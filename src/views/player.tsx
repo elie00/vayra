@@ -245,6 +245,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     settings,
   });
   useWebviewMemory(engine === "mpv");
+  const shellSnapRef = useRef(snap);
   const volumeRestoredRef = useRef(false);
   useEffect(() => {
     if (!bridgeReady) {
@@ -849,6 +850,11 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   });
   const showChrome = !loaderActive && (chromeVisible || drawMode);
   const ActiveShell = getPlayerShell(settings.playerShellId).Component;
+  const liveShellSnap = castDevice
+    ? { ...snap, positionSec: castPositionSec || snap.positionSec, status: (castPlaying ? "playing" : "paused") as typeof snap.status }
+    : snap;
+  if (showChrome) shellSnapRef.current = liveShellSnap;
+  const shellSnap = showChrome ? liveShellSnap : shellSnapRef.current;
   return (
     <main
       ref={stageRef}
@@ -1083,15 +1089,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       )}
 
       <ActiveShell
-        snap={
-          castDevice
-            ? {
-                ...snap,
-                positionSec: castPositionSec || snap.positionSec,
-                status: castPlaying ? "playing" : "paused",
-              }
-            : snap
-        }
+        snap={shellSnap}
         engine={engine}
         useOverlayPopups={false}
         onMenuOpenChange={setAnyMenuOpen}
