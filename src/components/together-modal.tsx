@@ -18,7 +18,7 @@ export function TogetherPopover({
   placement?: "below-right" | "above-left";
   connectStyle?: "tab" | "popover";
 } = {}) {
-  const { enabled, snapshot, chat, displayName, setDisplayName, startSession, joinSession, leaveSession, retrySession, sendChat, closeModal, clientId, participantLocations } = useTogether();
+  const { enabled, snapshot, chat, displayName, setDisplayName, startSession, joinSession, leaveSession, retrySession, sendChat, closeModal, clientId } = useTogether();
   const { openSettings, openPicker, topKind } = useView();
   const { settings, update } = useSettings();
   const { avatar: selfAvatar, color: selfColor } = useSelfIdentity();
@@ -96,8 +96,7 @@ export function TogetherPopover({
   const participants = useMemo(() => snapshot.participants.slice().sort((a, b) => a.joinedAt - b.joinedAt), [snapshot.participants]);
 
   const roomMedia = snapshot.syncState;
-  const someoneInPlayer = Array.from(participantLocations.values()).some((l) => l.kind === "player");
-  const canReturn = inSession && !!roomMedia?.mediaId && topKind !== "player" && someoneInPlayer;
+  const canReturn = inSession && !!roomMedia?.mediaId && topKind !== "player";
 
   const returnToVideo = () => {
     if (!roomMedia?.mediaId) return;

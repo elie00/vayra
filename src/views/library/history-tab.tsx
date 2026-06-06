@@ -1,7 +1,7 @@
 import { Clock } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { library, type LibraryItem } from "@/lib/stremio";
+import { library, removeStremioLibraryItem, type LibraryItem } from "@/lib/stremio";
 import { fetchWatchedHistory, type HistoryItem } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
 import {
@@ -31,17 +31,28 @@ export function HistoryTab() {
     library(authKey)
       .then((items) => {
         if (cancelled) return;
-        const filtered = items
-          .filter((i) => !i.removed || i.temp)
-          .filter((i) => i.state?.flaggedWatched === 1 || (i.state?.timeOffset ?? 0) > 0)
-          .sort((a, b) => Date.parse(b._mtime) - Date.parse(a._mtime));
-        setStremio(filtered);
+        setStremio(filterHistory(items));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [authKey]);
+
+  const handleRemove = useCallback(
+    async (stremioId: string) => {
+      if (!authKey) return;
+      setStremio((prev) => prev.filter((i) => i._id !== stremioId));
+      try {
+        await removeStremioLibraryItem(authKey, stremioId);
+      } catch {
+        library(authKey)
+          .then((items) => setStremio(filterHistory(items)))
+          .catch(() => {});
+      }
+    },
+    [authKey],
+  );
 
   useEffect(() => {
     if (!traktConnected) {
@@ -108,10 +119,17 @@ export function HistoryTab() {
           No matches for these filters.
         </p>
       ) : (
-        <GroupedGrid groups={groupByDate(visible)} />
+        <GroupedGrid groups={groupByDate(visible)} onRemove={handleRemove} />
       )}
     </section>
   );
+}
+
+function filterHistory(items: LibraryItem[]): LibraryItem[] {
+  return items
+    .filter((i) => !i.removed || i.temp)
+    .filter((i) => i.state?.flaggedWatched === 1 || (i.state?.timeOffset ?? 0) > 0)
+    .sort((a, b) => Date.parse(b._mtime) - Date.parse(a._mtime));
 }
 
 function mergeHistory(stremio: LibraryItem[], trakt: HistoryItem[]): WatchlistMerged[] {
@@ -127,6 +145,7 @@ function mergeHistory(stremio: LibraryItem[], trakt: HistoryItem[]): WatchlistMe
         background: item.background,
       },
       date: parseTs(item._mtime),
+      stremioId: item._id,
     });
   }
   for (const h of trakt) {

@@ -220,13 +220,13 @@ fn kill_orphan_sidecars() {
     {
         use std::os::windows::process::CommandExt;
         let _ = std::process::Command::new("taskkill")
-            .args(["/F", "/FI", "IMAGENAME eq stremio-server-*"])
+            .args(["/F", "/T", "/FI", "IMAGENAME eq stremio-server*"])
             .creation_flags(0x0800_0000)
             .output();
     }
     #[cfg(not(windows))]
     {
-        let _ = std::process::Command::new("pkill").args(["-f", "stremio-server-"]).output();
+        let _ = std::process::Command::new("pkill").args(["-f", "stremio-server"]).output();
     }
 }
 

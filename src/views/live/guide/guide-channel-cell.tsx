@@ -13,12 +13,14 @@ export function GuideChannelCell({
   onInfo,
   index,
   hydrated,
+  width = CHANNEL_COL_PX,
 }: {
   channel: IptvChannel;
   onPlay: (ch: IptvChannel) => void;
   onInfo?: (meta: Meta) => void;
   index: number;
   hydrated?: Meta | null;
+  width?: number;
 }) {
   const [errored, setErrored] = useState(false);
   const favorites = useFavorites();
@@ -29,7 +31,7 @@ export function GuideChannelCell({
   return (
     <div
       className="sticky left-0 z-20 flex items-center gap-2.5 overflow-hidden border-b border-r border-edge-soft/55 bg-surface pr-2 pl-3"
-      style={{ width: CHANNEL_COL_PX, height: ROW_HEIGHT_PX, flex: `0 0 ${CHANNEL_COL_PX}px` }}
+      style={{ width, height: ROW_HEIGHT_PX, flex: `0 0 ${width}px` }}
     >
       <HoverTooltip
         label={displayName}

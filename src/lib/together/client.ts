@@ -84,7 +84,7 @@ export class TogetherClient {
     this.clientId = clientId;
     this.name = name;
     this.originalName = name;
-    this.avatar = avatar && avatar.length > 150_000 ? null : avatar;
+    this.avatar = avatar;
     this.color = color;
     this.snapshot = {
       state: "disconnected",
@@ -114,7 +114,7 @@ export class TogetherClient {
   }
 
   setProfile(avatar: string | null, color: string | null) {
-    this.avatar = avatar && avatar.length > 150_000 ? null : avatar;
+    this.avatar = avatar;
     this.color = color;
     if (this.room && this.snapshot.state === "joined") {
       this.send({

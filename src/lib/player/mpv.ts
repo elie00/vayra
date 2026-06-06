@@ -82,7 +82,6 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "eof-reached" && data === true) snap.status = "ended";
       if (name === "volume" && typeof data === "number") snap.volume = data / 100;
       if (name === "mute" && typeof data === "boolean") snap.muted = data;
-      if (name === "speed" && typeof data === "number") snap.rate = data;
       if (name === "track-list" && Array.isArray(data)) {
         const list = data as Array<Record<string, unknown>>;
         pendingTracks["track-list"] = list;
@@ -350,7 +349,6 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       invoke("mpv_set_property", { name: "mute", value: m }).catch(() => {});
     },
     setRate(r) {
-      snap.rate = r;
       invoke("mpv_set_property", { name: "speed", value: r }).catch(() => {});
     },
     setAudioTrack(id) {

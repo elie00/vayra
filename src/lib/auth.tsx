@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { stremioSourceProfileId, useProfiles } from "./profiles";
+import { stremioSourceProfileId, useProfiles, type Profile } from "./profiles";
 import { login as apiLogin, type User } from "./stremio";
 
 type Session = { authKey: string; user: User };
@@ -42,6 +42,21 @@ function writeProfileSession(id: string, session: Session | null): void {
     else localStorage.removeItem(profileAuthKey(id));
   } catch {
     return;
+  }
+}
+
+export function readActiveStremioAuthKey(): string | null {
+  try {
+    const raw = localStorage.getItem("harbor.profiles.v1");
+    if (!raw) return null;
+    const state = JSON.parse(raw) as { profiles?: Profile[]; activeId?: string | null };
+    const profiles = Array.isArray(state.profiles) ? state.profiles : [];
+    const active = profiles.find((p) => p.id === state.activeId) ?? null;
+    const sourceId = stremioSourceProfileId(active, profiles);
+    if (!sourceId) return null;
+    return readProfileSession(sourceId)?.authKey ?? null;
+  } catch {
+    return null;
   }
 }
 

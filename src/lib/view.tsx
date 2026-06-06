@@ -96,7 +96,7 @@ type ViewValue = {
   view: View;
   setView: (v: View) => void;
   openSettings: (section?: SettingsSection) => void;
-  consumeSettingsSection: () => SettingsSection | null;
+  settingsSectionRequest: { section: SettingsSection | null; nonce: number };
   topKind: Frame["kind"];
   topPath: string;
   service: StreamingService | null;
@@ -317,7 +317,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const pendingSection = useRef<SettingsSection | null>(null);
+  const [sectionReq, setSectionReq] = useState<{ section: SettingsSection | null; nonce: number }>({
+    section: null,
+    nonce: 0,
+  });
 
   const setView = useCallback((v: View) => {
     if (typeof window !== "undefined") {
@@ -387,18 +390,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openSettings = useCallback((section?: SettingsSection) => {
-    pendingSection.current = section ?? null;
+    setSectionReq((r) => ({ section: section ?? null, nonce: r.nonce + 1 }));
     setStack((s) => {
       const t = s[s.length - 1];
       if (t.kind === "settings") return s;
       return pushFrame(s, { kind: "settings" });
     });
-  }, []);
-
-  const consumeSettingsSection = useCallback((): SettingsSection | null => {
-    const v = pendingSection.current;
-    pendingSection.current = null;
-    return v;
   }, []);
 
   const openService = useCallback((s: StreamingService | null) => {
@@ -569,7 +566,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       view,
       setView,
       openSettings,
-      consumeSettingsSection,
+      settingsSectionRequest: sectionReq,
       topKind: top.kind,
       topPath,
       service,
@@ -627,7 +624,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       canGoBack,
       setView,
       openSettings,
-      consumeSettingsSection,
+      sectionReq,
       openService,
       openMeta,
       openPerson,

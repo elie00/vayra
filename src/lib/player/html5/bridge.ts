@@ -457,8 +457,19 @@ export function createHtml5Bridge(): PlayerBridge {
     },
     setAudioDelay() {},
     async addSubtitle(url, lang, title, select): Promise<boolean> {
+      let resolvedUrl = url;
+      if (
+        !/^(https?|blob|data):/i.test(url) &&
+        typeof window !== "undefined" &&
+        "__TAURI_INTERNALS__" in window
+      ) {
+        try {
+          const { convertFileSrc } = await import("@tauri-apps/api/core");
+          resolvedUrl = convertFileSrc(url);
+        } catch {}
+      }
       const id = `ext-${subTracks.length}-${Date.now()}`;
-      const track: SubTrack = { id, url, lang, title, external: true, cues: null, loading: false };
+      const track: SubTrack = { id, url: resolvedUrl, lang, title, external: true, cues: null, loading: false };
       subTracks.push(track);
       if (select === true) {
         activeSubId = id;

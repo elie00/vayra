@@ -27,9 +27,7 @@ export function WatchlistSync() {
         if (cancelled) return;
         const ids: string[] = [];
         for (const it of items) {
-          if (it.removed && !it.temp) continue;
-          if (it.state?.flaggedWatched === 1) continue;
-          if ((it.state?.timeOffset ?? 0) > 0) continue;
+          if (it.removed || it.temp) continue;
           ids.push(it._id);
         }
         STORE.stremio = ids;

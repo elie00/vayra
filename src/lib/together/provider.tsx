@@ -12,6 +12,7 @@ import {
   type SyncState,
 } from "./protocol";
 
+const CLIENT_ID_KEY = "harbor.together.clientId";
 const NAME_KEY = "harbor.together.name";
 const CHAT_HISTORY_LIMIT = 200;
 
@@ -120,7 +121,12 @@ type TogetherValue = {
 const Ctx = createContext<TogetherValue | null>(null);
 
 function loadOrInitClientId(): string {
-  return crypto.randomUUID();
+  let id = localStorage.getItem(CLIENT_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(CLIENT_ID_KEY, id);
+  }
+  return id;
 }
 
 function loadOrInitName(): string {
@@ -256,12 +262,13 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
           next.set(e.from, e.activeAt);
           return next;
         });
-        setParticipantLocations((cur) => {
-          const next = new Map(cur);
-          if (e.location) next.set(e.from, e.location);
-          else next.delete(e.from);
-          return next;
-        });
+        if (e.location) {
+          setParticipantLocations((cur) => {
+            const next = new Map(cur);
+            next.set(e.from, e.location!);
+            return next;
+          });
+        }
       }
     });
     return () => {

@@ -329,6 +329,7 @@ function styleMatches(s: Settings, p: SubPreset): boolean {
 
 function PresetCluster({ settings, update }: { settings: Settings; update: (p: Partial<Settings>) => void }) {
   const [list, setList] = useState<SubPreset[]>(() => loadSubPresets());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [naming, setNaming] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -336,33 +337,75 @@ function PresetCluster({ settings, update }: { settings: Settings; update: (p: P
     setList(next);
     saveSubPresets(next);
   };
-  const save = () => {
+
+  useEffect(() => {
+    if (selectedId && list.some((p) => p.id === selectedId)) return;
+    const match = list.find((p) => styleMatches(settings, p));
+    setSelectedId(match ? match.id : null);
+  }, [list, selectedId, settings]);
+
+  const selected = list.find((p) => p.id === selectedId) ?? null;
+  const dirty = selected ? !styleMatches(settings, selected) : false;
+  const isSaved = !!selected && !dirty;
+
+  const apply = (p: SubPreset) => {
+    update(p.values);
+    setSelectedId(p.id);
+  };
+  const overrideSelected = () => {
+    if (!selected) return;
+    commit(list.map((p) => (p.id === selected.id ? { ...p, values: snapshotSub(settings) } : p)));
+  };
+  const startCreate = () => {
+    setDraft("");
+    setNaming(true);
+  };
+  const createNamed = () => {
     const name = draft.trim();
-    if (!name) {
-      setNaming(false);
-      return;
-    }
-    commit([...list, { id: `${name.toLowerCase()}-${list.length}`, name, values: snapshotSub(settings) }]);
+    if (!name) return;
+    const id = `${name.toLowerCase().replace(/\s+/g, "-").slice(0, 24)}-${list.length}`;
+    commit([...list, { id, name, values: snapshotSub(settings) }]);
+    setSelectedId(id);
     setDraft("");
     setNaming(false);
   };
 
   if (naming) {
     return (
-      <div className="flex h-11 shrink-0 items-center rounded-[10px] bg-raised px-1.5">
+      <div className="flex h-11 shrink-0 items-center gap-1 rounded-[10px] bg-raised px-1.5">
         <input
           autoFocus
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-            if (e.key === "Escape") setNaming(false);
+            if (e.key === "Enter") createNamed();
+            if (e.key === "Escape") {
+              setNaming(false);
+              setDraft("");
+            }
           }}
-          placeholder="Preset name"
-          className="h-8 w-[120px] rounded-[8px] bg-elevated px-2.5 text-[13px] text-ink outline-none ring-1 ring-edge placeholder:text-ink-subtle focus:ring-ink"
+          placeholder={list.length ? "New template name" : "Name your first template"}
+          className="h-8 w-[156px] rounded-[8px] bg-elevated px-2.5 text-[13px] text-ink outline-none ring-1 ring-edge placeholder:text-ink-subtle focus:ring-ink"
         />
-        <button onClick={save} className="ml-1 flex h-8 items-center rounded-[8px] px-2.5 text-[13px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink">
+        <button
+          onClick={createNamed}
+          disabled={!draft.trim()}
+          className={`ml-0.5 flex h-8 items-center gap-1 rounded-[8px] px-2.5 text-[13px] font-semibold transition-colors ${
+            draft.trim() ? "bg-accent text-canvas hover:brightness-110" : "cursor-default text-ink-subtle/50"
+          }`}
+        >
+          <Check size={13} strokeWidth={2.6} />
           Save
+        </button>
+        <button
+          onClick={() => {
+            setNaming(false);
+            setDraft("");
+          }}
+          aria-label="Cancel"
+          className="flex h-8 w-8 items-center justify-center rounded-[8px] text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+        >
+          <X size={15} />
         </button>
       </div>
     );
@@ -371,27 +414,57 @@ function PresetCluster({ settings, update }: { settings: Settings; update: (p: P
   return (
     <div className="flex h-11 shrink-0 items-center gap-1 rounded-[10px] bg-raised px-1.5">
       {list.map((p) => {
-        const active = styleMatches(settings, p);
+        const isSel = p.id === selectedId;
+        const matches = styleMatches(settings, p);
         return (
           <PresetTip key={p.id} label="Click to apply · Right-click to delete">
             <button
-              onClick={() => update(p.values)}
+              onClick={() => apply(p)}
               onContextMenu={(e) => {
                 e.preventDefault();
                 commit(list.filter((x) => x.id !== p.id));
+                if (selectedId === p.id) setSelectedId(null);
               }}
-              className={`flex h-8 items-center rounded-[8px] px-2.5 text-[13px] font-semibold transition-colors ${
-                active ? "bg-elevated text-ink ring-1 ring-edge" : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+              className={`flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-semibold transition-colors ${
+                matches
+                  ? "bg-elevated text-ink ring-1 ring-edge"
+                  : isSel
+                    ? "bg-elevated/60 text-ink"
+                    : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
               }`}
             >
               {p.name}
+              {isSel && dirty && <span aria-label="unsaved changes" className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
             </button>
           </PresetTip>
         );
       })}
-      <button aria-label="Save current as preset" onClick={() => setNaming(true)} className="flex h-8 w-8 items-center justify-center rounded-[8px] text-ink-subtle transition-colors hover:bg-elevated hover:text-ink">
-        <Plus size={16} />
+
+      {list.length > 0 && <span aria-hidden className="mx-0.5 h-5 w-px bg-edge-soft" />}
+
+      <button
+        onClick={selected ? (dirty ? overrideSelected : undefined) : startCreate}
+        disabled={isSaved}
+        title={selected ? (dirty ? `Overwrite ${selected.name} with this look` : "No unsaved changes") : "Save this look as a template"}
+        className={`flex h-8 items-center gap-1.5 rounded-[8px] px-3 text-[13px] font-semibold transition-all ${
+          isSaved ? "cursor-default text-ink-subtle/55" : "bg-accent text-canvas hover:brightness-110"
+        }`}
+      >
+        {isSaved || selected ? <Check size={13} strokeWidth={2.6} /> : <Plus size={14} strokeWidth={2.6} />}
+        {isSaved ? "Saved" : selected ? `Override ${selected.name}` : "Save look"}
       </button>
+
+      {selected && (
+        <PresetTip label="Save as a new template">
+          <button
+            onClick={startCreate}
+            aria-label="Save as a new template"
+            className="flex h-8 w-8 items-center justify-center rounded-[8px] text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+          >
+            <Plus size={16} />
+          </button>
+        </PresetTip>
+      )}
     </div>
   );
 }

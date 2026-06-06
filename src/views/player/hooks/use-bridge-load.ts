@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import { readResumeMs, saveResumeMs } from "@/lib/resume";
-import { libraryGetOne } from "@/lib/stremio";
+import { episodeFromVideoId, libraryGetOne } from "@/lib/stremio";
 import type { PlayerSrc } from "@/lib/view";
 
 const RESUME_PROMPT_MIN_SEC = 30;
@@ -127,10 +127,15 @@ async function resolveStartMs(
 ): Promise<{ ms: number; fromRemote: boolean }> {
   const local = readResumeMs(metaId, season, episode);
   if (!authKey) return { ms: local, fromRemote: false };
-  const matchesEpisode = (item: { state?: { season?: number; episode?: number } } | null) => {
+  const matchesEpisode = (
+    item: { state?: { season?: number; episode?: number; video_id?: string } } | null,
+  ) => {
     if (!item) return false;
     if (typeof season !== "number" || typeof episode !== "number") return true;
-    return item.state?.season === season && item.state?.episode === episode;
+    const fromVid = episodeFromVideoId(item.state?.video_id);
+    const se = item.state?.season ?? fromVid?.season;
+    const ep = item.state?.episode ?? fromVid?.episode;
+    return se === season && ep === episode;
   };
   const lookupId = metaId.startsWith("tt") ? metaId : imdbId?.startsWith("tt") ? imdbId : metaId;
   const remote = await libraryGetOne(authKey, lookupId).catch(() => null);

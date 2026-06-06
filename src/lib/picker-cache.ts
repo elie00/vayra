@@ -58,15 +58,26 @@ export function setPickerCache(
   notify();
 }
 
+// Keys for the actively-playing item(s). Pinned entries are exempt from
+// eviction so "Switch stream" always finds their streams in-place instead of
+// bouncing the user out to the full picker (which stops playback) once the
+// 30-min stale sweep runs. See pin/unpin below + use-stream-switcher.
+const pinned = new Set<string>();
+
+export function pinPickerCache(meta: Meta, episode?: PlayEpisode): void {
+  pinned.add(entryKey(meta, episode));
+}
+
+export function unpinPickerCache(meta: Meta, episode?: PlayEpisode): void {
+  pinned.delete(entryKey(meta, episode));
+}
+
 registerEvictable("picker-cache", (aggressive) => {
-  if (aggressive) {
-    if (cache.size > 0) clearPickerCache();
-    return;
-  }
   const now = Date.now();
   let changed = false;
   for (const [k, e] of cache) {
-    if (now - e.fetchedAt > STALE_MS) {
+    if (pinned.has(k)) continue;
+    if (aggressive || now - e.fetchedAt > STALE_MS) {
       cache.delete(k);
       changed = true;
     }

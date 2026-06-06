@@ -1,4 +1,4 @@
-import { Check, Loader2, Search as SearchIcon, SlidersHorizontal, X } from "lucide-react";
+import { Check, FolderOpen, Loader2, Search as SearchIcon, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Flag } from "@/components/flag";
 import type { TrackInfo } from "@/lib/player/bridge";
@@ -57,6 +57,30 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
   const totalEmbedded = tracks.filter((t) => !t.external).length;
   const totalExternal = tracks.filter((t) => t.external).length;
   const offSelected = selectedId == null;
+  const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const loadLocal = async () => {
+    setLocalError(null);
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const path = await open({
+        multiple: false,
+        filters: [{ name: "Subtitles", extensions: ["srt", "ass", "ssa", "vtt", "sub"] }],
+      });
+      if (typeof path !== "string") return;
+      const name = path.split(/[\\/]/).pop() || "Local subtitle";
+      const ok = await props.onAddSubtitle(path, undefined, name);
+      if (ok === false) {
+        setLocalError("Couldn't load that subtitle file. Try another.");
+        return;
+      }
+      onClose();
+    } catch (e) {
+      console.warn("[subtitles] local load failed", e);
+      setLocalError("Couldn't load that subtitle file. Try another.");
+    }
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -218,13 +242,30 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           </div>
           )}
 
-          <button
-            onClick={() => setSearchOpen((v) => !v)}
-            className="flex w-full shrink-0 items-center gap-2 border-t border-edge-soft px-3 py-2 text-left text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
-          >
-            <SearchIcon size={12} strokeWidth={2.2} />
-            {searchOpen ? "Hide search" : "Find more subtitles"}
-          </button>
+          {localError && (
+            <div className="shrink-0 border-t border-edge-soft bg-danger/10 px-3 py-1.5 text-[11.5px] text-danger">
+              {localError}
+            </div>
+          )}
+          <div className="flex shrink-0 items-stretch border-t border-edge-soft">
+            <button
+              onClick={() => setSearchOpen((v) => !v)}
+              className="flex flex-1 items-center gap-2 px-3 py-2 text-left text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
+            >
+              <SearchIcon size={12} strokeWidth={2.2} />
+              {searchOpen ? "Hide search" : "Find more subtitles"}
+            </button>
+            {isTauri && (
+              <button
+                onClick={() => void loadLocal()}
+                title="Load a subtitle file from your computer"
+                className="flex shrink-0 items-center gap-2 border-l border-edge-soft px-3 py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
+              >
+                <FolderOpen size={12} strokeWidth={2.2} />
+                Load file
+              </button>
+            )}
+          </div>
 
           <DelayRow delay={delaySec} onDelay={onDelay} />
         </section>

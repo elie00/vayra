@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { type Meta } from "@/lib/cinemeta";
-import { library, type LibraryItem } from "@/lib/stremio";
+import { library, removeStremioLibraryItem, type LibraryItem } from "@/lib/stremio";
 import { fetchWatchlist } from "@/lib/trakt/watchlist";
 import { useTrakt } from "@/lib/trakt/provider";
 import { traktItemToMeta } from "@/lib/trakt/to-meta";
 import type { TraktItem } from "@/lib/trakt/types";
-import { readLocalEntries, setWatchlistAggregate, subscribeWatchlist, type LocalEntry } from "@/lib/watchlist";
+import { readLocalEntries, removeFromWatchlist, setWatchlistAggregate, subscribeWatchlist, type LocalEntry } from "@/lib/watchlist";
 import {
   applyFilter,
   countByType,
@@ -25,6 +25,7 @@ export function WatchlistTab() {
   const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
   const [stremio, setStremio] = useState<LibraryItem[]>([]);
+  const [rawCount, setRawCount] = useState(0);
   const [trakt, setTrakt] = useState<TraktItem[]>([]);
   const [localEntries, setLocalEntries] = useState<LocalEntry[]>(() => readLocalEntries());
   const [traktStatus, setTraktStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -45,20 +46,35 @@ export function WatchlistTab() {
     library(authKey)
       .then((items) => {
         if (cancelled) return;
-        const filtered = items.filter((i) => {
-          if (settings.libraryBookmarkedOnly) return !i.removed && !i.temp;
-          if (i.removed && !i.temp) return false;
-          if (i.state?.flaggedWatched === 1) return false;
-          if ((i.state?.timeOffset ?? 0) > 0) return false;
-          return true;
-        });
-        setStremio(filtered);
+        setRawCount(items.filter((i) => !i.removed).length);
+        setStremio(filterLibrary(items, settings.libraryBookmarkedOnly));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [authKey, settings.libraryBookmarkedOnly]);
+
+  const handleRemove = useCallback(
+    async (stremioId: string) => {
+      if (!authKey) return;
+      const wasLocal = readLocalEntries().some((e) => e.id === stremioId);
+      setStremio((prev) => prev.filter((i) => i._id !== stremioId));
+      setRawCount((c) => Math.max(0, c - 1));
+      try {
+        await removeStremioLibraryItem(authKey, stremioId);
+        if (wasLocal) removeFromWatchlist(stremioId);
+      } catch {
+        library(authKey)
+          .then((items) => {
+            setRawCount(items.filter((i) => !i.removed).length);
+            setStremio(filterLibrary(items, settings.libraryBookmarkedOnly));
+          })
+          .catch(() => {});
+      }
+    },
+    [authKey, settings.libraryBookmarkedOnly],
+  );
 
   useEffect(() => {
     if (!traktConnected) {
@@ -111,7 +127,7 @@ export function WatchlistTab() {
     if (traktConnected) parts.push(traktStatus === "loading" ? "Syncing Trakt…" : `${trakt.length} on Trakt`);
     else parts.push("Connect Trakt in Settings to sync");
     parts.push(`${localEntries.length} saved here`);
-    if (authKey && stremio.length > 0) parts.push(`${stremio.length} on Stremio`);
+    if (authKey && rawCount > 0) parts.push(`${rawCount} in your Stremio library`);
     return parts.join(" · ");
   })();
 
@@ -130,10 +146,20 @@ export function WatchlistTab() {
           No matches for these filters.
         </p>
       ) : (
-        <GroupedGrid groups={groupByDate(visible)} />
+        <GroupedGrid groups={groupByDate(visible)} onRemove={handleRemove} />
       )}
     </section>
   );
+}
+
+function filterLibrary(items: LibraryItem[], bookmarkedOnly: boolean): LibraryItem[] {
+  return items.filter((i) => {
+    if (i.removed) return false;
+    if (i.state?.flaggedWatched === 1) return false;
+    if ((i.state?.timeOffset ?? 0) > 0) return false;
+    if (bookmarkedOnly && i.temp) return false;
+    return true;
+  });
 }
 
 function mergeWatchlist(
@@ -164,7 +190,7 @@ function mergeWatchlist(
       background: item.background,
     };
     const dedupKey = `${item.type}:${norm(item.name ?? "")}`;
-    setOrUpgrade(dedupKey, { key: item._id, meta, date: parseTs(item._mtime) });
+    setOrUpgrade(dedupKey, { key: item._id, meta, date: parseTs(item._mtime), stremioId: item._id });
   }
   for (const t of trakt) {
     const m = traktItemToMeta(t);

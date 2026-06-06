@@ -1,4 +1,4 @@
-import { Check, ChevronDown, GalleryHorizontal, List, Play } from "lucide-react";
+import { Check, ChevronDown, Play } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EpisodeJumper } from "@/components/episode-jumper";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
@@ -20,6 +20,7 @@ import { useTrakt } from "@/lib/trakt/provider";
 import { useView } from "@/lib/view";
 import { NewBadge, UpcomingBadge } from "./badges";
 import { CinemetaEpisodeRow } from "./cinemeta-episodes";
+import { EpisodeLayoutToggle } from "./episode-layout-toggle";
 import { EpisodeStrip } from "./episode-strip";
 import { isNewEpisode, isNewSeason, isUpcomingEpisode } from "./helpers";
 
@@ -185,7 +186,7 @@ export function SeriesEpisodes({
       <div className="flex items-end justify-between gap-6">
         <h3 className="text-[22px] font-medium tracking-tight text-ink">Episodes</h3>
         <div className="flex items-center gap-2.5">
-          <LayoutToggle
+          <EpisodeLayoutToggle
             value={settings.episodeLayout}
             onChange={(v) => update({ episodeLayout: v })}
           />
@@ -399,39 +400,6 @@ function EpisodeRow({
         )}
       </div>
     </button>
-  );
-}
-
-function LayoutToggle({
-  value,
-  onChange,
-}: {
-  value: "list" | "strip";
-  onChange: (v: "list" | "strip") => void;
-}) {
-  return (
-    <div className="flex h-10 items-center gap-0.5 rounded-full border border-edge-soft bg-canvas/90 p-1">
-      <button
-        type="button"
-        aria-label="List view"
-        onClick={() => onChange("list")}
-        className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-          value === "list" ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"
-        }`}
-      >
-        <List size={15} strokeWidth={2.2} />
-      </button>
-      <button
-        type="button"
-        aria-label="Horizontal view"
-        onClick={() => onChange("strip")}
-        className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-          value === "strip" ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"
-        }`}
-      >
-        <GalleryHorizontal size={15} strokeWidth={2.2} />
-      </button>
-    </div>
   );
 }
 

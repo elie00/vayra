@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Poster } from "@/components/poster";
 import type { CalendarItem } from "@/lib/calendar";
 import { formatDateLong } from "./utils";
@@ -52,6 +53,7 @@ function ChipTooltip({
   item: CalendarItem;
   anchorRef: React.RefObject<HTMLElement | null>;
 }) {
+  const tipRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
     left: 0,
     top: 0,
@@ -59,32 +61,30 @@ function ChipTooltip({
   });
 
   useLayoutEffect(() => {
-    const el = anchorRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const tooltipWidth = 320;
-    const tooltipHeight = 220;
+    const anchor = anchorRef.current;
+    const tip = tipRef.current;
+    if (!anchor || !tip) return;
+    const rect = anchor.getBoundingClientRect();
+    const tw = tip.offsetWidth || 320;
+    const th = tip.offsetHeight || 220;
     const margin = 8;
     let left = rect.right + margin;
-    if (left + tooltipWidth > window.innerWidth - 16) {
-      left = rect.left - tooltipWidth - margin;
-    }
-    let top = rect.top + rect.height / 2 - tooltipHeight / 2;
-    if (top < 16) top = 16;
-    if (top + tooltipHeight > window.innerHeight - 16) {
-      top = window.innerHeight - tooltipHeight - 16;
-    }
+    if (left + tw > window.innerWidth - 16) left = rect.left - tw - margin;
+    if (left < 16) left = 16;
+    let top = rect.top + rect.height / 2 - th / 2;
+    top = Math.max(16, Math.min(top, window.innerHeight - th - 16));
     setPos({ left, top, ready: true });
-  }, [anchorRef]);
+  }, [anchorRef, item.id]);
 
   const tag = item.isAnime ? "Anime" : item.type === "movie" ? "Movie" : "TV";
   const dateLabel = formatDateLong(item.releaseDate);
 
-  return (
+  return createPortal(
     <div
+      ref={tipRef}
       onClick={(e) => e.stopPropagation()}
       style={{ left: pos.left, top: pos.top, opacity: pos.ready ? 1 : 0 }}
-      className="pointer-events-none fixed z-[140] flex w-[320px] flex-col gap-3 rounded-2xl border border-edge bg-elevated/95 p-4 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] backdrop-blur-md transition-opacity duration-100"
+      className="pointer-events-none fixed z-[200] flex w-[320px] flex-col gap-3 rounded-2xl border border-edge bg-elevated/95 p-4 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] backdrop-blur-md transition-opacity duration-100"
     >
       <div className="flex items-start gap-3">
         <div className="h-[120px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-canvas/40 ring-1 ring-edge-soft">
@@ -108,6 +108,7 @@ function ChipTooltip({
       {item.overview && (
         <p className="line-clamp-4 text-[12px] leading-relaxed text-ink-muted">{item.overview}</p>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

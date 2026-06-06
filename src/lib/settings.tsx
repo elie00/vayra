@@ -87,6 +87,9 @@ export type Settings = {
   directTorrentStream: boolean;
   castAlwaysTranscode: boolean;
   playerAnime4kShaders: string[];
+  playerAnime4kMode: string;
+  playerAnime4kTier: string;
+  playerAnime4kFolder: string;
   preferredSubLangs: string[];
   preferredAudioLangs: string[];
   subFontSize: number;
@@ -267,6 +270,9 @@ const DEFAULT: Settings = {
   directTorrentStream: true,
   castAlwaysTranscode: true,
   playerAnime4kShaders: [],
+  playerAnime4kMode: "A",
+  playerAnime4kTier: "hq",
+  playerAnime4kFolder: "",
   preferredSubLangs: ["en"],
   preferredAudioLangs: ["en", "ja"],
   subFontSize: 32,

@@ -10,6 +10,8 @@ import { ThumbPreview } from "@/components/player/thumb-preview";
 import { SeekBarVisual } from "./seek-bar-visual";
 import { fmtTime } from "./transport-utils";
 
+const BUFFER_PAD_SEC = 4;
+
 export function SeekBar({
   durationSec,
   onSeek,
@@ -85,8 +87,12 @@ export function SeekBar({
           hovered={hover != null}
         />
         {hover != null &&
-          (trickplayActive && (!bufferedOnly || hover <= position + buffered) ? (
-            <ThumbPreview time={hover} dur={dur} />
+          (trickplayActive ? (
+            <ThumbPreview
+              time={hover}
+              dur={dur}
+              canFetch={!bufferedOnly || hover <= position + Math.max(0, buffered - BUFFER_PAD_SEC)}
+            />
           ) : (
             <div
               className="pointer-events-none absolute -top-9 -translate-x-1/2 rounded-md border border-white/10 bg-black/90 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-md"

@@ -1,3 +1,4 @@
+mod anime4k;
 mod browser;
 mod cast;
 mod cast_hls;
@@ -295,6 +296,8 @@ pub fn run() {
             harbor_resume_webview,
             save_text_file,
             cast_server::stop_stremio_sidecar,
+            anime4k::anime4k_download,
+            anime4k::anime4k_dir,
             proc_mem::harbor_process_memory,
             trailer::fetch_trailer,
             stream_proxy::proxy_register,

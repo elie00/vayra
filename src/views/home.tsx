@@ -21,7 +21,7 @@ import { type Meta } from "@/lib/cinemeta";
 import { useSettings, type StreamingService } from "@/lib/settings";
 import { trackEvent } from "@/lib/discover";
 import { saveResumeMs } from "@/lib/resume";
-import { library, libraryPut, type LibraryItem } from "@/lib/stremio";
+import { episodeFromVideoId, library, libraryPut, type LibraryItem } from "@/lib/stremio";
 import { useTrakt } from "@/lib/trakt/provider";
 import { buildTraktHomeRows } from "@/lib/trakt/home-rails";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
@@ -182,7 +182,13 @@ export function Home({ active = true }: { active?: boolean }) {
           setItems(libItems);
           for (const i of libItems) {
             if (i.state?.timeOffset && i.state.timeOffset > 0) {
-              saveResumeMs(i._id, i.state.timeOffset, i.state.season, i.state.episode);
+              const se = episodeFromVideoId(i.state.video_id);
+              saveResumeMs(
+                i._id,
+                i.state.timeOffset,
+                i.state.season ?? se?.season,
+                i.state.episode ?? se?.episode,
+              );
             }
             if ((i.removed && !i.temp) || trackedRef.current.has(i._id)) continue;
             trackedRef.current.add(i._id);

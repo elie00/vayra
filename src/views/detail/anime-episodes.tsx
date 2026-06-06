@@ -12,7 +12,9 @@ import { fetchWatchedKeySet } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useView } from "@/lib/view";
 import { useAnilistWatched } from "@/lib/anilist/use-anilist-watched";
+import { AnimeEpisodeStrip } from "./anime-episode-strip";
 import { UpcomingBadge } from "./badges";
+import { EpisodeLayoutToggle } from "./episode-layout-toggle";
 import { isUpcomingDate } from "./helpers";
 
 export function AnimeEpisodes({
@@ -51,6 +53,19 @@ export function AnimeEpisodes({
     meta.id,
     episodes,
   );
+  const { settings, update } = useSettings();
+
+  const progressFor = (ep: KitsuEpisode) =>
+    getEpisodeProgress(
+      meta.id,
+      ep.seasonNumber || 1,
+      ep.number,
+      ep.length ?? null,
+      ep.imdbId ?? null,
+      traktWatched,
+      undefined,
+      anilistWatched,
+    );
 
   const isOneOff = meta.type === "movie" || episodes.length <= 1;
   return (
@@ -65,6 +80,12 @@ export function AnimeEpisodes({
               {episodes.length} episode{episodes.length === 1 ? "" : "s"}
             </p>
           )}
+          {!isOneOff && (
+            <EpisodeLayoutToggle
+              value={settings.episodeLayout}
+              onChange={(v) => update({ episodeLayout: v })}
+            />
+          )}
           {franchise.length > 1 && (
             <AnimeSeasonPicker franchise={franchise} currentId={currentId} />
           )}
@@ -72,23 +93,14 @@ export function AnimeEpisodes({
       </div>
       {isOneOff ? (
         <MovieEntryCard meta={meta} ep={episodes[0]} watched={anilistCompleted} />
+      ) : settings.episodeLayout === "strip" ? (
+        <AnimeEpisodeStrip meta={meta} episodes={episodes} progressFor={progressFor} />
       ) : (
         <>
           <div className="flex flex-col gap-1">
-            {episodes.map((ep) => {
-              const season = ep.seasonNumber || 1;
-              const progress = getEpisodeProgress(
-                meta.id,
-                season,
-                ep.number,
-                ep.length ?? null,
-                ep.imdbId ?? null,
-                traktWatched,
-                undefined,
-                anilistWatched,
-              );
-              return <AnimeEpisodeRow key={ep.id} meta={meta} ep={ep} progress={progress} />;
-            })}
+            {episodes.map((ep) => (
+              <AnimeEpisodeRow key={ep.id} meta={meta} ep={ep} progress={progressFor(ep)} />
+            ))}
           </div>
           <EpisodeJumper scrollRef={scrollRef} totalEpisodes={episodes.length} />
         </>

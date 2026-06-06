@@ -98,18 +98,16 @@ export function Settings() {
   const [pmDraft, setPmDraft] = useState(settings.pmKey);
   const [dlDraft, setDlDraft] = useState(settings.dlKey);
   const [savedKey, setSavedKey] = useState<SavedKey | null>(null);
-  const { consumeSettingsSection } = useView();
-  const [active, setActive] = useState<SectionId>(() => {
-    const requested = consumeSettingsSection();
-    return (requested as SectionId | null) ?? "account";
-  });
+  const { settingsSectionRequest } = useView();
+  const [active, setActive] = useState<SectionId>(
+    (settingsSectionRequest.section as SectionId | null) ?? "account",
+  );
   const [relayMode, setRelayMode] = useState<RelayMode>("panel");
   const scrollRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const requested = consumeSettingsSection();
-    if (requested) setActive(requested as SectionId);
-  }, []);
+    if (settingsSectionRequest.section) setActive(settingsSectionRequest.section as SectionId);
+  }, [settingsSectionRequest]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });

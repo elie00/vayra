@@ -4,6 +4,7 @@ import { addonLogoSrc, resolveAddonLogo } from "@/components/addon-logo";
 import type { Addon } from "@/lib/addons";
 import type { ScoredStream } from "@/lib/streams/types";
 import { StremioRow } from "./stremio-row";
+import { QualityFilterBar, qualityTier, qualityTiersOf } from "./quality-filter";
 
 export function StremioLayout({
   streams,
@@ -22,6 +23,7 @@ export function StremioLayout({
 }) {
   const [filter, setFilter] = useState<string>("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [quality, setQuality] = useState<string>("all");
   const addonLogoMap = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const a of addons ?? []) {
@@ -50,8 +52,17 @@ export function StremioLayout({
     });
     return m;
   }, [addons]);
+  const addonFiltered = useMemo(
+    () => (filter === "all" ? streams : streams.filter((s) => s.addonId === filter)),
+    [streams, filter],
+  );
+  const qualityOptions = useMemo(() => qualityTiersOf(addonFiltered), [addonFiltered]);
+  useEffect(() => {
+    if (quality !== "all" && !qualityOptions.some((o) => o.tier === quality)) setQuality("all");
+  }, [qualityOptions, quality]);
   const visibleStreams = useMemo(() => {
-    const filtered = filter === "all" ? streams : streams.filter((s) => s.addonId === filter);
+    const filtered =
+      quality === "all" ? addonFiltered : addonFiltered.filter((s) => qualityTier(s) === quality);
     if (filter !== "all") return filtered;
     const downloadRx = /[⏳⌛⬇⏬🔽📥]|\bdownload(ing)?\b|\bqueued?\b|\bnot[\s_-]?cached\b/iu;
     const isDownload = (s: ScoredStream) => {
@@ -73,7 +84,7 @@ export function StremioLayout({
       if (ai !== bi) return bi - ai;
       return 0;
     });
-  }, [streams, filter, addonRank]);
+  }, [addonFiltered, quality, filter, addonRank]);
   const filterLabel = filter === "all"
     ? "All"
     : addonOptions.find((o) => o.id === filter)?.name ?? "All";
@@ -139,6 +150,12 @@ export function StremioLayout({
           </div>
         )}
       </div>
+      <QualityFilterBar
+        options={qualityOptions}
+        total={addonFiltered.length}
+        value={quality}
+        onChange={setQuality}
+      />
       <div className="flex flex-col gap-2">
         {visibleStreams.map((s, i) => (
           <StremioRow

@@ -3,7 +3,7 @@ import { Check, Play, X } from "lucide-react";
 import { meta as fetchMeta, type Meta } from "@/lib/cinemeta";
 import { useContextMenu } from "@/lib/context-menu";
 import { readSnapshot, useSnapshotVersion } from "@/lib/snapshots";
-import type { LibraryItem } from "@/lib/stremio";
+import { episodeFromVideoId, type LibraryItem } from "@/lib/stremio";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 
@@ -23,10 +23,11 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
   const off = item.state?.timeOffset ?? 0;
   const progress = dur > 0 ? Math.min(1, off / dur) : 0;
   const remaining = dur > 0 ? formatRemaining(dur - off) : "";
-  const sub =
+  const ep =
     item.state?.season && item.state?.episode
-      ? `S${item.state.season}E${item.state.episode}`
-      : "";
+      ? { season: item.state.season, episode: item.state.episode }
+      : episodeFromVideoId(item.state?.video_id);
+  const sub = ep ? `S${ep.season}E${ep.episode}` : "";
   const [logo, setLogo] = useState<string | undefined>();
   const [metaBg, setMetaBg] = useState<string | undefined>();
   const [hydratedMeta, setHydratedMeta] = useState<Meta | null>(null);
@@ -97,10 +98,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       };
 
   const onClick = () => {
-    const episode =
-      item.type === "series" && item.state?.season && item.state?.episode
-        ? { season: item.state.season, episode: item.state.episode }
-        : undefined;
+    const episode = item.type === "series" && ep ? ep : undefined;
     openPicker(meta, episode, { autoPlay: settings.instantPlay });
   };
 

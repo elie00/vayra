@@ -5,7 +5,7 @@ import { isLocalUrl } from "@/lib/player/local-url";
 import { clearOnePickerCache } from "@/lib/picker-cache";
 import { resolveViaDebrids } from "@/lib/streams/resolve";
 import { registerStreamProxy } from "@/lib/stream-proxy";
-import { buildTranscodedUrl, probeStremioServer } from "@/lib/stremio-server";
+import { buildTranscodedUrl, isBundledEngineUrl, probeStremioServer } from "@/lib/stremio-server";
 import type { DebridStore } from "@/lib/debrid/types";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayerSrc, PlayEpisode } from "@/lib/view";
@@ -30,6 +30,7 @@ export function useAutoRetry(params: {
 }) {
   const { bridgeRef, src, snap, stremioServerTranscode, instantPlay, inRoom, debrids, selfFrameReadyRef, openPicker } = params;
   const isLocal = isLocalUrl(src.url);
+  const isBundledEngine = isBundledEngineUrl(src.url);
   const isLive = src.meta.id.startsWith("iptv:");
 
   const hasProgress = usePlaybackFlag(
@@ -227,12 +228,12 @@ export function useAutoRetry(params: {
       const neverStarted = ref.pos < 0.5;
       const graceMs = neverStarted ? 75_000 : 18_000;
       if (now - ref.urlAt < graceMs) return;
-      if (now - ref.at > graceMs && pos < 5) {
+      if (!isBundledEngine && now - ref.at > graceMs && pos < 5) {
         triggerAutoRetry(neverStarted ? "source did not start after 75s" : "position frozen for 18s");
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [snap.status, triggerAutoRetry, src.url]);
+  }, [snap.status, triggerAutoRetry, src.url, isBundledEngine]);
 
   const noVideoSinceRef = useRef<number | null>(null);
   const videoSeenRef = useRef(false);
@@ -263,6 +264,7 @@ export function useAutoRetry(params: {
 
   useEffect(() => {
     if (snap.status === "ended") return;
+    if (isBundledEngine) return;
     if (snap.durationSec > 0 || getPlaybackPosition() > 1) return;
     const t = window.setTimeout(() => {
       if (snap.durationSec === 0 && getPlaybackPosition() === 0) {
@@ -270,7 +272,7 @@ export function useAutoRetry(params: {
       }
     }, STUCK_AUTORETRY_MS);
     return () => window.clearTimeout(t);
-  }, [src.url, snap.durationSec, snap.status, triggerAutoRetry]);
+  }, [src.url, snap.durationSec, snap.status, triggerAutoRetry, isBundledEngine]);
 
   useEffect(() => {
     if (!inRoom || isLocal || isLive) return;

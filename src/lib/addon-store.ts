@@ -1,4 +1,5 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
+import { readActiveStremioAuthKey } from "./auth";
 import { setUserAddons, userAddons, type Addon } from "./addons";
 
 const STORAGE_KEY = "harbor.installed-addons";
@@ -17,7 +18,15 @@ export async function seedDefaultAddonsIfFirstRun(): Promise<void> {
     }
     for (const def of DEFAULT_ADDONS) {
       try {
-        await installAddon(def.id, def.transportUrl);
+        const manifest = await fetchManifestAt(def.transportUrl);
+        const next = loadInstalled().filter((a) => a.transportUrl !== def.transportUrl);
+        next.push({
+          id: manifest.id || def.id,
+          transportUrl: def.transportUrl,
+          installedAt: Date.now(),
+          manifest,
+        });
+        saveInstalled(next);
       } catch (e) {
         console.warn(`[addons] failed to seed ${def.id}`, e);
       }
@@ -29,14 +38,7 @@ export async function seedDefaultAddonsIfFirstRun(): Promise<void> {
 }
 
 function readAuthKey(): string | null {
-  try {
-    const raw = localStorage.getItem("harbor.auth");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { authKey?: string };
-    return parsed.authKey ?? null;
-  } catch {
-    return null;
-  }
+  return readActiveStremioAuthKey();
 }
 
 async function pushToStremio(addon: Addon, mode: "install" | "uninstall"): Promise<boolean> {
@@ -44,7 +46,7 @@ async function pushToStremio(addon: Addon, mode: "install" | "uninstall"): Promi
   if (!authKey) return true;
   try {
     const current = await userAddons(authKey);
-    const filtered = current.filter((a) => a.manifest.id !== addon.manifest.id);
+    const filtered = current.filter((a) => a.transportUrl !== addon.transportUrl);
     const next = mode === "install" ? [...filtered, addon] : filtered;
     return await setUserAddons(authKey, next);
   } catch {
@@ -219,7 +221,7 @@ export type InstallResult = {
 export async function installAddon(id: string, transportUrl: string): Promise<Addon> {
   const manifest = await fetchManifestAt(transportUrl);
   const canonicalId = manifest.id || id;
-  const next = loadInstalled().filter((a) => a.id !== canonicalId);
+  const next = loadInstalled().filter((a) => a.transportUrl !== transportUrl);
   next.push({ id: canonicalId, transportUrl, installedAt: Date.now(), manifest });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl };
@@ -239,7 +241,7 @@ export async function installFromUrl(
   const replaceId = options.replaceId && options.replaceId !== id ? options.replaceId : null;
   const replacedById = before.some((a) => a.id === id);
   const replacedByOld = replaceId != null && before.some((a) => a.id === replaceId);
-  const next = before.filter((a) => a.id !== id && (!replaceId || a.id !== replaceId));
+  const next = before.filter((a) => a.transportUrl !== parsed.url && (!replaceId || a.id !== replaceId));
   next.push({ id, transportUrl: parsed.url, installedAt: Date.now(), manifest });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl: parsed.url };
@@ -261,13 +263,17 @@ export async function installFromUrl(
   return { addon, syncedToStremio, replaced: replacedById || replacedByOld };
 }
 
-export async function uninstallAddon(id: string): Promise<void> {
-  const next = loadInstalled().filter((a) => a.id !== id);
+export async function uninstallAddon(id: string, transportUrl?: string): Promise<void> {
+  const next = transportUrl
+    ? loadInstalled().filter((a) => a.transportUrl !== transportUrl)
+    : loadInstalled().filter((a) => a.id !== id);
   saveInstalled(next);
   const authKey = readAuthKey();
   if (!authKey) return;
   const current = await userAddons(authKey).catch(() => [] as Addon[]);
-  const filtered = current.filter((a) => a.manifest.id !== id);
+  const filtered = transportUrl
+    ? current.filter((a) => a.transportUrl !== transportUrl)
+    : current.filter((a) => a.manifest.id !== id);
   if (filtered.length !== current.length) {
     await setUserAddons(authKey, filtered).catch(() => {});
   }

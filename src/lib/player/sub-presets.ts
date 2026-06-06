@@ -14,6 +14,7 @@ export type SubPreset = {
     | "subBorderSize"
     | "subMarginY"
     | "subAlignX"
+    | "subAssOverride"
     | "subBoxOpacity"
     | "subBoxColor"
     | "subOpacity"
@@ -36,6 +37,7 @@ export const SEED_PRESETS: SubPreset[] = [
       subBorderSize: 0,
       subMarginY: 10,
       subAlignX: "center",
+      subAssOverride: "force",
       subBoxOpacity: 0.6,
       subBoxColor: "#000000",
       subOpacity: 1,
@@ -54,6 +56,7 @@ export const SEED_PRESETS: SubPreset[] = [
       subBorderSize: 2,
       subMarginY: 14,
       subAlignX: "center",
+      subAssOverride: "force",
       subBoxOpacity: 0.6,
       subBoxColor: "#000000",
       subOpacity: 1,
@@ -89,6 +92,7 @@ export function snapshotSub(s: Settings): SubPreset["values"] {
     subBorderSize: s.subBorderSize,
     subMarginY: s.subMarginY,
     subAlignX: s.subAlignX,
+    subAssOverride: s.subAssOverride,
     subBoxOpacity: s.subBoxOpacity,
     subBoxColor: s.subBoxColor,
     subOpacity: s.subOpacity,

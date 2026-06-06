@@ -1,30 +1,42 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { thumbCacheGet, thumbCacheSet, trickplayGet } from "@/lib/trickplay";
+import { thumbCacheGet, thumbCacheNearest, thumbCacheSet, trickplayGet } from "@/lib/trickplay";
 
 const BUCKET_SECONDS = 2;
 const CARD_WIDTH = 192;
 const CARD_HEIGHT = 108;
-const MAX_ATTEMPTS = 12;
-const RETRY_MS = 320;
+const MAX_ATTEMPTS = 8;
+const RETRY_MS = 300;
+const SETTLE_MS = 130;
+const NEAREST_WINDOW = 30;
 
-export function ThumbPreview({ time, dur }: { time: number; dur: number }) {
+export function ThumbPreview({
+  time,
+  dur,
+  canFetch = true,
+}: {
+  time: number;
+  dur: number;
+  canFetch?: boolean;
+}) {
   const bucket = Math.round(time / BUCKET_SECONDS);
   const liveBucketRef = useRef(bucket);
   liveBucketRef.current = bucket;
-  const [src, setSrc] = useState<string | null>(() => thumbCacheGet(bucket) ?? null);
+  const [fetchedSrc, setFetchedSrc] = useState<string | null>(() => thumbCacheGet(bucket) ?? null);
   const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const cached = thumbCacheGet(bucket);
     if (cached) {
-      setSrc(cached);
+      setFetchedSrc(cached);
       setLoading(false);
-      setFailed(false);
       return;
     }
-    setFailed(false);
+    setFetchedSrc(null);
+    if (!canFetch) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     let cancelled = false;
     let attempts = 0;
@@ -35,29 +47,31 @@ export function ThumbPreview({ time, dur }: { time: number; dur: number }) {
       if (cancelled || liveBucketRef.current !== bucket) return;
       if (url) {
         thumbCacheSet(bucket, url);
-        setSrc(url);
+        setFetchedSrc(url);
         setLoading(false);
         return;
       }
       attempts += 1;
       if (attempts >= MAX_ATTEMPTS) {
         setLoading(false);
-        setFailed(true);
         return;
       }
       timer = window.setTimeout(attempt, RETRY_MS);
     };
-    timer = window.setTimeout(attempt, 0);
+    timer = window.setTimeout(attempt, SETTLE_MS);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [bucket]);
+  }, [bucket, canFetch]);
 
   const pct = (time / dur) * 100;
   const label = fmtTime(time);
+  const nearest = fetchedSrc ? null : thumbCacheNearest(bucket, NEAREST_WINDOW);
+  const src = fetchedSrc ?? nearest ?? null;
+  const approx = !fetchedSrc && !!nearest;
 
-  if (failed && !src) {
+  if (!src && !loading) {
     return (
       <div
         className="pointer-events-none absolute -top-9 -translate-x-1/2 rounded-md border border-white/10 bg-black/90 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-md"
@@ -83,13 +97,13 @@ export function ThumbPreview({ time, dur }: { time: number; dur: number }) {
             alt=""
             draggable={false}
             className={`h-full w-full object-cover transition-opacity duration-100 ${
-              loading ? "opacity-40" : "opacity-100"
+              approx ? "opacity-60" : "opacity-100"
             }`}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-white/5 to-transparent" />
         )}
-        {loading && (
+        {loading && !src && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 className="h-5 w-5 animate-spin text-white/70" />
           </div>

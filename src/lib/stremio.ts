@@ -23,12 +23,27 @@ export type LibraryItem = {
     timeWatched?: number;
     flaggedWatched?: number;
     watched?: string;
+    video_id?: string;
   };
   removed: boolean;
   temp: boolean;
   _ctime: string;
   _mtime: string;
 };
+
+export function episodeFromVideoId(
+  videoId: string | undefined | null,
+): { season: number; episode: number } | null {
+  if (!videoId) return null;
+  const parts = videoId.split(":");
+  if (parts.length < 3) return null;
+  const season = Number(parts[parts.length - 2]);
+  const episode = Number(parts[parts.length - 1]);
+  if (!Number.isInteger(season) || !Number.isInteger(episode) || season < 0 || episode < 0) {
+    return null;
+  }
+  return { season, episode };
+}
 
 async function call<T>(path: string, body: object): Promise<T> {
   const res = await fetch(`${API}/${path}`, {
@@ -82,5 +97,22 @@ export async function libraryPut(authKey: string, item: LibraryItem): Promise<vo
     authKey,
     collection: "libraryItem",
     changes: [item],
+  });
+}
+
+export async function removeStremioLibraryItem(authKey: string, id: string): Promise<void> {
+  const items = await call<LibraryItem[]>("datastoreGet", {
+    authKey,
+    collection: "libraryItem",
+    ids: [id],
+    all: true,
+  });
+  const item = items?.[0];
+  if (!item) return;
+  await libraryPut(authKey, {
+    ...item,
+    removed: true,
+    temp: false,
+    _mtime: new Date().toISOString(),
   });
 }

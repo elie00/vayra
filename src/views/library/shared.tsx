@@ -1,4 +1,4 @@
-import { Bookmark } from "lucide-react";
+import { Bookmark, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Poster } from "@/components/poster";
 import { narrowMediaType, type Meta } from "@/lib/cinemeta";
@@ -11,7 +11,7 @@ export type Tab = "watchlist" | "history" | "local" | "trakt" | "anilist";
 
 export type TypeKey = "all" | "movie" | "series";
 
-export type WatchlistMerged = { key: string; meta: Meta; date: number | null };
+export type WatchlistMerged = { key: string; meta: Meta; date: number | null; stremioId?: string };
 
 export function TabBtn({
   active,
@@ -150,10 +150,14 @@ export function groupByDate<T extends { date: number | null }>(
   return [...groups.values()].sort((a, b) => a.rank - b.rank);
 }
 
-export function GroupedGrid<T extends { meta: Meta; date: number | null; key: string }>({
+export function GroupedGrid<
+  T extends { meta: Meta; date: number | null; key: string; stremioId?: string },
+>({
   groups,
+  onRemove,
 }: {
   groups: Array<{ label: string; items: T[] }>;
+  onRemove?: (stremioId: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-7">
@@ -164,7 +168,11 @@ export function GroupedGrid<T extends { meta: Meta; date: number | null; key: st
           </h3>
           <Grid>
             {g.items.map((it) => (
-              <WatchlistCard key={it.key} meta={it.meta} />
+              <WatchlistCard
+                key={it.key}
+                meta={it.meta}
+                onRemove={onRemove && it.stremioId ? () => onRemove(it.stremioId as string) : undefined}
+              />
             ))}
           </Grid>
         </div>
@@ -248,12 +256,13 @@ export function loadLocalIds(): Set<string> {
   }
 }
 
-export function WatchlistCard({ meta }: { meta: Meta }) {
+export function WatchlistCard({ meta, onRemove }: { meta: Meta; onRemove?: () => void }) {
   const { openMeta } = useView();
   const { settings } = useSettings();
   const inList = useInWatchlist(meta.id);
-  const cardRef = useRef<HTMLButtonElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [hydrated, setHydrated] = useState<Meta | null>(null);
+  const [confirm, setConfirm] = useState(false);
   useEffect(() => {
     if (meta.poster && meta.name) {
       setHydrated(null);
@@ -286,26 +295,64 @@ export function WatchlistCard({ meta }: { meta: Meta }) {
     };
   }, [meta.id, meta.type, meta.poster, meta.name, settings.tmdbKey]);
   const display: Meta = hydrated ? { ...meta, ...hydrated, id: meta.id, type: meta.type } : meta;
+  const open = () => openMeta(display);
   return (
-    <button
+    <div
       ref={cardRef}
-      type="button"
-      onClick={() => openMeta(display)}
       className="group relative flex flex-col gap-2 text-left"
+      onMouseLeave={() => setConfirm(false)}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:scale-[1.02]">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={open}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        }}
+        className="relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] outline-none ring-offset-2 ring-offset-canvas transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-ink group-hover:scale-[1.02]"
+      >
         <Poster src={display.poster} seed={display.id} className="h-full w-full" />
         {inList && (
-          <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink/80 text-canvas backdrop-blur-sm">
+          <span className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink/80 text-canvas backdrop-blur-sm">
             <Bookmark size={12} strokeWidth={2.6} fill="currentColor" />
           </span>
         )}
+        {onRemove && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm) {
+                onRemove();
+                setConfirm(false);
+              } else {
+                setConfirm(true);
+              }
+            }}
+            className={`absolute right-2 top-2 flex h-7 items-center justify-center gap-1 rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
+              confirm
+                ? "bg-danger px-2.5 text-[11px] font-semibold"
+                : "w-7 bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"
+            }`}
+            aria-label={confirm ? "Confirm remove from library" : "Remove from library"}
+          >
+            <Trash2 size={12} strokeWidth={2.2} />
+            {confirm && "Remove"}
+          </button>
+        )}
       </div>
-      <p className="truncate text-[13px] font-medium text-ink">{display.name || meta.id}</p>
-      {display.releaseInfo && (
-        <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">{display.releaseInfo}</p>
-      )}
-    </button>
+      <button type="button" onClick={open} className="text-left">
+        <p className="truncate text-[13px] font-medium text-ink transition-colors hover:text-accent">
+          {display.name || meta.id}
+        </p>
+        {display.releaseInfo && (
+          <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">{display.releaseInfo}</p>
+        )}
+      </button>
+    </div>
   );
 }
 

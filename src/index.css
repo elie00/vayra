@@ -667,14 +667,32 @@ html[data-theme-layout="stremio"] .harbor-cinema-badge {
   border-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
 }
 
+button.group:not([data-no-card-ring]):hover .harbor-card-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 60%, transparent);
+  pointer-events: none;
+}
+
 html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover > .relative {
   transform: none;
 }
 
-html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .rounded-xl {
+html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster {
+  box-shadow: none !important;
+}
+
+html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   box-shadow:
-    0 0 0 3px rgb(255 255 255 / 1),
-    0 0 18px color-mix(in srgb, var(--color-accent) 32%, transparent) !important;
+    inset 0 0 0 3px rgb(255 255 255 / 1),
+    inset 0 0 16px color-mix(in srgb, var(--color-accent) 30%, transparent);
+  pointer-events: none;
 }
 
 html[data-theme-card="stremio"] button.group:not([data-no-card-ring]) .rounded-xl > img {

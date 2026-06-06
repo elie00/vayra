@@ -223,7 +223,7 @@ export function AddonsView() {
     const id = r.manifest?.id ?? r.curated?.id;
     if (!id) return;
     try {
-      await uninstallAddon(id);
+      await uninstallAddon(id, r.transportUrl);
       window.dispatchEvent(
         new CustomEvent("harbor:addons-changed", {
           detail: { id, installed: false },

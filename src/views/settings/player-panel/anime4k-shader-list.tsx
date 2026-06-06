@@ -1,62 +1,160 @@
-import { useState } from "react";
+import { Check, Download, Loader2, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { anime4kDir, downloadAnime4k } from "@/lib/anime4k";
+import {
+  anime4kChain,
+  ANIME4K_MODES,
+  type Anime4kMode,
+  type Anime4kTier,
+} from "@/lib/player/anime4k-modes";
 import { useSettings } from "@/lib/settings";
 
 export function Anime4kShaderList() {
   const { settings, update } = useSettings();
-  const [draft, setDraft] = useState("");
-  const list = settings.playerAnime4kShaders;
-  const add = () => {
-    const t = draft.trim();
-    if (!t) return;
-    update({ playerAnime4kShaders: [...list, t] });
-    setDraft("");
+  const folder = settings.playerAnime4kFolder;
+  const mode = (settings.playerAnime4kMode as Anime4kMode) || "A";
+  const tier = (settings.playerAnime4kTier as Anime4kTier) || "hq";
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (folder) return;
+    let cancelled = false;
+    anime4kDir()
+      .then((dir) => {
+        if (cancelled || !dir) return;
+        update({ playerAnime4kFolder: dir, playerAnime4kShaders: anime4kChain(dir, mode, tier) });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setup = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const dir = await downloadAnime4k();
+      update({ playerAnime4kFolder: dir, playerAnime4kShaders: anime4kChain(dir, mode, tier) });
+    } catch (e) {
+      setError(typeof e === "string" ? e : "Download failed. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
   };
-  const remove = (i: number) => {
-    update({ playerAnime4kShaders: list.filter((_, idx) => idx !== i) });
-  };
+
+  const pickMode = (m: Anime4kMode) =>
+    update({ playerAnime4kMode: m, playerAnime4kShaders: anime4kChain(folder, m, tier) });
+  const pickTier = (t: Anime4kTier) =>
+    update({ playerAnime4kTier: t, playerAnime4kShaders: anime4kChain(folder, mode, t) });
+
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-edge-soft bg-canvas/40 px-4 py-3">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[12.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
-          Anime4K shaders
+    <div className="flex flex-col gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-4 py-4">
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
+          <Sparkles size={16} strokeWidth={2.2} />
         </span>
-        <span className="text-[12px] text-ink-subtle/85">
-          Absolute paths to .glsl files. Order matters: listed shaders run in sequence. Get them from github.com/bloc97/Anime4K.
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[14px] font-semibold text-ink">Anime4K presets</span>
+          <span className="text-[12.5px] leading-snug text-ink-subtle">
+            GPU shaders that sharpen lines and clean up gradients on anime as it plays. Pick a mode,
+            Harbor handles the shaders.
+          </span>
+        </div>
       </div>
-      {list.length > 0 && (
-        <ul className="flex flex-col gap-1">
-          {list.map((p, i) => (
-            <li key={`${p}-${i}`} className="flex items-center gap-2 rounded-lg border border-edge-soft bg-canvas/60 px-2.5 py-1.5">
-              <span className="flex-1 truncate font-mono text-[12px] text-ink">{p}</span>
-              <button
-                onClick={() => remove(i)}
-                className="text-[11px] uppercase tracking-[0.16em] text-ink-subtle hover:text-danger"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
+
+      {!folder ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/50 px-4 py-4">
+          <span className="text-[12.5px] leading-snug text-ink-muted">
+            One-time setup downloads the shader pack (about 1 MB) into Harbor. No files to hunt down.
+          </span>
+          {error && (
+            <span className="rounded-lg bg-danger/15 px-3 py-2 text-[12px] text-danger ring-1 ring-danger/30">
+              {error}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={setup}
+            disabled={busy}
+            className="flex h-11 w-fit items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-canvas transition-colors hover:bg-ink/90 disabled:cursor-wait disabled:opacity-70"
+          >
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} strokeWidth={2.2} />}
+            {busy ? "Downloading shaders…" : "Set up Anime4K"}
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-1 self-start rounded-full bg-elevated/50 p-1 ring-1 ring-edge-soft/60">
+            <TierBtn active={tier === "hq"} onClick={() => pickTier("hq")} label="Quality" />
+            <TierBtn active={tier === "fast"} onClick={() => pickTier("fast")} label="Performance" />
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {ANIME4K_MODES.map((m) => {
+              const selected = mode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => pickMode(m.id)}
+                  className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors ${
+                    selected
+                      ? "border-ink bg-elevated"
+                      : "border-edge-soft bg-canvas/50 hover:border-edge hover:bg-canvas/70"
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                      selected ? "border-ink" : "border-edge"
+                    }`}
+                  >
+                    {selected && <Check size={12} strokeWidth={3} className="text-ink" />}
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-[14px] font-semibold text-ink">{m.label}</span>
+                    <span className="text-[12px] leading-snug text-ink-subtle">{m.sub}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between gap-3 pt-0.5">
+            <span className="flex items-center gap-1.5 text-[12px] text-ink-subtle">
+              <Check size={13} className="text-emerald-300" strokeWidth={2.6} />
+              Shaders installed
+            </span>
+            <button
+              type="button"
+              onClick={setup}
+              disabled={busy}
+              className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:text-ink disabled:opacity-50"
+            >
+              {busy ? "Updating…" : "Re-download"}
+            </button>
+          </div>
+          {error && (
+            <span className="rounded-lg bg-danger/15 px-3 py-2 text-[12px] text-danger ring-1 ring-danger/30">
+              {error}
+            </span>
+          )}
+        </>
       )}
-      <div className="flex items-center gap-2">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="C:\Users\you\Anime4K\Anime4K_Restore_CNN_M.glsl"
-          className="flex-1 rounded-lg border border-edge-soft bg-canvas/60 px-3 py-1.5 font-mono text-[12.5px] text-ink placeholder:text-ink-subtle/60 focus:border-edge focus:outline-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") add();
-          }}
-        />
-        <button
-          onClick={add}
-          disabled={!draft.trim()}
-          className="rounded-full border border-edge-soft px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-muted hover:border-edge hover:text-ink disabled:opacity-40"
-        >
-          Add
-        </button>
-      </div>
     </div>
+  );
+}
+
+function TierBtn({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
+        active ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

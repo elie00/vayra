@@ -7,6 +7,11 @@ const READY_WAIT_POLL_MS = 250;
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+export function isBundledEngineUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  return /^https?:\/\/(127\.0\.0\.1|localhost):11470\//i.test(url);
+}
+
 let probeCache: { ok: boolean; at: number } | null = null;
 
 export type CastServerStatus = {

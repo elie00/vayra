@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { computeTvgIdCounts, epgProgramsForChannel } from "@/lib/iptv/epg-resolver";
 import { channelHasCatchup } from "@/lib/iptv/catchup";
@@ -17,6 +17,18 @@ import {
   clampDuration,
   startOfWindow,
 } from "./guide-utils";
+
+const COL_MIN = 140;
+const COL_MAX = 560;
+const COL_KEY = "harbor.guide.channel-col-px";
+
+function loadColPx(): number {
+  try {
+    const v = parseInt(localStorage.getItem(COL_KEY) ?? "", 10);
+    if (Number.isFinite(v) && v >= COL_MIN && v <= COL_MAX) return v;
+  } catch {}
+  return CHANNEL_COL_PX;
+}
 
 export function GuideView({
   channels: allChannels,
@@ -38,6 +50,32 @@ export function GuideView({
   const scrolledRef = useRef(false);
   const tvgIdCounts = useMemo(() => computeTvgIdCounts(allChannels), [allChannels]);
 
+  const [colPx, setColPx] = useState<number>(loadColPx);
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem(COL_KEY, String(colPx));
+    } catch {}
+  }, [colPx]);
+  const onResizeDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startW: colPx };
+  };
+  const onResizeMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    setColPx(Math.min(COL_MAX, Math.max(COL_MIN, d.startW + (e.clientX - d.startX))));
+  };
+  const onResizeUp = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
   const { windowStart, windowEnd, windowMinutes } = useMemo(() => {
     const start = startOfWindow(nowMs, 60);
     const minutes = WINDOW_HOURS * 60;
@@ -50,7 +88,7 @@ export function GuideView({
     const el = scrollRef.current;
     if (!el) return;
     const nowLeftInGrid = (nowMs - windowStart) * PX_PER_MS;
-    const viewport = el.clientWidth - CHANNEL_COL_PX;
+    const viewport = el.clientWidth - colPx;
     el.scrollLeft = Math.max(0, nowLeftInGrid - viewport / 3);
     scrolledRef.current = true;
   }, [channels.length, windowStart, nowMs]);
@@ -73,7 +111,7 @@ export function GuideView({
         <div
           className="relative"
           style={{
-            width: CHANNEL_COL_PX + WINDOW_PX,
+            width: colPx + WINDOW_PX,
             minHeight: RULER_HEIGHT_PX + channels.length * ROW_HEIGHT_PX,
           }}
         >
@@ -81,14 +119,23 @@ export function GuideView({
             <div
               className="sticky left-0 z-40 flex items-center gap-2 border-b border-r border-edge-soft/60 bg-surface px-3"
               style={{
-                width: CHANNEL_COL_PX,
+                width: colPx,
                 height: RULER_HEIGHT_PX,
-                flex: `0 0 ${CHANNEL_COL_PX}px`,
+                flex: `0 0 ${colPx}px`,
               }}
             >
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
                 Channel
               </span>
+              <div
+                onPointerDown={onResizeDown}
+                onPointerMove={onResizeMove}
+                onPointerUp={onResizeUp}
+                role="separator"
+                aria-orientation="vertical"
+                title="Drag to resize the channel column"
+                className="absolute right-0 top-0 z-50 h-full w-2.5 cursor-col-resize touch-none transition-colors hover:bg-accent/40 active:bg-accent/60"
+              />
             </div>
             <GuideTimeRuler
               windowStart={windowStart}
@@ -109,7 +156,7 @@ export function GuideView({
                   containIntrinsicSize: `${ROW_HEIGHT_PX}px`,
                 }}
               >
-                <GuideChannelCell channel={ch} onPlay={onPlay} index={i} />
+                <GuideChannelCell channel={ch} onPlay={onPlay} index={i} width={colPx} />
                 <div
                   className="relative border-b border-edge-soft/30"
                   style={{ width: WINDOW_PX, height: ROW_HEIGHT_PX }}
@@ -149,7 +196,7 @@ export function GuideView({
                 aria-hidden
                 className="pointer-events-none absolute z-[10] w-px bg-danger shadow-[0_0_8px_var(--color-danger)]"
                 style={{
-                  left: CHANNEL_COL_PX + nowOffsetPx,
+                  left: colPx + nowOffsetPx,
                   top: RULER_HEIGHT_PX,
                   bottom: 0,
                 }}
@@ -158,7 +205,7 @@ export function GuideView({
                 aria-hidden
                 className="pointer-events-none absolute z-[10] flex h-5 items-center rounded-md bg-danger px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-canvas"
                 style={{
-                  left: CHANNEL_COL_PX + nowOffsetPx - 22,
+                  left: colPx + nowOffsetPx - 22,
                   top: RULER_HEIGHT_PX + 4,
                 }}
               >

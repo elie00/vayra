@@ -1147,9 +1147,9 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           writePlayerPrefs(src.meta.id, { subDelaySec: s });
         }}
         onAudioDelay={(s) => bridgeRef.current?.setAudioDelay(s)}
-        onAddSubtitle={(url, lang, title) => {
-          void bridgeRef.current?.addSubtitle(url, lang, title);
-        }}
+        onAddSubtitle={(url, lang, title) =>
+          bridgeRef.current?.addSubtitle(url, lang, title) ?? Promise.resolve(false)
+        }
         onRate={(r) => {
           bridgeRef.current?.setRate(r);
           writePlayerPrefs(src.meta.id, { rate: r });
@@ -1249,6 +1249,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           variant={streamPillVariant}
           visible
           compact={mpvEmbedWindowsActive}
+          live={liveOverlay.isLive}
           onLooksGood={
             streamPillVariant === "check" ? () => setStreamCheckOpen(false) : undefined
           }

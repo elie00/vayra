@@ -22,7 +22,7 @@ export function Avatar({
   if (src && !failed) {
     return (
       <span
-        className="shrink-0 overflow-hidden rounded-full"
+        className="overflow-hidden rounded-full"
         style={{ width: size, height: size, boxShadow: color ? `0 0 0 1.5px ${color}` : undefined }}
       >
         <img
@@ -37,7 +37,7 @@ export function Avatar({
   }
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full font-semibold text-canvas"
+      className="flex items-center justify-center rounded-full font-semibold text-canvas"
       style={{
         width: size,
         height: size,

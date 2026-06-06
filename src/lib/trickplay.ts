@@ -33,6 +33,21 @@ export function thumbCacheSet(bucket: number, dataUri: string): void {
   thumbCache.set(bucket, dataUri);
 }
 
+export function thumbCacheNearest(bucket: number, maxDistance: number): string | undefined {
+  const exact = thumbCache.get(bucket);
+  if (exact) return exact;
+  let best: string | undefined;
+  let bestDist = Infinity;
+  for (const [b, uri] of thumbCache) {
+    const d = Math.abs(b - bucket);
+    if (d < bestDist) {
+      best = uri;
+      bestDist = d;
+    }
+  }
+  return bestDist <= maxDistance ? best : undefined;
+}
+
 export async function trickplaySetUrl(url: string): Promise<void> {
   thumbCache.clear();
   try {

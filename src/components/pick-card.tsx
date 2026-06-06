@@ -115,7 +115,7 @@ export const PickCard = memo(function PickCard({
           seed={meta.id}
           ratio="portrait"
           onError={() => setImgIdx((i) => i + 1)}
-          className="rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),0_0_0_1.5px_rgba(232,170,108,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]"
+          className="harbor-card-ring rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)]"
         />
         {rerun && <RerunBadge year={meta.releaseInfo} />}
         {showCinema && <CinemaBadge />}

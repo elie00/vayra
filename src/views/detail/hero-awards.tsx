@@ -11,7 +11,12 @@ export function HeroAwardsCorner({
   const lines: string[] = [];
   for (const item of summary) {
     if (item.wins > 0) {
-      lines.push(`${item.wins} ${awardNoun(item.type, item.wins)}`);
+      const winPart = `${item.wins} ${awardNoun(item.type, item.wins)}`;
+      lines.push(
+        item.nominations > 0
+          ? `${winPart} · ${item.nominations} ${item.nominations === 1 ? "nomination" : "nominations"}`
+          : winPart,
+      );
     } else if (item.nominations > 0) {
       lines.push(
         `${item.nominations} ${awardNoun(item.type, item.nominations)} ${item.nominations === 1 ? "nomination" : "nominations"}`,

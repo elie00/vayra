@@ -75,7 +75,7 @@ export const TopRankCard = memo(function TopRankCard({ meta, rank }: { meta: Met
           src={rpdbPoster(settings.rpdbKey, meta.id, meta.poster)}
           seed={meta.id}
           ratio="portrait"
-          className="rounded-xl shadow-[0_0_0_rgba(0,0,0,0)] transition-shadow duration-300 group-hover:shadow-[0_24px_44px_-14px_rgba(0,0,0,0.6),0_0_0_1.5px_rgba(232,170,108,0.4)]"
+          className="harbor-card-ring rounded-xl shadow-[0_0_0_rgba(0,0,0,0)] transition-shadow duration-300 group-hover:shadow-[0_24px_44px_-14px_rgba(0,0,0,0.6)]"
         />
         {inWatchlist && <WatchlistDot />}
         <AwardDot name={meta.name} year={parseAwardYear(meta.releaseInfo)} />
@@ -117,7 +117,7 @@ export const AnimeRankCard = memo(function AnimeRankCard({ meta, rank }: { meta:
           src={rpdbPoster(settings.rpdbKey, meta.id, meta.poster)}
           seed={meta.id}
           ratio="portrait"
-          className="rounded-xl shadow-[0_0_0_rgba(0,0,0,0)] transition-shadow duration-300 group-hover:shadow-[0_24px_44px_-14px_rgba(0,0,0,0.6),0_0_0_1.5px_rgba(232,170,108,0.4)]"
+          className="harbor-card-ring rounded-xl shadow-[0_0_0_rgba(0,0,0,0)] transition-shadow duration-300 group-hover:shadow-[0_24px_44px_-14px_rgba(0,0,0,0.6)]"
         />
         {inWatchlist && <WatchlistDot />}
         <AwardDot name={meta.name} year={parseAwardYear(meta.releaseInfo)} />

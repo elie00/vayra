@@ -114,7 +114,7 @@ export function PlayerEnginePanel() {
           {!linux && (
             <ToggleRow
               label="Anime4K upscaling"
-              sub="Apply Anime4K shaders for animated content. Add shader file paths below."
+              sub="Sharper lines and cleaner gradients on anime, in real time. One-tap setup below."
               value={settings.playerAnime4k}
               onChange={(v) => update({ playerAnime4k: v })}
             />

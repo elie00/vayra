@@ -33,8 +33,8 @@ export function useAddons(authKey: string | null, settings: Settings): {
       const merged: Addon[] = [];
       const seen = new Set<string>();
       for (const a of [...installed, ...stremioAddons]) {
-        if (seen.has(a.manifest.id)) continue;
-        seen.add(a.manifest.id);
+        if (seen.has(a.transportUrl)) continue;
+        seen.add(a.transportUrl);
         merged.push(a);
       }
       const userStreamCount = merged.filter((a) =>

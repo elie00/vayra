@@ -186,6 +186,7 @@ async function writeLibraryItem(
     typeof baseState.watched === "string" && baseState.watched.length > 0 ? baseState.watched : null;
   const prevLastVidReleased =
     typeof baseState.lastVidReleased === "string" ? baseState.lastVidReleased : null;
+  const prevFlagged = typeof baseState.flaggedWatched === "number" ? baseState.flaggedWatched : 0;
 
   const state: StremioLibraryItemState = {
     lastWatched: now,
@@ -193,7 +194,7 @@ async function writeLibraryItem(
     timeOffset: offsetMs,
     overallTimeWatched: Math.max(prevOverall, offsetMs),
     timesWatched: prevTimesWatched,
-    flaggedWatched: watchedRatio > 0.85 ? 1 : 0,
+    flaggedWatched: watchedRatio > 0.85 ? 1 : prevFlagged,
     duration: durationMs,
     video_id: videoId,
     watched: prevWatched,

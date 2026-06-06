@@ -1,19 +1,21 @@
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-export async function downloadText(
+export type SaveResult = { saved: boolean; path: string | null };
+
+export async function saveTextFileWithPath(
   filename: string,
   text: string,
   extensions: string[],
   label = "Harbor",
-): Promise<boolean> {
+): Promise<SaveResult> {
   if (IS_TAURI) {
     try {
       const { save } = await import("@tauri-apps/plugin-dialog");
       const { invoke } = await import("@tauri-apps/api/core");
       const path = await save({ defaultPath: filename, filters: [{ name: label, extensions }] });
-      if (!path) return false;
+      if (!path) return { saved: false, path: null };
       await invoke("save_text_file", { path, contents: text });
-      return true;
+      return { saved: true, path };
     } catch (err) {
       console.warn("[harbor] native save failed, falling back", err);
     }
@@ -27,5 +29,15 @@ export async function downloadText(
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return true;
+  return { saved: true, path: null };
+}
+
+export async function downloadText(
+  filename: string,
+  text: string,
+  extensions: string[],
+  label = "Harbor",
+): Promise<boolean> {
+  const { saved } = await saveTextFileWithPath(filename, text, extensions, label);
+  return saved;
 }

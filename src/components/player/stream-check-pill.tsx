@@ -8,17 +8,24 @@ export function StreamCheckPill({
   onLooksGood,
   onPickAnother,
   compact,
+  live,
 }: {
   variant: Variant;
   visible: boolean;
   onLooksGood?: () => void;
   onPickAnother: () => void;
   compact?: boolean;
+  live?: boolean;
 }) {
   if (!visible) return null;
 
-  const copy =
-    variant === "check"
+  const copy = live
+    ? variant === "check"
+      ? { title: "Is the channel playing right?", sub: "Wrong channel or source?", icon: Check, accent: "rgba(255,255,255,0.85)" }
+      : variant === "stalled"
+        ? { title: "Channel is taking a while", sub: "This source is slow. Try another.", icon: AlertCircle, accent: "#f59e0b" }
+        : { title: "Channel won't load", sub: "Try another source.", icon: AlertCircle, accent: "#ef4444" }
+    : variant === "check"
       ? { title: "Does this stream look right?", sub: "Wrong episode or quality?", icon: Check, accent: "rgba(255,255,255,0.85)" }
       : variant === "stalled"
         ? { title: "Stream is taking a while", sub: "Probably not cached. Pick another?", icon: AlertCircle, accent: "#f59e0b" }
@@ -56,7 +63,7 @@ export function StreamCheckPill({
           className="flex h-7 items-center gap-1.5 rounded-full bg-white/12 px-3 text-[11.5px] font-semibold text-white transition-colors hover:bg-white/22"
         >
           <Replace size={11.5} strokeWidth={2.4} />
-          Pick another
+          {live ? "Other sources" : "Pick another"}
         </button>
       </div>
     </div>

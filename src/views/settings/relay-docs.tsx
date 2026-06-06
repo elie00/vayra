@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { DownloadMenu, SavePill } from "./relay-docs-export";
 
 export function RelayDocs({ onBack }: { onBack: () => void }) {
   const docsRef = useRef<HTMLDivElement>(null);
+  const [savedPath, setSavedPath] = useState<string | null>(null);
+  useEffect(() => {
+    if (!savedPath) return;
+    const t = window.setTimeout(() => setSavedPath(null), 7000);
+    return () => window.clearTimeout(t);
+  }, [savedPath]);
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-3">
@@ -21,7 +28,7 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
           Back to relay
         </button>
         <div className="flex items-center gap-3">
-          <DownloadMenu docsRef={docsRef} />
+          <DownloadMenu docsRef={docsRef} onSaved={setSavedPath} />
           <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
             Documentation
           </span>
@@ -218,158 +225,9 @@ new_sqlite_classes = ["Room"]`}</DocsPre>
         </DocsList>
       </DocsBlock>
       </div>
+      {savedPath && <SavePill path={savedPath} onDismiss={() => setSavedPath(null)} />}
     </div>
   );
-}
-
-function DownloadMenu({ docsRef }: { docsRef: React.RefObject<HTMLDivElement | null> }) {
-  const [open, setOpen] = useState(false);
-  const wrap = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener("mousedown", close);
-    return () => window.removeEventListener("mousedown", close);
-  }, [open]);
-
-  const exportAs = (kind: "txt" | "json" | "pdf") => {
-    setOpen(false);
-    const root = docsRef.current;
-    if (!root) return;
-    if (kind === "pdf") {
-      window.print();
-      return;
-    }
-    if (kind === "txt") {
-      downloadBlob(buildTxt(root), "harbor-relay-docs.txt", "text/plain");
-      return;
-    }
-    downloadBlob(JSON.stringify(buildJson(root), null, 2), "harbor-relay-docs.json", "application/json");
-  };
-
-  return (
-    <div ref={wrap} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className={`flex h-9 items-center gap-2 rounded-full border px-3.5 text-[12.5px] font-semibold transition-colors ${
-          open
-            ? "border-edge bg-elevated text-ink"
-            : "border-edge-soft text-ink-muted hover:border-edge hover:bg-elevated/60 hover:text-ink"
-        }`}
-      >
-        <DownloadGlyph />
-        Download
-      </button>
-      {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-30 flex w-44 flex-col overflow-hidden rounded-xl border border-edge-soft bg-elevated shadow-[0_18px_50px_-15px_rgba(0,0,0,0.6)] backdrop-blur-md animate-in fade-in slide-in-from-top-1 duration-150">
-          <DownloadOption label="Plain text (.txt)" onClick={() => exportAs("txt")} />
-          <DownloadOption label="JSON (.json)" onClick={() => exportAs("json")} />
-          <DownloadOption label="PDF (print)" onClick={() => exportAs("pdf")} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DownloadOption({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center px-3.5 py-2.5 text-left text-[12.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
-    >
-      {label}
-    </button>
-  );
-}
-
-function DownloadGlyph() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 4v12m0 0l-5-5m5 5l5-5M4 20h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function downloadBlob(content: string, filename: string, mime: string) {
-  const blob = new Blob([content], { type: `${mime};charset=utf-8` });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-
-function buildTxt(root: HTMLElement): string {
-  const lines: string[] = [];
-  root.querySelectorAll("h2, h3, p, li, pre").forEach((el) => {
-    const tag = el.tagName.toLowerCase();
-    const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-    if (!text) return;
-    if (tag === "h2" || tag === "h3") {
-      lines.push("");
-      lines.push(text);
-      lines.push("=".repeat(Math.min(text.length, 60)));
-    } else if (tag === "li") {
-      lines.push(`- ${text}`);
-    } else if (tag === "pre") {
-      lines.push("");
-      lines.push((el.textContent ?? "").trimEnd());
-      lines.push("");
-    } else {
-      lines.push(text);
-    }
-  });
-  return `Harbor Relay Documentation\n${"=".repeat(28)}\n${lines.join("\n").trim()}\n`;
-}
-
-function buildJson(root: HTMLElement) {
-  const sections: Array<{ heading: string; blocks: Array<unknown> }> = [];
-  let current: { heading: string; blocks: Array<unknown> } | null = null;
-  const ensureSection = (heading: string) => {
-    current = { heading, blocks: [] };
-    sections.push(current);
-  };
-  root.querySelectorAll("section, header").forEach((sec) => {
-    const head = sec.querySelector("h2, h3");
-    if (head) ensureSection((head.textContent ?? "").trim());
-    else if (!current) ensureSection("");
-    sec.querySelectorAll(":scope > p, :scope > ul, :scope > ol, :scope > pre, :scope > div table").forEach((el) => {
-      const tag = el.tagName.toLowerCase();
-      if (tag === "p") current!.blocks.push({ type: "paragraph", text: (el.textContent ?? "").trim() });
-      else if (tag === "pre") current!.blocks.push({ type: "code", text: el.textContent ?? "" });
-      else if (tag === "ul" || tag === "ol") {
-        const items = Array.from(el.querySelectorAll(":scope > li")).map((li) => (li.textContent ?? "").trim());
-        current!.blocks.push({ type: tag === "ol" ? "ordered_list" : "list", items });
-      } else if (tag === "table") {
-        const rows = Array.from(el.querySelectorAll("tbody tr")).map((tr) =>
-          Array.from(tr.querySelectorAll("td")).map((td) => (td.textContent ?? "").trim()),
-        );
-        const headers = Array.from(el.querySelectorAll("thead th")).map((th) => (th.textContent ?? "").trim());
-        current!.blocks.push({ type: "table", headers, rows });
-      }
-    });
-  });
-  return {
-    title: "Harbor Relay Documentation",
-    generatedAt: new Date().toISOString(),
-    sections,
-  };
 }
 
 function DocsBlock({ children }: { children: React.ReactNode }) {

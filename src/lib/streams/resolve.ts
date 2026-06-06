@@ -2,7 +2,12 @@ import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dwarn } from "@/lib/debug";
 import { magnetFromHash, type DebridResult, type DebridStore, type DirectLink } from "@/lib/debrid/types";
 import { probeStremioServer } from "@/lib/stremio-server";
-import { buildTorrentStreamUrl, directTorrentEnabled } from "@/lib/torrent/stremio-stream";
+import {
+  buildTorrentStreamUrl,
+  createAndListFiles,
+  directTorrentEnabled,
+  trackersFromSources,
+} from "@/lib/torrent/stremio-stream";
 import type { ParsedStream, ScoredStream } from "./types";
 
 export type ResolveResult =
@@ -178,6 +183,7 @@ async function tryStremioServer(stream: ParsedStream | ScoredStream): Promise<Di
   const ready = await probeStremioServer();
   if (!ready) return null;
   const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName ?? null;
+  await createAndListFiles(stream.infoHash, trackersFromSources(stream.sources));
   return {
     url: buildTorrentStreamUrl({
       infoHash: stream.infoHash,

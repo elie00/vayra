@@ -205,8 +205,13 @@ export function torboxAddonFor(tbKey: string): Addon | null {
 
 export function withDebridKeys(addons: Addon[], keys: DebridKeySet): Addon[] {
   const config = torrentioConfigFor(keys);
+  const torrentioCount = addons.filter(
+    (a) => a.manifest.id === "com.stremio.torrentio.addon",
+  ).length;
   return addons.map((a) => {
     if (a.manifest.id !== "com.stremio.torrentio.addon") return a;
+    if (torrentioCount > 1) return a;
+    if (!/torrentio\.strem\.fun\/manifest\.json$/.test(a.transportUrl)) return a;
     return {
       ...a,
       transportUrl: config
