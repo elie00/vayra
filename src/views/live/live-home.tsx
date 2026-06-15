@@ -9,6 +9,7 @@ import { flagUrl } from "@/lib/iptv/country-detect";
 import { clearCountries, toggleCountry, useCountryPrefs } from "@/lib/iptv/country-prefs";
 import { useFavorites } from "@/lib/iptv/favorites";
 import { DEFAULT_SPORTS_LEAGUES, LEAGUES } from "@/lib/sports/espn";
+import { useSettings } from "@/lib/settings";
 import { useChannelHydration } from "./hooks/use-channel-hydration";
 import { CountryBar } from "./live-home/country-bar";
 import { SportsMarquee } from "./live-home/sports/sports-marquee";
@@ -50,6 +51,15 @@ export function LiveHome({
   });
   const countryPrefs = useCountryPrefs(sourceId);
   const tvgCounts = useMemo(() => computeTvgIdCounts(channels), [channels]);
+  const { settings, update } = useSettings();
+  const userSportsLeagues = settings.sportsLeagues?.length
+    ? settings.sportsLeagues
+    : DEFAULT_SPORTS_LEAGUES;
+
+  const saveSportsLeagues = (keys: string[]) => {
+    update({ sportsLeagues: keys });
+  };
+
   const [sportsLeague, setSportsLeague] = useState<string>(() => {
     try {
       return localStorage.getItem("harbor.sports.league") || "all";
@@ -64,8 +74,8 @@ export function LiveHome({
     } catch {}
   };
   const sportsLeagues = useMemo(
-    () => (sportsLeague === "all" ? DEFAULT_SPORTS_LEAGUES : [sportsLeague]),
-    [sportsLeague],
+    () => (sportsLeague === "all" ? userSportsLeagues : [sportsLeague]),
+    [sportsLeague, userSportsLeagues],
   );
   const sports = useSports({ enabled: true, leagues: sportsLeagues });
 
@@ -95,12 +105,14 @@ export function LiveHome({
           </div>
         )}
       </div>
-      {(sports.length > 0 || sportsLeague !== "all") && (
+      {(sports.length > 0 || sportsLeague !== "all" || userSportsLeagues.length > 0) && (
         <SportsMarquee
           games={sports}
           leagues={LEAGUES}
           selected={sportsLeague}
+          selectedLeagues={userSportsLeagues}
           onLeague={pickLeague}
+          onLeaguesChange={saveSportsLeagues}
           onSelect={() => {}}
         />
       )}

@@ -247,4 +247,5 @@ export type Settings = {
   translateTitles: boolean;
   translateDescriptions: boolean;
   translatePosters: boolean;
+  sportsLeagues: string[];
 };

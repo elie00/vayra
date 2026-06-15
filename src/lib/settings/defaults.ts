@@ -202,4 +202,5 @@ export const DEFAULT: Settings = {
   translateTitles: false,
   translateDescriptions: true,
   translatePosters: false,
+  sportsLeagues: ["ROSHN", "EPL", "UCL", "NBA", "NFL"],
 };

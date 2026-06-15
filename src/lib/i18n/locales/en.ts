@@ -67,6 +67,18 @@ const en: Record<string, string> = {
   "arabic.row.khaleeji": "Gulf / Khaleeji",
   "arabic.row.comedy": "Arabic Comedy",
   "arabic.row.trending": "Trending in Arabic",
+
+  // Sports customization
+  "sports.customize": "Customize",
+  "sports.customize.title": "Customize Sports",
+  "sports.customize.selected": "{n} league / tournament selected",
+  "sports.customize.all": "All",
+  "sports.customize.selectAll": "Select All",
+  "sports.customize.clearAll": "Clear All",
+  "sports.customize.selectGroupAll": "Select All",
+  "sports.customize.deselectGroupAll": "Deselect All",
+  "sports.customize.cancel": "Cancel",
+  "sports.customize.save": "Save Changes",
 };
 
 export default en;

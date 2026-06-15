@@ -163,7 +163,19 @@ const live: Record<string, string> = {
   "Home": "الرئيسية",
   "Grid": "شبكة",
   "Multiview": "متعدد",
-  "Stored as a standalone EPG source. No channels are loaded for EPG-only entries; they're kept here for future attachment to existing playlists.": "يتم حفظه كمصدر EPG مستقل. لا يتم تحميل أي قنوات لإدخالات EPG فقط؛ بل يتم الاحتفاظ بها هنا لربطها مستقبلاً بقوائم التشغيل الحالية."
+  "Stored as a standalone EPG source. No channels are loaded for EPG-only entries; they're kept here for future attachment to existing playlists.": "يتم حفظه كمصدر EPG مستقل. لا يتم تحميل أي قنوات لإدخالات EPG فقط؛ بل يتم الاحتفاظ بها هنا لربطها مستقبلاً بقوائم التشغيل الحالية.",
+
+  // Sports customization
+  "sports.customize": "تخصيص",
+  "sports.customize.title": "تخصيص الرياضات",
+  "sports.customize.selected": "{n} دوري / بطولة محددة",
+  "sports.customize.all": "الكل",
+  "sports.customize.selectAll": "تحديد الكل",
+  "sports.customize.clearAll": "مسح الكل",
+  "sports.customize.selectGroupAll": "تحديد الكل",
+  "sports.customize.deselectGroupAll": "إلغاء الكل",
+  "sports.customize.cancel": "إلغاء",
+  "sports.customize.save": "حفظ التغييرات",
 
 };
 
