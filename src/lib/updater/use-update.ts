@@ -88,6 +88,7 @@ export function updateAvailable(s: UpdateState): boolean {
   return s.status === "available" || s.status === "downloading" || s.status === "downloaded";
 }
 
+/*
 function betaChannel(): boolean {
   try {
     const raw = localStorage.getItem("harbor.settings");
@@ -97,26 +98,11 @@ function betaChannel(): boolean {
     return false;
   }
 }
+*/
 
-export async function checkForUpdate(manual = false): Promise<void> {
-  if (!IS_TAURI) return;
-  if (state.status === "downloading" || state.status === "installing") return;
-  if (!manual && (state.status === "available" || state.status === "downloaded")) return;
-  set({ status: "checking", manualCheck: manual, error: null });
-  try {
-    const { check } = await import("@tauri-apps/plugin-updater");
-    const opts = betaChannel() ? { headers: { "x-harbor-channel": "beta" } } : undefined;
-    const update = (await check(opts)) as UpdateHandle | null;
-    if (update) {
-      handle = update;
-      set({ status: "available", version: update.version, notes: update.body ?? null });
-    } else {
-      handle = null;
-      set({ status: "uptodate", version: null, notes: null });
-    }
-  } catch (e) {
-    if (manual || !handle) set({ status: "error", error: String(e) });
-  }
+export async function checkForUpdate(_manual = false): Promise<void> {
+  // Disabled for custom fork to prevent overwriting modifications
+  return Promise.resolve();
 }
 
 export async function downloadUpdate(): Promise<void> {
