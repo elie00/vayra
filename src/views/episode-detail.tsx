@@ -120,6 +120,12 @@ export function EpisodeDetailView({
 
   const traktResolution = stremioIdToTraktTarget(seriesId, { season, episode });
 
+  // Inject IMDB ID into target if resolution succeeded but only has TMDB ID
+  // (Trakt comments API only accepts IMDB/Trakt/slug IDs, not TMDB)
+  if (traktResolution.ok && imdbId && traktResolution.target.kind === "episode" && !traktResolution.target.show.ids.imdb) {
+    traktResolution.target.show.ids.imdb = imdbId;
+  }
+
   const handlePlay = useCallback(() => {
     if (!seriesMeta || !episodeData) return;
     const playEpisode: PlayEpisode = {

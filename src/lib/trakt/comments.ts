@@ -40,7 +40,9 @@ type RawComment = {
 };
 
 function pickId(ids: { tmdb?: number; imdb?: string }): string {
-  return ids.tmdb != null ? `tmdb:${ids.tmdb}` : `imdb:${ids.imdb}`;
+  if (ids.imdb) return ids.imdb;
+  if (ids.tmdb) return `tmdb:${ids.tmdb}`;
+  return "";
 }
 
 function showPath(target: TraktTarget): string {
@@ -50,15 +52,13 @@ function showPath(target: TraktTarget): string {
 
 export function commentsPath(target: TraktTarget, sort: string): string {
   const id = showPath(target);
-  let path: string;
   if (target.kind === "episode") {
-    path = `/shows/${id}/seasons/${target.season}/episodes/${target.number}/comments`;
-  } else if (target.kind === "movie") {
-    path = `/movies/${id}/comments`;
-  } else {
-    path = `/shows/${id}/comments`;
+    return `/shows/${id}/seasons/${target.season}/episodes/${target.number}/comments/${sort}`;
   }
-  return `${path}?sort=${sort}`;
+  if (target.kind === "movie") {
+    return `/movies/${id}/comments/${sort}`;
+  }
+  return `/shows/${id}/comments/${sort}`;
 }
 
 function mapComment(raw: RawComment): TraktComment {
