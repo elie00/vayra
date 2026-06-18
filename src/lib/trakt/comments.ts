@@ -92,6 +92,13 @@ export async function fetchComments(
   return raw.map(mapComment);
 }
 
+export async function fetchReplies(commentId: number): Promise<TraktComment[]> {
+  const raw = await traktRequest<RawComment[]>(`/comments/${commentId}/replies?extended=images`).catch(
+    () => [] as RawComment[],
+  );
+  return raw.map(mapComment);
+}
+
 export async function likeComment(id: number): Promise<void> {
   await traktRequest(`/comments/${id}/like`, { method: "POST", authed: true });
 }

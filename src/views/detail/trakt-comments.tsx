@@ -3,6 +3,7 @@ import { Heart, MessageCircle, ChevronDown, Settings, Loader2, Send, AlertCircle
 import { useT } from "@/lib/i18n";
 import {
   fetchComments,
+  fetchReplies,
   likeComment,
   unlikeComment,
   postComment,
@@ -135,6 +136,8 @@ function CommentCard({
   const [liking, setLiking] = useState(false);
   const [likes, setLikes] = useState(comment.likes);
   const [revealed, setRevealed] = useState(!comment.spoiler);
+  const [replies, setReplies] = useState<TraktComment[] | null>(null);
+  const [loadingReplies, setLoadingReplies] = useState(false);
 
   const avatar = (() => {
     if (comment.user.avatar) return comment.user.avatar;
@@ -230,12 +233,56 @@ function CommentCard({
             {likes}
           </button>
           {comment.replies > 0 && (
-            <span className="flex items-center gap-1">
-              <MessageCircle size={12} />
-              {comment.replies}
-            </span>
+            <button
+              onClick={() => {
+                if (replies) { setReplies(null); return; }
+                setLoadingReplies(true);
+                fetchReplies(comment.id).then((r) => {
+                  setReplies(r);
+                  setLoadingReplies(false);
+                });
+              }}
+              className="flex items-center gap-1 transition-colors hover:text-ink"
+            >
+              {loadingReplies ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <MessageCircle size={12} />
+              )}
+              {replies ? `${comment.replies}` : `${comment.replies}`}
+            </button>
           )}
         </div>
+        {replies && (
+          <div className="mt-3 space-y-2 border-l-2 border-edge pl-4">
+            {replies.map((r) => (
+              <div key={r.id} className="flex gap-2 rounded-lg bg-raised/50 p-3">
+                <div className="shrink-0">
+                  {r.user.avatar ? (
+                    <img src={r.user.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-muted/20 text-[10px] font-semibold text-ink-muted">
+                      {(r.user.name ?? r.user.username).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-ink">{r.user.name ?? r.user.username}</span>
+                    <span className="text-[10px] text-ink-muted">{timeAgo(r.createdAt)}</span>
+                  </div>
+                  {r.spoiler ? (
+                    <SpoilerLabel comment={r} />
+                  ) : (
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ink" dir="auto">
+                      {r.comment}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -589,5 +636,20 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
         </div>
       )}
     </section>
+  );
+}
+
+function SpoilerLabel({ comment }: { comment: { comment: string } }) {
+  const [show, setShow] = useState(false);
+  if (show) {
+    return <p className="mt-0.5 whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ink" dir="auto">{comment.comment}</p>;
+  }
+  return (
+    <button
+      onClick={() => setShow(true)}
+      className="mt-0.5 inline-flex items-center gap-1 rounded bg-yellow-500/10 px-2 py-0.5 text-[10px] font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
+    >
+      Spoiler — Click
+    </button>
   );
 }
