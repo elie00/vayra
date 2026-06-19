@@ -18,6 +18,19 @@
           "ffmpeg",
           "yt-dlp"
         ]
+      },
+      "rpm": {
+        "depends": [
+          "mpv-libs",
+          "webkit2gtk4.1",
+          "mesa-libGL",
+          "mesa-libEGL",
+          "libappindicator-gtk3",
+          "openssl-libs",
+          "ca-certificates",
+          "(ffmpeg-free or ffmpeg)",
+          "yt-dlp"
+        ]
       }
     }
   }
