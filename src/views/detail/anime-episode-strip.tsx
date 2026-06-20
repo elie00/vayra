@@ -1,4 +1,4 @@
-import { Check, Play } from "lucide-react";
+import { Check, Play, Eye } from "lucide-react";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
@@ -78,34 +78,40 @@ function AnimeEpisodeStripCard({
   grid?: boolean;
 }) {
   const t = useT();
-  const { openPicker } = useView();
+  const { openPicker, openEpisodeDetail } = useView();
   const { settings } = useSettings();
   const upcoming = isUpcomingDate(ep.airdate);
+
+  const handlePlayClick = () => {
+    openPicker(
+      meta,
+      {
+        season: ep.seasonNumber || 1,
+        episode: ep.number,
+        name: ep.title,
+        still: ep.thumbnail ?? undefined,
+        overview: ep.synopsis || undefined,
+        kitsuStreamId: ep.streamId,
+        imdbId: ep.imdbId,
+        imdbSeason: ep.imdbSeason,
+        imdbEpisode: ep.imdbEpisode,
+      },
+      { autoPlay: settings.instantPlay },
+    );
+  };
+
   return (
-    <button
+    <div
       data-ep={ep.number}
       data-no-card-ring
       onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber || 1, ep.number, progress.watched)}
-      onClick={() =>
-        openPicker(
-          meta,
-          {
-            season: ep.seasonNumber || 1,
-            episode: ep.number,
-            name: ep.title,
-            still: ep.thumbnail ?? undefined,
-            overview: ep.synopsis || undefined,
-            kitsuStreamId: ep.streamId,
-            imdbId: ep.imdbId,
-            imdbSeason: ep.imdbSeason,
-            imdbEpisode: ep.imdbEpisode,
-          },
-          { autoPlay: settings.instantPlay },
-        )
-      }
       className="group flex w-full flex-col gap-2.5 text-start"
     >
-      <div className="relative aspect-video overflow-hidden rounded-xl">
+      <button
+        type="button"
+        onClick={handlePlayClick}
+        className="relative aspect-video overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+      >
         <div className={`${spoiler?.thumb ? SPOILER_THUMB_CLASS : ""} ${upcoming ? "opacity-55 saturate-50" : ""}`}>
           <Poster src={ep.thumbnail ?? undefined} seed={String(ep.id)} ratio="landscape" className="" />
         </div>
@@ -132,20 +138,35 @@ function AnimeEpisodeStripCard({
             <div className="h-full bg-accent" style={{ width: `${Math.max(2, progress.ratio * 100)}%` }} />
           </div>
         )}
-      </div>
-      <div className="flex flex-col gap-0.5 px-0.5">
-        <span className="flex items-center gap-2">
-          <span className={`${grid ? "line-clamp-2" : "truncate"} text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
-            {ep.title || t("Episode {n}", { n: ep.number })}
+      </button>
+      <div className="flex items-start justify-between gap-2 px-0.5">
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          className="flex min-w-0 flex-1 flex-col gap-0.5 text-start focus-visible:outline-none"
+        >
+          <span className="flex items-center gap-2">
+            <span className={`${grid ? "line-clamp-2" : "truncate"} text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
+              {ep.title || t("Episode {n}", { n: ep.number })}
+            </span>
+            {ep.filler && <FillerBadge />}
           </span>
-          {ep.filler && <FillerBadge />}
-        </span>
-        <span className="text-[11.5px] text-ink-subtle">
-          E{ep.number}
-          {ep.length ? ` · ${t("{n} min", { n: ep.length })}` : ""}
-          {upcoming && ep.airdate ? ` · ${formatAirDate(ep.airdate)}` : ""}
-        </span>
+          <span className="text-[11.5px] text-ink-subtle">
+            E{ep.number}
+            {ep.length ? ` · ${t("{n} min", { n: ep.length })}` : ""}
+            {upcoming && ep.airdate ? ` · ${formatAirDate(ep.airdate)}` : ""}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber || 1, ep.number, meta)}
+          aria-label={t("Episode details")}
+          title={t("Episode details")}
+          className="flex shrink-0 items-center justify-center rounded-full p-1.5 text-ink-subtle transition-colors hover:bg-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+        >
+          <Eye size={16} strokeWidth={2} />
+        </button>
       </div>
-    </button>
+    </div>
   );
 }

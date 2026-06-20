@@ -1,4 +1,4 @@
-import { Check, Play } from "lucide-react";
+import { Check, Play, Eye } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
@@ -38,7 +38,7 @@ export function EpisodeStrip({
             meta={meta}
             ep={ep}
             progress={progressFor(ep)}
-            cinemetaThumbnail={thumbnailFor(ep)}
+            thumbnail={thumbnailFor(ep)}
             spoiler={spoilerFor?.(ep)}
             onContextMenu={onContextMenu}
           />
@@ -54,7 +54,7 @@ export function EpisodeStrip({
             meta={meta}
             ep={ep}
             progress={progressFor(ep)}
-            cinemetaThumbnail={thumbnailFor(ep)}
+            thumbnail={thumbnailFor(ep)}
             spoiler={spoilerFor?.(ep)}
             onContextMenu={onContextMenu}
           />
@@ -68,7 +68,7 @@ function EpisodeStripCard({
   meta,
   ep,
   progress,
-  cinemetaThumbnail,
+  thumbnail,
   spoiler,
   onContextMenu,
   grid = false,
@@ -76,45 +76,52 @@ function EpisodeStripCard({
   meta: Meta;
   ep: Episode;
   progress: Progress;
-  cinemetaThumbnail?: string;
+  thumbnail?: string;
   spoiler?: SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
   grid?: boolean;
 }) {
   const t = useT();
-  const { openPicker } = useView();
+  const { openPicker, openEpisodeDetail } = useView();
   const { settings } = useSettings();
-  const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/w300${ep.stillPath}` : undefined;
-  const candidates = useMemo(
-    () => [tmdbStill, cinemetaThumbnail].filter((u): u is string => !!u),
-    [tmdbStill, cinemetaThumbnail],
-  );
+
   const [imgIdx, setImgIdx] = useState(0);
   useEffect(() => {
     setImgIdx(0);
   }, [ep.id]);
-  const still = candidates[imgIdx];
+
+  const still = useMemo(() => {
+    if (imgIdx === 0 && thumbnail) return thumbnail;
+    if (imgIdx <= 1 && ep.stillPath) return `https://image.tmdb.org/t/p/w300${ep.stillPath}`;
+    return undefined;
+  }, [ep.stillPath, imgIdx, thumbnail]);
+
+  const handlePlayClick = () => {
+    openPicker(
+      meta,
+      {
+        season: ep.seasonNumber,
+        episode: ep.episodeNumber,
+        name: ep.name || undefined,
+        still,
+        overview: ep.overview || undefined,
+      },
+      { autoPlay: settings.instantPlay },
+    );
+  };
+
   return (
-    <button
+    <div
       data-ep={ep.episodeNumber}
       data-no-card-ring
       onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber, ep.episodeNumber, progress.watched)}
-      onClick={() =>
-        openPicker(
-          meta,
-          {
-            season: ep.seasonNumber,
-            episode: ep.episodeNumber,
-            name: ep.name || undefined,
-            still,
-            overview: ep.overview || undefined,
-          },
-          { autoPlay: settings.instantPlay },
-        )
-      }
       className="group flex w-full flex-col gap-2.5 text-start"
     >
-      <div className="relative aspect-video overflow-hidden rounded-xl">
+      <button
+        type="button"
+        onClick={handlePlayClick}
+        className="relative aspect-video overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+      >
         <div className={spoiler?.thumb ? SPOILER_THUMB_CLASS : undefined}>
           <Poster
             src={still}
@@ -142,16 +149,31 @@ function EpisodeStripCard({
             <div className="h-full bg-accent" style={{ width: `${Math.max(2, progress.ratio * 100)}%` }} />
           </div>
         )}
+      </button>
+      <div className="flex items-start justify-between gap-2 px-0.5">
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          className="flex min-w-0 flex-1 flex-col gap-0.5 text-start focus-visible:outline-none"
+        >
+          <span className={`${grid ? "line-clamp-2" : "truncate"} text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
+            {ep.name || t("Episode {n}", { n: ep.episodeNumber })}
+          </span>
+          <span className="text-[11.5px] text-ink-subtle">
+            S{ep.seasonNumber} E{ep.episodeNumber}
+            {ep.runtime ? ` · ${t("{n} min", { n: ep.runtime })}` : ""}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
+          aria-label={t("Episode details")}
+          title={t("Episode details")}
+          className="flex shrink-0 items-center justify-center rounded-full p-1.5 text-ink-subtle transition-colors hover:bg-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+        >
+          <Eye size={16} strokeWidth={2} />
+        </button>
       </div>
-      <div className="flex flex-col gap-0.5 px-0.5">
-        <span className={`${grid ? "line-clamp-2" : "truncate"} text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
-          {ep.name || t("Episode {n}", { n: ep.episodeNumber })}
-        </span>
-        <span className="text-[11.5px] text-ink-subtle">
-          S{ep.seasonNumber} E{ep.episodeNumber}
-          {ep.runtime ? ` · ${t("{n} min", { n: ep.runtime })}` : ""}
-        </span>
-      </div>
-    </button>
+    </div>
   );
 }
