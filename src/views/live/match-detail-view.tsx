@@ -9,7 +9,8 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
   const { goBack } = useView();
   const [detail, setDetail] = useState<SportsMatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"summary" | "lineups" | "stats">("summary");
+  const [tab, setTab] = useState<"summary" | "lineups" | "stats" | "profile">("summary");
+  const isCombat = game.id.includes("|") || game.league === "UFC";
 
   useEffect(() => {
     let active = true;
@@ -93,7 +94,7 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
 
       {/* Tabs */}
       <div className="mx-auto mt-8 flex w-full max-w-4xl shrink-0 gap-6 border-b border-edge-soft/50 px-6">
-        {(["summary", "lineups", "stats"] as const).map((tId) => (
+        {(isCombat ? ["summary", "profile", "stats"] as const : ["summary", "lineups", "stats"] as const).map((tId) => (
           <button
             key={tId}
             onClick={() => setTab(tId)}
@@ -122,6 +123,7 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
             {tab === "summary" && <SummaryTab detail={detail} />}
             {tab === "lineups" && <LineupsTab detail={detail} />}
             {tab === "stats" && <StatsTab detail={detail} />}
+            {tab === "profile" && <MmaProfileTab detail={detail} />}
           </div>
         )}
       </div>
@@ -335,10 +337,79 @@ function TeamPitch({ roster, formation, teamAbbr, isHome }: { roster: any[]; for
   );
 }
 
+function StatRow({ label, hVal, aVal }: { label: string; hVal: string; aVal: string }) {
+  const t = useT();
+  const hNum = parseFloat((hVal || "0").replace(/[^0-9.-]/g, ""));
+  const aNum = parseFloat((aVal || "0").replace(/[^0-9.-]/g, ""));
+  
+  return (
+    <div className="flex items-center justify-between py-2 text-sm font-medium">
+      <div className={`w-12 text-center tabular-nums sm:w-16 ${hNum > aNum ? "font-bold text-ink" : "text-ink-subtle"}`}>
+        {hVal || "-"}
+      </div>
+      <div className="flex-1 px-2 text-center text-xs tracking-wider text-ink-subtle uppercase">
+        {t(label)}
+      </div>
+      <div className={`w-12 text-center tabular-nums sm:w-16 ${aNum > hNum ? "font-bold text-ink" : "text-ink-subtle"}`}>
+        {aVal || "-"}
+      </div>
+    </div>
+  );
+}
+
+function MmaProfileTab({ detail }: { detail: SportsMatchDetail }) {
+  const t = useT();
+  const hP = detail.homeProfile;
+  const aP = detail.awayProfile;
+
+  if (!hP || !aP) {
+    return <div className="text-center text-sm text-ink-subtle">{t("Profile details not available.")}</div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Full Body Images */}
+      <div className="flex justify-between items-end bg-elevated/20 rounded-2xl p-4 overflow-hidden relative">
+        {/* Background gradient effect for depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-ink/5" />
+        
+        <div className="flex-1 flex flex-col items-center z-10">
+          <div className="h-64 sm:h-80 relative w-full flex justify-center">
+             {hP.fullImage && (
+               <img src={hP.fullImage} className="max-h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)]" alt={detail.home.name} />
+             )}
+          </div>
+          <div className="font-bold text-lg mt-2">{detail.home.name}</div>
+        </div>
+        
+        <div className="shrink-0 flex items-center justify-center font-black text-ink-muted px-4 z-10 opacity-30 text-2xl">VS</div>
+
+        <div className="flex-1 flex flex-col items-center z-10">
+          <div className="h-64 sm:h-80 relative w-full flex justify-center">
+             {aP.fullImage && (
+               <img src={aP.fullImage} className="max-h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)]" alt={detail.away.name} />
+             )}
+          </div>
+          <div className="font-bold text-lg mt-2">{detail.away.name}</div>
+        </div>
+      </div>
+
+      {/* Tale of the Tape */}
+      <div className="flex flex-col gap-1 rounded-2xl bg-elevated/20 p-4 ring-1 ring-edge-soft/50 shadow-sm">
+        <StatRow label="Height" hVal={hP.height} aVal={aP.height} />
+        <StatRow label="Weight" hVal={hP.weight} aVal={aP.weight} />
+        <StatRow label="Age" hVal={hP.age} aVal={aP.age} />
+        <StatRow label="Reach" hVal={hP.reach} aVal={aP.reach} />
+        <StatRow label="Stance" hVal={t(hP.stance)} aVal={t(aP.stance)} />
+      </div>
+    </div>
+  );
+}
+
 function StatsTab({ detail }: { detail: SportsMatchDetail }) {
   const t = useT();
 
-  const StatRow = ({ label, hVal, aVal }: { label: string; hVal?: string; aVal?: string }) => {
+  const StatsTabRow = ({ label, hVal, aVal }: { label: string; hVal?: string; aVal?: string }) => {
     if (!hVal && !aVal) return null;
     
     const hNum = parseFloat((hVal || "0").replace(/[^0-9.-]/g, ""));
@@ -363,7 +434,7 @@ function StatsTab({ detail }: { detail: SportsMatchDetail }) {
   return (
     <div className="flex flex-col gap-1 rounded-2xl bg-elevated/20 p-4 ring-1 ring-edge-soft/50 shadow-sm">
       {detail.allStats.map((stat, i) => (
-        <StatRow key={i} label={stat.label} hVal={stat.homeValue} aVal={stat.awayValue} />
+        <StatsTabRow key={i} label={stat.label} hVal={stat.homeValue} aVal={stat.awayValue} />
       ))}
     </div>
   );

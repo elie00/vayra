@@ -267,6 +267,18 @@ const live: Record<string, string> = {
   "Pitches Thrown": "إجمالي الرميات",
   "Strikes": "رميات صحيحة (Strikes)",
 
+  // MMA Stats
+  "Overall Record": "سجل المواجهات",
+  "profile": "تفاصيل المصارعين",
+  "Height": "الطول",
+  "Weight": "الوزن",
+  "Age": "العمر",
+  "Reach": "مدى الوصول",
+  "Stance": "وضعية القتال",
+  "Orthodox": "أرثوذكسي (أيمن)",
+  "Southpaw": "أعسر (أشول)",
+  "Switch": "مزدوج",
+
   // Extended Soccer Stats
   "Offsides": "التسلل",
   "Saves": "تصديات الحارس",

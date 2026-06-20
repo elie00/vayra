@@ -58,6 +58,15 @@ export type MatchTeamStatRow = {
   awayValue: string;
 };
 
+export type MMAFighterProfile = {
+  age: string;
+  height: string;
+  weight: string;
+  reach: string;
+  stance: string;
+  fullImage: string;
+};
+
 export type SportsMatchDetail = SportsGame & {
   homeFormation?: string;
   awayFormation?: string;
@@ -67,6 +76,8 @@ export type SportsMatchDetail = SportsGame & {
   awayStats: MatchTeamStats;
   allStats: MatchTeamStatRow[];
   events: MatchEvent[];
+  homeProfile?: MMAFighterProfile;
+  awayProfile?: MMAFighterProfile;
 };
 
 const BASE = "https://site.api.espn.com/apis/site/v2/sports";
@@ -150,7 +161,7 @@ const TTL = 10_000;
 const cache = new Map<string, { at: number; games: SportsGame[] }>();
 const inflight = new Map<string, Promise<SportsGame[]>>();
 
-function toSide(c: Record<string, unknown> | undefined): SportsSide {
+function toSide(c: Record<string, unknown> | undefined, group?: string): SportsSide {
   const team = (c?.team ?? {}) as Record<string, unknown>;
   // For individual-sport athletes (MMA, racing, tennis, golf)
   const athlete = (c?.athlete ?? {}) as Record<string, unknown>;
@@ -166,12 +177,18 @@ function toSide(c: Record<string, unknown> | undefined): SportsSide {
   }
   
   if (isAthlete) {
+    let logoUrl = typeof athlete.flag === "object" && athlete.flag !== null
+      ? ((athlete.flag as Record<string, unknown>).href as string) ?? ""
+      : "";
+      
+    if (group === "combat" && c?.id) {
+      logoUrl = `https://a.espncdn.com/i/headshots/mma/players/full/${c.id}.png`;
+    }
+
     return {
       name: (athlete.displayName as string) ?? (athlete.fullName as string) ?? "",
       abbr: (athlete.shortName as string) ?? "",
-      logo: typeof athlete.flag === "object" && athlete.flag !== null
-        ? ((athlete.flag as Record<string, unknown>).href as string) ?? ""
-        : "",
+      logo: logoUrl,
       score: scoreValue,
       winner: c?.winner === true,
     };
@@ -286,66 +303,74 @@ function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
     const allComps = flatComps.length > 0 ? flatComps : directComps;
     if (allComps.length === 0) continue;
 
-    // For multi-competition events (UFC, NASCAR, F1, Tennis), prefer featured/main event
-    // For F1/NASCAR: prioritize Race > Qualifying > Sprint > Practice
-    let comp = allComps.find((c) => c.featured === true);
-    if (!comp && (def.key === "F1" || def.key === "NASCAR")) {
-      const raceComp = allComps.find((c) => {
-        const typeAbbr = ((c.type as Record<string, unknown>)?.abbreviation as string)?.toUpperCase();
-        return typeAbbr === "RACE" || typeAbbr === "R" || typeAbbr?.includes("MAIN");
-      });
-      const qualComp = allComps.find((c) => {
-        const typeAbbr = ((c.type as Record<string, unknown>)?.abbreviation as string)?.toUpperCase();
-        return typeAbbr?.includes("QUAL") || typeAbbr === "Q";
-      });
-      const sprintComp = allComps.find((c) => {
-        const typeAbbr = ((c.type as Record<string, unknown>)?.abbreviation as string)?.toUpperCase();
-        return typeAbbr?.includes("SPRINT") || typeAbbr === "S";
-      });
-      comp = raceComp || qualComp || sprintComp || allComps[allComps.length - 1];
-    } else {
-      comp = comp ?? allComps[0];
-    }
-    if (!comp) continue;
+    const compsToProcess = def.group === "combat" ? allComps : [];
 
-    const cs = (comp.competitors as Record<string, unknown>[] | undefined) ?? [];
-    if (cs.length < 2) continue;
-
-    // Team sports: use homeAway; individual sports (athlete type): use order 1/2
-    const isAthleteType = cs.some((x) => x.type === "athlete");
-    let home: Record<string, unknown> | undefined;
-    let away: Record<string, unknown> | undefined;
-
-    if (isAthleteType) {
-      const sorted = [...cs].sort((a, b) =>
-        Number((a as Record<string, unknown>).order ?? 99) - Number((b as Record<string, unknown>).order ?? 99)
-      );
-      home = sorted[0];
-      away = sorted[1];
-    } else {
-      home = cs.find((x) => x.homeAway === "home") ?? cs[0];
-      away = cs.find((x) => x.homeAway === "away") ?? cs[1];
+    if (compsToProcess.length === 0) {
+      // For multi-competition events (NASCAR, F1, Tennis), prefer featured/main event
+      // For F1/NASCAR: prioritize Race > Qualifying > Sprint > Practice
+      let comp = allComps.find((c) => c.featured === true);
+      if (!comp && (def.key === "F1" || def.key === "NASCAR")) {
+        const raceComp = allComps.find((c) => {
+          const typeAbbr = ((c.type as Record<string, unknown>)?.abbreviation as string)?.toUpperCase();
+          return typeAbbr === "RACE" || typeAbbr === "R" || typeAbbr?.includes("MAIN");
+        });
+        const qualComp = allComps.find((c) => {
+          const typeAbbr = ((c.type as Record<string, unknown>)?.abbreviation as string)?.toUpperCase();
+          return typeAbbr?.includes("QUAL") || typeAbbr === "Q";
+        });
+        const sprintComp = allComps.find((c) => {
+          const typeAbbr = ((c.type as Record<string, unknown>)?.abbreviation as string)?.toUpperCase();
+          return typeAbbr?.includes("SPRINT") || typeAbbr === "S";
+        });
+        comp = raceComp || qualComp || sprintComp || allComps[allComps.length - 1];
+      } else {
+        comp = comp ?? allComps[0];
+      }
+      if (comp) compsToProcess.push(comp);
     }
 
-    if (!home || !away) continue;
-    const t = ((comp.status as Record<string, unknown>)?.type ?? {}) as Record<string, unknown>;
-    const rawState = t.state;
-    const state = rawState === "in" || rawState === "post" ? rawState : "pre";
+    for (const comp of compsToProcess) {
+      const cs = (comp.competitors as Record<string, unknown>[] | undefined) ?? [];
+      if (cs.length < 2) continue;
 
-    // Skip TBD matchups (id < 0)
-    const homeId = String((home as Record<string, unknown>).id ?? "");
-    const awayId = String((away as Record<string, unknown>).id ?? "");
-    if (homeId.startsWith("-") && awayId.startsWith("-")) continue;
+      // Team sports: use homeAway; individual sports (athlete type): use order 1/2
+      const isAthleteType = cs.some((x) => x.type === "athlete");
+      let home: Record<string, unknown> | undefined;
+      let away: Record<string, unknown> | undefined;
 
-    out.push({
-      id: String(ev.id ?? `${def.key}-${out.length}`),
-      league: def.tag,
-      state,
-      detail: (t.shortDetail as string) ?? (t.detail as string) ?? "",
-      home: toSide(home),
-      away: toSide(away),
-      startMs: Date.parse((ev.date as string) ?? "") || 0,
-    });
+      if (isAthleteType) {
+        const sorted = [...cs].sort((a, b) =>
+          Number((a as Record<string, unknown>).order ?? 99) - Number((b as Record<string, unknown>).order ?? 99)
+        );
+        home = sorted[0];
+        away = sorted[1];
+      } else {
+        home = cs.find((x) => x.homeAway === "home") ?? cs[0];
+        away = cs.find((x) => x.homeAway === "away") ?? cs[1];
+      }
+
+      if (!home || !away) continue;
+      const t = ((comp.status as Record<string, unknown>)?.type ?? {}) as Record<string, unknown>;
+      const rawState = t.state;
+      const state = rawState === "in" || rawState === "post" ? rawState : "pre";
+
+      // Skip TBD matchups (id < 0)
+      const homeId = String((home as Record<string, unknown>).id ?? "");
+      const awayId = String((away as Record<string, unknown>).id ?? "");
+      if (homeId.startsWith("-") && awayId.startsWith("-")) continue;
+
+      const idStr = def.group === "combat" ? `${ev.id}|${comp.id}` : String(ev.id ?? `${def.key}-${out.length}`);
+
+      out.push({
+        id: idStr,
+        league: def.tag,
+        state,
+        detail: (t.shortDetail as string) ?? (t.detail as string) ?? "",
+        home: toSide(home, def.group),
+        away: toSide(away, def.group),
+        startMs: Date.parse((ev.date as string) ?? "") || 0,
+      });
+    }
   }
   return out;
 }
@@ -388,7 +413,108 @@ export async function fetchSports(leagues: string[]): Promise<SportsGame[]> {
 export async function fetchMatchSummary(leagueTag: string, eventId: string): Promise<SportsMatchDetail | null> {
   const def = Array.from(BY_KEY.values()).find(l => l.tag === leagueTag);
   if (!def) return null;
-  const res = await safeFetch(`${BASE}/${def.path}/summary?event=${eventId}`);
+
+  let actualEventId = eventId;
+  let compId = "";
+  
+  if (def.group === "combat" && eventId.includes("|")) {
+    [actualEventId, compId] = eventId.split("|");
+  }
+
+  // MMA summary endpoint is broken, extract from scoreboard directly
+  if (def.group === "combat") {
+    const res = await safeFetch(`${BASE}/${def.path}/scoreboard`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const event = data.events?.find((e: any) => e.id === actualEventId);
+    const comp = event?.competitions?.find((c: any) => c.id === compId);
+    if (!comp) return null;
+    
+    const cs = comp.competitors || [];
+    const isAthleteType = cs.some((x: any) => x.type === "athlete");
+    let homeRaw, awayRaw;
+    if (isAthleteType) {
+      const sorted = [...cs].sort((a: any, b: any) => (a.order || 99) - (b.order || 99));
+      homeRaw = sorted[0];
+      awayRaw = sorted[1];
+    } else {
+      homeRaw = cs[0];
+      awayRaw = cs[1];
+    }
+    if (!homeRaw || !awayRaw) return null;
+
+    const gameSide = (c: any) => ({
+       id: c.id,
+       name: c.athlete?.displayName || "",
+       abbr: c.athlete?.shortName || "",
+       score: typeof c.score === "string" ? c.score : String(c.score || ""),
+       winner: c.winner === true,
+       logo: c.id ? `https://a.espncdn.com/i/headshots/mma/players/full/${c.id}.png` : ""
+    });
+
+    const home = gameSide(homeRaw);
+    const away = gameSide(awayRaw);
+    
+    // Fetch deep profiles
+    const fetchProfile = async (id: string): Promise<MMAFighterProfile | undefined> => {
+      if (!id) return undefined;
+      try {
+        const r = await safeFetch(`https://sports.core.api.espn.com/v2/sports/mma/leagues/ufc/athletes/${id}`);
+        if (!r.ok) return undefined;
+        const d = await r.json();
+        return {
+          age: String(d.age || "-"),
+          height: d.displayHeight || "-",
+          weight: d.displayWeight || "-",
+          reach: d.displayReach || "-",
+          stance: d.stance?.text || "-",
+          fullImage: d.images?.[0]?.href || `https://a.espncdn.com/i/headshots/mma/players/full/${id}.png`
+        };
+      } catch {
+        return undefined;
+      }
+    };
+
+    const [homeProfile, awayProfile] = await Promise.all([
+      fetchProfile(homeRaw.id),
+      fetchProfile(awayRaw.id)
+    ]);
+    
+    const allStats: MatchTeamStatRow[] = [];
+    const hRecords = homeRaw.records || [];
+    const aRecords = awayRaw.records || [];
+    if (hRecords.length > 0) {
+      hRecords.forEach((hr: any) => {
+        const ar = aRecords.find((a: any) => a.name === hr.name);
+        allStats.push({ 
+          label: hr.name === "overall" ? "Overall Record" : hr.name, 
+          homeValue: hr.summary || "0", 
+          awayValue: ar?.summary || "0" 
+        });
+      });
+    }
+
+    const t = comp.status?.type || {};
+    return {
+      id: eventId,
+      league: def.tag,
+      state: (t.state === "in" || t.state === "post") ? t.state : "pre",
+      detail: t.shortDetail || t.detail || "",
+      startMs: Date.parse(event.date || "") || 0,
+      home,
+      away,
+      homeRoster: [],
+      awayRoster: [],
+      homeStats: {},
+      awayStats: {},
+      allStats,
+      events: [],
+      homeProfile,
+      awayProfile
+    };
+  }
+
+  const res = await safeFetch(`${BASE}/${def.path}/summary?event=${actualEventId}`);
   if (!res.ok) return null;
   const data = await res.json();
   
