@@ -1,4 +1,5 @@
 import { Check, Play, Eye } from "lucide-react";
+import { ImdbIcon } from "@/components/icons/imdb-icon";
 import { useEffect, useMemo, useState } from "react";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
@@ -131,21 +132,41 @@ function EpisodeStripCard({
             onError={() => setImgIdx((i) => i + 1)}
           />
         </div>
-        <div className="absolute inset-0 flex items-center justify-center bg-canvas/40 opacity-0 transition-opacity group-hover:opacity-100">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-ink text-canvas">
+        
+        {/* Persistent bottom gradient with Rating and Overview */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
+          {ep.voteAverage && ep.voteAverage > 0 ? (
+            <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
+              <ImdbIcon className="h-3 w-auto rounded-[2px] shadow-sm" />
+              <span className="text-[10px] font-bold text-white">
+                {ep.voteAverage.toFixed(1)}
+              </span>
+            </div>
+          ) : null}
+          {ep.overview && (
+            <p className="line-clamp-4 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
+              {ep.overview}
+            </p>
+          )}
+        </div>
+
+        {/* Hover Play Button */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-ink/90 text-canvas backdrop-blur-md">
             <Play size={16} fill="currentColor" />
           </div>
         </div>
-        <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink">
+
+        <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink transition-opacity group-hover:opacity-0">
           {ep.episodeNumber}
         </span>
         {progress.watched && (
-          <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/22 text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm">
+          <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/22 text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm transition-opacity group-hover:opacity-0">
             <Check size={12} strokeWidth={3} />
           </span>
         )}
         {progress.ratio > 0.01 && (
-          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/55">
+          <div className="absolute inset-x-0 bottom-0 z-10 h-[3px] bg-black/55 transition-opacity group-hover:opacity-0">
             <div className="h-full bg-accent" style={{ width: `${Math.max(2, progress.ratio * 100)}%` }} />
           </div>
         )}
