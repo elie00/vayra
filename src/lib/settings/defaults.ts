@@ -134,6 +134,7 @@ export const DEFAULT: Settings = {
   spoilerHideTitles: true,
   spoilerHideDescriptions: true,
   spoilerSkipNext: true,
+  streamBackdropBlur: true,
   hideContent: {
     anime: false,
     liveTv: false,
