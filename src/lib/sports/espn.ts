@@ -19,6 +19,56 @@ export type SportsGame = {
   startMs: number;
 };
 
+export type MatchPlayer = {
+  id: string;
+  name: string;
+  jersey: string;
+  position: string;
+  starter: boolean;
+  substitutedIn?: boolean;
+  substitutedOut?: boolean;
+  goals: number;
+  yellowCards: number;
+  redCards: number;
+  image?: string;
+};
+
+export type MatchTeamStats = {
+  possession?: string;
+  shots?: string;
+  shotsOnTarget?: string;
+  corners?: string;
+  fouls?: string;
+  yellowCards?: string;
+  redCards?: string;
+};
+
+export type MatchEvent = {
+  id: string;
+  time: string;
+  type: "goal" | "yellow_card" | "red_card" | "substitution" | "other";
+  text: string;
+  teamId?: string;
+  participantName?: string;
+};
+
+export type MatchTeamStatRow = {
+  label: string;
+  homeValue: string;
+  awayValue: string;
+};
+
+export type SportsMatchDetail = SportsGame & {
+  homeFormation?: string;
+  awayFormation?: string;
+  homeRoster: MatchPlayer[];
+  awayRoster: MatchPlayer[];
+  homeStats: MatchTeamStats;
+  awayStats: MatchTeamStats;
+  allStats: MatchTeamStatRow[];
+  events: MatchEvent[];
+};
+
 const BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
 export type LeagueDef = { key: string; label: string; labelEn: string; tag: string; path: string; logo: string; group: string };
@@ -333,4 +383,155 @@ export function liveCount(games: SportsGame[]): number {
 export async function fetchSports(leagues: string[]): Promise<SportsGame[]> {
   const lists = await Promise.all(leagues.map((l) => fetchLeague(l).catch(() => [] as SportsGame[])));
   return sortGames(lists.flat());
+}
+
+export async function fetchMatchSummary(leagueTag: string, eventId: string): Promise<SportsMatchDetail | null> {
+  const def = Array.from(BY_KEY.values()).find(l => l.tag === leagueTag);
+  if (!def) return null;
+  const res = await safeFetch(`${BASE}/${def.path}/summary?event=${eventId}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  
+  const header = data.header?.competitions?.[0] || {};
+  const teams = header.competitors || [];
+  const homeHeader = teams.find((t: any) => t.homeAway === "home") || teams[0];
+  const awayHeader = teams.find((t: any) => t.homeAway === "away") || teams[1];
+
+  if (!homeHeader || !awayHeader) return null;
+
+  const tState = header.status?.type?.state;
+  const state = tState === "in" || tState === "post" ? tState : "pre";
+
+  const game: SportsGame = {
+    id: eventId,
+    league: leagueTag,
+    state,
+    detail: header.status?.type?.shortDetail || header.status?.type?.detail || "",
+    home: {
+      name: homeHeader.team?.displayName || "",
+      abbr: homeHeader.team?.abbreviation || "",
+      logo: homeHeader.team?.logos?.[0]?.href || "",
+      score: homeHeader.score || "",
+      winner: homeHeader.winner === true,
+    },
+    away: {
+      name: awayHeader.team?.displayName || "",
+      abbr: awayHeader.team?.abbreviation || "",
+      logo: awayHeader.team?.logos?.[0]?.href || "",
+      score: awayHeader.score || "",
+      winner: awayHeader.winner === true,
+    },
+    startMs: Date.parse(header.date) || 0,
+  };
+
+  const rosters = data.rosters || [];
+  const homeRosterData = rosters.find((r: any) => r.homeAway === "home" || r.team?.id === homeHeader.team?.id);
+  const awayRosterData = rosters.find((r: any) => r.homeAway === "away" || r.team?.id === awayHeader.team?.id);
+
+  const parseRoster = (rData: any): MatchPlayer[] => {
+    if (!rData || !Array.isArray(rData.roster)) return [];
+    return rData.roster.map((p: any) => {
+      const stats = p.stats || [];
+      const getStat = (name: string) => stats.find((s: any) => s.name === name)?.value || 0;
+      return {
+        id: p.athlete?.id || "",
+        name: p.athlete?.displayName || "",
+        jersey: p.jersey || p.athlete?.jersey || "",
+        position: p.position?.abbreviation || p.athlete?.position?.abbreviation || "",
+        starter: p.starter === true,
+        substitutedIn: p.substitutedIn === true,
+        substitutedOut: p.substitutedOut === true,
+        goals: Number(getStat("goals")),
+        yellowCards: Number(getStat("yellowCards")),
+        redCards: Number(getStat("redCards")),
+        image: p.athlete?.headshot?.href || "",
+      };
+    });
+  };
+
+  const boxscoreTeams = data.boxscore?.teams || [];
+  const homeBox = boxscoreTeams.find((t: any) => t.team?.id === homeHeader.team?.id);
+  const awayBox = boxscoreTeams.find((t: any) => t.team?.id === awayHeader.team?.id);
+
+  const parseStats = (box: any): MatchTeamStats => {
+    if (!box || !Array.isArray(box.statistics)) return {};
+    const stats = box.statistics;
+    const getS = (names: string[]) => {
+      for (const n of names) {
+        const s = stats.find((x: any) => x.name === n);
+        if (s && s.displayValue) return s.displayValue;
+      }
+      return "0";
+    };
+    return {
+      possession: getS(["possessionPct", "possession"]),
+      shots: getS(["totalShots", "shotsTotal", "shots"]),
+      shotsOnTarget: getS(["shotsOnTarget", "shotsOnGoal"]),
+      corners: getS(["wonCorners", "corners", "cornerKicks"]),
+      fouls: getS(["foulsCommitted", "fouls"]),
+      yellowCards: getS(["yellowCards", "totalYellowCards"]),
+      redCards: getS(["redCards", "totalRedCards"]),
+    };
+  };
+
+  const keyEvents = data.keyEvents || [];
+  const parseEvents = (evs: any[]): MatchEvent[] => {
+    return evs.map((e: any) => {
+      const txt = e.type?.text?.toLowerCase() || "";
+      let type: MatchEvent["type"] = "other";
+      if (txt.includes("goal")) type = "goal";
+      else if (txt.includes("yellow")) type = "yellow_card";
+      else if (txt.includes("red")) type = "red_card";
+      else if (txt.includes("substitution")) type = "substitution";
+
+      return {
+        id: e.id || "",
+        time: e.clock?.displayValue || "",
+        type,
+        text: e.shortText || e.text || "",
+        teamId: e.team?.id,
+        participantName: e.participants?.[0]?.athlete?.displayName,
+      };
+    });
+  };
+
+  const allStats: MatchTeamStatRow[] = [];
+  
+  const processStatItem = (hStat: any, aStatsList: any[]) => {
+    if (Array.isArray(hStat.stats)) {
+      const aCat = aStatsList?.find((s: any) => s.name === hStat.name);
+      for (const subH of hStat.stats) {
+        processStatItem(subH, Array.isArray(aCat?.stats) ? aCat.stats : []);
+      }
+      return;
+    }
+    
+    if (!hStat.name) return;
+    const name = hStat.name;
+    const label = hStat.label || hStat.displayName || hStat.name;
+    const hVal = hStat.displayValue || "0";
+    
+    const aStat = aStatsList?.find((s: any) => s.name === name);
+    const aVal = aStat?.displayValue || "0";
+    
+    allStats.push({ label, homeValue: hVal, awayValue: aVal });
+  };
+
+  if (homeBox && Array.isArray(homeBox.statistics)) {
+    for (const hStat of homeBox.statistics) {
+      processStatItem(hStat, awayBox?.statistics || []);
+    }
+  }
+
+  return {
+    ...game,
+    homeFormation: homeRosterData?.formation,
+    awayFormation: awayRosterData?.formation,
+    homeRoster: parseRoster(homeRosterData),
+    awayRoster: parseRoster(awayRosterData),
+    homeStats: parseStats(homeBox),
+    awayStats: parseStats(awayBox),
+    allStats,
+    events: parseEvents(keyEvents),
+  };
 }

@@ -3,7 +3,7 @@ import type { Meta } from "./cinemeta";
 import { profileFromMeta, trackEvent } from "./discover";
 import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
-
+import type { SportsGame } from "./sports/espn";
 export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "library" | "live" | "vod" | "downloads";
 
 export type PlayEpisode = {
@@ -92,7 +92,8 @@ export type Frame =
   | { kind: "award"; awardType: import("./providers/wikidata").AwardType }
   | { kind: "anime-award"; sourceId: import("./anime-awards").AwardSourceId }
   | { kind: "picker"; meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }
-  | { kind: "player"; src: PlayerSrc };
+  | { kind: "player"; src: PlayerSrc }
+  | { kind: "match-detail"; game: SportsGame };
 
 export type ScrollSnapshot = {
   anchor?: string;
@@ -126,6 +127,8 @@ type ViewValue = {
   openMeta: (m: Meta | null, opts?: { liveContext?: boolean; episodeHint?: { season: number; episode: number } }) => void;
   episodeDetail: { seriesId: string; season: number; episode: number; seriesMeta?: Meta } | null;
   openEpisodeDetail: (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => void;
+  matchDetailGame: SportsGame | null;
+  openMatchDetail: (game: SportsGame) => void;
   promoteMetaToRoot: () => void;
   personId: number | null;
   openPerson: (id: number | null) => void;
@@ -239,6 +242,8 @@ function frameKey(f: Frame): string {
     }
     case "player":
       return `player:${f.src.meta.id}:${f.src.url.slice(-32)}`;
+    case "match-detail":
+      return `match-detail:${f.game.id}`;
   }
 }
 
@@ -333,6 +338,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const filter = top.kind === "filter" ? top.filter : null;
   const grid = top.kind === "grid" ? top.grid : null;
   const awardType = top.kind === "award" ? top.awardType : null;
+  const matchDetailGame = top.kind === "match-detail" ? top.game : null;
   const picker =
     top.kind === "picker"
       ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent, resume: top.resume }
@@ -546,6 +552,14 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const openMatchDetail = useCallback((game: SportsGame) => {
+    setStack((cur) => {
+      const t = cur[cur.length - 1];
+      if (t.kind === "match-detail" && t.game.id === game.id) return cur;
+      return pushFrame(cur, { kind: "match-detail", game });
+    });
+  }, []);
+
   const openEpisodeDetail = useCallback(
     (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => {
       setStack((cur) => {
@@ -706,6 +720,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openCollection,
       episodeDetail,
       openEpisodeDetail,
+      matchDetailGame,
+      openMatchDetail,
       openQueue,
       filter,
       openFilter,
@@ -754,6 +770,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openCollection,
       episodeDetail,
       openEpisodeDetail,
+      matchDetailGame,
+      openMatchDetail,
       filter,
       stackKinds,
       awardType,

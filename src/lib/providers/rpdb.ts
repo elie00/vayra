@@ -11,6 +11,7 @@ type ParsedId = {
 };
 
 function parseMetaId(metaId: string): ParsedId | undefined {
+  if (!metaId) return undefined;
   if (metaId.startsWith("tt")) return { imdb: metaId, mediaType: "movie" };
   const tmdb = metaId.match(/^tmdb:(movie|tv):(\d+)$/);
   if (tmdb) {

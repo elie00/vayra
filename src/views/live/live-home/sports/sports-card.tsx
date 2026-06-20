@@ -17,6 +17,8 @@ function startLabel(
   return `${dateStr} ${time}`;
 }
 
+import { SportsHoverPreview } from "./sports-hover-preview";
+
 export function SportsCard({ game, onSelect }: { game: SportsGame; onSelect: (g: SportsGame) => void }) {
   const finalGame = game.state === "post";
   const live = game.state === "in";
@@ -24,20 +26,21 @@ export function SportsCard({ game, onSelect }: { game: SportsGame; onSelect: (g:
   const showWinIndicator = finalGame && !hasScores && (game.home.winner || game.away.winner);
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(game)}
-      className="flex h-24 w-[260px] shrink-0 flex-col justify-between rounded-xl border border-edge-soft/55 bg-elevated p-3 text-start transition-colors duration-150 hover:border-edge"
-    >
-      <div className="flex items-center justify-between">
-        <Status game={game} />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">
-          {game.league}
-        </span>
-      </div>
-      <SideRow side={game.away} active={live || finalGame} dim={finalGame && !game.away.winner} showWinner={showWinIndicator} />
-      <SideRow side={game.home} active={live || finalGame} dim={finalGame && !game.home.winner} showWinner={showWinIndicator} />
-    </button>
+    <SportsHoverPreview game={game} onSelect={() => onSelect(game)}>
+      <button
+        type="button"
+        className="flex h-24 w-[260px] shrink-0 flex-col justify-between rounded-xl border border-edge-soft/55 bg-elevated p-3 text-start transition-colors duration-150 hover:border-edge"
+      >
+        <div className="flex items-center justify-between">
+          <Status game={game} />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">
+            {game.league}
+          </span>
+        </div>
+        <SideRow side={game.away} active={live || finalGame} dim={finalGame && !game.away.winner} showWinner={showWinIndicator} />
+        <SideRow side={game.home} active={live || finalGame} dim={finalGame && !game.home.winner} showWinner={showWinIndicator} />
+      </button>
+    </SportsHoverPreview>
   );
 }
 
