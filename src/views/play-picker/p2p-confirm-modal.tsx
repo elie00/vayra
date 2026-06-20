@@ -1,4 +1,5 @@
 import { Radio, Users, X } from "lucide-react";
+import { useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { ScoredStream } from "@/lib/streams/types";
 import { formatSize, streamSummaryParts } from "./picker-utils";
@@ -11,9 +12,10 @@ export function P2pConfirmModal({
 }: {
   meta: Meta;
   stream: ScoredStream;
-  onConfirm: () => void;
+  onConfirm: (remember: boolean) => void;
   onCancel: () => void;
 }) {
+  const [remember, setRemember] = useState(false);
   const backdrop = meta.background || meta.poster;
   const title = stream.parsedTitle || stream.title || stream.name || "This source";
   const summary = streamSummaryParts(stream).filter((p) => !/seed/i.test(p));
@@ -53,10 +55,19 @@ export function P2pConfirmModal({
             {summary.length > 0 && <span>{summary.join(" · ")}</span>}
           </div>
         </div>
+        <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-white/70 transition-colors hover:text-white/90">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="h-4 w-4 accent-accent"
+          />
+          Auto-play peer-to-peer sources from now on
+        </label>
         <div className="flex items-center gap-3 pt-1">
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={() => onConfirm(remember)}
             className="flex h-12 items-center gap-2 rounded-xl bg-accent px-6 text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
           >
             <Radio size={15} strokeWidth={2.4} />

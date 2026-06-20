@@ -8,7 +8,7 @@ import { useTogether } from "@/lib/together/provider";
 import { buildMatchScores, matchBadge, MATCH_CLOSE } from "@/lib/together/source-match";
 import { HostSourceBanner } from "@/components/host-source-banner";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
-import { readPlayback } from "@/lib/playback-history";
+import { readPlayback, streamMatchesEntry } from "@/lib/playback-history";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
@@ -52,17 +52,19 @@ export function PlayPicker({
   autoPlay,
   attempt,
   intent,
+  resume,
 }: {
   meta: Meta;
   episode?: PlayEpisode;
   autoPlay?: boolean;
   attempt?: number;
   intent?: "play" | "download";
+  resume?: boolean;
 }) {
   const isDownload = intent === "download";
   const { openPlayer, openSettings, exitPickerToDetail } = useView();
   const backToDetail = () => exitPickerToDetail(meta);
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { authKey } = useAuth();
   const debrids = useDebridClients();
   const { snapshot: roomSnapshot, sendInvite, claimHost, wasInvitedTo, clientId, hostSource, roomGuestPick, lastInviteProto } = useTogether();
@@ -79,11 +81,6 @@ export function PlayPicker({
   const [strictMode, setStrictMode] = useState(settings.streamFilterLevel === "strict");
   const [forceShowAll, setForceShowAll] = useState(false);
   const filterDisabled = settings.streamFilterLevel === "off" || forceShowAll || isDownload;
-  const baseLangs = settings.preferredLanguages ?? [];
-  const [langFilter, setLangFilter] = useState(
-    settings.requirePreferredLanguage === true && baseLangs.length > 0,
-  );
-  const [cachedOnly, setCachedOnly] = useState(false);
   const {
     result,
     loading,
@@ -104,6 +101,7 @@ export function PlayPicker({
     strictMode,
     filterDisabled,
   });
+  const baseLangs = settings.preferredLanguages ?? [];
   const isAnimeRequest = useMemo(
     () => (streamIds ?? []).some((id) => id.startsWith("kitsu:") || id.startsWith("mal:")),
     [streamIds],
@@ -123,6 +121,10 @@ export function PlayPicker({
     }
     return out;
   }, [baseLangs, settings.preferredAudioLangs, isAnimeRequest]);
+  const [langFilter, setLangFilter] = useState(
+    settings.requirePreferredLanguage === true && baseLangs.length > 0,
+  );
+  const [cachedOnly, setCachedOnly] = useState(false);
 
   const { inviteKey, canInvite, inviteSentRef, hostSourceForMedia, expectHostSource } = useRoomInvite({
     meta,
@@ -235,8 +237,11 @@ export function PlayPicker({
   }, [filteredPicker]);
 
   const previousPlayback = useMemo(
-    () => readPlayback(meta.id, episode?.season, episode?.episode),
-    [meta.id, episode?.season, episode?.episode],
+    () =>
+      settings.rememberLastStream
+        ? readPlayback(meta.id, episode?.season, episode?.episode)
+        : null,
+    [meta.id, episode?.season, episode?.episode, settings.rememberLastStream],
   );
 
   const autoCandidates = useAutoCandidates({
@@ -263,19 +268,7 @@ export function PlayPicker({
 
   const previousMatch: ScoredStream | null = useMemo(() => {
     if (!filteredPicker || !previousPlayback) return null;
-    return (
-      filteredPicker.all.find((s) => {
-        if (previousPlayback.infoHash && s.infoHash) {
-          if (s.infoHash.toLowerCase() !== previousPlayback.infoHash.toLowerCase()) return false;
-          if (previousPlayback.fileIdx == null || s.fileIdx == null) return true;
-          return s.fileIdx === previousPlayback.fileIdx;
-        }
-        if (previousPlayback.url && s.url) {
-          return s.url === previousPlayback.url;
-        }
-        return false;
-      }) ?? null
-    );
+    return filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null;
   }, [filteredPicker, previousPlayback]);
 
   const currentPick: ScoredStream | null = useMemo(() => {
@@ -314,8 +307,25 @@ export function PlayPicker({
     setResolving,
   });
 
+  const rememberedFiredRef = useRef(false);
+  const rememberedHandledFirst =
+    !!previousMatch &&
+    settings.rememberLastStream &&
+    !!resume &&
+    !wasInvitedTo(inviteKey) &&
+    !isDownload &&
+    !roomGuestPick &&
+    !inSession &&
+    (attempt ?? 0) === 0;
+  useEffect(() => {
+    if (rememberedFiredRef.current || !rememberedHandledFirst || !previousMatch) return;
+    rememberedFiredRef.current = true;
+    onPlay(previousMatch, true);
+  }, [rememberedHandledFirst, previousMatch, onPlay]);
+
   useAutoFire({
     autoActive,
+    rememberedHandledFirst: rememberedHandledFirst && autoAttemptIdx === 0,
     attempt,
     autoCandidates,
     resolving,
@@ -324,6 +334,7 @@ export function PlayPicker({
     pipelineDone,
     firstResultAt,
     isCached,
+    p2pAutoConsent: settings.p2pAutoConsent,
     preferredLangs,
     hasStrongAddon,
     isTorrentioStream,
@@ -419,7 +430,6 @@ export function PlayPicker({
           abortResolve();
           setResolving(null);
           setAutoCancelled(true);
-          backToDetail();
         }}
       />
     );
@@ -440,7 +450,10 @@ export function PlayPicker({
       <P2pConfirmModal
         meta={meta}
         stream={p2pConfirm.stream}
-        onConfirm={confirmP2p}
+        onConfirm={(remember) => {
+          if (remember) update({ p2pAutoConsent: true });
+          confirmP2p();
+        }}
         onCancel={cancelP2p}
       />
     );
@@ -476,19 +489,16 @@ export function PlayPicker({
       <BackdropLayer src={backdropSrc} />
 
       {createPortal(
-        <>
-          <button
-            type="button"
-            onClick={() => backToDetail()}
-            aria-label="Back"
-            className="fixed left-5 top-5 z-[200] flex h-11 w-11 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink backdrop-blur-md transition-colors hover:bg-elevated"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          
-        </>,
+        <button
+          type="button"
+          onClick={() => backToDetail()}
+          aria-label="Back"
+          className="fixed left-5 top-5 z-[200] flex h-11 w-11 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink backdrop-blur-md transition-colors hover:bg-elevated"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>,
         document.body,
       )}
 

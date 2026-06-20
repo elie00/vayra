@@ -5,8 +5,9 @@ import pubRelaySvg from "@/assets/pubrelay.svg";
 import { deleteRelay } from "@/lib/together/cf-deploy";
 import { HARBOR_PUBLIC_RELAY, isPublicRelay } from "@/lib/together/relay-version";
 import { useSettings } from "@/lib/settings";
-import { useRelayHealth } from "./relay-panel/use-relay-health";
 import { useT } from "@/lib/i18n";
+import { downloadText } from "@/lib/download-text";
+import { useRelayHealth } from "./relay-panel/use-relay-health";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -22,8 +23,8 @@ export function TogetherRelayPanel({
   onOpenDocs: () => void;
   onOpenDeploy: () => void;
 }) {
-  const t = useT();
   const { settings, update } = useSettings();
+  const t = useT();
   const [stopping, setStopping] = useState(false);
   const [stopError, setStopError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -49,7 +50,7 @@ export function TogetherRelayPanel({
     setTimeout(() => setCopied(false), 1400);
   };
 
-  const exportBackup = () => {
+  const exportBackup = async () => {
     const payload = {
       harbor: "relay-credentials",
       version: 1,
@@ -65,15 +66,12 @@ export function TogetherRelayPanel({
         "You can always delete the underlying Worker manually at dash.cloudflare.com -> Workers & Pages, even without this file.",
       ],
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `harbor-relay-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await downloadText(
+      `harbor-relay-backup-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(payload, null, 2),
+      ["json"],
+      "Harbor relay backup",
+    );
   };
 
   const stop = async () => {
@@ -177,8 +175,8 @@ export function TogetherRelayPanel({
                     <div className="flex min-w-0 flex-col">
                       <span className="text-[13px] font-medium text-ink">
                         {passive.needsUpdate
-                          ? t("Relay version {version}. Update available.", { version: passive.version ?? "unknown" })
-                          : t("Relay is current (v{version}).", { version: passive.version ?? "unknown" })}
+                          ? t("Relay version {version}. Update available.", { version: passive.version ?? t("unknown") })
+                          : t("Relay is current (v{version}).", { version: passive.version ?? "" })}
                       </span>
                       <span className="text-[11.5px] text-ink-subtle">
                         {passive.needsUpdate

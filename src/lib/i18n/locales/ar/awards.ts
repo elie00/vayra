@@ -9,6 +9,17 @@ const awards: Record<string, string> = {
   "Founded {year}": "تأسّست {year}",
   "{n} years": "{n} سنة",
   "{n} year": "سنة واحدة",
+  "Winning films & shows": "الأفلام والمسلسلات الفائزة",
+  "View all {n} winners": "عرض كل الفائزين الـ{n}",
+  "{n} title": "عنوان واحد",
+  "{n} titles": "{n} عنوان",
+  "Celebrated actors": "ممثلون مُحتفى بهم",
+  "Acclaimed directors": "مخرجون مرموقون",
+  "Honored writers": "كُتّاب مُكرَّمون",
+  "{n} wins": "{n} فوز",
+  "Add a TMDB key in Settings to unlock posters and the artists behind this award.":
+    "أضف مفتاح TMDB في الإعدادات لإظهار الملصقات والفنانين وراء هذه الجائزة.",
+  "No winners are catalogued for this award yet.": "لا يوجد فائزون مُفهرَسون لهذه الجائزة بعد.",
 
   "Anime award": "جائزة أنمي",
   "recorded winners": "فائزون مسجّلون",

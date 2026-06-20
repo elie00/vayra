@@ -67,7 +67,7 @@ export function CastMenu({
     <div
       ref={wrapRef}
       onMouseDown={(e) => e.stopPropagation()}
-      className="animate-popover-in fixed z-[140] w-[320px] rounded-2xl border border-edge bg-elevated/95 p-4 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] backdrop-blur-md"
+      className="animate-popover-in fixed z-[140] w-[320px] rounded-2xl border border-edge bg-elevated p-4 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] backdrop-blur-md"
       style={{
         right: anchor ? window.innerWidth - anchor.right : 24,
         bottom: anchor ? window.innerHeight - anchor.bottom + 12 : 80,

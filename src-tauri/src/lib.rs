@@ -11,6 +11,7 @@ mod download;
 mod dvr;
 mod fonts;
 mod fullscreen;
+mod hdr_overlay;
 mod http_fetch;
 mod local_lib;
 mod modal_overlay;
@@ -456,8 +457,11 @@ pub fn run() {
             mpv::mpv_start,
             mpv::mpv_command,
             mpv::mpv_set_property,
+            mpv::mpv_get_property,
             mpv::mpv_set_geometry,
             mpv::mpv_force_below,
+            mpv::mpv_set_hdr_stage,
+            mpv::display_hdr_active,
             webview_helpers::webview_reapply_transparency,
             mpv::mpv_on_pip_changed,
             mpv::mpv_screenshot_data_url,
@@ -471,6 +475,11 @@ pub fn run() {
             modal_overlay::modal_overlay_emit_action,
             modal_overlay::modal_overlay_sync,
             modal_overlay::modal_overlay_get_pending,
+            hdr_overlay::hdr_overlay_open,
+            hdr_overlay::hdr_overlay_close,
+            hdr_overlay::hdr_overlay_sync,
+            hdr_overlay::hdr_overlay_emit_props,
+            hdr_overlay::hdr_overlay_emit_action,
             mpv::mpv_sub_add,
             mpv::sub_download,
             mpv::mpv_stop,

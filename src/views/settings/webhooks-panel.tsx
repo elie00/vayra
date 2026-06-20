@@ -12,7 +12,6 @@ import {
   type FieldStatus,
 } from "./webhooks-panel/webhook-field";
 import { TelegramComposedField } from "./webhooks-panel/telegram-field";
-import { useT } from "@/lib/i18n";
 
 const idleStatus: FieldStatus = { state: "idle", message: null };
 
@@ -65,7 +64,6 @@ const SOURCES: SourceMeta[] = [
 ];
 
 export function WebhooksPanel() {
-  const t = useT();
   const { settings, update } = useSettings();
   const { authKey } = useAuth();
   const { isConnected: traktConnected } = useTrakt();
@@ -93,20 +91,16 @@ export function WebhooksPanel() {
     const setStatus = kind === "discord" ? setDiscordStatus : setTelegramStatus;
     if (!url) return;
     inFlightRef.current[kind] = true;
-    setStatus({ state: "busy", message: t("Sending…") });
+    setStatus({ state: "busy", message: "Sending…" });
     const testPayload: WebhookPayload = {
-      text: t(
-        kind === "discord"
-          ? "Harbor test message (Discord). If you can read this, your webhook is wired up."
-          : "Harbor test message (Telegram). If you can read this, your webhook is wired up."
-      ),
+      text: `Harbor test message (${kind === "discord" ? "Discord" : "Telegram"}). If you can read this, your webhook is wired up.`,
       items: [],
     };
     try {
       const res = await fireWebhook(kind, url, testPayload);
       setStatus({
         state: res.ok ? "ok" : "error",
-        message: res.ok ? t("Sent. Check your channel.") : res.error ?? t("Failed"),
+        message: res.ok ? "Sent. Check your channel." : res.error ?? "Failed",
       });
     } finally {
       inFlightRef.current[kind] = false;
@@ -117,7 +111,7 @@ export function WebhooksPanel() {
   return (
     <div className="flex flex-col gap-5">
       <WebhookField
-        label={t("Discord webhook URL")}
+        label="Discord webhook URL"
         placeholder="https://discord.com/api/webhooks/…"
         value={settings.webhooks.discordUrl}
         onChange={(v) => setUrl("discordUrl", v)}
@@ -135,10 +129,10 @@ export function WebhooksPanel() {
       <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-5">
         <div className="flex flex-col gap-1">
           <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-            {t("Sources")}
+            Sources
           </span>
           <p className="text-[12.5px] text-ink-muted">
-            {t("Pick which calendars feed your webhook. Items are deduped across sources before sending.")}
+            Pick which calendars feed your webhook. Items are deduped across sources before sending.
           </p>
         </div>
         <div className="flex flex-col gap-2">
@@ -161,16 +155,16 @@ export function WebhooksPanel() {
       <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-5">
         <div className="flex flex-col gap-1">
           <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-            {t("Types")}
+            Types
           </span>
           <p className="text-[12.5px] text-ink-muted">
-            {t("Filter by media type after the sources merge. Leave them all on to send everything.")}
+            Filter by media type after the sources merge. Leave them all on to send everything.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ChipToggle label={t("Movies")} on={settings.webhooks.notifyMovies} onToggle={(v) => setNotify("notifyMovies", v)} />
-          <ChipToggle label={t("TV")} on={settings.webhooks.notifyTv} onToggle={(v) => setNotify("notifyTv", v)} />
-          <ChipToggle label={t("Anime")} on={settings.webhooks.notifyAnime} onToggle={(v) => setNotify("notifyAnime", v)} />
+          <ChipToggle label="Movies" on={settings.webhooks.notifyMovies} onToggle={(v) => setNotify("notifyMovies", v)} />
+          <ChipToggle label="TV" on={settings.webhooks.notifyTv} onToggle={(v) => setNotify("notifyTv", v)} />
+          <ChipToggle label="Anime" on={settings.webhooks.notifyAnime} onToggle={(v) => setNotify("notifyAnime", v)} />
         </div>
       </div>
 
@@ -196,7 +190,6 @@ function SourceToggle({
   blocker: string | null;
   onChange: (v: boolean) => void;
 }) {
-  const t = useT();
   const disabled = blocker !== null;
   const effective = on && !disabled;
   return (
@@ -221,9 +214,9 @@ function SourceToggle({
           {source.icon()}
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[13.5px] font-semibold text-ink">{t(source.label)}</span>
+          <span className="text-[13.5px] font-semibold text-ink">{source.label}</span>
           <span className={`text-[12px] ${blocker ? "text-amber-200/85" : "text-ink-subtle"}`}>
-            {t(blocker ?? source.description)}
+            {blocker ?? source.description}
           </span>
         </div>
       </div>
@@ -252,7 +245,6 @@ function ChipToggle({
   on: boolean;
   onToggle: (v: boolean) => void;
 }) {
-  const t = useT();
   return (
     <button
       onClick={() => onToggle(!on)}
@@ -260,7 +252,7 @@ function ChipToggle({
         on ? "bg-ink text-canvas" : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
       }`}
     >
-      {t(label)}
+      {label}
     </button>
   );
 }

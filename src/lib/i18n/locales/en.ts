@@ -69,16 +69,6 @@ const en: Record<string, string> = {
   "arabic.row.trending": "Trending in Arabic",
 
   // Sports customization
-  "sports.customize": "Customize",
-  "sports.customize.title": "Customize Sports",
-  "sports.customize.selected": "{n} league / tournament selected",
-  "sports.customize.all": "All",
-  "sports.customize.selectAll": "Select All",
-  "sports.customize.clearAll": "Clear All",
-  "sports.customize.selectGroupAll": "Select All",
-  "sports.customize.deselectGroupAll": "Deselect All",
-  "sports.customize.cancel": "Cancel",
-  "sports.customize.save": "Save Changes",
 
   // Episode Detail Page
   "Episode Not Found": "Episode Not Found",
@@ -126,6 +116,17 @@ const en: Record<string, string> = {
   "Comments may take a moment to appear on Trakt": "Comments may take a moment to appear on Trakt",
   "Spoiler — Click to reveal": "Spoiler — Click to reveal",
   "Spoiler — Click": "Spoiler — Click",
+  "sports.customize": "Customize",
+  "sports.customize.title": "Customize Leagues",
+  "sports.customize.selected": "{n} selected",
+  "sports.customize.all": "All",
+  "sports.customize.selectGroupAll": "Select all",
+  "sports.customize.deselectGroupAll": "Deselect all",
+  "sports.customize.selectAll": "Select all",
+  "sports.customize.clearAll": "Clear all",
+  "sports.customize.cancel": "Cancel",
+  "sports.customize.save": "Save",
+  "Upcoming": "Upcoming",
 };
 
 export default en;

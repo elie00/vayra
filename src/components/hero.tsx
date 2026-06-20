@@ -6,7 +6,7 @@ import { RtBadge } from "@/components/rt-badge";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
-import { tmdbImdbId, tmdbLogo, tmdbTrailerList, useTmdbImdbId } from "@/lib/providers/tmdb";
+import { tmdbImdbId, tmdbLogo, tmdbMovieImages, tmdbTrailerList, useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { fetchTrailer, prefetchTrailer, trailerSrc, type TrailerInfo } from "@/lib/trailer";
 import { useView } from "@/lib/view";
@@ -30,7 +30,9 @@ export const Hero = memo(function Hero({
   const { openMeta } = useView();
   const t = useT();
   const inWatchlist = useInWatchlist(meta.id);
-  const bg = upsizeTmdb(meta.background || meta.poster);
+  const [bgUrl, setBgUrl] = useState<string | undefined>(meta.background);
+  const [bgResolved, setBgResolved] = useState<boolean>(!!meta.background);
+  const bg = bgUrl ? upsizeTmdb(bgUrl) : bgResolved ? meta.poster : undefined;
   const [trailerCandidates, setTrailerCandidates] = useState<string[]>([]);
   const [trailerInfo, setTrailerInfo] = useState<TrailerInfo | null>(null);
   const [videoReady, setVideoReady] = useState(false);
@@ -77,37 +79,56 @@ export const Hero = memo(function Hero({
     setLogo(meta.logo);
     setLogoLoaded(false);
     setLogoResolved(!!meta.logo);
-  }, [meta.id, meta.logo]);
+    setBgUrl(meta.background);
+    setBgResolved(!!meta.background);
+  }, [meta.id, meta.logo, meta.background]);
 
   useEffect(() => {
-    if (!active) return;
+    if (logoResolved && bgResolved) return;
     let cancelled = false;
-    if (!logoResolved) {
-      const isTmdb = meta.id.startsWith("tmdb:");
-      const logoLookup = isTmdb
-        ? tmdbLogo(settings.tmdbKey, meta.id)
-        : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) => full?.logo);
-      logoLookup
-        .then((url) => {
-          if (cancelled) return;
-          setLogo(url);
+    const isTmdb = meta.id.startsWith("tmdb:");
+    const resolve: Promise<{ logo?: string; background?: string }> = isTmdb
+      ? Promise.all([
+          tmdbLogo(settings.tmdbKey, meta.id),
+          tmdbMovieImages(settings.tmdbKey, meta.id).then((urls) => urls[0]),
+        ]).then(([logo, background]) => ({ logo, background }))
+      : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) => ({
+          logo: full?.logo,
+          background: full?.background,
+        }));
+    resolve
+      .then(({ logo: l, background: b }) => {
+        if (cancelled) return;
+        if (!logoResolved) {
+          setLogo(l);
           setLogoResolved(true);
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setLogoResolved(true);
-        });
-    }
-    if (settings.omdbKey) {
-      tmdbImdbId(settings.tmdbKey, meta.id).then((id) => {
-        if (cancelled || !id) return;
-        omdbPrefetch(settings.omdbKey, id);
+        }
+        if (!bgResolved) {
+          if (b) setBgUrl(b);
+          setBgResolved(true);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setLogoResolved(true);
+        setBgResolved(true);
       });
-    }
     return () => {
       cancelled = true;
     };
-  }, [active, logoResolved, meta.id, meta.type, settings.tmdbKey, settings.omdbKey]);
+  }, [logoResolved, bgResolved, meta.id, meta.type, settings.tmdbKey]);
+
+  useEffect(() => {
+    if (!active || !settings.omdbKey) return;
+    let cancelled = false;
+    tmdbImdbId(settings.tmdbKey, meta.id).then((id) => {
+      if (cancelled || !id) return;
+      omdbPrefetch(settings.omdbKey, id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, meta.id, settings.tmdbKey, settings.omdbKey]);
 
   useEffect(() => {
     if (!playTrailer || trailerCandidates.length === 0 || trailerInfo) return;

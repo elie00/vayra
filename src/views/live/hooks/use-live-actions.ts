@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { buildCatchupUrl } from "@/lib/iptv/catchup";
+import { headersFromChannel } from "@/lib/iptv/channel-headers";
 import { recordChannelPlay } from "@/lib/iptv/channel-stats";
 import { buildM3u, suggestExportFilename } from "@/lib/iptv/export";
 import { findCurrent } from "@/lib/iptv/xmltv";
@@ -43,6 +44,8 @@ export function useLiveActions(params: {
         title: ch.name,
         subtitle: ch.group ?? "Live",
         notWebReady: true,
+        isLive: true,
+        headers: headersFromChannel(ch),
         liveProgram,
       });
     },
@@ -62,6 +65,8 @@ export function useLiveActions(params: {
         title: program.title || ch.name,
         subtitle: `${ch.name} · catch up`,
         notWebReady: true,
+        isLive: true,
+        headers: headersFromChannel(ch),
         liveProgram: program.title || undefined,
       });
     },

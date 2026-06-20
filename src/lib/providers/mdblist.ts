@@ -10,7 +10,19 @@ export type MdblistScores = {
 };
 
 type RatingRow = { source?: string; value?: number | null };
-type ApiShape = { ratings?: RatingRow[]; score_average?: number | null; score?: number | null };
+type ApiShape = {
+  ratings?: RatingRow[];
+  score_average?: number | null;
+  scoreaverage?: number | null;
+  score?: number | null;
+};
+
+function positive(...vals: (number | null | undefined)[]): number | null {
+  for (const v of vals) {
+    if (typeof v === "number" && v > 0) return v;
+  }
+  return null;
+}
 
 const cache = new Map<string, MdblistScores | null>();
 const inflight = new Map<string, Promise<MdblistScores | null>>();
@@ -21,12 +33,7 @@ function parse(json: ApiShape): MdblistScores {
     const r = rows.find((x) => x.source === source);
     return typeof r?.value === "number" && r.value > 0 ? r.value : null;
   };
-  const agg =
-    typeof json.score_average === "number" && json.score_average > 0
-      ? json.score_average
-      : typeof json.score === "number" && json.score > 0
-        ? json.score
-        : null;
+  const agg = positive(json.score_average, json.scoreaverage, json.score);
   return {
     score: agg,
     letterboxd: val("letterboxd"),

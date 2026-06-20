@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { Poster } from "@/components/poster";
 import { topMovies, topSeries, type Meta } from "@/lib/cinemeta";
+import { useT } from "@/lib/i18n";
 
 const SPLASH_DURATION_MS = 2600;
 
 export function SplashStep({ onAdvance }: { onAdvance: () => void }) {
+  const t = useT();
   const [posters, setPosters] = useState<string[]>([]);
   const [out, setOut] = useState(false);
   const advanced = useRef(false);
@@ -74,7 +76,7 @@ export function SplashStep({ onAdvance }: { onAdvance: () => void }) {
           className="animate-splash-title text-[14px] uppercase tracking-[0.42em] text-ink-muted"
           style={{ animationDelay: "260ms" }}
         >
-          For watching things
+          {t("For watching things")}
         </p>
       </div>
     </div>

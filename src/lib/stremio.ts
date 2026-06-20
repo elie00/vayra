@@ -36,6 +36,7 @@ export type LibraryItem = {
   external?: "simkl";
   isAnime?: boolean;
   upNext?: boolean;
+  local?: boolean;
 };
 
 export function libraryMetaType(t: string): import("@/lib/cinemeta").MetaType {

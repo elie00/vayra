@@ -68,6 +68,89 @@ fn cached_info(path: &Path, quality: &str, size: u64) -> TrailerInfo {
     }
 }
 
+struct YtDlpOutput {
+    success: bool,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+}
+
+async fn run_yt_dlp(
+    app: &tauri::AppHandle,
+    args: Vec<String>,
+    timeout: Duration,
+    label: &str,
+) -> Result<YtDlpOutput, String> {
+    match app.shell().sidecar("yt-dlp") {
+        Ok(cmd) => {
+            let sidecar_args = args.clone();
+            let run_sidecar = async move {
+                cmd.args(sidecar_args)
+                    .output()
+                    .await
+                    .map(|out| YtDlpOutput {
+                        success: out.status.success(),
+                        stdout: out.stdout,
+                        stderr: out.stderr,
+                    })
+                    .map_err(|e| format!("yt-dlp {label}: {}", e))
+            };
+
+            #[cfg(not(target_os = "linux"))]
+            {
+                return tokio::time::timeout(timeout, run_sidecar)
+                    .await
+                    .map_err(|_| format!("yt-dlp {label} timed out"))?;
+            }
+
+            #[cfg(target_os = "linux")]
+            {
+                match tokio::time::timeout(timeout, run_sidecar).await {
+                    Ok(Ok(output)) => return Ok(output),
+                    Ok(Err(err)) => {
+                        eprintln!(
+                            "[harbor::trailer] bundled yt-dlp failed: {err}; trying system yt-dlp"
+                        );
+                    }
+                    Err(_) => return Err(format!("yt-dlp {label} timed out")),
+                }
+            }
+        }
+        Err(err) => {
+            #[cfg(not(target_os = "linux"))]
+            {
+                return Err(format!("sidecar init: {}", err));
+            }
+
+            #[cfg(target_os = "linux")]
+            {
+                eprintln!(
+                    "[harbor::trailer] bundled yt-dlp unavailable: {err}; trying system yt-dlp"
+                );
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let output = tokio::time::timeout(
+            timeout,
+            tokio::process::Command::new("yt-dlp").args(args).output(),
+        )
+        .await
+        .map_err(|_| format!("yt-dlp {label} timed out"))?
+        .map_err(|e| format!("yt-dlp {label}: {}", e))?;
+
+        return Ok(YtDlpOutput {
+            success: output.status.success(),
+            stdout: output.stdout,
+            stderr: output.stderr,
+        });
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    unreachable!()
+}
+
 pub fn sweep_cache() {
     let dir = cache_dir();
     let entries = match std::fs::read_dir(&dir) {
@@ -137,24 +220,21 @@ pub async fn fetch_trailer(
     std::fs::create_dir_all(&dir).map_err(|e| format!("cache dir: {}", e))?;
     let url = format!("https://www.youtube.com/watch?v={}", video_id);
 
-    let meta_sidecar = app
-        .shell()
-        .sidecar("yt-dlp")
-        .map_err(|e| format!("sidecar init: {}", e))?
-        .args([
-            "-j",
-            "--no-playlist",
-            "--no-warnings",
-            "--skip-download",
-            &url,
-        ]);
+    let meta_output = run_yt_dlp(
+        &app,
+        vec![
+            "-j".into(),
+            "--no-playlist".into(),
+            "--no-warnings".into(),
+            "--skip-download".into(),
+            url.clone(),
+        ],
+        METADATA_TIMEOUT,
+        "metadata",
+    )
+    .await?;
 
-    let meta_output = tokio::time::timeout(METADATA_TIMEOUT, meta_sidecar.output())
-        .await
-        .map_err(|_| "yt-dlp metadata timed out".to_string())?
-        .map_err(|e| format!("yt-dlp metadata: {}", e))?;
-
-    if !meta_output.status.success() {
+    if !meta_output.success {
         let stderr = String::from_utf8_lossy(&meta_output.stderr);
         return Err(format!("yt-dlp failed: {}", stderr));
     }
@@ -192,23 +272,14 @@ pub async fn fetch_trailer(
         dl_args.push("mp4".into());
     }
     dl_args.push(url.clone());
-    let download_sidecar = app
-        .shell()
-        .sidecar("yt-dlp")
-        .map_err(|e| format!("sidecar init: {}", e))?
-        .args(dl_args);
-
     let dl_timeout = if wants_merge {
         Duration::from_secs(240)
     } else {
         DOWNLOAD_TIMEOUT
     };
-    let download_output = tokio::time::timeout(dl_timeout, download_sidecar.output())
-        .await
-        .map_err(|_| "yt-dlp download timed out".to_string())?
-        .map_err(|e| format!("yt-dlp download: {}", e))?;
+    let download_output = run_yt_dlp(&app, dl_args, dl_timeout, "download").await?;
 
-    if !download_output.status.success() {
+    if !download_output.success {
         let stderr = String::from_utf8_lossy(&download_output.stderr);
         return Err(format!("yt-dlp download failed: {}", stderr));
     }

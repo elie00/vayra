@@ -3,8 +3,12 @@ import { useT, useUiLanguage } from "@/lib/i18n";
 import type { SportsGame, SportsSide } from "@/lib/sports/espn";
 import { fmtClock } from "../now-format";
 
-function startLabel(ms: number, locale: string): string {
-  if (!ms || isNaN(ms)) return "TBD";
+function startLabel(
+  ms: number,
+  locale: string,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  if (!ms || isNaN(ms)) return t("TBD");
   const d = new Date(ms);
   const now = new Date();
   const time = fmtClock(ms);
@@ -18,7 +22,7 @@ export function SportsCard({ game, onSelect }: { game: SportsGame; onSelect: (g:
   const live = game.state === "in";
   const hasScores = (game.home.score && game.home.score !== "0") || (game.away.score && game.away.score !== "0");
   const showWinIndicator = finalGame && !hasScores && (game.home.winner || game.away.winner);
-  
+
   return (
     <button
       type="button"
@@ -38,10 +42,11 @@ export function SportsCard({ game, onSelect }: { game: SportsGame; onSelect: (g:
 }
 
 function SideRow({ side, active, dim, showWinner }: { side: SportsSide; active: boolean; dim: boolean; showWinner?: boolean }) {
+  const t = useT();
   const [err, setErr] = useState(false);
   const hasScore = side.score && side.score !== "" && side.score !== "0";
-  const isPositionScore = hasScore && /^\d+(st|nd|rd|th)$/.test(side.score); // Check if it's a position like "1st", "2nd"
-  
+  const isPositionScore = hasScore && /^\d+(st|nd|rd|th)$/.test(side.score);
+
   return (
     <div className="flex items-center gap-2">
       {side.logo && !err ? (
@@ -61,11 +66,11 @@ function SideRow({ side, active, dim, showWinner }: { side: SportsSide; active: 
       </span>
       {showWinner && side.winner && !hasScore ? (
         <span className="flex h-5 items-center rounded bg-success/20 px-2 text-[10px] font-bold uppercase tracking-wider text-success">
-          WIN
+          {t("WIN")}
         </span>
       ) : (
         <span
-          className={`${isPositionScore ? 'w-auto px-1' : 'w-9'} shrink-0 text-end text-[${isPositionScore ? '13' : '20'}px] font-bold ${isPositionScore ? 'tracking-tight' : 'tabular-nums'} ${
+          className={`${isPositionScore ? "w-auto px-1" : "w-9"} shrink-0 text-end text-[${isPositionScore ? "13" : "20"}px] font-bold ${isPositionScore ? "tracking-tight" : "tabular-nums"} ${
             active ? (dim ? "text-ink-muted" : "text-ink") : "text-ink-subtle"
           }`}
         >
@@ -80,7 +85,7 @@ function Status({ game }: { game: SportsGame }) {
   const t = useT();
   const lang = useUiLanguage();
   const locale = lang === "ar" ? "ar-SA" : "en-US";
-  
+
   if (game.state === "in") {
     return (
       <span className="flex h-[18px] items-center gap-1 rounded bg-danger px-1.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-white">
@@ -89,7 +94,7 @@ function Status({ game }: { game: SportsGame }) {
       </span>
     );
   }
-  
+
   if (game.state === "post") {
     return (
       <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
@@ -97,10 +102,9 @@ function Status({ game }: { game: SportsGame }) {
       </span>
     );
   }
-  
-  // Pre-game state
-  const label = game.startMs ? startLabel(game.startMs, locale) : (game.detail || t("Upcoming"));
-  
+
+  const label = game.startMs ? startLabel(game.startMs, locale, t) : (game.detail || t("Upcoming"));
+
   return (
     <span className="flex h-[18px] items-center gap-1.5 rounded border border-edge-soft/60 px-1.5 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
       <span className="h-1.5 w-1.5 rounded-full bg-ink-subtle/60" />

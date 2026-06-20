@@ -2,6 +2,7 @@ import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/together/provider";
 import type { Participant } from "@/lib/together/protocol";
+import { useT } from "@/lib/i18n";
 import { Avatar } from "./avatar";
 
 export function ChatPanel({
@@ -19,6 +20,7 @@ export function ChatPanel({
   selfColor: string | null;
   onSend: (text: string) => void;
 }) {
+  const t = useT();
   const chatRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState("");
 
@@ -34,12 +36,12 @@ export function ChatPanel({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[10.5px] uppercase tracking-wider text-ink-subtle">Chat</span>
+      <span className="text-[10.5px] uppercase tracking-wider text-ink-subtle">{t("Chat")}</span>
       <div
         ref={chatRef}
         className="flex h-36 flex-col gap-1.5 overflow-y-auto rounded-lg border border-edge bg-canvas/60 p-2.5"
       >
-        {chat.length === 0 && <p className="m-auto text-[11.5px] text-ink-subtle">Say hi.</p>}
+        {chat.length === 0 && <p className="m-auto text-[11.5px] text-ink-subtle">{t("Say hi.")}</p>}
         {chat.map((m, i) => {
           const self = m.from === clientId;
           const peer = participants.find((p) => p.id === m.from);
@@ -63,14 +65,14 @@ export function ChatPanel({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Message"
+          placeholder={t("Message")}
           className="h-9 flex-1 rounded-lg border border-edge bg-canvas px-2.5 text-[12.5px] text-ink focus:border-accent"
         />
         <button
           onClick={send}
           disabled={!draft.trim()}
           className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink text-canvas transition-transform hover:scale-[1.05] disabled:opacity-40 disabled:hover:scale-100"
-          aria-label="Send"
+          aria-label={t("Send")}
         >
           <Send size={13} strokeWidth={2.2} />
         </button>

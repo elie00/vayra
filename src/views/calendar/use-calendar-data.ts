@@ -13,6 +13,7 @@ import {
   fetchTraktCalendar,
 } from "@/lib/calendar-sources";
 import type { Settings } from "@/lib/settings";
+import { t } from "@/lib/i18n";
 
 type Args = {
   source: Settings["calendarSource"];
@@ -54,7 +55,7 @@ export function useCalendarData({
         if (!cancelled) setItems(rows);
       })
         .catch((e) => {
-          if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
+          if (!cancelled) setError(e instanceof Error ? e.message : t("Failed to load"));
         })
         .finally(() => {
           if (!cancelled) setLoading(false);

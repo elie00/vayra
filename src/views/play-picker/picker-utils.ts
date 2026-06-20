@@ -1,6 +1,7 @@
 import {
   hdrBadge,
   qualityConfidence,
+  releaseSourceBadge,
   resolutionBadge,
   sourceBadge,
   type BadgeKind,
@@ -292,6 +293,8 @@ export function tierChipBadges(s: ScoredStream): BadgeKind[] {
     const r = resolutionBadge(s);
     if (r) out.push(r);
   }
+  const release = releaseSourceBadge(s);
+  if (release && !src) out.push(release);
   const h = hdrBadge(s);
   if (h) out.push(h);
   return out;

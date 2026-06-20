@@ -46,7 +46,7 @@ export function useSkipSegments(
       const segs = await fetchAniSkipSegments(malId, epNum);
       if (cancelled) return;
       setAniSkip(segs);
-    })();
+    })().catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -61,9 +61,11 @@ export function useSkipSegments(
       introSeason != null && introEpisode != null
         ? { season: introSeason, episode: introEpisode }
         : undefined;
-    fetchIntroDbSegments(introDbId, ep, durationSec).then((segs) => {
-      if (!cancelled) setIntroDb(segs);
-    });
+    fetchIntroDbSegments(introDbId, ep, durationSec)
+      .then((segs) => {
+        if (!cancelled) setIntroDb(segs);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };

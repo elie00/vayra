@@ -1,8 +1,9 @@
 import { Check, Loader2, Wifi, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/lib/settings";
-import { ToggleRow, settingsAnchor } from "../shared";
+import { t as tr } from "@/lib/i18n";
 import { useT } from "@/lib/i18n";
+import { ToggleRow, settingsAnchor } from "../shared";
 
 type TestResult = { ok: boolean; message: string };
 
@@ -26,17 +27,17 @@ async function probeServer(url: string): Promise<TestResult> {
     const timer = window.setTimeout(() => ctrl.abort(), 1500);
     const res = await fetch(`${url}/settings`, { method: "GET", signal: ctrl.signal });
     window.clearTimeout(timer);
-    if (!res.ok) return { ok: false, message: `The server answered with status ${res.status}. Is that a streaming server?` };
+    if (!res.ok) return { ok: false, message: tr("The server answered with status {status}. Is that a streaming server?", { status: res.status }) };
     const ms = Math.max(1, Math.round(performance.now() - started));
-    return { ok: true, message: `Server reachable in ${ms}ms. Harbor will use it for torrent streaming.` };
+    return { ok: true, message: tr("Server reachable in {ms}ms. Harbor will use it for torrent streaming.", { ms }) };
   } catch {
-    return { ok: false, message: "Could not reach the server within 1.5 seconds. Check the address and that the server machine is online." };
+    return { ok: false, message: tr("Could not reach the server within 1.5 seconds. Check the address and that the server machine is online.") };
   }
 }
 
 export function RemoteServerSection() {
-  const t = useT();
   const { settings, update } = useSettings();
+  const t = useT();
   const saved = settings.remoteStreamServerUrl;
   const [draft, setDraft] = useState(saved);
   const [reach, setReach] = useState<boolean | null>(null);
@@ -77,7 +78,6 @@ export function RemoteServerSection() {
   };
 
   const pill = !saved ? PILL.off : reach === null ? PILL.checking : reach ? PILL.connected : PILL.unreachable;
-  const pillLabel = pill.label === "Off" ? t("Off") : pill.label === "Checking" ? t("Checking") : pill.label === "Connected" ? t("Connected") : t("Unreachable");
 
   return (
     <div id={settingsAnchor("Remote streaming server")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
@@ -90,7 +90,7 @@ export function RemoteServerSection() {
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${pill.dot}`} />
-          {pillLabel}
+          {t(pill.label)}
         </span>
       </div>
 

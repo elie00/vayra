@@ -26,7 +26,7 @@ export function useGeomSync(
         if (!el) continue;
         const r = await screenRectForEl(el);
         if (cancelled || !r) continue;
-        const sig = `${r.x},${r.y},${r.w},${r.h}`;
+        const sig = `${r.cssLeft},${r.cssTop},${r.cssWidth},${r.cssHeight},${r.cssViewW},${r.cssViewH}`;
         if (last.get(slot) === sig) continue;
         last.set(slot, sig);
         mvGeometry({ slot, ...r }).catch(() => {});
@@ -39,19 +39,12 @@ export function useGeomSync(
       for (const slot of activeSlots) {
         const el = cells.get(slot);
         if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.width < 2 || r.height < 2) continue;
-        const dpr = window.devicePixelRatio || 1;
-        const sig = `${Math.round(r.left * dpr)},${Math.round(r.top * dpr)},${Math.round(r.width * dpr)},${Math.round(r.height * dpr)}`;
+        const r = screenRectForEl(el);
+        if (!r) continue;
+        const sig = `${r.cssLeft},${r.cssTop},${r.cssWidth},${r.cssHeight},${r.cssViewW},${r.cssViewH}`;
         if (last.get(slot) === sig) continue;
         last.set(slot, sig);
-        mvGeometry({
-          slot,
-          x: Math.round(r.left * dpr),
-          y: Math.round(r.top * dpr),
-          w: Math.max(1, Math.round(r.width * dpr)),
-          h: Math.max(1, Math.round(r.height * dpr)),
-        }).catch(() => {});
+        mvGeometry({ slot, ...r }).catch(() => {});
       }
     };
 

@@ -17,6 +17,9 @@ export type PlayEpisode = {
   videoId?: string;
   still?: string;
   overview?: string;
+  rating?: number;
+  airDate?: string;
+  runtime?: number;
 };
 
 export type PlayerSrc = {
@@ -32,6 +35,8 @@ export type PlayerSrc = {
   attempt?: number;
   streamRef?: PlayerStreamRef;
   liveProgram?: string;
+  isLive?: boolean;
+  headers?: Record<string, string>;
 };
 
 export type PlayerStreamRef = {
@@ -86,7 +91,7 @@ export type Frame =
   | { kind: "grid"; grid: GridSpec }
   | { kind: "award"; awardType: import("./providers/wikidata").AwardType }
   | { kind: "anime-award"; sourceId: import("./anime-awards").AwardSourceId }
-  | { kind: "picker"; meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: "play" | "download" }
+  | { kind: "picker"; meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }
   | { kind: "player"; src: PlayerSrc };
 
 export type ScrollSnapshot = {
@@ -119,9 +124,9 @@ type ViewValue = {
   metaLiveContext: boolean;
   metaEpisodeHint: { season: number; episode: number } | null;
   openMeta: (m: Meta | null, opts?: { liveContext?: boolean; episodeHint?: { season: number; episode: number } }) => void;
-  promoteMetaToRoot: () => void;
   episodeDetail: { seriesId: string; season: number; episode: number; seriesMeta?: Meta } | null;
   openEpisodeDetail: (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => void;
+  promoteMetaToRoot: () => void;
   personId: number | null;
   openPerson: (id: number | null) => void;
   collectionId: number | null;
@@ -138,11 +143,11 @@ type ViewValue = {
   animeAwardSource: import("./anime-awards").AwardSourceId | null;
   openAnimeAward: (s: import("./anime-awards").AwardSourceId) => void;
   homeResetTick: number;
-  picker: { meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: "play" | "download" } | null;
+  picker: { meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean } | null;
   openPicker: (
     meta: Meta,
     episode?: PlayEpisode,
-    opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download" },
+    opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean },
   ) => void;
   player: PlayerSrc | null;
   openPlayer: (src: PlayerSrc) => void;
@@ -310,6 +315,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     metaFrame && metaFrame.kind === "meta" ? metaFrame.liveContext === true : false;
   const metaEpisodeHint =
     metaFrame && metaFrame.kind === "meta" ? metaFrame.episodeHint ?? null : null;
+  const personId = top.kind === "person" ? top.id : null;
+  const collectionId = top.kind === "collection" ? top.id : null;
   const episodeDetail = useMemo(
     () =>
       top.kind === "episode-detail"
@@ -323,14 +330,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       top.kind === "episode-detail" && top.seriesMeta ? top.seriesMeta.id : "",
     ],
   );
-  const personId = top.kind === "person" ? top.id : null;
-  const collectionId = top.kind === "collection" ? top.id : null;
   const filter = top.kind === "filter" ? top.filter : null;
   const grid = top.kind === "grid" ? top.grid : null;
   const awardType = top.kind === "award" ? top.awardType : null;
   const picker =
     top.kind === "picker"
-      ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent }
+      ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent, resume: top.resume }
       : null;
   const player = top.kind === "player" ? top.src : null;
   const canGoBack = stack.length > 1;
@@ -513,30 +518,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const openEpisodeDetail = useCallback(
-    (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => {
-      setStack((cur) => {
-        const t = cur[cur.length - 1];
-        if (
-          t.kind === "episode-detail" &&
-          t.seriesId === seriesId &&
-          t.season === season &&
-          t.episode === episode
-        ) {
-          return cur;
-        }
-        return pushFrame(cur, {
-          kind: "episode-detail",
-          seriesId,
-          season,
-          episode,
-          seriesMeta,
-        });
-      });
-    },
-    [],
-  );
-
   const openPerson = useCallback((id: number | null) => {
     if (id === null) {
       setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
@@ -564,6 +545,24 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       return pushFrame(cur, { kind: "collection", id });
     });
   }, []);
+
+  const openEpisodeDetail = useCallback(
+    (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => {
+      setStack((cur) => {
+        const t = cur[cur.length - 1];
+        if (
+          t.kind === "episode-detail" &&
+          t.seriesId === seriesId &&
+          t.season === season &&
+          t.episode === episode
+        ) {
+          return cur;
+        }
+        return pushFrame(cur, { kind: "episode-detail", seriesId, season, episode, seriesMeta });
+      });
+    },
+    [],
+  );
 
   const openAward = useCallback((t: import("./providers/wikidata").AwardType) => {
     setStack((cur) => {
@@ -613,7 +612,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openPicker = useCallback(
-    (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download" }) => {
+    (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }) => {
       setStack((cur) => {
         const t = cur[cur.length - 1];
         if (
@@ -631,6 +630,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           autoPlay: opts?.autoPlay,
           attempt: opts?.attempt,
           intent: opts?.intent,
+          resume: opts?.resume,
         });
       });
     },
@@ -700,12 +700,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       metaEpisodeHint,
       openMeta,
       promoteMetaToRoot,
-      episodeDetail,
-      openEpisodeDetail,
       personId,
       openPerson,
       collectionId,
       openCollection,
+      episodeDetail,
+      openEpisodeDetail,
       openQueue,
       filter,
       openFilter,
@@ -749,11 +749,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       metaLiveContext,
       metaEpisodeHint,
       promoteMetaToRoot,
-      episodeDetail,
-      openEpisodeDetail,
       personId,
       collectionId,
       openCollection,
+      episodeDetail,
+      openEpisodeDetail,
       filter,
       stackKinds,
       awardType,

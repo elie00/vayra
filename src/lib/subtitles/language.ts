@@ -10,6 +10,7 @@ const NAMES: Record<string, string> = {
   en: "English", es: "Spanish", "es-419": "Spanish (Latin America)", fr: "French",
   de: "German", it: "Italian",
   ja: "Japanese", ko: "Korean", zh: "Chinese", ru: "Russian", pt: "Portuguese",
+  "pt-br": "Portuguese (Brazil)",
   ar: "Arabic", hi: "Hindi", th: "Thai", vi: "Vietnamese", tr: "Turkish",
   pl: "Polish", nl: "Dutch", sv: "Swedish", no: "Norwegian", da: "Danish",
   fi: "Finnish", he: "Hebrew", id: "Indonesian", cs: "Czech", el: "Greek",
@@ -27,6 +28,12 @@ const LATAM_REGIONS = new Set([
   "py", "sv", "ni", "cr", "pa", "uy", "pr", "419",
 ]);
 
+const BRAZIL_ALIASES = new Set([
+  "pt-br", "pt_br", "pob", "por-br", "brazilian", "brazilian portuguese",
+  "portuguese (brazil)", "portuguese brazil", "português (brasil)",
+  "portugues (brasil)", "português brasil", "portugues brasil",
+]);
+
 const NAME_TO_CODE: Record<string, string> = (() => {
   const m: Record<string, string> = {};
   for (const [code, name] of Object.entries(NAMES)) m[name.toLowerCase()] = code;
@@ -40,6 +47,7 @@ export function normalizeLang(input?: string | null): string {
   if (!input) return "";
   const raw = input.trim().toLowerCase();
   if (LATAM_ALIASES.has(raw)) return "es-419";
+  if (BRAZIL_ALIASES.has(raw)) return "pt-br";
   if (raw.length === 2) return raw;
   if (raw.length === 3 && ISO_3_TO_1[raw]) return ISO_3_TO_1[raw];
   if (NAME_TO_CODE[raw]) return NAME_TO_CODE[raw];
@@ -47,6 +55,7 @@ export function normalizeLang(input?: string | null): string {
     const [head, region] = raw.split(/[-_]/);
     const headCode = head.length === 2 ? head : ISO_3_TO_1[head] ?? NAME_TO_CODE[head];
     if (headCode === "es" && region && LATAM_REGIONS.has(region)) return "es-419";
+    if (headCode === "pt" && region === "br") return "pt-br";
     if (headCode) return headCode;
   }
   return raw;
@@ -83,11 +92,12 @@ export function pickBestTrack<T extends { lang?: string; default?: boolean; forc
   for (const t of tracks) {
     if (t.forced) continue;
     const ls = langScore(t.lang ?? "", preferred);
+    if (ls < 0) continue;
     const score = ls * 10 + (t.default ? 1 : 0);
     if (score > bestScore) {
       bestScore = score;
       best = t;
     }
   }
-  return best ?? tracks[0];
+  return best;
 }

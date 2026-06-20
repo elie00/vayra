@@ -1,6 +1,7 @@
 import { Check, Loader2, Play, RotateCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/lib/settings";
+import { useT } from "@/lib/i18n";
 import {
   torrentEngineRestart,
   torrentEngineSelfTest as engineSelfTest,
@@ -8,7 +9,6 @@ import {
   type EngineStatus,
 } from "@/lib/torrent/local-engine";
 import { settingsAnchor } from "../shared";
-import { useT } from "@/lib/i18n";
 
 type SelfTestResult = Awaited<ReturnType<typeof engineSelfTest>>;
 
@@ -27,8 +27,8 @@ function engineState(status: EngineStatus | null): EngineState {
 }
 
 export function LocalEngineSection() {
-  const t = useT();
   const { settings } = useSettings();
+  const t = useT();
   const strictRemote = !!settings.remoteStreamServerUrl && settings.remoteStreamServerStrict;
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [running, setRunning] = useState(false);
@@ -81,8 +81,6 @@ export function LocalEngineSection() {
 
   const pill = PILL[engineState(status)];
 
-  const pillLabel = pill.label === "Running" ? t("Running") : pill.label === "Stopped" ? t("Stopped") : t("Error");
-
   return (
     <div id={settingsAnchor("Local engine")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -96,7 +94,7 @@ export function LocalEngineSection() {
           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${pill.dot}`} />
-          {pillLabel}
+          {t(pill.label)}
         </span>
       </div>
 

@@ -145,7 +145,7 @@ export function LibraryPanel({
             <ToggleRow
               label={t("Blur episode images on detail page")}
               sub={t("Blurs the hero image and stills on the episode detail page until you click reveal.")}
-              value={settings.blurEpisodes}
+              value={!!settings.blurEpisodes}
               onChange={(v) => update({ blurEpisodes: v })}
             />
             <ToggleRow

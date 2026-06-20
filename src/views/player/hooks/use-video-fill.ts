@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge } from "@/lib/player/bridge";
+import { t } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 
 type CropMode = {
@@ -50,9 +51,9 @@ export function useVideoFill(bridgeRef: RefObject<PlayerBridge | null>, srcKey: 
     }
     if (!showPill) return;
     if (mode.id === "zoom" && zoomLevel > 0) {
-      flash(`Zoom ${Math.round(Math.pow(2, zoomLevel) * 100)}%`);
+      flash(t("Zoom {pct}%", { pct: Math.round(Math.pow(2, zoomLevel) * 100) }));
     } else {
-      flash(mode.label);
+      flash(t(mode.label));
     }
   };
 

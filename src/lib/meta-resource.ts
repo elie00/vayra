@@ -32,16 +32,30 @@ export async function resolveMeta(
     return cinemetaPromise;
   }
 
-  const addonRaces = candidates.map((a) => fetchAddonMeta(a, type, id));
+  const addonRaces = candidates.map((a) => ({ a, p: fetchAddonMeta(a, type, id) }));
   const cinemeta = await cinemetaPromise;
   if (cinemeta && cinemeta.poster) return cinemeta;
 
-  for (const p of addonRaces) {
+  for (const { a, p } of addonRaces) {
     const result = await p;
-    if (result && result.poster) return result;
+    if (result && result.poster) return withOrigin(result, a);
   }
 
   return cinemeta ?? null;
+}
+
+function withOrigin(meta: Meta, addon: Addon): Meta {
+  if (meta.addonOrigin?.base) return meta;
+  const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
+  return {
+    ...meta,
+    addonOrigin: {
+      id: addon.manifest.id,
+      name: addon.manifest.name ?? addon.manifest.id,
+      logo: addon.manifest.logo,
+      base,
+    },
+  };
 }
 
 function isCinemeta(addon: Addon): boolean {

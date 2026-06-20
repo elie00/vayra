@@ -27,7 +27,7 @@ export type AwardEntry = {
   workImdb?: string;
 };
 
-const CACHE_KEY = "harbor.awards.wikidata.v9";
+const CACHE_KEY = "harbor.awards.wikidata.v10";
 const STALE_MS = 30 * 24 * 60 * 60 * 1000;
 
 type Cached = { entries: AwardEntry[]; fetchedAt: number; complete: boolean };
@@ -43,6 +43,7 @@ function load() {
   loaded = true;
   try {
     localStorage.removeItem("harbor.awards.wikidata.v8");
+    localStorage.removeItem("harbor.awards.wikidata.v9");
   } catch {
     /* ignore */
   }
@@ -205,29 +206,31 @@ function parseRows(data: any, result: "won" | "nominated"): AwardEntry[] {
     .filter((e) => !isAggregateEntry(e));
 }
 
+const AGGREGATE_NAMES = [
+  "golden globe awards",
+  "academy awards",
+  "bafta awards",
+  "primetime emmy awards",
+  "creative arts emmy awards",
+  "international emmy awards",
+  "emmy awards",
+  "screen actors guild awards",
+  "critics' choice awards",
+  "tony awards",
+  "grammy awards",
+  "cannes film festival",
+  "venice film festival",
+  "berlin international film festival",
+  "saturn awards",
+];
+
 function isAggregateEntry(entry: AwardEntry): boolean {
-  if (entry.workTitle || entry.workImdb) return false;
-  if (entry.category) return false;
   const name = entry.awardName.toLowerCase().trim();
-  if (/\bawards$/i.test(entry.awardName.trim())) return true;
-  const aggregates = [
-    "golden globe awards",
-    "academy awards",
-    "bafta awards",
-    "primetime emmy awards",
-    "creative arts emmy awards",
-    "international emmy awards",
-    "emmy awards",
-    "screen actors guild awards",
-    "critics' choice awards",
-    "tony awards",
-    "grammy awards",
-    "cannes film festival",
-    "venice film festival",
-    "berlin international film festival",
-    "saturn awards",
-  ];
-  return aggregates.includes(name);
+  const isBodyName = /\bawards$/i.test(entry.awardName.trim()) || AGGREGATE_NAMES.includes(name);
+  if (!isBodyName) return false;
+  const cat = entry.category?.toLowerCase().trim();
+  if (cat && cat !== name) return false;
+  return true;
 }
 
 function dropGenericDuplicates(entries: AwardEntry[]): AwardEntry[] {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Type verification test for episode types
  * This file ensures all types are properly defined and can be used
@@ -131,3 +132,5 @@ export type {
 
 // Test successful if this compiles without errors
 console.log("Episode types verification: All types are properly defined");
+
+export { testCacheEntry, testApiResponse, isValidEpisodeDetail };

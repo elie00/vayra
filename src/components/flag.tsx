@@ -15,6 +15,7 @@ import flagKor from "@/assets/flags/flag-kor.svg";
 import flagNld from "@/assets/flags/flag-nld.svg";
 import flagNor from "@/assets/flags/flag-nor.svg";
 import flagPol from "@/assets/flags/flag-pol.svg";
+import flagPrt from "@/assets/flags/flag-prt.svg";
 import flagRon from "@/assets/flags/flag-ron.svg";
 import flagRus from "@/assets/flags/flag-rus.svg";
 import flagSpa from "@/assets/flags/flag-spa.svg";
@@ -35,7 +36,8 @@ const FLAG: Record<string, string> = {
   Korean: flagKor,
   Japanese: flagJpn,
   Chinese: flagZho,
-  Portuguese: flagBra,
+  Portuguese: flagPrt,
+  "Portuguese (Brazil)": flagBra,
   German: flagDeu,
   French: flagFra,
   Turkish: flagTur,

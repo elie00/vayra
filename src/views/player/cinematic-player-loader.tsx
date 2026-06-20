@@ -7,7 +7,7 @@ import type { PlayerSrc } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { LoaderLogoOrText } from "./loader-logo-or-text";
 import { readinessScore, type EngineStats } from "@/lib/torrent/engine-stats";
-import { isBundledEngineUrl } from "@/lib/stremio-server";
+import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 
 export function CinematicPlayerLoader({
   src,
@@ -26,7 +26,8 @@ export function CinematicPlayerLoader({
 }) {
   const t = useT();
   const isLocal = isLocalUrl(src.url);
-  const isInfoHash = isBundledEngineUrl(src.url) && !src.url.includes("/hlsv2/");
+  const isInfoHash =
+    (isBundledEngineUrl(src.url) || isLocalEngineUrl(src.url)) && !src.url.includes("/hlsv2/");
   const pct = Math.round(readinessScore(engineStats ?? null, isInfoHash));
   const everPlayedRef = useRef(false);
   const hasProgress = usePlaybackFlag(() => getPlaybackPosition() > 0.3);

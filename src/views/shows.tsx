@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackToTop } from "@/components/back-to-top";
 import { ContinueCard } from "@/components/continue-card";
+import { dismissCw, isCwDismissed, useCwDismissVersion } from "@/lib/cw-dismiss";
 import { PeekHero } from "@/components/peek-hero";
 import { PickCard } from "@/components/pick-card";
 import { Row, ScrollRootContext } from "@/components/row";
@@ -40,6 +41,7 @@ type RowSpec = {
 export function Shows({ active = true }: { active?: boolean }) {
   const { settings } = useSettings();
   const { authKey } = useAuth();
+  const cwVersion = useCwDismissVersion();
   const { openGrid } = useView();
   const t = useT();
   const [hero, setHero] = useState<Meta[]>([]);
@@ -147,12 +149,12 @@ export function Shows({ active = true }: { active?: boolean }) {
   const continueWatching = useMemo(
     () =>
       items
-        .filter((i) => i.type === "series" && isCwMember(i))
+        .filter((i) => i.type === "series" && isCwMember(i) && !isCwDismissed(i))
         .map((i) => ({ i, k: cwSortKey(i) }))
         .sort((a, b) => b.k - a.k)
         .map((e) => e.i)
         .slice(0, 16),
-    [items],
+    [items, cwVersion],
   );
 
   useEffect(() => {
@@ -218,7 +220,7 @@ export function Shows({ active = true }: { active?: boolean }) {
           {continueWatching.length > 0 && (
             <Row title={t("Pick up where you left off")} min={260} shape="landscape" scrollKey="shows:cw">
               {continueWatching.map((it) => (
-                <ContinueCard key={it._id} item={it} />
+                <ContinueCard key={it._id} item={it} onDismiss={(item) => dismissCw(item, authKey)} />
               ))}
             </Row>
           )}

@@ -97,7 +97,9 @@ export function usePlayerMedia(params: {
   useTrickplay({ src, enabled: settings.seekPreviewEnabled });
   const subEmbed = engine === "mpv" && settings.playerMpvEmbed;
   const selectedSubTrack = snap.subtitleTracks.find((t) => t.selected) ?? null;
-  const subAssNative = subEmbed && isAssTrack(selectedSubTrack);
+  const subAssOverridden = settings.subAssOverride !== "no" && settings.subAssOverride !== "scale";
+  const subAssNative =
+    subEmbed && isAssTrack(selectedSubTrack) && (!subAssOverridden || !selectedSubTrack?.external);
   const subNativeRender = subAssNative || (subEmbed && isImageSubTrack(selectedSubTrack));
   useSubStyleApply({ engine, settings, subAssNative, bridgeReady, bridgeKey });
   useEffect(() => {

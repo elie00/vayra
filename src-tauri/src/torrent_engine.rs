@@ -90,15 +90,35 @@ async fn init(app: AppHandle) -> Result<(), String> {
         .join("engine");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     cache_sweep::run(&dir, cache_sweep::CAP_BYTES);
-    let opts = SessionOptions {
-        fastresume: true,
-        persistence: None,
-        disable_dht: false,
-        ..Default::default()
+    let session = match Session::new_with_opts(
+        dir.clone(),
+        SessionOptions {
+            fastresume: true,
+            persistence: None,
+            disable_dht: false,
+            listen_port_range: Some(6881..6891),
+            enable_upnp_port_forwarding: true,
+            ..Default::default()
+        },
+    )
+    .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("[torrent-engine] inbound listener unavailable ({e:#}); using outbound-only");
+            Session::new_with_opts(
+                dir,
+                SessionOptions {
+                    fastresume: true,
+                    persistence: None,
+                    disable_dht: false,
+                    ..Default::default()
+                },
+            )
+            .await
+            .map_err(|e| format!("{e:#}"))?
+        }
     };
-    let session = Session::new_with_opts(dir, opts)
-        .await
-        .map_err(|e| format!("{e:#}"))?;
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
         .await
         .map_err(|e| e.to_string())?;
@@ -198,18 +218,16 @@ pub async fn torrent_engine_add(
         trackers: Some(merge_trackers(trackers)),
         ..Default::default()
     };
-    let resp = session
-        .add_torrent(AddTorrent::from_url(magnet.as_str()), Some(opts))
-        .await
-        .map_err(|e| format!("{e:#}"))?;
-    let handle = resp
+    let added = timeout(
+        Duration::from_secs(45),
+        session.add_torrent(AddTorrent::from_url(magnet.as_str()), Some(opts)),
+    )
+    .await
+    .map_err(|_| "metadata timed out: no peers reached in 45s".to_string())?
+    .map_err(|e| format!("{e:#}"))?;
+    let handle = added
         .into_handle()
         .ok_or_else(|| "torrent added as list-only".to_string())?;
-    match timeout(Duration::from_secs(45), handle.wait_until_initialized()).await {
-        Ok(Ok(())) => {}
-        Ok(Err(e)) => return Err(format!("{e:#}")),
-        Err(_) => return Err("metadata timed out: no peers reached in 45s".to_string()),
-    }
     let info_hash = format!("{:?}", handle.info_hash());
     let files = handle
         .with_metadata(|m| {
@@ -228,8 +246,12 @@ pub async fn torrent_engine_add(
                 .collect::<Vec<_>>()
         })
         .map_err(|e| format!("{e:#}"))?;
-    if let Some(largest) = files.iter().max_by_key(|f| f.length).map(|f| f.idx) {
-        let only: HashSet<usize> = HashSet::from([largest]);
+    timeout(Duration::from_secs(45), handle.wait_until_initialized())
+        .await
+        .map_err(|_| "torrent init timed out".to_string())?
+        .map_err(|e| format!("{e:#}"))?;
+    if let Some(idx) = files.iter().max_by_key(|f| f.length).map(|f| f.idx) {
+        let only: HashSet<usize> = HashSet::from([idx]);
         if let Err(e) = session.update_only_files(&handle, &only).await {
             eprintln!("[torrent-engine] initial file narrowing failed: {e:#}");
         }

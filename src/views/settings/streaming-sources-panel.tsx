@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import allDebridLogo from "@/assets/addon-logos/alldebrid.webp";
 import debridLinkLogo from "@/assets/addon-logos/debridlink.png";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/streams/aiostatus";
 import { ExtLink, KeyField, Section } from "./shared";
 import { ManualAddonCard, ServiceCard } from "./streaming-panel";
+import { AioStatusModal } from "./aiostatus-modal";
 import { useT } from "@/lib/i18n";
 
 export type DebridKey = "rd" | "tb" | "ad" | "pm" | "dl";
@@ -423,32 +425,42 @@ function useAioStatusHealth(): AioStatusSnapshot | null {
 
 function AioStatusBanner({ snapshot }: { snapshot: AioStatusSnapshot }) {
   const t = useT();
-  const count = snapshot.health.size;
-  if (count === 0) return null;
-  const expiringSoon = Array.from(snapshot.health.values()).filter(
-    (h) => h.status === "expiring" || h.status === "expired",
+  const [open, setOpen] = useState(false);
+  const total = snapshot.services.length;
+  if (total === 0) return null;
+  const expiringSoon = snapshot.services.filter(
+    (s) => s.status === "expiring" || s.status === "expired",
   );
   const hasWarning = expiringSoon.length > 0;
   return (
-    <div
-      className={`mb-2 flex items-center gap-2.5 rounded-xl border px-3.5 py-2 text-[12px] ${
-        hasWarning
-          ? "border-amber-300/40 bg-amber-400/10 text-amber-100"
-          : "border-edge-soft bg-canvas/40 text-ink-muted"
-      }`}
-    >
-      <span className="font-semibold tracking-wide">{snapshot.addonName}</span>
-      <span className="text-ink-subtle">·</span>
-      <span>
-        {hasWarning
-          ? expiringSoon.length === 1
-            ? t("{n} service needs attention", { n: expiringSoon.length })
-            : t("{n} services need attention", { n: expiringSoon.length })
-          : count === 1
-            ? t("Health for {n} service below", { n: count })
-            : t("Health for {n} services below", { n: count })}
-      </span>
-    </div>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`mb-2 flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2 text-left text-[12px] transition-colors ${
+          hasWarning
+            ? "border-amber-300/40 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
+            : "border-edge-soft bg-canvas/40 text-ink-muted hover:bg-canvas/60"
+        }`}
+      >
+        <span className="shrink-0 font-semibold tracking-wide">{snapshot.addonName}</span>
+        <span className="text-ink-subtle">·</span>
+        <span className="min-w-0 flex-1 truncate">
+          {hasWarning
+            ? expiringSoon.length === 1
+              ? t("{n} service needs attention", { n: expiringSoon.length })
+              : t("{n} services need attention", { n: expiringSoon.length })
+            : total === 1
+              ? t("Health for {n} service", { n: total })
+              : t("Health for {n} services", { n: total })}
+        </span>
+        <span className="flex shrink-0 items-center gap-0.5 font-semibold text-ink-subtle">
+          {t("View all")}
+          <ChevronRight size={13} strokeWidth={2.4} />
+        </span>
+      </button>
+      {open && <AioStatusModal snapshot={snapshot} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 

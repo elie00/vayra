@@ -125,6 +125,19 @@ const rails: Record<string, string> = {
   "Awards Contenders": "المرشّحون للجوائز",
   "Cozy Autumn Nights": "ليالي الخريف الدافئة",
   "Spring Awakening": "صحوة الربيع",
+
+  "Featured film": "فيلم مميّز",
+  "More info": "مزيد من المعلومات",
+  "See details": "عرض التفاصيل",
+  "Play tonight": "شغّل الليلة",
+  Skip: "تخطّي",
+  "Not interested": "غير مهتم",
+
+  "Show me more like this": "أرني المزيد مثل هذا",
+  "Show me less like this": "أرني محتوى أقل مثل هذا",
+  "Tune your recommendations": "اضبط توصياتك",
+  "Thumbs down hides this title from Featured. Thumbs up helps surface similar picks.":
+    "الإعجاب السلبي يخفي هذا العنوان من المميّزة. الإعجاب الإيجابي يساعد في إظهار اختيارات مشابهة.",
 };
 
 export default rails;

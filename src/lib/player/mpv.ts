@@ -41,7 +41,14 @@ type MpvEvent =
   | { event: "file-loaded" }
   | { event: string; [k: string]: unknown };
 
-export type MpvRect = { screenX: number; screenY: number; w: number; h: number };
+export type MpvRect = {
+  cssLeft: number;
+  cssTop: number;
+  cssWidth: number;
+  cssHeight: number;
+  cssViewW: number;
+  cssViewH: number;
+};
 
 export type MpvOptions = {
   anime4k: boolean;
@@ -58,6 +65,19 @@ const AUDIO_PROFILE_AF: Record<string, string> = {
   "bass-reduce": "lavfi=[bass=g=-8:f=110:w=0.6]",
   night: "lavfi=[acompressor=ratio=3:threshold=-20dB:attack=20:release=300:makeup=4dB]",
 };
+
+const DEFAULT_UA = "VLC/3.0.20 LibVLC/3.0.20";
+
+async function applyHeaderProps(headers?: Record<string, string>): Promise<void> {
+  let ua = DEFAULT_UA;
+  const fields: string[] = [];
+  for (const [k, v] of Object.entries(headers ?? {})) {
+    if (k.toLowerCase() === "user-agent") ua = v;
+    else fields.push(`${k}: ${v}`);
+  }
+  await invoke("mpv_set_property", { name: "user-agent", value: ua }).catch(() => {});
+  await invoke("mpv_set_property", { name: "http-header-fields", value: fields.join(",") }).catch(() => {});
+}
 
 export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let host: HTMLElement | null = null;
@@ -158,6 +178,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "sub-start" && typeof data === "number") snap.subStartSec = data;
       if (name === "dwidth" && typeof data === "number") snap.videoWidth = data;
       if (name === "dheight" && typeof data === "number") snap.videoHeight = data;
+      if (name === "video-params/gamma") snap.hdrGamma = typeof data === "string" ? data : "";
       if (name === "af") {
         const repr = typeof data === "string" ? data : JSON.stringify(data ?? "");
         snap.audioNormalize = repr.includes("dynaudnorm");
@@ -231,6 +252,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       snap.positionSec = 0;
       snap.durationSec = 0;
       snap.bufferedSec = 0;
+      snap.hdrGamma = "";
       pendingTracks = {};
       urlByExternalFilename.clear();
       emit();
@@ -246,6 +268,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
           try {
             suppressEndFileUntil = Date.now() + 1500;
             await invoke("mpv_command", { cmd: ["stop"] });
+            await applyHeaderProps(src.headers);
             const cmd: Array<string | number> = ["loadfile", src.url];
             if (typeof src.startAtSec === "number" && src.startAtSec > 0) {
               cmd.push("replace", 0, `start=${src.startAtSec}`);
@@ -288,6 +311,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             embed: opts.embed === true,
             anime4kShaders: opts.anime4kShaders ?? [],
             d3d11Flip: opts.d3d11Flip === true,
+            isLive: src.isLive === true,
+            headers: src.headers ?? null,
           },
         });
         mpvStarted = true;
@@ -295,17 +320,19 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
           await invoke("mpv_set_property", { name: "sub-visibility", value: false }).catch(() => {});
         }
         if (opts.embed && opts.getEmbedRect && geomTimer == null) {
-          let lastRect: { screenX: number; screenY: number; w: number; h: number } | null = null;
+          let lastRect: MpvRect | null = null;
           const tick = async () => {
             try {
               const r = await opts.getEmbedRect!();
               if (!r) return;
               if (
                 lastRect &&
-                lastRect.screenX === r.screenX &&
-                lastRect.screenY === r.screenY &&
-                lastRect.w === r.w &&
-                lastRect.h === r.h
+                lastRect.cssLeft === r.cssLeft &&
+                lastRect.cssTop === r.cssTop &&
+                lastRect.cssWidth === r.cssWidth &&
+                lastRect.cssHeight === r.cssHeight &&
+                lastRect.cssViewW === r.cssViewW &&
+                lastRect.cssViewH === r.cssViewH
               ) {
                 return;
               }

@@ -52,7 +52,11 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
       </button>
 
       {menuOpen && (
-        <div className="absolute bottom-full start-2 end-2 mb-1.5 overflow-hidden rounded-xl border border-edge bg-elevated shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)] lg:start-4 lg:end-4">
+        <div
+          className={`absolute bottom-full mb-1.5 overflow-hidden rounded-xl border border-edge bg-elevated shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)] ${
+            collapsed ? "start-0 w-64" : "start-2 end-2 lg:start-4 lg:end-4"
+          }`}
+        >
           {otherProfiles.length > 0 && (
             <div className="flex flex-col gap-0.5 border-b border-edge-soft p-1.5">
               <span className="px-2.5 pb-1 pt-1 text-[10.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">

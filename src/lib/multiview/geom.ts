@@ -1,13 +1,21 @@
-export type ScreenRect = { x: number; y: number; w: number; h: number };
+export type ScreenRect = {
+  cssLeft: number;
+  cssTop: number;
+  cssWidth: number;
+  cssHeight: number;
+  cssViewW: number;
+  cssViewH: number;
+};
 
 export function screenRectForEl(el: HTMLElement): ScreenRect | null {
   const r = el.getBoundingClientRect();
   if (r.width < 2 || r.height < 2) return null;
-  const dpr = window.devicePixelRatio || 1;
   return {
-    x: Math.round(r.left * dpr),
-    y: Math.round(r.top * dpr),
-    w: Math.max(1, Math.round(r.width * dpr)),
-    h: Math.max(1, Math.round(r.height * dpr)),
+    cssLeft: r.left,
+    cssTop: r.top,
+    cssWidth: r.width,
+    cssHeight: r.height,
+    cssViewW: document.documentElement.clientWidth,
+    cssViewH: document.documentElement.clientHeight,
   };
 }

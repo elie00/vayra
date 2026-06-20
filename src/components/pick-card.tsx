@@ -13,7 +13,7 @@ import {
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
 import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
 import { mdblistCardPrefetch, useMdblistCardScores } from "@/lib/providers/mdblist-batch";
-import { rpdbPoster } from "@/lib/providers/rpdb";
+import { needsImdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
 import { tmdbImdbId, useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
@@ -54,11 +54,13 @@ export const PickCard = memo(function PickCard({
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
+  const posterId =
+    needsImdbForPoster(settings.rpdbKey, meta.id) && imdbId ? imdbId : meta.id;
   const posterCandidates = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
     for (const u of [
-      rpdbPoster(settings.rpdbKey, settings.posterBaseUrl, imdbId ?? meta.id, meta.poster),
+      rpdbPoster(settings.rpdbKey, posterId, meta.poster),
       meta.poster,
       hydratedPoster,
     ]) {
@@ -67,7 +69,7 @@ export const PickCard = memo(function PickCard({
       out.push(u);
     }
     return out;
-  }, [settings.rpdbKey, settings.posterBaseUrl, meta.id, imdbId, meta.poster, hydratedPoster]);
+  }, [settings.rpdbKey, posterId, meta.poster, hydratedPoster]);
   const posterSrc = posterCandidates[imgIdx];
 
   useEffect(() => {
@@ -103,7 +105,7 @@ export const PickCard = memo(function PickCard({
   }, [posterSrc, hydratedPoster, meta.type, meta.id]);
 
   useEffect(() => {
-    if (!settings.omdbKey && !settings.mdblistKey) return;
+    if (!settings.omdbKey && !settings.mdblistKey && !needsImdbForPoster(settings.rpdbKey, meta.id)) return;
     const el = ref.current;
     if (!el) return;
     let off: (() => void) | null = null;
@@ -119,7 +121,7 @@ export const PickCard = memo(function PickCard({
       }
     });
     return () => off?.();
-  }, [meta.id, meta.type, settings.tmdbKey, settings.omdbKey, settings.mdblistKey, settings.showRtBadge]);
+  }, [meta.id, meta.type, settings.tmdbKey, settings.omdbKey, settings.mdblistKey, settings.showRtBadge, settings.rpdbKey]);
 
   return (
     <button

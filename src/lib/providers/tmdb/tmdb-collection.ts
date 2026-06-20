@@ -71,7 +71,9 @@ export function collectionNameMatches(a: string, b: string): boolean {
   const na = normName(a);
   const nb = normName(b);
   if (!na || !nb) return false;
-  return na === nb || na.includes(nb) || nb.includes(na);
+  if (na === nb) return true;
+  const [short, long] = na.length <= nb.length ? [na, nb] : [nb, na];
+  return long.startsWith(`${short} `);
 }
 
 export function tmdbSearchCollectionId(key: string, query: string): Promise<number | null> {

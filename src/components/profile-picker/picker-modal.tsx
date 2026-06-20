@@ -1,13 +1,14 @@
 import { Plus, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useT } from "@/lib/i18n";
 import { useProfiles } from "@/lib/profiles";
 import { EditorView } from "./editor-view";
 import { PasswordPrompt } from "./password-prompt";
 import { ProfileTile } from "./profile-tile";
-import { useT } from "@/lib/i18n";
 
 export function ProfilePickerModal() {
   const { profiles, activeId, pickerOpen, pickerView, closePicker, setPickerView, selectProfile } = useProfiles();
+  const t = useT();
 
   if (!pickerOpen) return null;
 
@@ -22,7 +23,7 @@ export function ProfilePickerModal() {
           onClick={closePicker}
           style={{ position: "fixed", top: 24, right: 24, zIndex: 190 }}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white/85 ring-1 ring-white/15 transition-colors hover:bg-black/75 hover:text-white"
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <X size={18} />
         </button>
@@ -136,7 +137,7 @@ function NotFoundFallback({ onBack }: { onBack: () => void }) {
         onClick={onBack}
         className="h-10 rounded-xl bg-ink px-5 text-[13px] font-semibold text-canvas"
       >
-        {t("Back")}
+        {t("common.back")}
       </button>
     </div>
   );

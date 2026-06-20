@@ -8,6 +8,7 @@ import { useRankings, type KnownForEntry, type PersonEntry } from "@/lib/ranking
 import { useSettings } from "@/lib/settings";
 import { useTopRankModal, type TopRankDept } from "@/lib/top-rank-modal";
 import { useView } from "@/lib/view";
+import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 import type { Meta } from "@/lib/cinemeta";
@@ -24,6 +25,7 @@ export function TopRankModal() {
   const { topList } = useRankings();
   const { settings } = useSettings();
   const { openPerson, openMeta } = useView();
+  const t = useT();
   const [query, setQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showTop, setShowTop] = useState(false);
@@ -83,7 +85,7 @@ export function TopRankModal() {
       className="fixed inset-0 z-[130] flex items-stretch justify-center bg-canvas/85 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label={meta.title}
+      aria-label={t(meta.title)}
       onClick={close}
     >
       <div
@@ -93,10 +95,10 @@ export function TopRankModal() {
         <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-7 py-5">
           <div>
             <h2 className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
-              {meta.title}
+              {t(meta.title)}
             </h2>
             <p className="flex items-center gap-1.5 text-[12.5px] text-ink-muted">
-              {meta.subtitle} · ranked by current popularity
+              {t("{subtitle} · ranked by current popularity", { subtitle: t(meta.subtitle) })}
               <span className="ms-1 inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-canvas ring-1 ring-edge-soft">
                 <img src={tmdbLogo} alt="" className="h-3.5 w-3.5 object-contain" />
               </span>
@@ -109,14 +111,14 @@ export function TopRankModal() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Filter by name or title"
+                placeholder={t("Filter by name or title")}
                 spellCheck={false}
                 className="h-full w-56 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-subtle/60"
               />
             </div>
             <button
               onClick={close}
-              aria-label="Close"
+              aria-label={t("Close")}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-edge text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
             >
               <X size={16} strokeWidth={2} />
@@ -127,7 +129,7 @@ export function TopRankModal() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-7 py-6">
           {filtered.length === 0 ? (
             <div className="flex h-40 items-center justify-center text-[13.5px] text-ink-muted">
-              {list.length === 0 ? "Loading…" : "No matches."}
+              {list.length === 0 ? t("Loading…") : t("No matches.")}
             </div>
           ) : (
             <ul className="grid auto-rows-[200px] grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -153,7 +155,7 @@ export function TopRankModal() {
 
         <button
           onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
-          aria-label="Back to top"
+          aria-label={t("Back to top")}
           className={`absolute bottom-5 end-5 z-10 flex h-8 w-8 items-center justify-center rounded-md border border-edge-soft/40 bg-canvas/90 text-ink-muted transition-[transform,opacity,background-color,color] duration-300 hover:bg-canvas hover:text-ink ${
             showTop ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
           }`}
@@ -177,6 +179,7 @@ function PersonRow({
   onOpenPerson: (id: number) => void;
   onOpenMedia: (m: Meta) => void;
 }) {
+  const t = useT();
   const photo = person.profilePath ? `https://image.tmdb.org/t/p/w185${person.profilePath}` : undefined;
   const bestKnown = person.knownFor.slice(0, 3);
   const handleImdb = useImdbOpener(person.id, tmdbKey);
@@ -186,7 +189,7 @@ function PersonRow({
       <button
         onClick={() => onOpenPerson(person.id)}
         className="relative h-full w-[120px] shrink-0 overflow-hidden rounded-xl bg-elevated/60 ring-1 ring-edge-soft/60"
-        aria-label={`Open ${person.name}`}
+        aria-label={t("Open {name}", { name: person.name })}
       >
         {photo ? (
           <img src={photo} alt={person.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
@@ -206,26 +209,26 @@ function PersonRow({
         >
           {person.name}
         </button>
-        <p className="text-[10.5px] uppercase tracking-[0.18em] text-ink-subtle">Best known for</p>
+        <p className="text-[10.5px] uppercase tracking-[0.18em] text-ink-subtle">{t("Best known for")}</p>
         <div className="flex max-h-[68px] flex-wrap gap-1.5 overflow-hidden">
           {bestKnown.map((k) => (
             <KnownChip key={`${k.mediaType}:${k.id}`} entry={k} onClick={() => onOpenMedia(toMeta(k))} />
           ))}
-          {bestKnown.length === 0 && <span className="text-[12px] text-ink-subtle">No credits available</span>}
+          {bestKnown.length === 0 && <span className="text-[12px] text-ink-subtle">{t("No credits available")}</span>}
         </div>
         <div className="mt-auto flex items-center gap-2 pt-1">
           <button
             onClick={() => onOpenPerson(person.id)}
             className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink px-3 text-[12px] font-semibold text-canvas transition-transform hover:scale-[1.04]"
           >
-            View profile
+            {t("View profile")}
             <ExternalLink size={11} strokeWidth={2.4} />
           </button>
           <button
             onClick={handleImdb.open}
             disabled={handleImdb.loading}
             className="inline-flex h-8 items-center gap-1.5 rounded-full border border-edge px-3 text-[12px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:opacity-60"
-            aria-label="Open on IMDb"
+            aria-label={t("Open on IMDb")}
           >
             <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
             IMDb

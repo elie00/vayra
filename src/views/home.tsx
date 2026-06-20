@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { BackToTop } from "@/components/back-to-top";
 import { HeroCarousel, type Slide } from "@/components/hero-carousel";
 import { CollectionsRow } from "@/components/collections-row";
 import { TmdbNudge } from "@/components/nudge";
 import { Row, ScrollRootContext } from "@/components/row";
+import { isMacDesktop } from "@/lib/platform";
 import {
   applyHomeRowCustomization,
   effectiveOrder,
@@ -26,7 +27,9 @@ import { t, useT, useUiLanguage } from "@/lib/i18n";
 import { useSettings, type StreamingService } from "@/lib/settings";
 import { trackEvent } from "@/lib/discover";
 import { publishResumeStates } from "@/lib/hover-preview/store";
-import { clearResume, readResumeEntry, saveResumeBatch } from "@/lib/resume";
+import { readResumeEntry, saveResumeBatch } from "@/lib/resume";
+import { dismissCw, isCwDismissed, useCwDismissVersion } from "@/lib/cw-dismiss";
+import { clearLocalCw, listLocalCw, localCwVersion, subscribeLocalCw } from "@/lib/local-cw";
 import { repairLibraryNames } from "@/lib/stremio-repair";
 import {
   cwSortKey,
@@ -34,7 +37,6 @@ import {
   isAnimeCwItem,
   isCwMember,
   library,
-  libraryPut,
   type LibraryItem,
 } from "@/lib/stremio";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -76,19 +78,7 @@ export function Home({ active = true }: { active?: boolean }) {
   const [traktWatched, setTraktWatched] = useState<Set<string>>(() => new Set());
   const [heroPool, setHeroPool] = useState<Meta[]>([]);
   const [items, setItems] = useState<LibraryItem[]>([]);
-  const [dismissed, setDismissed] = useState<Set<string>>(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem("harbor.cw.dismissed.simkl") ?? "[]");
-      const arr = Array.isArray(raw) ? (raw as string[]) : [];
-      const migrated = arr.map((v) => (v.startsWith("simkl|") ? v : `simkl|${v}`));
-      if (migrated.some((v, i) => v !== arr[i])) {
-        localStorage.setItem("harbor.cw.dismissed.simkl", JSON.stringify(migrated));
-      }
-      return new Set(migrated);
-    } catch {
-      return new Set();
-    }
-  });
+  const cwVersion = useCwDismissVersion();
   const [tmdbProvidedByAddon, setTmdbProvidedByAddon] = useState(false);
   const [addonsTick, setAddonsTick] = useState(0);
   const { isConnected: traktConnected } = useTrakt();
@@ -120,7 +110,7 @@ export function Home({ active = true }: { active?: boolean }) {
               ...r,
               metas: reachedCap ? combined.slice(0, MAX_PER_ROW) : combined,
               page: next,
-              hasMore: !reachedCap && more.length > 0,
+              hasMore: !reachedCap && fresh.length > 0,
             };
           }),
         );
@@ -283,9 +273,12 @@ export function Home({ active = true }: { active?: boolean }) {
           for (const i of libItems) {
             const mt = Date.parse(i._mtime ?? "");
             if (i.state?.timeOffset && i.state.timeOffset > 0) {
-              const se = episodeFromVideoId(i.state.video_id);
-              const s = i.state.season ?? se?.season;
-              const e = i.state.episode ?? se?.episode;
+              const vid = i.state.video_id ?? "";
+              const kitsuThreeSeg =
+                /^(kitsu|mal|anilist|anidb):/.test(i._id) && vid.split(":").length === 3;
+              const se = kitsuThreeSeg ? null : episodeFromVideoId(i.state.video_id);
+              const s = i.state.season ?? (kitsuThreeSeg ? 1 : se?.season);
+              const e = i.state.episode ?? (kitsuThreeSeg ? Number(vid.split(":")[2]) : se?.episode);
               const local = readResumeEntry(i._id, s, e);
               if (!local || (Number.isFinite(mt) && mt > local.t)) {
                 resumeEntries.push({
@@ -339,14 +332,37 @@ export function Home({ active = true }: { active?: boolean }) {
     };
   }, [authKey, active]);
 
+  const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
   const continueWatching = useMemo(() => {
-    const eligible = [...items, ...simklCw]
+    const localCwItems: LibraryItem[] = listLocalCw().map((e) => ({
+      _id: e.id,
+      type: e.type,
+      name: e.name,
+      poster: e.poster,
+      background: e.background,
+      state: {
+        timeOffset: e.positionMs,
+        duration: e.durationMs,
+        season: e.season,
+        episode: e.episode,
+        video_id:
+          e.videoId ??
+          (e.season != null && e.episode != null ? `${e.id}:${e.season}:${e.episode}` : undefined),
+        flaggedWatched: e.durationMs > 0 && e.positionMs / e.durationMs >= 0.9 ? 1 : 0,
+        lastWatched: new Date(e.t).toISOString(),
+      },
+      removed: false,
+      temp: false,
+      _ctime: new Date(e.t).toISOString(),
+      _mtime: new Date(e.t).toISOString(),
+      local: true,
+    }));
+    const eligible = [...items, ...simklCw, ...localCwItems]
       .filter(
         (i) =>
           (i.type as string) !== "other" &&
           !i._id.startsWith("iptv:") &&
-          !dismissed.has(i._id) &&
-          !(i.external === "simkl" && dismissed.has(`simkl|${i._id}`)) &&
+          !isCwDismissed(i) &&
           isCwMember(i) &&
           !(settings.animeOnlyInAnimeRoom && isAnimeCwItem(i)),
       )
@@ -370,7 +386,7 @@ export function Home({ active = true }: { active?: boolean }) {
       if (out.length >= 100) break;
     }
     return out;
-  }, [items, simklCw, dismissed, settings.animeOnlyInAnimeRoom]);
+  }, [items, simklCw, localCwVer, cwVersion, settings.animeOnlyInAnimeRoom]);
   const cwItems = useCwAdvance(continueWatching, settings.tmdbKey, settings.cwAdvanceNext);
 
   useEffect(() => {
@@ -378,37 +394,11 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [cwItems]);
 
   const onDismissCw = useCallback(
-    (id: string) => {
-      setDismissed((prev) => new Set(prev).add(id));
-      const target = [...items, ...simklCw].find((i) => i._id === id);
-      if (!target) return;
-      if ((target as { external?: string }).external === "simkl") {
-        setDismissed((prev) => new Set(prev).add(`simkl|${id}`));
-        try {
-          const raw = JSON.parse(localStorage.getItem("harbor.cw.dismissed.simkl") ?? "[]");
-          const set = new Set(Array.isArray(raw) ? (raw as string[]) : []);
-          set.add(`simkl|${id}`);
-          localStorage.setItem("harbor.cw.dismissed.simkl", JSON.stringify([...set]));
-        } catch {}
-        return;
-      }
-      if (!authKey || !target.state) return;
-      const vid = target.state.video_id ?? "";
-      const kitsuThreeSeg =
-        /^(kitsu|mal|anilist|anidb):/.test(target._id) && vid.split(":").length === 3;
-      const se = kitsuThreeSeg ? null : episodeFromVideoId(target.state.video_id);
-      clearResume(
-        target._id,
-        target.state.season ?? (kitsuThreeSeg ? 1 : se?.season),
-        target.state.episode ?? (kitsuThreeSeg ? Number(vid.split(":")[2]) : se?.episode),
-      );
-      void libraryPut(authKey, {
-        ...target,
-        state: { ...target.state, timeOffset: 0 },
-        _mtime: new Date().toISOString(),
-      }).catch(() => {});
+    (item: LibraryItem) => {
+      if (item.local) clearLocalCw(item._id);
+      else dismissCw(item, authKey);
     },
-    [authKey, items, simklCw],
+    [authKey],
   );
 
   const { items: favItems } = useMediaFavorites();
@@ -599,7 +589,7 @@ export function Home({ active = true }: { active?: boolean }) {
               />
             </div>
           )}
-          <div data-scroll-anchor="cw" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 300px" }}>
+          <div data-scroll-anchor="cw" style={{ contentVisibility: isMacDesktop() ? undefined : "auto", containIntrinsicSize: "auto 300px" }}>
             <CWSection
               signedIn={!!authKey}
               items={cwItems}
@@ -608,12 +598,12 @@ export function Home({ active = true }: { active?: boolean }) {
             />
           </div>
           {settings.homeMode !== "classic" && (
-            <div data-scroll-anchor="streaming" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 340px" }}>
+            <div data-scroll-anchor="streaming" style={{ contentVisibility: isMacDesktop() ? undefined : "auto", containIntrinsicSize: "auto 340px" }}>
               <StreamingRail services={enabledServices} />
             </div>
           )}
           {settings.homeMode !== "classic" && top10.length >= 10 && !homeRowsCustom.hidden.includes("top10") && (
-            <div data-scroll-anchor="top10" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 380px" }}>
+            <div data-scroll-anchor="top10" style={{ contentVisibility: isMacDesktop() ? undefined : "auto", containIntrinsicSize: "auto 380px" }}>
               {editMode && (
                 <PinnedRowControls
                   label={t("Top 10 Trending This Week")}
@@ -640,7 +630,7 @@ export function Home({ active = true }: { active?: boolean }) {
             />
           )}
           {settings.homeMode !== "classic" && settings.tmdbKey && !homeRowsCustom.hidden.includes("collections") && (
-            <div data-scroll-anchor="collections" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 260px" }}>
+            <div data-scroll-anchor="collections" style={{ contentVisibility: isMacDesktop() ? undefined : "auto", containIntrinsicSize: "auto 260px" }}>
               {editMode && (
                 <PinnedRowControls
                   label={t("Collections")}

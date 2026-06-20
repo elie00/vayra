@@ -1,14 +1,19 @@
-import { Check, ChevronDown, Play } from "lucide-react";
+import { Check, ChevronDown, Play, RotateCcw, Star } from "lucide-react";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+
+function formatAirDate(d: string): string {
+  const date = new Date(`${d}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return d;
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
 
 export function EpisodeRow({
   episode,
   expanded,
   onToggle,
   onPlay,
-  manualMode,
   isCurrent = false,
   watched = false,
   spoiler,
@@ -17,12 +22,12 @@ export function EpisodeRow({
   expanded: boolean;
   onToggle: () => void;
   onPlay: () => void;
-  manualMode: boolean;
   isCurrent?: boolean;
   watched?: boolean;
   spoiler?: SpoilerMask;
 }) {
   const t = useT();
+  const hasMeta = episode.rating != null || !!episode.airDate || episode.runtime != null;
   const epLabel = `S${episode.imdbSeason ?? episode.season} · E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`;
   const hasStill = !!episode.still;
   return (
@@ -71,31 +76,47 @@ export function EpisodeRow({
           <div className="flex items-center gap-2">
             <button
               onClick={onPlay}
-              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-4 text-[14px] font-semibold text-canvas shadow-[0_6px_18px_-8px_var(--color-accent)] transition-opacity hover:opacity-90"
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-4 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90"
             >
-              <Play size={16} fill="currentColor" />
-              {t("Play")}
+              {isCurrent ? <RotateCcw size={15} strokeWidth={2.6} /> : <Play size={16} fill="currentColor" />}
+              {isCurrent ? t("Restart") : t("Play")}
             </button>
-            {manualMode && (
-              <button
-                onClick={onToggle}
-                aria-label={expanded ? t("Hide streams") : t("Show streams")}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated text-ink-muted ring-1 ring-edge-soft transition-colors hover:bg-raised hover:text-ink"
-              >
-                <ChevronDown
-                  size={18}
-                  strokeWidth={2.4}
-                  className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-                />
-              </button>
-            )}
+            <button
+              onClick={onToggle}
+              aria-label={expanded ? t("Hide details") : t("Show details")}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated text-ink-muted ring-1 ring-edge-soft transition-colors hover:bg-raised hover:text-ink"
+            >
+              <ChevronDown
+                size={18}
+                strokeWidth={2.4}
+                className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+              />
+            </button>
           </div>
         </div>
       </div>
-      {expanded && episode.overview && (
-        <p className={`mx-3 mb-3 rounded-xl bg-canvas/40 p-3 text-[13px] leading-relaxed text-ink-muted ${spoiler?.desc ? SPOILER_TEXT_CLASS : ""}`}>
-          {episode.overview}
-        </p>
+      {expanded && (
+        <div className="mx-3 mb-3 flex flex-col gap-2 rounded-xl bg-canvas/40 p-3">
+          {hasMeta && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-ink-subtle">
+              {episode.rating != null && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-accent/15 px-1.5 py-0.5 text-[11.5px] font-bold text-accent ring-1 ring-accent/25">
+                  <Star size={11} fill="currentColor" strokeWidth={0} />
+                  {episode.rating.toFixed(1)}
+                </span>
+              )}
+              {episode.airDate && <span>{formatAirDate(episode.airDate)}</span>}
+              {episode.runtime != null && <span>{t("{n} min", { n: episode.runtime })}</span>}
+            </div>
+          )}
+          {episode.overview ? (
+            <p className={`text-[13px] leading-relaxed text-ink-muted ${spoiler?.desc ? SPOILER_TEXT_CLASS : ""}`}>
+              {episode.overview}
+            </p>
+          ) : (
+            <p className="text-[12.5px] text-ink-subtle">{t("No description available.")}</p>
+          )}
+        </div>
       )}
     </div>
   );

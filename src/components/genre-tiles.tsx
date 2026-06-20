@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { fetchGenreSample } from "@/lib/feed";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
+import { useT } from "@/lib/i18n";
 import { rpdbPoster } from "@/lib/providers/rpdb";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
@@ -51,8 +52,9 @@ const TILES: string[] = [
 ];
 
 export function GenreTiles() {
+  const t = useT();
   return (
-    <Row title="Browse by Genre" min={210} shape="tile" alwaysActive>
+    <Row title={t("Browse by Genre")} min={210} shape="tile" alwaysActive>
       {TILES.map((g) => (
         <GenreTile key={g} genre={g} />
       ))}
@@ -94,7 +96,7 @@ function GenreTile({ genre }: { genre: string }) {
         background: `linear-gradient(150deg, ${palette.from}, ${palette.to})`,
       }}
     >
-      <CollageBackdrop backdrops={backdrops} rpdbKey={settings.rpdbKey} posterBaseUrl={settings.posterBaseUrl} />
+      <CollageBackdrop backdrops={backdrops} rpdbKey={settings.rpdbKey} />
       <div
         aria-hidden
         className="absolute inset-0"
@@ -129,7 +131,7 @@ function GenreTile({ genre }: { genre: string }) {
   );
 }
 
-function CollageBackdrop({ backdrops, rpdbKey, posterBaseUrl }: { backdrops: Meta[]; rpdbKey: string; posterBaseUrl: string }) {
+function CollageBackdrop({ backdrops, rpdbKey }: { backdrops: Meta[]; rpdbKey: string }) {
   if (backdrops.length === 0) return null;
   return (
     <div className="absolute inset-0 grid grid-cols-3">
@@ -140,7 +142,7 @@ function CollageBackdrop({ backdrops, rpdbKey, posterBaseUrl }: { backdrops: Met
           style={{ transform: `skewX(-8deg) translateX(${(i - 1) * 6}px)` }}
         >
           <Poster
-            src={rpdbPoster(rpdbKey, posterBaseUrl, m.id, m.background ?? m.poster)}
+            src={rpdbPoster(rpdbKey, m.id, m.background ?? m.poster)}
             seed={m.id}
             ratio="landscape"
             className="absolute inset-0 rounded-none [transform:skewX(8deg)_scale(1.4)]"

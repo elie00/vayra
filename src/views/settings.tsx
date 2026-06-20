@@ -126,11 +126,16 @@ export function Settings() {
     if (active !== "relay") setRelayMode("panel");
   }, [active]);
 
+  const pendingAnchorRef = useRef<string | null>(null);
+  pendingAnchorRef.current = pendingAnchor;
+
   useEffect(() => {
-    if (!pendingAnchor) {
-      scrollRef.current?.scrollTo({ top: 0 });
-      return;
-    }
+    if (pendingAnchorRef.current) return;
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [active]);
+
+  useEffect(() => {
+    if (!pendingAnchor) return;
     const target = pendingAnchor;
     let tries = 0;
     let timer = 0;
@@ -138,6 +143,16 @@ export function Settings() {
       const el = document.getElementById(target);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const sec = el as HTMLElement;
+        sec.style.transition = "box-shadow 0.5s ease";
+        sec.style.boxShadow = "0 0 0 2px var(--color-accent)";
+        window.setTimeout(() => {
+          sec.style.boxShadow = "0 0 0 0 transparent";
+        }, 1300);
+        window.setTimeout(() => {
+          sec.style.transition = "";
+          sec.style.boxShadow = "";
+        }, 1900);
         setPendingAnchor(null);
         return;
       }

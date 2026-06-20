@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { confirmDialog } from "@/lib/dialog";
 import { sourceLabel, type CustomList } from "@/lib/lists/types";
 import { useT } from "@/lib/i18n";
 import { AddListForm } from "./add-list-form";
@@ -131,8 +132,8 @@ export function ListPicker({
                         setActions(null);
                       }}
                       onCopy={() => void copyRef(l.ref, l.id)}
-                      onDelete={() => {
-                        if (confirm(t('Remove list "{name}"?', { name: l.name }))) {
+                      onDelete={async () => {
+                        if (await confirmDialog(t('Remove list "{name}"?', { name: l.name }))) {
                           onRemove(l.id);
                           setActions(null);
                         }

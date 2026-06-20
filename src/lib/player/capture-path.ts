@@ -13,7 +13,9 @@ export function formatStamp(d: Date): string {
     "_" +
     pad(d.getHours()) +
     pad(d.getMinutes()) +
-    pad(d.getSeconds())
+    pad(d.getSeconds()) +
+    "_" +
+    String(d.getMilliseconds()).padStart(3, "0")
   );
 }
 

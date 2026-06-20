@@ -1,5 +1,6 @@
 import { getEpgOverride } from "./epg-map";
 import { hasArabic, normalizeArabic } from "./rtl";
+import { epgOffsetHoursPref } from "./settings-bridge";
 import type { EpgIndex, EpgProgram, IptvChannel } from "./types";
 
 const NOISE_WORDS = new Set([
@@ -56,10 +57,11 @@ function nameKey(s: string): string {
 }
 
 function shiftHours(channel: IptvChannel): number {
+  const global = epgOffsetHoursPref();
   const raw = channel.attrs["tvg-shift"];
-  if (!raw) return 0;
+  if (!raw) return global;
   const n = Number.parseFloat(raw);
-  return Number.isFinite(n) ? n : 0;
+  return (Number.isFinite(n) ? n : 0) + global;
 }
 
 function applyShift(programs: EpgProgram[], hours: number): EpgProgram[] {

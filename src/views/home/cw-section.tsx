@@ -12,7 +12,7 @@ type Props = {
   signedIn: boolean;
   items: LibraryItem[];
   watchedSet?: Set<string>;
-  onDismiss: (id: string) => void;
+  onDismiss: (item: LibraryItem) => void;
 };
 
 export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {

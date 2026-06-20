@@ -1,396 +1,213 @@
-import { ArrowUpRight, Search, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { LayoutGrid, List } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BackToTop } from "@/components/back-to-top";
-import { AwardLogo, laurelColorFor } from "@/components/icons/award-logo";
-import { Laurel } from "@/components/icons/laurel";
+import { laurelColorFor } from "@/components/icons/award-logo";
 import { AWARD_CATALOG } from "@/lib/awards-catalog";
-import { readAwardHistory, type CategoryHistory } from "@/lib/awards-history";
-import { tmdbPersonIdByName } from "@/lib/providers/tmdb";
-import { useSettings } from "@/lib/settings";
+import {
+  awardFilmTotal,
+  EMPTY_PEOPLE,
+  loadAwardFilms,
+  loadAwardPeople,
+  type AwardPeople,
+} from "@/lib/awards/award-page";
+import type { Meta } from "@/lib/cinemeta";
 import type { AwardType } from "@/lib/providers/wikidata";
-import { useView } from "@/lib/view";
+import { useSettings } from "@/lib/settings";
+import { useScrollMemory } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { AwardHero } from "./award/award-hero";
+import { AwardList } from "./award/award-list";
+import { FilmGrid } from "./award/film-grid";
+import { PeopleRail } from "./award/people-rail";
+
+const PREVIEW = 18;
+const PAGE = 24;
+const MODE_KEY = "harbor.award.viewmode";
+type AwardMode = "gallery" | "list";
+
+function readMode(): AwardMode {
+  try {
+    return localStorage.getItem(MODE_KEY) === "list" ? "list" : "gallery";
+  } catch {
+    return "gallery";
+  }
+}
 
 export function AwardView({ awardType }: { awardType: AwardType }) {
   const t = useT();
   const meta = AWARD_CATALOG[awardType];
-  const history = useMemo(
-    () => readAwardHistory(awardType, meta.categories),
-    [awardType, meta.categories],
-  );
+  const { settings } = useSettings();
   const scrollRef = useRef<HTMLElement>(null);
-  const [decade, setDecade] = useState<number | null>(null);
-  const [query, setQuery] = useState("");
+
+  const [mode, setMode] = useState<AwardMode>(readMode);
+  const [films, setFilms] = useState<Meta[]>([]);
+  const [filmsDone, setFilmsDone] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [loadingFilms, setLoadingFilms] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [people, setPeople] = useState<AwardPeople>(EMPTY_PEOPLE);
+  const [loadingPeople, setLoadingPeople] = useState(true);
+  const targetRef = useRef(PREVIEW);
+
+  useScrollMemory(`award:${awardType}`, scrollRef);
+
+  const selectMode = useCallback((m: AwardMode) => {
+    setMode(m);
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
-    setDecade(null);
-    setQuery("");
-  }, [awardType]);
+    let cancelled = false;
+    setFilms([]);
+    setFilmsDone(false);
+    setExpanded(false);
+    setLoadingFilms(true);
+    setLoadingMore(false);
+    setPeople(EMPTY_PEOPLE);
+    setLoadingPeople(true);
+    targetRef.current = PREVIEW;
+    loadAwardFilms(settings.tmdbKey, awardType, PREVIEW)
+      .then(({ films, done }) => {
+        if (cancelled) return;
+        setFilms(films);
+        setFilmsDone(done);
+        setLoadingFilms(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadingFilms(false);
+      });
+    loadAwardPeople(settings.tmdbKey, awardType)
+      .then((p) => {
+        if (cancelled) return;
+        setPeople(p);
+        setLoadingPeople(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadingPeople(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [awardType, settings.tmdbKey]);
 
-  const decades = useMemo(() => {
-    const set = new Set<number>();
-    for (const g of history) for (const e of g.entries) set.add(Math.floor(e.year / 10) * 10);
-    return [...set].sort((a, b) => b - a);
-  }, [history]);
+  const loadMore = useCallback(() => {
+    if (loadingMore || loadingFilms || filmsDone || !settings.tmdbKey) return;
+    setLoadingMore(true);
+    targetRef.current += PAGE;
+    loadAwardFilms(settings.tmdbKey, awardType, targetRef.current)
+      .then(({ films, done }) => {
+        setFilms(films);
+        setFilmsDone(done);
+        setLoadingMore(false);
+      })
+      .catch(() => setLoadingMore(false));
+  }, [awardType, settings.tmdbKey, loadingMore, loadingFilms, filmsDone]);
 
-  const filteredHistory = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return history
-      .map((group) => ({
-        ...group,
-        entries: group.entries.filter((e) => {
-          if (decade !== null && (e.year < decade || e.year >= decade + 10)) return false;
-          if (q) {
-            const matches =
-              e.workTitle.toLowerCase().includes(q) ||
-              e.recipients.some((r) => r.toLowerCase().includes(q));
-            if (!matches) return false;
-          }
-          return true;
-        }),
-      }))
-      .filter((g) => g.entries.length > 0);
-  }, [history, decade, query]);
+  const onViewAll = useCallback(() => {
+    setExpanded(true);
+    loadMore();
+  }, [loadMore]);
 
   const tint = laurelColorFor(awardType) ?? "#E8AA6C";
-  const filtered = decade !== null || query.trim().length > 0;
-  const noResults = filtered && filteredHistory.every((g) => g.entries.length === 0);
+  const hasKey = !!settings.tmdbKey;
+  const isEmpty =
+    !loadingFilms &&
+    !loadingPeople &&
+    films.length === 0 &&
+    people.actors.length === 0 &&
+    people.directors.length === 0 &&
+    people.writers.length === 0;
 
   return (
     <main ref={scrollRef} className="relative h-full overflow-y-auto bg-canvas">
-      <Banner type={awardType} tint={tint} />
+      <AwardHero type={awardType} tint={tint} films={films} />
 
-      <div className="relative mx-auto flex max-w-[1100px] flex-col gap-14 px-12 pb-32 pt-14">
-        <section className="flex flex-col gap-3">
-          <p className="max-w-3xl text-[16.5px] leading-[1.65] text-ink-muted">
-            {meta.description}
-          </p>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
-            {meta.tagline}
-          </p>
+      <div className="relative mx-auto flex max-w-[1180px] flex-col gap-12 px-12 pb-32 pt-14">
+        <section className="flex max-w-3xl flex-col gap-3">
+          <p className="text-[16.5px] leading-[1.65] text-ink-muted">{meta.description}</p>
+          {meta.tagline && (
+            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+              {meta.tagline}
+            </p>
+          )}
         </section>
 
-        {history.length === 0 && (
+        <ModeToggle mode={mode} onSelect={selectMode} tint={tint} />
+
+        {mode === "list" ? (
+          <AwardList awardType={awardType} tint={tint} />
+        ) : !hasKey ? (
           <p className="rounded-2xl border border-edge-soft bg-elevated/30 p-6 text-[14px] leading-relaxed text-ink-muted">
-            {t("No data shipped for this award yet. Re-run")} <code>node scripts/scrape-awards.mjs</code> {t("to refresh the bundled dataset.")}
+            {t("Add a TMDB key in Settings to unlock posters and the artists behind this award.")}
           </p>
+        ) : (
+          <div className="flex flex-col gap-16">
+            <FilmGrid
+              films={films}
+              total={awardFilmTotal(awardType)}
+              loading={loadingFilms}
+              loadingMore={loadingMore}
+              expanded={expanded}
+              done={filmsDone}
+              onViewAll={onViewAll}
+              onLoadMore={loadMore}
+              scrollRoot={scrollRef}
+              tint={tint}
+            />
+            <PeopleRail title={t("Celebrated actors")} people={people.actors} loading={loadingPeople} tint={tint} />
+            <PeopleRail title={t("Acclaimed directors")} people={people.directors} loading={loadingPeople} tint={tint} />
+            <PeopleRail title={t("Honored writers")} people={people.writers} loading={loadingPeople} tint={tint} />
+            {isEmpty && (
+              <p className="rounded-2xl border border-edge-soft bg-elevated/30 p-6 text-[14px] leading-relaxed text-ink-muted">
+                {t("No winners are catalogued for this award yet.")}
+              </p>
+            )}
+          </div>
         )}
-
-        {history.length > 0 && (
-          <FilterBar
-            decade={decade}
-            decades={decades}
-            onDecade={setDecade}
-            query={query}
-            onQuery={setQuery}
-            tint={tint}
-          />
-        )}
-
-        {noResults && (
-          <p className="rounded-2xl border border-edge-soft bg-elevated/30 p-5 text-[13.5px] text-ink-muted">
-            {t("No winners match these filters.")}{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setDecade(null);
-                setQuery("");
-              }}
-              className="text-ink underline-offset-4 hover:underline"
-            >
-              {t("Clear filters")}
-            </button>
-            .
-          </p>
-        )}
-
-        {filteredHistory.map((group) => (
-          <CategorySection key={group.category.key} group={group} tint={tint} />
-        ))}
       </div>
       <BackToTop scrollRef={scrollRef} />
     </main>
   );
 }
 
-function FilterBar({
-  decade,
-  decades,
-  onDecade,
-  query,
-  onQuery,
+function ModeToggle({
+  mode,
+  onSelect,
   tint,
 }: {
-  decade: number | null;
-  decades: number[];
-  onDecade: (d: number | null) => void;
-  query: string;
-  onQuery: (q: string) => void;
+  mode: AwardMode;
+  onSelect: (m: AwardMode) => void;
   tint: string;
 }) {
   const t = useT();
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-5">
-      <div className="flex items-center gap-3">
-        <Search size={15} strokeWidth={2} className="shrink-0 text-ink-subtle" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
-          placeholder={t("Search by recipient or title…")}
-          className="flex-1 bg-transparent text-[14.5px] text-ink placeholder:text-ink-subtle/65 outline-none"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => onQuery("")}
-            aria-label={t("Clear search")}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
-          >
-            <X size={13} strokeWidth={2.4} />
-          </button>
-        )}
-      </div>
-      <div className="flex gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <DecadePill active={decade === null} label={t("All years")} onClick={() => onDecade(null)} tint={tint} />
-        {decades.map((d) => (
-          <DecadePill
-            key={d}
-            active={decade === d}
-            label={`${d}s`}
-            onClick={() => onDecade(d)}
-            tint={tint}
-          />
-        ))}
-      </div>
-    </section>
+    <div className="flex w-fit items-center gap-1 self-start rounded-full border border-edge-soft bg-elevated/40 p-1">
+      <button
+        type="button"
+        onClick={() => onSelect("gallery")}
+        className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
+          mode === "gallery" ? "text-canvas" : "text-ink-muted hover:text-ink"
+        }`}
+        style={mode === "gallery" ? { backgroundColor: tint } : undefined}
+      >
+        <LayoutGrid size={15} strokeWidth={2.2} />
+        {t("Gallery")}
+      </button>
+      <button
+        type="button"
+        onClick={() => onSelect("list")}
+        className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
+          mode === "list" ? "text-canvas" : "text-ink-muted hover:text-ink"
+        }`}
+        style={mode === "list" ? { backgroundColor: tint } : undefined}
+      >
+        <List size={15} strokeWidth={2.2} />
+        {t("Full list")}
+      </button>
+    </div>
   );
-}
-
-function DecadePill({
-  active,
-  label,
-  onClick,
-  tint,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-  tint: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold tabular-nums transition-colors ${
-        active ? "text-canvas" : "text-ink-muted hover:bg-canvas/60 hover:text-ink"
-      }`}
-      style={active ? { backgroundColor: tint } : undefined}
-    >
-      {label}
-    </button>
-  );
-}
-
-function Banner({ type, tint }: { type: AwardType; tint: string }) {
-  const t = useT();
-  const meta = AWARD_CATALOG[type];
-  const bgGradient = `radial-gradient(ellipse at 18% 28%, ${tint}26 0%, transparent 56%), radial-gradient(ellipse at 82% 75%, ${tint}1a 0%, transparent 60%), linear-gradient(180deg, var(--color-canvas) 0%, color-mix(in oklab, var(--color-elevated) 65%, var(--color-canvas)) 100%)`;
-  return (
-    <header
-      data-tauri-drag-region
-      className="harbor-bleed-stremio relative flex h-[52vh] min-h-[460px] items-end overflow-hidden border-b border-edge-soft pb-14 pt-32"
-      style={{ backgroundImage: bgGradient }}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.06]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
-          backgroundSize: "26px 26px",
-          color: tint,
-        }}
-      />
-      <div className="relative z-10 mx-auto flex w-full max-w-[1100px] items-end justify-between gap-12 px-12">
-        <div className="flex max-w-2xl flex-col gap-5">
-          <div className="flex items-center gap-2.5 text-ink-subtle">
-            <Sparkles size={14} strokeWidth={2.2} style={{ color: tint }} />
-            <span className="text-[11px] font-bold uppercase tracking-[0.36em]">
-              {meta.shorthand}
-            </span>
-          </div>
-          <h1 className="font-display text-[68px] font-medium leading-[0.96] tracking-tight text-ink">
-            {meta.title}
-          </h1>
-          <p className="text-[13.5px] font-medium tabular-nums text-ink-muted">
-            {t("Founded {year}", { year: meta.founded })}
-            <span className="mx-3 opacity-40">·</span>
-            <span style={{ color: tint }}>{t("{n} years", { n: new Date().getFullYear() - meta.founded })}</span>
-          </p>
-        </div>
-        <div className="hidden lg:flex items-center justify-center" style={{ color: tint }}>
-          <Laurel size={210}>
-            <AwardLogo type={type} size={86} />
-          </Laurel>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function CategorySection({
-  group,
-  tint,
-}: {
-  group: CategoryHistory;
-  tint: string;
-}) {
-  const t = useT();
-  return (
-    <section className="flex flex-col gap-6">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
-          {group.category.name}
-        </h2>
-        <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
-          {group.entries.length === 1
-            ? t("{n} year", { n: group.entries.length })
-            : t("{n} years", { n: group.entries.length })}
-        </span>
-      </div>
-      <ol className="flex flex-col">
-        {group.entries.map((e, i) => (
-          <WinnerRow key={`${e.year}-${e.workTitle}-${i}`} entry={e} tint={tint} />
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function WinnerRow({
-  entry,
-  tint,
-}: {
-  entry: CategoryHistory["entries"][number];
-  tint: string;
-}) {
-  const { settings } = useSettings();
-  const { openMeta, openPerson } = useView();
-  const [resolving, setResolving] = useState(false);
-  const recipient = entry.recipients[0];
-
-  const onWorkClick = async () => {
-    if (resolving || !settings.tmdbKey) return;
-    setResolving(true);
-    try {
-      const movie = await searchTmdb(settings.tmdbKey, entry.workTitle, entry.year, "movie");
-      if (movie) {
-        openMeta({
-          id: `tmdb:movie:${movie.id}`,
-          type: "movie",
-          name: entry.workTitle,
-        });
-        return;
-      }
-      const tv = await searchTmdb(settings.tmdbKey, entry.workTitle, entry.year, "tv");
-      if (tv) {
-        openMeta({
-          id: `tmdb:tv:${tv.id}`,
-          type: "series",
-          name: entry.workTitle,
-        });
-      }
-    } finally {
-      setResolving(false);
-    }
-  };
-
-  const onRecipientClick = async () => {
-    if (!recipient || resolving) return;
-    setResolving(true);
-    const id = await tmdbPersonIdByName(settings.tmdbKey, recipient);
-    setResolving(false);
-    if (id) openPerson(id);
-  };
-
-  const workClickable = !!settings.tmdbKey;
-
-  return (
-    <li className="grid grid-cols-[80px_1fr_auto] items-baseline gap-x-6 border-b border-edge-soft/55 py-4">
-      <span className="font-mono text-[15px] font-semibold tabular-nums" style={{ color: tint }}>
-        {entry.year}
-      </span>
-      <div className="flex min-w-0 flex-col gap-1">
-        {workClickable ? (
-          <button
-            type="button"
-            onClick={onWorkClick}
-            className="self-start text-start text-[16px] font-medium leading-tight text-ink transition-colors hover:text-accent"
-          >
-            {entry.workTitle}
-          </button>
-        ) : (
-          <span className="text-[16px] font-medium leading-tight text-ink">{entry.workTitle}</span>
-        )}
-        {entry.recipients.length > 0 && (
-          <span className="self-start text-[13px] leading-tight text-ink-muted">
-            {entry.recipients.map((r, i) => (
-              <span key={`${r}-${i}`}>
-                {i > 0 && <span className="text-ink-subtle">, </span>}
-                {settings.tmdbKey ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (i === 0) {
-                        onRecipientClick();
-                      } else {
-                        tmdbPersonIdByName(settings.tmdbKey, r).then((id) => {
-                          if (id) openPerson(id);
-                        });
-                      }
-                    }}
-                    disabled={resolving}
-                    className="text-start transition-colors hover:text-ink disabled:cursor-default disabled:hover:text-ink-muted"
-                  >
-                    {r}
-                  </button>
-                ) : (
-                  <span>{r}</span>
-                )}
-              </span>
-            ))}
-          </span>
-        )}
-      </div>
-      {workClickable && (
-        <ArrowUpRight size={14} className="dir-icon text-ink-subtle" strokeWidth={2.2} />
-      )}
-    </li>
-  );
-}
-
-async function searchTmdb(
-  key: string,
-  title: string,
-  year: number,
-  type: "movie" | "tv",
-): Promise<{ id: number } | null> {
-  const params = new URLSearchParams({
-    api_key: key,
-    query: title,
-    include_adult: "false",
-  });
-  if (type === "movie") params.set("year", String(year));
-  else params.set("first_air_date_year", String(year));
-  try {
-    const res = await fetch(`https://api.themoviedb.org/3/search/${type}?${params}`);
-    if (!res.ok) return null;
-    const data: any = await res.json();
-    const hit = data?.results?.[0];
-    return hit?.id ? { id: hit.id } : null;
-  } catch {
-    return null;
-  }
 }

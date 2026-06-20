@@ -192,7 +192,7 @@ export function PersonView({ personId }: { personId: number }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-14 px-12 pb-24 pt-6">
+      <div className="relative z-10 flex flex-col gap-14 px-12 pb-24 pt-6">
         {loading && (
           <div className="h-[260px] animate-pulse rounded-2xl border border-edge-soft bg-elevated/30" />
         )}

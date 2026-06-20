@@ -23,7 +23,7 @@ export function SportsMarquee({
   onSelect: (g: SportsGame) => void;
 }) {
   const t = useT();
-  useUiLanguage(); // re-render on language change
+  useUiLanguage();
   const trackRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
   const live = liveCount(games);

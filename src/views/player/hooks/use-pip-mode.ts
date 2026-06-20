@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge } from "@/lib/player/bridge";
 
 export function usePipMode(params: {
@@ -7,6 +7,8 @@ export function usePipMode(params: {
 }) {
   const { bridgeRef, setChromeHidden } = params;
   const [pipMode, setPipMode] = useState(false);
+  const setChromeHiddenRef = useRef(setChromeHidden);
+  setChromeHiddenRef.current = setChromeHidden;
 
   useEffect(() => {
     const isTauri = "__TAURI__" in window || "__TAURI_INTERNALS__" in window;
@@ -19,6 +21,9 @@ export function usePipMode(params: {
         try {
           window.dispatchEvent(new Event("resize"));
           window.dispatchEvent(new Event("harbor:mpv-refresh-geom"));
+          void import("@tauri-apps/api/core").then(({ invoke }) =>
+            invoke("hdr_overlay_sync").catch(() => {}),
+          );
         } catch {}
       };
       fire();
@@ -31,12 +36,12 @@ export function usePipMode(params: {
       const { listen } = await import("@tauri-apps/api/event");
       const onEntered = await listen("pip://entered", () => {
         setPipMode(true);
-        setChromeHidden(true);
+        setChromeHiddenRef.current(true);
         kickLayout();
       });
       const onExited = await listen("pip://exited", () => {
         setPipMode(false);
-        setChromeHidden(false);
+        setChromeHiddenRef.current(false);
         kickLayout();
       });
       if (cancelled) {
@@ -62,7 +67,8 @@ export function usePipMode(params: {
       unlistenEntered = null;
       unlistenExited = null;
     };
-  }, [setChromeHidden]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const togglePipMode = useCallback(async () => {
     const isTauri = "__TAURI__" in window || "__TAURI_INTERNALS__" in window;

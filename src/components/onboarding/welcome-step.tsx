@@ -1,6 +1,8 @@
 import { HarborMark } from "@/components/icons/harbor-mark";
+import { useT } from "@/lib/i18n";
 
 export function WelcomeStep() {
+  const t = useT();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
@@ -21,14 +23,15 @@ export function WelcomeStep() {
           </span>
         </div>
         <p className="text-[15.5px] leading-relaxed text-ink-muted">
-          A client for the Stremio protocol. Two minutes to set up; most of it optional. You
-          stay in control of every key.
+          {t(
+            "A client for the Stremio protocol. Two minutes to set up; most of it optional. You stay in control of every key.",
+          )}
         </p>
       </div>
       <div className="grid grid-cols-3 gap-3 pt-2">
-        <Bullet title="Current">Trending, in theaters, what's on every streamer.</Bullet>
-        <Bullet title="Yours">Your Stremio library + addons sync in untouched.</Bullet>
-        <Bullet title="Quiet">No telemetry, no servers, no bundled keys.</Bullet>
+        <Bullet title={t("Current")}>{t("Trending, in theaters, what's on every streamer.")}</Bullet>
+        <Bullet title={t("Yours")}>{t("Your Stremio library + addons sync in untouched.")}</Bullet>
+        <Bullet title={t("Quiet")}>{t("No telemetry, no servers, no bundled keys.")}</Bullet>
       </div>
     </div>
   );

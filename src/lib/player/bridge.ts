@@ -44,6 +44,7 @@ export type PlayerSnapshot = {
   audioNormalize: boolean;
   videoWidth: number;
   videoHeight: number;
+  hdrGamma: string;
   errorMessage: string | null;
   errorCode: "decode" | "codec" | "network" | "source" | "unknown" | null;
   noAudio?: boolean;
@@ -54,6 +55,8 @@ export type PlayerSource = {
   subtitles?: { id?: string; url: string; lang?: string; m?: string }[];
   notWebReady?: boolean;
   startAtSec?: number;
+  isLive?: boolean;
+  headers?: Record<string, string>;
 };
 
 export type PlayerBridge = {
@@ -119,6 +122,7 @@ export const emptySnapshot: PlayerSnapshot = {
   audioNormalize: false,
   videoWidth: 0,
   videoHeight: 0,
+  hdrGamma: "",
   errorMessage: null,
   errorCode: null,
 };

@@ -2,13 +2,14 @@ import { useMemo } from "react";
 import { isStreamDead } from "@/lib/dead-streams";
 import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
 import type { ScoredStream } from "@/lib/streams/types";
+import { streamMatchesEntry, type PlaybackEntry } from "@/lib/playback-history";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores } from "@/lib/together/source-match";
 import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from "./picker-utils";
 
 export function useAutoCandidates(args: {
   filteredPicker: { all: ScoredStream[]; primary: ScoredStream | null } | null;
-  previousPlayback: { infoHash?: string | null; fileIdx?: number | null; url?: string | null } | null;
+  previousPlayback: PlaybackEntry | null;
   isCached: (s: ScoredStream) => boolean;
   addons: Array<{ manifest?: { id?: string } }> | null;
   hasStrongAddon: boolean;
@@ -27,18 +28,7 @@ export function useAutoCandidates(args: {
     });
     const matchScores = hostSource ? buildMatchScores(filteredPicker.all, hostSource) : null;
     const previousMatch = previousPlayback
-      ? filteredPicker.all.find((s) => {
-          if (
-            previousPlayback.infoHash &&
-            s.infoHash &&
-            s.infoHash.toLowerCase() === previousPlayback.infoHash.toLowerCase()
-          ) {
-            if (previousPlayback.fileIdx == null || s.fileIdx == null) return true;
-            return s.fileIdx === previousPlayback.fileIdx;
-          }
-          if (previousPlayback.url && s.url) return s.url === previousPlayback.url;
-          return false;
-        }) ?? null
+      ? filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null
       : null;
     const sorted = filteredPicker.all.slice().sort((a, b) => {
       if (matchScores) {

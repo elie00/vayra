@@ -44,13 +44,15 @@ function catMap(raw: unknown): Map<string, string> {
 }
 
 function buildVodUrl(creds: XtreamCreds, streamId: number | string, ext?: string): string {
-  const e = (ext && String(ext).trim()) || "mp4";
-  return `${creds.base}/movie/${encodeURIComponent(creds.username)}/${encodeURIComponent(creds.password)}/${streamId}.${e}`;
+  const base = `${creds.base}/movie/${encodeURIComponent(creds.username)}/${encodeURIComponent(creds.password)}/${streamId}`;
+  const e = ext && String(ext).trim();
+  return e ? `${base}.${e}` : base;
 }
 
 function buildSeriesUrl(creds: XtreamCreds, episodeId: number | string, ext?: string): string {
-  const e = (ext && String(ext).trim()) || "mp4";
-  return `${creds.base}/series/${encodeURIComponent(creds.username)}/${encodeURIComponent(creds.password)}/${episodeId}.${e}`;
+  const base = `${creds.base}/series/${encodeURIComponent(creds.username)}/${encodeURIComponent(creds.password)}/${episodeId}`;
+  const e = ext && String(ext).trim();
+  return e ? `${base}.${e}` : base;
 }
 
 async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
@@ -92,13 +94,17 @@ export async function fetchXtreamVod(creds: XtreamCreds, baseId: string): Promis
   return out;
 }
 
+const MAX_SERIES_EXPANDED = 1200;
+
 export async function fetchXtreamSeries(creds: XtreamCreds, baseId: string): Promise<IptvChannel[]> {
   const [catsRaw, seriesRaw] = await Promise.all([
     xtreamFetch(apiUrl(creds, "get_series_categories")),
     xtreamFetch(apiUrl(creds, "get_series")),
   ]);
   const cats = catMap(catsRaw);
-  const series: SeriesRow[] = Array.isArray(seriesRaw) ? (seriesRaw as SeriesRow[]) : [];
+  const all: SeriesRow[] = Array.isArray(seriesRaw) ? (seriesRaw as SeriesRow[]) : [];
+  const series = all.slice(0, MAX_SERIES_EXPANDED);
+  let throttled = false;
   const perSeries = await mapLimit(series, 6, async (s): Promise<IptvChannel[]> => {
     if (!s || s.series_id == null) return [];
     const seriesName = s.name?.trim() || `Series ${s.series_id}`;
@@ -107,11 +113,13 @@ export async function fetchXtreamSeries(creds: XtreamCreds, baseId: string): Pro
     const cacheKey = `${baseId}::${s.series_id}`;
     let info = seriesInfoCache.get(cacheKey);
     if (!info) {
+      if (throttled) return [];
       try {
         info = (await xtreamFetch(
           apiUrl(creds, "get_series_info", { series_id: String(s.series_id) }),
         )) as SeriesInfo;
-      } catch {
+      } catch (e) {
+        if (/HTTP (?:429|403)/.test(String(e))) throttled = true;
         return [];
       }
       seriesInfoCache.set(cacheKey, info);

@@ -4,6 +4,7 @@ import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import type { ScoredStream } from "@/lib/streams/types";
+import { EditionChip } from "./edition-chip";
 
 export function StremioRow({
   stream,
@@ -46,12 +47,13 @@ export function StremioRow({
             {description}
           </p>
         )}
-        {(badges.length > 0 || match) && (
+        {(badges.length > 0 || match || stream.edition) && (
           <div className="flex flex-wrap items-center gap-1.5">
             <HostMatchChip match={match} />
             {badges.map((k) => (
               <FormatBadge key={k} kind={k} size="sm" />
             ))}
+            <EditionChip stream={stream} />
           </div>
         )}
         {failed && (

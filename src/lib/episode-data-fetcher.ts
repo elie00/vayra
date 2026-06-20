@@ -20,7 +20,7 @@ import type { EpisodeDetail } from "@/lib/providers/tmdb/tmdb-episode-types";
  */
 async function extractTmdbId(
   seriesId: string,
-  seriesMeta: Meta,
+  _seriesMeta: Meta,
   tmdbKey: string,
 ): Promise<number | null> {
   // Direct TMDB ID format: tmdb:tv:12345

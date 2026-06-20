@@ -58,7 +58,12 @@ const BUNDLED_AWARD_NAME: Partial<Record<AwardType, string>> = {
 };
 
 function normTitle(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return s
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 let titleIndex: Map<string, AwardEntry[]> | null = null;

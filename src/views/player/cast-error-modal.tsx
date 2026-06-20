@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useT } from "@/lib/i18n";
 
 export type CastErrorInfo = {
   title: string;
@@ -14,6 +15,7 @@ export function CastErrorModal({
   error: CastErrorInfo | null;
   onDismiss: () => void;
 }) {
+  const t = useT();
   useEffect(() => {
     if (!error) return;
     const onKey = (e: KeyboardEvent) => {
@@ -73,7 +75,7 @@ export function CastErrorModal({
             className="rounded-full bg-accent px-5 py-2 text-[13px] font-semibold text-canvas transition-colors hover:bg-accent/85"
             autoFocus
           >
-            Got it
+            {t("Got it")}
           </button>
         </div>
       </div>

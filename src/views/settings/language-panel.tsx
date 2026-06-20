@@ -1,5 +1,6 @@
 import { Github } from "lucide-react";
 import { useState } from "react";
+import { Dropdown, type DropdownOption } from "@/components/dropdown";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
@@ -7,109 +8,25 @@ import { Section, ToggleRow } from "./shared";
 import { LanguagesPicker } from "./streaming-panel";
 import { DisplayLanguageSection } from "./language-panel/display-language-section";
 
-const TMDB_LANGUAGES = [
-  { value: "",      native: "English",              label: "Default" },
-  { value: "ar-SA", native: "العربية",               label: "Arabic" },
-  { value: "de-DE", native: "Deutsch",               label: "German" },
-  { value: "es-ES", native: "Español (España)",       label: "Spanish (Spain)" },
-  { value: "es-MX", native: "Español (Latinoamérica)",label: "Spanish (Latin America)" },
-  { value: "fr-FR", native: "Français",               label: "French" },
-  { value: "hi-IN", native: "हिन्दी",                 label: "Hindi" },
-  { value: "it-IT", native: "Italiano",               label: "Italian" },
-  { value: "ja-JP", native: "日本語",                  label: "Japanese" },
-  { value: "ko-KR", native: "한국어",                  label: "Korean" },
-  { value: "nl-NL", native: "Nederlands",             label: "Dutch" },
-  { value: "pl-PL", native: "Polski",                 label: "Polish" },
-  { value: "pt-BR", native: "Português (Brasil)",     label: "Portuguese (Brazil)" },
-  { value: "pt-PT", native: "Português (Portugal)",   label: "Portuguese (Portugal)" },
-  { value: "ru-RU", native: "Русский",                label: "Russian" },
-  { value: "tr-TR", native: "Türkçe",                 label: "Turkish" },
-  { value: "uk-UA", native: "Українська",             label: "Ukrainian" },
-  { value: "zh-CN", native: "中文 (简体)",              label: "Chinese (Simplified)" },
+const TMDB_LANGUAGES: DropdownOption[] = [
+  { value: "es-ES", label: "Español (España)" },
+  { value: "es-MX", label: "Español (Latinoamérica)" },
+  { value: "fr-FR", label: "Français" },
+  { value: "de-DE", label: "Deutsch" },
+  { value: "it-IT", label: "Italiano" },
+  { value: "pt-BR", label: "Português (Brasil)" },
+  { value: "pt-PT", label: "Português (Portugal)" },
+  { value: "ja-JP", label: "日本語" },
+  { value: "ko-KR", label: "한국어" },
+  { value: "zh-CN", label: "中文 (简体)" },
+  { value: "ar-SA", label: "العربية" },
+  { value: "tr-TR", label: "Türkçe" },
+  { value: "ru-RU", label: "Русский" },
+  { value: "hi-IN", label: "हिन्दी" },
+  { value: "pl-PL", label: "Polski" },
+  { value: "nl-NL", label: "Nederlands" },
+  { value: "uk-UA", label: "Українська" },
 ];
-
-function TmdbLanguageDropdown({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const current = TMDB_LANGUAGES.find((l) => l.value === value) ?? TMDB_LANGUAGES[0];
-
-  return (
-    <div className="relative w-full max-w-[340px]">
-      {/* Trigger button */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 text-[13.5px] transition-all ${
-          open
-            ? "border-edge bg-elevated shadow-sm"
-            : "border-edge-soft bg-canvas/40 hover:border-edge hover:bg-canvas/60"
-        }`}
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="font-medium text-ink truncate">{current.native}</span>
-          <span className="text-[12px] text-ink-muted shrink-0">{current.label}</span>
-        </div>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          className={`shrink-0 text-ink-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        >
-          <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-
-      {/* Dropdown panel */}
-      {open && (
-        <>
-          {/* backdrop to close on outside click */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
-          />
-          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-2xl border border-edge-soft bg-elevated shadow-xl">
-            <div className="max-h-64 overflow-y-auto py-1.5">
-              {TMDB_LANGUAGES.map((lang) => {
-                const selected = lang.value === value;
-                return (
-                  <button
-                    key={lang.value}
-                    type="button"
-                    onClick={() => {
-                      onChange(lang.value);
-                      setOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-start transition-colors ${
-                      selected
-                        ? "bg-ink/8 text-ink"
-                        : "text-ink hover:bg-ink/5"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-[13.5px] font-medium truncate">{lang.native}</span>
-                      <span className="text-[12px] text-ink-muted shrink-0">{lang.label}</span>
-                    </div>
-                    {selected && (
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 text-ink">
-                        <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 export function LanguagePanel() {
   const { settings, update } = useSettings();
@@ -171,33 +88,12 @@ export function LanguagePanel() {
       title={t("Metadata language")}
       subtitle={t("Titles, overviews, and taglines from TMDB display in this language when a translation exists. Needs a TMDB key.")}
     >
-      <TmdbLanguageDropdown
+      <Dropdown
         value={settings.tmdbLanguage}
         onChange={(v) => update({ tmdbLanguage: v })}
+        options={[{ value: "", label: t("English (default)") }, ...TMDB_LANGUAGES]}
+        className="w-full max-w-[340px]"
       />
-      {settings.tmdbLanguage && (
-        <div className="mt-4 border-t border-edge-soft pt-4 flex flex-col gap-1">
-          <ToggleRow
-            label={t("Translate titles")}
-            sub={t("If disabled, titles remain in their original language.")}
-            value={settings.translateTitles}
-            onChange={(v) => update({ translateTitles: v })}
-          />
-          <ToggleRow
-            label={t("Translate descriptions")}
-            sub={t("If disabled, overviews and taglines remain in their original language. (Applies only inside the details page)")}
-            value={settings.translateDescriptions}
-            onChange={(v) => update({ translateDescriptions: v })}
-          />
-          <ToggleRow
-            label={t("Translate posters")}
-            sub={t("If disabled, posters remain in their original language. (Applies only inside the details page)")}
-            value={settings.translatePosters}
-            onChange={(v) => update({ translatePosters: v })}
-            lockReason={settings.posterBaseUrl ? t("Poster translation is disabled because a custom poster service is active.") : undefined}
-          />
-        </div>
-      )}
     </Section>
 
     <Section

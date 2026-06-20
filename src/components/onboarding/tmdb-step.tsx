@@ -1,11 +1,13 @@
 import { Check, ExternalLink, Key, Loader2, X } from "lucide-react";
 import { useState } from "react";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { openUrl } from "@/lib/window";
 
 export function TmdbStep() {
   const { settings, update } = useSettings();
+  const t = useT();
   const [draft, setDraft] = useState(settings.tmdbKey);
   const [status, setStatus] = useState<"idle" | "checking" | "ok" | "bad">(
     settings.tmdbKey ? "ok" : "idle",
@@ -35,24 +37,25 @@ export function TmdbStep() {
   return (
     <div className="flex flex-col gap-6">
       <span className="text-[12.5px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
-        Step 1 · Metadata
+        {t("Step 1 · Metadata")}
       </span>
       <div className="flex flex-col gap-3">
         <h1 className="flex flex-wrap items-center font-display text-[36px] font-medium leading-[1.08] tracking-tight text-ink">
-          Connect
+          {t("Connect")}
           <img src={tmdbLogo} alt="" className="ms-4 me-1.5 h-8 w-8 rounded-md" />
           TMDB
         </h1>
         <p className="text-[15px] leading-relaxed text-ink-muted">
-          Free, two-minute signup. Unlocks Trending, In Theaters Now, Top Rated, and per-streaming
-          catalogs (Netflix, Disney+, Hulu, …). Your key stays on this machine.
+          {t(
+            "Free, two-minute signup. Unlocks Trending, In Theaters Now, Top Rated, and per-streaming catalogs (Netflix, Disney+, Hulu, …). Your key stays on this machine.",
+          )}
         </p>
       </div>
       <button
         onClick={() => openUrl("https://www.themoviedb.org/settings/api")}
         className="inline-flex w-fit items-center gap-1.5 text-[14px] text-ink underline-offset-4 hover:underline"
       >
-        Get a free key at themoviedb.org <ExternalLink size={13} />
+        {t("Get a free key at themoviedb.org")} <ExternalLink size={13} />
       </button>
       <div className="flex items-center gap-2.5">
         <div
@@ -71,7 +74,7 @@ export function TmdbStep() {
               update({ tmdbKey: e.target.value.trim() });
             }}
             onKeyDown={(e) => e.key === "Enter" && validate()}
-            placeholder="v3 API key"
+            placeholder={t("v3 API key")}
             spellCheck={false}
             autoComplete="off"
             className="h-12 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-subtle/60"
@@ -98,20 +101,20 @@ export function TmdbStep() {
           {status === "checking" ? (
             <span className="flex items-center gap-2 animate-copy-swap">
               <Loader2 size={14} className="animate-spin" />
-              Checking
+              {t("Checking")}
             </span>
           ) : status === "ok" ? (
             <span key={`saved-${pulseKey}`} className="flex items-center gap-1.5 animate-copy-swap">
               <Check size={14} strokeWidth={2.8} />
-              Saved
+              {t("Saved")}
             </span>
           ) : (
-            "Verify"
+            t("Verify")
           )}
         </button>
       </div>
       <p className="text-[13px] text-ink-subtle">
-        Skip if you'd rather just use Cinemeta. Harbor still works, you'll just see fewer rails.
+        {t("Skip if you'd rather just use Cinemeta. Harbor still works, you'll just see fewer rails.")}
       </p>
     </div>
   );

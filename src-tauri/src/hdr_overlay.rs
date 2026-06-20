@@ -1,6 +1,5 @@
 use tauri::{
-    AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl,
-    WebviewWindowBuilder,
+    AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder,
 };
 
 pub const HDR_OVERLAY_LABEL: &str = "harbor-hdr-overlay";
@@ -83,7 +82,7 @@ pub async fn hdr_overlay_open(app: AppHandle) -> Result<(), String> {
             #[cfg(windows)]
             {
                 set_no_activate(&app);
-                crate::webview_helpers::apply_transparency_to_label(&app, HDR_OVERLAY_LABEL);
+                crate::webview_helpers::apply_transparency(&app, HDR_OVERLAY_LABEL);
             }
             Ok(())
         }
@@ -110,7 +109,7 @@ pub async fn hdr_overlay_sync(app: AppHandle) -> Result<(), String> {
     let _ = overlay.set_position(LogicalPosition::new(px, py));
     let _ = overlay.set_size(LogicalSize::new(sw, sh));
     #[cfg(windows)]
-    crate::webview_helpers::apply_transparency_to_label(&app, HDR_OVERLAY_LABEL);
+    crate::webview_helpers::apply_transparency(&app, HDR_OVERLAY_LABEL);
     Ok(())
 }
 

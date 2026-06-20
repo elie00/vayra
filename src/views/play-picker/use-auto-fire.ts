@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { SourceDescriptor } from "@/lib/together/protocol";
+import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
 import { hasInstantMarker, streamMatchesLangs } from "./picker-utils";
 
 const AUTO_SETTLE_MS = 1500;
@@ -9,6 +10,7 @@ const HOST_SOURCE_WAIT_MS = 12_000;
 
 export function useAutoFire(args: {
   autoActive: boolean;
+  rememberedHandledFirst?: boolean;
   attempt?: number;
   autoCandidates: ScoredStream[];
   resolving: unknown;
@@ -17,6 +19,7 @@ export function useAutoFire(args: {
   pipelineDone: boolean;
   firstResultAt: number | null;
   isCached: (s: ScoredStream) => boolean;
+  p2pAutoConsent: boolean;
   preferredLangs: string[];
   hasStrongAddon: boolean;
   isTorrentioStream: (s: ScoredStream) => boolean;
@@ -28,8 +31,8 @@ export function useAutoFire(args: {
   onPlay: (s: ScoredStream, committed: boolean) => void;
 }): void {
   const {
-    autoActive, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady,
-    pipelineDone, firstResultAt, isCached, preferredLangs, hasStrongAddon, isTorrentioStream,
+    autoActive, rememberedHandledFirst, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady,
+    pipelineDone, firstResultAt, isCached, p2pAutoConsent, preferredLangs, hasStrongAddon, isTorrentioStream,
     expectHostSource, hostSource,
     autoFiredRef, setAutoSettleReady, setAutoCancelled, onPlay,
   } = args;
@@ -68,6 +71,7 @@ export function useAutoFire(args: {
 
   useEffect(() => {
     if (!autoActive || autoFiredRef.current) return;
+    if (rememberedHandledFirst) return;
     if (waitingForHostSource) return;
     const top = autoCandidates[0];
     const isFirstAttempt = (attempt ?? 0) === 0 && autoAttemptIdx === 0;
@@ -90,12 +94,12 @@ export function useAutoFire(args: {
     const idx = Math.min((attempt ?? 0) + autoAttemptIdx, autoCandidates.length - 1);
     const pick = autoCandidates[idx];
     if (!pick) return;
-    const pickInstant = isCached(pick) || !!pick.url;
+    const pickInstant = isCached(pick) || !!pick.url || (p2pAutoConsent && engineP2pEligible(pick));
     if (!pickInstant) {
       if (pipelineDone) setAutoCancelled(true);
       return;
     }
     autoFiredRef.current = true;
     onPlay(pick, false);
-  }, [autoActive, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady, pipelineDone, isCached, preferredLangs, hasStrongAddon, isTorrentioStream, autoFiredRef, setAutoCancelled, onPlay, highConfidenceTick, waitingForHostSource]);
+  }, [autoActive, rememberedHandledFirst, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady, pipelineDone, isCached, preferredLangs, hasStrongAddon, isTorrentioStream, autoFiredRef, setAutoCancelled, onPlay, highConfidenceTick, waitingForHostSource]);
 }

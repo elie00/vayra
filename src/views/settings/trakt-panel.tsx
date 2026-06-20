@@ -141,7 +141,7 @@ export function TraktPanel() {
           <ToggleRow
             label={t("Blur comments by default")}
             sub={t("Comments on episode/show pages are blurred until you reveal them, even if they are not tagged as spoilers.")}
-            value={settings.blurComments}
+            value={!!settings.blurComments}
             onChange={(on) => update({ blurComments: on })}
           />
           {!confirmDisconnect ? (

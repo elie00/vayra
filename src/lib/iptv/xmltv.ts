@@ -35,7 +35,7 @@ async function iptvFetch(url: string, signal: AbortSignal): Promise<Response> {
 
 export async function fetchAndParseXmltv(
   url: string,
-  onProgress?: (programs: EpgProgram[]) => void,
+  onProgress?: (programs: EpgProgram[], channelMeta: Map<string, EpgChannelMeta>) => void,
 ): Promise<XmltvParseResult> {
   const ac = new AbortController();
   let stallTimer: ReturnType<typeof setTimeout> | null = null;
@@ -130,7 +130,7 @@ export async function fetchAndParseXmltv(
         const sec = ((now - startedAt) / 1000).toFixed(1);
         console.info(`[epg] downloading… ${mb}MB · ${out.length} programs · ${sec}s`);
         lastLog = now;
-        if (onProgress && out.length > prevLen) onProgress(out);
+        if (onProgress && out.length > prevLen) onProgress(out.slice(prevLen), channelMeta);
       }
     }
     buffer += decoder.decode();
@@ -302,14 +302,7 @@ export function findCurrent(arr: EpgProgram[] | undefined, nowMs: number): {
     }
   }
   if (foundIdx < 0) {
-    let lower = -1;
-    for (let i = 0; i < arr.length; i++) {
-      if (arr[i].startMs > nowMs) {
-        lower = i;
-        break;
-      }
-    }
-    return { current: null, next: lower >= 0 ? arr[lower] : null };
+    return { current: null, next: arr[lo] ?? null };
   }
   return { current: arr[foundIdx], next: arr[foundIdx + 1] ?? null };
 }

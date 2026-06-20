@@ -34,7 +34,7 @@ export function saveResumeMs(
 ): void {
   if (!Number.isFinite(ms) || ms < 0) return;
   if (typeof season === "number" && typeof episode === "number") {
-    if (season < 1 || episode < 1) return;
+    if (season < 0 || episode < 1) return;
   }
   const all = readAll();
   all[entryKey(id, season, episode)] = { ms, t: Date.now() };
@@ -50,7 +50,7 @@ export function saveResumeBatch(
   for (const e of entries) {
     if (!Number.isFinite(e.ms) || e.ms < 0) continue;
     if (typeof e.season === "number" && typeof e.episode === "number") {
-      if (e.season < 1 || e.episode < 1) continue;
+      if (e.season < 0 || e.episode < 1) continue;
     }
     all[entryKey(e.id, e.season, e.episode)] = { ms: e.ms, t: e.t ?? now };
   }

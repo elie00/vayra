@@ -54,9 +54,11 @@ async function fetchRaw(cacheKey: string): Promise<RawResponse | null> {
     const json = (await res.json()) as RawResponse;
     cache.set(cacheKey, json);
     return json;
-  })().finally(() => {
-    inflight.delete(cacheKey);
-  });
+  })()
+    .catch(() => null)
+    .finally(() => {
+      inflight.delete(cacheKey);
+    });
   inflight.set(cacheKey, p);
   return p;
 }

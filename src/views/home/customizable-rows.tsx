@@ -6,6 +6,7 @@ import { TopRankCard } from "@/components/top-rank-card";
 import { useT } from "@/lib/i18n";
 import type { HomeRowCustomization } from "@/lib/home-customization";
 import { useView } from "@/lib/view";
+import { isMacDesktop } from "@/lib/platform";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
 
@@ -94,7 +95,7 @@ export function CustomizableRows({
           <div
             key={row.key}
             data-scroll-anchor={`row:${row.key}`}
-            style={{ contentVisibility: "auto", containIntrinsicSize: "auto 340px" }}
+            style={{ contentVisibility: isMacDesktop() ? undefined : "auto", containIntrinsicSize: "auto 340px" }}
           >
             {editMode && (
               <RowControls

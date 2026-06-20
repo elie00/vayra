@@ -27,10 +27,11 @@ export function classifyChannel(ch: IptvChannel): VodKind {
   if (/\/movie\//i.test(url)) return "movie";
   if (/\/live\//i.test(url)) return "live";
 
-  if (parseSeriesEpisode(name)) return "series";
-
   const vodExt = VOD_EXT_RE.test(url);
   const liveExt = LIVE_EXT_RE.test(url);
+  const movieFile = vodExt && !liveExt && !SERIES_GROUP_RE.test(group);
+
+  if (!movieFile && parseSeriesEpisode(name)) return "series";
 
   if (SERIES_GROUP_RE.test(group) && !liveExt) return "series";
   if (MOVIE_GROUP_RE.test(group) && !liveExt) return "movie";

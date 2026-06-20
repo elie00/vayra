@@ -1,23 +1,26 @@
 import { Check } from "lucide-react";
 import { ServiceLogo } from "@/components/service-logo";
+import { useT } from "@/lib/i18n";
 import { SERVICES } from "@/lib/providers/streaming";
 import { useSettings, type StreamingService } from "@/lib/settings";
 
 export function StreamingStep() {
   const { settings, toggleStreaming } = useSettings();
+  const t = useT();
   const tmdbReady = !!settings.tmdbKey;
   return (
     <div className="flex flex-col gap-6">
       <span className="text-[12.5px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
-        Step 3 · Streaming
+        {t("Step 3 · Streaming")}
       </span>
       <div className="flex flex-col gap-3">
         <h1 className="font-display text-[36px] font-medium leading-[1.08] tracking-tight text-ink">
-          Pick what you actually use
+          {t("Pick what you actually use")}
         </h1>
         <p className="text-[15px] leading-relaxed text-ink-muted">
-          Harbor pulls the most popular titles each service has right now. Toggle off anything you
-          don't subscribe to.
+          {t(
+            "Harbor pulls the most popular titles each service has right now. Toggle off anything you don't subscribe to.",
+          )}
         </p>
       </div>
       <div className="grid grid-cols-4 gap-2">
@@ -46,8 +49,7 @@ export function StreamingStep() {
       </div>
       {!tmdbReady && (
         <p className="text-[13px] text-ink-subtle">
-          These rails activate once a TMDB key is set. You can come back to this anytime in
-          Settings.
+          {t("These rails activate once a TMDB key is set. You can come back to this anytime in Settings.")}
         </p>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { fetchAndParseXmltv, indexProgramsByChannel } from "./xmltv";
-import type { EpgChannelMeta, EpgIndex } from "./types";
+import type { EpgChannelMeta, EpgIndex, EpgProgram } from "./types";
 
 const TTL_MS = 60 * 60 * 1000;
 
@@ -51,14 +51,26 @@ export async function loadEpg(params: {
   }
   const pending = inflight.get(playlistId);
   if (pending && !force) return pending;
-  const onProgress = (programs: EpgProgramArr) => {
-    if (programs.length === 0) return;
+  const onProgress = (delta: EpgProgram[], channelMeta: Map<string, EpgChannelMeta>) => {
+    if (delta.length === 0) return;
     if (inflight.get(playlistId) !== promise) return;
-    cache.set(playlistId, {
-      byChannel: indexProgramsByChannel(programs),
-      channelMeta: cache.get(playlistId)?.channelMeta,
-      fetchedAt: Date.now(),
-    });
+    const prev = cache.get(playlistId);
+    const byChannel = prev ? new Map(prev.byChannel) : new Map<string, EpgProgram[]>();
+    const touched = new Set<string>();
+    for (const p of delta) {
+      let arr = byChannel.get(p.channelTvgId);
+      if (!arr) {
+        arr = [];
+        byChannel.set(p.channelTvgId, arr);
+      } else if (!touched.has(p.channelTvgId)) {
+        arr = arr.slice();
+        byChannel.set(p.channelTvgId, arr);
+      }
+      arr.push(p);
+      touched.add(p.channelTvgId);
+    }
+    for (const id of touched) byChannel.get(id)!.sort((a, b) => a.startMs - b.startMs);
+    cache.set(playlistId, { byChannel, channelMeta, fetchedAt: Date.now() });
     notify();
   };
   const promise: Promise<EpgIndex> = doFetchWithFallback(urls, onProgress).then((idx) => {
@@ -76,11 +88,9 @@ export async function loadEpg(params: {
   }
 }
 
-type EpgProgramArr = Parameters<typeof indexProgramsByChannel>[0];
-
 async function doFetchWithFallback(
   urls: string[],
-  onProgress?: (programs: EpgProgramArr) => void,
+  onProgress?: (programs: EpgProgram[], channelMeta: Map<string, EpgChannelMeta>) => void,
 ): Promise<EpgIndex> {
   if (urls.length === 0) throw new Error("No EPG URL available for this playlist");
   let lastErr: unknown = null;

@@ -25,6 +25,7 @@ import {
   type Profile,
   type ProfileColor,
 } from "@/lib/profiles";
+import { useT } from "@/lib/i18n";
 import { hashProfilePassword, verifyProfilePassword } from "@/lib/profile-password";
 import { fetchTraktAvatar } from "@/lib/trakt/profile";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -37,7 +38,6 @@ import { AvatarRing } from "@/views/settings/account/avatar-ring";
 import { resizeAvatar } from "@/views/settings/account/avatar-utils";
 import { ColorPicker } from "@/views/settings/color-picker";
 import { PinEntry } from "./pin-entry";
-import { useT } from "@/lib/i18n";
 
 type SubView =
   | { kind: "main" }
@@ -58,11 +58,11 @@ export function EditorView({
 }) {
   const { profiles, activeProfile, createProfile, updateProfile, deleteProfile, selectProfile } =
     useProfiles();
-  const t = useT();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected, avatar: anilistAvatar } = useAnilist();
   const { isConnected: simklConnected } = useSimkl();
   const { update } = useSettings();
+  const t = useT();
   const [loadingTraktAvatar, setLoadingTraktAvatar] = useState(false);
   const [traktAvatarError, setTraktAvatarError] = useState<string | null>(null);
   const [loadingAnilistAvatar, setLoadingAnilistAvatar] = useState(false);
@@ -118,14 +118,14 @@ export function EditorView({
     try {
       const url = await fetchTraktAvatar();
       if (!url) {
-        setTraktAvatarError("Couldn't find a Trakt avatar on your account.");
+        setTraktAvatarError(t("Couldn't find a Trakt avatar on your account."));
         setTimeout(() => setTraktAvatarError(null), 4000);
         return;
       }
       setAvatar(url);
       setAvatarSource("trakt");
     } catch {
-      setTraktAvatarError("Couldn't reach Trakt.");
+      setTraktAvatarError(t("Couldn't reach Trakt."));
       setTimeout(() => setTraktAvatarError(null), 4000);
     } finally {
       setLoadingTraktAvatar(false);
@@ -138,14 +138,14 @@ export function EditorView({
     try {
       const url = await fetchAnilistAvatar();
       if (!url) {
-        setAnilistAvatarError("Couldn't find an AniList avatar on your account.");
+        setAnilistAvatarError(t("Couldn't find an AniList avatar on your account."));
         setTimeout(() => setAnilistAvatarError(null), 4000);
         return;
       }
       setAvatar(url);
       setAvatarSource("anilist");
     } catch {
-      setAnilistAvatarError("Couldn't reach AniList.");
+      setAnilistAvatarError(t("Couldn't reach AniList."));
       setTimeout(() => setAnilistAvatarError(null), 4000);
     } finally {
       setLoadingAnilistAvatar(false);
@@ -158,14 +158,14 @@ export function EditorView({
     try {
       const url = await fetchSimklAvatar();
       if (!url) {
-        setSimklAvatarError("Couldn't find a Simkl avatar on your account.");
+        setSimklAvatarError(t("Couldn't find a Simkl avatar on your account."));
         setTimeout(() => setSimklAvatarError(null), 4000);
         return;
       }
       setAvatar(url);
       setAvatarSource("simkl");
     } catch {
-      setSimklAvatarError("Couldn't reach Simkl.");
+      setSimklAvatarError(t("Couldn't reach Simkl."));
       setTimeout(() => setSimklAvatarError(null), 4000);
     } finally {
       setLoadingSimklAvatar(false);
@@ -304,7 +304,7 @@ export function EditorView({
           {t("Harbor identity")}
         </span>
         <h1 className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
-          {editing ? t("Edit {name}").replace("{name}", editing.name) : t("New profile")}
+          {editing ? t("Edit {name}", { name: editing.name }) : t("profile.new")}
         </h1>
       </div>
 
@@ -393,7 +393,7 @@ export function EditorView({
                   }}
                   className="h-8 rounded-lg border border-edge-soft px-2.5 text-[12px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
                 >
-                  {t("Remove")}
+                  {t("common.remove")}
                 </button>
               )}
             </div>
@@ -429,7 +429,7 @@ export function EditorView({
               active={shareWith === primary.id}
               onClick={() => setShareWith(primary.id)}
               icon={<Link2 size={14} strokeWidth={2.2} />}
-              title={t("Share with {name}").replace("{name}", primary.name)}
+              title={t("Share with {name}", { name: primary.name })}
               sub={t("Use the primary profile's Stremio library, watchlist, and addons.")}
             />
             <ShareOption
@@ -450,7 +450,7 @@ export function EditorView({
             onClick={onCancel}
             className="h-10 rounded-xl border border-edge-soft px-4 text-[13px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
-            {t("Cancel")}
+            {t("common.cancel")}
           </button>
           {editing && !isPrimary && canEditAdvanced && (
             !confirmingDelete ? (
@@ -470,7 +470,7 @@ export function EditorView({
                   onClick={() => setConfirmingDelete(false)}
                   className="text-ink-muted hover:text-ink"
                 >
-                  {t("Cancel")}
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -480,7 +480,7 @@ export function EditorView({
                   }}
                   className="rounded-md bg-red-400/20 px-2 py-0.5 font-semibold text-red-200 hover:bg-red-400/30"
                 >
-                  {t("Confirm")}
+                  {t("common.confirm")}
                 </button>
               </div>
             )
@@ -511,7 +511,7 @@ function BlockedView({ onBack }: { onBack: () => void }) {
         onClick={onBack}
         className="h-10 rounded-xl bg-ink px-5 text-[13px] font-semibold text-canvas"
       >
-        {t("Back")}
+        {t("common.back")}
       </button>
     </div>
   );
@@ -530,9 +530,7 @@ function SecurityRow({
   const lockedCount = lockedTabs ? Object.values(lockedTabs).filter(Boolean).length : 0;
   const pinLabel = locked ? t("PIN on") : t("PIN off");
   const tabsLabel =
-    lockedCount === 0
-      ? t("no tab locks")
-      : lockedCount === 1 ? t("{n} tab locked").replace("{n}", "1") : t("{n} tabs locked").replace("{n}", lockedCount.toString());
+    lockedCount === 0 ? t("no tab locks") : t("{n} tabs locked", { n: lockedCount });
   return (
     <button
       type="button"
@@ -595,7 +593,7 @@ function SecurityView({
           className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-elevated/40 hover:text-ink"
         >
           <ChevronLeft size={14} strokeWidth={2.2} className="dir-icon" />
-          {t("Back")}
+          {t("common.back")}
         </button>
       </div>
       <div className="flex flex-col items-center gap-2">
@@ -657,7 +655,7 @@ function SecurityView({
                     onClick={onRemovePin}
                     className="h-9 rounded-lg border border-edge-soft px-3.5 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
                   >
-                    {editing ? t("Remove") : t("Clear")}
+                    {editing ? t("common.remove") : t("Clear")}
                   </button>
                 </>
               )}
@@ -685,7 +683,7 @@ function SecurityView({
               <span className="text-[12px] text-ink-subtle">
                 {lockedCount === 0
                   ? t("No locks. All sidebar tabs open without a PIN.")
-                  : lockedCount === 1 ? t("{n} tab requires this profile's PIN.").replace("{n}", "1") : t("{n} tabs require this profile's PIN.").replace("{n}", lockedCount.toString())}
+                  : t("{n} tabs require this profile's PIN.", { n: lockedCount })}
               </span>
             </div>
           </div>
@@ -769,7 +767,7 @@ function TabsView({
 }) {
   const t = useT();
   const [tabs, setTabs] = useState<HiddenTabs>({ ...DEFAULT_HIDDEN, ...(initial ?? {}) });
-  const toggle = (key: LockableTab) => setTabs((t) => ({ ...t, [key]: !t[key] }));
+  const toggle = (key: LockableTab) => setTabs((prev) => ({ ...prev, [key]: !prev[key] }));
   const count = Object.values(tabs).filter(Boolean).length;
   return (
     <div className="flex h-full max-h-[calc(100vh-7rem)] w-full max-w-[560px] flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -780,7 +778,7 @@ function TabsView({
           className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-elevated/40 hover:text-ink"
         >
           <ChevronLeft size={14} strokeWidth={2.2} className="dir-icon" />
-          {t("Back")}
+          {t("common.back")}
         </button>
       </div>
       <div className="flex flex-col items-center gap-1">
@@ -800,14 +798,16 @@ function TabsView({
             key={tab.key}
             type="button"
             onClick={() => toggle(tab.key)}
-            className="flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-elevated/40"
+            className={`flex shrink-0 items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-start transition-colors ${
+              tabs[tab.key]
+                ? "border-ink/40 bg-canvas/60"
+                : "border-edge-soft hover:border-edge hover:bg-canvas/40"
+            }`}
           >
             <div className="flex items-center gap-3">
               <span
-                className={`flex h-4 w-4 items-center justify-center rounded-[4px] border transition-colors ${
-                  tabs[tab.key]
-                    ? "border-accent bg-accent text-canvas"
-                    : "border-edge bg-canvas/60"
+                className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition-colors ${
+                  tabs[tab.key] ? "border-ink bg-ink text-canvas" : "border-edge"
                 }`}
               >
                 {tabs[tab.key] && <Check size={12} strokeWidth={3} />}
@@ -827,14 +827,14 @@ function TabsView({
       </div>
       <div className="flex items-center justify-between gap-3">
         <span className="text-[12.5px] text-ink-subtle">
-          {count === 0 ? "No tabs selected" : `${count} ${count === 1 ? "tab" : "tabs"} locked`}
+          {count === 0 ? t("No tabs selected") : t("{n} tabs locked", { n: count })}
         </span>
         <button
           type="button"
           onClick={() => onSave(tabs)}
           className="h-10 rounded-xl bg-ink px-5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
         >
-          Save
+          {t("common.save")}
         </button>
       </div>
     </div>

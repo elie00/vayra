@@ -8,6 +8,7 @@ import { useDebridClients } from "@/lib/debrid/registry";
 import type { ScoredStream } from "@/lib/streams/types";
 import { directStreamAvailable } from "@/lib/torrent/stremio-stream";
 import type { PlayEpisode } from "@/lib/view";
+import { EditionChip } from "./edition-chip";
 import { confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts } from "./picker-utils";
 import { PlayProvenance } from "./play-provenance";
 
@@ -145,7 +146,7 @@ export function PrimaryCard({
               </div>
             )}
 
-            {(cachedDebrid || queued || (debrids.length > 0 && !stream.url) || stream.remux || stream.releaseGroupNormalized) && (
+            {(cachedDebrid || queued || (debrids.length > 0 && !stream.url) || stream.remux || stream.releaseGroupNormalized || stream.edition) && (
               <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
                 {libraryDebrids.length > 0 ? (
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-accent">
@@ -178,6 +179,7 @@ export function PrimaryCard({
                     {stream.releaseGroupNormalized}
                   </span>
                 )}
+                <EditionChip stream={stream} />
               </div>
             )}
           </div>

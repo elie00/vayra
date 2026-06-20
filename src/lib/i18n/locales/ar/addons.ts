@@ -232,6 +232,49 @@ const addons: Record<string, string> = {
     "لا توجد نسخ احتياطية بعد. اضغط الزرّ أعلاه لحفظ أول نسخة.",
   "{names} +{n} more": "{names} +{n} أخرى",
   Restore: "استعادة",
+
+  Cancel: "إلغاء",
+  Close: "إغلاق",
+  Done: "تم",
+  Copied: "تم النسخ",
+  "Copy URL": "نسخ الرابط",
+  Hide: "إخفاء",
+  Manage: "إدارة",
+  Retry: "إعادة المحاولة",
+  "Try again": "حاول مرة أخرى",
+  Remove: "إزالة",
+  "Show less": "عرض أقل",
+  "Move up": "نقل لأعلى",
+  "Move down": "نقل لأسفل",
+  "See all ({n})": "عرض الكل ({n})",
+  Anime: "أنمي",
+  "Loading…": "جارٍ التحميل…",
+  "Untitled addon": "إضافة بلا عنوان",
+  "Paste manifest URL or stremio:// link": "الصق رابط الـ manifest أو رابط //:stremio",
+  "Install from URL: paste any manifest or stremio:// link":
+    "التثبيت من رابط: الصق أي manifest أو رابط //:stremio",
+  "Click below to open {name}'s setup page. Pick your options, then copy the install link it gives you and paste it below to update the addon.":
+    "انقر أدناه لفتح صفحة إعداد {name}. اختر خياراتك، ثم انسخ رابط التثبيت الذي تمنحك إياه والصقه أدناه لتحديث الإضافة.",
+  "Click below to open {name}'s setup page in Harbor's built-in browser. Pick your options. When you click Install on their page, Harbor catches the link automatically and updates the addon.":
+    "انقر أدناه لفتح صفحة إعداد {name} في متصفّح Harbor المدمج. اختر خياراتك. عند النقر على تثبيت في صفحتها، يلتقط Harbor الرابط تلقائيًا ويحدّث الإضافة.",
+
+  "Essential addons": "إضافات أساسية",
+  "Start here. The ones almost everyone has.": "ابدأ من هنا. الإضافات التي لدى الجميع تقريبًا.",
+  "Best for debrid": "الأفضل مع debrid",
+  "Cached on Real-Debrid, TorBox, AllDebrid. Instant play.":
+    "مخزّنة مؤقتًا على Real-Debrid وTorBox وAllDebrid. تشغيل فوري.",
+  "Free torrent + usenet": "تورنت + Usenet مجاني",
+  "No subscription needed. Quality varies.": "لا يتطلب اشتراكًا. تتفاوت الجودة.",
+  "Anime done right": "أنمي بشكل صحيح",
+  "Kitsu IDs, fansub-friendly, season-aware.": "معرّفات Kitsu، متوافقة مع ترجمات المعجبين، مدركة للمواسم.",
+  "Proper search across providers, foreign-language coverage.":
+    "بحث دقيق عبر المزوّدين، وتغطية للّغات الأجنبية.",
+  "Better posters, ratings, episode info.": "ملصقات وتقييمات ومعلومات حلقات أفضل.",
+  "Sports & live TV": "الرياضة والبث التلفزيوني المباشر",
+  "Live streams that actually work.": "بثوث مباشرة تعمل فعلًا.",
+  "Power tools": "أدوات احترافية",
+  "Quality-of-life upgrades. Sync, ratings, trailers.": "تحسينات لجودة الاستخدام. مزامنة وتقييمات ومقاطع دعائية.",
+  "NSFW. Hidden until enabled.": "محتوى للبالغين. مخفي حتى يُفعّل.",
 };
 
 export default addons;

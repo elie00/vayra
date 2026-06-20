@@ -35,12 +35,19 @@ export function cleanTitle(name: string): string {
   return s || name.trim();
 }
 
+const EP_WORD_RE = /\s*[-|:]?\s*\b(?:episode|ep|part|pt)\b\s*\.?\s*\d{1,3}\s*$/i;
+const LAST_DELIM_RE = /^(.*\S)\s+[-|:]\s+\S.*$/;
+
 export function showTitleFromEpisode(name: string): string {
   const seIdx = name.search(SE_RE);
   const xIdx = name.search(X_RE);
   let cut = -1;
   if (seIdx >= 0) cut = seIdx;
   else if (xIdx >= 0) cut = xIdx;
-  const base = cut >= 0 ? name.slice(0, cut) : name;
-  return cleanTitle(base);
+  if (cut >= 0) return cleanTitle(name.slice(0, cut));
+  const stripped = name.replace(EP_WORD_RE, "").trim();
+  if (stripped && stripped !== name.trim()) return cleanTitle(stripped);
+  const m = name.match(LAST_DELIM_RE);
+  if (m && m[1].trim()) return cleanTitle(m[1]);
+  return cleanTitle(name);
 }

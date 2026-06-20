@@ -1,6 +1,7 @@
 import { ArrowUpToLine, Check, ChevronDown, ChevronUp, Copy, Download, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import type { IptvPlaylistSource } from "@/lib/iptv/types";
 import { EMPTY_FORM, PlaylistForm, type PlaylistFormValue } from "./source-picker/playlist-form";
@@ -146,8 +147,8 @@ export function SourcePicker({
                           onExport(s.id);
                           setActions(null);
                         }}
-                        onDelete={() => {
-                          if (confirm(t('Remove playlist "{name}"?', { name: s.name }))) {
+                        onDelete={async () => {
+                          if (await confirmDialog(t('Remove playlist "{name}"?', { name: s.name }))) {
                             onRemove(s.id);
                             setActions(null);
                           }

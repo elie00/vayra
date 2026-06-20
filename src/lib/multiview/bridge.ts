@@ -2,7 +2,24 @@ import { invoke } from "@tauri-apps/api/core";
 
 export const MAX_SLOTS = 4;
 
-export type CellRect = { slot: number; x: number; y: number; w: number; h: number };
+export type CellRect = {
+  slot: number;
+  cssLeft: number;
+  cssTop: number;
+  cssWidth: number;
+  cssHeight: number;
+  cssViewW: number;
+  cssViewH: number;
+};
+
+export type OpenRect = {
+  cssLeft: number;
+  cssTop: number;
+  cssWidth: number;
+  cssHeight: number;
+  cssViewW: number;
+  cssViewH: number;
+};
 
 export function multiviewSupported(): boolean {
   if (typeof window === "undefined") return false;
@@ -12,12 +29,22 @@ export function multiviewSupported(): boolean {
 
 export async function mvOpen(
   slot: number,
-  rect: { x: number; y: number; w: number; h: number },
+  rect: OpenRect,
   url: string,
   userAgent?: string,
 ): Promise<void> {
   await invoke("multiview_open", {
-    args: { slot, x: rect.x, y: rect.y, w: rect.w, h: rect.h, url, userAgent },
+    args: {
+      slot,
+      cssLeft: rect.cssLeft,
+      cssTop: rect.cssTop,
+      cssWidth: rect.cssWidth,
+      cssHeight: rect.cssHeight,
+      cssViewW: rect.cssViewW,
+      cssViewH: rect.cssViewH,
+      url,
+      userAgent,
+    },
   });
 }
 
@@ -27,7 +54,15 @@ export async function mvPrespawn(count: number): Promise<void> {
 
 export async function mvGeometry(r: CellRect): Promise<void> {
   await invoke("multiview_geometry", {
-    args: { slot: r.slot, x: r.x, y: r.y, w: r.w, h: r.h },
+    args: {
+      slot: r.slot,
+      cssLeft: r.cssLeft,
+      cssTop: r.cssTop,
+      cssWidth: r.cssWidth,
+      cssHeight: r.cssHeight,
+      cssViewW: r.cssViewW,
+      cssViewH: r.cssViewH,
+    },
   });
 }
 

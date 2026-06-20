@@ -56,7 +56,7 @@ export function EpisodeDetailView({
   useEffect(() => {
     if (!settings.omdbKey || !episodeImdbId) return;
     let cancelled = false;
-    void fetchOmdbScores(settings.omdbKey, episodeImdbId, "episode").then(() => {
+    void fetchOmdbScores(settings.omdbKey, episodeImdbId).then(() => {
       if (cancelled) return;
     });
     return () => { cancelled = true; };
@@ -110,7 +110,6 @@ export function EpisodeDetailView({
   };
 
   const background = getImageUrl(episodeData?.stillPath, "original") ?? seriesMeta?.background ?? undefined;
-  const [episodeBlurred, setEpisodeBlurred] = useState(true);
 
   // Episode rating: OMDB (via episode IMDb ID) → TMDB vote_average → none
   const episodeRating = episodeOmdbScores?.imdbRating ??
@@ -210,18 +209,8 @@ export function EpisodeDetailView({
               alt=""
               decoding="async"
               fetchPriority="high"
-              className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${
-                settings.blurEpisodes && episodeBlurred ? "blur-xl brightness-50 scale-105" : ""
-              }`}
+              className="absolute inset-0 h-full w-full object-cover"
             />
-          )}
-          {settings.blurEpisodes && episodeBlurred && (
-            <button
-              onClick={() => setEpisodeBlurred(false)}
-              className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-xl bg-ink px-4 py-2 text-[12px] font-semibold text-canvas shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.97]"
-            >
-              {t("Reveal image")}
-            </button>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
@@ -315,9 +304,7 @@ export function EpisodeDetailView({
                     src={getImageUrl(still.filePath, "w780")}
                     alt={`${episodeData.name} — ${t("Still {n}", { n: idx + 1 })}`}
                     loading="lazy"
-                    className={`h-full w-full object-cover transition-all duration-500 ${
-                      settings.blurEpisodes && episodeBlurred ? "blur-xl brightness-50" : ""
-                    } group-hover:scale-105`}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
               ))}

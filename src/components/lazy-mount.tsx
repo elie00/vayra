@@ -32,7 +32,11 @@ export function LazyMount({
       { rootMargin },
     );
     io.observe(el);
-    return () => io.disconnect();
+    const safety = window.setTimeout(() => setShown(true), 800);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(safety);
+    };
   }, [shown, rootMargin]);
 
   if (shown) return <>{children}</>;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
+import { headersFromChannel } from "@/lib/iptv/channel-headers";
 import type { IptvChannel, IptvPlaylistSource } from "@/lib/iptv/types";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayerSrc } from "@/lib/view";
@@ -117,6 +118,8 @@ export function useLiveChannelOverlay(params: {
         title: channel.name,
         subtitle: channel.group ?? "Live",
         notWebReady: true,
+        isLive: true,
+        headers: headersFromChannel(channel),
         liveProgram: program,
       };
       replacePlayerSrc(newSrc);

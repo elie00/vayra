@@ -15,11 +15,16 @@ import { repairStremioLibrary, type RepairProgress, type RepairResult } from "@/
 import { openUrl } from "@/lib/window";
 import {
   checkForUpdate,
+  clearStagedUpdate,
   openUpdatePanel,
   updateAvailable,
   useUpdate,
 } from "@/lib/updater/use-update";
+import { BetaTag } from "@/components/beta-tag";
+import { IS_BETA_BUILD } from "@/lib/build-info";
 import { BackupRow } from "./backup-row";
+import { BuildFeedback } from "./build-feedback";
+import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
 import { Section } from "./shared";
@@ -45,6 +50,8 @@ export function AdvancedPanel() {
           <div className="flex flex-col gap-2.5">
             <UpdatesRow />
             <BetaChannelRow />
+            <RollbackRow />
+            <BuildFeedback />
           </div>
         </Section>
       )}
@@ -155,6 +162,7 @@ function LegalDisclaimer() {
 }
 
 function WebBuildBanner() {
+  const t = useT();
   return (
     <section className="relative overflow-hidden rounded-2xl border border-edge bg-elevated/60 p-7">
       <div className="group absolute -end-6 bottom-0 aspect-square h-[82%] cursor-default">
@@ -173,20 +181,16 @@ function WebBuildBanner() {
       </div>
       <div className="relative z-10 flex max-w-[54%] flex-col gap-3">
         <span className="w-fit rounded-full border border-edge-soft bg-canvas/60 px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
-          Web build
+          {t("Web build")}
         </span>
         <h2 className="text-[19px] font-medium tracking-tight text-ink">
-          Where your data lives
+          {t("Where your data lives")}
         </h2>
         <p className="text-[13.5px] leading-relaxed text-ink-muted">
-          Everything you save here stays in this browser. Your Stremio login, API
-          keys, watch progress, picker cache, dismissed tips. Harbor servers never
-          see any of it. Clearing your browser data wipes it.
+          {t("Everything you save here stays in this browser. Your Stremio login, API keys, watch progress, picker cache, dismissed tips. Harbor servers never see any of it. Clearing your browser data wipes it.")}
         </p>
         <p className="text-[13.5px] leading-relaxed text-ink-muted">
-          The web build can't run mpv, the trickplay generator, the local bandwidth
-          probe, or your own Cloudflare relay. If you want HDR passthrough,
-          TrueHD or DTS-HD audio, and smoother seeking, grab the desktop app.
+          {t("The web build can't run mpv, the trickplay generator, the local bandwidth probe, or your own Cloudflare relay. If you want HDR passthrough, TrueHD or DTS-HD audio, and smoother seeking, grab the desktop app.")}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <button
@@ -195,7 +199,7 @@ function WebBuildBanner() {
             className="flex h-10 w-fit items-center gap-2 rounded-xl bg-ink px-4 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
           >
             <Download size={14} strokeWidth={2.4} />
-            Get Harbor for desktop
+            {t("Get Harbor for desktop")}
           </button>
           <button
             type="button"
@@ -203,7 +207,7 @@ function WebBuildBanner() {
             className="flex h-10 w-fit items-center gap-2 rounded-xl border border-edge bg-elevated/60 px-4 text-[13.5px] font-semibold text-ink transition-colors hover:border-ink hover:bg-elevated"
           >
             <Github size={14} strokeWidth={2.2} />
-            Source code
+            {t("Source code")}
           </button>
         </div>
       </div>
@@ -227,15 +231,17 @@ function BetaChannelRow() {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="text-[14px] font-medium text-ink">{t("Get beta updates")}</span>
         <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-          Receive early builds with the newest fixes before they reach the stable release. Betas can
-          be rough around the edges; switch this off to return to stable at the next update.
+          {t("Receive early builds with the newest fixes before they reach the stable release. Betas can be rough around the edges; switch this off to return to stable at the next update.")}
         </p>
       </div>
       <button
         type="button"
         role="switch"
         aria-checked={on}
-        onClick={() => update({ betaUpdates: !on })}
+        onClick={() => {
+          if (on) clearStagedUpdate();
+          update({ betaUpdates: !on });
+        }}
         className={`mt-1 flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors ${
           on ? "bg-accent" : "bg-raised"
         }`}
@@ -251,6 +257,7 @@ function BetaChannelRow() {
 }
 
 function StremioDeeplinkRow() {
+  const t = useT();
   const { settings, update } = useSettings();
   const on = settings.stremioDeeplinkInstall;
   return (
@@ -265,14 +272,10 @@ function StremioDeeplinkRow() {
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-[14px] font-medium text-ink">
-            Catch stremio:// install links inside Harbor
+            {t("Catch stremio:// install links inside Harbor")}
           </span>
           <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-            Harbor&apos;s in-app installer animates the manifest install and keeps you in
-            context. Anything Harbor installs is also synced to your Stremio account, so the
-            official app stays the canonical library. Turn this off and Stremio becomes the
-            only handler for stremio:// links; Harbor still installs anything you trigger from
-            inside the app (Configure &amp; install, paste, drag-and-drop).
+            {t("Harbor's in-app installer animates the manifest install and keeps you in context. Anything Harbor installs is also synced to your Stremio account, so the official app stays the canonical library. Turn this off and Stremio becomes the only handler for stremio:// links; Harbor still installs anything you trigger from inside the app (Configure & install, paste, drag-and-drop).")}
           </p>
         </div>
         <button
@@ -293,13 +296,11 @@ function StremioDeeplinkRow() {
       </div>
       {on ? (
         <p className="px-1 text-[11.5px] leading-relaxed text-ink-subtle">
-          Heads up: if Stremio is also installed, Windows may ask which app to use the first
-          time a stremio:// link fires. Pick Harbor to make it stick.
+          {t("Heads up: if Stremio is also installed, Windows may ask which app to use the first time a stremio:// link fires. Pick Harbor to make it stick.")}
         </p>
       ) : (
         <p className="px-1 text-[11.5px] leading-relaxed text-ink-subtle">
-          stremio:// links now open in the Stremio app. Harbor will only install when you
-          trigger it from inside Harbor.
+          {t("stremio:// links now open in the Stremio app. Harbor will only install when you trigger it from inside Harbor.")}
         </p>
       )}
     </div>
@@ -307,25 +308,26 @@ function StremioDeeplinkRow() {
 }
 
 function UpdatesRow() {
+  const t = useT();
   const u = useUpdate();
   const ready = updateAvailable(u);
   const busy = u.status === "checking";
   const status =
     u.status === "checking"
-      ? "Checking harbor.site for a newer build."
+      ? t("Checking harbor.site for a newer build.")
       : u.status === "downloading"
-        ? `Downloading ${Math.round(u.progress * 100)}%`
+        ? t("Downloading {pct}%", { pct: Math.round(u.progress * 100) })
         : u.status === "downloaded"
-          ? "Downloaded. Ready to install and restart."
+          ? t("Downloaded. Ready to install and restart.")
           : u.status === "installing"
-            ? "Installing. Harbor will restart."
+            ? t("Installing. Harbor will restart.")
             : u.status === "available"
-              ? "A new version is ready to download."
+              ? t("A new version is ready to download.")
               : u.status === "uptodate"
-                ? "You're on the latest version."
+                ? t("You're on the latest version.")
                 : u.status === "error" && u.manualCheck
-                  ? "Couldn't reach the update server. Try again in a moment."
-                  : "Harbor checks automatically every few hours.";
+                  ? t("Couldn't reach the update server. Try again in a moment.")
+                  : t("Harbor checks automatically every few hours.");
   return (
     <div className="flex items-center gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5">
       <div
@@ -336,8 +338,9 @@ function UpdatesRow() {
         <RotateCw size={18} strokeWidth={2} className={busy ? "animate-spin" : ""} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[14px] font-medium text-ink">
-          {ready && u.version ? `Harbor ${u.version} available` : `Harbor ${__APP_VERSION__}`}
+        <span className="flex items-center gap-2 text-[14px] font-medium text-ink">
+          {ready && u.version ? t("Harbor {version} available", { version: u.version }) : `Harbor ${__APP_VERSION__}`}
+          <BetaTag />
         </span>
         <span className="text-[12.5px] text-ink-subtle">{status}</span>
       </div>
@@ -346,7 +349,7 @@ function UpdatesRow() {
           onClick={openUpdatePanel}
           className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-4 text-[13px] font-semibold text-[#1b1304] transition-[filter] hover:brightness-105"
         >
-          <Download size={15} strokeWidth={2.2} /> Update now
+          <Download size={15} strokeWidth={2.2} /> {t("Update now")}
         </button>
       ) : (
         <button
@@ -355,7 +358,7 @@ function UpdatesRow() {
           className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-edge px-3.5 text-[13px] font-medium text-ink transition-colors hover:bg-raised disabled:opacity-60"
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : <RotateCw size={15} strokeWidth={2.2} />}
-          {busy ? "Checking" : "Check for updates"}
+          {busy ? t("Checking") : t("Check for updates")}
         </button>
       )}
     </div>
@@ -376,10 +379,9 @@ function DiscordPresenceRow() {
           className="h-14 w-auto shrink-0 self-center object-contain"
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-[14px] font-medium text-ink">Show on Discord</span>
+          <span className="text-[14px] font-medium text-ink">{t("Show on Discord")}</span>
           <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-            Display what you are watching on your Discord profile, with the show poster and a
-            live progress bar. Requires the Discord desktop app to be running.
+            {t("Display what you are watching on your Discord profile, with the show poster and a live progress bar. Requires the Discord desktop app to be running.")}
           </p>
         </div>
         <button
@@ -402,42 +404,42 @@ function DiscordPresenceRow() {
         <div className="flex flex-col gap-1.5 ps-4">
           <DiscordSubToggle
             label={t("Hide the title")}
-            hint="Show 'Watching something' with no show name or poster."
+            hint={t("Show 'Watching something' with no show name or poster.")}
             on={settings.discordHideTitle}
             onToggle={() => update({ discordHideTitle: !settings.discordHideTitle })}
           />
           <DiscordSubToggle
             label={t("Show while paused")}
-            hint="Keep the presence visible when playback is paused."
+            hint={t("Keep the presence visible when playback is paused.")}
             on={settings.discordShowWhenPaused}
             onToggle={() => update({ discordShowWhenPaused: !settings.discordShowWhenPaused })}
           />
           <DiscordSubToggle
             label={t("Show while browsing")}
-            hint="Display 'Browsing Harbor' when nothing is playing."
+            hint={t("Display 'Browsing Harbor' when nothing is playing.")}
             on={settings.discordShowWhenBrowsing}
             onToggle={() => update({ discordShowWhenBrowsing: !settings.discordShowWhenBrowsing })}
           />
           <DiscordSubToggle
             label={t("Show poster")}
-            hint="Reveal the show or movie artwork. Off keeps the title but hides the poster."
+            hint={t("Reveal the show or movie artwork. Off keeps the title but hides the poster.")}
             on={settings.discordShowPoster}
             onToggle={() => update({ discordShowPoster: !settings.discordShowPoster })}
           />
           <DiscordSubToggle
             label={t("Show elapsed time")}
-            hint="Display the live progress bar showing how far into the title you are."
+            hint={t("Display the live progress bar showing how far into the title you are.")}
             on={settings.discordShowTimestamp}
             onToggle={() => update({ discordShowTimestamp: !settings.discordShowTimestamp })}
           />
           <DiscordSubToggle
             label={t("Watch party join button")}
-            hint="Add a Join button with your room link while you're in a watch party."
+            hint={t("Add a Join button with your room link while you're in a watch party.")}
             on={settings.discordShowPartyJoin}
             onToggle={() => update({ discordShowPartyJoin: !settings.discordShowPartyJoin })}
           />
           <p className="px-1 pt-1 text-[11.5px] leading-snug text-ink-subtle">
-            And for the naughty ones: browsing or rating an adult addon never shows on Discord.
+            {t("And for the naughty ones: browsing or rating an adult addon never shows on Discord.")}
           </p>
         </div>
       )}
@@ -482,7 +484,7 @@ function DiscordSubToggle({
 }
 
 function OmdbBudgetRow() {
-  const t = useT();
+  const tr = useT();
   const { settings } = useSettings();
   const [budget, setBudget] = useState<OmdbBudget>(() => readOmdbBudget());
   const [confirmed, setConfirmed] = useState(false);
@@ -496,22 +498,23 @@ function OmdbBudgetRow() {
   if (!settings.omdbKey) {
     return (
       <ActionRow
-        label={t("OMDB daily budget")}
-        sub={t("Save an OMDB key in Library & metadata to enable rating fetches.")}
+        label={tr("OMDB daily budget")}
+        sub={tr("Save an OMDB key in Library & metadata to enable rating fetches.")}
         disabled
       />
     );
   }
 
   const sub = budget.keyInvalid
-    ? "Key rejected. Check it on Library & metadata."
-    : `${budget.used} / ${budget.limit} requests today.${budget.exhausted ? " Budget exhausted, resets at midnight UTC." : ""}`;
+    ? tr("Key rejected. Check it on Library & metadata.")
+    : tr("{used} / {limit} requests today.", { used: budget.used, limit: budget.limit }) +
+      (budget.exhausted ? " " + tr("Budget exhausted, resets at midnight UTC.") : "");
 
   return (
     <ActionRow
-      label={t("OMDB daily budget")}
+      label={tr("OMDB daily budget")}
       sub={sub}
-      cta={confirmed ? "Reset" : "Reset counter"}
+      cta={confirmed ? tr("Reset") : tr("Reset counter")}
       icon={confirmed ? <Check size={14} strokeWidth={2.6} /> : <RotateCw size={14} />}
       tone={confirmed ? "success" : "neutral"}
       onClick={() => {
@@ -523,7 +526,7 @@ function OmdbBudgetRow() {
 }
 
 function OnboardingRow() {
-  const t = useT();
+  const tr = useT();
   const { resetOnboarding, resetNudges } = useOnboarding();
   const [phase, setPhase] = useState<"idle" | "walkthrough" | "hints">("idle");
   useEffect(() => {
@@ -535,9 +538,9 @@ function OnboardingRow() {
   return (
     <div className="flex flex-col gap-2.5">
       <ActionRow
-        label={t("Replay walkthrough")}
-        sub={t("Re-runs the welcome flow and clears every dismissed tip.")}
-        cta={phase === "walkthrough" ? "Done" : "Replay"}
+        label={tr("Replay walkthrough")}
+        sub={tr("Re-runs the welcome flow and clears every dismissed tip.")}
+        cta={phase === "walkthrough" ? tr("Done") : tr("Replay")}
         icon={phase === "walkthrough" ? <Check size={14} strokeWidth={2.6} /> : <RotateCw size={14} />}
         tone={phase === "walkthrough" ? "success" : "neutral"}
         onClick={() => {
@@ -546,9 +549,9 @@ function OnboardingRow() {
         }}
       />
       <ActionRow
-        label={t("Restore dismissed hints")}
-        sub={t("Brings back the small in-app tips you've dismissed without redoing the welcome flow.")}
-        cta={phase === "hints" ? "Restored" : "Restore"}
+        label={tr("Restore dismissed hints")}
+        sub={tr("Brings back the small in-app tips you've dismissed without redoing the welcome flow.")}
+        cta={phase === "hints" ? tr("Restored") : tr("Restore")}
         icon={phase === "hints" ? <Check size={14} strokeWidth={2.6} /> : <RotateCw size={14} />}
         tone={phase === "hints" ? "success" : "neutral"}
         onClick={() => {
@@ -564,8 +567,8 @@ function AboutRow() {
   const t = useT();
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5 text-[13px] text-ink-muted">
-      <InfoLine label={t("Version")} value={__APP_VERSION__} />
-      <InfoLine label={t("Build")} value={isTauri ? "Desktop (Tauri 2 / WebView2)" : "Web"} />
+      <InfoLine label={t("Version")} value={`${__APP_VERSION__}${IS_BETA_BUILD ? " (Beta)" : ""}`} />
+      <InfoLine label={t("Build")} value={isTauri ? t("Desktop (Tauri 2 / WebView2)") : t("Web")} />
       <InfoLine label={t("Bug reports")} value="bugs@harbor.site" />
     </div>
   );
@@ -662,31 +665,35 @@ function LibraryRepairRow() {
   }
 
   const statusLine = (() => {
-    if (error) return `Failed: ${error}`;
+    if (error) return t("Failed: {error}", { error });
     if (result) {
-      if (result.total === 0) return "Library is empty. Nothing to repair.";
-      return `${result.repaired} fixed, ${result.alreadyClean} already clean${result.unrepairable > 0 ? `, ${result.unrepairable} unrepairable` : ""}.`;
+      if (result.total === 0) return t("Library is empty. Nothing to repair.");
+      return (
+        t("{repaired} fixed, {clean} already clean", { repaired: result.repaired, clean: result.alreadyClean }) +
+        (result.unrepairable > 0 ? t(", {n} unrepairable", { n: result.unrepairable }) : "") +
+        "."
+      );
     }
-    if (!progress) return "Rewrites every library item to match Stremio's exact schema. Run once if your Stremio app started crashing after Harbor synced playback.";
+    if (!progress) return t("Rewrites every library item to match Stremio's exact schema. Run once if your Stremio app started crashing after Harbor synced playback.");
     if (progress.phase === "fetching") {
-      return progress.total ? `Fetching ${progress.total} items…` : "Fetching library index…";
+      return progress.total ? t("Fetching {n} items…", { n: progress.total }) : t("Fetching library index…");
     }
     if (progress.phase === "normalizing") {
       return progress.needsRepair != null
-        ? `${progress.needsRepair} items need repair.`
-        : `Checking ${progress.total ?? 0} items…`;
+        ? t("{n} items need repair.", { n: progress.needsRepair })
+        : t("Checking {n} items…", { n: progress.total ?? 0 });
     }
     if (progress.phase === "pushing") {
-      return `Pushing ${progress.pushed ?? 0} of ${progress.needsRepair ?? 0}…`;
+      return t("Pushing {pushed} of {total}…", { pushed: progress.pushed ?? 0, total: progress.needsRepair ?? 0 });
     }
-    return "Done.";
+    return t("Done.");
   })();
 
   return (
     <ActionRow
       label={t("Repair library")}
       sub={statusLine}
-      cta={busy ? "Working…" : result ? "Run again" : "Repair now"}
+      cta={busy ? t("Working…") : result ? t("Run again") : t("Repair now")}
       icon={busy ? <Loader2 size={13} strokeWidth={2.4} className="animate-spin" /> : <Wrench size={13} strokeWidth={2.4} />}
       onClick={run}
       disabled={busy}

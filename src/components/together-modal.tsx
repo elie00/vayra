@@ -1,11 +1,11 @@
 import { Check, Copy, LogOut, MousePointer2, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useT } from "@/lib/i18n";
 import type { Meta } from "@/lib/cinemeta";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
 import { useSelfIdentity } from "@/lib/together/use-self-identity";
 import { useView } from "@/lib/view";
+import { useT } from "@/lib/i18n";
 import { Tooltip } from "@/views/detail/tooltip";
 import { Avatar } from "./together-modal/avatar";
 import { ChatPanel } from "./together-modal/chat-panel";
@@ -22,11 +22,11 @@ export function TogetherPopover({
   placement?: "below-right" | "above-left";
   connectStyle?: "tab" | "popover";
 } = {}) {
-  const t = useT();
   const { enabled, snapshot, chat, displayName, setDisplayName, startSession, joinSession, leaveSession, retrySession, sendChat, closeModal, clientId } = useTogether();
   const { openSettings, openPicker, topKind } = useView();
   const { settings, update } = useSettings();
   const { avatar: selfAvatar, color: selfColor } = useSelfIdentity();
+  const t = useT();
   const [joinCode, setJoinCode] = useState("");
   const [draftName, setDraftName] = useState(displayName);
   const [copied, setCopied] = useState(false);
@@ -126,7 +126,7 @@ export function TogetherPopover({
           <button
             type="button"
             onClick={() => setView((v) => (v === "link" ? "default" : "link"))}
-            aria-label={view === "link" ? "Close invite link panel" : "Open invite link panel"}
+            aria-label={view === "link" ? t("Close invite link panel") : t("Open invite link panel")}
             aria-pressed={view === "link"}
             className={`flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10.5px] font-bold uppercase tracking-[0.16em] transition-colors ${
               view === "link"
@@ -158,7 +158,9 @@ export function TogetherPopover({
           <div>
             <p className="text-[13px] text-ink">{t("Watch Together needs a relay.")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-ink-muted">
-              {t("A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.")}
+              {t(
+                "A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.",
+              )}
             </p>
           </div>
           <input
@@ -236,8 +238,8 @@ export function TogetherPopover({
                 disabled={joinCode.trim().length === 0 || connecting}
                 className="h-10 rounded-lg border border-edge px-4 text-[13px] font-medium text-ink transition-colors hover:bg-elevated disabled:opacity-40 disabled:hover:bg-transparent"
               >
-              {t("Join")}
-            </button>
+                {t("Join")}
+              </button>
             </div>
             <p className="px-1 text-[10.5px] text-ink-subtle">
               {t("or paste an invite link")}
@@ -270,7 +272,7 @@ export function TogetherPopover({
             <button
               onClick={handleCopy}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-edge text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
-              aria-label="Copy room code"
+              aria-label={t("Copy room code")}
             >
               {copied ? <Check size={15} strokeWidth={2.4} /> : <Copy size={14} strokeWidth={1.9} />}
             </button>
@@ -278,7 +280,7 @@ export function TogetherPopover({
 
           <div className="flex flex-col gap-1.5">
             <span className="text-[10.5px] uppercase tracking-wider text-ink-subtle">
-              {t("{n} watching").replace("{n}", participants.length.toString())}
+              {t("{n} watching", { n: participants.length })}
             </span>
             <ul className="flex flex-wrap gap-1.5">
               {participants.map((p) => {

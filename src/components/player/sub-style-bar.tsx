@@ -60,11 +60,13 @@ export function SubStyleBar() {
       <div
         role="toolbar"
         aria-label={t("Subtitle appearance")}
-        className="pointer-events-auto flex max-w-[calc(100vw-56px)] items-stretch gap-1.5 overflow-x-auto rounded-[14px] border border-edge bg-elevated/95 px-1.5 py-1.5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.85)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="pointer-events-auto flex max-w-[calc(100vw-56px)] items-stretch gap-1.5 overflow-x-auto rounded-[14px] border border-edge bg-elevated px-1.5 py-1.5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.85)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <FontMenu value={settings.subFontFamily} fonts={settings.customFonts} onChange={(f) => update({ subFontFamily: f })} />
         <Divider />
         <SizeStepper value={settings.subFontSize} onChange={(n) => update({ subFontSize: clamp(n, 16, 120) })} />
+        <Divider />
+        <BoldToggle settings={settings} update={update} />
         <Divider />
         <ColorRow value={settings.subFontColor} onChange={(c) => update({ subFontColor: c })} portal />
         <Divider />
@@ -173,7 +175,7 @@ function FontMenu({
             />
             <div
               ref={menuRef}
-              className="fixed z-[320] max-h-[min(60vh,380px)] w-[208px] overflow-y-auto rounded-[14px] border border-edge bg-elevated/95 p-1.5 shadow-[0_24px_60px_-14px_rgba(0,0,0,0.8)] backdrop-blur-md [scrollbar-width:thin]"
+              className="fixed z-[320] max-h-[min(60vh,380px)] w-[208px] overflow-y-auto rounded-[14px] border border-edge bg-elevated p-1.5 shadow-[0_24px_60px_-14px_rgba(0,0,0,0.8)] backdrop-blur-md [scrollbar-width:thin]"
               style={{ top: pos.top, left: pos.left }}
             >
             {items.map((it) => {
@@ -290,6 +292,24 @@ function OutlineToggle({ settings, update }: { settings: Settings; update: (p: P
         </div>
       )}
     </div>
+  );
+}
+
+function BoldToggle({ settings, update }: { settings: Settings; update: (p: Partial<Settings>) => void }) {
+  const t = useT();
+  return (
+    <button
+      type="button"
+      onClick={() => update({ subBold: !settings.subBold })}
+      aria-pressed={settings.subBold}
+      aria-label={t("Bold")}
+      title={t("Bold")}
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-[16px] font-bold transition-colors ${
+        settings.subBold ? "bg-accent text-canvas" : "bg-raised text-ink-muted hover:bg-elevated hover:text-ink"
+      }`}
+    >
+      B
+    </button>
   );
 }
 

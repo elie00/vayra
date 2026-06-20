@@ -8,6 +8,7 @@ import { HostMatchChip } from "@/components/host-match-chip";
 import { useDebridClients } from "@/lib/debrid/registry";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
+import { EditionChip } from "./edition-chip";
 import {
   addonInstanceKey,
   buildAddonOptions,
@@ -177,7 +178,10 @@ function SourceRow({
           ))}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <p className="truncate font-mono text-[14px] text-ink">{displayTitle(stream, showName, episode)}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="min-w-0 truncate font-mono text-[14px] text-ink">{displayTitle(stream, showName, episode)}</p>
+            <EditionChip stream={stream} />
+          </div>
           <p className="flex items-center gap-2 truncate text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
             <AddonLogo
               addonId={stream.addonId}

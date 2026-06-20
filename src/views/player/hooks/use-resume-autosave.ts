@@ -2,12 +2,16 @@ import { useEffect, useRef } from "react";
 import { markAnimeWatching, syncAnimeProgress } from "@/lib/anilist/sync";
 import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
+import { isExternalPlaylistId } from "@/lib/iptv/vod";
+import { saveLocalCw } from "@/lib/local-cw";
+import { isManuallyWatched, setManualWatched } from "@/lib/manual-watched";
 import { savePlayback } from "@/lib/playback-history";
 import { saveResumeMs } from "@/lib/resume";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, subscribePlaybackClock } from "@/lib/player/playback-clock";
 import { useSettings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
+import { CLOUD_OK } from "./use-stremio-sync";
 
 const TICK_MS = 4000;
 const MIN_POSITION_SEC = 5;
@@ -60,7 +64,33 @@ export function useResumeAutosave(params: {
     if (pos < MIN_POSITION_SEC) return;
     lastSavedRef.current = pos * 1000;
     saveResumeMs(id, pos * 1000, se, ep);
+    if (isExternalPlaylistId(id)) return;
     savePlayback(id, { title: s.meta.name, parsedTitle: s.meta.name }, se, ep);
+    if ((s.meta.type === "series" || s.meta.type === "movie") && !CLOUD_OK.test(id)) {
+      saveLocalCw({
+        id,
+        type: s.meta.type,
+        name: s.meta.name,
+        poster: s.meta.poster,
+        background: s.meta.background,
+        season: se,
+        episode: ep,
+        videoId: s.episode?.videoId,
+        positionMs: Math.floor(pos * 1000),
+        durationMs: Math.max(0, Math.floor(sn.durationSec * 1000)),
+        t: Date.now(),
+      });
+      if (
+        s.meta.type === "series" &&
+        typeof se === "number" &&
+        typeof ep === "number" &&
+        sn.durationSec > 0 &&
+        pos / sn.durationSec >= WATCHED_RATIO &&
+        !isManuallyWatched(id, se, ep)
+      ) {
+        setManualWatched(id, se, ep, true);
+      }
+    }
     if (pos < TASTE_MIN_SEC) return;
     const trackId = animeTrackId(s);
     if (autoSyncRef.current && trackId) {

@@ -61,9 +61,11 @@ export function fetchAniSkipSegments(malId: number, episode: number): Promise<Sk
     segments.sort((a, b) => a.startSec - b.startSec);
     segmentCache.set(key, segments);
     return segments;
-  })().finally(() => {
-    inflight.delete(key);
-  });
+  })()
+    .catch((): SkipSegment[] => [])
+    .finally(() => {
+      inflight.delete(key);
+    });
   inflight.set(key, p);
   return p;
 }

@@ -1,4 +1,5 @@
 import type { ResolvedAddon } from "@/lib/addons-store/store";
+import { t } from "@/lib/i18n";
 
 export function resourceLabels(rs: NonNullable<ResolvedAddon["manifest"]>["resources"] | undefined): string[] {
   if (!rs) return [];
@@ -7,7 +8,7 @@ export function resourceLabels(rs: NonNullable<ResolvedAddon["manifest"]>["resou
 
 export function subtitleFromManifest(r: ResolvedAddon): string {
   const m = r.manifest;
-  if (!m) return "Loading…";
+  if (!m) return t("Loading…");
   if (m.description) return m.description.split(/[.\n]/)[0]?.slice(0, 90) ?? "";
   const labels = resourceLabels(m.resources);
   return labels.join(" · ");
@@ -18,7 +19,7 @@ export function idOf(r: ResolvedAddon): string {
 }
 
 export function nameOf(r: ResolvedAddon): string {
-  return r.manifest?.name ?? r.curated?.id ?? "Untitled addon";
+  return r.manifest?.name ?? r.curated?.id ?? t("Untitled addon");
 }
 
 export function addonKey(r: ResolvedAddon): string {

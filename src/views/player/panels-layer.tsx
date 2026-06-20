@@ -20,6 +20,7 @@ export function PanelsLayer({
   onHostAdvance,
   watchedFor,
   nextEp,
+  onRestart,
   pendingResumeSec,
   durationSec,
   resumeTitle,
@@ -44,6 +45,7 @@ export function PanelsLayer({
   onHostAdvance: (ep: PlayEpisode) => void;
   watchedFor: (ep: PlayEpisode) => boolean;
   nextEp: PlayEpisode | null;
+  onRestart: () => void;
   pendingResumeSec: number | null;
   durationSec: number;
   resumeTitle: string;
@@ -62,10 +64,10 @@ export function PanelsLayer({
         <button
           onClick={onOpenEpisodePanel}
           aria-label={t("Up next")}
-          className={`group absolute top-1/2 z-20 flex h-32 -translate-y-1/2 flex-col items-center justify-center gap-2.5 bg-elevated/95 text-ink ring-1 ring-edge-soft shadow-[0_10px_32px_-10px_rgba(0,0,0,0.6)] backdrop-blur-md transition-[padding,background] duration-200 hover:bg-elevated ${
+          className={`group absolute top-1/2 z-20 flex h-32 -translate-y-1/2 flex-col items-center justify-center gap-2.5 bg-elevated/95 text-ink shadow-[0_10px_32px_-10px_rgba(0,0,0,0.6)] backdrop-blur-md transition-[padding,background] duration-200 hover:bg-elevated ${
             episodesCorner === "top-left" || episodesCorner === "bottom-left"
-              ? "left-0 rounded-r-2xl pl-2 pr-2.5 hover:pr-3"
-              : "right-0 rounded-l-2xl pl-2.5 pr-2 hover:pl-3"
+              ? "left-0 rounded-r-2xl border-y border-r border-edge-soft pl-2 pr-2.5 hover:pr-3"
+              : "right-0 rounded-l-2xl border-y border-l border-edge-soft pl-2.5 pr-2 hover:pl-3"
           }`}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -97,6 +99,7 @@ export function PanelsLayer({
           onHostAdvance={onHostAdvance}
           watchedFor={watchedFor}
           nextEp={nextEp}
+          onRestart={onRestart}
         />
       )}
 

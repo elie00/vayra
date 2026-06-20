@@ -114,6 +114,13 @@ const common: Record<string, string> = {
   added: "تمت الإضافة",
   default: "افتراضي",
   local: "محلي",
+
+  Continue: "متابعة",
+  "Quick age check": "تحقّق سريع من العمر",
+  "A quick age check before adult add-ons unlock. Answer three everyday questions any adult would know, and you're in.":
+    "تحقّق سريع من العمر قبل فتح إضافات الكبار. أجب عن ثلاثة أسئلة يوميّة يعرفها أي بالغ، وستدخل.",
+  "You're verified": "تم التحقّق",
+  "That's not it. Try a fresh round in a moment.": "إجابة غير صحيحة. ستظهر جولة جديدة بعد لحظات.",
 };
 
 export default common;

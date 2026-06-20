@@ -34,8 +34,21 @@ export type VodSeries = {
 
 export type VodLibrary = { movies: VodMovie[]; series: VodSeries[] };
 
+export function isExternalPlaylistId(id: string): boolean {
+  return id.startsWith("iptv:") || id.startsWith("vod:");
+}
+
 function norm(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function numberFallbackEpisodes(episodes: VodEpisode[]): void {
+  const fallback = episodes.filter((e) => e.episode === 0);
+  if (fallback.length === 0) return;
+  fallback.sort((a, b) => a.url.localeCompare(b.url));
+  fallback.forEach((e, i) => {
+    e.episode = i + 1;
+  });
 }
 
 export function buildVodLibrary(
@@ -88,10 +101,10 @@ export function buildVodLibrary(
         seriesMap.set(key, series);
       }
       if (!series.logo && ch.logo) series.logo = ch.logo;
-      const se = parseSeriesEpisode(ch.name) ?? { season: 1, episode: series.episodes.length + 1 };
+      const se = parseSeriesEpisode(ch.name);
       series.episodes.push({
-        season: se.season,
-        episode: se.episode,
+        season: se?.season ?? 1,
+        episode: se?.episode ?? 0,
         title: cleanTitle(ch.name),
         url: ch.url,
         logo: ch.logo,
@@ -101,6 +114,7 @@ export function buildVodLibrary(
 
   const series = [...seriesMap.values()];
   for (const s of series) {
+    numberFallbackEpisodes(s.episodes);
     s.episodes.sort((a, b) => a.season - b.season || a.episode - b.episode);
     s.seasons = [...new Set(s.episodes.map((e) => e.season))].sort((a, b) => a - b);
   }

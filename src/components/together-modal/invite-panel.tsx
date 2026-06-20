@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import { buildInviteUrl } from "@/lib/together/invite";
+import { useT } from "@/lib/i18n";
 import { LinkGlyph } from "./link-glyph";
 
 export function InvitePanel({
@@ -12,6 +13,7 @@ export function InvitePanel({
   room: string | null;
   onClose: () => void;
 }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const inviteUrl = useMemo(() => {
     if (!relayUrl || !room) return "";
@@ -30,16 +32,17 @@ export function InvitePanel({
   if (!room) {
     return (
       <div className="flex flex-col gap-3 rounded-xl border border-edge bg-canvas/60 p-3.5">
-        <p className="text-[13px] text-ink">Start a room first.</p>
+        <p className="text-[13px] text-ink">{t("Start a room first.")}</p>
         <p className="text-[12px] leading-snug text-ink-muted">
-          Once you&apos;re in a room you can copy a link that joins anyone instantly: it sets the
-          relay URL and the room code in one click.
+          {t(
+            "Once you're in a room you can copy a link that joins anyone instantly: it sets the relay URL and the room code in one click.",
+          )}
         </p>
         <button
           onClick={onClose}
           className="self-start text-[12.5px] font-medium text-ink-muted transition-colors hover:text-ink"
         >
-          Back
+          {t("Back")}
         </button>
       </div>
     );
@@ -48,7 +51,7 @@ export function InvitePanel({
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-edge bg-canvas/60 p-3.5">
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10.5px] uppercase tracking-wider text-ink-subtle">Invite link</span>
+        <span className="text-[10.5px] uppercase tracking-wider text-ink-subtle">{t("Invite link")}</span>
         <input
           readOnly
           value={inviteUrl}
@@ -63,18 +66,19 @@ export function InvitePanel({
         {copied ? (
           <>
             <Check size={14} strokeWidth={2.4} />
-            Link copied
+            {t("Link copied")}
           </>
         ) : (
           <>
             <LinkGlyph />
-            Copy invite link
+            {t("Copy invite link")}
           </>
         )}
       </button>
       <p className="text-[11.5px] leading-snug text-ink-subtle">
-        Anyone who opens this link gets the relay URL and room code set automatically. Works in the
-        browser too: no install required for the joiner.
+        {t(
+          "Anyone who opens this link gets the relay URL and room code set automatically. Works in the browser too: no install required for the joiner.",
+        )}
       </p>
     </div>
   );

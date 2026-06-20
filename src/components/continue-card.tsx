@@ -7,7 +7,7 @@ import { tmdbLiteMeta } from "@/lib/providers/tmdb/tmdb-lite";
 import { useContextMenu } from "@/lib/context-menu";
 import { useT } from "@/lib/i18n";
 import { readSnapshot, useSnapshotVersion } from "@/lib/snapshots";
-import { episodeFromVideoId, libraryMetaType, type LibraryItem } from "@/lib/stremio";
+import { episodeFromVideoId, isAnimeCwItem, libraryMetaType, type LibraryItem } from "@/lib/stremio";
 import { useHasNewEpisode } from "@/lib/new-episodes";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
@@ -15,7 +15,7 @@ import { useView } from "@/lib/view";
 type Props = {
   item: LibraryItem;
   watched?: boolean;
-  onDismiss?: (id: string) => void;
+  onDismiss?: (item: LibraryItem) => void;
 };
 
 export const ContinueCard = memo(function ContinueCard({ item, watched = false, onDismiss }: Props) {
@@ -43,7 +43,17 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       : kitsuThreeSeg
         ? null
         : episodeFromVideoId(item.state?.video_id);
-  const sub = ep ? `S${ep.season}E${ep.episode}` : "";
+  const animeEp = kitsuThreeSeg
+    ? Number((item.state?.video_id ?? "").split(":")[2])
+    : isAnimeCwItem(item) && ep
+      ? ep.episode
+      : null;
+  const sub =
+    animeEp && Number.isFinite(animeEp) && animeEp > 0
+      ? `Ep ${animeEp}`
+      : ep
+        ? `S${ep.season}E${ep.episode}`
+        : "";
   const [logo, setLogo] = useState<string | undefined>();
   const [metaBg, setMetaBg] = useState<string | undefined>();
   const [hydratedMeta, setHydratedMeta] = useState<Meta | null>(null);
@@ -157,8 +167,12 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
 
   const onPlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const episode = item.type === "series" && ep ? ep : undefined;
-    openPicker(meta, episode, { autoPlay: settings.instantPlay });
+    let episode = item.type === "series" && ep ? ep : undefined;
+    if (!episode && kitsuThreeSeg) {
+      const epNum = Number((item.state?.video_id ?? "").split(":")[2]);
+      if (Number.isFinite(epNum) && epNum > 0) episode = { season: 1, episode: epNum };
+    }
+    openPicker(meta, episode, { autoPlay: settings.instantPlay, resume: true });
   };
 
   return (
@@ -176,8 +190,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
             key={src}
             src={src}
             alt=""
-            loading="lazy"
-            decoding="async"
+            decoding="sync"
             onError={() => setImgIdx((i) => i + 1)}
             className="absolute inset-0 h-full w-full object-cover brightness-95"
           />
@@ -251,7 +264,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onDismiss(item._id);
+            onDismiss(item);
           }}
           aria-label={t("Remove from Continue Watching")}
           className="group/x absolute end-0.5 top-0.5 z-10 flex h-11 w-11 items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"

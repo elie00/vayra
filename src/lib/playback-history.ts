@@ -75,7 +75,18 @@ export function savePlayback(
   episode?: number,
 ): void {
   const all = readAll();
-  all[entryKey(metaId, season, episode)] = { ...entry, savedAt: Date.now() };
+  const key = entryKey(metaId, season, episode);
+  const prev = all[key];
+  const thin = !entry.infoHash && !entry.addonId && !entry.url;
+  all[key] =
+    thin && prev
+      ? {
+          ...prev,
+          title: entry.title ?? prev.title,
+          parsedTitle: entry.parsedTitle ?? prev.parsedTitle,
+          savedAt: Date.now(),
+        }
+      : { ...entry, savedAt: Date.now() };
   writeAll(all);
 }
 
@@ -92,6 +103,40 @@ export function clearPlayback(metaId: string, season?: number, episode?: number)
   const all = readAll();
   delete all[entryKey(metaId, season, episode)];
   writeAll(all);
+}
+
+export function streamMatchesEntry(
+  s: {
+    infoHash?: string | null;
+    fileIdx?: number | null;
+    url?: string | null;
+    addonId?: string | null;
+    parsedTitle?: string | null;
+    resolution?: string | null;
+    source?: string | null;
+    size?: number | null;
+  },
+  e: PlaybackEntry,
+): boolean {
+  if (e.infoHash && s.infoHash) {
+    if (s.infoHash.toLowerCase() !== e.infoHash.toLowerCase()) return false;
+    if (e.fileIdx == null || s.fileIdx == null) return true;
+    return s.fileIdx === e.fileIdx;
+  }
+  if (
+    e.addonId &&
+    s.addonId === e.addonId &&
+    e.parsedTitle &&
+    s.parsedTitle === e.parsedTitle &&
+    e.resolution === s.resolution &&
+    e.source === s.source &&
+    (e.fileIdx == null || s.fileIdx == null || e.fileIdx === s.fileIdx) &&
+    (e.size == null || s.size == null || e.size === s.size)
+  ) {
+    return true;
+  }
+  if (e.url && s.url) return s.url === e.url;
+  return false;
 }
 
 export type WatchedSet = { ids: Set<string>; titles: Set<string> };

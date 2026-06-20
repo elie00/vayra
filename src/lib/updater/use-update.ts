@@ -166,6 +166,23 @@ export function dismissUpdate(): void {
   set({ dismissed: state.version, panelOpen: false });
 }
 
+export function clearStagedUpdate(): void {
+  if (handle) {
+    void handle.close().catch(() => {});
+    handle = null;
+  }
+  set({
+    status: "idle",
+    version: null,
+    notes: null,
+    progress: 0,
+    downloadedBytes: 0,
+    totalBytes: 0,
+    error: null,
+    panelOpen: false,
+  });
+}
+
 let started = false;
 export function startUpdateWatcher(): void {
   if (started || !IS_TAURI) return;

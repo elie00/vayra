@@ -23,7 +23,7 @@ export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
   const baseTextStyle: React.CSSProperties = {
     color: fontColor,
     fontFamily: family,
-    fontWeight: 600,
+    fontWeight: settings.subBold ? 700 : 400,
     fontSize: `${fontSize}px`,
     lineHeight: 1.2,
     letterSpacing: `${(-0.005 + (settings.subLineSpacing ?? 0) * 0.06).toFixed(3)}em`,
@@ -72,6 +72,9 @@ export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
 }
 
 function fontFamilyFor(family: string | undefined): string {
+  if (family?.startsWith("custom:")) {
+    return `"harbor-font-${family.slice("custom:".length)}", "Inter", system-ui, sans-serif`;
+  }
   switch (family) {
     case "system":
       return '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';

@@ -9,6 +9,7 @@ import { getDownvotedIds, getUpvotedIds } from "@/lib/feed/preferences";
 import { rpdbPoster } from "@/lib/providers/rpdb";
 import { useSettings } from "@/lib/settings";
 import { useInWatchlist } from "@/lib/watchlist";
+import { useT } from "@/lib/i18n";
 
 const LOW_WATER_MARK = 6;
 
@@ -17,6 +18,7 @@ let savedActiveId: string | null = null;
 type LeaveAnim = "skip" | "block" | "back" | null;
 
 export function QueueView() {
+  const t = useT();
   const { settings } = useSettings();
   const [pool, setPool] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,11 +176,11 @@ export function QueueView() {
       <div className="mx-auto flex h-full min-w-0 max-w-[1180px] flex-col gap-6 px-6 sm:px-12">
         <header className="flex items-baseline gap-3">
           <h1 className="font-display text-[20px] font-medium tracking-tight text-ink">
-            Discovery Queue
+            {t("Discovery Queue")}
           </h1>
           <span className="text-[12px] uppercase tracking-[0.2em] text-ink-subtle">
             {loading
-              ? "Loading…"
+              ? t("Loading…")
               : `${String(Math.min(activeIndex + 1, pool.length)).padStart(2, "0")} / ${String(pool.length).padStart(2, "0")}`}
           </span>
         </header>
@@ -226,12 +228,13 @@ function NavArrow({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const t = useT();
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={side === "left" ? "Previous" : "Next"}
+      aria-label={side === "left" ? t("Previous") : t("Next")}
       className={`group absolute top-1/2 ${
         side === "left" ? "-left-3" : "-right-3"
       } z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-canvas/80 text-ink/75 ring-1 ring-inset ring-ink/12 shadow-[0_10px_28px_-12px_rgba(0,0,0,0.8)] transition-all duration-200 ease-out hover:scale-110 hover:bg-canvas hover:text-ink hover:ring-ink/25 active:scale-95 disabled:pointer-events-none disabled:opacity-25`}
@@ -262,6 +265,7 @@ function Strip({
   active: number;
   onJump: (i: number) => void;
 }) {
+  const t = useT();
   const { settings } = useSettings();
   const stripRef = useRef<HTMLDivElement>(null);
 
@@ -277,7 +281,7 @@ function Strip({
   return (
     <div className="flex flex-col gap-3">
       <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-ink-subtle">
-        Queue
+        {t("Queue")}
       </span>
       <div
         ref={stripRef}
@@ -299,7 +303,6 @@ function Strip({
               <Poster
                 src={rpdbPoster(
                   settings.rpdbKey,
-                  settings.posterBaseUrl,
                   item.meta.id,
                   item.meta.background ?? item.meta.poster,
                 )}
@@ -336,16 +339,17 @@ function Strip({
 }
 
 function QueueSkeleton({ loading, hasKey }: { loading: boolean; hasKey: boolean }) {
+  const t = useT();
   return (
     <div className="flex min-h-[480px] items-center justify-center rounded-[28px] border border-edge-soft bg-elevated/30 px-12 py-16 text-center">
       {loading ? (
-        <p className="text-[15px] text-ink-muted">Building tonight's queue…</p>
+        <p className="text-[15px] text-ink-muted">{t("Building tonight's queue…")}</p>
       ) : !hasKey ? (
         <p className="max-w-[60ch] text-[15px] text-ink-muted">
-          Add a TMDB key in Settings to unlock the full discovery feed.
+          {t("Add a TMDB key in Settings to unlock the full discovery feed.")}
         </p>
       ) : (
-        <p className="text-[15px] text-ink-muted">No picks loaded. TMDB might be unreachable.</p>
+        <p className="text-[15px] text-ink-muted">{t("No picks loaded. TMDB might be unreachable.")}</p>
       )}
     </div>
   );

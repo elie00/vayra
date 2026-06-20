@@ -2,31 +2,31 @@ import { Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import godfatherStill from "@/assets/godfather-offer.svg";
 import { useSettings } from "@/lib/settings";
+import { useT } from "@/lib/i18n";
 import { ColorPopoverTrigger } from "../color-picker";
 import { ToggleRow } from "../shared";
 import { Label, SubField, previewFamily } from "./internals";
-import { useT } from "@/lib/i18n";
 
 export function SubtitleStylePanel() {
-  const t = useT();
   const { settings, update } = useSettings();
+  const t = useT();
 
   const styles: Array<{ id: "shadow" | "outline" | "box"; label: string; sub: string }> = [
-    { id: "shadow", label: "Drop shadow", sub: "Soft halo around the text. Cleanest on most content." },
-    { id: "outline", label: "Outline", sub: "Hard stroke around each letter. High contrast." },
-    { id: "box", label: "Black bar", sub: "Rounded background panel behind the text. Most readable." },
+    { id: "shadow", label: t("Drop shadow"), sub: t("Soft halo around the text. Cleanest on most content.") },
+    { id: "outline", label: t("Outline"), sub: t("Hard stroke around each letter. High contrast.") },
+    { id: "box", label: t("Black bar"), sub: t("Rounded background panel behind the text. Most readable.") },
   ];
 
   const aligns: Array<{ id: "left" | "center" | "right"; label: string }> = [
-    { id: "left", label: "Left" },
-    { id: "center", label: "Center" },
-    { id: "right", label: "Right" },
+    { id: "left", label: t("Left") },
+    { id: "center", label: t("Center") },
+    { id: "right", label: t("Right") },
   ];
 
   const assModes: Array<{ id: "no" | "scale" | "force"; label: string; sub: string }> = [
-    { id: "no", label: "Keep original", sub: "Styled (ASS) subs keep their own fonts, colors, and effects. Truest to the release." },
-    { id: "scale", label: "Resize only", sub: "Keep the original look but apply your size and position." },
-    { id: "force", label: "Use my style", sub: "Force your font, size, and color onto styled subs. Use this for Arabic or any subs showing boxes. Can affect karaoke and signs." },
+    { id: "no", label: t("Keep original"), sub: t("Styled (ASS) subs keep their own fonts, colors, and effects. Truest to the release.") },
+    { id: "scale", label: t("Resize only"), sub: t("Keep the original look but apply your size and position.") },
+    { id: "force", label: t("Use my style"), sub: t("Force your font, size, and color onto styled subs. Use this for Arabic or any subs showing boxes. Can affect karaoke and signs.") },
   ];
 
   const isDefault =
@@ -40,7 +40,8 @@ export function SubtitleStylePanel() {
     settings.subAlignX === "center" &&
     (settings.subBoxOpacity ?? 0.6) === 0.6 &&
     (settings.subBoxColor || "#000000").toUpperCase() === "#000000" &&
-    (settings.subOpacity ?? 1) === 1;
+    (settings.subOpacity ?? 1) === 1 &&
+    !settings.subBold;
 
   const resetDefaults = () => {
     update({
@@ -55,6 +56,7 @@ export function SubtitleStylePanel() {
       subBoxOpacity: 0.6,
       subBoxColor: "#000000",
       subOpacity: 1,
+      subBold: false,
     });
   };
 
@@ -76,8 +78,8 @@ export function SubtitleStylePanel() {
                   sel ? "border-ink bg-elevated" : "border-edge-soft bg-canvas/40 hover:border-edge"
                 }`}
               >
-                <span className="text-[13px] font-semibold text-ink">{t(s.label)}</span>
-                <span className="text-[11.5px] leading-snug text-ink-muted">{t(s.sub)}</span>
+                <span className="text-[13px] font-semibold text-ink">{s.label}</span>
+                <span className="text-[11.5px] leading-snug text-ink-muted">{s.sub}</span>
               </button>
             );
           })}
@@ -98,8 +100,8 @@ export function SubtitleStylePanel() {
                   sel ? "border-ink bg-elevated" : "border-edge-soft bg-canvas/40 hover:border-edge"
                 }`}
               >
-                <span className="text-[13px] font-semibold text-ink">{t(m.label)}</span>
-                <span className="text-[11.5px] leading-snug text-ink-muted">{t(m.sub)}</span>
+                <span className="text-[13px] font-semibold text-ink">{m.label}</span>
+                <span className="text-[11.5px] leading-snug text-ink-muted">{m.sub}</span>
               </button>
             );
           })}
@@ -137,7 +139,14 @@ export function SubtitleStylePanel() {
         </SubField>
       )}
 
-      <FontPicker t={t} />
+      <FontPicker />
+
+      <ToggleRow
+        label={t("Bold text")}
+        sub={t("Render subtitles in a heavier weight. Turn off to use your font's normal weight.")}
+        value={settings.subBold}
+        onChange={(v) => update({ subBold: v })}
+      />
 
       <ToggleRow
         label={t("Show subtitles in Picture-in-Picture")}
@@ -199,7 +208,7 @@ export function SubtitleStylePanel() {
                   sel ? "border-ink bg-elevated text-ink" : "border-edge-soft bg-canvas/40 text-ink-muted hover:border-edge hover:text-ink"
                 }`}
               >
-                {t(a.label)}
+                {a.label}
               </button>
             );
           })}
@@ -223,7 +232,7 @@ export function SubtitleStylePanel() {
                 onClick={() => update({ subFontColor: "#FFFFFF" })}
                 className="ms-auto rounded-md px-2 py-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
               >
-                Reset
+                {t("Reset")}
               </button>
             )}
           </div>
@@ -245,7 +254,7 @@ export function SubtitleStylePanel() {
                 onClick={() => update({ subBorderColor: "#000000" })}
                 className="ms-auto rounded-md px-2 py-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
               >
-                Reset
+                {t("Reset")}
               </button>
             )}
           </div>
@@ -269,7 +278,7 @@ export function SubtitleStylePanel() {
                 onClick={() => update({ subBoxColor: "#000000" })}
                 className="ms-auto rounded-md px-2 py-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
               >
-                Reset
+                {t("Reset")}
               </button>
             )}
           </div>
@@ -346,7 +355,7 @@ function SubtitlePreview() {
             style={{
               color: settings.subFontColor,
               fontFamily: family,
-              fontWeight: 600,
+              fontWeight: settings.subBold ? 700 : 400,
               fontSize: `${previewSize}px`,
               lineHeight: 1.2,
               letterSpacing: "-0.005em",
@@ -354,7 +363,7 @@ function SubtitlePreview() {
               textAlign: align as "left" | "center" | "right",
             }}
           >
-            I&apos;m gonna make him an offer he can&apos;t refuse.
+                  I&apos;m gonna make him an offer he can&apos;t refuse.
           </div>
         </div>
       </div>
@@ -373,8 +382,9 @@ const PRESET_FONTS: Array<{ id: "inter" | "system" | "rounded" | "serif" | "arab
 const FONT_ACCEPT = ".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2,application/x-font-ttf,application/x-font-otf,application/font-woff,application/font-woff2";
 const MAX_FONT_BYTES = 4 * 1024 * 1024;
 
-function FontPicker({ t }: { t: (key: string, data?: Record<string, any>) => string }) {
+function FontPicker() {
   const { settings, update } = useSettings();
+  const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -466,7 +476,7 @@ function FontPicker({ t }: { t: (key: string, data?: Record<string, any>) => str
                 }`}
                 style={{ fontFamily: previewFamily(f.id) }}
               >
-                <span className="truncate">{f.label}</span>
+                <span className="truncate">{f.custom ? f.label : t(f.label)}</span>
               </button>
               {f.custom && (
                 <button
@@ -475,7 +485,7 @@ function FontPicker({ t }: { t: (key: string, data?: Record<string, any>) => str
                     e.stopPropagation();
                     setConfirmId(f.id.slice("custom:".length));
                   }}
-                  aria-label={`Remove ${f.label}`}
+                  aria-label={t("Remove {name}", { name: f.label })}
                   className="absolute -end-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-canvas text-ink-muted ring-1 ring-edge transition-colors hover:bg-danger hover:text-white"
                 >
                   <X size={10} strokeWidth={2.6} />
@@ -511,7 +521,6 @@ function FontPicker({ t }: { t: (key: string, data?: Record<string, any>) => str
       )}
       {confirmFont && (
         <ConfirmDeleteFont
-          t={t}
           name={confirmFont.name}
           onCancel={() => setConfirmId(null)}
           onConfirm={() => remove(confirmFont.id)}
@@ -522,16 +531,15 @@ function FontPicker({ t }: { t: (key: string, data?: Record<string, any>) => str
 }
 
 function ConfirmDeleteFont({
-  t,
   name,
   onCancel,
   onConfirm,
 }: {
-  t: (key: string, data?: Record<string, any>) => string;
   name: string;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const t = useT();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -553,7 +561,8 @@ function ConfirmDeleteFont({
       <div className="w-[min(92vw,360px)] rounded-2xl border border-edge bg-elevated p-5 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-150">
         <p className="text-[15px] font-semibold text-ink">{t("Delete this font?")}</p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
-          {t("{name} will be removed from Harbor. Anything you've set to use it will fall back to Inter.", { name })}
+          <span className="font-semibold text-ink">{name}</span>{" "}
+          {t("will be removed from Harbor. Anything you've set to use it will fall back to Inter.")}
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <button
@@ -561,7 +570,7 @@ function ConfirmDeleteFont({
             onClick={onCancel}
             className="rounded-full bg-raised px-4 py-2 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-canvas/55 hover:text-ink"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             type="button"

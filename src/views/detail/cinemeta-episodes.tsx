@@ -1,6 +1,10 @@
-import { ChevronDown, Play } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Play } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
+import { manualWatchedState, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
+import { getLastSeason, setLastSeason } from "@/lib/last-season";
+import { lastPlayedEpisode } from "@/lib/resume";
 import { Poster } from "@/components/poster";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
@@ -11,6 +15,16 @@ type Translator = (key: string, vars?: Record<string, string | number>) => strin
 
 type CinemetaVideo = NonNullable<Meta["videos"]>[number];
 
+function pickDefaultSeason(metaId: string, seasons: number[]): number {
+  const has = (n: number) => seasons.includes(n);
+  const saved = getLastSeason(metaId);
+  if (saved != null && has(saved)) return saved;
+  const lp = lastPlayedEpisode(metaId);
+  if (lp && has(lp.season)) return lp.season;
+  const real = seasons.filter((s) => s > 0);
+  return real[real.length - 1] ?? seasons[seasons.length - 1] ?? 1;
+}
+
 export function CinemetaEpisodes({
   meta,
   videos,
@@ -19,6 +33,12 @@ export function CinemetaEpisodes({
   videos: NonNullable<Meta["videos"]>;
 }) {
   const t = useT();
+  useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
+  const [watchedMenu, setWatchedMenu] = useState<WatchedMenuTarget | null>(null);
+  const openWatchedMenu = (e: React.MouseEvent, season: number, episode: number, watched: boolean) => {
+    e.preventDefault();
+    setWatchedMenu({ x: e.clientX, y: e.clientY, season, episode, watched });
+  };
   const grouped = useMemo(() => {
     const map = new Map<number, CinemetaVideo[]>();
     const flat: CinemetaVideo[] = [];
@@ -44,18 +64,29 @@ export function CinemetaEpisodes({
     return numbered;
   }, [videos]);
 
-  const realSeasons = grouped.filter((g) => g.seasonNumber > 0);
-  const latestSeason =
-    realSeasons[realSeasons.length - 1]?.seasonNumber ??
-    grouped[grouped.length - 1]?.seasonNumber ??
-    1;
-  const [active, setActive] = useState<number>(latestSeason);
+  const allEpisodesOrdered = useMemo(
+    () =>
+      grouped.flatMap((g) =>
+        g.episodes.map((ep, i) => ({
+          season: ep.season ?? 0,
+          episode: ep.episode ?? ep.number ?? (ep.season == null ? i + 1 : 1),
+        })),
+      ),
+    [grouped],
+  );
+
+  const [active, setActive] = useState<number>(() =>
+    pickDefaultSeason(meta.id, grouped.map((g) => g.seasonNumber)),
+  );
+  const userPickedRef = useRef(false);
 
   useEffect(() => {
-    const real = grouped.filter((g) => g.seasonNumber > 0);
-    setActive(
-      real[real.length - 1]?.seasonNumber ?? grouped[grouped.length - 1]?.seasonNumber ?? 1,
-    );
+    userPickedRef.current = false;
+  }, [meta.id]);
+
+  useEffect(() => {
+    if (userPickedRef.current) return;
+    setActive(pickDefaultSeason(meta.id, grouped.map((g) => g.seasonNumber)));
   }, [meta.id, grouped.length]);
 
   if (grouped.length === 0) return null;
@@ -69,7 +100,11 @@ export function CinemetaEpisodes({
           <SeasonDropdown
             seasons={grouped.map((g) => g.seasonNumber)}
             active={active}
-            onChange={setActive}
+            onChange={(n) => {
+              userPickedRef.current = true;
+              setLastSeason(meta.id, n);
+              setActive(n);
+            }}
           />
         )}
       </div>
@@ -79,15 +114,29 @@ export function CinemetaEpisodes({
           : t("{n} episodes", { n: activeEps.length })}
       </p>
       <div className="flex flex-col gap-1">
-        {activeEps.map((ep, i) => (
-          <CinemetaEpisodeRow
-            key={ep.id ?? `${ep.season ?? "x"}-${ep.episode ?? i}`}
-            meta={meta}
-            ep={ep}
-            flatIndex={ep.season == null ? i + 1 : undefined}
-          />
-        ))}
+        {activeEps.map((ep, i) => {
+          const season = ep.season ?? 0;
+          const epNumber = ep.episode ?? ep.number ?? (ep.season == null ? i + 1 : 1);
+          return (
+            <CinemetaEpisodeRow
+              key={ep.id ?? `${ep.season ?? "x"}-${ep.episode ?? i}`}
+              meta={meta}
+              ep={ep}
+              flatIndex={ep.season == null ? i + 1 : undefined}
+              watched={manualWatchedState(meta.id, season, epNumber) === true}
+              onContextMenu={openWatchedMenu}
+            />
+          );
+        })}
       </div>
+      {watchedMenu && (
+        <EpisodeWatchedMenu
+          metaId={meta.id}
+          target={watchedMenu}
+          allEpisodes={allEpisodesOrdered}
+          onClose={() => setWatchedMenu(null)}
+        />
+      )}
     </div>
   );
 }
@@ -96,16 +145,21 @@ export function CinemetaEpisodeRow({
   meta,
   ep,
   flatIndex,
+  watched = false,
+  onContextMenu,
 }: {
   meta: Meta;
   ep: CinemetaVideo;
   flatIndex?: number;
+  watched?: boolean;
+  onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
 }) {
   const t = useT();
   const { openPicker } = useView();
   const { settings } = useSettings();
   const aired = ep.released ?? ep.firstAired ?? null;
   const epNumber = ep.episode ?? ep.number ?? flatIndex ?? 1;
+  const season = ep.season ?? 0;
   const playEpisode = {
     season: ep.season ?? 0,
     episode: epNumber,
@@ -117,6 +171,7 @@ export function CinemetaEpisodeRow({
   return (
     <div
       data-no-card-ring
+      onContextMenu={onContextMenu ? (e) => onContextMenu(e, season, epNumber, watched) : undefined}
       className="group flex items-center gap-4 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
@@ -137,6 +192,11 @@ export function CinemetaEpisodeRow({
           {ep.season != null && (
             <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink">
               {epNumber}
+            </span>
+          )}
+          {watched && (
+            <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-canvas shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+              <Check size={13} strokeWidth={3} />
             </span>
           )}
         </div>

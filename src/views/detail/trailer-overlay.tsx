@@ -2,6 +2,7 @@ import { Cast, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { fetchTrailer, resolveTrailerQuality, trailerSrc } from "@/lib/trailer";
+import { isMacDesktop } from "@/lib/platform";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -77,7 +78,7 @@ export function TrailerOverlay({
       onClick={dismiss}
       className="fixed inset-0 z-[120] flex cursor-zoom-out items-center justify-center"
       style={{
-        backgroundColor: open ? "rgba(0,0,0,0.82)" : "rgba(0,0,0,0)",
+        backgroundColor: open ? (isMacDesktop() ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.82)") : "rgba(0,0,0,0)",
         backdropFilter: open ? "blur(32px) saturate(1.2)" : "blur(0px)",
         WebkitBackdropFilter: open ? "blur(32px) saturate(1.2)" : "blur(0px)",
         transition:
@@ -141,10 +142,10 @@ export function TrailerOverlay({
 }
 
 function YouTubeEmbed({ id, title }: { id: string; title: string }) {
-  const origin =
-    typeof window !== "undefined" && window.location?.origin
+  const httpOrigin =
+    typeof window !== "undefined" && /^https?:$/.test(window.location?.protocol ?? "")
       ? window.location.origin
-      : "";
+      : null;
   const params = new URLSearchParams({
     autoplay: "1",
     modestbranding: "1",
@@ -153,14 +154,14 @@ function YouTubeEmbed({ id, title }: { id: string; title: string }) {
     playsinline: "1",
     fs: "1",
   });
-  if (origin) params.set("origin", origin);
+  if (httpOrigin) params.set("origin", httpOrigin);
   return (
     <iframe
       src={`https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`}
       title={`${title} trailer`}
       allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
       allowFullScreen
-      referrerPolicy="strict-origin-when-cross-origin"
+      referrerPolicy={httpOrigin ? "strict-origin-when-cross-origin" : "no-referrer"}
       className="absolute inset-0 h-full w-full border-0"
     />
   );

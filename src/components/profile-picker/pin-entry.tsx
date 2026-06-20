@@ -1,5 +1,6 @@
 import { ChevronLeft, Delete } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 type Stage = "enter" | "confirm";
 
@@ -18,6 +19,7 @@ export function PinEntry({
   onBack: () => void;
   verify?: (pin: string) => Promise<boolean>;
 }) {
+  const t = useT();
   const [stage, setStage] = useState<Stage>("enter");
   const [first, setFirst] = useState("");
   const [pin, setPin] = useState("");
@@ -29,8 +31,8 @@ export function PinEntry({
   const focus = () => inputRef.current?.focus();
 
   useEffect(() => {
-    const t = setTimeout(focus, 40);
-    return () => clearTimeout(t);
+    const id = setTimeout(focus, 40);
+    return () => clearTimeout(id);
   }, [stage]);
 
   const triggerShake = () => {
@@ -52,7 +54,7 @@ export function PinEntry({
         if (ok) {
           await onComplete(pin);
         } else {
-          setError("Wrong PIN");
+          setError(t("Wrong PIN"));
           setPin("");
           triggerShake();
           focus();
@@ -67,7 +69,7 @@ export function PinEntry({
         return;
       }
       if (pin !== first) {
-        setError("PINs didn't match. Start over.");
+        setError(t("PINs didn't match. Start over."));
         setFirst("");
         setPin("");
         setStage("enter");
@@ -98,9 +100,9 @@ export function PinEntry({
   };
 
   const displayTitle =
-    mode === "set" && stage === "confirm" ? "Confirm your PIN" : title;
+    mode === "set" && stage === "confirm" ? t("Confirm your PIN") : title;
   const displaySub =
-    mode === "set" && stage === "confirm" ? "Type the same 4-digit PIN again." : subtitle;
+    mode === "set" && stage === "confirm" ? t("Type the same 4-digit PIN again.") : subtitle;
 
   return (
     <div className="flex w-full max-w-[420px] flex-col gap-7 animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -109,15 +111,15 @@ export function PinEntry({
           type="button"
           onClick={onBack}
           className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-elevated/40 hover:text-ink"
-          aria-label="Back"
+          aria-label={t("common.back")}
         >
           <ChevronLeft size={14} strokeWidth={2.2} className="dir-icon" />
-          Back
+          {t("common.back")}
         </button>
       </div>
       <div className="flex flex-col items-center gap-2">
         <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
-          Profile PIN
+          {t("Profile PIN")}
         </span>
         <h1 className="font-display text-[28px] font-medium tracking-tight text-ink">
           {displayTitle}
@@ -133,7 +135,7 @@ export function PinEntry({
         <button
           type="button"
           onClick={focus}
-          aria-label="Focus PIN entry"
+          aria-label={t("Focus PIN entry")}
           className="relative flex cursor-text items-center gap-3 rounded-full px-3 py-2"
         >
           <input
@@ -151,7 +153,7 @@ export function PinEntry({
               setPin(v);
             }}
             className="absolute inset-0 cursor-text rounded-full bg-transparent text-transparent caret-transparent outline-none [-webkit-text-security:disc] selection:bg-transparent"
-            aria-label="PIN"
+            aria-label={t("PIN")}
           />
           {[0, 1, 2, 3].map((i) => (
             <span
@@ -173,14 +175,14 @@ export function PinEntry({
           <PinKey onClick={() => tap("0")} disabled={busy}>
             0
           </PinKey>
-          <PinKey onClick={backspace} disabled={busy || pin.length === 0} aria-label="Delete">
+          <PinKey onClick={backspace} disabled={busy || pin.length === 0} aria-label={t("Delete")}>
             <Delete size={18} strokeWidth={1.8} />
           </PinKey>
         </div>
       </div>
 
       <p className="text-center text-[11.5px] text-ink-subtle">
-        Type on your keyboard or tap the digits above.
+        {t("Type on your keyboard or tap the digits above.")}
       </p>
       <style>{`
         @keyframes pin-shake {

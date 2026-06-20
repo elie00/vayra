@@ -1,7 +1,7 @@
 import { Check, Eye, EyeOff } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { setManualWatched, setManualWatchedUpTo } from "@/lib/manual-watched";
+import { setManualWatched, setManualWatchedMany, setManualWatchedUpTo } from "@/lib/manual-watched";
 import { markEpisodesWatched, unmarkEpisodeWatched } from "@/lib/simkl/history";
 import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { useSimkl } from "@/lib/simkl/provider";
@@ -17,10 +17,12 @@ export type WatchedMenuTarget = {
 export function EpisodeWatchedMenu({
   metaId,
   target,
+  allEpisodes,
   onClose,
 }: {
   metaId: string;
   target: WatchedMenuTarget;
+  allEpisodes?: Array<{ season: number; episode: number }>;
   onClose: () => void;
 }) {
   const { isConnected: simklConnected } = useSimkl();
@@ -81,7 +83,16 @@ export function EpisodeWatchedMenu({
             icon={<Eye size={14} strokeWidth={2} />}
             label="Mark watched up to here"
             onClick={() => {
-              setManualWatchedUpTo(metaId, target.season, target.episode, true);
+              if (allEpisodes && allEpisodes.length > 0) {
+                const upTo = allEpisodes.filter(
+                  (e) =>
+                    e.season < target.season ||
+                    (e.season === target.season && e.episode <= target.episode),
+                );
+                setManualWatchedMany(metaId, upTo, true);
+              } else {
+                setManualWatchedUpTo(metaId, target.season, target.episode, true);
+              }
               if (showIds) {
                 const eps = Array.from({ length: target.episode }, (_, i) => i + 1);
                 void markEpisodesWatched(showIds, target.season, eps);

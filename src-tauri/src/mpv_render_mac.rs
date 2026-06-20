@@ -135,6 +135,14 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64) -> Result<(), S
         let mask = NS_VIEW_AUTORESIZE_WIDTH | NS_VIEW_AUTORESIZE_HEIGHT;
         let _: () = msg_send![view_as_view, setAutoresizingMask: mask];
 
+        let _: () = msg_send![view_as_view, setWantsLayer: true];
+        if let Some(layer) = view_as_view.layer() {
+            let black: *mut AnyObject = msg_send![objc2::class!(NSColor), blackColor];
+            let cg_black: *mut AnyObject = msg_send![&*black, CGColor];
+            let _: () = msg_send![&*layer, setBackgroundColor: cg_black];
+            let _: () = msg_send![&*layer, setOpaque: true];
+        }
+
         let gl_ctx = view
             .openGLContext()
             .ok_or_else(|| "openGLContext was nil".to_string())?;
@@ -244,15 +252,6 @@ pub fn resize_to(x: f64, y: f64, w: f64, h: f64) -> Result<(), String> {
         let parent = view_as_view
             .superview()
             .ok_or_else(|| "GL view has no superview".to_string())?;
-        let scale = parent
-            .window()
-            .map(|win| win.backingScaleFactor())
-            .filter(|s| *s > 0.0)
-            .unwrap_or(1.0);
-        let x = x / scale;
-        let y = y / scale;
-        let w = w / scale;
-        let h = h / scale;
         let parent_h = parent.bounds().size.height;
         let flipped_y = parent_h - y - h;
         let frame = objc2_foundation::NSRect {

@@ -111,6 +111,7 @@ export async function deleteComment(id: number): Promise<void> {
   await traktRequest(`/comments/${id}`, { method: "DELETE", authed: true });
 }
 
+
 function subjectBody(target: TraktTarget) {
   const ids: Record<string, string | number> = {};
   const src = target.kind === "episode"

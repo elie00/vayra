@@ -12,6 +12,7 @@ import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import { meta as fetchCinemetaMeta, narrowMediaType, isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
 import { fetchAddonMeta } from "@/lib/addons";
+import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
@@ -226,6 +227,23 @@ export function DetailView({
       cancelled = true;
     };
   }, [meta.id, meta.type, meta.addonOrigin?.base, addonNative, cinemetaFull?.videos?.length]);
+
+  useEffect(() => {
+    if (meta.type !== "series") return;
+    if (meta.addonOrigin?.base) return;
+    if (/^(tt\d|tmdb:|kitsu:|mal:|anilist:|anidb:)/.test(meta.id)) return;
+    if (cinemetaFull?.videos && cinemetaFull.videos.length > 0) return;
+    let cancelled = false;
+    resolveMeta(authKey, narrowMediaType(meta.type), meta.id)
+      .then((full) => {
+        if (cancelled || !full?.videos?.length) return;
+        setCinemetaFull(full);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [meta.id, meta.type, meta.addonOrigin?.base, authKey, cinemetaFull?.videos?.length]);
 
   useEffect(() => {
     setLibraryItem(null);

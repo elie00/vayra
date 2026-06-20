@@ -2,10 +2,12 @@ import { Check, ChevronLeft, ExternalLink, Loader2 } from "lucide-react";
 import { useState } from "react";
 import stremioLogo from "@/assets/stremio-wordmark.png";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 
 export function StremioStep() {
   const { user, signIn } = useAuth();
+  const t = useT();
   const [mode, setMode] = useState<"intro" | "form">("intro");
   const [direction, setDirection] = useState<"forward" | "back" | null>(null);
   const [email, setEmail] = useState("");
@@ -39,7 +41,7 @@ export function StremioStep() {
     try {
       await signIn(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed");
+      setError(err instanceof Error ? err.message : t("Sign-in failed"));
     } finally {
       setBusy(false);
     }
@@ -49,14 +51,14 @@ export function StremioStep() {
     return (
       <div className="flex flex-col gap-6">
         <span className="text-[12.5px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
-          Step 2 · Stremio
+          {t("Step 2 · Stremio")}
         </span>
         <div className="flex flex-col gap-3">
           <h1 className="font-display text-[36px] font-medium leading-[1.08] tracking-tight text-ink">
-            You're in
+            {t("You're in")}
           </h1>
           <p className="text-[15px] leading-relaxed text-ink-muted">
-            Library and addons will sync in once you're past setup.
+            {t("Library and addons will sync in once you're past setup.")}
           </p>
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-edge-soft bg-canvas px-5 py-4">
@@ -85,7 +87,7 @@ export function StremioStep() {
           className="flex w-fit items-center gap-1.5 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink-muted"
         >
           <ChevronLeft size={14} strokeWidth={2.2} className="dir-icon" />
-          Back
+          {t("Back")}
         </button>
         <div className="flex justify-center">
           <img
@@ -97,7 +99,7 @@ export function StremioStep() {
         </div>
         <div className="flex flex-col gap-3">
           <FormField
-            label="Email"
+            label={t("Email")}
             type="email"
             value={email}
             onChange={setEmail}
@@ -105,7 +107,7 @@ export function StremioStep() {
             disabled={busy}
           />
           <FormField
-            label="Password"
+            label={t("Password")}
             type="password"
             value={password}
             onChange={setPassword}
@@ -127,10 +129,10 @@ export function StremioStep() {
           {busy ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              Signing in…
+              {t("Signing in…")}
             </>
           ) : (
-            "Sign in to Stremio"
+            t("Sign in to Stremio")
           )}
         </button>
         <button
@@ -138,8 +140,8 @@ export function StremioStep() {
           onClick={() => openUrl("https://www.stremio.com/register")}
           className="flex items-center justify-center gap-1.5 text-[12.5px] text-ink-subtle transition-colors hover:text-ink-muted"
         >
-          <span>Don't have an account?</span>
-          <span className="font-medium text-ink-muted">Create one</span>
+          <span>{t("Don't have an account?")}</span>
+          <span className="font-medium text-ink-muted">{t("Create one")}</span>
           <ExternalLink size={11} />
         </button>
       </form>
@@ -149,15 +151,16 @@ export function StremioStep() {
   return (
     <div key="intro" className={`flex flex-col gap-6 ${animClass}`}>
       <span className="text-[12.5px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
-        Step 2 · Stremio
+        {t("Step 2 · Stremio")}
       </span>
       <div className="flex flex-col gap-3">
         <h1 className="font-display text-[36px] font-medium leading-[1.08] tracking-tight text-ink">
-          Bring in your library
+          {t("Bring in your library")}
         </h1>
         <p className="text-[15px] leading-relaxed text-ink-muted">
-          Sign in to mirror your Continue Watching, watchlist, and any addons you've already
-          curated. Optional; Harbor works fully signed-out.
+          {t(
+            "Sign in to mirror your Continue Watching, watchlist, and any addons you've already curated. Optional; Harbor works fully signed-out.",
+          )}
         </p>
       </div>
       <div className="flex flex-col gap-2">
@@ -165,7 +168,7 @@ export function StremioStep() {
           onClick={goToForm}
           className="group flex h-14 items-center justify-center gap-3 rounded-2xl border border-edge bg-canvas/60 px-6 transition-all hover:border-ink-subtle/40 hover:bg-canvas"
         >
-          <span className="text-[14.5px] font-medium text-ink">Sign in with</span>
+          <span className="text-[14.5px] font-medium text-ink">{t("Sign in with")}</span>
           <img
             src={stremioLogo}
             alt="Stremio"
@@ -177,7 +180,7 @@ export function StremioStep() {
           onClick={() => openUrl("https://www.stremio.com/register")}
           className="text-center text-[12.5px] text-ink-subtle transition-colors hover:text-ink-muted"
         >
-          Don't have an account? Create one →
+          {t("Don't have an account? Create one →")}
         </button>
       </div>
     </div>

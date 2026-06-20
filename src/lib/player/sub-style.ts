@@ -36,6 +36,7 @@ export async function applySubStyle(s: Settings, assActive = false): Promise<voi
     ["sub-ass-force-margins", assMargins],
     ["sub-use-margins", assMargins],
     ["sub-spacing", s.subLineSpacing],
+    ["sub-bold", s.subBold ? "yes" : "no"],
   ];
   await Promise.all(
     props.map(([name, value]) =>

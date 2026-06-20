@@ -71,6 +71,8 @@ export type ControlContext = {
   title?: string;
   subtitle?: string;
   titleClickable?: boolean;
+  titleScale?: number;
+  titleSeriesFirst?: boolean;
   onBack?: () => void;
   onTitleClick?: () => void;
   meta?: Meta;
@@ -135,6 +137,28 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     }
     case "title-info": {
       if (!ctx.title) return null;
+      const scale = ctx.titleScale ?? 1;
+      const swap = !!ctx.titleSeriesFirst && !!ctx.subtitle;
+      const primary = swap ? ctx.subtitle : ctx.title;
+      const secondary = swap ? ctx.title : ctx.subtitle;
+      const lines = (
+        <>
+          <h1
+            style={{ fontSize: `${Math.round(19 * scale)}px` }}
+            className="font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+          >
+            {primary}
+          </h1>
+          {secondary && (
+            <p
+              style={{ fontSize: `${Math.round(13 * scale)}px` }}
+              className="text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+            >
+              {secondary}
+            </p>
+          )}
+        </>
+      );
       if (ctx.titleClickable && ctx.onTitleClick) {
         return (
           <button
@@ -143,16 +167,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
             className="pointer-events-auto group inline-flex items-center gap-2 rounded-lg px-2 py-0.5 text-end transition-colors hover:bg-white/10"
             aria-label={t("Title info")}
           >
-            <div className="flex flex-col items-end gap-0.5">
-              <h1 className="text-[19px] font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-                {ctx.title}
-              </h1>
-              {ctx.subtitle && (
-                <p className="text-[13px] text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-                  {ctx.subtitle}
-                </p>
-              )}
-            </div>
+            <div className="flex flex-col items-end gap-0.5">{lines}</div>
             <Info
               size={14}
               strokeWidth={2.2}
@@ -162,16 +177,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
         );
       }
       return (
-        <div className="pointer-events-none flex flex-col items-end gap-0.5 text-end">
-          <h1 className="text-[19px] font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-            {ctx.title}
-          </h1>
-          {ctx.subtitle && (
-            <p className="text-[13px] text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-              {ctx.subtitle}
-            </p>
-          )}
-        </div>
+        <div className="pointer-events-none flex flex-col items-end gap-0.5 text-end">{lines}</div>
       );
     }
     case "time-start": {

@@ -1,20 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
-import { rpdbPoster } from "@/lib/providers/rpdb";
+import { needsImdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
+import { tmdbImdbId, useTmdbImdbId } from "@/lib/providers/tmdb/tmdb-imdb-resolve";
+import { useSettings } from "@/lib/settings";
 
 type Ratio = "portrait" | "landscape" | "wide";
 
-export function usePosterChain(rpdbKey: string, posterBaseUrl: string, metaId: string, metaPoster?: string) {
+export function useRpdbId(rpdbKey: string, metaId: string): string {
+  const { settings } = useSettings();
+  const want = needsImdbForPoster(rpdbKey, metaId);
+  const imdb = useTmdbImdbId(want ? metaId : undefined);
+  useEffect(() => {
+    if (want && settings.tmdbKey) void tmdbImdbId(settings.tmdbKey, metaId);
+  }, [want, settings.tmdbKey, metaId]);
+  return want && typeof imdb === "string" && imdb.startsWith("tt") ? imdb : metaId;
+}
+
+export function usePosterChain(rpdbKey: string, metaId: string, metaPoster?: string) {
+  const posterId = useRpdbId(rpdbKey, metaId);
   const candidates = useMemo(() => {
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const u of [rpdbPoster(rpdbKey, posterBaseUrl, metaId, metaPoster), metaPoster]) {
+    for (const u of [rpdbPoster(rpdbKey, posterId, metaPoster), metaPoster]) {
       if (u && !seen.has(u)) {
         seen.add(u);
         out.push(u);
       }
     }
     return out;
-  }, [rpdbKey, posterBaseUrl, metaId, metaPoster]);
+  }, [rpdbKey, posterId, metaPoster]);
   const [idx, setIdx] = useState(0);
   useEffect(() => setIdx(0), [candidates]);
   return {
@@ -53,7 +66,7 @@ export function Poster({
 
   return (
     <div
-      className={`harbor-poster relative overflow-hidden rounded-xl ${ASPECT[ratio]} ${className}`}
+      className={`harbor-poster your-card relative overflow-hidden rounded-xl ${ASPECT[ratio]} ${className}`}
       style={showGradient ? { background: gradient(hue) } : undefined}
     >
       {!showGradient && (
@@ -61,7 +74,7 @@ export function Poster({
           key={src}
           src={src}
           alt=""
-          decoding="async"
+          decoding="sync"
           onError={() => {
             setFailed(true);
             onError?.();

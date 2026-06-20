@@ -40,6 +40,7 @@ export function PipSeekBar({
 
   return (
     <div
+      dir="ltr"
       data-tauri-drag-region="false"
       className="pointer-events-auto group/pipseek relative h-5"
       onMouseDown={(e) => e.stopPropagation()}

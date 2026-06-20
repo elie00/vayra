@@ -10,7 +10,7 @@ use std::sync::{Mutex, OnceLock};
 
 use gtk::gdk;
 use gtk::glib;
-use gtk::glib::translate::ToGlibPtr;
+use gtk::glib::translate::{Stash, ToGlibPtr};
 use gtk::prelude::*;
 use libmpv2::render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamApiType};
 use libmpv2_sys::mpv_handle;
@@ -42,6 +42,9 @@ struct Pending {
 
 struct Embed {
     area: gtk::GLArea,
+    overlay: gtk::Overlay,
+    gtk_window: gtk::ApplicationWindow,
+    vbox: gtk::Box,
     web_view: gtk::Widget,
 }
 
@@ -63,7 +66,17 @@ fn pending_slot() -> &'static Mutex<Option<Pending>> {
     PENDING.get_or_init(|| Mutex::new(None))
 }
 
+type GlProcLoader = unsafe extern "C" fn(*const c_char) -> *mut c_void;
+
+fn symbol_as_loader(name: &[u8]) -> Option<GlProcLoader> {
+    let sym = unsafe { dlsym(RTLD_DEFAULT, name.as_ptr() as *const c_char) };
+    (!sym.is_null()).then(|| unsafe { std::mem::transmute(sym) })
+}
+
 fn proc_loader() -> Option<unsafe extern "C" fn(*const c_char) -> *mut c_void> {
+    if let Some(epoxy) = symbol_as_loader(b"epoxy_get_proc_address\0") {
+        return Some(epoxy);
+    }
     let primary = if PROC_WAYLAND.load(Ordering::Relaxed) {
         b"eglGetProcAddress\0".as_ptr()
     } else {
@@ -139,7 +152,7 @@ fn native_display(backend: Backend) -> u64 {
     let Some(display) = gdk::Display::default() else {
         return 0;
     };
-    let stash = display.to_glib_none();
+    let stash: Stash<'_, *mut gdk::ffi::GdkDisplay, gdk::Display> = display.to_glib_none();
     let raw = stash.0 as *mut c_void;
     if raw.is_null() {
         return 0;
@@ -186,8 +199,7 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
     {
         let mut existing = embed_slot().lock().map_err(|e| format!("embed lock: {}", e))?;
         if let Some(stale) = existing.take() {
-            stale.area.unparent();
-            std::mem::forget(stale);
+            restore_webview(stale);
         }
     }
     let pending = pending_slot()
@@ -212,12 +224,13 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
     area.set_app_paintable(true);
     area.set_size_request(16, 16);
 
+    gtk_window.remove(vbox);
     vbox.remove(&web_view);
     fixed.put(&area, 0, 0);
     overlay.add(&fixed);
     overlay.add_overlay(&web_view);
     overlay.set_overlay_pass_through(&web_view, false);
-    vbox.pack_start(&overlay, true, true, 0);
+    gtk_window.add(&overlay);
 
     set_webview_transparent(&web_view);
     overlay.show_all();
@@ -250,6 +263,9 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
 
     *embed_slot().lock().map_err(|e| format!("embed lock: {}", e))? = Some(Embed {
         area: area.clone(),
+        overlay,
+        gtk_window: gtk_window.clone(),
+        vbox: vbox.clone(),
         web_view,
     });
 
@@ -290,6 +306,7 @@ fn do_render(rc: &RenderContext, area: &gtk::GLArea) {
     if LAST_SURFACE.swap(packed, Ordering::Relaxed) != packed {
         eprintln!("[harbor::mpv_linux] render surface {}x{} px scale {}", w, h, scale);
     }
+    area.attach_buffers();
     let fbo = current_fbo();
     if fbo == 0 && !FBO_ZERO_WARNED.swap(true, Ordering::Relaxed) {
         eprintln!("[harbor::mpv_linux] WARNING: GtkGLArea FBO query returned 0; mpv will render to the default framebuffer and the video region will stay BLACK. glGetIntegerv or the GL proc loader likely failed to resolve.");
@@ -297,19 +314,28 @@ fn do_render(rc: &RenderContext, area: &gtk::GLArea) {
     let _ = rc.render::<()>(fbo, w, h, true);
 }
 
-pub fn resize_to(x: f64, y: f64, w: f64, h: f64) -> Result<(), String> {
+pub fn resize_to(
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    css_view_w: f64,
+    css_view_h: f64,
+) -> Result<(), String> {
     let guard = embed_slot().lock().map_err(|e| format!("embed lock: {}", e))?;
     let Some(embed) = guard.as_ref() else {
         return Ok(());
     };
-    let scale = embed.area.scale_factor().max(1) as f64;
-    let lw = (w / scale).round().max(1.0) as i32;
-    let lh = (h / scale).round().max(1.0) as i32;
+    let widget_scale = embed.area.scale_factor().max(1) as f64;
+    let sx = if css_view_w > 0.0 { embed.gtk_window.allocated_width().max(1) as f64 / css_view_w } else { 1.0 };
+    let sy = if css_view_h > 0.0 { embed.gtk_window.allocated_height().max(1) as f64 / css_view_h } else { 1.0 };
+    let lw = (w * sx / widget_scale).round().max(1.0) as i32;
+    let lh = (h * sy / widget_scale).round().max(1.0) as i32;
     embed.area.set_size_request(lw, lh);
     if let Some(parent) = embed.area.parent() {
         if let Some(fixed) = parent.downcast_ref::<gtk::Fixed>() {
-            let lx = (x / scale).round() as i32;
-            let ly = (y / scale).round() as i32;
+            let lx = (x * sx / widget_scale).round() as i32;
+            let ly = (y * sy / widget_scale).round() as i32;
             fixed.move_(&embed.area, lx, ly);
         }
     }
@@ -322,10 +348,33 @@ pub fn uninstall() -> Result<(), String> {
     let Some(embed) = guard.take() else {
         return Ok(());
     };
-    set_webview_opaque(&embed.web_view);
-    embed.area.unparent();
+    restore_webview(embed);
     eprintln!("[harbor::mpv_linux] uninstalled");
     Ok(())
+}
+
+fn restore_webview(embed: Embed) {
+    set_webview_opaque(&embed.web_view);
+    if let Some(parent) = embed.web_view.parent() {
+        if let Some(container) = parent.downcast_ref::<gtk::Container>() {
+            container.remove(&embed.web_view);
+        }
+    }
+    if embed.overlay.parent().is_some() {
+        if let Some(parent) = embed.overlay.parent() {
+            if let Some(container) = parent.downcast_ref::<gtk::Container>() {
+                container.remove(&embed.overlay);
+            }
+        }
+    }
+    if embed.web_view.parent().is_none() {
+        embed.vbox.pack_start(&embed.web_view, true, true, 0);
+        embed.web_view.show();
+    }
+    if embed.vbox.parent().is_none() {
+        embed.gtk_window.add(&embed.vbox);
+    }
+    embed.vbox.show_all();
 }
 
 fn schedule_redraw() {
@@ -366,7 +415,7 @@ fn set_webview_bg_alpha(web_view: &gtk::Widget, alpha: f64) {
     let setter: Option<unsafe extern "C" fn(*mut c_void, *const GdkRgba)> =
         resolve_symbol(b"webkit_web_view_set_background_color\0");
     if let Some(f) = setter {
-        let stash = web_view.to_glib_none();
+        let stash: Stash<'_, *mut gtk::ffi::GtkWidget, gtk::Widget> = web_view.to_glib_none();
         let ptr = stash.0 as *mut c_void;
         let color = GdkRgba {
             red: 0.0,

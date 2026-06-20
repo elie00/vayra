@@ -1,16 +1,37 @@
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, X } from "lucide-react";
+import { useState } from "react";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
-import { isPublicRelay } from "@/lib/together/relay-version";
+import { isPublicRelay, REQUIRED_RELAY_VERSION } from "@/lib/together/relay-version";
 import { useView } from "@/lib/view";
+
+const DISMISS_KEY = "harbor.relayBannerDismissed";
 
 export function TogetherRelayBanner() {
   const { relayOutdated, closeModal } = useTogether();
   const { settings } = useSettings();
   const { openSettings } = useView();
-  if (!relayOutdated) return null;
-
+  const t = useT();
   const pub = isPublicRelay(settings.togetherRelayUrl);
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(DISMISS_KEY) === String(REQUIRED_RELAY_VERSION);
+    } catch {
+      return false;
+    }
+  });
+  if (!relayOutdated) return null;
+  if (pub && dismissed) return null;
+
+  const dismiss = () => {
+    try {
+      localStorage.setItem(DISMISS_KEY, String(REQUIRED_RELAY_VERSION));
+    } catch {
+      /* private mode */
+    }
+    setDismissed(true);
+  };
 
   return (
     <div className="flex items-start gap-2.5 rounded-[14px] border border-edge-soft bg-elevated px-3.5 py-3">
@@ -40,6 +61,15 @@ export function TogetherRelayBanner() {
           </button>
         )}
       </div>
+      {pub && (
+        <button
+          onClick={dismiss}
+          aria-label={t("Dismiss")}
+          className="-me-1 -mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+        >
+          <X size={13} strokeWidth={2.4} />
+        </button>
+      )}
     </div>
   );
 }

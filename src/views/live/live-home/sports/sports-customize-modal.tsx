@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { X, Check, Settings2 } from "lucide-react";
-import { useT } from "@/lib/i18n";
-import { useUiLanguage } from "@/lib/i18n";
+import { useT, useUiLanguage } from "@/lib/i18n";
 import { LEAGUES, LEAGUE_GROUPS, getLeagueLabel, getGroupLabel, type LeagueDef } from "@/lib/sports/espn";
 
 interface SportsCustomizeModalProps {
@@ -12,7 +11,7 @@ interface SportsCustomizeModalProps {
 
 export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustomizeModalProps) {
   const t = useT();
-  useUiLanguage(); // re-render on language change
+  useUiLanguage();
   const [draft, setDraft] = useState<Set<string>>(new Set(selected));
   const [activeGroup, setActiveGroup] = useState<string>("all");
 
@@ -55,7 +54,6 @@ export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustom
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-edge-soft/40 bg-canvas shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-edge-soft/30 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink/10">
@@ -74,7 +72,6 @@ export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustom
           </button>
         </div>
 
-        {/* Group Filter Tabs */}
         <div className="flex gap-1.5 overflow-x-auto border-b border-edge-soft/30 px-4 py-2.5 [scrollbar-width:none]">
           <GroupTab
             active={activeGroup === "all"}
@@ -98,7 +95,6 @@ export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustom
           })}
         </div>
 
-        {/* Leagues Grid */}
         <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "420px" }}>
           {activeGroup !== "all" ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -148,7 +144,6 @@ export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustom
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between border-t border-edge-soft/30 px-6 py-3.5">
           <div className="flex gap-2">
             <button
@@ -232,7 +227,6 @@ function LeagueCard({
           : "border-edge-soft/40 bg-elevated/50 hover:border-edge hover:bg-elevated"
       }`}
     >
-      {/* Logo */}
       {!imgErr ? (
         <img
           src={league.logo}
@@ -246,11 +240,9 @@ function LeagueCard({
           {LEAGUE_GROUPS.find((g) => g.key === league.group)?.icon ?? "🏆"}
         </div>
       )}
-      {/* Label */}
       <span className="min-w-0 flex-1 truncate text-[12px] font-medium leading-tight text-ink">
         {getLeagueLabel(league)}
       </span>
-      {/* Checkmark */}
       {selected && (
         <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink">
           <Check size={11} strokeWidth={3} className="text-canvas" />

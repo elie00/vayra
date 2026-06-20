@@ -153,18 +153,25 @@ function interleaveBySource(
     (a, b) => sourcePriority(b as SubResult["source"]) - sourcePriority(a as SubResult["source"]),
   );
   const out: SubResult[] = [];
-  let depth = 0;
-  let added = true;
-  while (added) {
-    added = false;
-    for (const src of sourceOrder) {
-      const arr = buckets.get(src);
-      if (arr && arr[depth]) {
-        out.push(arr[depth]);
-        added = true;
+  const seen = new Set<SubResult>();
+  const drain = (predicate: (r: SubResult) => boolean) => {
+    let depth = 0;
+    let more = true;
+    while (more) {
+      more = false;
+      for (const src of sourceOrder) {
+        const item = buckets.get(src)?.[depth];
+        if (!item) continue;
+        more = true;
+        if (!seen.has(item) && predicate(item)) {
+          seen.add(item);
+          out.push(item);
+        }
       }
+      depth++;
     }
-    depth++;
-  }
+  };
+  drain((r) => langScore(r.lang, preferred) > 0);
+  drain(() => true);
   return out;
 }

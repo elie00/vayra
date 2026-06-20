@@ -1,8 +1,10 @@
 import { ListChecks } from "lucide-react";
 import { useSettings } from "@/lib/settings";
+import { useT } from "@/lib/i18n";
 
 export function GuestPickToggle() {
   const { settings, update } = useSettings();
+  const t = useT();
   const on = settings.togetherGuestsPick;
   return (
     <button
@@ -13,9 +15,9 @@ export function GuestPickToggle() {
       <span className="flex min-w-0 items-center gap-2">
         <ListChecks size={13} strokeWidth={1.9} className="shrink-0" />
         <span className="flex min-w-0 flex-col text-start">
-          <span className="truncate">Guests pick their own source</span>
+          <span className="truncate">{t("Guests pick their own source")}</span>
           <span className="truncate text-[10.5px] text-ink-subtle">
-            Prompts guests to choose instead of auto-matching
+            {t("Prompts guests to choose instead of auto-matching")}
           </span>
         </span>
       </span>

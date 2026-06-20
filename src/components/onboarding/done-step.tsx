@@ -1,8 +1,10 @@
 import { useMemo } from "react";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 
 export function DoneStep() {
   const { settings } = useSettings();
+  const t = useT();
   const enabled = useMemo(
     () => Object.values(settings.streaming).filter(Boolean).length,
     [settings.streaming],
@@ -13,12 +15,15 @@ export function DoneStep() {
 
       <div className="flex flex-col gap-3">
         <h1 className="font-display text-[40px] font-medium leading-[1.05] tracking-tight text-ink">
-          You're set.
+          {t("You're set.")}
         </h1>
         <p className="max-w-md text-[15px] leading-relaxed text-ink-muted">
           {settings.tmdbKey
-            ? `TMDB connected. ${enabled} streaming ${enabled === 1 ? "service" : "services"} on. Welcome aboard.`
-            : "Running on Cinemeta for now. Add a TMDB key from Settings whenever you're ready."}
+            ? t("TMDB connected. {n} streaming {services} on. Welcome aboard.", {
+                n: enabled,
+                services: t(enabled === 1 ? "service" : "services"),
+              })
+            : t("Running on Cinemeta for now. Add a TMDB key from Settings whenever you're ready.")}
         </p>
       </div>
     </div>

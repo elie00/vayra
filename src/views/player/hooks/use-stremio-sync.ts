@@ -47,7 +47,10 @@ export function useStremioSync(params: {
       const { src: s, snap: sn, authKey: ak } = latestRef.current;
       const cid = sessionCidRef.current ?? latestRef.current.canonicalId;
       const base = baseItemRef.current?._id === cid ? baseItemRef.current : null;
-      if (ak && cid && base) {
+      const seeded = base?.state as { video_id?: string; timeOffset?: number } | undefined;
+      const alreadyResumed =
+        seeded?.video_id === vid && (seeded?.timeOffset ?? 0) > MIN_POSITION_SEC * 1000;
+      if (ak && cid && base && !alreadyResumed) {
         void writeLibraryItem(ak, s, sn, base, cid, 0.001, false, vid).then((mt) => {
           if (mt) lastWrittenMtimesRef.current.add(mt);
         });
@@ -312,8 +315,12 @@ async function writeLibraryItem(
     typeof baseState.lastVidReleased === "string" ? baseState.lastVidReleased : null;
   const prevFlagged = typeof baseState.flaggedWatched === "number" ? baseState.flaggedWatched : 0;
   const effPrevFlagged = videoChanged ? 0 : prevFlagged;
-  const nowFlagged = durationMs > 0 && watchedRatio > 0.7;
-  const creditsReset = isTerminal && watchedRatio > CREDITS_RATIO && !src.episode;
+  const priorDuration = typeof baseState.duration === "number" ? baseState.duration : 0;
+  const durationShrunk =
+    !src.episode && priorDuration > 0 && durationMs > 0 && durationMs < priorDuration * 0.7;
+  const playedReal = snap.status !== "error" && !durationShrunk;
+  const nowFlagged = durationMs > 0 && watchedRatio > 0.7 && playedReal;
+  const creditsReset = isTerminal && watchedRatio > CREDITS_RATIO && !src.episode && playedReal;
 
   const state: StremioLibraryItemState = {
     lastWatched: now,

@@ -52,8 +52,13 @@ type LiveStreamRow = {
 };
 
 type UserInfo = {
-  user_info?: { auth?: number; status?: string; message?: string };
-  server_info?: unknown;
+  user_info?: { auth?: number; status?: string; message?: string; allowed_output_formats?: string[] };
+  server_info?: { server_protocol?: string; https_port?: string | number; port?: string | number };
+};
+
+export type XtreamServerCaps = {
+  allowedFormats: string[];
+  streamBase: string;
 };
 
 type ShortEpgRow = {
@@ -128,7 +133,7 @@ function userInfoUrl(creds: XtreamCreds): string {
   return `${creds.base}/player_api.php?${params.toString()}`;
 }
 
-export async function fetchXtreamUserInfo(creds: XtreamCreds): Promise<void> {
+export async function fetchXtreamUserInfo(creds: XtreamCreds): Promise<XtreamServerCaps> {
   const raw = (await xtreamFetch(userInfoUrl(creds))) as UserInfo;
   const info = raw?.user_info;
   if (!info || typeof info !== "object") {
@@ -143,13 +148,41 @@ export async function fetchXtreamUserInfo(creds: XtreamCreds): Promise<void> {
   if (status === "expired") throw new XtreamAuthError("This Xtream account is expired.");
   if (status === "banned") throw new XtreamAuthError("This Xtream account is banned by the provider.");
   if (status === "disabled") throw new XtreamAuthError("This Xtream account is disabled by the provider.");
+  const allowedFormats = Array.isArray(info.allowed_output_formats)
+    ? info.allowed_output_formats.map((f) => String(f).toLowerCase())
+    : [];
+  return { allowedFormats, streamBase: deriveStreamBase(creds, raw.server_info) };
+}
+
+function deriveStreamBase(creds: XtreamCreds, server?: UserInfo["server_info"]): string {
+  if (server && String(server.server_protocol).toLowerCase() === "https") {
+    try {
+      const host = new URL(creds.base).hostname;
+      const port = String(server.https_port || server.port || "").trim();
+      return port ? `https://${host}:${port}` : `https://${host}`;
+    } catch {
+      return creds.base;
+    }
+  }
+  return creds.base;
+}
+
+function pickContainer(pref: XtreamContainer, allowed: string[]): XtreamContainer {
+  if (allowed.length === 0) return pref;
+  if (allowed.includes(pref)) return pref;
+  if (allowed.includes("ts")) return "ts";
+  if (allowed.includes("m3u8")) return "m3u8";
+  return pref;
 }
 
 export async function fetchXtreamLiveChannels(
   creds: XtreamCreds,
   baseId: string,
   container: XtreamContainer = "ts",
+  caps?: XtreamServerCaps,
 ): Promise<IptvChannel[]> {
+  const resolvedContainer = pickContainer(container, caps?.allowedFormats ?? []);
+  const streamBase = caps?.streamBase ?? creds.base;
   const [categoriesRaw, streamsRaw] = await Promise.all([
     xtreamFetch(apiUrl(creds, "get_live_categories")),
     xtreamFetch(apiUrl(creds, "get_live_streams")),
@@ -167,7 +200,7 @@ export async function fetchXtreamLiveChannels(
     if (!s || s.stream_id == null) continue;
     const tvgId = s.epg_channel_id?.trim() || null;
     const group = s.category_id ? categoryName.get(String(s.category_id)) ?? null : null;
-    const url = buildLiveStreamUrl(creds, s.stream_id, container);
+    const url = buildLiveStreamUrl(creds, s.stream_id, resolvedContainer, streamBase);
     const attrs: Record<string, string> = {};
     if (Number(s.tv_archive) > 0) {
       attrs.catchup = "xtream";
@@ -193,8 +226,10 @@ export function buildLiveStreamUrl(
   creds: XtreamCreds,
   streamId: number,
   container: XtreamContainer = "ts",
+  streamBase?: string,
 ): string {
-  return `${creds.base}/live/${encodeURIComponent(creds.username)}/${encodeURIComponent(creds.password)}/${streamId}.${container}`;
+  const base = streamBase ?? creds.base;
+  return `${base}/live/${encodeURIComponent(creds.username)}/${encodeURIComponent(creds.password)}/${streamId}.${container}`;
 }
 
 export async function fetchXtreamShortEpg(
@@ -224,13 +259,25 @@ export async function fetchXtreamShortEpg(
   return out;
 }
 
+function hasControlChars(s: string): boolean {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) return true;
+  }
+  return false;
+}
+
 function decodeBase64(s: string | undefined): string {
   if (!s) return "";
+  const raw = s.trim();
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(raw) || raw.length % 4 !== 0) return raw;
   try {
-    const bin = atob(s);
+    const bin = atob(raw);
     const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
-    return new TextDecoder("utf-8").decode(bytes).trim();
+    const decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes).trim();
+    if (!decoded || hasControlChars(decoded)) return raw;
+    return decoded;
   } catch {
-    return s.trim();
+    return raw;
   }
 }

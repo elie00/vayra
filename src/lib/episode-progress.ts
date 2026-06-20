@@ -1,4 +1,4 @@
-import { isManuallyWatched } from "@/lib/manual-watched";
+import { manualWatchedState } from "@/lib/manual-watched";
 import { lastPlayedEpisode, readResumeEntry } from "@/lib/resume";
 
 export type EpisodeProgress = {
@@ -59,8 +59,12 @@ export function getEpisodeProgress(
   simklWatched?: Set<string>,
 ): EpisodeProgress {
   const entry = readResumeEntry(resumeId, season, episode);
-  const ms = entry?.ms ?? 0;
   const startedAt = entry?.t ?? 0;
+
+  const manual = manualWatchedState(resumeId, season, episode);
+  if (manual === false) return { ratio: 0, watched: false, startedAt };
+
+  const ms = entry?.ms ?? 0;
   const durationMs = runtimeMin && runtimeMin > 0 ? runtimeMin * 60 * 1000 : 0;
   const ratio = durationMs > 0 && ms > 0 ? Math.min(1, ms / durationMs) : 0;
 
@@ -69,8 +73,7 @@ export function getEpisodeProgress(
   const stremioDone = stremioWatched ? stremioWatched.has(`${season}:${episode}`) : false;
   const anilistDone = anilistWatched ? anilistWatched.has(`${season}:${episode}`) : false;
   const simklDone = simklWatched ? simklWatched.has(`${season}:${episode}`) : false;
-  const manualDone = isManuallyWatched(resumeId, season, episode);
-  const done = traktDone || stremioDone || manualDone || anilistDone || simklDone;
+  const done = manual === true || traktDone || stremioDone || anilistDone || simklDone;
 
   return {
     ratio: done ? 1 : ratio,

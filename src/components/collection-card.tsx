@@ -47,7 +47,7 @@ export function CollectionCard({
     let cancelled = false;
     void (async () => {
       let c = id > 0 ? await tmdbCollection(settings.tmdbKey, id).catch(() => null) : null;
-      if (!c || !collectionNameMatches(c.name, name)) {
+      if (!c || (id <= 0 && !collectionNameMatches(c.name, name))) {
         const healedId = await tmdbSearchCollectionId(settings.tmdbKey, name).catch(() => null);
         if (healedId != null && healedId !== id) {
           c = await tmdbCollection(settings.tmdbKey, healedId).catch(() => null);

@@ -269,11 +269,13 @@ export function useKeyboardShortcuts(params: {
       }
       if (match("playerScreenshot") && onScreenshot) {
         e.preventDefault();
+        if (e.repeat) return;
         onScreenshot();
         return;
       }
       if (match("playerGifRecord") && onGifRecord) {
         e.preventDefault();
+        if (e.repeat) return;
         onGifRecord();
         return;
       }

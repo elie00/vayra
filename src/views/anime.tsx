@@ -4,6 +4,7 @@ import { AnimeGenrePicker } from "@/components/anime-genre-picker";
 import { AnimeHero } from "@/components/anime-hero";
 import { BackToTop } from "@/components/back-to-top";
 import { ContinueCard } from "@/components/continue-card";
+import { dismissCw, isCwDismissed, useCwDismissVersion } from "@/lib/cw-dismiss";
 import { PickCard } from "@/components/pick-card";
 import { Row, ScrollRootContext } from "@/components/row";
 import { AnimeRankCard } from "@/components/top-rank-card";
@@ -34,7 +35,7 @@ import {
 import { animeFranchiseKey, stripFranchiseSuffix } from "@/lib/providers/jikan";
 import { useSettings } from "@/lib/settings";
 import { isAdultAnime } from "@/lib/addons-store/adult-filter";
-import { isAnimeCwItem, library, type LibraryItem } from "@/lib/stremio";
+import { isAnimeCwItem, isCwMember, library, type LibraryItem } from "@/lib/stremio";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
@@ -172,6 +173,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
   const [showPicker, setShowPicker] = useState(false);
 
   const { authKey } = useAuth();
+  const cwVersion = useCwDismissVersion();
   const { isConnected: simklConnected } = useSimkl();
   const [libItems, setLibItems] = useState<LibraryItem[]>([]);
   const [simklCw, setSimklCw] = useState<LibraryItem[]>([]);
@@ -218,9 +220,9 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     const seen = new Set<string>();
     return [...libItems, ...simklCw]
       .filter((i) => {
-        if (!(!i.removed || i.temp)) return false;
-        if (!i.state || i.state.timeOffset <= 0) return false;
+        if (!isCwMember(i)) return false;
         if (!isAnimeCwItem(i)) return false;
+        if (isCwDismissed(i)) return false;
         if (seen.has(i._id)) return false;
         seen.add(i._id);
         return true;
@@ -231,7 +233,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
           Date.parse(a.state?.lastWatched ?? a._mtime),
       )
       .slice(0, 20);
-  }, [libItems, simklCw]);
+  }, [libItems, simklCw, cwVersion]);
 
   useEffect(() => {
     publishResumeStates(continueWatching);
@@ -429,7 +431,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
           {continueWatching.length > 0 && (
             <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="anime:cw">
               {continueWatching.map((item) => (
-                <ContinueCard key={item._id} item={item} />
+                <ContinueCard key={item._id} item={item} onDismiss={(it) => dismissCw(it, authKey)} />
               ))}
             </Row>
           )}

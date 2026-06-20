@@ -1,5 +1,6 @@
 import { Bookmark, BookmarkCheck, Info, Play, SkipForward, ThumbsDown } from "lucide-react";
 import type { FeedItem } from "@/lib/feed";
+import { useT } from "@/lib/i18n";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { rpdbPoster } from "@/lib/providers/rpdb";
 import { useSettings } from "@/lib/settings";
@@ -25,6 +26,7 @@ export function FeedHero({
 }) {
   const { settings } = useSettings();
   const { openMeta, openPicker } = useView();
+  const t = useT();
   const saved = useInWatchlist(item.meta.id);
 
   const meta = item.meta;
@@ -36,7 +38,7 @@ export function FeedHero({
     <article className="relative h-[clamp(480px,46vh,560px)] overflow-hidden rounded-[28px] border border-edge-soft bg-canvas">
       <div className="absolute inset-0">
         <Poster
-          src={rpdbPoster(settings.rpdbKey, settings.posterBaseUrl, resolvedImdb ?? meta.id, backdrop)}
+          src={rpdbPoster(settings.rpdbKey, meta.id, backdrop)}
           seed={meta.id}
           ratio="wide"
           className="h-full w-full rounded-none"
@@ -65,7 +67,7 @@ export function FeedHero({
             <button
               type="button"
               onClick={() => openMeta(meta)}
-              aria-label="See details"
+              aria-label={t("See details")}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-canvas/35 text-ink/85 transition-colors duration-200 hover:bg-canvas/65 hover:text-ink"
             >
               <Info size={18} />
@@ -79,7 +81,7 @@ export function FeedHero({
               </span>
               {meta.type === "series" && item.tag.toLowerCase() !== "series" && (
                 <span className="rounded-full border border-ink/30 px-3 py-1 text-ink/85">
-                  Series
+                  {t("Series")}
                 </span>
               )}
             </div>
@@ -122,23 +124,23 @@ export function FeedHero({
               className="flex h-12 items-center gap-2.5 rounded-full bg-ink px-7 text-[15px] font-semibold text-canvas transition-all duration-200 hover:bg-ink/90"
             >
               <Play size={18} fill="currentColor" />
-              <span>Play tonight</span>
+              <span>{t("Play tonight")}</span>
             </button>
             <SecondaryAction
               icon={saved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-              label={saved ? "Saved" : "Save"}
+              label={saved ? t("Saved") : t("Save")}
               onClick={() => toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster })}
               active={saved}
             />
             <SecondaryAction
               icon={<SkipForward size={18} />}
-              label="Skip"
+              label={t("Skip")}
               onClick={onSkip}
             />
             {onNotInterested && (
               <SecondaryAction
                 icon={<ThumbsDown size={18} />}
-                label="Not interested"
+                label={t("Not interested")}
                 onClick={onNotInterested}
               />
             )}

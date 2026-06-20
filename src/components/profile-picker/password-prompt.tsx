@@ -1,5 +1,6 @@
 import { Lock } from "lucide-react";
 import { CatAvatar } from "@/components/icons/cat-avatar";
+import { useT } from "@/lib/i18n";
 import { type Profile } from "@/lib/profiles";
 import { verifyProfilePassword } from "@/lib/profile-password";
 import { PinEntry } from "./pin-entry";
@@ -13,6 +14,7 @@ export function PasswordPrompt({
   onSuccess: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   if (!profile.passwordHash) return null;
   const targetHash = profile.passwordHash;
   return (
@@ -33,8 +35,8 @@ export function PasswordPrompt({
         </span>
       </span>
       <PinEntry
-        title={`Enter ${profile.name}'s PIN`}
-        subtitle="Profile is locked. Enter the 4-digit PIN to continue."
+        title={t("Enter {name}'s PIN", { name: profile.name })}
+        subtitle={t("Profile is locked. Enter the 4-digit PIN to continue.")}
         mode="verify"
         verify={(pin) => verifyProfilePassword(pin, targetHash)}
         onComplete={onSuccess}

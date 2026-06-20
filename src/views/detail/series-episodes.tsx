@@ -49,7 +49,7 @@ export function SeriesEpisodes({
   const { settings, update } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
-  useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
+  const mwVersion = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
   const [watchedMenu, setWatchedMenu] = useState<WatchedMenuTarget | null>(null);
   const openWatchedMenu = (
     e: React.MouseEvent,
@@ -221,7 +221,7 @@ export function SeriesEpisodes({
       );
     }
     return m;
-  }, [enrichedEpisodes, meta.id, traktKey, traktWatched, stremioWatched, simklWatched]);
+  }, [enrichedEpisodes, meta.id, traktKey, traktWatched, stremioWatched, simklWatched, mwVersion]);
   const nextUpEp = useMemo(() => {
     for (const ep of enrichedEpisodes) {
       if (!progressByEp.get(ep.episodeNumber)?.watched) return ep.episodeNumber;
@@ -279,8 +279,9 @@ export function SeriesEpisodes({
         <CinemetaFallback meta={meta} videos={cinemetaVideos} season={active} />
       )}
 
-      {!loading && enrichedEpisodes.length > 0 && settings.episodeLayout === "strip" && (
+      {!loading && enrichedEpisodes.length > 0 && settings.episodeLayout !== "list" && (
         <EpisodeStrip
+          layout={settings.episodeLayout === "grid" ? "grid" : "strip"}
           meta={meta}
           episodes={enrichedEpisodes}
           progressFor={(ep) =>
@@ -306,7 +307,7 @@ export function SeriesEpisodes({
         />
       )}
 
-      {!loading && enrichedEpisodes.length > 0 && settings.episodeLayout !== "strip" && (
+      {!loading && enrichedEpisodes.length > 0 && settings.episodeLayout === "list" && (
         <div className="flex flex-col gap-1">
           {enrichedEpisodes.map((ep) => (
             <EpisodeRow

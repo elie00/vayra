@@ -8,7 +8,7 @@ import { useScrollMemory, useView } from "@/lib/view";
 import { FAVORITES_GROUP_KEY, useFavorites } from "@/lib/iptv/favorites";
 import { clearPlaylistCache, getCachedPlaylist } from "@/lib/iptv/store";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
-import type { IptvPlaylistSource } from "@/lib/iptv/types";
+import type { IptvChannel, IptvPlaylistSource } from "@/lib/iptv/types";
 import { CategorySidebar } from "./live/category-sidebar";
 import { ChannelGrid, EmptyResult, ErrorBlock } from "./live/channel-grid";
 import { GridSkeleton, GuideSkeleton } from "./live/skeletons";
@@ -20,6 +20,7 @@ import { GuideView } from "./live/guide/guide-view";
 import { useAllPlaylists } from "./live/hooks/use-all-playlists";
 import { useChannelPipeline } from "./live/hooks/use-channel-pipeline";
 import { useEpg, useNowTick } from "./live/hooks/use-epg";
+import { useXtreamEpgFallback } from "./live/hooks/use-xtream-epg-fallback";
 import { useIptvPlaylist } from "./live/hooks/use-iptv-playlist";
 import { MultiviewView } from "./multiview";
 import { ViewModeToggle, type ViewMode } from "./live/view-mode-toggle";
@@ -27,6 +28,7 @@ import { isWindowsDesktop } from "@/lib/platform";
 
 const ACTIVE_KEY = "harbor.iptv.active";
 const MODE_KEY = "harbor.iptv.viewMode";
+const EMPTY_CHANNELS: IptvChannel[] = [];
 
 function readActiveId(): string | null {
   try {
@@ -103,7 +105,8 @@ export function LiveView({ active }: { active: boolean }) {
     () => sources.filter((s) => s.kind === "epg").map((s) => s.epgUrl || s.url),
     [sources],
   );
-  const { index: epg, error: epgError } = useEpg(active ? activeSource : null, epgOnlyUrls);
+  const { index: baseEpg, error: epgError } = useEpg(active ? activeSource : null, epgOnlyUrls);
+  const epg = useXtreamEpgFallback(activeSource, playlist?.channels ?? EMPTY_CHANNELS, baseEpg);
   const nowMs = useNowTick(30_000);
 
   const favorites = useFavorites();

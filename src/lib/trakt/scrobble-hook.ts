@@ -21,6 +21,7 @@ export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
   pauseOnPauseRef.current = settings.pauseListStatusOnPause;
   const lastActionRef = useRef<LastAction>(null);
   const lastKeyRef = useRef<string | null>(null);
+  const prevIdentityRef = useRef({ metaId: src.meta.id, episode: src.episode });
 
   const metaId = src.meta.id;
   const season = src.episode?.season;
@@ -54,11 +55,13 @@ export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
       const prevDur = snap.durationSec;
       if (prevDur > 0 && pauseOnPauseRef.current) {
         const progress = Math.min(100, (prevPos / prevDur) * 100);
-        scrobble("pause", { metaId, episode: src.episode, progress });
+        const prev = prevIdentityRef.current;
+        scrobble("pause", { metaId: prev.metaId, episode: prev.episode, progress });
       }
       lastActionRef.current = "pause";
     }
     lastKeyRef.current = key;
+    prevIdentityRef.current = { metaId, episode: src.episode };
   }, [key, metaId, src.episode, scrobble, snap.durationSec]);
 
   useEffect(() => {

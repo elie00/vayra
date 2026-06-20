@@ -58,7 +58,7 @@ export const TopRankCard = memo(function TopRankCard({ meta, rank }: { meta: Met
   const resolvedImdb = useTmdbImdbId(meta.id);
   const altIds = useMemo(() => [resolvedImdb], [resolvedImdb]);
   const inWatchlist = useInWatchlist(meta.id, altIds);
-  const poster = usePosterChain(settings.rpdbKey, settings.posterBaseUrl, resolvedImdb ?? meta.id, meta.poster);
+  const poster = usePosterChain(settings.rpdbKey, meta.id, meta.poster);
   return (
     <button
       onClick={() => openMeta(meta)}
@@ -110,7 +110,7 @@ export const AnimeRankCard = memo(function AnimeRankCard({ meta, rank }: { meta:
   const resolvedImdb = useTmdbImdbId(meta.id);
   const altIds = useMemo(() => [resolvedImdb], [resolvedImdb]);
   const inWatchlist = useInWatchlist(meta.id, altIds);
-  const poster = usePosterChain(settings.rpdbKey, settings.posterBaseUrl, resolvedImdb ?? meta.id, meta.poster);
+  const poster = usePosterChain(settings.rpdbKey, meta.id, meta.poster);
   return (
     <button
       onClick={() => openMeta(meta)}

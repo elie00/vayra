@@ -284,6 +284,9 @@ async function tmdbSeason(key: string, tvId: number, season: number): Promise<Pl
       name: e.name || undefined,
       still: e.stillPath ? `https://image.tmdb.org/t/p/w300${e.stillPath}` : undefined,
       overview: e.overview || undefined,
+      rating: e.voteAverage && e.voteAverage > 0 ? e.voteAverage : undefined,
+      airDate: e.airDate || undefined,
+      runtime: e.runtime && e.runtime > 0 ? e.runtime : undefined,
     }))
     .sort((a, b) => a.episode - b.episode);
   lruSet(tmdbSeasonCache, cacheKey, eps, SEASON_CACHE_MAX);

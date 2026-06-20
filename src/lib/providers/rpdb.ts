@@ -1,10 +1,26 @@
+let posterBase = "";
 
-function fillTemplate(template: string, metaId: string): string | undefined {
+export function setPosterBaseUrl(url: string): void {
+  posterBase = url.trim().replace(/\/+$/, "");
+}
+
+type ParsedId = {
+  imdb?: string;
+  tmdbId?: string;
+  mediaType: "movie" | "series";
+};
+
+function parseMetaId(metaId: string): ParsedId | undefined {
+  if (metaId.startsWith("tt")) return { imdb: metaId, mediaType: "movie" };
   const tmdb = metaId.match(/^tmdb:(movie|tv):(\d+)$/);
-  const imdb = metaId.startsWith("tt") ? metaId : undefined;
-  const mediaType = tmdb ? tmdb[1] : "movie";
-  const tmdbId = tmdb ? tmdb[2] : undefined;
-  const idToken = imdb ?? (tmdb ? `${tmdb[1]}-${tmdb[2]}` : undefined);
+  if (tmdb) {
+    return { tmdbId: tmdb[2], mediaType: tmdb[1] === "tv" ? "series" : "movie" };
+  }
+  return undefined;
+}
+
+function fillTemplate(template: string, id: ParsedId): string | undefined {
+  const idToken = id.imdb ?? (id.tmdbId ? `${id.mediaType}-${id.tmdbId}` : undefined);
   if (!idToken) return undefined;
   let out = template;
   const sub = (token: string, value: string | undefined): boolean => {
@@ -13,30 +29,62 @@ function fillTemplate(template: string, metaId: string): string | undefined {
     out = out.split(token).join(value);
     return true;
   };
-  if (!sub("{imdbId}", imdb)) return undefined;
-  if (!sub("{imdb_id}", imdb)) return undefined;
-  if (!sub("{tmdbId}", tmdbId)) return undefined;
-  if (!sub("{tmdb_id}", tmdbId)) return undefined;
-  sub("{type}", mediaType);
-  sub("{mediaType}", mediaType);
+  if (!sub("{imdbId}", id.imdb)) return undefined;
+  if (!sub("{imdb_id}", id.imdb)) return undefined;
+  if (!sub("{tmdbId}", id.tmdbId)) return undefined;
+  if (!sub("{tmdb_id}", id.tmdbId)) return undefined;
+  sub("{type}", id.mediaType);
+  sub("{mediaType}", id.mediaType);
   if (!sub("{id}", idToken)) return undefined;
   return out;
 }
 
-export function rpdbPoster(key: string, posterBaseUrl: string, metaId: string, fallback?: string): string | undefined {
-  const effectiveBase = posterBaseUrl.trim().replace(/\/+$/, "");
-  if (effectiveBase && effectiveBase.includes("{")) {
-    return fillTemplate(effectiveBase, metaId) ?? fallback;
-  }
-  const base = effectiveBase || "https://api.ratingposterdb.com";
-  if (!key && !effectiveBase) return fallback;
+function rpdbPath(base: string, key: string, id: ParsedId): string | undefined {
   const keySeg = key || "default";
-  if (metaId.startsWith("tt")) {
-    return `${base}/${keySeg}/imdb/poster-default/${metaId}.jpg?fallback=true`;
+  if (id.imdb) {
+    return `${base}/${keySeg}/imdb/poster-default/${id.imdb}.jpg?fallback=true`;
   }
-  const m = metaId.match(/^tmdb:(movie|tv):(\d+)$/);
-  if (m) {
-    return `${base}/${keySeg}/tmdb/poster-default/${m[1]}-${m[2]}.jpg?fallback=true`;
+  if (id.tmdbId) {
+    return `${base}/${keySeg}/tmdb/poster-default/${id.mediaType}-${id.tmdbId}.jpg?fallback=true`;
   }
+  return undefined;
+}
+
+function betterPostersPath(base: string, id: ParsedId): string | undefined {
+  if (!id.imdb) return undefined;
+  return `${base}/poster/imdb/poster-default/${id.imdb}.jpg`;
+}
+
+export function rpdbPoster(key: string, metaId: string, fallback?: string): string | undefined {
+  const id = parseMetaId(metaId);
+  if (!id) return fallback;
+
+  if (posterBase.includes("{")) {
+    return fillTemplate(posterBase, id) ?? fallback;
+  }
+
+  if (!posterBase) {
+    if (!key) return fallback;
+    return rpdbPath("https://api.ratingposterdb.com", key, id) ?? fallback;
+  }
+
+  const host = posterBase.toLowerCase();
+  if (host.includes("ratingposterdb.com")) {
+    return rpdbPath(posterBase, key, id) ?? fallback;
+  }
+  if (host.includes("btttr.cc")) {
+    return betterPostersPath(posterBase, id) ?? fallback;
+  }
+  if (host.includes("postersplus") || host.includes("elfhosted")) {
+    return fallback;
+  }
+
+  if (key) return rpdbPath(posterBase, key, id) ?? fallback;
   return fallback;
+}
+
+export function needsImdbForPoster(key: string, metaId: string): boolean {
+  if (rpdbPoster(key, metaId)) return false;
+  if (!posterBase && !key) return false;
+  return /^tmdb:(movie|tv):\d+$/.test(metaId);
 }

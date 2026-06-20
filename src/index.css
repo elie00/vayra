@@ -27,6 +27,7 @@
   --color-accent: oklch(0.78 0.13 60);
   --color-accent-soft: oklch(0.78 0.13 60 / 0.18);
   --color-danger: oklch(0.55 0.18 25);
+  --color-success: oklch(0.68 0.15 150);
 
   --radius-sm: 6px;
   --radius-md: 10px;

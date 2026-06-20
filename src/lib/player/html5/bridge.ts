@@ -1,4 +1,5 @@
 import Hls from "hls.js";
+import mpegts from "mpegts.js";
 import {
   emptySnapshot,
   type PlayerBridge,
@@ -28,6 +29,8 @@ export function createHtml5Bridge(): PlayerBridge {
   let mediaSessionBound = false;
   let pendingVolume = 1;
   let hls: Hls | null = null;
+  let tsPlayer: ReturnType<typeof mpegts.createPlayer> | null = null;
+  let isLiveSrc = false;
   let audioProbeDone = false;
   const subTracks: SubTrack[] = [];
   let activeSubId: string | null = null;
@@ -161,6 +164,17 @@ export function createHtml5Bridge(): PlayerBridge {
     pendingVolume = v;
     if (!video) return;
     video.volume = Math.min(1, Math.max(0, v));
+  };
+
+  const teardownTs = () => {
+    if (!tsPlayer) return;
+    try {
+      tsPlayer.pause();
+      tsPlayer.unload();
+      tsPlayer.detachMediaElement();
+      tsPlayer.destroy();
+    } catch {}
+    tsPlayer = null;
   };
 
   const ensureLoaded = async (track: SubTrack) => {
@@ -317,6 +331,7 @@ export function createHtml5Bridge(): PlayerBridge {
         try { hls.destroy(); } catch {}
         hls = null;
       }
+      teardownTs();
       if (video) {
         try {
           video.pause();
@@ -331,11 +346,13 @@ export function createHtml5Bridge(): PlayerBridge {
     },
     async load(src: PlayerSource) {
       if (!video) return;
+      isLiveSrc = src.notWebReady === true;
       pendingStart = src.startAtSec ?? null;
       if (hls) {
         try { hls.destroy(); } catch {}
         hls = null;
       }
+      teardownTs();
       try {
         if (video.src) {
           video.pause();
@@ -347,13 +364,27 @@ export function createHtml5Bridge(): PlayerBridge {
       video.muted = false;
       if (video.volume === 0) video.volume = 1;
 
-      const isHls = /\.m3u8(\?|$)/i.test(src.url);
+      const bare = src.url.toLowerCase().split("?")[0];
+      const isHls = /\.m3u8$/.test(bare);
+      const isTs = bare.endsWith(".ts") || (src.notWebReady === true && !isHls && !/\.(mp4|webm|mov|mkv|mpd)$/.test(bare));
       if (isHls && Hls.isSupported()) {
-        hls = new Hls({ enableWorker: true });
+        hls = new Hls(
+          src.notWebReady === true
+            ? { enableWorker: true, lowLatencyMode: false, liveDurationInfinity: true, backBufferLength: 30 }
+            : { enableWorker: true },
+        );
         hls.loadSource(src.url);
         hls.attachMedia(video);
         hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, refreshSnapshot);
         hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, refreshSnapshot);
+      } else if (isTs && mpegts.isSupported()) {
+        tsPlayer = mpegts.createPlayer(
+          { type: "mpegts", url: src.url, isLive: true, cors: true },
+          { enableWorker: true, liveBufferLatencyChasing: true, lazyLoadMaxDuration: 4 },
+        );
+        tsPlayer.attachMediaElement(video);
+        tsPlayer.on(mpegts.Events.ERROR, refreshSnapshot);
+        tsPlayer.load();
       } else {
         video.src = src.url;
       }
@@ -429,6 +460,12 @@ export function createHtml5Bridge(): PlayerBridge {
     },
     seek(sec) {
       if (!video) return;
+      if (isLiveSrc && video.seekable.length > 0) {
+        const lo = video.seekable.start(0);
+        const hi = video.seekable.end(0) - 0.5;
+        video.currentTime = Math.max(lo, Math.min(sec, hi));
+        return;
+      }
       if (!Number.isFinite(video.duration)) {
         pendingStart = sec;
         return;
@@ -552,6 +589,8 @@ export function createHtml5Bridge(): PlayerBridge {
         if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
           const fs = await import("@tauri-apps/plugin-fs");
           const bytes = new Uint8Array(await blob.arrayBuffer());
+          const dir = path.replace(/[\\/][^\\/]+$/, "");
+          if (dir && dir !== path) await fs.mkdir(dir, { recursive: true }).catch(() => {});
           await fs.writeFile(path, bytes);
           return { ok: true, path };
         }
@@ -692,6 +731,7 @@ export function createHtml5Bridge(): PlayerBridge {
         try { hls.destroy(); } catch {}
         hls = null;
       }
+      teardownTs();
       if (pipWindow) {
         try {
           pipWindow.close();

@@ -1,8 +1,8 @@
 #[cfg(windows)]
-fn apply_transparency(app: &tauri::AppHandle) {
+pub fn apply_transparency(app: &tauri::AppHandle, label: &str) {
     use tauri::Manager;
-    let Some(window) = app.get_webview_window("main") else {
-        eprintln!("[harbor::transparent] main window missing");
+    let Some(window) = app.get_webview_window(label) else {
+        eprintln!("[harbor::transparent] window {} missing", label);
         return;
     };
     let res = window.with_webview(|webview| unsafe {
@@ -31,7 +31,7 @@ fn apply_transparency(app: &tauri::AppHandle) {
 pub fn webview_reapply_transparency(_app: tauri::AppHandle) -> Result<(), String> {
     #[cfg(windows)]
     {
-        apply_transparency(&_app);
+        apply_transparency(&_app, "main");
     }
     Ok(())
 }

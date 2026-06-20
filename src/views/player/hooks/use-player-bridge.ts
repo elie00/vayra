@@ -24,6 +24,7 @@ function snapChangedIgnoringClock(a: PlayerSnapshot, b: PlayerSnapshot): boolean
     a.audioNormalize !== b.audioNormalize ||
     a.videoWidth !== b.videoWidth ||
     a.videoHeight !== b.videoHeight ||
+    a.hdrGamma !== b.hdrGamma ||
     a.errorMessage !== b.errorMessage ||
     a.errorCode !== b.errorCode
   );
@@ -44,7 +45,14 @@ export function usePlayerBridge(params: {
 
   const hdrOpaqueWindow = isWindowsDesktop() && settings.playerHdrOpaqueWindow;
   const embedActive = settings.playerMpvEmbed && !hdrOpaqueWindow;
-  const bridgeKey = `${autoFallbackTried ? "mpv" : settings.playerEngine}|${settings.playerAnime4k}|${settings.playerHdrToSdr}|${embedActive}|${settings.playerAnime4kShaders.join(",")}`;
+  const isAnimeSrc =
+    !!src.meta.id?.startsWith("kitsu:") ||
+    !!src.meta.id?.startsWith("mal:") ||
+    !!src.meta.id?.startsWith("anilist:") ||
+    !!src.meta.id?.startsWith("anidb:") ||
+    (src.meta.genres ?? []).some((g) => g.toLowerCase() === "anime");
+  const anime4kOn = settings.playerAnime4k && (!settings.playerAnime4kAnimeOnly || isAnimeSrc);
+  const bridgeKey = `${autoFallbackTried ? "mpv" : settings.playerEngine}|${anime4kOn}|${settings.playerHdrToSdr}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}`;
   const [bridgeReady, setBridgeReady] = useState(false);
   useEffect(() => {
     const host = videoMountRef.current;
@@ -59,24 +67,21 @@ export function usePlayerBridge(params: {
         const el = videoMountRef.current;
         if (!el) return null;
         const r = el.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const left = Math.floor(r.left * dpr);
-        const top = Math.floor(r.top * dpr);
-        const right = Math.ceil((r.left + r.width) * dpr);
-        const bottom = Math.ceil((r.top + r.height) * dpr);
         return {
-          screenX: left,
-          screenY: top,
-          w: Math.max(1, right - left),
-          h: Math.max(1, bottom - top),
+          cssLeft: r.left,
+          cssTop: r.top,
+          cssWidth: r.width,
+          cssHeight: r.height,
+          cssViewW: document.documentElement.clientWidth,
+          cssViewH: document.documentElement.clientHeight,
         };
       };
       const { bridge: choose, engine: chosen } = await pickBridge(want, src.notWebReady === true, {
-        anime4k: settings.playerAnime4k,
+        anime4k: anime4kOn,
         hdrToSdr: settings.playerHdrToSdr,
         embed: embedActive,
         d3d11Flip: settings.playerD3d11Flip,
-        anime4kShaders: settings.playerAnime4k && settings.playerAnime4kShaders.length > 0
+        anime4kShaders: anime4kOn && settings.playerAnime4kShaders.length > 0
           ? settings.playerAnime4kShaders
           : [],
         getEmbedRect,

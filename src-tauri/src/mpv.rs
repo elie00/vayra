@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -48,15 +49,19 @@ pub struct MpvStartArgs {
     pub embed: Option<bool>,
     pub anime4k_shaders: Option<Vec<String>>,
     pub d3d11_flip: Option<bool>,
+    pub is_live: Option<bool>,
+    pub headers: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MpvGeometry {
-    pub screen_x: i32,
-    pub screen_y: i32,
-    pub w: u32,
-    pub h: u32,
+    pub css_left: f64,
+    pub css_top: f64,
+    pub css_width: f64,
+    pub css_height: f64,
+    pub css_view_w: f64,
+    pub css_view_h: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,6 +104,7 @@ const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     ("af", 13, PropertyKind::String),
     ("dwidth", 14, PropertyKind::Int64),
     ("dheight", 15, PropertyKind::Int64),
+    ("video-params/gamma", 16, PropertyKind::String),
 ];
 
 #[derive(Clone, Copy)]
@@ -169,7 +175,21 @@ fn apply_pre_init(
     set("audio-client-name", "Harbor")?;
     set("terminal", "no")?;
     set("msg-level", "all=warn,vo=v,d3d11=v,gpu=v,win32=v")?;
-    set("user-agent", "VLC/3.0.20 LibVLC/3.0.20")?;
+    let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
+    let mut header_fields: Vec<String> = Vec::new();
+    if let Some(headers) = &args.headers {
+        for (k, v) in headers {
+            if k.eq_ignore_ascii_case("user-agent") {
+                user_agent = v.clone();
+            } else {
+                header_fields.push(format!("{}: {}", k, v));
+            }
+        }
+    }
+    set("user-agent", &user_agent)?;
+    if !header_fields.is_empty() {
+        set("http-header-fields", &header_fields.join(","))?;
+    }
     let on_mac_embed = cfg!(target_os = "macos") && embed_hwnd.is_some();
     if on_mac_embed {
         set("hwdec", "videotoolbox-copy")?;
@@ -200,7 +220,7 @@ fn apply_pre_init(
         {
             let hwnd_i64: i64 = hwnd.parse().map_err(|e| format!("parse wid {}: {}", hwnd, e))?;
             init.set_property("wid", hwnd_i64).map_err(|e| format!("set wid={}: {}", hwnd_i64, e))?;
-            if args.d3d11_flip.unwrap_or(false) {
+            if args.d3d11_flip.unwrap_or(false) && args.hdr_to_sdr.unwrap_or(false) {
                 set("d3d11-flip", "no")?;
             }
         }
@@ -214,6 +234,14 @@ fn apply_pre_init(
 
     if args.hdr_to_sdr.unwrap_or(false) {
         set("tone-mapping", "bt.2446a")?;
+    } else {
+        #[cfg(windows)]
+        {
+            set("target-colorspace-hint", "yes")?;
+            if embed_hwnd.is_some() {
+                set("gpu-api", "d3d11")?;
+            }
+        }
     }
 
     if let Some(shaders) = &args.anime4k_shaders {
@@ -376,23 +404,37 @@ pub async fn mpv_start(
             }
         }
     }
-    let _ = mpv.set_property("cache", "yes");
-    let _ = mpv.set_property("cache-secs", "60");
-    let _ = mpv.set_property("cache-pause", "yes");
-    let _ = mpv.set_property("demuxer-max-bytes", "128MiB");
-    let _ = mpv.set_property("demuxer-max-back-bytes", "32MiB");
-    let _ = mpv.set_property("demuxer-readahead-secs", "60");
-    if let Ok(base) = app.path().app_cache_dir() {
-        let dvr = base.join("mpv-cache");
-        let _ = std::fs::create_dir_all(&dvr);
-        if let Some(s) = dvr.to_str() {
-            let _ = mpv.set_property("cache-dir", s);
+    let is_live = args.is_live.unwrap_or(false);
+    if is_live {
+        let _ = mpv.set_property("cache", "yes");
+        let _ = mpv.set_property("cache-secs", "30");
+        let _ = mpv.set_property("cache-pause", "yes");
+        let _ = mpv.set_property("cache-pause-initial", "no");
+        let _ = mpv.set_property("demuxer-max-bytes", "64MiB");
+        let _ = mpv.set_property("demuxer-max-back-bytes", "16MiB");
+        let _ = mpv.set_property("demuxer-readahead-secs", "20");
+        let _ = mpv.set_property("network-timeout", "60");
+        let _ = mpv.set_property("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=5,reconnect_on_network_error=1");
+        let _ = mpv.set_property("stream-buffer-size", "16MiB");
+    } else {
+        let _ = mpv.set_property("cache", "yes");
+        let _ = mpv.set_property("cache-secs", "60");
+        let _ = mpv.set_property("cache-pause", "yes");
+        let _ = mpv.set_property("demuxer-max-bytes", "128MiB");
+        let _ = mpv.set_property("demuxer-max-back-bytes", "32MiB");
+        let _ = mpv.set_property("demuxer-readahead-secs", "60");
+        if let Ok(base) = app.path().app_cache_dir() {
+            let dvr = base.join("mpv-cache");
+            let _ = std::fs::create_dir_all(&dvr);
+            if let Some(s) = dvr.to_str() {
+                let _ = mpv.set_property("cache-dir", s);
+            }
         }
+        let _ = mpv.set_property("cache-on-disk", "yes");
+        let _ = mpv.set_property("network-timeout", "600");
+        let _ = mpv.set_property("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_on_network_error=1");
+        let _ = mpv.set_property("stream-buffer-size", "32MiB");
     }
-    let _ = mpv.set_property("cache-on-disk", "yes");
-    let _ = mpv.set_property("network-timeout", "600");
-    let _ = mpv.set_property("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_on_network_error=1");
-    let _ = mpv.set_property("stream-buffer-size", "32MiB");
     if want_embed {
         let _ = mpv.set_property("sub-visibility", "no");
         let _ = mpv.set_property("secondary-sub-visibility", "no");
@@ -587,6 +629,24 @@ pub async fn mpv_set_property(
 }
 
 #[tauri::command]
+pub async fn mpv_get_property(
+    state: State<'_, MpvState>,
+    name: String,
+) -> Result<Value, String> {
+    let mpv = {
+        let g = state.inner.lock().await;
+        g.as_ref().map(|s| s.mpv.clone()).ok_or_else(|| "mpv not started".to_string())?
+    };
+    let s = mpv
+        .get_property::<String>(&name)
+        .map_err(|e| format!("get {}: {}", name, e))?;
+    Ok(match s.parse::<f64>() {
+        Ok(n) if n.is_finite() => serde_json::json!(n),
+        _ => Value::String(s),
+    })
+}
+
+#[tauri::command]
 pub async fn mpv_set_geometry(
     app: AppHandle,
     state: State<'_, MpvState>,
@@ -599,15 +659,23 @@ pub async fn mpv_set_geometry(
             g.as_ref().map(|s| s.embedded).unwrap_or(false)
         };
         if embedded {
-            return position_embedded_mpv_child(&app, geom.screen_x, geom.screen_y, geom.w, geom.h);
+            return position_embedded_mpv_child(
+                &app,
+                geom.css_left,
+                geom.css_top,
+                geom.css_width,
+                geom.css_height,
+                geom.css_view_w,
+                geom.css_view_h,
+            );
         }
     }
     #[cfg(target_os = "macos")]
     {
-        let x = geom.screen_x as f64;
-        let y = geom.screen_y as f64;
-        let w = geom.w as f64;
-        let h = geom.h as f64;
+        let x = geom.css_left;
+        let y = geom.css_top;
+        let w = geom.css_width;
+        let h = geom.css_height;
         let (tx, rx) = std::sync::mpsc::sync_channel::<()>(1);
         let _ = app.run_on_main_thread(move || {
             let _ = crate::mpv_render_mac::resize_to(x, y, w, h);
@@ -623,13 +691,15 @@ pub async fn mpv_set_geometry(
             g.as_ref().map(|s| s.embedded).unwrap_or(false)
         };
         if embedded {
-            let x = geom.screen_x as f64;
-            let y = geom.screen_y as f64;
-            let w = geom.w as f64;
-            let h = geom.h as f64;
+            let x = geom.css_left;
+            let y = geom.css_top;
+            let w = geom.css_width;
+            let h = geom.css_height;
+            let css_view_w = geom.css_view_w;
+            let css_view_h = geom.css_view_h;
             let (tx, rx) = std::sync::mpsc::sync_channel::<()>(1);
             let _ = app.run_on_main_thread(move || {
-                let _ = crate::mpv_render_linux::resize_to(x, y, w, h);
+                let _ = crate::mpv_render_linux::resize_to(x, y, w, h, css_view_w, css_view_h);
                 let _ = tx.send(());
             });
             let _ = rx.recv_timeout(std::time::Duration::from_millis(300));
@@ -643,7 +713,10 @@ pub async fn mpv_set_geometry(
         let g = state.inner.lock().await;
         g.as_ref().map(|s| s.mpv.clone()).ok_or_else(|| "mpv not started".to_string())?
     };
-    let geo = format!("{}x{}+{}+{}", geom.w, geom.h, geom.screen_x, geom.screen_y);
+    let geo = format!(
+        "{}x{}+{}+{}",
+        geom.css_width as i32, geom.css_height as i32, geom.css_left as i32, geom.css_top as i32
+    );
     mpv.set_property("geometry", geo.as_str()).map_err(|e| format!("geometry: {}", e))
 }
 
@@ -651,6 +724,9 @@ pub async fn mpv_set_geometry(
 pub async fn mpv_force_below(_app: AppHandle) -> Result<(), String> {
     #[cfg(windows)]
     {
+        if MPV_HDR_STAGE.load(std::sync::atomic::Ordering::Relaxed) {
+            return Ok(());
+        }
         use windows::Win32::Foundation::{HWND, LPARAM};
         use windows::Win32::UI::WindowsAndMessaging::{
             EnumChildWindows, GetClassNameW, SetWindowPos, HWND_BOTTOM, SWP_NOACTIVATE, SWP_NOMOVE,
@@ -701,6 +777,104 @@ pub async fn mpv_force_below(_app: AppHandle) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn mpv_set_hdr_stage(_app: AppHandle, active: bool) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        MPV_HDR_STAGE.store(active, std::sync::atomic::Ordering::Relaxed);
+        if let Ok(mut guard) = MPV_POS_LAST_RECT.lock() {
+            *guard = None;
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = active;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn display_hdr_active(_app: AppHandle) -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        use tauri::Manager;
+        let window = match _app.get_webview_window("main") {
+            Some(w) => w,
+            None => return Ok(false),
+        };
+        let hwnd = match window.hwnd() {
+            Ok(h) => h,
+            Err(_) => return Ok(false),
+        };
+        return Ok(monitor_hdr_active(hwnd.0 as isize));
+    }
+    #[cfg(not(windows))]
+    {
+        Ok(false)
+    }
+}
+
+#[cfg(windows)]
+fn monitor_hdr_active(hwnd_raw: isize) -> bool {
+    use windows::core::Interface;
+    use windows::Win32::Foundation::{HWND, RECT};
+    use windows::Win32::Graphics::Dxgi::Common::DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+    use windows::Win32::Graphics::Dxgi::{
+        CreateDXGIFactory1, IDXGIFactory1, IDXGIOutput6, DXGI_ERROR_NOT_FOUND,
+    };
+    use windows::Win32::Graphics::Gdi::{MonitorFromWindow, MONITOR_DEFAULTTONEAREST};
+    use windows::Win32::UI::WindowsAndMessaging::GetWindowRect;
+
+    let hwnd = HWND(hwnd_raw as *mut _);
+    let target_monitor = unsafe { MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) };
+    let mut win_rect = RECT::default();
+    let have_win_rect = unsafe { GetWindowRect(hwnd, &mut win_rect).is_ok() };
+
+    let factory: IDXGIFactory1 = match unsafe { CreateDXGIFactory1() } {
+        Ok(f) => f,
+        Err(_) => return false,
+    };
+
+    let mut adapter_idx = 0u32;
+    loop {
+        let adapter = match unsafe { factory.EnumAdapters1(adapter_idx) } {
+            Ok(a) => a,
+            Err(e) if e.code() == DXGI_ERROR_NOT_FOUND => break,
+            Err(_) => break,
+        };
+        adapter_idx += 1;
+
+        let mut output_idx = 0u32;
+        loop {
+            let output = match unsafe { adapter.EnumOutputs(output_idx) } {
+                Ok(o) => o,
+                Err(_) => break,
+            };
+            output_idx += 1;
+
+            let output6: IDXGIOutput6 = match output.cast() {
+                Ok(o) => o,
+                Err(_) => continue,
+            };
+            let desc = match unsafe { output6.GetDesc1() } {
+                Ok(d) => d,
+                Err(_) => continue,
+            };
+
+            let monitor_matches = !target_monitor.is_invalid()
+                && desc.Monitor.0 as isize == target_monitor.0 as isize;
+            let rect_matches = have_win_rect && {
+                let d = desc.DesktopCoordinates;
+                let cx = (win_rect.left + win_rect.right) / 2;
+                let cy = (win_rect.top + win_rect.bottom) / 2;
+                cx >= d.left && cx < d.right && cy >= d.top && cy < d.bottom
+            };
+            if monitor_matches || rect_matches {
+                return desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+            }
+        }
+    }
+    false
 }
 
 #[tauri::command]
@@ -1186,16 +1360,28 @@ static MPV_POS_LAST_RECT: std::sync::Mutex<Option<(isize, i32, i32, u32, u32)>> 
     std::sync::Mutex::new(None);
 
 #[cfg(windows)]
-fn position_embedded_mpv_child(app: &AppHandle, x: i32, y: i32, w: u32, h: u32) -> Result<(), String> {
+static MPV_HDR_STAGE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[cfg(windows)]
+fn position_embedded_mpv_child(
+    app: &AppHandle,
+    css_left: f64,
+    css_top: f64,
+    css_width: f64,
+    css_height: f64,
+    css_view_w: f64,
+    css_view_h: f64,
+) -> Result<(), String> {
     use windows::core::BOOL;
     use windows::Win32::Foundation::{HWND, LPARAM};
-    use windows::Win32::UI::Shell::SetWindowSubclass;
+    use windows::Win32::UI::Shell::{RemoveWindowSubclass, SetWindowSubclass};
     use windows::Win32::Graphics::Gdi::{RedrawWindow, RDW_ALLCHILDREN, RDW_INVALIDATE, RDW_UPDATENOW};
     use windows::Win32::UI::WindowsAndMessaging::{
         EnumChildWindows, GetClassNameW, GetWindowLongW, GetWindowTextW, SetWindowLongW,
-        SetWindowPos, GWL_EXSTYLE, HWND_BOTTOM, SWP_HIDEWINDOW, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
-        SWP_SHOWWINDOW, WS_EX_TRANSPARENT,
+        SetWindowPos, GWL_EXSTYLE, HWND_BOTTOM, HWND_TOP, SWP_HIDEWINDOW, SWP_NOACTIVATE, SWP_NOMOVE,
+        SWP_NOSIZE, SWP_SHOWWINDOW, WS_EX_TRANSPARENT,
     };
+    let hdr_stage = MPV_HDR_STAGE.load(std::sync::atomic::Ordering::Relaxed);
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "main window missing".to_string())?;
@@ -1207,8 +1393,15 @@ fn position_embedded_mpv_child(app: &AppHandle, x: i32, y: i32, w: u32, h: u32) 
         let mut rc = RECT::default();
         let ok = unsafe { GetClientRect(parent_hwnd, &mut rc).is_ok() };
         let (cw, ch) = (rc.right, rc.bottom);
-        let (mut x, mut y, mut w, mut h) = (x, y, w as i32, h as i32);
-        if ok && cw > 0 && ch > 0 {
+        if !(ok && cw > 0 && ch > 0 && css_view_w > 0.5 && css_view_h > 0.5) {
+            (0i32, 0i32, cw.max(1) as u32, ch.max(1) as u32)
+        } else {
+            let sx = cw as f64 / css_view_w;
+            let sy = ch as f64 / css_view_h;
+            let mut x = (css_left * sx).round() as i32;
+            let mut y = (css_top * sy).round() as i32;
+            let mut w = (css_width * sx).round() as i32;
+            let mut h = (css_height * sy).round() as i32;
             if x.abs() <= 2 {
                 w += x;
                 x = 0;
@@ -1217,14 +1410,14 @@ fn position_embedded_mpv_child(app: &AppHandle, x: i32, y: i32, w: u32, h: u32) 
                 h += y;
                 y = 0;
             }
-            if (x + w - cw).abs() <= 2 {
+            if (x + w - cw).abs() <= 4 || css_left + css_width >= css_view_w - 2.0 {
                 w = cw - x;
             }
-            if (y + h - ch).abs() <= 2 {
+            if (y + h - ch).abs() <= 4 || css_top + css_height >= css_view_h - 2.0 {
                 h = ch - y;
             }
+            (x, y, w.max(1) as u32, h.max(1) as u32)
         }
-        (x, y, w.max(1) as u32, h.max(1) as u32)
     };
 
     struct EnumState {
@@ -1294,17 +1487,27 @@ fn position_embedded_mpv_child(app: &AppHandle, x: i32, y: i32, w: u32, h: u32) 
         let first_position = prev_rect.map(|r| r.0) != Some(first);
         let rect_unchanged = prev_rect == Some(new_rect);
         let target = HWND(first as *mut _);
+        let z = if hdr_stage { HWND_TOP } else { HWND_BOTTOM };
         unsafe {
             if first_position {
                 let cur_ex = GetWindowLongW(target, GWL_EXSTYLE);
-                let want_ex = cur_ex | WS_EX_TRANSPARENT.0 as i32;
+                let want_ex = if hdr_stage {
+                    cur_ex & !(WS_EX_TRANSPARENT.0 as i32)
+                } else {
+                    cur_ex | WS_EX_TRANSPARENT.0 as i32
+                };
                 if cur_ex != want_ex {
                     SetWindowLongW(target, GWL_EXSTYLE, want_ex);
                 }
-                let _ = SetWindowSubclass(target, Some(mpv_subclass_proc), HARBOR_MPV_SUBCLASS_ID, 0);
+                if hdr_stage {
+                    let _ = RemoveWindowSubclass(target, Some(mpv_subclass_proc), HARBOR_MPV_SUBCLASS_ID);
+                } else {
+                    let _ =
+                        SetWindowSubclass(target, Some(mpv_subclass_proc), HARBOR_MPV_SUBCLASS_ID, 0);
+                }
                 let _ = SetWindowPos(
                     target,
-                    Some(HWND_BOTTOM),
+                    Some(z),
                     x,
                     y,
                     w as i32,
@@ -1314,7 +1517,7 @@ fn position_embedded_mpv_child(app: &AppHandle, x: i32, y: i32, w: u32, h: u32) 
             } else if rect_unchanged {
                 let _ = SetWindowPos(
                     target,
-                    Some(HWND_BOTTOM),
+                    Some(z),
                     0,
                     0,
                     0,
@@ -1324,7 +1527,7 @@ fn position_embedded_mpv_child(app: &AppHandle, x: i32, y: i32, w: u32, h: u32) 
             } else {
                 let _ = SetWindowPos(
                     target,
-                    Some(HWND_BOTTOM),
+                    Some(z),
                     x,
                     y,
                     w as i32,

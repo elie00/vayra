@@ -31,9 +31,9 @@ export async function loadFromShape(
 }
 
 async function loadXtream(src: IptvPlaylistSource, creds: XtreamCreds): Promise<IptvPlaylist> {
-  await fetchXtreamUserInfo(creds);
+  const caps = await fetchXtreamUserInfo(creds);
   const container = liveContainerPref();
-  const live = await fetchXtreamLiveChannels(creds, src.id, container);
+  const live = await fetchXtreamLiveChannels(creds, src.id, container, caps);
   if (live.length === 0) {
     throw new XtreamEmptyError(
       "Logged in to the Xtream server, but it returned no live channels. The account may have no active package.",

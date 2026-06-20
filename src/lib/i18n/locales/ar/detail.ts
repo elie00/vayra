@@ -52,6 +52,7 @@ const detail: Record<string, string> = {
   "Where to watch": "أين تشاهد",
   "Watch on": "المشاهدة على",
   "How to get this": "كيفية الحصول على هذا",
+  "Customize layout": "تخصيص التخطيط",
 
   Episodes: "الحلقات",
   "Episode {n}": "الحلقة {n}",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useT, useUiLanguage } from "@/lib/i18n";
 import piratePeek from "@/assets/piratepeek.svg";
-import { useT } from "@/lib/i18n";
 
 type Question = {
   q: string;
@@ -10,7 +10,250 @@ type Question = {
 };
 
 // Arabic questions bank - adult financial literacy quiz
-const QUESTION_BANK_AR: Question[] = [
+const QUESTION_BANK: Question[] = [
+  {
+    q: "Giving \"two weeks' notice\" at a job means:",
+    options: [
+      "Booking two weeks of holiday",
+      "Telling your boss you're quitting",
+      "Starting a probation period",
+      "Demanding a raise within 14 days",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A landlord asks for a \"deposit\" before move-in. What's it for?",
+    options: [
+      "Pre-paying the last month's rent",
+      "A property registration tax",
+      "Cover for damage when you leave",
+      "Fee to the listing agent",
+    ],
+    correct: 2,
+  },
+  {
+    q: "Your account goes \"overdrawn\". What happened?",
+    options: [
+      "You earned interest above the limit",
+      "You spent past your balance",
+      "You hit the savings ceiling",
+      "Your bank locked the account",
+    ],
+    correct: 1,
+  },
+  {
+    q: "\"Compound\" interest is calculated on:",
+    options: [
+      "Only the original sum borrowed",
+      "Sum borrowed plus earned interest",
+      "A fixed amount every month",
+      "Whatever's left at year-end",
+    ],
+    correct: 1,
+  },
+  {
+    q: "You make an insurance claim. Before the insurer pays out, you usually:",
+    options: [
+      "Get all your past payments refunded",
+      "Pay a set amount yourself first",
+      "Receive a loyalty bonus instead",
+      "Have the policy cancelled automatically",
+    ],
+    correct: 1,
+  },
+  {
+    q: "Friend asks you to \"co-sign\" a loan. You agree to:",
+    options: [
+      "Split the borrowed amount equally",
+      "Pay if the friend defaults",
+      "Witness the contract only",
+      "Receive interest from the friend",
+    ],
+    correct: 1,
+  },
+  {
+    q: "You buy something \"in installments\". That means you:",
+    options: [
+      "Pay a one-time fee to reserve it",
+      "Pay the total in smaller amounts over time",
+      "Get a discount for paying early",
+      "Lease it and return it after a while",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A bill is set up via \"direct debit\". The biller can:",
+    options: [
+      "Charge a one-time fee only",
+      "Pull money on a schedule",
+      "Reverse old transactions",
+      "Convert your currency",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A mortgage is essentially:",
+    options: [
+      "Insurance that covers the home",
+      "A loan tied to the property",
+      "An agreement between landlord and tenant",
+      "A yearly property tax bill",
+    ],
+    correct: 1,
+  },
+  {
+    q: "You only ever pay the minimum on a credit card each month. Over time you:",
+    options: [
+      "Pay no interest as long as the minimum is met",
+      "Owe more, because interest keeps building on the rest",
+      "Clear the balance in equal monthly steps",
+      "Lower the card's interest rate automatically",
+    ],
+    correct: 1,
+  },
+  {
+    q: "The economy has \"inflation\". What's happening?",
+    options: [
+      "GDP is shrinking",
+      "Prices are rising overall",
+      "Currency is gaining strength",
+      "Unemployment is climbing",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A document needs to be \"notarised\". You take it to someone who will:",
+    options: [
+      "Translate it into another language",
+      "Verify and witness the signing",
+      "File it with the government",
+      "Legally enforce it",
+    ],
+    correct: 1,
+  },
+  {
+    q: "You're given \"power of attorney\" for a relative. You can:",
+    options: [
+      "Inherit their property automatically",
+      "Make decisions on their behalf",
+      "Practise law in court for them",
+      "Override their existing will",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A laid-off employee receives \"severance\". That's:",
+    options: [
+      "The standard year-end bonus",
+      "A payout when employment ends",
+      "A retirement-fund withdrawal",
+      "The signing bonus from year one",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A will names someone as \"executor\". Their job is to:",
+    options: [
+      "Inherit the largest share",
+      "Settle the estate's affairs",
+      "Witness the signing only",
+      "Approve the will in court",
+    ],
+    correct: 1,
+  },
+  {
+    q: "Your payslip shows \"gross\" and \"net\" pay. Net is:",
+    options: [
+      "The hourly rate",
+      "What lands in your bank",
+      "Just the bonus portion",
+      "The same as gross",
+    ],
+    correct: 1,
+  },
+  {
+    q: "You sign an \"NDA\" with a company. You're agreeing to:",
+    options: [
+      "Not quit without long notice",
+      "Not share their confidential info",
+      "Waive any overtime claim",
+      "Relocate if they ask",
+    ],
+    correct: 1,
+  },
+  {
+    q: "Interest rate on a loan is shown as a percentage. It tells you:",
+    options: [
+      "How many months the loan lasts",
+      "The cost of borrowing per year",
+      "The bank's quarterly profit",
+      "Total fees in fixed dollars",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A charge on your bank app sits as \"pending\" for a day. The merchant is:",
+    options: [
+      "Reversing it back to you",
+      "Holding the funds before settling",
+      "Charging double next week",
+      "Refusing the transaction",
+    ],
+    correct: 1,
+  },
+  {
+    q: "Your boss says \"submit your timesheet by Friday\". You're recording:",
+    options: [
+      "Receipts for expenses",
+      "Hours you worked this week",
+      "Your holiday plans",
+      "A complaint to HR",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A new job's salary is \"pro-rated\" because you start mid-year. You'll receive:",
+    options: [
+      "The full annual amount upfront",
+      "A share matching your months worked",
+      "Double pay to catch you up",
+      "Nothing until next year begins",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A subscription \"auto-renews\" at the end of the term. That means:",
+    options: [
+      "It pauses until you reactivate",
+      "It charges you for another period",
+      "The price drops by half",
+      "It cancels and refunds",
+    ],
+    correct: 1,
+  },
+  {
+    q: "A job offer's compensation is described as \"competitive\". That tells you:",
+    options: [
+      "You'll compete with peers for it",
+      "It's broadly in line with the market",
+      "It changes every quarter",
+      "It's commission-only",
+    ],
+    correct: 1,
+  },
+  {
+    q: "You file a tax return as a \"sole proprietor\" or self-employed. You owe tax on:",
+    options: [
+      "Only the cash you withdrew",
+      "Your business profit",
+      "The total revenue",
+      "Whatever's in your bank account",
+    ],
+    correct: 1,
+  },
+];
+
+const AR_QUESTION_BANK: Question[] = [
   {
     q: "تقديم \"إشعار أسبوعين\" في العمل يعني:",
     options: [
@@ -253,14 +496,14 @@ const QUESTION_BANK_AR: Question[] = [
   },
 ];
 
-function pickThree(seed: number): Question[] {
-  const indices = [...QUESTION_BANK_AR.keys()];
+function pickThree(seed: number, bank: Question[]): Question[] {
+  const indices = [...bank.keys()];
   for (let i = indices.length - 1; i > 0; i--) {
     seed = (seed * 9301 + 49297) % 233280;
     const j = Math.floor((seed / 233280) * (i + 1));
     [indices[i], indices[j]] = [indices[j], indices[i]];
   }
-  return indices.slice(0, 3).map((i) => QUESTION_BANK_AR[i]);
+  return indices.slice(0, 3).map((i) => bank[i]);
 }
 
 export function AgeGateModal({
@@ -273,8 +516,12 @@ export function AgeGateModal({
   onPass: () => void;
 }) {
   const t = useT();
+  const isAr = useUiLanguage() === "ar";
   const [seed, setSeed] = useState(() => Date.now() % 1_000_000);
-  const questions = useMemo(() => pickThree(seed), [seed]);
+  const questions = useMemo(
+    () => pickThree(seed, isAr ? AR_QUESTION_BANK : QUESTION_BANK),
+    [seed, isAr],
+  );
   const [picks, setPicks] = useState<(number | null)[]>([null, null, null]);
   const [submitted, setSubmitted] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -339,10 +586,10 @@ export function AgeGateModal({
         <header className="relative shrink-0 overflow-hidden border-b border-edge-soft bg-gradient-to-b from-elevated/35 to-canvas px-7 py-6">
           <div className="relative flex flex-col gap-1.5">
             <h2 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
-              {t("Holdup Matey!")}
+              {t("Quick age check")}
             </h2>
             <p className="text-[14px] leading-relaxed text-ink-muted">
-              {t("We need to check your age before you sail ahead. Three quick questions a working adult would know in their sleep. Get them all right and the adult shelf opens.")}
+              {t("A quick age check before adult add-ons unlock. Answer three everyday questions any adult would know, and you're in.")}
             </p>
           </div>
         </header>
@@ -403,7 +650,7 @@ export function AgeGateModal({
               onClick={onClose}
               className="rounded-full border border-edge-soft px-5 py-2 text-[12.5px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
             >
-              {t("Nevermind")}
+              {t("Cancel")}
             </button>
             <button
               onClick={handleSubmit}
@@ -414,7 +661,7 @@ export function AgeGateModal({
                   : "cursor-not-allowed bg-edge text-ink-subtle"
               }`}
             >
-              {t("Set sail")}
+              {t("Continue")}
             </button>
           </div>
           {submitted && !allCorrect && (
@@ -458,7 +705,7 @@ function VerifiedSplash({ t }: { t: (key: string) => string }) {
         </svg>
       </div>
       <p className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
-        {t("Welcome aboard")}
+        {t("You're verified")}
       </p>
     </div>
   );

@@ -27,6 +27,7 @@ export function EpisodePanel({
   onHostAdvance,
   watchedFor,
   nextEp,
+  onRestart,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,6 +38,7 @@ export function EpisodePanel({
   onHostAdvance?: (ep: PlayEpisode) => void;
   watchedFor?: (ep: PlayEpisode) => boolean;
   nextEp?: PlayEpisode | null;
+  onRestart?: () => void;
 }) {
   const t = useT();
   const { settings } = useSettings();
@@ -153,8 +155,8 @@ export function EpisodePanel({
       <aside
         role="dialog"
         aria-label={t("Up next")}
-        className={`absolute top-0 flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-surface shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] ring-1 ring-edge-soft transition-transform duration-300 ease-out ${
-          corner === "top-left" || corner === "bottom-left" ? "left-0" : "right-0"
+        className={`absolute top-0 flex h-full w-full max-w-[440px] flex-col overflow-hidden bg-surface shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] transition-transform duration-300 ease-out ${
+          corner === "top-left" || corner === "bottom-left" ? "left-0 border-r border-edge-soft" : "right-0 border-l border-edge-soft"
         } ${
           open
             ? "translate-x-0"
@@ -233,8 +235,15 @@ export function EpisodePanel({
                         episode={ep}
                         expanded={expandedEp === key}
                         onToggle={() => setExpandedEp((cur) => (cur === key ? null : key))}
-                        onPlay={() => handlePlay(ep)}
-                        manualMode={manualMode}
+                        onPlay={() => {
+                          if (isCurrent) {
+                            if (roomGuest) return;
+                            onRestart?.();
+                            onClose();
+                          } else {
+                            handlePlay(ep);
+                          }
+                        }}
                         isCurrent={isCurrent}
                         watched={watchedFor?.(ep) ?? false}
                         spoiler={spoilerMaskFor(settings, {

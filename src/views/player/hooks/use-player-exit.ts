@@ -1,12 +1,14 @@
 import { useCallback, type RefObject } from "react";
 import { clearOnePickerCache } from "@/lib/picker-cache";
-import { savePlayback } from "@/lib/playback-history";
+import { clearPlayback, readPlayback, savePlayback, streamMatchesEntry } from "@/lib/playback-history";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { saveResumeMs } from "@/lib/resume";
 import type { PartialSyncState } from "@/lib/together/provider";
 import { useView, type PlayerSrc, type PlayerStreamRef } from "@/lib/view";
 import { MAX_AUTORETRY_ATTEMPTS } from "../player-utils";
+
+const REMEMBER_MIN_SEC = 30;
 
 export function usePlayerExit(params: {
   src: PlayerSrc;
@@ -54,7 +56,7 @@ export function usePlayerExit(params: {
     const pos = getPlaybackPosition();
     if (Number.isFinite(pos) && pos > 0) {
       saveResumeMs(src.meta.id, pos * 1000, season, episode);
-      if (liveStreamRef) {
+      if (liveStreamRef && pos >= REMEMBER_MIN_SEC) {
         savePlayback(
           src.meta.id,
           { ...liveStreamRef, url: liveUrl || src.url, title: src.meta.name },
@@ -86,6 +88,12 @@ export function usePlayerExit(params: {
       bridgeRef.current.destroy();
       bridgeRef.current = null;
     }
+    if (src.streamRef) {
+      const remembered = readPlayback(src.meta.id, season, episode);
+      if (remembered && streamMatchesEntry(src.streamRef, remembered)) {
+        clearPlayback(src.meta.id, season, episode);
+      }
+    }
     if (nextAttempt > MAX_AUTORETRY_ATTEMPTS) {
       void closePlayer();
       return;
@@ -96,7 +104,7 @@ export function usePlayerExit(params: {
       src.episode,
       instantPlay || inRoom ? { autoPlay: true, attempt: nextAttempt } : { autoPlay: false },
     );
-  }, [src.attempt, src.meta, src.episode, openPicker, instantPlay, inRoom, closePlayer, bridgeRef]);
+  }, [src.attempt, src.meta, src.episode, src.streamRef, season, episode, openPicker, instantPlay, inRoom, closePlayer, bridgeRef]);
 
   return { closePlayer, onStubEject };
 }

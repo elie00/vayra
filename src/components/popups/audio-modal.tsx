@@ -25,7 +25,7 @@ export function AudioModal({ state, onSelect, onDelay, onClose }: Props) {
       }}
     >
       <div
-        className="m-3 mb-[110px] me-[160px] flex max-h-[480px] w-[340px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/97 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-xl [--color-edge:rgba(255,255,255,0.18)] [--color-edge-soft:rgba(255,255,255,0.1)]"
+        className="m-3 mb-[110px] me-[160px] flex max-h-[480px] w-[340px] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <AudioMenuBody

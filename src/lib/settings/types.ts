@@ -28,6 +28,9 @@ export type ContentCategory = "anime" | "liveTv" | "sports" | "adult";
 export type ContentFilters = Record<ContentCategory, boolean>;
 
 export type Settings = {
+  translatePosters: boolean;
+  blurComments: boolean;
+  blurEpisodes: boolean;
   tmdbKey: string;
   omdbKey: string;
   rpdbKey: string;
@@ -46,19 +49,20 @@ export type Settings = {
   showMalBadge: boolean;
   showQualityBadge: boolean;
   posterScale: number;
+  rowTitleScale: number;
+  playerTitleScale: number;
+  playerTitleSeriesFirst: boolean;
   uiScale: number;
   serveWebUi: boolean;
   trailerQuality: "auto" | "360p" | "720p" | "1080p" | "best";
   badgePlacement: "top" | "bottom";
-  episodeLayout: "list" | "strip";
+  episodeLayout: "list" | "strip" | "grid";
   harborAvatar: string | null;
   harborColor: string;
   anilistAutoSync: boolean;
   useAnilistAvatar: boolean;
   useTraktAvatar: boolean;
   useSimklAvatar: boolean;
-  blurComments: boolean;
-  blurEpisodes: boolean;
   traktClientId: string;
   traktClientSecret: string;
   traktAccessToken: string | null;
@@ -84,12 +88,16 @@ export type Settings = {
   playerShellId: string;
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
+  rememberLastStream: boolean;
   playerHdrToSdr: boolean;
   playerMotionInterp: boolean;
   playerAnime4k: boolean;
+  playerAnime4kAnimeOnly: boolean;
+  playerAnime4kIndicator: boolean;
   playerMpvEmbed: boolean;
   stremioServerTranscode: boolean;
   directTorrentStream: boolean;
+  p2pAutoConsent: boolean;
   localEngine: boolean;
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
@@ -109,6 +117,7 @@ export type Settings = {
   subAssOverride: "no" | "yes" | "force" | "scale" | "strip";
   subStyle: "shadow" | "outline" | "box";
   subFontFamily: string;
+  subBold: boolean;
   customFonts: Array<{ id: string; name: string; dataUrl: string; format: string }>;
   subBoxOpacity: number;
   subBoxColor: string;
@@ -129,6 +138,7 @@ export type Settings = {
   mdblistKey: string;
   playerD3d11Flip: boolean;
   playerHdrOpaqueWindow: boolean;
+  playerHdrStage: "auto" | "off" | "always";
   opensubtitlesApiKey: string;
   jimakuToken: string;
   audioNormalize: boolean;
@@ -136,6 +146,7 @@ export type Settings = {
   bandwidthMbps: number;
   nextEpisodeLeadSec: number;
   showPlaylistsTab: boolean;
+  sportsLeagues: string[];
   hideSpoilers: boolean;
   spoilerHideThumbnails: boolean;
   spoilerHideTitles: boolean;
@@ -248,6 +259,4 @@ export type Settings = {
   pauseListStatusOnPause: boolean;
   translateTitles: boolean;
   translateDescriptions: boolean;
-  translatePosters: boolean;
-  sportsLeagues: string[];
 };

@@ -1,9 +1,11 @@
 import harborStyleImg from "@/assets/onboarding/harborstyle.png";
 import traditionalStyleImg from "@/assets/onboarding/traditional.png";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 
 export function LayoutStep() {
   const { settings, update } = useSettings();
+  const t = useT();
   const choice = settings.homeMode;
   const options: Array<{
     id: "harbor" | "classic";
@@ -13,14 +15,14 @@ export function LayoutStep() {
   }> = [
     {
       id: "harbor",
-      label: "Harbor curated",
-      sub: "Hero, Top 10, Trending, In Theaters, per-service rails. Your addons append underneath.",
+      label: t("Harbor curated"),
+      sub: t("Hero, Top 10, Trending, In Theaters, per-service rails. Your addons append underneath."),
       img: harborStyleImg,
     },
     {
       id: "classic",
-      label: "Classic Stremio",
-      sub: "Continue Watching, then your addon catalogs in install order. No hero, no Harbor rails.",
+      label: t("Classic Stremio"),
+      sub: t("Continue Watching, then your addon catalogs in install order. No hero, no Harbor rails."),
       img: traditionalStyleImg,
     },
   ];
@@ -28,10 +30,10 @@ export function LayoutStep() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <h2 className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
-          Pick a home layout
+          {t("Pick a home layout")}
         </h2>
         <p className="text-[14px] leading-relaxed text-ink-muted">
-          You can switch later in Settings under Library &amp; metadata.
+          {t("You can switch later in Settings under Library & metadata.")}
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

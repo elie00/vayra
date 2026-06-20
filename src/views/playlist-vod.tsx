@@ -1,5 +1,5 @@
 import { Film, Search, Tv } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { getCachedPlaylist } from "@/lib/iptv/store";
@@ -46,6 +46,10 @@ export function PlaylistVodView({ active }: { active: boolean }) {
     setTab(t);
     setSelected(null);
   }, []);
+
+  useEffect(() => {
+    setSelected(null);
+  }, [activeId]);
 
   const q = query.trim().toLowerCase();
   const movies = useMemo(

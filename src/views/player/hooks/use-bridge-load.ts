@@ -87,6 +87,8 @@ export function useBridgeLoad(params: {
           url: playUrl,
           subtitles: src.subtitles,
           notWebReady: src.notWebReady,
+          isLive,
+          headers: src.headers,
           startAtSec: guestInRoom
             ? undefined
             : eligibleForPrompt

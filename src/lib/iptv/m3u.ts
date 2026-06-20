@@ -9,6 +9,7 @@ export function parseM3u(text: string, baseId: string): IptvChannel[] {
   const lines = text.replace(/^﻿/, "").split(/\r?\n/);
   const out: IptvChannel[] = [];
   let pending: PendingEntry | null = null;
+  let stickyGroup: string | null = null;
   let autoIndex = 0;
   for (const raw of lines) {
     const line = raw.trim();
@@ -19,7 +20,9 @@ export function parseM3u(text: string, baseId: string): IptvChannel[] {
       continue;
     }
     if (line.startsWith(EXTGRP)) {
-      if (pending) pending.attrs["group-title"] = line.slice(EXTGRP.length).trim();
+      const g = line.slice(EXTGRP.length).trim();
+      stickyGroup = g || null;
+      if (pending) pending.attrs["group-title"] = g;
       continue;
     }
     if (line.startsWith(EXTVLCOPT)) {
@@ -31,13 +34,16 @@ export function parseM3u(text: string, baseId: string): IptvChannel[] {
       continue;
     }
     if (line.startsWith("#")) continue;
+    const pipe = line.indexOf("|");
+    const url = pipe >= 0 ? line.slice(0, pipe) : line;
     if (!pending) {
       pending = {
         durationSec: null,
-        title: line,
+        title: url,
         attrs: {},
       };
     }
+    if (pipe >= 0) capturePipeOpts(line.slice(pipe + 1), pending.attrs);
     const displayName = pending.attrs["tvg-name"] || pending.title || `Channel ${autoIndex}`;
     if (isDecorativeRow(displayName)) {
       pending = null;
@@ -51,8 +57,8 @@ export function parseM3u(text: string, baseId: string): IptvChannel[] {
       tvgId,
       name: displayName,
       logo: pending.attrs["tvg-logo"] || pending.attrs["logo"] || null,
-      group: pending.attrs["group-title"] || pending.attrs["group"] || null,
-      url: line,
+      group: pending.attrs["group-title"] || pending.attrs["group"] || stickyGroup || null,
+      url,
       catchupSource: pending.attrs["catchup-source"] || pending.attrs["catchup"] || null,
       durationSec: pending.durationSec,
       attrs: pending.attrs,
@@ -153,6 +159,27 @@ function captureVlcOpt(rest: string, attrs: Record<string, string>): void {
   if (!val) return;
   if (key === "http-user-agent") attrs["vlcopt-user-agent"] = val;
   else if (key === "http-referrer") attrs["vlcopt-referrer"] = val;
+}
+
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
+function capturePipeOpts(rest: string, attrs: Record<string, string>): void {
+  for (const pair of rest.split("&")) {
+    const eq = pair.indexOf("=");
+    if (eq < 0) continue;
+    const key = pair.slice(0, eq).trim().toLowerCase();
+    const val = safeDecode(pair.slice(eq + 1).trim());
+    if (!val) continue;
+    if (key === "user-agent" && !attrs["vlcopt-user-agent"]) attrs["vlcopt-user-agent"] = val;
+    else if ((key === "referer" || key === "referrer") && !attrs["vlcopt-referrer"]) attrs["vlcopt-referrer"] = val;
+    else if (key === "cookie" && !attrs["vlcopt-cookie"]) attrs["vlcopt-cookie"] = val;
+  }
 }
 
 function captureKodiProp(rest: string, attrs: Record<string, string>): void {

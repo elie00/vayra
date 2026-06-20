@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { activeLayout } from "@/lib/theme";
-import { DrawCanvas, StrokesLayer } from "@/components/player/draw-canvas";
-import { StreamSwitcher } from "@/components/player/stream-switcher";
 import { type PlayerBridge } from "@/lib/player/bridge";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
@@ -10,18 +8,8 @@ import { useTogether } from "@/lib/together/provider";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
 import { useSkipSegments } from "@/lib/skip-intro";
-import { StreamCheckPill } from "@/components/player/stream-check-pill";
 import { isLocalUrl } from "@/lib/player/local-url";
 import { useAuth } from "@/lib/auth";
-import { CastLayer } from "./player/cast-layer";
-import { DragClickStage } from "./player/drag-click-stage";
-import { LiveLayer } from "./player/live-layer";
-import { LoaderLayer } from "./player/loader-layer";
-import { PanelsLayer } from "./player/panels-layer";
-import { RoomLayer } from "./player/room-layer";
-import { ShellLayer } from "./player/shell-layer";
-import { StageOverlays } from "./player/stage-overlays";
-import { ToolsLayer } from "./player/tools-layer";
 import { embedFlags } from "./player/player-utils";
 import { useFullscreen } from "./player/hooks/use-fullscreen";
 import { usePlayerCast } from "./player/hooks/use-player-cast";
@@ -44,8 +32,8 @@ import { useLiveChannelOverlay } from "./player/hooks/use-live-channel-overlay";
 import { useStreamSwitcher } from "./player/hooks/use-stream-switcher";
 import { useMpvEmbed } from "./player/hooks/use-mpv-embed";
 import { usePlayerBridge } from "./player/hooks/use-player-bridge";
-import { Toaster } from "@/views/addons/toaster";
-import type { ToastInfo } from "@/views/addons/addons-types";
+import { useTextSync } from "./player/hooks/use-text-sync";
+import { useT } from "@/lib/i18n";
 import { useEpisodeNavigation } from "./player/hooks/use-episode-navigation";
 import { useAbLoop } from "./player/hooks/use-ab-loop";
 import { useAutoNextEpisode } from "./player/hooks/use-auto-next-episode";
@@ -55,9 +43,6 @@ import { useSleepTimer } from "./player/hooks/use-sleep-timer";
 import { useAutoEndExit } from "./player/hooks/use-auto-end-exit";
 import { usePipMode } from "./player/hooks/use-pip-mode";
 import { usePlaybackControls } from "./player/hooks/use-playback-controls";
-import { useTextSync } from "./player/hooks/use-text-sync";
-import { TextSyncOverlay } from "./player/text-sync-overlay";
-import { useT } from "@/lib/i18n";
 import { usePlaybackPresence } from "./player/hooks/use-playback-presence";
 import { usePlayerExit } from "./player/hooks/use-player-exit";
 import { usePendingSeekApply } from "./player/hooks/use-pending-seek-apply";
@@ -67,7 +52,11 @@ import { useStreamPill } from "./player/hooks/use-stream-pill";
 import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useVideoFill } from "./player/hooks/use-video-fill";
+import { useHdrStage } from "./player/hooks/use-hdr-stage";
+import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
+import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
+import type { ToastInfo } from "@/views/addons/addons-types";
 
 export function PlayerView({ src }: { src: PlayerSrc }) {
   const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
@@ -125,7 +114,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     url: src.url,
     infoHash: src.streamRef?.infoHash ?? null,
     fileIdx: src.streamRef?.fileIdx ?? null,
-    active: snap.status !== "ended" && snap.videoWidth <= 0,
+    active: snap.status !== "ended" && (snap.videoWidth <= 0 || isP2pEngine),
   });
   const shellSnapRef = useRef(snap);
   const snapRef = useRef(snap);
@@ -528,6 +517,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   useMpvEmbed({ engine, settings });
 
+  const hdrStageActive = useHdrStage({
+    engine,
+    embedActive,
+    hdrGamma: snap.hdrGamma,
+    playerHdrStage: settings.playerHdrStage,
+    playerHdrToSdr: settings.playerHdrToSdr,
+  });
+
   const { mpvEmbedWindowsActive, stageBg } = embedFlags(
     engine,
     embedActive,
@@ -548,6 +545,141 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     : snap;
   if (showChrome) shellSnapRef.current = liveShellSnap;
   const shellSnap = showChrome ? liveShellSnap : shellSnapRef.current;
+  const overlayProps: PlayerOverlayLayersProps = {
+    snap,
+    engine,
+    src,
+    subShowInPip: settings.subShowInPip,
+    subAssNative,
+    showStats,
+    holdSpeedActive,
+    videoFillPill: videoFill.pill,
+    subDropToast,
+    pipMode,
+    drawMode,
+    cast,
+    pickAnother,
+    pickAnotherOrGuide,
+    playPauseToggle,
+    toggleFullscreen,
+    isLocalSrc,
+    swappingEp,
+    swapResolvingKey,
+    closePlayer,
+    engineStats,
+    isP2pEngine,
+    setLoaderShowing,
+    onLoaderRetry: () => {
+      const b = bridgeRef.current;
+      if (b) {
+        void b.load({ url: src.url, subtitles: src.subtitles, notWebReady: src.notWebReady, isLive: src.meta.id?.startsWith("iptv:"), headers: src.headers });
+      }
+    },
+    bridgeRef,
+    strokes,
+    hideOthersDrawings,
+    clientId,
+    selfName,
+    selfColor,
+    onDrawStart,
+    onDrawPoint,
+    onDrawEnd,
+    showWaiting,
+    pendingResumeSec,
+    pendingSeekSec,
+    skipSegments,
+    hasNextEpisode: hasNextEpisodeNow,
+    hasNextEpDisplay: canChangeEpisode && !autoNextCancelled && !!adjacent.next,
+    nextEp: canChangeEpisode && !autoNextCancelled ? adjacent.next : null,
+    nextEpMask,
+    pillsVisible: hasStarted || !inRoom,
+    allowAutoSkip: !roomGuest,
+    seekTo,
+    goToEpisode,
+    setAutoNextCancelled,
+    showChrome,
+    ab,
+    frameGrabToast: frameGrab.toast,
+    gif,
+    loaderActive,
+    playerShellId: settings.playerShellId,
+    shellSnap,
+    snapRef,
+    fullscreen,
+    showDraw: inRoom && roomSnapshot.participants.length > 1 && !cast.castDevice,
+    metaId: src.meta.id,
+    setAnyMenuOpen,
+    onSeekStep: seekStep,
+    rememberSubChoice,
+    togglePipMode,
+    setDrawMode,
+    wakeChrome,
+    setHideOthersDrawings,
+    canPickAnother: !liveOverlay.isLive || !inRoom || isHost,
+    resolvedImdbId,
+    tmdbKey: settings.tmdbKey ?? null,
+    download,
+    liveOverlay,
+    setDvrOpen,
+    openDvr: liveOverlay.isLive ? () => setDvrOpen(true) : undefined,
+    sleep,
+    adjacentPrev: adjacent.prev,
+    adjacentNext: adjacent.next,
+    canChangeEpisode,
+    inRoom,
+    participants: roomSnapshot.participants,
+    hostClientId: roomSnapshot.hostClientId,
+    syncState: roomSnapshot.syncState,
+    avatarsVisible: chromeVisible || !playing,
+    presenceMap,
+    participantLocations,
+    now,
+    avatarsCorner,
+    avatarsHidden,
+    chat,
+    sendChat,
+    chromeVisible,
+    chatCorner,
+    chatHidden,
+    isHost,
+    staleIds: lobby.staleIds,
+    guestEscapeReady: lobby.guestEscapeReady,
+    onStart: lobby.startHost,
+    onPlayWithoutSync: lobby.playWithoutSync,
+    guestHostSource,
+    liveUrl,
+    switcherOpen,
+    foreignNotice,
+    onDismissForeign: () => setForeignNotice(null),
+    streamPillVariant,
+    mpvEmbedWindowsActive,
+    setStreamCheckOpen,
+    dvrOpen,
+    setSwitcherOpen,
+    onSwitchStream,
+    debridSlugs: debrids.map((d) => d.slug),
+    isSeriesPlayback,
+    episodePanelOpen,
+    setEpisodePanelOpen,
+    upNextButtonVisible:
+      isSeriesPlayback && chromeVisible && !episodePanelOpen && !switcherOpen && !pipMode && !drawMode && !episodesHidden && !roomGuest,
+    episodesCorner,
+    episodesHidden,
+    roomGuest,
+    onHostAdvance: broadcastEpisode,
+    watchedFor,
+    acknowledgeResume,
+    showHeaderWarning: showHeaderWarning && !streamPillVariant,
+    showNoAudioWarning,
+    onUseMpv: () => update({ playerEngine: "mpv" }),
+    onDismissNoAudio: () => setNoAudioDismissed(true),
+    // Text-sync props (preserved from fork)
+    onEnterSync: handleEnterSync,
+    syncMode: textSync.syncMode,
+    syncApi: textSync,
+    syncToast,
+    onSyncPlayPause: playPauseToggle,
+  };
   return (
     <main
       ref={stageRef}
@@ -567,252 +699,37 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           playPauseToggle();
         }}
       />
-      <StageOverlays
-        snap={snap}
-        engine={engine}
-        pipMode={pipMode}
-        subShowInPip={settings.subShowInPip}
-        subAssNative={subAssNative}
-        showStats={showStats}
-        holdSpeedActive={holdSpeedActive}
-        videoFillPill={videoFill.pill}
-        subDropToast={subDropToast}
-        onSubDelay={(s) => {
-          bridgeRef.current?.setSubDelay(s);
+      {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
+      <HdrStageBridge
+        active={hdrStageActive}
+        payload={{
+          snap,
+          src,
+          shellId: settings.playerShellId,
+          engine,
+          visible: showChrome,
+          fullscreen,
+          resolvedImdbId,
+          tmdbKey: settings.tmdbKey ?? null,
+          canChangeEpisode,
+          hasPrevEp: canChangeEpisode && !!adjacent.prev,
+          hasNextEp: canChangeEpisode && !!adjacent.next,
+          pipMode,
         }}
-        onEnterSync={handleEnterSync}
-      />
-
-      <CastLayer
-        cast={cast}
-        src={src}
-        durationSec={snap.durationSec}
-        hasActiveSub={snap.subtitleTracks.some((t) => t.selected)}
-        onPickAnother={pickAnother}
-      />
-      <DragClickStage
-        drawMode={drawMode}
-        pipMode={pipMode}
-        onClick={playPauseToggle}
-        onDoubleClick={toggleFullscreen}
-      />
-
-      <LoaderLayer
-        src={src}
-        snap={snap}
-        isLocalSrc={isLocalSrc}
-        forceShow={swappingEp || swapResolvingKey != null}
-        onCancel={closePlayer}
-        engineStats={engineStats}
-        onShowingChange={setLoaderShowing}
-        onRetry={() => {
-          const b = bridgeRef.current;
-          if (b) {
-            void b.load({ url: src.url, subtitles: src.subtitles, notWebReady: src.notWebReady });
-          }
+        handlers={{
+          playPause: playPauseToggle,
+          fullscreen: toggleFullscreen,
+          seek: seekTo,
+          seekStep,
+          rememberSub: rememberSubChoice,
+          pip: togglePipMode,
+          cast: () => cast.openCastMenu(null),
+          back: closePlayer,
+          prevEp: () => goToEpisode(adjacent.prev),
+          nextEp: () => goToEpisode(adjacent.next),
+          pickAnother: pickAnotherOrGuide,
+          menuOpen: setAnyMenuOpen,
         }}
-      />
-
-      {!pipMode && !cast.castDevice && (
-        <StrokesLayer strokes={strokes} hideOthers={hideOthersDrawings} selfId={clientId} />
-      )}
-      {drawMode && !pipMode && !cast.castDevice && bridgeRef.current && (
-        <DrawCanvas
-          enabled={drawMode}
-          selfId={clientId}
-          selfName={selfName}
-          selfColor={selfColor}
-          hideOthers={hideOthersDrawings}
-          strokes={strokes}
-          onStrokeStart={onDrawStart}
-          onStrokePoint={onDrawPoint}
-          onStrokeEnd={onDrawEnd}
-        />
-      )}
-
-      <ToolsLayer
-        pipMode={pipMode}
-        drawMode={drawMode}
-        showWaiting={showWaiting}
-        pendingResumeSec={pendingResumeSec}
-        pendingSeekSec={pendingSeekSec}
-        skipSegments={skipSegments}
-        durationSec={snap.durationSec}
-        hasNextEpisode={hasNextEpisodeNow}
-        hasNextEpDisplay={canChangeEpisode && !autoNextCancelled && !!adjacent.next}
-        nextEp={canChangeEpisode && !autoNextCancelled ? adjacent.next : null}
-        nextEpMask={nextEpMask}
-        pillsVisible={hasStarted || !inRoom}
-        allowAutoSkip={!roomGuest}
-        onSkip={seekTo}
-        onNextEpisode={() => goToEpisode(adjacent.next)}
-        onCancelAutoNext={() => setAutoNextCancelled(true)}
-        showChrome={showChrome}
-        ab={ab}
-        frameGrabToast={frameGrab.toast}
-        gif={gif}
-      />
-
-      {!loaderActive && textSync.syncMode !== "active" && (
-        <ShellLayer
-          shellId={settings.playerShellId}
-          shellSnap={shellSnap}
-          snapRef={snapRef}
-          bridgeRef={bridgeRef}
-          engine={engine}
-          visible={showChrome}
-          fullscreen={fullscreen}
-          drawMode={drawMode}
-          hideOthersDrawings={hideOthersDrawings}
-          pipMode={pipMode}
-          showDraw={inRoom && roomSnapshot.participants.length > 1 && !cast.castDevice}
-          metaId={src.meta.id}
-          onMenuOpenChange={setAnyMenuOpen}
-          onBack={closePlayer}
-          onPlayPause={playPauseToggle}
-          onSeek={seekTo}
-          onSeekStep={seekStep}
-          rememberSubChoice={rememberSubChoice}
-          onEnterSync={handleEnterSync}
-          onPiP={() => togglePipMode()}
-          onFullscreen={toggleFullscreen}
-          openCastMenu={cast.openCastMenu}
-          onToggleDraw={() => {
-            setDrawMode((d) => !d);
-            wakeChrome();
-          }}
-          onToggleHideOthers={() => setHideOthersDrawings((h) => !h)}
-          onPickAnother={pickAnotherOrGuide}
-          canPickAnother={!liveOverlay.isLive || !inRoom || isHost}
-          title={src.title}
-          subtitle={src.subtitle}
-          hoverTitle={src.meta.name}
-          hoverSub={
-            src.episode
-              ? `S${src.episode.imdbSeason ?? src.episode.season} · E${String(src.episode.imdbEpisode ?? src.episode.episode).padStart(2, "0")}`
-              : undefined
-          }
-          hasPrevEp={canChangeEpisode && !!adjacent.prev}
-          hasNextEp={canChangeEpisode && !!adjacent.next}
-          onPrevEp={() => goToEpisode(adjacent.prev)}
-          onNextEp={() => goToEpisode(adjacent.next)}
-          metaImdbId={resolvedImdbId}
-          metaTitle={src.meta.name ?? null}
-          metaReleaseDate={src.meta.releaseDate ?? null}
-          meta={src.meta}
-          tmdbKey={settings.tmdbKey ?? null}
-          season={src.episode?.season ?? null}
-          episode={src.episode?.episode ?? null}
-          download={download}
-          onOpenDvr={liveOverlay.isLive ? () => setDvrOpen(true) : undefined}
-          sleep={sleep}
-        />
-      )}
-
-      {!loaderActive && textSync.syncMode === "active" && (
-        <TextSyncOverlay
-          api={textSync}
-          playing={snap.status === "playing"}
-          onPlayPause={playPauseToggle}
-        />
-      )}
-
-      <Toaster toast={syncToast} />
-
-      <RoomLayer
-        inRoom={inRoom}
-        pipMode={pipMode}
-        drawMode={drawMode}
-        participants={roomSnapshot.participants}
-        clientId={clientId}
-        hostClientId={roomSnapshot.hostClientId}
-        syncState={roomSnapshot.syncState}
-        avatarsVisible={chromeVisible || !playing}
-        presenceMap={presenceMap}
-        participantLocations={participantLocations}
-        now={now}
-        avatarsCorner={avatarsCorner}
-        avatarsHidden={avatarsHidden}
-        chat={chat}
-        sendChat={sendChat}
-        chromeVisible={chromeVisible}
-        chatCorner={chatCorner}
-        chatHidden={chatHidden}
-        showWaiting={showWaiting}
-        isHost={isHost}
-        staleIds={lobby.staleIds}
-        guestEscapeReady={lobby.guestEscapeReady}
-        onStart={lobby.startHost}
-        onPlayWithoutSync={lobby.playWithoutSync}
-        onLeave={closePlayer}
-        guestHostSource={guestHostSource}
-        guestDurationSec={snap.durationSec}
-        casting={!!cast.castDevice}
-        currentUrl={liveUrl}
-        switcherOpen={switcherOpen}
-        onFindCloser={pickAnother}
-        foreignNotice={foreignNotice}
-        onDismissForeign={() => setForeignNotice(null)}
-      />
-
-      {streamPillVariant && !switcherOpen && (
-        <StreamCheckPill
-          variant={streamPillVariant}
-          visible
-          compact={mpvEmbedWindowsActive}
-          live={liveOverlay.isLive}
-          onLooksGood={
-            streamPillVariant === "check" ? () => setStreamCheckOpen(false) : undefined
-          }
-          onPickAnother={pickAnotherOrGuide}
-        />
-      )}
-
-      <LiveLayer
-        liveOverlay={liveOverlay}
-        dvrOpen={dvrOpen}
-        onCloseDvr={() => setDvrOpen(false)}
-        srcUrl={src.url}
-        channelName={src.meta.name ?? src.title}
-      />
-      <StreamSwitcher
-        open={switcherOpen}
-        onClose={() => setSwitcherOpen(false)}
-        onPick={onSwitchStream}
-        resolvingKey={swapResolvingKey}
-        currentUrl={liveUrl}
-        debridSlugs={debrids.map((d) => d.slug)}
-        meta={src.meta}
-        episode={src.episode}
-        hostSource={guestHostSource}
-      />
-
-      <PanelsLayer
-        isSeriesPlayback={isSeriesPlayback}
-        meta={src.meta}
-        currentEpisode={src.episode}
-        episodePanelOpen={episodePanelOpen}
-        onOpenEpisodePanel={() => setEpisodePanelOpen(true)}
-        onCloseEpisodePanel={() => setEpisodePanelOpen(false)}
-        upNextButtonVisible={
-          isSeriesPlayback && chromeVisible && !episodePanelOpen && !switcherOpen && !pipMode && !drawMode && !episodesHidden && !roomGuest
-        }
-        episodesCorner={episodesCorner}
-        episodesHidden={episodesHidden}
-        roomGuest={roomGuest}
-        onHostAdvance={broadcastEpisode}
-        watchedFor={watchedFor}
-        nextEp={adjacent.next}
-        pendingResumeSec={pendingResumeSec}
-        durationSec={snap.durationSec}
-        resumeTitle={src.meta.name ?? src.title}
-        onResume={() => acknowledgeResume("resume")}
-        onStartOver={() => acknowledgeResume("start-over")}
-        showHeaderWarning={showHeaderWarning && !streamPillVariant}
-        showNoAudioWarning={showNoAudioWarning}
-        onUseMpv={() => update({ playerEngine: "mpv" })}
-        onDismissNoAudio={() => setNoAudioDismissed(true)}
-        onPickAnother={pickAnotherOrGuide}
       />
     </main>
   );

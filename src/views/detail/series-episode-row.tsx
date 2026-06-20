@@ -1,4 +1,4 @@
-import { CalendarClock, Check, Eye, Play } from "lucide-react";
+import { Check, Eye, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
@@ -56,55 +56,31 @@ export function EpisodeRow({
     overview: ep.overview || undefined,
   };
 
-  const isUpcoming = isUpcomingEpisode(ep);
-  
-  // Click handlers
-  const handleEpisodeClick = () => {
-    if (!isUpcoming) {
-      openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta);
-    }
-  };
-
-  const handlePlayClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    openPicker(meta, playEpisode, { autoPlay: settings.instantPlay });
-  };
-
   return (
     <div
       data-ep={ep.episodeNumber}
       data-no-card-ring
       onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber, ep.episodeNumber, progress.watched)}
-      className={`group flex gap-6 rounded-2xl px-4 py-5 transition-colors ${isUpcoming ? "opacity-75 hover:bg-elevated/30" : "hover:bg-elevated/30"}`}
+      className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
-      {/* Episode clickable area - navigates to episode detail page */}
       <button
-        onClick={handleEpisodeClick}
-        disabled={isUpcoming}
+        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay })}
         className="flex min-w-0 flex-1 gap-6 text-start"
       >
         <div className="relative w-[200px] shrink-0 overflow-hidden rounded-lg">
-          {isUpcoming ? (
-            <div className="flex aspect-[16/9] w-full flex-col items-center justify-center bg-canvas/60 text-ink-subtle">
-              <CalendarClock size={28} strokeWidth={1.5} />
+          <div className={spoiler?.thumb ? SPOILER_THUMB_CLASS : undefined}>
+            <Poster
+              src={still}
+              seed={String(ep.id)}
+              ratio="landscape"
+              onError={() => setImgIdx((i) => i + 1)}
+            />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center bg-canvas/40 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas">
+              <Play size={18} fill="currentColor" />
             </div>
-          ) : (
-            <div className={spoiler?.thumb ? SPOILER_THUMB_CLASS : undefined}>
-              <Poster
-                src={still}
-                seed={String(ep.id)}
-                ratio="landscape"
-                onError={() => setImgIdx((i) => i + 1)}
-              />
-            </div>
-          )}
-          {!isUpcoming && (
-            <div className="absolute inset-0 flex items-center justify-center bg-canvas/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ink/10 text-ink backdrop-blur-sm">
-                <Eye size={20} />
-              </div>
-            </div>
-          )}
+          </div>
           <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink">
             {ep.episodeNumber}
           </span>
@@ -132,7 +108,7 @@ export function EpisodeRow({
           <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-ink-subtle">
             <span>
               {[
-                t("S{s} E{e}", { s: ep.seasonNumber, e: ep.episodeNumber }),
+                `S${ep.seasonNumber} E${ep.episodeNumber}`,
                 ep.runtime ? t("{n} min", { n: ep.runtime }) : null,
                 formatAirDate(ep.airDate) || null,
                 ep.voteAverage && ep.voteAverage > 0 ? `★ ${ep.voteAverage.toFixed(1)}` : null,
@@ -160,17 +136,15 @@ export function EpisodeRow({
           )}
         </div>
       </button>
-      
-      {/* Separate play button - navigates directly to play picker */}
-      {!isUpcoming && (
-        <button
-          onClick={handlePlayClick}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-edge bg-elevated/60 transition-colors hover:bg-elevated"
-        >
-          <Play size={18} fill="currentColor" />
-        </button>
-      )}
-      
+      <button
+        type="button"
+        onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
+        aria-label={t("Episode details")}
+        title={t("Episode details")}
+        className="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+      >
+        <Eye size={18} strokeWidth={2} />
+      </button>
       <EpisodeDownloadButton meta={meta} episode={playEpisode} />
     </div>
   );

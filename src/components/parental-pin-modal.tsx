@@ -1,5 +1,6 @@
 import { Delete, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 type Mode =
   | { kind: "unlock"; onUnlock: () => void; onCancel: () => void }
@@ -12,6 +13,7 @@ export function ParentalPinModal({
   mode: Mode;
   verify?: (pin: string) => Promise<boolean>;
 }) {
+  const t = useT();
   const [stage, setStage] = useState<"enter" | "confirm">("enter");
   const [first, setFirst] = useState("");
   const [pin, setPin] = useState("");
@@ -45,7 +47,7 @@ export function ParentalPinModal({
         if (ok) {
           mode.onUnlock();
         } else {
-          setError("Wrong PIN");
+          setError(t("Wrong PIN"));
           setPin("");
           triggerShake();
           focus();
@@ -60,7 +62,7 @@ export function ParentalPinModal({
         return;
       }
       if (pin !== first) {
-        setError("PINs didn't match. Start over.");
+        setError(t("PINs didn't match. Start over."));
         setFirst("");
         setPin("");
         setStage("enter");
@@ -91,16 +93,16 @@ export function ParentalPinModal({
 
   const headerLabel =
     mode.kind === "unlock"
-      ? "Enter your PIN"
+      ? t("Enter your PIN")
       : stage === "enter"
-        ? "Set a 4-digit PIN"
-        : "Confirm your PIN";
+        ? t("Set a 4-digit PIN")
+        : t("Confirm your PIN");
   const headerSub =
     mode.kind === "unlock"
-      ? "Parental controls are on. Enter your PIN to access settings."
+      ? t("Parental controls are on. Enter your PIN to access settings.")
       : stage === "enter"
-        ? "You'll need this to access settings while controls are on."
-        : "Type the same PIN one more time.";
+        ? t("You'll need this to access settings while controls are on.")
+        : t("Type the same PIN one more time.");
 
   const tap = (digit: string) => {
     setError(null);
@@ -133,7 +135,7 @@ export function ParentalPinModal({
           <button
             onClick={mode.onCancel}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-canvas/40 text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
-            aria-label="Cancel"
+            aria-label={t("Cancel")}
           >
             <X size={16} />
           </button>
@@ -143,7 +145,7 @@ export function ParentalPinModal({
           <button
             type="button"
             onClick={focus}
-            aria-label="Focus PIN entry"
+            aria-label={t("Focus PIN entry")}
             className="relative flex cursor-text items-center gap-3 rounded-full px-3 py-2"
           >
             <input
@@ -161,7 +163,7 @@ export function ParentalPinModal({
                 setPin(v);
               }}
               className="absolute inset-0 cursor-text rounded-full bg-transparent text-transparent caret-transparent outline-none [-webkit-text-security:disc] selection:bg-transparent"
-              aria-label="PIN"
+              aria-label={t("PIN")}
             />
             {[0, 1, 2, 3].map((i) => (
               <span
@@ -183,14 +185,14 @@ export function ParentalPinModal({
             <PinKey onClick={() => tap("0")} disabled={busy}>
               0
             </PinKey>
-            <PinKey onClick={backspace} disabled={busy || pin.length === 0} aria-label="Delete">
+            <PinKey onClick={backspace} disabled={busy || pin.length === 0} aria-label={t("Delete")}>
               <Delete size={18} strokeWidth={1.8} />
             </PinKey>
           </div>
         </div>
 
         <p className="text-center text-[11.5px] text-ink-subtle">
-          Type on your keyboard or tap the digits above.
+          {t("Type on your keyboard or tap the digits above.")}
         </p>
       </div>
       <style>{`

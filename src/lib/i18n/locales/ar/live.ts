@@ -95,18 +95,56 @@ const live: Record<string, string> = {
   "Could not load this playlist": "تعذر تحميل قائمة التشغيل هذه",
 
   "No channels match": "لا توجد قنوات مطابقة",
-  "Try a different category or clear your filters.": "جرب فئة مختلفة أو امسح الفلاتر الخاصة بك.",
   "Reset filters": "إعادة تعيين الفلاتر",
 
-  "Connect a playlist to get started.": "اربط قائمة تشغيل للبدء.",
-  "Connect any IPTV provider. Channels are sorted by category, EPG is pulled automatically when your provider supplies it, and playback runs through native libmpv.": "اتصل بأي مزود IPTV. يتم فرز القنوات حسب الفئة، ويتم سحب دليل البرامج (EPG) تلقائياً عندما يقدمه مزودك، ويعمل التشغيل من خلال مشغل libmpv الداخلي.",
-  "Connect a provider": "ربط مزود",
-  "Multi-view": "العرض المتعدد",
-  "Four channels at once, pre-spawned and swap-ready.": "أربع قنوات في نفس الوقت، جاهزة للتشغيل والتبديل.",
-  "Live EPG": "دليل البرامج المباشر",
-  "Now-playing and a seven-day guide when your provider supplies it.": "يعرض ما يشتغل الآن ودليلاً لمدة سبعة أيام عندما يوفره مزودك.",
-  "Native libmpv": "مشغل libmpv مدمج",
-  "HEVC, HDR, TrueHD, plus real subtitle and audio menus.": "دعم HEVC، HDR، TrueHD، بالإضافة إلى قوائم ترجمة وصوت حقيقية.",
+  "Loading more channels ({shown} of {total})":
+    "تحميل المزيد من القنوات ({shown} من {total})",
+  "Showing first {shown} of {total} channels. Use search or a category to narrow down.":
+    "عرض أول {shown} من {total} قناة. استخدم البحث أو فئة لتضييق النطاق.",
+  "All {total} channels loaded": "تم تحميل كل القنوات البالغة {total}",
+  "Loading program listings… channels are ready to play in the meantime.":
+    "جارٍ تحميل قوائم البرامج… القنوات جاهزة للتشغيل في هذه الأثناء.",
+  "Loading playlist...": "جارٍ تحميل قائمة التشغيل...",
+  "Try a different category or clear your filters.":
+    "جرّب فئة مختلفة أو امسح المرشّحات.",
+
+  "Channel categories": "فئات القنوات",
+  "Filter categories": "تصفية الفئات",
+  "Clear filter": "مسح التصفية",
+  "No categories match": "لا توجد فئات مطابقة",
+  "Hide category": "إخفاء الفئة",
+  "Unhide {name}": "إظهار {name}",
+  "Pin category to top": "تثبيت الفئة في الأعلى",
+  "Unpin category": "إلغاء تثبيت الفئة",
+  "Unpin from top": "إلغاء التثبيت من الأعلى",
+
+  "Match EPG": "مطابقة دليل البرامج",
+  "Match EPG channel": "مطابقة قناة دليل البرامج",
+  "Clear match": "مسح المطابقة",
+  "No EPG channels match. This playlist's EPG source may be empty.":
+    "لا توجد قنوات دليل برامج مطابقة. قد يكون مصدر دليل البرامج لهذه القائمة فارغًا.",
+  "Search {n} EPG channels": "البحث في {n} قناة دليل برامج",
+  "Drag to resize the channel column": "اسحب لتغيير حجم عمود القنوات",
+
+  "Live & Upcoming": "مباشر وقادم",
+  "{n} LIVE": "{n} مباشر",
+  "No live or upcoming games right now.": "لا توجد مباريات مباشرة أو قادمة الآن.",
+
+  "Upcoming": "قادم",
+
+  "Connect a playlist to get started.": "وصّل قائمة تشغيل للبدء.",
+  "Connect any IPTV provider. Channels are sorted by category, EPG is pulled automatically when your provider supplies it, and playback runs through native libmpv.":
+    "وصّل أي مزوّد IPTV. تُرتّب القنوات حسب الفئة، ويُجلب دليل البرامج تلقائيًا عندما يوفّره مزوّدك، ويعمل التشغيل عبر libmpv الأصلي.",
+  "Connect a provider": "وصّل مزوّدًا",
+  "Multi-view": "العرض المتعدّد",
+  "Four channels at once, pre-spawned and swap-ready.":
+    "أربع قنوات في آنٍ واحد، مهيّأة مسبقًا وجاهزة للتبديل.",
+  "Live EPG": "دليل برامج مباشر",
+  "Now-playing and a seven-day guide when your provider supplies it.":
+    "ما يُعرض الآن ودليل لسبعة أيام عندما يوفّره مزوّدك.",
+  "Native libmpv": "libmpv الأصلي",
+  "HEVC, HDR, TrueHD, plus real subtitle and audio menus.":
+    "HEVC وHDR وTrueHD، إضافة إلى قوائم حقيقية للترجمة والصوت.",
   "Local only": "محلي فقط",
   "Credentials stored on this device. Nothing leaves your machine.": "يتم تخزين بيانات الاعتماد على هذا الجهاز. لا يوجد شيء يغادر جهازك.",
   "M3U playlist": "قائمة M3U",
@@ -177,6 +215,22 @@ const live: Record<string, string> = {
   "sports.customize.cancel": "إلغاء",
   "sports.customize.save": "حفظ التغييرات",
 
+  "Search movies": "ابحث عن أفلام",
+  "Search shows": "ابحث عن مسلسلات",
+  "Back to library": "العودة إلى المكتبة",
+  "Season {n}": "الموسم {n}",
+  'No movies match "{query}".': "لا توجد أفلام تطابق \"{query}\".",
+  "This playlist has no movies. It may be live channels only, or an Xtream login that exposes movies separately.":
+    "لا تحتوي قائمة التشغيل هذه على أفلام. قد تكون قنوات مباشرة فقط، أو تسجيل دخول Xtream يعرض الأفلام بشكل منفصل.",
+  "No movies here.": "لا توجد أفلام هنا.",
+  'No shows match "{query}".': "لا توجد مسلسلات تطابق \"{query}\".",
+  "This playlist has no shows. It may be live channels only, or an Xtream login that exposes shows separately.":
+    "لا تحتوي قائمة التشغيل هذه على مسلسلات. قد تكون قنوات مباشرة فقط، أو تسجيل دخول Xtream يعرض المسلسلات بشكل منفصل.",
+  "No shows here.": "لا توجد مسلسلات هنا.",
+  "Showing {shown} of {total} movies. Search to find the rest.":
+    "عرض {shown} من {total} فيلم. ابحث للعثور على البقية.",
+  "Showing {shown} of {total} shows. Search to find the rest.":
+    "عرض {shown} من {total} مسلسل. ابحث للعثور على البقية.",
 };
 
 

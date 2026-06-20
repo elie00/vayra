@@ -92,6 +92,8 @@ export function useAutoRetry(params: {
         url: src.url,
         subtitles: src.subtitles,
         notWebReady: src.notWebReady,
+        isLive: true,
+        headers: src.headers,
       });
     }, 4000);
     return () => window.clearTimeout(timer);
@@ -178,6 +180,8 @@ export function useAutoRetry(params: {
           url: src.url,
           subtitles: src.subtitles,
           notWebReady: src.notWebReady,
+          isLive,
+          headers: src.headers,
         });
         return;
       }

@@ -70,8 +70,8 @@ export function DiscoverPane({
       {otherRails.map(({ rail, items }) => (
         <Rail
           key={rail.id}
-          title={rail.title}
-          blurb={rail.blurb}
+          title={t(rail.title)}
+          blurb={rail.blurb ? t(rail.blurb) : undefined}
           layout={rail.layout}
           items={items}
           onOpen={onOpen}

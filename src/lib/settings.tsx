@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { applyTheme } from "@/lib/theme";
 import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
-import { setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
-
+import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
+import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
 import { STORAGE_KEY } from "./settings/defaults";
@@ -69,6 +69,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
+  const tmdbLangRef = useRef<string | null>(null);
+  useEffect(() => {
+    const eff = effectiveTmdbLanguage();
+    if (tmdbLangRef.current === null) {
+      tmdbLangRef.current = eff;
+      return;
+    }
+    if (tmdbLangRef.current === eff) return;
+    tmdbLangRef.current = eff;
+    window.location.reload();
+  }, [settings.tmdbLanguage, settings.uiLanguage]);
+
   useEffect(() => {
     applyTheme(settings.theme);
   }, [settings.theme]);
@@ -94,7 +106,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
   }, [settings.serveWebUi]);
 
-
+  useEffect(() => {
+    setPosterBaseUrl(settings.posterBaseUrl);
+  }, [settings.posterBaseUrl]);
 
   useEffect(() => {
     setMdblistBatchKey(settings.mdblistKey);

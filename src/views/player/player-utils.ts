@@ -1,5 +1,5 @@
 import { createHtml5Bridge } from "@/lib/player/html5";
-import { createMpvBridge, probeMpv } from "@/lib/player/mpv";
+import { createMpvBridge, probeMpv, type MpvRect } from "@/lib/player/mpv";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import { isLinuxDesktop, isMacDesktop } from "@/lib/platform";
 
@@ -61,10 +61,7 @@ export async function pickBridge(
     embed?: boolean;
     anime4kShaders?: string[];
     d3d11Flip?: boolean;
-    getEmbedRect?: () =>
-      | Promise<{ screenX: number; screenY: number; w: number; h: number } | null>
-      | { screenX: number; screenY: number; w: number; h: number }
-      | null;
+    getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
   },
 ): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" }> {
   if (want === "html5") return { bridge: createHtml5Bridge(), engine: "html5" };

@@ -413,7 +413,10 @@ export function Row({
       {(title || onViewAll) && (
         <div className="flex items-baseline justify-between gap-4 pe-1">
           {title && (
-            <h3 className="truncate text-[17px] font-medium tracking-tight text-ink">
+            <h3
+              className="truncate font-medium tracking-tight text-ink"
+              style={{ fontSize: `${Math.round(17 * settings.rowTitleScale)}px` }}
+            >
               {title}
             </h3>
           )}
@@ -443,7 +446,7 @@ export function Row({
             onPointerCancel={endDrag}
             onClickCapture={onClickCapture}
             onDragStart={(e) => e.preventDefault()}
-            className="grid grid-flow-col gap-5 overflow-x-auto p-5 -m-5 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none] [will-change:transform]"
+            className="grid grid-flow-col gap-5 overflow-x-auto p-5 -m-5 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none]"
             style={{ gridAutoColumns: cellWidth != null ? `${cellWidth}px` : `${effMin}px` }}
           >
             {Children.map(children, (child, i) => {

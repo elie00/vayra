@@ -50,6 +50,7 @@ export function useFullscreen(stageRef: RefObject<HTMLDivElement | null>) {
         window.dispatchEvent(new Event("harbor:mpv-refresh-geom"));
         await invoke("webview_reapply_transparency").catch(() => {});
         await invoke("mpv_force_below").catch(() => {});
+        await invoke("hdr_overlay_sync").catch(() => {});
       } catch {
         /* not tauri */
       }
@@ -82,15 +83,25 @@ export function useFullscreen(stageRef: RefObject<HTMLDivElement | null>) {
         /* not in tauri */
       }
     };
+    const overlaySync = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("hdr_overlay_sync");
+      } catch {
+        /* not in tauri */
+      }
+    };
     const kickRepeatedly = () => {
       kickGeom();
       void reapplyTransparency();
       void forceBelow();
+      void overlaySync();
       const delays = [60, 160, 320, 640, 1100, 1700, 2400, 3200, 4200];
       for (const d of delays) {
         window.setTimeout(kickGeom, d);
         window.setTimeout(() => void reapplyTransparency(), d);
         window.setTimeout(() => void forceBelow(), d);
+        window.setTimeout(() => void overlaySync(), d);
       }
     };
     const isTauri = "__TAURI__" in window || "__TAURI_INTERNALS__" in window;

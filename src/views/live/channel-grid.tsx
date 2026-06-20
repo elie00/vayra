@@ -145,6 +145,11 @@ export function ErrorBlock({ message, onRetry }: { message: string; onRetry: () 
           </pre>
         )}
       </div>
+      <p className="text-[11.5px] leading-relaxed text-ink-subtle">
+        {t(
+          "Heads up: most IPTV providers cap how many streams an account can run at the same time. If other devices or players are using these credentials, close them and try again.",
+        )}
+      </p>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { useOmdbScores } from "@/lib/providers/omdb";
 import { rpdbPoster } from "@/lib/providers/rpdb";
 import { tmdbCriticData, tmdbMovieImages, useTmdbImdbId, type CriticData, type CriticReview } from "@/lib/providers/tmdb";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { openUrl } from "@/lib/window";
@@ -24,6 +25,7 @@ import { RtBadge } from "./rt-badge";
 export function CriticsPick({ meta }: { meta: Meta }) {
   const { settings } = useSettings();
   const { openMeta, openPicker, openPerson } = useView();
+  const t = useT();
   const backdrop = upsizeTmdb(meta.background ?? meta.poster);
 
   const [data, setData] = useState<CriticData | null>(null);
@@ -200,7 +202,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
           style={{ isolation: "isolate" }}
         >
           {(() => {
-            const src = rpdbPoster(settings.rpdbKey, settings.posterBaseUrl, resolvedImdb ?? meta.id, backdrop);
+            const src = rpdbPoster(settings.rpdbKey, meta.id, backdrop);
             return src ? (
               <img
                 src={src}
@@ -284,7 +286,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                         e.stopPropagation();
                         openUrl(activeReview.url!);
                       }}
-                      aria-label="Open review source"
+                      aria-label={t("Open review source")}
                       className="ms-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-ink-subtle transition-colors hover:text-ink"
                     >
                       <ExternalLink size={11} strokeWidth={2} />
@@ -297,7 +299,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                       <button
                         type="button"
                         onClick={() => setReviewIdx((i) => (i - 1 + reviews.length) % reviews.length)}
-                        aria-label="Previous review"
+                        aria-label={t("Previous review")}
                         className="flex h-5 w-5 items-center justify-center rounded text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
                       >
                         <ChevronLeft size={12} className="dir-icon" />
@@ -308,7 +310,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                       <button
                         type="button"
                         onClick={() => setReviewIdx((i) => (i + 1) % reviews.length)}
-                        aria-label="Next review"
+                        aria-label={t("Next review")}
                         className="flex h-5 w-5 items-center justify-center rounded text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
                       >
                         <ChevronRight size={12} className="dir-icon" />
@@ -320,7 +322,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                     onClick={() => setOverviewOpen(true)}
                     className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent transition-opacity hover:opacity-80"
                   >
-                    Read full
+                    {t("Read full")}
                   </button>
                 </div>
               </div>
@@ -352,7 +354,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                     onClick={() => setOverviewOpen(true)}
                     className="shrink-0 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent transition-opacity hover:opacity-80"
                   >
-                    Read full
+                    {t("Read full")}
                   </button>
                 )}
               </div>
@@ -373,13 +375,13 @@ export function CriticsPick({ meta }: { meta: Meta }) {
           {data && data.cast.length > 0 && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10.5px] uppercase tracking-[0.2em] text-ink-subtle">Cast</span>
+                <span className="text-[10.5px] uppercase tracking-[0.2em] text-ink-subtle">{t("Cast")}</span>
                 {data.cast.length > 4 && (
                   <div className="flex gap-1">
                     <button
                       type="button"
                       onClick={() => scrollCast(-1)}
-                      aria-label="Scroll cast left"
+                      aria-label={t("Scroll cast left")}
                       className="flex h-6 w-6 items-center justify-center rounded-full border border-edge-soft text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
                     >
                       <ChevronLeft size={14} className="dir-icon" />
@@ -387,7 +389,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                     <button
                       type="button"
                       onClick={() => scrollCast(1)}
-                      aria-label="Scroll cast right"
+                      aria-label={t("Scroll cast right")}
                       className="flex h-6 w-6 items-center justify-center rounded-full border border-edge-soft text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
                     >
                       <ChevronRight size={14} className="dir-icon" />
@@ -413,7 +415,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
             <div className="flex flex-col gap-2 text-[12.5px]">
               {data.director && (
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-[10.5px] uppercase tracking-[0.2em] text-ink-subtle">Director</span>
+                  <span className="text-[10.5px] uppercase tracking-[0.2em] text-ink-subtle">{t("Director")}</span>
                   <button
                     type="button"
                     onClick={() => openPerson(data.director!.id)}
