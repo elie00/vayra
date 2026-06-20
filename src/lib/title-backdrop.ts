@@ -1,8 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// Per-title backdrop overrides chosen by the user from the Media → Backdrops
-// gallery (right-click → "Set as a backdrop"). Persisted to localStorage so a
-// pinned backdrop survives navigation and app restarts.
+
 
 const STORAGE_KEY = "harbor:title-backdrops";
 
@@ -28,7 +26,7 @@ function persist() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
   } catch {
-    // ignore quota / serialization errors
+    
   }
 }
 
@@ -39,12 +37,12 @@ function subscribe(callback: () => void): () => void {
   };
 }
 
-/** Non-reactive read, handy inside event handlers. */
+
 export function getTitleBackdrop(metaId: string): string | undefined {
   return cache[metaId];
 }
 
-/** Pin a backdrop URL as the hero image for a specific title. */
+
 export function setTitleBackdrop(metaId: string, url: string): void {
   if (cache[metaId] === url) return;
   cache = { ...cache, [metaId]: url };
@@ -52,7 +50,6 @@ export function setTitleBackdrop(metaId: string, url: string): void {
   emit();
 }
 
-/** Remove a pinned backdrop, falling back to the default hero image. */
 export function clearTitleBackdrop(metaId: string): void {
   if (!(metaId in cache)) return;
   const next = { ...cache };
@@ -62,7 +59,7 @@ export function clearTitleBackdrop(metaId: string): void {
   emit();
 }
 
-/** Reactive hook: the pinned backdrop URL for a title, or undefined. */
+
 export function useTitleBackdrop(metaId: string | undefined): string | undefined {
   return useSyncExternalStore(
     subscribe,

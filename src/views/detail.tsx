@@ -109,8 +109,6 @@ export function DetailView({
   const [backdrops, setBackdrops] = useState<string[]>([]);
   const [backdropIdx, setBackdropIdx] = useState(0);
   const pinnedBackdrop = useTitleBackdrop(meta.id);
-  // Gallery URLs are often a small TMDB size (e.g. w300/w780); upgrade the
-  // pinned one to full resolution so the hero panel stays sharp.
   const pinnedBackdropHi = pinnedBackdrop
     ? pinnedBackdrop.replace(/\/t\/p\/w\d+\//, "/t/p/original/")
     : undefined;
