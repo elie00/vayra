@@ -148,6 +148,12 @@ export function LibraryPanel({
               value={settings.spoilerSkipNext}
               onChange={(v) => update({ spoilerSkipNext: v })}
             />
+            <ToggleRow
+              label={t("Blur stream backdrop")}
+              sub={t("Adds a blurred glass effect behind the stream picker panel.")}
+              value={settings.streamBackdropBlur}
+              onChange={(v) => update({ streamBackdropBlur: v })}
+            />
           </div>
         )}
       </Section>
