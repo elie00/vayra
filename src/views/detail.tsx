@@ -44,6 +44,7 @@ import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
 import { CollectionRow } from "./detail/collection-row";
 import { MediaGallery } from "./detail/media-gallery";
+import { useTitleBackdrop } from "@/lib/title-backdrop";
 import { ContentRails, type DetailSection } from "./detail/content-rails";
 import {
   loadDetailCustomization,
@@ -107,6 +108,12 @@ export function DetailView({
   const [streamers, setStreamers] = useState<KitsuStreamer[]>([]);
   const [backdrops, setBackdrops] = useState<string[]>([]);
   const [backdropIdx, setBackdropIdx] = useState(0);
+  const pinnedBackdrop = useTitleBackdrop(meta.id);
+  // Gallery URLs are often a small TMDB size (e.g. w300/w780); upgrade the
+  // pinned one to full resolution so the hero panel stays sharp.
+  const pinnedBackdropHi = pinnedBackdrop
+    ? pinnedBackdrop.replace(/\/t\/p\/w\d+\//, "/t/p/original/")
+    : undefined;
   const [cinemetaFull, setCinemetaFull] = useState<Meta | null>(
     meta.videos && meta.videos.length > 0 ? meta : null,
   );
@@ -412,7 +419,7 @@ export function DetailView({
   const title = isAnime ? stripFranchiseSuffix(rawTitle) : rawTitle;
   const overview = detail?.overview ?? meta.description ?? "";
   const tagline = detail?.tagline ?? "";
-  const backdrop = backdrops[backdropIdx] ?? detail?.backdrop ?? meta.background ?? meta.poster;
+  const backdrop = pinnedBackdropHi ?? backdrops[backdropIdx] ?? detail?.backdrop ?? meta.background ?? meta.poster;
   const logo = detail?.logo ?? meta.logo;
   const year = detail?.year ?? meta.releaseInfo;
   const releaseYearNum = parseAwardYear(year);
@@ -562,7 +569,7 @@ export function DetailView({
           data-tauri-drag-region
           className="harbor-bleed-stremio relative h-[78vh] min-h-[640px] overflow-hidden"
         >
-          {backdrops.length >= 2 ? (
+          {!pinnedBackdrop && backdrops.length >= 2 ? (
             backdrops.map((b, i) => (
               <img
                 key={b}
