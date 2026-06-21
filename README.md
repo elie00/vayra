@@ -648,7 +648,7 @@ Thank you to everyone, named and unnamed, whose open work Harbor builds upon.
 [rust]: https://www.rust-lang.org/
 
 <!-- badges -->
-[badge-version]: https://img.shields.io/badge/version-0.9.12-D9A441?style=for-the-badge&labelColor=1a1a1a
+[badge-version]: https://img.shields.io/badge/version-0.9.13-D9A441?style=for-the-badge&labelColor=1a1a1a
 [badge-license]: https://img.shields.io/badge/license-MIT-D9A441?style=for-the-badge&labelColor=1a1a1a
 [badge-tauri]: https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white&labelColor=1a1a1a
 [badge-react]: https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white&labelColor=1a1a1a
