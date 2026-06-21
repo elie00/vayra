@@ -167,6 +167,7 @@ export type Settings = {
   spoilerHideTitles: boolean;
   spoilerHideDescriptions: boolean;
   spoilerSkipNext: boolean;
+  streamBackdropBlur: boolean;
   hideContent: ContentFilters;
   theme: ThemeSettings;
   homeMode: "harbor" | "classic";

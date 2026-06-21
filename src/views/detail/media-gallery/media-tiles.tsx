@@ -65,17 +65,19 @@ export function ImageTile({
   onOpen,
   onDownload,
   onSetBackdrop,
+  pinnable = false,
 }: {
   src: string;
   ratio: "landscape" | "portrait";
   onOpen: () => void;
   onDownload: () => void;
   onSetBackdrop?: () => void;
+  pinnable?: boolean;
 }) {
   const w = ratio === "landscape" ? "w-[300px]" : "w-[160px]";
   const aspect = ratio === "landscape" ? "aspect-video" : "aspect-[2/3]";
   return (
-    <div className={`group relative ${w} shrink-0`}>
+    <div className={`group relative ${w} shrink-0`} data-title-backdrop={pinnable ? src : undefined}>
       <button
         type="button"
         onClick={onOpen}
