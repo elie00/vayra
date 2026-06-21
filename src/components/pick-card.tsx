@@ -13,8 +13,13 @@ import {
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
 import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
 import { mdblistCardPrefetch, useMdblistCardScores } from "@/lib/providers/mdblist-batch";
-import { needsImdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
-import { tmdbImdbId, useTmdbImdbId } from "@/lib/providers/tmdb";
+import { needsImdbForPoster, needsTmdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
+import {
+  tmdbIdFromImdb,
+  tmdbImdbId,
+  useTmdbIdFromImdb,
+  useTmdbImdbId,
+} from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { observe } from "@/lib/visibility";
@@ -54,13 +59,18 @@ export const PickCard = memo(function PickCard({
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
-  const posterId =
-    needsImdbForPoster(settings.rpdbKey, meta.id) && imdbId ? imdbId : meta.id;
+  const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
+  const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
+  const posterAltId = needsImdbForPoster(settings.rpdbKey, meta.id)
+    ? imdbId
+    : wantTmdbPoster
+      ? resolvedTmdb ?? undefined
+      : undefined;
   const posterCandidates = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
     for (const u of [
-      rpdbPoster(settings.rpdbKey, posterId, meta.poster),
+      rpdbPoster(settings.rpdbKey, meta.id, meta.poster, posterAltId),
       meta.poster,
       hydratedPoster,
     ]) {
@@ -69,7 +79,7 @@ export const PickCard = memo(function PickCard({
       out.push(u);
     }
     return out;
-  }, [settings.rpdbKey, posterId, meta.poster, hydratedPoster]);
+  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster]);
   const posterSrc = posterCandidates[imgIdx];
 
   useEffect(() => {
@@ -105,7 +115,13 @@ export const PickCard = memo(function PickCard({
   }, [posterSrc, hydratedPoster, meta.type, meta.id]);
 
   useEffect(() => {
-    if (!settings.omdbKey && !settings.mdblistKey && !needsImdbForPoster(settings.rpdbKey, meta.id)) return;
+    if (
+      !settings.omdbKey &&
+      !settings.mdblistKey &&
+      !needsImdbForPoster(settings.rpdbKey, meta.id) &&
+      !wantTmdbPoster
+    )
+      return;
     const el = ref.current;
     if (!el) return;
     let off: (() => void) | null = null;
@@ -113,6 +129,13 @@ export const PickCard = memo(function PickCard({
       if (!visible) return;
       off?.();
       off = null;
+      if (wantTmdbPoster) {
+        void tmdbIdFromImdb(
+          settings.tmdbKey,
+          meta.id,
+          meta.type === "series" ? "series" : "movie",
+        );
+      }
       const id = await tmdbImdbId(settings.tmdbKey, meta.id);
       if (!id) return;
       if (settings.omdbKey) omdbPrefetch(settings.omdbKey, id);

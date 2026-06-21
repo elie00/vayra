@@ -24,6 +24,11 @@ export type PlayerShellProps = {
   onEnterSync?: () => void;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
+  cropMode?: string;
+  onCropMode?: (id: string) => void;
+  anime4kMode?: string;
+  onAnime4kMode?: (id: string) => void;
+  anime4kAvailable?: boolean;
   onPiP: () => void;
   onFullscreen: () => void;
   onCast: () => void;

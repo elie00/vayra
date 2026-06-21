@@ -28,7 +28,7 @@ export function useAutoFire(args: {
   autoFiredRef: React.MutableRefObject<boolean>;
   setAutoSettleReady: (v: boolean) => void;
   setAutoCancelled: (v: boolean) => void;
-  onPlay: (s: ScoredStream, committed: boolean) => void;
+  onPlay: (s: ScoredStream, committed: boolean, skipP2pConfirm?: boolean) => void;
 }): void {
   const {
     autoActive, rememberedHandledFirst, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady,
@@ -100,6 +100,7 @@ export function useAutoFire(args: {
       return;
     }
     autoFiredRef.current = true;
-    onPlay(pick, false);
+    const p2pConsentPick = !isCached(pick) && !pick.url && p2pAutoConsent && engineP2pEligible(pick);
+    onPlay(pick, p2pConsentPick, p2pConsentPick);
   }, [autoActive, rememberedHandledFirst, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady, pipelineDone, isCached, preferredLangs, hasStrongAddon, isTorrentioStream, autoFiredRef, setAutoCancelled, onPlay, highConfidenceTick, waitingForHostSource]);
 }

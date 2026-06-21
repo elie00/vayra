@@ -2,8 +2,10 @@ import { Check, Download, Upload } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import { applyBackup, backupKeyCount, downloadBackup, parseBackup, type Backup } from "@/lib/backup";
+import { useT } from "@/lib/i18n";
 
 export function BackupRow() {
+  const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
   const [exported, setExported] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +63,9 @@ export function BackupRow() {
 
       <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-ink">Export everything</span>
+          <span className="text-[14px] font-medium text-ink">{t("Export everything")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
-            Saves your whole Harbor setup to one file: theme, home layout, settings, addons,
-            profiles, watchlist, player layouts, watch progress, and more. Your Stremio sign-in is
-            left out on purpose.
+            {t("Saves your whole Harbor setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Stremio sign-in is left out on purpose.")}
           </span>
         </div>
         <button
@@ -78,16 +78,15 @@ export function BackupRow() {
           }`}
         >
           {exported ? <Check size={14} strokeWidth={2.6} /> : <Download size={14} strokeWidth={2.4} />}
-          {exported ? "Saved" : "Export"}
+          {exported ? t("Saved") : t("Export")}
         </button>
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-ink">Restore from a backup</span>
+          <span className="text-[14px] font-medium text-ink">{t("Restore from a backup")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
-            Loads a backup file and replaces your current setup with it. Perfect for a new computer.
-            Your Stremio sign-in on this device stays as is.
+            {t("Loads a backup file and replaces your current setup with it. Perfect for a new computer. Your Stremio sign-in on this device stays as is.")}
           </span>
         </div>
         <button
@@ -96,7 +95,7 @@ export function BackupRow() {
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[12.5px] font-semibold text-ink transition-all hover:scale-[1.02] hover:border-ink active:scale-[0.97]"
         >
           <Upload size={14} strokeWidth={2.4} />
-          Restore
+          {t("Restore")}
         </button>
       </div>
 
@@ -125,7 +124,8 @@ function RestoreConfirm({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const when = backup.exportedAt ? new Date(backup.exportedAt).toLocaleString() : "an unknown date";
+  const t = useT();
+  const when = backup.exportedAt ? new Date(backup.exportedAt).toLocaleString() : t("an unknown date");
   return createPortal(
     <div
       className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm"
@@ -138,14 +138,12 @@ function RestoreConfirm({
         aria-modal="true"
         className="modal-panel w-full max-w-md rounded-2xl border border-edge-soft bg-elevated p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
       >
-        <h2 className="text-[17px] font-semibold tracking-tight text-ink">Restore this backup?</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-ink">{t("Restore this backup?")}</h2>
         <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-muted">
-          This replaces your current Harbor setup (theme, home layout, settings, addons, profiles,
-          and more) with the {backupKeyCount(backup)} saved entries in this file. Your Stremio
-          sign-in stays as is. Harbor reloads when it finishes.
+          {t("This replaces your current Harbor setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. Harbor reloads when it finishes.", { n: String(backupKeyCount(backup)) })}
         </p>
         <p className="mt-2 text-[12px] text-ink-subtle">
-          Saved {when} from Harbor {backup.app}.
+          {t("Saved {when} from Harbor {app}.", { when, app: backup.app })}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -154,7 +152,7 @@ function RestoreConfirm({
             disabled={applying}
             className="h-10 rounded-full px-4 text-[13px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink disabled:opacity-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             type="button"
@@ -162,7 +160,7 @@ function RestoreConfirm({
             disabled={applying}
             className="h-10 rounded-full bg-accent px-5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {applying ? "Restoring..." : "Restore and reload"}
+            {applying ? t("Restoring...") : t("Restore and reload")}
           </button>
         </div>
       </div>

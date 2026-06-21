@@ -36,11 +36,15 @@ import { BigButton } from "./big-button";
 import { DvrButton } from "./dvr-button";
 import { VolumeControl } from "./volume-control";
 import { SpeedMenu } from "./speed-menu";
+import { AspectMenu } from "./aspect-menu";
+import { Anime4kMenu } from "./anime4k-menu";
+import type { Anime4kChoice } from "@/views/player/hooks/use-anime4k";
 import { DrawToggle } from "./draw-toggle";
 import { CastButton } from "./cast-button";
 import { SeekStepBtn } from "./seek-step-btn";
 import { EpisodeNavBtn } from "./episode-nav-btn";
 import { TimeStart, TimeEnd } from "./time-display";
+import { WindowControlButtons } from "./window-control-buttons";
 
 export type ControlContext = {
   t?: (key: string, vars?: Record<string, string | number>) => string;
@@ -110,6 +114,13 @@ export type ControlContext = {
   setAudioMenuOpen: (v: boolean) => void;
   setSubtitleMenuOpen: (v: boolean) => void;
   setSpeedMenuOpen: (v: boolean) => void;
+  setAspectMenuOpen: (v: boolean) => void;
+  cropMode?: string;
+  onCropMode?: (id: string) => void;
+  setAnime4kMenuOpen: (v: boolean) => void;
+  anime4kMode?: string;
+  onAnime4kMode?: (id: string) => void;
+  anime4kAvailable?: boolean;
 };
 
 export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNode {
@@ -351,6 +362,26 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
         />
       );
     }
+    case "aspect-menu": {
+      if (ctx.tight || ctx.engine === "html5" || !ctx.onCropMode) return null;
+      return (
+        <AspectMenu
+          mode={ctx.cropMode ?? "fit"}
+          onMode={ctx.onCropMode}
+          onOpenChange={ctx.setAspectMenuOpen}
+        />
+      );
+    }
+    case "anime4k-menu": {
+      if (ctx.tight || ctx.engine === "html5" || !ctx.onAnime4kMode || !ctx.anime4kAvailable) return null;
+      return (
+        <Anime4kMenu
+          mode={(ctx.anime4kMode as Anime4kChoice) ?? "auto"}
+          onMode={ctx.onAnime4kMode}
+          onOpenChange={ctx.setAnime4kMenuOpen}
+        />
+      );
+    }
     case "draw-toggle": {
       if (ctx.compact || !ctx.showDraw) return null;
       return (
@@ -389,5 +420,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
         </BigButton>
       );
     }
+    case "window-controls":
+      return <WindowControlButtons t={t} />;
   }
 }

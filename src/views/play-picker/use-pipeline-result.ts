@@ -4,6 +4,7 @@ import { isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { buildPickerConfigHash, getPickerCache, setPickerCache } from "@/lib/picker-cache";
 import { useSettings } from "@/lib/settings";
+import { readPlayback } from "@/lib/playback-history";
 import { runPipeline, type PipelineResult } from "@/lib/streams/pipeline";
 import type { Stream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
@@ -104,6 +105,10 @@ export function usePipelineResult({
     const animeReq = streamIds.some((id) => id.startsWith("kitsu:") || id.startsWith("mal:"));
     const effSeason = episode?.imdbSeason ?? episode?.season;
     const effEpisode = episode?.imdbEpisode ?? episode?.episode;
+    const prevGroup =
+      episode && typeof effSeason === "number" && typeof effEpisode === "number" && effEpisode > 1
+        ? readPlayback(meta.id, effSeason, effEpisode - 1)?.releaseGroup ?? undefined
+        : undefined;
     runPipeline(
       {
         request: {
@@ -149,6 +154,7 @@ export function usePipelineResult({
           preferSingleAudioTrack:
             !("__TAURI_INTERNALS__" in window) || settings.playerEngine === "html5",
           preferAddonId: meta.addonOrigin?.id,
+          preferredReleaseGroup: prevGroup,
           respectAddonOrder: settings.streamSort === "addon",
         },
       },

@@ -51,7 +51,7 @@ export function Anime4kShaderList() {
     update({ playerAnime4kTier: t, playerAnime4kShaders: anime4kChain(folder, mode, t) });
 
   return (
-    <div className="flex flex-col gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-4 py-4">
+    <div id="set-anime4k-presets" className="scroll-mt-28 flex flex-col gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-4 py-4">
       <div className="flex items-start gap-2.5">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
           <Sparkles size={16} strokeWidth={2.2} />

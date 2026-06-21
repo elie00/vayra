@@ -7,6 +7,7 @@ import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
 import { STORAGE_KEY } from "./settings/defaults";
 import { loadStoredSettings } from "./settings/load";
+import { readSettingsFile, writeSettingsFile } from "./settings/file-store";
 import type { Settings, StreamingService } from "./settings/types";
 
 export type {
@@ -45,6 +46,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (localStorage.getItem(STORAGE_KEY)) return;
+    let cancelled = false;
+    void readSettingsFile().then((raw) => {
+      if (cancelled || !raw || localStorage.getItem(STORAGE_KEY)) return;
+      try {
+        localStorage.setItem(STORAGE_KEY, raw);
+        setSettings(loadStoredSettings());
+      } catch {}
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const lastSavedImageRef = useRef<string | null>(null);
   useEffect(() => {
     const img = settings.theme.backgroundImage;
@@ -53,12 +69,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     void saveBgImage(img);
   }, [settings.theme.backgroundImage]);
 
+  const fileTimerRef = useRef(0);
   useEffect(() => {
     try {
       const { backgroundImage: _drop, ...themeRest } = settings.theme;
       void _drop;
       const settingsToSave = { ...settings, theme: themeRest };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
+      const json = JSON.stringify(settingsToSave);
+      localStorage.setItem(STORAGE_KEY, json);
+      window.clearTimeout(fileTimerRef.current);
+      fileTimerRef.current = window.setTimeout(() => void writeSettingsFile(json), 600);
     } catch (e) {
       if (e instanceof DOMException && (e.name === "QuotaExceededError" || e.code === 22)) {
         console.warn("[settings] localStorage quota exceeded, dropping avatar");

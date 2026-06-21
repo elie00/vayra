@@ -8,7 +8,7 @@ import {
   torrentEngineStatus as engineStatus,
   type EngineStatus,
 } from "@/lib/torrent/local-engine";
-import { settingsAnchor } from "../shared";
+import { settingsAnchor, ToggleRow } from "../shared";
 
 type SelfTestResult = Awaited<ReturnType<typeof engineSelfTest>>;
 
@@ -27,7 +27,7 @@ function engineState(status: EngineStatus | null): EngineState {
 }
 
 export function LocalEngineSection() {
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const t = useT();
   const strictRemote = !!settings.remoteStreamServerUrl && settings.remoteStreamServerStrict;
   const [status, setStatus] = useState<EngineStatus | null>(null);
@@ -82,13 +82,13 @@ export function LocalEngineSection() {
   const pill = PILL[engineState(status)];
 
   return (
-    <div id={settingsAnchor("Local engine")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
+    <section id={settingsAnchor("Local engine")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-ink">{t("Local engine")}</span>
-          <span className="text-[12.5px] text-ink-subtle">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Local engine")}</h2>
+          <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {t("Built-in peer-to-peer streaming, served from your own machine.")}
-          </span>
+          </p>
         </div>
         <span
           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}
@@ -110,6 +110,13 @@ export function LocalEngineSection() {
       {status?.last_error && (
         <p className="text-[12px] leading-relaxed text-danger">{status.last_error}</p>
       )}
+
+      <ToggleRow
+        label={t("Show P2P status overlay")}
+        sub={t("Peers, speed and progress chip on the player during torrent playback. Turn off to keep the player clean.")}
+        value={settings.playerP2pChip}
+        onChange={(v) => update({ playerP2pChip: v })}
+      />
 
       <div className="flex items-center gap-2">
         <button
@@ -190,6 +197,6 @@ export function LocalEngineSection() {
           </ul>
         </div>
       )}
-    </div>
+    </section>
   );
 }

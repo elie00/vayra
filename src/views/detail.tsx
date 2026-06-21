@@ -80,9 +80,11 @@ import { PreviewIcon } from "./detail/preview-icon";
 import { HeroActionOverflow, useHeroActionOverflow } from "./detail/hero-action-overflow";
 import { HeroRatings } from "./detail/hero-ratings";
 import { TrailerOverlay } from "./detail/trailer-overlay";
+import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
 import { SeriesEpisodes } from "./detail/series-episodes";
 import { CinemetaEpisodes } from "./detail/cinemeta-episodes";
 import { AnimeEpisodes } from "./detail/anime-episodes";
+import { EpisodeGridSkeleton } from "./detail/episode-grid-skeleton";
 import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
@@ -101,6 +103,8 @@ export function DetailView({
 }) {
   const t = useT();
   const { settings } = useSettings();
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   const [detail, setDetail] = useState<TmdbDetail | null>(null);
   const [animeEpisodes, setAnimeEpisodes] = useState<KitsuEpisode[]>([]);
   const [franchise, setFranchise] = useState<FranchiseEntry[]>([]);
@@ -320,7 +324,7 @@ export function DetailView({
     }
     setLoading(true);
     const work = isAnime
-      ? animeDetails(settings, detectedKitsu != null ? { ...meta, id: `kitsu:${detectedKitsu}` } : meta).then((res) => {
+      ? animeDetails(settingsRef.current, detectedKitsu != null ? { ...meta, id: `kitsu:${detectedKitsu}` } : meta).then((res) => {
           if (cancelled) return null;
           if (!res) {
             if (detectedKitsu != null) {
@@ -336,8 +340,8 @@ export function DetailView({
           setBackdrops(res.backdrops);
           return res.detail;
         })
-      : settings.tmdbKey
-        ? tmdbDetails(settings.tmdbKey, meta).then((d) =>
+      : settingsRef.current.tmdbKey
+        ? tmdbDetails(settingsRef.current.tmdbKey, meta).then((d) =>
             d ?? cinemetaDetails(meta),
           )
         : cinemetaDetails(meta);
@@ -354,7 +358,17 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, settings, isAnime, addonNative, detectedKitsu]);
+  }, [
+    meta.id,
+    meta.type,
+    settings.tmdbKey,
+    settings.fanartKey,
+    settings.tvdbKey,
+    settings.tmdbLanguage,
+    isAnime,
+    addonNative,
+    detectedKitsu,
+  ]);
 
   useEffect(() => {
     if (!detail) return;
@@ -416,7 +430,7 @@ export function DetailView({
   const overview = detail?.overview ?? meta.description ?? "";
   const tagline = detail?.tagline ?? "";
   const backdrop = backdrops[backdropIdx] ?? detail?.backdrop ?? meta.background ?? meta.poster;
-  const logo = detail?.logo ?? meta.logo;
+  const logo = loading ? detail?.logo : (detail?.logo ?? meta.logo);
   const year = detail?.year ?? meta.releaseInfo;
   const releaseYearNum = parseAwardYear(year);
   const rating =
@@ -604,6 +618,9 @@ export function DetailView({
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : null}
+          {settings.detailTrailerAutoplay && trailerCandidate && (
+            <DetailHeroTrailer candidateId={trailerCandidate} paused={trailerOpen} />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
 
@@ -641,9 +658,15 @@ export function DetailView({
                 {runtime && (
                   <Pill
                     onClick={() => {
+                      if (isSeries) {
+                        document
+                          .querySelector("[data-episodes], [data-anime-episodes]")
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        return;
+                      }
                       const minutes = parseInt(String(runtime), 10);
                       if (Number.isFinite(minutes)) {
-                        openFilter({ kind: "runtime", mediaType: isSeries ? "tv" : "movie", value: minutes });
+                        openFilter({ kind: "runtime", mediaType: "movie", value: minutes });
                       }
                     }}
                   >
@@ -863,9 +886,7 @@ export function DetailView({
 
       <div data-tauri-drag-region className="flex flex-col gap-16 px-12 pb-24 pt-14">
         {overview && <Synopsis text={overview} />}
-        {loading && (
-          <div className="h-[280px] animate-pulse rounded-2xl border border-edge-soft bg-elevated/30" />
-        )}
+        {loading && (meta.type === "series" || isAnime) && <EpisodeGridSkeleton />}
 
         {isAnime && streamers.length > 0 && <StreamingLinks streamers={streamers} />}
 

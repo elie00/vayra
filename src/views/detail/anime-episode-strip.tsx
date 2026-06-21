@@ -1,4 +1,5 @@
 import { Check, Play, Eye } from "lucide-react";
+import { useMemo } from "react";
 import { MalLogo } from "@/components/icons/mal-logo";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
@@ -9,6 +10,8 @@ import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib
 import { useView } from "@/lib/view";
 import { formatAirDate } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
+import { EpisodeGrid } from "./episode-grid";
+import type { GridEpisode } from "./episode-grid-types";
 import { FillerBadge, UpcomingBadge } from "./badges";
 import { isUpcomingDate } from "./helpers";
 
@@ -29,21 +32,57 @@ export function AnimeEpisodeStrip({
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
   layout?: "strip" | "grid";
 }) {
+  const { openPicker } = useView();
+  const { settings } = useSettings();
+  const t = useT();
+
+  const gridEpisodes = useMemo<GridEpisode[]>(
+    () =>
+      episodes.map((ep) => ({
+        key: String(ep.id),
+        number: ep.number,
+        season: ep.seasonNumber || 1,
+        title: ep.title || t("Episode {n}", { n: ep.number }),
+        stills: ep.thumbnail ? [ep.thumbnail] : [],
+        runtime: ep.length,
+        airDate: ep.airdate,
+        overview: ep.synopsis || undefined,
+        filler: ep.filler,
+        upcoming: isUpcomingDate(ep.airdate),
+        play: () =>
+          openPicker(
+            meta,
+            {
+              season: ep.seasonNumber || 1,
+              episode: ep.number,
+              name: ep.title,
+              still: ep.thumbnail ?? undefined,
+              overview: ep.synopsis || undefined,
+              kitsuStreamId: ep.streamId,
+              imdbId: ep.imdbId,
+              imdbSeason: ep.imdbSeason,
+              imdbEpisode: ep.imdbEpisode,
+            },
+            { autoPlay: settings.instantPlay },
+          ),
+      })),
+    [episodes, meta, openPicker, settings.instantPlay, t],
+  );
+  const epByNumber = useMemo(() => {
+    const m = new Map<number, KitsuEpisode>();
+    for (const e of episodes) m.set(e.number, e);
+    return m;
+  }, [episodes]);
+
   if (layout === "grid") {
     return (
-      <div className="grid gap-x-4 gap-y-5 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
-        {episodes.map((ep) => (
-          <AnimeEpisodeStripCard
-            key={ep.id}
-            grid
-            meta={meta}
-            ep={ep}
-            progress={progressFor(ep)}
-            spoiler={spoilerFor?.(ep)}
-            onContextMenu={onContextMenu}
-          />
-        ))}
-      </div>
+      <EpisodeGrid
+        meta={meta}
+        episodes={gridEpisodes}
+        progressFor={(g) => progressFor(epByNumber.get(g.number)!)}
+        spoilerFor={spoilerFor ? (g) => spoilerFor(epByNumber.get(g.number)!) : undefined}
+        onContextMenu={onContextMenu}
+      />
     );
   }
   return (
@@ -69,14 +108,12 @@ function AnimeEpisodeStripCard({
   progress,
   spoiler,
   onContextMenu,
-  grid = false,
 }: {
   meta: Meta;
   ep: KitsuEpisode;
   progress: Progress;
   spoiler?: SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
-  grid?: boolean;
 }) {
   const t = useT();
   const { openPicker, openEpisodeDetail } = useView();
@@ -167,7 +204,7 @@ function AnimeEpisodeStripCard({
           className="flex min-w-0 flex-1 flex-col gap-0.5 text-start focus-visible:outline-none"
         >
           <span className="flex items-center gap-2">
-            <span className={`${grid ? "line-clamp-2" : "truncate"} text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
+            <span className={`truncate text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
               {ep.title || t("Episode {n}", { n: ep.number })}
             </span>
             {ep.filler && <FillerBadge />}

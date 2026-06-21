@@ -4,6 +4,7 @@ import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 
 export type SectionId =
+  | "basics"
   | "account"
   | "library"
   | "trakt"
@@ -13,6 +14,8 @@ export type SectionId =
   | "streaming"
   | "language"
   | "player"
+  | "mpv"
+  | "anime"
   | "playerLayout"
   | "hotkeys"
   | "theme"
@@ -313,5 +316,35 @@ export function ToggleRow({
         />
       </span>
     </button>
+  );
+}
+
+export function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  onChange: (v: T) => void;
+}) {
+  const t = useT();
+  return (
+    <div className="flex w-fit flex-wrap gap-1 rounded-full bg-elevated/40 p-1 ring-1 ring-edge-soft/60">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
+            value === o.value
+              ? "bg-ink text-canvas"
+              : "text-ink-muted hover:bg-raised hover:text-ink"
+          }`}
+        >
+          {t(o.label)}
+        </button>
+      ))}
+    </div>
   );
 }

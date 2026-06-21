@@ -175,13 +175,13 @@ export function ServerAddressSection() {
   };
 
   return (
-    <div id={settingsAnchor("Your streaming server address")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
+    <section id={settingsAnchor("Your streaming server address")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-ink">{t("Your streaming server address")}</span>
-          <span className="text-[12.5px] text-ink-subtle">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Your streaming server address")}</h2>
+          <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {t("Harbor runs a small streaming server right on this computer. This is where it lives. To stream from this machine on another device, copy the Wi-Fi address and paste it into Remote streaming server in Harbor over there.")}
-          </span>
+          </p>
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${pill.dot}`} />
@@ -237,6 +237,6 @@ export function ServerAddressSection() {
           )}
         </>
       )}
-    </div>
+    </section>
   );
 }

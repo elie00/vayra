@@ -257,40 +257,48 @@ function DelayRow({
   const round = (v: number) => Math.round(v * 100) / 100;
   return (
     <div
-      className={`flex items-center gap-1.5 border-t border-edge-soft bg-canvas/30 px-3 py-2 ${
+      className={`flex flex-col gap-2.5 px-4 py-3 border-t border-edge-soft bg-canvas/30 ${
         disabled ? "opacity-40" : ""
       }`}
     >
-      <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
-        {tr("Sync")}
-      </span>
-      <button
-        disabled={disabled}
-        onClick={() => onDelay(round(delay - 0.1))}
-        className="rounded bg-raised px-2 py-1 text-[11.5px] font-semibold tabular-nums text-ink transition-colors hover:bg-elevated disabled:cursor-not-allowed"
-      >
-        −0.1
-      </button>
-      <span className="flex-1 text-center font-mono text-[12px] tabular-nums text-ink">
-        {delay >= 0 ? "+" : ""}
-        {delay.toFixed(2)}s
-      </span>
-      <button
-        disabled={disabled}
-        onClick={() => onDelay(round(delay + 0.1))}
-        className="rounded bg-raised px-2 py-1 text-[11.5px] font-semibold tabular-nums text-ink transition-colors hover:bg-elevated disabled:cursor-not-allowed"
-      >
-        +0.1
-      </button>
-      {delay !== 0 && !disabled && (
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] font-semibold text-ink">
+          {tr("Sync Offset")}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className={`font-mono text-[13px] font-bold tabular-nums ${delay !== 0 ? "text-accent" : "text-ink-muted"}`}>
+            {delay > 0 ? "+" : ""}
+            {delay.toFixed(2)}s
+          </span>
+          {delay !== 0 && !disabled && (
+            <button
+              onClick={() => onDelay(0)}
+              aria-label={tr("Reset sync")}
+              className="flex h-6 w-6 items-center justify-center rounded-md bg-raised text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+            >
+              <RotateCcw size={12} strokeWidth={2.2} />
+            </button>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex items-stretch overflow-hidden rounded-lg bg-raised">
         <button
-          onClick={() => onDelay(0)}
-          aria-label={tr("Reset sync")}
-          className="flex h-6 w-6 items-center justify-center rounded text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+          disabled={disabled}
+          onClick={() => onDelay(round(delay - 0.1))}
+          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-ink-muted transition-colors hover:bg-elevated hover:text-ink active:scale-95 disabled:cursor-not-allowed"
         >
-          <RotateCcw size={11} strokeWidth={2.2} />
+          −0.1s
         </button>
-      )}
+        <div className="w-px bg-edge-soft/50" />
+        <button
+          disabled={disabled}
+          onClick={() => onDelay(round(delay + 0.1))}
+          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-ink-muted transition-colors hover:bg-elevated hover:text-ink active:scale-95 disabled:cursor-not-allowed"
+        >
+          +0.1s
+        </button>
+      </div>
     </div>
   );
 }

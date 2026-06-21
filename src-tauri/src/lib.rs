@@ -28,8 +28,10 @@ mod pip;
 mod pip_mac;
 mod power;
 mod airplay;
+mod settings_store;
 mod stream_proxy;
 mod streams;
+mod svp;
 mod thumbs;
 mod torrent_engine;
 mod trailer;
@@ -271,6 +273,48 @@ fn harbor_resume_webview(app: tauri::AppHandle) {
     }
 }
 
+fn ensure_window_on_screen(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let (pos, size) = match (window.outer_position(), window.outer_size()) {
+        (Ok(p), Ok(s)) => (p, s),
+        _ => return,
+    };
+    let monitors = match window.available_monitors() {
+        Ok(m) if !m.is_empty() => m,
+        _ => return,
+    };
+    let ww = size.width as i32;
+    let wh = size.height as i32;
+    let on_screen = monitors.iter().any(|m| {
+        let mp = m.position();
+        let ms = m.size();
+        pos.x < mp.x + ms.width as i32
+            && pos.x + ww > mp.x
+            && pos.y < mp.y + ms.height as i32
+            && pos.y + wh > mp.y
+    });
+    if on_screen {
+        return;
+    }
+    let target = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| monitors.into_iter().next());
+    let Some(mon) = target else {
+        return;
+    };
+    let mp = mon.position();
+    let ms = mon.size();
+    let cx = mp.x + (ms.width as i32 - ww).max(0) / 2;
+    let cy = mp.y + (ms.height as i32 - wh).max(0) / 2;
+    let _ = window.set_position(tauri::PhysicalPosition::new(cx, cy));
+    eprintln!("[harbor::window] launched off-screen; recentered to {},{}", cx, cy);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
@@ -354,6 +398,7 @@ pub fn run() {
             make_main_transparent(&app.handle());
             #[cfg(windows)]
             install_maximize_guard(&app.handle());
+            ensure_window_on_screen(&app.handle());
             #[cfg(target_os = "macos")]
             {
                 use tauri::Manager;
@@ -442,6 +487,11 @@ pub fn run() {
             web_server::web_serve_status,
             anime4k::anime4k_download,
             anime4k::anime4k_dir,
+            svp::svp_status,
+            svp::svp_launch,
+            svp::svp_apply,
+            settings_store::settings_read,
+            settings_store::settings_write,
             proc_mem::harbor_process_memory,
             trailer::fetch_trailer,
             download::download_start,

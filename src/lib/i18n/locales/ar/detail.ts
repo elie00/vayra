@@ -151,6 +151,20 @@ const detail: Record<string, string> = {
   Adventure: "مغامرة",
   Suspense: "تشويق",
   Psychological: "نفسي",
+
+  Oldest: "الأقدم",
+  Newest: "الأحدث",
+  Options: "خيارات",
+  "Mark season as watched": "تعليم الموسم كمُشاهَد",
+  "Mark season as unwatched": "تعليم الموسم كغير مُشاهَد",
+  "Watch again": "إعادة المشاهدة",
+  "{n}m left": "{n}د متبقية",
+  "{n}m": "{n}د",
+  "First page": "الصفحة الأولى",
+  "Last page": "الصفحة الأخيرة",
+  "Go to ep": "اذهب للحلقة",
+  "Go to episode": "الذهاب إلى الحلقة",
+  "{start}-{end} of {total}": "{start}-{end} من {total}",
 };
 
 export default detail;

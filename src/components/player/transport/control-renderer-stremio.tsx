@@ -22,12 +22,16 @@ import { DownloadButton } from "./download-button";
 import { Tooltip } from "./tooltip";
 import { DvrButton } from "./dvr-button";
 import { SpeedMenu } from "./speed-menu";
+import { AspectMenu } from "./aspect-menu";
+import { Anime4kMenu } from "./anime4k-menu";
+import type { Anime4kChoice } from "@/views/player/hooks/use-anime4k";
 import { DrawToggle } from "./draw-toggle";
 import { CastButton } from "./cast-button";
 import { TimeStart } from "./time-display";
 import { StremioBtn } from "./stremio-btn";
 import { StremioVolume } from "./stremio-volume";
 import { renderCustomIconControlStremio } from "./custom-icon-renderer";
+import { WindowControlButtons } from "./window-control-buttons";
 
 export type StremioRenderCtx = {
   snap: PlayerSnapshot;
@@ -69,6 +73,13 @@ export type StremioRenderCtx = {
   setAudioMenuOpen: (v: boolean) => void;
   setSubtitleMenuOpen: (v: boolean) => void;
   setSpeedMenuOpen: (v: boolean) => void;
+  setAspectMenuOpen: (v: boolean) => void;
+  cropMode?: string;
+  onCropMode?: (id: string) => void;
+  setAnime4kMenuOpen: (v: boolean) => void;
+  anime4kMode?: string;
+  onAnime4kMode?: (id: string) => void;
+  anime4kAvailable?: boolean;
   onPlayPause: () => void;
   onMute: () => void;
   onVolume: (v: number) => void;
@@ -256,6 +267,24 @@ export function RenderedStremioControl({
           onOpenChange={ctx.setSpeedMenuOpen}
         />
       );
+    case "aspect-menu":
+      if (ctx.engine === "html5" || !ctx.onCropMode) return null;
+      return (
+        <AspectMenu
+          mode={ctx.cropMode ?? "fit"}
+          onMode={ctx.onCropMode}
+          onOpenChange={ctx.setAspectMenuOpen}
+        />
+      );
+    case "anime4k-menu":
+      if (ctx.engine === "html5" || !ctx.onAnime4kMode || !ctx.anime4kAvailable) return null;
+      return (
+        <Anime4kMenu
+          mode={(ctx.anime4kMode as Anime4kChoice) ?? "auto"}
+          onMode={ctx.onAnime4kMode}
+          onOpenChange={ctx.setAnime4kMenuOpen}
+        />
+      );
     case "cast":
       return <CastButton onClick={ctx.onCast} capabilities={ctx.capabilities} />;
     case "subtitle-menu":
@@ -321,6 +350,8 @@ export function RenderedStremioControl({
           </StremioBtn>
         </Tooltip>
       );
+    case "window-controls":
+      return <WindowControlButtons t={tr} />;
     default:
       return null;
   }

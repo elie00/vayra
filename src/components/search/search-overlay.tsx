@@ -15,7 +15,9 @@ import { MetaList } from "./meta-list";
 import { AddonHits } from "./addon-hits";
 import { AddonResults } from "./addon-results";
 import { MagnetCard } from "./magnet-card";
-import { isMagnetInput } from "@/lib/torrent/magnet";
+import { UrlCard } from "./url-card";
+import { AiSearchSection } from "./ai-search-section";
+import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 
 export function SearchOverlay() {
   const { open, setOpen, query, setQuery, results, status, clear, recordRecent } = useSearch();
@@ -62,6 +64,8 @@ export function SearchOverlay() {
 
   const trimmed = query.trim();
   const magnetInput = !!trimmed && isMagnetInput(trimmed);
+  const urlInput = !!trimmed && !magnetInput && isDirectVideoUrl(trimmed);
+  const directInput = magnetInput || urlInput;
   const hasResults =
     results &&
     trimmed &&
@@ -139,7 +143,13 @@ export function SearchOverlay() {
             </div>
           )}
 
-          {trimmed && !magnetInput && results?.intent && (
+          {urlInput && (
+            <div className="mb-5">
+              <UrlCard raw={trimmed} onClose={close} />
+            </div>
+          )}
+
+          {trimmed && !directInput && results?.intent && (
             <button
               onClick={onIntent}
               className="mb-5 flex h-14 w-full items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 px-5 text-start transition-colors hover:bg-accent/15"
@@ -161,7 +171,9 @@ export function SearchOverlay() {
             </button>
           )}
 
-          {trimmed && !magnetInput && hasResults && results && (
+          {trimmed && !directInput && <AiSearchSection query={trimmed} onClose={close} />}
+
+          {trimmed && !directInput && hasResults && results && (
             <div className="flex flex-col gap-8 pb-12">
               {results.topMatch && <TopMatch match={results.topMatch} onClose={close} />}
               <LiveTvRow items={results.liveTv} onClose={close} />
@@ -176,7 +188,7 @@ export function SearchOverlay() {
             </div>
           )}
 
-          {noResults && !magnetInput && (
+          {noResults && !directInput && (
             <div className="flex flex-col items-center gap-3 pt-16 text-center">
               <span className="text-[17px] font-semibold text-ink">{t("No matches for \"{query}\"", { query: trimmed })}</span>
               <span className="max-w-[44ch] text-[14px] text-ink-muted">
@@ -185,7 +197,7 @@ export function SearchOverlay() {
             </div>
           )}
 
-          {trimmed && !magnetInput && !results && status !== "done" && (
+          {trimmed && !directInput && !results && status !== "done" && (
             <div className="flex flex-col items-center gap-3 pt-16 text-ink-muted">
               <Loader2 size={22} className="animate-spin" />
               <span className="text-[13.5px]">{t("Looking…")}</span>

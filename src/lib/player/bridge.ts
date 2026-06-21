@@ -77,6 +77,7 @@ export type PlayerBridge = {
   setPanscan: (value: number) => void;
   setVideoZoom: (log2: number) => void;
   setAspectOverride: (ratio: string) => void;
+  setAnime4kShaders: (shaders: string[]) => void;
   addSubtitle: (url: string, lang?: string, title?: string, select?: boolean) => Promise<boolean>;
   getSelectedTrackCues: () => SubCue[] | null;
   getSelectedTrackUrl: () => string | null;

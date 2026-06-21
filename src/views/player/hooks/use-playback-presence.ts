@@ -30,7 +30,8 @@ export function usePlaybackPresence(params: {
     setPlaybackPresence({
       title: src.meta.name ?? "Untitled",
       subtitle: epLine || year,
-      posterUrl: src.episode?.still ?? src.meta.poster ?? undefined,
+      posterUrl: src.meta.poster ?? src.episode?.still ?? undefined,
+      smallImageUrl: src.episode?.still ?? undefined,
       year,
       paused: snap.status === "paused",
       positionSec: getPlaybackPosition(),

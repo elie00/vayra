@@ -1,6 +1,8 @@
 import { Minimize2 } from "lucide-react";
 import { useSettings } from "@/lib/settings";
 
+import { useT } from "@/lib/i18n";
+
 function SubToggle({
   label,
   hint,
@@ -38,6 +40,7 @@ function SubToggle({
 }
 
 export function TrayRow() {
+  const t = useT();
   const { settings, update } = useSettings();
   const on = settings.closeToTray;
   return (
@@ -51,10 +54,9 @@ export function TrayRow() {
           <Minimize2 size={15} strokeWidth={2.2} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-[14px] font-medium text-ink">Close to the system tray</span>
+          <span className="text-[14px] font-medium text-ink">{t("Close to the system tray")}</span>
           <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-            Closing the window tucks Harbor into the tray instead of quitting, so it reopens
-            instantly. Right-click the tray icon for quick controls, or pick Quit to exit fully.
+            {t("Closing the window tucks Harbor into the tray instead of quitting, so it reopens instantly. Right-click the tray icon for quick controls, or pick Quit to exit fully.")}
           </p>
         </div>
         <button
@@ -75,20 +77,20 @@ export function TrayRow() {
       </div>
       <div className="flex flex-col gap-1.5 ps-4">
         <SubToggle
-          label="Always on top"
-          hint="Keep the Harbor window above other windows."
+          label={t("Always on top")}
+          hint={t("Keep the Harbor window above other windows.")}
           on={settings.trayAlwaysOnTop}
           onToggle={() => update({ trayAlwaysOnTop: !settings.trayAlwaysOnTop })}
         />
         <SubToggle
-          label="Pause when minimized"
-          hint="Stop playback when you minimize Harbor or send it to the tray."
+          label={t("Pause when minimized")}
+          hint={t("Stop playback when you minimize Harbor or send it to the tray.")}
           on={settings.pauseMinimized}
           onToggle={() => update({ pauseMinimized: !settings.pauseMinimized })}
         />
         <SubToggle
-          label="Pause when unfocused"
-          hint="Stop playback whenever another window takes focus."
+          label={t("Pause when unfocused")}
+          hint={t("Stop playback whenever another window takes focus.")}
           on={settings.pauseUnfocused}
           onToggle={() => update({ pauseUnfocused: !settings.pauseUnfocused })}
         />

@@ -70,6 +70,8 @@ export function loadStoredSettings(): Settings {
       _subAssRespectV2?: boolean;
       _mpvEmbedV2?: boolean;
       _mpvEmbedV3?: boolean;
+      _mpvEmbedV4?: boolean;
+      _anime4kIndicatorOffV1?: boolean;
       _pickerLayoutStremio?: boolean;
       _stremioDeeplinkOnByDefault?: boolean;
       _anilistSyncOnV1?: boolean;
@@ -97,6 +99,14 @@ export function loadStoredSettings(): Settings {
     if (!parsed._mpvEmbedV3) {
       parsed.playerMpvEmbed = true;
       parsed._mpvEmbedV3 = true;
+    }
+    if (!parsed._mpvEmbedV4) {
+      parsed.playerMpvEmbed = true;
+      parsed._mpvEmbedV4 = true;
+    }
+    if (!parsed._anime4kIndicatorOffV1) {
+      parsed.playerAnime4kIndicator = false;
+      parsed._anime4kIndicatorOffV1 = true;
     }
     if (!parsed._subStyleV2) {
       if (parsed.subFontSize === 55) parsed.subFontSize = DEFAULT.subFontSize;

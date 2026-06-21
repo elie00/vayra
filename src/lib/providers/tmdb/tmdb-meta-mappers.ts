@@ -31,7 +31,7 @@ export type RawSeries = {
 
 export type Page<T> = { results?: T[] };
 
-export const poster = (p?: string | null) => (p ? `${IMG}/w185${p}` : undefined);
+export const poster = (p?: string | null) => (p ? `${IMG}/w342${p}` : undefined);
 export const back = (p?: string | null) => (p ? `${IMG}/w780${p}` : undefined);
 export const year = (s?: string) => (s ? s.slice(0, 4) : undefined);
 export const rating = (v?: number) => (v && v > 0 ? v.toFixed(1) : undefined);

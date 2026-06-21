@@ -1,30 +1,29 @@
-import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EpisodeJumper } from "@/components/episode-jumper";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
-import { manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
+import { manualWatchedVersion, setManualWatchedMany, subscribeManualWatched } from "@/lib/manual-watched";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
 import { getLastSeason, setLastSeason } from "@/lib/last-season";
-import {
-  tmdbSeasonEpisodes,
-  type Episode,
-  type Season,
-} from "@/lib/providers/tmdb";
+import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { tvdbEpisodes, tvdbSeriesByImdb, type TvdbEpisode } from "@/lib/providers/tvdb";
 import { useSettings } from "@/lib/settings";
 import { spoilerMaskFor } from "@/lib/spoilers";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
 import { loadSimklWatchedMap, simklWatchedForId } from "@/lib/simkl/list-status";
+import { markEpisodesWatched, unmarkEpisodeWatched } from "@/lib/simkl/history";
+import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useT } from "@/lib/i18n";
-import { NewBadge } from "./badges";
 import { CinemetaEpisodeRow } from "./cinemeta-episodes";
+import { EpisodeGridControls } from "./episode-grid-controls";
 import { EpisodeLayoutToggle } from "./episode-layout-toggle";
 import { EpisodeRow } from "./series-episode-row";
+import { EpisodeGridSkeleton } from "./episode-grid-skeleton";
 import { EpisodeStrip } from "./episode-strip";
-import { isNewSeason } from "./helpers";
+import { RandomEpisodeButton } from "./random-episode-button";
+import { SeasonPicker } from "./series-episodes/season-picker";
 
 export function SeriesEpisodes({
   meta,
@@ -233,16 +232,45 @@ export function SeriesEpisodes({
       watched: progressByEp.get(epNumber)?.watched ?? false,
       isNextUp: epNumber === nextUpEp,
     });
+  const allWatched =
+    enrichedEpisodes.length > 0 &&
+    enrichedEpisodes.every((ep) => progressByEp.get(ep.episodeNumber)?.watched);
+  const markSeason = (watched: boolean) => {
+    if (enrichedEpisodes.length === 0) return;
+    setManualWatchedMany(
+      meta.id,
+      enrichedEpisodes.map((ep) => ({ season: ep.seasonNumber, episode: ep.episodeNumber })),
+      watched,
+    );
+    if (!simklConnected) return;
+    const r = stremioIdToSimklTarget(meta.id, { season: active, episode: 1 });
+    const showIds = r.ok && r.target.kind === "episode" ? r.target.show.ids : null;
+    if (!showIds) return;
+    if (watched) {
+      void markEpisodesWatched(showIds, active, enrichedEpisodes.map((e) => e.episodeNumber));
+    } else {
+      for (const e of enrichedEpisodes) void unmarkEpisodeWatched(showIds, active, e.episodeNumber);
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div data-episodes className="flex scroll-mt-24 flex-col gap-6">
       <div className="flex items-end justify-between gap-6">
         <h3 className="text-[22px] font-medium tracking-tight text-ink">{t("Episodes")}</h3>
         <div className="flex items-center gap-2.5">
+          <RandomEpisodeButton meta={meta} seasons={seasons} />
           <EpisodeLayoutToggle
             value={settings.episodeLayout}
             onChange={(v) => update({ episodeLayout: v })}
           />
+          {settings.episodeLayout === "grid" && (
+            <EpisodeGridControls
+              sort={settings.episodeSort}
+              onSort={(s) => update({ episodeSort: s })}
+              allWatched={allWatched}
+              onMarkSeason={markSeason}
+            />
+          )}
           {seasons.length > 1 && (
             <SeasonPicker
               seasons={seasons}
@@ -267,66 +295,62 @@ export function SeriesEpisodes({
         </p>
       )}
 
-      {loading && (
-        <div className="flex flex-col gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl border border-edge-soft bg-elevated/30" />
-          ))}
-        </div>
-      )}
+      {loading && <EpisodeGridSkeleton />}
 
       {!loading && enrichedEpisodes.length === 0 && (
         <CinemetaFallback meta={meta} videos={cinemetaVideos} season={active} />
       )}
 
-      {!loading && enrichedEpisodes.length > 0 && settings.episodeLayout !== "list" && (
-        <EpisodeStrip
-          layout={settings.episodeLayout === "grid" ? "grid" : "strip"}
-          meta={meta}
-          episodes={enrichedEpisodes}
-          progressFor={(ep) =>
-            getEpisodeProgress(
-              meta.id,
-              ep.seasonNumber,
-              ep.episodeNumber,
-              ep.runtime,
-              traktKey,
-              traktWatched,
-              stremioWatched,
-              undefined,
-              simklWatched,
-            )
-          }
-          thumbnailFor={(ep) =>
-            cinemetaVideos?.find(
-              (v) => v.season === ep.seasonNumber && v.episode === ep.episodeNumber,
-            )?.thumbnail
-          }
-          spoilerFor={(ep) => spoilerFor(ep.episodeNumber)}
-          onContextMenu={openWatchedMenu}
-        />
-      )}
-
-      {!loading && enrichedEpisodes.length > 0 && settings.episodeLayout === "list" && (
-        <div className="flex flex-col gap-1">
-          {enrichedEpisodes.map((ep) => (
-            <EpisodeRow
-              key={ep.id}
+      {!loading && enrichedEpisodes.length > 0 && (
+        <div key={settings.episodeLayout} className="animate-fade-in">
+          {settings.episodeLayout !== "list" ? (
+            <EpisodeStrip
+              layout={settings.episodeLayout === "grid" ? "grid" : "strip"}
               meta={meta}
-              ep={ep}
-              cinemetaThumbnail={
+              episodes={enrichedEpisodes}
+              progressFor={(ep) =>
+                getEpisodeProgress(
+                  meta.id,
+                  ep.seasonNumber,
+                  ep.episodeNumber,
+                  ep.runtime,
+                  traktKey,
+                  traktWatched,
+                  stremioWatched,
+                  undefined,
+                  simklWatched,
+                )
+              }
+              thumbnailFor={(ep) =>
                 cinemetaVideos?.find(
                   (v) => v.season === ep.seasonNumber && v.episode === ep.episodeNumber,
                 )?.thumbnail
               }
-              progress={progressByEp.get(ep.episodeNumber)!}
-              spoiler={spoilerFor(ep.episodeNumber)}
+              spoilerFor={(ep) => spoilerFor(ep.episodeNumber)}
               onContextMenu={openWatchedMenu}
             />
-          ))}
+          ) : (
+            <div className="flex flex-col gap-1">
+              {enrichedEpisodes.map((ep) => (
+                <EpisodeRow
+                  key={ep.id}
+                  meta={meta}
+                  ep={ep}
+                  cinemetaThumbnail={
+                    cinemetaVideos?.find(
+                      (v) => v.season === ep.seasonNumber && v.episode === ep.episodeNumber,
+                    )?.thumbnail
+                  }
+                  progress={progressByEp.get(ep.episodeNumber)!}
+                  spoiler={spoilerFor(ep.episodeNumber)}
+                  onContextMenu={openWatchedMenu}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
-      {settings.episodeLayout !== "strip" && (
+      {settings.episodeLayout === "list" && (
         <EpisodeJumper scrollRef={scrollRef} totalEpisodes={enrichedEpisodes.length} />
       )}
       {watchedMenu && (
@@ -335,99 +359,6 @@ export function SeriesEpisodes({
           target={watchedMenu}
           onClose={() => setWatchedMenu(null)}
         />
-      )}
-    </div>
-  );
-}
-
-function SeasonPicker({
-  seasons,
-  active,
-  onChange,
-  lastEpisodeAir,
-}: {
-  seasons: Season[];
-  active: number;
-  onChange: (n: number) => void;
-  lastEpisodeAir?: { seasonNumber: number; airDate: string | null };
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const current = seasons.find((s) => s.seasonNumber === active);
-  const isNew = (s: Season) => isNewSeason(s, lastEpisodeAir);
-  const hasUnseenNew =
-    !open &&
-    seasons.some((s) => isNew(s) && s.seasonNumber !== active);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="relative flex h-10 items-center gap-2 rounded-full border border-edge-soft bg-canvas/90 ps-4 pe-3 text-[13.5px] font-medium text-ink transition-colors hover:bg-canvas/100"
-      >
-        <span>{current?.name ?? t("Season {n}", { n: active })}</span>
-        {current && isNew(current) && <NewBadge />}
-        <ChevronDown
-          size={15}
-          className={`text-ink-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        />
-        {hasUnseenNew && (
-          <span className="pointer-events-none absolute -end-0.5 -top-0.5 flex h-2.5 w-2.5">
-            <span className="absolute inset-0 animate-ping rounded-full bg-accent/60" />
-            <span className="relative h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-canvas" />
-          </span>
-        )}
-      </button>
-      {open && (
-        <div className="animate-fade-in absolute end-0 top-full z-30 mt-2 w-64 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl">
-          <div className="max-h-[60vh] overflow-y-auto">
-            {seasons.map((s) => {
-              const isActive = s.seasonNumber === active;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => {
-                    onChange(s.seasonNumber);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-start transition-colors ${
-                    isActive ? "bg-ink/10 text-ink" : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
-                  }`}
-                >
-                  <div className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-2 text-[13.5px] font-medium">
-                      <span className="truncate">{s.name}</span>
-                      {isNew(s) && <NewBadge />}
-                    </span>
-                    <span className="text-[11.5px] text-ink-subtle">
-                      {s.episodeCount === 1
-                        ? t("{n} episode", { n: s.episodeCount })
-                        : t("{n} episodes", { n: s.episodeCount })}
-                      {s.airDate && ` · ${s.airDate.slice(0, 4)}`}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       )}
     </div>
   );

@@ -20,8 +20,14 @@ const MODES: CropMode[] = [
   { id: "zoom", label: "Zoom", panscan: 0, aspect: "-1", zoom: 0 },
   { id: "16:9", label: "16:9", panscan: 0, aspect: "16:9", zoom: 0 },
   { id: "4:3", label: "4:3", panscan: 0, aspect: "4:3", zoom: 0 },
-  { id: "original", label: "2.39:1 (Original)", panscan: 0, aspect: "2.39:1", zoom: 0 },
+  { id: "21:9", label: "21:9", panscan: 0, aspect: "21:9", zoom: 0 },
+  { id: "1.85:1", label: "1.85:1", panscan: 0, aspect: "1.85:1", zoom: 0 },
+  { id: "original", label: "2.39:1", panscan: 0, aspect: "2.39:1", zoom: 0 },
 ];
+
+export const CROP_PRESETS: ReadonlyArray<{ id: string; label: string }> = MODES.filter(
+  (m) => m.id !== "zoom",
+).map((m) => ({ id: m.id, label: m.label }));
 
 const modeIndex = (id: string) => {
   const i = MODES.findIndex((m) => m.id === id);
@@ -89,5 +95,13 @@ export function useVideoFill(bridgeRef: RefObject<PlayerBridge | null>, srcKey: 
     apply(zoomIdx, zoom.current, true);
   };
 
-  return { cycle, step, pill };
+  const setMode = (id: string) => {
+    const i = modeIndex(id);
+    index.current = i;
+    if (MODES[i].id !== "zoom") zoom.current = 0;
+    apply(i, zoom.current, true);
+    update({ cropMode: MODES[i].id });
+  };
+
+  return { cycle, step, setMode, mode: settings.cropMode, pill };
 }

@@ -45,6 +45,7 @@ export function LanguageTiles() {
 function LanguageTile({ lang }: { lang: Lang }) {
   const { settings } = useSettings();
   const { openFilter } = useView();
+  const t = useT();
   const [backdrops, setBackdrops] = useState<Meta[]>([]);
   const from = `oklch(0.42 0.13 ${lang.hue})`;
   const to = `oklch(0.17 0.07 ${lang.hue})`;
@@ -102,7 +103,7 @@ function LanguageTile({ lang }: { lang: Lang }) {
           className="font-display text-[26px] font-medium leading-tight tracking-tight drop-shadow-[0_2px_18px_rgba(0,0,0,0.4)]"
           style={{ color: ink }}
         >
-          {lang.name}
+          {t(lang.name)}
         </h3>
         <span
           className="dir-icon text-[18px] transition-transform duration-200 group-hover:translate-x-1 rtl:group-hover:-translate-x-1"

@@ -9,6 +9,7 @@ export type VersionEntry = {
   notes?: string;
   win?: string;
   mac?: string;
+  channel?: "beta" | "stable";
 };
 
 export const currentVersion = __APP_VERSION__;

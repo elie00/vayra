@@ -154,7 +154,7 @@ async function fetchPerson(key: string, personId: number): Promise<PersonDetail 
     id: c.id,
     mediaType: c.media_type,
     title: c.title ?? c.name ?? "",
-    poster: c.poster_path ? `${IMG}/w185${c.poster_path}` : undefined,
+    poster: c.poster_path ? `${IMG}/w342${c.poster_path}` : undefined,
     background: c.backdrop_path ? `${IMG}/w780${c.backdrop_path}` : undefined,
     releaseInfo: (c.release_date ?? c.first_air_date)?.slice(0, 4),
     releaseDate: c.release_date ?? c.first_air_date,

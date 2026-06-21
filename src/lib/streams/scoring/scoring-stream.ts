@@ -111,6 +111,15 @@ export function scoreStream(
     reasons.push({ signal: `group:${s.releaseGroupNormalized}`, delta: 2 });
   }
 
+  if (
+    opts.preferredReleaseGroup &&
+    s.releaseGroupNormalized &&
+    s.releaseGroupNormalized === opts.preferredReleaseGroup
+  ) {
+    score += 8;
+    reasons.push({ signal: `prev-episode-group:${s.releaseGroupNormalized}`, delta: 8 });
+  }
+
   if (s.remux) {
     score += 3;
     reasons.push({ signal: "REMUX", delta: 3 });

@@ -181,6 +181,16 @@ export function PlaylistForm({
               className="h-10 rounded-lg border border-edge-soft/70 bg-canvas px-3 font-mono text-[11.5px] text-ink placeholder:text-ink-subtle focus:border-edge focus:outline-none"
             />
           </Field>
+          <Field label={t("EPG URL (optional)")}>
+            <input
+              type="url"
+              value={epgUrl}
+              onChange={(e) => setEpgUrl(e.target.value)}
+              placeholder="https://...xmltv.php?username=...&password=..."
+              spellCheck={false}
+              className="h-10 rounded-lg border border-edge-soft/70 bg-canvas px-3 font-mono text-[11.5px] text-ink placeholder:text-ink-subtle focus:border-edge focus:outline-none"
+            />
+          </Field>
         </>
       )}
 

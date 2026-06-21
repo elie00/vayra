@@ -348,4 +348,12 @@ pub struct ScoreOptions {
     pub in_theaters: bool,
     #[serde(default)]
     pub respect_addon_order: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preferred_release_group: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bandwidth_mbps: Option<f64>,
+    #[serde(default)]
+    pub prefer_single_audio_track: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prefer_addon_id: Option<String>,
 }

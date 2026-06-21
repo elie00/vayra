@@ -18,6 +18,8 @@ import { useAnimeTopPicks } from "@/lib/use-anime-top-picks";
 import { useCrunchyrollAwardMetas } from "@/lib/use-crunchyroll-award-metas";
 import { useWatchHistoryRecommendations } from "@/lib/use-watch-history-recs";
 import { AnilistRows } from "./anime/anilist-rows";
+import { useCwAdvance } from "./home/hooks/use-cw-advance";
+import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
 import { AnilistRowControls } from "./anime/anilist-row-controls";
 import { AnilistTopRow, AnilistTrendingRow } from "./anime/anilist-top-row";
 import {
@@ -216,6 +218,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     };
   }, [simklConnected]);
 
+  const animeDetectVer = useDetectedAnimeVersion();
   const continueWatching = useMemo(() => {
     const seen = new Set<string>();
     return [...libItems, ...simklCw]
@@ -233,11 +236,17 @@ export function AnimeView({ active = true }: { active?: boolean }) {
           Date.parse(a.state?.lastWatched ?? a._mtime),
       )
       .slice(0, 20);
-  }, [libItems, simklCw, cwVersion]);
+  }, [libItems, simklCw, cwVersion, animeDetectVer]);
 
   useEffect(() => {
     publishResumeStates(continueWatching);
   }, [continueWatching]);
+
+  const cwItems = useCwAdvance(continueWatching, settings.tmdbKey, settings.cwAdvanceNext);
+
+  useEffect(() => {
+    void detectAnimeForCw(libItems);
+  }, [libItems]);
 
   const watchHistoryRecs = useWatchHistoryRecommendations(continueWatching);
 
@@ -427,14 +436,14 @@ export function AnimeView({ active = true }: { active?: boolean }) {
               </button>
             </div>
           )}
-          {!anilistHidden.includes("yourLists") && <AnilistRows />}
-          {continueWatching.length > 0 && (
+          {cwItems.length > 0 && (
             <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="anime:cw">
-              {continueWatching.map((item) => (
+              {cwItems.map((item) => (
                 <ContinueCard key={item._id} item={item} onDismiss={(it) => dismissCw(it, authKey)} />
               ))}
             </Row>
           )}
+          {!anilistHidden.includes("yourLists") && <AnilistRows />}
           <AnilistRowControls />
           {!anilistHidden.includes("trending") && <AnilistTrendingRow />}
           {!anilistHidden.includes("top100") && <AnilistTopRow />}

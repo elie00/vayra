@@ -365,11 +365,12 @@ export function createHtml5Bridge(): PlayerBridge {
       if (video.volume === 0) video.volume = 1;
 
       const bare = src.url.toLowerCase().split("?")[0];
-      const isHls = /\.m3u8$/.test(bare);
+      const lowerUrl = src.url.toLowerCase();
+      const isHls = /\.m3u8$/.test(bare) || lowerUrl.includes("m3u8") || lowerUrl.includes("/playlist/");
       const isTs = bare.endsWith(".ts") || (src.notWebReady === true && !isHls && !/\.(mp4|webm|mov|mkv|mpd)$/.test(bare));
       if (isHls && Hls.isSupported()) {
         hls = new Hls(
-          src.notWebReady === true
+          src.notWebReady === true || src.isLive === true
             ? { enableWorker: true, lowLatencyMode: false, liveDurationInfinity: true, backBufferLength: 30 }
             : { enableWorker: true },
         );
@@ -533,6 +534,7 @@ export function createHtml5Bridge(): PlayerBridge {
     },
     setVideoZoom() {},
     setAspectOverride() {},
+    setAnime4kShaders() {},
     async addSubtitle(url, lang, title, select): Promise<boolean> {
       let resolvedUrl = url;
       if (

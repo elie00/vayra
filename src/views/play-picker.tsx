@@ -259,7 +259,14 @@ export function PlayPicker({
   const [autoAttemptIdx, setAutoAttemptIdx] = useState(0);
   const [autoExhausted, setAutoExhausted] = useState(false);
   const [autoCancelled, setAutoCancelled] = useState(false);
-  const autoActive = !!(autoPlay || wasInvitedTo(inviteKey)) && !autoCancelled && !autoExhausted && !isDownload && !roomGuestPick;
+  const isLiveLikeContent =
+    !!meta.type && !["movie", "series", "anime"].includes(String(meta.type).toLowerCase());
+  const autoActive =
+    !!((autoPlay && !isLiveLikeContent) || wasInvitedTo(inviteKey)) &&
+    !autoCancelled &&
+    !autoExhausted &&
+    !isDownload &&
+    !roomGuestPick;
   useEffect(() => {
     if (!autoActive) return;
     const t = window.setTimeout(() => setAutoCancelled(true), 45_000);
@@ -306,6 +313,14 @@ export function PlayPicker({
     setResolveError,
     setResolving,
   });
+
+  const playManually = useCallback(
+    (s: ScoredStream) => {
+      setAutoCancelled(true);
+      onPlay(s);
+    },
+    [onPlay],
+  );
 
   const rememberedFiredRef = useRef(false);
   const rememberedHandledFirst =
@@ -419,6 +434,20 @@ export function PlayPicker({
     return <NoSourcesConfiguredModal meta={meta} />;
   }
 
+  if (p2pConfirm) {
+    return (
+      <P2pConfirmModal
+        meta={meta}
+        stream={p2pConfirm.stream}
+        onConfirm={(remember) => {
+          if (remember) update({ p2pAutoConsent: true });
+          confirmP2p();
+        }}
+        onCancel={cancelP2p}
+      />
+    );
+  }
+
   if (showAutoTransition) {
     return (
       <AutoPlayTransition
@@ -441,20 +470,6 @@ export function PlayPicker({
         meta={meta}
         onTryAgain={resetDebridDown}
         onBack={() => backToDetail()}
-      />
-    );
-  }
-
-  if (p2pConfirm) {
-    return (
-      <P2pConfirmModal
-        meta={meta}
-        stream={p2pConfirm.stream}
-        onConfirm={(remember) => {
-          if (remember) update({ p2pAutoConsent: true });
-          confirmP2p();
-        }}
-        onCancel={cancelP2p}
       />
     );
   }
@@ -553,7 +568,7 @@ export function PlayPicker({
             failedStreams={failedStreams}
             preserveOrder={addonOrderMode || !!hostMatch}
             matchFor={hostMatch ? matchFor : undefined}
-            onPlay={onPlay}
+            onPlay={playManually}
           />
         ) : (
           <>
@@ -568,7 +583,7 @@ export function PlayPicker({
                 stream={currentPick}
                 debrids={debrids}
                 addonLogo={lookupLogo(currentPick.addonId)}
-                onPlay={() => onPlay(currentPick)}
+                onPlay={() => playManually(currentPick)}
                 onCache={() => onCache(currentPick)}
                 resolving={resolving?.stream === currentPick}
                 queued={
@@ -621,7 +636,7 @@ export function PlayPicker({
                 debrids={debrids}
                 getAddonLogo={lookupLogo}
                 matchFor={hostMatch ? matchFor : undefined}
-                onPlay={onPlay}
+                onPlay={playManually}
                 resolvingId={resolving?.stream.infoHash ?? null}
                 showName={meta.name}
                 episode={episode}

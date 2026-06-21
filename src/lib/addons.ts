@@ -9,7 +9,7 @@ export type CatalogDef = {
   id: string;
   type: string;
   name: string;
-  extra?: Array<{ name: string; isRequired?: boolean }>;
+  extra?: Array<{ name: string; isRequired?: boolean; options?: string[] }>;
 };
 
 export type AddonResource =
@@ -256,7 +256,20 @@ export async function gatherCatalogAddons(authKey: string | null): Promise<Addon
   return [...stremio, ...localFull.filter((a): a is Addon => a != null)];
 }
 
-const HOME_CONTENT_TYPES = new Set(["movie", "series", "anime", "tv", "channel"]);
+const NON_CONTENT_TYPES = new Set(["addon_catalog"]);
+
+function catalogRequestUrl(base: string, cat: CatalogDef): string | null {
+  const required = (cat.extra ?? []).filter((e) => e.isRequired);
+  if (required.length === 0) return `${base}/catalog/${cat.type}/${cat.id}.json`;
+  const parts: string[] = [];
+  for (const e of required) {
+    if (e.name === "search") return null;
+    const opt = e.options?.[0];
+    if (!opt) return null;
+    parts.push(`${encodeURIComponent(e.name)}=${encodeURIComponent(opt)}`);
+  }
+  return `${base}/catalog/${cat.type}/${cat.id}/${parts.join("&")}.json`;
+}
 
 export async function loadAddonRows(
   authKey: string | null,
@@ -267,10 +280,12 @@ export async function loadAddonRows(
   const addons = await gatherCatalogAddons(authKey);
   const tasks = addons.flatMap((addon) =>
     (addon.manifest.catalogs ?? [])
-      .filter((c) => c && c.name && c.type && c.id && HOME_CONTENT_TYPES.has(c.type.toLowerCase()) && !c.extra?.some((e) => e.isRequired))
+      .filter((c) => c && c.name && c.type && c.id && !NON_CONTENT_TYPES.has(c.type.toLowerCase()))
       .map(async (cat): Promise<AddonRow | null> => {
         const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
-        const res = await fetchWithTimeout(`${base}/catalog/${cat.type}/${cat.id}.json`);
+        const url = catalogRequestUrl(base, cat);
+        if (!url) return null;
+        const res = await fetchWithTimeout(url);
         if (!res || !res.ok) return null;
         try {
           const json = await res.json();

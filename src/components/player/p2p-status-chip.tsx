@@ -1,4 +1,5 @@
 import { Share2 } from "lucide-react";
+import { useSettings } from "@/lib/settings";
 import type { EngineStats } from "@/lib/torrent/engine-stats";
 
 function fmtSpeed(bps: number): string {
@@ -14,13 +15,14 @@ export function P2pStatusChip({
   stats: EngineStats | null | undefined;
   visible: boolean;
 }) {
-  if (!visible || !stats) return null;
+  const { settings } = useSettings();
+  if (!visible || !stats || !settings.playerP2pChip) return null;
   const peers = stats.unchoked > 0 ? stats.unchoked : stats.peers;
   const pct = stats.streamLen ? Math.min(100, Math.round((stats.downloaded / stats.streamLen) * 100)) : null;
 
   return (
     <div
-      className="pointer-events-none absolute bottom-7 left-7 z-30 flex items-center gap-2.5 rounded-full border border-white/12 bg-black/80 py-1.5 ps-2.5 pe-3.5 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl animate-in fade-in duration-300"
+      className="pointer-events-none absolute top-20 left-7 z-30 flex items-center gap-2.5 rounded-full border border-white/12 bg-black/80 py-1.5 ps-2.5 pe-3.5 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl animate-in fade-in duration-300"
       role="status"
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/8">

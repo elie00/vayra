@@ -26,10 +26,13 @@ export type PlayerControlId =
   | "audio-menu"
   | "subtitle-menu"
   | "speed-menu"
+  | "aspect-menu"
+  | "anime4k-menu"
   | "draw-toggle"
   | "pip"
   | "cast"
-  | "fullscreen";
+  | "fullscreen"
+  | "window-controls";
 
 export type PanelId = "avatars" | "chat" | "episodes";
 export type PanelCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
@@ -163,6 +166,7 @@ export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
   controls: [
     { id: "back", slot: "top-left", order: 0 },
     { id: "title-info", slot: "top-right", order: 0 },
+    { id: "window-controls", slot: "top-right", order: 100, hidden: true },
     { id: "time-start", slot: "seek-leading", order: 0 },
     { id: "time-end", slot: "seek-trailing", order: 0 },
     { id: "volume", slot: "bottom-left", order: 0 },
@@ -176,6 +180,8 @@ export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
     { id: "pick-another", slot: "bottom-right", order: 0 },
     { id: "audio-menu", slot: "bottom-right", order: 10 },
     { id: "subtitle-menu", slot: "bottom-right", order: 20 },
+    { id: "aspect-menu", slot: "bottom-right", order: 25, hidden: true },
+    { id: "anime4k-menu", slot: "bottom-right", order: 27, hidden: true },
     { id: "speed-menu", slot: "bottom-right", order: 30 },
     { id: "draw-toggle", slot: "bottom-right", order: 40 },
     { id: "pip", slot: "bottom-right", order: 50 },
@@ -193,6 +199,7 @@ export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
     { id: "back", slot: "top-left", order: 0 },
     { id: "title-info", slot: "top-left", order: 10 },
     { id: "fullscreen", slot: "top-right", order: 0 },
+    { id: "window-controls", slot: "top-right", order: 100, hidden: true },
     { id: "play-pause", slot: "bottom-left", order: 0 },
     { id: "volume", slot: "bottom-left", order: 10 },
     { id: "time-start", slot: "bottom-left", order: 20 },
@@ -205,6 +212,8 @@ export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
     { id: "speed-menu", slot: "bottom-right", order: 0 },
     { id: "audio-menu", slot: "bottom-right", order: 10 },
     { id: "subtitle-menu", slot: "bottom-right", order: 20 },
+    { id: "aspect-menu", slot: "bottom-right", order: 25, hidden: true },
+    { id: "anime4k-menu", slot: "bottom-right", order: 27, hidden: true },
     { id: "draw-toggle", slot: "bottom-right", order: 30 },
     { id: "cast", slot: "bottom-right", order: 40 },
     { id: "pick-another", slot: "bottom-right", order: 50 },
@@ -236,10 +245,13 @@ export const CONTROL_META: Record<
   "audio-menu": { label: "Audio tracks", group: "menus", defaultSlot: "bottom-right" },
   "subtitle-menu": { label: "Subtitles", group: "menus", defaultSlot: "bottom-right" },
   "speed-menu": { label: "Playback speed", group: "menus", defaultSlot: "bottom-right" },
+  "aspect-menu": { label: "Aspect ratio", group: "menus", defaultSlot: "bottom-right" },
+  "anime4k-menu": { label: "Anime4K", group: "menus", defaultSlot: "bottom-right" },
   "draw-toggle": { label: "Draw on video", group: "actions", defaultSlot: "bottom-right" },
   pip: { label: "Picture-in-picture", group: "actions", defaultSlot: "bottom-right" },
   cast: { label: "Cast", group: "actions", defaultSlot: "bottom-right" },
   fullscreen: { label: "Fullscreen", group: "transport", defaultSlot: "bottom-right" },
+  "window-controls": { label: "Window buttons (minimize, maximize, close)", group: "actions", defaultSlot: "top-right" },
 };
 
 export type ThemeId = "default" | "stremio";

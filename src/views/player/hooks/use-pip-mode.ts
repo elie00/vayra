@@ -26,7 +26,7 @@ export function usePipMode(params: {
           );
         } catch {}
       };
-      fire();
+      requestAnimationFrame(fire);
       window.setTimeout(fire, 60);
       window.setTimeout(fire, 200);
       window.setTimeout(fire, 500);
@@ -86,12 +86,12 @@ export function usePipMode(params: {
         if (document.fullscreenElement) {
           await document.exitFullscreen().catch(() => {});
         }
-        setPipMode(true);
-        setChromeHidden(true);
         await invoke("window_pip_enter");
       }
     } catch (e) {
-      console.warn("[player] pip toggle failed, falling back to native", e);
+      console.warn("[player] pip toggle failed, reverting", e);
+      setPipMode(false);
+      setChromeHidden(false);
       bridgeRef.current?.requestPiP();
     }
   }, [pipMode, setChromeHidden]);

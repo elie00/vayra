@@ -105,6 +105,23 @@ impl ProxyState {
 
     pub async fn register(&self, args: RegisterArgs) -> RegisterResult {
         let id = Uuid::new_v4().to_string();
+        if !args.transcode {
+            if let Some((base, last_seg, query)) = split_playlist_url(&args.url) {
+                let session = Session {
+                    url: args.url.clone(),
+                    base_url: Some(base),
+                    headers: args.headers,
+                    transcode: false,
+                    profile: args.profile.unwrap_or_default(),
+                    burn_sub: None,
+                    created_at: Instant::now(),
+                };
+                self.sessions.write().await.insert(id.clone(), session);
+                let qs = query.map(|q| format!("?{}", q)).unwrap_or_default();
+                let url = format!("http://127.0.0.1:{}/p/{}/{}{}", self.port, id, last_seg, qs);
+                return RegisterResult { session_id: id, url };
+            }
+        }
         let session = Session {
             url: args.url.clone(),
             base_url: None,

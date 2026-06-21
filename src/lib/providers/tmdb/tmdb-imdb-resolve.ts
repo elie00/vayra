@@ -92,3 +92,102 @@ export async function tmdbImdbId(key: string, metaId: string): Promise<string | 
   inflightImdb.set(metaId, p);
   return p;
 }
+
+const TMDB_CACHE_MAX = 3000;
+const TMDB_CACHE_KEY = "harbor.imdb.tmdb.v1";
+const tmdbCache = new Map<string, string | null>();
+const inflightTmdb = new Map<string, Promise<string | null>>();
+const tmdbSubs = new Map<string, Set<() => void>>();
+let tmdbLoaded = false;
+let tmdbSaveTimer: number | null = null;
+
+function loadTmdbCache() {
+  if (tmdbLoaded) return;
+  tmdbLoaded = true;
+  try {
+    const raw = localStorage.getItem(TMDB_CACHE_KEY);
+    if (raw) {
+      const obj = JSON.parse(raw) as Record<string, string | null>;
+      for (const [k, v] of Object.entries(obj)) tmdbCache.set(k, v);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function persistTmdbSoon() {
+  if (tmdbSaveTimer) clearTimeout(tmdbSaveTimer);
+  tmdbSaveTimer = window.setTimeout(() => {
+    try {
+      localStorage.setItem(TMDB_CACHE_KEY, JSON.stringify(Object.fromEntries(tmdbCache)));
+    } catch {
+      /* ignore */
+    }
+  }, 5000);
+}
+
+function notifyTmdb(imdbId: string) {
+  tmdbSubs.get(imdbId)?.forEach((fn) => fn());
+}
+
+export function tmdbFromImdbCached(imdbId?: string): string | null | undefined {
+  if (!imdbId || !imdbId.startsWith("tt")) return undefined;
+  loadTmdbCache();
+  return tmdbCache.has(imdbId) ? tmdbCache.get(imdbId) ?? null : undefined;
+}
+
+export function subscribeImdbTmdb(imdbId: string, fn: () => void): () => void {
+  let set = tmdbSubs.get(imdbId);
+  if (!set) {
+    set = new Set();
+    tmdbSubs.set(imdbId, set);
+  }
+  set.add(fn);
+  return () => {
+    const s = tmdbSubs.get(imdbId);
+    if (!s) return;
+    s.delete(fn);
+    if (s.size === 0) tmdbSubs.delete(imdbId);
+  };
+}
+
+export function useTmdbIdFromImdb(imdbId?: string): string | null | undefined {
+  const [v, setV] = useState<string | null | undefined>(() => tmdbFromImdbCached(imdbId));
+  useEffect(() => {
+    setV(tmdbFromImdbCached(imdbId));
+    if (!imdbId || !imdbId.startsWith("tt")) return;
+    return subscribeImdbTmdb(imdbId, () => setV(tmdbFromImdbCached(imdbId)));
+  }, [imdbId]);
+  return v;
+}
+
+export async function tmdbIdFromImdb(
+  key: string,
+  imdbId: string,
+  type?: "movie" | "series",
+): Promise<string | null> {
+  if (!imdbId.startsWith("tt") || !key) return null;
+  loadTmdbCache();
+  if (tmdbCache.has(imdbId)) return tmdbCache.get(imdbId) ?? null;
+  if (inflightTmdb.has(imdbId)) return inflightTmdb.get(imdbId)!;
+  const p = (async () => {
+    const data = await get<{
+      movie_results?: { id: number }[];
+      tv_results?: { id: number }[];
+    }>(key, `find/${imdbId}`, { external_source: "imdb_id" });
+    const movie = data?.movie_results?.[0]?.id;
+    const tv = data?.tv_results?.[0]?.id;
+    let resolved: string | null = null;
+    if (type === "series" && tv) resolved = `tmdb:tv:${tv}`;
+    else if (type === "movie" && movie) resolved = `tmdb:movie:${movie}`;
+    else if (tv && !movie) resolved = `tmdb:tv:${tv}`;
+    else if (movie) resolved = `tmdb:movie:${movie}`;
+    else if (tv) resolved = `tmdb:tv:${tv}`;
+    lruSet(tmdbCache, imdbId, resolved, TMDB_CACHE_MAX);
+    persistTmdbSoon();
+    notifyTmdb(imdbId);
+    return resolved;
+  })().finally(() => inflightTmdb.delete(imdbId));
+  inflightTmdb.set(imdbId, p);
+  return p;
+}

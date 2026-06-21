@@ -13,6 +13,30 @@ export function isMagnetInput(value: string): boolean {
   return HEX40.test(v) || BASE32_32.test(v);
 }
 
+const VIDEO_URL_EXT = /\.(mp4|m4v|mkv|webm|mov|avi|ts|m3u8|mpd|flv|wmv|mpg|mpeg|m2ts)(\?|#|$)/i;
+
+export function isDirectVideoUrl(value: string): boolean {
+  const v = value.trim();
+  if (!/^https?:\/\//i.test(v)) return false;
+  let url: URL;
+  try {
+    url = new URL(v);
+  } catch {
+    return false;
+  }
+  return VIDEO_URL_EXT.test(url.pathname);
+}
+
+const WEB_READY_EXT = /\.(mp4|m4v|webm)(\?|#|$)/i;
+
+export function directUrlNotWebReady(value: string): boolean {
+  try {
+    return !WEB_READY_EXT.test(new URL(value.trim()).pathname);
+  } catch {
+    return true;
+  }
+}
+
 export function parseMagnet(value: string): ParsedMagnet | null {
   const v = value.trim();
   if (HEX40.test(v)) return { infoHash: v.toLowerCase(), name: null, trackers: [] };

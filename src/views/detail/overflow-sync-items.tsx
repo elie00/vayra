@@ -20,6 +20,9 @@ import {
 } from "@/lib/simkl/list-status";
 import { useSimkl } from "@/lib/simkl/provider";
 import type { SimklTarget } from "@/lib/simkl/types";
+import traktLogo from "@/assets/trakt.png";
+import { useTrakt } from "@/lib/trakt/provider";
+import { pushWatched } from "@/lib/trakt/history";
 import { useT } from "@/lib/i18n";
 
 const ANILIST_LABELS: Record<MediaListStatus, string> = {
@@ -284,5 +287,34 @@ export function AnilistMenuItems({
         </>
       )}
     </>
+  );
+}
+
+export function TraktMenuItems({
+  harborId,
+  type,
+  onAction,
+}: {
+  harborId: string;
+  type: "movie" | "series";
+  onAction: () => void;
+}) {
+  const t = useT();
+  const { isConnected, resolveTarget } = useTrakt();
+  if (!isConnected || type !== "movie") return null;
+  const target = resolveTarget(harborId);
+  if (!target || target.kind !== "movie") return null;
+  return (
+    <button
+      role="menuitem"
+      onClick={() => {
+        void pushWatched(target).catch(() => {});
+        onAction();
+      }}
+      className="flex h-9 items-center gap-2.5 rounded-lg px-3 text-start text-[13px] text-ink transition-colors hover:bg-raised"
+    >
+      <img src={traktLogo} alt="" className="h-[14px] w-[14px] rounded-[3px] object-contain" />
+      <span className="flex-1 truncate">{t("Mark watched on Trakt")}</span>
+    </button>
   );
 }

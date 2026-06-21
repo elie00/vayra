@@ -52,6 +52,7 @@ import { useStreamPill } from "./player/hooks/use-stream-pill";
 import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useVideoFill } from "./player/hooks/use-video-fill";
+import { useAnime4k } from "./player/hooks/use-anime4k";
 import { useHdrStage } from "./player/hooks/use-hdr-stage";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
@@ -220,7 +221,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   useAutoNextEpisode({
     src,
     snap,
-    nextEp: adjacent.next,
+    nextEp: settings.autoPlayNextEpisode ? adjacent.next : null,
     canChangeEpisode,
     cancelled: autoNextCancelled,
     goToEpisode,
@@ -438,6 +439,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   }, [textSync.enterSync, showSyncToast, t]);
 
   const videoFill = useVideoFill(bridgeRef, src.url);
+  const anime4k = useAnime4k(bridgeRef, src.url, src);
   const { holdSpeedActive, showStats } = usePlayerHotkeys({
     bridgeRef,
     snap,
@@ -460,6 +462,9 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     sleep,
     quickToolsEnabled,
     frameGrab,
+    onToggleAnime4k: anime4k.available
+      ? () => anime4k.setMode(anime4k.mode === "off" ? "auto" : "off")
+      : undefined,
     gif,
     videoFill,
   });
@@ -487,12 +492,28 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   useStubDetection({ src, snap, onStub: onStubEject });
 
+  const isLiveLike =
+    liveOverlay.isLive ||
+    !!src.meta.id?.startsWith("iptv:") ||
+    (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
+  const reloadLive = useCallback(() => {
+    bridgeRef.current?.load({
+      url: src.url,
+      subtitles: src.subtitles,
+      notWebReady: src.notWebReady,
+      isLive: true,
+      headers: src.headers,
+    });
+  }, [src.url, src.subtitles, src.notWebReady, src.headers]);
+
   useAutoEndExit({
     src,
     snap,
     nextEp: adjacent.next,
     canChangeEpisode,
     roomGuest,
+    isLive: isLiveLike,
+    reloadLive,
     closePlayer,
   });
 
@@ -554,6 +575,11 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     showStats,
     holdSpeedActive,
     videoFillPill: videoFill.pill,
+    cropMode: videoFill.mode,
+    onCropMode: videoFill.setMode,
+    anime4kMode: anime4k.mode,
+    onAnime4kMode: anime4k.setMode,
+    anime4kAvailable: anime4k.available,
     subDropToast,
     pipMode,
     drawMode,

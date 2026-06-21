@@ -56,6 +56,7 @@ export type MpvOptions = {
   embed?: boolean;
   anime4kShaders?: string[];
   d3d11Flip?: boolean;
+  extraOptions?: string;
   getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
 };
 
@@ -85,8 +86,9 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let profileAf = "";
   const applyAudioFilters = () => {
     const parts: string[] = [];
-    if (snap.audioNormalize) parts.push("dynaudnorm=f=200:g=15:m=10:r=0.6");
+    if (snap.audioNormalize) parts.push("dynaudnorm=f=500:g=31:p=0.9:m=4");
     if (profileAf) parts.push(profileAf);
+    if (parts.length > 0) parts.push("lavfi=[alimiter=limit=0.97]");
     invoke("mpv_command", { cmd: ["af", "set", parts.join(",")] }).catch(() => {});
   };
   const listeners = new Set<(s: PlayerSnapshot) => void>();
@@ -313,6 +315,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             d3d11Flip: opts.d3d11Flip === true,
             isLive: src.isLive === true,
             headers: src.headers ?? null,
+            extraOptions: opts.extraOptions || undefined,
           },
         });
         mpvStarted = true;
@@ -439,6 +442,10 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     },
     setAspectOverride(ratio) {
       invoke("mpv_set_property", { name: "video-aspect-override", value: ratio }).catch(() => {});
+    },
+    setAnime4kShaders(shaders) {
+      const sep = typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("windows") ? ";" : ":";
+      invoke("mpv_set_property", { name: "glsl-shaders", value: shaders.filter(Boolean).join(sep) }).catch(() => {});
     },
     async addSubtitle(url, lang, title, select): Promise<boolean> {
       let mpvUrl = url;

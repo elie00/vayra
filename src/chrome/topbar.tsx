@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { TogetherPopover } from "@/components/together-modal";
+import { DownloadsButton } from "@/components/downloads-popover";
 import { RecordingPill } from "@/chrome/recording-pill";
 import {
   effectiveBinding,
@@ -88,6 +89,7 @@ export function Topbar() {
           className="flex h-full min-w-0 items-center justify-end gap-2"
         >
           <RecordingPill />
+          <DownloadsButton />
           {!onLiveRoot && <TogetherButton />}
           {IS_TAURI && !settings.useNativeTitleBar && (
             <div className="ms-1 flex items-center gap-1.5">

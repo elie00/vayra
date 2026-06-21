@@ -16,22 +16,33 @@ const TINY_STUB_FLOOR: u64 = 5 * MIB;
 
 fn movie_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
     let (cinema, normal, older_floor) = match r {
-        Resolution::UHD => (2560 * MIB, 1536 * MIB, 800 * MIB),
-        Resolution::P1080 => (1228 * MIB, 700 * MIB, 350 * MIB),
-        Resolution::P720 => (600 * MIB, 400 * MIB, 200 * MIB),
-        Resolution::P480 => (250 * MIB, 150 * MIB, 80 * MIB),
-        Resolution::SD => (200 * MIB, 100 * MIB, 50 * MIB),
+        Resolution::UHD => (2560 * MIB, 1536 * MIB, 600 * MIB),
+        Resolution::P1080 => ((GIB * 6).div_ceil(5), 700 * MIB, 250 * MIB),
+        Resolution::P720 => (600 * MIB, 400 * MIB, 120 * MIB),
+        Resolution::P480 => (250 * MIB, 150 * MIB, 50 * MIB),
+        Resolution::SD => (200 * MIB, 100 * MIB, 25 * MIB),
     };
     if older { older_floor } else if in_cinema { cinema } else { normal }
 }
 
 fn episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
     let (cinema, normal, older_floor) = match r {
-        Resolution::UHD => (1024 * MIB, 600 * MIB, 300 * MIB),
-        Resolution::P1080 => (400 * MIB, 250 * MIB, 150 * MIB),
-        Resolution::P720 => (200 * MIB, 120 * MIB, 70 * MIB),
-        Resolution::P480 => (80 * MIB, 50 * MIB, 30 * MIB),
-        Resolution::SD => (50 * MIB, 30 * MIB, 20 * MIB),
+        Resolution::UHD => (1024 * MIB, 600 * MIB, 200 * MIB),
+        Resolution::P1080 => (400 * MIB, 250 * MIB, 100 * MIB),
+        Resolution::P720 => (200 * MIB, 120 * MIB, 40 * MIB),
+        Resolution::P480 => (80 * MIB, 50 * MIB, 12 * MIB),
+        Resolution::SD => (50 * MIB, 30 * MIB, 8 * MIB),
+    };
+    if older { older_floor } else if in_cinema { cinema } else { normal }
+}
+
+fn anime_episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
+    let (cinema, normal, older_floor) = match r {
+        Resolution::UHD => (600 * MIB, 400 * MIB, 150 * MIB),
+        Resolution::P1080 => (220 * MIB, 150 * MIB, 50 * MIB),
+        Resolution::P720 => (100 * MIB, 60 * MIB, 20 * MIB),
+        Resolution::P480 => (40 * MIB, 28 * MIB, 8 * MIB),
+        Resolution::SD => (25 * MIB, 18 * MIB, 5 * MIB),
     };
     if older { older_floor } else if in_cinema { cinema } else { normal }
 }
@@ -50,9 +61,35 @@ const FILENAME_BLACKLIST: &[&str] = &[
     ".exe", ".zip", ".rar", ".lnk", ".scr", ".bat", ".iso", ".img",
 ];
 
+static SHORT_FORMAT_RX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)\b(short|shorts|mini|mini[\s.\-_]?episode|ova|special|specials|skit|sketch|chibi|micro|webisode|vignette|interlude)\b",
+    )
+    .unwrap()
+});
+
+static UNCACHED_EMOJI_RX: Lazy<Regex> = Lazy::new(|| Regex::new(r"[⬇⏳⌛⏬🔽📥☁]").unwrap());
+
+static PLACEHOLDER_BANNER_RX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)(?:🚫|⚠️?|❗|ℹ️?)\s*(?:no\s+streams?\s+(?:found|available)|streams?\s+filtered|streams?\s+blocked|filtered)",
+    )
+    .unwrap()
+});
+
+static STATUS_LINE_RX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)\b(?:expires?\s+in|days?\s+left|premium\s+(?:active|expir(?:ed|ing))|api\s+limit|quota\s+used)\b",
+    )
+    .unwrap()
+});
+
+static VIDEO_EXT_RX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\.(mkv|mp4|m4v|avi|webm|mov|ts)(\?|$)").unwrap());
+
 static TRAILER_RX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
-        r"(?i)\b(trailer|teaser|tlr|trl|tra(?:iler)?|sneak[\s.\-_]?peek|preview|behind[\s.\-_]?the[\s.\-_]?scenes|featurette|making[\s.\-_]?of|deleted[\s.\-_]?scene|bloopers?|gag[\s.\-_]?reel|extras?|promo)\b",
+        r"(?i)(?:^|[^a-z0-9])(?:trailer|teaser|tlr|trl|tra(?:iler)?|sneak[\s.\-_]?peek|preview|behind[\s.\-_]?the[\s.\-_]?scenes|featurette|making[\s.\-_]?of|deleted[\s.\-_]?scene|bloopers?|gag[\s.\-_]?reel|extras?|promo)(?:$|[^a-z0-9])",
     )
     .unwrap()
 });
@@ -136,6 +173,41 @@ fn check_one(
         return Some("no-playable-source".to_string());
     }
 
+    let title_name_desc = format!(
+        "{} {} {}",
+        s.stream.title.as_deref().unwrap_or(""),
+        s.stream.name.as_deref().unwrap_or(""),
+        s.stream.description.as_deref().unwrap_or("")
+    );
+    if PLACEHOLDER_BANNER_RX.is_match(&title_name_desc) {
+        return Some("addon-placeholder-banner".to_string());
+    }
+    let url_is_video = s
+        .stream
+        .url
+        .as_deref()
+        .map(|u| VIDEO_EXT_RX.is_match(u))
+        .unwrap_or(false);
+    if s.stream.info_hash.is_none()
+        && !url_is_video
+        && STATUS_LINE_RX.is_match(&title_name_desc)
+    {
+        let bh = s.stream.behavior_hints.as_ref();
+        let has_video_size = bh
+            .and_then(|b| b.get("videoSize"))
+            .and_then(|v| v.as_f64())
+            .map(|n| n != 0.0)
+            .unwrap_or(false);
+        let has_filename = bh
+            .and_then(|b| b.get("filename"))
+            .and_then(|v| v.as_str())
+            .map(|f| !f.is_empty())
+            .unwrap_or(false);
+        if !has_video_size && !has_filename {
+            return Some("addon-status-card".to_string());
+        }
+    }
+
     let filename = behavior_hint_filename(s).unwrap_or_default().to_lowercase();
     let title_lower = s.stream.title.as_deref().unwrap_or("").to_lowercase();
     let name_lower = s.stream.name.as_deref().unwrap_or("").to_lowercase();
@@ -149,6 +221,10 @@ fn check_one(
 
     if TRAILER_RX.is_match(&haystack) {
         return Some("trailer-or-extra".to_string());
+    }
+
+    if UNCACHED_EMOJI_RX.is_match(&title_name_desc) {
+        return Some("addon-uncached-emoji".to_string());
     }
 
     if let Some(sz) = s.size {
@@ -168,6 +244,21 @@ fn check_one(
                     "movie-stub-too-small-for-{}",
                     resolution_label(s.resolution)
                 ));
+            }
+        }
+    }
+
+    if kind_is_movie
+        && in_cinema_window
+        && !matches!(s.source, Source::CAM | Source::TS | Source::HDTS | Source::TC)
+    {
+        if let Some(sz) = s.size {
+            let size_mb = (sz as f64 / MIB as f64).round() as u64;
+            if sz < 250 * MIB {
+                return Some(format!("new-release-virus-{size_mb}mb"));
+            }
+            if sz < 500 * MIB && !is_short_format(s) {
+                return Some(format!("new-release-stub-{size_mb}mb"));
             }
         }
     }
@@ -204,6 +295,14 @@ fn check_one(
         }
     }
 
+    if strict && kind_is_movie && in_cinema_window {
+        if let (Some(sy), Some(ey)) = (s.year, opts.expected_year) {
+            if sy != ey {
+                return Some(format!("cinema-year-mismatch:{sy}-vs-{ey}"));
+            }
+        }
+    }
+
     if strict && kind_is_movie {
         if let Some(expected) = opts.expected_title.as_deref() {
             if let Some(expected_seq) = sequel_marker(expected) {
@@ -230,16 +329,27 @@ fn check_one(
         {
             return Some("fresh-cinema-fake-4k-web".to_string());
         }
+        if matches!(s.source, Source::HDTV)
+            && matches!(s.resolution, Resolution::UHD | Resolution::P1080)
+        {
+            return Some("fresh-cinema-fake-hdtv".to_string());
+        }
     }
 
     if kind_is_series {
         if let Some(sz) = s.size {
-            let floor = episode_min_size(s.resolution, in_cinema_window, older_catalog);
-            if sz < floor {
-                return Some(format!(
-                    "episode-stub-too-small-for-{}",
-                    resolution_label(s.resolution)
-                ));
+            if !is_short_format(s) {
+                let floor = if opts.is_anime {
+                    anime_episode_min_size(s.resolution, in_cinema_window, older_catalog)
+                } else {
+                    episode_min_size(s.resolution, in_cinema_window, older_catalog)
+                };
+                if sz < floor {
+                    return Some(format!(
+                        "episode-stub-too-small-for-{}",
+                        resolution_label(s.resolution)
+                    ));
+                }
             }
         }
     }
@@ -289,11 +399,21 @@ fn check_one(
 }
 
 fn behavior_hint_filename(s: &ParsedStream) -> Option<&str> {
-    s.stream
-        .behavior_hints
-        .as_ref()
-        .and_then(|v| v.get("filename"))
+    let bh = s.stream.behavior_hints.as_ref()?;
+    bh.get("filename")
         .and_then(|v| v.as_str())
+        .or_else(|| bh.get("fileName").and_then(|v| v.as_str()))
+}
+
+fn is_short_format(s: &ParsedStream) -> bool {
+    let filename = behavior_hint_filename(s).unwrap_or_default();
+    let haystack = format!(
+        "{} {} {}",
+        filename,
+        s.stream.title.as_deref().unwrap_or(""),
+        s.stream.name.as_deref().unwrap_or("")
+    );
+    SHORT_FORMAT_RX.is_match(&haystack)
 }
 
 fn haystack_has_sequel_token(haystack: &str, expected_seq: i32) -> bool {
@@ -357,6 +477,20 @@ fn sequel_marker(title: &str) -> Option<i32> {
     roman_to_num(&tok)
 }
 
+fn year_tolerance_for(expected_year: Option<i32>) -> i32 {
+    let Some(ey) = expected_year else { return 1 };
+    let age = current_year() - ey;
+    if age >= 30 {
+        4
+    } else if age >= 15 {
+        3
+    } else if age >= 5 {
+        2
+    } else {
+        1
+    }
+}
+
 fn title_matches(
     expected: &str,
     parsed: &str,
@@ -365,6 +499,7 @@ fn title_matches(
 ) -> bool {
     let expected_seq = sequel_marker(expected);
     let parsed_seq = sequel_marker(parsed);
+    let year_tolerance = year_tolerance_for(expected_year);
     if let (Some(e), Some(p)) = (expected_seq, parsed_seq) {
         if e != p {
             return false;
@@ -373,7 +508,7 @@ fn title_matches(
     if expected_seq.is_some() && parsed_seq.is_none() {
         match (expected_year, parsed_year) {
             (Some(ey), Some(py)) => {
-                if (py - ey).abs() > 1 {
+                if (py - ey).abs() > year_tolerance {
                     return false;
                 }
             }
@@ -385,7 +520,7 @@ fn title_matches(
             if ps >= 2 {
                 match (expected_year, parsed_year) {
                     (Some(ey), Some(py)) => {
-                        if (py - ey).abs() > 1 {
+                        if (py - ey).abs() > year_tolerance {
                             return false;
                         }
                     }
@@ -406,6 +541,9 @@ fn title_matches(
     let reverse_overlap = count_overlap(&parsed_tokens, &expected_set);
     let expected_ratio = overlap as f64 / expected_tokens.len() as f64;
     let parsed_ratio = reverse_overlap as f64 / parsed_tokens.len() as f64;
+    if expected_tokens.len() <= 2 && parsed_tokens.len().saturating_sub(overlap) > 2 {
+        return false;
+    }
     expected_ratio >= 0.5 || parsed_ratio >= 0.5 || overlap >= 2
 }
 
@@ -430,9 +568,10 @@ fn count_overlap(words: &[String], lookup: &HashSet<&str>) -> usize {
 }
 
 fn tokenize(text: &str) -> Vec<String> {
-    let lower = text.to_lowercase();
-    let stripped: String = lower
-        .chars()
+    use unicode_normalization::UnicodeNormalization;
+    let stripped: String = text
+        .to_lowercase()
+        .nfkd()
         .filter(|c| {
             let cp = *c as u32;
             !(0x0300..=0x036F).contains(&cp)
@@ -736,5 +875,146 @@ mod tests {
         opts.expected_episode = Some(3);
         let result = apply_trust(vec![s], &opts);
         assert_eq!(result.keep.len(), 1);
+    }
+
+    #[test]
+    fn rejects_placeholder_banner() {
+        let mut s = base_stream();
+        s.stream.description = Some("🚫 No streams found".into());
+        let result = apply_trust(vec![s], &opts_strict());
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "addon-placeholder-banner");
+    }
+
+    #[test]
+    fn rejects_status_card() {
+        let mut s = base_stream();
+        s.stream.info_hash = None;
+        s.stream.url = Some("https://example.com/account".into());
+        s.stream.description = Some("Premium expires in 3 days".into());
+        let result = apply_trust(vec![s], &opts_strict());
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "addon-status-card");
+    }
+
+    #[test]
+    fn rejects_uncached_emoji() {
+        let mut s = base_stream();
+        s.stream.name = Some("⏳ Cloud only".into());
+        let result = apply_trust(vec![s], &opts_strict());
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "addon-uncached-emoji");
+    }
+
+    #[test]
+    fn rejects_underscore_delimited_trailer() {
+        let mut s = base_stream();
+        s.stream.behavior_hints = Some(json!({ "filename": "Movie_2025_trailer_1080p.mkv" }));
+        let result = apply_trust(vec![s], &opts_strict());
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "trailer-or-extra");
+    }
+
+    #[test]
+    fn rejects_cinema_year_mismatch() {
+        let days = now_unix_ms() / 86_400_000 - 7;
+        let (y, m, d) = civil_from_days(days);
+        let mut s = base_stream();
+        s.parsed_title = "The Strangers".into();
+        s.year = Some(2008);
+        s.resolution = Resolution::P720;
+        s.source = Source::WebDl;
+        let mut opts = opts_strict();
+        opts.kind = Some("movie".into());
+        opts.expected_year = Some(2025);
+        opts.release_date = Some(format!("{y:04}-{m:02}-{d:02}"));
+        let result = apply_trust(vec![s], &opts);
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "cinema-year-mismatch:2008-vs-2025");
+    }
+
+    #[test]
+    fn rejects_fresh_cinema_fake_hdtv() {
+        let days = now_unix_ms() / 86_400_000 - 7;
+        let (y, m, d) = civil_from_days(days);
+        let mut s = base_stream();
+        s.parsed_title = "New Movie".into();
+        s.year = Some(2025);
+        s.source = Source::HDTV;
+        s.resolution = Resolution::P1080;
+        let mut opts = opts_strict();
+        opts.kind = Some("movie".into());
+        opts.expected_year = Some(2025);
+        opts.release_date = Some(format!("{y:04}-{m:02}-{d:02}"));
+        let result = apply_trust(vec![s], &opts);
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "fresh-cinema-fake-hdtv");
+    }
+
+    #[test]
+    fn anime_keeps_small_episode_non_anime_rejects() {
+        let mut s = base_stream();
+        s.resolution = Resolution::P1080;
+        s.size = Some(180 * MIB);
+        let mut opts = opts_strict();
+        opts.kind = Some("series".into());
+        let non_anime = apply_trust(vec![s.clone()], &opts);
+        assert_eq!(non_anime.rejected.len(), 1);
+        assert_eq!(
+            non_anime.rejected[0].reason,
+            "episode-stub-too-small-for-1080p"
+        );
+        opts.is_anime = true;
+        let anime = apply_trust(vec![s], &opts);
+        assert_eq!(anime.keep.len(), 1);
+    }
+
+    #[test]
+    fn short_format_exempts_small_episode() {
+        let mut s = base_stream();
+        s.stream.behavior_hints = Some(json!({ "filename": "Show.OVA.1080p.mkv" }));
+        s.resolution = Resolution::P1080;
+        s.size = Some(80 * MIB);
+        let mut opts = opts_strict();
+        opts.kind = Some("series".into());
+        let result = apply_trust(vec![s], &opts);
+        assert_eq!(result.keep.len(), 1);
+    }
+
+    #[test]
+    fn title_short_guard_rejects_keyword_in_long_title() {
+        let mut s = base_stream();
+        s.parsed_title = "DBM Obsession Viva Las Vegas".into();
+        s.year = Some(2025);
+        let mut opts = opts_strict();
+        opts.kind = Some("movie".into());
+        opts.expected_title = Some("Obsession".into());
+        opts.expected_year = Some(2025);
+        let result = apply_trust(vec![s], &opts);
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "title-mismatch");
+    }
+
+    #[test]
+    fn title_year_tolerance_scales_with_age() {
+        assert!(title_matches("Rocky", "Rocky II", Some(1979), Some(1976)));
+    }
+
+    #[test]
+    fn tokenize_decomposes_precomposed_accents() {
+        assert_eq!(tokenize("Amélie"), vec!["amelie".to_string()]);
+        assert_eq!(tokenize("Pokémon"), vec!["pokemon".to_string()]);
+    }
+
+    #[test]
+    fn status_card_camelcase_filename_not_exempted() {
+        let mut s = base_stream();
+        s.stream.info_hash = None;
+        s.stream.url = Some("https://example.com/acct".into());
+        s.stream.description = Some("Premium expires in 3 days".into());
+        s.stream.behavior_hints = Some(json!({ "fileName": "card.mkv" }));
+        let result = apply_trust(vec![s], &opts_strict());
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(result.rejected[0].reason, "addon-status-card");
     }
 }

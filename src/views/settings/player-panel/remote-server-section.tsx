@@ -80,13 +80,13 @@ export function RemoteServerSection() {
   const pill = !saved ? PILL.off : reach === null ? PILL.checking : reach ? PILL.connected : PILL.unreachable;
 
   return (
-    <div id={settingsAnchor("Remote streaming server")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
+    <section id={settingsAnchor("Remote streaming server")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-ink">{t("Remote streaming server")}</span>
-          <span className="text-[12.5px] text-ink-subtle">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Remote streaming server")}</h2>
+          <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {t("Point Harbor at a streaming server on another machine, like the Stremio service on a home server. Torrents download and stream from that machine instead of this one.")}
-          </span>
+          </p>
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${pill.dot}`} />
@@ -159,6 +159,6 @@ export function RemoteServerSection() {
           )}
         </>
       )}
-    </div>
+    </section>
   );
 }

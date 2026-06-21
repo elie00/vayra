@@ -1,33 +1,52 @@
 import { useEffect, useMemo, useState } from "react";
-import { needsImdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
-import { tmdbImdbId, useTmdbImdbId } from "@/lib/providers/tmdb/tmdb-imdb-resolve";
+import { needsImdbForPoster, needsTmdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
+import {
+  tmdbIdFromImdb,
+  tmdbImdbId,
+  useTmdbIdFromImdb,
+  useTmdbImdbId,
+} from "@/lib/providers/tmdb/tmdb-imdb-resolve";
 import { useSettings } from "@/lib/settings";
 
 type Ratio = "portrait" | "landscape" | "wide";
 
-export function useRpdbId(rpdbKey: string, metaId: string): string {
+export function useRpdbAltId(
+  rpdbKey: string,
+  metaId: string,
+  type?: "movie" | "series",
+): string | undefined {
   const { settings } = useSettings();
-  const want = needsImdbForPoster(rpdbKey, metaId);
-  const imdb = useTmdbImdbId(want ? metaId : undefined);
+  const wantImdb = needsImdbForPoster(rpdbKey, metaId);
+  const wantTmdb = needsTmdbForPoster(rpdbKey, metaId);
+  const imdb = useTmdbImdbId(wantImdb ? metaId : undefined);
+  const tmdb = useTmdbIdFromImdb(wantTmdb ? metaId : undefined);
   useEffect(() => {
-    if (want && settings.tmdbKey) void tmdbImdbId(settings.tmdbKey, metaId);
-  }, [want, settings.tmdbKey, metaId]);
-  return want && typeof imdb === "string" && imdb.startsWith("tt") ? imdb : metaId;
+    if (wantImdb && settings.tmdbKey) void tmdbImdbId(settings.tmdbKey, metaId);
+    if (wantTmdb && settings.tmdbKey) void tmdbIdFromImdb(settings.tmdbKey, metaId, type);
+  }, [wantImdb, wantTmdb, settings.tmdbKey, metaId, type]);
+  if (wantImdb && typeof imdb === "string" && imdb.startsWith("tt")) return imdb;
+  if (wantTmdb && typeof tmdb === "string") return tmdb;
+  return undefined;
 }
 
-export function usePosterChain(rpdbKey: string, metaId: string, metaPoster?: string) {
-  const posterId = useRpdbId(rpdbKey, metaId);
+export function usePosterChain(
+  rpdbKey: string,
+  metaId: string,
+  metaPoster?: string,
+  type?: "movie" | "series",
+) {
+  const altId = useRpdbAltId(rpdbKey, metaId, type);
   const candidates = useMemo(() => {
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const u of [rpdbPoster(rpdbKey, posterId, metaPoster), metaPoster]) {
+    for (const u of [rpdbPoster(rpdbKey, metaId, metaPoster, altId), metaPoster]) {
       if (u && !seen.has(u)) {
         seen.add(u);
         out.push(u);
       }
     }
     return out;
-  }, [rpdbKey, posterId, metaPoster]);
+  }, [rpdbKey, metaId, altId, metaPoster]);
   const [idx, setIdx] = useState(0);
   useEffect(() => setIdx(0), [candidates]);
   return {
@@ -49,6 +68,7 @@ export function Poster({
   className = "",
   children,
   onError,
+  lazy = false,
 }: {
   src?: string;
   seed: string;
@@ -56,6 +76,7 @@ export function Poster({
   className?: string;
   children?: React.ReactNode;
   onError?: () => void;
+  lazy?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -75,6 +96,7 @@ export function Poster({
           src={src}
           alt=""
           decoding="sync"
+          loading={lazy ? "lazy" : undefined}
           onError={() => {
             setFailed(true);
             onError?.();

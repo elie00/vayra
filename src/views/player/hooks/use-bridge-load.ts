@@ -4,6 +4,7 @@ import { readResumeMs, saveResumeMs } from "@/lib/resume";
 import { episodeFromVideoId, libraryGetOne } from "@/lib/stremio";
 import type { PlayerSrc } from "@/lib/view";
 import { videoIdFor, cloudWriteId } from "./use-stremio-sync";
+import { useSettings } from "@/lib/settings";
 
 const RESUME_PROMPT_MIN_SEC = 30;
 
@@ -37,6 +38,10 @@ export function useBridgeLoad(params: {
     authKey,
   } = params;
 
+  const { settings } = useSettings();
+  const resumePromptRef = useRef(settings.resumePrompt);
+  resumePromptRef.current = settings.resumePrompt;
+
   const lastLoadedUrlRef = useRef<string | null>(null);
   const firstLoadRef = useRef(true);
   const [pendingResumeSec, setPendingResumeSec] = useState<number | null>(null);
@@ -54,7 +59,9 @@ export function useBridgeLoad(params: {
     const isFirstLoad = firstLoadRef.current;
     firstLoadRef.current = false;
     const isAutoRetry = (src.attempt ?? 0) > 0;
-    const isLive = src.meta.id?.startsWith("iptv:") ?? false;
+    const isLive =
+      !!src.meta.id?.startsWith("iptv:") ||
+      (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
     let cancelled = false;
     (async () => {
       const openingVid = videoIdFor(
@@ -79,7 +86,7 @@ export function useBridgeLoad(params: {
         isFirstLoad &&
         !isAutoRetry &&
         !isLive &&
-        !resolved.fromRemote &&
+        resumePromptRef.current &&
         startSec > RESUME_PROMPT_MIN_SEC &&
         !guestInRoom;
       try {

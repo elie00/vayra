@@ -12,6 +12,9 @@ export function useStubDetection(params: {
   useEffect(() => {
     if (stubCheckedRef.current === src.url) return;
     if (src.meta.id?.startsWith("iptv:")) return;
+    const metaType = String(src.meta.type ?? "").toLowerCase();
+    if (metaType && !["movie", "series", "anime"].includes(metaType)) return;
+    if (/\.m3u8(\?|#|$)/i.test(src.url)) return;
     if (snap.durationSec <= 0 || snap.durationSec >= 60) return;
     if (snap.status !== "playing") return;
     stubCheckedRef.current = src.url;

@@ -26,6 +26,11 @@ export function ShellLayer({
   onSeekStep,
   rememberSubChoice,
   onEnterSync,
+  cropMode,
+  onCropMode,
+  anime4kMode,
+  onAnime4kMode,
+  anime4kAvailable,
   onPiP,
   onFullscreen,
   openCastMenu,
@@ -71,6 +76,11 @@ export function ShellLayer({
   onSeekStep: (delta: number) => void;
   rememberSubChoice: (t: { lang?: string } | null | undefined) => void;
   onEnterSync?: () => void;
+  cropMode?: string;
+  onCropMode?: (id: string) => void;
+  anime4kMode?: string;
+  onAnime4kMode?: (id: string) => void;
+  anime4kAvailable?: boolean;
   onPiP: () => void;
   onFullscreen: () => void;
   openCastMenu: (anchor: { right: number; bottom: number } | null) => void;
@@ -150,6 +160,11 @@ export function ShellLayer({
         bridgeRef.current?.setRate(r);
         writePlayerPrefs(metaId, { rate: r });
       }}
+      cropMode={cropMode}
+      onCropMode={onCropMode}
+      anime4kMode={anime4kMode}
+      onAnime4kMode={onAnime4kMode}
+      anime4kAvailable={anime4kAvailable}
       onPiP={onPiP}
       onFullscreen={onFullscreen}
       onCast={() => {

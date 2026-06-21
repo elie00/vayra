@@ -56,9 +56,34 @@ function betterPostersPath(base: string, id: ParsedId): string | undefined {
   return `${base}/poster/imdb/poster-default/${id.imdb}.jpg`;
 }
 
-export function rpdbPoster(key: string, metaId: string, fallback?: string): string | undefined {
-  const id = parseMetaId(metaId);
-  if (!id) return fallback;
+function postersPlusPath(base: string, id: ParsedId): string | undefined {
+  if (!id.imdb || !id.tmdbId) return undefined;
+  const root = base.replace(/\/poster$/i, "");
+  const type = id.mediaType === "series" ? "series" : "movie";
+  return `${root}/poster?tmdb_id=${id.tmdbId}&imdb_id=${id.imdb}&type=${type}`;
+}
+
+function mergeAlt(id: ParsedId, altId?: string): ParsedId {
+  if (!altId) return id;
+  const other = parseMetaId(altId);
+  if (!other) return id;
+  const typed = id.tmdbId ? id : other.tmdbId ? other : id;
+  return {
+    imdb: id.imdb ?? other.imdb,
+    tmdbId: id.tmdbId ?? other.tmdbId,
+    mediaType: typed.mediaType,
+  };
+}
+
+export function rpdbPoster(
+  key: string,
+  metaId: string,
+  fallback?: string,
+  altId?: string,
+): string | undefined {
+  const parsed = parseMetaId(metaId);
+  if (!parsed) return fallback;
+  const id = mergeAlt(parsed, altId);
 
   if (posterBase.includes("{")) {
     return fillTemplate(posterBase, id) ?? fallback;
@@ -77,7 +102,7 @@ export function rpdbPoster(key: string, metaId: string, fallback?: string): stri
     return betterPostersPath(posterBase, id) ?? fallback;
   }
   if (host.includes("postersplus") || host.includes("elfhosted")) {
-    return fallback;
+    return postersPlusPath(posterBase, id) ?? fallback;
   }
 
   if (key) return rpdbPath(posterBase, key, id) ?? fallback;
@@ -88,4 +113,10 @@ export function needsImdbForPoster(key: string, metaId: string): boolean {
   if (rpdbPoster(key, metaId)) return false;
   if (!posterBase && !key) return false;
   return /^tmdb:(movie|tv):\d+$/.test(metaId);
+}
+
+export function needsTmdbForPoster(key: string, metaId: string): boolean {
+  if (rpdbPoster(key, metaId)) return false;
+  if (!posterBase) return false;
+  return metaId.startsWith("tt");
 }

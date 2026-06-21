@@ -6,6 +6,7 @@ export type PlaybackEntry = {
   title?: string | null;
   parsedTitle?: string | null;
   resolution?: string | null;
+  releaseGroup?: string | null;
   source?: string | null;
   size?: number | null;
   cachedSlugs?: string[];

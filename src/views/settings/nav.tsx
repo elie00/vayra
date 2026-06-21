@@ -25,6 +25,15 @@ const IconBase = ({
   </svg>
 );
 
+function IconBasics(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <path d="M12 3.2l2.1 6.1 6.1 2.1-6.1 2.1L12 19.7l-2.1-6.1L3.8 11.4l6.1-2.1z" fill="currentColor" stroke="none" />
+      <circle cx="18.5" cy="5.5" r="1.1" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
 function IconAccount(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -77,6 +86,28 @@ function IconLanguages(p: IconProps) {
       <path d="M4 11.5c1.6 1.5 3.6 2.5 6 2.8" />
       <path d="M13 20l3.5-9 3.5 9" />
       <path d="M14.2 17.2h4.6" />
+    </IconBase>
+  );
+}
+
+function IconVideoTune(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <path d="M4 7h9M18.5 7H20" />
+      <circle cx="15.5" cy="7" r="2" fill="currentColor" stroke="none" />
+      <path d="M4 12h2.5M11.5 12H20" />
+      <circle cx="8.5" cy="12" r="2" fill="currentColor" stroke="none" />
+      <path d="M4 17h7.5M16.5 17H20" />
+      <circle cx="13.5" cy="17" r="2" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
+function IconAnime(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <path d="M9.5 3l1.6 4.4 4.4 1.6-4.4 1.6L9.5 15l-1.6-4.4L3.5 9l4.4-1.6z" fill="currentColor" stroke="none" />
+      <path d="M17 13l.8 2.2 2.2.8-2.2.8L17 19l-.8-2.2-2.2-.8 2.2-.8z" fill="currentColor" stroke="none" />
     </IconBase>
   );
 }
@@ -228,6 +259,17 @@ type NavItem = {
 
 const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
   {
+    heading: null,
+    items: [
+      {
+        id: "basics",
+        label: "Get started",
+        Icon: IconBasics,
+        keywords: ["basics", "get started", "getting started", "setup", "quick start", "essentials", "beginner", "new user", "first time", "easy"],
+      },
+    ],
+  },
+  {
     heading: "Account",
     items: [
       {
@@ -302,6 +344,18 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         keywords: ["mpv", "html5", "engine", "quality", "hdr", "passthrough", "audio", "transcode"],
       },
       {
+        id: "mpv",
+        label: "Video tuning",
+        Icon: IconVideoTune,
+        keywords: ["mpv", "advanced mpv", "mpv.conf", "mpv options", "video quality", "picture quality", "performance", "potato", "low end", "weak pc", "shit computer", "hardware decoding", "hwdec", "buffer", "downmix", "upscaling", "scaling", "tonemap", "tuning", "quality preset"],
+      },
+      {
+        id: "anime",
+        label: "Anime tweaks",
+        Icon: IconAnime,
+        keywords: ["anime", "anime4k", "anime 4k", "upscale", "upscaling", "shaders", "smooth motion", "motion smoothing", "interpolation", "svp", "smoothvideo", "frame interpolation", "60fps", "48fps", "fluid"],
+      },
+      {
         id: "playerLayout",
         label: "Player layout",
         Icon: IconPlayerLayout,
@@ -365,60 +419,102 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
 type SettingsOption = { label: string; section: SectionId; anchorTitle?: string; keywords?: string[] };
 
 const SETTINGS_OPTIONS: SettingsOption[] = [
-  { label: "Picture-in-Picture subtitles", section: "player", anchorTitle: "Subtitle style", keywords: ["pip", "picture in picture", "subtitles in pip", "subs"] },
-  { label: "Subtitle size", section: "player", anchorTitle: "Subtitle style", keywords: ["sub", "subtitle", "caption", "font size"] },
-  { label: "Subtitle opacity", section: "player", anchorTitle: "Subtitle style", keywords: ["sub", "subtitle", "transparency"] },
-  { label: "Subtitle background opacity", section: "player", anchorTitle: "Subtitle style", keywords: ["sub", "subtitle", "box", "background"] },
-  { label: "Subtitle outline thickness", section: "player", anchorTitle: "Subtitle style", keywords: ["sub", "subtitle", "border"] },
-  { label: "Subtitle distance from bottom", section: "player", anchorTitle: "Subtitle style", keywords: ["sub", "subtitle", "position", "margin"] },
-  { label: "Player engine (mpv / HTML5)", section: "player", anchorTitle: "Player engine", keywords: ["mpv", "html5", "engine", "playback"] },
-  { label: "HDR-to-SDR tonemapping", section: "player", anchorTitle: "Player engine", keywords: ["hdr", "sdr", "tonemap", "color"] },
-  { label: "Anime4K upscaling", section: "player", anchorTitle: "Player engine", keywords: ["anime4k", "upscale", "shader", "quality"] },
-  { label: "Seek bar style", section: "player", anchorTitle: "Seek bar", keywords: ["seek", "scrubber", "progress", "bar", "timeline"] },
-  { label: "Play button behavior", section: "player", anchorTitle: "Play button behavior", keywords: ["autoplay", "instant", "manual", "picker", "play mode"] },
-  { label: "Stream format chips", section: "player", anchorTitle: "Stream format chips", keywords: ["chips", "badges", "4k", "hdr", "codec", "quality badge"] },
-  { label: "Poster size", section: "player", anchorTitle: "Poster size", keywords: ["poster", "card", "size", "scale", "4k", "bigger"] },
-  { label: "Trailer quality", section: "player", anchorTitle: "Trailer quality", keywords: ["trailer", "quality", "youtube", "ytdl"] },
-  { label: "Next episode prompt timing", section: "player", anchorTitle: "Next episode prompt", keywords: ["next episode", "up next", "autoplay", "pill", "credits"] },
-  { label: "Downloads folder", section: "player", anchorTitle: "Downloads", keywords: ["download", "folder", "save", "directory"] },
-  { label: "Built-in torrent engine", section: "player", anchorTitle: "Local engine", keywords: ["torrent", "p2p", "local engine", "librqbit", "stream"] },
-  { label: "Remote streaming server", section: "player", anchorTitle: "Remote streaming server", keywords: ["remote", "server", "stremio service", "strict", "home server", "streaming server", "vpn"] },
-  { label: "Your streaming server address", section: "player", anchorTitle: "Your streaming server address", keywords: ["address", "ip", "localhost", "11470", "lan", "wifi", "share", "web instance", "url", "where"] },
-  { label: "Harbor in your browser", section: "player", anchorTitle: "Your streaming server address", keywords: ["web", "browser", "web version", "web app", "serve", "phone", "tablet", "11471"] },
-  { label: "Custom CSS / JS code", section: "player", anchorTitle: "Custom code", keywords: ["custom", "css", "js", "javascript", "inject", "power user"] },
-  { label: "Home layout", section: "library", anchorTitle: "Home layout", keywords: ["home", "rails", "rows", "layout"] },
-  { label: "Show every addon row", section: "library", anchorTitle: "Home layout", keywords: ["addon", "rows", "duplicate", "rails"] },
-  { label: "Show Playlists tab", section: "library", anchorTitle: "Home layout", keywords: ["playlist", "m3u", "xtream", "vod", "nav"] },
-  { label: "Keep anime in the Anime room only", section: "library", anchorTitle: "Home layout", keywords: ["anime", "continue watching", "home", "hide", "room"] },
-  { label: "Advance Continue Watching to next episode", section: "library", anchorTitle: "Home layout", keywords: ["continue watching", "next episode", "advance", "auto", "home"] },
-  { label: "Blur spoilers", section: "library", anchorTitle: "Spoilers", keywords: ["spoiler", "blur", "hide", "thumbnails", "titles", "episodes"] },
-  { label: "Continue Watching screenshots", section: "library", anchorTitle: "Continue Watching screenshots", keywords: ["continue watching", "screenshot", "snapshot", "frame"] },
-  { label: "Hide anime / Live TV / sports / adult", section: "library", anchorTitle: "Content filters", keywords: ["hide", "content filter", "anime", "live tv", "sports", "adult", "age"] },
-  { label: "Region", section: "library", anchorTitle: "Region", keywords: ["region", "country", "availability"] },
-  { label: "TMDB / OMDb / RPDB / Fanart / TVDB keys", section: "library", anchorTitle: "Metadata providers", keywords: ["tmdb", "omdb", "rpdb", "fanart", "tvdb", "api key", "metadata", "ratings"] },
-  { label: "IMDb / Rotten Tomatoes / MAL scores on cards", section: "library", anchorTitle: "Metadata providers", keywords: ["imdb", "rotten tomatoes", "rt", "mal", "score", "rating", "badge"] },
-  { label: "Hover preview on posters", section: "library", anchorTitle: "Metadata providers", keywords: ["hover", "preview", "peek", "popup", "poster", "card", "dwell"] },
-  { label: "Subtitle languages", section: "language", anchorTitle: "Subtitle languages", keywords: ["subtitle", "language", "sub", "default"] },
-  { label: "Audio languages", section: "language", anchorTitle: "Audio languages", keywords: ["audio", "language", "dub", "track"] },
-  { label: "Preferred languages", section: "language", anchorTitle: "Preferred languages", keywords: ["language", "preferred", "region"] },
-  { label: "Stream safety filter", section: "streaming", anchorTitle: "Stream safety filter", keywords: ["safety", "filter", "scam", "fake", "shady", "mismatched"] },
-  { label: "Picker layout (Condensed / Stremio)", section: "streaming", anchorTitle: "Picker layout", keywords: ["picker", "layout", "condensed", "stremio", "list", "drawer"] },
-  { label: "Result order (Harbor ranking / Addon order)", section: "streaming", anchorTitle: "Result order", keywords: ["order", "sort", "addon order", "ranking", "stremio", "vidi", "sequence"] },
-  { label: "Debrid keys (RealDebrid / TorBox / AllDebrid / Premiumize)", section: "streaming", anchorTitle: "Debrid services", keywords: ["debrid", "realdebrid", "torbox", "alldebrid", "premiumize", "rd", "tb"] },
-  { label: "Usenet (Easynews+)", section: "streaming", anchorTitle: "Usenet", keywords: ["usenet", "easynews", "nzb"] },
-  { label: "Streaming catalogs", section: "streaming", anchorTitle: "Streaming catalogs", keywords: ["netflix", "disney", "hulu", "streaming", "providers", "catalogs"] },
-  { label: "Watch Together relay", section: "relay", anchorTitle: "Harbor Relay", keywords: ["watch together", "party", "relay", "p2p", "host", "cloudflare"] },
-  { label: "Theme preset", section: "theme", anchorTitle: "Theme", keywords: ["theme", "color", "preset", "dark", "appearance"] },
-  { label: "Background wallpaper", section: "theme", anchorTitle: "Background image", keywords: ["background", "wallpaper", "image", "dim"] },
-  { label: "Typography and custom fonts", section: "theme", anchorTitle: "Typography", keywords: ["font", "typography", "display", "body", "typeface", "custom font"] },
-  { label: "Keyboard shortcuts", section: "hotkeys", keywords: ["hotkey", "keybind", "shortcut", "keyboard"] },
-  { label: "Player layout / chrome", section: "playerLayout", keywords: ["layout", "chrome", "controls", "player ui", "trickplay", "thumbnail"] },
-  { label: "Webhooks (Discord / Telegram)", section: "webhooks", keywords: ["webhook", "discord", "telegram", "notify", "alerts"] },
-  { label: "Updates", section: "advanced", anchorTitle: "Updates", keywords: ["update", "version", "upgrade", "auto update"] },
+  // PLAYBACK (QualityPanel). Display/subtitle/library/advanced rows were relocated; the section field is authoritative, not this grouping.
+  { label: "Play button behavior", section: "player", anchorTitle: "Play button behavior", keywords: ["play mode", "instant", "instant play", "autoplay", "auto start", "manual picker", "choose stream", "source picker", "quality picker"] },
+  { label: "Player engine", section: "player", anchorTitle: "Player engine", keywords: ["mpv", "html5", "engine", "playback", "embed mpv", "inline", "separate window", "hdr", "sdr", "tonemap", "tonemapping", "hdr display mode", "hdr separate window", "opaque", "passthrough", "line-free", "line free", "brightness line", "motion smoothing", "frame interpolation", "direct torrent", "stremio server", "built-in engine", "rust engine", "p2p", "re-encode", "transcode", "cast", "dlna", "anime4k", "upscale", "upscaling", "anime4k indicator", "fps", "av1", "dts-hd", "truehd", "codec"] },
+  { label: "Aspect ratio", section: "player", anchorTitle: "Aspect ratio", keywords: ["aspect ratio", "fit", "fill", "zoom", "crop", "stretch", "black bars", "widescreen", "4:3", "16:9", "21:9"] },
+  { label: "Seek bar", section: "theme", anchorTitle: "Seek bar", keywords: ["seek", "seek bar", "scrubber", "progress", "timeline", "thumbnail preview", "trickplay", "hover preview", "bar style", "flat", "glass", "pinstripe", "rainbow", "bar height", "bar color", "bar image", "seek dot", "dot shape", "circle", "square", "custom dot", "hidden dot", "dot size", "nyan cat", "sticker"] },
+  { label: "Subtitle style", section: "language", anchorTitle: "Subtitle style", keywords: ["subtitle", "subtitles", "subs", "caption", "sub style", "drop shadow", "outline", "black bar", "ass", "styled subs", "background opacity", "outline thickness", "bold", "pip subtitles", "picture in picture", "subtitle size", "subtitle opacity", "distance from bottom", "margin", "alignment", "left", "center", "right", "text color", "outline color", "box color", "font", "inter", "rounded", "serif", "arabic font", "upload font", "custom font", "reset"] },
+  { label: "Stream format chips", section: "theme", anchorTitle: "Stream format chips", keywords: ["format chips", "quality badge", "resolution chip", "hdr chip", "codec tag", "audio format", "badges on rows", "4k badge"] },
+  { label: "Poster size", section: "theme", anchorTitle: "Poster size", keywords: ["poster size", "card size", "compact", "default", "large", "huge", "scale", "grid", "bigger posters"] },
+  { label: "Row & player title size", section: "theme", anchorTitle: "Title text", keywords: ["title", "text size", "row title", "player title", "series first", "series name first", "episode name", "header", "font size", "bigger text"] },
+  { label: "Interface scale (accessibility)", section: "theme", anchorTitle: "Accessibility", keywords: ["accessibility", "interface scale", "ui scale", "zoom", "readability", "4k display", "ultrawide", "bigger ui", "text size"] },
+  { label: "Trailer quality", section: "theme", anchorTitle: "Trailer quality", keywords: ["trailer", "trailer quality", "youtube", "ytdl", "ytdlp", "360p", "720p", "1080p", "best"] },
+  { label: "Audio (normalize, bass, night mode)", section: "player", anchorTitle: "Audio", keywords: ["audio", "normalize loudness", "audio normalize", "normalization", "loudness", "dialogue", "dynamic", "loud", "distorted", "boost", "audio profile", "bass boost", "vocal clarity", "voice", "less bass", "night mode", "compress", "equalizer", "eq"] },
+  { label: "Skip intros", section: "player", anchorTitle: "Skip intros", keywords: ["skip intro", "skip intros", "skip opening", "auto-skip", "auto skip", "aniskip", "theintroodb", "skip button"] },
+  { label: "Next episode prompt & auto-play", section: "player", anchorTitle: "Next episode prompt", keywords: ["next episode", "up next", "prompt", "timing", "autoplay", "auto-play next", "auto play next episode", "continuous", "credits", "pill", "binge"] },
+  { label: "Hide watched in catalogs", section: "library", anchorTitle: "Home layout", keywords: ["hide watched", "hide finished", "watched filter", "catalog filter", "trakt history", "seen"] },
+  { label: "Downloads folder", section: "advanced", anchorTitle: "Downloads", keywords: ["downloads", "download folder", "location", "directory", "save", "path", "choose folder", "open folder"] },
+  { label: "Local torrent engine", section: "player", anchorTitle: "Local engine", keywords: ["local engine", "torrent engine", "p2p", "librqbit", "self-test", "self test", "restart engine", "peer test", "connectivity"] },
+  { label: "Your streaming server address", section: "player", anchorTitle: "Your streaming server address", keywords: ["streaming server", "server address", "localhost", "wifi", "lan", "start server", "stop server", "restart server", "harbor in browser", "web ui", "11470", "11471", "web version", "use exclusively", "strict"] },
+  { label: "Remote streaming server", section: "player", anchorTitle: "Remote streaming server", keywords: ["remote server", "server url", "ip address", "test connection", "forget server", "use exclusively", "strict", "vpn", "home server", "stremio service"] },
+  { label: "Anime4K presets & modes", section: "player", anchorTitle: "Anime4K presets", keywords: ["anime4k", "setup", "download shaders", "install anime4k", "re-download", "quality", "performance", "mode a", "mode b", "mode c", "apply to anime only", "anime detection"] },
+  { label: "Internet speed / bandwidth", section: "player", anchorTitle: "Internet speed", keywords: ["internet speed", "bandwidth", "cap", "limit", "mbps", "gbps", "speed test", "fiber", "gigabit", "data"] },
+  { label: "Remember last stream", section: "player", anchorTitle: "Remember last stream", keywords: ["remember last stream", "resume stream", "last source", "addon memory", "source memory"] },
+  { label: "Custom CSS / JS / HTML code", section: "advanced", anchorTitle: "Custom code", keywords: ["custom code", "custom css", "custom js", "javascript", "custom html overlay", "inject", "mod", "power user", "retheme"] },
+
+  // VIDEO TUNING (MpvPanel)
+  { label: "Picture quality (weak PC / balanced / max)", section: "mpv", anchorTitle: "Picture quality", keywords: ["picture quality", "video quality", "performance", "potato", "weak pc", "low end", "old computer", "slow", "max quality", "upscaling", "scaling", "quality preset", "mpv profile", "gpu load"] },
+  { label: "Hardware acceleration (hwdec)", section: "mpv", anchorTitle: "Hardware acceleration", keywords: ["hardware acceleration", "hwdec", "gpu decoding", "graphics card", "cpu", "decode", "battery"] },
+  { label: "Picture adjustments (brightness, contrast, sharpen)", section: "mpv", anchorTitle: "Picture adjustments", keywords: ["brightness", "contrast", "saturation", "gamma", "sharpen", "sharpness", "picture", "image", "too dark", "dark scenes", "vivid", "punchy color", "dim", "calibrate"] },
+  { label: "Color & HDR tone-mapping", section: "mpv", anchorTitle: "Color & HDR", keywords: ["tone-mapping", "tonemap", "hdr", "inverse tone mapping", "sdr to hdr", "color curve", "bt.2390", "hable", "mobius", "reinhard", "washed out"] },
+  { label: "Bigger buffer for slow connections", section: "mpv", anchorTitle: "Slow or unstable connection", keywords: ["buffer", "buffering", "slow connection", "unstable", "wifi", "cache", "readahead", "stutter", "pausing"] },
+  { label: "Downmix surround to stereo", section: "mpv", anchorTitle: "Audio", keywords: ["downmix", "stereo", "surround", "5.1", "7.1", "laptop speakers", "headphones", "quiet dialogue", "audio channels"] },
+  { label: "Advanced mpv options (mpv.conf)", section: "mpv", anchorTitle: "Advanced (mpv.conf)", keywords: ["advanced mpv", "mpv.conf", "mpv options", "extra options", "tone-mapping", "inverse tone mapping", "custom mpv", "key=value", "power user", "raw config"] },
+
+  // ANIME (AnimePanel)
+  { label: "Anime4K upscaling", section: "anime", anchorTitle: "Anime4K upscaling", keywords: ["anime4k", "anime 4k", "upscale", "upscaling", "shaders", "sharper anime", "anime only", "anime4k indicator", "fps badge", "gpu upscale"] },
+  { label: "Smooth motion (interpolation) & SVP", section: "anime", anchorTitle: "Smooth motion", keywords: ["smooth motion", "motion smoothing", "interpolation", "frame interpolation", "svp", "smoothvideo", "60fps", "48fps", "fluid", "judder", "soap opera", "vapoursynth"] },
+
+  // LIBRARY & METADATA (LibraryPanel)
+  { label: "Home layout", section: "library", anchorTitle: "Home layout", keywords: ["home layout", "rails", "rows", "addon rows", "duplicate rails", "watchlist saved only", "playlists tab", "m3u", "xtream", "keep anime in anime room", "continue watching advance", "advance next episode"] },
+  { label: "Spoilers (blur)", section: "library", anchorTitle: "Spoilers", keywords: ["spoiler", "spoilers", "blur", "blur thumbnails", "blur titles", "blur descriptions", "hide spoilers", "next episode visible"] },
+  { label: "Continue Watching screenshots", section: "library", anchorTitle: "Continue Watching screenshots", keywords: ["continue watching", "screenshots", "snapshots", "frames", "retention", "clear frames", "storage"] },
+  { label: "Region & language", section: "library", anchorTitle: "Region & language", keywords: ["region", "country", "availability", "location", "iso"] },
+  { label: "Metadata providers (TMDB, OMDb, RPDB, MDBList, Fanart, TVDB)", section: "library", anchorTitle: "Metadata providers", keywords: ["metadata", "tmdb", "omdb", "rpdb", "mdblist", "letterboxd", "fanart", "tvdb", "api key", "ratings", "scores", "custom poster service", "btttr", "posters", "hide titles under posters", "imdb score", "rotten tomatoes", "mal score", "hover preview", "peek", "badge position"] },
+  { label: "Content filters (hide anime / live tv / sports / adult)", section: "library", anchorTitle: "Content filters", keywords: ["content filters", "hide anime", "hide live tv", "hide sports", "hide adult", "age", "filter"] },
+
+  // LANGUAGES (LanguagePanel)
+  { label: "Display language", section: "language", anchorTitle: "Display language", keywords: ["display language", "ui language", "interface language", "rtl", "arabic", "menus", "buttons", "translation"] },
+  { label: "Subtitle languages & autoload", section: "language", anchorTitle: "Subtitle languages", keywords: ["subtitle languages", "preferred subs", "start with subtitles off", "subs off", "prefer embedded", "forced subs", "native audio", "never auto-select", "block tracks", "commentary", "descriptive"] },
+  { label: "Metadata language", section: "language", anchorTitle: "Metadata language", keywords: ["metadata language", "tmdb titles", "overviews", "taglines", "translation"] },
+  { label: "Audio languages", section: "language", anchorTitle: "Audio languages", keywords: ["audio languages", "dub", "audio tracks", "preferred audio"] },
+  { label: "Preferred languages", section: "language", anchorTitle: "Preferred languages", keywords: ["preferred languages", "rank", "priority", "only show my languages", "filter streams", "multi-audio"] },
+
+  // STREAMING SOURCES (StreamingSourcesPanel)
+  { label: "Stream safety filter", section: "streaming", anchorTitle: "Stream safety filter", keywords: ["safety filter", "stream filter", "shady", "mismatched", "scam", "fake", "rejection", "aggression", "filter level"] },
+  { label: "Picker layout (Condensed / Stremio)", section: "streaming", anchorTitle: "Picker layout", keywords: ["picker layout", "condensed", "stremio", "sources", "drawer", "list"] },
+  { label: "Result order (ranking / addon order)", section: "streaming", anchorTitle: "Result order", keywords: ["result order", "ranking", "addon order", "sort", "priority", "sequence", "vidi"] },
+  { label: "Debrid services (RealDebrid / TorBox / AllDebrid / Premiumize / Debrid-Link)", section: "streaming", anchorTitle: "Debrid services", keywords: ["debrid", "real-debrid", "realdebrid", "torbox", "alldebrid", "premiumize", "debrid-link", "api token", "cache", "rd", "tb"] },
+  { label: "Usenet (Easynews+)", section: "streaming", anchorTitle: "Usenet", keywords: ["usenet", "easynews", "nzb", "addon"] },
+  { label: "Streaming catalogs (Netflix, Disney+, etc.)", section: "streaming", anchorTitle: "Streaming catalogs", keywords: ["streaming catalogs", "netflix", "disney", "hulu", "prime", "apple tv", "max", "paramount", "peacock", "providers", "services"] },
+
+  // WATCH TOGETHER (RelaySection)
+  { label: "Watch Together relay", section: "relay", anchorTitle: "Harbor Relay", keywords: ["watch together", "relay", "party", "p2p", "host", "cloudflare", "deploy", "share"] },
+
+  // THEME & APPEARANCE (ThemePanel)
+  { label: "Theme preset", section: "theme", anchorTitle: "Theme", keywords: ["theme", "color", "preset", "cool grey", "warm gold", "deep purple", "sunset orange", "rose pink", "custom theme", "palette", "dark", "appearance"] },
+  { label: "Background image / wallpaper", section: "theme", anchorTitle: "Background image", keywords: ["background", "wallpaper", "image", "choose image", "replace", "remove", "dim overlay"] },
+  { label: "Typography & custom fonts", section: "theme", anchorTitle: "Typography", keywords: ["typography", "font", "display font", "body font", "serif", "sans", "font pair", "custom font", "fraunces", "inter", "upload font"] },
+  { label: "Theme Studio / your themes", section: "theme", anchorTitle: "Your themes", keywords: ["theme studio", "custom theme", "editor", "browse theme library", "import theme", "your themes", "card css"] },
+  { label: "Window title bar", section: "theme", anchorTitle: "Window title bar", keywords: ["window title bar", "native title bar", "system title bar", "decorations"] },
+  { label: "Home hero shadow", section: "theme", anchorTitle: "Home hero shadow", keywords: ["hero shadow", "home hero", "hero gradient", "featured title", "darken hero", "backdrop shadow", "gradient overlay", "show artwork"] },
+
+  // ADVANCED (AdvancedPanel)
+  { label: "Updates & rollback", section: "advanced", anchorTitle: "Updates", keywords: ["updates", "version", "check for updates", "beta updates", "roll back", "rollback", "downgrade", "previous version", "build feedback"] },
   { label: "Backup & restore", section: "advanced", anchorTitle: "Backup & restore", keywords: ["backup", "restore", "export", "import", "settings file"] },
-  { label: "System tray", section: "advanced", anchorTitle: "System tray", keywords: ["tray", "close to tray", "minimize", "background"] },
-  { label: "Discord Rich Presence", section: "advanced", anchorTitle: "Discord Rich Presence", keywords: ["discord", "rich presence", "status", "now watching"] },
-  { label: "Privacy & tracker blocking", section: "advanced", anchorTitle: "Privacy", keywords: ["privacy", "telemetry", "tracker", "ads", "analytics", "block"] },
+  { label: "Privacy & tracker blocking", section: "advanced", anchorTitle: "Privacy", keywords: ["privacy", "block ads", "trackers", "analytics", "telemetry", "ad blocker"] },
+  { label: "System tray & window behavior", section: "advanced", anchorTitle: "System tray", keywords: ["system tray", "close to tray", "minimize", "always on top", "pause when minimized", "pause when unfocused", "background"] },
+  { label: "Stremio install links", section: "advanced", anchorTitle: "Stremio install links", keywords: ["stremio install links", "deeplink", "protocol handler", "install addon"] },
+  { label: "Discord Rich Presence", section: "advanced", anchorTitle: "Discord Rich Presence", keywords: ["discord", "rich presence", "now watching", "status", "hide title", "show while paused", "browsing", "poster", "elapsed time", "watch party join"] },
+  { label: "API budget (OMDb)", section: "advanced", anchorTitle: "API budget", keywords: ["api budget", "omdb budget", "daily requests", "counter", "rate limit"] },
+  { label: "Onboarding & hints", section: "advanced", anchorTitle: "Onboarding", keywords: ["onboarding", "walkthrough", "tutorial", "replay", "restore hints", "tips"] },
+  { label: "Stremio library repair", section: "advanced", anchorTitle: "Stremio library repair", keywords: ["stremio library repair", "fix library", "schema", "repair"] },
+  { label: "About (version / build)", section: "advanced", anchorTitle: "About", keywords: ["about", "version", "build", "platform", "bug reports"] },
+
+  // ACCOUNT (AccountStub)
+  { label: "Harbor identity (avatar / color)", section: "account", anchorTitle: "Harbor identity", keywords: ["avatar", "profile photo", "upload photo", "color", "identity", "picture"] },
+  { label: "Stremio account (email / sign out)", section: "account", anchorTitle: "Stremio account", keywords: ["stremio", "email", "sign out", "logout", "re-authenticate", "login", "account"] },
+  { label: "Synced addons", section: "account", anchorTitle: "Synced addons", keywords: ["synced addons", "addons", "stremio addons", "installed addons"] },
+
+  // PANEL-LEVEL (no Section anchor — these navigate to the panel)
+  { label: "Trakt connection", section: "trakt", keywords: ["trakt", "scrobble", "sync", "watchlist", "connect", "disconnect", "avatar", "history"] },
+  { label: "AniList connection", section: "anilist", keywords: ["anilist", "anime", "lists", "sync", "connect", "disconnect", "avatar", "watch progress", "mal", "kitsu"] },
+  { label: "Simkl connection", section: "simkl", keywords: ["simkl", "sync", "watched", "watchlist", "connect", "disconnect", "avatar", "anime"] },
+  { label: "Webhooks (Discord / Telegram)", section: "webhooks", keywords: ["webhooks", "discord", "telegram", "notifications", "alerts", "calendar sources", "rules", "upcoming"] },
+  { label: "Hotkeys / keyboard shortcuts", section: "hotkeys", keywords: ["hotkeys", "shortcuts", "keybindings", "keyboard", "rebind", "reset shortcuts"] },
+  { label: "Player layout / chrome", section: "playerLayout", keywords: ["player layout", "chrome", "controls", "buttons", "overlay", "arrange", "rearrange", "trickplay", "thumbnail", "hide buttons"] },
+  { label: "Report a bug", section: "bug", keywords: ["bug report", "report", "feedback", "issue", "crash", "screenshot", "diagnostics"] },
 ];
 
 export function SettingsNav({
@@ -493,6 +589,7 @@ export function SettingsNav({
     Object.values(settings.webhooks.sources).some(Boolean);
 
   const status: Record<SectionId, string | null> = {
+    basics: null,
     account: null,
     library: libraryKeys > 0 ? `${libraryKeys}/5` : null,
     trakt: null,
@@ -502,6 +599,8 @@ export function SettingsNav({
     streaming: debridChip,
     language: langChip,
     player: settings.playerEngine === "auto" ? null : settings.playerEngine,
+    mpv: (settings.mpvQuality ?? "balanced") === "balanced" ? null : settings.mpvQuality === "performance" ? "lite" : "max",
+    anime: settings.playerAnime4k ? "on" : null,
     playerLayout: null,
     theme: settings.theme.preset === "cool-grey" && settings.theme.fontPair === "sentient-switzer" ? null : "•",
     webhooks: webhookActive ? "live" : null,

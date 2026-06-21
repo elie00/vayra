@@ -42,6 +42,7 @@ import {
 import { useTrakt } from "@/lib/trakt/provider";
 import { buildTraktHomeRows } from "@/lib/trakt/home-rails";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
+import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
 import { buildSimklHomeRows } from "@/lib/simkl/home-rails";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
 import { useSimkl } from "@/lib/simkl/provider";
@@ -146,9 +147,9 @@ export function Home({ active = true }: { active?: boolean }) {
       setHeroPool(built.hero);
 
       const dedupRows = isClassic ? false : !settings.homeShowAllAddonRows;
-      const addons = (await loadAddonRows(authKey, { dedup: dedupRows }).catch(
+      const addons = await loadAddonRows(authKey, { dedup: dedupRows }).catch(
         () => [] as AddonRow[],
-      )).filter((a) => a.type !== "tv" && a.type !== "channel");
+      );
       if (cancelled) return;
       const filtered = isClassic
         ? addons
@@ -333,6 +334,7 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [authKey, active]);
 
   const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
+  const animeDetectVer = useDetectedAnimeVersion();
   const continueWatching = useMemo(() => {
     const localCwItems: LibraryItem[] = listLocalCw().map((e) => ({
       _id: e.id,
@@ -386,8 +388,12 @@ export function Home({ active = true }: { active?: boolean }) {
       if (out.length >= 100) break;
     }
     return out;
-  }, [items, simklCw, localCwVer, cwVersion, settings.animeOnlyInAnimeRoom]);
+  }, [items, simklCw, localCwVer, cwVersion, settings.animeOnlyInAnimeRoom, animeDetectVer]);
   const cwItems = useCwAdvance(continueWatching, settings.tmdbKey, settings.cwAdvanceNext);
+
+  useEffect(() => {
+    void detectAnimeForCw(items);
+  }, [items]);
 
   useEffect(() => {
     publishResumeStates(cwItems);
@@ -662,6 +668,8 @@ export function Home({ active = true }: { active?: boolean }) {
               onToggleNumerals={handleToggleNumerals}
               onToggleHero={handleToggleHero}
               onLoadMore={loadMore}
+              hideWatched={settings.hideWatchedInCatalogs}
+              watchedSet={traktWatched}
             />
           )}
         </div>

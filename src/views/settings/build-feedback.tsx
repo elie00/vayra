@@ -130,8 +130,8 @@ export function BuildFeedback() {
         <span className="text-[18px] font-semibold tracking-tight">{t(cur.label)}</span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="w-12 shrink-0 text-end text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">
+      <div className="flex items-center gap-3" dir="ltr">
+        <span className="w-14 shrink-0 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">
           {t("Worse")}
         </span>
         <div
@@ -192,7 +192,7 @@ export function BuildFeedback() {
             <cur.Icon size={19} strokeWidth={2.1} />
           </span>
         </div>
-        <span className="w-12 shrink-0 text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">
+        <span className="w-14 shrink-0 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">
           {t("Better")}
         </span>
       </div>

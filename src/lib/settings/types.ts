@@ -55,8 +55,12 @@ export type Settings = {
   uiScale: number;
   serveWebUi: boolean;
   trailerQuality: "auto" | "360p" | "720p" | "1080p" | "best";
+  detailTrailerAutoplay: boolean;
+  heroShadow: number;
+  resumePrompt: boolean;
   badgePlacement: "top" | "bottom";
   episodeLayout: "list" | "strip" | "grid";
+  episodeSort: "oldest" | "newest";
   harborAvatar: string | null;
   harborColor: string;
   anilistAutoSync: boolean;
@@ -95,6 +99,7 @@ export type Settings = {
   playerAnime4kAnimeOnly: boolean;
   playerAnime4kIndicator: boolean;
   playerMpvEmbed: boolean;
+  playerP2pChip: boolean;
   stremioServerTranscode: boolean;
   directTorrentStream: boolean;
   p2pAutoConsent: boolean;
@@ -106,6 +111,7 @@ export type Settings = {
   playerAnime4kMode: string;
   playerAnime4kTier: string;
   playerAnime4kFolder: string;
+  playerAnime4kOverride: string;
   preferredSubLangs: string[];
   preferredAudioLangs: string[];
   subFontSize: number;
@@ -136,7 +142,17 @@ export type Settings = {
   hidePosterTitles: boolean;
   hoverPreview: boolean;
   mdblistKey: string;
+  aiSearchKey: string;
+  aiSearchModel: string;
   playerD3d11Flip: boolean;
+  mpvExtraOptions: string;
+  mpvQuality: "balanced" | "performance" | "quality";
+  mpvHwdec: "auto" | "on" | "off";
+  mpvBufferBoost: boolean;
+  mpvDownmixStereo: boolean;
+  mpvTweaks: Record<string, string>;
+  playerSvp: boolean;
+  svpVpyPath: string;
   playerHdrOpaqueWindow: boolean;
   playerHdrStage: "auto" | "off" | "always";
   opensubtitlesApiKey: string;
@@ -145,6 +161,8 @@ export type Settings = {
   audioProfile: "off" | "bass" | "voice" | "bass-reduce" | "night";
   bandwidthMbps: number;
   nextEpisodeLeadSec: number;
+  autoPlayNextEpisode: boolean;
+  hideWatchedInCatalogs: boolean;
   showPlaylistsTab: boolean;
   sportsLeagues: string[];
   hideSpoilers: boolean;
@@ -157,6 +175,8 @@ export type Settings = {
   homeMode: "harbor" | "classic";
   homeShowAllAddonRows: boolean;
   libraryBookmarkedOnly: boolean;
+  librarySort: "recent" | "title" | "year";
+  preferCustomMetaAddon: boolean;
   animeOnlyInAnimeRoom: boolean;
   cwAdvanceNext: boolean;
   useNativeTitleBar: boolean;
@@ -212,6 +232,7 @@ export type Settings = {
     | "custom"
     | "simkl"
     | "simkl-anticipated";
+  weekStartsMonday: boolean;
   customCalendar: {
     trackedPeople: Array<{
       id: number;

@@ -3,9 +3,11 @@ import { useSettings } from "@/lib/settings";
 import { type ThemeSettings } from "@/lib/theme";
 import { useT } from "@/lib/i18n";
 import { Section } from "./shared";
+import { SeekBarPanel } from "./player-panel";
 import { BackgroundPicker } from "./theme-panel/background-picker";
 import { ColorThemeBody } from "./theme-panel/color-theme-body";
 import { CustomThemesSection } from "./theme-panel/custom-themes-section";
+import { DisplaySection } from "./theme-panel/display-section";
 import { FontGrid } from "./theme-panel/font-grid";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -69,6 +71,15 @@ export function ThemePanel() {
         subtitle={t("Make your own in the Theme Studio, or import one a friend shared.")}
       >
         <CustomThemesSection />
+      </Section>
+
+      <DisplaySection />
+
+      <Section
+        title={t("Seek bar")}
+        subtitle={t("Style the timeline at the bottom of the player. Swap the dot for a sticker, change the bar height, recolor it. Settings live-preview right here.")}
+      >
+        <SeekBarPanel />
       </Section>
 
       {isTauri && (

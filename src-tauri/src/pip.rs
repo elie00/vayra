@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -47,6 +48,7 @@ pub struct PipExitState {
 pub struct PipState {
     session: Arc<Mutex<Option<PipSession>>>,
     snapshot: Arc<Mutex<Option<WindowSnapshot>>>,
+    window_pip_active: Arc<AtomicBool>,
 }
 
 impl PipState {
@@ -54,6 +56,7 @@ impl PipState {
         Self {
             session: Arc::new(Mutex::new(None)),
             snapshot: Arc::new(Mutex::new(None)),
+            window_pip_active: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -200,6 +203,7 @@ pub async fn window_pip_enter(
             maximized,
         });
     }
+    state.window_pip_active.store(true, Ordering::SeqCst);
 
     if maximized {
         let _ = main.unmaximize();
@@ -215,8 +219,16 @@ pub async fn window_pip_enter(
     } else {
         (0.0, 0.0, 1920.0, 1080.0)
     };
-    let target_x = mon_x + mon_w - pip_w - 24.0;
-    let target_y = mon_y + mon_h - pip_h - 56.0;
+    let mut target_x = mon_x + mon_w - pip_w - 24.0;
+    let mut target_y = mon_y + mon_h - pip_h - 56.0;
+    if !target_x.is_finite() {
+        target_x = mon_x;
+    }
+    if !target_y.is_finite() {
+        target_y = mon_y;
+    }
+    target_x = target_x.clamp(mon_x, (mon_x + mon_w - pip_w).max(mon_x));
+    target_y = target_y.clamp(mon_y, (mon_y + mon_h - pip_h).max(mon_y));
 
     main.set_min_size(Some(LogicalSize::new(360.0, 240.0)))
         .map_err(|e| format!("set_min_size: {}", e))?;
@@ -233,6 +245,21 @@ pub async fn window_pip_enter(
         if let Ok(ns) = main.ns_window() {
             let ptr = ns as i64;
             let _ = app.run_on_main_thread(move || crate::pip_mac::enter_pip_window(ptr));
+            // tauri #5566: in RELEASE builds macOS resets the window level + collection
+            // behavior shortly after the resize, so a single set doesn't make the window
+            // float over other apps. Re-assert it for ~1.5s, stopping early if PiP exits.
+            let app2 = app.clone();
+            let active = state.window_pip_active.clone();
+            std::thread::spawn(move || {
+                for _ in 0..8 {
+                    std::thread::sleep(std::time::Duration::from_millis(180));
+                    if !active.load(Ordering::SeqCst) {
+                        break;
+                    }
+                    let p = ptr;
+                    let _ = app2.run_on_main_thread(move || crate::pip_mac::enter_pip_window(p));
+                }
+            });
         }
     }
 
@@ -254,6 +281,7 @@ pub async fn window_pip_exit(
         let mut g = state.snapshot.lock().await;
         g.take()
     };
+    state.window_pip_active.store(false, Ordering::SeqCst);
 
     if let Some(s) = saved {
         let _ = main.set_always_on_top(s.always_on_top);
@@ -278,6 +306,20 @@ pub async fn window_pip_exit(
         if let Ok(ns) = main.ns_window() {
             let ptr = ns as i64;
             let _ = app.run_on_main_thread(move || crate::pip_mac::exit_pip_window(ptr));
+            // Mirror the enter re-assert so the restored normal level sticks too; stop if
+            // the user re-enters PiP.
+            let app2 = app.clone();
+            let active = state.window_pip_active.clone();
+            std::thread::spawn(move || {
+                for _ in 0..3 {
+                    std::thread::sleep(std::time::Duration::from_millis(160));
+                    if active.load(Ordering::SeqCst) {
+                        break;
+                    }
+                    let p = ptr;
+                    let _ = app2.run_on_main_thread(move || crate::pip_mac::exit_pip_window(p));
+                }
+            });
         }
     }
 

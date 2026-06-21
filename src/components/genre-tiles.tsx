@@ -65,6 +65,7 @@ export function GenreTiles() {
 function GenreTile({ genre }: { genre: string }) {
   const { settings } = useSettings();
   const { openFilter } = useView();
+  const t = useT();
   const [backdrops, setBackdrops] = useState<Meta[]>([]);
   const palette = GENRE_PALETTE[genre] ?? GENRE_PALETTE.Drama;
 
@@ -117,7 +118,7 @@ function GenreTile({ genre }: { genre: string }) {
           className="font-display text-[26px] font-medium leading-tight tracking-tight drop-shadow-[0_2px_18px_rgba(0,0,0,0.4)]"
           style={{ color: palette.ink }}
         >
-          {genre}
+          {t(genre)}
         </h3>
         <span
           className="dir-icon text-[18px] transition-transform duration-200 group-hover:translate-x-1 rtl:group-hover:-translate-x-1"

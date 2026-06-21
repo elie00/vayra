@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { AccountStub } from "./settings/account";
 import { AdvancedPanel } from "./settings/advanced-panel";
+import { BasicsPanel } from "./settings/basics-panel";
 import { BugReportPanel } from "./settings/bug-report-panel";
 import { LibraryPanel, type LibraryKey } from "./settings/library-panel";
 import { LanguagePanel } from "./settings/language-panel";
 import { SettingsNav } from "./settings/nav";
+import { SettingsJumpBar } from "./settings/jump-bar";
 import { HotkeysPanel } from "./settings/hotkeys-panel";
 import { PlayerLayoutPanel } from "./settings/player-layout-panel";
 import { QualityPanel } from "./settings/quality-panel";
+import { MpvPanel } from "./settings/mpv-panel";
+import { AnimePanel } from "./settings/anime-panel";
 import { TraktPanel } from "./settings/trakt-panel";
 import { AnilistPanel } from "./settings/anilist-panel";
 import { SimklPanel } from "./settings/simkl-panel";
@@ -25,6 +29,10 @@ import { useT } from "@/lib/i18n";
 const IS_WEB = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
 
 const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
+  basics: {
+    label: "Get started",
+    sub: "The handful of settings most people set once. Sign in, choose how Play behaves, and pick your look.",
+  },
   account: {
     label: "Account",
     sub: "Your Stremio sign-in. Library, watch progress, and addons sync from here.",
@@ -61,7 +69,15 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   player: {
     label: "Player & quality",
-    sub: "Pick the playback engine and which quality chips show up on cards.",
+    sub: "Pick the playback engine and aspect, shape the audio, and set how episodes skip and advance.",
+  },
+  mpv: {
+    label: "Video tuning",
+    sub: "Match the picture quality to your computer, smooth out weak connections, and fine-tune the mpv engine with plain-language controls.",
+  },
+  anime: {
+    label: "Anime tweaks",
+    sub: "Anime4K real-time upscaling, smooth motion, and where SVP fits in. All the anime-specific picture enhancements in one place.",
   },
   playerLayout: {
     label: "Player layout",
@@ -139,24 +155,38 @@ export function Settings() {
     const target = pendingAnchor;
     let tries = 0;
     let timer = 0;
+    const findTarget = (): HTMLElement | null => {
+      const exact = document.getElementById(target);
+      if (exact) return exact;
+      const root = scrollRef.current;
+      if (!root) return null;
+      const sections = Array.from(root.querySelectorAll<HTMLElement>('section[id^="set-"]'));
+      let best: HTMLElement | null = null;
+      for (const s of sections) {
+        if (!(s.id.startsWith(target) || target.startsWith(s.id))) continue;
+        if (best == null || Math.abs(s.id.length - target.length) < Math.abs(best.id.length - target.length)) {
+          best = s;
+        }
+      }
+      return best;
+    };
     const tryScroll = () => {
-      const el = document.getElementById(target);
+      const el = findTarget();
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
-        const sec = el as HTMLElement;
-        sec.style.transition = "box-shadow 0.5s ease";
-        sec.style.boxShadow = "0 0 0 2px var(--color-accent)";
+        el.style.transition = "box-shadow 0.5s ease";
+        el.style.boxShadow = "0 0 0 2px var(--color-accent)";
         window.setTimeout(() => {
-          sec.style.boxShadow = "0 0 0 0 transparent";
+          el.style.boxShadow = "0 0 0 0 transparent";
         }, 1300);
         window.setTimeout(() => {
-          sec.style.transition = "";
-          sec.style.boxShadow = "";
+          el.style.transition = "";
+          el.style.boxShadow = "";
         }, 1900);
         setPendingAnchor(null);
         return;
       }
-      if (tries++ < 12) timer = window.setTimeout(tryScroll, 40);
+      if (tries++ < 30) timer = window.setTimeout(tryScroll, 50);
       else setPendingAnchor(null);
     };
     timer = window.setTimeout(tryScroll, 60);
@@ -202,6 +232,8 @@ export function Settings() {
             </header>
           )}
 
+          {active === "basics" && <BasicsPanel />}
+
           {active === "account" && <AccountStub />}
 
           {active === "library" && (
@@ -246,6 +278,10 @@ export function Settings() {
 
           {active === "player" && <QualityPanel />}
 
+          {active === "mpv" && <MpvPanel />}
+
+          {active === "anime" && <AnimePanel />}
+
           {active === "playerLayout" && <PlayerLayoutPanel />}
 
           {active === "hotkeys" && <HotkeysPanel />}
@@ -266,6 +302,7 @@ export function Settings() {
         </div>
       </main>
       <BackToTop scrollRef={scrollRef} />
+      <SettingsJumpBar scrollRef={scrollRef} activeSection={active} />
     </div>
     </SettingsActiveContext.Provider>
   );

@@ -32,6 +32,7 @@ export function usePlayerHotkeys(params: {
   frameGrab: ReturnType<typeof useFrameGrab>;
   gif: ReturnType<typeof useGifRecorder>;
   videoFill: ReturnType<typeof useVideoFill>;
+  onToggleAnime4k?: () => void;
 }) {
   const {
     bridgeRef,
@@ -57,6 +58,7 @@ export function usePlayerHotkeys(params: {
     frameGrab,
     gif,
     videoFill,
+    onToggleAnime4k,
   } = params;
 
   const [showStats, setShowStats] = useState(false);
@@ -93,6 +95,7 @@ export function usePlayerHotkeys(params: {
     onPanscanUp: () => videoFill.step(0.1),
     onPanscanDown: () => videoFill.step(-0.1),
     onPrevChannel: liveOverlay.isLive ? liveOverlay.goPrevChannel : undefined,
+    onToggleAnime4k,
   });
 
   return { holdSpeedActive, showStats };

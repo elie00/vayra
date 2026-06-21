@@ -69,7 +69,7 @@ export function TextSyncOverlay({
   };
 
   return (
-    <div className="absolute inset-0 z-[70] flex flex-col bg-black/60 backdrop-blur-sm animate-in slide-in-from-top duration-200">
+    <div className="absolute bottom-[90px] end-5 top-[90px] z-[70] flex w-[440px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/80 shadow-[0_32px_80px_rgba(0,0,0,0.7)] backdrop-blur-2xl animate-in slide-in-from-right duration-300">
       <SyncTransport
         playing={playing}
         anchorCount={api.anchors.length}
@@ -82,15 +82,12 @@ export function TextSyncOverlay({
         onExit={handleExit}
       />
 
-      <div className="flex items-center gap-2 border-b border-edge-soft/50 bg-canvas/40 px-4 py-1.5">
-        <span className="text-[11px] font-medium text-white/70">
-          {api.anchors.length === 0
-            ? t("Pick a line when you hear it (1/2)")
-            : api.anchors.length === 1
-              ? t("Pick another line near the end (2/2)")
-              : t("Ready to save")}
+      <div className="flex flex-col gap-2 border-b border-edge-soft/50 bg-canvas/30 px-4 py-3">
+        <span className="text-[12px] font-semibold text-white/80">
+          {t("Anchor Selection")}
         </span>
-        <div className="flex-1" />
+        <div className="flex gap-2">
+
         {[0, 1].map((slot) => {
           const anchor = api.anchors[slot];
           const isActive = api.activeAnchorSlot === slot;
@@ -115,6 +112,7 @@ export function TextSyncOverlay({
             </button>
           );
         })}
+        </div>
       </div>
 
       {(warnings.gapWarning || warnings.slopeWarning) && (

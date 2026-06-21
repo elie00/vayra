@@ -67,6 +67,12 @@ const downloads: Record<string, string> = {
 
   "Saving GIF…": "جارٍ حفظ الـ GIF…",
   "Continue Watching screenshots": "لقطات متابعة المشاهدة",
+
+  "Go to show": "الذهاب إلى العمل",
+  Completed: "اكتمل",
+  Failed: "فشل",
+  Interrupted: "توقّف",
+  Remove: "إزالة",
 };
 
 export default downloads;

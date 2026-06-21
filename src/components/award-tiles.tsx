@@ -30,6 +30,7 @@ export function AwardTiles() {
 
 function AwardTile({ type, name, sub }: { type: AwardType; name: string; sub: string }) {
   const { openAward } = useView();
+  const t = useT();
   const tint = laurelColorFor(type);
   return (
     <button
@@ -60,9 +61,9 @@ function AwardTile({ type, name, sub }: { type: AwardType; name: string; sub: st
       <div className="absolute inset-x-5 bottom-4 flex items-end justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           <h3 className="truncate font-display text-[21px] font-medium leading-tight tracking-tight text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.5)]">
-            {name}
+            {t(name)}
           </h3>
-          <span className="truncate text-[11.5px] font-medium text-white/65">{sub}</span>
+          <span className="truncate text-[11.5px] font-medium text-white/65">{t(sub)}</span>
         </div>
         <span
           className="dir-icon shrink-0 text-[18px] text-white/80 transition-transform duration-200 group-hover:translate-x-1 rtl:group-hover:-translate-x-1"

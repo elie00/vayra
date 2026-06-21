@@ -61,6 +61,7 @@ export async function pickBridge(
     embed?: boolean;
     anime4kShaders?: string[];
     d3d11Flip?: boolean;
+    extraOptions?: string;
     getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
   },
 ): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" }> {

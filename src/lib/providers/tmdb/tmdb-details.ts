@@ -254,7 +254,7 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
     id: kind === "movie" ? `tmdb:movie:${r.id}` : `tmdb:tv:${r.id}`,
     type: kind === "movie" ? "movie" : "series",
     name: r.title ?? r.name,
-    poster: r.poster_path ? `${IMG}/w185${r.poster_path}` : undefined,
+    poster: r.poster_path ? `${IMG}/w342${r.poster_path}` : undefined,
     background: r.backdrop_path ? `${IMG}/w780${r.backdrop_path}` : undefined,
     description: r.overview,
     releaseInfo: (r.release_date ?? r.first_air_date)?.slice(0, 4),

@@ -5,8 +5,11 @@ import { fireWebhook, type WebhookKind, type WebhookPayload } from "@/lib/calend
 import { useAuth } from "@/lib/auth";
 import { useSettings, type Settings } from "@/lib/settings";
 import { useTrakt } from "@/lib/trakt/provider";
+import { useT } from "@/lib/i18n";
+import { Section } from "./shared";
 import { RuleBuilder } from "./webhooks-panel/rule-builder";
 import {
+  DiscordMark,
   DiscordTutorial,
   WebhookField,
   type FieldStatus,
@@ -64,6 +67,7 @@ const SOURCES: SourceMeta[] = [
 ];
 
 export function WebhooksPanel() {
+  const t = useT();
   const { settings, update } = useSettings();
   const { authKey } = useAuth();
   const { isConnected: traktConnected } = useTrakt();
@@ -109,32 +113,35 @@ export function WebhooksPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <WebhookField
-        label="Discord webhook URL"
-        placeholder="https://discord.com/api/webhooks/…"
-        value={settings.webhooks.discordUrl}
-        onChange={(v) => setUrl("discordUrl", v)}
-        onTest={() => send("discord")}
-        status={discordStatus}
-        help={<DiscordTutorial />}
-      />
-      <TelegramComposedField
-        fullUrl={settings.webhooks.telegramUrl}
-        onUrlChange={(v) => setUrl("telegramUrl", v)}
-        onTest={() => send("telegram")}
-        status={telegramStatus}
-      />
-
-      <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-5">
-        <div className="flex flex-col gap-1">
-          <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-            Sources
-          </span>
-          <p className="text-[12.5px] text-ink-muted">
-            Pick which calendars feed your webhook. Items are deduped across sources before sending.
-          </p>
+    <>
+      <Section
+        title={t("Where alerts go")}
+        subtitle={t("Connect Discord or Telegram and Harbor posts a message when something you follow is about to drop. Hit Test to send yourself a sample first.")}
+      >
+        <div className="flex flex-col gap-5">
+          <WebhookField
+            label={t("Discord webhook URL")}
+            logo={<DiscordMark />}
+            placeholder="https://discord.com/api/webhooks/…"
+            value={settings.webhooks.discordUrl}
+            onChange={(v) => setUrl("discordUrl", v)}
+            onTest={() => send("discord")}
+            status={discordStatus}
+            help={<DiscordTutorial />}
+          />
+          <TelegramComposedField
+            fullUrl={settings.webhooks.telegramUrl}
+            onUrlChange={(v) => setUrl("telegramUrl", v)}
+            onTest={() => send("telegram")}
+            status={telegramStatus}
+          />
         </div>
+      </Section>
+
+      <Section
+        title={t("What to send")}
+        subtitle={t("Pick which calendars feed your alerts. Items are deduped across sources before sending.")}
+      >
         <div className="flex flex-col gap-2">
           {SOURCES.map((s) => {
             const blocker = s.prereq(settings, { authKey, traktConnected });
@@ -150,23 +157,18 @@ export function WebhooksPanel() {
             );
           })}
         </div>
-      </div>
+      </Section>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-5">
-        <div className="flex flex-col gap-1">
-          <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-            Types
-          </span>
-          <p className="text-[12.5px] text-ink-muted">
-            Filter by media type after the sources merge. Leave them all on to send everything.
-          </p>
-        </div>
+      <Section
+        title={t("Media types")}
+        subtitle={t("Filter by type after the sources merge. Leave them all on to send everything.")}
+      >
         <div className="flex flex-wrap gap-2">
-          <ChipToggle label="Movies" on={settings.webhooks.notifyMovies} onToggle={(v) => setNotify("notifyMovies", v)} />
-          <ChipToggle label="TV" on={settings.webhooks.notifyTv} onToggle={(v) => setNotify("notifyTv", v)} />
-          <ChipToggle label="Anime" on={settings.webhooks.notifyAnime} onToggle={(v) => setNotify("notifyAnime", v)} />
+          <ChipToggle label={t("Movies")} on={settings.webhooks.notifyMovies} onToggle={(v) => setNotify("notifyMovies", v)} />
+          <ChipToggle label={t("TV")} on={settings.webhooks.notifyTv} onToggle={(v) => setNotify("notifyTv", v)} />
+          <ChipToggle label={t("Anime")} on={settings.webhooks.notifyAnime} onToggle={(v) => setNotify("notifyAnime", v)} />
         </div>
-      </div>
+      </Section>
 
       <RuleBuilder
         rules={settings.webhookRules}
@@ -175,7 +177,7 @@ export function WebhooksPanel() {
         canDiscord={!!settings.webhooks.discordUrl}
         canTelegram={!!settings.webhooks.telegramUrl}
       />
-    </div>
+    </>
   );
 }
 
@@ -190,6 +192,7 @@ function SourceToggle({
   blocker: string | null;
   onChange: (v: boolean) => void;
 }) {
+  const t = useT();
   const disabled = blocker !== null;
   const effective = on && !disabled;
   return (
@@ -214,9 +217,9 @@ function SourceToggle({
           {source.icon()}
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[13.5px] font-semibold text-ink">{source.label}</span>
+          <span className="text-[13.5px] font-semibold text-ink">{t(source.label)}</span>
           <span className={`text-[12px] ${blocker ? "text-amber-200/85" : "text-ink-subtle"}`}>
-            {blocker ?? source.description}
+            {blocker ? t(blocker) : t(source.description)}
           </span>
         </div>
       </div>
@@ -245,6 +248,7 @@ function ChipToggle({
   on: boolean;
   onToggle: (v: boolean) => void;
 }) {
+  const t = useT();
   return (
     <button
       onClick={() => onToggle(!on)}
@@ -252,7 +256,7 @@ function ChipToggle({
         on ? "bg-ink text-canvas" : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
       }`}
     >
-      {label}
+      {t(label)}
     </button>
   );
 }

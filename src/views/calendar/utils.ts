@@ -10,6 +10,11 @@ export const MONTH_NAMES = [
 
 export const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+export function orderedWeekdayNames(weekStartsMonday: boolean): string[] {
+  if (!weekStartsMonday) return WEEKDAY_NAMES;
+  return [...WEEKDAY_NAMES.slice(1), WEEKDAY_NAMES[0]];
+}
+
 export const FILTERS: Array<{ id: CalendarFilter; label: string }> = [
   { id: "all", label: "All" },
   { id: "movie", label: "Movies" },
@@ -63,10 +68,11 @@ export function buildLibraryNameSet(items: LibraryItem[]): Set<string> {
   return out;
 }
 
-export function buildMonthCells(year: number, month: number): Cell[] {
+export function buildMonthCells(year: number, month: number, weekStartsMonday = false): Cell[] {
   const first = new Date(year, month, 1);
-  const dayOfWeek = first.getDay();
-  const start = new Date(year, month, 1 - dayOfWeek);
+  const weekStart = weekStartsMonday ? 1 : 0;
+  const leadOffset = (first.getDay() - weekStart + 7) % 7;
+  const start = new Date(year, month, 1 - leadOffset);
   const cells: Cell[] = [];
   for (let i = 0; i < 42; i++) {
     const d = new Date(start);
