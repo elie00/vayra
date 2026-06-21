@@ -59,10 +59,11 @@ export function LibraryPanel({
   const t = useT();
   const [mdblistDraft, setMdblistDraft] = useState(settings.mdblistKey);
   const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
-  const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | null>(null);
+  const [aiKeyDraft, setAiKeyDraft] = useState(settings.aiSearchKey);
+  const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | null>(null);
   const [tmdbGuide, setTmdbGuide] = useState(false);
   const extraTimerRef = useRef<number | null>(null);
-  const flashExtra = (k: "mdblist" | "postersrv") => {
+  const flashExtra = (k: "mdblist" | "postersrv" | "ai") => {
     setExtraSaved(k);
     if (extraTimerRef.current) window.clearTimeout(extraTimerRef.current);
     extraTimerRef.current = window.setTimeout(() => setExtraSaved(null), 1800);
@@ -112,6 +113,12 @@ export function LibraryPanel({
           sub={t("When you finish an episode, the Home Continue Watching card moves on to the next episode instead of sitting at 0 minutes left.")}
           value={settings.cwAdvanceNext}
           onChange={(v) => update({ cwAdvanceNext: v })}
+        />
+        <ToggleRow
+          label={t("Hide watched titles in catalogs")}
+          sub={t("Movies you've watched and shows you've made progress on stop appearing in the built-in Discover rows, using your Trakt history. Needs Trakt connected. Continue Watching is never touched.")}
+          value={settings.hideWatchedInCatalogs}
+          onChange={(v) => update({ hideWatchedInCatalogs: v })}
         />
       </Section>
 
@@ -292,11 +299,47 @@ export function LibraryPanel({
             </>
           }
         />
+        <KeyField
+          label={t("AI Search · natural-language search")}
+          placeholder={t("OpenRouter API key (sk-or-...)")}
+          value={aiKeyDraft}
+          onChange={setAiKeyDraft}
+          onSave={() => {
+            update({ aiSearchKey: aiKeyDraft.trim() });
+            flashExtra("ai");
+          }}
+          saved={extraSaved === "ai"}
+          help={
+            <>
+              Adds an "Ask AI" button to search, so you can type things like{" "}
+              <em>popular French TV shows last year</em>. Get a key at{" "}
+              <ExtLink href="https://openrouter.ai/keys">openrouter.ai/keys</ExtLink>. It only runs
+              when you tap that button, so it never costs anything unless you ask.
+            </>
+          }
+        />
+        <div className="-mt-1 flex items-center gap-2.5 px-1">
+          <span className="shrink-0 text-[12px] text-ink-subtle">{t("AI model (optional)")}</span>
+          <input
+            type="text"
+            defaultValue={settings.aiSearchModel}
+            onBlur={(e) => update({ aiSearchModel: e.target.value.trim() })}
+            placeholder="openai/gpt-4o-mini"
+            spellCheck={false}
+            className="min-w-0 flex-1 rounded-lg border border-edge-soft bg-canvas/60 px-2.5 py-1.5 font-mono text-[11.5px] text-ink placeholder:text-ink-subtle outline-none focus:border-edge"
+          />
+        </div>
         <ToggleRow
           label={t("Hide titles under posters")}
           sub={t("Cleaner grid when your poster service already prints the title on the artwork.")}
           value={settings.hidePosterTitles}
           onChange={(v) => update({ hidePosterTitles: v })}
+        />
+        <ToggleRow
+          label={t("Prefer my installed metadata addon")}
+          sub={t("Use a custom meta addon you installed (e.g. a localized Cinemeta) for titles and descriptions instead of the built-in Cinemeta. Falls back to Cinemeta if yours has no data.")}
+          value={settings.preferCustomMetaAddon}
+          onChange={(v) => update({ preferCustomMetaAddon: v })}
         />
         <KeyField
           label={t("Fanart.tv · logos and backdrops")}

@@ -6,6 +6,7 @@ import { Row, ScrollRootContext } from "@/components/row";
 import { TopRankCard } from "@/components/top-rank-card";
 import { TmdbNudge } from "@/components/nudge";
 import { topMovies, type Meta } from "@/lib/cinemeta";
+import { recentlyPlayed, watchTitleKey } from "@/lib/playback-history";
 import { useT } from "@/lib/i18n";
 import { fetchUnderNinety } from "@/lib/feed/sections";
 import { pickMoodSpecs } from "@/lib/feed/moods";
@@ -59,8 +60,9 @@ export function Movies({ active = true }: { active?: boolean }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const seen = recentlyPlayed();
       if (settings.tmdbKey) {
-        const heroPool = await buildMovieHero(settings.tmdbKey).catch(() => [] as Meta[]);
+        const heroPool = await buildMovieHero(settings.tmdbKey, seen).catch(() => [] as Meta[]);
         if (cancelled) return;
         setHero(heroPool);
         const specs = movieSpecs(settings.tmdbKey, settings.region);
@@ -100,7 +102,7 @@ export function Movies({ active = true }: { active?: boolean }) {
           ...genreList.map((g) => topMovies(g).catch(() => [] as Meta[])),
         ]);
         if (cancelled) return;
-        setHero(top.filter((m) => m.background).slice(0, HERO_POOL_TARGET));
+        setHero(rotateDaily(top.filter((m) => m.background), HERO_POOL_TARGET, seen));
         const built: MovieRow[] = [
           {
             key: "cinemeta-top",
@@ -191,7 +193,7 @@ export function Movies({ active = true }: { active?: boolean }) {
     <main ref={scrollCb} className="relative h-full overflow-y-auto bg-canvas">
       <ScrollRootContext.Provider value={scrollEl}>
         <CinemaHero slides={hero} eyebrow={t("Featured tonight")} />
-        <div className="relative mx-auto flex max-w-[1700px] flex-col gap-12 px-12 pb-32 pt-12">
+        <div className="relative flex w-full flex-col gap-12 px-12 pb-32 pt-12">
           {!settings.tmdbKey && <TmdbNudge />}
           {top10.length >= 10 && (
             <Row
@@ -242,28 +244,60 @@ export function Movies({ active = true }: { active?: boolean }) {
   );
 }
 
-async function buildMovieHero(key: string): Promise<Meta[]> {
-  const [trending, theaters, prestige] = await Promise.all([
-    tmdbTrending(key, "movie", "week", 1).catch(() => [] as Meta[]),
-    tmdbMovieRow(key, "now_playing", "US", 1).catch(() => [] as Meta[]),
+async function buildMovieHero(key: string, seen: ReturnType<typeof recentlyPlayed>): Promise<Meta[]> {
+  const [topA, topB, prestigeA, prestigeB, modern] = await Promise.all([
+    tmdbMovieRow(key, "top_rated", "US", 1).catch(() => [] as Meta[]),
+    tmdbMovieRow(key, "top_rated", "US", 2).catch(() => [] as Meta[]),
     tmdbDiscover(key, "movie", {
-      "vote_average.gte": "8.2",
-      "vote_count.gte": "5000",
-      sort_by: "vote_count.desc",
+      "vote_average.gte": "8.0",
+      "vote_count.gte": "4000",
+      sort_by: "vote_average.desc",
+      page: "1",
+    }).catch(() => [] as Meta[]),
+    tmdbDiscover(key, "movie", {
+      "vote_average.gte": "8.0",
+      "vote_count.gte": "4000",
+      sort_by: "vote_average.desc",
+      page: "2",
+    }).catch(() => [] as Meta[]),
+    tmdbDiscover(key, "movie", {
+      "primary_release_date.gte": "2016-01-01",
+      "vote_average.gte": "7.8",
+      "vote_count.gte": "2500",
+      sort_by: "vote_average.desc",
       page: "1",
     }).catch(() => [] as Meta[]),
   ]);
-  const seen = new Set<string>();
-  const out: Meta[] = [];
-  const slots = [trending, theaters, prestige];
-  for (let i = 0; i < 18 && out.length < HERO_POOL_TARGET; i++) {
-    for (const list of slots) {
-      const m = list[i];
-      if (!m || seen.has(m.id) || !m.background) continue;
-      seen.add(m.id);
-      out.push(m);
-      if (out.length >= HERO_POOL_TARGET) break;
+  const pool: Meta[] = [];
+  const ids = new Set<string>();
+  for (const list of [prestigeA, topA, modern, prestigeB, topB]) {
+    for (const m of list) {
+      if (!m.background || ids.has(m.id)) continue;
+      ids.add(m.id);
+      pool.push(m);
     }
+  }
+  return rotateDaily(pool, HERO_POOL_TARGET, seen);
+}
+
+function rotateDaily<T extends { id: string; name: string }>(
+  pool: T[],
+  n: number,
+  seen: ReturnType<typeof recentlyPlayed>,
+): T[] {
+  const unseen = pool.filter(
+    (m) => !seen.ids.has(m.id) && !seen.titles.has(watchTitleKey(m.name)),
+  );
+  const base = unseen.length >= n ? unseen : pool;
+  if (base.length === 0) return [];
+  const day = Math.floor(Date.now() / 86_400_000);
+  const out: T[] = [];
+  const used = new Set<number>();
+  while (out.length < n && used.size < base.length) {
+    let j = (day * 13 + out.length * 17) % base.length;
+    while (used.has(j)) j = (j + 1) % base.length;
+    used.add(j);
+    out.push(base[j]);
   }
   return out;
 }

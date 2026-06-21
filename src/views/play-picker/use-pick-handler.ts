@@ -12,7 +12,7 @@ import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayInvite } from "@/lib/together/protocol";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { type PlayEpisode, type PlayerSrc } from "@/lib/view";
-import { openUrl } from "@/lib/window";
+import { openInAppBrowser, openUrl } from "@/lib/window";
 import { enqueueDownload } from "@/lib/download/downloads-store";
 import { humanError, isDebridFailure } from "./picker-utils";
 
@@ -93,6 +93,12 @@ export function usePickHandler({
       const r = await resolveStream(stream, debrids, ac.signal, userCommitted);
       if (ac.signal.aborted) return;
       if (!r.ok) {
+        if (r.code === "web-page" && r.webUrl) {
+          openInAppBrowser(r.webUrl, stream.title ?? stream.name ?? meta.name);
+          opened = true;
+          setResolving(null);
+          return;
+        }
         setFailedStreams((prev) => new Set(prev).add(stream));
         const isDebridSide = isDebridFailure(r.code, r.tried);
         if (isDebridSide && debrids.length > 0) {
@@ -183,6 +189,7 @@ export function usePickHandler({
           title: stream.title ?? null,
           parsedTitle: stream.parsedTitle ?? null,
           resolution: stream.resolution ?? null,
+          releaseGroup: stream.releaseGroupNormalized ?? null,
           source: stream.source ?? null,
           size: stream.size ?? null,
           cachedSlugs: Object.entries(stream.cached ?? {})
@@ -205,7 +212,7 @@ export function usePickHandler({
     void resolveAndOpen(stream, committed);
   };
 
-  const onPlay = (stream: ScoredStream, committed = true) => {
+  const onPlay = (stream: ScoredStream, committed = true, skipP2pConfirm = false) => {
     if (!stream.url && stream.externalUrl) {
       openUrl(stream.externalUrl);
       return;
@@ -214,7 +221,7 @@ export function usePickHandler({
       openUrl(`https://www.youtube.com/watch?v=${stream.ytId}`);
       return;
     }
-    if (committed && !isCached(stream) && !stream.url && engineP2pEligible(stream)) {
+    if (committed && !skipP2pConfirm && !isCached(stream) && !stream.url && engineP2pEligible(stream)) {
       setP2pConfirm({ stream });
       return;
     }

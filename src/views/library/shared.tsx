@@ -152,6 +152,57 @@ export function groupByDate<T extends { date: number | null }>(
   return [...groups.values()].sort((a, b) => a.rank - b.rank);
 }
 
+export type SortKey = "recent" | "title" | "year";
+
+function releaseYear(m: Meta): number {
+  return parseInt((m.releaseInfo ?? "").slice(0, 4), 10) || 0;
+}
+
+export function sortedGroups<T extends { meta: Meta; date: number | null }>(
+  entries: T[],
+  sort: SortKey,
+): Array<{ label: string; items: T[] }> {
+  if (sort === "title") {
+    const items = [...entries].sort((a, b) =>
+      (a.meta.name ?? "").localeCompare(b.meta.name ?? "", undefined, { sensitivity: "base" }),
+    );
+    return [{ label: "A to Z", items }];
+  }
+  if (sort === "year") {
+    const items = [...entries].sort((a, b) => releaseYear(b.meta) - releaseYear(a.meta));
+    return [{ label: "By year", items }];
+  }
+  return groupByDate(entries);
+}
+
+export function SortControl() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  const options: Array<[SortKey, string]> = [
+    ["recent", t("Recent")],
+    ["title", t("A-Z")],
+    ["year", t("Year")],
+  ];
+  return (
+    <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
+      {options.map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => update({ librarySort: key })}
+          className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+            settings.librarySort === key
+              ? "bg-ink text-canvas"
+              : "text-ink-muted hover:bg-raised hover:text-ink"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function GroupedGrid<
   T extends { meta: Meta; date: number | null; key: string; stremioId?: string },
 >({

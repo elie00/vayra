@@ -21,7 +21,7 @@ export function BandwidthInput() {
       ? t("No filter. All bitrates considered equally.")
       : t("Streams over {cap} Mbps will rank lower, even when cached.", { cap });
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
+    <div id="set-internet-speed" className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-medium text-ink">{t("Internet speed")}</span>

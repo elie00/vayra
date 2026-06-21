@@ -2,9 +2,8 @@ import { isWindowsDesktop } from "@/lib/platform";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { ToggleRow } from "../shared";
-import { Anime4kShaderList } from "./anime4k-shader-list";
 import { BandwidthInput } from "./bandwidth-section";
-import { DesktopOnlyBlock, isTauri } from "./internals";
+import { DesktopOnlyBlock } from "./internals";
 
 export function PlayerEnginePanel() {
   const { settings, update } = useSettings();
@@ -137,12 +136,6 @@ export function PlayerEnginePanel() {
             />
           )}
           <ToggleRow
-            label={t("Motion smoothing")}
-            sub={t("Interpolates frames for smoother panning, best on anime. Needs a display refresh rate above the video's frame rate, and can stutter on weak GPUs. mpv only.")}
-            value={settings.playerMotionInterp}
-            onChange={(v) => update({ playerMotionInterp: v })}
-          />
-          <ToggleRow
             label={t("Direct torrent streaming")}
             sub={t("When you have no debrid set up, or a torrent isn't cached, stream it straight from the bundled engine on localhost:11470. This connects to peers over your own connection, the same way Stremio's built-in streaming does.")}
             value={settings.directTorrentStream}
@@ -162,28 +155,13 @@ export function PlayerEnginePanel() {
             value={settings.castAlwaysTranscode}
             onChange={(v) => update({ castAlwaysTranscode: v })}
           />
-          <ToggleRow
-            label={t("Anime4K upscaling")}
-            sub={t("Sharper lines and cleaner gradients on anime, in real time. One-tap setup below.")}
-            value={settings.playerAnime4k}
-            onChange={(v) => update({ playerAnime4k: v })}
-          />
-          {settings.playerAnime4k && (
-            <ToggleRow
-              label={t("Show Anime4K indicator")}
-              sub={t("A small badge over the video (with live FPS) that only appears when Anime4K is actually running. Follows your anime-only setting.")}
-              value={settings.playerAnime4kIndicator}
-              onChange={(v) => update({ playerAnime4kIndicator: v })}
-            />
-          )}
         </div>
       </DesktopOnlyBlock>
-
-      {settings.playerAnime4k && isTauri && <Anime4kShaderList />}
 
       <DesktopOnlyBlock>
         <BandwidthInput />
       </DesktopOnlyBlock>
+
     </div>
   );
 }

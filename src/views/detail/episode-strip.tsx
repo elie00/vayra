@@ -8,6 +8,9 @@ import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { EpisodeGrid } from "./episode-grid";
+import type { GridEpisode } from "./episode-grid-types";
+import { isUpcomingDate } from "./helpers";
 
 type Progress = { ratio: number; watched: boolean; startedAt: number };
 
@@ -28,22 +31,56 @@ export function EpisodeStrip({
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
   layout?: "strip" | "grid";
 }) {
+  const { openPicker } = useView();
+  const { settings } = useSettings();
+  const t = useT();
+
+  const gridEpisodes = useMemo<GridEpisode[]>(
+    () =>
+      episodes.map((ep) => {
+        const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/w300${ep.stillPath}` : undefined;
+        const stills = [tmdbStill, thumbnailFor(ep)].filter((u): u is string => !!u);
+        return {
+          key: String(ep.id),
+          number: ep.episodeNumber,
+          season: ep.seasonNumber,
+          title: ep.name || t("Episode {n}", { n: ep.episodeNumber }),
+          stills,
+          runtime: ep.runtime,
+          airDate: ep.airDate,
+          overview: ep.overview || undefined,
+          upcoming: isUpcomingDate(ep.airDate),
+          play: () =>
+            openPicker(
+              meta,
+              {
+                season: ep.seasonNumber,
+                episode: ep.episodeNumber,
+                name: ep.name || undefined,
+                still: stills[0],
+                overview: ep.overview || undefined,
+              },
+              { autoPlay: settings.instantPlay },
+            ),
+        };
+      }),
+    [episodes, thumbnailFor, meta, openPicker, settings.instantPlay, t],
+  );
+  const epByNumber = useMemo(() => {
+    const m = new Map<number, Episode>();
+    for (const e of episodes) m.set(e.episodeNumber, e);
+    return m;
+  }, [episodes]);
+
   if (layout === "grid") {
     return (
-      <div className="grid gap-x-4 gap-y-5 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
-        {episodes.map((ep) => (
-          <EpisodeStripCard
-            key={ep.id}
-            grid
-            meta={meta}
-            ep={ep}
-            progress={progressFor(ep)}
-            cinemetaThumbnail={thumbnailFor(ep)}
-            spoiler={spoilerFor?.(ep)}
-            onContextMenu={onContextMenu}
-          />
-        ))}
-      </div>
+      <EpisodeGrid
+        meta={meta}
+        episodes={gridEpisodes}
+        progressFor={(g) => progressFor(epByNumber.get(g.number)!)}
+        spoilerFor={spoilerFor ? (g) => spoilerFor(epByNumber.get(g.number)!) : undefined}
+        onContextMenu={onContextMenu}
+      />
     );
   }
   return (
@@ -71,7 +108,6 @@ function EpisodeStripCard({
   cinemetaThumbnail,
   spoiler,
   onContextMenu,
-  grid = false,
 }: {
   meta: Meta;
   ep: Episode;
@@ -79,7 +115,6 @@ function EpisodeStripCard({
   cinemetaThumbnail?: string;
   spoiler?: SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
-  grid?: boolean;
 }) {
   const t = useT();
   const { openPicker } = useView();
@@ -144,7 +179,7 @@ function EpisodeStripCard({
         )}
       </div>
       <div className="flex flex-col gap-0.5 px-0.5">
-        <span className={`${grid ? "line-clamp-2" : "truncate"} text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
+        <span className={`truncate text-[13.5px] font-semibold text-ink ${spoiler?.title ? SPOILER_TEXT_CLASS : ""}`}>
           {ep.name || t("Episode {n}", { n: ep.episodeNumber })}
         </span>
         <span className="text-[11.5px] text-ink-subtle">

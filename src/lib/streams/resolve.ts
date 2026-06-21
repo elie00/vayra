@@ -17,9 +17,32 @@ import type { ParsedStream, ScoredStream } from "./types";
 
 export type ResolveResult =
   | { ok: true; data: DirectLink; via: string }
-  | { ok: false; code: string; tried: Array<{ slug: string; code: string }> };
+  | { ok: false; code: string; tried: Array<{ slug: string; code: string }>; webUrl?: string };
 
 const ERROR_VIDEO_MAX_BYTES = 80 * 1024 * 1024;
+const VIDEO_EXT_RE = /\.(mkv|mp4|avi|mov|m4v|webm|ts|m3u8|mpd|flv|wmv|m2ts|mpg|mpeg|ogv|3gp)(\?|#|$)/i;
+
+async function probeIsWebPage(
+  url: string,
+  headers: Record<string, string> | undefined,
+  signal: AbortSignal,
+): Promise<boolean> {
+  try {
+    const ac = new AbortController();
+    const onAbort = () => ac.abort();
+    signal.addEventListener("abort", onAbort);
+    const timer = setTimeout(() => ac.abort(), 3500);
+    const res = await fetch(url, { method: "HEAD", headers: headers ?? {}, signal: ac.signal }).finally(() => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+    });
+    if (!res.ok) return false;
+    const ct = res.headers.get("content-type") ?? "";
+    return /^\s*(?:text\/html|application\/xhtml)/i.test(ct);
+  } catch {
+    return false;
+  }
+}
 
 export async function resolveStream(
   stream: ParsedStream | ScoredStream,
@@ -33,6 +56,12 @@ export async function resolveStream(
   if (stream.url && stream.url !== "#") {
     const headers = stream.behaviorHints?.proxyHeaders?.request ?? stream.behaviorHints?.headers;
     const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName;
+    if (!stream.infoHash && !VIDEO_EXT_RE.test(stream.url)) {
+      if (await probeIsWebPage(stream.url, headers, signal)) {
+        return { ok: false, code: "web-page", tried: [], webUrl: stream.url };
+      }
+      if (signal.aborted) return { ok: false, code: "aborted", tried };
+    }
     const data: DirectLink = {
       url: stream.url,
       filename,

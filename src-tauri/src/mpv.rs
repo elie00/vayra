@@ -51,6 +51,7 @@ pub struct MpvStartArgs {
     pub d3d11_flip: Option<bool>,
     pub is_live: Option<bool>,
     pub headers: Option<HashMap<String, String>>,
+    pub extra_options: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -261,6 +262,30 @@ fn apply_pre_init(
     Ok(())
 }
 
+fn apply_extra_mpv_options(mpv: &Mpv, raw: &str) {
+    for line in raw.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') || line.starts_with("//") {
+            continue;
+        }
+        let (key, value) = if let Some((k, v)) = line.split_once('=') {
+            (k.trim(), v.trim())
+        } else if let Some((k, v)) = line.split_once(char::is_whitespace) {
+            (k.trim(), v.trim())
+        } else {
+            (line, "yes")
+        };
+        let key = key.trim_start_matches("--").trim();
+        if key.is_empty() {
+            continue;
+        }
+        match mpv.set_property(key, value) {
+            Ok(()) => eprintln!("[harbor::mpv] extra option set {}={}", key, value),
+            Err(e) => eprintln!("[harbor::mpv] extra option {}={} rejected: {:?}", key, value, e),
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn mpv_start(
     app: AppHandle,
@@ -453,6 +478,10 @@ pub async fn mpv_start(
         for s in subs {
             let _ = mpv_argv_command(&mpv, &["sub-add", &s.url, "auto"]);
         }
+    }
+
+    if let Some(extra) = args.extra_options.as_deref() {
+        apply_extra_mpv_options(&mpv, extra);
     }
 
     let mpv_arc = Arc::new(mpv);

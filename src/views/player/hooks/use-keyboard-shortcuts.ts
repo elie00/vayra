@@ -34,6 +34,7 @@ export function useKeyboardShortcuts(params: {
   onPanscanUp?: () => void;
   onPanscanDown?: () => void;
   onPrevChannel?: () => void;
+  onToggleAnime4k?: () => void;
 }) {
   const {
     bridgeRef,
@@ -63,6 +64,7 @@ export function useKeyboardShortcuts(params: {
     onPanscanUp,
     onPanscanDown,
     onPrevChannel,
+    onToggleAnime4k,
   } = params;
   const { settings } = useSettings();
   const overrides = settings.hotkeys ?? {};
@@ -165,6 +167,11 @@ export function useKeyboardShortcuts(params: {
       if (match("playerCrop") && onToggleCrop) {
         e.preventDefault();
         onToggleCrop();
+        return;
+      }
+      if (match("playerAnime4kToggle") && onToggleAnime4k) {
+        e.preventDefault();
+        onToggleAnime4k();
         return;
       }
       if (match("playerPanscanUp") && onPanscanUp) {
@@ -325,7 +332,7 @@ export function useKeyboardShortcuts(params: {
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closePlayer, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel]);
+  }, [closePlayer, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k]);
 
   return { holdSpeedActive };
 }

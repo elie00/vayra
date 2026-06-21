@@ -31,10 +31,6 @@ export function P2pConfirmModal({
       )}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/85" />
       <div className="relative flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
-        <span className="flex items-center gap-2 rounded-full bg-accent/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-accent ring-1 ring-accent/40">
-          <Radio size={12} strokeWidth={2.4} />
-          Not cached
-        </span>
         <h1 className="max-w-2xl font-display text-[40px] font-medium leading-[1.06] text-white">
           Stream this via peer-to-peer?
         </h1>

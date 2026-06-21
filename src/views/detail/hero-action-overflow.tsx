@@ -5,7 +5,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { activeDownloadFor, cancelDownload, useDownloads } from "@/lib/download/downloads-store";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
-import { AnilistMenuItems, SimklMenuItems } from "./overflow-sync-items";
+import { AnilistMenuItems, SimklMenuItems, TraktMenuItems } from "./overflow-sync-items";
 import { PreviewIcon } from "./preview-icon";
 
 const CIRCLES_SAVED_ESTIMATE = 132;
@@ -167,6 +167,11 @@ export function HeroActionOverflow({
                 {anilist && (
                   <AnilistMenuItems harborId={anilist.harborId} onAction={() => setMenu(null)} />
                 )}
+                <TraktMenuItems
+                  harborId={meta.id}
+                  type={meta.type === "series" ? "series" : "movie"}
+                  onAction={() => setMenu(null)}
+                />
                 <div className="my-1 h-px bg-edge-soft" />
               </>
             )}

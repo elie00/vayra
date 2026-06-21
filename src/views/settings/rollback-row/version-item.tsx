@@ -1,4 +1,5 @@
 import { ArrowDownToLine, Check } from "lucide-react";
+import { BetaTag } from "@/components/beta-tag";
 import { useT } from "@/lib/i18n";
 import { installerUrl, type VersionEntry } from "@/lib/updater/versions";
 import { openUrl } from "@/lib/window";
@@ -18,10 +19,16 @@ export function VersionItem({ entry, isCurrent }: { entry: VersionEntry; isCurre
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex items-center gap-2">
           <span className="text-[13.5px] font-semibold tabular-nums text-ink">{entry.version}</span>
+          {entry.channel === "beta" && <BetaTag force />}
+          {entry.channel === "stable" && (
+            <span className="inline-flex shrink-0 items-center rounded-md bg-ink/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink-muted ring-1 ring-edge">
+              {t("Stable")}
+            </span>
+          )}
           {entry.date && <span className="text-[11.5px] text-ink-subtle">{entry.date}</span>}
         </div>
         {entry.notes && (
-          <span className="truncate text-[11.5px] leading-snug text-ink-subtle">{entry.notes}</span>
+          <span className="line-clamp-2 text-[11.5px] leading-snug text-ink-subtle">{entry.notes}</span>
         )}
       </div>
 

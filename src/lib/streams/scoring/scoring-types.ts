@@ -10,6 +10,7 @@ export type ScoreOptions = {
   inTheaters?: boolean;
   preferSingleAudioTrack?: boolean;
   preferAddonId?: string;
+  preferredReleaseGroup?: string;
   respectAddonOrder?: boolean;
 };
 

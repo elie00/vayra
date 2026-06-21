@@ -1,4 +1,5 @@
 import { Anime4kIndicator } from "@/components/player/anime4k-indicator";
+import { SvpIndicator } from "@/components/player/svp-indicator";
 import { StatsOverlay } from "@/components/player/stats-overlay";
 import { SubStyleBar } from "@/components/player/sub-style-bar";
 import { SubtitleOverlay } from "@/components/player/subtitle-overlay";
@@ -15,6 +16,7 @@ export function StageOverlays({
   holdSpeedActive,
   videoFillPill,
   subDropToast,
+  chromeVisible,
 }: {
   snap: PlayerSnapshot;
   engine: "html5" | "mpv";
@@ -25,6 +27,7 @@ export function StageOverlays({
   holdSpeedActive: boolean;
   videoFillPill: string | null;
   subDropToast: string | null;
+  chromeVisible: boolean;
 }) {
   const t = useT();
   return (
@@ -34,6 +37,7 @@ export function StageOverlays({
       )}
       {showStats && !pipMode && <StatsOverlay snap={snap} engine={engine} />}
       {!pipMode && <Anime4kIndicator engine={engine} />}
+      {!pipMode && <SvpIndicator engine={engine} chromeVisible={chromeVisible} />}
       {holdSpeedActive && !pipMode && (
         <div className="pointer-events-none absolute left-1/2 top-8 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-canvas/85 px-3.5 py-1.5 text-[13px] font-semibold text-ink backdrop-blur-md">
           {snap.rate}x

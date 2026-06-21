@@ -75,7 +75,7 @@ export function SkipPillContainer({
   return (
     <SkipPill
       segment={activeSkip}
-      hasNextEp={hasNextEpDisplay}
+      hasNextEp={hasNextEpDisplay && leadSec > 0}
       nextEp={nextEp}
       nextEpMask={nextEpMask}
       remainingSec={remainingSec}

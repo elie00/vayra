@@ -62,15 +62,36 @@ impl ThumbsState {
 }
 
 fn locate_mpv() -> Option<PathBuf> {
-    let candidates = if cfg!(windows) {
-        vec!["mpv.exe", "mpv"]
+    let mut candidates: Vec<String> = Vec::new();
+    if cfg!(windows) {
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(dir) = exe.parent() {
+                candidates.push(dir.join("mpv.exe").to_string_lossy().into_owned());
+                candidates
+                    .push(dir.join("mpv-x86_64-pc-windows-msvc.exe").to_string_lossy().into_owned());
+                for up in ["..", "..\\..", "..\\..\\.."] {
+                    candidates.push(
+                        dir.join(format!("{up}\\binaries\\mpv-x86_64-pc-windows-msvc.exe"))
+                            .to_string_lossy()
+                            .into_owned(),
+                    );
+                }
+            }
+        }
+        candidates.push(r"src-tauri\binaries\mpv-x86_64-pc-windows-msvc.exe".into());
+        candidates.push(r"binaries\mpv-x86_64-pc-windows-msvc.exe".into());
+        candidates.push("mpv.exe".into());
+        candidates.push("mpv".into());
     } else if cfg!(target_os = "macos") {
-        vec!["/opt/homebrew/bin/mpv", "/usr/local/bin/mpv", "mpv"]
+        candidates.push("/opt/homebrew/bin/mpv".into());
+        candidates.push("/usr/local/bin/mpv".into());
+        candidates.push("mpv".into());
     } else {
-        vec!["mpv", "/usr/bin/mpv"]
-    };
+        candidates.push("mpv".into());
+        candidates.push("/usr/bin/mpv".into());
+    }
     for c in candidates {
-        let p = PathBuf::from(c);
+        let p = PathBuf::from(&c);
         let mut cmd = std::process::Command::new(&p);
         cmd.arg("--version");
         #[cfg(windows)]

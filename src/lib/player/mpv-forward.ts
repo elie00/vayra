@@ -66,6 +66,10 @@ export function createForwardingMpvBridge(): ForwardingBridge {
     setAspectOverride(ratio) {
       void set("video-aspect-override", ratio);
     },
+    setAnime4kShaders(shaders) {
+      const sep = typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("windows") ? ";" : ":";
+      void set("glsl-shaders", shaders.filter(Boolean).join(sep));
+    },
     async addSubtitle(url, lang, title, select) {
       try {
         await invoke("mpv_sub_add", { url, lang: lang ?? null, title: title ?? null, select: select ?? true });

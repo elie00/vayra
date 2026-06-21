@@ -41,6 +41,11 @@ export function Transport({
   onAudioDelay,
   onAddSubtitle,
   onRate,
+  cropMode,
+  onCropMode,
+  anime4kMode,
+  onAnime4kMode,
+  anime4kAvailable,
   onPiP,
   onFullscreen,
   onCast,
@@ -94,6 +99,11 @@ export function Transport({
   onAudioDelay: (sec: number) => void;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
+  cropMode?: string;
+  onCropMode?: (id: string) => void;
+  anime4kMode?: string;
+  onAnime4kMode?: (id: string) => void;
+  anime4kAvailable?: boolean;
   onPiP: () => void;
   onFullscreen: () => void;
   onCast: () => void;
@@ -151,6 +161,11 @@ export function Transport({
         onAudioDelay={onAudioDelay}
         onAddSubtitle={onAddSubtitle}
         onRate={onRate}
+        cropMode={cropMode}
+        onCropMode={onCropMode}
+        anime4kMode={anime4kMode}
+        onAnime4kMode={onAnime4kMode}
+        anime4kAvailable={anime4kAvailable}
         onPiP={onPiP}
         onFullscreen={onFullscreen}
         onCast={onCast}
@@ -189,6 +204,8 @@ export function Transport({
   const [audioMenuOpen, setAudioMenuOpen] = useState(false);
   const [subtitleMenuOpen, setSubtitleMenuOpen] = useState(false);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
+  const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
   const [castModalOpen, setCastModalOpen] = useState(false);
   const [chromeConfig, setChromeConfig] = useState<PlayerChromeConfig>(() =>
     readPlayerChromeConfig("default"),
@@ -200,8 +217,8 @@ export function Transport({
   const [compact, setCompact] = useState(false);
   const [tight, setTight] = useState(false);
   useEffect(() => {
-    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen);
-  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, onMenuOpenChange]);
+    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen || anime4kMenuOpen);
+  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, aspectMenuOpen, anime4kMenuOpen, onMenuOpenChange]);
   useEffect(() => {
     const refresh = () => setChromeConfig(readPlayerChromeConfig("default"));
     const onStorage = (e: StorageEvent) => {
@@ -318,6 +335,13 @@ export function Transport({
     setAudioMenuOpen,
     setSubtitleMenuOpen,
     setSpeedMenuOpen,
+    setAspectMenuOpen,
+    cropMode,
+    onCropMode,
+    setAnime4kMenuOpen,
+    anime4kMode,
+    onAnime4kMode,
+    anime4kAvailable,
   };
   return (
     <>
@@ -332,10 +356,12 @@ export function Transport({
             <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
           ))}
         </div>
-        <div className="pointer-events-auto flex items-start gap-2">
-          {controlsInSlot(chromeConfig, "top-right").map((c) => (
-            <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
-          ))}
+        <div className="flex items-start gap-2">
+          <div className="pointer-events-auto flex items-start gap-2">
+            {controlsInSlot(chromeConfig, "top-right").map((c) => (
+              <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
+            ))}
+          </div>
         </div>
       </div>
 

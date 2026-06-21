@@ -4,14 +4,16 @@ import { useAuth } from "@/lib/auth";
 import { library, libraryMetaType, removeStremioLibraryItem, type LibraryItem } from "@/lib/stremio";
 import { fetchWatchedHistory, type HistoryItem } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
+import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import {
   applyFilter,
   countByType,
   FilterBar,
   GroupedGrid,
-  groupByDate,
   parseTs,
+  SortControl,
+  sortedGroups,
   type TypeKey,
   type WatchlistMerged,
 } from "./shared";
@@ -19,6 +21,7 @@ import {
 export function HistoryTab() {
   const t = useT();
   const { authKey } = useAuth();
+  const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
   const [stremio, setStremio] = useState<LibraryItem[]>([]);
   const [trakt, setTrakt] = useState<HistoryItem[]>([]);
@@ -100,7 +103,14 @@ export function HistoryTab() {
   return (
     <section className="flex flex-col gap-4">
       {merged.length > 0 && (
-        <FilterBar type={type} setType={setType} query={query} setQuery={setQuery} counts={counts} />
+        <FilterBar
+          type={type}
+          setType={setType}
+          query={query}
+          setQuery={setQuery}
+          counts={counts}
+          trailing={<SortControl />}
+        />
       )}
       <div className="flex items-center justify-between">
         <span className="text-[12px] text-ink-muted">
@@ -123,7 +133,7 @@ export function HistoryTab() {
           {t("No matches for these filters.")}
         </p>
       ) : (
-        <GroupedGrid groups={groupByDate(visible)} onRemove={handleRemove} />
+        <GroupedGrid groups={sortedGroups(visible, settings.librarySort)} onRemove={handleRemove} />
       )}
     </section>
   );

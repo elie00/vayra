@@ -1,4 +1,4 @@
-const WORKER_VERSION = 9;
+const WORKER_VERSION = 10;
 const MAX_AVATAR_LENGTH = 600_000;
 
 function sanitizeAvatar(v) {
@@ -6,6 +6,18 @@ function sanitizeAvatar(v) {
   if (v.length === 0 || v.length > MAX_AVATAR_LENGTH) return null;
   if (!/^data:image\/(png|webp|jpeg|gif);base64,/i.test(v) && !/^https?:\/\//i.test(v)) return null;
   return v;
+}
+
+function sanitizeSource(v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const out = {};
+  if (typeof v.title === "string" && v.title.length > 0) out.title = v.title.slice(0, 200);
+  if (typeof v.resolution === "string" && v.resolution.length > 0) out.resolution = v.resolution.slice(0, 16);
+  if (typeof v.infoHash === "string" && /^[0-9a-fA-F]{16,64}$/.test(v.infoHash)) out.infoHash = v.infoHash.toLowerCase();
+  if (typeof v.sizeBytes === "number" && isFinite(v.sizeBytes) && v.sizeBytes >= 0) out.sizeBytes = v.sizeBytes;
+  if (typeof v.durationSec === "number" && isFinite(v.durationSec) && v.durationSec >= 0) out.durationSec = v.durationSec;
+  if (typeof v.fileIdx === "number" && isFinite(v.fileIdx) && v.fileIdx >= 0) out.fileIdx = v.fileIdx;
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function sanitizeColor(v) {
@@ -354,6 +366,7 @@ export class Room {
       hostClientId: this.hostClientId,
       started: this.started,
       srvAt: Date.now(),
+      relayVersion: WORKER_VERSION,
     });
     this.broadcast(
       {
@@ -410,6 +423,10 @@ export class Room {
     if (s.posterUrl != null && typeof s.posterUrl !== "string") return;
     if (s.episode != null && !(typeof s.episode === "object" && typeof s.episode.season === "number" && typeof s.episode.episode === "number")) return;
     if (typeof s.updatedBy !== "string" || s.updatedBy !== peer.clientId) return;
+    const cleanSource = sanitizeSource(s.source);
+    if (cleanSource) s.source = cleanSource;
+    else delete s.source;
+    if (s.guestPick !== true) delete s.guestPick;
     const isHostWrite = this.hostClientId != null && peer.clientId === this.hostClientId;
     if (this.hostClientId != null && !isHostWrite) return;
     const now = Date.now();
@@ -429,6 +446,8 @@ export class Room {
     const c = msg.command;
     if (c.action !== "play" && c.action !== "pause" && c.action !== "seek") return;
     if (c.action === "seek" && (typeof c.positionSeconds !== "number" || !isFinite(c.positionSeconds) || c.positionSeconds < 0)) return;
+    if (c.seq != null && (typeof c.seq !== "number" || !isFinite(c.seq))) delete c.seq;
+    if (c.at != null && (typeof c.at !== "number" || !isFinite(c.at))) delete c.at;
     if (!this.hostClientId || peer.clientId === this.hostClientId) return;
     for (const [s, p] of this.peers) {
       if (p.clientId === this.hostClientId) {
@@ -455,6 +474,11 @@ export class Room {
     if ((inv.backgroundUrl?.length ?? 0) > 2000) return;
     if ((inv.logoUrl?.length ?? 0) > 2000) return;
     if ((inv.mediaTitle?.length ?? 0) > 300) return;
+    const cleanSource = sanitizeSource(inv.source);
+    if (cleanSource) inv.source = cleanSource;
+    else delete inv.source;
+    if (inv.guestPick !== true) delete inv.guestPick;
+    if (!Number.isInteger(inv.proto) || inv.proto < 0 || inv.proto > 99) delete inv.proto;
     this.broadcast(
       { t: "invite", from: peer.clientId, name: peer.name, invite: inv, at: Date.now() },
       socket,

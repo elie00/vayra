@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { emptySnapshot, type PlayerBridge, type PlayerSnapshot } from "@/lib/player/bridge";
 import { probeMpv } from "@/lib/player/mpv";
+import { mergeMpvOptions } from "@/lib/player/mpv-tuning";
 import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock } from "@/lib/player/playback-clock";
@@ -52,7 +53,12 @@ export function usePlayerBridge(params: {
     !!src.meta.id?.startsWith("anidb:") ||
     (src.meta.genres ?? []).some((g) => g.toLowerCase() === "anime");
   const anime4kOn = settings.playerAnime4k && (!settings.playerAnime4kAnimeOnly || isAnimeSrc);
-  const bridgeKey = `${autoFallbackTried ? "mpv" : settings.playerEngine}|${anime4kOn}|${settings.playerHdrToSdr}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}`;
+  const svpOn = settings.playerSvp && !!settings.svpVpyPath;
+  const isLiveLike =
+    !!src.meta.id?.startsWith("iptv:") ||
+    (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
+  const chosenEngine = isLiveLike ? "html5" : autoFallbackTried ? "mpv" : settings.playerEngine;
+  const bridgeKey = `${chosenEngine}|${anime4kOn}|${settings.playerHdrToSdr}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}`;
   const [bridgeReady, setBridgeReady] = useState(false);
   useEffect(() => {
     const host = videoMountRef.current;
@@ -62,7 +68,7 @@ export function usePlayerBridge(params: {
     let bridge: PlayerBridge | null = null;
     setBridgeReady(false);
     (async () => {
-      const want = autoFallbackTried ? "mpv" : settings.playerEngine;
+      const want = chosenEngine;
       const getEmbedRect = async () => {
         const el = videoMountRef.current;
         if (!el) return null;
@@ -84,6 +90,7 @@ export function usePlayerBridge(params: {
         anime4kShaders: anime4kOn && settings.playerAnime4kShaders.length > 0
           ? settings.playerAnime4kShaders
           : [],
+        extraOptions: mergeMpvOptions(settings),
         getEmbedRect,
       });
       if (cancelled) return;

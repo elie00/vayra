@@ -16,6 +16,7 @@ export type PlaybackPresence = {
   title: string;
   subtitle?: string;
   posterUrl?: string;
+  smallImageUrl?: string;
   year?: string | number;
   paused: boolean;
   positionSec: number;
@@ -89,6 +90,7 @@ function computeBase(): Base {
         details: playback.title,
         state,
         posterUrl: (config.showPoster && playback.posterUrl) || HARBOR_LOGO,
+        smallImageUrl: (config.showPoster && playback.smallImageUrl) || undefined,
         largeText: playback.year != null ? `${playback.title} (${playback.year})` : playback.title,
         startTs: live && config.showTimestamp ? nowSec - Math.floor(playback.positionSec) : undefined,
         endTs: live && config.showTimestamp ? nowSec + Math.floor(remaining) : undefined,

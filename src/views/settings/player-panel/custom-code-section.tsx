@@ -41,9 +41,9 @@ const FIELDS: Array<{
 export function CustomCodeCard() {
   const [open, setOpen] = useState(false);
   return (
-    <div
+    <section
       id={settingsAnchor("Custom code")}
-      className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-4"
+      className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7"
     >
       <button
         type="button"
@@ -51,9 +51,9 @@ export function CustomCodeCard() {
         aria-expanded={open}
         className="flex items-start justify-between gap-3 text-start"
       >
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-ink">Custom code</span>
-          <span className="text-[12.5px] text-ink-subtle">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[19px] font-medium tracking-tight text-ink">Custom code</h2>
+          <span className="text-[13.5px] leading-relaxed text-ink-muted">
             Power-user knob. Inject your own CSS, JS, and HTML into Harbor. Lives in your local settings; nothing leaves your machine.
           </span>
         </div>
@@ -66,7 +66,7 @@ export function CustomCodeCard() {
         </span>
       </button>
       {open && <CustomCodePanel />}
-    </div>
+    </section>
   );
 }
 

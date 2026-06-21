@@ -5,6 +5,7 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 import { Section, ToggleRow } from "./shared";
+import { SubtitleStylePanel } from "./player-panel";
 import { LanguagesPicker } from "./streaming-panel";
 import { DisplayLanguageSection } from "./language-panel/display-language-section";
 
@@ -82,6 +83,13 @@ export function LanguagePanel() {
           className="h-11 w-full max-w-[340px] rounded-xl border border-edge-soft bg-canvas/40 px-3.5 text-[13.5px] text-ink outline-none transition-colors focus:border-edge"
         />
       </div>
+    </Section>
+
+    <Section
+      title={t("Subtitle style")}
+      subtitle={t("How subtitles look during playback. Live preview below.")}
+    >
+      <SubtitleStylePanel />
     </Section>
 
     <Section

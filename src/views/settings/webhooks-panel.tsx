@@ -5,8 +5,10 @@ import { fireWebhook, type WebhookKind, type WebhookPayload } from "@/lib/calend
 import { useAuth } from "@/lib/auth";
 import { useSettings, type Settings } from "@/lib/settings";
 import { useTrakt } from "@/lib/trakt/provider";
+import { Section } from "./shared";
 import { RuleBuilder } from "./webhooks-panel/rule-builder";
 import {
+  DiscordMark,
   DiscordTutorial,
   WebhookField,
   type FieldStatus,
@@ -109,32 +111,35 @@ export function WebhooksPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <WebhookField
-        label="Discord webhook URL"
-        placeholder="https://discord.com/api/webhooks/…"
-        value={settings.webhooks.discordUrl}
-        onChange={(v) => setUrl("discordUrl", v)}
-        onTest={() => send("discord")}
-        status={discordStatus}
-        help={<DiscordTutorial />}
-      />
-      <TelegramComposedField
-        fullUrl={settings.webhooks.telegramUrl}
-        onUrlChange={(v) => setUrl("telegramUrl", v)}
-        onTest={() => send("telegram")}
-        status={telegramStatus}
-      />
-
-      <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-5">
-        <div className="flex flex-col gap-1">
-          <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-            Sources
-          </span>
-          <p className="text-[12.5px] text-ink-muted">
-            Pick which calendars feed your webhook. Items are deduped across sources before sending.
-          </p>
+    <>
+      <Section
+        title="Where alerts go"
+        subtitle="Connect Discord or Telegram and Harbor posts a message when something you follow is about to drop. Hit Test to send yourself a sample first."
+      >
+        <div className="flex flex-col gap-5">
+          <WebhookField
+            label="Discord webhook URL"
+            logo={<DiscordMark />}
+            placeholder="https://discord.com/api/webhooks/…"
+            value={settings.webhooks.discordUrl}
+            onChange={(v) => setUrl("discordUrl", v)}
+            onTest={() => send("discord")}
+            status={discordStatus}
+            help={<DiscordTutorial />}
+          />
+          <TelegramComposedField
+            fullUrl={settings.webhooks.telegramUrl}
+            onUrlChange={(v) => setUrl("telegramUrl", v)}
+            onTest={() => send("telegram")}
+            status={telegramStatus}
+          />
         </div>
+      </Section>
+
+      <Section
+        title="What to send"
+        subtitle="Pick which calendars feed your alerts. Items are deduped across sources before sending."
+      >
         <div className="flex flex-col gap-2">
           {SOURCES.map((s) => {
             const blocker = s.prereq(settings, { authKey, traktConnected });
@@ -150,23 +155,18 @@ export function WebhooksPanel() {
             );
           })}
         </div>
-      </div>
+      </Section>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-5">
-        <div className="flex flex-col gap-1">
-          <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-            Types
-          </span>
-          <p className="text-[12.5px] text-ink-muted">
-            Filter by media type after the sources merge. Leave them all on to send everything.
-          </p>
-        </div>
+      <Section
+        title="Media types"
+        subtitle="Filter by type after the sources merge. Leave them all on to send everything."
+      >
         <div className="flex flex-wrap gap-2">
           <ChipToggle label="Movies" on={settings.webhooks.notifyMovies} onToggle={(v) => setNotify("notifyMovies", v)} />
           <ChipToggle label="TV" on={settings.webhooks.notifyTv} onToggle={(v) => setNotify("notifyTv", v)} />
           <ChipToggle label="Anime" on={settings.webhooks.notifyAnime} onToggle={(v) => setNotify("notifyAnime", v)} />
         </div>
-      </div>
+      </Section>
 
       <RuleBuilder
         rules={settings.webhookRules}
@@ -175,7 +175,7 @@ export function WebhooksPanel() {
         canDiscord={!!settings.webhooks.discordUrl}
         canTelegram={!!settings.webhooks.telegramUrl}
       />
-    </div>
+    </>
   );
 }
 

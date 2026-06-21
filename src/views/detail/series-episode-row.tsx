@@ -73,6 +73,7 @@ export function EpisodeRow({
               src={still}
               seed={String(ep.id)}
               ratio="landscape"
+              lazy
               onError={() => setImgIdx((i) => i + 1)}
             />
           </div>

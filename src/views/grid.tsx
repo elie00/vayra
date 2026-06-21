@@ -55,7 +55,7 @@ export function GridView({ grid }: { grid: GridSpec }) {
 
   return (
     <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
-      <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-8 px-12 pb-24 pt-24">
+      <div className="flex w-full flex-col gap-8 px-12 pb-24 pt-24">
         <div className="flex items-center gap-4">
           {!layoutHasGlobalBack() && (
             <button

@@ -29,6 +29,7 @@ import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
 import { Section } from "./shared";
 import { Signature } from "./signature";
+import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
 import { useT } from "@/lib/i18n";
 
@@ -61,6 +62,13 @@ export function AdvancedPanel() {
         subtitle={t("Export your entire Harbor setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Stremio sign-in.")}
       >
         <BackupRow />
+      </Section>
+
+      <Section
+        title={t("Downloads")}
+        subtitle={t("Where Harbor saves videos when you hit Download in the player. Pick any folder, including one on a different drive.")}
+      >
+        <DownloadsSection />
       </Section>
 
       <Section
@@ -119,6 +127,8 @@ export function AdvancedPanel() {
           <LibraryRepairRow />
         </DesktopOnlyBlock>
       </Section>
+
+      <CustomCodeCard />
 
       <Section
         title={t("About")}

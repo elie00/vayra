@@ -1,4 +1,5 @@
-import { Check, ChevronDown, Play, RotateCcw, Star } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown, Hourglass, Play, RotateCcw, Star } from "lucide-react";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -30,6 +31,7 @@ export function EpisodeRow({
   const hasMeta = episode.rating != null || !!episode.airDate || episode.runtime != null;
   const epLabel = `S${episode.imdbSeason ?? episode.season} · E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`;
   const hasStill = !!episode.still;
+  const [imgFailed, setImgFailed] = useState(false);
   return (
     <div
       className={`group overflow-hidden rounded-2xl bg-elevated/60 ring-1 ${
@@ -38,15 +40,21 @@ export function EpisodeRow({
     >
       <div className="flex gap-4 p-3">
         <div className="relative aspect-video h-[88px] shrink-0 overflow-hidden rounded-xl bg-canvas/60 ring-1 ring-edge-soft/60">
-          {hasStill && (
+          {hasStill && !imgFailed && (
             <div className={`h-full w-full overflow-hidden ${spoiler?.thumb ? SPOILER_THUMB_CLASS : ""}`}>
               <img
                 src={episode.still}
                 alt=""
                 loading="lazy"
                 decoding="async"
+                onError={() => setImgFailed(true)}
                 className="h-full w-full object-cover"
               />
+            </div>
+          )}
+          {(!hasStill || imgFailed) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-elevated/50 to-canvas/70">
+              <Hourglass size={18} strokeWidth={1.8} className="text-ink-subtle/45" />
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />

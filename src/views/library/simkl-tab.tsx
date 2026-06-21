@@ -3,14 +3,16 @@ import { fetchWatchedHistory, type SimklHistoryItem } from "@/lib/simkl/history"
 import { fetchWatchlist } from "@/lib/simkl/watchlist";
 import { simklItemToMeta } from "@/lib/simkl/to-meta";
 import type { SimklItem } from "@/lib/simkl/types";
+import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import {
   applyFilter,
   countByType,
   FilterBar,
   GroupedGrid,
-  groupByDate,
   parseTs,
+  SortControl,
+  sortedGroups,
   type TypeKey,
   type WatchlistMerged,
 } from "./shared";
@@ -36,6 +38,7 @@ function historyToDated(items: SimklHistoryItem[]): WatchlistMerged[] {
 
 export function SimklTab() {
   const tr = useT();
+  const { settings } = useSettings();
   const [watchlist, setWatchlist] = useState<SimklItem[]>([]);
   const [history, setHistory] = useState<SimklHistoryItem[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -90,7 +93,14 @@ export function SimklTab() {
   return (
     <section className="flex flex-col gap-10">
       {watchlistEntries.length + historyEntries.length > 0 && (
-        <FilterBar type={type} setType={setType} query={query} setQuery={setQuery} counts={counts} />
+        <FilterBar
+          type={type}
+          setType={setType}
+          query={query}
+          setQuery={setQuery}
+          counts={counts}
+          trailing={<SortControl />}
+        />
       )}
       <div className="flex flex-col gap-4">
         <div className="flex items-baseline gap-3">
@@ -108,7 +118,7 @@ export function SimklTab() {
               : tr("No matches for these filters.")}
           </p>
         ) : (
-          <GroupedGrid groups={groupByDate(visibleW)} />
+          <GroupedGrid groups={sortedGroups(visibleW, settings.librarySort)} />
         )}
       </div>
       <div className="flex flex-col gap-4">
@@ -125,7 +135,7 @@ export function SimklTab() {
             {historyEntries.length === 0 ? tr("No Simkl history yet.") : tr("No matches for these filters.")}
           </p>
         ) : (
-          <GroupedGrid groups={groupByDate(visibleH)} />
+          <GroupedGrid groups={sortedGroups(visibleH, settings.librarySort)} />
         )}
       </div>
       {status === "error" && (

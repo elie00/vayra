@@ -19,6 +19,7 @@ export type HotkeyId =
   | "playerStart"
   | "playerEnd"
   | "playerStats"
+  | "playerAnime4kToggle"
   | "playerCrop"
   | "playerPanscanUp"
   | "playerPanscanDown"
@@ -56,6 +57,7 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: "playerPanscanUp", scope: "Player", group: "Playback", label: "Zoom in", description: "Step zoom in to crop baked-in black bars (Zoom mode).", defaultBinding: "=" },
   { id: "playerScreenshot", scope: "Player", group: "Playback", label: "Screenshot", description: "Save the current frame (video only, no subtitles) as a PNG to Pictures/Harbor.", defaultBinding: "p" },
   { id: "playerGifRecord", scope: "Player", group: "Playback", label: "Record GIF", description: "Start or stop recording a GIF of the video (no subtitles). Saves to Pictures/Harbor.", defaultBinding: "o" },
+  { id: "playerAnime4kToggle", scope: "Player", group: "Playback", label: "Toggle Anime4K", description: "Turn Anime4K upscaling on (auto) or off. Only active when shaders are available.", defaultBinding: "a" },
 
   { id: "playerSeekBack10", scope: "Player", group: "Seeking", label: "Seek back 10s", description: "Jump back ten seconds.", defaultBinding: "ArrowLeft" },
   { id: "playerSeekForward10", scope: "Player", group: "Seeking", label: "Seek forward 10s", description: "Jump forward ten seconds.", defaultBinding: "ArrowRight" },

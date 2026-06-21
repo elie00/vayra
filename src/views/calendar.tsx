@@ -93,7 +93,10 @@ export function CalendarView() {
   }, [source, items, filter, watchlistOnly, libraryNames]);
 
   const grouped = useMemo(() => groupByDate(filtered), [filtered]);
-  const cells = useMemo(() => buildMonthCells(year, month), [year, month]);
+  const cells = useMemo(
+    () => buildMonthCells(year, month, settings.weekStartsMonday),
+    [year, month, settings.weekStartsMonday],
+  );
 
   const openItem = useCallback(
     (item: CalendarItem) => {
@@ -145,6 +148,7 @@ export function CalendarView() {
         cells={cells}
         grouped={grouped}
         todayISO={todayISO}
+        weekStartsMonday={settings.weekStartsMonday}
         onOpenItem={openItem}
         onOpenDay={(iso) => setDayModal(iso)}
       />
@@ -197,6 +201,16 @@ export function CalendarView() {
             traktConnected={traktConnected}
             simklConnected={simklConnected}
           />
+          <button
+            onClick={() => update({ weekStartsMonday: !settings.weekStartsMonday })}
+            className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
+              settings.weekStartsMonday
+                ? "bg-ink text-canvas"
+                : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
+            }`}
+          >
+            {t("Start week on Monday")}
+          </button>
           {source === "custom" && (
             <CustomCalendarBar
               tmdbKey={settings.tmdbKey}

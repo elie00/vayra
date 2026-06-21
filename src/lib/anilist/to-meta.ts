@@ -2,7 +2,7 @@ import type { Meta } from "@/lib/cinemeta";
 import type { AnilistMedia, AnilistMediaEntry } from "./types";
 
 export function anilistMediaToMeta(m: AnilistMedia): Meta | null {
-  const name = m.title.userPreferred || m.title.english || m.title.romaji;
+  const name = m.title.english || m.title.userPreferred || m.title.romaji;
   if (!name) return null;
   const id = m.idMal != null ? `mal:${m.idMal}` : `anilist:${m.id}`;
   return {

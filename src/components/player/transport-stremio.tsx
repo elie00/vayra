@@ -36,6 +36,11 @@ export type TransportStremioProps = {
   onAudioDelay: (sec: number) => void;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
+  cropMode?: string;
+  onCropMode?: (id: string) => void;
+  anime4kMode?: string;
+  onAnime4kMode?: (id: string) => void;
+  anime4kAvailable?: boolean;
   onPiP: () => void;
   onFullscreen: () => void;
   onCast: () => void;
@@ -88,6 +93,11 @@ export function TransportStremio(p: TransportStremioProps) {
     onAudioDelay,
     onAddSubtitle,
     onRate,
+    cropMode,
+    onCropMode,
+    anime4kMode,
+    onAnime4kMode,
+    anime4kAvailable,
     onPiP,
     onFullscreen,
     onCast,
@@ -125,6 +135,8 @@ export function TransportStremio(p: TransportStremioProps) {
   const [audioMenuOpen, setAudioMenuOpen] = useState(false);
   const [subtitleMenuOpen, setSubtitleMenuOpen] = useState(false);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
+  const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
   const [castModalOpen, setCastModalOpen] = useState(false);
   const [showRemaining, setShowRemaining] = useState(false);
   const [config, setConfig] = useState<PlayerChromeConfig>(() => readPlayerChromeConfig("stremio"));
@@ -133,8 +145,8 @@ export function TransportStremio(p: TransportStremioProps) {
   const controlsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen);
-  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, onMenuOpenChange]);
+    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen || anime4kMenuOpen);
+  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, aspectMenuOpen, anime4kMenuOpen, onMenuOpenChange]);
 
   useEffect(() => {
     const refresh = () => setConfig(readPlayerChromeConfig("stremio"));
@@ -188,6 +200,13 @@ export function TransportStremio(p: TransportStremioProps) {
     setAudioMenuOpen,
     setSubtitleMenuOpen,
     setSpeedMenuOpen,
+    setAspectMenuOpen,
+    cropMode,
+    onCropMode,
+    setAnime4kMenuOpen,
+    anime4kMode,
+    onAnime4kMode,
+    anime4kAvailable,
     onPlayPause,
     onMute,
     onVolume,
@@ -227,8 +246,10 @@ export function TransportStremio(p: TransportStremioProps) {
         <div className="pointer-events-auto flex min-w-0 flex-1 items-center gap-3">
           {renderSlot("top-left")}
         </div>
-        <div className="pointer-events-auto flex items-center gap-1">
-          {renderSlot("top-right")}
+        <div className="flex items-center gap-1">
+          <div className="pointer-events-auto flex items-center gap-1">
+            {renderSlot("top-right")}
+          </div>
         </div>
       </div>
 

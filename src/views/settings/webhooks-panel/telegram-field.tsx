@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { StatusBadge, TelegramTutorial, type FieldStatus } from "./webhook-field";
+import { StatusBadge, TelegramMark, TelegramTutorial, type FieldStatus } from "./webhook-field";
 
 const URL_RE = /^https?:\/\/api\.telegram\.org\/bot([^/]+)\/sendMessage(?:\?chat_id=(.+))?$/;
 
@@ -61,8 +61,11 @@ export function TelegramComposedField({
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[12.5px] font-semibold text-ink">Telegram bot</span>
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
+          <TelegramMark />
+          Telegram bot
+        </span>
         <StatusBadge status={status} />
       </div>
       <div className="flex flex-col gap-2">

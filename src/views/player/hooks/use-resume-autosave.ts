@@ -65,7 +65,11 @@ export function useResumeAutosave(params: {
     lastSavedRef.current = pos * 1000;
     saveResumeMs(id, pos * 1000, se, ep);
     if (isExternalPlaylistId(id)) return;
-    savePlayback(id, { title: s.meta.name, parsedTitle: s.meta.name }, se, ep);
+    if (s.streamRef) {
+      savePlayback(id, { ...s.streamRef, url: s.url, title: s.meta.name }, se, ep);
+    } else {
+      savePlayback(id, { title: s.meta.name, parsedTitle: s.meta.name }, se, ep);
+    }
     if ((s.meta.type === "series" || s.meta.type === "movie") && !CLOUD_OK.test(id)) {
       saveLocalCw({
         id,

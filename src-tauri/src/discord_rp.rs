@@ -20,6 +20,8 @@ struct Desired {
     state: Option<String>,
     large_image: Option<String>,
     large_text: Option<String>,
+    small_image: Option<String>,
+    small_text: Option<String>,
     start_ts: Option<i64>,
     end_ts: Option<i64>,
     party_id: Option<String>,
@@ -51,6 +53,8 @@ pub struct PresenceInput {
     pub state: Option<String>,
     pub poster_url: Option<String>,
     pub large_text: Option<String>,
+    pub small_image_url: Option<String>,
+    pub small_text: Option<String>,
     pub start_ts: Option<i64>,
     pub end_ts: Option<i64>,
     #[serde(default)]
@@ -93,6 +97,8 @@ pub fn discord_set_presence(state: tauri::State<'_, DiscordState>, p: PresenceIn
         d.state = clean(p.state);
         d.large_image = safe_image(p.poster_url);
         d.large_text = clean(p.large_text);
+        d.small_image = safe_image(p.small_image_url);
+        d.small_text = clean(p.small_text);
         d.start_ts = if p.paused { None } else { p.start_ts };
         d.end_ts = if p.paused { None } else { p.end_ts };
         d.party_id = clean(p.party_id);
@@ -167,7 +173,12 @@ pub fn run_loop(app: AppHandle) {
         let Some(c) = client.as_mut() else { continue };
 
         let result = if desired.active {
-            let mut assets = Assets::new().small_image(SMALL_IMAGE_KEY).small_text("Harbor");
+            let mut assets = match desired.small_image.as_deref() {
+                Some(s) => Assets::new()
+                    .small_image(s)
+                    .small_text(desired.small_text.as_deref().unwrap_or("Harbor")),
+                None => Assets::new().small_image(SMALL_IMAGE_KEY).small_text("Harbor"),
+            };
             if let Some(img) = desired.large_image.as_deref() {
                 assets = assets.large_image(img);
             }

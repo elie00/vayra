@@ -93,7 +93,7 @@ export function CinemetaEpisodes({
   const activeEps = grouped.find((g) => g.seasonNumber === active)?.episodes ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div data-episodes className="flex scroll-mt-24 flex-col gap-6">
       <div className="flex items-end justify-between gap-6">
         <h3 className="text-[22px] font-medium tracking-tight text-ink">{t("Episodes")}</h3>
         {grouped.length > 1 && (
@@ -183,6 +183,7 @@ export function CinemetaEpisodeRow({
             src={ep.thumbnail}
             seed={ep.id ?? `${meta.id}-${ep.season}-${epNumber}`}
             ratio="landscape"
+            lazy
           />
           <div className="absolute inset-0 flex items-center justify-center bg-canvas/40 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas">

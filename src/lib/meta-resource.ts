@@ -5,6 +5,15 @@ import { loadInstalled } from "./addon-store";
 
 const ADDON_TIMEOUT_MS = 4000;
 
+function preferCustomMeta(): boolean {
+  try {
+    const raw = localStorage.getItem("harbor.settings");
+    return raw ? JSON.parse(raw).preferCustomMetaAddon === true : false;
+  } catch {
+    return false;
+  }
+}
+
 function localAddons(): Addon[] {
   return loadInstalled()
     .filter((a) => !!a.manifest)
@@ -33,6 +42,15 @@ export async function resolveMeta(
   }
 
   const addonRaces = candidates.map((a) => ({ a, p: fetchAddonMeta(a, type, id) }));
+
+  if (preferCustomMeta()) {
+    for (const { a, p } of addonRaces) {
+      const result = await p;
+      if (result && result.poster) return withOrigin(result, a);
+    }
+    return (await cinemetaPromise) ?? null;
+  }
+
   const cinemeta = await cinemetaPromise;
   if (cinemeta && cinemeta.poster) return cinemeta;
 

@@ -213,7 +213,7 @@ export function Shows({ active = true }: { active?: boolean }) {
   return (
     <main ref={scrollCb} className="relative h-full overflow-y-auto bg-canvas">
       <ScrollRootContext.Provider value={scrollEl}>
-        <div className="relative mx-auto flex max-w-[1700px] flex-col gap-12 px-12 pb-32 pt-32">
+        <div className="relative flex w-full flex-col gap-12 px-12 pb-32 pt-32">
           <PageMast />
           <PeekHero slides={hero} />
           {!settings.tmdbKey && <TmdbNudge />}

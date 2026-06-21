@@ -556,6 +556,129 @@ fn format_one(x: f64) -> String {
     format!("{:.1}", rounded)
 }
 
+fn bitrate_budget_penalty(s: &ParsedStream, opts: &ScoreOptions, cached: bool) -> ScoreReason {
+    let budget = match opts.bandwidth_mbps {
+        Some(b) if b > 0.0 => b,
+        _ => {
+            return ScoreReason {
+                signal: "bitrate-ok".to_string(),
+                delta: 0.0,
+            }
+        }
+    };
+    let headroom = budget * 0.8;
+    if let (Some(size), Some(runtime)) = (s.size, opts.runtime_minutes) {
+        if size > 0 && runtime > 0 {
+            let required = (size as f64 * 8.0) / (runtime as f64 * 60.0) / 1_000_000.0;
+            if required > budget * 1.1 {
+                let sev = if required > budget * 1.5 { -120.0 } else { -45.0 };
+                return ScoreReason {
+                    signal: format!(
+                        "bitrate-exceeds-budget:{}>{}Mbps",
+                        required.round() as i64,
+                        budget.round() as i64
+                    ),
+                    delta: if cached { sev + 10.0 } else { sev },
+                };
+            }
+            if required > headroom {
+                return ScoreReason {
+                    signal: format!(
+                        "bitrate-tight:{}/{}Mbps",
+                        required.round() as i64,
+                        budget.round() as i64
+                    ),
+                    delta: -12.0,
+                };
+            }
+        }
+    }
+    if matches!(s.resolution, Resolution::UHD) && budget < 25.0 {
+        return ScoreReason {
+            signal: "low-bandwidth-4k".to_string(),
+            delta: if cached { -30.0 } else { -60.0 },
+        };
+    }
+    if matches!(s.resolution, Resolution::P1080) && budget < 8.0 {
+        return ScoreReason {
+            signal: "low-bandwidth-1080p".to_string(),
+            delta: if cached { -20.0 } else { -45.0 },
+        };
+    }
+    ScoreReason {
+        signal: "bitrate-ok".to_string(),
+        delta: 0.0,
+    }
+}
+
+fn impossibly_small_movie_penalty(s: &ParsedStream, opts: &ScoreOptions) -> ScoreReason {
+    if opts.media_kind.as_deref() == Some("series") {
+        return ScoreReason {
+            signal: "tiny-skip-series".to_string(),
+            delta: 0.0,
+        };
+    }
+    let size = match s.size {
+        Some(sz) => sz as f64,
+        None => {
+            return ScoreReason {
+                signal: "tiny-skip-no-size".to_string(),
+                delta: 0.0,
+            }
+        }
+    };
+    let date = match &opts.release_date {
+        Some(d) => d,
+        None => {
+            return ScoreReason {
+                signal: "tiny-skip-no-date".to_string(),
+                delta: 0.0,
+            }
+        }
+    };
+    let t = match parse_iso_date_to_ms(date) {
+        Some(v) => v,
+        None => {
+            return ScoreReason {
+                signal: "tiny-skip-bad-date".to_string(),
+                delta: 0.0,
+            }
+        }
+    };
+    let days = (current_time_ms() - t) / 86_400_000.0;
+    if days >= 90.0 {
+        return ScoreReason {
+            signal: "tiny-skip-mature".to_string(),
+            delta: 0.0,
+        };
+    }
+    if is_theater_source(s.source) {
+        return ScoreReason {
+            signal: "tiny-skip-theater".to_string(),
+            delta: 0.0,
+        };
+    }
+    let size_mb = size / (1024.0 * 1024.0);
+    if size_mb < 250.0 {
+        return ScoreReason {
+            signal: format!("new-release-virus-{}mb", size_mb.round() as i64),
+            delta: -250.0,
+        };
+    }
+    let runtime_floor = opts.runtime_minutes.map(|r| r as f64 * 5.0).unwrap_or(0.0);
+    let floor = 500.0_f64.max(runtime_floor);
+    if size_mb < floor {
+        return ScoreReason {
+            signal: format!("new-release-no-label-{}mb", size_mb.round() as i64),
+            delta: -200.0,
+        };
+    }
+    ScoreReason {
+        signal: "tiny-ok".to_string(),
+        delta: 0.0,
+    }
+}
+
 fn fresh_theatrical_adjust(
     s: &ParsedStream,
     opts: &ScoreOptions,
@@ -787,6 +910,48 @@ pub fn score_stream(
         }
     }
 
+    if parsed.stream.info_hash.is_some() && parsed.seeders == Some(0) && !cached {
+        score -= 8.0;
+        reasons.push(ScoreReason {
+            signal: "zero-seeders-soft".to_string(),
+            delta: -8.0,
+        });
+    }
+
+    let expected_year = opts
+        .release_date
+        .as_deref()
+        .and_then(|d| d.get(0..4))
+        .and_then(|y| y.parse::<i32>().ok());
+    if let (Some(ey), Some(sy)) = (expected_year, parsed.year) {
+        let diff = (sy as i32 - ey).abs();
+        if diff != 0 {
+            let days_from_release = opts
+                .release_date
+                .as_deref()
+                .and_then(parse_iso_date_to_ms)
+                .map(|ms| ((current_time_ms() - ms) / 86_400_000.0).abs())
+                .unwrap_or(f64::INFINITY);
+            let is_recent = days_from_release < 365.0;
+            let suffix = if is_recent { "-recent" } else { "" };
+            if diff == 1 {
+                let delta = if is_recent { -75.0 } else { -18.0 };
+                score += delta;
+                reasons.push(ScoreReason {
+                    signal: format!("year-off-by-1:{}vs{}{}", sy, ey, suffix),
+                    delta,
+                });
+            } else {
+                let delta = if is_recent { -150.0 } else { -70.0 };
+                score += delta;
+                reasons.push(ScoreReason {
+                    signal: format!("year-mismatch:{}vs{}{}", sy, ey, suffix),
+                    delta,
+                });
+            }
+        }
+    }
+
     if is_trusted_group(parsed.release_group_normalized.as_deref()) {
         score += 2.0;
         reasons.push(ScoreReason {
@@ -796,6 +961,19 @@ pub fn score_stream(
             ),
             delta: 2.0,
         });
+    }
+
+    if let (Some(preferred), Some(group)) = (
+        opts.preferred_release_group.as_deref(),
+        parsed.release_group_normalized.as_deref(),
+    ) {
+        if group == preferred {
+            score += 8.0;
+            reasons.push(ScoreReason {
+                signal: format!("prev-episode-group:{}", group),
+                delta: 8.0,
+            });
+        }
     }
 
     if parsed.remux {
@@ -888,11 +1066,19 @@ pub fn score_stream(
                     delta: 12.0,
                 });
             } else if is_multi {
-                score += 4.0;
-                reasons.push(ScoreReason {
-                    signal: "multi-language".to_string(),
-                    delta: 4.0,
-                });
+                if opts.prefer_single_audio_track {
+                    score -= 18.0;
+                    reasons.push(ScoreReason {
+                        signal: "html5-multi-audio-penalty".to_string(),
+                        delta: -18.0,
+                    });
+                } else {
+                    score += 4.0;
+                    reasons.push(ScoreReason {
+                        signal: "multi-language".to_string(),
+                        delta: 4.0,
+                    });
+                }
             } else {
                 score -= 14.0;
                 reasons.push(ScoreReason {
@@ -901,6 +1087,14 @@ pub fn score_stream(
                 });
             }
         }
+    } else if opts.prefer_single_audio_track
+        && parsed.audio_languages.iter().any(|l| l == "Multi")
+    {
+        score -= 12.0;
+        reasons.push(ScoreReason {
+            signal: "html5-multi-audio-penalty".to_string(),
+            delta: -12.0,
+        });
     }
 
     if parsed.scam_score > 0 {
@@ -920,6 +1114,16 @@ pub fn score_stream(
         });
     }
 
+    if let Some(pref) = &opts.prefer_addon_id {
+        if &parsed.stream.addon_id == pref {
+            score += 250.0;
+            reasons.push(ScoreReason {
+                signal: "origin-addon".to_string(),
+                delta: 250.0,
+            });
+        }
+    }
+
     let trusted_addon_boost = trusted_addon_points(&parsed);
     if trusted_addon_boost.delta > 0.0 {
         score += trusted_addon_boost.delta;
@@ -933,6 +1137,12 @@ pub fn score_stream(
             signal: "webview2-unfriendly".to_string(),
             delta: playability_delta,
         });
+    }
+
+    let bitrate_penalty = bitrate_budget_penalty(&parsed, opts, cached);
+    if bitrate_penalty.delta < 0.0 {
+        score += bitrate_penalty.delta;
+        reasons.push(bitrate_penalty);
     }
 
     let expected_min = opts
@@ -965,6 +1175,12 @@ pub fn score_stream(
     if undersized_penalty.delta < 0.0 {
         score += undersized_penalty.delta;
         reasons.push(undersized_penalty);
+    }
+
+    let tiny_penalty = impossibly_small_movie_penalty(&parsed, opts);
+    if tiny_penalty.delta < 0.0 {
+        score += tiny_penalty.delta;
+        reasons.push(tiny_penalty);
     }
 
     let recency = fresh_theatrical_adjust(&parsed, opts, has_valid_size, Some(corpus));
@@ -1181,9 +1397,10 @@ mod tests {
         p2.seeders = Some(0);
         p2.stream.info_hash = Some("abc".to_string());
         let scored2 = score_stream(p2, &empty_opts(), &empty_corpus());
-        assert_eq!(scored2.score, 0.0);
+        assert_eq!(scored2.score, -8.0);
         let signals: Vec<&str> = scored2.reasons.iter().map(|r| r.signal.as_str()).collect();
         assert!(signals.contains(&"zero-seeders-stale-meta"));
+        assert!(signals.contains(&"zero-seeders-soft"));
 
         let mut p3 = base_parsed();
         p3.seeders = Some(95);

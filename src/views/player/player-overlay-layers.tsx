@@ -86,6 +86,11 @@ export type PlayerOverlayLayersProps = {
   setAnyMenuOpen: (v: boolean) => void;
   onSeekStep: (delta: number) => void;
   rememberSubChoice: Shell["rememberSubChoice"];
+  cropMode: Shell["cropMode"];
+  onCropMode: Shell["onCropMode"];
+  anime4kMode: Shell["anime4kMode"];
+  onAnime4kMode: Shell["onAnime4kMode"];
+  anime4kAvailable: Shell["anime4kAvailable"];
   togglePipMode: () => void;
   setDrawMode: (fn: (d: boolean) => boolean) => void;
   wakeChrome: () => void;
@@ -162,6 +167,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         holdSpeedActive={p.holdSpeedActive}
         videoFillPill={p.videoFillPill}
         subDropToast={p.subDropToast}
+        chromeVisible={p.showChrome}
       />
       <CastLayer
         cast={p.cast}
@@ -248,6 +254,11 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
           onSeek={p.seekTo}
           onSeekStep={p.onSeekStep}
           rememberSubChoice={p.rememberSubChoice}
+          cropMode={p.cropMode}
+          onCropMode={p.onCropMode}
+          anime4kMode={p.anime4kMode}
+          onAnime4kMode={p.onAnime4kMode}
+          anime4kAvailable={p.anime4kAvailable}
           onPiP={() => p.togglePipMode()}
           onFullscreen={p.toggleFullscreen}
           openCastMenu={p.cast.openCastMenu}

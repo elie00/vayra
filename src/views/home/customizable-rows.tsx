@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import { useMemo } from "react";
 import { LazyMount } from "@/components/lazy-mount";
 import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
@@ -9,6 +10,16 @@ import { useView } from "@/lib/view";
 import { isMacDesktop } from "@/lib/platform";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
+
+function metaTitleKey(meta: { id: string }): string | null {
+  const id = meta.id;
+  if (/^tt\d+$/.test(id)) return `imdb:${id}`;
+  if (id.startsWith("tmdb:")) {
+    const num = Number(id.split(":")[2]);
+    if (Number.isFinite(num)) return `tmdb:${num}`;
+  }
+  return null;
+}
 
 function RowTitle({ row }: { row: HomeRow }) {
   const t = useT();
@@ -41,6 +52,8 @@ export function CustomizableRows({
   onToggleNumerals,
   onToggleHero,
   onLoadMore,
+  hideWatched,
+  watchedSet,
 }: {
   rows: HomeRow[];
   editMode: boolean;
@@ -52,21 +65,38 @@ export function CustomizableRows({
   onToggleNumerals: (key: string) => void;
   onToggleHero: (key: string) => void;
   onLoadMore: (key: string) => void;
+  hideWatched?: boolean;
+  watchedSet?: Set<string>;
 }) {
   const { openGrid } = useView();
   const t = useT();
+  const watchedTitleKeys = useMemo(() => {
+    const out = new Set<string>();
+    if (!watchedSet) return out;
+    for (const k of watchedSet) {
+      const parts = k.split(":");
+      if (parts.length >= 2) out.add(`${parts[0]}:${parts[1]}`);
+    }
+    return out;
+  }, [watchedSet]);
+  const isWatched = (m: { id: string }) => {
+    const key = metaTitleKey(m);
+    return key != null && watchedTitleKeys.has(key);
+  };
   return (
     <>
       {rows.map((row, rowIndex) => {
         const hidden = customization.hidden.includes(row.key);
         if (hidden && !editMode) return null;
+        const metas = hideWatched ? row.metas.filter((m) => !isWatched(m)) : row.metas;
+        if (hideWatched && metas.length === 0 && !editMode) return null;
         const idx = orderKeys.indexOf(row.key);
         const eager = rowIndex < 2;
         const viewAll = row.fetcher
           ? () => openGrid({ title: t(row.name), fetcher: row.fetcher!, initial: row.metas })
           : undefined;
         const ranked =
-          (customization.numerals ?? []).includes(row.key) && row.metas.length >= 10;
+          (customization.numerals ?? []).includes(row.key) && metas.length >= 10;
         const rowEl = ranked ? (
           <Row
             title={<RowTitle row={row} />}
@@ -75,7 +105,7 @@ export function CustomizableRows({
             scrollKey={`home:${row.key}`}
             onViewAll={viewAll}
           >
-            {row.metas.slice(0, 10).map((m, i) => (
+            {metas.slice(0, 10).map((m, i) => (
               <TopRankCard key={m.id} meta={m} rank={i + 1} />
             ))}
           </Row>
@@ -86,7 +116,7 @@ export function CustomizableRows({
             onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
             onViewAll={viewAll}
           >
-            {row.metas.map((m, i) => (
+            {metas.map((m, i) => (
               <PickCard key={`${m.id}-${i}`} meta={m} />
             ))}
           </Row>

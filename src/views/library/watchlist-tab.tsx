@@ -17,6 +17,8 @@ import {
   GroupedGrid,
   groupByDate,
   parseTs,
+  SortControl,
+  sortedGroups,
   type TypeKey,
   type WatchlistMerged,
 } from "./shared";
@@ -155,7 +157,14 @@ export function WatchlistTab() {
           query={query}
           setQuery={setQuery}
           counts={counts}
-          trailing={<ViewModeToggle flat={flat} onToggle={toggleFlat} />}
+          trailing={
+            <>
+              <SortControl />
+              {settings.librarySort === "recent" && (
+                <ViewModeToggle flat={flat} onToggle={toggleFlat} />
+              )}
+            </>
+          }
         />
       )}
       <div className="flex items-center justify-between">
@@ -167,6 +176,8 @@ export function WatchlistTab() {
         <p className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-6 py-10 text-center text-[13px] text-ink-muted">
           {tr("No matches for these filters.")}
         </p>
+      ) : settings.librarySort !== "recent" ? (
+        <GroupedGrid groups={sortedGroups(visible, settings.librarySort)} onRemove={handleRemove} />
       ) : flat ? (
         <GroupedGrid
           groups={[{ label: "Everything", items: [...visible].sort((a, b) => (b.date ?? -Infinity) - (a.date ?? -Infinity)) }]}

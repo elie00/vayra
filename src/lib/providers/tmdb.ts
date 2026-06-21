@@ -3,6 +3,10 @@ export {
   subscribeTmdbImdb,
   useTmdbImdbId,
   tmdbImdbId,
+  tmdbFromImdbCached,
+  subscribeImdbTmdb,
+  useTmdbIdFromImdb,
+  tmdbIdFromImdb,
 } from "./tmdb/tmdb-imdb-resolve";
 
 export {
