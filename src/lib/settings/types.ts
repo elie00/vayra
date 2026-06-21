@@ -90,6 +90,7 @@ export type Settings = {
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
   rememberLastStream: boolean;
+  keepSourceNextEpisode: boolean;
   playerHdrToSdr: boolean;
   playerMotionInterp: boolean;
   playerAnime4k: boolean;

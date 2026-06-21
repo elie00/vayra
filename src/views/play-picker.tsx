@@ -8,7 +8,7 @@ import { useTogether } from "@/lib/together/provider";
 import { buildMatchScores, matchBadge, MATCH_CLOSE } from "@/lib/together/source-match";
 import { HostSourceBanner } from "@/components/host-source-banner";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
-import { readPlayback, streamMatchesEntry } from "@/lib/playback-history";
+import { readPlayback, readLastSeriesPlayback, streamMatchesEntry, streamMatchesSource } from "@/lib/playback-history";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
@@ -237,16 +237,25 @@ export function PlayPicker({
   }, [filteredPicker]);
 
   const previousPlayback = useMemo(
+  () =>
+    settings.rememberLastStream
+      ? readPlayback(meta.id, episode?.season, episode?.episode)
+      : null,
+  [meta.id, episode?.season, episode?.episode, settings.rememberLastStream],
+  );
+
+  const lastSeriesSource = useMemo(
     () =>
-      settings.rememberLastStream
-        ? readPlayback(meta.id, episode?.season, episode?.episode)
+      settings.keepSourceNextEpisode && !!autoPlay && meta.type === "series"
+        ? readLastSeriesPlayback(meta.id)
         : null,
-    [meta.id, episode?.season, episode?.episode, settings.rememberLastStream],
+    [meta.id, meta.type, settings.keepSourceNextEpisode, autoPlay],
   );
 
   const autoCandidates = useAutoCandidates({
     filteredPicker,
     previousPlayback,
+    sourceEntry: lastSeriesSource,
     isCached,
     addons,
     hasStrongAddon,
@@ -278,14 +287,20 @@ export function PlayPicker({
     return filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null;
   }, [filteredPicker, previousPlayback]);
 
+  const sameSourceMatch: ScoredStream | null = useMemo(() => {
+    if (!filteredPicker || !lastSeriesSource || previousMatch) return null;
+    return filteredPicker.all.find((s) => streamMatchesSource(s, lastSeriesSource)) ?? null;
+  }, [filteredPicker, lastSeriesSource, previousMatch]);
+
   const currentPick: ScoredStream | null = useMemo(() => {
     if (!filteredPicker) return null;
     if (selectedTier && filteredPicker.byTier[selectedTier]) {
-      return filteredPicker.byTier[selectedTier]!;
-    }
+    return filteredPicker.byTier[selectedTier]!;
+  }
     if (previousMatch) return previousMatch;
+    if (sameSourceMatch) return sameSourceMatch;   
     return filteredPicker.primary;
-  }, [filteredPicker, selectedTier, previousMatch]);
+  }, [filteredPicker, selectedTier, previousMatch, sameSourceMatch]);
 
   const { onPlay, onCache, queuedHash, debridDown, resetDebridDown, abortResolve, p2pConfirm, confirmP2p, cancelP2p } = usePickHandler({
     meta,

@@ -49,6 +49,7 @@ export type PlayerStreamRef = {
   releaseGroup?: string | null;
   source?: string | null;
   size?: number | null;
+  bingeGroup?: string | null;
   cachedSlugs?: string[];
 };
 

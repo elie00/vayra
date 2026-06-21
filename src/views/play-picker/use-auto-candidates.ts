@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { isStreamDead } from "@/lib/dead-streams";
 import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
 import type { ScoredStream } from "@/lib/streams/types";
-import { streamMatchesEntry, type PlaybackEntry } from "@/lib/playback-history";
+import { streamMatchesEntry, streamMatchesSource, type PlaybackEntry } from "@/lib/playback-history";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores } from "@/lib/together/source-match";
 import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from "./picker-utils";
@@ -10,6 +10,7 @@ import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from 
 export function useAutoCandidates(args: {
   filteredPicker: { all: ScoredStream[]; primary: ScoredStream | null } | null;
   previousPlayback: PlaybackEntry | null;
+  sourceEntry: PlaybackEntry | null;
   isCached: (s: ScoredStream) => boolean;
   addons: Array<{ manifest?: { id?: string } }> | null;
   hasStrongAddon: boolean;
@@ -17,7 +18,7 @@ export function useAutoCandidates(args: {
   preferredLangs: string[];
   hostSource?: SourceDescriptor | null;
 }): ScoredStream[] {
-  const { filteredPicker, previousPlayback, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource } = args;
+  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource } = args;
   return useMemo(() => {
     if (!filteredPicker) return [];
     const key = (s: ScoredStream) => s.url ?? s.infoHash ?? `${s.addonId}:${s.title ?? ""}`;
@@ -74,8 +75,13 @@ export function useAutoCandidates(args: {
       seen.add(k);
       out.push(s);
     };
-    if (!matchScores) push(previousMatch);
+     const sourceMatch =
+      sourceEntry ? filteredPicker.all.find((s) => streamMatchesSource(s, sourceEntry)) ?? null : null;
+    if (!matchScores) {
+      push(sourceMatch);   
+      push(previousMatch);
+    }
     for (const s of sorted) push(s);
     return out;
-  }, [filteredPicker, previousPlayback, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource]);
+  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource]);
 }
