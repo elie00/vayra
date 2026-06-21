@@ -75,6 +75,6 @@ export async function hydrateTraktItems(
   items: TraktItem[],
   tmdbKey: string,
 ): Promise<Meta[]> {
-  const results = await mapLimit(items, 6, (it) => hydrateOne(it, tmdbKey));
+  const results = await mapLimit(items, 20, (it) => hydrateOne(it, tmdbKey));
   return results.filter((m): m is Meta => m !== null && !!m.poster);
 }

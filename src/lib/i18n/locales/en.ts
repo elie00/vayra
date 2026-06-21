@@ -127,6 +127,27 @@ const en: Record<string, string> = {
   "sports.customize.cancel": "Cancel",
   "sports.customize.save": "Save",
   "Upcoming": "Upcoming",
+
+  "Add Custom Source": "Add Custom Source",
+  "Provide a JSON link or paste it directly.": "Provide a JSON link or paste it directly.",
+  "JSON URL": "JSON URL",
+  "Paste JSON": "Paste JSON",
+  "URL cannot be empty": "URL cannot be empty",
+  "Failed to fetch JSON": "Failed to fetch JSON",
+  "JSON cannot be empty": "JSON cannot be empty",
+  "Invalid SourceRow JSON format": "Invalid SourceRow JSON format",
+  "Add Source": "Add Source",
+  "Edit Folder Images": "Edit Folder Images",
+  "Cover Image URL": "Cover Image URL",
+  "Focus GIF URL": "Focus GIF URL",
+  "Addon not installed": "Addon not installed",
+  "This section depends on the addon": "This section depends on the addon",
+  "You must install this addon in your Stremio account first so Harbor can fetch its works.": "You must install this addon in your Stremio account first so Harbor can fetch its works.",
+  "Missing TMDB Key": "Missing TMDB Key",
+  "This section relies on TMDB discovery features.": "This section relies on TMDB discovery features.",
+  "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Please add your TMDB API key in the Library & Metadata settings to view this folder.",
+  "OK": "OK",
+  "Loading...": "Loading...",
 };
 
 export default en;

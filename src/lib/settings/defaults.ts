@@ -177,7 +177,7 @@ export const DEFAULT: Settings = {
   cwSnapshotRetentionDays: 30,
   streamFilterLevel: "strict",
   blockTrackers: true,
-  homeRows: { order: [], hidden: [], renamed: {}, numerals: [], heroSource: null },
+  homeRows: { order: [], hidden: [], renamed: {}, numerals: [], heroSource: null, customSources: [] },
   hotkeys: {},
   animeFavoriteGenres: [],
   animePicksDismissedAt: 0,

@@ -1,4 +1,4 @@
-import { Pencil, RotateCcw } from "lucide-react";
+import { Pencil, RotateCcw, Plus } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import type { HomeRowCustomization } from "@/lib/home-customization";
 
@@ -7,11 +7,13 @@ export function CustomizeBar({
   customization,
   onToggleEdit,
   onReset,
+  onAddSource,
 }: {
   editMode: boolean;
   customization: HomeRowCustomization;
   onToggleEdit: () => void;
   onReset: () => void;
+  onAddSource?: () => void;
 }) {
   const t = useT();
   const hasChanges =
@@ -27,6 +29,15 @@ export function CustomizeBar({
         >
           <RotateCcw size={12} strokeWidth={2.2} />
           {t("Reset")}
+        </button>
+      )}
+      {editMode && onAddSource && (
+        <button
+          onClick={onAddSource}
+          className="flex h-8 items-center gap-1.5 rounded-md border border-edge-soft/40 bg-canvas/80 px-2.5 text-[12px] font-medium text-ink-muted backdrop-blur-md transition-colors hover:bg-canvas hover:text-ink"
+        >
+          <Plus size={12} strokeWidth={2.2} />
+          {t("Add Source")}
         </button>
       )}
       <button

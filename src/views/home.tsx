@@ -63,6 +63,8 @@ import {
 } from "./home/home-rows";
 import type { HomeRow } from "./home/home-types";
 import { RowSkeleton } from "./home/row-skeleton";
+import { AddSourceModal } from "@/components/add-source-modal";
+import type { SourceRow } from "@/lib/custom-sources";
 
 export function Home({ active = true }: { active?: boolean }) {
   const { authKey, user } = useAuth();
@@ -70,6 +72,7 @@ export function Home({ active = true }: { active?: boolean }) {
   const t = useT();
   const uiLang = useUiLanguage();
   const [editMode, setEditMode] = useState(false);
+  const [isAddSourceModalOpen, setAddSourceModalOpen] = useState(false);
   const [rows, setRows] = useState<HomeRow[]>([]);
   const [animeRows, setAnimeRows] = useState<HomeRow[]>([]);
   const [arabicRows, setArabicRows] = useState<HomeRow[]>([]);
@@ -491,9 +494,27 @@ export function Home({ active = true }: { active?: boolean }) {
   const restRows = displayed.rest;
 
   const homeRowsCustom = settings.homeRows;
+  
+  const sourceRows = useMemo<HomeRow[]>(() => {
+    const uniqueSources = new Map<string, SourceRow>();
+    for (const sr of homeRowsCustom.customSources || []) {
+      if (!uniqueSources.has(sr.id)) uniqueSources.set(sr.id, sr);
+    }
+    return Array.from(uniqueSources.values()).map((sr) => ({
+      key: `source-${sr.id}`,
+      type: "movie",
+      name: sr.title,
+      metas: [],
+      page: 1,
+      hasMore: false,
+      sourceRow: sr,
+      noDedup: true,
+    }));
+  }, [homeRowsCustom.customSources]);
+
   const allCustomizableRows = useMemo(
-    () => [...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...restRows, ...animeRows],
-    [arabicRows, personalRows, traktRows, simklRows, restRows, animeRows],
+    () => [...sourceRows, ...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...restRows, ...animeRows],
+    [sourceRows, arabicRows, personalRows, traktRows, simklRows, restRows, animeRows],
   );
   const visibleRows = useMemo(
     () => applyHomeRowCustomization(allCustomizableRows, homeRowsCustom, false),
@@ -534,6 +555,48 @@ export function Home({ active = true }: { active?: boolean }) {
     [homeRowsCustom, mutateHomeRows],
   );
 
+  const handleSaveCustomSources = useCallback((newSources: SourceRow[]) => {
+    const existing = homeRowsCustom.customSources || [];
+    const next = [...existing];
+    for (const ns of newSources) {
+      const idx = next.findIndex(s => s.id === ns.id);
+      if (idx >= 0) {
+        next[idx] = ns;
+      } else {
+        next.push(ns);
+      }
+    }
+    mutateHomeRows({
+      ...homeRowsCustom,
+      customSources: next,
+    });
+  }, [homeRowsCustom, mutateHomeRows]);
+
+  const handleDeleteCustomSource = useCallback((key: string) => {
+    // Key comes in as `source-${id}`
+    const id = key.replace(/^source-/, "");
+    mutateHomeRows({
+      ...homeRowsCustom,
+      customSources: (homeRowsCustom.customSources || []).filter(sr => sr.id !== id),
+    });
+  }, [homeRowsCustom, mutateHomeRows]);
+
+  const handleEditFolderImages = useCallback((sourceId: string, folderId: string, coverImageUrl: string, focusGifUrl: string) => {
+    mutateHomeRows({
+      ...homeRowsCustom,
+      customSources: (homeRowsCustom.customSources || []).map((sr) => {
+        if (sr.id !== sourceId) return sr;
+        return {
+          ...sr,
+          folders: sr.folders.map((f) => {
+            if (f.id !== folderId) return f;
+            return { ...f, coverImageUrl: coverImageUrl || null, focusGifUrl: focusGifUrl || null };
+          }),
+        };
+      }),
+    });
+  }, [homeRowsCustom, mutateHomeRows]);
+
   const enabledServices = useMemo(
     () =>
       settings.tmdbKey
@@ -566,16 +629,15 @@ export function Home({ active = true }: { active?: boolean }) {
                 />
               )}
               <HeroCarousel slides={heroSlides} />
-              {!editMode && (
-                <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
-                  <CustomizeBar
-                    editMode={editMode}
-                    customization={homeRowsCustom}
-                    onToggleEdit={() => setEditMode((v) => !v)}
-                    onReset={() => mutateHomeRows(resetHomeRows())}
-                  />
-                </div>
-              )}
+              <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
+                <CustomizeBar
+                  editMode={editMode}
+                  customization={homeRowsCustom}
+                  onToggleEdit={() => setEditMode((v) => !v)}
+                  onReset={() => mutateHomeRows(resetHomeRows())}
+                  onAddSource={() => setAddSourceModalOpen(true)}
+                />
+              </div>
             </div>
           )}
           {editMode && homeRowsCustom.hidden.includes("hero") && (
@@ -585,13 +647,14 @@ export function Home({ active = true }: { active?: boolean }) {
               onToggleHidden={() => handleToggleHidden("hero")}
             />
           )}
-          {!editMode && settings.homeMode !== "classic" && homeRowsCustom.hidden.includes("hero") && (
+          {settings.homeMode !== "classic" && homeRowsCustom.hidden.includes("hero") && (
             <div className="pointer-events-none absolute end-5 top-0 z-20 [&>*]:pointer-events-auto">
               <CustomizeBar
                 editMode={editMode}
                 customization={homeRowsCustom}
                 onToggleEdit={() => setEditMode((v) => !v)}
                 onReset={() => mutateHomeRows(resetHomeRows())}
+                onAddSource={() => setAddSourceModalOpen(true)}
               />
             </div>
           )}
@@ -668,6 +731,8 @@ export function Home({ active = true }: { active?: boolean }) {
               onToggleNumerals={handleToggleNumerals}
               onToggleHero={handleToggleHero}
               onLoadMore={loadMore}
+              onDeleteCustomSource={handleDeleteCustomSource}
+              onEditFolderImages={handleEditFolderImages}
               hideWatched={settings.hideWatchedInCatalogs}
               watchedSet={traktWatched}
             />
@@ -675,6 +740,12 @@ export function Home({ active = true }: { active?: boolean }) {
         </div>
       </ScrollRootContext.Provider>
       <BackToTop scrollRef={scrollRef} />
+      
+      <AddSourceModal 
+        isOpen={isAddSourceModalOpen} 
+        onClose={() => setAddSourceModalOpen(false)} 
+        onSave={handleSaveCustomSources} 
+      />
     </main>
   );
 }

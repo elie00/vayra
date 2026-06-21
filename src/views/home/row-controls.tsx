@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, Eye, EyeOff, ListOrdered, Pencil, Sparkles, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Eye, EyeOff, ListOrdered, Pencil, Sparkles, X, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 
@@ -19,6 +19,7 @@ export function RowControls({
   heroActive,
   canHero,
   onToggleHero,
+  onDelete,
 }: {
   name: string;
   hidden: boolean;
@@ -36,6 +37,7 @@ export function RowControls({
   heroActive?: boolean;
   canHero?: boolean;
   onToggleHero?: () => void;
+  onDelete?: () => void;
 }) {
   const t = useT();
   const [editing, setEditing] = useState(false);
@@ -120,6 +122,15 @@ export function RowControls({
           }`}
         >
           <Sparkles size={14} strokeWidth={2.2} />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          onClick={onDelete}
+          title={t("Delete custom source")}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-danger/80 transition-colors hover:bg-danger/15 hover:text-danger"
+        >
+          <Trash2 size={14} strokeWidth={2.2} />
         </button>
       )}
       <div className="mx-1 h-5 w-px bg-edge-soft" />
