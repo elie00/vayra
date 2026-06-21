@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { DebridStore } from "@/lib/debrid/types";
+import { savePlayback } from "@/lib/playback-history";
 import { markStreamDead, recordStubEvent } from "@/lib/dead-streams";
 
 const PREFLIGHT_STUB_TTL_MS = 15 * 60 * 1000;
@@ -191,6 +192,7 @@ export function usePickHandler({
           resolution: stream.resolution ?? null,
           releaseGroup: stream.releaseGroupNormalized ?? null,
           source: stream.source ?? null,
+          bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
           size: stream.size ?? null,
           cachedSlugs: Object.entries(stream.cached ?? {})
             .filter(([, v]) => v === true)
@@ -198,6 +200,28 @@ export function usePickHandler({
         },
       });
       opened = true;
+      if (meta.id && !meta.id.startsWith("iptv:")) {
+        savePlayback(
+          meta.id,
+          {
+            infoHash: stream.infoHash ?? null,
+            fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
+            addonId: stream.addonId ?? null,
+            url: playUrl,
+            title: meta.name,
+            parsedTitle: stream.parsedTitle ?? null,
+            resolution: stream.resolution ?? null,
+            source: stream.source ?? null,
+            size: stream.size ?? null,
+            bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
+            cachedSlugs: Object.entries(stream.cached ?? {})
+              .filter(([, v]) => v === true)
+              .map(([k]) => k),
+          },
+          episode?.season,
+          episode?.episode,
+        );
+      }
     } finally {
       if (!opened && !ac.signal.aborted) {
         setResolving(null);

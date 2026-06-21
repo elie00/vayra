@@ -78,6 +78,7 @@ export const DEFAULT: Settings = {
   seekPreviewEnabled: typeof navigator !== "undefined" && (navigator.hardwareConcurrency || 8) >= 4,
   instantPlay: true,
   rememberLastStream: false,
+  keepSourceNextEpisode: false,
   playerHdrToSdr: true,
   playerMotionInterp: false,
   playerAnime4k: false,
