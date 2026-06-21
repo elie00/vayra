@@ -14,7 +14,11 @@ import { RoomLayer } from "./room-layer";
 import { ShellLayer } from "./shell-layer";
 import { StageOverlays } from "./stage-overlays";
 import { ToolsLayer } from "./tools-layer";
+import { TextSyncOverlay } from "./text-sync-overlay";
+import { Toaster } from "@/views/addons/toaster";
+import type { ToastInfo } from "@/views/addons/addons-types";
 import type { usePlayerCast } from "./hooks/use-player-cast";
+import type { useTextSync } from "./hooks/use-text-sync";
 
 type Room = ComponentProps<typeof RoomLayer>;
 type Shell = ComponentProps<typeof ShellLayer>;
@@ -152,6 +156,12 @@ export type PlayerOverlayLayersProps = {
   showNoAudioWarning: boolean;
   onUseMpv: () => void;
   onDismissNoAudio: () => void;
+  // Text-sync feature
+  onEnterSync?: () => void;
+  syncMode: ReturnType<typeof useTextSync>["syncMode"];
+  syncApi: ReturnType<typeof useTextSync>;
+  syncToast: ToastInfo | null;
+  onSyncPlayPause: () => void;
 };
 
 export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
@@ -167,6 +177,8 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         holdSpeedActive={p.holdSpeedActive}
         videoFillPill={p.videoFillPill}
         subDropToast={p.subDropToast}
+        onSubDelay={(s) => { p.bridgeRef.current?.setSubDelay(s); }}
+        onEnterSync={p.onEnterSync}
         chromeVisible={p.showChrome}
       />
       <CastLayer
@@ -234,7 +246,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         gif={p.gif}
       />
 
-      {!p.loaderActive && (
+      {!p.loaderActive && p.syncMode !== "active" && (
         <ShellLayer
           shellId={p.playerShellId}
           shellSnap={p.shellSnap}
@@ -254,6 +266,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
           onSeek={p.seekTo}
           onSeekStep={p.onSeekStep}
           rememberSubChoice={p.rememberSubChoice}
+          onEnterSync={p.onEnterSync}
           cropMode={p.cropMode}
           onCropMode={p.onCropMode}
           anime4kMode={p.anime4kMode}
@@ -293,6 +306,16 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
           sleep={p.sleep}
         />
       )}
+
+      {!p.loaderActive && p.syncMode === "active" && (
+        <TextSyncOverlay
+          api={p.syncApi}
+          playing={p.snap.status === "playing"}
+          onPlayPause={p.onSyncPlayPause}
+        />
+      )}
+
+      <Toaster toast={p.syncToast} />
 
       <RoomLayer
         inRoom={p.inRoom}

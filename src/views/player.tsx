@@ -32,6 +32,8 @@ import { useLiveChannelOverlay } from "./player/hooks/use-live-channel-overlay";
 import { useStreamSwitcher } from "./player/hooks/use-stream-switcher";
 import { useMpvEmbed } from "./player/hooks/use-mpv-embed";
 import { usePlayerBridge } from "./player/hooks/use-player-bridge";
+import { useTextSync } from "./player/hooks/use-text-sync";
+import { useT } from "@/lib/i18n";
 import { useEpisodeNavigation } from "./player/hooks/use-episode-navigation";
 import { useAbLoop } from "./player/hooks/use-ab-loop";
 import { useAutoNextEpisode } from "./player/hooks/use-auto-next-episode";
@@ -55,10 +57,12 @@ import { useHdrStage } from "./player/hooks/use-hdr-stage";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
+import type { ToastInfo } from "@/views/addons/addons-types";
 
 export function PlayerView({ src }: { src: PlayerSrc }) {
   const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
   const { settings, update } = useSettings();
+  const t = useT();
   const chromeTheme = activeLayout(settings.theme) === "stremio" ? "stremio" : "default";
   const {
     avatarsCorner,
@@ -412,6 +416,28 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     sendCommand,
   });
 
+  const textSync = useTextSync(bridgeRef.current, src.meta.id);
+  const [syncToast, setSyncToast] = useState<ToastInfo | null>(null);
+  const syncToastTimerRef = useRef<number | null>(null);
+  const showSyncToast = useCallback((kind: "ok" | "error", text: string) => {
+    if (syncToastTimerRef.current != null) window.clearTimeout(syncToastTimerRef.current);
+    setSyncToast({ kind, text });
+    syncToastTimerRef.current = window.setTimeout(() => setSyncToast(null), kind === "error" ? 5000 : 3000);
+  }, []);
+  const handleEnterSync = useCallback(async () => {
+    const res = await textSync.enterSync();
+    if (!res.ok) {
+      const reason = res.reason === "no-cues"
+        ? t("No subtitle cues available")
+        : res.reason === "local-path-unreadable"
+          ? t("Could not read the subtitle file")
+          : res.reason === "no-bridge"
+            ? t("Player not ready")
+            : t("Sync unavailable");
+      showSyncToast("error", reason);
+    }
+  }, [textSync.enterSync, showSyncToast, t]);
+
   const videoFill = useVideoFill(bridgeRef, src.url);
   const anime4k = useAnime4k(bridgeRef, src.url, src);
   const { holdSpeedActive, showStats } = usePlayerHotkeys({
@@ -673,11 +699,18 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     showNoAudioWarning,
     onUseMpv: () => update({ playerEngine: "mpv" }),
     onDismissNoAudio: () => setNoAudioDismissed(true),
+    // Text-sync props (preserved from fork)
+    onEnterSync: handleEnterSync,
+    syncMode: textSync.syncMode,
+    syncApi: textSync,
+    syncToast,
+    onSyncPlayPause: playPauseToggle,
   };
   return (
     <main
       ref={stageRef}
       data-harbor-player
+      dir="ltr"
       className={`fixed inset-0 z-[100] overflow-hidden ${stageBg}`}
       style={cursorStyle}
       onMouseMove={wakeChrome}

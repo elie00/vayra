@@ -2,6 +2,7 @@ import { ArrowRight, Check, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import cfTokenTutorial from "@/assets/cf-token-tutorial.png";
 import cloudflareLogoPng from "@/assets/cloudflare.png";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { deployRelay, listAccounts, type CfAccount } from "@/lib/together/cf-deploy";
 import { openUrl } from "@/lib/window";
@@ -9,6 +10,7 @@ import { openUrl } from "@/lib/window";
 type Phase = "intro" | "token" | "account" | "deploying" | "done" | "error";
 
 export function TogetherDeployModal({ onClose, inline = false }: { onClose: () => void; inline?: boolean }) {
+  const t = useT();
   const { settings, update } = useSettings();
   const [phase, setPhase] = useState<Phase>(settings.togetherCfToken ? "deploying" : "intro");
   const [token, setToken] = useState(settings.togetherCfToken);
@@ -78,13 +80,13 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
   const verifyTokenAndPickAccount = async () => {
     setError(null);
     if (!token.trim()) {
-      setError("Paste your API token first.");
+      setError(t("Paste your API token first."));
       return;
     }
     try {
       const list = await listAccounts(token.trim());
       if (list.length === 0) {
-        setError("Token works, but no accounts came back. Check the token's permissions.");
+        setError(t("Token works, but no accounts came back. Check the token's permissions."));
         return;
       }
       setAccounts(list);
@@ -111,15 +113,15 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
               strokeLinejoin="round"
             />
           </svg>
-          Relay
+          {t("Relay")}
         </button>
       )}
       <header>
           <h2 className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
-            Deploy your relay
+            {t("Deploy your relay")}
           </h2>
           <p className="mt-1.5 text-[13px] text-ink-muted">
-            Spins up a tiny server on Cloudflare's free Workers tier. Stays online forever (or until you stop it). Friends connect by URL.
+            {t("Spins up a tiny server on Cloudflare's free Workers tier. Stays online forever (or until you stop it). Friends connect by URL.")}
           </p>
         </header>
 
@@ -127,24 +129,35 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
           <div className="flex flex-col gap-4">
             <ol className="flex flex-col gap-3">
               <Step n={1}>
-                Click the button below. It opens Cloudflare's token page in your browser. Sign in (free, takes 30 seconds if you don't have an account).
+                {t("Click the button below. It opens Cloudflare's token page in your browser. Sign in (free, takes 30 seconds if you don't have an account).")}
               </Step>
               <Step n={2}>
-                On Cloudflare, click <b>Create Token</b>, then find <b>Create Custom Token</b> and click <b>Get started</b>.
+                <Interpolate text={t("On Cloudflare, click {b1}, then find {b2} and click {b3}.")} values={{
+                  b1: <b>{t("Create Token")}</b>,
+                  b2: <b>{t("Create Custom Token")}</b>,
+                  b3: <b>{t("Get started")}</b>,
+                }} />
               </Step>
               <Step n={3}>
-                Fill the top of the form to look exactly like this:
+                {t("Fill the top of the form to look exactly like this:")}
                 <img
                   src={cfTokenTutorial}
-                  alt="Cloudflare token form filled with name 'Harbor Relay' and one permission row set to Account / Workers Scripts / Edit"
+                  alt={t("Cloudflare token form filled with name 'Harbor Relay' and one permission row set to Account / Workers Scripts / Edit")}
                   className="mt-2 w-full rounded-lg border border-edge"
                 />
                 <span className="mt-2 block text-[12px] text-ink-subtle">
-                  Token name can be anything. The permission row must be exactly <b>Account</b> + <b>Workers Scripts</b> + <b>Edit</b>.
+                  <Interpolate text={t("Token name can be anything. The permission row must be exactly {b1} + {b2} + {b3}.")} values={{
+                    b1: <b>{t("Account")}</b>,
+                    b2: <b>{t("Workers Scripts")}</b>,
+                    b3: <b>{t("Edit")}</b>,
+                  }} />
                 </span>
               </Step>
               <Step n={4}>
-                Leave everything below it alone. Scroll down, click <b>Continue to summary</b>, then <b>Create Token</b>. Copy the long string it shows you (you only see it once) and bring it back here.
+                <Interpolate text={t("Leave everything below it alone. Scroll down, click {b1}, then {b2}. Copy the long string it shows you (you only see it once) and bring it back here.")} values={{
+                  b1: <b>{t("Continue to summary")}</b>,
+                  b2: <b>{t("Create Token")}</b>,
+                }} />
               </Step>
             </ol>
             <button
@@ -152,14 +165,14 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
               className="flex h-11 items-center justify-center gap-2 rounded-xl border border-edge text-[14px] text-ink transition-colors hover:bg-elevated"
             >
               <ExternalLink size={15} strokeWidth={1.8} />
-              Open Cloudflare token page
+              {t("Open Cloudflare token page")}
             </button>
             <button
               onClick={() => setPhase("token")}
               className="flex h-11 items-center justify-center gap-2 rounded-xl bg-ink text-[14px] font-medium text-canvas transition-transform hover:scale-[1.01]"
             >
-              I have my token
-              <ArrowRight size={15} strokeWidth={2} className="dir-icon" />
+              {t("I have my token")}
+              <ArrowRight size={15} strokeWidth={2} />
             </button>
           </div>
         )}
@@ -167,12 +180,12 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
         {phase === "token" && (
           <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-medium text-ink-muted">API token</span>
+              <span className="text-[12px] font-medium text-ink-muted">{t("API token")}</span>
               <input
                 type="password"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="40-character token"
+                placeholder={t("40-character token")}
                 autoFocus
                 className="h-11 rounded-xl border border-edge bg-canvas px-3.5 font-mono text-[13px] text-ink transition-colors focus:border-accent"
               />
@@ -185,14 +198,14 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
                 onClick={() => setPhase("intro")}
                 className="h-11 flex-1 rounded-xl border border-edge text-[14px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
               >
-                Back
+                {t("Back")}
               </button>
               <button
                 onClick={verifyTokenAndPickAccount}
                 disabled={!token.trim()}
                 className="h-11 flex-1 rounded-xl bg-ink text-[14px] font-medium text-canvas transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
               >
-                Continue
+                {t("Continue")}
               </button>
             </div>
           </div>
@@ -200,7 +213,7 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
 
         {phase === "account" && (
           <div className="flex flex-col gap-4">
-            <p className="text-[13px] text-ink-muted">Which account should the relay live in?</p>
+            <p className="text-[13px] text-ink-muted">{t("Which account should the relay live in?")}</p>
             <div className="flex flex-col gap-1.5">
               {accounts.map((a) => (
                 <button
@@ -223,8 +236,8 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
           <div className="flex flex-col items-center gap-4 py-6">
             <Loader2 size={32} strokeWidth={1.8} className="animate-spin text-accent" />
             <div className="text-center">
-              <p className="text-[14px] text-ink">Uploading worker, wiring durable object…</p>
-              <p className="mt-1 text-[12px] text-ink-subtle">Takes about 10 seconds.</p>
+              <p className="text-[14px] text-ink">{t("Uploading worker, wiring durable object…")}</p>
+              <p className="mt-1 text-[12px] text-ink-subtle">{t("Takes about 10 seconds.")}</p>
             </div>
           </div>
         )}
@@ -236,8 +249,8 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
                 <Check size={18} strokeWidth={2.4} />
               </span>
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="text-[13px] font-medium text-ink">Relay is live</span>
-                <span className="text-[12px] text-ink-muted">URL is saved and ready to share.</span>
+                <span className="text-[13px] font-medium text-ink">{t("Relay is live")}</span>
+                <span className="text-[12px] text-ink-muted">{t("URL is saved and ready to share.")}</span>
               </div>
               <img
                 src={cloudflareLogoPng}
@@ -247,7 +260,7 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
               />
             </div>
             <div className="flex flex-col gap-3 rounded-xl border border-edge bg-canvas/60 p-4">
-              <span className="text-[11px] uppercase tracking-wider text-ink-subtle">Your relay URL</span>
+              <span className="text-[11px] uppercase tracking-wider text-ink-subtle">{t("Your relay URL")}</span>
               <p className="break-all font-mono text-[13px] text-ink">{result.url}</p>
               <button
                 onClick={copyUrl}
@@ -264,32 +277,32 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
                   {copied ? (
                     <>
                       <Check size={16} strokeWidth={2.6} className="animate-copy-check" />
-                      Copied. Paste it to your friend.
+                      {t("Copied. Paste it to your friend.")}
                     </>
                   ) : (
                     <>
                       <Copy size={15} strokeWidth={2} />
-                      Copy URL
+                      {t("Copy URL")}
                     </>
                   )}
                 </span>
               </button>
             </div>
             <p className="text-[12px] text-ink-subtle">
-              Send this to anyone you want to watch with. They paste it in their Settings → Harbor Relay. After that, share a 6-character room code from the people icon up top.
+              {t("Send this to anyone you want to watch with. They paste it in their Settings → Harbor Relay. After that, share a 6-character room code from the people icon up top.")}
             </p>
             <button
               onClick={onClose}
               className="h-11 rounded-xl border border-edge text-[14px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
             >
-              Done
+              {t("Done")}
             </button>
           </div>
         )}
 
         {phase === "error" && (
           <ErrorPanel
-            message={error ?? "Something went wrong."}
+            message={error ?? t("Something went wrong.")}
             accountId={triedAccountId}
             onClose={onClose}
             onRetry={() => setPhase("deploying")}
@@ -342,6 +355,7 @@ function ErrorPanel({
   onRetry: () => void;
   onEditToken: () => void;
 }) {
+  const t = useT();
   const needsSubdomain = /workers\.dev subdomain/i.test(message);
   const dashUrl = accountId
     ? `https://dash.cloudflare.com/${accountId}/workers-and-pages`
@@ -351,40 +365,50 @@ function ErrorPanel({
     return (
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 rounded-xl border border-edge bg-canvas/60 p-4">
-          <span className="text-[13px] font-medium text-ink">One last thing on Cloudflare's side</span>
+          <span className="text-[13px] font-medium text-ink">{t("One last thing on Cloudflare's side")}</span>
           <p className="text-[13px] leading-snug text-ink-muted">
-            Your account hasn't picked its free <span className="font-mono text-ink">workers.dev</span> address yet. Cloudflare only asks the first time. Quick to set up.
+            <Interpolate text={t("Your account hasn't picked its free {code} address yet. Cloudflare only asks the first time. Quick to set up.")} values={{ code: <span className="font-mono text-ink">workers.dev</span> }} />
           </p>
         </div>
         <ol className="flex flex-col gap-2.5 text-[13px] text-ink">
-          <Step n={1}>Click the button below to open Cloudflare's Workers page.</Step>
+          <Step n={1}>{t("Click the button below to open Cloudflare's Workers page.")}</Step>
           <Step n={2}>
-            Click <b>Create</b> in the top right. Pick the <b>Hello World</b> template (it's the default, should already be selected).
+            <Interpolate text={t("Click {b1} in the top right. Pick the {b2} template (it's the default, should already be selected).")} values={{
+              b1: <b>{t("Create")}</b>,
+              b2: <b>{t("Hello World")}</b>
+            }} />
           </Step>
           <Step n={3}>
-            Cloudflare asks you to pick a name (this becomes <span className="font-mono text-ink">yourname.workers.dev</span>). Type any name (your first name works). Then click <b>Deploy</b>.
+            <Interpolate text={t("Cloudflare asks you to pick a name (this becomes {code}). Type any name (your first name works). Then click {b1}.")} values={{
+              code: <span className="font-mono text-ink">yourname.workers.dev</span>,
+              b1: <b>{t("Deploy")}</b>
+            }} />
           </Step>
-          <Step n={4}>Come back here and hit <b>Try deploy again</b>. The Hello World can stay where it is. It's free and harmless.</Step>
+          <Step n={4}>
+            <Interpolate text={t("Come back here and hit {b1}. The Hello World can stay where it is. It's free and harmless.")} values={{
+              b1: <b>{t("Try deploy again")}</b>
+            }} />
+          </Step>
         </ol>
         <button
           onClick={() => openUrl(dashUrl)}
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-edge text-[14px] text-ink transition-colors hover:bg-elevated"
         >
           <ExternalLink size={15} strokeWidth={1.8} />
-          Open Cloudflare Workers
+          {t("Open Cloudflare Workers")}
         </button>
         <div className="flex gap-2">
           <button
             onClick={onClose}
             className="h-11 flex-1 rounded-xl border border-edge text-[14px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
           >
-            Close
+            {t("Close")}
           </button>
           <button
             onClick={onRetry}
             className="h-11 flex-1 rounded-xl bg-ink text-[14px] font-medium text-canvas transition-transform hover:scale-[1.02]"
           >
-            Try deploy again
+            {t("Try deploy again")}
           </button>
         </div>
       </div>
@@ -400,13 +424,13 @@ function ErrorPanel({
           onClick={onClose}
           className="h-11 flex-1 rounded-xl border border-edge text-[14px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
         >
-          Close
+          {t("Close")}
         </button>
         <button
           onClick={onEditToken}
           className="h-11 flex-1 rounded-xl bg-ink text-[14px] font-medium text-canvas transition-transform hover:scale-[1.02]"
         >
-          Try again
+          {t("Try again")}
         </button>
       </div>
     </div>
@@ -427,5 +451,20 @@ function linkifyMessage(text: string): React.ReactNode {
     ) : (
       <span key={i}>{part}</span>
     ),
+  );
+}
+
+function Interpolate({ text, values }: { text: string; values: Record<string, React.ReactNode> }) {
+  const parts = text.split(/({[a-zA-Z0-9]+})/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const match = part.match(/^{([a-zA-Z0-9]+)}$/);
+        if (match && values[match[1]]) {
+          return <span key={i}>{values[match[1]]}</span>;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
   );
 }

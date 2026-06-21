@@ -22,13 +22,6 @@
       ]
     },
     {
-      "identifier": "shell:allow-open",
-      "allow": [
-        { "url": "https://*" },
-        { "url": "http://*" }
-      ]
-    },
-    {
       "identifier": "shell:allow-execute",
       "allow": [
         {
@@ -65,6 +58,22 @@
     },
     {
       "identifier": "fs:allow-remove",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-stat",
       "allow": [{ "path": "**" }]
     },
     {

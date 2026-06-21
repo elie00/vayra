@@ -79,34 +79,6 @@ const catalog: Record<string, string> = {
     "تحتاج مرشّحات السنة والمدة واللغة والدولة إلى TMDB. يعود تصفّح الأنواع إلى Cinemeta تلقائيًا.",
   "The best {genre} {media}, layered by mood. Browse trending, dive into a director's run, sort by decade, find quiet gems.":
     "أفضل {media} {genre}، مرتّبة حسب المزاج. تصفّح الرائج، وتعمّق في أعمال مخرج، ورتّب حسب العقد، واكتشف الجواهر الهادئة.",
-
-  Documentaries: "أفلام وثائقية",
-  Animation: "رسوم متحركة",
-  "Kids & Family": "الأطفال والعائلة",
-  Reality: "واقعي",
-  Action: "أكشن",
-  Comedy: "كوميديا",
-  Drama: "دراما",
-  Horror: "رعب",
-  "Sci-Fi & Fantasy": "خيال علمي وفانتازيا",
-  Thriller: "إثارة",
-  Romance: "رومانسي",
-
-  "Popular on": "الأكثر شعبية على",
-  "The most-watched movies and series on {name} right now in {region}.":
-    "أكثر الأفلام والمسلسلات مشاهدة على {name} الآن في {region}.",
-  "Top 10 Movies on {name}": "أفضل 10 أفلام على {name}",
-  "Top 10 Series on {name}": "أفضل 10 مسلسلات على {name}",
-  "Movies on {name}": "أفلام على {name}",
-  "Series on {name}": "مسلسلات على {name}",
-  "More Movies": "المزيد من الأفلام",
-  "More Series": "المزيد من المسلسلات",
-  "Nothing matched this filter. Try another category or change your region in Settings.":
-    "لا شيء يطابق هذا المرشّح. جرّب فئة أخرى أو غيّر منطقتك في الإعدادات.",
-  "Add a TMDB key in Settings → Library to power this view.":
-    "أضف مفتاح TMDB في الإعدادات ← المكتبة لتشغيل هذا العرض.",
-  "Scroll filters left": "تمرير المرشّحات لليسار",
-  "Scroll filters right": "تمرير المرشّحات لليمين",
 };
 
 export default catalog;

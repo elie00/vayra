@@ -6,6 +6,7 @@ export type SubtitleMenuProps = {
   delaySec: number;
   onSelect: (id: string | null) => void;
   onDelay: (sec: number) => void;
+  onEnterSync?: () => void;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void | Promise<boolean>;
   metaImdbId?: string | null;
   metaTitle?: string | null;

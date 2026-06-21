@@ -1,3 +1,5 @@
+import type { SubCue } from "@/lib/subtitles/parser";
+
 export type TrackInfo = {
   id: string;
   label: string;
@@ -13,6 +15,7 @@ export type TrackInfo = {
   forced?: boolean;
   default?: boolean;
   hearingImpaired?: boolean;
+  url?: string;
 };
 
 export type Chapter = {
@@ -76,6 +79,8 @@ export type PlayerBridge = {
   setAspectOverride: (ratio: string) => void;
   setAnime4kShaders: (shaders: string[]) => void;
   addSubtitle: (url: string, lang?: string, title?: string, select?: boolean) => Promise<boolean>;
+  getSelectedTrackCues: () => SubCue[] | null;
+  getSelectedTrackUrl: () => string | null;
   setAudioNormalize: (on: boolean) => void;
   setAudioProfile?: (profile: string) => void;
   setMediaInfo?: (info: { title: string; artist?: string; artwork?: string }) => void;

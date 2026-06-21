@@ -39,6 +39,7 @@ export function Transport({
   onSubtitle,
   onSubDelay,
   onAudioDelay,
+  onEnterSync,
   onAddSubtitle,
   onRate,
   cropMode,
@@ -97,6 +98,7 @@ export function Transport({
   onSubtitle: (id: string | null) => void;
   onSubDelay: (sec: number) => void;
   onAudioDelay: (sec: number) => void;
+  onEnterSync?: () => void;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
   cropMode?: string;
@@ -159,6 +161,7 @@ export function Transport({
         onSubtitle={onSubtitle}
         onSubDelay={onSubDelay}
         onAudioDelay={onAudioDelay}
+        onEnterSync={onEnterSync}
         onAddSubtitle={onAddSubtitle}
         onRate={onRate}
         cropMode={cropMode}
@@ -317,6 +320,7 @@ export function Transport({
     onSubtitle,
     onSubDelay,
     onAudioDelay,
+    onEnterSync,
     onAddSubtitle,
     onRate,
     onPiP,

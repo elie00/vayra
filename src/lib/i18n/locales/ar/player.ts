@@ -35,6 +35,8 @@ const player: Record<string, string> = {
   "Loading on {names}…": "جارٍ التحميل على {names}…",
   "Loading {label}": "جارٍ تحميل {label}",
   "Searching sources…": "جارٍ البحث عن مصادر…",
+  "Loading subtitle addons…": "جارٍ تحميل إضافات الترجمة…",
+  "Searching {count} sources…": "جارٍ البحث في {count} مصدر…",
   "Stream failed to load": "تعذّر تحميل البث",
   "Stream is taking a while": "يستغرق البث وقتًا أطول",
   "This source is slow. Try another.": "هذا المصدر بطيء. جرّب مصدرًا آخر.",

@@ -80,6 +80,8 @@ export function createForwardingMpvBridge(): ForwardingBridge {
     },
     setAudioNormalize() {},
     setAudioProfile() {},
+    getSelectedTrackCues() { return null; },
+    getSelectedTrackUrl() { return null; },
     setMediaInfo() {},
     async screenshot(path) {
       try {

@@ -1,10 +1,12 @@
 import { Check, ExternalLink, Loader2, X } from "lucide-react";
 import { openUrl } from "@/lib/window";
 import type { ReactNode } from "react";
+import { useT } from "@/lib/i18n";
 
 export type FieldStatus = { state: "idle" | "busy" | "ok" | "error"; message: string | null };
 
 export function WebhookField({
+
   label,
   logo,
   placeholder,
@@ -23,6 +25,7 @@ export function WebhookField({
   status: FieldStatus;
   help: ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4">
       <div className="flex items-center justify-between gap-3">
@@ -48,7 +51,7 @@ export function WebhookField({
           className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-ink px-4 text-[12.5px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {status.state === "busy" && <Loader2 size={12} strokeWidth={2.4} className="animate-spin" />}
-          Send test
+          {t("Send test")}
         </button>
       </div>
       <div className="rounded-lg bg-canvas/60 p-3 text-[12px] leading-relaxed text-ink-muted">
@@ -59,6 +62,7 @@ export function WebhookField({
 }
 
 export function StatusBadge({ status }: { status: FieldStatus }) {
+  const t = useT();
   if (status.state === "idle") return null;
   const palette =
     status.state === "ok"
@@ -73,29 +77,30 @@ export function StatusBadge({ status }: { status: FieldStatus }) {
       {status.state === "ok" && <Check size={11} strokeWidth={2.6} />}
       {status.state === "error" && <X size={11} strokeWidth={2.6} />}
       {status.state === "busy" && <Loader2 size={11} strokeWidth={2.4} className="animate-spin" />}
-      {status.message}
+      {status.message ? t(status.message) : null}
     </span>
   );
 }
 
 export function DiscordTutorial() {
+  const t = useT();
   return (
     <div className="flex flex-col gap-2.5">
       <p className="text-[12px] text-ink-muted">
-        Discord posts a message to a channel whenever Harbor pings it. Takes about a minute to set up.
+        {t("Discord posts a message to a channel whenever Harbor pings it. Takes about a minute to set up.")}
       </p>
       <ol className="ms-4 list-decimal space-y-1.5 text-[12px] text-ink-muted marker:text-ink-subtle">
-        <li>Open the Discord server where you want notifications to land.</li>
-        <li>Right-click a text channel, pick <span className="text-ink">Edit Channel</span>.</li>
-        <li>Click <span className="text-ink">Integrations</span> on the left, then <span className="text-ink">Webhooks</span>.</li>
-        <li>Click <span className="text-ink">New Webhook</span>, name it Harbor, hit <span className="text-ink">Copy Webhook URL</span>.</li>
-        <li>Paste the URL into the box above and send a test.</li>
+        <li>{t("Open the Discord server where you want notifications to land.")}</li>
+        <li>{t("Right-click a text channel, pick")} <span className="text-ink">{t("Edit Channel")}</span>.</li>
+        <li>{t("Click")} <span className="text-ink">{t("Integrations")}</span> {t("on the left, then")} <span className="text-ink">{t("Webhooks")}</span>.</li>
+        <li>{t("Click")} <span className="text-ink">{t("New Webhook")}</span>, {t("name it Harbor, hit")} <span className="text-ink">{t("Copy Webhook URL")}</span>.</li>
+        <li>{t("Paste the URL into the box above and send a test.")}</li>
       </ol>
       <p className="text-[11.5px] text-ink-subtle">
-        No Integrations option? You need the Manage Webhooks permission. Ask whoever owns the server.
+        {t("No Integrations option? You need the Manage Webhooks permission. Ask whoever owns the server.")}
       </p>
       <ExternalLinkButton
-        label="Open Discord's webhook help"
+        label={t("Open Discord's webhook help")}
         url="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"
       />
     </div>
@@ -103,21 +108,22 @@ export function DiscordTutorial() {
 }
 
 export function TelegramTutorial() {
+  const t = useT();
   return (
     <div className="flex flex-col gap-2.5">
       <p className="text-[12px] text-ink-muted">
-        Telegram sends through a bot you create. You need two things: a <span className="text-ink">bot token</span> and your <span className="text-ink">chat ID</span>. Both go in the boxes above. Harbor builds the URL for you.
+        {t("Telegram sends through a bot you create. You need two things: a")} <span className="text-ink">{t("bot token")}</span> {t("and your")} <span className="text-ink">{t("chat ID")}</span>. {t("Both go in the boxes above. Harbor builds the URL for you.")}
       </p>
       <ol className="ms-4 list-decimal space-y-1.5 text-[12px] text-ink-muted marker:text-ink-subtle">
-        <li>Tap <span className="text-ink">Open BotFather</span> below. In Telegram, send him <span className="font-mono text-ink">/newbot</span>. Pick any name. Pick a username ending in <span className="font-mono text-ink">bot</span>.</li>
-        <li>BotFather replies with a token like <span className="font-mono text-ink">1234567890:AAExample...</span>. Long string with a colon in it. Copy it. Paste it into the <span className="text-ink">Bot token</span> box above.</li>
-        <li>Open the bot BotFather just made (he sends you a link). Send it any message so it's allowed to message you back.</li>
-        <li>Tap <span className="text-ink">Open userinfobot</span> below. Send it <span className="font-mono text-ink">/start</span>. It replies with your numeric ID. Copy that number. Paste it into the <span className="text-ink">Chat ID</span> box above.</li>
-        <li>Hit <span className="text-ink">Send test</span>. You should get a message from your new bot.</li>
+        <li>{t("Tap")} <span className="text-ink">{t("Open BotFather")}</span> {t("below. In Telegram, send him")} <span className="font-mono text-ink">/newbot</span>. {t("Pick any name. Pick a username ending in")} <span className="font-mono text-ink">bot</span>.</li>
+        <li>{t("BotFather replies with a token like")} <span className="font-mono text-ink">1234567890:AAExample...</span>. {t("Long string with a colon in it. Copy it. Paste it into the")} <span className="text-ink">{t("Bot token")}</span> {t("box above.")}</li>
+        <li>{t("Open the bot BotFather just made (he sends you a link). Send it any message so it's allowed to message you back.")}</li>
+        <li>{t("Tap")} <span className="text-ink">{t("Open userinfobot")}</span> {t("below. Send it")} <span className="font-mono text-ink">/start</span>. {t("It replies with your numeric ID. Copy that number. Paste it into the")} <span className="text-ink">{t("Chat ID")}</span> {t("box above.")}</li>
+        <li>{t("Hit")} <span className="text-ink">{t("Send test")}</span>. {t("You should get a message from your new bot.")}</li>
       </ol>
       <div className="flex flex-wrap gap-2">
-        <ExternalLinkButton label="Open BotFather" url="https://t.me/botfather" />
-        <ExternalLinkButton label="Open userinfobot" url="https://t.me/userinfobot" />
+        <ExternalLinkButton label={t("Open BotFather")} url="https://t.me/botfather" />
+        <ExternalLinkButton label={t("Open userinfobot")} url="https://t.me/userinfobot" />
       </div>
     </div>
   );
@@ -140,13 +146,14 @@ export function TelegramMark({ size = 18 }: { size?: number }) {
 }
 
 function ExternalLinkButton({ label, url }: { label: string; url: string }) {
+  const t = useT();
   return (
     <button
       type="button"
       onClick={() => openUrl(url)}
       className="inline-flex items-center gap-1.5 self-start rounded-lg border border-edge-soft bg-canvas/60 px-3 py-1.5 text-[11.5px] font-semibold text-ink transition-colors hover:border-edge hover:bg-canvas/80"
     >
-      {label}
+      {t(label)}
       <ExternalLink size={11} strokeWidth={2.2} />
     </button>
   );

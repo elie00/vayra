@@ -40,6 +40,7 @@ import { EditorOverlay } from "./editor-overlay";
 import { OptionsSection } from "./options-section";
 import { EditLayoutCard, FooterBar, ThemeTabs } from "./panel-bars";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
+import { useT } from "@/lib/i18n";
 
 const THEME_BASELINES: Record<ThemeId, PlayerChromeConfig> = {
   default: DEFAULT_DEFAULT_CONFIG,
@@ -51,6 +52,7 @@ function themeIdFromSettings(settings: ReturnType<typeof useSettings>["settings"
 }
 
 export function PlayerLayoutPanel() {
+  const t = useT();
   const { settings } = useSettings();
   const appTheme = themeIdFromSettings(settings);
   const [theme, setTheme] = useState<ThemeId>(appTheme);
@@ -90,8 +92,8 @@ export function PlayerLayoutPanel() {
 
   useEffect(() => {
     return pushActivityHint({
-      details: editorOpen ? "Designing the player layout" : "Customizing the player",
-      state: "Player layout",
+      details: editorOpen ? t("Designing the player layout") : t("Customizing the player"),
+      state: t("Player layout"),
     });
   }, [editorOpen]);
 
@@ -202,7 +204,7 @@ export function PlayerLayoutPanel() {
   const onSave = useCallback(() => {
     const res = writePlayerChromeConfig(theme, draft);
     if (!res.ok) {
-      void alertDialog(`Couldn't save your layout. ${res.error}`);
+      void alertDialog(t("Couldn't save your layout. {error}", { error: res.error }));
       return;
     }
     setSaved(draft);
@@ -216,13 +218,13 @@ export function PlayerLayoutPanel() {
     async (id: string) => {
       if (!sameConfig(draft, saved)) {
         const ok = await confirmDialog(
-          "You have unsaved changes that will be lost when switching profiles. Continue?",
+          t("You have unsaved changes that will be lost when switching profiles. Continue?")
         );
         if (!ok) return;
       }
       const res = setActiveProfile(theme, id);
       if (!res.ok) {
-        void alertDialog(`Couldn't switch profile. ${res.error}`);
+        void alertDialog(t("Couldn't switch profile. {error}", { error: res.error }));
         return;
       }
       bumpProfiles();
@@ -235,7 +237,7 @@ export function PlayerLayoutPanel() {
     (name: string) => {
       const res = createProfile(theme, name, draft);
       if (!res.ok) {
-        void alertDialog(`Couldn't create the profile. ${res.error}`);
+        void alertDialog(t("Couldn't create the profile. {error}", { error: res.error }));
         return;
       }
       bumpProfiles();
@@ -251,7 +253,7 @@ export function PlayerLayoutPanel() {
       if (!activeProfileId) return;
       const res = renameProfileApi(activeProfileId, newName);
       if (!res.ok) {
-        void alertDialog(`Couldn't rename the profile. ${res.error}`);
+        void alertDialog(t("Couldn't rename the profile. {error}", { error: res.error }));
         return;
       }
       bumpProfiles();
@@ -261,11 +263,11 @@ export function PlayerLayoutPanel() {
 
   const onDeleteProfile = useCallback(async () => {
     if (!activeProfileId) return;
-    const ok = await confirmDialog("Delete this profile permanently? This cannot be undone.");
+    const ok = await confirmDialog(t("Delete this profile permanently? This cannot be undone."));
     if (!ok) return;
     const res = deleteProfileApi(activeProfileId);
     if (!res.ok) {
-      void alertDialog(`Couldn't delete the profile. ${res.error}`);
+      void alertDialog(t("Couldn't delete the profile. {error}", { error: res.error }));
       return;
     }
     bumpProfiles();
@@ -293,7 +295,7 @@ export function PlayerLayoutPanel() {
     (text: string) => {
       const res = importProfileJson(text);
       if (!res.ok) {
-        void alertDialog(`Couldn't import that file. ${res.error}`);
+        void alertDialog(t("Couldn't import that file. {error}", { error: res.error }));
         return;
       }
       bumpProfiles();
@@ -377,7 +379,7 @@ export function PlayerLayoutPanel() {
           onClose={async () => {
             if (!sameConfig(draft, saved)) {
               const ok = await confirmDialog(
-                "You have unsaved changes. Close the editor and discard them?",
+                t("You have unsaved changes. Close the editor and discard them?")
               );
               if (!ok) return;
               setDraft(saved);

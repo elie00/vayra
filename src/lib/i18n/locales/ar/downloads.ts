@@ -1,4 +1,17 @@
 const downloads: Record<string, string> = {
+  Downloads: "التحميلات",
+  "Saved movies and episodes for offline watching": "الأفلام والمسلسلات المحفوظة للمشاهدة بدون اتصال",
+  "1 item": "عنصر واحد",
+  "{count} items": "{count} عناصر",
+  "{count} downloading": "جارٍ تنزيل {count}",
+  "{size} saved": "تم حفظ {size}",
+  "No downloads yet": "لا توجد تنزيلات بعد",
+  "Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.": "افتح أي فيلم أو مسلسل، مرر المؤشر فوق حلقة، وانقر على أيقونة التنزيل. اختر المصدر الذي تريده بدقة وسيتم حفظه هنا للمشاهدة بدون اتصال.",
+  "Failed: {error}": "فشل: {error}",
+  Canceled: "أُلغي",
+  "Interrupted: re-download to finish": "قوطع: أعد التنزيل للإكمال",
+  "Cancel download": "إلغاء التنزيل",
+  "Delete download and file": "حذف التنزيل والملف",
   Download: "تنزيل",
   "Download video": "تنزيل الفيديو",
   "Download to disk": "التنزيل إلى القرص",
@@ -59,7 +72,6 @@ const downloads: Record<string, string> = {
   Completed: "اكتمل",
   Failed: "فشل",
   Interrupted: "توقّف",
-  Canceled: "أُلغي",
   Remove: "إزالة",
 };
 

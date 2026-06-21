@@ -113,7 +113,8 @@ function dedupAndRank(
   const seen = new Set<string>();
   const filtered: SubResult[] = [];
   for (const r of results) {
-    const key = `${normalizeLang(r.lang)}|${r.url}`;
+    // Include title and format in dedup key to handle cases where same URL appears multiple times
+    const key = `${normalizeLang(r.lang)}|${r.url}|${r.title || ""}|${r.format || ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
     filtered.push(r);

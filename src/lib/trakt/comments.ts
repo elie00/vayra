@@ -89,7 +89,14 @@ export async function fetchComments(
 ): Promise<TraktComment[]> {
   const path = commentsPath(target, sort) + "?extended=images";
   const raw = await traktRequest<RawComment[]>(path).catch(() => [] as RawComment[]);
-  return raw.filter((c) => !c.spoiler).map(mapComment);
+  return raw.map(mapComment);
+}
+
+export async function fetchReplies(commentId: number): Promise<TraktComment[]> {
+  const raw = await traktRequest<RawComment[]>(`/comments/${commentId}/replies?extended=images`).catch(
+    () => [] as RawComment[],
+  );
+  return raw.map(mapComment);
 }
 
 export async function likeComment(id: number): Promise<void> {
@@ -99,6 +106,11 @@ export async function likeComment(id: number): Promise<void> {
 export async function unlikeComment(id: number): Promise<void> {
   await traktRequest(`/comments/${id}/like`, { method: "DELETE", authed: true });
 }
+
+export async function deleteComment(id: number): Promise<void> {
+  await traktRequest(`/comments/${id}`, { method: "DELETE", authed: true });
+}
+
 
 function subjectBody(target: TraktTarget) {
   const ids: Record<string, string | number> = {};
@@ -114,10 +126,11 @@ function subjectBody(target: TraktTarget) {
 export async function postComment(
   target: TraktTarget,
   comment: string,
+  spoiler: boolean = false,
 ): Promise<TraktComment> {
   const body = {
     comment,
-    spoiler: false,
+    spoiler,
     review: false,
     share: false,
     ...subjectBody(target),

@@ -78,6 +78,51 @@ jobs:
         if: contains(matrix.platform.runner, 'windows')
         run: pnpm run setup:libmpv
 
+      - name: Fetch external binaries
+        shell: bash
+        run: |
+          mkdir -p src-tauri/binaries
+          cd src-tauri/binaries
+          TARGET="${{ matrix.platform.target }}"
+          EXT=""
+          if [[ "$TARGET" == *"windows"* ]]; then EXT=".exe"; fi
+          
+          echo "Downloading yt-dlp..."
+          if [[ "$TARGET" == *"windows"* ]]; then
+            curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -o "yt-dlp-${TARGET}${EXT}"
+          elif [[ "$TARGET" == *"apple"* ]]; then
+            curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos" -o "yt-dlp-${TARGET}${EXT}"
+          else
+            curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -o "yt-dlp-${TARGET}${EXT}"
+          fi
+          chmod +x "yt-dlp-${TARGET}${EXT}" || true
+
+          echo "Fetching ffmpeg and ffprobe..."
+          if [[ "$TARGET" == *"windows"* ]]; then
+            curl -L "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -o ffmpeg.zip
+            unzip -j ffmpeg.zip "*/bin/ffmpeg.exe" "*/bin/ffprobe.exe"
+            mv ffmpeg.exe "ffmpeg-${TARGET}${EXT}"
+            mv ffprobe.exe "ffprobe-${TARGET}${EXT}"
+          elif [[ "$TARGET" == *"apple"* ]]; then
+            if [[ "$TARGET" == *"aarch64"* ]]; then
+              curl -L "https://www.osxexperts.net/ffmpeg6arm.zip" -o ffmpeg.zip
+              curl -L "https://www.osxexperts.net/ffprobe6arm.zip" -o ffprobe.zip
+            else
+              curl -L "https://www.osxexperts.net/ffmpeg6intel.zip" -o ffmpeg.zip
+              curl -L "https://www.osxexperts.net/ffprobe6intel.zip" -o ffprobe.zip
+            fi
+            unzip ffmpeg.zip
+            unzip ffprobe.zip
+            mv ffmpeg "ffmpeg-${TARGET}${EXT}"
+            mv ffprobe "ffprobe-${TARGET}${EXT}"
+            chmod +x "ffmpeg-${TARGET}${EXT}" "ffprobe-${TARGET}${EXT}" || true
+          else
+            curl -L "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" -o ffmpeg.tar.xz
+            tar -xf ffmpeg.tar.xz --strip-components=1 --wildcards '*/ffmpeg' '*/ffprobe'
+            mv ffmpeg "ffmpeg-${TARGET}${EXT}"
+            mv ffprobe "ffprobe-${TARGET}${EXT}"
+          fi
+
       - name: harbor-core check
         working-directory: harbor-core
         run: |

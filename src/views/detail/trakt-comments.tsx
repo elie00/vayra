@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId } from "react";
-import { Heart, MessageCircle, ChevronDown, Settings, Loader2, Send, AlertCircle } from "lucide-react";
+import { Heart, MessageCircle, ChevronDown, Settings, Loader2, Send, AlertCircle, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import {
   fetchComments,
+  fetchReplies,
   likeComment,
   unlikeComment,
+  deleteComment,
   postComment,
   rateContent,
   removeRating,
@@ -14,6 +16,7 @@ import { traktRequest, TraktApiError } from "@/lib/trakt/client";
 import type { IdResolution } from "@/lib/trakt/ids";
 import { getSession, subscribeSession } from "@/lib/trakt/session";
 import { useView } from "@/lib/view";
+import { useSettings } from "@/lib/settings";
 import { openUrl } from "@/lib/window";
 
 function timeAgo(dateStr: string): string {
@@ -127,13 +130,22 @@ function StarRow({ value, interactive, onRate, onHover }: { value: number; inter
 function CommentCard({
   comment,
   connected,
+  username,
+  onDelete,
 }: {
   comment: TraktComment;
   connected: boolean;
+  username: string | null;
+  onDelete: (id: number) => void;
 }) {
+  const t = useT();
   const [imgError, setImgError] = useState(false);
   const [liking, setLiking] = useState(false);
   const [likes, setLikes] = useState(comment.likes);
+  const [revealed, setRevealed] = useState(!comment.spoiler);
+  const [replies, setReplies] = useState<TraktComment[] | null>(null);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const avatar = (() => {
     if (comment.user.avatar) return comment.user.avatar;
@@ -191,9 +203,23 @@ function CommentCard({
             </span>
           )}
         </div>
-        <p className="mt-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink" dir="auto">
-          {comment.comment}
-        </p>
+        {!revealed ? (
+          <div className="mt-1.5">
+            <button
+              onClick={() => setRevealed(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-yellow-500/10 px-3 py-1.5 text-[12px] font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
+            >
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-current">
+                <path d="M8 3C4.5 3 1.7 5.3 0 8c1.7 2.7 4.5 5 8 5s6.3-2.3 8-5c-1.7-2.7-4.5-5-8-5zm0 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+              </svg>
+              {t("Spoiler — Click to reveal")}
+            </button>
+          </div>
+        ) : (
+          <p className="mt-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-ink" dir="auto">
+            {comment.comment}
+          </p>
+        )}
         <div className="mt-2 flex items-center gap-3 text-[12px] text-ink-muted">
           <button
             onClick={handleLike}
@@ -215,12 +241,78 @@ function CommentCard({
             {likes}
           </button>
           {comment.replies > 0 && (
-            <span className="flex items-center gap-1">
-              <MessageCircle size={12} />
-              {comment.replies}
-            </span>
+            <button
+              onClick={() => {
+                if (replies) { setReplies(null); return; }
+                setLoadingReplies(true);
+                fetchReplies(comment.id).then((r) => {
+                  setReplies(r);
+                  setLoadingReplies(false);
+                });
+              }}
+              className="flex items-center gap-1 transition-colors hover:text-ink"
+            >
+              {loadingReplies ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <MessageCircle size={12} />
+              )}
+              {replies ? `${comment.replies}` : `${comment.replies}`}
+            </button>
+          )}
+          {comment.user.username === username && (
+            <button
+              onClick={async () => {
+                if (deleting) return;
+                setDeleting(true);
+                try {
+                  await deleteComment(comment.id);
+                  onDelete(comment.id);
+                } catch {
+                  setDeleting(false);
+                }
+              }}
+              disabled={deleting}
+              className="flex items-center gap-1 text-ink-muted transition-colors hover:text-red-400 disabled:opacity-50"
+            >
+              {deleting ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Trash2 size={12} />
+              )}
+            </button>
           )}
         </div>
+        {replies && (
+          <div className="mt-3 space-y-2 border-l-2 border-edge pl-4">
+            {replies.map((r) => (
+              <div key={r.id} className="flex gap-2 rounded-lg bg-raised/50 p-3">
+                <div className="shrink-0">
+                  {r.user.avatar ? (
+                    <img src={r.user.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-muted/20 text-[10px] font-semibold text-ink-muted">
+                      {(r.user.name ?? r.user.username).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-ink">{r.user.name ?? r.user.username}</span>
+                    <span className="text-[10px] text-ink-muted">{timeAgo(r.createdAt)}</span>
+                  </div>
+                  {r.spoiler ? (
+                    <SpoilerLabel comment={r} />
+                  ) : (
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ink" dir="auto">
+                      {r.comment}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -234,14 +326,18 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<string>("likes");
   const [showSort, setShowSort] = useState(false);
+  const [myComments, setMyComments] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const [spoiler, setSpoiler] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [ratinging, setRatinging] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
+  const [blurred, setBlurred] = useState(true);
   const sortRef = useRef<HTMLDivElement>(null);
   const { openSettings } = useView();
+  const { settings } = useSettings();
   const [session, setSessionState] = useState(() => getSession());
   const connected = !!session;
   const username = session?.username ?? null;
@@ -331,15 +427,15 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
 
   const handleOpenTrakt = useCallback(() => {
     if (!target) return;
-    const id = target.kind === "episode" ? target.show.ids : target.ids;
-    const provider = id.tmdb ? "tmdb" : "imdb";
-    const val = provider === "tmdb" ? String(id.tmdb) : id.imdb;
+    const ids = target.kind === "episode" ? target.show.ids : target.ids;
+    const slug = ids.tmdb ? `tmdb:${ids.tmdb}` : ids.imdb;
+    if (!slug) return;
     if (target.kind === "episode") {
-      openUrl(`https://trakt.tv/search/${provider}/${val}?season=${target.season}&episode=${target.number}`);
+      openUrl(`https://app.trakt.tv/shows/${slug}/seasons/${target.season}/episodes/${target.number}?mode=media`);
     } else if (target.kind === "movie") {
-      openUrl(`https://trakt.tv/search/${provider}/${val}`);
+      openUrl(`https://app.trakt.tv/movies/${slug}?mode=media`);
     } else {
-      openUrl(`https://trakt.tv/search/${provider}/${val}`);
+      openUrl(`https://app.trakt.tv/shows/${slug}?mode=media`);
     }
   }, [target]);
 
@@ -348,7 +444,8 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
     setPostError(null);
     setPosting(true);
     try {
-      const created = await postComment(target, text.trim());
+      const created = await postComment(target, text.trim(), spoiler);
+      setSpoiler(false);
       setComments((prev) => [created, ...prev]);
       setText("");
       if (commentsCacheKey) {
@@ -376,7 +473,15 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
       }
     }
     setPosting(false);
-  }, [target, text, posting, commentsCacheKey]);
+  }, [target, text, posting, commentsCacheKey, spoiler]);
+
+  const handleDelete = useCallback((id: number) => {
+    setComments((prev) => prev.filter((c) => c.id !== id));
+    if (commentsCacheKey) {
+      const existing = JSON.parse(localStorage.getItem(commentsCacheKey) ?? "[]") as TraktComment[];
+      localStorage.setItem(commentsCacheKey, JSON.stringify(existing.filter((c) => c.id !== id)));
+    }
+  }, [commentsCacheKey]);
 
   const handleRate = useCallback(async (rating: number) => {
     if (!target || ratinging) return;
@@ -401,12 +506,22 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
         <h2 className="text-[20px] font-bold text-ink">{t("Trakt Comments")}</h2>
         {target && (
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMyComments(!myComments)}
+              className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-[12px] font-medium ring-1 transition-colors ${
+                myComments
+                  ? "bg-ink text-canvas ring-ink"
+                  : "text-ink-muted ring-edge hover:bg-elevated hover:text-ink"
+              }`}
+            >
+              {t("My")}
+            </button>
             <div ref={sortRef} className="relative">
               <button
                 onClick={() => setShowSort(!showSort)}
                 className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[12px] font-medium text-ink-muted ring-1 ring-edge transition-colors hover:bg-elevated hover:text-ink"
               >
-                {sort}
+                {t(sort.charAt(0).toUpperCase() + sort.slice(1))}
                 <ChevronDown size={12} />
               </button>
               {showSort && (
@@ -435,7 +550,24 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
         )}
       </div>
 
-      {target && connected && (
+      <div className="relative overflow-hidden rounded-xl">
+        {settings.blurComments && blurred && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center gap-3 pt-16 backdrop-blur-sm"
+            style={{
+              background: "linear-gradient(to bottom, color-mix(in srgb, var(--color-canvas) 5%, transparent) 0%, color-mix(in srgb, var(--color-canvas) 78%, transparent) 40%, color-mix(in srgb, var(--color-canvas) 95%, transparent) 100%)",
+            }}
+          >
+            <button
+              onClick={() => setBlurred(false)}
+              className="rounded-xl bg-ink px-5 py-2.5 text-[13px] font-semibold text-canvas shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.97]"
+            >
+              {t("Reveal comments")}
+            </button>
+            <span className="text-[11px] text-ink-muted/60">{t("Comments are hidden")}</span>
+          </div>
+        )}
+
+        {target && connected && (
         <div className="mb-4 flex items-center gap-2">
           <span className="text-[12px] font-medium text-ink-muted">{t("Rating")}:</span>
           <StarRow value={userRating} interactive={true} onRate={handleRate} onHover={setHoverRating} />
@@ -524,6 +656,18 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
               </button>
             </div>
           </div>
+          <div className="mt-2 flex items-center gap-4">
+            <label className="flex cursor-pointer items-center gap-1.5 text-[12px] text-ink-muted transition-colors hover:text-ink">
+              <input
+                type="checkbox"
+                checked={spoiler}
+                onChange={(e) => setSpoiler(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-edge bg-elevated accent-ink"
+              />
+              {t("Contains spoiler")}
+            </label>
+            <span className="text-[11px] text-ink-muted/40">{t("Comments may take a moment to appear on Trakt")}</span>
+          </div>
           {postError && (
             <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-400">
               <AlertCircle size={12} />
@@ -552,13 +696,34 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
         <p className="text-[14px] text-ink-muted">{t("No comments yet")}</p>
       )}
 
-      {target && !loading && comments.length > 0 && (
+      {target && !loading && (myComments ? comments.filter((c) => c.user.username === username) : comments).length === 0 && myComments && (
+        <p className="text-[14px] text-ink-muted">{t("You haven't commented yet")}</p>
+      )}
+
+      {target && !loading && (
         <div className="flex flex-col gap-3">
-          {comments.map((c) => (
-            <CommentCard key={c.id} comment={c} connected={connected} />
+          {(myComments ? comments.filter((c) => c.user.username === username) : comments).map((c) => (
+            <CommentCard key={c.id} comment={c} connected={connected} username={username} onDelete={handleDelete} />
           ))}
         </div>
       )}
+      </div>
     </section>
+  );
+}
+
+function SpoilerLabel({ comment }: { comment: { comment: string } }) {
+  const t = useT();
+  const [show, setShow] = useState(false);
+  if (show) {
+    return <p className="mt-0.5 whitespace-pre-wrap break-words text-[12px] leading-relaxed text-ink" dir="auto">{comment.comment}</p>;
+  }
+  return (
+    <button
+      onClick={() => setShow(true)}
+      className="mt-0.5 inline-flex items-center gap-1 rounded bg-yellow-500/10 px-2 py-0.5 text-[10px] font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
+    >
+{t("Spoiler — Click")}
+    </button>
   );
 }

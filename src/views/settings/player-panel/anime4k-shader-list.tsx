@@ -134,30 +134,6 @@ export function Anime4kShaderList() {
               {busy ? "Updating…" : "Re-download"}
             </button>
           </div>
-
-          <div className="flex items-start gap-3 rounded-xl border border-edge-soft bg-canvas/50 px-3.5 py-3">
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[13.5px] font-medium text-ink">Apply to anime only</span>
-              <span className="text-[12px] leading-snug text-ink-subtle">
-                Anime4K is built for animation. Keep this on to skip it on live-action movies and shows.
-              </span>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={settings.playerAnime4kAnimeOnly}
-              onClick={() => update({ playerAnime4kAnimeOnly: !settings.playerAnime4kAnimeOnly })}
-              className={`mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors ${
-                settings.playerAnime4kAnimeOnly ? "bg-accent" : "bg-raised"
-              }`}
-            >
-              <span
-                className={`h-5 w-5 rounded-full bg-canvas shadow-sm transition-transform ${
-                  settings.playerAnime4kAnimeOnly ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
           {error && (
             <span className="rounded-lg bg-danger/15 px-3 py-2 text-[12px] text-danger ring-1 ring-danger/30">
               {error}

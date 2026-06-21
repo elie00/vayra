@@ -1,5 +1,4 @@
 import { ArrowRight, X } from "lucide-react";
-import { useT } from "@/lib/i18n";
 import { useTogether } from "@/lib/together/provider";
 import { useView, type View } from "@/lib/view";
 import type { Meta } from "@/lib/cinemeta";
@@ -7,7 +6,6 @@ import type { Meta } from "@/lib/cinemeta";
 export function TogetherSummonToast() {
   const { incomingSummon, dismissSummon } = useTogether();
   const { openMeta, setView, openQueue, openAddonDetail, player } = useView();
-  const t = useT();
   if (player || !incomingSummon) return null;
   const { name, target } = incomingSummon;
   const hue = nameHue(name);
@@ -16,10 +14,10 @@ export function TogetherSummonToast() {
 
   const isViewTarget = target.view != null;
   const headline = target.addonId
-    ? target.label || t("an addon")
+    ? target.label || "an addon"
     : isViewTarget
       ? target.label || viewLabel(target.view!)
-      : target.mediaTitle || t("a title");
+      : target.mediaTitle || "a title";
 
   const handleAccept = () => {
     if (target.view) {
@@ -42,16 +40,16 @@ export function TogetherSummonToast() {
   };
 
   function viewLabel(v: string): string {
-    if (v === "home") return t("Home");
-    if (v === "discover") return t("Discover");
-    if (v === "anime") return t("Anime");
-    if (v === "queue") return t("My Library");
+    if (v === "home") return "Home";
+    if (v === "discover") return "Discover";
+    if (v === "anime") return "Anime";
+    if (v === "queue") return "My Library";
     return v;
   }
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-6 z-[125] flex justify-center px-6">
-      <div className="harbor-together-pill pointer-events-auto flex items-center gap-3 rounded-full border border-edge bg-surface/98 px-2 py-2 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.75)] animate-popover-in">
+      <div className="harbor-together-pill pointer-events-auto flex items-center gap-3 rounded-full border border-edge bg-surface/98 py-2 pl-2 pr-2 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.75)] animate-popover-in">
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-canvas"
           style={{ backgroundColor: tint }}
@@ -61,7 +59,7 @@ export function TogetherSummonToast() {
 
         <div className="flex min-w-0 flex-col gap-0.5 pe-2">
           <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-accent">
-            {t("{name} wants you here", { name })}
+            {name} wants you here
           </span>
           <span className="max-w-[280px] truncate text-[13.5px] font-semibold text-ink">
             {headline}
@@ -72,13 +70,13 @@ export function TogetherSummonToast() {
           onClick={handleAccept}
           className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-4 text-[12.5px] font-semibold text-canvas transition-transform hover:scale-[1.04]"
         >
-          {t("Sure")}
-          <ArrowRight size={13} strokeWidth={2.4} className="dir-icon" />
+          Sure
+          <ArrowRight size={13} strokeWidth={2.4} />
         </button>
 
         <button
           onClick={dismissSummon}
-          aria-label={t("Dismiss")}
+          aria-label="Dismiss"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
         >
           <X size={15} strokeWidth={2.2} />

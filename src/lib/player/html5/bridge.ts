@@ -118,6 +118,7 @@ export function createHtml5Bridge(): PlayerBridge {
       kind: "subtitle" as const,
       selected: t.id === activeSubId,
       external: t.external,
+      url: t.url,
     }));
   };
 
@@ -556,6 +557,14 @@ export function createHtml5Bridge(): PlayerBridge {
       }
       refreshSnapshot();
       return true;
+    },
+    getSelectedTrackCues() {
+      const track = subTracks.find((t) => t.id === activeSubId);
+      return track?.cues ?? null;
+    },
+    getSelectedTrackUrl() {
+      const track = subTracks.find((t) => t.id === activeSubId);
+      return track?.url ?? null;
     },
     setAudioNormalize() {},
     setMediaInfo(info) {

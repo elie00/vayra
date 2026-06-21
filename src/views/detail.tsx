@@ -89,6 +89,9 @@ import { EpisodeGridSkeleton } from "./detail/episode-grid-skeleton";
 import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
+import { TraktComments } from "./detail/trakt-comments";
+import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
+import type { IdResolution } from "@/lib/trakt/ids";
 
 export function DetailView({
   meta,
@@ -450,6 +453,24 @@ export function DetailView({
   const isSeries = detail?.kind != null
     ? detail.kind === "tv"
     : meta.type === "series";
+  const traktResolution = useMemo((): IdResolution => {
+    if (isAnime) return { ok: false, reason: "anime" };
+    const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
+    const tmdbId = detail?.id;
+    if (isSeries && (imdbId || (tmdbId && detail?.kind === "tv"))) {
+      const ids: Record<string, string | number> = {};
+      if (imdbId) ids.imdb = imdbId;
+      if (tmdbId) ids.tmdb = tmdbId;
+      return { ok: true, target: { kind: "show", ids } } as IdResolution;
+    }
+    if (!isSeries && (imdbId || tmdbId)) {
+      const ids: Record<string, string | number> = {};
+      if (imdbId) ids.imdb = imdbId;
+      if (tmdbId) ids.tmdb = tmdbId;
+      return { ok: true, target: { kind: "movie", ids } } as IdResolution;
+    }
+    return stremioIdToTraktTarget(meta.id);
+  }, [meta.id, isSeries, isAnime, detail?.imdbId, detail?.id, detail?.kind]);
   const playMeta: Meta = {
     ...meta,
     name: title,
@@ -1059,6 +1080,7 @@ export function DetailView({
             <InfoBlock detail={detail} isAnime={isAnime} />
           </LazyMount>
         )}
+        <TraktComments resolution={traktResolution} />
 
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">

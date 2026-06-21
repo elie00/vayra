@@ -41,13 +41,13 @@ export function TogetherRelayBanner() {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="text-[12.5px] font-medium text-ink">
           {pub
-            ? t("Harbor's public relay has not rolled out the latest protocol yet.")
-            : t("Relay outdated. Your self-hosted relay is running an older version.")}
+            ? "Harbor's public relay has not rolled out the latest protocol yet."
+            : "Relay outdated. Your self-hosted relay is running an older version."}
         </span>
         <span className="text-[11.5px] leading-snug text-ink-muted">
           {pub
-            ? t("It updates automatically; nothing to do.")
-            : t("Redeploy it to get the latest Watch Together fixes. Harbor's public relay updates on its own.")}
+            ? "It updates automatically; nothing to do."
+            : "Redeploy it to get the latest Watch Together fixes. Harbor's public relay updates on its own."}
         </span>
         {!pub && (
           <button
@@ -57,7 +57,7 @@ export function TogetherRelayBanner() {
             }}
             className="mt-1 w-fit rounded-lg border border-edge px-2.5 py-1 text-[11.5px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink"
           >
-            {t("Open relay settings")}
+            Open relay settings
           </button>
         )}
       </div>

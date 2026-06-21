@@ -4,6 +4,9 @@ import type { Settings } from "./types";
 export const STORAGE_KEY = "harbor.settings";
 
 export const DEFAULT: Settings = {
+  translatePosters: false,
+  blurComments: false,
+  blurEpisodes: false,
   tmdbKey: "",
   omdbKey: "",
   rpdbKey: "",

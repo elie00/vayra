@@ -92,6 +92,7 @@ const importLibrary = () => import("@/views/library");
 const importLive = () => import("@/views/live");
 const importVod = () => import("@/views/playlist-vod");
 const importDownloads = () => import("@/views/downloads");
+const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importOnboarding = () => import("@/components/onboarding");
 
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
@@ -116,6 +117,7 @@ const Settings = lazy(() => importSettings().then((m) => ({ default: m.Settings 
 const Shows = lazy(() => importShows().then((m) => ({ default: m.Shows })));
 const LibraryView = lazy(() => importLibrary().then((m) => ({ default: m.LibraryView })));
 const LiveView = lazy(() => importLive().then((m) => ({ default: m.LiveView })));
+const MatchDetailView = lazy(() => importMatchDetail().then((m) => ({ default: m.MatchDetailView })));
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
 const OnboardingModal = lazy(() => importOnboarding().then((m) => ({ default: m.OnboardingModal })));
@@ -150,6 +152,7 @@ function useViewPreloader() {
       void importAward();
       void importAnimeAward();
       void importService();
+      void importMatchDetail();
       void importOnboarding();
     });
     return () => {
@@ -487,6 +490,7 @@ function Shell() {
   const liveTop = topKind === "live";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
+  const matchDetailTop = topKind === "match-detail";
 
   const [immersive, setImmersive] = useState(false);
   useEffect(() => {
@@ -532,6 +536,8 @@ function Shell() {
     !!episodeDetail,
     stackKinds.includes("episode-detail"),
   );
+  const { matchDetailGame } = useView();
+  const matchDetailAlive = useKeepAlive(matchDetailTop, !!matchDetailGame);
   const filterAlive = useKeepAlive(filterTop, !!filter);
   const gridAlive = useKeepAlive(gridTop, !!grid, stackKinds.includes("grid"));
   const awardAlive = useKeepAlive(awardTop, awardTop);
@@ -685,6 +691,13 @@ function Shell() {
                 episode={episodeDetail.episode}
                 seriesMeta={episodeDetail.seriesMeta}
               />
+            </Suspense>
+          </div>
+        )}
+        {matchDetailAlive && matchDetailGame && (
+          <div className={layer(matchDetailTop)}>
+            <Suspense fallback={null}>
+              <MatchDetailView key={`match-${matchDetailGame.id}`} game={matchDetailGame} />
             </Suspense>
           </div>
         )}

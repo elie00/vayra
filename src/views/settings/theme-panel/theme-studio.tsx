@@ -4,12 +4,9 @@ import { createPortal } from "react-dom";
 import { Inspector } from "./theme-studio/inspector";
 import { StudioHeader } from "./theme-studio/studio-header";
 import { CodePopout } from "./theme-studio/code-popout";
-import { buildChrome } from "./theme-studio/chrome-config";
+import { buildChrome, DEFAULT_CHROME } from "./theme-studio/chrome-config";
 import { SUITE_CHROME as STABLE_CHROME } from "./theme-studio/suite-theme";
 import { useStudioPreview } from "./theme-studio/hooks/use-studio-preview";
-import { useDraftHistory } from "./theme-studio/hooks/use-draft-history";
-import { emptyDraft } from "./theme-studio/studio-draft";
-import { CardCssPopout } from "./theme-studio/card-css-popout";
 import type { Draft } from "./theme-studio/studio-types";
 import type { CodeLang } from "@/components/code-editor";
 import { saveCustomTheme, type CustomTheme } from "@/lib/custom-themes";
@@ -18,6 +15,7 @@ import { serializeHarborStyle } from "@/lib/harborstyle";
 import {
   applyTheme,
   customColorsToTokens,
+  DEFAULT_CUSTOM_COLORS,
   type ActiveThemeId,
   type ChromeConfig,
   type ThemePreset,
@@ -26,14 +24,88 @@ import { useSettings } from "@/lib/settings";
 import { pushOverlayPin } from "@/lib/overlay-pin";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 
+function cssColorToHex(input: string): string {
+  const s = input.trim();
+  if (s.startsWith("#")) return s.slice(0, 7);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "#808080";
+    ctx.fillStyle = "#808080";
+    ctx.fillStyle = s;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    const hex = (n: number) => n.toString(16).padStart(2, "0");
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
+  } catch {
+    return "#808080";
+  }
+}
+
+function emptyDraft(seed?: ThemePreset): Draft {
+  if (!seed) {
+    return {
+      name: "",
+      blurb: "",
+      layout: "sidebar",
+      cardStyle: "flat",
+      buttonStyle: "flat",
+      fontPair: "sentient-switzer",
+      customFontId: null,
+      bokeh: false,
+      colors: { ...DEFAULT_CUSTOM_COLORS },
+      chrome: { ...DEFAULT_CHROME },
+      chromeDirty: false,
+      css: "",
+      js: "",
+      html: "",
+    };
+  }
+  const t = seed.tokens;
+  const ext = seed as ThemePreset & {
+    css?: string;
+    js?: string;
+    html?: string;
+    customFontId?: string | null;
+  };
+  return {
+    name: `${seed.name} copy`,
+    blurb: seed.blurb ?? "",
+    layout: seed.layout ?? "sidebar",
+    cardStyle: seed.cardStyle ?? "flat",
+    buttonStyle: seed.buttonStyle ?? "flat",
+    fontPair: seed.fontPair ?? "sentient-switzer",
+    customFontId: ext.customFontId ?? null,
+    bokeh: !!seed.bokeh,
+    colors: {
+      canvas: cssColorToHex(t["--color-canvas"]),
+      surface: cssColorToHex(t["--color-surface"]),
+      elevated: cssColorToHex(t["--color-elevated"]),
+      raised: cssColorToHex(t["--color-raised"]),
+      ink: cssColorToHex(t["--color-ink"]),
+      inkMuted: cssColorToHex(t["--color-ink-muted"]),
+      inkSubtle: cssColorToHex(t["--color-ink-subtle"]),
+      edge: cssColorToHex(t["--color-edge"]),
+      accent: cssColorToHex(t["--color-accent"]),
+      danger: cssColorToHex(t["--color-danger"]),
+    },
+    chrome: seed.chrome ? { ...seed.chrome } : { ...DEFAULT_CHROME },
+    chromeDirty: false,
+    css: ext.css ?? "",
+    js: ext.js ?? "",
+    html: ext.html ?? "",
+  };
+}
+
 const STUDIO_STYLE_ID = "harbor-studio-preview-css";
 const STUDIO_HTML_ID = "harbor-studio-preview-html";
 const STUDIO_AUTHORITY_ID = "harbor-studio-authority-css";
 
 export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: () => void }) {
   const { settings, update } = useSettings();
-  const { draft, setDraft, undo, redo, canUndo, canRedo } = useDraftHistory(() => emptyDraft(seed));
-  const [cardCssOpen, setCardCssOpen] = useState(false);
+  const [draft, setDraft] = useState<Draft>(() => emptyDraft(seed));
   const restoreRef = useState(() => settings.theme.preset)[0];
   const liveThemeRef = useRef(settings.theme);
   liveThemeRef.current = settings.theme;
@@ -138,29 +210,15 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (confirmClose) setConfirmClose(false);
-        else if (cardCssOpen) setCardCssOpen(false);
-        else if (popoutTab) setPopoutTab(null);
-        else if (inspectorHidden) setInspectorHidden(false);
-        else requestClose();
-        return;
-      }
-      const mod = e.ctrlKey || e.metaKey;
-      if (!mod || popoutTab || cardCssOpen) return;
-      const key = e.key.toLowerCase();
-      if (key === "z") {
-        e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
-      } else if (key === "y") {
-        e.preventDefault();
-        redo();
-      }
+      if (e.key !== "Escape") return;
+      if (confirmClose) setConfirmClose(false);
+      else if (popoutTab) setPopoutTab(null);
+      else if (inspectorHidden) setInspectorHidden(false);
+      else requestClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, inspectorHidden, setInspectorHidden, popoutTab, confirmClose, cardCssOpen, dirty, undo, redo]);
+  }, [onClose, inspectorHidden, setInspectorHidden, popoutTab, confirmClose, dirty]);
 
   const runJs = () => {
     const code = draft.js.trim();
@@ -263,10 +321,6 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           name={trimmedName}
           onCancel={requestClose}
           onHidePanel={() => setInspectorHidden(true)}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
         />
         <Inspector
           draft={draft}
@@ -275,7 +329,6 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           onChromeChange={onChromeChange}
           onRegenerateChrome={onRegenerateChrome}
           onExpand={(t) => setPopoutTab(t)}
-          onEditCardCss={() => setCardCssOpen(true)}
         />
         <footer className="flex shrink-0 items-center gap-2.5 border-t border-edge-soft bg-surface px-5 py-3.5">
           <button
@@ -320,18 +373,6 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           onChange={onPatch}
           onRunJs={runJs}
           onClose={() => setPopoutTab(null)}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-        />
-      )}
-
-      {cardCssOpen && (
-        <CardCssPopout
-          css={draft.css}
-          onChange={onPatch}
-          onClose={() => setCardCssOpen(false)}
         />
       )}
 
@@ -345,7 +386,8 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
             onClick={(e) => e.stopPropagation()}
             className="animate-in zoom-in-95 fade-in w-[340px] max-w-full overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_30px_80px_-24px_rgba(0,0,0,0.8)] duration-150"
           >
-            <div className="flex flex-col px-6 pb-6 pt-6">
+            <div className="h-1 w-full" style={{ background: "var(--color-accent)" }} />
+            <div className="flex flex-col px-6 pb-6 pt-5">
               <h2 className="text-[17px] font-semibold tracking-tight text-ink">
                 Leave without saving?
               </h2>

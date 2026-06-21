@@ -21,7 +21,7 @@ export function BackupRow() {
         window.setTimeout(() => setExported(false), 1600);
       }
     } catch {
-      setError(t("Could not build the backup file."));
+      setError("Could not build the backup file.");
     }
   };
 
@@ -39,7 +39,7 @@ export function BackupRow() {
       }
       setPending(res.backup);
     };
-    reader.onerror = () => setError(t("Could not read that file."));
+    reader.onerror = () => setError("Could not read that file.");
     reader.readAsText(file);
   };
 
@@ -140,7 +140,7 @@ function RestoreConfirm({
       >
         <h2 className="text-[17px] font-semibold tracking-tight text-ink">{t("Restore this backup?")}</h2>
         <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-muted">
-          {t("This replaces your current Harbor setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. Harbor reloads when it finishes.", { n: backupKeyCount(backup) })}
+          {t("This replaces your current Harbor setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. Harbor reloads when it finishes.", { n: String(backupKeyCount(backup)) })}
         </p>
         <p className="mt-2 text-[12px] text-ink-subtle">
           {t("Saved {when} from Harbor {app}.", { when, app: backup.app })}

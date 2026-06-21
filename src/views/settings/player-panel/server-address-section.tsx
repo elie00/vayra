@@ -6,6 +6,7 @@ import { BUNDLED_SERVER_URL, getCastServerStatus, restartCastServer } from "@/li
 import { openUrl } from "@/lib/window";
 import { ToggleRow, settingsAnchor } from "../shared";
 import { isTauri } from "./internals";
+import { useT } from "@/lib/i18n";
 
 const WEB_PORT = 11471;
 
@@ -38,6 +39,7 @@ async function readEngineState(): Promise<EngineState> {
 }
 
 function AddressRow({ label, url, openable }: { label: string; url: string; openable?: boolean }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const copy = () => {
     void navigator.clipboard.writeText(url).then(() => {
@@ -62,7 +64,7 @@ function AddressRow({ label, url, openable }: { label: string; url: string; open
           }`}
         >
           {copied ? <Check size={13} strokeWidth={2.4} /> : <Copy size={13} strokeWidth={1.9} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("Copied") : t("Copy")}
         </button>
         {openable && (
           <button
@@ -71,7 +73,7 @@ function AddressRow({ label, url, openable }: { label: string; url: string; open
             className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-edge px-3.5 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
           >
             <ExternalLink size={13} strokeWidth={1.9} />
-            Open
+            {t("Open")}
           </button>
         )}
       </div>
@@ -104,6 +106,7 @@ function ControlButton({
 }
 
 export function ServerAddressSection() {
+  const t = useT();
   const { settings, update } = useSettings();
   const [lanIp, setLanIp] = useState<string | null>(null);
   const [engine, setEngine] = useState<EngineState>("checking");
@@ -152,6 +155,8 @@ export function ServerAddressSection() {
   const pill = PILL[engine];
   const running = engine === "running" || engine === "starting";
 
+  const pillLabel = pill.label === "Checking" ? t("Checking") : pill.label === "Running" ? t("Running") : pill.label === "Starting" ? t("Starting") : t("Not running");
+
   const start = async () => {
     setActing(true);
     setEngine("starting");
@@ -173,32 +178,32 @@ export function ServerAddressSection() {
     <section id={settingsAnchor("Your streaming server address")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="text-[19px] font-medium tracking-tight text-ink">Your streaming server address</h2>
+          <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Your streaming server address")}</h2>
           <p className="text-[13.5px] leading-relaxed text-ink-muted">
-            Harbor runs a small streaming server right on this computer. This is where it lives. To stream from this machine on another device, copy the Wi-Fi address and paste it into Remote streaming server in Harbor over there.
+            {t("Harbor runs a small streaming server right on this computer. This is where it lives. To stream from this machine on another device, copy the Wi-Fi address and paste it into Remote streaming server in Harbor over there.")}
           </p>
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${pill.dot}`} />
-          {pill.label}
+          {pillLabel}
         </span>
       </div>
 
-      <AddressRow label="On this computer" url={BUNDLED_SERVER_URL} openable={running} />
-      {lanIp && <AddressRow label="From other devices on your Wi-Fi" url={`http://${lanIp}:11470`} />}
+      <AddressRow label={t("On this computer")} url={BUNDLED_SERVER_URL} openable={running} />
+      {lanIp && <AddressRow label={t("From other devices on your Wi-Fi")} url={`http://${lanIp}:11470`} />}
 
       <div className="flex items-center gap-2">
         {running ? (
           <>
             <ControlButton
               icon={<Square size={13} strokeWidth={2} />}
-              label="Stop"
+              label={t("Stop")}
               busy={acting}
               onClick={() => void stop()}
             />
             <ControlButton
               icon={<RotateCw size={13} strokeWidth={2} />}
-              label="Restart"
+              label={t("Restart")}
               busy={acting}
               onClick={() => void start()}
             />
@@ -206,7 +211,7 @@ export function ServerAddressSection() {
         ) : (
           <ControlButton
             icon={<Play size={13} strokeWidth={2} />}
-            label="Start server"
+            label={t("Start server")}
             busy={acting || engine === "checking"}
             onClick={() => void start()}
           />
@@ -216,18 +221,18 @@ export function ServerAddressSection() {
       <div className="h-px bg-edge-soft" />
 
       <ToggleRow
-        label="Harbor in your browser"
-        sub="Serves this exact install of Harbor as a web app on your network. Open it on a phone, laptop, or TV browser, sign in there, and it streams through this computer."
+        label={t("Harbor in your browser")}
+        sub={t("Serves this exact install of Harbor as a web app on your network. Open it on a phone, laptop, or TV browser, sign in there, and it streams through this computer.")}
         value={settings.serveWebUi}
         onChange={(v) => update({ serveWebUi: v })}
       />
       {settings.serveWebUi && (
         <>
-          <AddressRow label="On this computer" url={`http://127.0.0.1:${WEB_PORT}`} openable />
-          {lanIp && <AddressRow label="From any browser on your Wi-Fi" url={`http://${lanIp}:${WEB_PORT}`} />}
+          <AddressRow label={t("On this computer")} url={`http://127.0.0.1:${WEB_PORT}`} openable />
+          {lanIp && <AddressRow label={t("From any browser on your Wi-Fi")} url={`http://${lanIp}:${WEB_PORT}`} />}
           {webError && (
             <span className="text-[12px] text-danger">
-              Couldn't start on port {WEB_PORT}. Another app may be using it; toggle off and on to retry.
+              {t("Couldn't start on port {WEB_PORT}. Another app may be using it; toggle off and on to retry.", { WEB_PORT: String(WEB_PORT) })}
             </span>
           )}
         </>

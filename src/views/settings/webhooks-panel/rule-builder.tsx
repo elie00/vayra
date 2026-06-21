@@ -1,5 +1,6 @@
 import { Plus, Trash2, X, Zap } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
 import type { Settings, WebhookTrigger } from "@/lib/settings";
 
@@ -124,6 +125,7 @@ export function RuleBuilder({
   canDiscord: boolean;
   canTelegram: boolean;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState<Rule | null>(null);
 
   const upsert = (rule: Rule) => {
@@ -150,10 +152,10 @@ export function RuleBuilder({
         <div className="flex flex-col gap-1">
           <span className="flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
             <Zap size={11} strokeWidth={2.3} />
-            Automations
+            {t("AUTOMATIONS")}
           </span>
           <p className="text-[12.5px] text-ink-muted">
-            Each rule fires independently. Define what triggers a ping and where it goes.
+            {t("Each rule fires independently. Define what triggers a ping and where it goes.")}
           </p>
         </div>
         <button
@@ -163,17 +165,17 @@ export function RuleBuilder({
           className="flex h-9 items-center gap-1.5 rounded-full bg-ink px-3.5 text-[12.5px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           <Plus size={13} strokeWidth={2.4} />
-          New rule
+          {t("New rule")}
         </button>
       </div>
       {!canDiscord && !canTelegram && (
         <div className="rounded-lg border border-amber-200/30 bg-amber-200/5 px-3 py-2 text-[11.5px] text-amber-200/85">
-          Add a Discord or Telegram URL above before creating rules.
+          {t("Add a Discord or Telegram URL above before creating rules.")}
         </div>
       )}
       {rules.length === 0 ? (
         <div className="rounded-lg border border-dashed border-edge-soft/60 bg-canvas/20 px-3 py-6 text-center text-[12.5px] text-ink-subtle">
-          No automations yet. Hit New rule to wire one up.
+          {t("No automations yet. Hit New rule to wire one up.")}
         </div>
       ) : (
         <ul className="flex flex-col gap-2">

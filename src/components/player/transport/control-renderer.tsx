@@ -1,10 +1,10 @@
+import { t as translate } from "@/lib/i18n";
 import { ChevronLeft, Info, Maximize, Minimize, PauseCircle, PictureInPicture2, PlayCircle, Replace, Tv } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
 import { getCustomIcon, type ControlVariant, type CustomIconMap, type PlayerControlId, type TimeFormat, type VolumeStyle } from "@/lib/player-chrome";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
-import { t as translate } from "@/lib/i18n";
 import { renderCustomIconControl } from "./custom-icon-renderer";
 
 function getControlState(id: PlayerControlId, ctx: ControlContext): string | undefined {
@@ -95,6 +95,7 @@ export type ControlContext = {
   onSubtitle: (id: string | null) => void;
   onSubDelay: (sec: number) => void;
   onAudioDelay: (sec: number) => void;
+  onEnterSync?: () => void;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
   onPiP: () => void;
@@ -140,7 +141,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
             aria-label={t("Back")}
             className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-black/80"
           >
-            <ChevronLeft size={26} strokeWidth={2.2} className="dir-icon" />
+            <ChevronLeft size={26} strokeWidth={2.2} />
           </button>
         </Tooltip>
       );
@@ -338,6 +339,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           delaySec={ctx.snap.subDelaySec}
           onSelect={ctx.onSubtitle}
           onDelay={ctx.onSubDelay}
+          onEnterSync={ctx.onEnterSync}
           onAddSubtitle={ctx.onAddSubtitle}
           metaImdbId={ctx.metaImdbId}
           metaTitle={ctx.metaTitle}

@@ -27,10 +27,13 @@ type SettingsValue = {
 const Ctx = createContext<SettingsValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<Settings>(loadStoredSettings);
+  const [settings, setSettings] = useState<Settings>(() => {
+    const s = loadStoredSettings();
+    setUiLanguage(s.uiLanguage);
+    return s;
+  });
 
   setTmdbLanguage(settings.tmdbLanguage);
-  setUiLanguage(settings.uiLanguage);
 
   useEffect(() => {
     let cancelled = false;

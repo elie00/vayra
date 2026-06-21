@@ -1,5 +1,6 @@
 import { Pencil, RotateCcw, Save, Undo2 } from "lucide-react";
 import type { ThemeId } from "@/lib/player-chrome";
+import { useT } from "@/lib/i18n";
 
 export function EditLayoutCard({
   theme,
@@ -14,25 +15,26 @@ export function EditLayoutCard({
   activeProfileName: string | null;
   onOpen: () => void;
 }) {
-  const themeName = theme === "stremio" ? "Stremio" : "Default";
+  const t = useT();
+  const themeName = theme === "stremio" ? t("Stremio") : t("Default");
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-col gap-1.5">
-        <h3 className="text-[14.5px] font-semibold text-ink">Player layout</h3>
+        <h3 className="text-[14.5px] font-semibold text-ink">{t("Player layout")}</h3>
         <p className="text-[12.5px] leading-relaxed text-ink-muted">
-          Click any control in the live preview to move, hide, or reorder it.
+          {t("Click any control in the live preview to move, hide, or reorder it.")}
         </p>
         <p className="text-[11.5px] text-ink-subtle">
           {activeProfileName ? (
             <>
-              Profile <span className="text-ink-muted">{activeProfileName}</span> · {visibleCount} visible
+              {t("Profile")} <span className="text-ink-muted">{activeProfileName}</span> · {visibleCount} {t("visible")}
             </>
           ) : (
             <>
-              {visibleCount} visible
+              {visibleCount} {t("visible")}
             </>
           )}
-          {hiddenCount > 0 ? `, ${hiddenCount} hidden` : ""} on the {themeName} theme.
+          {hiddenCount > 0 ? t(", {hiddenCount} hidden", { hiddenCount: String(hiddenCount) }) : ""} {t("on the {themeName} theme.", { themeName: themeName })}
         </p>
       </div>
       <button
@@ -41,16 +43,17 @@ export function EditLayoutCard({
         className="flex shrink-0 items-center gap-2 self-start rounded-xl bg-ink px-5 py-3 text-[13.5px] font-semibold text-canvas transition-all duration-150 hover:scale-[1.02] active:scale-[0.97] sm:self-auto"
       >
         <Pencil size={14} strokeWidth={2.4} />
-        Edit player layout
+        {t("Edit player layout")}
       </button>
     </div>
   );
 }
 
 export function ThemeTabs({ value, onChange }: { value: ThemeId; onChange: (v: ThemeId) => void }) {
+  const t = useT();
   const tabs: Array<{ id: ThemeId; label: string; sub: string }> = [
-    { id: "default", label: "Default", sub: "Harbor's native player chrome." },
-    { id: "stremio", label: "Stremio", sub: "Familiar Stremio button order." },
+    { id: "default", label: t("Default"), sub: t("Harbor's native player chrome.") },
+    { id: "stremio", label: t("Stremio"), sub: t("Familiar Stremio button order.") },
   ];
   return (
     <div className="flex items-center gap-2 rounded-2xl border border-edge-soft bg-canvas/40 p-1.5">
@@ -93,6 +96,7 @@ export function FooterBar({
   onDiscard: () => void;
   onResetAll: () => void;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4">
       <button
@@ -105,7 +109,7 @@ export function FooterBar({
         }`}
       >
         <RotateCcw size={12.5} strokeWidth={2.4} />
-        {confirmingReset ? "Confirm full reset" : "Reset all to default"}
+        {confirmingReset ? t("Confirm full reset") : t("Reset all to default")}
       </button>
 
       <div className="flex items-center gap-2">
@@ -116,7 +120,7 @@ export function FooterBar({
           className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-raised hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Undo2 size={12.5} strokeWidth={2.4} />
-          Discard changes
+          {t("Discard changes")}
         </button>
         <button
           type="button"
@@ -131,7 +135,7 @@ export function FooterBar({
           }`}
         >
           <Save size={12.5} strokeWidth={2.4} />
-          {justSaved ? "Saved" : "Save changes"}
+          {justSaved ? t("Saved") : t("Save changes")}
         </button>
       </div>
     </div>

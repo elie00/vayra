@@ -8,6 +8,7 @@ import {
   requestDeviceCode,
   type DeviceCode,
 } from "@/lib/trakt";
+import { setSession } from "@/lib/trakt/session";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 import { DocsCode } from "../relay-docs";
@@ -81,6 +82,13 @@ export function TraktConnectCard() {
           traktExpiresAt: expiresAt,
           traktUsername: user?.username ?? null,
         });
+        setSession({
+          accessToken: r.token.access_token,
+          refreshToken: r.token.refresh_token,
+          createdAt: r.token.created_at,
+          expiresIn: r.token.expires_in,
+          username: user?.username ?? null,
+        });
         setPhase("idle");
         setCode(null);
         return;
@@ -131,6 +139,7 @@ export function TraktConnectCard() {
       traktExpiresAt: 0,
       traktUsername: null,
     });
+    setSession(null);
   };
 
   if (phase === "awaiting" || phase === "polling") {

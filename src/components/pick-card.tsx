@@ -84,6 +84,9 @@ export const PickCard = memo(function PickCard({
 
   useEffect(() => {
     setImgIdx(0);
+  }, [posterCandidates]);
+
+  useEffect(() => {
     setHydratedPoster(undefined);
   }, [meta.id]);
 

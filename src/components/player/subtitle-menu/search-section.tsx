@@ -28,15 +28,24 @@ export function SearchSection(props: SubtitleMenuProps) {
   const [hideHI, setHideHI] = useState(false);
   const [forcedOnly, setForcedOnly] = useState(false);
   const [addons, setAddons] = useState<Addon[] | null>(null);
+  const [addonsLoading, setAddonsLoading] = useState(true);
+  const initialSearchDone = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    setAddonsLoading(true);
     gatherSubtitleAddons(authKey)
       .then((a) => {
-        if (!cancelled) setAddons(a);
+        if (!cancelled) {
+          setAddons(a);
+          setAddonsLoading(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setAddons([]);
+        if (!cancelled) {
+          setAddons([]);
+          setAddonsLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -44,33 +53,56 @@ export function SearchSection(props: SubtitleMenuProps) {
   }, [authKey]);
 
   useEffect(() => {
-    if (!metaImdbId || addons === null || results !== null) return;
+    // Only run initial auto-search once, after addons are loaded
+    if (!metaImdbId || addons === null || addonsLoading || initialSearchDone.current) return;
+    initialSearchDone.current = true;
     void run();
-  }, [metaImdbId, addons]);
+  }, [metaImdbId, addons, addonsLoading]);
 
   const run = async () => {
     setLoading(true);
     setResults(null);
     try {
       const enabled = settings.subProvidersEnabled ?? {};
-      const r = await searchSubtitles(
-        {
-          imdbId: metaImdbId ?? undefined,
-          title: !metaImdbId ? query : undefined,
-          season: season ?? undefined,
-          episode: episode ?? undefined,
-          langs: settings.preferredSubLangs ?? [],
+      const searchQuery = {
+        imdbId: metaImdbId ?? undefined,
+        title: !metaImdbId ? query : undefined,
+        season: season ?? undefined,
+        episode: episode ?? undefined,
+        langs: settings.preferredSubLangs ?? [],
+      };
+      const searchOpts = {
+        providers: {
+          wyzie: enabled.wyzie === true,
+          addons: enabled.addons ?? true,
+          opensubtitles: enabled.opensubtitles ?? true,
         },
-        {
-          providers: {
-            wyzie: enabled.wyzie === true,
-            addons: enabled.addons ?? true,
-            opensubtitles: enabled.opensubtitles ?? true,
-          },
-          addons: addons ?? [],
-          preferredLangs: settings.preferredSubLangs ?? [],
-        },
-      );
+        addons: addons ?? [],
+        preferredLangs: settings.preferredSubLangs ?? [],
+      };
+      
+      // Log search attempt for debugging (will appear in terminal)
+      console.log('[SUBTITLES SEARCH] Starting with:', {
+        hasImdbId: !!metaImdbId,
+        addonsCount: addons?.length ?? 0,
+        providers: searchOpts.providers,
+        query: searchQuery,
+      });
+      
+      const r = await searchSubtitles(searchQuery, searchOpts);
+      
+      // Log results by source (will appear in terminal)
+      const bySource = r.reduce((acc, sub) => {
+        acc[sub.source] = (acc[sub.source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log('[SUBTITLES SEARCH] Complete:', { 
+        total: r.length, 
+        bySource,
+        addonResults: bySource.addon || 0,
+        opensubtitlesResults: bySource.opensubtitles || 0,
+      });
+      
       setResults(r);
     } finally {
       setLoading(false);
@@ -141,7 +173,12 @@ export function SearchSection(props: SubtitleMenuProps) {
       )}
 
       {loading && results == null && (
-        <p className="px-4 py-3 text-[13px] text-ink-muted">{t("Searching…")}</p>
+        <p className="flex items-center gap-2 px-4 py-3 text-[13px] text-ink-muted">
+          <Loader2 size={14} className="animate-spin" />
+          {addonsLoading 
+            ? t("Loading subtitle addons…")
+            : t("Searching {count} sources…", { count: 1 + (addons?.length ?? 0) })}
+        </p>
       )}
       {results !== null && results.length === 0 && (
         <p className="px-4 py-3 text-[13px] text-ink-muted">
@@ -217,6 +254,14 @@ function ResultRow({
     }
   };
 
+  // Enhanced source display with color coding
+  const sourceColor = {
+    addon: "text-blue-400",
+    opensubtitles: "text-emerald-400",
+    wyzie: "text-purple-400",
+    jimaku: "text-amber-400",
+  }[result.source] || "text-ink-subtle";
+
   return (
     <div className="group flex w-full items-start gap-3 px-4 py-2.5 transition-colors hover:bg-canvas/60">
       <button
@@ -231,7 +276,7 @@ function ResultRow({
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[13.5px] text-ink">{result.title || lang}</span>
           <span className="flex items-center gap-2 text-[11.5px] text-ink-subtle">
-            <span className="capitalize">{result.source}</span>
+            <span className={`font-semibold capitalize ${sourceColor}`}>{result.source}</span>
             {result.format && (
               <>
                 <span aria-hidden>·</span>

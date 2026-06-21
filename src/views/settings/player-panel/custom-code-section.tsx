@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useSettings, type Settings } from "@/lib/settings";
 import { settingsAnchor } from "../shared";
 import { SubField } from "./internals";
+import { useT } from "@/lib/i18n";
 
 type Field = "customCss" | "customJs" | "customHtml";
 
@@ -39,6 +40,7 @@ const FIELDS: Array<{
 ];
 
 export function CustomCodeCard() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <section
@@ -52,9 +54,9 @@ export function CustomCodeCard() {
         className="flex items-start justify-between gap-3 text-start"
       >
         <div className="flex flex-col gap-1">
-          <h2 className="text-[19px] font-medium tracking-tight text-ink">Custom code</h2>
+          <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Custom code")}</h2>
           <span className="text-[13.5px] leading-relaxed text-ink-muted">
-            Power-user knob. Inject your own CSS, JS, and HTML into Harbor. Lives in your local settings; nothing leaves your machine.
+            {t("Power-user knob. Inject your own CSS, JS, and HTML into Harbor. Lives in your local settings; nothing leaves your machine.")}
           </span>
         </div>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-edge text-ink-muted transition-colors hover:bg-elevated hover:text-ink">
@@ -71,6 +73,7 @@ export function CustomCodeCard() {
 }
 
 export function CustomCodePanel() {
+  const t = useT();
   const { settings, update } = useSettings();
 
   return (
@@ -78,16 +81,15 @@ export function CustomCodePanel() {
       <div className="flex items-start gap-2.5 rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-3 text-[12px] leading-snug text-ink">
         <AlertTriangle size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-danger" />
         <span>
-          You're modding your own client. Custom JS has full access to your Harbor session.
-          Only paste code you wrote or fully trust.
+          {t("You're modding your own client. Custom JS has full access to your Harbor session. Only paste code you wrote or fully trust.")}
         </span>
       </div>
 
       {FIELDS.map((f) => (
         <SubField
           key={f.id}
-          label={f.label}
-          value={`${(settings[f.id] ?? "").length} chars`}
+          label={t(f.label)}
+          value={t("{n} chars", { n: String((settings[f.id] ?? "").length) })}
         >
           <textarea
             value={settings[f.id] ?? ""}
@@ -98,7 +100,7 @@ export function CustomCodePanel() {
             className="w-full resize-y rounded-xl border border-edge-soft bg-canvas/40 px-3 py-2.5 font-mono text-[12px] leading-relaxed text-ink placeholder:text-ink-subtle/70 focus:border-edge focus:outline-none"
           />
           <div className="flex items-center justify-between">
-            <span className="text-[11px] leading-snug text-ink-subtle">{f.hint}</span>
+            <span className="text-[11px] leading-snug text-ink-subtle">{t(f.hint)}</span>
             {settings[f.id] && (
               <button
                 type="button"
@@ -106,7 +108,7 @@ export function CustomCodePanel() {
                 className="flex h-7 items-center gap-1 rounded-full bg-raised px-2.5 text-[11px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
               >
                 <Eraser size={11} strokeWidth={2.4} />
-                Clear
+                {t("Clear")}
               </button>
             )}
           </div>

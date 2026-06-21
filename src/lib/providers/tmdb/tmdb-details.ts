@@ -1,5 +1,6 @@
 import type { Meta } from "../../cinemeta";
 import { get, IMG, tmdbLanguageIso } from "./tmdb-client";
+import { loadStoredSettings } from "@/lib/settings/load";
 import { pickLogo } from "./tmdb-images";
 import { pickTrailers, type Video } from "./tmdb-trailers";
 import type { PersonRef } from "./tmdb-people";
@@ -187,9 +188,11 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
   }
 
   const iso = tmdbLanguageIso();
+  const settings = loadStoredSettings();
+  const translatePosters = settings.translatePosters && !settings.posterBaseUrl;
   const raw = await get<any>(key, `${kind}/${id}`, {
-    append_to_response: "credits,aggregate_credits,recommendations,similar,videos,external_ids,images,keywords",
-    include_image_language: iso && iso !== "en" ? `${iso},en,null` : "en,null",
+    append_to_response: "credits,aggregate_credits,recommendations,similar,videos,external_ids,images,keywords,translations",
+    include_image_language: translatePosters && iso && iso !== "en" ? `${iso},en,null` : "en,null",
   });
   if (!raw) return null;
 
@@ -285,15 +288,29 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
         ? `${raw.number_of_seasons} season${raw.number_of_seasons === 1 ? "" : "s"}`
         : undefined;
 
+  let overview = raw.overview ?? "";
+  let tagline = raw.tagline ?? "";
+  if (!settings.translateDescriptions) {
+    const enTrans = raw.translations?.translations?.find((t: any) => t.iso_639_1 === "en");
+    if (enTrans?.data?.overview) overview = enTrans.data.overview;
+    if (enTrans?.data?.tagline) tagline = enTrans.data.tagline;
+  }
+
+  let finalPosterPath = raw.poster_path;
+  if (!translatePosters && raw.images?.posters?.length) {
+    const enPoster = raw.images.posters.find((p: any) => p.iso_639_1 === "en") || raw.images.posters[0];
+    if (enPoster) finalPosterPath = enPoster.file_path;
+  }
+
   return {
     kind,
     id: raw.id,
     imdbId: raw.external_ids?.imdb_id ?? null,
     title: raw.title ?? raw.name,
     originalTitle: raw.original_title ?? raw.original_name ?? "",
-    tagline: raw.tagline ?? "",
-    overview: raw.overview ?? "",
-    poster: raw.poster_path ? `${IMG}/w342${raw.poster_path}` : undefined,
+    tagline,
+    overview,
+    poster: finalPosterPath ? `${IMG}/w342${finalPosterPath}` : undefined,
     backdrop: raw.backdrop_path ? `${IMG}/original${raw.backdrop_path}` : undefined,
     logo,
     year: (raw.release_date ?? raw.first_air_date)?.slice(0, 4),

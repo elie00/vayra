@@ -95,7 +95,7 @@ export function StreamsView({
           onClick={onBack}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated text-ink-muted transition-colors hover:bg-raised hover:text-ink"
         >
-          <ChevronLeft size={20} strokeWidth={2.2} className="dir-icon" />
+          <ChevronLeft size={20} strokeWidth={2.2} />
         </button>
         <div className="min-w-0 flex-1">
           <p className="text-[10.5px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">

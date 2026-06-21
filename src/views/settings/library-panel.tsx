@@ -150,6 +150,12 @@ export function LibraryPanel({
               onChange={(v) => update({ spoilerHideDescriptions: v })}
             />
             <ToggleRow
+              label={t("Blur episode images on detail page")}
+              sub={t("Blurs the hero image and stills on the episode detail page until you click reveal.")}
+              value={!!settings.blurEpisodes}
+              onChange={(v) => update({ blurEpisodes: v })}
+            />
+            <ToggleRow
               label={t("Keep the next episode visible")}
               sub={t("Leave the episode you are up to clear and only blur the ones after it.")}
               value={settings.spoilerSkipNext}
@@ -581,18 +587,17 @@ function HomeModePicker({
   value: "harbor" | "classic";
   onChange: (v: "harbor" | "classic") => void;
 }) {
-  const t = useT();
   const options: Array<{ id: "harbor" | "classic"; label: string; sub: string; img: string }> = [
     {
       id: "harbor",
-      label: t("Harbor curated"),
-      sub: t("Hero carousel, Top 10, Trending, In Theaters, per-service rails. Addon catalogs append underneath, deduped."),
+      label: "Harbor curated",
+      sub: "Hero carousel, Top 10, Trending, In Theaters, per-service rails. Addon catalogs append underneath, deduped.",
       img: harborStyleImg,
     },
     {
       id: "classic",
-      label: t("Classic Stremio"),
-      sub: t("Continue Watching, then your installed addons. Every catalog renders as its own row, install order, no dedup, no hero."),
+      label: "Classic Stremio",
+      sub: "Continue Watching, then your installed addons. Every catalog renders as its own row, install order, no dedup, no hero.",
       img: traditionalStyleImg,
     },
   ];
@@ -666,19 +671,18 @@ function RetentionPicker({
   value: number;
   onChange: (v: number) => void;
 }) {
-  const t = useT();
   const options: Array<{ days: number; label: string }> = [
-    { days: 0, label: t("None") },
-    { days: 7, label: t("1 week") },
-    { days: 30, label: t("30 days") },
-    { days: 90, label: t("3 months") },
-    { days: 180, label: t("6 months") },
-    { days: 365, label: t("1 year") },
+    { days: 0, label: "None" },
+    { days: 7, label: "1 week" },
+    { days: 30, label: "30 days" },
+    { days: 90, label: "3 months" },
+    { days: 180, label: "6 months" },
+    { days: 365, label: "1 year" },
   ];
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-        {t("Keep frames for")}
+        Keep frames for
       </p>
       <div className="flex flex-wrap gap-1.5">
         {options.map((opt) => {
@@ -704,7 +708,6 @@ function RetentionPicker({
 }
 
 function ClearSnapshotsButton() {
-  const t = useT();
   const [count, setCount] = useState<number>(() => snapshotCount());
   const [confirming, setConfirming] = useState(false);
   useEffect(() => {
@@ -725,13 +728,11 @@ function ClearSnapshotsButton() {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-3.5 py-2.5">
       <div className="flex flex-col gap-0.5">
-        <p className="text-[12.5px] font-medium text-ink">{t("Clear all saved frames")}</p>
+        <p className="text-[12.5px] font-medium text-ink">Clear all saved frames</p>
         <p className="text-[11.5px] leading-snug text-ink-subtle">
           {count > 0
-            ? count === 1
-              ? t("{n} frame stored. Wiping rebuilds them next time you watch.", { n: count })
-              : t("{n} frames stored. Wiping rebuilds them next time you watch.", { n: count })
-            : t("No frames stored yet. They'll appear here as you watch things.")}
+            ? `${count} frame${count === 1 ? "" : "s"} stored. Wiping rebuilds them next time you watch.`
+            : "No frames stored yet. They'll appear here as you watch things."}
         </p>
       </div>
       <button
@@ -744,7 +745,7 @@ function ClearSnapshotsButton() {
             : "bg-raised text-ink-muted hover:bg-elevated hover:text-ink disabled:opacity-40"
         }`}
       >
-        {confirming ? t("Confirm clear") : t("Clear all")}
+        {confirming ? "Confirm clear" : "Clear all"}
       </button>
     </div>
   );
@@ -763,7 +764,6 @@ function PlacementPicker({
   showRt: boolean;
   showMal: boolean;
 }) {
-  const t = useT();
   const effective: "top" | "bottom" = value === "top" ? "top" : "bottom";
   const [phase, setPhase] = useState<"normal" | "anime">("normal");
   useEffect(() => {
@@ -779,8 +779,8 @@ function PlacementPicker({
     normal: string;
     anime: string;
   }> = [
-    { id: "top", label: t("Top"), sub: t("Floats over the artwork"), normal: previewPoster1, anime: previewPoster3 },
-    { id: "bottom", label: t("Bottom"), sub: t("Sits above the title strip"), normal: previewPoster2, anime: previewPoster4 },
+    { id: "top", label: "Top", sub: "Floats over the artwork", normal: previewPoster1, anime: previewPoster3 },
+    { id: "bottom", label: "Bottom", sub: "Sits above the title strip", normal: previewPoster2, anime: previewPoster4 },
   ];
   return (
     <div className="grid grid-cols-2 gap-3">

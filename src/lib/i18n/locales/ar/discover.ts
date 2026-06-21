@@ -1,4 +1,5 @@
 const discover: Record<string, string> = {
+  "Featured & Recommended": "مميزة ومقترحة",
   "What people are watching": "ما يشاهده الناس",
   "Showing now": "يُعرض الآن",
   "Critically Loved": "محبوب نقديًا",

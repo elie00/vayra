@@ -1,5 +1,6 @@
-import { get } from "./tmdb-client";
+import { get, tmdbLanguageIso } from "./tmdb-client";
 import { pickLogo } from "./tmdb-images";
+import { loadStoredSettings } from "@/lib/settings/load";
 
 type SearchTvHit = {
   id: number;
@@ -104,10 +105,13 @@ export async function tmdbAnimeLogo(
 ): Promise<{ logo?: string; backdrop?: string; tmdbId?: number } | null> {
   const id = await tmdbAnimeMatch(key, name, year, kind);
   if (!id) return null;
+  const iso = tmdbLanguageIso();
+  const settings = loadStoredSettings();
+  const translatePosters = settings.translatePosters && !settings.posterBaseUrl;
   const imgs = await get<{ logos?: any[]; backdrops?: any[] }>(
     key,
     `${kind}/${id}/images`,
-    { include_image_language: "en,null" },
+    { include_image_language: translatePosters && iso && iso !== "en" ? `${iso},en,null` : "en,null" },
   );
   const logo = pickLogo(imgs?.logos ?? []);
   const backdropPath = (imgs?.backdrops ?? [])[0]?.file_path;

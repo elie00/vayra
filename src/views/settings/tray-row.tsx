@@ -1,5 +1,6 @@
 import { Minimize2 } from "lucide-react";
 import { useSettings } from "@/lib/settings";
+
 import { useT } from "@/lib/i18n";
 
 function SubToggle({
@@ -39,8 +40,8 @@ function SubToggle({
 }
 
 export function TrayRow() {
-  const { settings, update } = useSettings();
   const t = useT();
+  const { settings, update } = useSettings();
   const on = settings.closeToTray;
   return (
     <div className="flex flex-col gap-2.5">

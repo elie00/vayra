@@ -10,17 +10,37 @@ let loaded = false;
 function read(): TraktSession | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as TraktSession;
-    if (
-      typeof parsed?.accessToken !== "string" ||
-      typeof parsed?.refreshToken !== "string" ||
-      typeof parsed?.createdAt !== "number" ||
-      typeof parsed?.expiresIn !== "number"
-    ) {
-      return null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as TraktSession;
+      if (
+        typeof parsed?.accessToken === "string" &&
+        typeof parsed?.refreshToken === "string" &&
+        typeof parsed?.createdAt === "number" &&
+        typeof parsed?.expiresIn === "number"
+      ) {
+        return parsed;
+      }
     }
-    return parsed;
+    const settingsRaw = localStorage.getItem("harbor.settings");
+    if (settingsRaw) {
+      const s = JSON.parse(settingsRaw);
+      if (typeof s?.traktAccessToken === "string" && typeof s?.traktRefreshToken === "string" && typeof s?.traktExpiresAt === "number") {
+        const now = Date.now();
+        const expiresInSec = Math.floor((s.traktExpiresAt - now) / 1000);
+        const session: TraktSession = {
+          accessToken: s.traktAccessToken,
+          refreshToken: s.traktRefreshToken,
+          createdAt: Math.floor(now / 1000),
+          expiresIn: Math.max(0, expiresInSec),
+          username: s.traktUsername ?? null,
+        };
+        if (session.expiresIn > 0) {
+          write(session);
+          return session;
+        }
+      }
+    }
+    return null;
   } catch {
     return null;
   }

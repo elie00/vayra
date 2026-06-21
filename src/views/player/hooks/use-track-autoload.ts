@@ -336,7 +336,7 @@ function labelForTrack(r: { title?: string; source: string; release?: string | n
   if (release && release !== r.title) {
     return `${sourceLabel} · ${release}`;
   }
-  if (r.title && r.title !== sourceLabel) {
+  if (r.title && r.title !== sourceLabel && r.source !== "addon") {
     return `${sourceLabel} · ${r.title}`;
   }
   return sourceLabel;

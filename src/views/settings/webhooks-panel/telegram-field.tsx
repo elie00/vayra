@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { StatusBadge, TelegramMark, TelegramTutorial, type FieldStatus } from "./webhook-field";
+import { useT } from "@/lib/i18n";
 
 const URL_RE = /^https?:\/\/api\.telegram\.org\/bot([^/]+)\/sendMessage(?:\?chat_id=(.+))?$/;
 
@@ -27,6 +28,7 @@ export function TelegramComposedField({
   onTest: () => void;
   status: FieldStatus;
 }) {
+  const t = useT();
   const [token, setToken] = useState(() => parse(fullUrl).token);
   const [chatId, setChatId] = useState(() => parse(fullUrl).chatId);
 
@@ -64,20 +66,20 @@ export function TelegramComposedField({
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
           <TelegramMark />
-          Telegram bot
+          {t("Telegram bot")}
         </span>
         <StatusBadge status={status} />
       </div>
       <div className="flex flex-col gap-2">
         <SubField
-          label="Bot token"
+          label={t("Bot token")}
           placeholder="1234567890:AAExampleTokenFromBotFather"
           value={token}
           onChange={onTokenChange}
           monospace
         />
         <SubField
-          label="Chat ID"
+          label={t("Chat ID")}
           placeholder="123456789"
           value={chatId}
           onChange={onChatIdChange}
@@ -90,7 +92,7 @@ export function TelegramComposedField({
         className="flex h-10 items-center justify-center gap-1.5 self-start rounded-lg bg-ink px-5 text-[12.5px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {status.state === "busy" && <Loader2 size={12} strokeWidth={2.4} className="animate-spin" />}
-        Send test
+        {t("Send test")}
       </button>
       <div className="rounded-lg bg-canvas/60 p-3 text-[12px] leading-relaxed text-ink-muted">
         <TelegramTutorial />

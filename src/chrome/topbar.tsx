@@ -69,12 +69,9 @@ export function Topbar() {
             </button>
           )}
           {onLiveRoot && (
-            <div className="flex items-center gap-1 text-ink">
+            <div className="flex items-center gap-1.5 text-ink">
               <HarborMark className="h-7 w-7" />
-              <span
-                className="text-[18px] font-medium leading-none"
-                style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
-              >
+              <span className="font-display text-[18px] font-semibold leading-none tracking-tight">
                 {t("Live")}
               </span>
             </div>

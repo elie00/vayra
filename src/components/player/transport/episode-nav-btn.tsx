@@ -28,9 +28,9 @@ export function EpisodeNavBtn({
           : "text-white/90 hover:bg-white/10 hover:text-white"
       }`}
     >
-      {direction === "prev" && <Icon size={iconOnly ? 22 : 20} strokeWidth={2.2} className="dir-icon" />}
+      {direction === "prev" && <Icon size={iconOnly ? 22 : 20} strokeWidth={2.2} />}
       {!iconOnly && <span className="text-[14px] font-medium">{label}</span>}
-      {direction === "next" && <Icon size={iconOnly ? 22 : 20} strokeWidth={2.2} className="dir-icon" />}
+      {direction === "next" && <Icon size={iconOnly ? 22 : 20} strokeWidth={2.2} />}
     </button>
   );
 }

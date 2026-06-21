@@ -102,6 +102,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let geomTauriUnlisten: Array<() => void> = [];
   let mpvStarted = false;
   let suppressEndFileUntil = 0;
+  const urlByExternalFilename = new Map<string, string>();
 
   const emit = () => {
     const next: PlayerSnapshot = { ...snap };
@@ -165,6 +166,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             forced,
             default: isDefault,
             hearingImpaired,
+            url: external && externalFilename ? (urlByExternalFilename.get(externalFilename) ?? undefined) : undefined,
           };
           if (type === "audio") audio.push(info);
           else if (type === "sub") subs.push(info);
@@ -254,6 +256,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       snap.bufferedSec = 0;
       snap.hdrGamma = "";
       pendingTracks = {};
+      urlByExternalFilename.clear();
       emit();
       if (!unlistenEvent) {
         unlistenEvent = await listen<MpvEvent>("mpv://event", (ev) => handleEvent(ev.payload));
@@ -453,6 +456,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
           console.warn("[mpv] sub_download failed, falling back to URL", e);
         }
       }
+      urlByExternalFilename.set(mpvUrl, url);
       try {
         await invoke("mpv_sub_add", {
           url: mpvUrl,
@@ -465,6 +469,14 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
         console.warn("[mpv] sub-add failed", e);
         return false;
       }
+    },
+    getSelectedTrackCues() {
+      return null;
+    },
+    getSelectedTrackUrl() {
+      const sel = snap.subtitleTracks.find((t) => t.selected);
+      if (!sel || !sel.external) return null;
+      return sel.url ?? sel.externalFilename ?? null;
     },
     setAudioNormalize(on) {
       snap.audioNormalize = on;

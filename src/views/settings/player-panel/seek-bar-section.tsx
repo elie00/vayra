@@ -3,14 +3,14 @@ import { useRef, useState } from "react";
 import seekPreviewBg from "@/assets/preview/seek-preview.png";
 import { SeekBarVisual } from "@/components/player/transport/seek-bar-visual";
 import { useSettings, type Settings } from "@/lib/settings";
-import { useT } from "@/lib/i18n";
 import { ColorPopoverTrigger } from "../color-picker";
 import { SubField } from "./internals";
 import { ToggleRow } from "../shared";
 import { SeekImageUpload, openSeekImageDialog } from "./seek-image-upload";
+import { useT } from "@/lib/i18n";
 
 const STYLES: Array<{ id: "flat" | "glass" | "pinstripe" | "rainbow"; label: string; sub: string }> = [
-  { id: "flat", label: "Flat", sub: "Solid fill, no texture. Cleanest baseline." },
+  { id: "flat", label: "Flat_Style", sub: "Solid fill, no texture. Cleanest baseline." },
   { id: "glass", label: "Glass", sub: "Subtle Apple-like sheen on the filled portion." },
   { id: "pinstripe", label: "Pinstripe", sub: "Diagonal stripes across the fill, retro vibe." },
   { id: "rainbow", label: "Rainbow", sub: "Six horizontal stripes. Pairs with nyan cat dot." },
@@ -37,8 +37,8 @@ const PRESET_COLORS = [
 ];
 
 export function SeekBarPanel() {
-  const { settings, update } = useSettings();
   const t = useT();
+  const { settings, update } = useSettings();
 
   const heightVal = settings.seekBarHeight ?? 6;
   const dotVal = settings.seekDotSize ?? 16;

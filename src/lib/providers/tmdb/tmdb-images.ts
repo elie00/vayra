@@ -1,5 +1,6 @@
 import { lruSet } from "@/lib/cache";
 import { registerCache } from "@/lib/memory-profiler";
+import { loadStoredSettings } from "@/lib/settings/load";
 import { get, IMG, tmdbLanguageIso } from "./tmdb-client";
 
 export type LogoEntry = { file_path: string; iso_639_1: string | null; vote_average?: number };
@@ -26,8 +27,10 @@ export async function fetchMovieAssets(key: string, metaId: string): Promise<Raw
   if (inflight) return inflight;
   const [, kind, id] = match;
   const iso = tmdbLanguageIso();
+  const settings = loadStoredSettings();
+  const translatePosters = settings.translatePosters && !settings.posterBaseUrl;
   const p = get<RawImages>(key, `${kind}/${id}/images`, {
-    include_image_language: iso && iso !== "en" ? `${iso},en,null` : "en,null",
+    include_image_language: translatePosters && iso && iso !== "en" ? `${iso},en,null` : "en,null",
   }).then((data) => {
     movieAssetsInflight.delete(metaId);
     if (data) lruSet(movieAssetsCache, metaId, data, MOVIE_ASSETS_MAX);

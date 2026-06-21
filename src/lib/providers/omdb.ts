@@ -304,11 +304,11 @@ export function useOmdbBudget(): OmdbBudget {
   return b;
 }
 
-async function performFetch(key: string, imdbId: string): Promise<OmdbScores | null> {
+async function performFetch(key: string, imdbId: string, type?: string): Promise<OmdbScores | null> {
   try {
-    const res = await fetch(
-      `https://www.omdbapi.com/?i=${encodeURIComponent(imdbId)}&apikey=${encodeURIComponent(key)}`,
-    );
+    let url = `https://www.omdbapi.com/?i=${encodeURIComponent(imdbId)}&apikey=${encodeURIComponent(key)}`;
+    if (type) url += `&type=${encodeURIComponent(type)}`;
+    const res = await fetch(url);
     if (res.status === 401) {
       markKeyInvalid();
       return null;
@@ -371,7 +371,7 @@ function recentMiss(imdbId: string): boolean {
   return ts != null && Date.now() - ts < MISS_TTL_MS;
 }
 
-export async function omdbScores(key: string, imdbId?: string): Promise<OmdbScores | null> {
+export async function omdbScores(key: string, imdbId?: string, type?: string): Promise<OmdbScores | null> {
   if (!key || !imdbId || !imdbId.startsWith("tt")) return null;
   load();
   const fresh = shouldServeFromCache(imdbId);
@@ -379,18 +379,18 @@ export async function omdbScores(key: string, imdbId?: string): Promise<OmdbScor
   if (inflight.has(imdbId)) return inflight.get(imdbId)!;
   rolloverIfStale();
   if (budget.exhausted || budget.keyInvalid) return null;
-  const p = performFetch(key, imdbId).finally(() => inflight.delete(imdbId));
+  const p = performFetch(key, imdbId, type).finally(() => inflight.delete(imdbId));
   inflight.set(imdbId, p);
   return p;
 }
 
-export async function omdbPrefetch(key: string, imdbId?: string): Promise<void> {
+export async function omdbPrefetch(key: string, imdbId?: string, type?: string): Promise<void> {
   if (!key || !imdbId || !imdbId.startsWith("tt")) return;
   load();
   if (cache.has(imdbId) || inflight.has(imdbId) || recentMiss(imdbId)) return;
   rolloverIfStale();
   if (budget.exhausted || budget.keyInvalid) return;
   if (budget.used >= Math.floor(budget.limit * PREFETCH_THRESHOLD)) return;
-  const p = performFetch(key, imdbId).finally(() => inflight.delete(imdbId));
+  const p = performFetch(key, imdbId, type).finally(() => inflight.delete(imdbId));
   inflight.set(imdbId, p);
 }

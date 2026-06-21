@@ -28,6 +28,9 @@ export type ContentCategory = "anime" | "liveTv" | "sports" | "adult";
 export type ContentFilters = Record<ContentCategory, boolean>;
 
 export type Settings = {
+  translatePosters: boolean;
+  blurComments: boolean;
+  blurEpisodes: boolean;
   tmdbKey: string;
   omdbKey: string;
   rpdbKey: string;

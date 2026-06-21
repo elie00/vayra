@@ -5,6 +5,7 @@ import { fireWebhook, type WebhookKind, type WebhookPayload } from "@/lib/calend
 import { useAuth } from "@/lib/auth";
 import { useSettings, type Settings } from "@/lib/settings";
 import { useTrakt } from "@/lib/trakt/provider";
+import { useT } from "@/lib/i18n";
 import { Section } from "./shared";
 import { RuleBuilder } from "./webhooks-panel/rule-builder";
 import {
@@ -66,6 +67,7 @@ const SOURCES: SourceMeta[] = [
 ];
 
 export function WebhooksPanel() {
+  const t = useT();
   const { settings, update } = useSettings();
   const { authKey } = useAuth();
   const { isConnected: traktConnected } = useTrakt();
@@ -113,12 +115,12 @@ export function WebhooksPanel() {
   return (
     <>
       <Section
-        title="Where alerts go"
-        subtitle="Connect Discord or Telegram and Harbor posts a message when something you follow is about to drop. Hit Test to send yourself a sample first."
+        title={t("Where alerts go")}
+        subtitle={t("Connect Discord or Telegram and Harbor posts a message when something you follow is about to drop. Hit Test to send yourself a sample first.")}
       >
         <div className="flex flex-col gap-5">
           <WebhookField
-            label="Discord webhook URL"
+            label={t("Discord webhook URL")}
             logo={<DiscordMark />}
             placeholder="https://discord.com/api/webhooks/…"
             value={settings.webhooks.discordUrl}
@@ -137,8 +139,8 @@ export function WebhooksPanel() {
       </Section>
 
       <Section
-        title="What to send"
-        subtitle="Pick which calendars feed your alerts. Items are deduped across sources before sending."
+        title={t("What to send")}
+        subtitle={t("Pick which calendars feed your alerts. Items are deduped across sources before sending.")}
       >
         <div className="flex flex-col gap-2">
           {SOURCES.map((s) => {
@@ -158,13 +160,13 @@ export function WebhooksPanel() {
       </Section>
 
       <Section
-        title="Media types"
-        subtitle="Filter by type after the sources merge. Leave them all on to send everything."
+        title={t("Media types")}
+        subtitle={t("Filter by type after the sources merge. Leave them all on to send everything.")}
       >
         <div className="flex flex-wrap gap-2">
-          <ChipToggle label="Movies" on={settings.webhooks.notifyMovies} onToggle={(v) => setNotify("notifyMovies", v)} />
-          <ChipToggle label="TV" on={settings.webhooks.notifyTv} onToggle={(v) => setNotify("notifyTv", v)} />
-          <ChipToggle label="Anime" on={settings.webhooks.notifyAnime} onToggle={(v) => setNotify("notifyAnime", v)} />
+          <ChipToggle label={t("Movies")} on={settings.webhooks.notifyMovies} onToggle={(v) => setNotify("notifyMovies", v)} />
+          <ChipToggle label={t("TV")} on={settings.webhooks.notifyTv} onToggle={(v) => setNotify("notifyTv", v)} />
+          <ChipToggle label={t("Anime")} on={settings.webhooks.notifyAnime} onToggle={(v) => setNotify("notifyAnime", v)} />
         </div>
       </Section>
 
@@ -190,6 +192,7 @@ function SourceToggle({
   blocker: string | null;
   onChange: (v: boolean) => void;
 }) {
+  const t = useT();
   const disabled = blocker !== null;
   const effective = on && !disabled;
   return (
@@ -214,9 +217,9 @@ function SourceToggle({
           {source.icon()}
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[13.5px] font-semibold text-ink">{source.label}</span>
+          <span className="text-[13.5px] font-semibold text-ink">{t(source.label)}</span>
           <span className={`text-[12px] ${blocker ? "text-amber-200/85" : "text-ink-subtle"}`}>
-            {blocker ?? source.description}
+            {blocker ? t(blocker) : t(source.description)}
           </span>
         </div>
       </div>
@@ -245,6 +248,7 @@ function ChipToggle({
   on: boolean;
   onToggle: (v: boolean) => void;
 }) {
+  const t = useT();
   return (
     <button
       onClick={() => onToggle(!on)}
@@ -252,7 +256,7 @@ function ChipToggle({
         on ? "bg-ink text-canvas" : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
       }`}
     >
-      {label}
+      {t(label)}
     </button>
   );
 }

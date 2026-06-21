@@ -12,7 +12,6 @@ import {
 } from "@/lib/addon-store";
 import { openUrl } from "@/lib/window";
 import { useSettings, type StreamingService } from "@/lib/settings";
-import { useT } from "@/lib/i18n";
 
 export function pickDebridForAddon(s: ReturnType<typeof useSettings>["settings"]):
   | { service: string; key: string; label: string }
@@ -38,7 +37,6 @@ export function RecommendedAddonCard({
   urlBuilder: (service: string, apiKey: string) => string;
   settings: ReturnType<typeof useSettings>["settings"];
 }) {
-  const t = useT();
   const [installed, setInstalled] = useState(() => isInstalled(id));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +61,7 @@ export function RecommendedAddonCard({
       await installAddon(id, urlBuilder(debrid.service, debrid.key));
       setInstalled(true);
     } catch (e: any) {
-      setError(e?.message ?? t("Install failed"));
+      setError(e?.message ?? "Install failed");
     } finally {
       setBusy(false);
     }
@@ -83,7 +81,7 @@ export function RecommendedAddonCard({
           {installed && (
             <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-accent ring-1 ring-accent/40">
               <Zap size={9} fill="currentColor" strokeWidth={0} />
-              {t("Installed via {label}", { label: debrid?.label ?? t("debrid") })}
+              Installed via {debrid?.label ?? "debrid"}
             </span>
           )}
         </div>
@@ -91,7 +89,7 @@ export function RecommendedAddonCard({
         {error && <span className="text-[12px] text-danger">{error}</span>}
         {!debrid && !installed && (
           <span className="text-[12px] text-ink-subtle">
-            {t("Save a debrid key above (TorBox, Real-Debrid, AllDebrid, Premiumize, or Debrid-Link) to enable this.")}
+            Save a debrid key above (TorBox, Real-Debrid, AllDebrid, Premiumize, or Debrid-Link) to enable this.
           </span>
         )}
       </div>
@@ -101,7 +99,7 @@ export function RecommendedAddonCard({
           className="flex h-10 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[13px] font-medium text-ink-muted transition-colors hover:border-danger/60 hover:bg-danger/10 hover:text-danger"
         >
           <Trash2 size={13} strokeWidth={2.2} />
-          {t("Remove")}
+          Remove
         </button>
       ) : (
         <button
@@ -110,7 +108,7 @@ export function RecommendedAddonCard({
           className="flex h-10 items-center gap-1.5 rounded-lg bg-ink px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} strokeWidth={2.2} />}
-          {t("Install")}
+          Install
         </button>
       )}
     </div>
@@ -135,7 +133,6 @@ export function ManualAddonCard({
   blurb: string;
   configureUrl: string;
 }) {
-  const t = useT();
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const localId = `harbor-manual-${slug}`;
   const [installedId, setInstalledId] = useState<string | null>(() => {
@@ -157,7 +154,7 @@ export function ManualAddonCard({
       setInstalledId(installed.manifest.id || localId);
       setDraft("");
     } catch (e: any) {
-      setError(e?.message ?? t("Couldn't install. Double-check the URL and try again."));
+      setError(e?.message ?? "Couldn't install. Double-check the URL and try again.");
     } finally {
       setBusy(false);
     }
@@ -178,7 +175,7 @@ export function ManualAddonCard({
             {installedId && (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-accent ring-1 ring-accent/40">
                 <Check size={9} strokeWidth={3} />
-                {t("Installed")}
+                Installed
               </span>
             )}
           </div>
@@ -190,7 +187,7 @@ export function ManualAddonCard({
             className="flex h-10 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[13px] font-medium text-ink-muted transition-colors hover:border-ink-subtle hover:text-ink"
           >
             <ExternalLink size={13} strokeWidth={2.2} />
-            {t("Configure")}
+            Configure
           </button>
           {installedId && (
             <button
@@ -198,7 +195,7 @@ export function ManualAddonCard({
               className="flex h-10 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[13px] font-medium text-ink-muted transition-colors hover:border-danger/60 hover:bg-danger/10 hover:text-danger"
             >
               <Trash2 size={13} strokeWidth={2.2} />
-              {t("Remove")}
+              Remove
             </button>
           )}
         </div>
@@ -218,7 +215,7 @@ export function ManualAddonCard({
                   setDraft(text);
                 }
               }}
-              placeholder={t("Paste the manifest URL the configure page gave you")}
+              placeholder="Paste the manifest URL the configure page gave you"
               spellCheck={false}
               autoComplete="off"
               className="h-11 flex-1 bg-transparent text-[14.5px] text-ink placeholder:text-ink-subtle/60 outline-none"
@@ -230,7 +227,7 @@ export function ManualAddonCard({
             className="flex h-11 items-center gap-1.5 rounded-lg bg-ink px-5 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} strokeWidth={2.2} />}
-            {t("Install")}
+            Install
           </button>
         </div>
       )}
@@ -247,7 +244,6 @@ const LANGUAGE_OPTIONS = [
   "German",
   "Italian",
   "Portuguese",
-  "Portuguese (Brazil)",
   "Russian",
   "Japanese",
   "Korean",

@@ -25,6 +25,7 @@ export function ShellLayer({
   onSeek,
   onSeekStep,
   rememberSubChoice,
+  onEnterSync,
   cropMode,
   onCropMode,
   anime4kMode,
@@ -74,6 +75,7 @@ export function ShellLayer({
   onSeek: (sec: number) => void;
   onSeekStep: (delta: number) => void;
   rememberSubChoice: (t: { lang?: string } | null | undefined) => void;
+  onEnterSync?: () => void;
   cropMode?: string;
   onCropMode?: (id: string) => void;
   anime4kMode?: string;
@@ -145,6 +147,7 @@ export function ShellLayer({
         bridgeRef.current?.setSubDelay(s);
         writePlayerPrefs(metaId, { subDelaySec: s });
       }}
+      onEnterSync={onEnterSync}
       onAudioDelay={(s) => bridgeRef.current?.setAudioDelay(s)}
       onAddSubtitle={(url, lang, title2) => {
         const p = bridgeRef.current?.addSubtitle(url, lang, title2) ?? Promise.resolve(false);

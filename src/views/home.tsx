@@ -586,7 +586,7 @@ export function Home({ active = true }: { active?: boolean }) {
             />
           )}
           {!editMode && settings.homeMode !== "classic" && homeRowsCustom.hidden.includes("hero") && (
-            <div className="pointer-events-none absolute end-0 top-0 z-20 [&>*]:pointer-events-auto">
+            <div className="pointer-events-none absolute end-5 top-0 z-20 [&>*]:pointer-events-auto">
               <CustomizeBar
                 editMode={editMode}
                 customization={homeRowsCustom}
@@ -674,26 +674,6 @@ export function Home({ active = true }: { active?: boolean }) {
           )}
         </div>
       </ScrollRootContext.Provider>
-      {!editMode && settings.homeMode === "classic" && (
-        <div className="pointer-events-none fixed bottom-16 end-5 z-30 flex items-center justify-end gap-2 [&>*]:pointer-events-auto">
-          <CustomizeBar
-            editMode={editMode}
-            customization={homeRowsCustom}
-            onToggleEdit={() => setEditMode((v) => !v)}
-            onReset={() => mutateHomeRows(resetHomeRows())}
-          />
-        </div>
-      )}
-      {editMode && (
-        <div className="pointer-events-none fixed bottom-16 end-5 z-30 flex items-center justify-end gap-2 [&>*]:pointer-events-auto">
-          <CustomizeBar
-            editMode={editMode}
-            customization={homeRowsCustom}
-            onToggleEdit={() => setEditMode((v) => !v)}
-            onReset={() => mutateHomeRows(resetHomeRows())}
-          />
-        </div>
-      )}
       <BackToTop scrollRef={scrollRef} />
     </main>
   );

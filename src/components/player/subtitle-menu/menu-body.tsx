@@ -1,10 +1,10 @@
-import { Check, FolderOpen, Languages, Loader2, Search as SearchIcon, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { Check, FolderOpen, Languages, Loader2, Search as SearchIcon, SlidersHorizontal, Sparkles, Timer, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Flag } from "@/components/flag";
 import { markImportedSub } from "@/lib/player/imported-subs";
 import { useT } from "@/lib/i18n";
+import { openSyncBar } from "@/lib/player/sub-sync";
 import { Tooltip } from "../transport/tooltip";
-import { DelayRow } from "./delay-row";
 import { SearchSection } from "./search-section";
 import { VariantRow } from "./variant-row";
 import type { SubtitleMenuProps } from "./types";
@@ -15,7 +15,7 @@ const ALL_LANGS = "__all__";
 
 export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
   const tr = useT();
-  const { tracks, selectedId, onSelect, onClose, delaySec, onDelay, metaReleaseDate, onOpenStyleBar } = props;
+  const { tracks, selectedId, onSelect, onClose, delaySec, metaReleaseDate, onOpenStyleBar } = props;
   const groups = useMemo(() => groupByLang(tracks), [tracks]);
   const [searchSettled, setSearchSettled] = useState(false);
   const [activeLang, setActiveLang] = useState<string | null>(null);
@@ -66,6 +66,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
   const offSelected = selectedId == null;
   const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
   const [localError, setLocalError] = useState<string | null>(null);
+  const delayNonZero = delaySec !== 0;
 
   const loadLocal = async () => {
     setLocalError(null);
@@ -76,7 +77,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
         filters: [{ name: "Subtitles", extensions: ["srt", "ass", "ssa", "vtt", "sub"] }],
       });
       if (typeof path !== "string") return;
-      const name = path.split(/[\\/]/).pop() || tr("Local subtitle");
+      const name = path.split(/[\\\/]/).pop() || tr("Local subtitle");
       const ok = await props.onAddSubtitle(path, undefined, name);
       if (ok === false) {
         setLocalError(tr("Couldn't load that subtitle file. Try another."));
@@ -94,6 +95,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {/* ── Header ── */}
       <header className="flex items-center justify-between border-b border-edge-soft px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           <span className="text-[13.5px] font-semibold text-ink">{tr("Subtitles")}</span>
@@ -103,7 +105,28 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </span>
           )}
         </div>
+
         <div className="flex items-center gap-1">
+          {/* ── Sync button → opens the floating player-level bar ── */}
+          <Tooltip label={tr("Subtitle sync")} align="end">
+            <button
+              type="button"
+              onClick={() => {
+                openSyncBar();
+                onClose();
+              }}
+              aria-label={tr("Subtitle sync")}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+            >
+              <Timer size={16} strokeWidth={2} />
+              {/* badge when delay is active */}
+              {delayNonZero && (
+                <span className="absolute end-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-accent" />
+              )}
+            </button>
+          </Tooltip>
+
+          {/* ── Style bar button ── */}
           {onOpenStyleBar && (
             <button
               type="button"
@@ -117,6 +140,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               <SlidersHorizontal size={18} strokeWidth={2} />
             </button>
           )}
+
           <button
             onClick={onClose}
             aria-label={tr("Close")}
@@ -127,7 +151,9 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
         </div>
       </header>
 
+      {/* ── Body ── */}
       <div className="flex min-h-0 flex-1">
+        {/* Language sidebar */}
         <aside className="flex w-[128px] shrink-0 flex-col gap-0.5 overflow-y-auto border-e border-edge-soft bg-canvas/30 p-2">
           <button
             onClick={() => {
@@ -197,13 +223,11 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           })}
         </aside>
 
+        {/* Track list section */}
         <section className="flex min-h-0 min-w-0 flex-1 flex-col">
           {!searchOpen && tracks.length > 0 && (activeGroup || allLangs) && (
             <div className="flex flex-wrap items-center gap-1.5 border-b border-edge-soft bg-canvas/15 px-3 py-2">
-              <Tab
-                active={sourceFilter === "all"}
-                onClick={() => setSourceFilter("all")}
-              >
+              <Tab active={sourceFilter === "all"} onClick={() => setSourceFilter("all")}>
                 {tr("All")} <Count value={tracks.length} />
               </Tab>
               <Tab
@@ -241,30 +265,30 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               <SearchSection {...props} />
             </div>
           ) : (
-          <div className="flex-1 overflow-y-auto">
-            {justImported && <ImportBanner name={justImported} />}
-            {tracks.length === 0 ? (
-              <EmptyState searchSettled={searchSettled} veryNewMovie={veryNewMovie} />
-            ) : visibleVariants.length === 0 ? (
-              <p className="px-5 py-6 text-[13.5px] text-ink-muted">
-                {tr("No tracks match these filters. Try toggling HI/SDH or Forced.")}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-0.5 p-2">
-                {visibleVariants.map((t) => (
-                  <VariantRow
-                    key={t.id}
-                    track={t}
-                    selected={t.id === selectedId}
-                    onPick={() => {
-                      onSelect(t.id);
-                      onClose();
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+            <div className="flex-1 overflow-y-auto">
+              {justImported && <ImportBanner name={justImported} />}
+              {tracks.length === 0 ? (
+                <EmptyState searchSettled={searchSettled} veryNewMovie={veryNewMovie} />
+              ) : visibleVariants.length === 0 ? (
+                <p className="px-5 py-6 text-[13.5px] text-ink-muted">
+                  {tr("No tracks match these filters. Try toggling HI/SDH or Forced.")}
+                </p>
+              ) : (
+                <div className="flex flex-col gap-0.5 p-2">
+                  {visibleVariants.map((t) => (
+                    <VariantRow
+                      key={t.id}
+                      track={t}
+                      selected={t.id === selectedId}
+                      onPick={() => {
+                        onSelect(t.id);
+                        onClose();
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {localError && (
@@ -272,6 +296,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               {localError}
             </div>
           )}
+
           <div className="flex shrink-0 items-stretch border-t border-edge-soft">
             <button
               onClick={() => setSearchOpen((v) => !v)}
@@ -292,13 +317,13 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               </Tooltip>
             )}
           </div>
-
-          <DelayRow delay={delaySec} onDelay={onDelay} />
         </section>
       </div>
     </div>
   );
 }
+
+// ─── Helper components ────────────────────────────────────────────────────────
 
 function Tab({
   active,
@@ -346,9 +371,7 @@ function ToggleChip({
       onClick={onClick}
       title={hint}
       className={`flex h-6 items-center rounded-full px-2 text-[11px] font-semibold transition-colors ${
-        active
-          ? "bg-accent text-canvas"
-          : "bg-raised text-ink-muted hover:bg-elevated"
+        active ? "bg-accent text-canvas" : "bg-raised text-ink-muted hover:bg-elevated"
       }`}
     >
       {label}

@@ -1,16 +1,20 @@
 import type { PlayerChromeConfig, TimeFormat, VolumeStyle } from "@/lib/player-chrome";
+import { useT } from "@/lib/i18n";
 
-const TIME_OPTIONS: Array<{ id: TimeFormat; label: string; sub: string }> = [
-  { id: "start-end", label: "Elapsed and remaining", sub: "00:23 on the left, -1:12 on the right." },
-  { id: "remaining", label: "Remaining only", sub: "Single -1:12 label, both ends collapse." },
-  { id: "elapsed-only", label: "Elapsed only", sub: "Single 00:23 label, both ends collapse." },
-];
+export function getOptions(t: (k: string) => string) {
+  const TIME_OPTIONS: Array<{ id: TimeFormat; label: string; sub: string }> = [
+    { id: "start-end", label: t("Elapsed and remaining"), sub: t("00:23 on the left, -1:12 on the right.") },
+    { id: "remaining", label: t("Remaining only"), sub: t("Single -1:12 label, both ends collapse.") },
+    { id: "elapsed-only", label: t("Elapsed only"), sub: t("Single 00:23 label, both ends collapse.") },
+  ];
 
-const VOLUME_OPTIONS: Array<{ id: VolumeStyle; label: string; sub: string }> = [
-  { id: "slider", label: "Slider", sub: "Hover the speaker to reveal a horizontal slider." },
-  { id: "stepper", label: "Stepper", sub: "Click to cycle 100 / 75 / 50 / 25 / 0." },
-  { id: "icon-only", label: "Icon only", sub: "Click toggles mute. Wheel scrolls volume." },
-];
+  const VOLUME_OPTIONS: Array<{ id: VolumeStyle; label: string; sub: string }> = [
+    { id: "slider", label: t("Slider"), sub: t("Hover the speaker to reveal a horizontal slider.") },
+    { id: "stepper", label: t("Stepper"), sub: t("Click to cycle 100 / 75 / 50 / 25 / 0.") },
+    { id: "icon-only", label: t("Icon only"), sub: t("Click toggles mute. Wheel scrolls volume.") },
+  ];
+  return { TIME_OPTIONS, VOLUME_OPTIONS };
+}
 
 type Props = {
   config: PlayerChromeConfig;
@@ -19,18 +23,21 @@ type Props = {
 };
 
 export function OptionsSection({ config, onTimeFormat, onVolumeStyle }: Props) {
+  const t = useT();
+  const { TIME_OPTIONS, VOLUME_OPTIONS } = getOptions(t);
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <OptionCard
-        title="Time format"
-        sub="What the clock labels show on the seek bar."
+        title={t("Time format")}
+        sub={t("What the clock labels show on the seek bar.")}
         value={config.options.timeFormat}
         options={TIME_OPTIONS}
         onChange={onTimeFormat}
       />
       <OptionCard
-        title="Volume control"
-        sub="How the volume widget behaves on click and hover."
+        title={t("Volume control")}
+        sub={t("How the volume widget behaves on click and hover.")}
         value={config.options.volumeStyle}
         options={VOLUME_OPTIONS}
         onChange={onVolumeStyle}

@@ -1,26 +1,4 @@
 const lists: Record<string, string> = {
-  "Refresh list": "تحديث القائمة",
-  "Pick a list to view it.": "اختر قائمة لعرضها.",
-  "This list is empty, or its items couldn't be matched.":
-    "هذه القائمة فارغة، أو تعذّرت مطابقة عناصرها.",
-  "Showing {shown} of {total}.": "عرض {shown} من {total}.",
-  "Open Settings": "فتح الإعدادات",
-  Retry: "إعادة المحاولة",
-  "This list needs your {key} API key. Add it in Settings, then refresh.":
-    "تحتاج هذه القائمة إلى مفتاح API الخاص بـ {key}. أضفه في الإعدادات ثم حدّث.",
-  "That list is private or doesn't exist. Public lists only.":
-    "تلك القائمة خاصة أو غير موجودة. القوائم العامة فقط.",
-  "Couldn't load this list. Check the URL and try again.":
-    "تعذّر تحميل هذه القائمة. تحقّق من الرابط وحاول مرة أخرى.",
-
-  Collection: "مجموعة",
-  Films: "أفلام",
-  "{n} film": "فيلم واحد",
-  "{n} films": "{n} أفلام",
-  "Add a TMDB key in Settings to browse collections.":
-    "أضف مفتاح TMDB في الإعدادات لتصفّح المجموعات.",
-  "No films found in this collection.": "لم يُعثر على أفلام في هذه المجموعة.",
-
   "Add a list": "إضافة قائمة",
   "Add list": "إضافة قائمة",
   "List URL or ID": "رابط القائمة أو المعرّف",

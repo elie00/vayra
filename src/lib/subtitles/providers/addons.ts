@@ -1,5 +1,6 @@
 import { addonAccepts, type Addon } from "@/lib/addons";
 import { safeFetch } from "@/lib/safe-fetch";
+import { dlog } from "@/lib/debug";
 import type { SubResult, SubSearchQuery } from "../types";
 import { normalizeLang } from "../language";
 
@@ -38,12 +39,19 @@ function extraSegment(q: SubSearchQuery): string {
 async function callOne(addon: Addon, type: string, id: string, extra: string): Promise<RawAddonSub[]> {
   const base = transportBase(addon.transportUrl);
   const url = `${base}/subtitles/${type}/${id}${extra}.json`;
+  dlog(`[addons] Fetching from ${addon.manifest.name}: ${url}`);
   try {
     const res = await safeFetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      dlog(`[addons] ${addon.manifest.name} returned ${res.status}`);
+      return [];
+    }
     const data = (await res.json()) as { subtitles?: RawAddonSub[] };
-    return Array.isArray(data?.subtitles) ? data.subtitles : [];
-  } catch {
+    const subs = Array.isArray(data?.subtitles) ? data.subtitles : [];
+    dlog(`[addons] ${addon.manifest.name} returned ${subs.length} subtitles`);
+    return subs;
+  } catch (e) {
+    dlog(`[addons] ${addon.manifest.name} error: ${e}`);
     return [];
   }
 }
@@ -52,22 +60,54 @@ export async function searchAddons(
   addons: Addon[],
   q: SubSearchQuery,
 ): Promise<SubResult[]> {
+  dlog(`[addons] searchAddons called with ${addons.length} addons`);
+  
   const id = contentId(q);
-  if (!id) return [];
+  if (!id) {
+    dlog('[addons] No content ID, returning empty');
+    return [];
+  }
+  
   const type = q.type ?? (q.season != null && q.episode != null ? "series" : "movie");
-  const subAddons = addons.filter((a) => addonAccepts(a, "subtitles", type, id));
-  if (subAddons.length === 0) return [];
+  dlog(`[addons] Content ID: ${id}, Type: ${type}`);
+  
+  const subAddons = addons.filter((a) => {
+    const accepts = addonAccepts(a, "subtitles", type, id);
+    if (!accepts) {
+      dlog(`[addons] ${a.manifest.name} does NOT accept ${type}/${id}`);
+    }
+    return accepts;
+  });
+  dlog(`[addons] === Filtered subtitle addons: ${subAddons.length} of ${addons.length} ===`);
+  if (subAddons.length > 0) {
+    dlog(`[addons] Accepting addons: ${subAddons.map(a => a.manifest.name).join(', ')}`);
+  }
+  if (subAddons.length === 0) {
+    dlog('[addons] No subtitle addons accept this content');
+    return [];
+  }
+  
   const extra = extraSegment(q);
   const settled = await Promise.all(
-    subAddons.map((addon) => callOne(addon, type, id, extra)),
+    subAddons.map(async (addon) => {
+      const result = await callOne(addon, type, id, extra);
+      dlog(`[addons] ${addon.manifest.name}: ${result.length} subtitles`);
+      return result;
+    }),
   );
+  
   const out: SubResult[] = [];
   settled.forEach((subs, i) => {
     const addonName = subAddons[i].manifest.name;
-    for (const s of subs) {
+    for (let idx = 0; idx < subs.length; idx++) {
+      const s = subs[idx];
       if (!s.url) continue;
+      // Include addon name and index to ensure unique IDs across different addons
+      const uniqueId = s.id 
+        ? `${addonName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${s.id}` 
+        : `${addonName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${idx}`;
       out.push({
-        id: String(s.id ?? `${addonName}:${s.url}`),
+        id: uniqueId,
         url: s.url,
         lang: normalizeLang(s.lang),
         title: addonName,
@@ -76,5 +116,7 @@ export async function searchAddons(
       });
     }
   });
+  
+  dlog(`[addons] Total addon results: ${out.length}`);
   return out;
 }

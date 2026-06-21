@@ -86,7 +86,7 @@ export function SkipPill({
         onClick={action}
         className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/75 px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_18px_50px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-[background-color,transform] hover:bg-black/90 active:scale-[0.97]"
       >
-        <Icon size={18} strokeWidth={2.2} className={isOutroNext ? "dir-icon" : undefined} />
+        <Icon size={18} strokeWidth={2.2} />
         {label}
       </button>
     </div>
