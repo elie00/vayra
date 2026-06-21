@@ -295,18 +295,12 @@ fn check_one(
         }
     }
 
-    if strict
-        && kind_is_movie
-        && in_cinema_window
-        && opts.expected_year.is_some()
-        && s.year.is_some()
-        && s.year != opts.expected_year
-    {
-        return Some(format!(
-            "cinema-year-mismatch:{}-vs-{}",
-            s.year.unwrap(),
-            opts.expected_year.unwrap()
-        ));
+    if strict && kind_is_movie && in_cinema_window {
+        if let (Some(sy), Some(ey)) = (s.year, opts.expected_year) {
+            if sy != ey {
+                return Some(format!("cinema-year-mismatch:{sy}-vs-{ey}"));
+            }
+        }
     }
 
     if strict && kind_is_movie {
