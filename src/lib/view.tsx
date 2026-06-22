@@ -46,6 +46,7 @@ export type PlayerStreamRef = {
   title?: string | null;
   parsedTitle?: string | null;
   resolution?: string | null;
+  quality?: string | null;
   releaseGroup?: string | null;
   source?: string | null;
   size?: number | null;

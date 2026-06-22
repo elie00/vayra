@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { LazyMount } from "@/components/lazy-mount";
 import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
+import { CustomSourcesRow } from "@/components/custom-sources-row";
 import { TopRankCard } from "@/components/top-rank-card";
 import { useT } from "@/lib/i18n";
 import type { HomeRowCustomization } from "@/lib/home-customization";
@@ -10,9 +11,11 @@ import { useView } from "@/lib/view";
 import { isMacDesktop } from "@/lib/platform";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
+import { watchTitleKey, type WatchedSet } from "@/lib/playback-history";
 
-function metaTitleKey(meta: { id: string }): string | null {
+function metaTitleKey(meta: { id?: string }): string | null {
   const id = meta.id;
+  if (!id) return null;
   if (/^tt\d+$/.test(id)) return `imdb:${id}`;
   if (id.startsWith("tmdb:")) {
     const num = Number(id.split(":")[2]);
@@ -52,8 +55,12 @@ export function CustomizableRows({
   onToggleNumerals,
   onToggleHero,
   onLoadMore,
+  onDeleteCustomSource,
+  onEditFolderImages,
   hideWatched,
   watchedSet,
+  localWatched,
+  homeLanguages,
 }: {
   rows: HomeRow[];
   editMode: boolean;
@@ -63,10 +70,14 @@ export function CustomizableRows({
   onToggleHidden: (key: string) => void;
   onRename: (key: string, label: string) => void;
   onToggleNumerals: (key: string) => void;
-  onToggleHero: (key: string) => void;
+  onToggleHero?: (key: string) => void;
   onLoadMore: (key: string) => void;
+  onDeleteCustomSource?: (key: string) => void;
+  onEditFolderImages?: (sourceId: string, folderId: string, cover: string, gif: string) => void;
   hideWatched?: boolean;
   watchedSet?: Set<string>;
+  localWatched?: WatchedSet;
+  homeLanguages?: string[];
 }) {
   const { openGrid } = useView();
   const t = useT();
@@ -79,17 +90,28 @@ export function CustomizableRows({
     }
     return out;
   }, [watchedSet]);
-  const isWatched = (m: { id: string }) => {
+  const isWatched = (m: { id: string; name?: string }) => {
     const key = metaTitleKey(m);
-    return key != null && watchedTitleKeys.has(key);
+    if (key != null && watchedTitleKeys.has(key)) return true;
+    if (localWatched) {
+      if (localWatched.ids.has(m.id)) return true;
+      const tk = watchTitleKey(m.name);
+      if (tk && localWatched.titles.has(tk)) return true;
+    }
+    return false;
   };
   return (
     <>
       {rows.map((row, rowIndex) => {
         const hidden = customization.hidden.includes(row.key);
         if (hidden && !editMode) return null;
-        const metas = hideWatched ? row.metas.filter((m) => !isWatched(m)) : row.metas;
-        if (hideWatched && metas.length === 0 && !editMode) return null;
+        let metas = row.metas.filter((m) => typeof m.id === "string");
+        if (homeLanguages && homeLanguages.length > 0) {
+          metas = metas.filter((m) => !m.originalLanguage || homeLanguages.includes(m.originalLanguage));
+        }
+        if (hideWatched) metas = metas.filter((m) => !isWatched(m));
+        if ((hideWatched || (homeLanguages && homeLanguages.length > 0)) && metas.length === 0 && !editMode)
+          return null;
         const idx = orderKeys.indexOf(row.key);
         const eager = rowIndex < 2;
         const viewAll = row.fetcher
@@ -97,30 +119,37 @@ export function CustomizableRows({
           : undefined;
         const ranked =
           (customization.numerals ?? []).includes(row.key) && metas.length >= 10;
-        const rowEl = ranked ? (
-          <Row
-            title={<RowTitle row={row} />}
-            min={180}
-            shape="rank"
-            scrollKey={`home:${row.key}`}
-            onViewAll={viewAll}
-          >
-            {metas.slice(0, 10).map((m, i) => (
-              <TopRankCard key={m.id} meta={m} rank={i + 1} />
-            ))}
-          </Row>
-        ) : (
-          <Row
-            title={<RowTitle row={row} />}
-            scrollKey={`home:${row.key}`}
-            onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
-            onViewAll={viewAll}
-          >
-            {metas.map((m, i) => (
-              <PickCard key={`${m.id}-${i}`} meta={m} />
-            ))}
-          </Row>
-        );
+        let rowEl;
+        if (row.sourceRow) {
+          rowEl = <CustomSourcesRow sourceRow={row.sourceRow} editMode={editMode} onEditFolderImages={onEditFolderImages} />;
+        } else if (ranked) {
+          rowEl = (
+            <Row
+              title={<RowTitle row={row} />}
+              min={180}
+              shape="rank"
+              scrollKey={`home:${row.key}`}
+              onViewAll={viewAll}
+            >
+              {metas.slice(0, 10).map((m, i) => (
+                <TopRankCard key={m.id} meta={m} rank={i + 1} />
+              ))}
+            </Row>
+          );
+        } else {
+          rowEl = (
+            <Row
+              title={<RowTitle row={row} />}
+              scrollKey={`home:${row.key}`}
+              onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
+              onViewAll={viewAll}
+            >
+              {metas.map((m, i) => (
+                <PickCard key={`${m.id}-${i}`} meta={m} />
+              ))}
+            </Row>
+          );
+        }
         return (
           <div
             key={row.key}
@@ -144,7 +173,8 @@ export function CustomizableRows({
                 onToggleNumerals={() => onToggleNumerals(row.key)}
                 heroActive={customization.heroSource === row.key}
                 canHero={row.metas.some((m) => m.background || m.poster)}
-                onToggleHero={() => onToggleHero(row.key)}
+                onToggleHero={() => onToggleHero?.(row.key)}
+                onDelete={row.sourceRow ? () => onDeleteCustomSource?.(row.key) : undefined}
               />
             )}
             {!hidden && (eager ? rowEl : <LazyMount minHeight={340}>{rowEl}</LazyMount>)}

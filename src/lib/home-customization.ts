@@ -1,4 +1,5 @@
 import type { HomeRow } from "@/views/home/home-types";
+import type { SourceRow } from "./custom-sources";
 
 export type HomeRowCustomization = {
   order: string[];
@@ -6,6 +7,7 @@ export type HomeRowCustomization = {
   renamed: Record<string, string>;
   numerals: string[];
   heroSource: string | null;
+  customSources: SourceRow[];
 };
 
 export function applyHomeRowCustomization(
@@ -107,5 +109,5 @@ export function toggleHeroSource(
 }
 
 export function resetHomeRows(): HomeRowCustomization {
-  return { order: [], hidden: [], renamed: {}, numerals: [], heroSource: null };
+  return { order: [], hidden: [], renamed: {}, numerals: [], heroSource: null, customSources: [] };
 }

@@ -4,6 +4,7 @@ import { registerEvictable } from "@/lib/maintenance";
 import { registerCache } from "@/lib/memory-profiler";
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
 import { tmdbAnimeLogo, tmdbImdbId, tmdbLogo } from "@/lib/providers/tmdb";
+import { anilistBannerByTitle } from "@/lib/anilist/browse";
 
 const CACHE_MAX = 1200;
 const BACKDROP_CACHE_MAX = 600;
@@ -86,7 +87,7 @@ export async function resolveAnimeBackdrop(
   tmdbKey: string,
   meta: Meta,
 ): Promise<string | undefined> {
-  if (!tmdbKey || !meta.name) return undefined;
+  if (!meta.name) return undefined;
   if (
     !meta.id.startsWith("kitsu:") &&
     !meta.id.startsWith("mal:") &&
@@ -102,10 +103,14 @@ export async function resolveAnimeBackdrop(
   const p = (async () => {
     try {
       const akm = await animeKitsuMeta(meta.id);
+      const name = akm?.name ?? meta.name;
       const kind = meta.type === "movie" ? "movie" : "tv";
       const year = akm?.releaseInfo ?? meta.releaseInfo;
-      const hit = await tmdbAnimeLogo(tmdbKey, akm?.name ?? meta.name, year, kind);
-      return hit?.backdrop;
+      if (tmdbKey) {
+        const hit = await tmdbAnimeLogo(tmdbKey, name, year, kind);
+        if (hit?.backdrop) return hit.backdrop;
+      }
+      return await anilistBannerByTitle(name);
     } catch {
       return undefined;
     }

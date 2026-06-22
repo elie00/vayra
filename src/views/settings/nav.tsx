@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { settingsAnchor, type SectionId } from "./shared";
+import { markSectionSeen, useSettingsNew } from "./settings-new";
 
 type IconProps = { size?: number; strokeWidth?: number };
 
@@ -28,8 +29,9 @@ const IconBase = ({
 function IconBasics(p: IconProps) {
   return (
     <IconBase {...p}>
-      <path d="M12 3.2l2.1 6.1 6.1 2.1-6.1 2.1L12 19.7l-2.1-6.1L3.8 11.4l6.1-2.1z" fill="currentColor" stroke="none" />
-      <circle cx="18.5" cy="5.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M15.8 8.2l-2.3 5.3-5.3 2.3 2.3-5.3z" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1" fill="var(--color-canvas)" stroke="none" />
     </IconBase>
   );
 }
@@ -73,6 +75,20 @@ function IconStreaming(p: IconProps) {
     <IconBase {...p}>
       <path d="M12 5v14" strokeWidth={p.strokeWidth ?? 2} />
       <path d="M5 12h14" strokeWidth={p.strokeWidth ?? 2} />
+    </IconBase>
+  );
+}
+
+function IconP2P(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <path d="M16.6 6.8l2.8-1.2M16.8 10.4l2.6 1.1" strokeWidth="1.4" />
+      <path d="M7.4 6.8 4.6 5.6M7.2 10.4 4.6 11.5" strokeWidth="1.4" />
+      <path d="M12 3.2 13.7 6h-3.4z" fill="currentColor" stroke="none" />
+      <rect x="9.9" y="6" width="4.2" height="2.7" rx="0.5" />
+      <path d="M9 20.6 10.3 8.7h3.4L15 20.6z" />
+      <path d="M9.6 12.4h4.8" />
+      <path d="M7.3 20.6h9.4" strokeLinecap="round" />
     </IconBase>
   );
 }
@@ -332,6 +348,36 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
           "xtream",
         ],
       },
+      {
+        id: "p2p",
+        label: "P2P & servers",
+        Icon: IconP2P,
+        keywords: [
+          "p2p",
+          "peer to peer",
+          "torrent engine",
+          "local engine",
+          "librqbit",
+          "built-in engine",
+          "rust engine",
+          "self-test",
+          "self test",
+          "peer test",
+          "restart engine",
+          "clear and restart",
+          "streaming server",
+          "server address",
+          "localhost",
+          "11470",
+          "11471",
+          "remote server",
+          "stremio server",
+          "direct torrent",
+          "seeders",
+          "connecting",
+          "dht",
+        ],
+      },
     ],
   },
   {
@@ -341,7 +387,7 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         id: "player",
         label: "Player & quality",
         Icon: IconPlayer,
-        keywords: ["mpv", "html5", "engine", "quality", "hdr", "passthrough", "audio", "transcode"],
+        keywords: ["mpv", "html5", "engine", "quality", "hdr", "passthrough", "audio", "transcode", "tonemap", "true hdr", "separate window", "hdr no ui", "hdr controls missing", "brightness dimming", "washed out", "dolby vision"],
       },
       {
         id: "mpv",
@@ -435,9 +481,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Next episode prompt & auto-play", section: "player", anchorTitle: "Next episode prompt", keywords: ["next episode", "up next", "prompt", "timing", "autoplay", "auto-play next", "auto play next episode", "continuous", "credits", "pill", "binge"] },
   { label: "Hide watched in catalogs", section: "library", anchorTitle: "Home layout", keywords: ["hide watched", "hide finished", "watched filter", "catalog filter", "trakt history", "seen"] },
   { label: "Downloads folder", section: "advanced", anchorTitle: "Downloads", keywords: ["downloads", "download folder", "location", "directory", "save", "path", "choose folder", "open folder"] },
-  { label: "Local torrent engine", section: "player", anchorTitle: "Local engine", keywords: ["local engine", "torrent engine", "p2p", "librqbit", "self-test", "self test", "restart engine", "peer test", "connectivity"] },
-  { label: "Your streaming server address", section: "player", anchorTitle: "Your streaming server address", keywords: ["streaming server", "server address", "localhost", "wifi", "lan", "start server", "stop server", "restart server", "harbor in browser", "web ui", "11470", "11471", "web version", "use exclusively", "strict"] },
-  { label: "Remote streaming server", section: "player", anchorTitle: "Remote streaming server", keywords: ["remote server", "server url", "ip address", "test connection", "forget server", "use exclusively", "strict", "vpn", "home server", "stremio service"] },
+  { label: "Local torrent engine", section: "p2p", anchorTitle: "Local engine", keywords: ["local engine", "torrent engine", "p2p", "librqbit", "self-test", "self test", "restart engine", "peer test", "connectivity"] },
+  { label: "Your streaming server address", section: "p2p", anchorTitle: "Your streaming server address", keywords: ["streaming server", "server address", "localhost", "wifi", "lan", "start server", "stop server", "restart server", "harbor in browser", "web ui", "11470", "11471", "web version", "use exclusively", "strict"] },
+  { label: "Remote streaming server", section: "p2p", anchorTitle: "Remote streaming server", keywords: ["remote server", "server url", "ip address", "test connection", "forget server", "use exclusively", "strict", "vpn", "home server", "stremio service"] },
   { label: "Anime4K presets & modes", section: "player", anchorTitle: "Anime4K presets", keywords: ["anime4k", "setup", "download shaders", "install anime4k", "re-download", "quality", "performance", "mode a", "mode b", "mode c", "apply to anime only", "anime detection"] },
   { label: "Internet speed / bandwidth", section: "player", anchorTitle: "Internet speed", keywords: ["internet speed", "bandwidth", "cap", "limit", "mbps", "gbps", "speed test", "fiber", "gigabit", "data"] },
   { label: "Remember last stream", section: "player", anchorTitle: "Remember last stream", keywords: ["remember last stream", "resume stream", "last source", "addon memory", "source memory"] },
@@ -526,6 +572,7 @@ export function SettingsNav({
 }) {
   const { settings } = useSettings();
   const t = useT();
+  const isNew = useSettingsNew();
   const [query, setQuery] = useState("");
   const trimmed = query.trim().toLowerCase();
   const sectionLabel = useMemo(() => {
@@ -597,6 +644,7 @@ export function SettingsNav({
     simkl: null,
     relay: relayLive,
     streaming: debridChip,
+    p2p: null,
     language: langChip,
     player: settings.playerEngine === "auto" ? null : settings.playerEngine,
     mpv: (settings.mpvQuality ?? "balanced") === "balanced" ? null : settings.mpvQuality === "performance" ? "lite" : "max",
@@ -766,7 +814,10 @@ export function SettingsNav({
               return (
                 <button
                   key={id}
-                  onClick={() => onChange(id)}
+                  onClick={() => {
+                    onChange(id);
+                    markSectionSeen(id);
+                  }}
                   className={`group flex h-14 w-full items-center gap-3 rounded-xl px-2.5 text-start transition-colors ${
                     isActive
                       ? "bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-edge)]"
@@ -783,6 +834,12 @@ export function SettingsNav({
                     <Icon size={20} strokeWidth={1.6} />
                   </span>
                   <span className="flex-1 truncate text-[14.5px] font-medium">{t(label)}</span>
+                  {isNew(id) && (
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-accent ring-1 ring-accent/30">
+                      <span className="h-1 w-1 rounded-full bg-accent" />
+                      {t("New")}
+                    </span>
+                  )}
                   {(chip || debridChip) && (
                     <span className="flex shrink-0 gap-1">
                       {debridChip && (

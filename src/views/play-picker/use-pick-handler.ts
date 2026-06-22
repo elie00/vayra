@@ -15,7 +15,7 @@ import { buildPlayInvite } from "@/lib/together/build-invite";
 import { type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { openInAppBrowser, openUrl } from "@/lib/window";
 import { enqueueDownload } from "@/lib/download/downloads-store";
-import { humanError, isDebridFailure } from "./picker-utils";
+import { formatStreamQuality, humanError, isDebridFailure } from "./picker-utils";
 
 export function usePickHandler({
   meta,
@@ -25,6 +25,7 @@ export function usePickHandler({
   attempt,
   debrids,
   isCached,
+  p2pAutoConsent,
   inSession,
   canInvite,
   inviteSentRef,
@@ -50,6 +51,7 @@ export function usePickHandler({
   attempt?: number;
   debrids: DebridStore[];
   isCached: (s: ScoredStream) => boolean;
+  p2pAutoConsent: boolean;
   inSession: boolean;
   canInvite: boolean;
   inviteSentRef: React.MutableRefObject<string | null>;
@@ -132,7 +134,7 @@ export function usePickHandler({
         }
       }
       const preflight =
-        r.via === "stremio-server" || r.via === "direct"
+        r.via === "p2p" || r.via === "direct"
           ? ({ ok: true } as const)
           : await preflightCheck(playUrl, ac.signal);
       if (ac.signal.aborted) return;
@@ -190,6 +192,7 @@ export function usePickHandler({
           title: stream.title ?? null,
           parsedTitle: stream.parsedTitle ?? null,
           resolution: stream.resolution ?? null,
+          quality: formatStreamQuality(stream),
           releaseGroup: stream.releaseGroupNormalized ?? null,
           source: stream.source ?? null,
           bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
@@ -245,7 +248,14 @@ export function usePickHandler({
       openUrl(`https://www.youtube.com/watch?v=${stream.ytId}`);
       return;
     }
-    if (committed && !skipP2pConfirm && !isCached(stream) && !stream.url && engineP2pEligible(stream)) {
+    if (
+      committed &&
+      !skipP2pConfirm &&
+      !p2pAutoConsent &&
+      !isCached(stream) &&
+      !stream.url &&
+      engineP2pEligible(stream)
+    ) {
       setP2pConfirm({ stream });
       return;
     }

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import fanartLogo from "@/assets/addon-logos/fanarttv.svg";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
+import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
+import traktLogo from "@/assets/trakt.svg";
 import harborStyleImg from "@/assets/onboarding/harborstyle.png";
 import traditionalStyleImg from "@/assets/onboarding/traditional.png";
 import omdbLogo from "@/assets/addon-logos/omdb.png";
@@ -18,7 +20,7 @@ import { RtRotten } from "@/components/icons/rt-rotten";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { clearAllSnapshots, snapshotCount } from "@/lib/snapshots";
-import { HelpCircle } from "lucide-react";
+import { Bookmark, HelpCircle, Popcorn } from "lucide-react";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
 import { RegionField } from "./region-cascade";
@@ -57,6 +59,36 @@ export function LibraryPanel({
   const { settings, update } = useSettings();
   const { activeProfile, updateProfile } = useProfiles();
   const t = useT();
+
+  const badgeFlags: PreviewFlags = {
+    showImdb: settings.showImdbBadge && !!settings.tmdbKey,
+    showTmdb: settings.showTmdbBadge && !!settings.tmdbKey,
+    showRt: settings.showRtBadge && !!settings.omdbKey,
+    showPopcorn: settings.showPopcornBadge && !!settings.mdblistKey,
+    showMetacritic: settings.showMetacriticBadge && !!settings.mdblistKey,
+    showLetterboxd: settings.showLetterboxdBadge && !!settings.mdblistKey,
+    showMdblist: settings.showMdblistBadge && !!settings.mdblistKey,
+    showTrakt: settings.showTraktBadge && !!settings.mdblistKey,
+    showMal: settings.showMalBadge,
+  };
+  const enabledBadgeCount =
+    (badgeFlags.showImdb || badgeFlags.showTmdb || badgeFlags.showMal ? 1 : 0) +
+    (badgeFlags.showRt ? 1 : 0) +
+    (badgeFlags.showPopcorn ? 1 : 0) +
+    (badgeFlags.showMetacritic ? 1 : 0) +
+    (badgeFlags.showLetterboxd ? 1 : 0) +
+    (badgeFlags.showMdblist ? 1 : 0) +
+    (badgeFlags.showTrakt ? 1 : 0);
+
+  const prevBadgeCountRef = useRef(enabledBadgeCount);
+  useEffect(() => {
+    const prev = prevBadgeCountRef.current;
+    prevBadgeCountRef.current = enabledBadgeCount;
+    if (enabledBadgeCount > prev && enabledBadgeCount > settings.cardBadgeLimit) {
+      update({ cardBadgeLimit: Math.min(6, enabledBadgeCount) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabledBadgeCount]);
   const [mdblistDraft, setMdblistDraft] = useState(settings.mdblistKey);
   const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
   const [aiKeyDraft, setAiKeyDraft] = useState(settings.aiSearchKey);
@@ -116,10 +148,47 @@ export function LibraryPanel({
         />
         <ToggleRow
           label={t("Hide watched titles in catalogs")}
-          sub={t("Movies you've watched and shows you've made progress on stop appearing in the built-in Discover rows, using your Trakt history. Needs Trakt connected. Continue Watching is never touched.")}
+          sub={t("Movies you've watched and shows you've made progress on stop appearing in the built-in catalog rows, using your local watch history (and Trakt if connected). Continue Watching is never touched.")}
           value={settings.hideWatchedInCatalogs}
           onChange={(v) => update({ hideWatchedInCatalogs: v })}
         />
+      </Section>
+
+      <Section
+        title={t("Home languages")}
+        subtitle={t("Only show titles in these original languages on the Home catalogs. Leave all off to show everything.")}
+      >
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["en", "English"], ["es", "Spanish"], ["fr", "French"], ["de", "German"],
+              ["it", "Italian"], ["pt", "Portuguese"], ["ar", "Arabic"], ["hi", "Hindi"],
+              ["ja", "Japanese"], ["ko", "Korean"], ["zh", "Chinese"], ["ru", "Russian"],
+              ["tr", "Turkish"],
+            ] as Array<[string, string]>
+          ).map(([code, label]) => {
+            const on = settings.homeLanguages.includes(code);
+            return (
+              <button
+                key={code}
+                onClick={() =>
+                  update({
+                    homeLanguages: on
+                      ? settings.homeLanguages.filter((c) => c !== code)
+                      : [...settings.homeLanguages, code],
+                  })
+                }
+                className={`rounded-full px-3 py-1.5 text-[13px] font-medium ring-1 transition-colors ${
+                  on
+                    ? "bg-accent text-canvas ring-accent"
+                    : "bg-elevated text-ink-muted ring-edge-soft hover:text-ink"
+                }`}
+              >
+                {t(label)}
+              </button>
+            );
+          })}
+        </div>
       </Section>
 
       <Section
@@ -169,6 +238,30 @@ export function LibraryPanel({
             />
           </div>
         )}
+      </Section>
+
+      <Section
+        title={t("Episode cards")}
+        subtitle={t("Show the IMDb rating and synopsis on episodes across the list, grid, and panel layouts.")}
+      >
+        <ToggleRow
+          label={t("Show IMDb rating on episodes")}
+          sub={t("Shows each episode's rating. Add your free OMDb API key for real IMDb scores; without it, ratings fall back to TMDB.")}
+          value={settings.showEpisodeRating}
+          onChange={(v) => update({ showEpisodeRating: v })}
+        />
+        <ToggleRow
+          label={t("Show episode description")}
+          sub={t("Shows the episode synopsis on the cards. Turn it off to hide it.")}
+          value={settings.showEpisodeDescription}
+          onChange={(v) => update({ showEpisodeDescription: v })}
+        />
+        <ToggleRow
+          label={t("High-quality episode images")}
+          sub={t("Loads full-resolution episode artwork (original) instead of lighter w300 images. Turn off for slow connections or low-end devices.")}
+          value={settings.hdEpisodeImages}
+          onChange={(v) => update({ hdEpisodeImages: v })}
+        />
       </Section>
 
       <Section
@@ -390,6 +483,12 @@ export function LibraryPanel({
           </p>
           <div className="flex flex-col gap-2">
             <ToggleRow
+              label={t("Show tags on cards (New, In Cinema, Rerun, Awards)")}
+              sub={t("Turn off for a cleaner grid. Score chips are controlled separately below.")}
+              value={settings.showCardBadges}
+              onChange={(v) => update({ showCardBadges: v })}
+            />
+            <ToggleRow
               label={t("Show IMDb score on cards")}
               sub={t("The yellow chip in the poster corner.")}
               leading={<ImdbBadge />}
@@ -401,6 +500,18 @@ export function LibraryPanel({
                   : undefined
               }
               note={settings.rpdbKey ? t("RPDB already paints scores onto the poster. Toggle to override.") : undefined}
+            />
+            <ToggleRow
+              label={t("Show TMDB score on cards")}
+              sub={t("Falls back to the TMDB rating only when a title has no IMDb score yet (mostly brand-new or unreleased). Off by default so cards prefer IMDb.")}
+              leading={<TmdbBadge />}
+              value={settings.showTmdbBadge}
+              onChange={(v) => update({ showTmdbBadge: v })}
+              lockReason={
+                !settings.tmdbKey
+                  ? t("Add a TMDB key above to unlock this.")
+                  : undefined
+              }
             />
             <ToggleRow
               label={t("Show Rotten Tomatoes score on cards")}
@@ -416,6 +527,14 @@ export function LibraryPanel({
               note={settings.rpdbKey ? t("RPDB already paints scores onto the poster. Toggle to override.") : undefined}
             />
             <ToggleRow
+              label={t("Show audience score on cards")}
+              sub={t("Rotten Tomatoes Popcornmeter, the audience score (%).")}
+              leading={<PopcornBadge />}
+              value={settings.showPopcornBadge}
+              onChange={(v) => update({ showPopcornBadge: v })}
+              lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
+            />
+            <ToggleRow
               label={t("Show MAL score on cards")}
               sub={t("MyAnimeList scores for anime titles. RPDB doesn't cover anime, so this stays optional.")}
               leading={<MalBadge />}
@@ -423,10 +542,74 @@ export function LibraryPanel({
               onChange={(v) => update({ showMalBadge: v })}
             />
             <ToggleRow
+              label={t("Show Metacritic score on cards")}
+              sub={t("Metascore (0-100), colored green / yellow / red.")}
+              leading={<MetacriticBadge />}
+              value={settings.showMetacriticBadge}
+              onChange={(v) => update({ showMetacriticBadge: v })}
+              lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
+            />
+            <ToggleRow
+              label={t("Show Letterboxd score on cards")}
+              sub={t("Average Letterboxd rating out of 5.")}
+              leading={<LetterboxdBadge />}
+              value={settings.showLetterboxdBadge}
+              onChange={(v) => update({ showLetterboxdBadge: v })}
+              lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
+            />
+            <ToggleRow
+              label={t("Show MDBList score on cards")}
+              sub={t("MDBList's aggregate score across all sources.")}
+              leading={<MdblistBadge />}
+              value={settings.showMdblistBadge}
+              onChange={(v) => update({ showMdblistBadge: v })}
+              lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
+            />
+            <ToggleRow
+              label={t("Show Trakt score on cards")}
+              sub={t("Trakt community rating as a percentage.")}
+              leading={<TraktBadge />}
+              value={settings.showTraktBadge}
+              onChange={(v) => update({ showTraktBadge: v })}
+              lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
+            />
+            <ToggleRow
               label={t("Hover preview")}
               sub={t("Rest the cursor on a poster to peek at the rating, runtime, and story without opening it.")}
               value={settings.hoverPreview}
               onChange={(v) => update({ hoverPreview: v })}
+            />
+            {settings.hoverPreview && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
+                <span className="text-[13px] text-ink-muted">{t("Open preview")}</span>
+                <div className="flex gap-1.5">
+                  {(
+                    [
+                      { v: "over", label: t("On the card") },
+                      { v: "side", label: t("To the side") },
+                    ] as const
+                  ).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => update({ hoverPreviewPlacement: o.v })}
+                      className={`rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                        settings.hoverPreviewPlacement === o.v
+                          ? "border-accent bg-accent/15 text-accent"
+                          : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-edge hover:text-ink"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <ToggleRow
+              label={t("Mark watched button")}
+              sub={t("Show a button on the detail page to mark a title or episode as watched. Syncs to Trakt and Simkl if connected.")}
+              value={settings.showWatchedButton}
+              onChange={(v) => update({ showWatchedButton: v })}
             />
           </div>
 
@@ -436,10 +619,67 @@ export function LibraryPanel({
           <PlacementPicker
             value={settings.badgePlacement}
             onChange={(v) => update({ badgePlacement: v })}
-            showImdb={settings.showImdbBadge && !!settings.tmdbKey}
-            showRt={settings.showRtBadge && !!settings.omdbKey}
-            showMal={settings.showMalBadge}
+            flags={badgeFlags}
+            watchlistBadge={settings.watchlistBadge}
+            limit={settings.cardBadgeLimit}
           />
+          <p className="mb-3 mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+            {t("Max badges per card")}
+          </p>
+          <div className="flex gap-2">
+            {[2, 3, 4, 5, 6].map((n) => {
+              const maxN = Math.max(2, enabledBadgeCount);
+              const disabled = n > maxN;
+              const effLimit = Math.min(settings.cardBadgeLimit, maxN);
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => update({ cardBadgeLimit: n })}
+                  className={`h-9 w-9 rounded-lg border text-[13px] font-semibold transition-colors ${
+                    disabled
+                      ? "cursor-not-allowed border-edge-soft/40 bg-canvas/30 text-ink-subtle/40"
+                      : effLimit === n
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-edge hover:text-ink"
+                  }`}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[12px] text-ink-subtle">
+            {t("{n} score badges enabled.", { n: enabledBadgeCount })}
+          </p>
+          <p className="mb-3 mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+            {t("Watchlist badge")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { v: "off", label: t("Off") },
+                { v: "topStart", label: t("Top left") },
+                { v: "topEnd", label: t("Top right") },
+                { v: "bottomStart", label: t("Bottom left") },
+                { v: "bottomEnd", label: t("Bottom right") },
+              ] as const
+            ).map((o) => (
+              <button
+                key={o.v}
+                type="button"
+                onClick={() => update({ watchlistBadge: o.v })}
+                className={`h-9 rounded-lg border px-3 text-[13px] font-semibold transition-colors ${
+                  settings.watchlistBadge === o.v
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-edge hover:text-ink"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
         </div>
       </Section>
 
@@ -481,6 +721,10 @@ function ImdbBadge({ compact = false }: { compact?: boolean } = {}) {
   );
 }
 
+function TmdbBadge() {
+  return <img src={tmdbLogo} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain" />;
+}
+
 function MalBadge({ compact = false }: { compact?: boolean } = {}) {
   return (
     <span
@@ -507,25 +751,179 @@ function RtPairBadge() {
   );
 }
 
+function PopcornBadge() {
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-canvas ring-1 ring-edge-soft">
+      <Popcorn size={15} strokeWidth={2.2} className="text-accent" />
+    </span>
+  );
+}
+
+function MetacriticBadge() {
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-emerald-500 text-[14px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]">
+      M
+    </span>
+  );
+}
+
+function LetterboxdBadge() {
+  return (
+    <img
+      src={letterboxdLogo}
+      alt=""
+      className="h-7 w-7 shrink-0 rounded-md object-cover shadow-[0_1px_2px_rgba(0,0,0,0.25)]"
+    />
+  );
+}
+
+function MdblistBadge() {
+  return <img src={mdblistLogo} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain" />;
+}
+
+function TraktBadge() {
+  return <img src={traktLogo} alt="" className="h-7 w-7 shrink-0 object-contain" />;
+}
+
+type PreviewFlags = {
+  showImdb: boolean;
+  showTmdb: boolean;
+  showRt: boolean;
+  showPopcorn: boolean;
+  showMetacritic: boolean;
+  showLetterboxd: boolean;
+  showMdblist: boolean;
+  showTrakt: boolean;
+  showMal: boolean;
+};
+
+function previewExtras(f: PreviewFlags): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  if (f.showPopcorn)
+    out.push(
+      <span className="flex items-center gap-0.5">
+        <Popcorn size={11} strokeWidth={2.4} className="text-accent" />
+        <span>85%</span>
+      </span>,
+    );
+  if (f.showMetacritic)
+    out.push(
+      <span className="flex h-[12px] min-w-[14px] items-center justify-center rounded-[3px] bg-emerald-500 px-0.5 text-[8px] font-bold text-white">
+        78
+      </span>,
+    );
+  if (f.showLetterboxd)
+    out.push(
+      <span className="flex items-center gap-0.5">
+        <img src={letterboxdLogo} alt="" className="h-[10px] w-[10px] rounded-[2px] object-cover" />
+        <span>4.2</span>
+      </span>,
+    );
+  if (f.showMdblist)
+    out.push(
+      <span className="flex items-center gap-0.5">
+        <img src={mdblistLogo} alt="" className="h-[10px] w-[10px] rounded-[2px] object-contain" />
+        <span>76</span>
+      </span>,
+    );
+  if (f.showTrakt)
+    out.push(
+      <span className="flex items-center gap-0.5">
+        <img src={traktLogo} alt="" className="h-[10px] w-[10px] object-contain" />
+        <span>88%</span>
+      </span>,
+    );
+  return out;
+}
+
+function PreviewBadgeRow({
+  nodes,
+  badgePos,
+  visible,
+}: {
+  nodes: React.ReactNode[];
+  badgePos: string;
+  visible: boolean;
+}) {
+  if (nodes.length === 0) return null;
+  const scale = nodes.length <= 3 ? 1 : nodes.length === 4 ? 0.88 : nodes.length === 5 ? 0.78 : 0.7;
+  return (
+    <div
+      style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: "right" } : undefined}
+      className={`absolute end-1.5 flex items-center gap-1 whitespace-nowrap rounded-md bg-canvas/95 px-1.5 py-0.5 text-[9px] font-semibold text-ink transition-opacity duration-700 ease-in-out ${badgePos} ${
+        visible ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      {nodes.map((node, i) => (
+        <span key={i} className="flex items-center gap-1">
+          {i > 0 && <span className="opacity-30">·</span>}
+          {node}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const WL_PREVIEW_POS: Record<string, string> = {
+  topStart: "top-1.5 start-1.5",
+  topEnd: "top-1.5 end-1.5",
+  bottomStart: "bottom-1.5 start-1.5",
+  bottomEnd: "bottom-1.5 end-1.5",
+};
+
 function PreviewCard({
   position,
   normalPoster,
   animePoster,
   phase,
-  showImdb,
-  showRt,
-  showMal,
+  flags,
+  watchlistBadge,
+  limit,
 }: {
   position: "top" | "bottom";
   normalPoster: string;
   animePoster: string;
   phase: "normal" | "anime";
-  showImdb: boolean;
-  showRt: boolean;
-  showMal: boolean;
+  flags: PreviewFlags;
+  watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
+  limit: number;
 }) {
-  const normalHasBadges = showImdb || showRt;
-  const animeHasBadges = showMal;
+  const extras = previewExtras(flags);
+  const normal: React.ReactNode[] = [];
+  if (flags.showImdb)
+    normal.push(
+      <span className="flex items-center gap-1">
+        <ImdbIcon className="h-[10px] w-auto rounded-[2px]" />
+        <span>8.4</span>
+      </span>,
+    );
+  else if (flags.showTmdb)
+    normal.push(
+      <span className="flex items-center gap-1">
+        <img src={tmdbLogo} alt="" className="h-[11px] w-auto object-contain" />
+        <span>7.9</span>
+      </span>,
+    );
+  if (flags.showRt)
+    normal.push(
+      <span className="flex items-center gap-0.5">
+        <RtFresh className="h-[11px] w-auto" />
+        <span>92%</span>
+      </span>,
+    );
+  normal.push(...extras);
+
+  const anime: React.ReactNode[] = [];
+  if (flags.showMal)
+    anime.push(
+      <span className="flex items-center gap-0.5">
+        <MalLogo className="h-[10px] w-auto text-ink-muted" />
+        <span>8.7</span>
+      </span>,
+    );
+  anime.push(...extras);
+
+  const cap = Math.max(1, limit);
   const badgePos = position === "top" ? "top-1.5" : "bottom-1.5";
   return (
     <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg shadow-[0_4px_14px_rgba(0,0,0,0.45)]">
@@ -545,36 +943,14 @@ function PreviewCard({
           phase === "anime" ? "opacity-100" : "opacity-0"
         }`}
       />
-      {normalHasBadges && (
-        <div
-          className={`absolute end-1.5 flex items-center gap-1 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[9px] font-semibold text-ink transition-opacity duration-700 ease-in-out ${badgePos} ${
-            phase === "normal" ? "opacity-100" : "opacity-0"
-          }`}
+      <PreviewBadgeRow nodes={normal.slice(0, cap)} badgePos={badgePos} visible={phase === "normal"} />
+      <PreviewBadgeRow nodes={anime.slice(0, cap)} badgePos={badgePos} visible={phase === "anime"} />
+      {watchlistBadge !== "off" && (
+        <span
+          className={`absolute z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-canvas/85 text-ink ring-1 ring-edge-soft/70 ${WL_PREVIEW_POS[watchlistBadge]}`}
         >
-          {showImdb && (
-            <span className="flex items-center gap-1">
-              <ImdbIcon className="h-[10px] w-auto rounded-[2px]" />
-              <span>8.4</span>
-            </span>
-          )}
-          {showImdb && showRt && <span className="opacity-30">·</span>}
-          {showRt && (
-            <span className="flex items-center gap-0.5">
-              <RtFresh className="h-[11px] w-auto" />
-              <span>92%</span>
-            </span>
-          )}
-        </div>
-      )}
-      {animeHasBadges && (
-        <div
-          className={`absolute end-1.5 flex items-center gap-1 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[9px] font-semibold text-ink transition-opacity duration-700 ease-in-out ${badgePos} ${
-            phase === "anime" ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <MalLogo className="h-[10px] w-auto text-ink-muted" />
-          <span>8.7</span>
-        </div>
+          <Bookmark size={9} strokeWidth={2.6} fill="currentColor" />
+        </span>
       )}
     </div>
   );
@@ -754,15 +1130,15 @@ function ClearSnapshotsButton() {
 function PlacementPicker({
   value,
   onChange,
-  showImdb,
-  showRt,
-  showMal,
+  flags,
+  watchlistBadge,
+  limit,
 }: {
   value: "top" | "bottom";
   onChange: (v: "top" | "bottom") => void;
-  showImdb: boolean;
-  showRt: boolean;
-  showMal: boolean;
+  flags: PreviewFlags;
+  watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
+  limit: number;
 }) {
   const effective: "top" | "bottom" = value === "top" ? "top" : "bottom";
   const [phase, setPhase] = useState<"normal" | "anime">("normal");
@@ -803,9 +1179,9 @@ function PlacementPicker({
                 normalPoster={opt.normal}
                 animePoster={opt.anime}
                 phase={phase}
-                showImdb={showImdb}
-                showRt={showRt}
-                showMal={showMal}
+                flags={flags}
+                watchlistBadge={watchlistBadge}
+                limit={limit}
               />
             </div>
             <div className="flex items-center justify-between gap-2 px-1">

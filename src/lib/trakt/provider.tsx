@@ -20,7 +20,7 @@ import {
   setSession,
   subscribeSession,
 } from "./session";
-import { stremioIdToTraktTarget } from "./ids";
+import { stremioIdToTraktTarget, type TraktEpisodeRef } from "./ids";
 import {
   scrobblePause,
   scrobbleStart,
@@ -39,7 +39,7 @@ export type ConnectState =
 
 type ScrobbleArgs = {
   metaId: string;
-  episode?: { season: number; episode: number };
+  episode?: TraktEpisodeRef;
   progress: number;
 };
 
@@ -54,7 +54,7 @@ type Value = {
   scrobble: (action: "start" | "pause" | "stop", args: ScrobbleArgs) => Promise<void>;
   resolveTarget: (
     metaId: string,
-    episode?: { season: number; episode: number },
+    episode?: TraktEpisodeRef,
   ) => TraktTarget | null;
 };
 
@@ -119,7 +119,7 @@ export function TraktProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resolveTarget = useCallback(
-    (metaId: string, episode?: { season: number; episode: number }) => {
+    (metaId: string, episode?: TraktEpisodeRef) => {
       const r = stremioIdToTraktTarget(metaId, episode);
       return r.ok ? r.target : null;
     },

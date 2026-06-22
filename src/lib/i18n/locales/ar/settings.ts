@@ -1583,6 +1583,27 @@ const settings: Record<string, string> = {
   "URL on r/Stremio or wherever your community lives. Other Harbor users paste it into Settings, Harbor Relay,": "على r/Stremio أو أينما يتواجد مجتمعك. يقوم مستخدمو Harbor الآخرون بلصقه في الإعدادات، Harbor Relay،",
   "returns JSON with the worker version. Used by the test button.": "يعيد JSON يحتوي على إصدار worker. يُستخدم بواسطة زر الاختبار.",
   "with a WebSocket upgrade: opens a Watch Together room. State is held in a Durable Object, no persistence beyond the active session.": "مع ترقية WebSocket: يفتح غرفة المشاهدة معاً. يتم الاحتفاظ بالحالة في Durable Object، بدون استمرارية بعد الجلسة النشطة.",
+
+  "Add Custom Source": "إضافة قسم خارجي",
+  "Provide a JSON link or paste it directly.": "أضف رابط JSON أو الصق الكود مباشرة.",
+  "JSON URL": "رابط JSON",
+  "Paste JSON": "لصق JSON",
+  "URL cannot be empty": "الرابط لا يمكن أن يكون فارغاً",
+  "Failed to fetch JSON": "فشل جلب ملف JSON",
+  "JSON cannot be empty": "JSON لا يمكن أن يكون فارغاً",
+  "Invalid SourceRow JSON format": "تنسيق JSON غير صالح",
+  "Add Source": "إضافة قسم",
+  "Edit Folder Images": "تعديل صور المجموعة",
+  "Cover Image URL": "رابط الصورة (Cover Image URL)",
+  "Focus GIF URL": "رابط الصورة المتحركة (Focus GIF URL)",
+  "Addon not installed": "الإضافة غير مثبتة",
+  "This section depends on the addon": "هذا القسم يعتمد على إضافة",
+  "You must install this addon in your Stremio account first so Harbor can fetch its works.": "يجب عليك تثبيت هذه الإضافة في حساب Stremio الخاص بك أولاً لكي يتمكن Harbor من جلب الأعمال الخاصة بها.",
+  "Missing TMDB Key": "مفتاح TMDB مفقود",
+  "This section relies on TMDB discovery features.": "يعتمد هذا القسم على ميزات الاكتشاف الخاصة بـ TMDB.",
+  "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "يرجى إضافة مفتاح TMDB API الخاص بك في إعدادات المكتبة والبيانات الوصفية لعرض هذه المجموعة.",
+  "OK": "حسناً",
+  "Loading...": "جاري التحميل...",
 };
 
 export default settings;

@@ -59,6 +59,9 @@ const misc: Record<string, string> = {
   "Restoring...": "جاري الاستعادة...",
   "Restore and reload": "استعادة وإعادة تشغيل",
 
+  "Hide watched titles in catalogs": "إخفاء العناوين المُشاهدة من القوائم",
+  "Movies you've watched and shows you've made progress on stop appearing in the built-in Discover rows, using your Trakt history. Needs Trakt connected. Continue Watching is never touched.": "لن تظهر الأفلام التي شاهدتها والمسلسلات التي أحرزت تقدماً فيها في صفوف 'اكتشف' المدمجة، بناءً على سجل Trakt الخاص بك. (يتطلب ربط حساب Trakt). قسم 'متابعة المشاهدة' لن يتأثر أبداً.",
+
   "Horizontal view": "عرض أفقي",
   "Grid view": "عرض شبكي",
   "List view": "عرض القائمة",

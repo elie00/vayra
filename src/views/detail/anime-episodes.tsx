@@ -86,6 +86,9 @@ export function AnimeEpisodes({
           traktWatched,
           undefined,
           anilistWatched,
+          undefined,
+          ep.imdbSeason,
+          ep.imdbEpisode,
         ),
       );
     }

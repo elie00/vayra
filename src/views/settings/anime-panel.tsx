@@ -53,6 +53,11 @@ export function AnimePanel() {
           sub={t("Harbor's built-in frame interpolation. Smooths panning, best on anime. Needs a display refresh rate above the video's frame rate, and can stutter on weak GPUs. Lighter than SVP.")}
           value={settings.playerMotionInterp}
           onChange={(v) => update({ playerMotionInterp: v })}
+          lockReason={
+            settings.playerSvp && !!settings.svpVpyPath
+              ? t("SVP is already handling frame interpolation. Turn off SVP below to use this instead. Running both delays the audio.")
+              : undefined
+          }
         />
       </Section>
 

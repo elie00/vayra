@@ -1,5 +1,6 @@
 import { AtSign, Github, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useAuth } from "@/lib/auth";
 import {
   collectDiagnostics,
@@ -172,6 +173,13 @@ export function BugReportPanel() {
       </Section>
 
       <Section
+        title={t("Player log")}
+        subtitle={t("If a stream or the video player misbehaves, export the player log and attach it above. It saves to your Downloads folder.")}
+      >
+        <ExportLogButton />
+      </Section>
+
+      <Section
         title={t("Credit (optional)")}
         subtitle={t("Bug reporters get listed in the release notes when their report leads to a shipped fix. Leave blank to stay anonymous.")}
       >
@@ -234,6 +242,58 @@ export function BugReportPanel() {
           {submitting ? t("Sending…") : t("Submit bug report")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function ExportLogButton() {
+  const t = useT();
+  const [state, setState] = useState<"idle" | "exporting" | "done" | "error">("idle");
+  const [detail, setDetail] = useState<string | null>(null);
+
+  const run = async () => {
+    setState("exporting");
+    setDetail(null);
+    try {
+      await invoke<string>("mpv_export_log");
+      setState("done");
+      setDetail(t("Saved to Downloads as harbor-mpv-log.txt"));
+    } catch (e) {
+      setState("error");
+      setDetail(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const pill =
+    state === "exporting"
+      ? { dot: "bg-amber-400 animate-pulse", text: t("Exporting"), chip: "bg-amber-500/15 text-amber-300" }
+      : state === "done"
+        ? { dot: "bg-emerald-400", text: t("Exported"), chip: "bg-emerald-500/15 text-emerald-400" }
+        : state === "error"
+          ? { dot: "bg-danger", text: t("Failed"), chip: "bg-danger/15 text-danger" }
+          : null;
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => void run()}
+          disabled={state === "exporting"}
+          className="h-11 w-fit rounded-xl border border-edge bg-canvas px-5 text-[13.5px] font-semibold text-ink transition-colors hover:border-ink-subtle disabled:opacity-50"
+        >
+          {t("Export player log")}
+        </button>
+        {pill && (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${pill.dot}`} />
+            {pill.text}
+          </span>
+        )}
+      </div>
+      {detail && <p className="text-[12px] leading-relaxed text-ink-muted">{detail}</p>}
     </div>
   );
 }

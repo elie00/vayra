@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useT, useUiLanguage } from "@/lib/i18n";
-import piratePeek from "@/assets/piratepeek.svg";
 
 type Question = {
   q: string;
@@ -574,14 +573,6 @@ export function AgeGateModal({
         <VerifiedSplash t={t} />
       ) : (
       <div className="relative w-full max-w-xl animate-modal-in">
-        {/* Pirate image - RTL-aware positioning */}
-        <img
-          src={piratePeek}
-          alt=""
-          aria-hidden
-          className="pointer-events-none absolute end-[44px] top-0 z-10 h-[150px] w-auto select-none drop-shadow-[0_16px_28px_rgba(0,0,0,0.55)] animate-pirate-peek ltr:translate-x-1/2 rtl:-translate-x-1/2 rtl:scale-x-[-1]"
-          draggable={false}
-        />
       <div className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-3xl border border-edge bg-canvas shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
         <header className="relative shrink-0 overflow-hidden border-b border-edge-soft bg-gradient-to-b from-elevated/35 to-canvas px-7 py-6">
           <div className="relative flex flex-col gap-1.5">

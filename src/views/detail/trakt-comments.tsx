@@ -320,9 +320,14 @@ function CommentCard({
 
 const SORTS = ["likes", "newest", "oldest"] as const;
 
+const COMMENTS_PAGE_SIZE = 20;
+
 export function TraktComments({ resolution }: { resolution: IdResolution | null }) {
   const t = useT();
   const [comments, setComments] = useState<TraktComment[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<string>("likes");
   const [showSort, setShowSort] = useState(false);
@@ -400,8 +405,9 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
       return;
     }
     setLoading(true);
+    setPage(1);
     let cancelled = false;
-    fetchComments(target, sort).then((data) => {
+    fetchComments(target, sort, 1, COMMENTS_PAGE_SIZE).then((data) => {
       if (cancelled) return;
       // Merge API comments with locally posted ones (prepend)
       const local = commentsCacheKey
@@ -410,10 +416,25 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
       const localIds = new Set(local.map((c) => c.id));
       const merged = [...local, ...data.filter((c) => !localIds.has(c.id))];
       setComments(merged);
+      setHasMore(data.length >= COMMENTS_PAGE_SIZE);
       setLoading(false);
     });
     return () => { cancelled = true; };
   }, [target, sort, commentsCacheKey]);
+
+  const loadMore = useCallback(async () => {
+    if (!target || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const next = page + 1;
+    const data = await fetchComments(target, sort, next, COMMENTS_PAGE_SIZE);
+    setComments((prev) => {
+      const ids = new Set(prev.map((c) => c.id));
+      return [...prev, ...data.filter((c) => !ids.has(c.id))];
+    });
+    setPage(next);
+    setHasMore(data.length >= COMMENTS_PAGE_SIZE);
+    setLoadingMore(false);
+  }, [target, sort, page, hasMore, loadingMore]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -550,7 +571,7 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
         )}
       </div>
 
-      <div className="relative overflow-hidden rounded-xl">
+      <div className={`relative rounded-xl ${settings.blurComments && blurred ? "overflow-hidden" : ""}`}>
         {settings.blurComments && blurred && (
           <div className="absolute inset-0 z-10 flex flex-col items-center gap-3 pt-16 backdrop-blur-sm"
             style={{
@@ -705,6 +726,17 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
           {(myComments ? comments.filter((c) => c.user.username === username) : comments).map((c) => (
             <CommentCard key={c.id} comment={c} connected={connected} username={username} onDelete={handleDelete} />
           ))}
+          {hasMore && !myComments && (
+            <button
+              type="button"
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+              className="mt-1 flex h-10 items-center justify-center gap-2 rounded-xl border border-edge-soft bg-elevated/40 text-[13px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink disabled:opacity-60"
+            >
+              {loadingMore && <Loader2 size={15} className="animate-spin" />}
+              {loadingMore ? t("Loading more") : t("Load more comments")}
+            </button>
+          )}
         </div>
       )}
       </div>

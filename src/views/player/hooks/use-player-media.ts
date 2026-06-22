@@ -60,7 +60,7 @@ export function usePlayerMedia(params: {
     const prev = prevEngineHashRef.current;
     if (prev && prev !== hash) {
       cancelTorrentRemoval(prev);
-      void torrentEngineRemove(prev, false);
+      void torrentEngineRemove(prev, true);
     }
     if (hash) cancelTorrentRemoval(hash);
     prevEngineHashRef.current = hash;

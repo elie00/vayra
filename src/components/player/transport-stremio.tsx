@@ -47,10 +47,13 @@ export type TransportStremioProps = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  resolution?: string | null;
+  quality?: string | null;
   hasPrevEp: boolean;
   hasNextEp: boolean;
   onPrevEp: () => void;
@@ -105,10 +108,13 @@ export function TransportStremio(p: TransportStremioProps) {
     onCast,
     onToggleDraw,
     onToggleHideOthers,
+    onScreenshot,
     onPickAnother,
     canPickAnother,
     title,
     subtitle,
+    resolution,
+    quality,
     hasPrevEp,
     hasNextEp,
     onPrevEp,
@@ -186,6 +192,8 @@ export function TransportStremio(p: TransportStremioProps) {
     fullscreen,
     title,
     subtitle,
+    resolution,
+    quality,
     titleClickable,
     onBack,
     onFullscreen,
@@ -223,6 +231,7 @@ export function TransportStremio(p: TransportStremioProps) {
     onCast,
     onToggleDraw,
     onToggleHideOthers,
+    onScreenshot,
     onPickAnother,
     onPrevEp,
     onNextEp,

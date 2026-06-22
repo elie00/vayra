@@ -63,6 +63,9 @@ export function HeroActionOverflow({
   hasTrailer,
   onTrailer,
   canDownload,
+  showWatched = false,
+  onWatched,
+  watchedMark = false,
   showSync = false,
   inWatchlist = false,
   onToggleWatchlist,
@@ -75,6 +78,9 @@ export function HeroActionOverflow({
   hasTrailer: boolean;
   onTrailer: () => void;
   canDownload: boolean;
+  showWatched?: boolean;
+  onWatched?: () => void;
+  watchedMark?: boolean;
   showSync?: boolean;
   inWatchlist?: boolean;
   onToggleWatchlist?: () => void;
@@ -190,6 +196,17 @@ export function HeroActionOverflow({
                 setMenu(null);
               }}
             />
+            {showWatched && (
+              <Item
+                icon={<Check size={14} strokeWidth={2.4} />}
+                label={watchedMark ? t("Marked watched") : t("Mark watched")}
+                active={watchedMark}
+                onClick={() => {
+                  onWatched?.();
+                  setMenu(null);
+                }}
+              />
+            )}
             {hasTrailer && (
               <Item
                 icon={<PreviewIcon size={14} />}

@@ -11,6 +11,7 @@ import { HotkeysPanel } from "./settings/hotkeys-panel";
 import { PlayerLayoutPanel } from "./settings/player-layout-panel";
 import { QualityPanel } from "./settings/quality-panel";
 import { MpvPanel } from "./settings/mpv-panel";
+import { P2PPanel } from "./settings/p2p-panel";
 import { AnimePanel } from "./settings/anime-panel";
 import { TraktPanel } from "./settings/trakt-panel";
 import { AnilistPanel } from "./settings/anilist-panel";
@@ -62,6 +63,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   streaming: {
     label: "Streaming sources",
     sub: "How Harbor finds and resolves playable streams. Debrid keys and addon installs live here.",
+  },
+  p2p: {
+    label: "P2P & servers",
+    sub: "Harbor's built-in peer-to-peer engine, its self-test, and any streaming server you point it at.",
   },
   language: {
     label: "Languages",
@@ -273,6 +278,8 @@ export function Settings() {
               saveKey={saveKey}
             />
           )}
+
+          {active === "p2p" && <P2PPanel />}
 
           {active === "language" && <LanguagePanel />}
 

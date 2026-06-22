@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { FormatBadge, type BadgeKind } from "@/components/format-badge";
+import previewPoster from "@/assets/preview/poster1.webp";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Section, Segmented, ToggleRow } from "../shared";
@@ -6,19 +8,93 @@ import { Section, Segmented, ToggleRow } from "../shared";
 export function DisplaySection() {
   const t = useT();
   const { settings, update } = useSettings();
+  const previewW = Math.round(108 * settings.posterScale);
+  const cardW = Math.round(150 * settings.posterScale);
+  const cardH = Math.round(cardW * 1.5);
   return (
     <>
       <Section
-        title={t("Poster size")}
-        subtitle={t("Scale every poster and card across Home, Discover, and your library. Bump it up on a 4K or large display where the defaults feel small, or shrink it for a denser grid.")}
+        title={t("Poster card style")}
+        subtitle={t("Tune the size and corner radius of every poster across Home, Discover, and your library. The preview updates live.")}
       >
-        <Segmented
-          value={posterSizeKey(settings.posterScale)}
-          options={POSTER_SIZES.map((p) => ({ value: p.value, label: p.label }))}
-          onChange={(v) =>
-            update({ posterScale: POSTER_SIZES.find((p) => p.value === v)?.scale ?? 1 })
-          }
-        />
+        <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
+          <div className="flex shrink-0 flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-6 sm:w-[250px]">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Live preview")}</span>
+            <div className="flex justify-center py-1">
+              <img
+                src={previewPoster}
+                alt=""
+                draggable={false}
+                className="aspect-[2/3] object-cover shadow-[0_10px_28px_-10px_rgba(0,0,0,0.65)] transition-[width,border-radius] duration-200"
+                style={{ width: previewW, borderRadius: settings.posterRadius }}
+              />
+            </div>
+            <div className="flex flex-col gap-2.5 text-[12.5px]">
+              <span className="flex items-center justify-between gap-3">
+                <span className="font-medium text-ink">{t("Width")}</span>
+                <PxField
+                  value={cardW}
+                  min={90}
+                  max={300}
+                  onCommit={(px) => update({ posterScale: Math.round((px / 150) * 100) / 100 })}
+                />
+              </span>
+              <span className="flex items-center justify-between gap-3">
+                <span className="font-medium text-ink">{t("Corner radius")}</span>
+                <PxField
+                  value={settings.posterRadius}
+                  min={0}
+                  max={40}
+                  onCommit={(px) => update({ posterRadius: px })}
+                />
+              </span>
+              <span className="flex items-center justify-between gap-3 text-ink-subtle">
+                <span>{t("Height")}</span>
+                <PxField
+                  value={cardH}
+                  min={135}
+                  max={450}
+                  onCommit={(px) => update({ posterScale: Math.round((px / 225) * 100) / 100 })}
+                />
+              </span>
+            </div>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Size")}</span>
+              <Segmented
+                value={posterSizeKey(settings.posterScale)}
+                options={POSTER_SIZES.map((p) => ({ value: p.value, label: p.label }))}
+                onChange={(v) =>
+                  update({ posterScale: POSTER_SIZES.find((p) => p.value === v)?.scale ?? 1 })
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Corner radius")}</span>
+              <Segmented
+                value={radiusKey(settings.posterRadius)}
+                options={POSTER_RADII.map((p) => ({ value: p.value, label: t(p.label) }))}
+                onChange={(v) => update({ posterRadius: POSTER_RADII.find((p) => p.value === v)?.px ?? 12 })}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Load effect")}</span>
+              <Segmented
+                value={settings.posterEffect}
+                options={[
+                  { value: "blur", label: t("Blur up") },
+                  { value: "fade", label: t("Fade") },
+                  { value: "off", label: t("Instant") },
+                ]}
+                onChange={(v) => update({ posterEffect: v as "blur" | "fade" | "off" })}
+              />
+              <p className="text-[12px] leading-relaxed text-ink-subtle">
+                {t("How posters appear as they load. Blur up looks smoothest; Fade is lighter on older or low-power devices; Instant turns it off.")}
+              </p>
+            </div>
+          </div>
+        </div>
       </Section>
 
       <Section
@@ -177,11 +253,76 @@ function SizeSlider({
   );
 }
 
+const POSTER_RADII = [
+  { value: "sharp", label: "Sharp", px: 0 },
+  { value: "subtle", label: "Subtle", px: 6 },
+  { value: "classic", label: "Classic", px: 12 },
+  { value: "rounded", label: "Rounded", px: 18 },
+  { value: "pill", label: "Pill", px: 28 },
+];
+
+function radiusKey(px: number): string {
+  return POSTER_RADII.reduce((best, p) => (Math.abs(p.px - px) < Math.abs(best.px - px) ? p : best)).value;
+}
+
+function PxField({
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (v: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    if (!editing) setDraft(String(value));
+  }, [value, editing]);
+  const commit = () => {
+    const n = Math.max(min, Math.min(max, Math.round(Number(draft) || value)));
+    onCommit(n);
+    setEditing(false);
+  };
+  if (editing) {
+    return (
+      <input
+        type="number"
+        autoFocus
+        value={draft}
+        min={min}
+        max={max}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          else if (e.key === "Escape") setEditing(false);
+        }}
+        className="w-14 rounded-md border border-ink bg-canvas px-1.5 py-0.5 text-[12px] tabular-nums text-ink outline-none"
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Click to edit"
+      className="rounded px-1 py-0.5 tabular-nums text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+    >
+      {value}px
+    </button>
+  );
+}
+
 const POSTER_SIZES = [
-  { value: "compact", label: "Compact", scale: 0.85 },
-  { value: "default", label: "Default", scale: 1 },
-  { value: "large", label: "Large", scale: 1.25 },
-  { value: "huge", label: "Huge", scale: 1.55 },
+  { value: "compact", label: "Compact", scale: 0.8 },
+  { value: "dense", label: "Dense", scale: 0.9 },
+  { value: "standard", label: "Standard", scale: 1 },
+  { value: "balanced", label: "Balanced", scale: 1.15 },
+  { value: "comfort", label: "Comfort", scale: 1.3 },
+  { value: "large", label: "Large", scale: 1.5 },
 ] as const;
 
 function posterSizeKey(scale: number): string {

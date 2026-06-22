@@ -1,9 +1,11 @@
-import { CalendarDays, Check, Play, RotateCcw } from "lucide-react";
+import { CalendarDays, Check, Info, Play, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
 import { formatAirDate } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
+import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { FillerBadge, UpcomingBadge } from "./badges";
 import type { GridEpisode, Progress } from "./episode-grid-types";
@@ -26,6 +28,7 @@ export function EpisodeGridCard({
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
 }) {
   const t = useT();
+  const { settings } = useSettings();
   const [imgIdx, setImgIdx] = useState(0);
   useEffect(() => setImgIdx(0), [g.key]);
   const [preview, setPreview] = useState(false);
@@ -94,7 +97,15 @@ export function EpisodeGridCard({
           <span className="text-[11.5px] text-ink-subtle">
             E{g.number}
             {g.runtime ? ` · ${t("{n} min", { n: g.runtime })}` : ""}
+            {settings.showEpisodeRating && g.rating && g.rating > 0 ? ` · ★ ${g.rating.toFixed(1)}` : ""}
           </span>
+          {settings.showEpisodeDescription && g.overview && (
+            <p
+              className={`mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-ink-muted ${spoiler?.desc ? SPOILER_TEXT_CLASS : ""}`}
+            >
+              {g.overview}
+            </p>
+          )}
         </div>
       </button>
       {preview && !spoilered && (
@@ -165,6 +176,7 @@ function EpisodePreview({
   onContext: (e: React.MouseEvent) => void;
   t: T;
 }) {
+  const { openEpisodeDetail } = useView();
   return (
     <div className="animate-popover-in absolute -inset-x-2 -top-2 z-30 overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)]">
       <button onClick={g.play} onContextMenu={onContext} className="block w-full text-start">
@@ -204,13 +216,23 @@ function EpisodePreview({
         {g.overview && (
           <p className="line-clamp-4 text-[12.5px] leading-relaxed text-ink-muted">{g.overview}</p>
         )}
-        <button
-          onClick={g.play}
-          className="mt-1 flex h-9 items-center justify-center gap-2 rounded-lg bg-ink text-[12.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
-        >
-          {watched ? <RotateCcw size={14} strokeWidth={2.4} /> : <Play size={13} fill="currentColor" />}
-          {watched ? t("Watch again") : t("Play")}
-        </button>
+        <div className="mt-1 flex gap-2">
+          <button
+            onClick={g.play}
+            className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-ink text-[12.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
+          >
+            {watched ? <RotateCcw size={14} strokeWidth={2.4} /> : <Play size={13} fill="currentColor" />}
+            {watched ? t("Watch again") : minsLeft > 0 ? t("Resume") : t("Play")}
+          </button>
+          <button
+            onClick={() => openEpisodeDetail(meta.id, g.season, g.number, meta)}
+            aria-label={t("Episode details")}
+            title={t("Episode details")}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-edge-soft text-ink-muted transition-colors hover:border-edge hover:text-ink"
+          >
+            <Info size={15} strokeWidth={2} />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
-import { Check, Loader2, Play, RotateCw, X } from "lucide-react";
+import { AlertTriangle, Check, Eraser, Loader2, Play, RotateCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import {
+  torrentEngineHardReset,
   torrentEngineRestart,
   torrentEngineSelfTest as engineSelfTest,
   torrentEngineStatus as engineStatus,
@@ -33,7 +34,9 @@ export function LocalEngineSection() {
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [running, setRunning] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [result, setResult] = useState<SelfTestResult | null>(null);
+  const busy = running || restarting || clearing;
 
   useEffect(() => {
     let alive = true;
@@ -79,7 +82,21 @@ export function LocalEngineSection() {
     }
   };
 
+  const clearAll = async () => {
+    setClearing(true);
+    setResult(null);
+    try {
+      const s = await torrentEngineHardReset();
+      if (s) setStatus(s);
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const pill = PILL[engineState(status)];
+  const udpStep = result?.steps.find((s) => s.label === "udp egress");
+  const httpsStep = result?.steps.find((s) => s.label === "https egress");
+  const udpBlocked = !!udpStep && !udpStep.ok && !!httpsStep && httpsStep.ok;
 
   return (
     <section id={settingsAnchor("Local engine")} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
@@ -105,10 +122,23 @@ export function LocalEngineSection() {
         <span>
           {t("Active torrents")} <span className="font-mono text-accent">{status?.active_torrents ?? 0}</span>
         </span>
+        {status?.dht_tier ? (
+          <span>
+            {t("DHT")}{" "}
+            <span className={`font-mono ${(status.dht_nodes ?? 0) > 0 ? "text-accent" : "text-danger"}`}>
+              {status.dht_nodes ?? 0} {t("nodes")}
+            </span>
+          </span>
+        ) : null}
       </div>
 
       {status?.last_error && (
-        <p className="text-[12px] leading-relaxed text-danger">{status.last_error}</p>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[12px] leading-relaxed text-danger">{status.last_error}</p>
+          <p className="text-[12px] leading-relaxed text-ink-subtle">
+            {t("If streams stop loading, hit Clear & restart below to wipe the engine and start it fresh on a new port.")}
+          </p>
+        </div>
       )}
 
       <ToggleRow
@@ -122,7 +152,7 @@ export function LocalEngineSection() {
         <button
           type="button"
           onClick={() => void runTest()}
-          disabled={running || strictRemote}
+          disabled={busy || strictRemote}
           className="flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:hover:scale-100"
         >
           {running ? (
@@ -135,7 +165,7 @@ export function LocalEngineSection() {
         <button
           type="button"
           onClick={() => void restart()}
-          disabled={running || restarting}
+          disabled={busy}
           className="flex h-10 items-center gap-2 rounded-lg border border-edge-soft px-4 text-[13px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink disabled:opacity-60"
         >
           {restarting ? (
@@ -144,6 +174,19 @@ export function LocalEngineSection() {
             <RotateCw size={14} strokeWidth={2.4} />
           )}
           {restarting ? t("Restarting") : t("Restart engine")}
+        </button>
+        <button
+          type="button"
+          onClick={() => void clearAll()}
+          disabled={busy}
+          className="flex h-10 items-center gap-2 rounded-lg border border-edge-soft px-4 text-[13px] font-semibold text-ink-muted transition-colors hover:border-danger/50 hover:text-danger disabled:opacity-60"
+        >
+          {clearing ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Eraser size={14} strokeWidth={2.4} />
+          )}
+          {clearing ? t("Clearing") : t("Clear & restart")}
         </button>
       </div>
 
@@ -177,11 +220,13 @@ export function LocalEngineSection() {
               <li key={step.label} className="flex items-center gap-2.5 text-[12.5px]">
                 <span
                   className={`flex h-4 w-4 shrink-0 items-center justify-center ${
-                    step.ok ? "text-emerald-400" : "text-danger"
+                    step.ok ? "text-emerald-400" : step.warn ? "text-amber-400" : "text-danger"
                   }`}
                 >
                   {step.ok ? (
                     <Check size={13} strokeWidth={2.8} />
+                  ) : step.warn ? (
+                    <AlertTriangle size={12} strokeWidth={2.6} />
                   ) : (
                     <X size={13} strokeWidth={2.8} />
                   )}
@@ -195,6 +240,11 @@ export function LocalEngineSection() {
               </li>
             ))}
           </ul>
+          {udpBlocked && (
+            <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[12px] leading-relaxed text-amber-300/90">
+              {t("Your network blocks UDP, so DHT is offline, but HTTPS trackers are reachable over TCP. Streams can still find peers, they may just take a little longer to start.")}
+            </p>
+          )}
         </div>
       )}
     </section>
