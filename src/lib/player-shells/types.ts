@@ -34,10 +34,13 @@ export type PlayerShellProps = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  resolution?: string | null;
+  quality?: string | null;
   hoverTitle?: string;
   hoverSub?: string;
   hasPrevEp: boolean;

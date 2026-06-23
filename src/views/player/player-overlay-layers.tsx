@@ -79,6 +79,7 @@ export type PlayerOverlayLayersProps = {
   showChrome: boolean;
   ab: Tools["ab"];
   frameGrabToast: Tools["frameGrabToast"];
+  onScreenshot: () => void;
   gif: Tools["gif"];
   loaderActive: boolean;
   playerShellId: string;
@@ -280,10 +281,13 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
             p.wakeChrome();
           }}
           onToggleHideOthers={() => p.setHideOthersDrawings((h) => !h)}
+          onScreenshot={p.onScreenshot}
           onPickAnother={p.pickAnotherOrGuide}
           canPickAnother={p.canPickAnother}
           title={p.src.title}
           subtitle={p.src.subtitle}
+          resolution={p.src.streamRef?.resolution}
+          quality={p.src.streamRef?.quality}
           hoverTitle={p.src.meta.name}
           hoverSub={
             p.src.episode

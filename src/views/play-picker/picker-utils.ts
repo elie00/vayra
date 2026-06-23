@@ -331,6 +331,32 @@ export function streamSummaryParts(s: ScoredStream): string[] {
   return parts;
 }
 
+const HDR_LABEL: Record<string, string> = {
+  HDR10: "HDR10",
+  "HDR10+": "HDR10+",
+  DV: "Dolby Vision",
+  "DV+HDR10": "Dolby Vision",
+  HLG: "HLG",
+};
+
+export function formatStreamQuality(s: ScoredStream): string {
+  const parts: string[] = [];
+  if (s.resolution) parts.push(s.resolution);
+  if (s.hdrFormat) parts.push(HDR_LABEL[s.hdrFormat] ?? s.hdrFormat);
+  if (s.audio.codec !== "Other") {
+    const ch =
+      s.audio.channels === 8
+        ? " 7.1"
+        : s.audio.channels === 7
+          ? " 6.1"
+          : s.audio.channels === 6
+            ? " 5.1"
+            : "";
+    parts.push(`${s.audio.codec}${ch}`);
+  }
+  return parts.join(" · ");
+}
+
 export function formatSize(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
@@ -377,6 +403,13 @@ export function needsDownload(s: ScoredStream): boolean {
   return NEEDS_DOWNLOAD_RX.test(haystack);
 }
 
+export const ENGINE_WARMING_MESSAGE =
+  "Harbor's peer-to-peer engine is warming up. This clears on its own in a few seconds, then Play works.";
+
+export function isEngineWarmingError(msg: string | null): boolean {
+  return msg === ENGINE_WARMING_MESSAGE;
+}
+
 export function humanError(code: string): string {
   switch (code) {
     case "not-cached":
@@ -400,11 +433,13 @@ export function humanError(code: string): string {
     case "remote-server-unreachable-strict":
       return "Remote streaming server unreachable. Strict mode is on, so local fallback is disabled.";
     case "remote-server-unreachable":
-      return "Remote streaming server unreachable. Check the address in Settings > Player & quality and that the server machine is online.";
+      return "Remote streaming server unreachable. Check the address in Settings > P2P & servers and that the server machine is online.";
+    case "engine-no-peers":
+      return "Couldn't reach any peers for this torrent. If this keeps happening, your network or ISP is likely blocking torrents (the local port doesn't matter) - use a debrid service or a VPN.";
     case "engine-not-ready":
-      return "Harbor's local streaming engine isn't ready yet. Give it a few seconds and hit Play again.";
+      return ENGINE_WARMING_MESSAGE;
     case "direct-torrent-disabled":
-      return "Direct torrent streaming is turned off. Turn it on in Settings > Player & quality to stream torrents without a debrid.";
+      return "Direct torrent streaming is turned off. Turn it on in Settings > P2P & servers to stream torrents without a debrid.";
     case "no-source":
       return "This stream has no playable source.";
     case "addon-not-configured":

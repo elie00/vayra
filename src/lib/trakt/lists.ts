@@ -14,7 +14,7 @@ export async function fetchTraktList(listId: string | number, page: number = 1, 
     `/lists/${listId}/items?page=${page}&limit=${limit}`,
     { authed: false }
   ).catch(() => []);
-  
+
   const out: TraktItem[] = [];
   for (const r of rows) {
     if (r.type === "movie" && r.movie) {

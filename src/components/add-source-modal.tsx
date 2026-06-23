@@ -33,7 +33,7 @@ export function AddSourceModal({
     setError("");
     setLoading(true);
     let rows: SourceRow[] = [];
-    
+
     try {
       if (mode === "url") {
         if (!url.trim()) throw new Error(t("URL cannot be empty"));
@@ -45,7 +45,7 @@ export function AddSourceModal({
         if (!jsonText.trim()) throw new Error(t("JSON cannot be empty"));
         rows = parseSourceRows(jsonText);
       }
-      
+
       if (rows.length === 0) {
         throw new Error(t("Invalid SourceRow JSON format"));
       }

@@ -42,6 +42,7 @@ import {
 import { useTrakt } from "@/lib/trakt/provider";
 import { buildTraktHomeRows } from "@/lib/trakt/home-rails";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
+import { recentlyPlayed, subscribePlayback, type WatchedSet } from "@/lib/playback-history";
 import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
 import { buildSimklHomeRows } from "@/lib/simkl/home-rails";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
@@ -80,6 +81,8 @@ export function Home({ active = true }: { active?: boolean }) {
   const [simklRows, setSimklRows] = useState<HomeRow[]>([]);
   const [simklCw, setSimklCw] = useState<LibraryItem[]>([]);
   const [traktWatched, setTraktWatched] = useState<Set<string>>(() => new Set());
+  const [localWatched, setLocalWatched] = useState<WatchedSet>(() => recentlyPlayed());
+  useEffect(() => subscribePlayback(() => setLocalWatched(recentlyPlayed())), []);
   const [heroPool, setHeroPool] = useState<Meta[]>([]);
   const [items, setItems] = useState<LibraryItem[]>([]);
   const cwVersion = useCwDismissVersion();
@@ -436,12 +439,14 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [settings.homeRows.heroSource, personalRows, traktRows, simklRows, rows, animeRows]);
 
   const heroSlides = useMemo<Slide[]>(() => {
-    const pool = heroSourceRow
-      ? [
-          ...heroSourceRow.metas.filter((m) => m.background),
-          ...heroSourceRow.metas.filter((m) => !m.background && m.poster),
-        ]
-      : heroPool;
+    const pool = (
+      heroSourceRow
+        ? [
+            ...heroSourceRow.metas.filter((m) => m.background),
+            ...heroSourceRow.metas.filter((m) => !m.background && m.poster),
+          ]
+        : heroPool
+    ).filter((m) => typeof m.id === "string");
     const seen = new Set<string>();
     const out: Slide[] = [];
     for (const m of pool) {
@@ -476,7 +481,7 @@ export function Home({ active = true }: { active?: boolean }) {
     }
     const firstRow = rows[0];
     const firstRowHead = (firstRow?.metas ?? []).slice(0, FIRST_PAGE);
-    const top10 = firstRowHead.filter((m) => !seen.has(m.id)).slice(0, 10);
+    const top10 = firstRowHead.filter((m) => typeof m.id === "string" && !seen.has(m.id)).slice(0, 10);
     for (const m of top10) seen.add(m.id);
     const rest: HomeRow[] = [];
     for (const row of rows.slice(1)) {
@@ -494,7 +499,7 @@ export function Home({ active = true }: { active?: boolean }) {
   const restRows = displayed.rest;
 
   const homeRowsCustom = settings.homeRows;
-  
+
   const sourceRows = useMemo<HomeRow[]>(() => {
     const uniqueSources = new Map<string, SourceRow>();
     for (const sr of homeRowsCustom.customSources || []) {
@@ -559,25 +564,21 @@ export function Home({ active = true }: { active?: boolean }) {
     const existing = homeRowsCustom.customSources || [];
     const next = [...existing];
     for (const ns of newSources) {
-      const idx = next.findIndex(s => s.id === ns.id);
+      const idx = next.findIndex((s) => s.id === ns.id);
       if (idx >= 0) {
         next[idx] = ns;
       } else {
         next.push(ns);
       }
     }
-    mutateHomeRows({
-      ...homeRowsCustom,
-      customSources: next,
-    });
+    mutateHomeRows({ ...homeRowsCustom, customSources: next });
   }, [homeRowsCustom, mutateHomeRows]);
 
   const handleDeleteCustomSource = useCallback((key: string) => {
-    // Key comes in as `source-${id}`
     const id = key.replace(/^source-/, "");
     mutateHomeRows({
       ...homeRowsCustom,
-      customSources: (homeRowsCustom.customSources || []).filter(sr => sr.id !== id),
+      customSources: (homeRowsCustom.customSources || []).filter((sr) => sr.id !== id),
     });
   }, [homeRowsCustom, mutateHomeRows]);
 
@@ -619,17 +620,9 @@ export function Home({ active = true }: { active?: boolean }) {
               <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />
             </div>
           </div>
-          {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && (
-            <div data-scroll-anchor="hero" className="relative">
-              {editMode && (
-                <PinnedRowControls
-                  label={t("Featured hero")}
-                  hidden={false}
-                  onToggleHidden={() => handleToggleHidden("hero")}
-                />
-              )}
-              <HeroCarousel slides={heroSlides} />
-              <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
+          {editMode && (
+            <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+              <div className="pointer-events-auto rounded-xl border border-edge-soft bg-canvas/95 px-3 py-2 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)] backdrop-blur-md">
                 <CustomizeBar
                   editMode={editMode}
                   customization={homeRowsCustom}
@@ -640,6 +633,28 @@ export function Home({ active = true }: { active?: boolean }) {
               </div>
             </div>
           )}
+          {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && (
+            <div data-scroll-anchor="hero" className="relative">
+              {editMode && (
+                <PinnedRowControls
+                  label={t("Featured hero")}
+                  hidden={false}
+                  onToggleHidden={() => handleToggleHidden("hero")}
+                />
+              )}
+              <HeroCarousel slides={heroSlides} />
+              {!editMode && (
+                <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
+                  <CustomizeBar
+                    editMode={editMode}
+                    customization={homeRowsCustom}
+                    onToggleEdit={() => setEditMode((v) => !v)}
+                    onReset={() => mutateHomeRows(resetHomeRows())}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           {editMode && homeRowsCustom.hidden.includes("hero") && (
             <PinnedRowControls
               label={t("Featured hero")}
@@ -647,14 +662,13 @@ export function Home({ active = true }: { active?: boolean }) {
               onToggleHidden={() => handleToggleHidden("hero")}
             />
           )}
-          {settings.homeMode !== "classic" && homeRowsCustom.hidden.includes("hero") && (
+          {!editMode && settings.homeMode !== "classic" && homeRowsCustom.hidden.includes("hero") && (
             <div className="pointer-events-none absolute end-5 top-0 z-20 [&>*]:pointer-events-auto">
               <CustomizeBar
                 editMode={editMode}
                 customization={homeRowsCustom}
                 onToggleEdit={() => setEditMode((v) => !v)}
                 onReset={() => mutateHomeRows(resetHomeRows())}
-                onAddSource={() => setAddSourceModalOpen(true)}
               />
             </div>
           )}
@@ -735,16 +749,18 @@ export function Home({ active = true }: { active?: boolean }) {
               onEditFolderImages={handleEditFolderImages}
               hideWatched={settings.hideWatchedInCatalogs}
               watchedSet={traktWatched}
+              localWatched={localWatched}
+              homeLanguages={settings.homeLanguages}
             />
           )}
         </div>
       </ScrollRootContext.Provider>
       <BackToTop scrollRef={scrollRef} />
-      
-      <AddSourceModal 
-        isOpen={isAddSourceModalOpen} 
-        onClose={() => setAddSourceModalOpen(false)} 
-        onSave={handleSaveCustomSources} 
+
+      <AddSourceModal
+        isOpen={isAddSourceModalOpen}
+        onClose={() => setAddSourceModalOpen(false)}
+        onSave={handleSaveCustomSources}
       />
     </main>
   );

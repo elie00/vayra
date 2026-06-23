@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Loader2 } from "lucide-react";
 import { resolveAddonLogo } from "@/components/addon-logo";
+import { torrentEngineStatus } from "@/lib/torrent/local-engine";
 import { useAuth } from "@/lib/auth";
 import type { Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
@@ -8,7 +10,7 @@ import { useTogether } from "@/lib/together/provider";
 import { buildMatchScores, matchBadge, MATCH_CLOSE } from "@/lib/together/source-match";
 import { HostSourceBanner } from "@/components/host-source-banner";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
-import { readPlayback, streamMatchesEntry } from "@/lib/playback-history";
+import { readPlayback, readLastSeriesPlayback, streamMatchesEntry, streamMatchesSource } from "@/lib/playback-history";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
@@ -25,6 +27,7 @@ import { PickerEmptyLadder } from "./play-picker/picker-empty-ladder";
 import { NoSourcesConfiguredModal } from "./play-picker/no-sources-modal";
 import {
   hasUncachedMarker,
+  isEngineWarmingError,
   normalizeLangCode,
   orderByAddonNative,
   streamMatchesLangs,
@@ -237,16 +240,25 @@ export function PlayPicker({
   }, [filteredPicker]);
 
   const previousPlayback = useMemo(
+  () =>
+    settings.rememberLastStream
+      ? readPlayback(meta.id, episode?.season, episode?.episode)
+      : null,
+  [meta.id, episode?.season, episode?.episode, settings.rememberLastStream],
+  );
+
+  const lastSeriesSource = useMemo(
     () =>
-      settings.rememberLastStream
-        ? readPlayback(meta.id, episode?.season, episode?.episode)
+      settings.keepSourceNextEpisode && !!autoPlay && meta.type === "series"
+        ? readLastSeriesPlayback(meta.id)
         : null,
-    [meta.id, episode?.season, episode?.episode, settings.rememberLastStream],
+    [meta.id, meta.type, settings.keepSourceNextEpisode, autoPlay],
   );
 
   const autoCandidates = useAutoCandidates({
     filteredPicker,
     previousPlayback,
+    sourceEntry: lastSeriesSource,
     isCached,
     addons,
     hasStrongAddon,
@@ -278,14 +290,20 @@ export function PlayPicker({
     return filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null;
   }, [filteredPicker, previousPlayback]);
 
+  const sameSourceMatch: ScoredStream | null = useMemo(() => {
+    if (!filteredPicker || !lastSeriesSource || previousMatch) return null;
+    return filteredPicker.all.find((s) => streamMatchesSource(s, lastSeriesSource)) ?? null;
+  }, [filteredPicker, lastSeriesSource, previousMatch]);
+
   const currentPick: ScoredStream | null = useMemo(() => {
     if (!filteredPicker) return null;
     if (selectedTier && filteredPicker.byTier[selectedTier]) {
-      return filteredPicker.byTier[selectedTier]!;
-    }
+    return filteredPicker.byTier[selectedTier]!;
+  }
     if (previousMatch) return previousMatch;
+    if (sameSourceMatch) return sameSourceMatch;   
     return filteredPicker.primary;
-  }, [filteredPicker, selectedTier, previousMatch]);
+  }, [filteredPicker, selectedTier, previousMatch, sameSourceMatch]);
 
   const { onPlay, onCache, queuedHash, debridDown, resetDebridDown, abortResolve, p2pConfirm, confirmP2p, cancelP2p } = usePickHandler({
     meta,
@@ -295,6 +313,7 @@ export function PlayPicker({
     attempt,
     debrids,
     isCached,
+    p2pAutoConsent: settings.p2pAutoConsent,
     inSession,
     canInvite,
     inviteSentRef,
@@ -420,6 +439,27 @@ export function PlayPicker({
       setAutoExhausted(true);
     }
   }, [autoPlay, pipelineDone, autoCandidates.length, autoExhausted, autoCancelled]);
+
+  const engineWarming = isEngineWarmingError(resolveError);
+  useEffect(() => {
+    if (!engineWarming) return;
+    let alive = true;
+    const clear = () => {
+      if (alive) setResolveError(null);
+    };
+    const poll = async () => {
+      const status = await torrentEngineStatus();
+      if (status?.ready) clear();
+    };
+    void poll();
+    const id = window.setInterval(() => void poll(), 1500);
+    const cap = window.setTimeout(clear, 20000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+      window.clearTimeout(cap);
+    };
+  }, [engineWarming, setResolveError]);
 
   const showAutoTransition =
     !resolveError &&
@@ -645,7 +685,13 @@ export function PlayPicker({
           </>
         )}
 
-        {resolveError && (
+        {resolveError && engineWarming && (
+          <div className="flex items-center gap-3 rounded-2xl border border-edge-soft/60 bg-elevated/40 px-5 py-4 text-[13.5px] text-ink-muted">
+            <Loader2 size={16} className="shrink-0 animate-spin text-ink-subtle" />
+            <span>{resolveError}</span>
+          </div>
+        )}
+        {resolveError && !engineWarming && (
           <div className="rounded-2xl border border-danger/30 bg-danger/15 px-5 py-4 text-[13.5px] text-ink">
             {resolveError}
           </div>

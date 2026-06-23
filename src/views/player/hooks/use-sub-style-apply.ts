@@ -35,6 +35,15 @@ export function useSubStyleApply(params: {
     if (engine !== "mpv") return;
     if ((isMacDesktop() || isLinuxDesktop()) && settings.playerMpvEmbed) return;
     if (!bridgeReady) return;
-    void applyMotionInterp(settings.playerMotionInterp);
-  }, [engine, bridgeReady, bridgeKey, settings.playerMpvEmbed, settings.playerMotionInterp]);
+    const svpActive = settings.playerSvp && !!settings.svpVpyPath;
+    void applyMotionInterp(settings.playerMotionInterp && !svpActive);
+  }, [
+    engine,
+    bridgeReady,
+    bridgeKey,
+    settings.playerMpvEmbed,
+    settings.playerMotionInterp,
+    settings.playerSvp,
+    settings.svpVpyPath,
+  ]);
 }

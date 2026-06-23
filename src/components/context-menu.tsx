@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, ClipboardPaste, Copy, Download, Info, ListChecks, ListPlus, Maximize, Navigation, Star, UserPlus } from "lucide-react";
+import { Bookmark, BookmarkCheck, ClipboardPaste, Copy, Download, Info, ListChecks, ListPlus, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
@@ -9,6 +9,7 @@ import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { useInLocalWatchlist, useLocalWatchlist } from "@/lib/local-watchlist";
+import { clearTitleBackdrop, getTitleBackdrop, setTitleBackdrop } from "@/lib/title-backdrop";
 
 const MENU_WIDTH = 220;
 const MENU_HEIGHT = 120;
@@ -88,6 +89,16 @@ export function ContextMenu() {
       }
       if (topKind === "person") return;
       if (e.target instanceof HTMLElement && e.target.closest("[data-person-card]")) return;
+      const backdropEl =
+        e.target instanceof HTMLElement ? e.target.closest("[data-title-backdrop]") : null;
+      if (backdropEl && currentMeta) {
+        const backdropUrl = backdropEl.getAttribute("data-title-backdrop");
+        if (backdropUrl) {
+          e.preventDefault();
+          open(e, { kind: "backdrop", metaId: currentMeta.id, url: backdropUrl });
+          return;
+        }
+      }
       if (currentMeta) {
         e.preventDefault();
         open(e, { kind: "meta", meta: currentMeta });
@@ -274,6 +285,34 @@ export function ContextMenu() {
           icon={<UserPlus size={14} strokeWidth={2} />}
           label={`Bring friends to ${label}`}
           onClick={handleBringAddon}
+        />,
+      );
+    }
+  } else if (state.target.kind === "backdrop") {
+    const { metaId, url } = state.target;
+    const isCurrent = getTitleBackdrop(metaId) === url;
+    items.push(
+      <Item
+        key="set-title-backdrop"
+        icon={<Wallpaper size={14} strokeWidth={2} />}
+        label="Set as a backdrop"
+        onClick={() => {
+          setTitleBackdrop(metaId, url);
+          close();
+        }}
+        accent={isCurrent}
+      />,
+    );
+    if (getTitleBackdrop(metaId)) {
+      items.push(
+        <Item
+          key="reset-title-backdrop"
+          icon={<RotateCcw size={14} strokeWidth={2} />}
+          label="Reset to original"
+          onClick={() => {
+            clearTitleBackdrop(metaId);
+            close();
+          }}
         />,
       );
     }

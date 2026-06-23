@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 
-export type CardScores = { rtAudience: number | null };
+export type CardScores = {
+  rtAudience: number | null;
+  metacritic: number | null;
+  letterboxd: number | null;
+  trakt: number | null;
+  score: number | null;
+};
 
 type CacheEntry = { v: CardScores | null; t: number };
 type MediaKind = "movie" | "show";
@@ -68,14 +74,22 @@ function extractImdb(item: Record<string, unknown>): string | null {
   return null;
 }
 
-function audienceFrom(item: Record<string, unknown>): number | null {
+function ratingFrom(item: Record<string, unknown>, sources: string[]): number | null {
   const rows = item.ratings;
   if (!Array.isArray(rows)) return null;
-  for (const source of ["tomatoesaudience", "audience", "popcorn"]) {
+  for (const source of sources) {
     const r = rows.find(
       (x: { source?: string; value?: number | null }) => x?.source === source,
     ) as { value?: number | null } | undefined;
     if (typeof r?.value === "number" && r.value > 0) return r.value;
+  }
+  return null;
+}
+
+function scoreFrom(item: Record<string, unknown>): number | null {
+  for (const k of ["score_average", "scoreaverage", "score"]) {
+    const v = item[k];
+    if (typeof v === "number" && v > 0) return v;
   }
   return null;
 }
@@ -107,7 +121,13 @@ async function flush(): Promise<void> {
         const id = extractImdb(item);
         if (!id) continue;
         got.add(id);
-        remember(`${kind}:${id}`, { rtAudience: audienceFrom(item) });
+        remember(`${kind}:${id}`, {
+          rtAudience: ratingFrom(item, ["tomatoesaudience", "audience", "popcorn"]),
+          metacritic: ratingFrom(item, ["metacritic"]),
+          letterboxd: ratingFrom(item, ["letterboxd"]),
+          trakt: ratingFrom(item, ["trakt"]),
+          score: scoreFrom(item),
+        });
       }
       for (const i of ids) {
         if (!got.has(i)) remember(`${kind}:${i}`, null);

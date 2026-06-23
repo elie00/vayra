@@ -1,4 +1,5 @@
 import {
+  Camera,
   ChevronLeft,
   Info,
   Maximize,
@@ -24,6 +25,7 @@ import { DvrButton } from "./dvr-button";
 import { SpeedMenu } from "./speed-menu";
 import { AspectMenu } from "./aspect-menu";
 import { Anime4kMenu } from "./anime4k-menu";
+import { HdrToggleStremioBtn } from "./hdr-toggle-btn";
 import type { Anime4kChoice } from "@/views/player/hooks/use-anime4k";
 import { DrawToggle } from "./draw-toggle";
 import { CastButton } from "./cast-button";
@@ -32,6 +34,15 @@ import { StremioBtn } from "./stremio-btn";
 import { StremioVolume } from "./stremio-volume";
 import { renderCustomIconControlStremio } from "./custom-icon-renderer";
 import { WindowControlButtons } from "./window-control-buttons";
+
+function qualityInfoOn(): boolean {
+  try {
+    return (JSON.parse(localStorage.getItem("harbor.settings") ?? "{}") as { showQualityInfo?: boolean })
+      .showQualityInfo === true;
+  } catch {
+    return false;
+  }
+}
 
 export type StremioRenderCtx = {
   snap: PlayerSnapshot;
@@ -57,6 +68,8 @@ export type StremioRenderCtx = {
   fullscreen?: boolean;
   title?: string;
   subtitle?: string;
+  resolution?: string | null;
+  quality?: string | null;
   titleClickable?: boolean;
   onBack?: () => void;
   onFullscreen?: () => void;
@@ -94,6 +107,7 @@ export type StremioRenderCtx = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onScreenshot: () => void;
   onPickAnother: () => void;
   onPrevEp: () => void;
   onNextEp: () => void;
@@ -152,25 +166,54 @@ export function RenderedStremioControl({
       );
     case "title-info": {
       if (!ctx.title) return null;
+      const showQuality = qualityInfoOn() && !!ctx.quality;
       if (ctx.titleClickable && ctx.onTitleClick) {
         return (
           <button
             type="button"
             onClick={ctx.onTitleClick}
-            className="pointer-events-auto group inline-flex min-w-0 items-center gap-2 truncate rounded-lg px-2 py-1 text-start text-white/90 transition-colors hover:bg-white/[0.05]"
+            className="pointer-events-auto group flex min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-start text-white/90 transition-colors hover:bg-white/[0.05]"
           >
-            <h1 className="truncate text-[19px] font-medium leading-tight">{ctx.title}</h1>
-            {ctx.subtitle && (
-              <span className="shrink-0 text-[13px] font-normal text-white/55">{ctx.subtitle}</span>
-            )}
-            <Info size={13} strokeWidth={2.1} className="opacity-40 transition-opacity group-hover:opacity-90" />
+            <span className="flex min-w-0 flex-col">
+              <span className="flex min-w-0 items-center gap-2 truncate">
+                <h1 className="truncate text-[19px] font-medium leading-tight">{ctx.title}</h1>
+                {ctx.subtitle && (
+                  <span className="shrink-0 text-[13px] font-normal text-white/55">{ctx.subtitle}</span>
+                )}
+                {!showQuality && ctx.resolution && (
+                  <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white/80">
+                    {ctx.resolution}
+                  </span>
+                )}
+              </span>
+              {showQuality && (
+                <span className="truncate text-[12px] font-normal tabular-nums text-white/55">{ctx.quality}</span>
+              )}
+            </span>
+            <Info size={13} strokeWidth={2.1} className="shrink-0 opacity-40 transition-opacity group-hover:opacity-90" />
           </button>
         );
       }
       return (
         <div className="pointer-events-none min-w-0 truncate text-white/90">
           <h1 className="truncate text-[19px] font-medium leading-tight">{ctx.title}</h1>
-          {ctx.subtitle && <p className="truncate text-[13px] text-white/55">{ctx.subtitle}</p>}
+          {showQuality ? (
+            <>
+              {ctx.subtitle && <p className="truncate text-[13px] text-white/55">{ctx.subtitle}</p>}
+              <p className="truncate text-[12px] tabular-nums text-white/50">{ctx.quality}</p>
+            </>
+          ) : (
+            (ctx.subtitle || ctx.resolution) && (
+              <p className="flex items-center gap-1.5 text-[13px] text-white/55">
+                {ctx.subtitle && <span className="truncate">{ctx.subtitle}</span>}
+                {ctx.resolution && (
+                  <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white/80">
+                    {ctx.resolution}
+                  </span>
+                )}
+              </p>
+            )
+          )}
         </div>
       );
     }
@@ -285,6 +328,9 @@ export function RenderedStremioControl({
           onOpenChange={ctx.setAnime4kMenuOpen}
         />
       );
+    case "hdr-toggle":
+      if (ctx.engine === "html5") return null;
+      return <HdrToggleStremioBtn />;
     case "cast":
       return <CastButton onClick={ctx.onCast} capabilities={ctx.capabilities} />;
     case "subtitle-menu":
@@ -331,6 +377,14 @@ export function RenderedStremioControl({
           onToggle={ctx.onToggleDraw}
           onToggleHideOthers={ctx.onToggleHideOthers}
         />
+      );
+    case "screenshot":
+      return (
+        <Tooltip label={tr("Screenshot")}>
+          <StremioBtn onClick={ctx.onScreenshot} ariaLabel={tr("Screenshot")}>
+            <Camera size={26} strokeWidth={1.9} />
+          </StremioBtn>
+        </Tooltip>
       );
     case "pip":
       if (!ctx.capabilities.pictureInPicture) return null;

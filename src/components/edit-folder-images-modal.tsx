@@ -71,7 +71,7 @@ export function EditFolderImagesModal({
               dir="ltr"
             />
           </div>
-          
+
           <div>
             <label className="mb-1.5 block text-sm font-medium text-ink-muted">{t("Focus GIF URL")}</label>
             <input

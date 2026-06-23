@@ -110,6 +110,7 @@ export function MediaGallery({ detail, title, logo }: { detail: TmdbDetail; titl
               key={src}
               src={src}
               ratio="landscape"
+              pinnable
               onOpen={() => setLightbox({ images: backdrops, index: i, kind: "backdrops" })}
               onDownload={() => downloadImage(src, "backdrop", i)}
               onSetBackdrop={() => setBackdrop(src)}

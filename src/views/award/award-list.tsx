@@ -169,6 +169,7 @@ function DecadePill({
 
 function CategorySection({ group, tint }: { group: CategoryHistory; tint: string }) {
   const t = useT();
+  const preferTv = TV_CATEGORY_RX.test(group.category.name);
   return (
     <section className="flex flex-col gap-6">
       <div className="flex items-baseline justify-between gap-4">
@@ -183,14 +184,22 @@ function CategorySection({ group, tint }: { group: CategoryHistory; tint: string
       </div>
       <ol className="flex flex-col">
         {group.entries.map((e, i) => (
-          <WinnerRow key={`${e.year}-${e.workTitle}-${i}`} entry={e} tint={tint} />
+          <WinnerRow key={`${e.year}-${e.workTitle}-${i}`} entry={e} tint={tint} preferTv={preferTv} />
         ))}
       </ol>
     </section>
   );
 }
 
-function WinnerRow({ entry, tint }: { entry: CategoryHistory["entries"][number]; tint: string }) {
+function WinnerRow({
+  entry,
+  tint,
+  preferTv,
+}: {
+  entry: CategoryHistory["entries"][number];
+  tint: string;
+  preferTv: boolean;
+}) {
   const { settings } = useSettings();
   const { openMeta, openPerson } = useView();
   const [resolving, setResolving] = useState(false);
@@ -199,14 +208,13 @@ function WinnerRow({ entry, tint }: { entry: CategoryHistory["entries"][number];
     if (resolving || !settings.tmdbKey) return;
     setResolving(true);
     try {
-      const movie = await searchTmdb(settings.tmdbKey, entry.workTitle, entry.year, "movie");
-      if (movie) {
-        openMeta({ id: `tmdb:movie:${movie.id}`, type: "movie", name: entry.workTitle });
-        return;
-      }
-      const tv = await searchTmdb(settings.tmdbKey, entry.workTitle, entry.year, "tv");
-      if (tv) {
-        openMeta({ id: `tmdb:tv:${tv.id}`, type: "series", name: entry.workTitle });
+      const hit = await resolveAwardWork(settings.tmdbKey, entry.workTitle, entry.year, preferTv);
+      if (hit) {
+        openMeta({
+          id: `tmdb:${hit.type}:${hit.id}`,
+          type: hit.type === "movie" ? "movie" : "series",
+          name: entry.workTitle,
+        });
       }
     } finally {
       setResolving(false);
@@ -269,22 +277,78 @@ function WinnerRow({ entry, tint }: { entry: CategoryHistory["entries"][number];
   );
 }
 
-async function searchTmdb(
+const TV_CATEGORY_RX =
+  /series|television|\btv\b|daytime|talk|host|reality|variety|game show|soap|drama series|comedy series|limited series|miniseries|anthology/i;
+
+type AwardHit = { id: number; type: "movie" | "tv" };
+
+function normTitle(s: string): string {
+  return s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
+}
+
+function tmdbYear(date?: string): number | null {
+  if (!date) return null;
+  const y = parseInt(date.slice(0, 4), 10);
+  return Number.isFinite(y) ? y : null;
+}
+
+async function searchType(
+  key: string,
+  title: string,
+  type: "movie" | "tv",
+): Promise<Array<{ id: number; title: string; year: number | null }>> {
+  const params = new URLSearchParams({ api_key: key, query: title, include_adult: "false" });
+  try {
+    const res = await fetch(`https://api.themoviedb.org/3/search/${type}?${params}`);
+    if (!res.ok) return [];
+    const data: { results?: Array<Record<string, unknown>> } = await res.json();
+    return (data.results ?? [])
+      .slice(0, 6)
+      .map((r) => ({
+        id: Number(r.id),
+        title: String(
+          type === "movie" ? r.title ?? r.original_title ?? "" : r.name ?? r.original_name ?? "",
+        ),
+        year: tmdbYear(
+          ((type === "movie" ? r.release_date : r.first_air_date) as string) || undefined,
+        ),
+      }))
+      .filter((r) => Number.isFinite(r.id) && r.id > 0);
+  } catch {
+    return [];
+  }
+}
+
+async function resolveAwardWork(
   key: string,
   title: string,
   year: number,
-  type: "movie" | "tv",
-): Promise<{ id: number } | null> {
-  const params = new URLSearchParams({ api_key: key, query: title, include_adult: "false" });
-  if (type === "movie") params.set("year", String(year));
-  else params.set("first_air_date_year", String(year));
-  try {
-    const res = await fetch(`https://api.themoviedb.org/3/search/${type}?${params}`);
-    if (!res.ok) return null;
-    const data: { results?: Array<{ id?: number }> } = await res.json();
-    const hit = data?.results?.[0];
-    return hit?.id ? { id: hit.id } : null;
-  } catch {
-    return null;
+  preferTv: boolean,
+): Promise<AwardHit | null> {
+  const [movies, tvs] = await Promise.all([
+    searchType(key, title, "movie"),
+    searchType(key, title, "tv"),
+  ]);
+  const want = normTitle(title);
+  const candidates = [
+    ...tvs.map((r) => ({ ...r, type: "tv" as const })),
+    ...movies.map((r) => ({ ...r, type: "movie" as const })),
+  ];
+  let best: (typeof candidates)[number] | null = null;
+  let bestScore = 0;
+  for (const c of candidates) {
+    const nt = normTitle(c.title);
+    if (!nt) continue;
+    let score = 0;
+    if (nt === want) score += 100;
+    else if (nt.includes(want) || want.includes(nt)) score += 45;
+    else continue;
+    if (c.year != null) score += Math.max(0, 18 - Math.abs(c.year - year) * 3);
+    if (preferTv ? c.type === "tv" : c.type === "movie") score += 25;
+    if (score > bestScore) {
+      bestScore = score;
+      best = c;
+    }
   }
+  return best ? { id: best.id, type: best.type } : null;
 }

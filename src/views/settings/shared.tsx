@@ -12,6 +12,7 @@ export type SectionId =
   | "simkl"
   | "relay"
   | "streaming"
+  | "p2p"
   | "language"
   | "player"
   | "mpv"
@@ -330,7 +331,7 @@ export function Segmented<T extends string>({
 }) {
   const t = useT();
   return (
-    <div className="flex w-fit flex-wrap gap-1 rounded-full bg-elevated/40 p-1 ring-1 ring-edge-soft/60">
+    <div className="flex w-fit flex-wrap gap-1 rounded-2xl bg-elevated/40 p-1 ring-1 ring-edge-soft/60">
       {options.map((o) => (
         <button
           key={o.value}

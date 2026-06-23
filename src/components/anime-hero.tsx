@@ -35,15 +35,6 @@ export function AnimeHero({
   const [hdBackdrops, setHdBackdrops] = useState<Record<string, string | undefined>>({});
   const [savedTick, setSavedTick] = useState(0);
 
-  const wantsHighRes = (() => {
-    if (typeof navigator === "undefined") return true;
-    const cpus = (navigator as Navigator & { hardwareConcurrency?: number }).hardwareConcurrency;
-    const ram = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-    if (typeof cpus === "number" && cpus > 0 && cpus < 4) return false;
-    if (typeof ram === "number" && ram > 0 && ram < 4) return false;
-    return true;
-  })();
-
   useEffect(() => {
     if (slides.length === 0) return;
     const el = document.getElementById("anime-hero-section");
@@ -100,9 +91,7 @@ export function AnimeHero({
   }, [active, slides, covers]);
 
   useEffect(() => {
-    if (!wantsHighRes) return;
     if (slides.length === 0) return;
-    if (!settings.tmdbKey) return;
     const current = slides[active];
     if (!current || current.id in hdBackdrops) return;
     let cancelled = false;
@@ -116,7 +105,7 @@ export function AnimeHero({
     return () => {
       cancelled = true;
     };
-  }, [active, slides, settings.tmdbKey, hdBackdrops, wantsHighRes]);
+  }, [active, slides, settings.tmdbKey, hdBackdrops]);
 
   if (slides.length === 0) return null;
 

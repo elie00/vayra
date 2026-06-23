@@ -39,6 +39,7 @@ import {
 import { EditorOverlay } from "./editor-overlay";
 import { OptionsSection } from "./options-section";
 import { EditLayoutCard, FooterBar, ThemeTabs } from "./panel-bars";
+import { ToggleRow } from "../shared";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 import { useT } from "@/lib/i18n";
 
@@ -53,7 +54,7 @@ function themeIdFromSettings(settings: ReturnType<typeof useSettings>["settings"
 
 export function PlayerLayoutPanel() {
   const t = useT();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const appTheme = themeIdFromSettings(settings);
   const [theme, setTheme] = useState<ThemeId>(appTheme);
   const [saved, setSaved] = useState<PlayerChromeConfig>(() => readPlayerChromeConfig(appTheme));
@@ -355,6 +356,13 @@ export function PlayerLayoutPanel() {
         onVolumeStyle={(v: VolumeStyle) =>
           setDraft((cur) => ({ ...cur, options: { ...cur.options, volumeStyle: v } }))
         }
+      />
+
+      <ToggleRow
+        label={t("Show P2P status chip")}
+        sub={t("Peers, speed and progress while a torrent streams. Sits clear of the exit button, top left.")}
+        value={settings.playerP2pChip}
+        onChange={(v) => update({ playerP2pChip: v })}
       />
 
       <FooterBar

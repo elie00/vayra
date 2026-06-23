@@ -6,8 +6,14 @@ import { isLocalUrl } from "@/lib/player/local-url";
 import type { PlayerSrc } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { LoaderLogoOrText } from "./loader-logo-or-text";
-import { readinessScore, type EngineStats } from "@/lib/torrent/engine-stats";
+import { type EngineStats } from "@/lib/torrent/engine-stats";
 import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
+
+function fmtSpeed(bps: number): string {
+  if (bps >= 1024 ** 2) return `${(bps / 1024 ** 2).toFixed(1)} MB/s`;
+  if (bps >= 1024) return `${(bps / 1024).toFixed(0)} KB/s`;
+  return "warming up";
+}
 
 export function CinematicPlayerLoader({
   src,
@@ -28,7 +34,11 @@ export function CinematicPlayerLoader({
   const isLocal = isLocalUrl(src.url);
   const isInfoHash =
     (isBundledEngineUrl(src.url) || isLocalEngineUrl(src.url)) && !src.url.includes("/hlsv2/");
-  const pct = Math.round(readinessScore(engineStats ?? null, isInfoHash));
+  const enginePeers = engineStats ? (engineStats.unchoked > 0 ? engineStats.unchoked : engineStats.peers) : 0;
+  const engineSpeed = engineStats?.downloadSpeed ?? 0;
+  const showEngineActivity = isInfoHash && !!engineStats && (enginePeers > 0 || engineSpeed > 0);
+  const streamBytes = src.streamRef?.size ?? engineStats?.streamLen ?? null;
+  const heavyForP2p = isInfoHash && streamBytes != null && streamBytes > 20 * 1024 ** 3;
   const everPlayedRef = useRef(false);
   const hasProgress = usePlaybackFlag(() => getPlaybackPosition() > 0.3);
   if (snap.durationSec > 0 && hasProgress) {
@@ -89,21 +99,27 @@ export function CinematicPlayerLoader({
             {src.episode.name ? ` · ${src.episode.name}` : ""}
           </p>
         )}
-        {isInfoHash ? (
-          <div className="flex w-full max-w-[360px] flex-col items-center gap-3">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/12">
-              <div
-                className="h-full rounded-full bg-white/85 transition-[width] duration-700 ease-out"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="text-[12.5px] font-medium tracking-wide text-white/55">
-              {snap.buffering ? t("Buffering") : t("Preparing stream")}
-              {engineStats ? ` (${pct}%)` : ""}
-            </p>
-          </div>
-        ) : (
-          <HarborLoader size="md" caption={isLocal ? t("Loading") : t("Connecting")} />
+        <HarborLoader
+          size="md"
+          caption={
+            isLocal
+              ? t("Loading")
+              : isInfoHash
+                ? snap.buffering
+                  ? t("Buffering")
+                  : t("Preparing stream")
+                : t("Connecting")
+          }
+        />
+        {showEngineActivity && (
+          <p className="text-[12.5px] font-medium tracking-wide text-white/50 tabular-nums">
+            {enginePeers} {enginePeers === 1 ? t("peer") : t("peers")} · {fmtSpeed(engineSpeed)}
+          </p>
+        )}
+        {heavyForP2p && (
+          <p className="max-w-md text-[12.5px] leading-relaxed text-amber-300/85">
+            {t("Heads up: this is a large file for peer-to-peer streaming, so it can take a while to start. A 1080p source or a debrid service will load faster.")}
+          </p>
         )}
       </div>
       <button

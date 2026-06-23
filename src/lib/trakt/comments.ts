@@ -86,8 +86,10 @@ function mapComment(raw: RawComment): TraktComment {
 export async function fetchComments(
   target: TraktTarget,
   sort: string = "likes",
+  page = 1,
+  limit = 20,
 ): Promise<TraktComment[]> {
-  const path = commentsPath(target, sort) + "?extended=images";
+  const path = commentsPath(target, sort) + `?extended=images&page=${page}&limit=${limit}`;
   const raw = await traktRequest<RawComment[]>(path).catch(() => [] as RawComment[]);
   return raw.map(mapComment);
 }

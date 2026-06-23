@@ -14,7 +14,9 @@ export type HdrStageHandlers = {
   prevEp: () => void;
   nextEp: () => void;
   pickAnother: () => void;
+  screenshot: () => void;
   menuOpen: (open: boolean) => void;
+  activity: () => void;
 };
 
 export function HdrStageBridge({
@@ -35,6 +37,12 @@ export function HdrStageBridge({
     if (!active) return;
     void hdrOverlayEmitProps(payload);
   }, [active, payload]);
+
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => void hdrOverlayEmitProps(payloadRef.current), 1000);
+    return () => window.clearInterval(id);
+  }, [active]);
 
   useEffect(() => {
     if (!active) return;
@@ -64,7 +72,9 @@ export function HdrStageBridge({
       await bind("hdr-stage://prev-ep", () => h().prevEp());
       await bind("hdr-stage://next-ep", () => h().nextEp());
       await bind("hdr-stage://pick-another", () => h().pickAnother());
+      await bind("hdr-stage://screenshot", () => h().screenshot());
       await bind("hdr-stage://menu-open", (p) => h().menuOpen((p as { open: boolean }).open));
+      await bind("hdr-stage://activity", () => h().activity());
       await bind("hdr-stage://request", () => void hdrOverlayEmitProps(payloadRef.current));
     })();
     return () => {

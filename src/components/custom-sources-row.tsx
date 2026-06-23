@@ -2,18 +2,17 @@ import { Row } from "./row";
 import { SourceFolderCard } from "./source-folder-card";
 import type { SourceRow } from "@/lib/custom-sources";
 
-export function CustomSourcesRow({ 
-  sourceRow, 
+export function CustomSourcesRow({
+  sourceRow,
   editMode,
   onEditFolderImages,
-}: { 
-  sourceRow: SourceRow; 
+}: {
+  sourceRow: SourceRow;
   editMode?: boolean;
   onEditFolderImages?: (sourceId: string, folderId: string, cover: string, gif: string) => void;
 }) {
   if (!sourceRow.folders || sourceRow.folders.length === 0) return null;
 
-  // Determine row shape by inspecting the first folder (assume homogenous row)
   const isPoster = sourceRow.folders[0]?.tileShape === "POSTER";
 
   return (
@@ -26,11 +25,11 @@ export function CustomSourcesRow({
     >
       {sourceRow.folders.map((folder, index) => (
         <div key={`${folder.id}-${index}`} className={isPoster ? "w-[160px]" : "w-[320px]"}>
-          <SourceFolderCard 
-            folder={folder} 
-            editMode={editMode} 
-            sourceId={sourceRow.id} 
-            onEditFolderImages={onEditFolderImages} 
+          <SourceFolderCard
+            folder={folder}
+            editMode={editMode}
+            sourceId={sourceRow.id}
+            onEditFolderImages={onEditFolderImages}
           />
         </div>
       ))}

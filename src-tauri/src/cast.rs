@@ -315,7 +315,7 @@ fn humanize_cast_error(err: &str) -> String {
         return "Device refused the connection. Try restarting it.".to_string();
     }
     if lower.contains("certificate") || lower.contains("tls") {
-        return "Secure handshake failed. Check the device firmware is up to date.".to_string();
+        return "Secure handshake failed. Make sure the TV is on the same network, and update its firmware if this keeps happening.".to_string();
     }
     err.to_string()
 }

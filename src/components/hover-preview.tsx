@@ -137,7 +137,13 @@ export function HoverPreview() {
     const el = layerEls.current.get(scene.current.key);
     if (!el) return;
     const h = Math.round(el.offsetHeight);
-    const pos = placePanel(scene.current.payload.rect, scene.width, h, scene.topInset);
+    const pos = placePanel(
+      scene.current.payload.rect,
+      scene.width,
+      h,
+      scene.topInset,
+      settingsRef.current.hoverPreviewPlacement,
+    );
     setScene((s) => (s && s.seq === scene.seq && !s.pos ? { ...s, pos, height: h } : s));
   }, [scene]);
 
@@ -176,7 +182,13 @@ export function HoverPreview() {
     const el = layerEls.current.get(scene.incoming.key);
     if (!el) return;
     const h = Math.round(el.offsetHeight);
-    const pos = placePanel(scene.incoming.payload.rect, scene.width, h, scene.topInset);
+    const pos = placePanel(
+      scene.incoming.payload.rect,
+      scene.width,
+      h,
+      scene.topInset,
+      settingsRef.current.hoverPreviewPlacement,
+    );
     setScene((s) => {
       if (!s || !s.incoming || s.incoming.key !== scene.incoming?.key) return s;
       return { ...s, outgoing: s.current, current: s.incoming, incoming: null, pos, nextHeight: h };

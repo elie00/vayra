@@ -9,6 +9,7 @@ export type GridEpisode = {
   runtime: number | null;
   airDate: string | null;
   overview?: string;
+  rating?: number;
   filler?: boolean;
   upcoming?: boolean;
   play: () => void;

@@ -1,5 +1,5 @@
 import { t as translate } from "@/lib/i18n";
-import { ChevronLeft, Info, Maximize, Minimize, PauseCircle, PictureInPicture2, PlayCircle, Replace, Tv } from "lucide-react";
+import { Camera, ChevronLeft, Info, Maximize, Minimize, PauseCircle, PictureInPicture2, PlayCircle, Replace, Tv } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
@@ -38,6 +38,7 @@ import { VolumeControl } from "./volume-control";
 import { SpeedMenu } from "./speed-menu";
 import { AspectMenu } from "./aspect-menu";
 import { Anime4kMenu } from "./anime4k-menu";
+import { HdrToggleBigBtn } from "./hdr-toggle-btn";
 import type { Anime4kChoice } from "@/views/player/hooks/use-anime4k";
 import { DrawToggle } from "./draw-toggle";
 import { CastButton } from "./cast-button";
@@ -103,6 +104,7 @@ export type ControlContext = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onScreenshot: () => void;
   onPickAnother: () => void;
   onPrevEp: () => void;
   onNextEp: () => void;
@@ -382,6 +384,10 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
         />
       );
     }
+    case "hdr-toggle": {
+      if (ctx.tight || ctx.engine === "html5") return null;
+      return <HdrToggleBigBtn />;
+    }
     case "draw-toggle": {
       if (ctx.compact || !ctx.showDraw) return null;
       return (
@@ -391,6 +397,13 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           onToggle={ctx.onToggleDraw}
           onToggleHideOthers={ctx.onToggleHideOthers}
         />
+      );
+    }
+    case "screenshot": {
+      return (
+        <BigButton onClick={ctx.onScreenshot} ariaLabel={t("Screenshot")} tooltip={t("Screenshot")}>
+          <Camera size={24} strokeWidth={1.9} />
+        </BigButton>
       );
     }
     case "pip": {

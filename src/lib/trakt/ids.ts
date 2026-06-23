@@ -4,13 +4,38 @@ export type IdResolution =
   | { ok: true; target: TraktTarget }
   | { ok: false; reason: "anime" | "unrecognized" };
 
+export type TraktEpisodeRef = {
+  season: number;
+  episode: number;
+  imdbId?: string;
+  imdbSeason?: number;
+  imdbEpisode?: number;
+};
+
 export function stremioIdToTraktTarget(
   metaId: string,
-  episode?: { season: number; episode: number },
+  episode?: TraktEpisodeRef,
 ): IdResolution {
   if (!metaId) return { ok: false, reason: "unrecognized" };
 
   if (metaId.startsWith("kitsu:") || metaId.startsWith("mal:")) {
+    const imdb = episode?.imdbId;
+    if (
+      imdb &&
+      /^tt\d+$/.test(imdb) &&
+      episode.imdbSeason != null &&
+      episode.imdbEpisode != null
+    ) {
+      return {
+        ok: true,
+        target: {
+          kind: "episode",
+          show: { ids: { imdb } },
+          season: episode.imdbSeason,
+          number: episode.imdbEpisode,
+        },
+      };
+    }
     return { ok: false, reason: "anime" };
   }
 

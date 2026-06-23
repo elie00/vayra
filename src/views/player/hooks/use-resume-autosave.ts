@@ -70,6 +70,16 @@ export function useResumeAutosave(params: {
     } else {
       savePlayback(id, { title: s.meta.name, parsedTitle: s.meta.name }, se, ep);
     }
+    if (
+      s.meta.type === "series" &&
+      typeof se === "number" &&
+      typeof ep === "number" &&
+      sn.durationSec > 0 &&
+      pos / sn.durationSec >= WATCHED_RATIO &&
+      !isManuallyWatched(id, se, ep)
+    ) {
+      setManualWatched(id, se, ep, true);
+    }
     if ((s.meta.type === "series" || s.meta.type === "movie") && !CLOUD_OK.test(id)) {
       saveLocalCw({
         id,
@@ -84,16 +94,6 @@ export function useResumeAutosave(params: {
         durationMs: Math.max(0, Math.floor(sn.durationSec * 1000)),
         t: Date.now(),
       });
-      if (
-        s.meta.type === "series" &&
-        typeof se === "number" &&
-        typeof ep === "number" &&
-        sn.durationSec > 0 &&
-        pos / sn.durationSec >= WATCHED_RATIO &&
-        !isManuallyWatched(id, se, ep)
-      ) {
-        setManualWatched(id, se, ep, true);
-      }
     }
     if (pos < TASTE_MIN_SEC) return;
     const trackId = animeTrackId(s);

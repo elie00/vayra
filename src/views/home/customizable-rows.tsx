@@ -11,9 +11,11 @@ import { useView } from "@/lib/view";
 import { isMacDesktop } from "@/lib/platform";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
+import { watchTitleKey, type WatchedSet } from "@/lib/playback-history";
 
-function metaTitleKey(meta: { id: string }): string | null {
+function metaTitleKey(meta: { id?: string }): string | null {
   const id = meta.id;
+  if (!id) return null;
   if (/^tt\d+$/.test(id)) return `imdb:${id}`;
   if (id.startsWith("tmdb:")) {
     const num = Number(id.split(":")[2]);
@@ -57,6 +59,8 @@ export function CustomizableRows({
   onEditFolderImages,
   hideWatched,
   watchedSet,
+  localWatched,
+  homeLanguages,
 }: {
   rows: HomeRow[];
   editMode: boolean;
@@ -72,6 +76,8 @@ export function CustomizableRows({
   onEditFolderImages?: (sourceId: string, folderId: string, cover: string, gif: string) => void;
   hideWatched?: boolean;
   watchedSet?: Set<string>;
+  localWatched?: WatchedSet;
+  homeLanguages?: string[];
 }) {
   const { openGrid } = useView();
   const t = useT();
@@ -84,17 +90,28 @@ export function CustomizableRows({
     }
     return out;
   }, [watchedSet]);
-  const isWatched = (m: { id: string }) => {
+  const isWatched = (m: { id: string; name?: string }) => {
     const key = metaTitleKey(m);
-    return key != null && watchedTitleKeys.has(key);
+    if (key != null && watchedTitleKeys.has(key)) return true;
+    if (localWatched) {
+      if (localWatched.ids.has(m.id)) return true;
+      const tk = watchTitleKey(m.name);
+      if (tk && localWatched.titles.has(tk)) return true;
+    }
+    return false;
   };
   return (
     <>
       {rows.map((row, rowIndex) => {
         const hidden = customization.hidden.includes(row.key);
         if (hidden && !editMode) return null;
-        const metas = hideWatched ? row.metas.filter((m) => !isWatched(m)) : row.metas;
-        if (hideWatched && metas.length === 0 && !editMode) return null;
+        let metas = row.metas.filter((m) => typeof m.id === "string");
+        if (homeLanguages && homeLanguages.length > 0) {
+          metas = metas.filter((m) => !m.originalLanguage || homeLanguages.includes(m.originalLanguage));
+        }
+        if (hideWatched) metas = metas.filter((m) => !isWatched(m));
+        if ((hideWatched || (homeLanguages && homeLanguages.length > 0)) && metas.length === 0 && !editMode)
+          return null;
         const idx = orderKeys.indexOf(row.key);
         const eager = rowIndex < 2;
         const viewAll = row.fetcher
@@ -102,7 +119,6 @@ export function CustomizableRows({
           : undefined;
         const ranked =
           (customization.numerals ?? []).includes(row.key) && metas.length >= 10;
-        
         let rowEl;
         if (row.sourceRow) {
           rowEl = <CustomSourcesRow sourceRow={row.sourceRow} editMode={editMode} onEditFolderImages={onEditFolderImages} />;

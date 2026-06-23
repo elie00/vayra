@@ -243,6 +243,10 @@ fn apply_pre_init(
                 set("gpu-api", "d3d11")?;
             }
         }
+        #[cfg(target_os = "macos")]
+        {
+            set("target-colorspace-hint", "yes")?;
+        }
     }
 
     if let Some(shaders) = &args.anime4k_shaders {
@@ -356,6 +360,14 @@ pub async fn mpv_start(
     unsafe {
         let level = std::ffi::CString::new("warn").unwrap();
         libmpv2_sys::mpv_request_log_messages(mpv.ctx.as_ptr(), level.as_ptr());
+    }
+    {
+        use tauri::Manager;
+        if let Ok(dir) = app.path().app_data_dir() {
+            let _ = std::fs::create_dir_all(&dir);
+            let logp = dir.join("harbor-mpv.log");
+            let _ = mpv.set_property("log-file", logp.to_string_lossy().as_ref());
+        }
     }
     let use_render_api = (cfg!(target_os = "macos") || cfg!(target_os = "linux")) && want_embed;
     if !use_render_api {
@@ -747,6 +759,23 @@ pub async fn mpv_set_geometry(
         geom.css_width as i32, geom.css_height as i32, geom.css_left as i32, geom.css_top as i32
     );
     mpv.set_property("geometry", geo.as_str()).map_err(|e| format!("geometry: {}", e))
+}
+
+#[tauri::command]
+pub fn mpv_export_log(app: AppHandle) -> Result<String, String> {
+    use tauri::Manager;
+    let src = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("harbor-mpv.log");
+    if !src.exists() {
+        return Err("No player log yet. Play something first, then export.".into());
+    }
+    let dl = app.path().download_dir().map_err(|e| e.to_string())?;
+    let dst = dl.join("harbor-mpv-log.txt");
+    std::fs::copy(&src, &dst).map_err(|e| format!("copy: {}", e))?;
+    Ok(dst.to_string_lossy().into_owned())
 }
 
 #[tauri::command]

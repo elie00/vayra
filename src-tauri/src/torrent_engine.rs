@@ -1,6 +1,9 @@
 mod cache_sweep;
+mod dht_boot;
+mod netcheck;
 mod selftest;
 mod stream_route;
+mod trackers;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
@@ -8,7 +11,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use librqbit::api::TorrentIdOrHash;
-use librqbit::{AddTorrent, AddTorrentOptions, Session, SessionOptions};
+use librqbit::dht::{Dht, PersistentDhtConfig};
+use librqbit::{AddTorrent, AddTorrentOptions, PeerConnectionOptions, Session, SessionOptions};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 use tokio::net::TcpListener;
@@ -16,7 +20,9 @@ use tokio::time::timeout;
 
 struct EngineState {
     session: Option<Arc<Session>>,
+    side_dht: Option<Dht>,
     port: Option<u16>,
+    dht_tier: u8,
     ready: bool,
     last_error: Option<String>,
     server: Option<tokio::task::JoinHandle<()>>,
@@ -27,7 +33,9 @@ fn engine() -> &'static Mutex<EngineState> {
     S.get_or_init(|| {
         Mutex::new(EngineState {
             session: None,
+            side_dht: None,
             port: None,
+            dht_tier: 0,
             ready: false,
             last_error: None,
             server: None,
@@ -37,6 +45,10 @@ fn engine() -> &'static Mutex<EngineState> {
 
 fn current_session() -> Option<Arc<Session>> {
     engine().lock().unwrap().session.clone()
+}
+
+fn current_side_dht() -> Option<Dht> {
+    engine().lock().unwrap().side_dht.clone()
 }
 
 fn current_port() -> Option<u16> {
@@ -49,6 +61,8 @@ pub struct EngineStatusDto {
     port: Option<u16>,
     active_torrents: usize,
     last_error: Option<String>,
+    dht_tier: u8,
+    dht_nodes: usize,
 }
 
 #[derive(Serialize)]
@@ -82,43 +96,62 @@ pub struct TorrentEngineStats {
     state: String,
 }
 
+async fn new_session(
+    dir: &std::path::Path,
+    full: bool,
+    dht: bool,
+    persist_dht: bool,
+) -> Result<Arc<Session>, String> {
+    Session::new_with_opts(
+        dir.to_path_buf(),
+        SessionOptions {
+            fastresume: true,
+            persistence: None,
+            disable_dht: !dht,
+            disable_dht_persistence: !persist_dht,
+            dht_config: persist_dht.then(|| PersistentDhtConfig {
+                config_filename: Some(dir.join("dht.json")),
+                dump_interval: None,
+            }),
+            trackers: trackers::as_url_set(),
+            listen_port_range: if full { Some(16881..16931) } else { None },
+            enable_upnp_port_forwarding: full,
+            ..Default::default()
+        },
+    )
+    .await
+    .map_err(|e| format!("{e:#}"))
+}
+
 async fn init(app: AppHandle) -> Result<(), String> {
+    std::env::set_var("DHT_QUERIES_PER_SECOND", "100");
     let dir = app
         .path()
         .app_cache_dir()
         .map_err(|e| e.to_string())?
         .join("engine");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    cache_sweep::run(&dir, cache_sweep::CAP_BYTES);
-    let session = match Session::new_with_opts(
-        dir.clone(),
-        SessionOptions {
-            fastresume: true,
-            persistence: None,
-            disable_dht: false,
-            listen_port_range: Some(6881..6891),
-            enable_upnp_port_forwarding: true,
-            ..Default::default()
-        },
-    )
-    .await
-    {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("[torrent-engine] inbound listener unavailable ({e:#}); using outbound-only");
-            Session::new_with_opts(
-                dir,
-                SessionOptions {
-                    fastresume: true,
-                    persistence: None,
-                    disable_dht: false,
-                    ..Default::default()
-                },
-            )
-            .await
-            .map_err(|e| format!("{e:#}"))?
+    cache_sweep::run(&dir);
+    let (session, dht_tier) = match new_session(&dir, true, true, true).await {
+        Ok(s) => (s, 1u8),
+        Err(e1) => {
+            eprintln!("[torrent-engine] tier1 (inbound + warm dht) unavailable ({e1}); trying no-inbound + warm dht");
+            match new_session(&dir, false, true, true).await {
+                Ok(s) => (s, 2u8),
+                Err(e2) => {
+                    eprintln!("[torrent-engine] tier2 unavailable ({e2}); trying cold ephemeral dht");
+                    match new_session(&dir, false, true, false).await {
+                        Ok(s) => (s, 3u8),
+                        Err(e3) => {
+                            eprintln!("[torrent-engine] tier3 (cold dht) unavailable ({e3}); starting without dht");
+                            (new_session(&dir, false, false, false).await?, 4u8)
+                        }
+                    }
+                }
+            }
         }
     };
+    let side_dht = dht_boot::build().await;
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
         .await
         .map_err(|e| e.to_string())?;
@@ -134,11 +167,13 @@ async fn init(app: AppHandle) -> Result<(), String> {
         old.abort();
     }
     st.session = Some(session);
+    st.side_dht = side_dht;
     st.port = Some(port);
+    st.dht_tier = dht_tier;
     st.ready = true;
     st.last_error = None;
     st.server = Some(server);
-    eprintln!("[torrent-engine] ready on 127.0.0.1:{port}");
+    eprintln!("[torrent-engine] ready on 127.0.0.1:{port} (dht tier {dht_tier})");
     Ok(())
 }
 
@@ -168,42 +203,36 @@ pub fn stop() {
         server.abort();
     }
     st.session = None;
+    st.side_dht = None;
     st.port = None;
+    st.dht_tier = 0;
     st.ready = false;
 }
 
 #[tauri::command]
 pub fn torrent_engine_status() -> EngineStatusDto {
-    let (port, ready, last_error) = {
+    let (port, ready, last_error, dht_tier) = {
         let st = engine().lock().unwrap();
-        (st.port, st.ready, st.last_error.clone())
+        (st.port, st.ready, st.last_error.clone(), st.dht_tier)
     };
     let active_torrents = current_session()
         .map(|s| s.with_torrents(|t| t.count()))
+        .unwrap_or(0);
+    let dht_nodes = current_side_dht()
+        .map(|d| dht_boot::node_count(&d))
         .unwrap_or(0);
     EngineStatusDto {
         ready,
         port,
         active_torrents,
         last_error,
+        dht_tier,
+        dht_nodes,
     }
 }
 
-fn merge_trackers(mut trackers: Vec<String>) -> Vec<String> {
-    for t in [
-        "udp://tracker.opentrackr.org:1337/announce",
-        "udp://open.tracker.cl:1337/announce",
-        "udp://tracker.openbittorrent.com:6969/announce",
-        "udp://exodus.desync.com:6969/announce",
-        "udp://tracker.torrent.eu.org:451/announce",
-        "udp://open.demonii.com:1337/announce",
-    ] {
-        let s = t.to_string();
-        if !trackers.contains(&s) {
-            trackers.push(s);
-        }
-    }
-    trackers
+fn merge_trackers(trackers: Vec<String>) -> Vec<String> {
+    trackers::merge_into(trackers)
 }
 
 #[tauri::command]
@@ -213,17 +242,28 @@ pub async fn torrent_engine_add(
     trackers: Vec<String>,
 ) -> Result<AddResult, String> {
     let session = ensure_session(&app).await?;
+    let seed = match current_side_dht() {
+        Some(d) => dht_boot::seed_peers(&d, magnet.as_str(), 40, Duration::from_secs(3)).await,
+        None => Vec::new(),
+    };
     let opts = AddTorrentOptions {
         overwrite: true,
         trackers: Some(merge_trackers(trackers)),
+        initial_peers: (!seed.is_empty()).then_some(seed),
+        peer_opts: Some(PeerConnectionOptions {
+            connect_timeout: Some(Duration::from_secs(7)),
+            read_write_timeout: Some(Duration::from_secs(10)),
+            keep_alive_interval: None,
+        }),
+        force_tracker_interval: Some(Duration::from_secs(300)),
         ..Default::default()
     };
     let added = timeout(
-        Duration::from_secs(45),
+        Duration::from_secs(60),
         session.add_torrent(AddTorrent::from_url(magnet.as_str()), Some(opts)),
     )
     .await
-    .map_err(|_| "metadata timed out: no peers reached in 45s".to_string())?
+    .map_err(|_| "metadata timed out: no peers reached in 60s".to_string())?
     .map_err(|e| format!("{e:#}"))?;
     let handle = added
         .into_handle()
@@ -325,6 +365,19 @@ pub async fn torrent_engine_remove(info_hash: String, delete_files: bool) -> Res
 #[tauri::command]
 pub async fn torrent_engine_restart(app: AppHandle) -> Result<EngineStatusDto, String> {
     stop();
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    init(app).await?;
+    Ok(torrent_engine_status())
+}
+
+#[tauri::command]
+pub async fn torrent_engine_hard_reset(app: AppHandle) -> Result<EngineStatusDto, String> {
+    stop();
+    tokio::time::sleep(Duration::from_millis(800)).await;
+    if let Ok(cache) = app.path().app_cache_dir() {
+        let _ = std::fs::remove_dir_all(cache.join("engine"));
+    }
+    engine().lock().unwrap().last_error = None;
     init(app).await?;
     Ok(torrent_engine_status())
 }

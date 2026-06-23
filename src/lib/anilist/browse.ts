@@ -48,6 +48,34 @@ async function fetchAnilistBrowse(sort: string, count: number): Promise<Meta[]> 
   return out.slice(0, count);
 }
 
+const BANNER_QUERY = `query ($search: String) {
+  Media(type: ANIME, search: $search) {
+    bannerImage
+  }
+}`;
+
+const bannerCache = new Map<string, string | null>();
+
+export async function anilistBannerByTitle(title: string): Promise<string | undefined> {
+  const key = title.trim().toLowerCase();
+  if (!key) return undefined;
+  if (bannerCache.has(key)) return bannerCache.get(key) ?? undefined;
+  try {
+    const data = await anilistRequest<{ Media: { bannerImage: string | null } | null }>(
+      BANNER_QUERY,
+      { search: title },
+      undefined,
+      true,
+    );
+    const url = data?.Media?.bannerImage ?? null;
+    bannerCache.set(key, url);
+    return url ?? undefined;
+  } catch {
+    bannerCache.set(key, null);
+    return undefined;
+  }
+}
+
 export function fetchAnilistTopAnime(count = 100): Promise<Meta[]> {
   return fetchAnilistBrowse("SCORE_DESC", count);
 }

@@ -7,6 +7,7 @@ import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress"
 import { getLastSeason, setLastSeason } from "@/lib/last-season";
 import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { tvdbEpisodes, tvdbSeriesByImdb, type TvdbEpisode } from "@/lib/providers/tvdb";
+import { omdbSeasonRatings } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
 import { spoilerMaskFor } from "@/lib/spoilers";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
@@ -68,6 +69,7 @@ export function SeriesEpisodes({
   });
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [tvdbBySeason, setTvdbBySeason] = useState<Map<number, Map<number, TvdbEpisode>>>(new Map());
+  const [omdbBySeason, setOmdbBySeason] = useState<Map<number, Map<number, number>>>(new Map());
   const [loading, setLoading] = useState(true);
   const [traktWatched, setTraktWatched] = useState<Set<string>>(() => new Set());
   const [simklWatched, setSimklWatched] = useState<Set<string>>(() => new Set());
@@ -179,25 +181,51 @@ export function SeriesEpisodes({
     };
   }, [imdbId, active, settings.tvdbKey, tvdbBySeason]);
 
+  useEffect(() => {
+    if (!settings.omdbKey || !imdbId) return;
+    if (omdbBySeason.has(active)) return;
+    let cancelled = false;
+    (async () => {
+      const map = await omdbSeasonRatings(settings.omdbKey, imdbId, active);
+      if (cancelled || map.size === 0) return;
+      setOmdbBySeason((prev) => {
+        const next = new Map(prev);
+        next.set(active, map);
+        return next;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [imdbId, active, settings.omdbKey, omdbBySeason]);
+
   const tvdbForSeason = tvdbBySeason.get(active);
+  const omdbForSeason = omdbBySeason.get(active);
   const enrichedEpisodes = useMemo<Episode[]>(() => {
-    if (!tvdbForSeason) return episodes;
+    if (!tvdbForSeason && !omdbForSeason) return episodes;
     return episodes.map((ep): Episode => {
-      const tv = tvdbForSeason.get(ep.episodeNumber);
-      if (!tv) return ep;
-      const overview =
-        tv.overview && tv.overview.trim().length > (ep.overview?.trim().length ?? 0)
-          ? tv.overview
-          : ep.overview;
-      return {
-        ...ep,
-        overview,
-        runtime: ep.runtime ?? tv.runtime ?? null,
-        name: ep.name || tv.name || ep.name,
-        airDate: ep.airDate ?? tv.aired ?? null,
-      };
+      let next: Episode = ep;
+      const tv = tvdbForSeason?.get(ep.episodeNumber);
+      if (tv) {
+        const overview =
+          tv.overview && tv.overview.trim().length > (next.overview?.trim().length ?? 0)
+            ? tv.overview
+            : next.overview;
+        next = {
+          ...next,
+          overview,
+          runtime: next.runtime ?? tv.runtime ?? null,
+          name: next.name || tv.name || next.name,
+          airDate: next.airDate ?? tv.aired ?? null,
+        };
+      }
+      const imdbRating = omdbForSeason?.get(ep.episodeNumber);
+      if (imdbRating != null && imdbRating > 0) {
+        next = { ...next, voteAverage: imdbRating };
+      }
+      return next;
     });
-  }, [episodes, tvdbForSeason]);
+  }, [episodes, tvdbForSeason, omdbForSeason]);
 
   const activeSeason = seasons.find((s) => s.seasonNumber === active);
 

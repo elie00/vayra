@@ -19,6 +19,7 @@ export function usePlayerHotkeys(params: {
   seekStep: (delta: number) => void;
   seekTo: (sec: number) => void;
   toggleFullscreen: () => void;
+  fullscreen: boolean;
   cycleSubtitles: () => void;
   canChangeEpisode: boolean;
   adjacent: { prev: PlayEpisode | null; next: PlayEpisode | null };
@@ -45,6 +46,7 @@ export function usePlayerHotkeys(params: {
     seekStep,
     seekTo,
     toggleFullscreen,
+    fullscreen,
     cycleSubtitles,
     canChangeEpisode,
     adjacent,
@@ -72,6 +74,7 @@ export function usePlayerHotkeys(params: {
     seekStep,
     seekTo,
     toggleFullscreen,
+    fullscreen,
     cycleSubtitles,
     setShowStats,
     metaId,

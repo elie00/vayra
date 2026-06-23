@@ -39,7 +39,7 @@ export function EpisodeStrip({
   const gridEpisodes = useMemo<GridEpisode[]>(
     () =>
       episodes.map((ep) => {
-        const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/w300${ep.stillPath}` : undefined;
+        const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}` : undefined;
         const stills = [tmdbStill, thumbnailFor(ep)].filter((u): u is string => !!u);
         return {
           key: String(ep.id),
@@ -50,6 +50,7 @@ export function EpisodeStrip({
           runtime: ep.runtime,
           airDate: ep.airDate,
           overview: ep.overview || undefined,
+          rating: ep.voteAverage ?? undefined,
           upcoming: isUpcomingDate(ep.airDate),
           play: () =>
             openPicker(
@@ -65,7 +66,7 @@ export function EpisodeStrip({
             ),
         };
       }),
-    [episodes, thumbnailFor, meta, openPicker, settings.instantPlay, t],
+    [episodes, thumbnailFor, meta, openPicker, settings.instantPlay, settings.hdEpisodeImages, t],
   );
   const epByNumber = useMemo(() => {
     const m = new Map<number, Episode>();
@@ -127,10 +128,11 @@ function EpisodeStripCard({
   }, [ep.id]);
 
   const still = useMemo(() => {
-    if (imgIdx === 0 && thumbnail) return thumbnail;
-    if (imgIdx <= 1 && ep.stillPath) return `https://image.tmdb.org/t/p/w300${ep.stillPath}`;
+    const tmdbSize = settings.hdEpisodeImages ? "original" : "w300";
+    if (imgIdx === 0 && ep.stillPath) return `https://image.tmdb.org/t/p/${tmdbSize}${ep.stillPath}`;
+    if (imgIdx <= 1 && thumbnail) return thumbnail;
     return undefined;
-  }, [ep.stillPath, imgIdx, thumbnail]);
+  }, [ep.stillPath, imgIdx, thumbnail, settings.hdEpisodeImages]);
 
   const handlePlayClick = () => {
     openPicker(
@@ -168,22 +170,26 @@ function EpisodeStripCard({
           />
         </div>
         
-        {/* Persistent bottom gradient with Rating and Overview */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
-          {ep.voteAverage && ep.voteAverage > 0 ? (
-            <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
-              <ImdbIcon className="h-3 w-auto rounded-[2px] shadow-sm" />
-              <span className="text-[10px] font-bold text-white">
-                {ep.voteAverage.toFixed(1)}
-              </span>
-            </div>
-          ) : null}
-          {ep.overview && (
+        {settings.showEpisodeDescription && ep.overview ? (
+          <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
+            {settings.showEpisodeRating && ep.voteAverage && ep.voteAverage > 0 ? (
+              <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
+                <ImdbIcon className="h-3.5 w-auto rounded-[2px] shadow-sm" />
+                <span className="text-[12px] font-bold text-white">
+                  {ep.voteAverage.toFixed(1)}
+                </span>
+              </div>
+            ) : null}
             <p className="line-clamp-4 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
               {ep.overview}
             </p>
-          )}
-        </div>
+          </div>
+        ) : settings.showEpisodeRating && ep.voteAverage && ep.voteAverage > 0 ? (
+          <div className="pointer-events-none absolute bottom-2 start-2 z-[5] flex items-center gap-1.5 rounded-md bg-black/55 px-1.5 py-0.5 drop-shadow-md backdrop-blur-sm">
+            <ImdbIcon className="h-3.5 w-auto rounded-[2px] shadow-sm" />
+            <span className="text-[12px] font-bold text-white">{ep.voteAverage.toFixed(1)}</span>
+          </div>
+        ) : null}
 
         {/* Hover Play Button */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">

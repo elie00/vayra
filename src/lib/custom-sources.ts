@@ -43,17 +43,17 @@ export function isValidSourceRow(data: any): data is SourceRow {
   if (!data || typeof data !== "object") return false;
   if (typeof data.id !== "string" || typeof data.title !== "string") return false;
   if (!Array.isArray(data.folders)) return false;
-  
+
   for (const folder of data.folders) {
     if (!folder || typeof folder !== "object") return false;
     if (typeof folder.id !== "string" || typeof folder.title !== "string") return false;
     if (folder.tileShape !== "LANDSCAPE" && folder.tileShape !== "POSTER") return false;
-    
+
     const hasCatalogSources = Array.isArray(folder.catalogSources) && folder.catalogSources.length > 0;
     const hasNativeSources = Array.isArray(folder.sources) && folder.sources.length > 0;
-    
+
     if (!hasCatalogSources && !hasNativeSources) return false;
-    
+
     if (hasCatalogSources) {
       for (const source of folder.catalogSources!) {
         if (!source || typeof source !== "object") return false;
@@ -62,7 +62,7 @@ export function isValidSourceRow(data: any): data is SourceRow {
         }
       }
     }
-    
+
     if (hasNativeSources) {
       for (const source of folder.sources!) {
         if (!source || typeof source !== "object") return false;
@@ -72,7 +72,7 @@ export function isValidSourceRow(data: any): data is SourceRow {
       }
     }
   }
-  
+
   return true;
 }
 

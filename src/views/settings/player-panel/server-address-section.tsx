@@ -112,11 +112,16 @@ export function ServerAddressSection() {
   const [engine, setEngine] = useState<EngineState>("checking");
   const [acting, setActing] = useState(false);
   const [webError, setWebError] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const aliveRef = useRef(true);
 
   const refresh = async () => {
     const next = await readEngineState();
-    if (aliveRef.current) setEngine(next);
+    const s = await getCastServerStatus();
+    if (aliveRef.current) {
+      setEngine(next);
+      setLastError(next === "stopped" ? s?.last_error ?? null : null);
+    }
   };
 
   useEffect(() => {
@@ -191,6 +196,16 @@ export function ServerAddressSection() {
 
       <AddressRow label={t("On this computer")} url={BUNDLED_SERVER_URL} openable={running} />
       {lanIp && <AddressRow label={t("From other devices on your Wi-Fi")} url={`http://${lanIp}:11470`} />}
+      {engine === "stopped" && lastError && (
+        <div className="rounded-xl border border-danger/30 bg-danger/8 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-danger">
+          <span className="font-semibold">{t("Server couldn't start:")}</span> {lastError}
+          {/not bundled/i.test(lastError) && (
+            <span className="mt-1.5 block text-ink-muted">
+              {t("This usually means antivirus removed the server file (stremio-server.exe). Add Harbor's install folder to your antivirus exclusions, then reinstall.")}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         {running ? (

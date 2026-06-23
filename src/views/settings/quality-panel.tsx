@@ -1,11 +1,5 @@
 import { useSettings } from "@/lib/settings";
-import {
-  LocalEngineSection,
-  PlayModePanel,
-  PlayerEnginePanel,
-  RemoteServerSection,
-  ServerAddressSection,
-} from "./player-panel";
+import { PlayModePanel, PlayerEnginePanel } from "./player-panel";
 import { Section, Segmented, ToggleRow, useSettingsActiveContext } from "./shared";
 import { CROP_PRESETS } from "@/views/player/hooks/use-video-fill";
 import { useT } from "@/lib/i18n";
@@ -28,6 +22,18 @@ export function QualityPanel() {
         subtitle={t("HTML5 plays everything WebView2 supports. mpv handles TrueHD, DTS-HD, AV1, weird containers, and HDR. Auto picks based on the source.")}
       >
         <PlayerEnginePanel />
+      </Section>
+
+      <Section
+        title={t("Stream quality in player")}
+        subtitle={t("Show what you're actually watching, under the title in the player.")}
+      >
+        <ToggleRow
+          label={t("Show stream quality under the title")}
+          sub={t("Displays the resolution, HDR format and audio (e.g. 4K · Dolby Vision · TrueHD 7.1) under the movie or episode title while playing. Off by default.")}
+          value={settings.showQualityInfo}
+          onChange={(v) => update({ showQualityInfo: v })}
+        />
       </Section>
 
       <Section
@@ -109,12 +115,6 @@ export function QualityPanel() {
           onChange={(v) => update({ autoPlayNextEpisode: v })}
         />
       </Section>
-
-      <LocalEngineSection />
-
-      <ServerAddressSection />
-
-      <RemoteServerSection />
     </>
   );
 }

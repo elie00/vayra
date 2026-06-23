@@ -9,7 +9,7 @@ export type HomeRow = {
   hasMore: boolean;
   noDedup?: boolean;
   fetcher?: (page: number) => Promise<Meta[]>;
-  sourceRow?: any; // SourceRow from custom sources
+  sourceRow?: import("@/lib/custom-sources").SourceRow;
 };
 
 export type RowSpec = {

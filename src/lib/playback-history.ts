@@ -9,6 +9,7 @@ export type PlaybackEntry = {
   releaseGroup?: string | null;
   source?: string | null;
   size?: number | null;
+  bingeGroup?: string | null;
   cachedSlugs?: string[];
   savedAt: number;
 };
@@ -159,4 +160,34 @@ export function recentlyPlayed(): WatchedSet {
     if (raw) titles.add(raw);
   }
   return { ids, titles };
+}
+
+export function readLastSeriesPlayback(metaId: string): PlaybackEntry | null {
+  const all = readAll();
+  const prefix = `${metaId}|`;
+  let best: PlaybackEntry | null = null;
+  for (const [key, entry] of Object.entries(all)) {
+    if (key !== metaId && !key.startsWith(prefix)) continue;
+    if (!best || entry.savedAt > best.savedAt) best = entry;
+  }
+  return best;
+}
+
+export function streamMatchesSource(
+  s: {
+    addonId?: string | null;
+    resolution?: string | null;
+    source?: string | null;
+    behaviorHints?: { bingeGroup?: string };
+  },
+  e: PlaybackEntry,
+): boolean {
+  const sBinge = s.behaviorHints?.bingeGroup ?? null;
+  if (e.bingeGroup && sBinge) return sBinge === e.bingeGroup;    
+  return (                                                       
+    !!e.addonId &&
+    s.addonId === e.addonId &&
+    e.resolution === s.resolution &&
+    e.source === s.source
+  );
 }

@@ -19,6 +19,7 @@ import { useEverPlayed } from "./player/hooks/use-ever-played";
 import { useDrawMode } from "./player/hooks/use-draw-mode";
 import { useChromeVisibility } from "./player/hooks/use-chrome-visibility";
 import { useAutoRetry } from "./player/hooks/use-auto-retry";
+import { useWakeReconnect } from "./player/hooks/use-wake-reconnect";
 import { useEngineStats } from "./player/hooks/use-engine-stats";
 import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 import { usePauseOnInactive } from "./player/hooks/use-pause-on-inactive";
@@ -54,6 +55,7 @@ import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useVideoFill } from "./player/hooks/use-video-fill";
 import { useAnime4k } from "./player/hooks/use-anime4k";
 import { useHdrStage } from "./player/hooks/use-hdr-stage";
+import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
@@ -139,6 +141,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     isP2pEngine,
     engineStats,
   });
+
+  useWakeReconnect({ bridgeRef, src, snap });
 
   useEffect(() => {
     if (roomSnapshot.state !== "joined") return;
@@ -451,6 +455,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     seekStep,
     seekTo,
     toggleFullscreen,
+    fullscreen,
     cycleSubtitles,
     canChangeEpisode,
     adjacent,
@@ -462,9 +467,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     sleep,
     quickToolsEnabled,
     frameGrab,
-    onToggleAnime4k: anime4k.available
-      ? () => anime4k.setMode(anime4k.mode === "off" ? "auto" : "off")
-      : undefined,
+    onToggleAnime4k: () => {
+      if (!anime4k.available) {
+        showSyncToast("error", t("Anime4K isn't set up yet. Turn it on in Settings under Anime."));
+        return;
+      }
+      anime4k.setMode(anime4k.mode === "off" ? "auto" : "off");
+    },
     gif,
     videoFill,
   });
@@ -537,6 +546,12 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const hasNextEpisodeNow = canChangeEpisode && !!adjacent.next;
 
   useMpvEmbed({ engine, settings });
+
+  useSdrBoostGate({
+    engine,
+    hdrGamma: snap.hdrGamma,
+    enabled: settings.mpvTweaks?.["inverse-tone-mapping"] === "yes",
+  });
 
   const hdrStageActive = useHdrStage({
     engine,
@@ -626,6 +641,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     showChrome,
     ab,
     frameGrabToast: frameGrab.toast,
+    onScreenshot: () => frameGrab.trigger(),
     gif,
     loaderActive,
     playerShellId: settings.playerShellId,
@@ -754,7 +770,9 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           prevEp: () => goToEpisode(adjacent.prev),
           nextEp: () => goToEpisode(adjacent.next),
           pickAnother: pickAnotherOrGuide,
+          screenshot: () => frameGrab.trigger(),
           menuOpen: setAnyMenuOpen,
+          activity: wakeChrome,
         }}
       />
     </main>

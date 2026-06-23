@@ -4,7 +4,7 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 import { svpApply, svpLaunch, svpStatus, type SvpStatus } from "@/lib/svp";
-import { Section, ToggleRow } from "../shared";
+import { Section, ToggleRow, Segmented } from "../shared";
 
 export function SvpSection() {
   const { settings, update } = useSettings();
@@ -90,6 +90,24 @@ export function SvpSection() {
         value={settings.playerSvp}
         onChange={(v) => void onToggle(v)}
       />
+
+      {settings.playerSvp && (
+        <div>
+          <p className="mb-2 text-[12.5px] font-medium text-ink">{t("Apply SVP to")}</p>
+          <Segmented
+            value={settings.svpScope}
+            options={[
+              { value: "all", label: t("All content") },
+              { value: "anime", label: t("Anime only") },
+              { value: "non-anime", label: t("Movies & TV") },
+            ]}
+            onChange={(v) => update({ svpScope: v as "all" | "anime" | "non-anime" })}
+          />
+          <p className="mt-2 text-[12.5px] leading-relaxed text-ink-subtle">
+            {t("Frame interpolation shines on anime but can look off on live-action film. Limit it to the content you want, then restart playback.")}
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2.5 rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-3 text-[12px] leading-snug text-ink">

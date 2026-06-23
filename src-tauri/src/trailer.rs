@@ -97,9 +97,9 @@ async fn run_yt_dlp(
 
             #[cfg(not(target_os = "linux"))]
             {
-                return tokio::time::timeout(timeout, run_sidecar)
+                tokio::time::timeout(timeout, run_sidecar)
                     .await
-                    .map_err(|_| format!("yt-dlp {label} timed out"))?;
+                    .map_err(|_| format!("yt-dlp {label} timed out"))?
             }
 
             #[cfg(target_os = "linux")]
@@ -118,7 +118,7 @@ async fn run_yt_dlp(
         Err(err) => {
             #[cfg(not(target_os = "linux"))]
             {
-                return Err(format!("sidecar init: {}", err));
+                Err(format!("sidecar init: {}", err))
             }
 
             #[cfg(target_os = "linux")]
@@ -146,9 +146,6 @@ async fn run_yt_dlp(
             stderr: output.stderr,
         });
     }
-
-    #[cfg(not(target_os = "linux"))]
-    unreachable!()
 }
 
 pub fn sweep_cache() {

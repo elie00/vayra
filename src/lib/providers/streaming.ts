@@ -38,6 +38,7 @@ export const SERVICES: Record<StreamingService, Service> = {
     tint: "#0064FF",
   },
   peacock: { id: 386, providerIds: [386, 387], name: "Peacock", logo: "/services/peacock.svg", tint: "#FF7112" },
+  crunchyroll: { id: 283, name: "Crunchyroll", logo: "/services/crunchyroll.svg", tint: "#F47521" },
 };
 
 export function providerIdsFor(svc: Service): string {

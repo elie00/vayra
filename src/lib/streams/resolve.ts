@@ -1,11 +1,8 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dwarn } from "@/lib/debug";
 import { magnetFromHash, type DebridResult, type DebridStore, type DirectLink } from "@/lib/debrid/types";
-import { BUNDLED_SERVER_URL, probeStremioServer, remoteStreamServerStrict, remoteStreamServerUrl } from "@/lib/stremio-server";
-import { isLocalEngineEnabled, torrentEngineAdd, torrentEngineSelect } from "@/lib/torrent/local-engine";
+import { lastEngineAddError, torrentEngineAdd, torrentEngineSelect } from "@/lib/torrent/local-engine";
 import {
-  buildTorrentStreamUrl,
-  createAndListFiles,
   directTorrentEnabled,
   engineP2pEligible,
   isVideoFile,
@@ -94,7 +91,7 @@ export async function resolveStream(
   }
   if (debrids.length === 0) {
     const direct = await tryTorrentEngine(stream);
-    if (direct) return { ok: true, data: direct, via: "stremio-server" };
+    if (direct) return { ok: true, data: direct, via: "p2p" };
     return { ok: false, code: engineFailureCode(), tried };
   }
   const sorted = sortDebridsForStream(stream, debrids);
@@ -111,7 +108,7 @@ export async function resolveStream(
   const anyCached = sorted.some((d) => cachedMap[d.slug] === true || libMap[d.slug] === true);
   if (userCommitted && !anyCached && engineP2pEligible(stream)) {
     const direct = await tryTorrentEngine(stream);
-    if (direct) return { ok: true, data: direct, via: "stremio-server" };
+    if (direct) return { ok: true, data: direct, via: "p2p" };
   }
   const magnet = magnetFromHash(stream.infoHash);
   for (const d of sorted) {
@@ -130,7 +127,7 @@ export async function resolveStream(
     tried.push({ slug: d.slug, code: "stub-or-error-video" });
   }
   const direct = await tryTorrentEngine(stream);
-  if (direct) return { ok: true, data: direct, via: "stremio-server" };
+  if (direct) return { ok: true, data: direct, via: "p2p" };
   if (directTorrentEnabled()) return { ok: false, code: engineFailureCode(), tried };
   return { ok: false, code: tried[tried.length - 1]?.code ?? "all-debrids-failed", tried };
 }
@@ -224,37 +221,6 @@ export async function resolveViaDebrids(
   return { ok: false, code: tried[tried.length - 1]?.code ?? "all-debrids-failed", tried };
 }
 
-async function tryStremioServer(stream: ParsedStream | ScoredStream, base?: string): Promise<DirectLink | null> {
-  if (!stream.infoHash || !directTorrentEnabled()) return null;
-  const ready = await probeStremioServer(true, base);
-  if (!ready) return null;
-  const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName ?? null;
-  const created = await createAndListFiles(stream.infoHash, trackersFromSources(stream.sources), {
-    season: stream.season,
-    episode: stream.episode,
-  }, 15000, base);
-  let chosenIdx = stream.fileIdx;
-  if (chosenIdx == null || chosenIdx < 0) {
-    if (created?.guessedFileIdx != null) {
-      chosenIdx = created.guessedFileIdx;
-    } else if (created && created.files.length > 0) {
-      chosenIdx = selectEngineFileIdx(created.files, stream.season, stream.episode);
-    }
-  }
-  return {
-    url: buildTorrentStreamUrl({
-      infoHash: stream.infoHash,
-      fileIdx: chosenIdx,
-      sources: stream.sources,
-      filename,
-      base,
-    }),
-    fileIdx: chosenIdx,
-    filename: filename ?? undefined,
-    notWebReady: stream.behaviorHints?.notWebReady,
-    subtitles: stream.subtitles?.map((s) => ({ url: s.url, lang: s.lang, id: s.id })),
-  };
-}
 
 async function tryLocalEngine(stream: ParsedStream | ScoredStream): Promise<DirectLink | null> {
   if (!stream.infoHash || !localTorrentAllowed()) return null;
@@ -276,27 +242,14 @@ async function tryLocalEngine(stream: ParsedStream | ScoredStream): Promise<Dire
 }
 
 async function tryTorrentEngine(stream: ParsedStream | ScoredStream): Promise<DirectLink | null> {
-  const remote = remoteStreamServerUrl();
-  if (remote) {
-    const viaRemote = await tryStremioServer(stream);
-    if (viaRemote) return viaRemote;
-    if (remoteStreamServerStrict()) return null;
-  }
-  if (isLocalEngineEnabled()) {
-    const local = await tryLocalEngine(stream);
-    if (local) return local;
-  }
-  if (remote) {
-    return localTorrentAllowed() ? tryStremioServer(stream, BUNDLED_SERVER_URL) : null;
-  }
-  return tryStremioServer(stream);
+  return tryLocalEngine(stream);
 }
 
 function engineFailureCode(): string {
-  if (remoteStreamServerUrl()) {
-    return remoteStreamServerStrict() ? "remote-server-unreachable-strict" : "remote-server-unreachable";
-  }
-  return directTorrentEnabled() ? "engine-not-ready" : "direct-torrent-disabled";
+  if (!localTorrentAllowed()) return "direct-torrent-disabled";
+  const err = lastEngineAddError();
+  if (err && /timed out|no peers/i.test(err)) return "engine-no-peers";
+  return "engine-not-ready";
 }
 
 function selectEngineFileIdx(files: TorrentFile[], season?: number | null, episode?: number | null): number {

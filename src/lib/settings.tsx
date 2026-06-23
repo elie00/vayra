@@ -106,6 +106,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings.theme]);
 
   useEffect(() => {
+    document.documentElement.style.setProperty("--poster-radius", `${settings.posterRadius}px`);
+  }, [settings.posterRadius]);
+
+  useEffect(() => {
     const scale = settings.uiScale > 0 ? settings.uiScale : 1;
     const root = document.getElementById("root") as (HTMLElement & { style: CSSStyleDeclaration & { zoom?: string } }) | null;
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {

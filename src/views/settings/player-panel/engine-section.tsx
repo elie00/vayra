@@ -4,11 +4,11 @@ import { useT } from "@/lib/i18n";
 import { ToggleRow } from "../shared";
 import { BandwidthInput } from "./bandwidth-section";
 import { DesktopOnlyBlock } from "./internals";
+import { HdrModePicker } from "./hdr-mode";
 
 export function PlayerEnginePanel() {
   const { settings, update } = useSettings();
   const t = useT();
-  const strictRemote = !!settings.remoteStreamServerUrl && settings.remoteStreamServerStrict;
 
   const choices: Array<{
     id: "auto" | "html5" | "mpv";
@@ -83,49 +83,15 @@ export function PlayerEnginePanel() {
             value={settings.playerMpvEmbed}
             onChange={(v) => update({ playerMpvEmbed: v })}
           />
-          <ToggleRow
-            label={t("HDR-to-SDR tonemapping")}
-            sub={t("Maps HDR sources to SDR using bt.2446a. Recommended on SDR displays.")}
-            value={settings.playerHdrToSdr}
-            onChange={(v) => update({ playerHdrToSdr: v })}
-          />
-          {isWindowsDesktop() && (
+          {isWindowsDesktop() ? (
+            <HdrModePicker />
+          ) : (
             <ToggleRow
-              label={t("HDR in a separate window")}
-              sub={t("Plays HDR content in its own window so Windows treats it as true HDR (the SDR brightness slider stops dimming it). Turn off HDR-to-SDR tonemapping above to use this on an HDR display.")}
-              value={settings.playerHdrOpaqueWindow}
-              onChange={(v) => update({ playerHdrOpaqueWindow: v })}
+              label={t("HDR-to-SDR tonemapping")}
+              sub={t("Maps HDR sources to SDR using bt.2446a. Recommended on SDR displays.")}
+              value={settings.playerHdrToSdr}
+              onChange={(v) => update({ playerHdrToSdr: v })}
             />
-          )}
-          {isWindowsDesktop() && (
-            <div className="flex flex-col gap-1.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4">
-              <span className="text-[15px] font-semibold text-ink">{t("HDR display mode")}</span>
-              <span className="text-[12.5px] leading-snug text-ink-muted">
-                {t("Keeps Harbor embedded but lifts the HDR video onto its own opaque plane with the controls floating above, so Windows shows true HDR without the brightness slider dimming it. Needs HDR-to-SDR tonemapping off.")}
-              </span>
-              <div className="mt-1 flex gap-1.5">
-                {(
-                  [
-                    { id: "auto", label: t("Auto") },
-                    { id: "off", label: t("Off") },
-                    { id: "always", label: t("Always") },
-                  ] as const
-                ).map((o) => (
-                  <button
-                    key={o.id}
-                    type="button"
-                    onClick={() => update({ playerHdrStage: o.id })}
-                    className={`rounded-xl border px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
-                      settings.playerHdrStage === o.id
-                        ? "border-ink bg-elevated text-ink"
-                        : "border-edge-soft bg-canvas/40 text-ink-muted hover:border-edge"
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
           )}
           {isWindowsDesktop() && (
             <ToggleRow
@@ -135,20 +101,6 @@ export function PlayerEnginePanel() {
               onChange={(v) => update({ playerD3d11Flip: v })}
             />
           )}
-          <ToggleRow
-            label={t("Direct torrent streaming")}
-            sub={t("When you have no debrid set up, or a torrent isn't cached, stream it straight from the bundled engine on localhost:11470. This connects to peers over your own connection, the same way Stremio's built-in streaming does.")}
-            value={settings.directTorrentStream}
-            onChange={(v) => update({ directTorrentStream: v })}
-            lockReason={strictRemote ? t("Disabled while strict remote streaming is on") : undefined}
-          />
-          <ToggleRow
-            label={t("Use Harbor's built-in engine (beta)")}
-            sub={t("Stream torrents through Harbor's own Rust peer-to-peer engine instead of the bundled Stremio Server. Falls back automatically if it can't connect. Status and a self-test live in the Local engine card below.")}
-            value={settings.localEngine}
-            onChange={(v) => update({ localEngine: v })}
-            lockReason={strictRemote ? t("Disabled while strict remote streaming is on") : undefined}
-          />
           <ToggleRow
             label={t("Always re-encode when casting (recommended)")}
             sub={t("On by default. Pipes every cast through ffmpeg as H.264 + AAC + MPEG-TS so Samsung, LG, Sony, and other DLNA TVs accept the stream regardless of source codec. Turn off only if you have a beefy receiver that handles raw HEVC/DTS and want max quality. Requires ffmpeg in PATH.")}

@@ -31,7 +31,7 @@ export function EpisodeRow({
   const t = useT();
   const { openPicker, openEpisodeDetail } = useView();
   const { settings } = useSettings();
-  const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/w300${ep.stillPath}` : undefined;
+  const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}` : undefined;
   const candidates = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -112,7 +112,7 @@ export function EpisodeRow({
                 `S${ep.seasonNumber} E${ep.episodeNumber}`,
                 ep.runtime ? t("{n} min", { n: ep.runtime }) : null,
                 formatAirDate(ep.airDate) || null,
-                ep.voteAverage && ep.voteAverage > 0 ? `★ ${ep.voteAverage.toFixed(1)}` : null,
+                settings.showEpisodeRating && ep.voteAverage && ep.voteAverage > 0 ? `★ ${ep.voteAverage.toFixed(1)}` : null,
               ]
                 .filter(Boolean)
                 .join("  ·  ")}

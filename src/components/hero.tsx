@@ -224,10 +224,10 @@ export const Hero = memo(function Hero({
           )}
           <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[14px]">
             {meta.releaseInfo && <Stat label={t("Year")} value={meta.releaseInfo} />}
-            {settings.showImdbBadge && meta.imdbRating && (
+            {settings.showImdbBadge && (omdb?.imdbRating ?? meta.imdbRating) && (
               <span className="flex items-center gap-2">
                 <ImdbIcon className="h-[18px] w-auto rounded-[4px] shadow-[0_1px_3px_rgba(0,0,0,0.35)]" />
-                <span className="font-semibold text-ink">{meta.imdbRating}</span>
+                <span className="font-semibold text-ink">{omdb?.imdbRating ?? meta.imdbRating}</span>
               </span>
             )}
             {settings.showRtBadge && omdb?.rtCritics != null && (
