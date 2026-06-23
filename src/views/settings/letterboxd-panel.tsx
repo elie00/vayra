@@ -121,7 +121,7 @@ export function LetterboxdPanel() {
       setListUrl("");
       invalidateLetterboxdCache();
     } catch {
-      setListError("Could not resolve that Letterboxd list URL.");
+      setListError(t("Could not resolve that Letterboxd list URL."));
     }
     setListBusy(false);
   };
@@ -323,9 +323,9 @@ export function LetterboxdPanel() {
                       >
                         {selected && !locked && <Check size={13} strokeWidth={3} />}
                       </span>
-                      {opt.label}
+                      {t(opt.label)}
                       {opt.fullOnly && (
-                        <span className="ms-auto text-[10px] uppercase tracking-wider text-ink-subtle">Full</span>
+                        <span className="ms-auto text-[10px] uppercase tracking-wider text-ink-subtle">{t("Full")}</span>
                       )}
                     </button>
                   );
