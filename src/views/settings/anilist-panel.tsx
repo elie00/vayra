@@ -94,6 +94,12 @@ export function AnilistPanel() {
             value={settings.useAnilistAvatar}
             onChange={(v) => update({ useAnilistAvatar: v })}
           />
+          <ToggleRow
+            label={t("Blur comments by default")}
+            sub={t("Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.")}
+            value={!!settings.anilistBlurComments}
+            onChange={(on) => update({ anilistBlurComments: on })}
+          />
           {!confirmDisconnect ? (
             <button
               onClick={() => setConfirmDisconnect(true)}

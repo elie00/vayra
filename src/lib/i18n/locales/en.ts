@@ -101,9 +101,30 @@ const en: Record<string, string> = {
   "Trakt Comments": "Trakt Comments",
   "Open on Trakt": "Open on Trakt",
 
+  "AniList Comments": "AniList Comments",
+  "Connect your AniList account to see forum threads and comments.": "Connect your AniList account to see forum threads and comments.",
+  "Connect AniList": "Connect AniList",
+  "Could not find this title on AniList.": "Could not find this title on AniList.",
+  "New thread": "New thread",
+  "Back to threads": "Back to threads",
+  "Thread title": "Thread title",
+  "Thread body (optional)": "Thread body (optional)",
+  "Create thread": "Create thread",
+  "Failed to create thread": "Failed to create thread",
+  "Open on AniList": "Open on AniList",
+  "This thread is locked.": "This thread is locked.",
+  "No threads for this title yet.": "No threads for this title yet.",
+  "Be the first to start a discussion.": "Be the first to start a discussion.",
+  "Load more threads": "Load more threads",
+  "No comments yet": "No comments yet",
+  "Loading more": "Loading more",
+  "Failed to post comment": "Failed to post comment",
+
   "Blur comments by default": "Blur comments by default",
   "Comments on episode/show pages are blurred until you reveal them, even if they are not tagged as spoilers.":
     "Comments on episode/show pages are blurred until you reveal them, even if they are not tagged as spoilers.",
+  "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.":
+    "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.",
   "Blur episode images on detail page": "Blur episode images on detail page",
   "Blurs the hero image and stills on the episode detail page until you click reveal.":
     "Blurs the hero image and stills on the episode detail page until you click reveal.",
