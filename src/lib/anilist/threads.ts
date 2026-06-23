@@ -173,8 +173,8 @@ export async function postThreadComment(
   return mapComment(data.SaveThreadComment);
 }
 
-const SAVE_THREAD_MUTATION = `mutation ($title: String, $body: String, $mediaCategories: [Int]) {
-  SaveThread(title: $title, body: $body, mediaCategories: $mediaCategories) {
+const SAVE_THREAD_MUTATION = `mutation ($title: String, $body: String, $categories: [Int], $mediaCategories: [Int]) {
+  SaveThread(title: $title, body: $body, categories: $categories, mediaCategories: $mediaCategories) {
     id title bodyHtml: body(asHtml: true) replyCount viewCount isLocked isSticky
     createdAt updatedAt siteUrl
     user { id name avatar { medium large } }
@@ -191,6 +191,7 @@ export async function createThread(
   const data = await anilistRequest<SaveThreadResponse>(SAVE_THREAD_MUTATION, {
     title,
     body: body || null,
+    categories: [1],
     mediaCategories: [mediaId],
   });
   return mapThread(data.SaveThread);
