@@ -13,7 +13,7 @@ import {
 } from "@/lib/hotkeys";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { Section } from "./shared";
+import { Section, ToggleRow } from "./shared";
 
 export function HotkeysPanel() {
   const t = useT();
@@ -78,6 +78,15 @@ export function HotkeysPanel() {
           </button>
         )}
       </div>
+
+      <Section title={t("Behavior")} subtitle={t("How keys behave during playback.")}>
+        <ToggleRow
+          label={t("Esc exits fullscreen first")}
+          sub={t("When in fullscreen, Esc leaves fullscreen instead of closing the player. Press Esc again to close. Turn off to make Esc always close.")}
+          value={settings.playerEscExitsFullscreen}
+          onChange={(v) => update({ playerEscExitsFullscreen: v })}
+        />
+      </Section>
 
       {(Object.keys(grouped) as HotkeyScope[]).map((scope) => {
         const defs = grouped[scope];

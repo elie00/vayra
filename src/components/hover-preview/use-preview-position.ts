@@ -27,13 +27,24 @@ export function placePanel(
   panelW: number,
   panelH: number,
   topInset: number,
+  mode: "over" | "side" = "over",
 ): PanelPlacement {
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
   const edgeInset = Math.max(GUTTER_PX, NAV_CLEAR_PX);
-  const left = Math.round(
-    Math.max(edgeInset, Math.min(cx - panelW / 2, window.innerWidth - panelW - edgeInset)),
-  );
+  let left: number;
+  if (mode === "side") {
+    const toRight = rect.left + rect.width + GUTTER_PX;
+    const toLeft = rect.left - panelW - GUTTER_PX;
+    if (toRight + panelW <= window.innerWidth - GUTTER_PX) left = toRight;
+    else if (toLeft >= edgeInset) left = toLeft;
+    else left = Math.max(edgeInset, Math.min(cx - panelW / 2, window.innerWidth - panelW - edgeInset));
+    left = Math.round(left);
+  } else {
+    left = Math.round(
+      Math.max(edgeInset, Math.min(cx - panelW / 2, window.innerWidth - panelW - edgeInset)),
+    );
+  }
   const maxTop = window.innerHeight - panelH - GUTTER_PX;
   const top = Math.round(
     maxTop < topInset

@@ -95,7 +95,7 @@ export function EpisodePanel({
           return;
         }
       }
-      const skipPreflight = r.via === "stremio-server" || r.via === "direct";
+      const skipPreflight = r.via === "p2p" || r.via === "direct";
       const preflight = skipPreflight
         ? ({ ok: true } as const)
         : await preflightCheck(playUrl).catch(() => ({ ok: true } as const));

@@ -35,7 +35,7 @@ export function SourceFolderCard({
 
   const handleClick = async () => {
     if (loading) return;
-    
+
     if (folder.sources && folder.sources.length > 0) {
       const source = folder.sources[0];
       if (source.provider === "tmdb") {
@@ -61,7 +61,7 @@ export function SourceFolderCard({
               }
             }
           }
-          
+
           if (source.tmdbSourceType === "COMPANY" && source.tmdbId) {
             params["with_companies"] = String(source.tmdbId);
           }
@@ -94,7 +94,7 @@ export function SourceFolderCard({
           setMissingTmdbKey(true);
           return;
         }
-        
+
         openGrid({
           title: source.title || folder.title,
           fetcher: async (page: number) => {
@@ -107,24 +107,24 @@ export function SourceFolderCard({
     }
 
     if (!folder.catalogSources || folder.catalogSources.length === 0) return;
-    
+
     const source = folder.catalogSources[0];
-    
+
     setLoading(true);
     try {
       const addons = await gatherCatalogAddons(authKey);
       const addon = addons.find((a) => a.manifest.id === source.addonId);
-      
+
       if (!addon) {
         setErrorAddon(source.addonId);
         return;
       }
-      
+
       openGrid({
         title: folder.title,
         fetcher: async (page: number) => {
           const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
-          const skip = (page - 1) * 20; 
+          const skip = (page - 1) * 20;
           const metas = await fetchAddonCatalogPage(base, source.type, source.catalogId, skip);
           return metas;
         },
@@ -160,7 +160,7 @@ export function SourceFolderCard({
           }`}
         />
       )}
-      
+
       {folder.focusGifUrl && (
         <img
           src={folder.focusGifUrl}
@@ -175,7 +175,7 @@ export function SourceFolderCard({
 
       <div aria-hidden className="absolute inset-0 bg-black/15 transition-colors duration-300 group-hover/card:bg-black/0" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/30 to-transparent" />
-      
+
       {!folder.hideTitle && (
         <h3 className="absolute inset-x-4 bottom-3.5 font-display text-[21px] font-medium leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.7)]">
           {folder.title}
@@ -190,7 +190,7 @@ export function SourceFolderCard({
             setIsEditModalOpen(true);
           }}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-colors hover:bg-brand-purple">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-colors hover:bg-accent">
             <Pencil className="h-4 w-4" />
           </div>
         </div>
@@ -223,7 +223,7 @@ export function SourceFolderCard({
             </p>
             <button
               onClick={() => setErrorAddon(null)}
-              className="w-full rounded-full bg-brand-purple px-6 py-2.5 font-medium text-white shadow-sm transition-opacity hover:opacity-90"
+              className="w-full rounded-full bg-accent px-6 py-2.5 font-medium text-white shadow-sm transition-opacity hover:opacity-90"
             >
               {t("OK")}
             </button>
@@ -259,7 +259,7 @@ export function SourceFolderCard({
             </p>
             <button
               onClick={() => setMissingTmdbKey(false)}
-              className="w-full rounded-full bg-brand-purple px-6 py-2.5 font-medium text-white shadow-sm transition-opacity hover:opacity-90"
+              className="w-full rounded-full bg-accent px-6 py-2.5 font-medium text-white shadow-sm transition-opacity hover:opacity-90"
             >
               {t("OK")}
             </button>

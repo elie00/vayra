@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { readSnapshot, useSnapshotVersion } from "@/lib/snapshots";
 import { episodeFromVideoId, isAnimeCwItem, libraryMetaType, type LibraryItem } from "@/lib/stremio";
 import { useHasNewEpisode } from "@/lib/new-episodes";
+import { Tooltip } from "@/views/detail/tooltip";
 import { useSettings } from "@/lib/settings";
 import { useView, type PlayEpisode } from "@/lib/view";
 
@@ -226,12 +227,20 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
             <Check size={12} strokeWidth={3} />
           </span>
         )}
-        {newEpisode && (
-          <span
-            className={`absolute top-2 flex h-6 items-center rounded-full bg-accent/90 px-2 text-[10px] font-bold tracking-[0.1em] text-canvas ${watched ? "start-10" : "start-2"}`}
-            title={t("New episode released since you last watched")}
-          >
-            +1
+        {newEpisode > 0 && (
+          <span className={`absolute top-2 ${watched ? "start-10" : "start-2"}`}>
+            <Tooltip
+              label={
+                newEpisode === 1
+                  ? t("1 new episode since you last watched")
+                  : t("{n} new episodes since you last watched", { n: newEpisode })
+              }
+              side="bottom"
+            >
+              <span className="flex h-6 items-center rounded-full bg-accent/90 px-2 text-[10px] font-bold tracking-[0.1em] text-canvas">
+                +{newEpisode}
+              </span>
+            </Tooltip>
           </span>
         )}
         {logo && (

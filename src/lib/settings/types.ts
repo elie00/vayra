@@ -10,7 +10,8 @@ export type StreamingService =
   | "apple"
   | "max"
   | "paramount"
-  | "peacock";
+  | "peacock"
+  | "crunchyroll";
 
 export type WebhookTrigger =
   | { event: "newMovie" }
@@ -46,10 +47,20 @@ export type Settings = {
   preferredLanguages: string[];
   requirePreferredLanguage: boolean;
   showImdbBadge: boolean;
+  showTmdbBadge: boolean;
   showRtBadge: boolean;
   showMalBadge: boolean;
+  showMetacriticBadge: boolean;
+  showLetterboxdBadge: boolean;
+  showMdblistBadge: boolean;
+  showTraktBadge: boolean;
+  cardBadgeLimit: number;
   showQualityBadge: boolean;
+  showCardBadges: boolean;
+  homeLanguages: string[];
   posterScale: number;
+  posterRadius: number;
+  posterEffect: "blur" | "fade" | "off";
   rowTitleScale: number;
   playerTitleScale: number;
   playerTitleSeriesFirst: boolean;
@@ -60,8 +71,14 @@ export type Settings = {
   heroShadow: number;
   resumePrompt: boolean;
   badgePlacement: "top" | "bottom";
+  watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
+  showWatchedButton: boolean;
+  showPopcornBadge: boolean;
   episodeLayout: "list" | "strip" | "grid";
   episodeSort: "oldest" | "newest";
+  showEpisodeRating: boolean;
+  showEpisodeDescription: boolean;
+  hdEpisodeImages: boolean;
   harborAvatar: string | null;
   harborColor: string;
   anilistAutoSync: boolean;
@@ -94,6 +111,7 @@ export type Settings = {
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
   rememberLastStream: boolean;
+  keepSourceNextEpisode: boolean;
   playerHdrToSdr: boolean;
   playerMotionInterp: boolean;
   playerAnime4k: boolean;
@@ -101,10 +119,10 @@ export type Settings = {
   playerAnime4kIndicator: boolean;
   playerMpvEmbed: boolean;
   playerP2pChip: boolean;
+  showQualityInfo: boolean;
   stremioServerTranscode: boolean;
   directTorrentStream: boolean;
   p2pAutoConsent: boolean;
-  localEngine: boolean;
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
   castAlwaysTranscode: boolean;
@@ -142,6 +160,7 @@ export type Settings = {
   posterBaseUrl: string;
   hidePosterTitles: boolean;
   hoverPreview: boolean;
+  hoverPreviewPlacement: "over" | "side";
   mdblistKey: string;
   aiSearchKey: string;
   aiSearchModel: string;
@@ -154,7 +173,9 @@ export type Settings = {
   mpvTweaks: Record<string, string>;
   playerSvp: boolean;
   svpVpyPath: string;
+  svpScope: "all" | "anime" | "non-anime";
   playerHdrOpaqueWindow: boolean;
+  playerEscExitsFullscreen: boolean;
   playerHdrStage: "auto" | "off" | "always";
   opensubtitlesApiKey: string;
   jimakuToken: string;
@@ -171,6 +192,7 @@ export type Settings = {
   spoilerHideTitles: boolean;
   spoilerHideDescriptions: boolean;
   spoilerSkipNext: boolean;
+  streamBackdropBlur: boolean;
   hideContent: ContentFilters;
   theme: ThemeSettings;
   homeMode: "harbor" | "classic";

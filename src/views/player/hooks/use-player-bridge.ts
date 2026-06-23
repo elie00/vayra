@@ -53,11 +53,15 @@ export function usePlayerBridge(params: {
     !!src.meta.id?.startsWith("anidb:") ||
     (src.meta.genres ?? []).some((g) => g.toLowerCase() === "anime");
   const anime4kOn = settings.playerAnime4k && (!settings.playerAnime4kAnimeOnly || isAnimeSrc);
-  const svpOn = settings.playerSvp && !!settings.svpVpyPath;
+  const svpOn =
+    settings.playerSvp &&
+    !!settings.svpVpyPath &&
+    (settings.svpScope === "all" || (settings.svpScope === "anime" ? isAnimeSrc : !isAnimeSrc));
   const isLiveLike =
     !!src.meta.id?.startsWith("iptv:") ||
     (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
-  const chosenEngine = isLiveLike ? "html5" : autoFallbackTried ? "mpv" : settings.playerEngine;
+  const chosenEngine =
+    isLiveLike && !src.notWebReady ? "html5" : autoFallbackTried ? "mpv" : settings.playerEngine;
   const bridgeKey = `${chosenEngine}|${anime4kOn}|${settings.playerHdrToSdr}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}`;
   const [bridgeReady, setBridgeReady] = useState(false);
   useEffect(() => {
@@ -90,7 +94,7 @@ export function usePlayerBridge(params: {
         anime4kShaders: anime4kOn && settings.playerAnime4kShaders.length > 0
           ? settings.playerAnime4kShaders
           : [],
-        extraOptions: mergeMpvOptions(settings),
+        extraOptions: mergeMpvOptions(settings, svpOn),
         getEmbedRect,
       });
       if (cancelled) return;

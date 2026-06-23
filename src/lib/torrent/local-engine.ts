@@ -7,6 +7,8 @@ export type EngineStatus = {
   port: number | null;
   active_torrents: number;
   last_error: string | null;
+  dht_tier?: number;
+  dht_nodes?: number;
 };
 
 export type EngineFile = {
@@ -36,6 +38,7 @@ export type TorrentEngineStats = {
 export type SelfTestStep = {
   label: string;
   ok: boolean;
+  warn?: boolean;
   detail: string;
 };
 
@@ -53,14 +56,22 @@ export async function torrentEngineStatus(): Promise<EngineStatus | null> {
   }
 }
 
+let lastAddError: string | null = null;
+
+export function lastEngineAddError(): string | null {
+  return lastAddError;
+}
+
 export async function torrentEngineAdd(
   magnet: string,
   trackers: string[],
 ): Promise<AddResult | null> {
   if (!isTauri) return null;
   try {
+    lastAddError = null;
     return await invoke<AddResult>("torrent_engine_add", { magnet, trackers });
   } catch (e) {
+    lastAddError = String(e);
     console.warn("[engine] add failed", e);
     return null;
   }
@@ -132,12 +143,13 @@ export async function torrentEngineRestart(): Promise<EngineStatus | null> {
   }
 }
 
-export function isLocalEngineEnabled(): boolean {
+export async function torrentEngineHardReset(): Promise<EngineStatus | null> {
+  if (!isTauri) return null;
   try {
-    const raw = localStorage.getItem("harbor.settings");
-    if (!raw) return true;
-    return (JSON.parse(raw) as { localEngine?: boolean }).localEngine !== false;
-  } catch {
-    return true;
+    return await invoke<EngineStatus>("torrent_engine_hard_reset");
+  } catch (e) {
+    console.warn("[engine] hard reset failed", e);
+    return null;
   }
 }
+

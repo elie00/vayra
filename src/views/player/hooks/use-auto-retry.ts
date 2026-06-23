@@ -196,7 +196,7 @@ export function useAutoRetry(params: {
       transcodedTriedRef.current = true;
       void probeStremioServer().then((ok) => {
         if (ok) {
-          console.warn("[player] decode error — retrying via stremio-server transcoding");
+          console.warn("[player] decode error — retrying via p2p transcoding");
           if (bridgeRef.current) {
             bridgeRef.current.destroy();
             bridgeRef.current = null;

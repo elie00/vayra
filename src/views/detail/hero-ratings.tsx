@@ -63,6 +63,7 @@ export function HeroRatings({
   imdbId,
   mediaType,
   onOpenUrl,
+  ratingSource = "imdb",
 }: {
   rating?: string;
   isAnime: boolean;
@@ -72,6 +73,7 @@ export function HeroRatings({
   imdbId: string | null;
   mediaType: "movie" | "show";
   onOpenUrl: (url: string) => void;
+  ratingSource?: "imdb" | "tmdb";
 }) {
   const t = useT();
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
@@ -82,12 +84,18 @@ export function HeroRatings({
     items.push(
       <ScoreItem
         key="imdb"
-        label={isAnime ? t("MyAnimeList") : t("IMDb")}
+        label={isAnime ? t("MyAnimeList") : ratingSource === "tmdb" ? t("TMDB") : t("IMDb")}
         sublabel={isAnime ? t("Score /10") : t("Rating /10")}
-        onClick={imdbId ? () => onOpenUrl(`https://www.imdb.com/title/${imdbId}/`) : undefined}
+        onClick={
+          !isAnime && ratingSource !== "tmdb" && imdbId
+            ? () => onOpenUrl(`https://www.imdb.com/title/${imdbId}/`)
+            : undefined
+        }
       >
         {isAnime ? (
           <MalLogo className="h-[14px] w-auto text-ink-muted" />
+        ) : ratingSource === "tmdb" ? (
+          <span className="text-[10px] font-bold tracking-tight text-ink-muted">TMDB</span>
         ) : (
           <ImdbIcon className="h-[15px] w-auto rounded-[3px]" />
         )}

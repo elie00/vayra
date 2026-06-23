@@ -45,18 +45,41 @@ function HdrOverlayChrome() {
   const bridge = useMemo(() => createForwardingMpvBridge(), []);
   const bridgeRef = useRef(bridge);
   const snapRef = useRef<PlayerSnapshot>(emptySnapshot);
+  const gotPayloadRef = useRef(false);
 
   useEffect(() => {
     const un = onHdrStageProps<HdrStagePayload>((p) => {
+      gotPayloadRef.current = true;
       setPayload(p);
       snapRef.current = p.snap;
       bridge.pushSnapshot(p.snap);
     });
     void hdrOverlayEmitAction("hdr-stage://request", {});
+    let tries = 0;
+    const id = window.setInterval(() => {
+      if (gotPayloadRef.current || tries++ > 40) {
+        window.clearInterval(id);
+        return;
+      }
+      void hdrOverlayEmitAction("hdr-stage://request", {});
+    }, 150);
     return () => {
+      window.clearInterval(id);
       void un.then((fn) => fn()).catch(() => {});
     };
   }, [bridge]);
+
+  useEffect(() => {
+    let last = 0;
+    const onMove = () => {
+      const now = performance.now();
+      if (now - last < 200) return;
+      last = now;
+      void hdrOverlayEmitAction("hdr-stage://activity", {});
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, []);
 
   if (!payload) return <div className="fixed inset-0" style={{ background: "transparent" }} />;
   const { snap, src } = payload;
@@ -103,6 +126,7 @@ function HdrOverlayChrome() {
         openCastMenu={() => act("hdr-stage://cast")}
         onToggleDraw={() => {}}
         onToggleHideOthers={() => {}}
+        onScreenshot={() => act("hdr-stage://screenshot")}
         onPickAnother={() => act("hdr-stage://pick-another")}
         canPickAnother={false}
         title={src.title}

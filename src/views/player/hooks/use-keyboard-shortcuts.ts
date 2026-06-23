@@ -16,6 +16,7 @@ export function useKeyboardShortcuts(params: {
   seekStep: (delta: number) => void;
   seekTo: (sec: number) => void;
   toggleFullscreen: () => void;
+  fullscreen: boolean;
   cycleSubtitles: () => void;
   setShowStats: (updater: (prev: boolean) => boolean) => void;
   metaId: string;
@@ -46,6 +47,7 @@ export function useKeyboardShortcuts(params: {
     seekStep,
     seekTo,
     toggleFullscreen,
+    fullscreen,
     cycleSubtitles,
     setShowStats,
     metaId,
@@ -101,6 +103,7 @@ export function useKeyboardShortcuts(params: {
 
       if (match("playerClose")) {
         if (drawMode) setDrawMode(false);
+        else if (fullscreen && settings.playerEscExitsFullscreen) toggleFullscreen();
         else closePlayer();
         return;
       }

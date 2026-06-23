@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { check } from "@tauri-apps/plugin-updater";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 const DISMISS_KEY = "harbor.update.dismissed";
@@ -88,7 +89,6 @@ export function updateAvailable(s: UpdateState): boolean {
   return s.status === "available" || s.status === "downloading" || s.status === "downloaded";
 }
 
-/*
 function betaChannel(): boolean {
   try {
     const raw = localStorage.getItem("harbor.settings");
@@ -98,11 +98,31 @@ function betaChannel(): boolean {
     return false;
   }
 }
-*/
 
-export async function checkForUpdate(_manual = false): Promise<void> {
-  // Disabled for custom fork to prevent overwriting modifications
-  return Promise.resolve();
+export async function checkForUpdate(manual = false): Promise<void> {
+  if (!IS_TAURI) return;
+  if (state.status === "checking" || state.status === "downloading" || state.status === "installing") {
+    return;
+  }
+  set({ status: "checking", manualCheck: manual, error: null });
+  try {
+    const update = await check(betaChannel() ? { headers: { "x-harbor-channel": "beta" } } : undefined);
+    if (!update) {
+      set({ status: "uptodate", version: null, notes: null });
+      return;
+    }
+    handle = update as unknown as UpdateHandle;
+    const dismissed = readDismissed();
+    set({
+      status: "available",
+      version: update.version,
+      notes: update.body ?? null,
+      dismissed,
+      panelOpen: manual || dismissed !== update.version,
+    });
+  } catch (e) {
+    set({ status: "error", error: String(e) });
+  }
 }
 
 export async function downloadUpdate(): Promise<void> {
@@ -134,6 +154,7 @@ export async function installUpdate(): Promise<void> {
   try {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("close_aux_windows").catch(() => {});
       await invoke("stop_stremio_sidecar");
       await new Promise((r) => setTimeout(r, 600));
     } catch {

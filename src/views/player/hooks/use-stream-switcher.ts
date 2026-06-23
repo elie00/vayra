@@ -3,6 +3,7 @@ import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, usePlaybackFlag } from "@/lib/player/playback-clock";
 import { pinPickerCache, unpinPickerCache } from "@/lib/picker-cache";
 import { readResumeMs } from "@/lib/resume";
+import { savePlayback } from "@/lib/playback-history";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
 import { registerStreamProxy } from "@/lib/stream-proxy";
@@ -123,10 +124,33 @@ export function useStreamSwitcher(params: {
         resolution: stream.resolution ?? null,
         source: stream.source ?? null,
         size: stream.size ?? null,
+        bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
         cachedSlugs: Object.entries(stream.cached ?? {})
           .filter(([, v]) => v === true)
           .map(([k]) => k),
       });
+      if (src.meta.id && !src.meta.id.startsWith("iptv:")) {
+        savePlayback(
+          src.meta.id,
+          {
+            infoHash: stream.infoHash ?? null,
+            fileIdx: stream.fileIdx ?? null,
+            addonId: stream.addonId ?? null,
+            url: playUrl,
+            title: src.meta.name,
+            parsedTitle: stream.parsedTitle ?? null,
+            resolution: stream.resolution ?? null,
+            source: stream.source ?? null,
+            size: stream.size ?? null,
+            bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
+            cachedSlugs: Object.entries(stream.cached ?? {})
+              .filter(([, v]) => v === true)
+              .map(([k]) => k),
+          },
+          src.episode?.season,
+          src.episode?.episode,
+        );
+      }
       setSwapResolvingKey(null);
       setSwitcherOpen(false);
       checkShownRef.current = false;

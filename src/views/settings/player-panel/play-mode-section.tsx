@@ -99,6 +99,25 @@ export function PlayModePanel() {
           </span>
         </div>
       </button>
+      <button
+        type="button"
+        onClick={() => update({ keepSourceNextEpisode: !settings.keepSourceNextEpisode })}
+        className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
+      >
+        <span
+          className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+            settings.keepSourceNextEpisode ? "justify-end bg-accent" : "justify-start bg-edge"
+          }`}
+        >
+          <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-[15px] font-semibold text-ink">{t("Keep same source on next episode")}</span>
+          <span className="text-[12.5px] leading-snug text-ink-muted">
+            {t("When auto-playing the next episode, keep the same release/source you were just watching instead of Harbor's top-ranked stream. Falls back to the best stream if that source isn't available.")}
+          </span>
+        </div>
+      </button>
     </div>
   );
 }

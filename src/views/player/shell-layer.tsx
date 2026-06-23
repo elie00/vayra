@@ -36,10 +36,13 @@ export function ShellLayer({
   openCastMenu,
   onToggleDraw,
   onToggleHideOthers,
+  onScreenshot,
   onPickAnother,
   canPickAnother,
   title,
   subtitle,
+  resolution,
+  quality,
   hoverTitle,
   hoverSub,
   hasPrevEp,
@@ -86,10 +89,13 @@ export function ShellLayer({
   openCastMenu: (anchor: { right: number; bottom: number } | null) => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  resolution?: string | null;
+  quality?: string | null;
   hoverTitle?: string;
   hoverSub?: string;
   hasPrevEp: boolean;
@@ -180,10 +186,13 @@ export function ShellLayer({
       }}
       onToggleDraw={onToggleDraw}
       onToggleHideOthers={onToggleHideOthers}
+      onScreenshot={onScreenshot}
       onPickAnother={onPickAnother}
       canPickAnother={canPickAnother}
       title={title}
       subtitle={subtitle}
+      resolution={resolution}
+      quality={quality}
       hoverTitle={hoverTitle}
       hoverSub={hoverSub}
       hasPrevEp={hasPrevEp}

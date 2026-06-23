@@ -36,14 +36,14 @@ export function compileMpvOptions(s: Settings): string {
   return lines.join("\n");
 }
 
-export function svpMpvLines(s: Settings): string {
-  if (!s.playerSvp || !s.svpVpyPath) return "";
+export function svpMpvLines(s: Settings, svpActive: boolean): string {
+  if (!svpActive || !s.svpVpyPath) return "";
   const vpy = s.svpVpyPath.replace(/\\/g, "/");
   return [`vf=vapoursynth=[${vpy}]`, "hwdec=auto-copy"].join("\n");
 }
 
-export function mergeMpvOptions(s: Settings): string | undefined {
-  const merged = [compileMpvOptions(s), svpMpvLines(s), s.mpvExtraOptions || ""]
+export function mergeMpvOptions(s: Settings, svpActive: boolean): string | undefined {
+  const merged = [compileMpvOptions(s), svpMpvLines(s, svpActive), s.mpvExtraOptions || ""]
     .filter((p) => p.trim())
     .join("\n");
   return merged.trim() ? merged : undefined;

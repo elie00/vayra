@@ -55,6 +55,16 @@ fn harbor_flush_done() {
 }
 
 #[tauri::command]
+fn close_aux_windows(app: tauri::AppHandle) {
+    use tauri::Manager;
+    for (label, window) in app.webview_windows() {
+        if label != "main" {
+            let _ = window.close();
+        }
+    }
+}
+
+#[tauri::command]
 async fn deeplink_set_stremio(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
     use tauri_plugin_deep_link::DeepLinkExt;
     if enabled {
@@ -474,6 +484,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             harbor_flush_done,
+            close_aux_windows,
             power::power_inhibit,
             harbor_set_webview_memory_low,
             harbor_set_webview_visible,
@@ -510,6 +521,7 @@ pub fn run() {
             mpv::mpv_get_property,
             mpv::mpv_set_geometry,
             mpv::mpv_force_below,
+            mpv::mpv_export_log,
             mpv::mpv_set_hdr_stage,
             mpv::display_hdr_active,
             webview_helpers::webview_reapply_transparency,
@@ -580,6 +592,7 @@ pub fn run() {
             torrent_engine::torrent_engine_remove,
             torrent_engine::torrent_engine_selftest,
             torrent_engine::torrent_engine_restart,
+            torrent_engine::torrent_engine_hard_reset,
             transcode::cast_ffmpeg_present,
             streams::streams_run_pipeline,
             streams::streams_parse,

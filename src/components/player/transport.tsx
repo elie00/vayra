@@ -52,10 +52,13 @@ export function Transport({
   onCast,
   onToggleDraw,
   onToggleHideOthers,
+  onScreenshot,
   onPickAnother,
   canPickAnother,
   title,
   subtitle,
+  resolution,
+  quality,
   hoverTitle,
   hoverSub,
   hasPrevEp,
@@ -111,10 +114,13 @@ export function Transport({
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  resolution?: string | null;
+  quality?: string | null;
   hoverTitle?: string;
   hoverSub?: string;
   hasPrevEp: boolean;
@@ -174,10 +180,13 @@ export function Transport({
         onCast={onCast}
         onToggleDraw={onToggleDraw}
         onToggleHideOthers={onToggleHideOthers}
+        onScreenshot={onScreenshot}
         onPickAnother={onPickAnother}
         canPickAnother={canPickAnother}
         title={title}
         subtitle={subtitle}
+        resolution={resolution}
+        quality={quality}
         hasPrevEp={hasPrevEp}
         hasNextEp={hasNextEp}
         onPrevEp={onPrevEp}
@@ -328,6 +337,7 @@ export function Transport({
     onCast,
     onToggleDraw,
     onToggleHideOthers,
+    onScreenshot,
     onPickAnother,
     onPrevEp,
     onNextEp,

@@ -28,7 +28,9 @@ export type PlayerControlId =
   | "speed-menu"
   | "aspect-menu"
   | "anime4k-menu"
+  | "hdr-toggle"
   | "draw-toggle"
+  | "screenshot"
   | "pip"
   | "cast"
   | "fullscreen"
@@ -181,9 +183,11 @@ export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
     { id: "audio-menu", slot: "bottom-right", order: 10 },
     { id: "subtitle-menu", slot: "bottom-right", order: 20 },
     { id: "aspect-menu", slot: "bottom-right", order: 25, hidden: true },
-    { id: "anime4k-menu", slot: "bottom-right", order: 27, hidden: true },
+    { id: "anime4k-menu", slot: "bottom-right", order: 27 },
+    { id: "hdr-toggle", slot: "bottom-right", order: 28, hidden: true },
     { id: "speed-menu", slot: "bottom-right", order: 30 },
     { id: "draw-toggle", slot: "bottom-right", order: 40 },
+    { id: "screenshot", slot: "bottom-right", order: 45, hidden: true },
     { id: "pip", slot: "bottom-right", order: 50 },
     { id: "cast", slot: "bottom-right", order: 60 },
     { id: "fullscreen", slot: "bottom-right", order: 70 },
@@ -213,8 +217,10 @@ export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
     { id: "audio-menu", slot: "bottom-right", order: 10 },
     { id: "subtitle-menu", slot: "bottom-right", order: 20 },
     { id: "aspect-menu", slot: "bottom-right", order: 25, hidden: true },
-    { id: "anime4k-menu", slot: "bottom-right", order: 27, hidden: true },
+    { id: "anime4k-menu", slot: "bottom-right", order: 27 },
+    { id: "hdr-toggle", slot: "bottom-right", order: 28, hidden: true },
     { id: "draw-toggle", slot: "bottom-right", order: 30 },
+    { id: "screenshot", slot: "bottom-right", order: 35, hidden: true },
     { id: "cast", slot: "bottom-right", order: 40 },
     { id: "pick-another", slot: "bottom-right", order: 50 },
     { id: "pip", slot: "bottom-right", order: 60 },
@@ -247,7 +253,9 @@ export const CONTROL_META: Record<
   "speed-menu": { label: "Playback speed", group: "menus", defaultSlot: "bottom-right" },
   "aspect-menu": { label: "Aspect ratio", group: "menus", defaultSlot: "bottom-right" },
   "anime4k-menu": { label: "Anime4K", group: "menus", defaultSlot: "bottom-right" },
+  "hdr-toggle": { label: "HDR to SDR toggle", group: "menus", defaultSlot: "bottom-right" },
   "draw-toggle": { label: "Draw on video", group: "actions", defaultSlot: "bottom-right" },
+  screenshot: { label: "Screenshot", group: "actions", defaultSlot: "bottom-right" },
   pip: { label: "Picture-in-picture", group: "actions", defaultSlot: "bottom-right" },
   cast: { label: "Cast", group: "actions", defaultSlot: "bottom-right" },
   fullscreen: { label: "Fullscreen", group: "transport", defaultSlot: "bottom-right" },

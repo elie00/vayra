@@ -12,6 +12,7 @@ import {
 } from "@/lib/hover-preview/store";
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
 import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
+import { cinemetaRatingPrefetch, useCinemetaRating } from "@/lib/providers/cinemeta-rating";
 import { mdblistCardPrefetch, useMdblistCardScores } from "@/lib/providers/mdblist-batch";
 import { needsImdbForPoster, needsTmdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
 import {
@@ -29,6 +30,16 @@ import { ImdbIcon } from "./icons/imdb-icon";
 import { MalLogo } from "./icons/mal-logo";
 import { Poster } from "./poster";
 import { RtBadge } from "./rt-badge";
+import mdblistLogo from "@/assets/addon-logos/mdblist.png";
+import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
+import traktLogo from "@/assets/trakt.svg";
+
+const WATCHLIST_POS: Record<string, string> = {
+  topStart: "top-1.5 start-1.5",
+  topEnd: "top-1.5 end-1.5",
+  bottomStart: "bottom-1.5 start-1.5",
+  bottomEnd: "bottom-1.5 end-1.5",
+};
 
 export const PickCard = memo(function PickCard({
   meta,
@@ -52,7 +63,44 @@ export const PickCard = memo(function PickCard({
   const imdbId = resolvedImdb ?? undefined;
   const cached = useOmdbScores(imdbId);
   const mediaKind = meta.type === "series" ? "show" : "movie";
-  const audience = useMdblistCardScores(settings.showRtBadge ? imdbId : undefined, mediaKind);
+  const wantMdblist =
+    settings.showPopcornBadge ||
+    settings.showMetacriticBadge ||
+    settings.showLetterboxdBadge ||
+    settings.showMdblistBadge ||
+    settings.showTraktBadge;
+  const cardScores = useMdblistCardScores(wantMdblist ? imdbId : undefined, mediaKind);
+  const wantCinemetaRating = settings.showImdbBadge && !isAnimeCardId && !meta.id.startsWith("tt");
+  const cinemetaRating = useCinemetaRating(wantCinemetaRating ? imdbId : undefined);
+  const cardImdbValue = isAnimeCardId
+    ? undefined
+    : cached?.imdbRating ?? cinemetaRating ?? (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
+  const cardRating = isAnimeCardId
+    ? settings.showMalBadge
+      ? meta.imdbRating
+      : undefined
+    : cardImdbValue
+      ? settings.showImdbBadge
+        ? cardImdbValue
+        : undefined
+      : settings.showTmdbBadge
+        ? meta.imdbRating
+        : undefined;
+  const cardRatingSource = isAnimeCardId ? "mal" : cardImdbValue ? "imdb" : "tmdb";
+  const cardBadges: CardBadge[] = [];
+  if (cardRating) cardBadges.push({ kind: "rating", source: cardRatingSource, value: cardRating });
+  if (settings.showRtBadge && cached?.rtCritics != null)
+    cardBadges.push({ kind: "rt", value: cached.rtCritics });
+  if (settings.showPopcornBadge && cardScores?.rtAudience != null)
+    cardBadges.push({ kind: "audience", value: cardScores.rtAudience });
+  if (settings.showMetacriticBadge && cardScores?.metacritic != null)
+    cardBadges.push({ kind: "metacritic", value: cardScores.metacritic });
+  if (settings.showLetterboxdBadge && cardScores?.letterboxd != null)
+    cardBadges.push({ kind: "letterboxd", value: cardScores.letterboxd });
+  if (settings.showMdblistBadge && cardScores?.score != null)
+    cardBadges.push({ kind: "mdblist", value: cardScores.score });
+  if (settings.showTraktBadge && cardScores?.trakt != null)
+    cardBadges.push({ kind: "trakt", value: cardScores.trakt });
   const ref = useRef<HTMLButtonElement>(null);
   const altIds = useMemo(() => [imdbId], [imdbId]);
   const inWatchlist = useInWatchlist(meta.id, altIds);
@@ -119,7 +167,8 @@ export const PickCard = memo(function PickCard({
       !settings.omdbKey &&
       !settings.mdblistKey &&
       !needsImdbForPoster(settings.rpdbKey, meta.id) &&
-      !wantTmdbPoster
+      !wantTmdbPoster &&
+      !wantCinemetaRating
     )
       return;
     const el = ref.current;
@@ -139,12 +188,13 @@ export const PickCard = memo(function PickCard({
       const id = await tmdbImdbId(settings.tmdbKey, meta.id);
       if (!id) return;
       if (settings.omdbKey) omdbPrefetch(settings.omdbKey, id);
-      if (settings.mdblistKey && settings.showRtBadge) {
+      if (settings.mdblistKey && wantMdblist) {
         mdblistCardPrefetch(id, meta.type === "series" ? "show" : "movie");
       }
+      if (wantCinemetaRating) cinemetaRatingPrefetch(id, meta.type === "series" ? "series" : "movie");
     });
     return () => off?.();
-  }, [meta.id, meta.type, settings.tmdbKey, settings.omdbKey, settings.mdblistKey, settings.showRtBadge, settings.rpdbKey]);
+  }, [meta.id, meta.type, settings.tmdbKey, settings.omdbKey, settings.mdblistKey, wantMdblist, settings.rpdbKey, wantCinemetaRating]);
 
   return (
     <button
@@ -164,24 +214,27 @@ export const PickCard = memo(function PickCard({
         <Poster
           src={posterSrc}
           seed={meta.id}
+          lowResImdb={imdbId}
           ratio="portrait"
           onError={() => setImgIdx((i) => i + 1)}
-          className="harbor-card-ring rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)]"
+          className="harbor-card-ring rounded-[var(--poster-radius,12px)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)]"
         />
-        {rerun && <RerunBadge year={meta.releaseInfo} />}
-        {showCinema && <CinemaBadge />}
-        {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} />}
-        <AnimeAwardBadge
-          name={awardLookupName ?? meta.name}
-          fallbackName={meta.name}
-          year={parseAwardYear(meta.releaseInfo)}
-          stacked={rerun || showCinema || !!newBadge}
-        />
-        {inWatchlist && (
+        {settings.showCardBadges && (
+          <>
+            {rerun && <RerunBadge year={meta.releaseInfo} />}
+            {showCinema && <CinemaBadge />}
+            {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} />}
+            <AnimeAwardBadge
+              name={awardLookupName ?? meta.name}
+              fallbackName={meta.name}
+              year={parseAwardYear(meta.releaseInfo)}
+              stacked={rerun || showCinema || !!newBadge}
+            />
+          </>
+        )}
+        {inWatchlist && settings.watchlistBadge !== "off" && (
           <span
-            className={`pointer-events-none absolute end-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-canvas/85 text-ink ring-1 ring-edge-soft/70 backdrop-blur-sm ${
-              settings.badgePlacement === "top" ? "bottom-1.5" : "top-1.5"
-            }`}
+            className={`pointer-events-none absolute flex h-6 w-6 items-center justify-center rounded-full bg-canvas/85 text-ink ring-1 ring-edge-soft/70 backdrop-blur-sm ${WATCHLIST_POS[settings.watchlistBadge]}`}
             title={t("In your watchlist")}
             aria-label={t("In watchlist")}
           >
@@ -189,23 +242,13 @@ export const PickCard = memo(function PickCard({
           </span>
         )}
         <ScoreStack
-          rating={
-            isAnimeCardId
-              ? settings.showMalBadge
-                ? meta.imdbRating
-                : undefined
-              : settings.showImdbBadge
-                ? cached?.imdbRating ?? meta.imdbRating
-                : undefined
-          }
-          rt={settings.showRtBadge ? cached?.rtCritics : undefined}
-          audience={settings.showRtBadge ? audience?.rtAudience ?? undefined : undefined}
-          source={isAnimeCardId ? "mal" : "imdb"}
+          badges={cardBadges}
+          limit={settings.cardBadgeLimit}
           placement={settings.badgePlacement}
         />
       </div>
       {!settings.hidePosterTitles && (
-        <p className="line-clamp-2 text-[13px] font-medium leading-snug text-ink">
+        <p className="line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink">
           {meta.name}
         </p>
       )}
@@ -213,51 +256,107 @@ export const PickCard = memo(function PickCard({
   );
 });
 
-function ScoreStack({
-  rating,
-  rt,
-  audience,
-  source = "imdb",
-  placement = "bottom",
-}: {
-  rating?: string;
-  rt?: number;
-  audience?: number;
-  source?: "imdb" | "mal";
-  placement?: "top" | "bottom";
-}) {
-  const t = useT();
-  if (!rating && rt == null && audience == null) return null;
-  return (
-    <div
-      className={`absolute end-1.5 flex items-center gap-1 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[10px] font-semibold text-ink ${
-        placement === "top" ? "top-1.5" : "bottom-1.5"
-      }`}
-    >
-      {rating && (
+type CardBadge =
+  | { kind: "rating"; source: "imdb" | "mal" | "tmdb"; value: string }
+  | { kind: "rt"; value: number }
+  | { kind: "audience"; value: number }
+  | { kind: "metacritic"; value: number }
+  | { kind: "letterboxd"; value: number }
+  | { kind: "mdblist"; value: number }
+  | { kind: "trakt"; value: number };
+
+function metacriticTone(v: number): string {
+  if (v >= 61) return "bg-emerald-500";
+  if (v >= 40) return "bg-amber-500";
+  return "bg-red-500";
+}
+
+function BadgeContent({ badge }: { badge: CardBadge }) {
+  switch (badge.kind) {
+    case "rating":
+      return (
         <span className="flex items-center gap-1">
-          {source === "mal" ? (
+          {badge.source === "mal" ? (
             <MalLogo className="h-[11px] w-auto text-ink-muted" />
+          ) : badge.source === "tmdb" ? (
+            <span className="text-[8.5px] font-bold leading-none tracking-tight text-ink-muted">TMDB</span>
           ) : (
             <ImdbIcon className="h-[11px] w-auto rounded-[2px]" />
           )}
-          <span>{rating}</span>
+          <span>{badge.value}</span>
         </span>
-      )}
-      {rating && rt != null && <span className="opacity-30">·</span>}
-      {rt != null && (
+      );
+    case "rt":
+      return (
         <span className="flex items-center gap-0.5">
-          <RtBadge score={rt} className="h-[12px] w-auto" />
-          <span>{rt}%</span>
+          <RtBadge score={badge.value} className="h-[12px] w-auto" />
+          <span>{badge.value}%</span>
         </span>
-      )}
-      {(rating || rt != null) && audience != null && <span className="opacity-30">·</span>}
-      {audience != null && (
-        <span className="flex items-center gap-0.5" title={t("Rotten Tomatoes audience score")}>
-          <Popcorn size={12} strokeWidth={2.4} className={audience >= 60 ? "text-accent" : "text-ink-muted"} />
-          <span>{Math.round(audience)}%</span>
+      );
+    case "audience":
+      return (
+        <span className="flex items-center gap-0.5">
+          <Popcorn size={12} strokeWidth={2.4} className={badge.value >= 60 ? "text-accent" : "text-ink-muted"} />
+          <span>{Math.round(badge.value)}%</span>
         </span>
-      )}
+      );
+    case "metacritic":
+      return (
+        <span
+          className={`flex h-[13px] min-w-[15px] items-center justify-center rounded-[3px] px-0.5 text-[8.5px] font-bold text-white ${metacriticTone(badge.value)}`}
+        >
+          {Math.round(badge.value)}
+        </span>
+      );
+    case "letterboxd":
+      return (
+        <span className="flex items-center gap-0.5">
+          <img src={letterboxdLogo} alt="" className="h-[11px] w-[11px] rounded-[2px] object-cover" />
+          <span>{(badge.value / 2).toFixed(1)}</span>
+        </span>
+      );
+    case "mdblist":
+      return (
+        <span className="flex items-center gap-0.5">
+          <img src={mdblistLogo} alt="" className="h-[11px] w-[11px] rounded-[2px] object-contain" />
+          <span>{Math.round(badge.value)}</span>
+        </span>
+      );
+    case "trakt":
+      return (
+        <span className="flex items-center gap-0.5">
+          <img src={traktLogo} alt="" className="h-[11px] w-[11px] object-contain" />
+          <span>{Math.round(badge.value)}%</span>
+        </span>
+      );
+  }
+}
+
+function ScoreStack({
+  badges,
+  limit = 3,
+  placement = "bottom",
+}: {
+  badges: CardBadge[];
+  limit?: number;
+  placement?: "top" | "bottom";
+}) {
+  const shown = badges.slice(0, Math.max(1, limit));
+  if (shown.length === 0) return null;
+  const scale = shown.length <= 3 ? 1 : shown.length === 4 ? 0.88 : shown.length === 5 ? 0.78 : 0.7;
+  return (
+    <div
+      style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: "right" } : undefined}
+      className={`absolute end-1.5 flex items-center gap-1 whitespace-nowrap rounded-md bg-canvas/95 px-1.5 py-0.5 text-[10px] font-semibold text-ink ${
+        placement === "top" ? "top-1.5" : "bottom-1.5"
+      }`}
+    >
+      {shown.map((b, i) => (
+        <span key={i} className="flex items-center gap-1">
+          {i > 0 && <span className="opacity-30">·</span>}
+          <BadgeContent badge={b} />
+        </span>
+      ))}
     </div>
   );
 }
