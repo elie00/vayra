@@ -75,6 +75,7 @@ const RATING_STARS = 5;
 // Half-filled star using clip-path for a crisp 50% cut — no overflow hacks.
 // The filled star is clipped to show only its left half over the empty outline.
 function HalfStar({ size, className, dim }: { size: number; className?: string; dim?: string }) {
+  const isRtl = document.documentElement.dir === "rtl";
   return (
     <span className="relative inline-block" style={{ width: size, height: size, lineHeight: 0 }}>
       <Star
@@ -87,7 +88,7 @@ function HalfStar({ size, className, dim }: { size: number; className?: string; 
         style={{
           position: "absolute",
           inset: 0,
-          clipPath: "inset(0 50% 0 0)",
+          clipPath: isRtl ? "inset(0 0 0 50%)" : "inset(0 50% 0 0)",
           display: "inline-flex",
         }}
       >
@@ -313,8 +314,11 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
                       }}
                       onMouseMove={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const isLeftHalf = e.clientX - rect.left < rect.width / 2;
-                        const next = isLeftHalf ? starIndex - 0.5 : starIndex;
+                        const isRtl = document.documentElement.dir === "rtl";
+                        const isFirstHalf = isRtl 
+                          ? e.clientX - rect.left > rect.width / 2
+                          : e.clientX - rect.left < rect.width / 2;
+                        const next = isFirstHalf ? starIndex - 0.5 : starIndex;
                         setPendingRating((prev) => (prev === next ? prev : next));
                       }}
                       className="group/star relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-150 hover:scale-110 hover:bg-amber-400/10 active:scale-95"

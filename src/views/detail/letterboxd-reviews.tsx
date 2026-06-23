@@ -25,7 +25,7 @@ class ReviewsBoundary extends Component<{ children: ReactNode }, { failed: boole
   }
 }
 
-type Filter = "all" | "friends" | "ar";
+type Filter = "all" | "friends";
 
 export function LetterboxdReviews({ meta, imdbId }: { meta: Meta; imdbId: string | null }) {
   return (
@@ -144,15 +144,8 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
     );
   }
 
-  // Filter: Arabic = lang="ar" OR contains Arabic characters
   // Friends = use friends reviews (from /{username}/friends/film/{slug}/reviews/)
-  const sourceReviews = filter === "friends" ? friendsReviews : reviews;
-  const filtered = sourceReviews.filter((r) => {
-    if (filter === "ar") {
-      return r.lang === "ar" || /[\u0600-\u06FF]/.test(r.text);
-    }
-    return true;
-  });
+  const filtered = filter === "friends" ? friendsReviews : reviews;
 
   // Show first 5 by default, "Load more" reveals the rest
   const VISIBLE_COUNT = 5;
@@ -190,13 +183,6 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
                 count={loadingFriends ? undefined : friendsReviews.length}
               />
             )}
-            <FilterBtn
-              active={filter === "ar"}
-              onClick={() => { setFilter("ar"); setShowAll(false); }}
-              icon={<Globe size={12} />}
-              label={t("العربية")}
-              count={reviews.filter((r) => r.lang === "ar" || /[\u0600-\u06FF]/.test(r.text)).length || undefined}
-            />
           </div>
 
           {/* Refresh */}
@@ -223,13 +209,11 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
 
       {filtered.length === 0 && !loading && (
         <p className="text-[14px] text-ink-muted py-4">
-          {filter === "ar"
-            ? t("No Arabic reviews found for this film.")
-            : filter === "friends"
-              ? loadingFriends
-                ? t("Loading friends' reviews…")
-                : t("No reviews from your friends for this film.")
-              : t("No reviews yet.")}
+          {filter === "friends"
+            ? loadingFriends
+              ? t("Loading friends' reviews…")
+              : t("No reviews from your friends for this film.")
+            : t("No reviews yet.")}
         </p>
       )}
 
