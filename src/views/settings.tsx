@@ -16,6 +16,7 @@ import { AnimePanel } from "./settings/anime-panel";
 import { TraktPanel } from "./settings/trakt-panel";
 import { AnilistPanel } from "./settings/anilist-panel";
 import { SimklPanel } from "./settings/simkl-panel";
+import { LetterboxdPanel } from "./settings/letterboxd-panel";
 import { RelaySection, type RelayMode } from "./settings/relay-section";
 import { SettingsActiveContext, type SectionId } from "./settings/shared";
 import { StreamingSourcesPanel, type DebridKey } from "./settings/streaming-sources-panel";
@@ -53,6 +54,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   simkl: {
     label: "Simkl",
     sub: "Connect your Simkl account to mark what you finish as watched and sync your plan-to-watch list across apps.",
+  },
+  letterboxd: {
+    label: "Letterboxd",
+    sub: "Bring your Letterboxd watchlist, diary, liked films and lists into Harbor via the Stremboxd bridge.",
   },
   relay: {
     label: "Harbor Relay",
@@ -298,6 +303,8 @@ export function Settings() {
           {active === "anilist" && <AnilistPanel />}
 
           {active === "simkl" && <SimklPanel />}
+
+          {active === "letterboxd" && <LetterboxdPanel />}
 
           {active === "theme" && <ThemePanel />}
 

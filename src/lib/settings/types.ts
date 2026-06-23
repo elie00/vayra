@@ -29,6 +29,18 @@ export type ContentCategory = "anime" | "liveTv" | "sports" | "adult";
 
 export type ContentFilters = Record<ContentCategory, boolean>;
 
+export type LetterboxdSettings = {
+  enabled: boolean;
+  mode: "public" | "full";
+  username: string;
+  encodedConfig: string;
+  selectedCatalogs: string[];
+  hiddenCatalogs: string[];
+  catalogOrder: string[];
+  showRatingsOnPosters: boolean;
+  listRefs: Array<{ id: string; name: string; owner?: string; filmCount?: number }>;
+};
+
 export type Settings = {
   translatePosters: boolean;
   blurComments: boolean;
@@ -304,4 +316,5 @@ export type Settings = {
   pauseListStatusOnPause: boolean;
   translateTitles: boolean;
   translateDescriptions: boolean;
+  letterboxd: LetterboxdSettings;
 };

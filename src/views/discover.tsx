@@ -8,7 +8,8 @@ import { FeaturedBanner } from "@/components/featured-banner";
 import { AwardTiles } from "@/components/award-tiles";
 import { GenreTiles } from "@/components/genre-tiles";
 import { LanguageTiles } from "@/components/language-tiles";
-import { ScrollRootContext } from "@/components/row";
+import { Row, ScrollRootContext } from "@/components/row";
+import { PickCard } from "@/components/pick-card";
 import type { Meta } from "@/lib/cinemeta";
 import { fetchCriticsPickList, fetchFeatured, getPool, selectDailyRows, type FeedItem } from "@/lib/feed";
 import { getStore, subscribe as subscribeTaste } from "@/lib/discover/store";
@@ -16,9 +17,13 @@ import { getDownvotedIds, getUpvotedIds, subscribePrefs } from "@/lib/feed/prefe
 import { recentlyPlayed, subscribePlayback, watchTitleKey } from "@/lib/playback-history";
 import { useSettings } from "@/lib/settings";
 import { useScrollMemory } from "@/lib/view";
+import { useLetterboxd } from "@/lib/stremboxd/provider";
+import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
+import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
 import { Rail } from "./discover/discover-rail";
 import { useDedupedRows } from "./discover/use-deduped-rows";
 import { ANCHOR_AWARDS, ANCHOR_TOP_RATED } from "@/lib/feed/daily-rows-anchors";
+import type { HomeRow } from "./home/home-types";
 
 const MAX_RAIL_PAGES = 10;
 const MIN_PAGE_YIELD = 4;
@@ -35,11 +40,53 @@ export function Discover({ active = true }: { active?: boolean }) {
   useScrollMemory("discover", scrollRef, active);
 
   const { settings } = useSettings();
+  const letterboxd = useLetterboxd();
   const [featured, setFeatured] = useState<Meta[]>([]);
   const [queue, setQueue] = useState<FeedItem[]>([]);
   const [criticsPickList, setCriticsPickList] = useState<Meta[]>([]);
   const [tasteVersion, setTasteVersion] = useState(0);
   const [rails, setRails] = useState<Record<string, Meta[]>>({});
+  const [letterboxdRows, setLetterboxdRows] = useState<HomeRow[]>([]);
+
+  useEffect(() => {
+    if (!letterboxd.isActive) {
+      setLetterboxdRows([]);
+      return;
+    }
+    if (letterboxd.mode === "full" && !letterboxd.session) {
+      setLetterboxdRows([]);
+      return;
+    }
+    if (letterboxd.mode === "public" && !letterboxd.configSegment) {
+      setLetterboxdRows([]);
+      return;
+    }
+    let cancelled = false;
+    buildLetterboxdHomeRows({
+      configSegment: letterboxd.configSegment,
+      selectedCatalogs: letterboxd.selectedCatalogs,
+      hiddenCatalogs: letterboxd.hiddenCatalogs,
+      catalogOrder: letterboxd.catalogOrder,
+      session: letterboxd.session,
+      listRefs: letterboxd.listRefs,
+    })
+      .then((rs) => {
+        if (!cancelled) setLetterboxdRows(rs);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    letterboxd.isActive,
+    letterboxd.mode,
+    letterboxd.configSegment,
+    letterboxd.selectedCatalogs,
+    letterboxd.hiddenCatalogs,
+    letterboxd.catalogOrder,
+    letterboxd.session,
+    letterboxd.listRefs,
+  ]);
   const railPagesRef = useRef<Record<string, number>>({});
   const railExhaustedRef = useRef<Record<string, boolean>>({});
   const railLoadingRef = useRef<Record<string, boolean>>({});
@@ -218,6 +265,40 @@ export function Discover({ active = true }: { active?: boolean }) {
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-14">
           <FeaturedBanner items={featured} />
+
+          {letterboxdRows.map((row, i) => {
+            const catalogId = row.key.replace("letterboxd-", "");
+            return (
+            <Row
+              key={row.key}
+              title={
+                <>
+                  {row.name}
+                  <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
+                    Letterboxd
+                  </span>
+                </>
+              }
+              titleExtra={
+                <LetterboxdRowMenu
+                  canMoveUp={i > 0}
+                  canMoveDown={i < letterboxdRows.length - 1}
+                  hidden={letterboxd.hiddenCatalogs.includes(catalogId)}
+                  onMoveUp={() => letterboxd.moveCatalog(catalogId, -1)}
+                  onMoveDown={() => letterboxd.moveCatalog(catalogId, 1)}
+                  onToggleHidden={() => letterboxd.toggleHidden(catalogId)}
+                />
+              }
+              min={148}
+              shape="portrait"
+              scrollKey={`discover:${row.key}`}
+            >
+              {row.metas.map((m) => (
+                <PickCard key={m.id} meta={m} />
+              ))}
+            </Row>
+            );
+          })}
 
           {dailyRows.map((r, i) => (
             <Fragment key={r.id}>

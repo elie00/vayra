@@ -91,6 +91,8 @@ import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
 import { TraktComments } from "./detail/trakt-comments";
+import { LetterboxdPanel } from "./detail/letterboxd-panel";
+import { LetterboxdReviews } from "./detail/letterboxd-reviews";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
 
@@ -1200,6 +1202,18 @@ export function DetailView({
           <LazyMount minHeight={200}>
             <InfoBlock detail={detail} isAnime={isAnime} />
           </LazyMount>
+        )}
+        {!isAnime && (
+          <LetterboxdPanel
+            meta={meta}
+            imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+          />
+        )}
+        {!isAnime && (
+          <LetterboxdReviews
+            meta={meta}
+            imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+          />
         )}
         <TraktComments resolution={traktResolution} />
 

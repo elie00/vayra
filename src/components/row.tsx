@@ -99,6 +99,7 @@ function Skeleton({ shape }: { shape: RowShape }) {
 
 export function Row({
   title,
+  titleExtra,
   className = "",
   min = 144,
   shape = "portrait",
@@ -110,6 +111,7 @@ export function Row({
   viewAllLabel = "View all",
 }: {
   title?: React.ReactNode;
+  titleExtra?: React.ReactNode;
   className?: string;
   min?: number;
   shape?: RowShape;
@@ -411,14 +413,17 @@ export function Row({
   return (
     <div className={`flex min-w-0 flex-col gap-5 ps-[9px] ${className}`}>
       {(title || onViewAll) && (
-        <div className="flex items-baseline justify-between gap-4 pe-1">
+        <div className="flex items-center justify-between gap-4 pe-1">
           {title && (
-            <h3
-              className="truncate font-medium tracking-tight text-ink"
-              style={{ fontSize: `${Math.round(17 * settings.rowTitleScale)}px` }}
-            >
-              {title}
-            </h3>
+            <div className="flex min-w-0 items-center gap-2">
+              <h3
+                className="truncate font-medium tracking-tight text-ink"
+                style={{ fontSize: `${Math.round(17 * settings.rowTitleScale)}px` }}
+              >
+                {title}
+              </h3>
+              {titleExtra}
+            </div>
           )}
           {onViewAll && (
             <button

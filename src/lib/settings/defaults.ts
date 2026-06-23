@@ -257,4 +257,15 @@ export const DEFAULT: Settings = {
   pauseListStatusOnPause: false,
   translateTitles: true,
   translateDescriptions: true,
+  letterboxd: {
+    enabled: false,
+    mode: "public",
+    username: "",
+    encodedConfig: "",
+    selectedCatalogs: ["letterboxd-watchlist", "letterboxd-liked", "letterboxd-popular", "letterboxd-top250"],
+    hiddenCatalogs: [],
+    catalogOrder: [],
+    showRatingsOnPosters: true,
+    listRefs: [],
+  },
 };
