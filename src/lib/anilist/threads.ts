@@ -190,7 +190,7 @@ export async function createThread(
 ): Promise<AnilistThread> {
   const data = await anilistRequest<SaveThreadResponse>(SAVE_THREAD_MUTATION, {
     title,
-    body,
+    body: body || null,
     mediaCategories: [mediaId],
   });
   return mapThread(data.SaveThread);
