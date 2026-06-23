@@ -31,6 +31,29 @@ import { useView } from "@/lib/view";
 import { useSettings } from "@/lib/settings";
 import { openUrl } from "@/lib/window";
 
+function extractAnilistError(e: unknown, fallback: string): string {
+  if (e instanceof AnilistApiError) {
+    try {
+      const parsed = JSON.parse(e.body);
+      if (parsed.errors && Array.isArray(parsed.errors)) {
+        const msgs = parsed.errors.map((err: { message?: string; validation?: Record<string, string[]> }) => {
+          if (err.validation) {
+            const fields = Object.entries(err.validation).map(
+              ([field, rules]) => `${field}: ${Array.isArray(rules) ? rules.join(", ") : rules}`,
+            );
+            return fields.join("; ");
+          }
+          return err.message ?? "";
+        });
+        const msg = msgs.filter(Boolean).join("; ");
+        if (msg) return msg;
+      }
+    } catch {}
+    return e.body.slice(0, 160) || `HTTP ${e.status}`;
+  }
+  return fallback;
+}
+
 function timeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp * 1000;
   const mins = Math.floor(diff / 60000);
@@ -339,7 +362,7 @@ export function AnilistComments({ harborId }: { harborId: string | null }) {
       setCommentText("");
     } catch (e) {
       if (e instanceof AnilistApiError) {
-        setPostError(e.body.slice(0, 120) || `HTTP ${e.status}`);
+        setPostError(extractAnilistError(e, t("Failed to post comment")));
       } else {
         setPostError(t("Failed to post comment"));
       }
@@ -363,7 +386,7 @@ export function AnilistComments({ harborId }: { harborId: string | null }) {
       setShowNewThread(false);
     } catch (e) {
       if (e instanceof AnilistApiError) {
-        setThreadError(e.body.slice(0, 120) || `HTTP ${e.status}`);
+        setThreadError(extractAnilistError(e, t("Failed to create thread")));
       } else {
         setThreadError(t("Failed to create thread"));
       }
