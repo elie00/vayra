@@ -9,6 +9,7 @@ import {
 } from "@/lib/stremboxd/client";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 
 class ReviewsBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -45,6 +46,8 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
   const [filmSlug, setFilmSlug] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
   const [showAll, setShowAll] = useState(false); // "Load more" toggle
+  const { settings } = useSettings();
+  const [blurred, setBlurred] = useState(true);
 
   const effectiveImdbId = imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
 
@@ -231,8 +234,25 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
       )}
 
       {visible.length > 0 && (
-        <div className="flex flex-col gap-3">
-          {visible.map((review, i) => (
+        <div className={`relative rounded-xl ${settings.blurComments && blurred ? "overflow-hidden" : ""}`}>
+          {settings.blurComments && blurred && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center gap-3 pt-16 backdrop-blur-sm"
+              style={{
+                background: "linear-gradient(to bottom, color-mix(in srgb, var(--color-canvas) 5%, transparent) 0%, color-mix(in srgb, var(--color-canvas) 78%, transparent) 40%, color-mix(in srgb, var(--color-canvas) 95%, transparent) 100%)",
+              }}
+            >
+              <button
+                onClick={() => setBlurred(false)}
+                className="rounded-xl bg-ink px-5 py-2.5 text-[13px] font-semibold text-canvas shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              >
+                {t("Reveal reviews")}
+              </button>
+              <span className="text-[11px] text-ink-muted/60">{t("Reviews are hidden")}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {visible.map((review, i) => (
             <div key={`${review.author}-${i}`} className="flex gap-3 rounded-xl bg-elevated p-4 ring-1 ring-edge">
               <div className="shrink-0">
                 {review.avatar ? (
@@ -288,6 +308,7 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
               {t("Show {n} more reviews", { n: hiddenCount })}
             </button>
           )}
+        </div>
         </div>
       )}
     </section>

@@ -391,6 +391,13 @@ export function LetterboxdPanel() {
               onChange={(on) => syncConfig({ showRatingsOnPosters: on })}
             />
 
+            <ToggleRow
+              label={t("Blur reviews by default")}
+              sub={t("Reviews on film pages are blurred until you reveal them.")}
+              value={!!settings.blurComments}
+              onChange={(on) => update({ blurComments: on })}
+            />
+
             {lb.hiddenCatalogs.length > 0 && (
               <div className="flex flex-col gap-2">
                 <label className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">

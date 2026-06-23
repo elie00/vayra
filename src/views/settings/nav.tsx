@@ -240,8 +240,9 @@ function IconSimkl(p: IconProps) {
 function IconLetterboxd(p: IconProps) {
   return (
     <IconBase {...p}>
-      <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
-      <path d="M3.5 9h17M3.5 15h17M8 5v14M16 5v14" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="5" cy="12" r="3.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="3.5" fill="currentColor" stroke="none" />
     </IconBase>
   );
 }
