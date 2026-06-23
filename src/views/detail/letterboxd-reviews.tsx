@@ -3,6 +3,7 @@ import { ExternalLink, Globe, Heart, Loader2, MessageCircle, RefreshCw, Users } 
 import type { Meta } from "@/lib/cinemeta";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
 import {
+  fetchLetterboxdFriendsReviews,
   fetchLetterboxdReviewsDirect,
   type LetterboxdReview,
 } from "@/lib/stremboxd/client";
@@ -37,7 +38,9 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
   const t = useT();
   const lb = useLetterboxd();
   const [reviews, setReviews] = useState<LetterboxdReview[]>([]);
+  const [friendsReviews, setFriendsReviews] = useState<LetterboxdReview[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingFriends, setLoadingFriends] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [filmSlug, setFilmSlug] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
@@ -66,7 +69,21 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
       setLoading(false);
       setTried(true);
     }
-  }, [effectiveImdbId]);
+
+    // Also fetch friends reviews in parallel (if full mode connected)
+    if (lb.isFullConnected && lb.username) {
+      setLoadingFriends(true);
+      setFriendsReviews([]);
+      try {
+        const friends = await fetchLetterboxdFriendsReviews(lb.username, effectiveImdbId);
+        setFriendsReviews(friends);
+      } catch (e) {
+        console.error("[Letterboxd Reviews] friends fetch error:", e);
+      } finally {
+        setLoadingFriends(false);
+      }
+    }
+  }, [effectiveImdbId, lb.isFullConnected, lb.username]);
 
   useEffect(() => {
     fetchReviews();
@@ -125,12 +142,12 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
   }
 
   // Filter: Arabic = lang="ar" OR contains Arabic characters
-  // Friends = all (no friend data from scraping, but button exists for UX)
-  const filtered = reviews.filter((r) => {
+  // Friends = use friends reviews (from /{username}/friends/film/{slug}/reviews/)
+  const sourceReviews = filter === "friends" ? friendsReviews : reviews;
+  const filtered = sourceReviews.filter((r) => {
     if (filter === "ar") {
       return r.lang === "ar" || /[\u0600-\u06FF]/.test(r.text);
     }
-    if (filter === "friends") return true;
     return true;
   });
 
@@ -159,18 +176,23 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
               onClick={() => { setFilter("all"); setShowAll(false); }}
               icon={<MessageCircle size={12} />}
               label={t("All")}
+              count={reviews.length}
             />
-            <FilterBtn
-              active={filter === "friends"}
-              onClick={() => { setFilter("friends"); setShowAll(false); }}
-              icon={<Users size={12} />}
-              label={t("Friends")}
-            />
+            {lb.isFullConnected && lb.username && (
+              <FilterBtn
+                active={filter === "friends"}
+                onClick={() => { setFilter("friends"); setShowAll(false); }}
+                icon={<Users size={12} />}
+                label={t("Friends")}
+                count={loadingFriends ? undefined : friendsReviews.length}
+              />
+            )}
             <FilterBtn
               active={filter === "ar"}
               onClick={() => { setFilter("ar"); setShowAll(false); }}
               icon={<Globe size={12} />}
               label={t("العربية")}
+              count={reviews.filter((r) => r.lang === "ar" || /[\u0600-\u06FF]/.test(r.text)).length || undefined}
             />
           </div>
 
@@ -196,11 +218,15 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
         </div>
       </div>
 
-      {filtered.length === 0 && reviews.length > 0 && (
+      {filtered.length === 0 && !loading && (
         <p className="text-[14px] text-ink-muted py-4">
           {filter === "ar"
             ? t("No Arabic reviews found for this film.")
-            : t("No reviews match this filter.")}
+            : filter === "friends"
+              ? loadingFriends
+                ? t("Loading friends' reviews…")
+                : t("No reviews from your friends for this film.")
+              : t("No reviews yet.")}
         </p>
       )}
 
@@ -273,11 +299,13 @@ function FilterBtn({
   onClick,
   icon,
   label,
+  count,
 }: {
   active: boolean;
   onClick: () => void;
   icon?: ReactNode;
   label: string;
+  count?: number;
 }) {
   return (
     <button
@@ -288,6 +316,11 @@ function FilterBtn({
     >
       {icon}
       {label}
+      {count != null && count > 0 && (
+        <span className={`rounded-full px-1 text-[9px] ${active ? "bg-canvas/20" : "bg-edge-soft/40"}`}>
+          {count}
+        </span>
+      )}
     </button>
   );
 }

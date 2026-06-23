@@ -348,6 +348,85 @@ export async function fetchLetterboxdReviewsDirect(
   return { reviews, hasNext: false };
 }
 
+// Fetch friends' reviews — uses letterboxd.com/{username}/friends/film/{slug}/reviews/
+// which returns 200 (unlike /by/activity/ which is 403'd by Cloudflare).
+// Requires the user's Letterboxd username + the film slug.
+export async function fetchLetterboxdFriendsReviews(
+  username: string,
+  imdbId: string,
+): Promise<LetterboxdReview[]> {
+  // First resolve the film slug from the IMDb redirect page
+  const url = `https://letterboxd.com/imdb/${imdbId}/`;
+  let html: string;
+  try {
+    const res = await fetchWithCloudflareBypass(url);
+    if (!res.ok) return [];
+    html = await res.text();
+  } catch {
+    return [];
+  }
+  if (html.includes("Just a moment...") || html.includes("__cf_chl_opt")) return [];
+
+  const slugMatch = html.match(/letterboxd\.com\/film\/([^/"'?\s#]+)/);
+  const slug = slugMatch ? slugMatch[1]! : null;
+  if (!slug) return [];
+
+  // Now fetch friends reviews
+  const friendsUrl = `https://letterboxd.com/${username}/friends/film/${slug}/reviews/`;
+  let friendsHtml: string;
+  try {
+    const res = await fetchWithCloudflareBypass(friendsUrl);
+    if (!res.ok) {
+      console.warn(`[Letterboxd] friends reviews HTTP ${res.status}`);
+      return [];
+    }
+    friendsHtml = await res.text();
+  } catch (e) {
+    console.error("[Letterboxd] friends reviews fetch error:", e);
+    return [];
+  }
+
+  if (friendsHtml.includes("Just a moment...") || friendsHtml.includes("__cf_chl_opt")) {
+    console.warn("[Letterboxd] Cloudflare on friends reviews");
+    return [];
+  }
+
+  const doc = new DOMParser().parseFromString(friendsHtml, "text/html");
+  const articles = doc.querySelectorAll("article.production-viewing");
+  console.log(`[Letterboxd] found ${articles.length} friends reviews`);
+
+  const reviews: LetterboxdReview[] = [];
+  for (const art of articles) {
+    const bodyEl = art.querySelector(".js-review-body") as HTMLElement | null;
+    if (!bodyEl) continue;
+    const text = bodyEl.textContent?.trim() ?? "";
+    if (!text) continue;
+
+    const authorEl = art.querySelector(".displayname");
+    const author = authorEl?.textContent?.trim() ?? "";
+    const authorLink = art.querySelector("a.avatar") as HTMLAnchorElement | null;
+    const authorPath = authorLink?.getAttribute("href") ?? "";
+    const authorUrl = authorPath
+      ? authorPath.startsWith("http") ? authorPath : `https://letterboxd.com${authorPath}`
+      : "";
+    const avatarImg = art.querySelector("a.avatar img") as HTMLImageElement | null;
+    const avatarSrc = avatarImg?.getAttribute("src") ?? "";
+    const avatar = avatarSrc
+      ? avatarSrc.startsWith("http") ? avatarSrc : `https://letterboxd.com${avatarSrc}`
+      : null;
+    const ratingSvg = art.querySelector(".inline-rating svg") as SVGSVGElement | null;
+    const rating = ratingSvg?.getAttribute("aria-label") ?? null;
+    const lang = bodyEl.getAttribute("lang") ?? null;
+    const dateEl = art.querySelector("time.timestamp") as HTMLElement | null;
+    const date = dateEl?.getAttribute("datetime") ?? null;
+
+    reviews.push({ text, author, authorUrl, avatar, rating, lang, date, url: friendsUrl });
+  }
+
+  console.log(`[Letterboxd] parsed ${reviews.length} friends reviews`);
+  return reviews;
+}
+
 // Update server-side preferences (which catalogs are enabled, etc.)
 // This controls what appears in the dynamic manifest.
 export type LetterboxdPreferences = {
