@@ -91,6 +91,7 @@ import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
 import { TraktComments } from "./detail/trakt-comments";
+import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
 
@@ -1201,7 +1202,8 @@ export function DetailView({
             <InfoBlock detail={detail} isAnime={isAnime} />
           </LazyMount>
         )}
-        <TraktComments resolution={traktResolution} />
+        {!isAnime && <TraktComments resolution={traktResolution} />}
+        {isAnime && <AnilistComments harborId={animeCanonicalId ?? meta.id} />}
 
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">
