@@ -715,8 +715,8 @@ pub async fn mpv_set_geometry(
     {
         let x = geom.css_left;
         let y = geom.css_top;
-        let w = geom.css_width;
-        let h = geom.css_height;
+        let w = geom.css_view_w;
+        let h = geom.css_view_h;
         let (tx, rx) = std::sync::mpsc::sync_channel::<()>(1);
         let _ = app.run_on_main_thread(move || {
             let _ = crate::mpv_render_mac::resize_to(x, y, w, h);
