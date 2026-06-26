@@ -41,7 +41,7 @@ export function StageOverlays({
         <SubtitleOverlay text={snap.subText} startSec={snap.subStartSec} scale={pipMode ? 0.45 : 1} />
       )}
       {showStats && !pipMode && <StatsOverlay snap={snap} engine={engine} />}
-      {!pipMode && <Anime4kIndicator engine={engine} />}
+      {!pipMode && <Anime4kIndicator engine={engine} chromeVisible={chromeVisible} />}
       {!pipMode && <SvpIndicator engine={engine} chromeVisible={chromeVisible} />}
       {holdSpeedActive && !pipMode && (
         <div className="pointer-events-none absolute left-1/2 top-8 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-canvas/85 px-3.5 py-1.5 text-[13px] font-semibold text-ink backdrop-blur-md">

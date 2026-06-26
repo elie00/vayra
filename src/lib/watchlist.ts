@@ -5,6 +5,8 @@ import { addToWatchlist as simklAdd, removeFromWatchlist as simklRemove } from "
 import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { isAuthenticated as simklConnected } from "@/lib/simkl/session";
 import { setItemWithRecovery, freeStorageSpace } from "@/lib/storage-recovery";
+import { cloudWriteId, saveStremioBookmark, removeStremioBookmark } from "@/lib/stremio";
+import { readActiveStremioAuthKey } from "@/lib/auth";
 
 const KEY = "harbor.watchlist.v1";
 const AGG_KEY = "harbor.watchlist.aggregate.v1";
@@ -18,7 +20,7 @@ export type LocalEntry = {
   addedAt: number;
 };
 
-export type WatchlistInput = { id: string; type?: string; name?: string; poster?: string };
+export type WatchlistInput = { id: string; type?: string; name?: string; poster?: string; imdbId?: string | null };
 
 let memoryFallback: Map<string, LocalEntry> | null = null;
 
@@ -155,12 +157,20 @@ export function removeFromWatchlist(id: string): void {
 export function toggleWatchlist(input: string | WatchlistInput): boolean {
   const map = read();
   const id = typeof input === "string" ? input : input.id;
-  const has = map.has(id);
-  if (has) map.delete(id);
-  else map.set(id, toEntry(input));
+  const imdb = typeof input === "string" ? null : input.imdbId ?? null;
+  const has = map.has(id) || aggregateIds.has(id) || (!!imdb && aggregateIds.has(imdb));
+  if (has) {
+    map.delete(id);
+    aggregateIds.delete(id);
+    if (imdb) aggregateIds.delete(imdb);
+    writeAggregateCache(aggregateIds);
+  } else {
+    map.set(id, toEntry(input));
+  }
   write(map);
   void syncWithTrakt(id, !has);
   void syncWithSimkl(id, !has);
+  void syncWithStremio(input, !has);
   return !has;
 }
 
@@ -182,6 +192,26 @@ async function syncWithSimkl(metaId: string, added: boolean): Promise<void> {
     if (!r.ok) return;
     if (added) await simklAdd(r.target);
     else await simklRemove(r.target);
+  } catch {
+    /* swallow */
+  }
+}
+
+async function syncWithStremio(input: string | WatchlistInput, added: boolean): Promise<void> {
+  try {
+    const authKey = readActiveStremioAuthKey();
+    if (!authKey) return;
+    const id = typeof input === "string" ? input : input.id;
+    const imdb = typeof input === "string" ? null : input.imdbId ?? null;
+    const writeId = cloudWriteId(id, imdb, !!imdb);
+    if (!writeId) return;
+    if (added) {
+      const meta =
+        typeof input === "string" ? {} : { type: input.type, name: input.name, poster: input.poster };
+      await saveStremioBookmark(authKey, writeId, meta);
+    } else {
+      await removeStremioBookmark(authKey, writeId);
+    }
   } catch {
     /* swallow */
   }

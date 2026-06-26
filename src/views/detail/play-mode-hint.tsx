@@ -58,7 +58,7 @@ export function PlayModeHint({ children }: { children: React.ReactNode }) {
             >
               <X size={13} />
             </button>
-            <div className="absolute start-10 top-full -mt-1.5 h-3 w-3 rotate-45 border-b border-r border-edge-soft bg-elevated/95" />
+            <div className="absolute start-10 top-full -mt-1.5 h-3 w-3 rotate-45 border-b border-e border-edge-soft bg-elevated/95" />
           </div>
         </div>
       )}

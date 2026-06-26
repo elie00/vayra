@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { activeLayout } from "@/lib/theme";
+import { resolveChromeTheme } from "@/lib/theme";
 import { type PlayerBridge } from "@/lib/player/bridge";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
+import { writePlayerVolume } from "@/lib/player-volume";
 import { nameColor } from "@/lib/together/colors";
 import { useTogether } from "@/lib/together/provider";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
-import { useSkipSegments } from "@/lib/skip-intro";
+import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
+import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
 import { useAuth } from "@/lib/auth";
 import { embedFlags } from "./player/player-utils";
@@ -39,6 +41,7 @@ import { useEpisodeNavigation } from "./player/hooks/use-episode-navigation";
 import { useAbLoop } from "./player/hooks/use-ab-loop";
 import { useAutoNextEpisode } from "./player/hooks/use-auto-next-episode";
 import { useFrameGrab } from "./player/hooks/use-frame-grab";
+import { useClipRecorder } from "./player/hooks/use-clip-recorder";
 import { useGifRecorder } from "./player/hooks/use-gif-recorder";
 import { useSleepTimer } from "./player/hooks/use-sleep-timer";
 import { useAutoEndExit } from "./player/hooks/use-auto-end-exit";
@@ -49,6 +52,7 @@ import { usePlayerExit } from "./player/hooks/use-player-exit";
 import { usePendingSeekApply } from "./player/hooks/use-pending-seek-apply";
 import { usePlayerHotkeys } from "./player/hooks/use-player-hotkeys";
 import { usePlayerMedia } from "./player/hooks/use-player-media";
+import { useTrickplay } from "./player/hooks/use-trickplay";
 import { useStreamPill } from "./player/hooks/use-stream-pill";
 import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
@@ -65,7 +69,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
   const { settings, update } = useSettings();
   const t = useT();
-  const chromeTheme = activeLayout(settings.theme) === "stremio" ? "stremio" : "default";
+  const chromeTheme = resolveChromeTheme(settings.theme, settings.playerChromeTheme);
   const {
     avatarsCorner,
     chatCorner,
@@ -102,7 +106,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const videoMountRef = useRef<HTMLDivElement>(null);
   const bridgeRef = useRef<PlayerBridge | null>(null);
   const selfFrameReadyRef = useRef(false);
-  const { fullscreen, toggleFullscreen } = useFullscreen(stageRef);
+  const { fullscreen, toggleFullscreen } = useFullscreen();
   const { snap, engine, bridgeReady, bridgeKey, embedActive } = usePlayerBridge({
     bridgeRef,
     videoMountRef,
@@ -186,7 +190,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     sendDraw,
   });
 
-  const { chromeVisible, wakeChrome, setAnyMenuOpen, cursorStyle } = useChromeVisibility({
+  const { chromeVisible, wakeChrome, hideForResume, setAnyMenuOpen, cursorStyle } = useChromeVisibility({
     playing,
     drawMode,
     pipMode,
@@ -249,6 +253,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     src,
   });
   const gif = useGifRecorder({ src });
+  const clip = useClipRecorder({ src });
 
   const { resolvedImdbId, subAssNative, captureExitSnapshot, download, subDropToast } = usePlayerMedia({
     src,
@@ -455,6 +460,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     seekStep,
     seekTo,
     toggleFullscreen,
+    togglePip: togglePipMode,
     fullscreen,
     cycleSubtitles,
     canChangeEpisode,
@@ -474,7 +480,18 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       }
       anime4k.setMode(anime4k.mode === "off" ? "auto" : "off");
     },
+    onAnime4kOn: () => {
+      if (!anime4k.available) {
+        showSyncToast("error", t("Anime4K isn't set up yet. Turn it on in Settings under Anime."));
+        return;
+      }
+      anime4k.setMode("auto");
+    },
+    onAnime4kOff: () => {
+      anime4k.setMode("off");
+    },
     gif,
+    clip,
     videoFill,
   });
 
@@ -538,7 +555,23 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     streamCheckOpen,
   });
 
-  const skipSegments = useSkipSegments(src.meta, src.episode, snap.chapters, snap.durationSec);
+  const playStreamRef = liveStreamRef ?? src.streamRef;
+  const playUrl = liveUrl ?? src.url;
+  useTrickplay({ url: playUrl, enabled: settings.seekPreviewEnabled });
+  const adSegments = useAdSegments(
+    src.meta.id,
+    src.imdbId ?? null,
+    playStreamRef,
+    playUrl,
+    withinAdWindow(src.meta) || settings.adSkipEnabled,
+  );
+  const skipSegments = useSkipSegments(
+    src.meta,
+    src.episode,
+    snap.chapters,
+    snap.durationSec,
+    adSegments,
+  );
   useEffect(() => {
     setSkipSegmentsView(skipSegments);
     return () => setSkipSegmentsView([]);
@@ -553,12 +586,19 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     enabled: settings.mpvTweaks?.["inverse-tone-mapping"] === "yes",
   });
 
-  const hdrStageActive = useHdrStage({
+  const { requested: hdrStageRequested, confirmed: hdrStageActive } = useHdrStage({
     engine,
     embedActive,
     hdrGamma: snap.hdrGamma,
     playerHdrStage: settings.playerHdrStage,
     playerHdrToSdr: settings.playerHdrToSdr,
+    onFallback: () =>
+      showSyncToast(
+        "error",
+        t(
+          "HDR controls could not load. Showing the video with controls. For reliable HDR, switch to True HDR, separate window in Settings.",
+        ),
+      ),
   });
 
   const { mpvEmbedWindowsActive, stageBg } = embedFlags(
@@ -581,10 +621,24 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     : snap;
   if (showChrome) shellSnapRef.current = liveShellSnap;
   const shellSnap = showChrome ? liveShellSnap : shellSnapRef.current;
+  const volumeRef = useRef(snap.volume);
+  useEffect(() => {
+    volumeRef.current = snap.volume;
+  }, [snap.volume]);
+  const onVolumeWheel = useCallback((deltaY: number) => {
+    const dir = deltaY < 0 ? 1 : -1;
+    const next = Math.min(6, Math.max(0, volumeRef.current + dir * 0.05));
+    volumeRef.current = next;
+    bridgeRef.current?.setVolume(next);
+    writePlayerVolume({ volume: next });
+  }, []);
+
   const overlayProps: PlayerOverlayLayersProps = {
     snap,
     engine,
     src,
+    adStreamRef: playStreamRef,
+    adUrl: playUrl,
     subShowInPip: settings.subShowInPip,
     subAssNative,
     showStats,
@@ -603,6 +657,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     pickAnotherOrGuide,
     playPauseToggle,
     toggleFullscreen,
+    onVolumeWheel,
     isLocalSrc,
     swappingEp,
     swapResolvingKey,
@@ -643,6 +698,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     frameGrabToast: frameGrab.toast,
     onScreenshot: () => frameGrab.trigger(),
     gif,
+    clip,
     loaderActive,
     playerShellId: settings.playerShellId,
     shellSnap,
@@ -738,12 +794,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
         onClick={(e) => {
           if (e.target !== e.currentTarget) return;
           if (drawMode || pipMode) return;
+          const resuming = snap.status !== "playing";
           playPauseToggle();
+          if (resuming) hideForResume();
         }}
       />
       {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
       <HdrStageBridge
-        active={hdrStageActive}
+        active={hdrStageRequested}
         payload={{
           snap,
           src,

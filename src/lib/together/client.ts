@@ -14,7 +14,7 @@ import { diagnoseRelayFailure, type RoomEvent, type RoomSnapshot } from "./clien
 
 export type { ClientState, RoomEvent, RoomSnapshot } from "./client-types";
 
-const AVATAR_MAX_CHARS = 150_000;
+const AVATAR_MAX_CHARS = 590_000;
 const PING_INTERVAL_MS = 25_000;
 const LIVENESS_TIMEOUT_MS = 40_000;
 const RECONNECT_BASE_MS = 1000;
@@ -403,6 +403,16 @@ export class TogetherClient {
           return;
         }
         this.update({ participants: nextParticipants });
+        if (incoming.id !== this.clientId && this.room && this.ws?.readyState === WebSocket.OPEN) {
+          this.sendNow({
+            t: "profile",
+            room: this.room,
+            clientId: this.clientId,
+            name: this.name,
+            avatar: this.avatar,
+            color: this.color,
+          });
+        }
         if (
           incoming.id !== this.clientId &&
           this.lastSentInvite &&

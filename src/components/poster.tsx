@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { needsImdbForPoster, needsTmdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
 import {
   tmdbIdFromImdb,
@@ -61,35 +61,15 @@ const ASPECT: Record<Ratio, string> = {
   wide: "aspect-[16/7]",
 };
 
-const loadedPosters = new Set<string>();
-
-function lowResUrl(src?: string): string | undefined {
-  if (!src) return undefined;
-  const tmdb = src.match(/^(https?:\/\/image\.tmdb\.org\/t\/p\/)(w\d+|original)(\/.+)$/);
-  if (tmdb) return `${tmdb[1]}w92${tmdb[3]}`;
-  const meta = src.match(/^(https?:\/\/images\.metahub\.space\/poster\/)(small|medium|large)(\/.+)$/);
-  if (meta) return `${meta[1]}small${meta[3]}`;
-  const imdb = src.match(/[?&]imdb_id=(tt\d+)/i);
-  if (imdb) return `https://images.metahub.space/poster/small/${imdb[1]}/img`;
-  return undefined;
-}
-
-function lowResId(id?: string): string | undefined {
-  if (!id) return undefined;
-  const m = id.match(/(tt\d+)/);
-  if (m) return `https://images.metahub.space/poster/small/${m[1]}/img`;
-  return undefined;
-}
-
 export function Poster({
   src,
   seed,
-  lowResImdb,
   ratio = "portrait",
   className = "",
   children,
   onError,
   lazy = false,
+  fallbacks,
 }: {
   src?: string;
   seed: string;
@@ -99,21 +79,38 @@ export function Poster({
   children?: React.ReactNode;
   onError?: () => void;
   lazy?: boolean;
+  fallbacks?: Array<string | null | undefined>;
 }) {
   const { settings } = useSettings();
   const effect = settings.posterEffect;
-  const [failed, setFailed] = useState(false);
+  const candidates = [src, ...(fallbacks ?? [])].filter((u): u is string => !!u);
+  const sig = candidates.join("|");
+  const [idx, setIdx] = useState(0);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    setFailed(false);
+    setIdx(0);
     setLoaded(false);
-  }, [src]);
-  const showGradient = !src || failed;
-  const showPlate = showGradient || (effect !== "blur" && !loaded);
-  const lowSrc = useMemo(
-    () => lowResUrl(src) ?? lowResId(lowResImdb) ?? lowResId(seed),
-    [src, lowResImdb, seed],
+  }, [sig]);
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const current: string | undefined = candidates[idx];
+  const advance = useCallback(() => {
+    setLoaded(false);
+    setIdx((i) => {
+      const next = i + 1;
+      if (next >= candidates.length) onErrorRef.current?.();
+      return next;
+    });
+  }, [candidates.length]);
+  const handleImgRef = useCallback(
+    (el: HTMLImageElement | null) => {
+      if (!el || !el.complete) return;
+      if (el.naturalWidth > 0) setLoaded(true);
+      else advance();
+    },
+    [advance],
   );
+  const showPlate = !current || !loaded;
   const hue = hash(seed) % 360;
 
   return (
@@ -121,57 +118,21 @@ export function Poster({
       className={`harbor-poster your-card relative overflow-hidden rounded-[var(--poster-radius,12px)] ${ASPECT[ratio]} ${className}`}
       style={showPlate ? { background: gradient(hue) } : undefined}
     >
-      {effect === "blur" && lowSrc && !showGradient && (
+      {current && (
         <img
-          key={lowSrc}
-          src={lowSrc}
-          alt=""
-          aria-hidden="true"
-          decoding="async"
-          className={`absolute inset-0 h-full w-full scale-110 object-cover blur-xl transition-opacity duration-500 ${loaded ? "opacity-0" : "opacity-100"}`}
-        />
-      )}
-      {!showGradient && (
-        <img
-          key={src}
-          ref={(el) => {
-            if (!el || !el.complete) return;
-            if (el.naturalWidth > 0) setLoaded(true);
-            else {
-              setFailed(true);
-              onError?.();
-            }
-          }}
-          src={src}
+          key={current}
+          ref={handleImgRef}
+          src={current}
           alt=""
           decoding="async"
           loading={lazy ? "lazy" : undefined}
-          onLoad={() => {
-            if (src) loadedPosters.add(src);
-            setLoaded(true);
-          }}
-          onError={() => {
-            setFailed(true);
-            onError?.();
-          }}
+          onLoad={() => setLoaded(true)}
+          onError={advance}
           className="absolute inset-0 h-full w-full object-cover"
           style={
             effect === "off"
-              ? { opacity: failed ? 0 : 1 }
-              : effect === "fade"
-                ? {
-                    opacity: failed ? 0 : loaded ? 1 : 0,
-                    transition: "opacity 350ms ease-out",
-                    willChange: "opacity",
-                  }
-                : {
-                    opacity: failed ? 0 : 1,
-                    transform: loaded ? "scale(1)" : "scale(1.06)",
-                    filter: loaded ? "blur(0px)" : "blur(14px)",
-                    transition:
-                      "opacity 350ms ease-out, transform 600ms cubic-bezier(0.22, 1, 0.36, 1), filter 500ms ease-out",
-                    willChange: "opacity, transform, filter",
-                  }
+              ? { opacity: 1 }
+              : { opacity: loaded ? 1 : 0, transition: "opacity 300ms ease-out" }
           }
         />
       )}

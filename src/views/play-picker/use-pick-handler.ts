@@ -72,7 +72,7 @@ export function usePickHandler({
 }) {
   const [queuedHash, setQueuedHash] = useState<string | null>(null);
   const [debridDown, setDebridDown] = useState(false);
-  const [p2pConfirm, setP2pConfirm] = useState<{ stream: ScoredStream } | null>(null);
+  const [p2pConfirm, setP2pConfirm] = useState<{ stream: ScoredStream; forceP2p?: boolean } | null>(null);
   const debridFailStreakRef = useRef(0);
   const resolveAcRef = useRef<AbortController | null>(null);
 
@@ -87,13 +87,13 @@ export function usePickHandler({
     }
   };
 
-  const resolveAndOpen = async (stream: ScoredStream, userCommitted: boolean) => {
+  const resolveAndOpen = async (stream: ScoredStream, userCommitted: boolean, forceP2p = false) => {
     const ac = new AbortController();
     resolveAcRef.current?.abort();
     resolveAcRef.current = ac;
     let opened = false;
     try {
-      const r = await resolveStream(stream, debrids, ac.signal, userCommitted);
+      const r = await resolveStream(stream, debrids, ac.signal, userCommitted, forceP2p);
       if (ac.signal.aborted) return;
       if (!r.ok) {
         if (r.code === "web-page" && r.webUrl) {
@@ -142,10 +142,15 @@ export function usePickHandler({
         setFailedStreams((prev) => new Set(prev).add(stream));
         const reasonStr = `preflight_stub_${preflight.sizeBytes ?? 0}b`;
         markStreamDead({ url: r.data.url }, reasonStr, PREFLIGHT_STUB_TTL_MS);
-        recordStubEvent(reasonStr);
         console.warn(
           `[picker] preflight detected stub (${preflight.sizeBytes ?? "unknown"} bytes); skipping`,
         );
+        if (!autoActive && !forceP2p && engineP2pEligible(stream)) {
+          setResolving(null);
+          setP2pConfirm({ stream, forceP2p: true });
+          return;
+        }
+        recordStubEvent(reasonStr);
         const willRetry = autoActive && autoAttemptIdx + 1 < autoCandidatesLength;
         advanceAuto();
         if (!willRetry && !autoActive) {
@@ -232,11 +237,11 @@ export function usePickHandler({
     }
   };
 
-  const startResolve = (stream: ScoredStream, committed: boolean) => {
+  const startResolve = (stream: ScoredStream, committed: boolean, forceP2p = false) => {
     setResolveError(null);
     setQueuedHash(null);
     setResolving({ stream });
-    void resolveAndOpen(stream, committed);
+    void resolveAndOpen(stream, committed, forceP2p);
   };
 
   const onPlay = (stream: ScoredStream, committed = true, skipP2pConfirm = false) => {
@@ -263,9 +268,9 @@ export function usePickHandler({
   };
 
   const confirmP2p = () => {
-    const s = p2pConfirm?.stream;
+    const c = p2pConfirm;
     setP2pConfirm(null);
-    if (s) startResolve(s, true);
+    if (c?.stream) startResolve(c.stream, true, c.forceP2p ?? false);
   };
   const cancelP2p = () => setP2pConfirm(null);
 

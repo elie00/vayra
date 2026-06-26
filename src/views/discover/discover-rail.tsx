@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { RailDef } from "@/lib/feed";
 import { FeedShelf } from "@/components/feed-shelf";
@@ -9,20 +10,27 @@ export function Rail({
   allRails,
   deduped,
   loadMore,
+  ensureLoaded,
+  titleOverride,
 }: {
   railId: string;
   allRails: RailDef[];
   deduped: Record<string, Meta[] | null>;
   loadMore: (id: string) => void;
+  ensureLoaded?: (id: string) => void;
+  titleOverride?: string;
 }) {
   const { openGrid } = useView();
   const t = useT();
+  useEffect(() => {
+    ensureLoaded?.(railId);
+  }, [railId, ensureLoaded]);
   const def = allRails.find((r) => r.id === railId);
   if (!def) return null;
   const items = deduped[railId] ?? null;
   const shelf = {
     ...def.shelf,
-    title: t(def.shelf.title),
+    title: t(titleOverride ?? def.shelf.title),
     kicker: def.shelf.kicker ? t(def.shelf.kicker) : def.shelf.kicker,
   };
   return (

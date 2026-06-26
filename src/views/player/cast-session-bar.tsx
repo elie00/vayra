@@ -40,7 +40,7 @@ export function CastSessionBar({
           Transcoding
         </span>
       )}
-      <div className="ml-2 flex items-center gap-1.5">
+      <div className="ms-2 flex items-center gap-1.5">
         <button
           onClick={() => void onTogglePlay()}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-canvas/60 text-ink transition-colors hover:bg-canvas/85"

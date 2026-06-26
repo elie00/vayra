@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState } from "react";
 import { AuthProvider } from "@/lib/auth";
 import { SettingsProvider } from "@/lib/settings";
-import { SubtitleOverlay } from "@/components/player/subtitle-overlay";
 import { ShellLayer } from "./player/shell-layer";
 import { DragClickStage } from "./player/drag-click-stage";
 import { emptySnapshot, type PlayerSnapshot } from "@/lib/player/bridge";
@@ -24,17 +23,42 @@ export type HdrStagePayload = {
   pipMode: boolean;
 };
 
+function emitDead() {
+  void hdrOverlayEmitAction("hdr-stage://dead", {});
+}
+
+class OverlayErrorBoundary extends Component<{ children: React.ReactNode }, { crashed: boolean }> {
+  state = { crashed: false };
+  static getDerivedStateFromError() {
+    return { crashed: true };
+  }
+  componentDidCatch() {
+    emitDead();
+  }
+  render() {
+    return this.state.crashed ? null : this.props.children;
+  }
+}
+
 export function HdrOverlayApp() {
   useEffect(() => {
     document.documentElement.style.background = "transparent";
     document.body.style.background = "transparent";
     const root = document.getElementById("root");
     if (root) root.style.background = "transparent";
+    window.addEventListener("beforeunload", emitDead);
+    window.addEventListener("pagehide", emitDead);
+    return () => {
+      window.removeEventListener("beforeunload", emitDead);
+      window.removeEventListener("pagehide", emitDead);
+    };
   }, []);
   return (
     <AuthProvider>
       <SettingsProvider>
-        <HdrOverlayChrome />
+        <OverlayErrorBoundary>
+          <HdrOverlayChrome />
+        </OverlayErrorBoundary>
       </SettingsProvider>
     </AuthProvider>
   );
@@ -70,6 +94,12 @@ function HdrOverlayChrome() {
   }, [bridge]);
 
   useEffect(() => {
+    if (!payload) return;
+    const id = requestAnimationFrame(() => void hdrOverlayEmitAction("hdr-stage://ready", {}));
+    return () => cancelAnimationFrame(id);
+  }, [payload]);
+
+  useEffect(() => {
     let last = 0;
     const onMove = () => {
       const now = performance.now();
@@ -95,7 +125,6 @@ function HdrOverlayChrome() {
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: "transparent" }}>
-      <SubtitleOverlay text={snap.subText} startSec={snap.subStartSec} scale={1} />
       <DragClickStage
         drawMode={false}
         pipMode={payload.pipMode}

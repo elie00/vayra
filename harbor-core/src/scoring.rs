@@ -21,6 +21,8 @@ pub struct CorpusStats {
 }
 
 const TRACKING_MIN_SEEDERS: u32 = 30;
+const SHORT_FRESH_DAYS: f64 = 30.0;
+const THEATER_WINDOW_DAYS: f64 = 150.0;
 
 static TRUSTED_GROUPS: Lazy<&'static [&'static str]> = Lazy::new(|| {
     &[
@@ -710,7 +712,7 @@ fn fresh_theatrical_adjust(
         }
     };
     let days = (current_time_ms() - t) / 86_400_000.0;
-    if days >= 30.0 {
+    if days >= THEATER_WINDOW_DAYS {
         return ScoreReason {
             signal: "fresh-skip-mature".to_string(),
             delta: 0.0,
@@ -730,6 +732,13 @@ fn fresh_theatrical_adjust(
                 && c.theater_capture_fraction > c.webish_fraction
         })
         .unwrap_or(false);
+
+    if !theater_dominated && days >= SHORT_FRESH_DAYS {
+        return ScoreReason {
+            signal: "fresh-skip-mature".to_string(),
+            delta: 0.0,
+        };
+    }
 
     if is_theater_capture {
         if theater_dominated {
@@ -1305,6 +1314,86 @@ mod tests {
 
     fn empty_opts() -> ScoreOptions {
         ScoreOptions::default()
+    }
+
+    fn civil_from_days(z: i64) -> (i32, u32, u32) {
+        let z = z + 719_468;
+        let era = (if z >= 0 { z } else { z - 146_096 }) / 146_097;
+        let doe = z - era * 146_097;
+        let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+        let y = yoe + era * 400;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+        let m = (if mp < 10 { mp + 3 } else { mp - 9 }) as u32;
+        let y = y + if m <= 2 { 1 } else { 0 };
+        (y as i32, m, d)
+    }
+
+    fn days_ago_iso(days: f64) -> String {
+        let ms = current_time_ms() - days * 86_400_000.0;
+        let day_num = (ms / 86_400_000.0).floor() as i64;
+        let (y, m, d) = civil_from_days(day_num);
+        format!("{:04}-{:02}-{:02}", y, m, d)
+    }
+
+    #[test]
+    fn fresh_theater_window_protects_dominated_pool_past_30_days() {
+        let corpus = CorpusStats {
+            days_since_release: Some(50.0),
+            theater_capture_fraction: 0.8,
+            webish_fraction: 0.1,
+            trusted_tracked_count: 10,
+            ..Default::default()
+        };
+        let opts = ScoreOptions {
+            media_kind: Some("movie".to_string()),
+            release_date: Some(days_ago_iso(50.0)),
+            ..Default::default()
+        };
+
+        let mut ts = base_parsed();
+        ts.source = Source::TS;
+        let ts_adj = fresh_theatrical_adjust(&ts, &opts, false, Some(&corpus));
+        assert!(
+            ts_adj.delta > 0.0,
+            "telesync should stay boosted in a dominated window at day 50, got {}",
+            ts_adj.delta
+        );
+
+        let mut web = base_parsed();
+        web.source = Source::WEBRip;
+        web.resolution = Resolution::UHD;
+        let web_adj = fresh_theatrical_adjust(&web, &opts, false, Some(&corpus));
+        assert!(
+            web_adj.delta < 0.0,
+            "fake webrip should be penalized in a dominated window at day 50, got {}",
+            web_adj.delta
+        );
+    }
+
+    #[test]
+    fn fresh_non_dominated_still_skips_after_30_days() {
+        let corpus = CorpusStats {
+            days_since_release: Some(50.0),
+            theater_capture_fraction: 0.1,
+            webish_fraction: 0.7,
+            trusted_tracked_count: 10,
+            ..Default::default()
+        };
+        let opts = ScoreOptions {
+            media_kind: Some("movie".to_string()),
+            release_date: Some(days_ago_iso(50.0)),
+            ..Default::default()
+        };
+        let mut web = base_parsed();
+        web.source = Source::WEBRip;
+        web.resolution = Resolution::UHD;
+        let adj = fresh_theatrical_adjust(&web, &opts, false, Some(&corpus));
+        assert_eq!(
+            adj.delta, 0.0,
+            "a non-theater-dominated pool past 30 days must skip the fresh heuristic"
+        );
     }
 
     #[test]

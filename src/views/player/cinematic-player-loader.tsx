@@ -4,10 +4,12 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, usePlaybackFlag } from "@/lib/player/playback-clock";
 import { isLocalUrl } from "@/lib/player/local-url";
 import type { PlayerSrc } from "@/lib/view";
+import { Topbar } from "@/chrome/topbar";
 import { useT } from "@/lib/i18n";
 import { LoaderLogoOrText } from "./loader-logo-or-text";
-import { type EngineStats } from "@/lib/torrent/engine-stats";
+import { readinessScore, type EngineStats } from "@/lib/torrent/engine-stats";
 import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
+import { StreamLoadingBar } from "./stream-loading-bar";
 
 function fmtSpeed(bps: number): string {
   if (bps >= 1024 ** 2) return `${(bps / 1024 ** 2).toFixed(1)} MB/s`;
@@ -38,6 +40,7 @@ export function CinematicPlayerLoader({
   const engineSpeed = engineStats?.downloadSpeed ?? 0;
   const showEngineActivity = isInfoHash && !!engineStats && (enginePeers > 0 || engineSpeed > 0);
   const streamBytes = src.streamRef?.size ?? engineStats?.streamLen ?? null;
+  const ready = isInfoHash ? readinessScore(engineStats ?? null, true) : 0;
   const heavyForP2p = isInfoHash && streamBytes != null && streamBytes > 20 * 1024 ** 3;
   const everPlayedRef = useRef(false);
   const hasProgress = usePlaybackFlag(() => getPlaybackPosition() > 0.3);
@@ -53,6 +56,7 @@ export function CinematicPlayerLoader({
   const showing =
     forceShow ||
     (!everPlayedRef.current && snap.errorCode == null && snap.status !== "ended");
+  const done = !showing && snap.errorCode == null;
   const [mounted, setMounted] = useState(showing);
   useEffect(() => {
     onShowingChange?.(showing);
@@ -75,6 +79,7 @@ export function CinematicPlayerLoader({
         showing ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
     >
+      <Topbar connecting />
       {backdrop && (
         <img
           src={backdrop}
@@ -99,18 +104,16 @@ export function CinematicPlayerLoader({
             {src.episode.name ? ` · ${src.episode.name}` : ""}
           </p>
         )}
-        <HarborLoader
-          size="md"
-          caption={
-            isLocal
-              ? t("Loading")
-              : isInfoHash
-                ? snap.buffering
-                  ? t("Buffering")
-                  : t("Preparing stream")
-                : t("Connecting")
-          }
-        />
+        {isInfoHash ? (
+          <div className="flex w-full max-w-sm flex-col items-center gap-3">
+            <StreamLoadingBar key={src.url} ready={ready} done={done} />
+            <p className="text-[12.5px] font-medium uppercase tracking-[0.18em] text-white/70">
+              {snap.buffering ? t("Buffering") : t("Preparing stream")}
+            </p>
+          </div>
+        ) : (
+          <HarborLoader size="md" caption={isLocal ? t("Loading") : t("Connecting")} />
+        )}
         {showEngineActivity && (
           <p className="text-[12.5px] font-medium tracking-wide text-white/50 tabular-nums">
             {enginePeers} {enginePeers === 1 ? t("peer") : t("peers")} · {fmtSpeed(engineSpeed)}

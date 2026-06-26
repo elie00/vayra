@@ -46,9 +46,11 @@ export function MediaGallery({ detail, title, logo }: { detail: TmdbDetail; titl
 
   const downloadImage = useCallback(
     (url: string, kind: string, i: number) => {
-      void saveImageToDisk(url, `${slug}-${kind}-${i + 1}`).then((r) => {
-        if (r.saved) flash(t("Saved to disk"));
-      });
+      saveImageToDisk(url, `${slug}-${kind}-${i + 1}`)
+        .then((r) => {
+          if (r.saved) flash(t("Saved to disk"));
+        })
+        .catch(() => flash(t("Download failed")));
     },
     [slug, flash],
   );
@@ -56,9 +58,9 @@ export function MediaGallery({ detail, title, logo }: { detail: TmdbDetail; titl
   const downloadVideo = useCallback(
     (v: GalleryVideo) => {
       flash(t("Downloading..."));
-      void saveTrailerToDisk(v.ytId, resolveTrailerQuality(settings.trailerQuality), `${slug}-${baseName(v.name)}`).then(
-        (r) => flash(r.saved ? t("Saved to disk") : t("Download failed")),
-      );
+      saveTrailerToDisk(v.ytId, resolveTrailerQuality(settings.trailerQuality), `${slug}-${baseName(v.name)}`)
+        .then((r) => flash(r.saved ? t("Saved to disk") : t("Download failed")))
+        .catch(() => flash(t("Download failed")));
     },
     [slug, settings.trailerQuality, flash],
   );

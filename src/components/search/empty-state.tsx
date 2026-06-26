@@ -62,7 +62,7 @@ type FilterTab = "all" | "movies" | "shows" | StreamingService;
 const MAX_PAGES = 25;
 
 export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOpenGuide: () => void }) {
-  const { recent, removeRecent, setQuery } = useSearch();
+  const { recent, removeRecent, clearRecent, setQuery } = useSearch();
   const { setView, openMeta } = useView();
   const { hiddenTabs } = useParental();
   const { settings } = useSettings();
@@ -347,7 +347,19 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
     <div className="flex flex-col gap-9">
       {recent.length > 0 && (
         <section>
-          <Title icon={<Clock size={13} strokeWidth={2.2} />}>{t("Recent searches")}</Title>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+              <span className="text-ink-muted"><Clock size={13} strokeWidth={2.2} /></span>
+              {t("Recent searches")}
+            </h3>
+            <button
+              type="button"
+              onClick={clearRecent}
+              className="text-[11.5px] font-medium uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:text-ink"
+            >
+              {t("Clear history")}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {recent.map((q) => (
               <span

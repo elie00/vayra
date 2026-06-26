@@ -5,11 +5,12 @@ import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import type { Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
+import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
 import { directStreamAvailable } from "@/lib/torrent/stremio-stream";
 import type { PlayEpisode } from "@/lib/view";
 import { EditionChip } from "./edition-chip";
-import { confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts } from "./picker-utils";
+import { confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts, torrentFilename } from "./picker-utils";
 import { PlayProvenance } from "./play-provenance";
 
 export function PrimaryCard({
@@ -39,6 +40,7 @@ export function PrimaryCard({
   isPreviouslyPlayed?: boolean;
   match?: "same" | "close" | null;
 }) {
+  const { settings } = useSettings();
   const cachedDebrids = debrids.filter((d) => stream.cached[d.slug]);
   const libraryDebrids = debrids.filter((d) => stream.inLibrary[d.slug]);
   const cachedDebrid = cachedDebrids[0] ?? null;
@@ -51,7 +53,9 @@ export function PrimaryCard({
   const queueTarget = debrids.find((d) => d.queueCache);
   const canStream = !isCached && directStreamAvailable(stream);
   const summary = streamSummaryParts(stream);
-  const badges = streamBadges(stream);
+  const title = displayTitle(stream, meta.name, episode);
+  const fname = settings.pickerShowFilename ? torrentFilename(stream) : "";
+  const badges = settings.showQualityBadge ? streamBadges(stream) : [];
   const knownLanguages = stream.audioLanguages.filter((l) => l && l.toLowerCase() !== "unknown");
   const titleConfirmation = !episode ? confirmationLabel(meta, stream) : null;
   const landscapeImage = episode?.still || meta.background || null;
@@ -87,7 +91,7 @@ export function PrimaryCard({
               <img
                 src={meta.logo}
                 alt={meta.name}
-                className="pointer-events-none absolute bottom-3 left-3.5 max-h-[26%] max-w-[58%] object-contain opacity-70 drop-shadow-[0_4px_18px_rgba(0,0,0,0.7)]"
+                className="pointer-events-none absolute bottom-3 start-3.5 max-h-[26%] max-w-[58%] object-contain opacity-70 drop-shadow-[0_4px_18px_rgba(0,0,0,0.7)]"
                 draggable={false}
               />
             </>
@@ -98,7 +102,7 @@ export function PrimaryCard({
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-black/65 via-black/20 to-transparent"
               />
-              <div className="absolute right-2 top-2 flex flex-col items-end gap-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.55)]">
+              <div className="absolute end-2 top-2 flex flex-col items-end gap-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.55)]">
                 {badges.map((k) => (
                   <FormatBadge key={k} kind={k} size="sm" />
                 ))}
@@ -132,8 +136,13 @@ export function PrimaryCard({
             )}
             <HostMatchChip match={match} long />
             <p className="break-all font-mono text-[15.5px] leading-relaxed text-ink">
-              {displayTitle(stream, meta.name, episode)}
+              {title}
             </p>
+            {fname && fname !== title && (
+              <p className="break-all font-mono text-[12.5px] leading-relaxed text-ink-subtle/80">
+                {fname}
+              </p>
+            )}
 
             {summary.length > 0 && (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] font-semibold uppercase tracking-[0.16em] text-ink-muted">

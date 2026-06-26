@@ -1,7 +1,8 @@
-import { Film, Maximize, Minimize, Save, Tv, Users, X } from "lucide-react";
+import { Film, Maximize, Minimize, Plus, Save, Tv, Users, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  CONTROL_META,
   type ControlVariant,
   type PanelCorner,
   type PanelId,
@@ -21,6 +22,7 @@ import { buildDefaultCtx, buildStremioCtx, type PlayerMode } from "./editor-mock
 import { EditorPanels } from "./editor-panels";
 import { FloatingInspector } from "./floating-inspector";
 import { ProfilePicker } from "./profile-picker";
+import { usePreviewBackdrop } from "./use-preview-backdrop";
 
 type Props = {
   theme: ThemeId;
@@ -50,6 +52,7 @@ type Props = {
   onExportProfile: () => void;
   onImportProfile: (text: string) => void;
   onResetToDefaults: () => void;
+  onUnhide: (id: PlayerControlId) => void;
 };
 
 export function EditorOverlay({
@@ -80,6 +83,7 @@ export function EditorOverlay({
   onExportProfile,
   onImportProfile,
   onResetToDefaults,
+  onUnhide,
 }: Props) {
   const chromeRef = useRef<HTMLDivElement>(null);
   const [chromeW, setChromeW] = useState(0);
@@ -89,6 +93,7 @@ export function EditorOverlay({
   }));
   const [isFs, setIsFs] = useState(false);
   const [mode, setMode] = useState<PlayerMode>("normal");
+  const previewBg = usePreviewBackdrop();
   const [previewStates, setPreviewStates] = useState<Partial<Record<PlayerControlId, string>>>({});
   const setPreviewState = (id: PlayerControlId, state: string) =>
     setPreviewStates((cur) => ({ ...cur, [id]: state }));
@@ -272,8 +277,10 @@ export function EditorOverlay({
         </div>
       </header>
 
+      <HiddenTray config={config} onUnhide={onUnhide} onSelect={onSelect} />
+
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        <FauxBackdrop width={winSize.w} height={winSize.h} sizeLabel={sizeLabel} />
+        <FauxBackdrop width={winSize.w} height={winSize.h} sizeLabel={sizeLabel} bg={previewBg} />
 
         <TopRow
           theme={theme}
@@ -346,6 +353,41 @@ export function EditorOverlay({
       </div>
     </div>,
     document.body,
+  );
+}
+
+function HiddenTray({
+  config,
+  onUnhide,
+  onSelect,
+}: {
+  config: PlayerChromeConfig;
+  onUnhide: (id: PlayerControlId) => void;
+  onSelect: (id: PlayerControlId | null) => void;
+}) {
+  const hidden = config.controls.filter((c) => c.hidden);
+  if (hidden.length === 0) return null;
+  return (
+    <div className="flex shrink-0 items-center gap-3 overflow-x-auto border-b border-white/8 px-8 py-2.5">
+      <span className="shrink-0 text-[10.5px] font-bold uppercase tracking-[0.24em] text-white/40">Hidden</span>
+      <div className="flex items-center gap-1.5">
+        {hidden.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => {
+              onUnhide(c.id);
+              onSelect(c.id);
+            }}
+            title={`Show ${CONTROL_META[c.id]?.label ?? c.id}`}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/5 py-1.5 ps-2.5 pe-3 text-[12px] font-medium text-white/65 transition-colors hover:border-white/25 hover:bg-white/12 hover:text-white"
+          >
+            <Plus size={12} strokeWidth={2.6} />
+            <span className="max-w-[160px] truncate">{CONTROL_META[c.id]?.label ?? c.id}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

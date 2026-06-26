@@ -6,7 +6,7 @@ import { useSettings } from "@/lib/settings";
 import type { SpoilerMask } from "@/lib/spoilers";
 import type { PlayEpisode } from "@/lib/view";
 
-function nextEpisodeLead(setting: number, durationSec: number): number {
+export function nextEpisodeLead(setting: number, durationSec: number): number {
   if (setting === 0) return 0;
   if (setting > 0) return setting;
   return Math.min(45, Math.max(15, Math.round(durationSec * 0.04)));
@@ -65,12 +65,15 @@ export function SkipPillContainer({
     autoSkippedRef.current = null;
   }, [skipSegments]);
   useEffect(() => {
-    if (!settings.autoSkipIntro || !allowAutoSkip) return;
-    if (!realActiveSkip || realActiveSkip.kind !== "intro") return;
+    if (!allowAutoSkip || !realActiveSkip) return;
+    const wantSkip =
+      (realActiveSkip.kind === "intro" && settings.autoSkipIntro) ||
+      (realActiveSkip.kind === "ad" && settings.autoSkipAd);
+    if (!wantSkip) return;
     if (autoSkippedRef.current === realActiveSkip) return;
     autoSkippedRef.current = realActiveSkip;
     onSkip(realActiveSkip.endSec);
-  }, [settings.autoSkipIntro, allowAutoSkip, realActiveSkip, onSkip]);
+  }, [settings.autoSkipIntro, settings.autoSkipAd, allowAutoSkip, realActiveSkip, onSkip]);
 
   return (
     <SkipPill

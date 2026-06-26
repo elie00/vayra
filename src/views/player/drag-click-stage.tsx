@@ -3,11 +3,16 @@ export function DragClickStage(props: {
   pipMode: boolean;
   onClick: () => void;
   onDoubleClick: () => void;
+  onWheelVolume?: (deltaY: number) => void;
 }) {
-  const { drawMode, pipMode, onClick, onDoubleClick } = props;
+  const { drawMode, pipMode, onClick, onDoubleClick, onWheelVolume } = props;
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-[3]"
+      onWheel={(e) => {
+        if (drawMode || pipMode) return;
+        onWheelVolume?.(e.deltaY);
+      }}
       onMouseDown={(e) => {
         if (e.target !== e.currentTarget) return;
         if (drawMode || pipMode) return;

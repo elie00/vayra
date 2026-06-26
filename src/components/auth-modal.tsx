@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
+import { StremioWebButton } from "./auth-modal/stremio-web-button";
 
 export function AuthModal({ onClose }: { onClose: () => void }) {
   const { signIn } = useAuth();
@@ -52,13 +53,22 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
+        <StremioWebButton onDone={onClose} disabled={busy} />
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-edge-soft" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+            {t("or use email")}
+          </span>
+          <span className="h-px flex-1 bg-edge-soft" />
+        </div>
+
         <div className="flex flex-col gap-3">
           <Field
             label={t("Email")}
             type="email"
             value={email}
             onChange={setEmail}
-            autoFocus
             disabled={busy}
           />
           <Field
@@ -96,7 +106,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
         <button
           type="submit"
           disabled={busy || !email || !password}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-ink text-[14.5px] font-semibold text-canvas transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-edge bg-elevated text-[14px] font-semibold text-ink transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? (
             <>
@@ -104,7 +114,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
               {t("Signing in...")}
             </>
           ) : (
-            t("Sign in")
+            t("Sign in with email")
           )}
         </button>
 

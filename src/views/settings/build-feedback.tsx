@@ -2,6 +2,7 @@ import { Angry, Frown, Github, Laugh, Meh, Smile, ThumbsUp } from "lucide-react"
 import { useRef, useState, type ComponentType } from "react";
 import { BetaTag } from "@/components/beta-tag";
 import { APP_VERSION, IS_BETA_BUILD } from "@/lib/build-info";
+import { submitBuildFeedback } from "@/lib/build-feedback-submit";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 
@@ -50,6 +51,7 @@ export function BuildFeedback() {
     } catch {
       /* private mode */
     }
+    void submitBuildFeedback(value);
   };
 
   const openIssue = (rating: number) => {

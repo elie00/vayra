@@ -4,6 +4,7 @@ import { profileFromMeta, trackEvent } from "./discover";
 import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
+import { getWindowFullscreen, suppressFullscreenExitOnce } from "./fullscreen-state";
 export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "library" | "live" | "vod" | "downloads";
 
 export type PlayEpisode = {
@@ -264,6 +265,17 @@ function syncFrameKey(f: Frame): string {
   return frameKey(f);
 }
 
+function lastOfKind<K extends Frame["kind"]>(
+  frames: Frame[],
+  kind: K,
+): Extract<Frame, { kind: K }> | undefined {
+  for (let i = frames.length - 1; i >= 0; i--) {
+    const f = frames[i];
+    if (f.kind === kind) return f as Extract<Frame, { kind: K }>;
+  }
+  return undefined;
+}
+
 export function ViewProvider({ children }: { children: ReactNode }) {
   const [stack, setStack] = useState<Frame[]>([{ kind: "home" }]);
   const [chromeHidden, setChromeHidden] = useState(false);
@@ -323,8 +335,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     metaFrame && metaFrame.kind === "meta" ? metaFrame.liveContext === true : false;
   const metaEpisodeHint =
     metaFrame && metaFrame.kind === "meta" ? metaFrame.episodeHint ?? null : null;
-  const personId = top.kind === "person" ? top.id : null;
-  const collectionId = top.kind === "collection" ? top.id : null;
+  const personFrame = lastOfKind(stack, "person");
+  const personId = personFrame ? personFrame.id : null;
+  const collectionFrame = lastOfKind(stack, "collection");
+  const collectionId = collectionFrame ? collectionFrame.id : null;
   const episodeDetail = useMemo(
     () =>
       top.kind === "episode-detail"
@@ -338,8 +352,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       top.kind === "episode-detail" && top.seriesMeta ? top.seriesMeta.id : "",
     ],
   );
-  const filter = top.kind === "filter" ? top.filter : null;
-  const grid = top.kind === "grid" ? top.grid : null;
+  const filterFrame = lastOfKind(stack, "filter");
+  const filter = filterFrame ? filterFrame.filter : null;
+  const gridFrame = lastOfKind(stack, "grid");
+  const grid = gridFrame ? gridFrame.grid : null;
   const awardType = top.kind === "award" ? top.awardType : null;
   const matchDetailGame = top.kind === "match-detail" ? top.game : null;
   const picker =
@@ -630,6 +646,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
 
   const openPicker = useCallback(
     (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }) => {
+      if (opts?.autoPlay && getWindowFullscreen()) suppressFullscreenExitOnce();
       setStack((cur) => {
         const t = cur[cur.length - 1];
         if (

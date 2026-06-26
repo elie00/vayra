@@ -6,9 +6,11 @@ const CHUNK_SIZE = 50;
 export function EpisodeJumper({
   scrollRef,
   totalEpisodes,
+  onReveal,
 }: {
   scrollRef: React.RefObject<HTMLElement | null>;
   totalEpisodes: number;
+  onReveal?: (n: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -45,16 +47,24 @@ export function EpisodeJumper({
   if (totalEpisodes < 12) return null;
 
   const jumpToEpisode = (n: number) => {
-    const root = scrollRef.current;
-    if (!root) return;
-    const target = root.querySelector<HTMLElement>(`[data-ep="${n}"]`);
-    if (!target) return;
-    const rootRect = root.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const offset = targetRect.top - rootRect.top + root.scrollTop - 90;
-    root.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
+    onReveal?.(n);
     setOpen(false);
     setDraft("");
+    let tries = 0;
+    const tryScroll = () => {
+      const root = scrollRef.current;
+      if (!root) return;
+      const target = root.querySelector<HTMLElement>(`[data-ep="${n}"]`);
+      if (!target) {
+        if (tries++ < 30) requestAnimationFrame(tryScroll);
+        return;
+      }
+      const rootRect = root.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const offset = targetRect.top - rootRect.top + root.scrollTop - 90;
+      root.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
+    };
+    requestAnimationFrame(tryScroll);
   };
 
   const submit = () => {

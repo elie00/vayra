@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import { readResumeMs, saveResumeMs } from "@/lib/resume";
-import { episodeFromVideoId, libraryGetOne } from "@/lib/stremio";
+import { cloudWriteId, episodeFromVideoId, libraryGetOne } from "@/lib/stremio";
 import type { PlayerSrc } from "@/lib/view";
-import { videoIdFor, cloudWriteId } from "./use-stremio-sync";
+import { videoIdFor } from "./use-stremio-sync";
 import { useSettings } from "@/lib/settings";
 
 const RESUME_PROMPT_MIN_SEC = 30;
+const RESTART_THRESHOLD = 0.8;
 
 export function useBridgeLoad(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
@@ -41,6 +42,8 @@ export function useBridgeLoad(params: {
   const { settings } = useSettings();
   const resumePromptRef = useRef(settings.resumePrompt);
   resumePromptRef.current = settings.resumePrompt;
+  const resumePlaybackRef = useRef(settings.resumePlayback);
+  resumePlaybackRef.current = settings.resumePlayback;
 
   const lastLoadedUrlRef = useRef<string | null>(null);
   const firstLoadRef = useRef(true);
@@ -80,7 +83,10 @@ export function useBridgeLoad(params: {
             openingVid,
           );
       const startMs = resolved.ms;
-      const startSec = startMs / 1000;
+      const runtimeMin = src.episode?.runtime ?? null;
+      const durationMs = runtimeMin && runtimeMin > 0 ? runtimeMin * 60_000 : 0;
+      const finishedNearEnd = durationMs > 0 && startMs / durationMs >= RESTART_THRESHOLD;
+      const startSec = (!resumePlaybackRef.current || finishedNearEnd ? 0 : startMs) / 1000;
       const guestInRoom = inRoomRef.current && !isHostRef.current;
       const eligibleForPrompt =
         isFirstLoad &&

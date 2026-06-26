@@ -2,6 +2,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { aniZipByKitsu, pickEpisodeTitle } from "@/lib/providers/anizip";
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
 import { kitsuToTvdb, externalToKitsu } from "@/lib/providers/anime-mapping";
+import { anilistFranchise, type AnilistFranchiseNode } from "@/lib/anilist/relations";
 import { enrichEpisodes } from "@/lib/providers/anime-episode-enrich";
 import { fanartMovie, fanartTv } from "@/lib/providers/fanart";
 import {
@@ -128,6 +129,7 @@ async function buildFranchise(
   rootAnime: import("./kitsu").KitsuAnimeDetail,
 ): Promise<FranchiseEntry[]> {
   const now = Date.now();
+  const anilistPromise = anilistFranchise(rootId).catch(() => [] as AnilistFranchiseNode[]);
   const items = new Map<number, FranchiseEntry>();
   items.set(rootId, {
     meta: makeFranchiseMeta(rootId, rootAnime),
@@ -180,13 +182,34 @@ async function buildFranchise(
     depth++;
   }
 
+  const anilistNodes = await anilistPromise;
+  const anilistEntries: FranchiseEntry[] = anilistNodes.map((n) => ({
+    meta: {
+      id: `anilist:${n.id}`,
+      type: n.type,
+      name: n.name,
+      poster: n.poster,
+      background: n.banner,
+      releaseInfo: n.year != null ? String(n.year) : undefined,
+      imdbRating: n.rating,
+    },
+    year: n.year ?? 0,
+    startDate: n.startDate,
+    episodeCount: n.episodes,
+    isCurrent: false,
+    isUpcoming: n.upcoming,
+  }));
+
   const score = (e: FranchiseEntry) =>
     (e.isCurrent ? 1000 : 0) +
+    (e.meta.id.startsWith("kitsu:") ? 4 : 0) +
     (e.startDate ? 2 : 0) +
     ((e.episodeCount ?? 0) > 0 ? 1 : 0);
+  const norm = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
   const byName = new Map<string, FranchiseEntry>();
-  for (const e of items.values()) {
-    const key = e.meta.name.trim().toLowerCase();
+  for (const e of [...items.values(), ...anilistEntries]) {
+    const key = norm(e.meta.name);
+    if (!key) continue;
     const prev = byName.get(key);
     if (!prev || score(e) > score(prev)) byName.set(key, e);
   }
@@ -306,7 +329,15 @@ export async function animeDetails(
     }
   }
 
-  await enrichEpisodes(episodes, settings, kitsuId);
+  const seriesImdb = aniZip?.mappings?.imdb_id ?? episodes.find((e) => e.imdbId)?.imdbId ?? null;
+  await enrichEpisodes(episodes, settings, kitsuId, seriesImdb);
+
+  if (seriesImdb?.startsWith("tt")) {
+    for (const ep of episodes) {
+      const abs = ep.absoluteNumber ?? ep.number;
+      ep.thumbnailFallback = `https://episodes.metahub.space/${seriesImdb}/1/${abs}/w780.jpg`;
+    }
+  }
 
   const kind: "movie" | "tv" = anime.subtype === "movie" ? "movie" : "tv";
 

@@ -20,6 +20,7 @@ export const BLACK_SCREEN_GRACE_MS = 6_000;
 export const MAX_AUTORETRY_ATTEMPTS = 5;
 export const CHROME_HIDE_MS_PLAYING = 1800;
 export const CHROME_HIDE_MS_PAUSED = 4500;
+export const CHROME_HIDE_MS_RESUME = 1000;
 
 export function round2(v: number): number {
   return Math.round(v * 100) / 100;

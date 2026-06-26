@@ -13,6 +13,12 @@
     "core:window:allow-set-decorations",
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-fullscreen",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-set-size",
+    "core:window:allow-set-position",
+    "core:window:allow-current-monitor",
+    "core:window:allow-outer-size",
+    "core:window:allow-outer-position",
     "core:webview:allow-set-webview-zoom",
     {
       "identifier": "opener:allow-open-url",

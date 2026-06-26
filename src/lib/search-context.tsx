@@ -22,6 +22,7 @@ type SearchValue = SearchState & {
   clear: () => void;
   recordRecent: (q: string) => void;
   removeRecent: (q: string) => void;
+  clearRecent: () => void;
 };
 
 const Ctx = createContext<SearchValue | null>(null);
@@ -201,9 +202,14 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const clearRecent = useCallback(() => {
+    setRecent([]);
+    saveRecent([]);
+  }, []);
+
   const value = useMemo(
-    () => ({ open, setOpen, query, setQuery, results, status, recent, clear, recordRecent, removeRecent }),
-    [open, query, results, status, recent, setQuery, clear, recordRecent, removeRecent],
+    () => ({ open, setOpen, query, setQuery, results, status, recent, clear, recordRecent, removeRecent, clearRecent }),
+    [open, query, results, status, recent, setQuery, clear, recordRecent, removeRecent, clearRecent],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

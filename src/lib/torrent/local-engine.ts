@@ -153,3 +153,14 @@ export async function torrentEngineHardReset(): Promise<EngineStatus | null> {
   }
 }
 
+export async function torrentEngineSetOptions(
+  dir: string | null,
+  retentionHours: number,
+  restart: boolean,
+): Promise<void> {
+  if (!isTauri) return;
+  await invoke("torrent_engine_set_options", { dir, retentionHours, restart }).catch((e) =>
+    console.warn("[engine] set options failed", e),
+  );
+}
+

@@ -42,7 +42,7 @@ export type SourceRow = {
 export function isValidSourceRow(data: any): data is SourceRow {
   if (!data || typeof data !== "object") return false;
   if (typeof data.id !== "string" || typeof data.title !== "string") return false;
-  if (!Array.isArray(data.folders)) return false;
+  if (!Array.isArray(data.folders) || data.folders.length === 0) return false;
 
   for (const folder of data.folders) {
     if (!folder || typeof folder !== "object") return false;

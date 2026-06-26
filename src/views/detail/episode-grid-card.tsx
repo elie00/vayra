@@ -1,5 +1,6 @@
 import { CalendarDays, Check, Info, Play, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { EpisodeRatingBadge } from "./episode-rating-badge";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
 import { formatAirDate } from "@/lib/dates";
@@ -81,6 +82,11 @@ export function EpisodeGridCard({
             </span>
           )}
           <StatusTag watched={watched} minsLeft={minsLeft} runtime={g.runtime} t={t} />
+          {settings.showEpisodeRating && g.rating && g.rating > 0 && (
+            <div className="pointer-events-none absolute bottom-2 start-2 z-[5] flex items-center gap-1.5 rounded-md bg-black/55 px-1.5 py-0.5 drop-shadow-md backdrop-blur-sm">
+              <EpisodeRatingBadge value={g.rating} isImdb={!!g.ratingIsImdb} />
+            </div>
+          )}
           {partial && (
             <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/55">
               <div className="h-full bg-accent" style={{ width: `${Math.max(2, progress.ratio * 100)}%` }} />
@@ -97,7 +103,6 @@ export function EpisodeGridCard({
           <span className="text-[11.5px] text-ink-subtle">
             E{g.number}
             {g.runtime ? ` · ${t("{n} min", { n: g.runtime })}` : ""}
-            {settings.showEpisodeRating && g.rating && g.rating > 0 ? ` · ★ ${g.rating.toFixed(1)}` : ""}
           </span>
           {settings.showEpisodeDescription && g.overview && (
             <p
@@ -214,7 +219,9 @@ function EpisodePreview({
           )}
         </span>
         {g.overview && (
-          <p className="line-clamp-4 text-[12.5px] leading-relaxed text-ink-muted">{g.overview}</p>
+          <div className="max-h-28 overflow-y-auto pe-1 text-[12.5px] leading-relaxed text-ink-muted [scrollbar-width:thin]">
+            {g.overview}
+          </div>
         )}
         <div className="mt-1 flex gap-2">
           <button

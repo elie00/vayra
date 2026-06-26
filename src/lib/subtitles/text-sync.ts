@@ -51,26 +51,21 @@ function round3(v: number): number {
 }
 
 export function evaluateAnchors(anchors: SyncAnchor[]): {
-  gapWarning: string | null;
-  slopeWarning: string | null;
+  gapSec: number | null;
+  slopePct: number | null;
 } {
   if (anchors.length < 2) {
-    return { gapWarning: null, slopeWarning: null };
+    return { gapSec: null, slopePct: null };
   }
   const sorted = [...anchors].sort((a, b) => a.t - b.t);
   const a1 = sorted[0];
   const a2 = sorted[sorted.length - 1];
   const gap = Math.abs(a2.t - a1.t);
-  let gapWarning: string | null = null;
-  if (gap < MIN_GAP_SEC) {
-    gapWarning = `النقطتان قريبتان جداً (${gap.toFixed(1)}ث). حدّد نقطتين متباعدتين (واحدة قرب البداية وأخرى قرب النهاية) وإلا قد يُضخّم الانحراف عند الأطراف.`;
-  }
-  let slopeWarning: string | null = null;
+  const gapSec = gap < MIN_GAP_SEC ? gap : null;
+  let slopePct: number | null = null;
   if (gap > 1e-9) {
     const m = Math.abs((a2.delta - a1.delta) / (a2.t - a1.t));
-    if (m > MAX_SLOPE) {
-      slopeWarning = `ميل التصحيح كبير غير معقول (${(m * 100).toFixed(1)}%). ربما إحدى النقطتين خاطئة — راجعهما.`;
-    }
+    if (m > MAX_SLOPE) slopePct = m * 100;
   }
-  return { gapWarning, slopeWarning };
+  return { gapSec, slopePct };
 }

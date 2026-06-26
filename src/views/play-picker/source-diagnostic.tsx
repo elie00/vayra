@@ -44,7 +44,7 @@ export function SourceDiagnostic({
         />
       </button>
       {expanded && (
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-1 text-[11px] text-ink-subtle/70">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 ps-1 text-[11px] text-ink-subtle/70">
           <span>{result.picker.all.length} kept after dedupe</span>
           <span className="text-ink-subtle/40">·</span>
           {counts.length === 0 ? (

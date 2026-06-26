@@ -9,6 +9,7 @@ import nordPreview from "@/assets/theme-previews/nord.png";
 import royalPreview from "@/assets/theme-previews/royal.png";
 import stremioPreview from "@/assets/theme-previews/stremio.png";
 import velvetPreview from "@/assets/theme-previews/velvet.png";
+import { getCustomThemes } from "./custom-themes";
 
 export type ThemePresetId =
   | "cool-grey"
@@ -504,16 +505,7 @@ export function getThemeById(id: string): ThemePreset | null {
   const template = TEMPLATE_THEMES.find((t) => t.id === id);
   if (template) return template;
   if (id.startsWith("user:")) {
-    try {
-      const raw = localStorage.getItem("harbor.custom-themes.v1");
-      if (!raw) return null;
-      const list = JSON.parse(raw);
-      if (!Array.isArray(list)) return null;
-      const hit = list.find((t) => t && t.id === id);
-      return (hit as ThemePreset) ?? null;
-    } catch {
-      return null;
-    }
+    return (getCustomThemes().find((t) => t.id === id) as ThemePreset | undefined) ?? null;
   }
   return null;
 }
@@ -561,6 +553,14 @@ export function applyTheme(theme: ThemeSettings): void {
 export function activeLayout(theme: ThemeSettings): ThemeLayout {
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   return preset?.layout ?? "sidebar";
+}
+
+export function resolveChromeTheme(
+  theme: ThemeSettings,
+  override: "auto" | "default" | "stremio",
+): "default" | "stremio" {
+  if (override === "default" || override === "stremio") return override;
+  return activeLayout(theme) === "stremio" ? "stremio" : "default";
 }
 
 const TOPBAR_BACK_LAYOUTS = new Set(["sidebar", "dracula", "nord", "forest", "stremio"]);

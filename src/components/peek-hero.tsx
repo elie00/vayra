@@ -5,6 +5,7 @@ import { MetaAwardsCorner } from "@/components/meta-awards-corner";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { tmdbLogo, useTmdbImdbId } from "@/lib/providers/tmdb";
+import { useImdbRating } from "@/lib/imdb-rating";
 import { useSettings } from "@/lib/settings";
 import { smartPlayEpisode } from "@/lib/smart-play";
 import { useView } from "@/lib/view";
@@ -194,6 +195,7 @@ function PeekSlide({
   const { settings } = useSettings();
   const { openMeta, openPicker } = useView();
   const resolvedImdb = useTmdbImdbId(meta.id);
+  const imdbRating = useImdbRating(meta, resolvedImdb);
   const [logo, setLogo] = useState<string | undefined>(meta.logo);
   const [logoLoaded, setLogoLoaded] = useState(false);
   const bg = upsizeTmdb(meta.background || meta.poster);
@@ -274,11 +276,11 @@ function PeekSlide({
           <>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] uppercase tracking-[0.18em] text-white/70">
               {meta.releaseInfo && <span>{meta.releaseInfo}</span>}
-              {meta.imdbRating && (
+              {imdbRating && (
                 <span className="flex items-center gap-1.5 normal-case tracking-normal">
                   <ImdbIcon className="h-[14px] w-auto rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
                   <span className="text-[13px] font-semibold text-white">
-                    {meta.imdbRating}
+                    {imdbRating}
                   </span>
                 </span>
               )}

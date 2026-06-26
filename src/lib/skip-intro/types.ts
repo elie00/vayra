@@ -1,5 +1,5 @@
-export type SkipKind = "intro" | "outro" | "recap";
-export type SkipSource = "aniskip" | "introdb" | "chapters";
+export type SkipKind = "intro" | "outro" | "recap" | "ad";
+export type SkipSource = "aniskip" | "introdb" | "chapters" | "adcorpus";
 
 export type SkipSegment = {
   kind: SkipKind;

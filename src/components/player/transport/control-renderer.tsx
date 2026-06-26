@@ -177,10 +177,10 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           <button
             type="button"
             onClick={ctx.onTitleClick}
-            className="pointer-events-auto group inline-flex items-center gap-2 rounded-lg px-2 py-0.5 text-end transition-colors hover:bg-white/10"
+            className="pointer-events-auto group inline-flex items-center gap-2 rounded-lg px-2 py-0.5 text-start transition-colors hover:bg-white/10"
             aria-label={t("Title info")}
           >
-            <div className="flex flex-col items-end gap-0.5">{lines}</div>
+            <div className="flex flex-col items-start gap-0.5">{lines}</div>
             <Info
               size={14}
               strokeWidth={2.2}
@@ -190,7 +190,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
         );
       }
       return (
-        <div className="pointer-events-none flex flex-col items-end gap-0.5 text-end">{lines}</div>
+        <div className="pointer-events-none flex flex-col items-start gap-0.5 text-start">{lines}</div>
       );
     }
     case "time-start": {

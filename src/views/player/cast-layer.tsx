@@ -63,7 +63,7 @@ export function CastLayer({
         </>
       )}
       {cast.castError && (
-        <div className="pointer-events-none absolute right-6 top-20 z-20 rounded-xl border border-rose-300/40 bg-rose-400/15 px-4 py-2 text-[12.5px] text-rose-100">
+        <div className="pointer-events-none absolute end-6 top-20 z-20 rounded-xl border border-rose-300/40 bg-rose-400/15 px-4 py-2 text-[12.5px] text-rose-100">
           {cast.castError}
         </div>
       )}

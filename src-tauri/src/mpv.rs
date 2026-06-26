@@ -715,8 +715,8 @@ pub async fn mpv_set_geometry(
     {
         let x = geom.css_left;
         let y = geom.css_top;
-        let w = geom.css_width;
-        let h = geom.css_height;
+        let w = geom.css_view_w;
+        let h = geom.css_view_h;
         let (tx, rx) = std::sync::mpsc::sync_channel::<()>(1);
         let _ = app.run_on_main_thread(move || {
             let _ = crate::mpv_render_mac::resize_to(x, y, w, h);
@@ -782,7 +782,11 @@ pub fn mpv_export_log(app: AppHandle) -> Result<String, String> {
 pub async fn mpv_force_below(_app: AppHandle) -> Result<(), String> {
     #[cfg(windows)]
     {
-        if MPV_HDR_STAGE.load(std::sync::atomic::Ordering::Relaxed) {
+        if MPV_HDR_STAGE.load(std::sync::atomic::Ordering::Relaxed)
+            && _app
+                .get_webview_window(crate::hdr_overlay::HDR_OVERLAY_LABEL)
+                .is_some()
+        {
             return Ok(());
         }
         use windows::Win32::Foundation::{HWND, LPARAM};
@@ -1139,6 +1143,105 @@ async fn run_gif_ffmpeg(ffmpeg: &std::path::Path, args: &[&str]) -> Result<(), S
     Ok(())
 }
 
+#[derive(Serialize)]
+pub struct ClipResult {
+    path: String,
+    duration: f64,
+}
+
+#[tauri::command]
+pub async fn mpv_clip_save(
+    state: State<'_, MpvState>,
+    with_subs: bool,
+    before_sec: f64,
+    out_path: String,
+) -> Result<ClipResult, String> {
+    let mpv = {
+        let g = state.inner.lock().await;
+        g.as_ref().map(|s| s.mpv.clone()).ok_or_else(|| "mpv not started".to_string())?
+    };
+    let src = mpv
+        .get_property::<String>("path")
+        .map_err(|e| format!("no source path: {}", e))?;
+    let pos: f64 = mpv
+        .get_property::<String>("time-pos")
+        .map_err(|e| format!("no position: {}", e))?
+        .trim()
+        .parse()
+        .map_err(|_| "bad position".to_string())?;
+    let start = (pos - before_sec).max(0.0);
+    let dur = pos - start;
+    if dur < 0.5 {
+        return Err("not enough playback to clip yet".into());
+    }
+
+    let sub_external = if with_subs {
+        mpv.get_property::<String>("current-tracks/sub/external-filename")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+    } else {
+        None
+    };
+    let sub_id = if with_subs {
+        mpv.get_property::<String>("sid")
+            .ok()
+            .filter(|s| s.trim() != "no" && !s.trim().is_empty())
+    } else {
+        None
+    };
+
+    let mpv_bin = crate::thumbs::locate_mpv().ok_or_else(|| "mpv binary not found".to_string())?;
+    if let Some(parent) = std::path::Path::new(&out_path).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let _ = std::fs::remove_file(&out_path);
+
+    let mut cmd = tokio::process::Command::new(&mpv_bin);
+    cmd.arg("--no-terminal")
+        .arg("--really-quiet")
+        .arg("--no-config")
+        .arg("--load-scripts=no")
+        .arg("--cache=yes")
+        .arg("--network-timeout=60")
+        .arg(format!("--start={:.3}", start))
+        .arg(format!("--length={:.3}", dur))
+        .arg(format!("--o={}", out_path))
+        .arg("--of=mp4")
+        .arg("--ovc=libx264")
+        .arg("--ovcopts=preset=veryfast,crf=18")
+        .arg("--oac=aac")
+        .arg("--oacopts=b=192k");
+    if with_subs {
+        if let Some(ext) = &sub_external {
+            cmd.arg(format!("--sub-files={}", ext));
+        } else if let Some(id) = &sub_id {
+            cmd.arg(format!("--sid={}", id));
+        }
+        cmd.arg("--sub-visibility=yes");
+    } else {
+        cmd.arg("--sid=no").arg("--no-sub");
+    }
+    cmd.arg(&src);
+    cmd.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    cmd.creation_flags(0x0800_0000);
+
+    let status = cmd
+        .status()
+        .await
+        .map_err(|e| format!("spawn mpv encode: {}", e))?;
+    if !status.success() {
+        let _ = std::fs::remove_file(&out_path);
+        return Err(format!("clip encode failed (mpv exit {:?})", status.code()));
+    }
+    match std::fs::metadata(&out_path) {
+        Ok(m) if m.len() > 0 => Ok(ClipResult { path: out_path, duration: dur }),
+        _ => Err("clip output missing".into()),
+    }
+}
+
 #[tauri::command]
 pub async fn mpv_screenshot_data_url(
     state: State<'_, MpvState>,
@@ -1439,7 +1542,10 @@ fn position_embedded_mpv_child(
         SetWindowPos, GWL_EXSTYLE, HWND_BOTTOM, HWND_TOP, SWP_HIDEWINDOW, SWP_NOACTIVATE, SWP_NOMOVE,
         SWP_NOSIZE, SWP_SHOWWINDOW, WS_EX_TRANSPARENT,
     };
-    let hdr_stage = MPV_HDR_STAGE.load(std::sync::atomic::Ordering::Relaxed);
+    let hdr_stage = MPV_HDR_STAGE.load(std::sync::atomic::Ordering::Relaxed)
+        && app
+            .get_webview_window(crate::hdr_overlay::HDR_OVERLAY_LABEL)
+            .is_some();
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "main window missing".to_string())?;

@@ -27,10 +27,9 @@ export function FeedHero({
   const { settings } = useSettings();
   const { openMeta, openPicker } = useView();
   const t = useT();
-  const saved = useInWatchlist(item.meta.id);
-
   const meta = item.meta;
   const resolvedImdb = useTmdbImdbId(meta.id);
+  const saved = useInWatchlist(meta.id, [resolvedImdb]);
   const backdrop = meta.background ?? meta.poster;
   const positionLabel = `${String(position + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
 
@@ -129,7 +128,7 @@ export function FeedHero({
             <SecondaryAction
               icon={saved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
               label={saved ? t("Saved") : t("Save")}
-              onClick={() => toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster })}
+              onClick={() => toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster, imdbId: resolvedImdb })}
               active={saved}
             />
             <SecondaryAction

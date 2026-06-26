@@ -19,6 +19,19 @@ import { useScrollMemory } from "@/lib/view";
 import { Rail } from "./discover/discover-rail";
 import { useDedupedRows } from "./discover/use-deduped-rows";
 import { ANCHOR_AWARDS, ANCHOR_TOP_RATED } from "@/lib/feed/daily-rows-anchors";
+import { CatalogCustomizeBar } from "@/components/catalog/customize-bar";
+import { RowControls } from "@/views/home/row-controls";
+import { useT } from "@/lib/i18n";
+import {
+  applyPageRows,
+  hasPageRowChanges,
+  movePageRow,
+  orderedRowKeys,
+  renamePageRow,
+  resetPageRows,
+  togglePageRowHidden,
+  usePageRows,
+} from "@/lib/page-rows";
 
 const MAX_RAIL_PAGES = 10;
 const MIN_PAGE_YIELD = 4;
@@ -35,6 +48,8 @@ export function Discover({ active = true }: { active?: boolean }) {
   useScrollMemory("discover", scrollRef, active);
 
   const { settings } = useSettings();
+  const t = useT();
+  const pageRows = usePageRows("discover");
   const [featured, setFeatured] = useState<Meta[]>([]);
   const [queue, setQueue] = useState<FeedItem[]>([]);
   const [criticsPickList, setCriticsPickList] = useState<Meta[]>([]);
@@ -43,11 +58,13 @@ export function Discover({ active = true }: { active?: boolean }) {
   const railPagesRef = useRef<Record<string, number>>({});
   const railExhaustedRef = useRef<Record<string, boolean>>({});
   const railLoadingRef = useRef<Record<string, boolean>>({});
+  const genRef = useRef(0);
 
   const dailyRows = useMemo(
     () => selectDailyRows(settings.tmdbKey, getStore().affinity, settings, ROW_COUNT),
     [settings.tmdbKey, settings.region, settings.streaming, tasteVersion],
   );
+  const rowSig = useMemo(() => dailyRows.map((r) => r.id).join("|"), [dailyRows]);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,34 +158,47 @@ export function Discover({ active = true }: { active?: boolean }) {
     setCriticsPickList((prev) => prev.filter((m) => !isWatched(m)));
   }, [active]);
 
+  const ensureLoaded = useCallback(
+    (railId: string) => {
+      if (railPagesRef.current[railId] != null) return;
+      if (railLoadingRef.current[railId]) return;
+      const def = dailyRows.find((r) => r.id === railId);
+      if (!def) return;
+      const gen = genRef.current;
+      railLoadingRef.current[railId] = true;
+      def
+        .fetch(1)
+        .then((list) => {
+          if (genRef.current !== gen) return;
+          railPagesRef.current[railId] = 1;
+          if (list.length < MIN_PAGE_YIELD) railExhaustedRef.current[railId] = true;
+          setRails((prev) => ({ ...prev, [railId]: list }));
+        })
+        .catch(() => {
+          if (genRef.current !== gen) return;
+          railPagesRef.current[railId] = 1;
+          railExhaustedRef.current[railId] = true;
+          setRails((prev) => ({ ...prev, [railId]: [] }));
+        })
+        .finally(() => {
+          if (genRef.current === gen) railLoadingRef.current[railId] = false;
+        });
+    },
+    [dailyRows],
+  );
+
+  const ensureLoadedRef = useRef(ensureLoaded);
+  ensureLoadedRef.current = ensureLoaded;
+
   useEffect(() => {
-    let cancelled = false;
+    genRef.current += 1;
     setRails({});
     railPagesRef.current = {};
     railExhaustedRef.current = {};
     railLoadingRef.current = {};
-    for (const rail of dailyRows) {
-      railLoadingRef.current[rail.id] = true;
-      rail
-        .fetch(1)
-        .then((list) => {
-          if (cancelled) return;
-          railPagesRef.current[rail.id] = 1;
-          if (list.length < MIN_PAGE_YIELD) railExhaustedRef.current[rail.id] = true;
-          setRails((prev) => ({ ...prev, [rail.id]: list }));
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setRails((prev) => ({ ...prev, [rail.id]: [] }));
-        })
-        .finally(() => {
-          railLoadingRef.current[rail.id] = false;
-        });
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [dailyRows, settings.tmdbLanguage]);
+    for (const id of DEDUP_PRIORITY) ensureLoadedRef.current(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowSig, settings.tmdbKey, settings.region, settings.streaming, settings.tmdbLanguage]);
 
   const loadMore = useCallback(
     (railId: string) => {
@@ -213,34 +243,104 @@ export function Discover({ active = true }: { active?: boolean }) {
   const order = useMemo(() => dailyRows.map((r) => r.id), [dailyRows]);
   const deduped = useDedupedRows(rails, order, featuredIds, criticsPick?.id, DEDUP_PRIORITY);
 
+  const railItems = useMemo(
+    () => dailyRows.map((r) => ({ key: r.id, title: r.shelf.title })),
+    [dailyRows],
+  );
+  const railKeys = useMemo(() => railItems.map((r) => r.key), [railItems]);
+  const visibleRails = useMemo(
+    () => applyPageRows(railItems, pageRows.custom, false),
+    [railItems, pageRows.custom],
+  );
+  const editRails = useMemo(
+    () =>
+      applyPageRows(railItems, pageRows.custom, true).filter((item) => {
+        const d = deduped[item.key];
+        return d == null || d.length > 0;
+      }),
+    [railItems, pageRows.custom, deduped],
+  );
+  const orderKeys = useMemo(
+    () => orderedRowKeys(railKeys, pageRows.custom),
+    [railKeys, pageRows.custom],
+  );
+
   return (
-    <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pb-20 pt-20">
+    <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pb-20 pt-28">
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-14">
-          <FeaturedBanner items={featured} />
+          <div className="relative">
+            <FeaturedBanner items={featured} />
+            <div className="absolute end-0 bottom-4 z-10">
+              <CatalogCustomizeBar
+                editMode={pageRows.editMode}
+                hasChanges={hasPageRowChanges(pageRows.custom)}
+                onToggleEdit={() => pageRows.setEditMode((v) => !v)}
+                onReset={() => pageRows.persist(resetPageRows())}
+              />
+            </div>
+          </div>
 
-          {dailyRows.map((r, i) => (
-            <Fragment key={r.id}>
-              <LazyMount minHeight={340}>
-                <Rail railId={r.id} allRails={dailyRows} deduped={deduped} loadMore={loadMore} />
-              </LazyMount>
+          {pageRows.editMode
+            ? editRails.map((item) => {
+                const hidden = pageRows.custom.hidden.includes(item.key);
+                const idx = orderKeys.indexOf(item.key);
+                return (
+                  <div key={item.key}>
+                    <RowControls
+                      name={t(item.title)}
+                      hidden={hidden}
+                      canMoveUp={idx > 0}
+                      canMoveDown={idx >= 0 && idx < orderKeys.length - 1}
+                      onMoveUp={() => pageRows.persist(movePageRow(pageRows.custom, railKeys, item.key, -1))}
+                      onMoveDown={() => pageRows.persist(movePageRow(pageRows.custom, railKeys, item.key, 1))}
+                      onToggleHidden={() => pageRows.persist(togglePageRowHidden(pageRows.custom, item.key))}
+                      onRename={(label) => pageRows.persist(renamePageRow(pageRows.custom, item.key, label))}
+                      onResetName={() => pageRows.persist(renamePageRow(pageRows.custom, item.key, ""))}
+                      isRenamed={item.key in pageRows.custom.renamed}
+                    />
+                    {!hidden && (
+                      <Rail
+                        railId={item.key}
+                        allRails={dailyRows}
+                        deduped={deduped}
+                        loadMore={loadMore}
+                        ensureLoaded={ensureLoaded}
+                        titleOverride={item.title}
+                      />
+                    )}
+                  </div>
+                );
+              })
+            : visibleRails.map((item, i) => (
+                <Fragment key={item.key}>
+                  <LazyMount minHeight={340}>
+                    <Rail
+                      railId={item.key}
+                      allRails={dailyRows}
+                      deduped={deduped}
+                      loadMore={loadMore}
+                      ensureLoaded={ensureLoaded}
+                      titleOverride={item.title}
+                    />
+                  </LazyMount>
 
-              {i === 0 && <GenreTiles />}
-              {i === 1 && queue.length > 0 && <DiscoveryQueueCta items={queue} />}
-              {i === 2 && <LanguageTiles />}
-              {i === 2 && settings.tmdbKey && (
-                <LazyMount minHeight={260}>
-                  <CollectionsRow />
-                </LazyMount>
-              )}
-              {i === 3 && criticsPick && (
-                <LazyMount minHeight={580}>
-                  <CriticsPick meta={criticsPick} />
-                </LazyMount>
-              )}
-              {i === 4 && <AwardTiles />}
-            </Fragment>
-          ))}
+                  {i === 0 && <GenreTiles />}
+                  {i === 1 && queue.length > 0 && <DiscoveryQueueCta items={queue} />}
+                  {i === 2 && <LanguageTiles />}
+                  {i === 2 && settings.tmdbKey && (
+                    <LazyMount minHeight={260}>
+                      <CollectionsRow />
+                    </LazyMount>
+                  )}
+                  {i === 3 && criticsPick && (
+                    <LazyMount minHeight={580}>
+                      <CriticsPick meta={criticsPick} />
+                    </LazyMount>
+                  )}
+                  {i === 4 && <AwardTiles />}
+                </Fragment>
+              ))}
         </div>
       </ScrollRootContext.Provider>
       <BackToTop scrollRef={scrollRef} />

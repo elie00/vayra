@@ -30,7 +30,7 @@ export function AutoPlayTransition({
   }, []);
   return (
     <main className="fixed inset-0 z-[120] overflow-hidden bg-black">
-
+      <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-20 h-16" />
       {backdrop && (
         <img
           src={backdrop}

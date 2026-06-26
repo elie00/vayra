@@ -32,17 +32,17 @@ export function AutoExhaustedModal({
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-subtle">
           Harbor
         </p>
-        <h2 className="mt-3 text-[24px] font-semibold leading-tight text-ink">
+        <h2 className="mt-3 text-start text-[24px] font-semibold leading-tight text-ink" dir="auto">
           We could not find a working stream
         </h2>
-        <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
+        <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
           Harbor checked every available source for {title}{epSuffix} and none of them played.
           The most common reasons:
         </p>
-        <ul className="mt-3 space-y-1.5 text-[13.5px] leading-relaxed text-ink-muted">
-          <li>· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.</li>
-          <li>· No stream addon is installed yet (Torrentio, MediaFusion, Comet).</li>
-          <li>· This title is too new and no source has it cached yet.</li>
+        <ul className="mt-3 space-y-1.5 text-start text-[13.5px] leading-relaxed text-ink-muted" dir="auto">
+          <li dir="auto">· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.</li>
+          <li dir="auto">· No stream addon is installed yet (Torrentio, MediaFusion, Comet).</li>
+          <li dir="auto">· This title is too new and no source has it cached yet.</li>
         </ul>
         <div className="mt-7 flex flex-col gap-2.5">
           <button

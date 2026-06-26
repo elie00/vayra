@@ -102,7 +102,7 @@ export function CastMenu({
             >
               <span
                 className={`h-3 w-3 rounded-full bg-canvas shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                  burnSubsOnTv ? "translate-x-[14px]" : "translate-x-0"
+                  burnSubsOnTv ? "translate-x-[14px] rtl:-translate-x-[14px]" : "translate-x-0"
                 }`}
               />
             </span>

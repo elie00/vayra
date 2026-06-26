@@ -6,7 +6,6 @@ import { extendPool, getPool, type FeedItem } from "@/lib/feed";
 import { rankByAffinity } from "@/lib/feed/rank";
 import { blockQueueItem, filterQueuePool, shuffleQueuePool, snoozeQueueItem } from "@/lib/feed/skipped";
 import { getDownvotedIds, getUpvotedIds } from "@/lib/feed/preferences";
-import { rpdbPoster } from "@/lib/providers/rpdb";
 import { useSettings } from "@/lib/settings";
 import { useInWatchlist } from "@/lib/watchlist";
 import { useT } from "@/lib/i18n";
@@ -236,7 +235,7 @@ function NavArrow({
       disabled={disabled}
       aria-label={side === "left" ? t("Previous") : t("Next")}
       className={`group absolute top-1/2 ${
-        side === "left" ? "-left-3" : "-right-3"
+        side === "left" ? "-start-3" : "-end-3"
       } z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-canvas/80 text-ink/75 ring-1 ring-inset ring-ink/12 shadow-[0_10px_28px_-12px_rgba(0,0,0,0.8)] transition-all duration-200 ease-out hover:scale-110 hover:bg-canvas hover:text-ink hover:ring-ink/25 active:scale-95 disabled:pointer-events-none disabled:opacity-25`}
     >
       {side === "left" ? (
@@ -266,7 +265,6 @@ function Strip({
   onJump: (i: number) => void;
 }) {
   const t = useT();
-  const { settings } = useSettings();
   const stripRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -301,11 +299,7 @@ function Strip({
               }`}
             >
               <Poster
-                src={rpdbPoster(
-                  settings.rpdbKey,
-                  item.meta.id,
-                  item.meta.background ?? item.meta.poster,
-                )}
+                src={item.meta.background ?? item.meta.poster}
                 seed={item.meta.id}
                 ratio="landscape"
                 className="absolute inset-0 rounded-[10px]"
@@ -327,7 +321,7 @@ function Strip({
                   className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[inset_0_0_0_2px_var(--color-accent)]"
                 />
               )}
-              <span className="absolute left-1.5 top-1.5 rounded-md bg-canvas/85 px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.12em] text-ink">
+              <span className="absolute start-1.5 top-1.5 rounded-md bg-canvas/85 px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.12em] text-ink">
                 {item.tag}
               </span>
             </button>

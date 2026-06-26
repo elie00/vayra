@@ -1,6 +1,7 @@
 import { useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import type { PlayEpisode } from "@/lib/view";
+import { useClipRecorder } from "./use-clip-recorder";
 import { useFrameGrab } from "./use-frame-grab";
 import { useGifRecorder } from "./use-gif-recorder";
 import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
@@ -19,6 +20,7 @@ export function usePlayerHotkeys(params: {
   seekStep: (delta: number) => void;
   seekTo: (sec: number) => void;
   toggleFullscreen: () => void;
+  togglePip: () => void;
   fullscreen: boolean;
   cycleSubtitles: () => void;
   canChangeEpisode: boolean;
@@ -32,8 +34,11 @@ export function usePlayerHotkeys(params: {
   quickToolsEnabled: boolean;
   frameGrab: ReturnType<typeof useFrameGrab>;
   gif: ReturnType<typeof useGifRecorder>;
+  clip: ReturnType<typeof useClipRecorder>;
   videoFill: ReturnType<typeof useVideoFill>;
   onToggleAnime4k?: () => void;
+  onAnime4kOn?: () => void;
+  onAnime4kOff?: () => void;
 }) {
   const {
     bridgeRef,
@@ -46,6 +51,7 @@ export function usePlayerHotkeys(params: {
     seekStep,
     seekTo,
     toggleFullscreen,
+    togglePip,
     fullscreen,
     cycleSubtitles,
     canChangeEpisode,
@@ -59,8 +65,11 @@ export function usePlayerHotkeys(params: {
     quickToolsEnabled,
     frameGrab,
     gif,
+    clip,
     videoFill,
     onToggleAnime4k,
+    onAnime4kOn,
+    onAnime4kOff,
   } = params;
 
   const [showStats, setShowStats] = useState(false);
@@ -74,6 +83,7 @@ export function usePlayerHotkeys(params: {
     seekStep,
     seekTo,
     toggleFullscreen,
+    togglePip,
     fullscreen,
     cycleSubtitles,
     setShowStats,
@@ -94,11 +104,15 @@ export function usePlayerHotkeys(params: {
       sleep.mode.kind === "off" ? sleep.set({ kind: "end_episode" }) : sleep.cancel(),
     onScreenshot: quickToolsEnabled ? () => frameGrab.trigger() : undefined,
     onGifRecord: quickToolsEnabled ? () => gif.toggle() : undefined,
+    onClipRecord: quickToolsEnabled ? () => clip.openChooser() : undefined,
     onToggleCrop: () => videoFill.cycle(),
     onPanscanUp: () => videoFill.step(0.1),
     onPanscanDown: () => videoFill.step(-0.1),
     onPrevChannel: liveOverlay.isLive ? liveOverlay.goPrevChannel : undefined,
     onToggleAnime4k,
+    onAnime4kOn,
+    onAnime4kOff,
+    onFrameStep: (dir) => bridgeRef.current?.frameStep?.(dir),
   });
 
   return { holdSpeedActive, showStats };

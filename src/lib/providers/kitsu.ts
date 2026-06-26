@@ -82,6 +82,7 @@ export type KitsuEpisode = {
   title: string;
   synopsis: string;
   thumbnail: string | null;
+  thumbnailFallback?: string | null;
   airdate: string | null;
   length: number | null;
   streamId?: string;

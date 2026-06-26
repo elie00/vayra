@@ -312,7 +312,7 @@ export function EpisodeDetailView({
           </section>
         )}
 
-        <TraktComments resolution={traktResolution} />
+        {settings.showTraktComments === true && <TraktComments resolution={traktResolution} />}
       </div>
 
       <BackToTop scrollRef={scrollRef} />

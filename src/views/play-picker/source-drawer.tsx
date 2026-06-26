@@ -6,6 +6,7 @@ import { FlagStack } from "@/components/flag";
 import { FormatBadge } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import { useDebridClients } from "@/lib/debrid/registry";
+import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
 import { EditionChip } from "./edition-chip";
@@ -16,6 +17,7 @@ import {
   displayTitle,
   streamSummaryParts,
   tierChipBadges,
+  torrentFilename,
 } from "./picker-utils";
 
 export function SourceDrawer({
@@ -160,17 +162,20 @@ function SourceRow({
   showName: string;
   episode?: PlayEpisode;
 }) {
+  const { settings } = useSettings();
   const cachedDebrids = debrids.filter((d) => stream.cached[d.slug]);
   const libraryDebrids = debrids.filter((d) => stream.inLibrary[d.slug]);
   const summary = streamSummaryParts(stream);
   const link = resolveStreamLink(stream);
+  const title = displayTitle(stream, showName, episode);
+  const fname = settings.pickerShowFilename ? torrentFilename(stream) : "";
 
   return (
     <li className={divider ? "border-t border-edge-soft/30" : ""}>
       <button
         onClick={onPlay}
         disabled={resolving}
-        className="group flex w-full items-start gap-4 px-5 py-4 text-left transition-colors hover:bg-ink/5 disabled:cursor-wait disabled:opacity-60"
+        className="group flex w-full items-start gap-4 px-5 py-4 text-start transition-colors hover:bg-ink/5 disabled:cursor-wait disabled:opacity-60"
       >
         <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
           {tierChipBadges(stream).map((k) => (
@@ -179,9 +184,14 @@ function SourceRow({
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex min-w-0 items-center gap-2">
-            <p className="min-w-0 truncate font-mono text-[14px] text-ink">{displayTitle(stream, showName, episode)}</p>
+            <p className="min-w-0 truncate font-mono text-[14px] text-ink">{title}</p>
             <EditionChip stream={stream} />
           </div>
+          {fname && fname !== title && (
+            <p className="min-w-0 break-all font-mono text-[11px] leading-snug text-ink-subtle/75 line-clamp-2">
+              {fname}
+            </p>
+          )}
           <p className="flex items-center gap-2 truncate text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
             <AddonLogo
               addonId={stream.addonId}
