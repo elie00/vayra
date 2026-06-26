@@ -282,7 +282,6 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                       selected={t.id === selectedId}
                       onPick={() => {
                         onSelect(t.id);
-                        onClose();
                       }}
                     />
                   ))}
