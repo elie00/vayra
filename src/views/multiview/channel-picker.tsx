@@ -247,7 +247,7 @@ function RailItem({
       <span className="truncate">{label}</span>
       {count != null && (
         <span
-          className={`ml-auto shrink-0 rounded-full px-1.5 py-px text-[10.5px] tabular-nums ${
+          className={`ms-auto shrink-0 rounded-full px-1.5 py-px text-[10.5px] tabular-nums ${
             active ? "bg-canvas/15 text-canvas" : "bg-edge/60 text-ink-subtle"
           }`}
         >

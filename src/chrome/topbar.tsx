@@ -19,20 +19,22 @@ import { useSelfIdentity } from "@/lib/together/use-self-identity";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { useView } from "@/lib/view";
-import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
+import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
+import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { close, minimize } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-export function Topbar() {
+export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const { chromeHidden, canGoBack, view, setView, topKind } = useView();
   const { settings } = useSettings();
   const t = useT();
   const preview = useThemePreview();
-  const maxed = useMaximized();
-  if (chromeHidden) return null;
+  const fullscreen = useWindowFullscreen();
+  if (chromeHidden && !connecting) return null;
   const layout = preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
-  const sidebarHidden = view === "settings" || onLiveRoot || topKind === "picker";
+  const sidebarHidden = connecting || view === "settings" || onLiveRoot || topKind === "picker";
   const hideSearch = view === "addons";
   const sidebarOffset =
     layout === "stremio"
@@ -43,9 +45,9 @@ export function Topbar() {
   const searchWidth = canGoBack
     ? "w-[14rem] sm:w-[18rem] lg:w-[22rem] xl:w-[24rem]"
     : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
-  const dragProps = IS_TAURI ? { "data-tauri-drag-region": true } : {};
+  const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
   return (
-    <header className="fixed inset-x-0 top-0 z-[55] h-20">
+    <header className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}>
       <div
         {...dragProps}
         className="relative z-10 grid h-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-8"
@@ -76,7 +78,7 @@ export function Topbar() {
               </span>
             </div>
           )}
-          {!onLiveRoot && <BackChrome />}
+          {!onLiveRoot && !connecting && <BackChrome />}
         </div>
         <div
           {...dragProps}
@@ -92,15 +94,15 @@ export function Topbar() {
           <DownloadsButton />
           {!onLiveRoot && <TogetherButton />}
           {IS_TAURI && !settings.useNativeTitleBar && (
-            <div className="ms-1 flex items-center gap-1.5">
+            <div className="ms-1 flex items-center gap-2">
               <Control label={t("chrome.minimize")} onClick={minimize}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
                   <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </Control>
-              <Control label={maxed ? t("chrome.restore") : t("chrome.maximize")} onClick={toggleMaximize}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  {maxed ? (
+              <Control label={fullscreen ? t("chrome.restore") : t("chrome.maximize")} onClick={() => void toggleWindowFullscreen()}>
+                <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
+                  {fullscreen ? (
                     <>
                       <rect x="2.5" y="4.5" width="6" height="6" stroke="currentColor" strokeWidth="1.4" rx="1" />
                       <path d="M5 4.5V3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5H9" stroke="currentColor" strokeWidth="1.4" fill="none" />
@@ -111,7 +113,7 @@ export function Topbar() {
                 </svg>
               </Control>
               <Control label={t("common.close")} onClick={close}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
                   <path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </Control>
@@ -306,7 +308,7 @@ function Control({
     <button
       aria-label={label}
       onClick={onClick}
-      className="flex h-10 w-11 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
+      className="flex h-11 w-12 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
     >
       {children}
     </button>

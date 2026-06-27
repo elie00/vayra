@@ -1,6 +1,6 @@
 import { Play, Star } from "lucide-react";
 import type { SearchResults } from "@/lib/search";
-import { Poster } from "@/components/poster";
+import { ResultPoster } from "./result-poster";
 import { useView } from "@/lib/view";
 
 export function TopMatch({
@@ -43,10 +43,9 @@ export function TopMatch({
         className="group flex w-full items-stretch gap-7 p-7 text-start transition-transform duration-200 hover:scale-[1.005] active:scale-[0.995]"
       >
         <div className="relative w-[180px] shrink-0 overflow-hidden rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] ring-1 ring-edge-soft">
-          <Poster
-            src={match.meta.poster}
-            seed={match.meta.id}
-            ratio="portrait"
+          <ResultPoster
+            id={match.meta.id}
+            poster={match.meta.poster}
             className="block h-full w-full"
           />
         </div>

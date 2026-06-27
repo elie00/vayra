@@ -24,3 +24,11 @@ export async function hdrOverlayEmitAction(event: string, payload: unknown): Pro
 export function onHdrStageProps<T>(handler: (p: T) => void): Promise<UnlistenFn> {
   return listen<T>("hdr-stage://props", (e) => handler(e.payload));
 }
+
+export function onHdrStageReady(handler: () => void): Promise<UnlistenFn> {
+  return listen("hdr-stage://ready", () => handler());
+}
+
+export function onHdrStageDead(handler: () => void): Promise<UnlistenFn> {
+  return listen("hdr-stage://dead", () => handler());
+}

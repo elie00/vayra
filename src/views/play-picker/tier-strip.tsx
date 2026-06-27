@@ -46,7 +46,7 @@ export function TierStrip({
             <button
               key={t}
               onClick={() => onSelect(t)}
-              className={`group flex min-h-[56px] items-center gap-3 rounded-[14px] border px-4 py-2.5 text-left transition-[border-color,background-color,opacity] duration-200 ${
+              className={`group flex min-h-[56px] items-center gap-3 rounded-[14px] border px-4 py-2.5 text-start transition-[border-color,background-color,opacity] duration-200 ${
                 isActive
                   ? "border-ink/35 bg-ink/[0.05]"
                   : "border-edge-soft hover:border-edge hover:bg-canvas/60"
@@ -121,7 +121,7 @@ function QualityDisclaimer() {
         createPortal(
           <div
             style={{ top: pos.top, left: pos.left, width: 320 }}
-            className="pointer-events-none fixed z-[145] flex flex-col gap-2 rounded-xl border border-edge bg-elevated/97 px-4 py-3.5 text-left shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in"
+            className="pointer-events-none fixed z-[145] flex flex-col gap-2 rounded-xl border border-edge bg-elevated/97 px-4 py-3.5 text-start shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in"
           >
             <span className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-accent">
               <Info size={11} strokeWidth={2.4} />

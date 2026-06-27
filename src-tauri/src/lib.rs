@@ -31,6 +31,7 @@ mod airplay;
 mod settings_store;
 mod stream_proxy;
 mod streams;
+mod stremio_auth;
 mod svp;
 mod thumbs;
 mod torrent_engine;
@@ -408,6 +409,16 @@ pub fn run() {
             make_main_transparent(&app.handle());
             #[cfg(windows)]
             install_maximize_guard(&app.handle());
+            #[cfg(windows)]
+            {
+                use tauri::Manager;
+                if let Ok(res) = app.path().resource_dir() {
+                    let mpv = res.join("mpv.exe");
+                    if mpv.exists() {
+                        thumbs::set_bundled_mpv(mpv);
+                    }
+                }
+            }
             ensure_window_on_screen(&app.handle());
             #[cfg(target_os = "macos")]
             {
@@ -531,6 +542,7 @@ pub fn run() {
             mpv::mpv_gif_start,
             mpv::mpv_gif_stop,
             mpv::mpv_gif_abort,
+            mpv::mpv_clip_save,
             modal_overlay::modal_overlay_open,
             modal_overlay::modal_overlay_close,
             modal_overlay::modal_overlay_emit_state,
@@ -593,12 +605,14 @@ pub fn run() {
             torrent_engine::torrent_engine_selftest,
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,
+            torrent_engine::torrent_engine_set_options,
             transcode::cast_ffmpeg_present,
             streams::streams_run_pipeline,
             streams::streams_parse,
             streams::streams_core_version,
             local_lib::harbor_scan_folder,
             tray::tray_set_prefs,
+            stremio_auth::stremio_auth_start,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
         ])

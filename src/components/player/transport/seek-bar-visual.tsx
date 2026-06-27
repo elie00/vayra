@@ -14,7 +14,7 @@ export function resolveAccent(settings: Settings): string {
   return (settings.seekBarColor || "").trim() || "oklch(0.78 0.13 60)";
 }
 
-export type SeekSegmentSpan = { startPct: number; endPct: number };
+export type SeekSegmentSpan = { startPct: number; endPct: number; color?: string };
 
 export function SeekBarVisual({
   settings,
@@ -83,13 +83,14 @@ export function SeekBarVisual({
       {(segments ?? []).map((s, i) => (
         <div
           key={`${s.startPct}-${i}`}
-          className="pointer-events-none absolute rounded-full bg-white/45"
+          className="pointer-events-none absolute rounded-full"
           style={{
             left: `${s.startPct}%`,
             width: `${Math.max(0.4, s.endPct - s.startPct)}%`,
             height: Math.max(2, trackHeight - 2),
             top: "50%",
             transform: "translateY(-50%)",
+            backgroundColor: s.color ?? "rgba(255,255,255,0.45)",
           }}
         />
       ))}

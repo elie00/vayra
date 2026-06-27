@@ -1,5 +1,6 @@
 import { Check, Eye, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { EpisodeRatingBadge } from "./episode-rating-badge";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
 import { formatAirDate } from "@/lib/dates";
@@ -31,6 +32,8 @@ export function EpisodeRow({
   const t = useT();
   const { openPicker, openEpisodeDetail } = useView();
   const { settings } = useSettings();
+  const ratingValue = ep.imdbRating ?? ep.voteAverage;
+  const ratingIsImdb = ep.imdbRating != null;
   const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}` : undefined;
   const candidates = useMemo(() => {
     const seen = new Set<string>();
@@ -90,6 +93,11 @@ export function EpisodeRow({
               <Check size={12} strokeWidth={3} />
             </span>
           )}
+          {settings.showEpisodeRating && ratingValue != null && ratingValue > 0 && (
+            <div className="pointer-events-none absolute bottom-2 start-2 z-[5] flex items-center gap-1.5 rounded-md bg-black/55 px-1.5 py-0.5 drop-shadow-md backdrop-blur-sm">
+              <EpisodeRatingBadge value={ratingValue} isImdb={ratingIsImdb} />
+            </div>
+          )}
           {progress.ratio > 0.01 && (
             <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/55">
               <div
@@ -112,7 +120,6 @@ export function EpisodeRow({
                 `S${ep.seasonNumber} E${ep.episodeNumber}`,
                 ep.runtime ? t("{n} min", { n: ep.runtime }) : null,
                 formatAirDate(ep.airDate) || null,
-                settings.showEpisodeRating && ep.voteAverage && ep.voteAverage > 0 ? `★ ${ep.voteAverage.toFixed(1)}` : null,
               ]
                 .filter(Boolean)
                 .join("  ·  ")}

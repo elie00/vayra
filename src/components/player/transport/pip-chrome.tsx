@@ -48,6 +48,17 @@ export function PipChrome({
         aria-hidden
         className="absolute inset-0 z-10"
       />
+      <div
+        aria-hidden
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void import("@tauri-apps/api/window")
+            .then(({ getCurrentWindow }) => getCurrentWindow().startResizeDragging("SouthEast"))
+            .catch(() => {});
+        }}
+        className="pointer-events-auto absolute bottom-0 right-0 z-30 h-4 w-4 cursor-nwse-resize"
+      />
 
       <div
         className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/70 via-black/30 to-transparent px-3 pt-2.5 pb-8 transition-opacity duration-200 ${

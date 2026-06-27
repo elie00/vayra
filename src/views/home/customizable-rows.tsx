@@ -10,7 +10,6 @@ import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { useT } from "@/lib/i18n";
 import type { HomeRowCustomization } from "@/lib/home-customization";
 import { useView } from "@/lib/view";
-import { isMacDesktop } from "@/lib/platform";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
 import { watchTitleKey, type WatchedSet } from "@/lib/playback-history";
@@ -151,7 +150,12 @@ export function CustomizableRows({
           metas = metas.filter((m) => !m.originalLanguage || homeLanguages.includes(m.originalLanguage));
         }
         if (hideWatched) metas = metas.filter((m) => !isWatched(m));
-        if ((hideWatched || (homeLanguages && homeLanguages.length > 0)) && metas.length === 0 && !editMode)
+        if (
+          (hideWatched || (homeLanguages && homeLanguages.length > 0)) &&
+          metas.length === 0 &&
+          !editMode &&
+          !row.sourceRow
+        )
           return null;
         const idx = orderKeys.indexOf(row.key);
         const eager = rowIndex < 2;
@@ -197,7 +201,6 @@ export function CustomizableRows({
           <div
             key={row.key}
             data-scroll-anchor={`row:${row.key}`}
-            style={{ contentVisibility: isMacDesktop() ? undefined : "auto", containIntrinsicSize: "auto 340px" }}
           >
             {editMode && (
               <RowControls

@@ -32,8 +32,8 @@ pub async fn window_fullscreen_enter(
         }
         main.set_fullscreen(true)
             .map_err(|e| format!("set_fullscreen(true): {}", e))?;
+        let _ = main.set_focus();
     }
-    let _ = main.set_focus();
     let _ = app.emit_to("main", "fs://entered", ());
     Ok(())
 }

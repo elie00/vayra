@@ -41,7 +41,7 @@ export function ActiveView({
         {!isDone && (
           <div className="relative h-1.5 overflow-hidden rounded-full bg-canvas/55">
             <div
-              className="absolute inset-y-0 left-0 rounded-full bg-danger transition-[width] duration-500"
+              className="absolute inset-y-0 start-0 rounded-full bg-danger transition-[width] duration-500"
               style={{ width: `${ratio * 100}%` }}
             />
           </div>

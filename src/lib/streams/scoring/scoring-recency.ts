@@ -1,6 +1,9 @@
 import type { ParsedStream, ScoreReason } from "../types";
 import type { CorpusStats, ScoreOptions } from "./scoring-types";
 
+const SHORT_FRESH_DAYS = 30;
+const THEATER_WINDOW_DAYS = 150;
+
 export function freshTheatricalAdjust(
   s: ParsedStream,
   opts: ScoreOptions,
@@ -13,7 +16,7 @@ export function freshTheatricalAdjust(
   const t = Date.parse(opts.releaseDate);
   if (Number.isNaN(t)) return { signal: "fresh-skip-bad-date", delta: 0 };
   const days = (Date.now() - t) / 86_400_000;
-  if (days >= 30) return { signal: "fresh-skip-mature", delta: 0 };
+  if (days >= THEATER_WINDOW_DAYS) return { signal: "fresh-skip-mature", delta: 0 };
 
   const isTheaterCapture =
     s.source === "CAM" || s.source === "TS" || s.source === "HDTS" || s.source === "TC";
@@ -30,6 +33,10 @@ export function freshTheatricalAdjust(
     corpus.trustedTrackedCount >= 4 &&
     corpus.theaterCaptureFraction >= 0.4 &&
     corpus.theaterCaptureFraction > corpus.webishFraction;
+
+  if (!theaterDominated && days >= SHORT_FRESH_DAYS) {
+    return { signal: "fresh-skip-mature", delta: 0 };
+  }
 
   if (isTheaterCapture) {
     if (theaterDominated) {

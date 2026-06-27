@@ -1,5 +1,6 @@
 const live: Record<string, string> = {
   Live: "مباشر",
+  "Now playing": "قيد التشغيل الآن",
   "Go to live": "الانتقال إلى البث المباشر",
   "Jump to live edge": "القفز إلى حافة البث المباشر",
   "On now": "يعمل الآن",

@@ -6,6 +6,7 @@ import { isSaved, toggleSaved } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
 import { kitsuCoverImage, parseKitsuId } from "@/lib/providers/kitsu";
 import { resolveAnimeBackdrop, resolveLogo } from "@/lib/logo";
+import { useMalRating } from "@/lib/mal-rating";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { observe, usePageVisible } from "@/lib/visibility";
@@ -107,6 +108,7 @@ export function AnimeHero({
     };
   }, [active, slides, settings.tmdbKey, hdBackdrops]);
 
+  const malRating = useMalRating(slides[active]);
   if (slides.length === 0) return null;
 
   const current = slides[active];
@@ -198,10 +200,10 @@ export function AnimeHero({
               {saved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
             </button>
             <span className="ms-1 hidden items-center gap-1.5 text-[13px] text-ink-muted sm:inline-flex">
-              {current.imdbRating && (
+              {malRating && (
                 <>
                   <MalLogo className="h-[12px] w-auto text-ink-muted" />
-                  <span className="font-semibold text-ink">{current.imdbRating}</span>
+                  <span className="font-semibold text-ink">{malRating}</span>
                 </>
               )}
             </span>

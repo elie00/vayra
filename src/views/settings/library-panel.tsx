@@ -10,6 +10,7 @@ import previewPoster1 from "@/assets/preview/poster1.webp";
 import previewPoster2 from "@/assets/preview/poster2.webp";
 import previewPoster3 from "@/assets/preview/poster3.webp";
 import previewPoster4 from "@/assets/preview/poster4.webp";
+import { SpoilerPreview } from "./spoiler-preview";
 import rpdbLogo from "@/assets/addon-logos/rpdb.png";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
 import tvdbLogo from "@/assets/addon-logos/tvdb.svg";
@@ -238,6 +239,7 @@ export function LibraryPanel({
             />
           </div>
         )}
+        <SpoilerPreview />
       </Section>
 
       <Section

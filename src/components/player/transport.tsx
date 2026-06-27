@@ -7,7 +7,7 @@ import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { TransportStremio } from "./transport-stremio";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { activeLayout } from "@/lib/theme";
+import { resolveChromeTheme } from "@/lib/theme";
 import { SeekBar } from "./transport/seek-bar";
 import { LiveBadge, GoToLive, LiveSeekBar } from "./transport/live-controls";
 import { PipChrome } from "./transport/pip-chrome";
@@ -147,7 +147,7 @@ export function Transport({
 }) {
   const t = useT();
   const { settings } = useSettings();
-  const isStremioLayout = activeLayout(settings.theme) === "stremio";
+  const isStremioLayout = resolveChromeTheme(settings.theme, settings.playerChromeTheme) === "stremio";
   if (isStremioLayout && !pipMode) {
     return (
       <TransportStremio
@@ -360,7 +360,7 @@ export function Transport({
   return (
     <>
       <div
-        data-tauri-drag-region
+        data-tauri-drag-region={fullscreen ? undefined : ""}
         className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent px-7 pt-4 pb-8 transition-opacity duration-300 ${
           visible ? "opacity-100" : "opacity-0"
         }`}

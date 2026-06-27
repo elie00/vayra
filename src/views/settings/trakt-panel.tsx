@@ -138,12 +138,6 @@ export function TraktPanel() {
               }
             />
           )}
-          <ToggleRow
-            label={t("Blur comments by default")}
-            sub={t("Comments on episode/show pages are blurred until you reveal them, even if they are not tagged as spoilers.")}
-            value={!!settings.blurComments}
-            onChange={(on) => update({ blurComments: on })}
-          />
           {!confirmDisconnect ? (
             <button
               onClick={() => setConfirmDisconnect(true)}
@@ -183,6 +177,26 @@ export function TraktPanel() {
           )}
         </Section>
       )}
+
+      <Section
+        title={t("Comments")}
+        subtitle={t("Community comments from Trakt that appear on movie and show pages.")}
+      >
+        <ToggleRow
+          label={t("Show comments on detail pages")}
+          sub={t("Turn on to show the Trakt comments section on movies, shows, and episodes.")}
+          value={settings.showTraktComments === true}
+          onChange={(on) => update({ showTraktComments: on })}
+        />
+        {settings.showTraktComments === true && (
+          <ToggleRow
+            label={t("Blur comments by default")}
+            sub={t("Comments are blurred until you reveal them, even if they are not tagged as spoilers.")}
+            value={!!settings.blurComments}
+            onChange={(on) => update({ blurComments: on })}
+          />
+        )}
+      </Section>
 
       {modalOpen && <TraktDeviceModal onClose={() => setModalOpen(false)} />}
     </>

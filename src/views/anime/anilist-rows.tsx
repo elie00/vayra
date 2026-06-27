@@ -11,7 +11,14 @@ export function AnilistRows() {
     <>
       {rails.map((rail) => (
         <div key={rail.key} data-scroll-anchor={`row:anilist:${rail.key}`}>
-          <Row title={t("Your AniList: {name}", { name: rail.title })} scrollKey={`anime:anilist:${rail.key}`}>
+          <Row
+            title={
+              rail.key === "recommended"
+                ? t("Recommended for you")
+                : t("Your AniList: {name}", { name: rail.title })
+            }
+            scrollKey={`anime:anilist:${rail.key}`}
+          >
             {rail.metas.map((m, i) => (
               <PickCard key={`${m.id}-${i}`} meta={m} />
             ))}

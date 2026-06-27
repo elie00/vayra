@@ -7,14 +7,17 @@ export function DragStrip({
   itemCount,
   stride = 260,
   arrowOffset = "top-[69px]",
+  onReachEnd,
 }: {
   children: React.ReactNode;
   itemCount: number;
   stride?: number;
   arrowOffset?: string;
+  onReachEnd?: () => void;
 }) {
   const { ref, handlers } = useDragScroll<HTMLDivElement>({ stride });
   const barTrackRef = useRef<HTMLDivElement | null>(null);
+  const reachedRef = useRef(0);
   const barDrag = useRef<{ x: number; s: number } | null>(null);
   const [bar, setBar] = useState({ left: false, right: false, thumb: 0, pos: 0, show: false });
 
@@ -32,7 +35,13 @@ export function DragStrip({
       pos = (el.scrollLeft / max) * (tw - thumb);
     }
     setBar({ left: el.scrollLeft > 4, right: el.scrollLeft < max - 4, thumb, pos, show });
-  }, [ref]);
+    if (onReachEnd && max > 0 && el.scrollLeft >= max - 600) {
+      if (reachedRef.current !== el.scrollWidth) {
+        reachedRef.current = el.scrollWidth;
+        onReachEnd();
+      }
+    }
+  }, [ref, onReachEnd]);
 
   useEffect(() => {
     sync();

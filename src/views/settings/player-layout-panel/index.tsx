@@ -30,7 +30,7 @@ import {
   setActiveProfile,
 } from "@/lib/player-chrome-profiles";
 import { useSettings } from "@/lib/settings";
-import { activeLayout } from "@/lib/theme";
+import { resolveChromeTheme } from "@/lib/theme";
 import {
   moveControlOrder,
   moveControlSlot,
@@ -49,7 +49,7 @@ const THEME_BASELINES: Record<ThemeId, PlayerChromeConfig> = {
 };
 
 function themeIdFromSettings(settings: ReturnType<typeof useSettings>["settings"]): ThemeId {
-  return activeLayout(settings.theme) === "stremio" ? "stremio" : "default";
+  return resolveChromeTheme(settings.theme, settings.playerChromeTheme);
 }
 
 export function PlayerLayoutPanel() {
@@ -131,6 +131,13 @@ export function PlayerLayoutPanel() {
       ),
     }));
   }, [selectedId]);
+
+  const unhideControl = useCallback((id: PlayerControlId) => {
+    setDraft((cur) => ({
+      ...cur,
+      controls: cur.controls.map((c) => (c.id === id ? { ...c, hidden: false } : c)),
+    }));
+  }, []);
 
   const resetControl = useCallback(() => {
     if (!selectedId) return;
@@ -338,7 +345,13 @@ export function PlayerLayoutPanel() {
 
   return (
     <div className="flex flex-col gap-7">
-      <ThemeTabs value={theme} onChange={setTheme} />
+      <ThemeTabs
+        value={theme}
+        onChange={(id) => {
+          update({ playerChromeTheme: id });
+          setTheme(id);
+        }}
+      />
 
       <EditLayoutCard
         theme={theme}
@@ -414,6 +427,7 @@ export function PlayerLayoutPanel() {
           onExportProfile={onExportProfile}
           onImportProfile={onImportProfile}
           onResetToDefaults={onResetToDefaults}
+          onUnhide={unhideControl}
         />
       )}
     </div>

@@ -23,7 +23,7 @@ export function AnimeIcon({ active = false }: { active?: boolean }) {
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden
-        className={`pointer-events-none absolute -right-1 -top-1 ${
+        className={`pointer-events-none absolute -end-1 -top-1 ${
           active ? "animate-anger-pop" : "opacity-0"
         }`}
       >

@@ -15,6 +15,7 @@ import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
 import { cinemetaRatingPrefetch, useCinemetaRating } from "@/lib/providers/cinemeta-rating";
 import { mdblistCardPrefetch, useMdblistCardScores } from "@/lib/providers/mdblist-batch";
 import { needsImdbForPoster, needsTmdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
+import { externalToKitsu, kitsuToImdb, kitsuToTvdb } from "@/lib/providers/anime-mapping";
 import {
   tmdbIdFromImdb,
   tmdbImdbId,
@@ -70,7 +71,8 @@ export const PickCard = memo(function PickCard({
     settings.showMdblistBadge ||
     settings.showTraktBadge;
   const cardScores = useMdblistCardScores(wantMdblist ? imdbId : undefined, mediaKind);
-  const wantCinemetaRating = settings.showImdbBadge && !isAnimeCardId && !meta.id.startsWith("tt");
+  const hasInlineImdb = meta.id.startsWith("tt") && !!meta.imdbRating;
+  const wantCinemetaRating = settings.showImdbBadge && !isAnimeCardId && !hasInlineImdb;
   const cinemetaRating = useCinemetaRating(wantCinemetaRating ? imdbId : undefined);
   const cardImdbValue = isAnimeCardId
     ? undefined
@@ -107,6 +109,8 @@ export const PickCard = memo(function PickCard({
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
+  const [animeImdb, setAnimeImdb] = useState<string | undefined>();
+  const [animeTvdb, setAnimeTvdb] = useState<string | undefined>();
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
   const posterAltId = needsImdbForPoster(settings.rpdbKey, meta.id)
@@ -118,6 +122,8 @@ export const PickCard = memo(function PickCard({
     const seen = new Set<string>();
     const out: string[] = [];
     for (const u of [
+      animeImdb ? rpdbPoster(settings.rpdbKey, animeImdb, meta.poster) : undefined,
+      animeTvdb ? rpdbPoster(settings.rpdbKey, `tvdb:${animeTvdb}`, meta.poster) : undefined,
       rpdbPoster(settings.rpdbKey, meta.id, meta.poster, posterAltId),
       meta.poster,
       hydratedPoster,
@@ -127,7 +133,7 @@ export const PickCard = memo(function PickCard({
       out.push(u);
     }
     return out;
-  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster]);
+  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb]);
   const posterSrc = posterCandidates[imgIdx];
 
   useEffect(() => {
@@ -136,7 +142,37 @@ export const PickCard = memo(function PickCard({
 
   useEffect(() => {
     setHydratedPoster(undefined);
+    setAnimeImdb(undefined);
+    setAnimeTvdb(undefined);
   }, [meta.id]);
+
+  useEffect(() => {
+    if (!isAnimeCardId || (!settings.rpdbKey && !settings.posterBaseUrl)) return;
+    const m = meta.id.match(/^(kitsu|mal|anilist|anidb):(\d+)/);
+    if (!m) return;
+    const source = m[1];
+    const idNum = Number(m[2]);
+    if (!Number.isFinite(idNum)) return;
+    let cancelled = false;
+    (async () => {
+      let kitsuId: number | null = source === "kitsu" ? idNum : null;
+      if (kitsuId == null) {
+        const armSource = source === "mal" ? "myanimelist" : source;
+        kitsuId = await externalToKitsu(armSource, idNum).catch(() => null);
+      }
+      if (cancelled || kitsuId == null) return;
+      const [tt, tv] = await Promise.all([
+        kitsuToImdb(kitsuId).catch(() => null),
+        kitsuToTvdb(kitsuId).catch(() => null),
+      ]);
+      if (cancelled) return;
+      if (tt) setAnimeImdb(tt);
+      if (tv) setAnimeTvdb(String(tv));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [meta.id, isAnimeCardId, settings.rpdbKey, settings.posterBaseUrl]);
 
   useEffect(() => {
     if (posterSrc !== undefined || hydratedPoster) return;

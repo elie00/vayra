@@ -20,6 +20,7 @@ export type TvdbEpisode = {
   id: number;
   number: number;
   seasonNumber: number;
+  absoluteNumber?: number;
   name?: string;
   overview?: string;
   aired?: string;
@@ -192,4 +193,37 @@ export async function tvdbEpisodes(
       image: e.image,
       imdbId: undefined,
     }));
+}
+
+export async function tvdbEpisodesAbsolute(
+  apiKey: string,
+  seriesId: number,
+): Promise<TvdbEpisode[]> {
+  if (!apiKey || !seriesId) return [];
+  const out: TvdbEpisode[] = [];
+  for (let page = 0; page < 12; page++) {
+    const data = await getJson<any>(
+      apiKey,
+      `/series/${seriesId}/episodes/absolute?page=${page}`,
+    );
+    const arr = (data?.episodes ?? []) as any[];
+    if (arr.length === 0) break;
+    for (const e of arr) {
+      if (typeof e.number !== "number") continue;
+      out.push({
+        id: e.id,
+        number: e.number,
+        seasonNumber: typeof e.seasonNumber === "number" ? e.seasonNumber : 0,
+        absoluteNumber: typeof e.absoluteNumber === "number" ? e.absoluteNumber : undefined,
+        name: e.name,
+        overview: e.overview,
+        aired: e.aired,
+        runtime: e.runtime,
+        image: e.image,
+        imdbId: undefined,
+      });
+    }
+    if (arr.length < 500) break;
+  }
+  return out;
 }

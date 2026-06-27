@@ -1,8 +1,12 @@
-import { ArrowLeft, Check, Copy, Download, Trash2, X } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowLeft, Check, Copy, Download, ImagePlus, Loader2, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { setCustomThemePreview } from "@/lib/custom-themes";
 import type { ThemePreset } from "@/lib/theme";
+import { clearUnseenDownloads, getUnseenDownloads, subscribeUnseen } from "@/lib/theme-store";
+import { CommunityPane } from "./community-browser";
 import type { LibraryEntry } from "./library-grid";
+import { fileToPreviewDataUrl } from "./theme-upload/upload-utils";
 
 export function LibraryBrowser({
   entries,
@@ -36,6 +40,14 @@ export function LibraryBrowser({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const [tab, setTab] = useState<"library" | "community">("library");
+  const [unseen, setUnseen] = useState(() => getUnseenDownloads().length);
+
+  useEffect(() => subscribeUnseen(() => setUnseen(getUnseenDownloads().length)), []);
+  useEffect(() => {
+    if (tab === "library") clearUnseenDownloads();
+  }, [tab]);
+
   const builtIn = entries.filter((e) => e.category === "Built-in");
   const featured = entries.filter((e) => e.category === "Featured");
   const templates = entries.filter((e) => e.category === "Template");
@@ -47,7 +59,7 @@ export function LibraryBrowser({
       role="dialog"
       aria-label="Theme library"
     >
-      <header className="flex shrink-0 items-center justify-between gap-4 border-b border-edge-soft bg-surface/40 px-10 py-5">
+      <header data-tauri-drag-region className="flex shrink-0 items-center justify-between gap-4 border-b border-edge-soft bg-surface/40 px-10 py-5">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -57,9 +69,9 @@ export function LibraryBrowser({
             <ArrowLeft size={15} strokeWidth={2.2} className="dir-icon" />
             Back to settings
           </button>
-          <div className="flex flex-col">
-            <h1 className="text-[24px] font-semibold tracking-tight text-ink">Theme Library</h1>
-            <p className="text-[13px] text-ink-subtle">
+          <div data-tauri-drag-region className="flex flex-col">
+            <h1 className="pointer-events-none text-[24px] font-semibold tracking-tight text-ink">Theme Library</h1>
+            <p className="pointer-events-none text-[13px] text-ink-subtle">
               {entries.length} themes. Click Apply on any card to use it.
             </p>
           </div>
@@ -74,8 +86,26 @@ export function LibraryBrowser({
         </button>
       </header>
 
+      <div className="flex shrink-0 items-center gap-2 border-b border-edge-soft bg-surface/20 px-10 py-3">
+        <TabBtn active={tab === "library"} onClick={() => setTab("library")}>
+          My library
+          {unseen > 0 && (
+            <span className="harbor-pop ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-canvas">
+              {unseen}
+            </span>
+          )}
+        </TabBtn>
+        <TabBtn active={tab === "community"} onClick={() => setTab("community")}>
+          Community
+        </TabBtn>
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto px-10 py-10">
         <div className="mx-auto flex max-w-[1280px] flex-col gap-12">
+          {tab === "community" ? (
+            <CommunityPane />
+          ) : (
+          <>
           {featured.length > 0 && (
             <BrowserSection title="Featured" subtitle="Hand-picked reskins from the Harbor crew.">
               <BrowserGrid
@@ -127,10 +157,26 @@ export function LibraryBrowser({
               />
             </BrowserSection>
           )}
+          </>
+          )}
         </div>
       </div>
     </div>,
     document.body,
+  );
+}
+
+function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-9 items-center rounded-full px-4 text-[13px] font-semibold transition-colors ${
+        active ? "bg-ink text-canvas" : "text-ink-muted hover:bg-elevated hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -206,9 +252,24 @@ function BrowserCard({
 }) {
   const hasImage = !!theme.previewImage;
   const bg = theme.background?.image ?? `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
+  const [busy, setBusy] = useState(false);
+  const addImage = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+      const f = input.files?.[0];
+      if (!f) return;
+      setBusy(true);
+      const url = await fileToPreviewDataUrl(f);
+      if (url) setCustomThemePreview(theme.id, url);
+      setBusy(false);
+    };
+    input.click();
+  };
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-2xl border transition-all ${
+      className={`group flex flex-col overflow-hidden rounded-2xl border transition-all ${
         active
           ? "border-accent shadow-[0_0_0_2px_var(--color-accent-soft),0_18px_40px_-22px_rgba(0,0,0,0.35)]"
           : "border-edge-soft bg-surface hover:border-edge"
@@ -238,6 +299,17 @@ function BrowserCard({
             <span key={i} className="flex-1" style={{ background: c }} />
           ))}
         </div>
+        {removable && !hasImage && (
+          <button
+            type="button"
+            onClick={addImage}
+            disabled={busy}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-canvas/45 text-[12px] font-semibold text-ink-muted opacity-0 backdrop-blur-[1px] transition-opacity hover:text-ink group-hover:opacity-100"
+          >
+            {busy ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} strokeWidth={1.9} />}
+            {busy ? "Adding" : "Add image"}
+          </button>
+        )}
       </div>
       <div className="flex flex-col gap-3 p-4">
         <div className="flex min-w-0 flex-col gap-1">

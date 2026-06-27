@@ -24,6 +24,7 @@ export function AnimeEpisodeStrip({
   spoilerFor,
   onContextMenu,
   layout = "strip",
+  onReachEnd,
 }: {
   meta: Meta;
   episodes: KitsuEpisode[];
@@ -31,6 +32,7 @@ export function AnimeEpisodeStrip({
   spoilerFor?: (ep: KitsuEpisode) => SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
   layout?: "strip" | "grid";
+  onReachEnd?: () => void;
 }) {
   const { openPicker } = useView();
   const { settings } = useSettings();
@@ -43,10 +45,11 @@ export function AnimeEpisodeStrip({
         number: ep.number,
         season: ep.seasonNumber || 1,
         title: ep.title || t("Episode {n}", { n: ep.number }),
-        stills: ep.thumbnail ? [ep.thumbnail] : [],
+        stills: [ep.thumbnail, ep.thumbnailFallback, meta.background].filter((u): u is string => !!u),
         runtime: ep.length,
         airDate: ep.airdate,
         overview: ep.synopsis || undefined,
+        rating: Number(meta.imdbRating) || undefined,
         filler: ep.filler,
         upcoming: isUpcomingDate(ep.airdate),
         play: () =>
@@ -86,7 +89,7 @@ export function AnimeEpisodeStrip({
     );
   }
   return (
-    <DragStrip itemCount={episodes.length}>
+    <DragStrip itemCount={episodes.length} onReachEnd={onReachEnd}>
       {episodes.map((ep) => (
         <div key={ep.id} className="w-[244px] shrink-0">
           <AnimeEpisodeStripCard
@@ -151,7 +154,7 @@ function AnimeEpisodeStripCard({
         className="relative aspect-video overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
       >
         <div className={`${spoiler?.thumb ? SPOILER_THUMB_CLASS : ""} ${upcoming ? "opacity-55 saturate-50" : ""}`}>
-          <Poster src={ep.thumbnail ?? undefined} seed={String(ep.id)} ratio="landscape" className="" />
+          <Poster src={ep.thumbnail ?? undefined} seed={String(ep.id)} ratio="landscape" className="" lazy fallbacks={[ep.thumbnailFallback, meta.background]} />
         </div>
         {upcoming && (
           <span className="absolute bottom-2 start-2 transition-opacity group-hover:opacity-0">
@@ -161,7 +164,7 @@ function AnimeEpisodeStripCard({
 
         {/* Persistent bottom gradient with Synopsis */}
         <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
-          {meta.imdbRating ? (
+          {settings.showEpisodeRating && meta.imdbRating ? (
             <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
               <MalLogo className="h-2.5 w-auto text-white shadow-sm" />
               <span className="text-[10px] font-bold text-white">

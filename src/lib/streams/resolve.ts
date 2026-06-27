@@ -46,9 +46,16 @@ export async function resolveStream(
   debrids: DebridStore[],
   signal: AbortSignal,
   userCommitted = false,
+  forceP2p = false,
 ): Promise<ResolveResult> {
   const expectedSize = stream.size ?? null;
   const tried: Array<{ slug: string; code: string }> = [];
+
+  if (forceP2p && stream.infoHash && engineP2pEligible(stream)) {
+    const direct = await tryTorrentEngine(stream);
+    if (direct) return { ok: true, data: direct, via: "p2p" };
+    return { ok: false, code: engineFailureCode(), tried };
+  }
 
   if (stream.url && stream.url !== "#") {
     const headers = stream.behaviorHints?.proxyHeaders?.request ?? stream.behaviorHints?.headers;

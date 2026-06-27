@@ -113,6 +113,10 @@ export function login(email: string, password: string) {
   });
 }
 
+export function getUser(authKey: string) {
+  return call<User>("getUser", { authKey });
+}
+
 export function logout(authKey: string) {
   return call<unknown>("logout", { authKey });
 }
@@ -162,6 +166,68 @@ export async function removeStremioLibraryItem(authKey: string, id: string): Pro
     ...item,
     removed: true,
     temp: false,
+    _mtime: new Date().toISOString(),
+  });
+}
+
+export const CLOUD_OK = /^(tt\d|kitsu:|mal:|anilist:|anidb:|tmdb:)/;
+
+export function cloudWriteId(metaId: string, resolved: string | null, verified: boolean): string | null {
+  if (metaId.startsWith("tt")) return metaId;
+  if (verified && resolved && resolved.startsWith("tt")) return resolved;
+  return CLOUD_OK.test(metaId) ? metaId : null;
+}
+
+export async function saveStremioBookmark(
+  authKey: string,
+  id: string,
+  input: { type?: string; name?: string; poster?: string },
+): Promise<void> {
+  const now = new Date().toISOString();
+  const existing = await libraryGetOne(authKey, id).catch(() => null);
+  if (existing) {
+    await libraryPut(authKey, { ...existing, removed: false, temp: false, _mtime: now });
+    return;
+  }
+  const type =
+    input.type === "series" || input.type === "tv" || input.type === "channel" ? "series" : "movie";
+  const item = {
+    _id: id,
+    name: input.name ?? "",
+    type,
+    poster: input.poster ?? null,
+    posterShape: "poster",
+    removed: false,
+    temp: false,
+    _ctime: now,
+    _mtime: now,
+    state: {
+      lastWatched: null,
+      timeWatched: 0,
+      timeOffset: 0,
+      overallTimeWatched: 0,
+      timesWatched: 0,
+      flaggedWatched: 0,
+      duration: 0,
+      video_id: null,
+      watched: null,
+      lastVidReleased: null,
+      noNotif: false,
+    },
+    behaviorHints: { defaultVideoId: null, featuredVideoId: null, hasScheduledVideos: false },
+  };
+  await libraryPut(authKey, item as unknown as LibraryItem);
+}
+
+export async function removeStremioBookmark(authKey: string, id: string): Promise<void> {
+  const existing = await libraryGetOne(authKey, id).catch(() => null);
+  if (!existing) return;
+  const hasProgress =
+    (existing.state?.timeOffset ?? 0) > 0 || (existing.state?.flaggedWatched ?? 0) > 0;
+  await libraryPut(authKey, {
+    ...existing,
+    removed: true,
+    temp: hasProgress,
     _mtime: new Date().toISOString(),
   });
 }

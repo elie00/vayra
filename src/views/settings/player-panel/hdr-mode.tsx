@@ -47,7 +47,7 @@ export function HdrModePicker() {
     {
       id: "hdrEmbedded",
       label: t("True HDR, embedded"),
-      sub: t("Keeps HDR inside Harbor with the controls floating above the video. If the control bar or subtitles disappear, switch to separate window."),
+      sub: t("Keeps HDR inside Harbor with the controls floating above the video. Subtitles render on the video. If the control bar does not appear, press Esc or use separate window."),
       experimental: true,
     },
   ];

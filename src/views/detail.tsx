@@ -7,7 +7,6 @@ import type { KitsuEpisode, KitsuStreamer } from "@/lib/providers/kitsu";
 import { AnimeAwardsBlock } from "@/components/anime-awards-block";
 import { AwardsBlock } from "@/components/awards-block";
 import { BackToTop } from "@/components/back-to-top";
-import { LazyMount } from "@/components/lazy-mount";
 import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import { meta as fetchCinemetaMeta, narrowMediaType, isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
@@ -28,8 +27,7 @@ import {
 import { cinemetaDetails } from "@/lib/providers/cinemeta-details";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
-import { episodeFromVideoId, libraryGetOne, type LibraryItem } from "@/lib/stremio";
-import { CLOUD_OK } from "./player/hooks/use-stremio-sync";
+import { CLOUD_OK, episodeFromVideoId, libraryGetOne, type LibraryItem } from "@/lib/stremio";
 import { decodeWatchedEpisodes } from "@/lib/stremio-watched";
 import { useTogether } from "@/lib/together/provider";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -134,7 +132,7 @@ if (typeof document !== "undefined") {
     const __el = document.createElement("style");
     __el.id = __id;
     __el.textContent =
-      "@keyframes harborFadeInUp{from{opacity:0;filter:blur(14px);transform:scale(1.02)}to{opacity:1;filter:blur(0);transform:scale(1)}}.harbor-fade-in-up{animation:harborFadeInUp .6s ease-out both;will-change:filter,opacity,transform}";
+      "@keyframes harborFadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.harbor-fade-in-up{animation:harborFadeInUp .4s ease-out both}";
     document.head.appendChild(__el);
   }
 }
@@ -510,8 +508,8 @@ export function DetailView({
   const overview = detail?.overview ?? meta.description ?? "";
   const tagline = detail?.tagline ?? "";
   const backdrop =
-    pinnedBackdropHi ?? backdrops[backdropIdx] ?? meta.background ?? detail?.backdrop ?? (loading ? undefined : meta.poster);
-  const logo = loading ? detail?.logo : (detail?.logo ?? meta.logo);
+    pinnedBackdropHi || backdrops[backdropIdx] || meta.background || detail?.backdrop || (loading ? undefined : meta.poster) || undefined;
+  const logo = loading ? detail?.logo : (detail?.logo || meta.logo);
   const year = detail?.year ?? meta.releaseInfo;
   const releaseYearNum = parseAwardYear(year);
   const imdbRatingValue =
@@ -596,7 +594,7 @@ export function DetailView({
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
     if (!isSeries) {
-      openPicker(playMeta, undefined, { autoPlay: !forcePicker && settings.instantPlay });
+      openPicker(playMeta, undefined, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
       return;
     }
     if (isAnime) {
@@ -619,18 +617,18 @@ export function DetailView({
             imdbSeason: wantedEp.imdbSeason,
             imdbEpisode: wantedEp.imdbEpisode,
           },
-          { autoPlay: !forcePicker && settings.instantPlay },
+          { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay },
         );
         return;
       }
-      openPicker(playMeta, undefined, { autoPlay: !forcePicker && settings.instantPlay });
+      openPicker(playMeta, undefined, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
       return;
     }
     if (lastPlay) {
       openPicker(
         playMeta,
         { season: lastPlay.season, episode: lastPlay.episode },
-        { autoPlay: !forcePicker && settings.instantPlay },
+        { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay },
       );
       return;
     }
@@ -654,14 +652,14 @@ export function DetailView({
             season >= 1 &&
             episode >= 1
           ) {
-            openPicker(playMeta, { season, episode }, { autoPlay: !forcePicker && settings.instantPlay });
+            openPicker(playMeta, { season, episode }, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
             return;
           }
         }
         if (item) break;
       }
     }
-    openPicker(playMeta, { season: 1, episode: 1 }, { autoPlay: !forcePicker && settings.instantPlay });
+    openPicker(playMeta, { season: 1, episode: 1 }, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
   }, [isSeries, isAnime, animeEpisodes, lastPlay, openPicker, playMeta, settings.instantPlay, inSession, claimHost, authKey, meta.id, detail?.imdbId]);
   const smartPlayLabel = inSession && !liveContext
     ? t("Play Together")
@@ -801,7 +799,7 @@ export function DetailView({
                   </div>
                 )}
               </div>
-              <div ref={actionRowRef} className="mt-9 flex gap-3">
+              <div ref={actionRowRef} className="mt-9 flex items-center gap-3 [&>*]:shrink-0">
                 {upcoming ? (
                   <UpcomingCta detail={detail} onTry={() => smartPlay()} />
                 ) : (
@@ -828,10 +826,11 @@ export function DetailView({
                         type: meta.type,
                         name: title || meta.name,
                         poster: meta.poster ?? detail?.poster,
+                        imdbId: detail?.imdbId,
                       })
                     }
                     title={traktConnected ? t("Synced to Trakt") : t("Saved locally. Connect Trakt in Settings to sync.")}
-                    className={`flex h-12 items-center gap-2.5 rounded-full border px-6 text-[15px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 active:scale-[0.98] ${
+                    className={`flex h-12 items-center gap-2.5 whitespace-nowrap rounded-full border px-6 text-[15px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 active:scale-[0.98] ${
                       inWatchlist
                         ? "border-ink bg-ink/10 text-ink hover:bg-ink/20"
                         : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
@@ -896,6 +895,7 @@ export function DetailView({
                         type: meta.type,
                         name: title || meta.name,
                         poster: meta.poster ?? detail?.poster,
+                        imdbId: detail?.imdbId,
                       })
                     }
                     simkl={{
@@ -1136,6 +1136,79 @@ export function DetailView({
               node: <MediaGallery detail={detail} title={title} logo={logo} />,
             });
           }
+          if (isAnime) {
+            railSections.push({
+              key: "animeAwards",
+              label: t("Awards"),
+              minHeight: 160,
+              node: (
+                <AnimeAwardsBlock
+                  name={
+                    animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
+                    stickyAwardName.current ??
+                    title
+                  }
+                  year={releaseYearNum}
+                />
+              ),
+            });
+          }
+          if (detail && awards) {
+            railSections.push({
+              key: "awards",
+              label: t("Awards & Recognition"),
+              minHeight: 200,
+              node: <AwardsBlock awards={awards} />,
+            });
+          }
+          if (detail) {
+            railSections.push({
+              key: "info",
+              label: t("Information"),
+              minHeight: 200,
+              node: <InfoBlock detail={detail} isAnime={isAnime} />,
+            });
+          }
+          if (settings.showTraktComments === true && !isAnime) {
+            railSections.push({
+              key: "traktComments",
+              label: t("Comments"),
+              minHeight: 120,
+              node: <TraktComments resolution={traktResolution} />,
+            });
+          }
+          if (!isAnime) {
+            railSections.push({
+              key: "letterboxdPanel",
+              label: t("Letterboxd"),
+              minHeight: 120,
+              node: (
+                <LetterboxdPanel
+                  meta={meta}
+                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                />
+              ),
+            });
+            railSections.push({
+              key: "letterboxdReviews",
+              label: t("Letterboxd Reviews"),
+              minHeight: 120,
+              node: (
+                <LetterboxdReviews
+                  meta={meta}
+                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                />
+              ),
+            });
+          }
+          if (isAnime) {
+            railSections.push({
+              key: "anilistComments",
+              label: t("Anilist Comments"),
+              minHeight: 120,
+              node: <AnilistComments harborId={animeCanonicalId ?? meta.id} />,
+            });
+          }
           if (railSections.length === 0) return null;
           const railKeys = railSections.map((s) => s.key);
           const persist = (next: DetailCustomization) => {
@@ -1180,44 +1253,6 @@ export function DetailView({
           );
         })()}
 
-        <div id="anime-awards-section" style={{ scrollMarginTop: 96 }}>
-          <LazyMount minHeight={160}>
-            <AnimeAwardsBlock
-              name={
-                animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-                stickyAwardName.current ??
-                title
-              }
-              year={releaseYearNum}
-            />
-          </LazyMount>
-        </div>
-        {detail && awards && (
-          <div id="awards-section" style={{ scrollMarginTop: 96 }}>
-            <LazyMount minHeight={200}>
-              <AwardsBlock awards={awards} />
-            </LazyMount>
-          </div>
-        )}
-        {detail && (
-          <LazyMount minHeight={200}>
-            <InfoBlock detail={detail} isAnime={isAnime} />
-          </LazyMount>
-        )}
-        {!isAnime && (
-          <LetterboxdPanel
-            meta={meta}
-            imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
-          />
-        )}
-        {!isAnime && (
-          <LetterboxdReviews
-            meta={meta}
-            imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
-          />
-        )}
-        {!isAnime && <TraktComments resolution={traktResolution} />}
-        {isAnime && <AnilistComments harborId={animeCanonicalId ?? meta.id} />}
 
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">

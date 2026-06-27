@@ -184,7 +184,7 @@ export function SourceFolderCard({
 
       {editMode && sourceId && onEditFolderImages && (
         <div
-          className="absolute right-3 top-3 z-10"
+          className="absolute end-3 top-3 z-10"
           onClick={(e) => {
             e.stopPropagation();
             setIsEditModalOpen(true);

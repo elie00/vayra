@@ -177,7 +177,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
             type="button"
             onClick={closeSyncBar}
             aria-label={t("Close")}
-            className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-raised hover:text-ink active:scale-95"
+            className="ms-1 flex h-10 w-10 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-raised hover:text-ink active:scale-95"
           >
             <X size={18} strokeWidth={2.2} />
           </button>
@@ -237,7 +237,7 @@ function DelayDisplay({
           onClick={onReset}
           aria-label={t("Reset sync")}
           title={t("Reset to 0")}
-          className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-raised text-ink-subtle shadow-sm transition-colors hover:bg-elevated hover:text-danger"
+          className="absolute -end-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-raised text-ink-subtle shadow-sm transition-colors hover:bg-elevated hover:text-danger"
         >
           <RotateCcw size={10} strokeWidth={2.5} />
         </button>

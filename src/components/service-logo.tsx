@@ -11,6 +11,7 @@ export function ServiceLogo({
 }) {
   const [failed, setFailed] = useState(false);
   const meta = SERVICES[service];
+  if (!meta) return null;
   if (failed) {
     return (
       <span className="text-[14.5px] font-semibold tracking-tight" style={{ color: meta.tint }}>

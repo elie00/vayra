@@ -5,6 +5,7 @@ import { idOf } from "./addons-utils";
 import { CategoryGrid } from "./category-grid";
 import { HeroCard } from "./hero-card";
 import { Rail } from "./rail";
+import { LazyReveal } from "./lazy-reveal";
 
 export function DiscoverPane({
   hero,
@@ -55,30 +56,35 @@ export function DiscoverPane({
       )}
       <CommunityAddonsRail installedIds={installedIds} onChange={onRefetch} onOpen={onOpen} />
       {editorPicks.length > 0 && (
-        <Rail
-          title={t("Starters")}
-          blurb={t("Common picks for a fresh setup.")}
-          layout="list"
-          items={editorPicks}
-          onOpen={onOpen}
-          onInstall={onInstall}
-          onUninstall={onUninstall}
-          installedIds={installedIds}
-        />
+        <LazyReveal minHeight={320}>
+          <Rail
+            title={t("Starters")}
+            blurb={t("Common picks for a fresh setup.")}
+            layout="list"
+            items={editorPicks}
+            onOpen={onOpen}
+            onInstall={onInstall}
+            onUninstall={onUninstall}
+            installedIds={installedIds}
+          />
+        </LazyReveal>
       )}
-      <CategoryGrid onCategorySelect={onCategorySelect} />
+      <LazyReveal minHeight={220}>
+        <CategoryGrid onCategorySelect={onCategorySelect} />
+      </LazyReveal>
       {otherRails.map(({ rail, items }) => (
-        <Rail
-          key={rail.id}
-          title={t(rail.title)}
-          blurb={rail.blurb ? t(rail.blurb) : undefined}
-          layout={rail.layout}
-          items={items}
-          onOpen={onOpen}
-          onInstall={onInstall}
-          onUninstall={onUninstall}
-          installedIds={installedIds}
-        />
+        <LazyReveal key={rail.id} minHeight={360}>
+          <Rail
+            title={t(rail.title)}
+            blurb={rail.blurb ? t(rail.blurb) : undefined}
+            layout={rail.layout}
+            items={items}
+            onOpen={onOpen}
+            onInstall={onInstall}
+            onUninstall={onUninstall}
+            installedIds={installedIds}
+          />
+        </LazyReveal>
       ))}
     </div>
   );

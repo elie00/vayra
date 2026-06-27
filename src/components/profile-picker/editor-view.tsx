@@ -36,6 +36,9 @@ import { useSimkl } from "@/lib/simkl/provider";
 import { useSettings } from "@/lib/settings";
 import { AvatarRing } from "@/views/settings/account/avatar-ring";
 import { resizeAvatar } from "@/views/settings/account/avatar-utils";
+import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
+import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
+import { avatarUrl } from "@/lib/avatars/catalog";
 import { ColorPicker } from "@/views/settings/color-picker";
 import { PinEntry } from "./pin-entry";
 
@@ -77,7 +80,7 @@ export function EditorView({
   const [name, setName] = useState(editing?.name ?? "");
   const [avatar, setAvatar] = useState<string | null>(editing?.avatar ?? null);
   const [avatarSource, setAvatarSource] = useState<
-    "trakt" | "anilist" | "simkl" | "upload" | "removed" | null
+    "trakt" | "anilist" | "simkl" | "upload" | "builtin" | "removed" | null
   >(null);
   const [color, setColor] = useState<ProfileColor>(
     editing?.color ?? nextProfileColor(profiles),
@@ -91,6 +94,7 @@ export function EditorView({
     editing?.lockedTabs ?? null,
   );
   const [subView, setSubView] = useState<SubView>({ kind: "main" });
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const trimmed = name.trim();
@@ -397,6 +401,13 @@ export function EditorView({
                 </button>
               )}
             </div>
+            <AvatarFan
+              onClick={() => setAvatarPickerOpen(true)}
+              onRandomize={(id) => {
+                setAvatar(avatarUrl(id));
+                setAvatarSource("builtin");
+              }}
+            />
             {traktAvatarError && (
               <p className="text-[11.5px] text-amber-200/85">{traktAvatarError}</p>
             )}
@@ -495,6 +506,17 @@ export function EditorView({
           {editing ? t("Save changes") : t("Create profile")}
         </button>
       </div>
+      {avatarPickerOpen && (
+        <AvatarCatalogModal
+          current={avatar}
+          onPick={(id) => {
+            setAvatar(avatarUrl(id));
+            setAvatarSource("builtin");
+            setAvatarPickerOpen(false);
+          }}
+          onClose={() => setAvatarPickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

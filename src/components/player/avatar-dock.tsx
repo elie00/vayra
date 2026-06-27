@@ -144,24 +144,24 @@ function Avatar({
           )}
         </span>
         {leftPlayer && (
-          <span className="pointer-events-none absolute -bottom-1 -right-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/85 text-white/80 ring-1 ring-white/20">
+          <span className="pointer-events-none absolute -bottom-1 -end-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/85 text-white/80 ring-1 ring-white/20">
             <DoorOpen size={11} strokeWidth={2.2} />
           </span>
         )}
         {isPauser && !leftPlayer && (
-          <span className="pointer-events-none absolute -bottom-1 -right-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/85 text-white ring-1 ring-white/20">
+          <span className="pointer-events-none absolute -bottom-1 -end-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/85 text-white ring-1 ring-white/20">
             <Pause size={11} fill="currentColor" strokeWidth={0} />
           </span>
         )}
         {isStale && !isPauser && !leftPlayer && (
-          <span className="pointer-events-none absolute -bottom-1 -right-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/85 text-white/70 ring-1 ring-white/20">
+          <span className="pointer-events-none absolute -bottom-1 -end-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/85 text-white/70 ring-1 ring-white/20">
             <WifiOff size={10} strokeWidth={2.4} />
           </span>
         )}
         {isHost && (
           <span
             aria-label={t("Host")}
-            className="pointer-events-none absolute -top-2 -right-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-300 text-black shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-2 ring-black/35"
+            className="pointer-events-none absolute -top-2 -end-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-300 text-black shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-2 ring-black/35"
           >
             <Crown size={11} strokeWidth={2.4} fill="currentColor" />
           </span>

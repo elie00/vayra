@@ -7,6 +7,7 @@ import { useTogether } from "@/lib/together/provider";
 import type { ParticipantLocation } from "@/lib/together/protocol";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { useInLocalWatchlist, useLocalWatchlist } from "@/lib/local-watchlist";
 import { clearTitleBackdrop, getTitleBackdrop, setTitleBackdrop } from "@/lib/title-backdrop";
@@ -54,7 +55,8 @@ export function ContextMenu() {
   const isHost = inSession && snapshot.hostClientId === clientId;
   const canGoToHost = inSession && !isHost && hostLocation != null;
   const targetMetaId = state?.target.kind === "meta" ? state.target.meta.id : undefined;
-  const isWatchlisted = useInWatchlist(targetMetaId);
+  const targetImdb = useTmdbImdbId(targetMetaId);
+  const isWatchlisted = useInWatchlist(targetMetaId, [targetImdb]);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(targetMetaId);
   const { toggle: toggleLocalList } = useLocalWatchlist();
@@ -164,7 +166,7 @@ export function ContextMenu() {
       close();
     };
     const handleWatchlist = () => {
-      toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });
+      toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster, imdbId: targetImdb });
       close();
     };
     const handleBring = () => {

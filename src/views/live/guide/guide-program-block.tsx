@@ -109,7 +109,7 @@ export function GuideProgramBlock({
         onMouseLeave={onLeave}
         onFocus={onEnter}
         onBlur={onLeave}
-        className={`group absolute overflow-hidden rounded-lg border text-left transition-colors duration-150 ${stateClass}`}
+        className={`group absolute overflow-hidden rounded-lg border text-start transition-colors duration-150 ${stateClass}`}
         style={{
           top: rowTop + 4,
           height: rowHeight - 8,
@@ -189,7 +189,7 @@ function ProgramTooltip({
       role="tooltip"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="pointer-events-auto fixed z-[200] w-[320px] rounded-xl border border-edge-soft bg-elevated text-left text-ink shadow-[0_22px_60px_-12px_rgba(0,0,0,0.75)]"
+      className="pointer-events-auto fixed z-[200] w-[320px] rounded-xl border border-edge-soft bg-elevated text-start text-ink shadow-[0_22px_60px_-12px_rgba(0,0,0,0.75)]"
       style={{
         left: pos.left,
         top: pos.top,

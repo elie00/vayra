@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { libraryGetOne, libraryPut, type LibraryItem } from "@/lib/stremio";
+import { cloudWriteId, libraryGetOne, libraryPut, type LibraryItem } from "@/lib/stremio";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, subscribePlaybackClock } from "@/lib/player/playback-clock";
 import type { PlayerSrc } from "@/lib/view";
@@ -8,8 +8,6 @@ const TICK_MS = 30000;
 const BASE_REFRESH_MS = 30000;
 const MIN_POSITION_SEC = 6;
 const CREDITS_RATIO = 0.9;
-
-export const CLOUD_OK = /^(tt\d|kitsu:|mal:|anilist:|anidb:|tmdb:)/;
 
 let activeFlusher: (() => Promise<void>) | null = null;
 
@@ -216,16 +214,6 @@ export function useStremioSync(params: {
       window.removeEventListener("beforeunload", onHide);
     };
   }, []);
-}
-
-export function cloudWriteId(
-  metaId: string,
-  resolved: string | null,
-  verified: boolean,
-): string | null {
-  if (metaId.startsWith("tt")) return metaId;
-  if (verified && resolved && resolved.startsWith("tt")) return resolved;
-  return CLOUD_OK.test(metaId) ? metaId : null;
 }
 
 export function videoIdFor(s: PlayerSrc, cid: string | null): string | null {

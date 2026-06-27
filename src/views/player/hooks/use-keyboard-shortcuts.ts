@@ -15,7 +15,9 @@ export function useKeyboardShortcuts(params: {
   playPauseToggle: () => void;
   seekStep: (delta: number) => void;
   seekTo: (sec: number) => void;
+  onFrameStep?: (dir: 1 | -1) => void;
   toggleFullscreen: () => void;
+  togglePip?: () => void;
   fullscreen: boolean;
   cycleSubtitles: () => void;
   setShowStats: (updater: (prev: boolean) => boolean) => void;
@@ -31,11 +33,14 @@ export function useKeyboardShortcuts(params: {
   toggleSleep?: () => void;
   onScreenshot?: () => void;
   onGifRecord?: () => void;
+  onClipRecord?: () => void;
   onToggleCrop?: () => void;
   onPanscanUp?: () => void;
   onPanscanDown?: () => void;
   onPrevChannel?: () => void;
   onToggleAnime4k?: () => void;
+  onAnime4kOn?: () => void;
+  onAnime4kOff?: () => void;
 }) {
   const {
     bridgeRef,
@@ -46,7 +51,9 @@ export function useKeyboardShortcuts(params: {
     playPauseToggle,
     seekStep,
     seekTo,
+    onFrameStep,
     toggleFullscreen,
+    togglePip,
     fullscreen,
     cycleSubtitles,
     setShowStats,
@@ -62,11 +69,14 @@ export function useKeyboardShortcuts(params: {
     toggleSleep,
     onScreenshot,
     onGifRecord,
+    onClipRecord,
     onToggleCrop,
     onPanscanUp,
     onPanscanDown,
     onPrevChannel,
     onToggleAnime4k,
+    onAnime4kOn,
+    onAnime4kOff,
   } = params;
   const { settings } = useSettings();
   const overrides = settings.hotkeys ?? {};
@@ -107,6 +117,11 @@ export function useKeyboardShortcuts(params: {
         else closePlayer();
         return;
       }
+      if (match("playerPip")) {
+        e.preventDefault();
+        togglePip?.();
+        return;
+      }
       if (match("playerPlayPause")) {
         e.preventDefault();
         if (e.repeat) return;
@@ -139,6 +154,16 @@ export function useKeyboardShortcuts(params: {
       if (match("playerSeekForward30")) {
         e.preventDefault();
         seekStep(30);
+        return;
+      }
+      if (match("playerFrameForward") && onFrameStep) {
+        e.preventDefault();
+        onFrameStep(1);
+        return;
+      }
+      if (match("playerFrameBack") && onFrameStep) {
+        e.preventDefault();
+        onFrameStep(-1);
         return;
       }
       if (match("playerVolumeUp")) {
@@ -175,6 +200,16 @@ export function useKeyboardShortcuts(params: {
       if (match("playerAnime4kToggle") && onToggleAnime4k) {
         e.preventDefault();
         onToggleAnime4k();
+        return;
+      }
+      if (match("playerAnime4kOn") && onAnime4kOn) {
+        e.preventDefault();
+        onAnime4kOn();
+        return;
+      }
+      if (match("playerAnime4kOff") && onAnime4kOff) {
+        e.preventDefault();
+        onAnime4kOff();
         return;
       }
       if (match("playerPanscanUp") && onPanscanUp) {
@@ -289,18 +324,26 @@ export function useKeyboardShortcuts(params: {
         onGifRecord();
         return;
       }
-      if (e.key === "0") {
+      if (match("playerClipRecord") && onClipRecord) {
         e.preventDefault();
-        seekTo(0);
+        if (e.repeat) return;
+        onClipRecord();
         return;
       }
-      const digit = parseInt(e.key, 10);
-      if (!Number.isNaN(digit) && digit >= 1 && digit <= 9) {
-        e.preventDefault();
-        if (snap.durationSec > 0) {
-          seekTo((snap.durationSec * digit) / 10);
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === "0") {
+          e.preventDefault();
+          seekTo(0);
+          return;
         }
-        return;
+        const digit = parseInt(e.key, 10);
+        if (!Number.isNaN(digit) && digit >= 1 && digit <= 9) {
+          e.preventDefault();
+          if (snap.durationSec > 0) {
+            seekTo((snap.durationSec * digit) / 10);
+          }
+          return;
+        }
       }
     };
     const releaseHold = () => {
@@ -335,7 +378,7 @@ export function useKeyboardShortcuts(params: {
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closePlayer, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k]);
+  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep]);
 
   return { holdSpeedActive };
 }

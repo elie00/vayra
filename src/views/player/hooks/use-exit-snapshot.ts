@@ -4,7 +4,7 @@ import { trickplayGet } from "@/lib/trickplay";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayerStatus } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
-import { cloudWriteId } from "./use-stremio-sync";
+import { cloudWriteId } from "@/lib/stremio";
 
 const CACHE_MS = 12000;
 const WARM_MS = 4000;

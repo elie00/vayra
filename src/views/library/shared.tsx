@@ -1,5 +1,5 @@
 import { Bookmark, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Poster } from "@/components/poster";
 import { narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { resolveMeta } from "@/lib/meta-resource";
@@ -8,7 +8,7 @@ import { useView } from "@/lib/view";
 import { useInWatchlist } from "@/lib/watchlist";
 import { useT } from "@/lib/i18n";
 
-export type Tab = "watchlist" | "history" | "local" | "trakt" | "anilist" | "simkl";
+export type Tab = "watchlist" | "history" | "local" | "trakt" | "anilist" | "simkl" | "letterboxd";
 
 export type TypeKey = "all" | "movie" | "series";
 
@@ -317,7 +317,16 @@ export function WatchlistCard({ meta, onRemove }: { meta: Meta; onRemove?: () =>
   const [hydrated, setHydrated] = useState<Meta | null>(null);
   const [posterFailed, setPosterFailed] = useState(false);
   const [confirm, setConfirm] = useState(false);
-  useEffect(() => setPosterFailed(false), [meta.id]);
+  const posterFailedOnceRef = useRef(false);
+  useEffect(() => {
+    posterFailedOnceRef.current = false;
+    setPosterFailed(false);
+  }, [meta.id]);
+  const onPosterError = useCallback(() => {
+    if (posterFailedOnceRef.current) return;
+    posterFailedOnceRef.current = true;
+    setPosterFailed(true);
+  }, []);
   useEffect(() => {
     if (meta.poster && meta.name && !posterFailed) {
       setHydrated(null);
@@ -373,7 +382,7 @@ export function WatchlistCard({ meta, onRemove }: { meta: Meta; onRemove?: () =>
           src={display.poster}
           seed={display.id}
           className="h-full w-full"
-          onError={() => setPosterFailed(true)}
+          onError={onPosterError}
         />
         {inList && (
           <span className="absolute start-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink/80 text-canvas backdrop-blur-sm">

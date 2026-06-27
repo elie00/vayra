@@ -66,7 +66,7 @@ export function Sidebar() {
     <>
       <aside
         aria-hidden={chromeHidden}
-        className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-[320ms] ease-[cubic-bezier(0.32,0.72,0.24,1)] ${
+        className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width] ${
           collapsed ? "" : "lg:w-60"
         } ${
           chromeHidden
@@ -298,6 +298,7 @@ function NavItem({
   onClick,
   gated,
   collapsed,
+  view,
 }: {
   render: (active: boolean) => ReactNode;
   labelKey: string;
@@ -305,6 +306,7 @@ function NavItem({
   onClick?: () => void;
   gated?: boolean;
   collapsed?: boolean;
+  view?: View;
 }) {
   const t = useT();
   const label = t(labelKey);
@@ -314,6 +316,8 @@ function NavItem({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      data-harbor-nav={view}
+      data-active={active ? "" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label }) : label}
       title={gated ? t("chrome.lockedShort", { label }) : label}
       className={`relative flex h-14 items-center justify-center gap-4 rounded-xl text-[16px] transition-colors duration-150 ${

@@ -77,7 +77,7 @@ export function RowControls({
       </button>
       <button
         onClick={onToggleHidden}
-        title={hidden ? t("Show on home") : t("Hide from home")}
+        title={hidden ? t("Show row") : t("Hide row")}
         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
           hidden ? "bg-danger/15 text-danger hover:bg-danger/25" : "text-ink-muted hover:bg-raised hover:text-ink"
         }`}

@@ -11,6 +11,9 @@ import { Section } from "./shared";
 import { AvatarRing } from "./account/avatar-ring";
 import { resizeAvatar } from "./account/avatar-utils";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
+import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
+import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
+import { avatarUrl } from "@/lib/avatars/catalog";
 
 export function AccountStub() {
   const t = useT();
@@ -37,6 +40,7 @@ export function AccountStub() {
   const [nameDraft, setNameDraft] = useState(displayName);
   const [editingName, setEditingName] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
 
   useEffect(() => {
     setNameDraft(displayName);
@@ -158,6 +162,10 @@ export function AccountStub() {
                 </button>
               )}
             </div>
+            <AvatarFan
+              onClick={() => setAvatarPickerOpen(true)}
+              onRandomize={(id) => pushIdentity({ harborAvatar: avatarUrl(id) })}
+            />
             <ColorPicker
               value={settings.harborColor}
               onChange={(c) => pushIdentity({ harborColor: c })}
@@ -245,6 +253,16 @@ export function AccountStub() {
       </Section>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {avatarPickerOpen && (
+        <AvatarCatalogModal
+          current={effectiveAvatar}
+          onPick={(id) => {
+            pushIdentity({ harborAvatar: avatarUrl(id) });
+            setAvatarPickerOpen(false);
+          }}
+          onClose={() => setAvatarPickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

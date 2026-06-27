@@ -8,13 +8,14 @@ import {
   type ReactNode,
 } from "react";
 import { stremioSourceProfileId, useProfiles, type Profile } from "./profiles";
-import { login as apiLogin, type User } from "./stremio";
+import { getUser, login as apiLogin, type User } from "./stremio";
 
 type Session = { authKey: string; user: User };
 type AuthValue = {
   user: User | null;
   authKey: string | null;
   signIn: (email: string, password: string, remember?: boolean) => Promise<void>;
+  signInWithKey: (authKey: string) => Promise<void>;
   signOut: () => void;
 };
 
@@ -74,9 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(sourceId ? readProfileSession(sourceId) : null);
   }, [sourceId]);
 
-  const signIn = useCallback(
-    async (email: string, password: string) => {
-      const fresh = await apiLogin(email, password);
+  const commitSession = useCallback(
+    (fresh: Session) => {
       if (!activeProfile) {
         setSession(fresh);
         return;
@@ -88,6 +88,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(fresh);
     },
     [activeProfile, updateProfile],
+  );
+
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      commitSession(await apiLogin(email, password));
+    },
+    [commitSession],
+  );
+
+  const signInWithKey = useCallback(
+    async (authKey: string) => {
+      const key = authKey.trim();
+      if (!key) throw new Error("No sign-in key received. Try again.");
+      const fetched = await getUser(key).catch(() => null);
+      const user: User = fetched?._id ? fetched : { _id: `stremio:${key.slice(0, 10)}`, email: "" };
+      commitSession({ authKey: key, user });
+    },
+    [commitSession],
   );
 
   const signOut = useCallback(() => {
@@ -108,9 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       authKey: session?.authKey ?? null,
       signIn,
+      signInWithKey,
       signOut,
     }),
-    [session, signIn, signOut],
+    [session, signIn, signInWithKey, signOut],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
