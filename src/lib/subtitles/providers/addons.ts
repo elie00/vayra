@@ -61,16 +61,16 @@ export async function searchAddons(
   q: SubSearchQuery,
 ): Promise<SubResult[]> {
   dlog(`[addons] searchAddons called with ${addons.length} addons`);
-  
+
   const id = contentId(q);
   if (!id) {
     dlog('[addons] No content ID, returning empty');
     return [];
   }
-  
+
   const type = q.type ?? (q.season != null && q.episode != null ? "series" : "movie");
   dlog(`[addons] Content ID: ${id}, Type: ${type}`);
-  
+
   const subAddons = addons.filter((a) => {
     const accepts = addonAccepts(a, "subtitles", type, id);
     if (!accepts) {
@@ -86,7 +86,7 @@ export async function searchAddons(
     dlog('[addons] No subtitle addons accept this content');
     return [];
   }
-  
+
   const extra = extraSegment(q);
   const settled = await Promise.all(
     subAddons.map(async (addon) => {
@@ -95,7 +95,7 @@ export async function searchAddons(
       return result;
     }),
   );
-  
+
   const out: SubResult[] = [];
   settled.forEach((subs, i) => {
     const addonName = subAddons[i].manifest.name;
@@ -103,8 +103,8 @@ export async function searchAddons(
       const s = subs[idx];
       if (!s.url) continue;
       // Include addon name and index to ensure unique IDs across different addons
-      const uniqueId = s.id 
-        ? `${addonName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${s.id}` 
+      const uniqueId = s.id
+        ? `${addonName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${s.id}`
         : `${addonName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${idx}`;
       out.push({
         id: uniqueId,
@@ -116,7 +116,8 @@ export async function searchAddons(
       });
     }
   });
-  
+
   dlog(`[addons] Total addon results: ${out.length}`);
   return out;
 }
+

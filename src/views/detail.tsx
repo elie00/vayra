@@ -93,6 +93,7 @@ import { InfoBlock } from "./detail/info-block";
 import { TraktComments } from "./detail/trakt-comments";
 import { LetterboxdPanel } from "./detail/letterboxd-panel";
 import { LetterboxdReviews } from "./detail/letterboxd-reviews";
+import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
 
@@ -1215,7 +1216,8 @@ export function DetailView({
             imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
           />
         )}
-        <TraktComments resolution={traktResolution} />
+        {!isAnime && <TraktComments resolution={traktResolution} />}
+        {isAnime && <AnilistComments harborId={animeCanonicalId ?? meta.id} />}
 
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">

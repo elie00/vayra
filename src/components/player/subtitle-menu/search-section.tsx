@@ -80,7 +80,7 @@ export function SearchSection(props: SubtitleMenuProps) {
         addons: addons ?? [],
         preferredLangs: settings.preferredSubLangs ?? [],
       };
-      
+
       // Log search attempt for debugging (will appear in terminal)
       console.log('[SUBTITLES SEARCH] Starting with:', {
         hasImdbId: !!metaImdbId,
@@ -88,21 +88,21 @@ export function SearchSection(props: SubtitleMenuProps) {
         providers: searchOpts.providers,
         query: searchQuery,
       });
-      
+
       const r = await searchSubtitles(searchQuery, searchOpts);
-      
+
       // Log results by source (will appear in terminal)
       const bySource = r.reduce((acc, sub) => {
         acc[sub.source] = (acc[sub.source] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
-      console.log('[SUBTITLES SEARCH] Complete:', { 
-        total: r.length, 
+      console.log('[SUBTITLES SEARCH] Complete:', {
+        total: r.length,
         bySource,
         addonResults: bySource.addon || 0,
         opensubtitlesResults: bySource.opensubtitles || 0,
       });
-      
+
       setResults(r);
     } finally {
       setLoading(false);
@@ -175,7 +175,7 @@ export function SearchSection(props: SubtitleMenuProps) {
       {loading && results == null && (
         <p className="flex items-center gap-2 px-4 py-3 text-[13px] text-ink-muted">
           <Loader2 size={14} className="animate-spin" />
-          {addonsLoading 
+          {addonsLoading
             ? t("Loading subtitle addons…")
             : t("Searching {count} sources…", { count: 1 + (addons?.length ?? 0) })}
         </p>
@@ -318,9 +318,8 @@ function ResultRow({
             void download();
           }
         }}
-        className={`mt-0.5 inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors ${
-          saved ? "text-accent" : "text-ink-subtle hover:bg-elevated hover:text-ink"
-        }`}
+        className={`mt-0.5 inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors ${saved ? "text-accent" : "text-ink-subtle hover:bg-elevated hover:text-ink"
+          }`}
       >
         {busy ? (
           <Loader2 size={13} className="animate-spin" />
@@ -346,11 +345,10 @@ function FilterChip({
   return (
     <button
       onClick={onClick}
-      className={`flex h-7 items-center rounded-full px-2.5 text-[11.5px] font-semibold transition-colors ${
-        active
+      className={`flex h-7 items-center rounded-full px-2.5 text-[11.5px] font-semibold transition-colors ${active
           ? "bg-elevated text-ink ring-1 ring-edge"
           : "bg-raised text-ink-muted hover:bg-elevated/80"
-      }`}
+        }`}
     >
       {children}
     </button>

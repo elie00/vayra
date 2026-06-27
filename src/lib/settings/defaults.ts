@@ -56,6 +56,7 @@ export const DEFAULT: Settings = {
   harborAvatar: null,
   harborColor: "#7dd3fc",
   anilistAutoSync: true,
+  anilistBlurComments: false,
   useAnilistAvatar: false,
   useTraktAvatar: false,
   useSimklAvatar: false,

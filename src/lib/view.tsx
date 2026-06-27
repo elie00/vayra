@@ -108,6 +108,8 @@ export type SettingsSection =
   | "account"
   | "library"
   | "trakt"
+  | "anilist"
+  | "simkl"
   | "parental"
   | "relay"
   | "streaming"

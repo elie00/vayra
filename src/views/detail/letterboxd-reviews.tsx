@@ -1,5 +1,5 @@
 import { Component, useCallback, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
-import { ExternalLink, Globe, Heart, Loader2, MessageCircle, RefreshCw, Users } from "lucide-react";
+import { ExternalLink, Heart, Loader2, MessageCircle, RefreshCw, Users } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
 import {

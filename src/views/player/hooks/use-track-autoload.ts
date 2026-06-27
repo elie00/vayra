@@ -227,10 +227,10 @@ export function useTrackAutoload(params: {
           langScore(effAudio.lang ?? "", subLangs) >= 0;
         const want = nativeAudio
           ? (snap.subtitleTracks
-              .filter(isForcedTrack)
-              .sort(
-                (a, b) => langScore(b.lang ?? "", subLangs) - langScore(a.lang ?? "", subLangs),
-              )[0] ?? null)
+            .filter(isForcedTrack)
+            .sort(
+              (a, b) => langScore(b.lang ?? "", subLangs) - langScore(a.lang ?? "", subLangs),
+            )[0] ?? null)
           : pickDesiredSub(allow(snap.subtitleTracks), subLangs, settings.preferEmbeddedSubs);
         if (want && want.id !== current?.id) {
           bridgeRef.current?.setSubtitleTrack(want.id);
