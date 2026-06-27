@@ -132,7 +132,7 @@ export function Poster({
           style={
             effect === "off"
               ? { opacity: 1 }
-              : { opacity: loaded ? 1 : 0, transition: "opacity 300ms ease-out" }
+              : { opacity: loaded ? 1 : 0, transition: "opacity 300ms ease-out", willChange: "opacity" }
           }
         />
       )}
