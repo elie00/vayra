@@ -39,7 +39,7 @@ export function GuideSkeleton() {
         >
           <div className="flex bg-canvas">
             <div
-              className="flex shrink-0 items-center gap-2 border-b border-r border-edge-soft/60 px-3"
+              className="flex shrink-0 items-center gap-2 border-b border-e border-edge-soft/60 px-3"
               style={{ width: CHANNEL_COL_PX, height: RULER_HEIGHT_PX }}
             >
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
@@ -53,7 +53,7 @@ export function GuideSkeleton() {
               {Array.from({ length: slots }).map((_, i) => (
                 <div
                   key={i}
-                  className="relative flex shrink-0 items-center pl-2.5"
+                  className="relative flex shrink-0 items-center ps-2.5"
                   style={{ width: slotMin * PX_PER_MIN }}
                 >
                   <div
@@ -71,7 +71,7 @@ export function GuideSkeleton() {
               style={{ height: ROW_HEIGHT_PX }}
             >
               <div
-                className="flex shrink-0 items-center gap-3 border-r border-edge-soft/40 px-3"
+                className="flex shrink-0 items-center gap-3 border-e border-edge-soft/40 px-3"
                 style={{ width: CHANNEL_COL_PX }}
               >
                 <div

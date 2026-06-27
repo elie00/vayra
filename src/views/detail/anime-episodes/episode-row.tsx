@@ -53,7 +53,7 @@ export function AnimeEpisodeRow({
       >
         <div className="relative w-[200px] shrink-0">
           <div className={spoiler?.thumb ? `overflow-hidden rounded-lg ${SPOILER_THUMB_CLASS}` : undefined}>
-            <Poster src={ep.thumbnail ?? undefined} seed={String(ep.id)} ratio="landscape" className="rounded-lg" lazy />
+            <Poster src={ep.thumbnail ?? undefined} seed={String(ep.id)} ratio="landscape" className="rounded-lg" lazy fallbacks={[ep.thumbnailFallback, meta.background]} />
           </div>
           <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-canvas/40 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas">
@@ -89,6 +89,7 @@ export function AnimeEpisodeRow({
                 ep.absoluteNumber && ep.absoluteNumber !== ep.number ? `Abs E${ep.absoluteNumber}` : null,
                 ep.length ? t("{n} min", { n: ep.length }) : null,
                 formatAirDate(ep.airdate) || null,
+                settings.showEpisodeRating && meta.imdbRating ? `★ ${meta.imdbRating}` : null,
               ]
                 .filter(Boolean)
                 .join("  ·  ")}

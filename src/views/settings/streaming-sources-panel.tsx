@@ -14,7 +14,7 @@ import {
   type AioStatusSnapshot,
   type ServiceHealth,
 } from "@/lib/streams/aiostatus";
-import { ExtLink, KeyField, Section } from "./shared";
+import { ExtLink, KeyField, Section, ToggleRow } from "./shared";
 import { ManualAddonCard, ServiceCard } from "./streaming-panel";
 import { AioStatusModal } from "./aiostatus-modal";
 import { useT } from "@/lib/i18n";
@@ -71,6 +71,58 @@ export function StreamingSourcesPanel({
           value={settings.pickerLayout}
           onChange={(v) => update({ pickerLayout: v })}
         />
+      </Section>
+
+      <Section
+        title={t("Torrent name")}
+        subtitle={t("Show each source's full release filename on the condensed layout. The Stremio layout already shows it.")}
+      >
+        <ToggleRow
+          label={t("Show torrent name")}
+          sub={t("Display the raw release filename under each source in the condensed picker. Off keeps rows compact.")}
+          value={settings.pickerShowFilename}
+          onChange={(v) => update({ pickerShowFilename: v })}
+        />
+      </Section>
+
+      <Section
+        title={t("Stream descriptions")}
+        subtitle={t("How much of each source's description the Stremio picker layout shows. Full keeps everything the addon sends, which matters for AIOStreams and other custom formats.")}
+      >
+        <ToggleRow
+          label={t("Show full descriptions")}
+          sub={t("Show the addon's complete description instead of trimming it to a few lines. Turn off for shorter, tidier rows.")}
+          value={settings.fullStreamDescription}
+          onChange={(v) => update({ fullStreamDescription: v })}
+        />
+      </Section>
+
+      <Section
+        title={t("Injected ad skip (experimental)")}
+        subtitle={t("Some cam and new-release rips have ads spliced into the video itself. When the community has marked one, a Skip button appears. You can also report ads you spot for review. Off by default.")}
+      >
+        <ToggleRow
+          label={t("Enable injected ad skip")}
+          sub={t("Show a Skip button when a known injected ad plays, and a small report button on new releases so you can mark ads for review.")}
+          value={settings.adSkipEnabled}
+          onChange={(v) => update({ adSkipEnabled: v })}
+        />
+        {settings.adSkipEnabled && (
+          <ToggleRow
+            label={t("Always show the report button")}
+            sub={t("Show the report button on every torrent stream, not just likely new releases.")}
+            value={settings.adReportAlwaysShow}
+            onChange={(v) => update({ adReportAlwaysShow: v })}
+          />
+        )}
+        {settings.adSkipEnabled && (
+          <ToggleRow
+            label={t("Skip injected ads automatically")}
+            sub={t("Jump past a known injected ad on its own instead of showing the Skip button.")}
+            value={settings.autoSkipAd}
+            onChange={(v) => update({ autoSkipAd: v })}
+          />
+        )}
       </Section>
 
       <Section
@@ -437,7 +489,7 @@ function AioStatusBanner({ snapshot }: { snapshot: AioStatusSnapshot }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`mb-2 flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2 text-left text-[12px] transition-colors ${
+        className={`mb-2 flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2 text-start text-[12px] transition-colors ${
           hasWarning
             ? "border-amber-300/40 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
             : "border-edge-soft bg-canvas/40 text-ink-muted hover:bg-canvas/60"

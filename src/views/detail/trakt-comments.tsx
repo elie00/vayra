@@ -119,7 +119,7 @@ function StarRow({ value, interactive, onRate, onHover }: { value: number; inter
         );
       })}
       {!interactive && value > 0 && (
-        <span className="ml-1 text-[12px] font-medium text-ink-muted whitespace-nowrap">
+        <span className="ms-1 text-[12px] font-medium text-ink-muted whitespace-nowrap">
           {value % 2 === 0 ? value / 2 : (value / 2).toFixed(1)}
         </span>
       )}
@@ -198,7 +198,7 @@ function CommentCard({
           </span>
           <span className="text-[11px] text-ink-muted">{timeAgo(comment.createdAt)}</span>
           {comment.userRating != null && (
-            <span className="ml-auto">
+            <span className="ms-auto">
               <StarRow value={comment.userRating} interactive={false} />
             </span>
           )}
@@ -284,7 +284,7 @@ function CommentCard({
           )}
         </div>
         {replies && (
-          <div className="mt-3 space-y-2 border-l-2 border-edge pl-4">
+          <div className="mt-3 space-y-2 border-s-2 border-edge ps-4">
             {replies.map((r) => (
               <div key={r.id} className="flex gap-2 rounded-lg bg-raised/50 p-3">
                 <div className="shrink-0">
@@ -546,12 +546,12 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
                 <ChevronDown size={12} />
               </button>
               {showSort && (
-                <div className="absolute right-0 top-full z-50 mt-1 min-w-[100px] overflow-hidden rounded-xl bg-elevated ring-1 ring-edge shadow-lg">
+                <div className="absolute end-0 top-full z-50 mt-1 min-w-[100px] overflow-hidden rounded-xl bg-elevated ring-1 ring-edge shadow-lg">
                   {SORTS.map((s) => (
                     <button
                       key={s}
                       onClick={() => { setSort(s); setShowSort(false); }}
-                      className={`block w-full px-3 py-2 text-left text-[12px] transition-colors hover:bg-raised ${
+                      className={`block w-full px-3 py-2 text-start text-[12px] transition-colors hover:bg-raised ${
                         s === sort ? "font-semibold text-ink" : "text-ink-muted"
                       }`}
                     >
@@ -618,7 +618,7 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
       )}
 
       {target && !connected && (
-        <div className="rounded-xl border border-edge-soft bg-elevated/60 p-5 text-center">
+        <div className="mb-5 rounded-xl border border-edge-soft bg-elevated/60 p-5 text-center">
           <p className="text-[14px] text-ink-muted">
             {t("Connect your Trakt account to see comments and reviews.")}
           </p>

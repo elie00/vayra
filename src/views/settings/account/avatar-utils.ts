@@ -1,4 +1,17 @@
+import { shrinkGif } from "./avatar-gif";
+
+const MAX_ANIMATED_AVATAR_BYTES = 2 * 1024 * 1024;
+
 export function resizeAvatar(file: File, maxDim: number): Promise<string> {
+  if (file.type === "image/gif") {
+    return shrinkGif(file).catch(() =>
+      file.size <= MAX_ANIMATED_AVATAR_BYTES ? fileToDataUrl(file) : resizeToWebp(file, maxDim),
+    );
+  }
+  return resizeToWebp(file, maxDim);
+}
+
+function resizeToWebp(file: File, maxDim: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
@@ -23,5 +36,14 @@ export function resizeAvatar(file: File, maxDim: number): Promise<string> {
       reject(e);
     };
     img.src = objectUrl;
+  });
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
   });
 }

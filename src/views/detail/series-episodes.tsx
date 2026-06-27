@@ -221,7 +221,7 @@ export function SeriesEpisodes({
       }
       const imdbRating = omdbForSeason?.get(ep.episodeNumber);
       if (imdbRating != null && imdbRating > 0) {
-        next = { ...next, voteAverage: imdbRating };
+        next = { ...next, imdbRating };
       }
       return next;
     });

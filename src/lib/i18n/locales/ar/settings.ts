@@ -1606,6 +1606,28 @@ const settings: Record<string, string> = {
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "يرجى إضافة مفتاح TMDB API الخاص بك في إعدادات المكتبة والبيانات الوصفية لعرض هذه المجموعة.",
   "OK": "حسناً",
   "Loading...": "جاري التحميل...",
+  "Choose an avatar": "اختر صورة رمزية",
+  "{n} avatars across film, TV, and anime.": "{n} صورة رمزية من الأفلام والتلفزيون والأنمي.",
+  "or use one of our avatars": "أو استخدم إحدى صورنا الرمزية",
+  "Random avatar": "صورة رمزية عشوائية",
+  "More soon": "المزيد قريباً",
+  "More avatars coming soon": "المزيد من الصور الرمزية قريباً",
+  "Scroll left": "تمرير لليسار",
+  "Scroll right": "تمرير لليمين",
+  "Preview": "معاينة",
+  "Hover to peek": "مرّر للمعاينة",
+  "The Last Stand": "الصمود الأخير",
+  "With the city surrounded, an unlikely alliance forms as a long-buried secret finally comes to light.":
+    "مع تطويق المدينة، يتشكّل تحالف غير متوقّع بينما يخرج سرّ دفين إلى النور.",
+  "No Way Out": "لا مخرج",
+  "Loyalties shatter as the survivors realize the enemy has been among them all along.":
+    "تتحطّم الولاءات حين يدرك الناجون أن العدو كان بينهم طوال الوقت.",
+  "Previous frame": "الإطار السابق",
+  "Next frame": "الإطار التالي",
+  "Step back one frame and pause. Frame-accurate on mpv.":
+    "ارجع إطاراً واحداً مع الإيقاف المؤقت. دقة بمستوى الإطار على mpv.",
+  "Step forward one frame and pause. Frame-accurate on mpv.":
+    "تقدّم إطاراً واحداً مع الإيقاف المؤقت. دقة بمستوى الإطار على mpv.",
 };
 
 export default settings;

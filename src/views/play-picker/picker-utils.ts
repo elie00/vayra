@@ -317,6 +317,13 @@ export function displayTitle(s: ScoredStream, showName: string, episode?: PlayEp
   return parts.filter(Boolean).join(" · ");
 }
 
+export function torrentFilename(s: ScoredStream): string {
+  const fn = s.behaviorHints?.filename ?? s.behaviorHints?.fileName;
+  if (fn && fn.trim()) return fn.trim();
+  const firstLine = (s.title ?? "").split("\n").map((l) => l.trim()).find((l) => l.length > 0);
+  return firstLine ?? "";
+}
+
 export function streamSummaryParts(s: ScoredStream): string[] {
   const parts: string[] = [];
   if (s.size != null) parts.push(formatSize(s.size));

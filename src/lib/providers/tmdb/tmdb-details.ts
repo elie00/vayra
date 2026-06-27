@@ -41,6 +41,7 @@ export type Episode = {
   airDate: string | null;
   runtime: number | null;
   voteAverage: number | null;
+  imdbRating?: number | null;
 };
 
 export type ExtraVideo = {

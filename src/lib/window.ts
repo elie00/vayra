@@ -26,6 +26,20 @@ export const toggleMaximize = async () => {
 
 export const close = () => win?.close();
 
+export type ResizeDir =
+  | "East"
+  | "North"
+  | "NorthEast"
+  | "NorthWest"
+  | "South"
+  | "SouthEast"
+  | "SouthWest"
+  | "West";
+
+export function startResize(direction: ResizeDir) {
+  win?.startResizeDragging(direction).catch(() => {});
+}
+
 export function useMaximized(): boolean {
   const [maxed, setMaxed] = useState(false);
   useEffect(() => {

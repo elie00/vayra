@@ -459,6 +459,13 @@ export function createHtml5Bridge(): PlayerBridge {
     pause() {
       video?.pause();
     },
+    frameStep(dir) {
+      if (!video) return;
+      video.pause();
+      const fd = 1 / 24;
+      const hi = Number.isFinite(video.duration) ? video.duration - 0.05 : video.currentTime + fd;
+      video.currentTime = Math.max(0, Math.min(hi, video.currentTime + dir * fd));
+    },
     seek(sec) {
       if (!video) return;
       if (isLiveSrc && video.seekable.length > 0) {

@@ -7,6 +7,7 @@ export function setPosterBaseUrl(url: string): void {
 type ParsedId = {
   imdb?: string;
   tmdbId?: string;
+  tvdbId?: string;
   mediaType: "movie" | "series";
 };
 
@@ -16,6 +17,10 @@ function parseMetaId(metaId: string): ParsedId | undefined {
   const tmdb = metaId.match(/^tmdb:(movie|tv):(\d+)$/);
   if (tmdb) {
     return { tmdbId: tmdb[2], mediaType: tmdb[1] === "tv" ? "series" : "movie" };
+  }
+  const tvdb = metaId.match(/^tvdb:(\d+)$/);
+  if (tvdb) {
+    return { tvdbId: tvdb[1], mediaType: "series" };
   }
   return undefined;
 }
@@ -48,6 +53,9 @@ function rpdbPath(base: string, key: string, id: ParsedId): string | undefined {
   if (id.tmdbId) {
     return `${base}/${keySeg}/tmdb/poster-default/${id.mediaType}-${id.tmdbId}.jpg?fallback=true`;
   }
+  if (id.tvdbId) {
+    return `${base}/${keySeg}/tvdb/poster-default/series-${id.tvdbId}.jpg?fallback=true`;
+  }
   return undefined;
 }
 
@@ -71,6 +79,7 @@ function mergeAlt(id: ParsedId, altId?: string): ParsedId {
   return {
     imdb: id.imdb ?? other.imdb,
     tmdbId: id.tmdbId ?? other.tmdbId,
+    tvdbId: id.tvdbId ?? other.tvdbId,
     mediaType: typed.mediaType,
   };
 }
@@ -118,5 +127,5 @@ export function needsImdbForPoster(key: string, metaId: string): boolean {
 export function needsTmdbForPoster(key: string, metaId: string): boolean {
   if (rpdbPoster(key, metaId)) return false;
   if (!posterBase) return false;
-  return metaId.startsWith("tt");
+  return typeof metaId === "string" && metaId.startsWith("tt");
 }

@@ -31,7 +31,7 @@ export function GuideTimeRuler({
           className="relative shrink-0"
           style={{ width: slotMin * PX_PER_MIN }}
         >
-          <div className="flex h-full flex-col items-start justify-center gap-0.5 pl-2.5">
+          <div className="flex h-full flex-col items-start justify-center gap-0.5 ps-2.5">
             <span
               className={`text-[12px] tabular-nums leading-none ${
                 slot.major ? "font-semibold text-ink" : "font-medium text-ink-subtle"
@@ -46,7 +46,7 @@ export function GuideTimeRuler({
             )}
           </div>
           {slot.major && (
-            <div className="absolute bottom-0 left-0 h-2 w-px bg-edge-soft" />
+            <div className="absolute bottom-0 start-0 h-2 w-px bg-edge-soft" />
           )}
         </div>
       ))}

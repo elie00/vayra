@@ -1,4 +1,5 @@
 import { ChevronsRight, FastForward, Play, X } from "lucide-react";
+import { AdSkipIcon } from "@/components/icons/adskip-icon";
 import { useEffect, useState } from "react";
 import type { SkipSegment } from "@/lib/skip-intro";
 import type { SpoilerMask } from "@/lib/spoilers";
@@ -62,8 +63,10 @@ export function SkipPill({
     );
   }
 
-  const label =
-    mounted.kind === "intro"
+  const isAd = mounted.kind === "ad";
+  const label = isAd
+    ? t("Skip injected ad?")
+    : mounted.kind === "intro"
       ? t("Skip Intro")
       : mounted.kind === "recap"
         ? t("Skip Recap")
@@ -84,9 +87,11 @@ export function SkipPill({
       <button
         type="button"
         onClick={action}
-        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/75 px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_18px_50px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-[background-color,transform] hover:bg-black/90 active:scale-[0.97]"
+        className={`pointer-events-auto inline-flex items-center gap-2 rounded-full border bg-black/75 px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_18px_50px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-[background-color,transform] hover:bg-black/90 active:scale-[0.97] ${
+          isAd ? "border-rose-400/50" : "border-white/20"
+        }`}
       >
-        <Icon size={18} strokeWidth={2.2} />
+        {isAd ? <AdSkipIcon className="h-[18px] w-[18px]" /> : <Icon size={18} strokeWidth={2.2} />}
         {label}
       </button>
     </div>

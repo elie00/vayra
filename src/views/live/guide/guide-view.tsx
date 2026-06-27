@@ -41,6 +41,7 @@ export function GuideView({
   onPlayCatchup,
   resetKey,
   showPrograms = true,
+  currentChannelId,
 }: {
   channels: IptvChannel[];
   epg: EpgIndex | null;
@@ -49,6 +50,7 @@ export function GuideView({
   onPlayCatchup?: (ch: IptvChannel, program: EpgProgram) => void;
   resetKey: string;
   showPrograms?: boolean;
+  currentChannelId?: string | null;
 }) {
   const t = useT();
   const { visible: channels, sentinelRef, hasMore } = useLazyVisible(allChannels, resetKey);
@@ -129,7 +131,13 @@ export function GuideView({
       <div className="flex flex-col">
         {channels.map((ch, i) => (
           <div key={ch.id} className="flex">
-            <GuideChannelCell channel={ch} onPlay={onPlay} index={i} width={460} />
+            <GuideChannelCell
+              channel={ch}
+              onPlay={onPlay}
+              index={i}
+              width={460}
+              current={ch.id === currentChannelId}
+            />
           </div>
         ))}
         {hasMore && (
@@ -169,7 +177,7 @@ export function GuideView({
         >
           <div className="sticky top-0 z-30 flex bg-surface">
             <div
-              className="sticky left-0 z-40 flex items-center gap-2 border-b border-r border-edge-soft/60 bg-surface px-3"
+              className="sticky start-0 z-40 flex items-center gap-2 border-b border-e border-edge-soft/60 bg-surface px-3"
               style={{
                 width: colPx,
                 height: RULER_HEIGHT_PX,
@@ -186,7 +194,7 @@ export function GuideView({
                 role="separator"
                 aria-orientation="vertical"
                 title={t("Drag to resize the channel column")}
-                className="absolute right-0 top-0 z-50 h-full w-2.5 cursor-col-resize touch-none transition-colors hover:bg-accent/40 active:bg-accent/60"
+                className="absolute end-0 top-0 z-50 h-full w-2.5 cursor-col-resize touch-none transition-colors hover:bg-accent/40 active:bg-accent/60"
               />
             </div>
             <GuideTimeRuler
@@ -208,7 +216,13 @@ export function GuideView({
                   containIntrinsicSize: `${ROW_HEIGHT_PX}px`,
                 }}
               >
-                <GuideChannelCell channel={ch} onPlay={onPlay} index={i} width={colPx} />
+                <GuideChannelCell
+                  channel={ch}
+                  onPlay={onPlay}
+                  index={i}
+                  width={colPx}
+                  current={ch.id === currentChannelId}
+                />
                 <div
                   className="relative border-b border-edge-soft/30"
                   style={{ width: WINDOW_PX, height: ROW_HEIGHT_PX }}

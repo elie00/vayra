@@ -275,6 +275,7 @@ export function LiveChannelOverlay({
               channels={visible}
               epg={epg}
               nowMs={nowMs}
+              currentChannelId={currentChannelId}
               showPrograms={guideStyle === "timeline"}
               onPlay={(channel) => {
                 const programs = epgProgramsForChannel(channel, epg, tvgIdCounts);

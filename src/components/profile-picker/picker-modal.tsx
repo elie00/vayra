@@ -16,7 +16,7 @@ export function ProfilePickerModal() {
   const goList = () => setPickerView({ kind: "list" });
 
   return createPortal(
-    <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/85 backdrop-blur-2xl animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/85 backdrop-blur-2xl animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
       {hasActive && (
         <button
           type="button"
@@ -28,7 +28,7 @@ export function ProfilePickerModal() {
           <X size={18} />
         </button>
       )}
-      <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col items-center px-10 py-8">
+      <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col items-center px-10 py-8 animate-in fade-in zoom-in-95 slide-in-from-bottom-3 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
         {pickerView.kind === "list" && (
           <ListView
             onCreate={() => setPickerView({ kind: "create" })}
@@ -83,26 +83,38 @@ function ListView({
   const t = useT();
   const isPrimary = !!activeProfile?.isPrimary;
   return (
-    <div className="flex flex-col items-center gap-10 animate-in fade-in duration-300">
-      <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-10">
+      <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <h1 className="font-display text-[40px] font-medium tracking-tight text-ink">
           {t("Who's watching?")}
         </h1>
         <p className="text-[14px] text-ink-muted">{t("Pick a profile to continue.")}</p>
       </div>
       <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
-        {profiles.map((p) => {
+        {profiles.map((p, i) => {
           const canEditThis = isPrimary || p.id === activeProfile?.id;
           return (
-          <ProfileTile
-            key={p.id}
-            profile={p}
-            onSelect={() => onSelect(p.id)}
-            onEdit={canEditThis ? () => onEdit(p.id) : undefined}
-          />
+            <div
+              key={p.id}
+              className="animate-in fade-in slide-in-from-bottom-1 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              style={{ animationDelay: `${140 + Math.min(i, 8) * 55}ms`, animationFillMode: "both" }}
+            >
+              <ProfileTile
+                profile={p}
+                onSelect={() => onSelect(p.id)}
+                onEdit={canEditThis ? () => onEdit(p.id) : undefined}
+              />
+            </div>
           );
         })}
-        {isPrimary && <AddProfileButton onClick={onCreate} />}
+        {isPrimary && (
+          <div
+            className="animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{ animationDelay: `${140 + Math.min(profiles.length, 8) * 55}ms`, animationFillMode: "both" }}
+          >
+            <AddProfileButton onClick={onCreate} />
+          </div>
+        )}
       </div>
     </div>
   );

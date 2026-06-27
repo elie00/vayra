@@ -11,7 +11,7 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, subscribePlaybackClock } from "@/lib/player/playback-clock";
 import { useSettings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
-import { CLOUD_OK } from "./use-stremio-sync";
+import { CLOUD_OK } from "@/lib/stremio";
 
 const TICK_MS = 4000;
 const MIN_POSITION_SEC = 5;

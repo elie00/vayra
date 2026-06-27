@@ -101,7 +101,8 @@ export function MinUIDock() {
   const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
-    setCursor(e.clientX - rect.left);
+    const rtl = getComputedStyle(trackRef.current).direction === "rtl";
+    setCursor(rtl ? rect.right - e.clientX : e.clientX - rect.left);
   };
 
   return (

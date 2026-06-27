@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Addon } from "@/lib/addons";
 import { isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
-import { buildPickerConfigHash, getPickerCache, setPickerCache } from "@/lib/picker-cache";
+import { buildPickerConfigHash, clearOnePickerCache, getPickerCache, setPickerCache } from "@/lib/picker-cache";
 import { useSettings } from "@/lib/settings";
 import { readPlayback } from "@/lib/playback-history";
 import { runPipeline, type PipelineResult } from "@/lib/streams/pipeline";
@@ -39,6 +39,7 @@ export function usePipelineResult({
   const [firstResultAt, setFirstResultAt] = useState<number | null>(null);
   const [autoSettleReady, setAutoSettleReady] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const embedded = useMemo<Stream[]>(() => {
     const vids = meta.videos ?? [];
@@ -202,7 +203,13 @@ export function usePipelineResult({
     settings.requirePreferredLanguage,
     strictMode,
     filterDisabled,
+    refreshNonce,
   ]);
+
+  const refresh = useCallback(() => {
+    clearOnePickerCache(meta, episode);
+    setRefreshNonce((n) => n + 1);
+  }, [meta, episode]);
 
   return {
     result,
@@ -211,6 +218,7 @@ export function usePipelineResult({
     firstResultAt,
     autoSettleReady,
     resolveError,
+    refresh,
     setResult,
     setLoading,
     setPipelineDone,

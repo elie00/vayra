@@ -54,6 +54,7 @@ export type Settings = {
   showLetterboxdBadge: boolean;
   showMdblistBadge: boolean;
   showTraktBadge: boolean;
+  showTraktComments: boolean;
   cardBadgeLimit: number;
   showQualityBadge: boolean;
   showCardBadges: boolean;
@@ -70,6 +71,7 @@ export type Settings = {
   detailTrailerAutoplay: boolean;
   heroShadow: number;
   resumePrompt: boolean;
+  resumePlayback: boolean;
   badgePlacement: "top" | "bottom";
   watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
   showWatchedButton: boolean;
@@ -109,6 +111,7 @@ export type Settings = {
   discordShowPartyJoin: boolean;
   playerEngine: "auto" | "html5" | "mpv";
   playerShellId: string;
+  playerChromeTheme: "auto" | "default" | "stremio";
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
   rememberLastStream: boolean;
@@ -124,6 +127,8 @@ export type Settings = {
   stremioServerTranscode: boolean;
   directTorrentStream: boolean;
   p2pAutoConsent: boolean;
+  streamCacheRetentionHours: number;
+  streamCacheDir: string;
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
   castAlwaysTranscode: boolean;
@@ -155,6 +160,7 @@ export type Settings = {
   preferEmbeddedSubs: boolean;
   betaUpdates: boolean;
   autoSkipIntro: boolean;
+  autoSkipAd: boolean;
   trackBlockWords: string[];
   forcedSubsWhenNativeAudio: boolean;
   tmdbLanguage: string;
@@ -225,6 +231,8 @@ export type Settings = {
   animeAnilistRowsHidden: string[];
   pickerLayout: "condensed" | "stremio";
   streamSort: "harbor" | "addon";
+  fullStreamDescription: boolean;
+  pickerShowFilename: boolean;
   seekBarStyle: "flat" | "glass" | "pinstripe" | "rainbow" | "image";
   seekBarHeight: number;
   seekBarColor: string;
@@ -305,4 +313,7 @@ export type Settings = {
   pauseListStatusOnPause: boolean;
   translateTitles: boolean;
   translateDescriptions: boolean;
+  adSkipEnabled: boolean;
+  adReportAlwaysShow: boolean;
+  adReportFirstSeen: boolean;
 };

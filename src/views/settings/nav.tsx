@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { activeLayout } from "@/lib/theme";
+import { useView } from "@/lib/view";
 import { settingsAnchor, type SectionId } from "./shared";
 import { markSectionSeen, useSettingsNew } from "./settings-new";
 
@@ -571,8 +573,11 @@ export function SettingsNav({
   onChange: (id: SectionId, anchor?: string) => void;
 }) {
   const { settings } = useSettings();
+  const { goBack, canGoBack, setView } = useView();
   const t = useT();
   const isNew = useSettingsNew();
+  const navLayout = activeLayout(settings.theme);
+  const showBack = navLayout === "custom" || navLayout === "minui";
   const [query, setQuery] = useState("");
   const trimmed = query.trim().toLowerCase();
   const sectionLabel = useMemo(() => {
@@ -711,6 +716,20 @@ export function SettingsNav({
   return (
     <nav className="relative flex w-72 shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)]">
       <div data-tauri-drag-region className="h-3 shrink-0" />
+      {showBack && (
+        <div className="px-3 pb-1.5">
+          <button
+            type="button"
+            onClick={() => (canGoBack ? goBack() : setView("home"))}
+            className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-start text-[13.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated/70 hover:text-ink"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="dir-icon">
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+            {t("Back")}
+          </button>
+        </div>
+      )}
       <div className="px-3 pb-3">
         <div className="flex h-10 items-center gap-2 rounded-xl bg-elevated/70 px-3 shadow-[inset_0_0_0_1px_var(--color-edge-soft)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-subtle">

@@ -123,15 +123,39 @@ async fn new_session(
     .map_err(|e| format!("{e:#}"))
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Default)]
+struct EngineConfig {
+    dir: Option<String>,
+    retention_hours: Option<u64>,
+}
+
+fn config_path(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.path().app_cache_dir().ok().map(|d| d.join("engine.json"))
+}
+
+fn read_config(app: &AppHandle) -> EngineConfig {
+    config_path(app)
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str::<EngineConfig>(&s).ok())
+        .unwrap_or_default()
+}
+
+fn engine_dir(app: &AppHandle, cfg: &EngineConfig) -> Result<std::path::PathBuf, String> {
+    if let Some(custom) = cfg.dir.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        return Ok(std::path::PathBuf::from(custom).join("harbor-stream-cache"));
+    }
+    app.path()
+        .app_cache_dir()
+        .map_err(|e| e.to_string())
+        .map(|d| d.join("engine"))
+}
+
 async fn init(app: AppHandle) -> Result<(), String> {
     std::env::set_var("DHT_QUERIES_PER_SECOND", "100");
-    let dir = app
-        .path()
-        .app_cache_dir()
-        .map_err(|e| e.to_string())?
-        .join("engine");
+    let cfg = read_config(&app);
+    let dir = engine_dir(&app, &cfg)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    cache_sweep::run(&dir);
+    cache_sweep::run(&dir, cfg.retention_hours.unwrap_or(24));
     let (session, dht_tier) = match new_session(&dir, true, true, true).await {
         Ok(s) => (s, 1u8),
         Err(e1) => {
@@ -248,6 +272,7 @@ pub async fn torrent_engine_add(
     };
     let opts = AddTorrentOptions {
         overwrite: true,
+        paused: true,
         trackers: Some(merge_trackers(trackers)),
         initial_peers: (!seed.is_empty()).then_some(seed),
         peer_opts: Some(PeerConnectionOptions {
@@ -310,10 +335,8 @@ pub async fn torrent_engine_select(info_hash: String, file_idx: usize) -> Result
     let id = TorrentIdOrHash::parse(&info_hash).map_err(|e| e.to_string())?;
     let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
     let only: HashSet<usize> = HashSet::from([file_idx]);
-    session
-        .update_only_files(&handle, &only)
-        .await
-        .map_err(|e| format!("{e:#}"))?;
+    session.update_only_files(&handle, &only).await.map_err(|e| format!("{e:#}"))?;
+    session.unpause(&handle).await.map_err(|e| format!("{e:#}"))?;
     Ok(())
 }
 
@@ -374,11 +397,38 @@ pub async fn torrent_engine_restart(app: AppHandle) -> Result<EngineStatusDto, S
 pub async fn torrent_engine_hard_reset(app: AppHandle) -> Result<EngineStatusDto, String> {
     stop();
     tokio::time::sleep(Duration::from_millis(800)).await;
-    if let Ok(cache) = app.path().app_cache_dir() {
-        let _ = std::fs::remove_dir_all(cache.join("engine"));
+    let cfg = read_config(&app);
+    if let Ok(dir) = engine_dir(&app, &cfg) {
+        let _ = std::fs::remove_dir_all(&dir);
     }
     engine().lock().unwrap().last_error = None;
     init(app).await?;
+    Ok(torrent_engine_status())
+}
+
+#[tauri::command]
+pub async fn torrent_engine_set_options(
+    app: AppHandle,
+    dir: Option<String>,
+    retention_hours: u64,
+    restart: bool,
+) -> Result<EngineStatusDto, String> {
+    let cfg = EngineConfig {
+        dir: dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
+        retention_hours: Some(retention_hours),
+    };
+    if let Some(p) = config_path(&app) {
+        if let Some(parent) = p.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        std::fs::write(&p, serde_json::to_string(&cfg).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    }
+    if restart {
+        stop();
+        tokio::time::sleep(Duration::from_millis(600)).await;
+        init(app).await?;
+    }
     Ok(torrent_engine_status())
 }
 

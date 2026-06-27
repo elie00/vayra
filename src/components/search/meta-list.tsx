@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
-import { Poster } from "@/components/poster";
+import { ResultPoster } from "./result-poster";
 import { useView } from "@/lib/view";
 
 export function MetaList({
@@ -30,7 +30,7 @@ export function MetaList({
             className="group flex items-center gap-4 rounded-2xl border border-transparent px-3 py-2.5 text-start transition-colors hover:border-edge-soft hover:bg-elevated/50 active:scale-[0.997]"
           >
             <div className="h-[96px] w-[64px] shrink-0 overflow-hidden rounded-xl shadow-[0_6px_16px_-8px_rgba(0,0,0,0.55)] ring-1 ring-edge-soft">
-              <Poster src={m.poster} seed={m.id} ratio="portrait" className="block h-full w-full" />
+              <ResultPoster id={m.id} poster={m.poster} className="block h-full w-full" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="truncate text-[16px] font-semibold text-ink">{m.name}</span>

@@ -4,6 +4,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
+import { useImdbRating } from "@/lib/imdb-rating";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { ImdbIcon } from "../icons/imdb-icon";
@@ -38,6 +39,7 @@ export function BigCardStack({
   const t = useT();
   const current = items[active] ?? items[0];
   const resolvedImdb = useTmdbImdbId(current.id);
+  const imdbRating = useImdbRating(current, resolvedImdb);
   const [logos, setLogos] = useState<LogoMap>(() => seedLogos(settings.tmdbKey, items));
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; pointerId: number; moved: boolean } | null>(null);
@@ -187,12 +189,12 @@ export function BigCardStack({
         <TitlePlate title={current.name} logo={logo} />
         <div className="flex items-center gap-2.5 text-[13px] text-ink/80">
           {current.releaseInfo && <span>{current.releaseInfo}</span>}
-          {current.imdbRating && (
+          {imdbRating && (
             <>
               <Dot />
               <span className="inline-flex items-center gap-1.5">
                 <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
-                {current.imdbRating}
+                {imdbRating}
               </span>
             </>
           )}

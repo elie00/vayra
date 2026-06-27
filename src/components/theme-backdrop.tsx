@@ -6,14 +6,14 @@ import { useView } from "@/lib/view";
 
 export function ThemeBackdrop() {
   const { settings } = useSettings();
-  const { player } = useView();
+  const { player, view } = useView();
   const preview = useThemePreview();
 
   if (player) return null;
 
   const preset =
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
-  const wantsBokeh = preview ? preview.bokeh : !!preset?.bokeh;
+  const wantsBokeh = (preview ? preview.bokeh : !!preset?.bokeh) && view !== "addons";
   const img = settings.theme.backgroundImage ?? preset?.background?.image ?? null;
   const dim = Math.max(
     0,

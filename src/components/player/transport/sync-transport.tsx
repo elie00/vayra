@@ -1,14 +1,12 @@
-/**
- * SyncTransport — شريط التحكم في وضع المزامنة النصية
- * يظهر في أعلى الـ player عندما يدخل المستخدم وضع "Sync via text"
- */
 import { PauseCircle, PlayCircle, RotateCcw, Save, Undo2, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
 export function SyncTransport({
+  mode,
   playing,
   anchorCount,
   canUndo,
+  canSave,
   previewOffset,
   onPlayPause,
   onNudge,
@@ -16,9 +14,11 @@ export function SyncTransport({
   onSave,
   onExit,
 }: {
+  mode: "easy" | "normal";
   playing: boolean;
   anchorCount: number;
   canUndo: boolean;
+  canSave: boolean;
   previewOffset: number;
   onPlayPause: () => void;
   onNudge: (deltaSec: number) => void;
@@ -27,7 +27,7 @@ export function SyncTransport({
   onExit: () => void;
 }) {
   const t = useT();
-  const saveDisabled = anchorCount === 0;
+  const saveDisabled = !canSave;
   const nonZero = previewOffset !== 0;
 
   return (
@@ -87,27 +87,32 @@ export function SyncTransport({
           <X size={16} strokeWidth={2.2} />
         </button>
 
-        {/* Anchor progress indicator */}
         <div className="flex flex-1 items-center justify-center gap-2">
-          <div className="flex items-center gap-1.5">
-            {[0, 1].map((i) => (
-              <span
-                key={i}
-                className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                  anchorCount > i
-                    ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
-                    : "bg-white/15"
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-[12px] font-medium text-white/60 truncate max-w-[120px]">
-            {anchorCount === 0
-              ? t("Click a line")
-              : anchorCount === 1
-                ? t("Click another")
-                : t("Ready")}
-          </span>
+          {mode === "normal" ? (
+            <>
+              <div className="flex items-center gap-1.5">
+                {[0, 1].map((i) => (
+                  <span
+                    key={i}
+                    className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                      anchorCount > i ? "bg-emerald-500" : "bg-white/15"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="max-w-[120px] truncate text-[12px] font-medium text-white/60">
+                {anchorCount === 0
+                  ? t("Click a line")
+                  : anchorCount === 1
+                    ? t("Click another")
+                    : t("Ready")}
+              </span>
+            </>
+          ) : (
+            <span className="text-[12px] font-medium text-white/55">
+              {canSave ? t("Ready to save") : t("Tap a line, then nudge")}
+            </span>
+          )}
         </div>
 
         <button
@@ -124,10 +129,10 @@ export function SyncTransport({
           onClick={onSave}
           disabled={saveDisabled}
           aria-label={t("Save sync")}
-          className={`flex h-9 shrink-0 items-center gap-2 rounded-lg px-4 text-[13px] font-semibold transition-all active:scale-95 ${
+          className={`flex h-9 shrink-0 items-center gap-2 rounded-lg px-4 text-[13px] font-semibold transition-colors active:scale-95 ${
             saveDisabled
               ? "bg-white/5 text-white/30 cursor-not-allowed"
-              : "bg-emerald-500 text-white shadow-[0_0_16px_-2px_rgba(52,211,153,0.4)] hover:bg-emerald-400"
+              : "bg-emerald-600/90 text-white hover:bg-emerald-600"
           }`}
         >
           <Save size={14} strokeWidth={2.2} />

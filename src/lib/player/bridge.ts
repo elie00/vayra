@@ -66,6 +66,7 @@ export type PlayerBridge = {
   play: () => Promise<void>;
   pause: () => void;
   seek: (sec: number) => void;
+  frameStep?: (dir: 1 | -1) => void;
   setVolume: (v: number) => void;
   setMuted: (m: boolean) => void;
   setRate: (r: number) => void;

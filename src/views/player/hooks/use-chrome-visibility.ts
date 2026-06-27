@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { getSeekHovering, subscribeSeekHovering } from "@/lib/player/playback-clock";
-import { CHROME_HIDE_MS_PAUSED, CHROME_HIDE_MS_PLAYING } from "../player-utils";
+import { CHROME_HIDE_MS_PAUSED, CHROME_HIDE_MS_PLAYING, CHROME_HIDE_MS_RESUME } from "../player-utils";
 
 export function useChromeVisibility(params: {
   playing: boolean;
@@ -17,18 +17,27 @@ export function useChromeVisibility(params: {
 
   const hideTimer = useRef<number | null>(null);
   const anyMenuOpenRef = useRef(false);
+  const resumeHideRef = useRef(false);
 
   const wakeChrome = useCallback(() => {
     setChromeVisible(true);
     setChromeHidden(pipMode);
     if (hideTimer.current) window.clearTimeout(hideTimer.current);
     if (anyMenuOpenRef.current || getSeekHovering()) return;
-    const wait = playing && !drawMode ? CHROME_HIDE_MS_PLAYING : CHROME_HIDE_MS_PAUSED;
+    let wait = playing && !drawMode ? CHROME_HIDE_MS_PLAYING : CHROME_HIDE_MS_PAUSED;
+    if (resumeHideRef.current) {
+      resumeHideRef.current = false;
+      wait = CHROME_HIDE_MS_RESUME;
+    }
     hideTimer.current = window.setTimeout(() => {
       setChromeVisible(false);
       setChromeHidden(true);
     }, wait);
   }, [playing, drawMode, pipMode, setChromeHidden]);
+
+  const hideForResume = useCallback(() => {
+    resumeHideRef.current = true;
+  }, []);
 
   useEffect(() => {
     wakeChrome();
@@ -99,6 +108,7 @@ export function useChromeVisibility(params: {
   return {
     chromeVisible,
     wakeChrome,
+    hideForResume,
     anyMenuOpen,
     setAnyMenuOpen,
     cursorStyle,

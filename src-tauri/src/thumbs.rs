@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use serde_json::{json, Value};
@@ -16,6 +16,12 @@ use uuid::Uuid;
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+static BUNDLED_MPV: OnceLock<PathBuf> = OnceLock::new();
+
+pub fn set_bundled_mpv(path: PathBuf) {
+    let _ = BUNDLED_MPV.set(path);
+}
 
 const BUCKET_SECONDS: f64 = 2.0;
 const THUMB_WIDTH: u32 = 240;
@@ -61,8 +67,11 @@ impl ThumbsState {
     }
 }
 
-fn locate_mpv() -> Option<PathBuf> {
+pub(crate) fn locate_mpv() -> Option<PathBuf> {
     let mut candidates: Vec<String> = Vec::new();
+    if let Some(p) = BUNDLED_MPV.get() {
+        candidates.push(p.to_string_lossy().into_owned());
+    }
     if cfg!(windows) {
         if let Ok(exe) = std::env::current_exe() {
             if let Some(dir) = exe.parent() {

@@ -89,7 +89,7 @@ export function StremioLayout({
       <div className="relative">
         <button
           onClick={() => setFilterOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl bg-elevated/60 px-4 py-3 text-left text-[15px] font-medium text-ink ring-1 ring-edge-soft transition-colors hover:bg-elevated"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl bg-elevated/60 px-4 py-3 text-start text-[15px] font-medium text-ink ring-1 ring-edge-soft transition-colors hover:bg-elevated"
         >
           <div className="flex min-w-0 items-center gap-3">
             <CircleLogo
@@ -114,7 +114,7 @@ export function StremioLayout({
                 setFilter("all");
                 setFilterOpen(false);
               }}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-raised ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-[14px] transition-colors hover:bg-raised ${
                 filter === "all" ? "text-ink font-semibold" : "text-ink-muted"
               }`}
             >
@@ -129,7 +129,7 @@ export function StremioLayout({
                   setFilter(opt.id);
                   setFilterOpen(false);
                 }}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-raised ${
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-[14px] transition-colors hover:bg-raised ${
                   filter === opt.id ? "text-ink font-semibold" : "text-ink-muted"
                 }`}
               >

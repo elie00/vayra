@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
@@ -11,6 +11,7 @@ type Phase = "listen" | "review";
 
 interface TextSyncState {
   syncMode: "idle" | "active";
+  mode: "easy" | "normal";
   phase: Phase;
   anchors: SyncAnchor[];
   activeAnchorSlot: 0 | 1;
@@ -23,6 +24,7 @@ interface TextSyncState {
 
 const INITIAL_STATE: TextSyncState = {
   syncMode: "idle",
+  mode: "easy",
   phase: "listen",
   anchors: [],
   activeAnchorSlot: 0,
@@ -45,6 +47,11 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
   metaIdRef.current = metaId;
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  useEffect(() => {
+    if (state.syncMode !== "active") return;
+    bridgeRef.current?.setSubDelay(state.previewOffset);
+  }, [state.syncMode, state.previewOffset]);
 
   const enterSync = useCallback(async (): Promise<EnterSyncResult> => {
     const b = bridgeRef.current;
@@ -83,6 +90,7 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
 
     setState({
       syncMode: "active",
+      mode: "easy",
       phase: "listen",
       anchors: [],
       activeAnchorSlot: 0,
@@ -133,6 +141,16 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
     setState((prev) => ({ ...prev, activeAnchorSlot: slot }));
   }, []);
 
+  const setMode = useCallback((mode: "easy" | "normal") => {
+    setState((prev) => ({ ...prev, mode }));
+  }, []);
+
+  const seekTo = useCallback((cueIndex: number) => {
+    const cue = stateRef.current.pendingCues?.[cueIndex];
+    if (!cue) return;
+    bridgeRef.current?.seek(cue.start);
+  }, []);
+
   const undo = useCallback(() => {
     setState((prev) => {
       if (prev.anchors.length === 0) return prev;
@@ -167,7 +185,7 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
     if (cur.syncMode !== "active" || !cur.pendingCues) {
       return { ok: false, reason: "not-active" };
     }
-    if (cur.anchors.length === 0) {
+    if (cur.anchors.length === 0 && cur.mode !== "easy") {
       return { ok: false, reason: "no-anchors" };
     }
     if (cur.anchors.length === 1 && confirmSingleAnchor !== true) {
@@ -232,6 +250,8 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
     enterSync,
     pickCue,
     selectSlot,
+    setMode,
+    seekTo,
     undo,
     nudgeOffset,
     save,

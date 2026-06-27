@@ -123,7 +123,7 @@ export function MultiviewView({
           onClick={() => setCollapsed((c) => !c)}
           title={collapsed ? "Show controls" : "Hide controls, full grid"}
           aria-label={collapsed ? "Show controls" : "Hide controls"}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+          className="ms-auto flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
         >
           {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
         </button>

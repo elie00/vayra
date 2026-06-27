@@ -145,7 +145,7 @@ function YouTubeEmbed({ id, title }: { id: string; title: string }) {
   const httpOrigin =
     typeof window !== "undefined" && /^https?:$/.test(window.location?.protocol ?? "")
       ? window.location.origin
-      : null;
+      : "https://www.youtube.com";
   const params = new URLSearchParams({
     autoplay: "1",
     modestbranding: "1",
@@ -153,15 +153,16 @@ function YouTubeEmbed({ id, title }: { id: string; title: string }) {
     iv_load_policy: "3",
     playsinline: "1",
     fs: "1",
+    origin: httpOrigin,
+    widget_referrer: "https://www.youtube.com",
   });
-  if (httpOrigin) params.set("origin", httpOrigin);
   return (
     <iframe
       src={`https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`}
       title={`${title} trailer`}
       allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
       allowFullScreen
-      referrerPolicy={httpOrigin ? "strict-origin-when-cross-origin" : "no-referrer"}
+      referrerPolicy="strict-origin-when-cross-origin"
       className="absolute inset-0 h-full w-full border-0"
     />
   );

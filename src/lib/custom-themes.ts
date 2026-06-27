@@ -233,6 +233,14 @@ export function removeCustomTheme(id: string): void {
   emit();
 }
 
+export function setCustomThemePreview(id: string, previewImage: string | null): void {
+  const list = getCustomThemes();
+  if (!list.some((t) => t.id === id)) return;
+  cache = list.map((t) => (t.id === id ? { ...t, previewImage: previewImage ?? undefined } : t));
+  writeRaw(cache);
+  emit();
+}
+
 export function exportThemeJson(theme: ThemePreset | CustomTheme): string {
   const out: Record<string, unknown> = {
     name: theme.name,

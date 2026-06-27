@@ -6,6 +6,7 @@ import { RtBadge } from "@/components/rt-badge";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
+import { useImdbRating } from "@/lib/imdb-rating";
 import { tmdbImdbId, tmdbLogo, tmdbMovieImages, tmdbTrailerList, useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { fetchTrailer, prefetchTrailer, trailerSrc, type TrailerInfo } from "@/lib/trailer";
@@ -29,7 +30,8 @@ export const Hero = memo(function Hero({
   const { settings } = useSettings();
   const { openMeta } = useView();
   const t = useT();
-  const inWatchlist = useInWatchlist(meta.id);
+  const resolvedImdb = useTmdbImdbId(meta.id);
+  const inWatchlist = useInWatchlist(meta.id, [resolvedImdb]);
   const [bgUrl, setBgUrl] = useState<string | undefined>(meta.background);
   const [bgResolved, setBgResolved] = useState<boolean>(!!meta.background);
   const bg = bgUrl ? upsizeTmdb(bgUrl) : bgResolved ? meta.poster : undefined;
@@ -41,8 +43,8 @@ export const Hero = memo(function Hero({
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [logoResolved, setLogoResolved] = useState<boolean>(!!meta.logo);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const resolvedImdb = useTmdbImdbId(meta.id);
   const omdb = useOmdbScores(resolvedImdb ?? undefined);
+  const imdbRating = useImdbRating(meta, resolvedImdb);
   const pageVisible = usePageVisible();
   const wantsPlayback = !!playTrailer && !!trailerInfo && !overControls && pageVisible;
 
@@ -224,10 +226,10 @@ export const Hero = memo(function Hero({
           )}
           <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[14px]">
             {meta.releaseInfo && <Stat label={t("Year")} value={meta.releaseInfo} />}
-            {settings.showImdbBadge && (omdb?.imdbRating ?? meta.imdbRating) && (
+            {settings.showImdbBadge && imdbRating && (
               <span className="flex items-center gap-2">
                 <ImdbIcon className="h-[18px] w-auto rounded-[4px] shadow-[0_1px_3px_rgba(0,0,0,0.35)]" />
-                <span className="font-semibold text-ink">{omdb?.imdbRating ?? meta.imdbRating}</span>
+                <span className="font-semibold text-ink">{imdbRating}</span>
               </span>
             )}
             {settings.showRtBadge && omdb?.rtCritics != null && (
@@ -261,6 +263,7 @@ export const Hero = memo(function Hero({
                   type: meta.type,
                   name: meta.name,
                   poster: meta.poster,
+                  imdbId: resolvedImdb,
                 });
               }}
               className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/55 px-6 text-[15px] font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors duration-200 hover:border-ink-subtle hover:bg-canvas/75"

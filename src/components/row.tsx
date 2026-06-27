@@ -76,6 +76,7 @@ function LazyChild({
 }
 
 function Skeleton({ shape }: { shape: RowShape }) {
+  const { settings } = useSettings();
   if (shape === "service") {
     return <div className="h-20 w-full rounded-xl bg-elevated/40" />;
   }
@@ -86,13 +87,16 @@ function Skeleton({ shape }: { shape: RowShape }) {
     return <div className="aspect-[5/4] w-full rounded-2xl bg-elevated/30" />;
   }
   const aspect = shape === "landscape" ? "aspect-[16/9]" : "aspect-[2/3]";
+  const hideText = shape === "portrait" && settings.hidePosterTitles;
   return (
     <div className="flex w-full min-w-0 flex-col gap-2.5">
       <div className={`${aspect} rounded-xl bg-elevated/40`} />
-      <div className={`flex flex-col gap-1.5 ${shape === "landscape" ? "" : "h-9"}`}>
-        <div className="h-3 w-3/5 rounded bg-elevated/35" />
-        <div className="h-3 w-2/5 rounded bg-elevated/25" />
-      </div>
+      {!hideText && (
+        <div className={`flex flex-col gap-1.5 ${shape === "landscape" ? "" : "h-9"}`}>
+          <div className="h-3 w-3/5 rounded bg-elevated/35" />
+          <div className="h-3 w-2/5 rounded bg-elevated/25" />
+        </div>
+      )}
     </div>
   );
 }

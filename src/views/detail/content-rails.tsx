@@ -28,7 +28,7 @@ export function ContentRails({
   const order = orderedSectionKeys(available, custom);
   const byKey = new Map(sections.map((s) => [s.key, s]));
   return (
-    <>
+    <div className="flex flex-col gap-10">
       {order.map((key, idx) => {
         const s = byKey.get(key);
         if (!s) return null;
@@ -51,7 +51,7 @@ export function ContentRails({
           </div>
         );
       })}
-    </>
+    </div>
   );
 }
 

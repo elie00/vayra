@@ -9,6 +9,7 @@ import { SyncTransport } from "@/components/player/transport/sync-transport";
 
 export type TextSyncApi = {
   syncMode: "idle" | "active";
+  mode: "easy" | "normal";
   phase: "listen" | "review";
   anchors: SyncAnchor[];
   activeAnchorSlot: 0 | 1;
@@ -20,6 +21,8 @@ export type TextSyncApi = {
   enterSync: () => Promise<{ ok: true } | { ok: false; reason: string }>;
   pickCue: (cueIndex: number) => void;
   selectSlot: (slot: 0 | 1) => void;
+  setMode: (mode: "easy" | "normal") => void;
+  seekTo: (cueIndex: number) => void;
   undo: () => void;
   nudgeOffset: (deltaSec: number) => void;
   save: (confirmSingleAnchor?: boolean) => Promise<{ ok: true } | { ok: false; reason: string }>;
@@ -49,14 +52,15 @@ export function TextSyncOverlay({
   }, [cues, position]);
 
   const warnings = useMemo(() => evaluateAnchors(api.anchors), [api.anchors]);
+  const canSave = api.mode === "easy" ? api.previewOffset !== api.baseOffset : api.anchors.length > 0;
 
   if (api.syncMode !== "active" || !cues) return null;
 
   const handleSaveClick = () => {
-    if (api.anchors.length === 1) {
+    if (api.mode === "normal" && api.anchors.length === 1) {
       setConfirmSingle(true);
     } else {
-      void api.save();
+      void api.save(true);
     }
   };
 
@@ -71,9 +75,11 @@ export function TextSyncOverlay({
   return (
     <div className="absolute bottom-[90px] end-5 top-[90px] z-[70] flex w-[440px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/80 shadow-[0_32px_80px_rgba(0,0,0,0.7)] backdrop-blur-2xl animate-in slide-in-from-right duration-300">
       <SyncTransport
+        mode={api.mode}
         playing={playing}
         anchorCount={api.anchors.length}
         canUndo={api.anchors.length > 0}
+        canSave={canSave}
         previewOffset={api.previewOffset}
         onPlayPause={onPlayPause}
         onNudge={api.nudgeOffset}
@@ -82,6 +88,28 @@ export function TextSyncOverlay({
         onExit={handleExit}
       />
 
+      <div className="flex flex-col gap-1.5 border-b border-edge-soft/50 bg-canvas/30 px-4 py-2.5">
+        <div className="flex rounded-xl bg-white/5 p-0.5">
+          {(["easy", "normal"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => api.setMode(m)}
+              className={`flex-1 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                api.mode === m ? "bg-white/15 text-white" : "text-white/45 hover:text-white/70"
+              }`}
+            >
+              {m === "easy" ? t("Easy") : t("Normal")}
+            </button>
+          ))}
+        </div>
+        <span className="px-1 text-[11px] leading-snug text-white/45">
+          {api.mode === "easy"
+            ? t("Tap a line to jump there, then nudge until the subtitles match what you hear.")
+            : t("Play, then tap the line you hear at two spots (one early, one late) to fix drift.")}
+        </span>
+      </div>
+
+      {api.mode === "normal" && (
       <div className="flex flex-col gap-2 border-b border-edge-soft/50 bg-canvas/30 px-4 py-3">
         <span className="text-[12px] font-semibold text-white/80">
           {t("Anchor Selection")}
@@ -114,14 +142,19 @@ export function TextSyncOverlay({
         })}
         </div>
       </div>
+      )}
 
-      {(warnings.gapWarning || warnings.slopeWarning) && (
+      {(warnings.gapSec != null || warnings.slopePct != null) && (
         <div className="flex flex-col gap-0.5 border-b border-amber-300/20 bg-amber-400/10 px-4 py-1.5">
-          {warnings.gapWarning && (
-            <span className="text-[11px] font-medium text-amber-200">{warnings.gapWarning}</span>
+          {warnings.gapSec != null && (
+            <span className="text-[11px] font-medium leading-snug text-amber-200">
+              {t("These two points are very close ({n}s apart). Pick one near the start and one near the end, or the timing can drift at the edges.", { n: warnings.gapSec.toFixed(1) })}
+            </span>
           )}
-          {warnings.slopeWarning && (
-            <span className="text-[11px] font-medium text-amber-200">{warnings.slopeWarning}</span>
+          {warnings.slopePct != null && (
+            <span className="text-[11px] font-medium leading-snug text-amber-200">
+              {t("That is a large correction ({n}%). One of the two points may be off, double-check them.", { n: warnings.slopePct.toFixed(1) })}
+            </span>
           )}
         </div>
       )}
@@ -131,7 +164,7 @@ export function TextSyncOverlay({
           cues={cues}
           activeIndex={activeIndex}
           anchors={api.anchors}
-          onPick={api.pickCue}
+          onPick={api.mode === "easy" ? api.seekTo : api.pickCue}
         />
       </div>
 
@@ -200,7 +233,7 @@ function ConfirmDialog({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="flex w-[min(440px,92vw)] flex-col gap-3 rounded-2xl border border-edge bg-elevated/97 p-5 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 backdrop-blur-xl">
+      <div className="flex w-[300px] max-w-[86%] flex-col gap-3 rounded-2xl border border-edge bg-elevated/97 p-5 shadow-[0_24px_60px_-22px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 backdrop-blur-xl">
         <h3 className="text-[15px] font-semibold text-ink">{title}</h3>
         <p className="text-[13px] leading-relaxed text-ink-muted">{body}</p>
         <div className="mt-1 flex justify-end gap-2">

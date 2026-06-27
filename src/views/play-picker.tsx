@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { resolveAddonLogo } from "@/components/addon-logo";
 import { torrentEngineStatus } from "@/lib/torrent/local-engine";
@@ -15,6 +14,8 @@ import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
 import { useView, type PlayEpisode } from "@/lib/view";
+import { exitWindowFullscreen } from "@/lib/fullscreen-state";
+import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
 import { AutoPlayTransition } from "./play-picker/auto-play-transition";
 import { BackdropLayer } from "./play-picker/backdrop-layer";
@@ -66,8 +67,12 @@ export function PlayPicker({
 }) {
   const isDownload = intent === "download";
   const { openPlayer, openSettings, exitPickerToDetail } = useView();
-  const backToDetail = () => exitPickerToDetail(meta);
+  const backToDetail = () => {
+    void exitWindowFullscreen();
+    exitPickerToDetail(meta);
+  };
   const { settings, update } = useSettings();
+  const fs = useWindowFullscreen();
   const { authKey } = useAuth();
   const debrids = useDebridClients();
   const { snapshot: roomSnapshot, sendInvite, claimHost, wasInvitedTo, clientId, hostSource, roomGuestPick, lastInviteProto } = useTogether();
@@ -91,6 +96,7 @@ export function PlayPicker({
     firstResultAt,
     autoSettleReady,
     resolveError,
+    refresh,
     setAutoSettleReady,
     setResolveError,
   } = usePipelineResult({
@@ -543,22 +549,10 @@ export function PlayPicker({
     <main className="absolute inset-0 z-50 overflow-y-auto bg-canvas">
       <BackdropLayer src={backdropSrc} />
 
-      {createPortal(
-        <button
-          type="button"
-          onClick={() => backToDetail()}
-          aria-label="Back"
-          className="fixed left-5 top-5 z-[200] flex h-11 w-11 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink backdrop-blur-md transition-colors hover:bg-elevated"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>,
-        document.body,
-      )}
+      <div aria-hidden data-tauri-drag-region={fs ? "false" : "true"} className="absolute inset-x-0 top-0 z-10 h-20" />
 
       <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-12 px-12 pb-32 pt-32">
-        <PickerHeader meta={meta} episode={episode} />
+        <PickerHeader meta={meta} episode={episode} onBack={backToDetail} onRefresh={refresh} refreshing={loading} />
 
         {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
 

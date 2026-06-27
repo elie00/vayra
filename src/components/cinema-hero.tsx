@@ -4,6 +4,7 @@ import { ImdbIcon } from "@/components/icons/imdb-icon";
 import { MetaAwardsCorner } from "@/components/meta-awards-corner";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { tmdbLogo, tmdbTrailerList, useTmdbImdbId } from "@/lib/providers/tmdb";
+import { useImdbRating } from "@/lib/imdb-rating";
 import { useSettings } from "@/lib/settings";
 import { smartPlayEpisode } from "@/lib/smart-play";
 import { fetchTrailer, prefetchTrailer, trailerSrc, type TrailerInfo } from "@/lib/trailer";
@@ -205,6 +206,7 @@ function CinemaSlide({
   const { settings } = useSettings();
   const { openMeta, openPicker } = useView();
   const resolvedImdb = useTmdbImdbId(meta.id);
+  const imdbRating = useImdbRating(meta, resolvedImdb);
   const [logo, setLogo] = useState<string | undefined>(meta.logo);
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [logoResolved, setLogoResolved] = useState<boolean>(!!meta.logo);
@@ -341,7 +343,7 @@ function CinemaSlide({
       <MetaAwardsCorner meta={meta} imdbId={resolvedImdb} />
       <div className="absolute inset-y-0 start-0 w-3/5 bg-gradient-to-r from-canvas/95 via-canvas/55 to-transparent rtl:bg-gradient-to-l" />
 
-      <div className="relative flex h-full items-end pb-28 pl-20 pr-20">
+      <div className="relative flex h-full items-end pb-28 ps-20 pe-20">
         <div className="flex max-w-[640px] flex-col gap-5">
           <span className="text-[11px] font-bold uppercase tracking-[0.42em] text-ink-subtle">
             {t(eyebrow)}
@@ -361,11 +363,11 @@ function CinemaSlide({
             {meta.releaseInfo && <span>{meta.releaseInfo}</span>}
             {meta.runtime && <Dot />}
             {meta.runtime && <span>{meta.runtime}</span>}
-            {settings.showImdbBadge && meta.imdbRating && <Dot />}
-            {settings.showImdbBadge && meta.imdbRating && (
+            {settings.showImdbBadge && imdbRating && <Dot />}
+            {settings.showImdbBadge && imdbRating && (
               <span className="flex items-center gap-1.5">
                 <ImdbIcon className="h-[14px] w-auto rounded-[2px]" />
-                <span className="font-semibold text-ink">{meta.imdbRating}</span>
+                <span className="font-semibold text-ink">{imdbRating}</span>
               </span>
             )}
             {meta.genres && meta.genres.length > 0 && <Dot />}

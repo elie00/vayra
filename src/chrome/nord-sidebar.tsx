@@ -78,7 +78,7 @@ export function NordSidebar() {
     <>
       <aside
         aria-hidden={chromeHidden}
-        className={`relative z-[60] flex w-[78px] shrink-0 flex-col transition-[opacity,transform,width] duration-[320ms] ease-[cubic-bezier(0.32,0.72,0.24,1)] ${
+        className={`relative z-[60] flex w-[78px] shrink-0 flex-col transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width] ${
           collapsed ? "" : "lg:w-56"
         } ${
           chromeHidden ? "pointer-events-none -translate-x-2 rtl:translate-x-2 opacity-0" : "translate-x-0 opacity-100"

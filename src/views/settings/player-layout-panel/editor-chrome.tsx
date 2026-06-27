@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { SeekBarVisual } from "@/components/player/transport/seek-bar-visual";
 import {
   type PlayerChromeConfig,
@@ -48,18 +49,21 @@ export function FauxBackdrop({
   width,
   height,
   sizeLabel,
+  bg,
 }: {
   width: number;
   height: number;
   sizeLabel: string;
+  bg: string | null;
 }) {
   return (
     <div className="absolute inset-0">
+      <CyclingBackdrop bg={bg} />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 35% 30%, oklch(0.32 0.10 260 / 0.85) 0%, transparent 55%), radial-gradient(ellipse at 75% 70%, oklch(0.28 0.08 320 / 0.65) 0%, transparent 60%), linear-gradient(180deg, oklch(0.10 0.02 260) 0%, oklch(0.06 0.02 260) 100%)",
+            "radial-gradient(ellipse at 35% 30%, oklch(0.32 0.10 260 / 0.45) 0%, transparent 60%), radial-gradient(ellipse at 75% 70%, oklch(0.28 0.08 320 / 0.35) 0%, transparent 65%), linear-gradient(180deg, oklch(0.08 0.02 260 / 0.45) 0%, oklch(0.06 0.02 260 / 0.62) 100%)",
         }}
       />
       <div className="absolute inset-x-0 top-[28%] flex flex-col items-center gap-3 text-center opacity-[0.07]">
@@ -77,6 +81,38 @@ export function FauxBackdrop({
         </span>
       </div>
     </div>
+  );
+}
+
+function CyclingBackdrop({ bg }: { bg: string | null }) {
+  const [layers, setLayers] = useState<Array<{ url: string; id: number }>>([]);
+  const idRef = useRef(0);
+  useEffect(() => {
+    if (!bg) return;
+    setLayers((cur) => {
+      if (cur.length && cur[cur.length - 1].url === bg) return cur;
+      return [...cur, { url: bg, id: idRef.current++ }].slice(-2);
+    });
+    const tid = setTimeout(() => setLayers((cur) => cur.slice(-1)), 2600);
+    return () => clearTimeout(tid);
+  }, [bg]);
+  return (
+    <>
+      {layers.map((layer, i) => (
+        <img
+          key={layer.id}
+          src={layer.url}
+          alt=""
+          className={`absolute inset-0 h-full w-full object-cover opacity-[0.40] ${
+            i === layers.length - 1 && layers.length > 1
+              ? "animate-in fade-in duration-[2200ms] ease-out"
+              : ""
+          }`}
+          style={{ filter: "saturate(1.15)" }}
+          draggable={false}
+        />
+      ))}
+    </>
   );
 }
 
@@ -167,7 +203,7 @@ function LiveSeekRowMock() {
       </div>
       <span className="shrink-0 text-[12px] font-semibold uppercase tracking-[0.2em] text-white/85 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">
         Go to live{" "}
-        <span className="ml-0.5 font-mono lowercase tracking-normal text-white/55">· 24s</span>
+        <span className="ms-0.5 font-mono lowercase tracking-normal text-white/55">· 24s</span>
       </span>
     </>
   );
@@ -186,7 +222,9 @@ function SlotZone({
   onSelect: (id: PlayerControlId | null) => void;
   renderOne: (id: PlayerControlId) => React.ReactNode;
 }) {
-  const allInSlot = config.controls.filter((c) => c.slot === slot).sort((a, b) => a.order - b.order);
+  const allInSlot = config.controls
+    .filter((c) => c.slot === slot && !c.hidden)
+    .sort((a, b) => a.order - b.order);
   const items = allInSlot
     .map((c) => ({ c, rendered: renderOne(c.id) }))
     .filter((x): x is { c: typeof allInSlot[number]; rendered: NonNullable<React.ReactNode> } => x.rendered != null);
@@ -194,13 +232,7 @@ function SlotZone({
   return (
     <>
       {items.map(({ c, rendered }) => (
-        <ControlPick
-          key={c.id}
-          id={c.id}
-          selected={selectedId === c.id}
-          dimmed={!!c.hidden}
-          onSelect={onSelect}
-        >
+        <ControlPick key={c.id} id={c.id} selected={selectedId === c.id} onSelect={onSelect}>
           {rendered}
         </ControlPick>
       ))}
@@ -211,13 +243,11 @@ function SlotZone({
 function ControlPick({
   id,
   selected,
-  dimmed,
   onSelect,
   children,
 }: {
   id: PlayerControlId;
   selected: boolean;
-  dimmed: boolean;
   onSelect: (id: PlayerControlId | null) => void;
   children: React.ReactNode;
 }) {
@@ -233,12 +263,8 @@ function ControlPick({
         selected ? "bg-accent/15 ring-2 ring-accent" : "ring-2 ring-transparent hover:bg-white/8"
       }`}
     >
-      <div
-        className={`pointer-events-none ${dimmed ? "opacity-40" : ""}`}
-        style={dimmed ? { textDecoration: "line-through" } : undefined}
-      >
-        {children}
-      </div>
+      <div className="pointer-events-none">{children}</div>
+      <span className="pointer-events-auto absolute inset-0 z-10" />
     </div>
   );
 }

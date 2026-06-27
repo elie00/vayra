@@ -1,0 +1,10 @@
+export function shouldShowAdReport(opts: {
+  enabled: boolean;
+  alwaysShow: boolean;
+  isDirectStream: boolean;
+  recentRelease: boolean;
+}): boolean {
+  if (opts.isDirectStream) return false;
+  if (opts.enabled || opts.alwaysShow) return true;
+  return opts.recentRelease;
+}

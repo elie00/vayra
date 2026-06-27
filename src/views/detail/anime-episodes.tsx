@@ -1,5 +1,5 @@
 import { Check, ChevronDown, Play } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EpisodeJumper } from "@/components/episode-jumper";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress } from "@/lib/episode-progress";
@@ -19,6 +19,8 @@ import { AnimeEpisodeStrip } from "./anime-episode-strip";
 import { UpcomingBadge } from "./badges";
 import { EpisodeGridControls } from "./episode-grid-controls";
 import { EpisodeLayoutToggle } from "./episode-layout-toggle";
+
+const WINDOW_STEP = 60;
 
 export function AnimeEpisodes({
   meta,
@@ -118,6 +120,36 @@ export function AnimeEpisodes({
     );
   };
 
+  const windowed = settings.episodeLayout === "list" || settings.episodeLayout === "strip";
+  const [renderCount, setRenderCount] = useState(WINDOW_STEP);
+  useEffect(() => {
+    setRenderCount(WINDOW_STEP);
+  }, [meta.id, settings.episodeLayout]);
+  const grow = useCallback(
+    () => setRenderCount((c) => (c >= episodes.length ? c : Math.min(episodes.length, c + WINDOW_STEP))),
+    [episodes.length],
+  );
+  const reveal = useCallback(
+    (n: number) => setRenderCount((c) => Math.max(c, Math.min(episodes.length, n + 20))),
+    [episodes.length],
+  );
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const listEpisodes = windowed ? episodes.slice(0, renderCount) : episodes;
+  const hasMore = windowed && renderCount < episodes.length;
+  useEffect(() => {
+    if (settings.episodeLayout !== "list" || !hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) grow();
+      },
+      { root: scrollRef.current ?? null, rootMargin: "1200px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [settings.episodeLayout, hasMore, grow, scrollRef]);
+
   const isOneOff = meta.type === "movie" || episodes.length <= 1;
   return (
     <div data-anime-episodes className="flex flex-col gap-6 scroll-mt-24">
@@ -157,31 +189,31 @@ export function AnimeEpisodes({
       ) : (
         <div key={settings.episodeLayout} className="animate-fade-in">
           {settings.episodeLayout === "list" ? (
-            <>
-              <div className="flex flex-col gap-1">
-                {episodes.map((ep) => (
-                  <AnimeEpisodeRow
-                    key={ep.id}
-                    meta={meta}
-                    ep={ep}
-                    progress={progressFor(ep)}
-                    spoiler={spoilerFor(ep)}
-                    onContextMenu={openWatchedMenu}
-                  />
-                ))}
-              </div>
-              <EpisodeJumper scrollRef={scrollRef} totalEpisodes={episodes.length} />
-            </>
+            <div className="flex flex-col gap-1">
+              {listEpisodes.map((ep) => (
+                <AnimeEpisodeRow
+                  key={ep.id}
+                  meta={meta}
+                  ep={ep}
+                  progress={progressFor(ep)}
+                  spoiler={spoilerFor(ep)}
+                  onContextMenu={openWatchedMenu}
+                />
+              ))}
+              {hasMore && <div ref={sentinelRef} aria-hidden className="h-px w-full" />}
+            </div>
           ) : (
             <AnimeEpisodeStrip
               layout={settings.episodeLayout === "grid" ? "grid" : "strip"}
               meta={meta}
-              episodes={episodes}
+              episodes={settings.episodeLayout === "grid" ? episodes : listEpisodes}
               progressFor={progressFor}
               spoilerFor={spoilerFor}
               onContextMenu={openWatchedMenu}
+              onReachEnd={settings.episodeLayout === "grid" ? undefined : grow}
             />
           )}
+          <EpisodeJumper scrollRef={scrollRef} totalEpisodes={episodes.length} onReveal={reveal} />
         </div>
       )}
       {watchedMenu && (

@@ -1,5 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { FloatingBack } from "@/chrome/floating-back";
+import { WindowControls } from "@/chrome/window-controls";
+import { WindowResizeEdges } from "@/chrome/window-resize-edges";
 import { MinUIDock } from "@/chrome/minui-dock";
 import { Sidebar } from "@/chrome/sidebar";
 import { DraculaSidebar } from "@/chrome/dracula-sidebar";
@@ -11,6 +13,7 @@ import { StremioRail } from "@/chrome/stremio-rail";
 import { TopDock } from "@/chrome/topdock";
 import { Topbar } from "@/chrome/topbar";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
+import { exitWindowFullscreen, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
@@ -377,16 +380,33 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 }
 
 function Shell() {
-  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, goBack, openMeta, stackKinds } = useView();
+  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, goBack, openMeta, stackKinds, chromeHidden } = useView();
   const { settings } = useSettings();
   const preview = useThemePreview();
   const layout = useMemo(
     () => (preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],
   );
+  const themeHasTopbar =
+    layout === "sidebar" ||
+    layout === "dracula" ||
+    layout === "nord" ||
+    layout === "forest" ||
+    layout === "stremio";
   useViewPreloader();
 
   useEffect(() => startMaintenance(), []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F11") {
+        e.preventDefault();
+        void toggleWindowFullscreen();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
@@ -461,6 +481,9 @@ function Shell() {
 
   const playerActive = !!player;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
+  useEffect(() => {
+    if (!playerActive) void exitWindowFullscreen();
+  }, [playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
   const collectionTop = topKind === "collection";
@@ -504,9 +527,9 @@ function Shell() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (playerActive || pickerTop || immersive) root.dataset.chromeHidden = "true";
+    if (playerActive || pickerTop || immersive || settingsTop || chromeHidden) root.dataset.chromeHidden = "true";
     else delete root.dataset.chromeHidden;
-  }, [playerActive, pickerTop, immersive]);
+  }, [playerActive, pickerTop, immersive, settingsTop, chromeHidden]);
 
   useEffect(() => {
     document.querySelectorAll("[data-harbor-nav]").forEach((el) => {
@@ -561,10 +584,16 @@ function Shell() {
       {!settingsTop && !playerActive && !pickerTop && layout === "royal" && <RoyalTopbar />}
       {!settingsTop && !playerActive && !pickerTop && layout === "rail" && <SideRail />}
       {!playerActive && !pickerTop && layout === "minui" && <MinUIDock />}
-      {!playerActive && layout === "topdock" && <FloatingBack offsetTop={92} />}
-      {!playerActive && layout === "royal" && <FloatingBack offsetTop={92} />}
-      {!playerActive && layout === "rail" && <FloatingBack offsetLeft={settings.sidebarCollapsed ? 88 : 220} offsetTop={28} />}
-      {!playerActive && layout === "custom" && <FloatingBack offsetLeft={20} offsetTop={20} />}
+      {!playerActive && !pickerTop && layout === "topdock" && <FloatingBack offsetTop={92} />}
+      {!playerActive && !pickerTop && layout === "royal" && <FloatingBack offsetTop={92} />}
+      {!playerActive && !pickerTop && layout === "rail" && <FloatingBack offsetLeft={settings.sidebarCollapsed ? 88 : 220} offsetTop={28} />}
+      {!playerActive && !pickerTop && layout === "custom" && <FloatingBack offsetLeft={20} offsetTop={20} />}
+      {!playerActive && !pickerTop && layout === "custom" && (
+        <div className="fixed end-3 top-3 z-[120]">
+          <WindowControls />
+        </div>
+      )}
+      {!playerActive && <WindowResizeEdges />}
       <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}>
         <div className={layer(homeTop)}>
           <Home active={homeTop} />
@@ -751,11 +780,16 @@ function Shell() {
             </Suspense>
           </div>
         )}
+        {pickerTop && !themeHasTopbar && (
+          <div className="fixed end-3 top-3 z-[120]">
+            <WindowControls />
+          </div>
+        )}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 z-30 h-24 bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
         />
-        {!immersive && (layout === "sidebar" || layout === "dracula" || layout === "nord" || layout === "forest" || layout === "stremio" || (settingsTop && layout !== "minui" && layout !== "custom")) && <Topbar />}
+        {!immersive && (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && <Topbar />}
         {!immersive && layout === "rail" && !settingsTop && (
           <div
             aria-hidden

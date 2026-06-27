@@ -7,7 +7,7 @@ import { fetchWatchlist } from "@/lib/trakt/watchlist";
 import { useTrakt } from "@/lib/trakt/provider";
 import { traktItemToMeta } from "@/lib/trakt/to-meta";
 import type { TraktItem } from "@/lib/trakt/types";
-import { readLocalEntries, removeFromWatchlist, setWatchlistAggregate, subscribeWatchlist, type LocalEntry } from "@/lib/watchlist";
+import { readLocalEntries, removeFromWatchlist, subscribeWatchlist, type LocalEntry } from "@/lib/watchlist";
 import { useT } from "@/lib/i18n";
 import {
   applyFilter,
@@ -28,8 +28,8 @@ export function WatchlistTab() {
   const { authKey } = useAuth();
   const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
-  const [stremio, setStremio] = useState<LibraryItem[]>([]);
-  const [rawCount, setRawCount] = useState(0);
+  const [rawItems, setRawItems] = useState<LibraryItem[]>([]);
+  const [showAll, setShowAll] = useState(() => localStorage.getItem("harbor.watchlist.showall") === "1");
   const [trakt, setTrakt] = useState<TraktItem[]>([]);
   const [localEntries, setLocalEntries] = useState<LocalEntry[]>(() => readLocalEntries());
   const [traktStatus, setTraktStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -50,34 +50,35 @@ export function WatchlistTab() {
     library(authKey)
       .then((items) => {
         if (cancelled) return;
-        setRawCount(items.filter((i) => !i.removed).length);
-        setStremio(filterLibrary(items, settings.libraryBookmarkedOnly));
+        setRawItems(items);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [authKey, settings.libraryBookmarkedOnly]);
+  }, [authKey]);
+
+  const rawCount = useMemo(() => rawItems.filter((i) => !i.removed).length, [rawItems]);
+  const stremio = useMemo(
+    () => filterLibrary(rawItems, settings.libraryBookmarkedOnly, showAll),
+    [rawItems, settings.libraryBookmarkedOnly, showAll],
+  );
 
   const handleRemove = useCallback(
     async (stremioId: string) => {
       if (!authKey) return;
       const wasLocal = readLocalEntries().some((e) => e.id === stremioId);
-      setStremio((prev) => prev.filter((i) => i._id !== stremioId));
-      setRawCount((c) => Math.max(0, c - 1));
+      setRawItems((prev) => prev.filter((i) => i._id !== stremioId));
       try {
         await removeStremioLibraryItem(authKey, stremioId);
         if (wasLocal) removeFromWatchlist(stremioId);
       } catch {
         library(authKey)
-          .then((items) => {
-            setRawCount(items.filter((i) => !i.removed).length);
-            setStremio(filterLibrary(items, settings.libraryBookmarkedOnly));
-          })
+          .then((items) => setRawItems(items))
           .catch(() => {});
       }
     },
-    [authKey, settings.libraryBookmarkedOnly],
+    [authKey],
   );
 
   useEffect(() => {
@@ -108,19 +109,6 @@ export function WatchlistTab() {
     [localEntries, stremio, trakt],
   );
 
-  useEffect(() => {
-    const ids = new Set<string>();
-    for (const it of stremio) ids.add(it._id);
-    for (const t of trakt) {
-      if (t.ids.imdb) ids.add(t.ids.imdb);
-      if (t.ids.tmdb) {
-        ids.add(t.type === "movie" ? `tmdb:movie:${t.ids.tmdb}` : `tmdb:tv:${t.ids.tmdb}`);
-      }
-    }
-    for (const e of localEntries) ids.add(e.id);
-    setWatchlistAggregate(ids);
-  }, [stremio, trakt, localEntries]);
-
   const [type, setType] = useState<TypeKey>("all");
   const [query, setQuery] = useState("");
   const [flat, setFlat] = useState(() => localStorage.getItem("harbor.watchlist.flat") === "1");
@@ -129,6 +117,15 @@ export function WatchlistTab() {
       const next = !v;
       try {
         localStorage.setItem("harbor.watchlist.flat", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }, []);
+  const toggleShowAll = useCallback(() => {
+    setShowAll((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("harbor.watchlist.showall", next ? "1" : "0");
       } catch {}
       return next;
     });
@@ -159,6 +156,7 @@ export function WatchlistTab() {
           counts={counts}
           trailing={
             <>
+              <ScopeToggle showAll={showAll} onToggle={toggleShowAll} />
               <SortControl />
               {settings.librarySort === "recent" && (
                 <ViewModeToggle flat={flat} onToggle={toggleFlat} />
@@ -214,11 +212,34 @@ function ViewModeToggle({ flat, onToggle }: { flat: boolean; onToggle: () => voi
   );
 }
 
-function filterLibrary(items: LibraryItem[], bookmarkedOnly: boolean): LibraryItem[] {
+function ScopeToggle({ showAll, onToggle }: { showAll: boolean; onToggle: () => void }) {
+  const t = useT();
+  return (
+    <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
+      <button
+        onClick={() => showAll && onToggle()}
+        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+          !showAll ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        }`}
+      >
+        {t("Saved")}
+      </button>
+      <button
+        onClick={() => !showAll && onToggle()}
+        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+          showAll ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        }`}
+      >
+        {t("All")}
+      </button>
+    </div>
+  );
+}
+
+function filterLibrary(items: LibraryItem[], bookmarkedOnly: boolean, showAll: boolean): LibraryItem[] {
   return items.filter((i) => {
     if (i.removed) return false;
-    if (i.state?.flaggedWatched === 1) return false;
-    if ((i.state?.timeOffset ?? 0) > 0) return false;
+    if (showAll) return true;
     if (bookmarkedOnly && i.temp) return false;
     return true;
   });

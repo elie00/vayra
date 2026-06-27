@@ -1,5 +1,5 @@
 import { Check, Play, Eye } from "lucide-react";
-import { ImdbIcon } from "@/components/icons/imdb-icon";
+import { EpisodeRatingBadge } from "./episode-rating-badge";
 import { useEffect, useMemo, useState } from "react";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
@@ -50,7 +50,8 @@ export function EpisodeStrip({
           runtime: ep.runtime,
           airDate: ep.airDate,
           overview: ep.overview || undefined,
-          rating: ep.voteAverage ?? undefined,
+          rating: ep.imdbRating ?? ep.voteAverage ?? undefined,
+          ratingIsImdb: ep.imdbRating != null,
           upcoming: isUpcomingDate(ep.airDate),
           play: () =>
             openPicker(
@@ -121,6 +122,8 @@ function EpisodeStripCard({
   const t = useT();
   const { openPicker, openEpisodeDetail } = useView();
   const { settings } = useSettings();
+  const ratingValue = ep.imdbRating ?? ep.voteAverage;
+  const ratingIsImdb = ep.imdbRating != null;
 
   const [imgIdx, setImgIdx] = useState(0);
   useEffect(() => {
@@ -172,22 +175,18 @@ function EpisodeStripCard({
         
         {settings.showEpisodeDescription && ep.overview ? (
           <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
-            {settings.showEpisodeRating && ep.voteAverage && ep.voteAverage > 0 ? (
+            {settings.showEpisodeRating && ratingValue != null && ratingValue > 0 ? (
               <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
-                <ImdbIcon className="h-3.5 w-auto rounded-[2px] shadow-sm" />
-                <span className="text-[12px] font-bold text-white">
-                  {ep.voteAverage.toFixed(1)}
-                </span>
+                <EpisodeRatingBadge value={ratingValue} isImdb={ratingIsImdb} />
               </div>
             ) : null}
             <p className="line-clamp-4 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
               {ep.overview}
             </p>
           </div>
-        ) : settings.showEpisodeRating && ep.voteAverage && ep.voteAverage > 0 ? (
+        ) : settings.showEpisodeRating && ratingValue != null && ratingValue > 0 ? (
           <div className="pointer-events-none absolute bottom-2 start-2 z-[5] flex items-center gap-1.5 rounded-md bg-black/55 px-1.5 py-0.5 drop-shadow-md backdrop-blur-sm">
-            <ImdbIcon className="h-3.5 w-auto rounded-[2px] shadow-sm" />
-            <span className="text-[12px] font-bold text-white">{ep.voteAverage.toFixed(1)}</span>
+            <EpisodeRatingBadge value={ratingValue} isImdb={ratingIsImdb} />
           </div>
         ) : null}
 

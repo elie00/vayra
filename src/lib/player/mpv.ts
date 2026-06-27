@@ -399,6 +399,9 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       emit();
       invoke("mpv_command", { cmd: ["seek", sec, "absolute", "exact"] }).catch(() => {});
     },
+    frameStep(dir) {
+      invoke("mpv_command", { cmd: [dir > 0 ? "frame-step" : "frame-back-step"] }).catch(() => {});
+    },
     setVolume(v) {
       invoke("mpv_set_property", { name: "volume", value: Math.round(v * 100) }).catch(() => {});
     },

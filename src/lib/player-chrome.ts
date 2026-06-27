@@ -167,8 +167,8 @@ export type PlayerChromeConfig = {
 export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
   controls: [
     { id: "back", slot: "top-left", order: 0 },
-    { id: "title-info", slot: "top-right", order: 0 },
-    { id: "window-controls", slot: "top-right", order: 100, hidden: true },
+    { id: "title-info", slot: "top-left", order: 10 },
+    { id: "window-controls", slot: "top-right", order: 100 },
     { id: "time-start", slot: "seek-leading", order: 0 },
     { id: "time-end", slot: "seek-trailing", order: 0 },
     { id: "volume", slot: "bottom-left", order: 0 },
@@ -203,7 +203,7 @@ export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
     { id: "back", slot: "top-left", order: 0 },
     { id: "title-info", slot: "top-left", order: 10 },
     { id: "fullscreen", slot: "top-right", order: 0 },
-    { id: "window-controls", slot: "top-right", order: 100, hidden: true },
+    { id: "window-controls", slot: "top-right", order: 100 },
     { id: "play-pause", slot: "bottom-left", order: 0 },
     { id: "volume", slot: "bottom-left", order: 10 },
     { id: "time-start", slot: "bottom-left", order: 20 },
@@ -236,7 +236,7 @@ export const CONTROL_META: Record<
   { label: string; group: "transport" | "menus" | "info" | "actions"; defaultSlot: PlayerSlot }
 > = {
   back: { label: "Back", group: "actions", defaultSlot: "top-left" },
-  "title-info": { label: "Title & info", group: "info", defaultSlot: "top-right" },
+  "title-info": { label: "Title & info", group: "info", defaultSlot: "top-left" },
   "time-start": { label: "Time elapsed", group: "info", defaultSlot: "seek-leading" },
   "time-end": { label: "Time remaining or duration", group: "info", defaultSlot: "seek-trailing" },
   volume: { label: "Volume", group: "transport", defaultSlot: "bottom-left" },

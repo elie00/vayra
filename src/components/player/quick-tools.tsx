@@ -18,11 +18,13 @@ export function QuickTools({
   ab,
   toast,
   gifToast,
+  clipToast,
 }: {
   visible: boolean;
   ab: AbLoopState;
   toast: FrameGrabToast | null;
   gifToast?: FrameGrabToast | null;
+  clipToast?: FrameGrabToast | null;
 }) {
   return (
     <>
@@ -31,6 +33,7 @@ export function QuickTools({
       )}
       {toast && <FrameToast toast={toast} />}
       {gifToast && <FrameToast toast={gifToast} />}
+      {clipToast && <FrameToast toast={clipToast} />}
     </>
   );
 }

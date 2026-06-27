@@ -3,6 +3,7 @@ import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
+import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
 import { EditionChip } from "./edition-chip";
 
@@ -19,10 +20,13 @@ export function StremioRow({
   match?: "same" | "close" | null;
   onPlay: () => void;
 }) {
+  const { settings } = useSettings();
+  const full = settings.fullStreamDescription;
   const addonName = stream.addonName ?? "Source";
   const headline = stream.name?.trim() || addonName;
-  const description = stream.title?.trim() || stream.description?.trim() || "";
-  const badges = streamBadges(stream);
+  const rawDescription = stream.title?.trim() || stream.description?.trim() || "";
+  const description = full ? rawDescription : condenseDescription(rawDescription);
+  const badges = settings.showQualityBadge ? streamBadges(stream) : [];
   const link = resolveStreamLink(stream);
   return (
     <div
@@ -43,7 +47,7 @@ export function StremioRow({
           {headline}
         </p>
         {description && (
-          <p className="whitespace-pre-line text-[14.5px] leading-snug text-ink-muted">
+          <p className={`whitespace-pre-line text-[14.5px] leading-snug text-ink-muted${full ? "" : " line-clamp-3"}`}>
             {description}
           </p>
         )}
@@ -72,4 +76,11 @@ export function StremioRow({
       </div>
     </div>
   );
+}
+
+function condenseDescription(text: string): string {
+  if (!text) return "";
+  const [first, ...rest] = text.split("\n");
+  const head = first.length > 90 ? first.slice(0, 90).trimEnd() + "…" : first;
+  return [head, ...rest].join("\n");
 }

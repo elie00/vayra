@@ -10,6 +10,7 @@ export type GridEpisode = {
   airDate: string | null;
   overview?: string;
   rating?: number;
+  ratingIsImdb?: boolean;
   filler?: boolean;
   upcoming?: boolean;
   play: () => void;
