@@ -11,6 +11,7 @@ import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { useInLocalWatchlist, useLocalWatchlist } from "@/lib/local-watchlist";
 import { clearTitleBackdrop, getTitleBackdrop, setTitleBackdrop } from "@/lib/title-backdrop";
+import { useT } from "@/lib/i18n";
 
 const MENU_WIDTH = 220;
 const MENU_HEIGHT = 120;
@@ -33,6 +34,7 @@ const VIEW_LABELS: Record<ViewSummonable, string> = {
 
 export function ContextMenu() {
   const { state, close, open } = useContextMenu();
+  const t = useT();
   const {
     openMeta,
     setView,
@@ -250,6 +252,19 @@ export function ContextMenu() {
             label="Download Video"
             onClick={() => {
               playerActions.download();
+              close();
+            }}
+          />,
+        );
+      }
+      if (playerActions.canDownloadSubtitle) {
+        items.push(
+          <Item
+            key="download-subtitle"
+            icon={<Download size={14} strokeWidth={2} />}
+            label={t("Download Subtitle")}
+            onClick={() => {
+              playerActions.downloadSubtitle();
               close();
             }}
           />,
@@ -478,3 +493,4 @@ function Item({
 function Separator() {
   return <span aria-hidden className="my-1 h-px bg-edge-soft/60" />;
 }
+

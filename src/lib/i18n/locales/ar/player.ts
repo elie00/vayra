@@ -61,6 +61,7 @@ const player: Record<string, string> = {
   "Thinner outline": "حدود أرفع",
   "No subtitles found.": "لم يُعثر على ترجمات.",
   "Download subtitle to disk": "تنزيل الترجمة إلى القرص",
+  "Download Subtitle": "تحميل الترجمة",
   "Movie's too new. Subtitles haven't been published yet.":
     "الفيلم جديد جدًا. لم تُنشر الترجمات بعد.",
   Forced: "إجباري",

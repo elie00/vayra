@@ -6,6 +6,8 @@ import { clearImportedSubs } from "@/lib/player/imported-subs";
 import { readPlayerVolume } from "@/lib/player-volume";
 import { setPlayerActions } from "@/lib/player-actions";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
+import { fetchAndParse } from "@/lib/subtitles/parser";
+import { toSrt } from "@/lib/subtitles/serialize";
 import { useSettings } from "@/lib/settings";
 import { isLocalEngineUrl } from "@/lib/stremio-server";
 import { useSimklScrobble } from "@/lib/simkl/scrobble-hook";
@@ -137,13 +139,58 @@ export function usePlayerMedia(params: {
   const download = useVideoDownload({ url: src.url, meta: src.meta, episode: src.episode });
 
   useEffect(() => {
+    const doDownloadSubtitle = async () => {
+      const b = bridgeRef.current;
+      if (!b) return;
+
+      // Try URL-based download first (works for all external/addon/opensubtitles tracks)
+      const url = b.getSelectedTrackUrl();
+      if (url && /^https?:/i.test(url)) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const text = await res.text();
+            const ext = url.split(/[?#]/)[0].match(/\.([a-z]{2,4})$/i)?.[1]?.toLowerCase() || "srt";
+            const filename = `subtitle.${ext}`;
+            const { downloadText } = await import("@/lib/download-text");
+            await downloadText(filename, text, [ext], "Subtitle");
+            return;
+          }
+        } catch {
+          // fall through to cues-based
+        }
+      }
+
+      // Fallback: get cues from bridge (works for embedded/parsed tracks)
+      let cues = b.getSelectedTrackCues();
+      if ((!cues || cues.length === 0) && url) {
+        try {
+          const readableUrl =
+            /^(https?|blob|data|tauri|asset):/i.test(url) ? url : null;
+          if (readableUrl) {
+            cues = await fetchAndParse(readableUrl);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      if (!cues || cues.length === 0) return;
+      const { downloadText } = await import("@/lib/download-text");
+      await downloadText("subtitle.srt", toSrt(cues), ["srt"], "Subtitle");
+    };
+
+    const selectedSub = snap.subtitleTracks.find((t) => t.selected) ?? null;
+    const canSub = selectedSub !== null;
+
     setPlayerActions({
       download: download.start,
       toggleFullscreen,
       canDownload: !!src.url,
+      downloadSubtitle: doDownloadSubtitle,
+      canDownloadSubtitle: canSub,
     });
     return () => setPlayerActions(null);
-  }, [download.start, toggleFullscreen, src.url]);
+  }, [download.start, toggleFullscreen, src.url, snap.subtitleTracks]);
 
   useResumeAutosave({ src, snap, season, episode });
   useStremioSync({ src, snap, authKey, resolvedImdbId, resolvedImdbVerified, resolutionSettled, castActiveRef });
