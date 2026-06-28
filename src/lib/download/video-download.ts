@@ -70,7 +70,7 @@ export function startDownload(
   return {
     promise,
     abort: () => {
-      void invoke("download_cancel", { id });
+      void invoke("download_cancel", { id }).catch(() => {});
     },
   };
 }

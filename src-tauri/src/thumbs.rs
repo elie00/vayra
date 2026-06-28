@@ -19,6 +19,7 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 static BUNDLED_MPV: OnceLock<PathBuf> = OnceLock::new();
 
+#[cfg(windows)]
 pub fn set_bundled_mpv(path: PathBuf) {
     let _ = BUNDLED_MPV.set(path);
 }

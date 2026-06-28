@@ -7,6 +7,7 @@ import { DiscoverIcon } from "@/components/icons/discover-icon";
 import { HomeIcon } from "@/components/icons/home-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
 import { LiveTvIcon } from "@/components/icons/live-tv-icon";
+import { SportsIcon } from "@/components/icons/sports-icon";
 import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
@@ -34,6 +35,7 @@ const ITEMS: DockItem[] = [
   { view: "shows", label: "Shows", icon: (a) => <TvIcon active={a} />, parentalKey: "shows" },
   { view: "anime", label: "Anime", icon: (a) => <AnimeIcon active={a} />, hideKey: "anime", parentalKey: "anime" },
   { view: "live", label: "Live TV", icon: (a) => <LiveTvIcon active={a} />, hideKey: "liveTv", parentalKey: "liveTv" },
+  { view: "sports", label: "Sports", icon: (a) => <SportsIcon active={a} />, hideKey: "sports", parentalKey: "sports" },
   { view: "vod", label: "Playlists", icon: (a) => <PlaylistVodIcon active={a} /> },
   { view: "calendar", label: "Calendar", icon: (a) => <CalendarIcon active={a} />, parentalKey: "calendar" },
   { view: "library", label: "Library", icon: (a) => <LibraryIcon active={a} />, parentalKey: "library" },

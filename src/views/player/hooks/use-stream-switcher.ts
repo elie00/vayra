@@ -156,7 +156,10 @@ export function useStreamSwitcher(params: {
       checkShownRef.current = false;
       setStreamCheckOpen(false);
     },
-    [debrids],
+    // src.episode/src.meta changent en place lors d'un changement d'épisode (même
+    // série, pas de remount) : sans ces deps, le switch de flux reprend à la position
+    // de l'ancien épisode et enregistre l'historique sous le mauvais.
+    [debrids, bridgeRef, src.episode?.episode, src.episode?.season, src.meta.id, src.meta.name],
   );
 
   useEffect(() => () => swapAcRef.current?.abort(), []);

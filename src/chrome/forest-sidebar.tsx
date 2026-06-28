@@ -8,6 +8,7 @@ import { DiscoverIcon } from "@/components/icons/discover-icon";
 import { HomeIcon } from "@/components/icons/home-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
 import { LiveTvIcon } from "@/components/icons/live-tv-icon";
+import { SportsIcon } from "@/components/icons/sports-icon";
 import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
@@ -41,6 +42,7 @@ const PRIMARY: NavDef[] = [
   { render: (a) => <TvIcon active={a} />, labelKey: "nav.shows", view: "shows", parentalKey: "shows" },
   { render: (a) => <AnimeIcon active={a} />, labelKey: "nav.anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
   { render: (a) => <LiveTvIcon active={a} />, labelKey: "nav.live", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
+  { render: (a) => <SportsIcon active={a} />, labelKey: "nav.sports", view: "sports", hideKey: "sports", parentalKey: "sports" },
   { render: (a) => <PlaylistVodIcon active={a} />, labelKey: "nav.playlists", view: "vod" },
 ];
 
@@ -204,6 +206,7 @@ function NavRow({
   return (
     <button
       onClick={onClick}
+      aria-current={active ? "page" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label }) : label}
       title={gated ? t("chrome.lockedShort", { label }) : label}
       className={`group relative flex h-12 items-center justify-center gap-3.5 transition-colors duration-200 ${

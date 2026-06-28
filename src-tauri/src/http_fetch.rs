@@ -27,6 +27,15 @@ pub struct HarborFetchResponse {
 
 #[tauri::command]
 pub async fn harbor_fetch(args: HarborFetchArgs) -> Result<HarborFetchResponse, String> {
+    // N'autoriser que http/https : empêche cette primitive de fetch natif (qui
+    // contourne CORS) d'atteindre des schémas locaux/dangereux (file://, etc.).
+    // On ne bloque PAS les IP privées/loopback : des addons Stremio légitimes
+    // tournent en local (127.0.0.1 / LAN).
+    let parsed_url = reqwest::Url::parse(&args.url).map_err(|e| format!("url: {}", e))?;
+    if !matches!(parsed_url.scheme(), "http" | "https") {
+        return Err(format!("scheme not allowed: {}", parsed_url.scheme()));
+    }
+
     let timeout = Duration::from_millis(args.timeout_ms.unwrap_or(30_000));
     let client = reqwest::Client::builder()
         .timeout(timeout)
@@ -42,7 +51,7 @@ pub async fn harbor_fetch(args: HarborFetchArgs) -> Result<HarborFetchResponse, 
     let parsed_method = reqwest::Method::from_bytes(method.as_bytes())
         .map_err(|e| format!("method: {}", e))?;
 
-    let mut req = client.request(parsed_method, &args.url);
+    let mut req = client.request(parsed_method, parsed_url);
 
     let mut has_user_agent = false;
     if let Some(headers) = args.headers {

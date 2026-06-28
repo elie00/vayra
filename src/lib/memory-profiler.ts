@@ -367,26 +367,25 @@ function shortenUrl(url: string): string {
   }
 }
 
+let clickListener: ((e: MouseEvent) => void) | null = null;
 function instrumentClicks() {
   if (typeof document === "undefined") return;
-  document.addEventListener(
-    "click",
-    (e) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      const label = target.getAttribute("aria-label") ||
-        target.textContent?.trim().slice(0, 40) ||
-        target.tagName.toLowerCase();
-      pushSample("click", label);
-    },
-    { capture: true, passive: true },
-  );
+  clickListener = (e) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    const label = target.getAttribute("aria-label") ||
+      target.textContent?.trim().slice(0, 40) ||
+      target.tagName.toLowerCase();
+    pushSample("click", label);
+  };
+  document.addEventListener("click", clickListener, { capture: true, passive: true });
 }
 
+let longTaskObserver: PerformanceObserver | null = null;
 function instrumentLongTasks() {
   if (typeof window === "undefined" || typeof PerformanceObserver === "undefined") return;
   try {
-    const observer = new PerformanceObserver((list) => {
+    longTaskObserver = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.duration < 50) continue;
         pushSample("longtask", `${entry.duration.toFixed(0)}ms long task`, {
@@ -395,7 +394,7 @@ function instrumentLongTasks() {
         });
       }
     });
-    observer.observe({ entryTypes: ["longtask"] });
+    longTaskObserver.observe({ entryTypes: ["longtask"] });
   } catch {}
 }
 
@@ -479,6 +478,14 @@ export function stopProfiler(): void {
   if (tickHandle != null) {
     clearInterval(tickHandle);
     tickHandle = null;
+  }
+  if (clickListener && typeof document !== "undefined") {
+    document.removeEventListener("click", clickListener, { capture: true });
+    clickListener = null;
+  }
+  if (longTaskObserver) {
+    longTaskObserver.disconnect();
+    longTaskObserver = null;
   }
 }
 

@@ -14,7 +14,6 @@ import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
 import { useView, type PlayEpisode } from "@/lib/view";
-import { exitWindowFullscreen } from "@/lib/fullscreen-state";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
 import { AutoPlayTransition } from "./play-picker/auto-play-transition";
@@ -68,7 +67,6 @@ export function PlayPicker({
   const isDownload = intent === "download";
   const { openPlayer, openSettings, exitPickerToDetail } = useView();
   const backToDetail = () => {
-    void exitWindowFullscreen();
     exitPickerToDetail(meta);
   };
   const { settings, update } = useSettings();
@@ -408,7 +406,7 @@ export function PlayPicker({
       seen.set(s.addonId, { id: s.addonId, name: s.addonName, logo: addonLogoMap.get(s.addonId) ?? null });
     }
     return [...seen.values()];
-  }, [result, addonLogoMap]);
+  }, [filteredPicker, addonLogoMap]);
   const backdropSrc = episode?.still || meta.background || meta.poster;
 
   const [maxWaitElapsed, setMaxWaitElapsed] = useState(false);

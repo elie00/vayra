@@ -1,5 +1,6 @@
 import { Check, Copy, ExternalLink, Loader2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import { useSimkl } from "@/lib/simkl/provider";
 import { openUrl } from "@/lib/window";
@@ -7,6 +8,8 @@ import { openUrl } from "@/lib/window";
 export function SimklDeviceModal({ onClose }: { onClose: () => void }) {
   const { connectState, beginConnect, cancelConnect } = useSimkl();
   const t = useT();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -45,13 +48,19 @@ export function SimklDeviceModal({ onClose }: { onClose: () => void }) {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="flex w-full max-w-[460px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="simkl-device-title"
+        className="flex w-full max-w-[460px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200"
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
               {t("Connect Simkl")}
             </span>
-            <h2 className="text-[20px] font-medium tracking-tight text-ink">
+            <h2 id="simkl-device-title" className="text-[20px] font-medium tracking-tight text-ink">
               {connectState.kind === "success" ? t("Connected") : t("Authorize Harbor on Simkl")}
             </h2>
           </div>

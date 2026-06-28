@@ -131,6 +131,8 @@ async fn upload_with_retry(
     fallback: &Value,
 ) -> Result<(), String> {
     let mut last_err: Option<String> = None;
+    // boucle 0..=len (1 essai de plus que le nb de backoffs) : l'index sert au backoff
+    #[allow(clippy::needless_range_loop)]
     for attempt in 0..=NAMESPACE_RETRY_BACKOFF_MS.len() {
         let result = upload_worker(api_token, account_id, primary.to_string()).await;
         match result {

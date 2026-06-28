@@ -168,8 +168,12 @@ export function useAutoRetry(params: {
             triggerAutoRetry(`playback error "${snap.errorCode}"`);
           }
         },
-      );
-      return;
+      ).catch(() => {
+        /* résolution annulée (cleanup) ou échouée : on laisse l'auto-retry gérer */
+      });
+      // Annule la résolution debrid en vol si l'effet se relance / le player se démonte
+      // (évite un b.load() tardif sur un bridge périmé).
+      return () => ac.abort();
     }
     if (!sameUrlRetriedRef.current) {
       sameUrlRetriedRef.current = true;

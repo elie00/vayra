@@ -113,6 +113,7 @@ export function ServerAddressSection() {
   const [acting, setActing] = useState(false);
   const [webError, setWebError] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [webToken, setWebToken] = useState<string | null>(null);
   const aliveRef = useRef(true);
 
   const refresh = async () => {
@@ -153,6 +154,20 @@ export function ServerAddressSection() {
         .catch(() => {});
     }, 800);
     return () => window.clearTimeout(t);
+  }, [settings.serveWebUi]);
+
+  // Jeton d'acces a ajouter aux URL LAN (les autres appareils en ont besoin ;
+  // l'ouverture en local sur 127.0.0.1 est exemptee cote serveur).
+  useEffect(() => {
+    if (!isTauri || !settings.serveWebUi) {
+      setWebToken(null);
+      return;
+    }
+    void invoke<string>("web_serve_token")
+      .then((tok) => {
+        if (aliveRef.current) setWebToken(tok);
+      })
+      .catch(() => {});
   }, [settings.serveWebUi]);
 
   if (!isTauri) return null;
@@ -244,7 +259,17 @@ export function ServerAddressSection() {
       {settings.serveWebUi && (
         <>
           <AddressRow label={t("On this computer")} url={`http://127.0.0.1:${WEB_PORT}`} openable />
-          {lanIp && <AddressRow label={t("From any browser on your Wi-Fi")} url={`http://${lanIp}:${WEB_PORT}`} />}
+          {lanIp && (
+            <AddressRow
+              label={t("From any browser on your Wi-Fi")}
+              url={`http://${lanIp}:${WEB_PORT}${webToken ? `/?token=${webToken}` : ""}`}
+            />
+          )}
+          {lanIp && (
+            <p className="-mt-1 text-[12px] leading-relaxed text-ink-subtle">
+              {t("This link includes a private access token so only devices you share it with can open Harbor. Opening it on this computer doesn't need the token.")}
+            </p>
+          )}
           {webError && (
             <span className="text-[12px] text-danger">
               {t("Couldn't start on port {WEB_PORT}. Another app may be using it; toggle off and on to retry.", { WEB_PORT: String(WEB_PORT) })}

@@ -83,9 +83,6 @@ export function usePipMode(params: {
         setChromeHidden(false);
         await invoke("window_pip_exit");
       } else {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen().catch(() => {});
-        }
         await invoke("window_pip_enter");
       }
     } catch (e) {

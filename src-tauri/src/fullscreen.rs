@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 pub struct FullscreenState {
+    #[allow(clippy::type_complexity)] // (x, y, w, h) sauvegardés sous lock partagé
     saved: Arc<Mutex<Option<(i32, i32, u32, u32)>>>,
 }
 

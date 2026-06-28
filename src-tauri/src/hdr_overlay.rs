@@ -26,6 +26,7 @@ fn set_no_activate(app: &AppHandle) {
     }
 }
 
+#[allow(clippy::type_complexity)] // ((x, y), (w, h)) du rect de la fenêtre principale
 fn main_rect(app: &AppHandle) -> Result<((f64, f64), (f64, f64)), String> {
     let main = app
         .get_webview_window("main")

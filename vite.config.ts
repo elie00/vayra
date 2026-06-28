@@ -20,4 +20,41 @@ export default defineConfig({
   resolve: {
     alias: { "@": "/src" },
   },
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return;
+          if (
+            id.includes("/react-dom/") ||
+            id.includes("/react/") ||
+            id.includes("/scheduler/") ||
+            id.includes("react/jsx-runtime")
+          )
+            return "react-vendor";
+          if (id.includes("lottie-web")) return "lottie";
+          if (id.includes("hls.js")) return "hls";
+          if (id.includes("mpegts.js")) return "mpegts";
+          if (
+            id.includes("react-markdown") ||
+            id.includes("/remark") ||
+            id.includes("/rehype") ||
+            id.includes("/micromark") ||
+            id.includes("/mdast-") ||
+            id.includes("/hast-") ||
+            id.includes("/unist-") ||
+            id.includes("/unified/") ||
+            id.includes("/vfile") ||
+            id.includes("property-information") ||
+            id.includes("-separated-tokens") ||
+            id.includes("decode-named-character-reference") ||
+            id.includes("character-entities")
+          )
+            return "markdown";
+          if (id.includes("lucide-react")) return "icons";
+        },
+      },
+    },
+  },
 });

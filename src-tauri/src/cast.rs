@@ -291,7 +291,7 @@ pub async fn cast_discover() -> Result<Vec<CastDeviceInfo>, String> {
     let merged: Vec<CastDeviceInfo> =
         cc.into_iter().chain(dl).chain(rk).chain(ap).collect();
     let mut out = dedupe_by_host(merged);
-    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    out.sort_by_key(|a| a.name.to_lowercase());
     Ok(out)
 }
 
@@ -355,6 +355,7 @@ fn launch_receiver_app<'a>(device: &CastDevice<'a>, app_id: &str) -> Result<(Str
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)] // commande Tauri : tous les champs viennent du front
 pub async fn cast_load(
     proxy_state: tauri::State<'_, ProxyState>,
     host: String,

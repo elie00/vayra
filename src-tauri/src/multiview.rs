@@ -143,15 +143,20 @@ fn css_to_physical(
     (x, y, w.max(1), h.max(1))
 }
 
+/// Exécute `f` sur le main thread et renvoie son résultat. Renvoie `None` si le
+/// dispatcher est indisponible (typiquement à l'arrêt de l'app) au lieu de paniquer.
 async fn on_main<R: Send + 'static>(
     app: &AppHandle,
     f: impl FnOnce() -> R + Send + 'static,
-) -> R {
+) -> Option<R> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let _ = app.run_on_main_thread(move || {
+    if let Err(e) = app.run_on_main_thread(move || {
         let _ = tx.send(f());
-    });
-    rx.await.expect("main-thread dispatcher channel closed")
+    }) {
+        eprintln!("[harbor::multiview] run_on_main_thread failed: {:?}", e);
+        return None;
+    }
+    rx.await.ok()
 }
 
 #[cfg(windows)]
@@ -662,7 +667,9 @@ async fn ensure_slot(
             tokio::time::sleep(Duration::from_millis(25)).await;
             let title = slot_title(slot);
             let p = target_pid;
-            let h = on_main(app, move || find_child_by_pid_and_title(mh, p, &title)).await;
+            let h = on_main(app, move || find_child_by_pid_and_title(mh, p, &title))
+                .await
+                .flatten();
             if let Some(hwnd) = h {
                 on_main(app, move || {
                     move_child_only(hwnd, -30000, 0);

@@ -34,7 +34,7 @@ export function TogetherChatToast() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed end-6 top-24 z-[55] flex max-w-[320px] flex-col items-end gap-2">
+    <div role="status" aria-live="polite" className="pointer-events-none fixed end-6 top-24 z-[55] flex max-w-[320px] flex-col items-end gap-2">
       {toasts.map((m) => {
         const peer = snapshot.participants.find((p) => p.id === m.from);
         return (

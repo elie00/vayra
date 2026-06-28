@@ -1,4 +1,4 @@
-import { Bookmark, Clock, HardDrive } from "lucide-react";
+import { BarChart3, Bookmark, Clock, HardDrive } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
@@ -6,7 +6,7 @@ import simklLogo from "@/assets/simkl.png";
 import { useAnilist } from "@/lib/anilist/provider";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useTrakt } from "@/lib/trakt/provider";
-import { useScrollMemory } from "@/lib/view";
+import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { watchlistHas } from "@/lib/watchlist";
 import { AnilistTab } from "./library/anilist-tab";
@@ -115,6 +115,7 @@ function Header({
   simklConnected: boolean;
 }) {
   const t = useT();
+  const { openStats } = useView();
   return (
     <header className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-6">
@@ -129,6 +130,13 @@ function Header({
             {t("Watchlist is what you've saved for later. History is everything you've watched. Local is files on your computer.")}
           </p>
         </div>
+        <button
+          onClick={openStats}
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-edge-soft/60 bg-elevated px-3.5 py-2 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+        >
+          <BarChart3 size={14} strokeWidth={2.2} />
+          {t("Stats")}
+        </button>
       </div>
       <div className="flex items-center gap-1 border-b border-edge-soft">
         <TabBtn active={tab === "watchlist"} onClick={() => onTab("watchlist")}>

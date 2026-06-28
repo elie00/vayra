@@ -1,5 +1,6 @@
 let windowFullscreen = false;
 let suppressNextExit = false;
+let syncStarted = false;
 const subs = new Set<() => void>();
 
 export function suppressFullscreenExitOnce(): void {
@@ -32,6 +33,33 @@ export function setWindowFullscreen(v: boolean): void {
   if (windowFullscreen === v) return;
   windowFullscreen = v;
   emit();
+}
+
+export function startWindowFullscreenSync(): void {
+  if (syncStarted || !isTauri()) return;
+  syncStarted = true;
+  void (async () => {
+    try {
+      const { listen } = await import("@tauri-apps/api/event");
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const win = getCurrentWindow();
+      setWindowFullscreen(await win.isFullscreen().catch(() => windowFullscreen));
+      await listen("fs://entered", () => setWindowFullscreen(true));
+      await listen("fs://exited", () => setWindowFullscreen(false));
+    } catch {
+      /* not tauri or event API unavailable */
+    }
+  })();
+}
+
+export async function reassertWindowFullscreen(): Promise<void> {
+  if (!windowFullscreen || !isTauri()) return;
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("window_fullscreen_enter");
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function enterWindowFullscreen(): Promise<void> {

@@ -28,7 +28,12 @@ export function ProfilePickerModal() {
           <X size={18} />
         </button>
       )}
-      <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col items-center px-10 py-8 animate-in fade-in zoom-in-95 slide-in-from-bottom-3 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Profiles")}
+        className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col items-center px-10 py-8 animate-in fade-in zoom-in-95 slide-in-from-bottom-3 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      >
         {pickerView.kind === "list" && (
           <ListView
             onCreate={() => setPickerView({ kind: "create" })}

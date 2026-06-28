@@ -1,7 +1,8 @@
 import { Radio, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { ScoredStream } from "@/lib/streams/types";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { formatSize, streamSummaryParts } from "./picker-utils";
 
 export function P2pConfirmModal({
@@ -16,6 +17,8 @@ export function P2pConfirmModal({
   onCancel: () => void;
 }) {
   const [remember, setRemember] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   const backdrop = meta.background || meta.poster;
   const title = stream.parsedTitle || stream.title || stream.name || "This source";
   const summary = streamSummaryParts(stream).filter((p) => !/seed/i.test(p));
@@ -30,8 +33,14 @@ export function P2pConfirmModal({
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/85" />
-      <div className="relative flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
-        <h1 className="max-w-2xl font-display text-[40px] font-medium leading-[1.06] text-white">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="p2p-confirm-title"
+        className="relative flex h-full flex-col items-center justify-center gap-6 px-8 text-center"
+      >
+        <h1 id="p2p-confirm-title" className="max-w-2xl font-display text-[40px] font-medium leading-[1.06] text-white">
           Stream this via peer-to-peer?
         </h1>
         <p className="max-w-xl text-[14.5px] leading-relaxed text-white/75">

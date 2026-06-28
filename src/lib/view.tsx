@@ -5,7 +5,7 @@ import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
 import { getWindowFullscreen, suppressFullscreenExitOnce } from "./fullscreen-state";
-export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "library" | "live" | "vod" | "downloads";
+export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "library" | "live" | "vod" | "downloads" | "sports" | "stats";
 
 export type PlayEpisode = {
   season: number;
@@ -85,6 +85,8 @@ export type Frame =
   | { kind: "live" }
   | { kind: "vod" }
   | { kind: "downloads" }
+  | { kind: "sports" }
+  | { kind: "stats" }
   | { kind: "service"; service: StreamingService }
   | { kind: "meta"; meta: Meta; liveContext?: boolean; episodeHint?: { season: number; episode: number } }
   | { kind: "episode-detail"; seriesId: string; season: number; episode: number; seriesMeta?: Meta }
@@ -133,6 +135,7 @@ type ViewValue = {
   openEpisodeDetail: (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => void;
   matchDetailGame: SportsGame | null;
   openMatchDetail: (game: SportsGame) => void;
+  openStats: () => void;
   promoteMetaToRoot: () => void;
   personId: number | null;
   openPerson: (id: number | null) => void;
@@ -218,6 +221,10 @@ function frameKey(f: Frame): string {
       return "vod";
     case "downloads":
       return "downloads";
+    case "sports":
+      return "sports";
+    case "stats":
+      return "stats";
     case "service":
       return `service:${f.service}`;
     case "meta":
@@ -324,6 +331,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (f.kind === "live") return "live";
       if (f.kind === "vod") return "vod";
       if (f.kind === "downloads") return "downloads";
+      if (f.kind === "sports") return "sports";
+      if (f.kind === "stats") return "stats";
       if (f.kind === "home") return "home";
     }
     return "home";
@@ -478,6 +487,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         rowScrollMem.current.clear();
         return [{ kind: "vod" }];
       }
+      if (v === "sports") {
+        scrollMem.current.clear();
+        rowScrollMem.current.clear();
+        return [{ kind: "sports" }];
+      }
       if (t.kind === "settings") return s;
       return pushFrame(s, { kind: "settings" });
     });
@@ -576,6 +590,14 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       const t = cur[cur.length - 1];
       if (t.kind === "match-detail" && t.game.id === game.id) return cur;
       return pushFrame(cur, { kind: "match-detail", game });
+    });
+  }, []);
+
+  const openStats = useCallback(() => {
+    setStack((cur) => {
+      const t = cur[cur.length - 1];
+      if (t.kind === "stats") return cur;
+      return pushFrame(cur, { kind: "stats" });
     });
   }, []);
 
@@ -742,6 +764,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openEpisodeDetail,
       matchDetailGame,
       openMatchDetail,
+      openStats,
       openQueue,
       filter,
       openFilter,
@@ -792,6 +815,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openEpisodeDetail,
       matchDetailGame,
       openMatchDetail,
+      openStats,
       filter,
       stackKinds,
       awardType,

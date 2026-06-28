@@ -7,6 +7,7 @@ export type SubtitleMenuProps = {
   onSelect: (id: string | null) => void;
   onDelay: (sec: number) => void;
   onEnterSync?: () => void;
+  onTranslate?: (targetLangCode: string) => Promise<{ ok: boolean; error?: string }>;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void | Promise<boolean>;
   metaImdbId?: string | null;
   metaTitle?: string | null;

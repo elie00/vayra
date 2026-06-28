@@ -134,6 +134,10 @@ pub async fn dvr_start(
         .arg("--network-timeout=60")
         .arg("--user-agent=VLC/3.0.20 LibVLC/3.0.20")
         .arg(format!("--stream-record={}", output_path.display()))
+        // "--" : tout ce qui suit est un fichier/URL, pas une option mpv. L'URL vient
+        // d'une playlist d'addon (potentiellement non fiable) ; sans ce séparateur,
+        // une "URL" comme --script=… serait interprétée comme option (exécution Lua).
+        .arg("--")
         .arg(&args.url);
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())

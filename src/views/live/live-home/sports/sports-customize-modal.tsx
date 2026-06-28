@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { X, Check, Settings2 } from "lucide-react";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT, useUiLanguage } from "@/lib/i18n";
 import { LEAGUES, LEAGUE_GROUPS, getLeagueLabel, getGroupLabel, type LeagueDef } from "@/lib/sports/espn";
 
@@ -12,6 +13,8 @@ interface SportsCustomizeModalProps {
 export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustomizeModalProps) {
   const t = useT();
   useUiLanguage();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   const [draft, setDraft] = useState<Set<string>>(new Set(selected));
   const [activeGroup, setActiveGroup] = useState<string>("all");
 
@@ -53,14 +56,20 @@ export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustom
       style={{ backdropFilter: "blur(12px)", backgroundColor: "rgba(0,0,0,0.65)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-edge-soft/40 bg-canvas shadow-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sports-customize-title"
+        className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-edge-soft/40 bg-canvas shadow-2xl"
+      >
         <div className="flex items-center justify-between border-b border-edge-soft/30 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink/10">
               <Settings2 size={18} className="text-ink" />
             </div>
             <div>
-              <h2 className="text-[15px] font-semibold text-ink">{t("sports.customize.title")}</h2>
+              <h2 id="sports-customize-title" className="text-[15px] font-semibold text-ink">{t("sports.customize.title")}</h2>
               <p className="text-[12px] text-ink-subtle">{t("sports.customize.selected", { n: draft.size })}</p>
             </div>
           </div>

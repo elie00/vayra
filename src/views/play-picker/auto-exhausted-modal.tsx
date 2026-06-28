@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { openUrl } from "@/lib/window";
 
@@ -14,6 +16,8 @@ export function AutoExhaustedModal({
   onBrowseManually: () => void;
 }) {
   const { goBack } = useView();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   const title = meta.name ?? "this title";
   const epSuffix = episode
     ? ` S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
@@ -28,11 +32,17 @@ export function AutoExhaustedModal({
   const mailto = `mailto:bugs@harbor.site?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   return (
     <main className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-black px-6">
-      <div className="w-full max-w-md rounded-2xl bg-elevated p-8 ring-1 ring-edge-soft">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auto-exhausted-title"
+        className="w-full max-w-md rounded-2xl bg-elevated p-8 ring-1 ring-edge-soft"
+      >
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-subtle">
           Harbor
         </p>
-        <h2 className="mt-3 text-start text-[24px] font-semibold leading-tight text-ink" dir="auto">
+        <h2 id="auto-exhausted-title" className="mt-3 text-start text-[24px] font-semibold leading-tight text-ink" dir="auto">
           We could not find a working stream
         </h2>
         <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
