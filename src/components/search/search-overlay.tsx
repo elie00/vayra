@@ -18,10 +18,13 @@ import { MagnetCard } from "./magnet-card";
 import { UrlCard } from "./url-card";
 import { AiSearchSection } from "./ai-search-section";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 export function SearchOverlay() {
   const { open, setOpen, query, setQuery, results, status, clear, recordRecent } = useSearch();
   const inputRef = useRef<HTMLInputElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(overlayRef, open);
   const { openFilter, openMeta } = useView();
   const t = useT();
   const [guideOpen, setGuideOpen] = useState(false);
@@ -91,7 +94,13 @@ export function SearchOverlay() {
     results.addonGroups.length === 0;
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col">
+    <div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("Search")}
+      className="fixed inset-0 z-[200] flex flex-col"
+    >
       <button
         aria-label={t("Close search")}
         onClick={close}
@@ -116,6 +125,7 @@ export function SearchOverlay() {
               }
             }}
             placeholder={t("Search movies, shows, people, genres, years...")}
+            aria-label={t("Search movies, shows, people, genres, years...")}
             className="h-16 flex-1 bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
             spellCheck={false}
             autoComplete="off"

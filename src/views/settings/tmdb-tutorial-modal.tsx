@@ -1,5 +1,6 @@
 import { Check, ExternalLink, KeyRound, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { openUrl } from "@/lib/window";
 
 const STEPS: { title: string; body: string; callout?: boolean }[] = [
@@ -27,6 +28,8 @@ const STEPS: { title: string; body: string; callout?: boolean }[] = [
 ];
 
 export function TmdbGuideModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -42,6 +45,10 @@ export function TmdbGuideModal({ open, onClose }: { open: boolean; onClose: () =
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tmdb-guide-title"
         className="flex max-h-[86vh] w-full max-w-[520px] flex-col overflow-hidden rounded-3xl border border-edge bg-elevated shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] animate-popover-in"
         onClick={(e) => e.stopPropagation()}
       >
@@ -51,7 +58,7 @@ export function TmdbGuideModal({ open, onClose }: { open: boolean; onClose: () =
               <KeyRound size={18} strokeWidth={2.2} />
             </span>
             <div className="flex flex-col">
-              <h2 className="font-display text-[20px] font-medium tracking-tight text-ink">
+              <h2 id="tmdb-guide-title" className="font-display text-[20px] font-medium tracking-tight text-ink">
                 Get your free TMDB key
               </h2>
               <p className="text-[12.5px] text-ink-muted">About 30 seconds. No payment, ever.</p>

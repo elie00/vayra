@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 export function EditFolderImagesModal({
   isOpen,
@@ -19,6 +20,8 @@ export function EditFolderImagesModal({
   const t = useT();
   const [cover, setCover] = useState(initialCover || "");
   const [gif, setGif] = useState(initialGif || "");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,10 +48,16 @@ export function EditFolderImagesModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-[420px] flex-col gap-6 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-folder-images-title"
+        className="flex w-full max-w-[420px] flex-col gap-6 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200"
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Edit Folder Images")}</h2>
+            <h2 id="edit-folder-images-title" className="text-[19px] font-medium tracking-tight text-ink">{t("Edit Folder Images")}</h2>
           </div>
           <button
             onClick={onClose}

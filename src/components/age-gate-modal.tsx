@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useT, useUiLanguage } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 type Question = {
   q: string;
@@ -542,6 +543,9 @@ export function AgeGateModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
+
   if (!open) return null;
 
   const allAnswered = picks.every((p) => p != null);
@@ -572,11 +576,17 @@ export function AgeGateModal({
       {verified ? (
         <VerifiedSplash t={t} />
       ) : (
-      <div className="relative w-full max-w-xl animate-modal-in">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="age-gate-title"
+        className="relative w-full max-w-xl animate-modal-in"
+      >
       <div className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-3xl border border-edge bg-canvas shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
         <header className="relative shrink-0 overflow-hidden border-b border-edge-soft bg-gradient-to-b from-elevated/35 to-canvas px-7 py-6">
           <div className="relative flex flex-col gap-1.5">
-            <h2 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
+            <h2 id="age-gate-title" className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
               {t("Quick age check")}
             </h2>
             <p className="text-[14px] leading-relaxed text-ink-muted">

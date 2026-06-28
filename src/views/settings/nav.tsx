@@ -669,6 +669,7 @@ export function SettingsNav({
     return (
       <button
         key={id}
+        aria-current={isActive ? "page" : undefined}
         onClick={() => {
           onChange(id);
           setQuery("");
@@ -833,6 +834,7 @@ export function SettingsNav({
               return (
                 <button
                   key={id}
+                  aria-current={isActive ? "page" : undefined}
                   onClick={() => {
                     onChange(id);
                     markSectionSeen(id);

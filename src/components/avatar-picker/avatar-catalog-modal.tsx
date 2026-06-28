@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
 import { AVATAR_CATALOG, avatarUrl } from "@/lib/avatars/catalog";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 export function AvatarCatalogModal({
   current,
@@ -18,6 +19,8 @@ export function AvatarCatalogModal({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canStart, setCanStart] = useState(false);
   const [canEnd, setCanEnd] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -69,12 +72,16 @@ export function AvatarCatalogModal({
     >
       <div className="absolute inset-0 animate-in fade-in bg-black/70 backdrop-blur-sm duration-200" />
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="avatar-catalog-title"
         onClick={(e) => e.stopPropagation()}
         className="relative flex max-h-[86vh] w-full max-w-[940px] animate-in fade-in zoom-in-95 flex-col overflow-hidden rounded-3xl border border-edge bg-surface shadow-2xl duration-200"
       >
         <div className="flex items-center gap-4 px-6 pt-5 pb-4">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <h2 className="font-display text-[22px] font-medium tracking-tight text-ink">
+            <h2 id="avatar-catalog-title" className="font-display text-[22px] font-medium tracking-tight text-ink">
               {t("Choose an avatar")}
             </h2>
             <p className="text-[12.5px] text-ink-subtle">

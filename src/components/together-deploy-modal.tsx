@@ -1,7 +1,8 @@
 import { ArrowRight, Check, Copy, ExternalLink, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import cfTokenTutorial from "@/assets/cf-token-tutorial.png";
 import cloudflareLogoPng from "@/assets/cloudflare.png";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { deployRelay, listAccounts, type CfAccount } from "@/lib/together/cf-deploy";
@@ -20,6 +21,8 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
   const [triedAccountId, setTriedAccountId] = useState<string>("");
   const [result, setResult] = useState<{ url: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, !inline);
 
   const copyUrl = async () => {
     if (!result?.url) return;
@@ -117,7 +120,7 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
         </button>
       )}
       <header>
-          <h2 className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
+          <h2 id="together-deploy-title" className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
             {t("Deploy your relay")}
           </h2>
           <p className="mt-1.5 text-[13px] text-ink-muted">
@@ -322,6 +325,10 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="together-deploy-title"
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[88vh] w-[560px] flex-col gap-5 overflow-y-auto rounded-2xl border border-edge bg-surface p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
       >

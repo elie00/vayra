@@ -9,6 +9,7 @@ import {
 } from "@/lib/addon-store";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { isWeb } from "@/lib/platform";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import type { Addon } from "@/lib/addons";
 
@@ -39,6 +40,8 @@ export function AddonInstallModal({
   ) => Promise<{ replaced: boolean; addon: Addon } | null>;
 }) {
   const t = useT();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   const [pasted, setPasted] = useState(mode.kind === "install" ? mode.url : "");
   const [resolved, setResolved] = useState<ResolveMatch | null>(null);
   const [loading, setLoading] = useState(false);
@@ -136,7 +139,13 @@ export function AddonInstallModal({
         if (!installStage && !done && e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[90vh] w-[min(92vw,560px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated/97 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-150 backdrop-blur-xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="addon-install-title"
+        className="flex max-h-[90vh] w-[min(92vw,560px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated/97 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-150 backdrop-blur-xl"
+      >
         <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-6 py-4">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             {mode.kind === "manage" && (
@@ -162,7 +171,7 @@ export function AddonInstallModal({
               <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
                 {mode.kind === "manage" ? t("Manage addon") : t("Install addon")}
               </span>
-              <span className="truncate text-[15px] font-medium text-ink">
+              <span id="addon-install-title" className="truncate text-[15px] font-medium text-ink">
                 {mode.kind === "manage" ? mode.existing.name : t("Add from URL")}
               </span>
             </div>

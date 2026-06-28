@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { parseSourceRows, type SourceRow } from "@/lib/custom-sources";
 
 export function AddSourceModal({
@@ -19,6 +20,8 @@ export function AddSourceModal({
   const [jsonText, setJsonText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,10 +70,16 @@ export function AddSourceModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-[420px] flex-col gap-6 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-source-title"
+        className="flex w-full max-w-[420px] flex-col gap-6 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200"
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Add Custom Source")}</h2>
+            <h2 id="add-source-title" className="text-[19px] font-medium tracking-tight text-ink">{t("Add Custom Source")}</h2>
             <p className="text-[12.5px] leading-relaxed text-ink-muted">{t("Provide a JSON link or paste it directly.")}</p>
           </div>
           <button

@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 
 export type CastErrorInfo = {
@@ -16,6 +17,8 @@ export function CastErrorModal({
   onDismiss: () => void;
 }) {
   const t = useT();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, Boolean(error));
   useEffect(() => {
     if (!error) return;
     const onKey = (e: KeyboardEvent) => {
@@ -30,6 +33,10 @@ export function CastErrorModal({
   return (
     <div className="pointer-events-auto fixed inset-0 z-50 flex animate-[harbor-cast-err-in_180ms_ease-out] items-center justify-center bg-canvas/85 backdrop-blur-md">
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cast-error-title"
         className="relative mx-6 w-full max-w-[440px] rounded-[20px] border border-edge bg-elevated p-7 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -43,6 +50,7 @@ export function CastErrorModal({
           </span>
           <div className="flex-1">
             <h2
+              id="cast-error-title"
               className="text-[20px] font-semibold leading-tight text-ink"
               style={{ fontFamily: "Fraunces, serif" }}
             >

@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Tv } from "lucide-react";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useView } from "@/lib/view";
 
 export function TogetherLeaveForLiveModal() {
   const { pendingLiveSrc, confirmLeavePartyForLive, cancelLeavePartyForLive } = useView();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, Boolean(pendingLiveSrc));
 
   useEffect(() => {
     if (!pendingLiveSrc) return;
@@ -24,6 +27,10 @@ export function TogetherLeaveForLiveModal() {
       onClick={cancelLeavePartyForLive}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="leave-for-live-title"
         className="w-full max-w-md rounded-2xl border border-edge bg-surface p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] animate-modal-in"
         onClick={(e) => e.stopPropagation()}
       >
@@ -32,7 +39,7 @@ export function TogetherLeaveForLiveModal() {
             <Tv size={20} strokeWidth={2} />
           </span>
           <div className="flex flex-col gap-1.5">
-            <h2 className="text-[17px] font-semibold text-ink">Watch Live TV?</h2>
+            <h2 id="leave-for-live-title" className="text-[17px] font-semibold text-ink">Watch Live TV?</h2>
             <p className="text-[14px] leading-relaxed text-ink-muted">
               Live TV can't be synced in a watch party, so playing {name} will leave your party. Everyone else can keep watching together.
             </p>

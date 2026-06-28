@@ -1,16 +1,26 @@
+import { useRef } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useView } from "@/lib/view";
 
 export function NoSourcesConfiguredModal({ meta }: { meta: Meta }) {
   const { goBack, setView, openSettings } = useView();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   const title = meta.name ?? "this title";
   return (
     <main className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-black px-6">
-      <div className="w-full max-w-md rounded-2xl bg-elevated p-8 ring-1 ring-edge-soft">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="no-sources-title"
+        className="w-full max-w-md rounded-2xl bg-elevated p-8 ring-1 ring-edge-soft"
+      >
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-subtle">
           Harbor
         </p>
-        <h2 className="mt-3 text-[24px] font-semibold leading-tight text-ink">
+        <h2 id="no-sources-title" className="mt-3 text-[24px] font-semibold leading-tight text-ink">
           No streaming sources yet
         </h2>
         <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">

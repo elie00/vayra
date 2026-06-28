@@ -1,6 +1,7 @@
 import { Delete, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 type Mode =
   | { kind: "unlock"; onUnlock: () => void; onCancel: () => void }
@@ -21,6 +22,8 @@ export function ParentalPinModal({
   const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
 
   const focus = () => inputRef.current?.focus();
 
@@ -123,13 +126,17 @@ export function ParentalPinModal({
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="parental-pin-title"
         className={`modal-panel flex w-full max-w-[420px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 ${
           shake ? "animate-[pin-shake_0.34s_ease]" : ""
         }`}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-[19px] font-medium tracking-tight text-ink">{headerLabel}</h2>
+            <h2 id="parental-pin-title" className="text-[19px] font-medium tracking-tight text-ink">{headerLabel}</h2>
             <p className="text-[12.5px] leading-relaxed text-ink-muted">{headerSub}</p>
           </div>
           <button

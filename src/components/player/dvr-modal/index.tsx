@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EpgProgram } from "@/lib/iptv/types";
 import { useDvr } from "@/lib/dvr/provider";
 import { HoverTooltip } from "@/components/hover-tooltip";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import { ActiveView } from "./active-view";
 import { NewRecordingView } from "./new-view";
@@ -24,6 +25,9 @@ export function DvrModal({
   currentProgram: EpgProgram | null;
   nextProgram: EpgProgram | null;
 }) {
+  const t = useT();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
   const { sessions, start, stop, reveal, defaultDir } = useDvr();
   const activeForChannel = useMemo(
     () =>
@@ -50,6 +54,10 @@ export function DvrModal({
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Record from live TV")}
         style={{
           backgroundColor: "var(--color-canvas)",
           backgroundImage: "linear-gradient(var(--color-elevated), var(--color-elevated))",

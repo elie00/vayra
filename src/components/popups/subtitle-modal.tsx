@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { SubtitleMenuBody } from "@/components/player/subtitle-menu";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import type { TrackInfo } from "@/lib/player/bridge";
 
 export type SubtitleModalState = {
@@ -21,6 +23,8 @@ type Props = {
 };
 
 export function SubtitleModal({ state, onSelect, onDelay, onAddSubtitle, onClose }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   return (
     <div
       className="fixed inset-0 flex items-end justify-end"
@@ -30,6 +34,10 @@ export function SubtitleModal({ state, onSelect, onDelay, onAddSubtitle, onClose
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Subtitles"
         className="m-3 mb-[110px] me-[120px] flex max-h-[520px] w-[400px] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
       >

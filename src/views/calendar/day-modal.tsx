@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Poster } from "@/components/poster";
 import type { CalendarItem } from "@/lib/calendar";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import { formatDateLong } from "./utils";
 
@@ -17,6 +18,8 @@ export function DayModal({
   onOpenItem: (item: CalendarItem) => void;
 }) {
   const t = useT();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -31,6 +34,10 @@ export function DayModal({
       className="fixed inset-0 z-[140] flex animate-fade-in items-center justify-center bg-canvas/80 backdrop-blur-md"
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="day-modal-title"
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[80vh] w-[min(92vw,560px)] animate-modal-in flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
       >
@@ -39,7 +46,7 @@ export function DayModal({
             <span className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-ink-subtle">
               {t("Releases")}
             </span>
-            <h2 className="font-display text-[22px] font-medium tracking-tight text-ink">
+            <h2 id="day-modal-title" className="font-display text-[22px] font-medium tracking-tight text-ink">
               {formatDateLong(dateISO)}
             </h2>
             <span className="mt-0.5 text-[12.5px] text-ink-muted">
