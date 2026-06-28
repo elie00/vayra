@@ -3,17 +3,8 @@ import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
 import { MinUIDock } from "@/chrome/minui-dock";
-import { Sidebar } from "@/chrome/sidebar";
-import { DraculaSidebar } from "@/chrome/dracula-sidebar";
-import { NordSidebar } from "@/chrome/nord-sidebar";
-import { ForestSidebar } from "@/chrome/forest-sidebar";
-import { RoyalTopbar } from "@/chrome/royal-topbar";
-import { SideRail } from "@/chrome/siderail";
-import { StremioRail } from "@/chrome/stremio-rail";
-import { TopDock } from "@/chrome/topdock";
-import { Topbar } from "@/chrome/topbar";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
-import { exitWindowFullscreen, toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { reassertWindowFullscreen, startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
@@ -26,7 +17,6 @@ import { HarborErrorBoundary } from "@/components/error-boundary";
 import { ContextMenu } from "@/components/context-menu";
 import { HoverPreview } from "@/components/hover-preview";
 import { EmbedViewportRoot } from "@/components/embed-viewport";
-import { InstallerViewportRoot } from "@/components/installer-viewport";
 import { UpdateRoot } from "@/components/update/update-root";
 import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
@@ -57,6 +47,8 @@ import { SettingsProvider } from "@/lib/settings";
 import { SearchProvider } from "@/lib/search-context";
 import { SearchOverlay } from "@/components/search/search-overlay";
 import { SearchHotkey } from "@/components/search/search-hotkey";
+import { CommandPalette } from "@/components/command-palette";
+import { RoomHotkeys } from "@/components/room-hotkeys";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
@@ -123,7 +115,21 @@ const LiveView = lazy(() => importLive().then((m) => ({ default: m.LiveView })))
 const MatchDetailView = lazy(() => importMatchDetail().then((m) => ({ default: m.MatchDetailView })));
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
+const SportsHome = lazy(() => import("@/views/sports").then((m) => ({ default: m.SportsHome })));
+const StatsView = lazy(() => import("@/views/stats").then((m) => ({ default: m.StatsView })));
 const OnboardingModal = lazy(() => importOnboarding().then((m) => ({ default: m.OnboardingModal })));
+const InstallerViewportRoot = lazy(() => import("@/components/installer-viewport").then((m) => ({ default: m.InstallerViewportRoot })));
+// Layouts de theme : un seul est actif a la fois (activeLayout), donc on ne charge
+// que celui-la. Les 8 autres ne sont importes que si l'utilisateur change de theme.
+const Sidebar = lazy(() => import("@/chrome/sidebar").then((m) => ({ default: m.Sidebar })));
+const DraculaSidebar = lazy(() => import("@/chrome/dracula-sidebar").then((m) => ({ default: m.DraculaSidebar })));
+const NordSidebar = lazy(() => import("@/chrome/nord-sidebar").then((m) => ({ default: m.NordSidebar })));
+const ForestSidebar = lazy(() => import("@/chrome/forest-sidebar").then((m) => ({ default: m.ForestSidebar })));
+const RoyalTopbar = lazy(() => import("@/chrome/royal-topbar").then((m) => ({ default: m.RoyalTopbar })));
+const SideRail = lazy(() => import("@/chrome/siderail").then((m) => ({ default: m.SideRail })));
+const StremioRail = lazy(() => import("@/chrome/stremio-rail").then((m) => ({ default: m.StremioRail })));
+const TopDock = lazy(() => import("@/chrome/topdock").then((m) => ({ default: m.TopDock })));
+const Topbar = lazy(() => import("@/chrome/topbar").then((m) => ({ default: m.Topbar })));
 
 function useViewPreloader() {
   useEffect(() => {
@@ -157,6 +163,7 @@ function useViewPreloader() {
       void importService();
       void importMatchDetail();
       void importOnboarding();
+      void import("@/components/installer-viewport");
     });
     return () => {
       cancelled = true;
@@ -248,8 +255,12 @@ export function App() {
                       <ProfilePickerModal />
                       <SearchOverlay />
                       <SearchHotkey />
+                      <CommandPalette />
+                      <RoomHotkeys />
                       <EmbedViewportRoot />
-                      <InstallerViewportRoot />
+                      <Suspense fallback={null}>
+                        <InstallerViewportRoot />
+                      </Suspense>
                       <UpdateRoot />
                     </HarborErrorBoundary>
                     <ErrorView />
@@ -396,6 +407,7 @@ function Shell() {
   useViewPreloader();
 
   useEffect(() => startMaintenance(), []);
+  useEffect(() => startWindowFullscreenSync(), []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -482,8 +494,8 @@ function Shell() {
   const playerActive = !!player;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
   useEffect(() => {
-    if (!playerActive) void exitWindowFullscreen();
-  }, [playerActive]);
+    void reassertWindowFullscreen();
+  }, [topKind, playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
   const collectionTop = topKind === "collection";
@@ -513,6 +525,8 @@ function Shell() {
   const liveTop = topKind === "live";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
+  const sportsTop = topKind === "sports";
+  const statsTop = topKind === "stats";
   const matchDetailTop = topKind === "match-detail";
 
   const [immersive, setImmersive] = useState(false);
@@ -572,17 +586,21 @@ function Shell() {
   const liveAlive = useIdleEvict(liveTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
+  const sportsAlive = useIdleEvict(sportsTop);
+  const statsAlive = useKeepAlive(statsTop, statsTop);
 
   return (
     <div className="relative flex h-full">
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "sidebar" && <Sidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "stremio" && <StremioRail />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "topdock" && <TopDock />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "royal" && <RoyalTopbar />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "rail" && <SideRail />}
+      <Suspense fallback={null}>
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "sidebar" && <Sidebar />}
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "stremio" && <StremioRail />}
+        {!settingsTop && !playerActive && !pickerTop && layout === "topdock" && <TopDock />}
+        {!settingsTop && !playerActive && !pickerTop && layout === "royal" && <RoyalTopbar />}
+        {!settingsTop && !playerActive && !pickerTop && layout === "rail" && <SideRail />}
+      </Suspense>
       {!playerActive && !pickerTop && layout === "minui" && <MinUIDock />}
       {!playerActive && !pickerTop && layout === "topdock" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "royal" && <FloatingBack offsetTop={92} />}
@@ -658,6 +676,13 @@ function Shell() {
           <div className={layer(liveTop)}>
             <Suspense fallback={null}>
               <LiveView active={liveTop} />
+            </Suspense>
+          </div>
+        )}
+        {sportsAlive && (
+          <div className={layer(sportsTop)}>
+            <Suspense fallback={null}>
+              <SportsHome active={sportsTop} />
             </Suspense>
           </div>
         )}
@@ -765,6 +790,13 @@ function Shell() {
             </Suspense>
           </div>
         )}
+        {statsAlive && (
+          <div className={layer(statsTop)}>
+            <Suspense fallback={null}>
+              <StatsView active={statsTop} />
+            </Suspense>
+          </div>
+        )}
         {pickerAlive && picker && (
           <div className={layer(pickerTop)}>
             <Suspense fallback={null}>
@@ -789,7 +821,11 @@ function Shell() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 z-30 h-24 bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
         />
-        {!immersive && (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && <Topbar />}
+        {!immersive && (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && (
+          <Suspense fallback={null}>
+            <Topbar />
+          </Suspense>
+        )}
         {!immersive && layout === "rail" && !settingsTop && (
           <div
             aria-hidden
