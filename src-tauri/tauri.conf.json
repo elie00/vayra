@@ -30,7 +30,7 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self' asset: https://asset.localhost ipc: http://ipc.localhost; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src * data: blob: asset: https://asset.localhost; media-src * data: blob: asset: https://asset.localhost; font-src 'self' data:; connect-src * data: blob: asset: https://asset.localhost ipc: http://ipc.localhost; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https:; object-src 'none'; base-uri 'self'",
       "assetProtocol": {
         "enable": true,
         "scope": ["**"]

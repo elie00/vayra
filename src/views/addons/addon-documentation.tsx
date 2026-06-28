@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import { getAddon } from "@/lib/providers/stremio-addons";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
@@ -63,7 +64,10 @@ export function AddonDocumentation({ slug }: { slug: string }) {
       >
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
+            // rehypeRaw parse le HTML brut de la doc (contenu d'addon TIERS), puis
+            // rehypeSanitize retire les balises/attributs dangereux (script, iframe,
+            // on*, …) — sinon XSS stockée via la doc d'un addon malveillant.
+            rehypePlugins={[rehypeRaw, rehypeSanitize]}
             skipHtml={false}
             components={{
               h1: (p) => (

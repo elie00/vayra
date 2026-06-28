@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
 import { useView } from "@/lib/view";
@@ -31,7 +32,6 @@ export function CustomCodeMount() {
     if (!t) return null;
     return {
       css: t.css ?? "",
-      js: t.js ?? "",
       html: t.html ?? "",
     };
   }, [settings.theme.preset]);
@@ -73,19 +73,20 @@ export function CustomCodeMount() {
     return () => runThemeCleanup("__harborCustomCleanup");
   }, [settings.customJs]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const code = (themeExt?.js ?? "").trim();
-    if (!code) return;
-    try {
-      new Function(code)();
-    } catch (err) {
-      console.warn("[harbor-theme-js] error:", err);
-    }
-    return () => runThemeCleanup("__harborThemeCleanup");
-  }, [themeExt?.js]);
-
-  const html = `${settings.customHtml ?? ""}${themeExt?.html ?? ""}`;
+  // SÉCURITÉ : le JS d'un thème IMPORTÉ n'est plus exécuté (vecteur RCE — un thème
+  // partagé pouvait exécuter du code arbitraire via new Function). Seul le customJs
+  // saisi localement par l'utilisateur (effet ci-dessus) tourne encore. Le HTML du
+  // thème importé est sanitisé (pas de script/iframe/handler on*) ; le customHtml de
+  // l'utilisateur reste tel quel.
+  const themeHtml = useMemo(
+    () =>
+      DOMPurify.sanitize(themeExt?.html ?? "", {
+        FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "base"],
+        FORBID_ATTR: ["srcdoc"],
+      }),
+    [themeExt?.html],
+  );
+  const html = `${settings.customHtml ?? ""}${themeHtml}`;
   return (
     <div
       id={OVERLAY_ID}
