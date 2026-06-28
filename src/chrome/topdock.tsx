@@ -31,6 +31,7 @@ const PRIMARY: Tab[] = [
   { label: "Shows", view: "shows", parentalKey: "shows" },
   { label: "Anime", view: "anime", parentalKey: "anime" },
   { label: "Live TV", view: "live", parentalKey: "liveTv" },
+  { label: "Sports", view: "sports", parentalKey: "sports" },
   { label: "Playlists", view: "vod" },
 ];
 
@@ -80,6 +81,7 @@ export function TopDock() {
           <button
             type="button"
             onClick={() => navigate(tab)}
+            aria-current={active ? "page" : undefined}
             className={`relative h-9 whitespace-nowrap rounded-full px-3 text-[12.5px] font-medium transition-colors ${
               active ? "text-ink" : "text-ink-muted hover:text-ink"
             }`}

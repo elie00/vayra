@@ -11,6 +11,7 @@ import { HomeIcon } from "@/components/icons/home-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
 import { LiveTvIcon } from "@/components/icons/live-tv-icon";
 import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
+import { SportsIcon } from "@/components/icons/sports-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
@@ -47,6 +48,7 @@ const PRIMARY: NavDef[] = [
   { render: (a) => <TvIcon active={a} />, label: "Shows", view: "shows", parentalKey: "shows" },
   { render: (a) => <AnimeIcon active={a} />, label: "Anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
   { render: (a) => <LiveTvIcon active={a} />, label: "Live TV", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
+  { render: (a) => <SportsIcon active={a} />, label: "Sports", view: "sports", hideKey: "sports", parentalKey: "sports" },
   { render: (a) => <PlaylistVodIcon active={a} />, label: "Playlists", view: "vod" },
 ];
 
@@ -98,6 +100,7 @@ export function RoyalTopbar() {
         <button
           type="button"
           onClick={() => navigate(item)}
+          aria-current={active ? "page" : undefined}
           aria-label={label}
           title={label}
           className={`relative flex h-9 items-center gap-2 whitespace-nowrap rounded-md px-2.5 text-[13.5px] font-medium leading-none transition-colors duration-150 ${

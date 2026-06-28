@@ -10,6 +10,7 @@ import { HarborMark } from "@/components/icons/harbor-mark";
 import { HomeIcon } from "@/components/icons/home-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
 import { LiveTvIcon } from "@/components/icons/live-tv-icon";
+import { SportsIcon } from "@/components/icons/sports-icon";
 import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
@@ -39,6 +40,7 @@ const ITEMS: NavDef[] = [
   { render: (a) => <TvIcon active={a} />, label: "Shows", view: "shows", parentalKey: "shows" },
   { render: (a) => <AnimeIcon active={a} />, label: "Anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
   { render: (a) => <LiveTvIcon active={a} />, label: "Live", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
+  { render: (a) => <SportsIcon active={a} />, label: "Sports", view: "sports", hideKey: "sports", parentalKey: "sports" },
   { render: (a) => <PlaylistVodIcon active={a} />, label: "Playlists", view: "vod" },
   { render: (a) => <LibraryIcon active={a} />, label: "Library", view: "library", parentalKey: "library" },
   { render: (a) => <DownloadsNavIcon active={a} />, label: "Downloads", view: "downloads" },
@@ -201,6 +203,7 @@ function RailTab({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      aria-current={active ? "page" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label: translated }) : translated}
       title={gated ? t("chrome.lockedShort", { label: translated }) : translated}
       className={`group flex h-[4.5rem] w-full flex-col items-center justify-center gap-1.5 rounded-xl transition-colors duration-150 ${

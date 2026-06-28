@@ -28,6 +28,7 @@ const PRIMARY: Tab[] = [
   { label: "Shows", view: "shows", parentalKey: "shows" },
   { label: "Anime", view: "anime", parentalKey: "anime" },
   { label: "Live TV", view: "live", parentalKey: "liveTv" },
+  { label: "Sports", view: "sports", parentalKey: "sports" },
   { label: "Playlists", view: "vod" },
 ];
 
@@ -193,6 +194,7 @@ function RailItem({
     <button
       type="button"
       onClick={onClick}
+      aria-current={active ? "page" : undefined}
       aria-label={translated}
       title={collapsed ? translated : undefined}
       className={`group relative flex h-10 items-center text-[16px] tracking-tight transition-colors ${

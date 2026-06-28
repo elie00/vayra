@@ -5,6 +5,7 @@ const chrome: Record<string, string> = {
   "nav.shows": "مسلسلات",
   "nav.anime": "أنمي",
   "nav.live": "البث المباشر",
+  "nav.sports": "الرياضة",
   "nav.playlists": "قوائم التشغيل",
   "nav.calendar": "التقويم",
   "nav.library": "مكتبتي",
