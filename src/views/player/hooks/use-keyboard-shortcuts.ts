@@ -138,22 +138,30 @@ export function useKeyboardShortcuts(params: {
       }
       if (match("playerSeekBack10")) {
         e.preventDefault();
-        seekStep(-10);
+        const saved = localStorage.getItem("harbor.seek-step.back");
+        const n = saved ? Number(saved) : NaN;
+        seekStep(-(Number.isFinite(n) && n > 0 ? n : 10));
         return;
       }
       if (match("playerSeekForward10")) {
         e.preventDefault();
-        seekStep(10);
+        const saved = localStorage.getItem("harbor.seek-step.forward");
+        const n = saved ? Number(saved) : NaN;
+        seekStep(Number.isFinite(n) && n > 0 ? n : 10);
         return;
       }
       if (match("playerSeekBack30")) {
         e.preventDefault();
-        seekStep(-30);
+        const saved = localStorage.getItem("harbor.seek-step.back");
+        const n = saved ? Number(saved) : NaN;
+        seekStep(-(Number.isFinite(n) && n > 0 ? n : 30));
         return;
       }
       if (match("playerSeekForward30")) {
         e.preventDefault();
-        seekStep(30);
+        const saved = localStorage.getItem("harbor.seek-step.forward");
+        const n = saved ? Number(saved) : NaN;
+        seekStep(Number.isFinite(n) && n > 0 ? n : 30);
         return;
       }
       if (match("playerFrameForward") && onFrameStep) {
