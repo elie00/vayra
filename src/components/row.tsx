@@ -69,7 +69,14 @@ function LazyChild({
   }, [root, visible]);
 
   return (
-    <div ref={ref} style={span ? { gridColumn: span } : undefined}>
+    <div
+      ref={ref}
+      style={{
+        ...(span ? { gridColumn: span } : undefined),
+        contentVisibility: visible ? "visible" : "auto",
+        containIntrinsicSize: visible ? undefined : "auto 200px",
+      }}
+    >
       {visible ? children : <Skeleton shape={shape} />}
     </div>
   );
@@ -193,15 +200,26 @@ export function Row({
     const container = containerRef.current;
     const track = trackRef.current;
     if (!container || !track) return;
+    let roRaf: number | null = null;
     const ro = new ResizeObserver(() => {
-      measure();
-      measureScroll();
+      if (roRaf != null) return;
+      roRaf = requestAnimationFrame(() => {
+        roRaf = null;
+        measure();
+        measureScroll();
+      });
     });
     ro.observe(container);
     ro.observe(track);
     let saveTimer: number | null = null;
+    let scrollRaf: number | null = null;
     const onScroll = () => {
-      measureScroll();
+      if (scrollRaf == null) {
+        scrollRaf = requestAnimationFrame(() => {
+          scrollRaf = null;
+          measureScroll();
+        });
+      }
       if (!scrollKey) return;
       if (saveTimer != null) window.clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {
@@ -256,6 +274,8 @@ export function Row({
     window.addEventListener("harbor:reset-row-scrolls", onReset);
     return () => {
       ro.disconnect();
+      if (roRaf != null) cancelAnimationFrame(roRaf);
+      if (scrollRaf != null) cancelAnimationFrame(scrollRaf);
       track.removeEventListener("scroll", onScroll);
       track.removeEventListener("wheel", onWheel);
       track.removeEventListener("pointerdown", markInteracted);
@@ -451,7 +471,12 @@ export function Row({
             onClickCapture={onClickCapture}
             onDragStart={(e) => e.preventDefault()}
             className="grid grid-flow-col items-start gap-5 overflow-x-auto p-5 -m-5 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none]"
-            style={{ gridAutoColumns: cellWidth != null ? `${cellWidth}px` : `${effMin}px` }}
+            style={{
+              gridAutoColumns: cellWidth != null ? `${cellWidth}px` : `${effMin}px`,
+              willChange: "transform",
+              transform: "translateZ(0)",
+              contain: "layout style",
+            }}
           >
             {Children.map(children, (child, i) => {
               const span = isValidElement(child)
