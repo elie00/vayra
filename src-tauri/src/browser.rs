@@ -61,7 +61,7 @@ pub async fn browser_open(app: AppHandle, url: String) -> Result<(), String> {
     let parsed = Url::parse(&url).map_err(|e| format!("parse url: {}", e))?;
 
     if let Some(existing) = app.get_webview_window(BROWSER_LABEL) {
-        let _ = existing.eval(&format!(
+        let _ = existing.eval(format!(
             "window.location.href = {};",
             serde_json::to_string(&url).unwrap_or_else(|_| "''".to_string())
         ));

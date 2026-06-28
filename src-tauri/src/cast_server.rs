@@ -13,6 +13,7 @@ pub struct CastServerStatus {
     pub restart_count: u32,
 }
 
+#[derive(Default)]
 struct State {
     child: Option<CommandChild>,
     ready: bool,
@@ -22,18 +23,6 @@ struct State {
     user_stopped: bool,
 }
 
-impl Default for State {
-    fn default() -> Self {
-        Self {
-            child: None,
-            ready: false,
-            last_error: None,
-            restart_count: 0,
-            bundled: false,
-            user_stopped: false,
-        }
-    }
-}
 
 fn state() -> &'static Mutex<State> {
     static S: OnceLock<Mutex<State>> = OnceLock::new();

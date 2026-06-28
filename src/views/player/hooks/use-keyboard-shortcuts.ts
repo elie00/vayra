@@ -88,6 +88,12 @@ export function useKeyboardShortcuts(params: {
   }>({ key: null, timer: null, engaged: false, baseRate: 1 });
   const [holdSpeedActive, setHoldSpeedActive] = useState(false);
 
+  // Valeurs lues dans le handler keydown mais absentes des deps de l'effet (pour ne pas
+  // re-binder le listener a chaque toggle). On les miroir dans une ref pour eviter une
+  // stale closure : sinon Echap en plein ecran lit un `fullscreen` perime et ferme le player.
+  const liveRef = useRef({ fullscreen, escExits: settings.playerEscExitsFullscreen, toggleFullscreen });
+  liveRef.current = { fullscreen, escExits: settings.playerEscExitsFullscreen, toggleFullscreen };
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e)) return;
@@ -113,7 +119,8 @@ export function useKeyboardShortcuts(params: {
 
       if (match("playerClose")) {
         if (drawMode) setDrawMode(false);
-        else if (fullscreen && settings.playerEscExitsFullscreen) toggleFullscreen();
+        else if (liveRef.current.fullscreen && liveRef.current.escExits)
+          liveRef.current.toggleFullscreen();
         else closePlayer();
         return;
       }

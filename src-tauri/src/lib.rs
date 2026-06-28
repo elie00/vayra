@@ -50,6 +50,16 @@ pub(crate) fn shutdown_services(app: &tauri::AppHandle) {
 pub static CLOSE_FLUSH_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static CLOSE_IN_PROGRESS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+fn emit_window_fullscreen_state(window: &tauri::Window) {
+    use tauri::Emitter;
+    let event = if window.is_fullscreen().unwrap_or(false) {
+        "fs://entered"
+    } else {
+        "fs://exited"
+    };
+    let _ = window.emit(event, ());
+}
+
 #[tauri::command]
 fn harbor_flush_done() {
     CLOSE_FLUSH_DONE.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -363,6 +373,7 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(
@@ -419,7 +430,7 @@ pub fn run() {
                     }
                 }
             }
-            ensure_window_on_screen(&app.handle());
+            ensure_window_on_screen(app.handle());
             #[cfg(target_os = "macos")]
             {
                 use tauri::Manager;
@@ -435,14 +446,14 @@ pub fn run() {
                     }
                 }
             }
-            cast_server::ensure_started_on_setup(&app.handle());
-            torrent_engine::ensure_started_on_setup(&app.handle());
+            cast_server::ensure_started_on_setup(app.handle());
+            torrent_engine::ensure_started_on_setup(app.handle());
             {
                 let handle = app.handle().clone();
                 std::thread::spawn(move || discord_rp::run_loop(handle));
             }
             #[cfg(desktop)]
-            if let Err(e) = tray::build(&app.handle()) {
+            if let Err(e) = tray::build(app.handle()) {
                 eprintln!("[harbor::tray] build failed: {:?}", e);
             }
             Ok(())
@@ -450,6 +461,15 @@ pub fn run() {
         .on_window_event(|window, event| {
             if window.label() != "main" {
                 return;
+            }
+            if matches!(
+                event,
+                tauri::WindowEvent::Resized(_)
+                    | tauri::WindowEvent::Moved(_)
+                    | tauri::WindowEvent::Focused(_)
+                    | tauri::WindowEvent::ScaleFactorChanged { .. }
+            ) {
+                emit_window_fullscreen_state(window);
             }
             use tauri::Manager;
             match event {
@@ -507,6 +527,7 @@ pub fn run() {
             web_server::web_serve_start,
             web_server::web_serve_stop,
             web_server::web_serve_status,
+            web_server::web_serve_token,
             anime4k::anime4k_download,
             anime4k::anime4k_dir,
             svp::svp_status,

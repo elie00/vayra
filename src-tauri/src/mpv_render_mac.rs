@@ -1,4 +1,8 @@
 #![cfg(target_os = "macos")]
+#![allow(deprecated)]
+// Embed FFI mpv/AppKit : les handles (NSView/contexte mpv) ne sont pas Send+Sync,
+// ils sont confinés au main thread ; l'Arc<Mutex> sert au partage intra-thread.
+#![allow(clippy::arc_with_non_send_sync)]
 
 use std::ffi::{c_char, c_void, CString};
 use std::ptr::NonNull;
@@ -11,7 +15,7 @@ use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2::{msg_send, AnyThread, ClassType, MainThreadOnly};
 use objc2_app_kit::{
-    NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLView, NSView, NSWindow, NSWindowOrderingMode,
+    NSOpenGLPixelFormat, NSOpenGLView, NSView, NSWindow, NSWindowOrderingMode,
 };
 use objc2_foundation::{MainThreadMarker, NSNumber, NSString};
 
@@ -42,10 +46,6 @@ const RTLD_DEFAULT: *mut c_void = -2isize as *mut c_void;
 fn main_queue() -> *mut c_void {
     unsafe { (&_dispatch_main_q as *const c_void) as *mut c_void }
 }
-
-#[derive(Copy, Clone)]
-struct MpvHandlePtr(NonNull<mpv_handle>);
-unsafe impl Send for MpvHandlePtr {}
 
 pub struct Embed {
     view: Retained<NSOpenGLView>,

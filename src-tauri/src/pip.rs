@@ -15,6 +15,7 @@ struct WindowSnapshot {
     y: f64,
     always_on_top: bool,
     maximized: bool,
+    was_fullscreen: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -191,6 +192,7 @@ pub async fn window_pip_enter(
         .to_logical::<f64>(scale);
     let on_top = main.is_always_on_top().unwrap_or(false);
     let maximized = main.is_maximized().unwrap_or(false);
+    let was_fullscreen = main.is_fullscreen().unwrap_or(false);
 
     {
         let mut g = state.snapshot.lock().await;
@@ -201,12 +203,19 @@ pub async fn window_pip_enter(
             y: pos.y,
             always_on_top: on_top,
             maximized,
+            was_fullscreen,
         });
     }
     state.window_pip_active.store(true, Ordering::SeqCst);
 
     if maximized {
         let _ = main.unmaximize();
+    }
+    if was_fullscreen {
+        // Le PiP est une petite fenetre flottante : quitter d'abord l'espace plein
+        // ecran natif. Sur macOS le resize ci-dessous est ecrase tant que l'animation
+        // de sortie tourne, donc la geometrie est re-appliquee par le thread de re-assert.
+        let _ = main.set_fullscreen(false);
     }
 
     let pip_w = 480.0_f64;
@@ -257,7 +266,20 @@ pub async fn window_pip_enter(
                         break;
                     }
                     let p = ptr;
-                    let _ = app2.run_on_main_thread(move || crate::pip_mac::enter_pip_window(p));
+                    let app3 = app2.clone();
+                    let _ = app2.run_on_main_thread(move || {
+                        // Entree PiP depuis le plein ecran : AppKit ecrase le resize tant que
+                        // l'animation de sortie de fullscreen tourne ; re-appliquer la
+                        // geometrie PiP a chaque tick jusqu'a ce qu'elle tienne.
+                        if was_fullscreen {
+                            if let Some(w) = app3.get_webview_window("main") {
+                                let _ = w.set_always_on_top(true);
+                                let _ = w.set_size(LogicalSize::new(pip_w, pip_h));
+                                let _ = w.set_position(LogicalPosition::new(target_x, target_y));
+                            }
+                        }
+                        crate::pip_mac::enter_pip_window(p);
+                    });
                 }
             });
         }
@@ -283,9 +305,26 @@ pub async fn window_pip_exit(
     };
     state.window_pip_active.store(false, Ordering::SeqCst);
 
+    // Si on restaure le plein ecran, NE PAS relancer le thread macOS de re-assert PiP :
+    // il rappellerait exit_pip_window pendant l'animation d'entree plein ecran et la
+    // combattrait. La branche was_fullscreen ci-dessous gere deja exit_pip_window.
+    #[cfg(target_os = "macos")]
+    let restored_fullscreen = saved.as_ref().map(|s| s.was_fullscreen).unwrap_or(false);
+
     if let Some(s) = saved {
         let _ = main.set_always_on_top(s.always_on_top);
-        if s.maximized {
+        if s.was_fullscreen {
+            // Restaurer le plein ecran natif quitte a l'entree du PiP. Sur macOS le
+            // collection behavior du PiP (FullScreenAuxiliary) bloque toggleFullScreen :
+            // le remettre en FullScreenPrimary AVANT de re-entrer en plein ecran.
+            #[cfg(target_os = "macos")]
+            if let Ok(ns) = main.ns_window() {
+                let ptr = ns as i64;
+                let _ = app.run_on_main_thread(move || crate::pip_mac::exit_pip_window(ptr));
+            }
+            let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
+            let _ = main.set_fullscreen(true);
+        } else if s.maximized {
             let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
             let _ = main.maximize();
         } else {
@@ -302,7 +341,7 @@ pub async fn window_pip_exit(
     let _ = main.set_focus();
 
     #[cfg(target_os = "macos")]
-    {
+    if !restored_fullscreen {
         if let Ok(ns) = main.ns_window() {
             let ptr = ns as i64;
             let _ = app.run_on_main_thread(move || crate::pip_mac::exit_pip_window(ptr));

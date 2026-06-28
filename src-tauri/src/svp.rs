@@ -59,7 +59,7 @@ pub fn svp_status() -> SvpStatus {
     let root = svp_root();
     let ready = root
         .as_ref()
-        .map_or(false, |r| svpflow_dir(r).is_some() && vsscript_dir(r).is_some());
+        .is_some_and(|r| svpflow_dir(r).is_some() && vsscript_dir(r).is_some());
     SvpStatus {
         installed: root.is_some(),
         ready,

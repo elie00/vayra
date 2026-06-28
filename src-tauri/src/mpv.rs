@@ -132,7 +132,7 @@ impl PropertyKind {
 #[cfg(unix)]
 fn force_c_numeric_locale() {
     unsafe {
-        libc::setlocale(libc::LC_NUMERIC, b"C\0".as_ptr() as *const libc::c_char);
+        libc::setlocale(libc::LC_NUMERIC, c"C".as_ptr());
     }
 }
 
@@ -300,25 +300,28 @@ pub async fn mpv_start(
     if let Some(prev) = g.take() {
         #[cfg(target_os = "macos")]
         {
-            let (tx, rx) = std::sync::mpsc::sync_channel::<()>(1);
+            // Attente ASYNC du teardown sur le main thread : un oneshot tokio + timeout
+            // rend la main au runtime au lieu de bloquer un worker (l'ancien recv_timeout
+            // synchrone gelait un thread du runtime jusqu'a 4s).
+            let (tx, rx) = tokio::sync::oneshot::channel::<()>();
             let _ = app.run_on_main_thread(move || {
                 let _ = crate::mpv_render_mac::uninstall();
                 let _ = prev.mpv.command("quit", &[]);
                 drop(prev);
                 let _ = tx.send(());
             });
-            let _ = rx.recv_timeout(std::time::Duration::from_millis(4000));
+            let _ = tokio::time::timeout(std::time::Duration::from_millis(4000), rx).await;
         }
         #[cfg(target_os = "linux")]
         {
-            let (tx, rx) = std::sync::mpsc::sync_channel::<()>(1);
+            let (tx, rx) = tokio::sync::oneshot::channel::<()>();
             let _ = app.run_on_main_thread(move || {
                 let _ = crate::mpv_render_linux::uninstall();
                 let _ = prev.mpv.command("quit", &[]);
                 drop(prev);
                 let _ = tx.send(());
             });
-            let _ = rx.recv_timeout(std::time::Duration::from_millis(4000));
+            let _ = tokio::time::timeout(std::time::Duration::from_millis(4000), rx).await;
         }
         #[cfg(all(not(target_os = "macos"), not(target_os = "linux")))]
         {
@@ -507,7 +510,7 @@ pub async fn mpv_start(
     spawn_event_loop(app.clone(), mpv_arc.clone(), event_ctx);
 
     eprintln!("[harbor::mpv] loadfile {}", args.url);
-    mpv_argv_command(&*mpv_arc, &["loadfile", &args.url, "replace"]).map_err(|e| {
+    mpv_argv_command(&mpv_arc, &["loadfile", &args.url, "replace"]).map_err(|e| {
         eprintln!("[harbor::mpv] loadfile FAILED: {}", e);
         format!("loadfile: {}", e)
     })?;
@@ -713,6 +716,7 @@ pub async fn mpv_set_geometry(
     }
     #[cfg(target_os = "macos")]
     {
+        let _ = &state;
         let x = geom.css_left;
         let y = geom.css_top;
         let w = geom.css_view_w;
@@ -723,7 +727,7 @@ pub async fn mpv_set_geometry(
             let _ = tx.send(());
         });
         let _ = rx.recv_timeout(std::time::Duration::from_millis(300));
-        return Ok(());
+        Ok(())
     }
     #[cfg(target_os = "linux")]
     {
@@ -747,18 +751,21 @@ pub async fn mpv_set_geometry(
             return Ok(());
         }
     }
-    #[cfg(all(not(windows), not(target_os = "macos")))]
-    let _ = app;
+    #[cfg(not(target_os = "macos"))]
+    {
+        #[cfg(all(not(windows), not(target_os = "linux")))]
+        let _ = app;
 
-    let mpv = {
-        let g = state.inner.lock().await;
-        g.as_ref().map(|s| s.mpv.clone()).ok_or_else(|| "mpv not started".to_string())?
-    };
-    let geo = format!(
-        "{}x{}+{}+{}",
-        geom.css_width as i32, geom.css_height as i32, geom.css_left as i32, geom.css_top as i32
-    );
-    mpv.set_property("geometry", geo.as_str()).map_err(|e| format!("geometry: {}", e))
+        let mpv = {
+            let g = state.inner.lock().await;
+            g.as_ref().map(|s| s.mpv.clone()).ok_or_else(|| "mpv not started".to_string())?
+        };
+        let geo = format!(
+            "{}x{}+{}+{}",
+            geom.css_width as i32, geom.css_height as i32, geom.css_left as i32, geom.css_top as i32
+        );
+        mpv.set_property("geometry", geo.as_str()).map_err(|e| format!("geometry: {}", e))
+    }
 }
 
 #[tauri::command]
@@ -1474,7 +1481,7 @@ fn get_main_hwnd_str(app: &AppHandle) -> Option<String> {
     let (tx, rx) = mpsc::sync_channel::<i64>(1);
     window
         .with_webview(move |webview| {
-            let raw = webview.inner() as *mut std::ffi::c_void as i64;
+            let raw = webview.inner() as i64;
             let _ = tx.send(raw);
         })
         .ok()?;
@@ -1709,4 +1716,3 @@ fn position_embedded_mpv_child(
     }
     Ok(())
 }
-

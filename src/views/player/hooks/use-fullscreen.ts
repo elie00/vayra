@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  exitWindowFullscreen,
   getWindowFullscreen,
   setWindowFullscreen,
+  startWindowFullscreenSync,
   subscribeFullscreen,
   toggleWindowFullscreen,
 } from "@/lib/fullscreen-state";
@@ -10,18 +10,13 @@ import {
 export function useFullscreen() {
   const [fullscreen, setFullscreen] = useState(getWindowFullscreen);
 
+  useEffect(() => startWindowFullscreenSync(), []);
   useEffect(() => subscribeFullscreen(() => setFullscreen(getWindowFullscreen())), []);
 
-  useEffect(
-    () => () => {
-      void exitWindowFullscreen();
-    },
-    [],
-  );
-
   useEffect(() => {
+    if ("__TAURI_INTERNALS__" in window || "__TAURI__" in window) return;
     const onChange = () => {
-      if (!document.fullscreenElement) setWindowFullscreen(false);
+      setWindowFullscreen(document.fullscreenElement != null);
     };
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
