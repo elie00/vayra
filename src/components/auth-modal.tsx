@@ -1,8 +1,9 @@
 import { Check, ExternalLink, Eye, EyeOff, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { openUrl } from "@/lib/window";
 import { StremioWebButton } from "./auth-modal/stremio-web-button";
 
@@ -14,6 +15,8 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const dialogRef = useRef<HTMLFormElement>(null);
+  useFocusTrap(dialogRef, true);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -40,12 +43,16 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <form
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
         onClick={(e) => e.stopPropagation()}
         onSubmit={submit}
         className="animate-modal-in flex w-[min(92vw,400px)] flex-col gap-5 rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <div className="flex flex-col items-center gap-2">
-          <h2 className="font-display text-[22px] font-medium tracking-tight text-ink">
+          <h2 id="auth-modal-title" className="font-display text-[22px] font-medium tracking-tight text-ink">
             {t("Login to Stremio")}
           </h2>
           <p className="text-center text-[13px] leading-snug text-ink-muted">

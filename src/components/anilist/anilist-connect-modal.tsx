@@ -1,6 +1,7 @@
 import { Check, ExternalLink, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useAnilist } from "@/lib/anilist/provider";
 
 export function AnilistConnectModal({ onClose }: { onClose: () => void }) {
@@ -8,6 +9,8 @@ export function AnilistConnectModal({ onClose }: { onClose: () => void }) {
   const t = useT();
   const [draftCode, setDraftCode] = useState("");
   const started = useRef(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
 
   useEffect(() => {
     if (started.current) return;
@@ -51,13 +54,19 @@ export function AnilistConnectModal({ onClose }: { onClose: () => void }) {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="flex w-full max-w-[460px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="anilist-connect-title"
+        className="flex w-full max-w-[460px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200"
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
               {t("Connect AniList")}
             </span>
-            <h2 className="text-[20px] font-medium tracking-tight text-ink">{heading}</h2>
+            <h2 id="anilist-connect-title" className="text-[20px] font-medium tracking-tight text-ink">{heading}</h2>
           </div>
           <button
             onClick={onCancel}

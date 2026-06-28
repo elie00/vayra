@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 export function DebridDownModal({
   meta,
@@ -9,6 +11,8 @@ export function DebridDownModal({
   onTryAgain: () => void;
   onBack: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   const backdrop = meta.background || meta.poster;
   return (
     <main className="fixed inset-0 z-[120] overflow-hidden bg-black">
@@ -21,11 +25,17 @@ export function DebridDownModal({
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/85" />
-      <div className="relative flex h-full flex-col items-center justify-center gap-7 px-8 text-center">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="debrid-down-title"
+        className="relative flex h-full flex-col items-center justify-center gap-7 px-8 text-center"
+      >
         <span className="rounded-full bg-danger/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-danger ring-1 ring-danger/40">
           Debrid is down
         </span>
-        <h1 className="max-w-2xl font-display text-[44px] font-medium leading-[1.05] text-white">
+        <h1 id="debrid-down-title" className="max-w-2xl font-display text-[44px] font-medium leading-[1.05] text-white">
           Your debrid service can&apos;t process this right now.
         </h1>
         <p className="max-w-xl text-[14.5px] leading-relaxed text-white/75">

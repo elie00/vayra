@@ -1,11 +1,12 @@
 import { Loader2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
 import { getCachedPlaylist } from "@/lib/iptv/store";
 import type { IptvChannel, IptvPlaylistSource } from "@/lib/iptv/types";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useEpg, useNowTick } from "@/views/live/hooks/use-epg";
 import { useIptvPlaylist } from "@/views/live/hooks/use-iptv-playlist";
 import { GuideView } from "@/views/live/guide/guide-view";
@@ -41,6 +42,8 @@ export function GuideModal({ onClose }: { onClose: () => void }) {
   const playlist = state.kind === "ready" ? state.playlist : getCachedPlaylist(source?.id ?? "");
   const { index: epg } = useEpg(source);
   const nowMs = useNowTick(30_000);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -69,10 +72,16 @@ export function GuideModal({ onClose }: { onClose: () => void }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[260] flex flex-col bg-canvas/95 backdrop-blur-xl">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guide-modal-title"
+      className="fixed inset-0 z-[260] flex flex-col bg-canvas/95 backdrop-blur-xl"
+    >
       <header className="flex shrink-0 items-center justify-between gap-4 border-b border-edge-soft/40 px-8 py-5">
         <div className="flex items-center gap-4">
-          <h2 className="font-display text-[22px] font-medium tracking-tight text-ink">TV Guide</h2>
+          <h2 id="guide-modal-title" className="font-display text-[22px] font-medium tracking-tight text-ink">TV Guide</h2>
           {m3uSources.length > 1 && (
             <select
               value={sourceId ?? ""}
