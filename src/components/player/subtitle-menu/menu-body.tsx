@@ -2,7 +2,7 @@ import { Check, FolderOpen, Languages, Loader2, Search as SearchIcon, SlidersHor
 import { useEffect, useMemo, useState } from "react";
 import { Flag } from "@/components/flag";
 import { markImportedSub } from "@/lib/player/imported-subs";
-import { useT } from "@/lib/i18n";
+import { LANGUAGES, useT, useUiLanguage } from "@/lib/i18n";
 import { openSyncBar } from "@/lib/player/sub-sync";
 import { Tooltip } from "../transport/tooltip";
 import { SearchSection } from "./search-section";
@@ -67,6 +67,10 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
   const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
   const [localError, setLocalError] = useState<string | null>(null);
   const delayNonZero = delaySec !== 0;
+  const uiLang = useUiLanguage();
+  const targetLabel = LANGUAGES.find((l) => l.code === uiLang)?.nativeLabel ?? uiLang;
+  const [translating, setTranslating] = useState(false);
+  const onTranslate = props.onTranslate;
 
   const loadLocal = async () => {
     setLocalError(null);
@@ -294,6 +298,35 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             <div className="shrink-0 border-t border-edge-soft bg-danger/10 px-3 py-1.5 text-[11.5px] text-danger">
               {localError}
             </div>
+          )}
+
+          {onTranslate && selectedId != null && (
+            <button
+              type="button"
+              disabled={translating}
+              onClick={async () => {
+                if (translating) return;
+                setTranslating(true);
+                setLocalError(null);
+                const r = await onTranslate(uiLang);
+                setTranslating(false);
+                if (!r.ok) {
+                  setLocalError(r.error ?? tr("Translation failed. Check provider settings."));
+                  return;
+                }
+                onClose();
+              }}
+              className="flex shrink-0 items-center gap-2 border-t border-edge-soft px-3 py-2 text-start text-[12px] font-semibold text-accent transition-colors hover:bg-canvas/40 disabled:opacity-60"
+            >
+              {translating ? (
+                <Loader2 size={12} strokeWidth={2.2} className="animate-spin" />
+              ) : (
+                <Languages size={12} strokeWidth={2.2} />
+              )}
+              {translating
+                ? tr("Translating…")
+                : tr("Translate subtitles to {lang}", { lang: targetLabel })}
+            </button>
           )}
 
           <div className="flex shrink-0 items-stretch border-t border-edge-soft">

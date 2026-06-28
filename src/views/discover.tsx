@@ -4,6 +4,7 @@ import { CollectionsRow } from "@/components/collections-row";
 import { CriticsPick } from "@/components/critics-pick";
 import { LazyMount } from "@/components/lazy-mount";
 import { DiscoveryQueueCta } from "@/components/discovery-queue-cta";
+import { AskHarbor } from "@/components/search/ask-harbor";
 import { FeaturedBanner } from "@/components/featured-banner";
 import { AwardTiles } from "@/components/award-tiles";
 import { GenreTiles } from "@/components/genre-tiles";
@@ -269,6 +270,7 @@ export function Discover({ active = true }: { active?: boolean }) {
     <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pb-20 pt-28">
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-14">
+          <AskHarbor />
           <div className="relative">
             <FeaturedBanner items={featured} />
             <div className="absolute end-0 bottom-4 z-10">

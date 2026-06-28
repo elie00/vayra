@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { writeImage } from "@tauri-apps/plugin-clipboard-manager";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import {
   captureBaseTitle,
@@ -10,6 +11,8 @@ import {
 } from "@/lib/player/capture-path";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayerSrc } from "@/lib/view";
+
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export type FrameGrabToast = {
   id: number;
@@ -41,10 +44,21 @@ export function useFrameGrab(params: {
       const result = await bridge.screenshot(fullPath);
       if (dismissTimer.current) window.clearTimeout(dismissTimer.current);
       if (result.ok) {
+        let copied = false;
+        if (result.path && isTauri) {
+          try {
+            await writeImage(result.path); // string => JsImage::Path côté Rust, décodé grâce à image-png
+            copied = true;
+          } catch (e) {
+            console.warn("[frame-grab] clipboard copy failed", e);
+          }
+        }
         setToast({
           id: Date.now(),
           kind: "ok",
-          text: `Screenshot saved to ${dir ? "Pictures/Harbor" : "downloads"}`,
+          text: copied
+            ? `Screenshot copied to clipboard · saved to ${dir ? "Pictures/Harbor" : "downloads"}`
+            : `Screenshot saved to ${dir ? "Pictures/Harbor" : "downloads"}`,
           path: result.path,
         });
       } else {
