@@ -22,6 +22,7 @@ export type PlayerShellProps = {
   onSubDelay: (sec: number) => void;
   onAudioDelay: (sec: number) => void;
   onEnterSync?: () => void;
+  onTranslate?: (targetLangCode: string) => Promise<{ ok: boolean; error?: string }>;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
   cropMode?: string;

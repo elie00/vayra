@@ -170,6 +170,9 @@ export type Settings = {
   mdblistKey: string;
   aiSearchKey: string;
   aiSearchModel: string;
+  subTranslateProvider: "openrouter" | "ollama";
+  ollamaUrl: string;
+  ollamaModel: string;
   playerD3d11Flip: boolean;
   mpvExtraOptions: string;
   mpvQuality: "balanced" | "performance" | "quality";

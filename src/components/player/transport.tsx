@@ -20,7 +20,20 @@ import {
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 
-export function Transport({
+// Wrapper fin : choisit le layout AVANT d'appeler les hooks. La variante classique
+// (TransportClassic) porte tous ses hooks ; ainsi basculer le PiP en thème Stremio
+// ne change plus l'ordre des hooks d'un même composant (évite un crash React).
+export function Transport(props: Parameters<typeof TransportClassic>[0]) {
+  const { settings } = useSettings();
+  const isStremioLayout =
+    resolveChromeTheme(settings.theme, settings.playerChromeTheme) === "stremio";
+  if (isStremioLayout && !props.pipMode) {
+    return <TransportStremio {...props} />;
+  }
+  return <TransportClassic {...props} />;
+}
+
+function TransportClassic({
   snap,
   capabilities,
   visible,
@@ -40,6 +53,7 @@ export function Transport({
   onSubDelay,
   onAudioDelay,
   onEnterSync,
+  onTranslate,
   onAddSubtitle,
   onRate,
   cropMode,
@@ -57,8 +71,6 @@ export function Transport({
   canPickAnother,
   title,
   subtitle,
-  resolution,
-  quality,
   hoverTitle,
   hoverSub,
   hasPrevEp,
@@ -102,6 +114,7 @@ export function Transport({
   onSubDelay: (sec: number) => void;
   onAudioDelay: (sec: number) => void;
   onEnterSync?: () => void;
+  onTranslate?: (targetLangCode: string) => Promise<{ ok: boolean; error?: string }>;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
   cropMode?: string;
@@ -147,70 +160,6 @@ export function Transport({
 }) {
   const t = useT();
   const { settings } = useSettings();
-  const isStremioLayout = resolveChromeTheme(settings.theme, settings.playerChromeTheme) === "stremio";
-  if (isStremioLayout && !pipMode) {
-    return (
-      <TransportStremio
-        snap={snap}
-        capabilities={capabilities}
-        visible={visible}
-        fullscreen={fullscreen}
-        drawMode={drawMode}
-        hideOthersDrawings={hideOthersDrawings}
-        showDraw={showDraw}
-        onBack={onBack}
-        onPlayPause={onPlayPause}
-        onSeek={onSeek}
-        onMute={onMute}
-        onVolume={onVolume}
-        onAudio={onAudio}
-        onSubtitle={onSubtitle}
-        onSubDelay={onSubDelay}
-        onAudioDelay={onAudioDelay}
-        onEnterSync={onEnterSync}
-        onAddSubtitle={onAddSubtitle}
-        onRate={onRate}
-        cropMode={cropMode}
-        onCropMode={onCropMode}
-        anime4kMode={anime4kMode}
-        onAnime4kMode={onAnime4kMode}
-        anime4kAvailable={anime4kAvailable}
-        onPiP={onPiP}
-        onFullscreen={onFullscreen}
-        onCast={onCast}
-        onToggleDraw={onToggleDraw}
-        onToggleHideOthers={onToggleHideOthers}
-        onScreenshot={onScreenshot}
-        onPickAnother={onPickAnother}
-        canPickAnother={canPickAnother}
-        title={title}
-        subtitle={subtitle}
-        resolution={resolution}
-        quality={quality}
-        hasPrevEp={hasPrevEp}
-        hasNextEp={hasNextEp}
-        onPrevEp={onPrevEp}
-        onNextEp={onNextEp}
-        metaImdbId={metaImdbId}
-        metaTitle={metaTitle}
-        metaReleaseDate={metaReleaseDate}
-        meta={meta}
-        tmdbKey={tmdbKey}
-        season={season}
-        episode={episode}
-        engine={engine}
-        useOverlayPopups={useOverlayPopups}
-        onMenuOpenChange={onMenuOpenChange}
-        download={download}
-        onDownloadStart={onDownloadStart}
-        onDownloadCancel={onDownloadCancel}
-        onDownloadReveal={onDownloadReveal}
-        onDownloadReset={onDownloadReset}
-        onOpenDvr={onOpenDvr}
-        sleep={sleep}
-      />
-    );
-  }
   const playing = snap.status === "playing";
   const showEpisodeNav = hasPrevEp || hasNextEp;
   const [audioMenuOpen, setAudioMenuOpen] = useState(false);
@@ -330,6 +279,7 @@ export function Transport({
     onSubDelay,
     onAudioDelay,
     onEnterSync,
+    onTranslate,
     onAddSubtitle,
     onRate,
     onPiP,

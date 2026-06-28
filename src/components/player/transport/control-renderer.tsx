@@ -97,6 +97,7 @@ export type ControlContext = {
   onSubDelay: (sec: number) => void;
   onAudioDelay: (sec: number) => void;
   onEnterSync?: () => void;
+  onTranslate?: (targetLangCode: string) => Promise<{ ok: boolean; error?: string }>;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
   onPiP: () => void;
@@ -342,6 +343,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           onSelect={ctx.onSubtitle}
           onDelay={ctx.onSubDelay}
           onEnterSync={ctx.onEnterSync}
+          onTranslate={ctx.onTranslate}
           onAddSubtitle={ctx.onAddSubtitle}
           metaImdbId={ctx.metaImdbId}
           metaTitle={ctx.metaTitle}
