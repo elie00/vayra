@@ -422,22 +422,19 @@ function Shell() {
       setUiScale(uiScaleRef.current + direction * UI_SCALE_STEP);
     };
     const usesZoomModifier = (e: KeyboardEvent | WheelEvent) => e.ctrlKey || e.metaKey;
+    const isUiScaleKey = (key: string) => key === "0" || key === "+" || key === "=" || key === "-" || key === "_";
     const onKey = (e: KeyboardEvent) => {
       if (!usesZoomModifier(e)) return;
+      if (!isUiScaleKey(e.key)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.repeat) return;
+      window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
       if (e.key === "0") {
-        e.preventDefault();
-        e.stopPropagation();
-        window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
         setUiScale(1);
       } else if (e.key === "+" || e.key === "=") {
-        e.preventDefault();
-        e.stopPropagation();
-        window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
         stepUiScale(1);
       } else if (e.key === "-" || e.key === "_") {
-        e.preventDefault();
-        e.stopPropagation();
-        window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
         stepUiScale(-1);
       }
     };
