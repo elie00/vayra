@@ -63,6 +63,7 @@ import { FavoritesProvider } from "@/lib/iptv/favorites";
 import { MediaFavoritesProvider } from "@/lib/media-favorites";
 import { LocalWatchlistProvider } from "@/lib/local-watchlist";
 import { useSettings } from "@/lib/settings";
+import { effectiveBinding, eventToBinding } from "@/lib/hotkeys";
 import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@/lib/view";
 import type { MetaType } from "@/lib/cinemeta";
 import { useDiscordPresence } from "@/lib/discord/use-discord-presence";
@@ -422,19 +423,34 @@ function Shell() {
       setUiScale(uiScaleRef.current + direction * UI_SCALE_STEP);
     };
     const usesZoomModifier = (e: KeyboardEvent | WheelEvent) => e.ctrlKey || e.metaKey;
-    const isUiScaleKey = (key: string) => key === "0" || key === "+" || key === "=" || key === "-" || key === "_";
+    const isDefaultUiScaleUp = (e: KeyboardEvent) =>
+      usesZoomModifier(e) && (e.key === "+" || e.key === "=");
+    const isDefaultUiScaleDown = (e: KeyboardEvent) =>
+      usesZoomModifier(e) && (e.key === "-" || e.key === "_");
+    const isDefaultUiScaleReset = (e: KeyboardEvent) =>
+      usesZoomModifier(e) && e.key === "0";
     const onKey = (e: KeyboardEvent) => {
-      if (!usesZoomModifier(e)) return;
-      if (!isUiScaleKey(e.key)) return;
+      const binding = eventToBinding(e);
+      const overrides = settings.hotkeys ?? {};
+      const uiScaleUpCustom = "globalUiScaleUp" in overrides;
+      const uiScaleDownCustom = "globalUiScaleDown" in overrides;
+      const uiScaleResetCustom = "globalUiScaleReset" in overrides;
+      const matchesUp =
+        effectiveBinding("globalUiScaleUp", overrides) === binding || (!uiScaleUpCustom && isDefaultUiScaleUp(e));
+      const matchesDown =
+        effectiveBinding("globalUiScaleDown", overrides) === binding || (!uiScaleDownCustom && isDefaultUiScaleDown(e));
+      const matchesReset =
+        effectiveBinding("globalUiScaleReset", overrides) === binding || (!uiScaleResetCustom && isDefaultUiScaleReset(e));
+      if (!matchesUp && !matchesDown && !matchesReset) return;
       e.preventDefault();
       e.stopPropagation();
       if (e.repeat) return;
       window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
-      if (e.key === "0") {
+      if (matchesReset) {
         setUiScale(1);
-      } else if (e.key === "+" || e.key === "=") {
+      } else if (matchesUp) {
         stepUiScale(1);
-      } else if (e.key === "-" || e.key === "_") {
+      } else if (matchesDown) {
         stepUiScale(-1);
       }
     };
@@ -451,7 +467,7 @@ function Shell() {
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("wheel", onWheel, true);
     };
-  }, [update]);
+  }, [settings.hotkeys, update]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
