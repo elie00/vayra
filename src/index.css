@@ -679,6 +679,16 @@ html[data-theme-layout="stremio"] .harbor-bleed-stremio {
   margin-right: -2.75rem;
 }
 
+html[data-theme-layout="stremio"] .harbor-hero-full {
+  margin-left: -2.5rem;
+  margin-right: -2.75rem;
+}
+
+.harbor-hero-full {
+  width: 100vw;
+  margin-left: calc(-1 * var(--hero-bleed-x, 1.25rem));
+}
+
 .harbor-cinema-badge {
   color: oklch(0.78 0.13 60);
   border: 1px solid oklch(0.78 0.13 60 / 0.35);

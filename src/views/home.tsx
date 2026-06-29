@@ -458,6 +458,27 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [heroPool, heroSourceRow]);
 
   const scrollRef = useRef<HTMLElement>(null);
+  const heroWrapperRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+  const el = heroWrapperRef.current;
+  const main = scrollRef.current;
+  if (!el) return;
+  if (!settings.heroFull) {
+    el.style.removeProperty("--hero-bleed-x");
+    return;
+  }
+  const measure = () => {
+    if (!main) return;
+    const mainRect = main.getBoundingClientRect();
+    const mainPl = parseFloat(getComputedStyle(main).paddingLeft) || 0;
+    el.style.setProperty("--hero-bleed-x", `${mainRect.left + mainPl}px`);
+  };
+  measure();
+  const ro = new ResizeObserver(measure);
+  ro.observe(document.documentElement);
+  return () => ro.disconnect();
+}, [settings.heroFull, settings.sidebarCollapsed]);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const scrollCb = useCallback((el: HTMLElement | null) => {
     (scrollRef as { current: HTMLElement | null }).current = el;
@@ -610,7 +631,7 @@ export function Home({ active = true }: { active?: boolean }) {
   return (
     <main
       ref={scrollCb}
-      className="flex-1 overflow-y-auto px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
     >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="relative flex flex-col gap-12">
@@ -633,7 +654,11 @@ export function Home({ active = true }: { active?: boolean }) {
             </div>
           )}
           {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && (
-            <div data-scroll-anchor="hero" className="relative">
+            <div
+              ref={heroWrapperRef}
+              data-scroll-anchor="hero"
+              className={`relative ${settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
+            >
               {editMode && (
                 <PinnedRowControls
                   label={t("Featured hero")}
@@ -641,7 +666,11 @@ export function Home({ active = true }: { active?: boolean }) {
                   onToggleHidden={() => handleToggleHidden("hero")}
                 />
               )}
-              <HeroCarousel slides={heroSlides} />
+              <HeroCarousel
+                slides={heroSlides}
+                full={settings.heroFull}
+                fullQuality={settings.heroFullQuality}
+              />
               {!editMode && (
                 <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
                   <CustomizeBar

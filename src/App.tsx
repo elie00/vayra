@@ -11,6 +11,7 @@ import { RoyalTopbar } from "@/chrome/royal-topbar";
 import { SideRail } from "@/chrome/siderail";
 import { StremioRail } from "@/chrome/stremio-rail";
 import { TopDock } from "@/chrome/topdock";
+import { CinematicOverlay } from "@/chrome/cinematic-overlay";
 import { Topbar } from "@/chrome/topbar";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
 import { exitWindowFullscreen, toggleWindowFullscreen } from "@/lib/fullscreen-state";
@@ -581,10 +582,12 @@ function Shell() {
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "stremio" && <StremioRail />}
       {!settingsTop && !playerActive && !pickerTop && layout === "topdock" && <TopDock />}
+      {!settingsTop && !playerActive && !pickerTop && layout === "cinematic" && <CinematicOverlay />}
       {!settingsTop && !playerActive && !pickerTop && layout === "royal" && <RoyalTopbar />}
       {!settingsTop && !playerActive && !pickerTop && layout === "rail" && <SideRail />}
       {!playerActive && !pickerTop && layout === "minui" && <MinUIDock />}
       {!playerActive && !pickerTop && layout === "topdock" && <FloatingBack offsetTop={92} />}
+      {!playerActive && !pickerTop && layout === "cinematic" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "royal" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "rail" && <FloatingBack offsetLeft={settings.sidebarCollapsed ? 88 : 220} offsetTop={28} />}
       {!playerActive && !pickerTop && layout === "custom" && <FloatingBack offsetLeft={20} offsetTop={20} />}

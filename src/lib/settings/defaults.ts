@@ -44,6 +44,8 @@ export const DEFAULT: Settings = {
   trailerQuality: "auto",
   detailTrailerAutoplay: false,
   heroShadow: 100,
+  heroFull: false,    
+  heroFullQuality: true,
   resumePrompt: false,
   resumePlayback: true,
   badgePlacement: "bottom",
