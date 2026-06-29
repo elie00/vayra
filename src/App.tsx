@@ -442,6 +442,7 @@ function Shell() {
       const matchesReset =
         effectiveBinding("globalUiScaleReset", overrides) === binding || (!uiScaleResetCustom && isDefaultUiScaleReset(e));
       if (!matchesUp && !matchesDown && !matchesReset) return;
+      if (player && matchesReset) return;
       e.preventDefault();
       e.stopPropagation();
       if (e.repeat) return;
@@ -467,7 +468,7 @@ function Shell() {
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("wheel", onWheel, true);
     };
-  }, [settings.hotkeys, update]);
+  }, [player, settings.hotkeys, update]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
