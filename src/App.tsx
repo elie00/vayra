@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
@@ -167,6 +167,13 @@ function useViewPreloader() {
 const KEEP_ALIVE_MS = 1500;
 const IDLE_EVICT_MS = 60 * 1000;
 const PRESSURE_EVICT_MS = 1500;
+const UI_SCALE_MIN = 0.8;
+const UI_SCALE_MAX = 1.6;
+const UI_SCALE_STEP = 0.05;
+
+function clampUiScale(scale: number): number {
+  return Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, Math.round(scale * 100) / 100));
+}
 
 function useKeepAlive(active: boolean, requested: boolean, pin = false): boolean {
   const [mounted, setMounted] = useState(active && requested);
@@ -381,7 +388,8 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 
 function Shell() {
   const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, goBack, openMeta, stackKinds, chromeHidden } = useView();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
+  const uiScaleRef = useRef(settings.uiScale);
   const preview = useThemePreview();
   const layout = useMemo(
     () => (preview ? preview.layout : activeLayout(settings.theme)),
@@ -396,6 +404,48 @@ function Shell() {
   useViewPreloader();
 
   useEffect(() => startMaintenance(), []);
+
+  useEffect(() => {
+    uiScaleRef.current = settings.uiScale;
+  }, [settings.uiScale]);
+
+  useEffect(() => {
+    const setUiScale = (next: number) => {
+      const uiScale = clampUiScale(next);
+      if (uiScale !== uiScaleRef.current) {
+        uiScaleRef.current = uiScale;
+        update({ uiScale });
+      }
+    };
+    const stepUiScale = (direction: 1 | -1) => {
+      setUiScale(uiScaleRef.current + direction * UI_SCALE_STEP);
+    };
+    const usesZoomModifier = (e: KeyboardEvent | WheelEvent) => e.ctrlKey || e.metaKey;
+    const onKey = (e: KeyboardEvent) => {
+      if (!usesZoomModifier(e)) return;
+      if (e.key === "0") {
+        e.preventDefault();
+        setUiScale(1);
+      } else if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        stepUiScale(1);
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        stepUiScale(-1);
+      }
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (!usesZoomModifier(e)) return;
+      e.preventDefault();
+      stepUiScale(e.deltaY < 0 ? 1 : -1);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("wheel", onWheel);
+    };
+  }, [update]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
