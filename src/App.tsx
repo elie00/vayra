@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
@@ -63,6 +63,7 @@ import { FavoritesProvider } from "@/lib/iptv/favorites";
 import { MediaFavoritesProvider } from "@/lib/media-favorites";
 import { LocalWatchlistProvider } from "@/lib/local-watchlist";
 import { useSettings } from "@/lib/settings";
+import { effectiveBinding, eventToBinding } from "@/lib/hotkeys";
 import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@/lib/view";
 import type { MetaType } from "@/lib/cinemeta";
 import { useDiscordPresence } from "@/lib/discord/use-discord-presence";
@@ -167,6 +168,14 @@ function useViewPreloader() {
 const KEEP_ALIVE_MS = 1500;
 const IDLE_EVICT_MS = 60 * 1000;
 const PRESSURE_EVICT_MS = 1500;
+const UI_SCALE_MIN = 0.8;
+const UI_SCALE_MAX = 1.6;
+const UI_SCALE_STEP = 0.05;
+const UI_SCALE_ACTIVITY_EVENT = "harbor:ui-scale-activity";
+
+function clampUiScale(scale: number): number {
+  return Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, Math.round(scale * 100) / 100));
+}
 
 function useKeepAlive(active: boolean, requested: boolean, pin = false): boolean {
   const [mounted, setMounted] = useState(active && requested);
@@ -381,7 +390,8 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 
 function Shell() {
   const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, goBack, openMeta, stackKinds, chromeHidden } = useView();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
+  const uiScaleRef = useRef(settings.uiScale);
   const preview = useThemePreview();
   const layout = useMemo(
     () => (preview ? preview.layout : activeLayout(settings.theme)),
@@ -396,6 +406,69 @@ function Shell() {
   useViewPreloader();
 
   useEffect(() => startMaintenance(), []);
+
+  useEffect(() => {
+    uiScaleRef.current = settings.uiScale;
+  }, [settings.uiScale]);
+
+  useEffect(() => {
+    const setUiScale = (next: number) => {
+      const uiScale = clampUiScale(next);
+      if (uiScale !== uiScaleRef.current) {
+        uiScaleRef.current = uiScale;
+        update({ uiScale });
+      }
+    };
+    const stepUiScale = (direction: 1 | -1) => {
+      setUiScale(uiScaleRef.current + direction * UI_SCALE_STEP);
+    };
+    const usesZoomModifier = (e: KeyboardEvent | WheelEvent) => e.ctrlKey || e.metaKey;
+    const isDefaultUiScaleUp = (e: KeyboardEvent) =>
+      usesZoomModifier(e) && (e.key === "+" || e.key === "=");
+    const isDefaultUiScaleDown = (e: KeyboardEvent) =>
+      usesZoomModifier(e) && (e.key === "-" || e.key === "_");
+    const isDefaultUiScaleReset = (e: KeyboardEvent) =>
+      usesZoomModifier(e) && e.key === "0";
+    const onKey = (e: KeyboardEvent) => {
+      const binding = eventToBinding(e);
+      const overrides = settings.hotkeys ?? {};
+      const uiScaleUpCustom = "globalUiScaleUp" in overrides;
+      const uiScaleDownCustom = "globalUiScaleDown" in overrides;
+      const uiScaleResetCustom = "globalUiScaleReset" in overrides;
+      const matchesUp =
+        effectiveBinding("globalUiScaleUp", overrides) === binding || (!uiScaleUpCustom && isDefaultUiScaleUp(e));
+      const matchesDown =
+        effectiveBinding("globalUiScaleDown", overrides) === binding || (!uiScaleDownCustom && isDefaultUiScaleDown(e));
+      const matchesReset =
+        effectiveBinding("globalUiScaleReset", overrides) === binding || (!uiScaleResetCustom && isDefaultUiScaleReset(e));
+      if (!matchesUp && !matchesDown && !matchesReset) return;
+      if (player && matchesReset) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.repeat) return;
+      window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
+      if (matchesReset) {
+        setUiScale(1);
+      } else if (matchesUp) {
+        stepUiScale(1);
+      } else if (matchesDown) {
+        stepUiScale(-1);
+      }
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (!usesZoomModifier(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
+      stepUiScale(e.deltaY < 0 ? 1 : -1);
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("wheel", onWheel, true);
+    };
+  }, [player, settings.hotkeys, update]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

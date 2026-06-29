@@ -40,6 +40,9 @@ export type HotkeyId =
   | "playerTvGuide"
   | "playerDvr"
   | "playerSleep"
+  | "globalUiScaleUp"
+  | "globalUiScaleDown"
+  | "globalUiScaleReset"
   | "globalSearchFocus";
 
 export type HotkeyDef = {
@@ -53,6 +56,9 @@ export type HotkeyDef = {
 
 export const HOTKEYS: HotkeyDef[] = [
   { id: "globalSearchFocus", scope: "Global", group: "Navigation", label: "Focus search", description: "Jump to the top-bar search from anywhere.", defaultBinding: "/" },
+  { id: "globalUiScaleUp", scope: "Global", group: "Interface", label: "Increase interface scale", description: "Make Harbor's interface larger.", defaultBinding: "ctrl+=" },
+  { id: "globalUiScaleDown", scope: "Global", group: "Interface", label: "Decrease interface scale", description: "Make Harbor's interface smaller.", defaultBinding: "ctrl+-" },
+  { id: "globalUiScaleReset", scope: "Global", group: "Interface", label: "Reset interface scale", description: "Restore Harbor's interface scale to 100%.", defaultBinding: "ctrl+0" },
 
   { id: "playerClose", scope: "Player", group: "Playback", label: "Close player", description: "Exit playback and return to the previous view.", defaultBinding: "Escape" },
   { id: "playerPlayPause", scope: "Player", group: "Playback", label: "Play / pause", description: "Toggle playback.", defaultBinding: "Space" },

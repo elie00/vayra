@@ -127,6 +127,13 @@ export function HotkeysPanel() {
                       />
                     );
                   })}
+                  {scope === "Global" && groupName === "Interface" && (
+                    <ReadOnlyHotkeyRow
+                      label={t("Adjust interface scale with wheel")}
+                      description={t("Hold Ctrl or Cmd and scroll to resize Harbor's interface smoothly.")}
+                      binding="Ctrl / ⌘ + Scroll"
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -134,6 +141,30 @@ export function HotkeysPanel() {
         );
       })}
     </>
+  );
+}
+
+function ReadOnlyHotkeyRow({
+  label,
+  description,
+  binding,
+}: {
+  label: string;
+  description: string;
+  binding: string;
+}) {
+  const t = useT();
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[14px] font-medium text-ink">{label}</span>
+        <span className="text-[12.5px] text-ink-subtle">{description}</span>
+      </div>
+      <div className="flex h-8 min-w-[128px] items-center justify-center rounded-lg border border-edge bg-elevated px-3 text-[12.5px] font-semibold text-ink">
+        {binding}
+      </div>
+      <span className="sr-only">{t("Fixed shortcut")}</span>
+    </div>
   );
 }
 
