@@ -1,4 +1,10 @@
 const settings: Record<string, string> = {
+  "Home hero": "واجهة العنوان المميّز",
+  "Make the featured banner on Home bigger and sharper.": "اجعل لافتة العنوان المميّز في الصفحة الرئيسية أكبر وأوضح.",
+  "Full hero banner": "لافتة بطل كاملة",
+  "Stretch the featured hero edge to edge and taller, across every layout.": "تمدّد لافتة البطل من الحافة إلى الحافة وبارتفاع أكبر، في جميع التخطيطات.",
+  "Full quality hero image": "صورة البطل بأعلى جودة",
+  "Load the highest-resolution artwork for the featured hero. Uses more bandwidth.": "تحميل صورة البطل المميّز بأعلى دقة. يستهلك بيانات أكثر.",
   "Display language": "لغة العرض",
   "Interface language": "لغة الواجهة",
   "Metadata language": "لغة البيانات الوصفية",

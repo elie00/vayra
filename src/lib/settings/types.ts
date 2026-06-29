@@ -70,6 +70,8 @@ export type Settings = {
   trailerQuality: "auto" | "360p" | "720p" | "1080p" | "best";
   detailTrailerAutoplay: boolean;
   heroShadow: number;
+  heroFull: boolean;         
+  heroFullQuality: boolean;
   resumePrompt: boolean;
   resumePlayback: boolean;
   badgePlacement: "top" | "bottom";

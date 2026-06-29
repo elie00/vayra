@@ -162,6 +162,24 @@ export function DisplaySection() {
       </Section>
 
       <Section
+        title={t("Home hero")}
+        subtitle={t("Make the featured banner on Home bigger and sharper.")}
+      >
+        <ToggleRow
+          label={t("Full hero banner")}
+          sub={t("Stretch the featured hero edge to edge and taller, across every layout.")}
+          value={settings.heroFull}
+          onChange={(v) => update({ heroFull: v })}
+        />
+        <ToggleRow
+          label={t("Full quality hero image")}
+          sub={t("Load the highest-resolution artwork for the featured hero. Uses more bandwidth.")}
+          value={settings.heroFullQuality}
+          onChange={(v) => update({ heroFullQuality: v })}
+        />
+      </Section>
+
+      <Section
         title={t("Home hero shadow")}
         subtitle={t("How dark the gradient behind the featured title on Home is. 100% is the classic look; lower it to let more of the artwork show through.")}
       >

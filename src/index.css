@@ -679,6 +679,28 @@ html[data-theme-layout="stremio"] .harbor-bleed-stremio {
   margin-right: -2.75rem;
 }
 
+.harbor-hero-full {
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+}
+@media (min-width: 640px) {
+  .harbor-hero-full {
+    margin-left: -2rem;
+    margin-right: -2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .harbor-hero-full {
+    margin-left: -3rem;
+    margin-right: -3rem;
+  }
+}
+html[data-theme-layout="stremio"] .harbor-hero-full {
+  margin-left: -2.5rem;
+  margin-right: -2.75rem;
+}
+
+
 .harbor-cinema-badge {
   color: oklch(0.78 0.13 60);
   border: 1px solid oklch(0.78 0.13 60 / 0.35);
