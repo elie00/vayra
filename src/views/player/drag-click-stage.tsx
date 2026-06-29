@@ -11,6 +11,7 @@ export function DragClickStage(props: {
       className="pointer-events-auto absolute inset-0 z-[3]"
       onWheel={(e) => {
         if (drawMode || pipMode) return;
+        if (e.ctrlKey || e.metaKey) return;
         onWheelVolume?.(e.deltaY);
       }}
       onMouseDown={(e) => {

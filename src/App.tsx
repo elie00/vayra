@@ -170,6 +170,7 @@ const PRESSURE_EVICT_MS = 1500;
 const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 1.6;
 const UI_SCALE_STEP = 0.05;
+const UI_SCALE_ACTIVITY_EVENT = "harbor:ui-scale-activity";
 
 function clampUiScale(scale: number): number {
   return Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, Math.round(scale * 100) / 100));
@@ -425,25 +426,33 @@ function Shell() {
       if (!usesZoomModifier(e)) return;
       if (e.key === "0") {
         e.preventDefault();
+        e.stopPropagation();
+        window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
         setUiScale(1);
       } else if (e.key === "+" || e.key === "=") {
         e.preventDefault();
+        e.stopPropagation();
+        window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
         stepUiScale(1);
       } else if (e.key === "-" || e.key === "_") {
         e.preventDefault();
+        e.stopPropagation();
+        window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
         stepUiScale(-1);
       }
     };
     const onWheel = (e: WheelEvent) => {
       if (!usesZoomModifier(e)) return;
       e.preventDefault();
+      e.stopPropagation();
+      window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
       stepUiScale(e.deltaY < 0 ? 1 : -1);
     };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
     return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("wheel", onWheel, true);
     };
   }, [update]);
 
