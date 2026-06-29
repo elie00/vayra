@@ -458,27 +458,7 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [heroPool, heroSourceRow]);
 
   const scrollRef = useRef<HTMLElement>(null);
-  const heroWrapperRef = useRef<HTMLDivElement>(null);
 
-useEffect(() => {
-  const el = heroWrapperRef.current;
-  const main = scrollRef.current;
-  if (!el) return;
-  if (!settings.heroFull) {
-    el.style.removeProperty("--hero-bleed-x");
-    return;
-  }
-  const measure = () => {
-    if (!main) return;
-    const mainRect = main.getBoundingClientRect();
-    const mainPl = parseFloat(getComputedStyle(main).paddingLeft) || 0;
-    el.style.setProperty("--hero-bleed-x", `${mainRect.left + mainPl}px`);
-  };
-  measure();
-  const ro = new ResizeObserver(measure);
-  ro.observe(document.documentElement);
-  return () => ro.disconnect();
-}, [settings.heroFull, settings.sidebarCollapsed]);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const scrollCb = useCallback((el: HTMLElement | null) => {
     (scrollRef as { current: HTMLElement | null }).current = el;
@@ -655,7 +635,6 @@ useEffect(() => {
           )}
           {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && (
             <div
-              ref={heroWrapperRef}
               data-scroll-anchor="hero"
               className={`relative ${settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
             >
