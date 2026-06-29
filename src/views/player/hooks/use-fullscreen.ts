@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  exitWindowFullscreen,
   getWindowFullscreen,
   setWindowFullscreen,
   subscribeFullscreen,
@@ -11,13 +10,6 @@ export function useFullscreen() {
   const [fullscreen, setFullscreen] = useState(getWindowFullscreen);
 
   useEffect(() => subscribeFullscreen(() => setFullscreen(getWindowFullscreen())), []);
-
-  useEffect(
-    () => () => {
-      void exitWindowFullscreen();
-    },
-    [],
-  );
 
   useEffect(() => {
     const onChange = () => {
