@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use librqbit::api::TorrentIdOrHash;
 use librqbit::dht::{Dht, PersistentDhtConfig};
-use librqbit::{AddTorrent, AddTorrentOptions, PeerConnectionOptions, Session, SessionOptions};
+use librqbit::{AddTorrent, AddTorrentOptions, PeerConnectionOptions, Session, SessionOptions, SessionPersistenceConfig};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 use tokio::net::TcpListener;
@@ -106,7 +106,9 @@ async fn new_session(
         dir.to_path_buf(),
         SessionOptions {
             fastresume: true,
-            persistence: None,
+            persistence: Some(SessionPersistenceConfig::Json {
+                folder: Some(dir.to_path_buf()),
+            }),
             disable_dht: !dht,
             disable_dht_persistence: !persist_dht,
             dht_config: persist_dht.then(|| PersistentDhtConfig {
@@ -127,6 +129,7 @@ async fn new_session(
 struct EngineConfig {
     dir: Option<String>,
     retention_hours: Option<u64>,
+    max_gb: Option<u64>,
 }
 
 fn config_path(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -155,7 +158,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     let cfg = read_config(&app);
     let dir = engine_dir(&app, &cfg)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    cache_sweep::run(&dir, cfg.retention_hours.unwrap_or(24));
+    cache_sweep::run(&dir, cfg.retention_hours.unwrap_or(24), cfg.max_gb.unwrap_or(0));
     let (session, dht_tier) = match new_session(&dir, true, true, true).await {
         Ok(s) => (s, 1u8),
         Err(e1) => {
@@ -411,11 +414,13 @@ pub async fn torrent_engine_set_options(
     app: AppHandle,
     dir: Option<String>,
     retention_hours: u64,
+    max_gb: u64,
     restart: bool,
 ) -> Result<EngineStatusDto, String> {
     let cfg = EngineConfig {
         dir: dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
         retention_hours: Some(retention_hours),
+        max_gb: Some(max_gb),
     };
     if let Some(p) = config_path(&app) {
         if let Some(parent) = p.parent() {

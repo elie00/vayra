@@ -1,7 +1,8 @@
-import { Check, ExternalLink, Key, Lock } from "lucide-react";
+import { Check, ExternalLink, Eye, Key, Lock } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
+import { HoverPreviewCard } from "./setting-preview";
 
 export type SectionId =
   | "basics"
@@ -261,6 +262,7 @@ export function ToggleRow({
   leading,
   lockReason,
   note,
+  preview,
 }: {
   label: string;
   sub?: React.ReactNode;
@@ -269,20 +271,42 @@ export function ToggleRow({
   leading?: React.ReactNode;
   lockReason?: string;
   note?: string;
+  preview?: React.ReactNode;
 }) {
   const locked = !!lockReason;
   const effective = value && !locked;
   const subText: React.ReactNode = lockReason ?? note ?? sub;
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const [hover, setHover] = useState(false);
+  const hoverTimer = useRef<number | null>(null);
+  const openPreview = () => {
+    if (!preview) return;
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(() => setHover(true), 200);
+  };
+  const closePreview = () => {
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+    setHover(false);
+  };
+  useEffect(() => () => {
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+  }, []);
   return (
     <button
+      ref={btnRef}
       onClick={() => !locked && onChange(!value)}
+      onMouseEnter={openPreview}
+      onMouseLeave={closePreview}
+      onFocus={openPreview}
+      onBlur={closePreview}
       disabled={locked}
-      className={`flex items-center justify-between gap-4 rounded-xl border bg-canvas/40 px-4 py-3 text-start transition-colors ${
+      className={`relative flex items-center justify-between gap-4 rounded-xl border bg-canvas/40 px-4 py-3 text-start transition-colors ${
         locked
           ? "cursor-not-allowed border-edge-soft/40 opacity-60"
           : "border-edge-soft hover:border-edge"
       }`}
     >
+      {preview && <HoverPreviewCard open={hover} anchorRef={btnRef}>{preview}</HoverPreviewCard>}
       <div className="flex min-w-0 flex-1 items-center gap-3.5">
         <span className={`relative ${locked ? "saturate-50 opacity-70" : ""}`}>
           {leading}
@@ -305,17 +329,25 @@ export function ToggleRow({
           )}
         </div>
       </div>
-      <span
-        aria-hidden
-        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${
-          effective ? "bg-ink" : "bg-edge"
-        }`}
-      >
+      <span className="flex shrink-0 items-center gap-2.5">
+        {preview && (
+          <Eye
+            size={13}
+            className={`transition-colors ${hover ? "text-accent" : "text-ink-subtle/55"}`}
+          />
+        )}
         <span
-          className={`absolute start-[2px] top-0.5 h-5 w-5 rounded-full bg-canvas transition-transform ${
-            effective ? "translate-x-4 rtl:-translate-x-4" : "translate-x-0"
+          aria-hidden
+          className={`relative h-6 w-10 rounded-full transition-colors ${
+            effective ? "bg-ink" : "bg-edge"
           }`}
-        />
+        >
+          <span
+            className={`absolute start-[2px] top-0.5 h-5 w-5 rounded-full bg-canvas transition-transform ${
+              effective ? "translate-x-4 rtl:-translate-x-4" : "translate-x-0"
+            }`}
+          />
+        </span>
       </span>
     </button>
   );

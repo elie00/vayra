@@ -89,7 +89,9 @@ export function AnimeEpisodeRow({
                 ep.absoluteNumber && ep.absoluteNumber !== ep.number ? `Abs E${ep.absoluteNumber}` : null,
                 ep.length ? t("{n} min", { n: ep.length }) : null,
                 formatAirDate(ep.airdate) || null,
-                settings.showEpisodeRating && meta.imdbRating ? `★ ${meta.imdbRating}` : null,
+                settings.showEpisodeRating && ep.rating != null && ep.rating > 0
+                  ? `★ ${ep.rating.toFixed(1)}`
+                  : null,
               ]
                 .filter(Boolean)
                 .join("  ·  ")}

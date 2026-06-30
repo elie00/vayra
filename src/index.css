@@ -72,6 +72,229 @@ body {
   cursor: default;
 }
 
+:root[data-player-black="on"] {
+  --color-canvas: oklch(0 0 0);
+  --color-surface: oklch(0 0 0);
+  --color-elevated: oklch(0 0 0);
+  --color-raised: oklch(0.2 0 0);
+}
+
+.kids-hero-veil {
+  background: linear-gradient(180deg, oklch(0.72 0.1 245 / 0.4) 0%, oklch(0.56 0.12 285 / 0.46) 52%, oklch(0.5 0.1 285 / 0.55) 84%, var(--color-canvas) 100%);
+}
+.kids-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(46px);
+  opacity: 0.36;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.kids-blob-a { width: 340px; height: 340px; left: 6%; top: 8%; background: oklch(0.86 0.14 95); animation: kids-drift 15s ease-in-out infinite; }
+.kids-blob-b { width: 280px; height: 280px; right: 9%; top: 14%; background: oklch(0.81 0.15 350); animation: kids-drift 19s ease-in-out infinite reverse; }
+.kids-blob-c { width: 260px; height: 260px; left: 44%; top: 2%; background: oklch(0.87 0.13 165); animation: kids-drift 17s ease-in-out infinite; }
+@keyframes kids-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(26px, -20px) scale(1.06); }
+}
+.kids-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 18% 30%, rgba(255,255,255,0.9), transparent),
+    radial-gradient(2px 2px at 72% 22%, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1.5px 1.5px at 40% 16%, rgba(255,255,255,0.85), transparent),
+    radial-gradient(1.5px 1.5px at 86% 40%, rgba(255,255,255,0.8), transparent),
+    radial-gradient(2px 2px at 28% 12%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1.5px 1.5px at 60% 36%, rgba(255,255,255,0.75), transparent);
+  animation: kids-twinkle 5s ease-in-out infinite;
+}
+@keyframes kids-twinkle {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+.kids-card {
+  animation: kids-pop-in 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes kids-pop-in {
+  0% { opacity: 0; transform: translateY(16px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+[data-kids="on"] {
+  --color-canvas: #b6dee4;
+  --color-surface: #c6e8ed;
+  --color-elevated: #d6f0f3;
+  --color-raised: #e9f7f9;
+  --color-ink: oklch(0.4 0.07 205);
+  --color-ink-muted: oklch(0.52 0.06 205);
+  --color-ink-subtle: oklch(0.63 0.045 205);
+  --color-edge: oklch(0.55 0.05 212 / 0.26);
+  --color-edge-soft: oklch(0.55 0.05 212 / 0.13);
+}
+
+[data-kids="on"] [data-harbor-sidebar] {
+  background-color: #e5f5f5;
+}
+
+[data-kids="on"] .harbor-search-pill {
+  background-color: #d1eaed;
+  opacity: 1;
+}
+[data-kids="on"] .harbor-win-control,
+[data-kids="on"] .harbor-together-btn:not(.harbor-wt-tab) {
+  background-color: #d1eaed;
+}
+[data-kids="on"] .harbor-win-close:hover {
+  background-color: #e5484d;
+  color: #ffffff;
+}
+
+main[data-kids="on"]::-webkit-scrollbar {
+  width: 16px;
+}
+main[data-kids="on"]::-webkit-scrollbar-track {
+  background: #e5f5f5;
+}
+main[data-kids="on"]::-webkit-scrollbar-thumb {
+  background-color: #6bc5ca;
+  border-radius: 999px;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+}
+main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
+  background-color: #4fb3b9;
+}
+
+[data-kids="on"] .harbor-row-track {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+
+[data-kids="on"] .harbor-mark-sail {
+  fill: #6bc5ca;
+}
+[data-kids="on"] .harbor-mark-hull {
+  fill: #845151;
+}
+
+[data-kids="on"] .harbor-row-arrow {
+  height: 3.25rem;
+  width: 3.25rem;
+  background-color: #ffffff;
+  color: #1f8f88;
+  border: 2px solid #d4eff0;
+  box-shadow: 0 12px 28px -10px rgba(20, 70, 80, 0.4);
+}
+[data-kids="on"] .harbor-row-arrow svg {
+  width: 26px;
+  height: 26px;
+}
+
+.kids-page-glow {
+  background-image:
+    radial-gradient(130% 18% at 32% 38%, rgba(255, 226, 196, 0.2), transparent 72%),
+    radial-gradient(130% 18% at 70% 52%, rgba(196, 222, 250, 0.22), transparent 72%),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 24%,
+      rgba(58, 138, 156, 0.16) 54%,
+      rgba(34, 102, 128, 0.3) 80%,
+      rgba(20, 78, 104, 0.44) 100%
+    );
+}
+
+@keyframes kid-bubble-rise {
+  0% {
+    transform: translateY(0) scale(0.85);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-54px) scale(1.15);
+    opacity: 0;
+  }
+}
+.kid-bubble {
+  animation: kid-bubble-rise 3.4s ease-in infinite;
+}
+
+@keyframes curfew-sail {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg);
+  }
+}
+.curfew-sail {
+  animation: curfew-sail 3.5s ease-in-out infinite;
+}
+
+@keyframes curfew-drift {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-22px) translateY(-6px);
+  }
+}
+.curfew-drift {
+  animation: curfew-drift 6s ease-in-out infinite;
+}
+
+@keyframes curfew-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+.curfew-bob {
+  animation: curfew-bob 4.5s ease-in-out infinite;
+}
+
+@keyframes curfew-bubble {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-100vh) scale(1.2);
+    opacity: 0;
+  }
+}
+.curfew-bubble {
+  animation: curfew-bubble 7s linear infinite;
+}
+
+@keyframes curfew-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+.curfew-shake {
+  animation: curfew-shake 0.3s ease-in-out 2;
+}
+
 @layer base {
   button {
     font: inherit;
@@ -675,6 +898,27 @@ html[data-theme-layout="stremio"] main {
 }
 
 html[data-theme-layout="stremio"] .harbor-bleed-stremio {
+  margin-left: -2.5rem;
+  margin-right: -2.75rem;
+}
+
+.harbor-hero-full {
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+}
+@media (min-width: 640px) {
+  .harbor-hero-full {
+    margin-left: -2rem;
+    margin-right: -2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .harbor-hero-full {
+    margin-left: -3rem;
+    margin-right: -3rem;
+  }
+}
+html[data-theme-layout="stremio"] .harbor-hero-full {
   margin-left: -2.5rem;
   margin-right: -2.75rem;
 }

@@ -71,8 +71,6 @@ export function Shows({ active = true }: { active?: boolean }) {
     (async () => {
       if (settings.tmdbKey) {
         const heroPool = await buildShowHero(settings.tmdbKey).catch(() => [] as Meta[]);
-        if (cancelled) return;
-        setHero(heroPool);
         const specs = showSpecs(settings.tmdbKey);
         const firstPages = await Promise.all(
           specs.map((s) => s.fetcher(1).catch(() => [] as Meta[])),
@@ -88,8 +86,13 @@ export function Shows({ active = true }: { active?: boolean }) {
             fetcher: spec.noPaginate ? undefined : spec.fetcher,
           }))
           .filter((r) => r.metas.length > 0);
-        setRows(built);
-      } else {
+        if (built.length > 0) {
+          setHero(heroPool);
+          setRows(built);
+          return;
+        }
+      }
+      {
         const genreList = [
           "Drama",
           "Comedy",

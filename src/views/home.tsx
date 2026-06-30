@@ -385,6 +385,11 @@ export function Home({ active = true }: { active?: boolean }) {
 
   const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
   const animeDetectVer = useDetectedAnimeVersion();
+  const stremioWatchedIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const i of items) if ((i.state?.flaggedWatched ?? 0) > 0) s.add(i._id);
+    return s;
+  }, [items]);
   const continueWatching = useMemo(() => {
     const localCwItems: LibraryItem[] = listLocalCw().map((e) => ({
       _id: e.id,
@@ -422,24 +427,28 @@ export function Home({ active = true }: { active?: boolean }) {
       .sort((a, b) => b.k - a.k)
       .map((e) => e.i);
     const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
-    const ns = (id: string) => (id.startsWith("tt") ? "tt" : id.split(":")[0]);
     const seenId = new Set<string>();
-    const seenKey = new Map<string, { ns: string; vid: string }>();
+    const seenName = new Set<string>();
     const out: typeof eligible = [];
     for (const i of eligible) {
       if (seenId.has(i._id)) continue;
-      const key = `${i.type}:${norm(i.name ?? "")}`;
-      const kept = seenKey.get(key);
-      const vid = i.state?.video_id ?? "";
-      if (kept !== undefined && kept.ns !== ns(i._id) && kept.vid === vid) continue;
+      const nm = norm(i.name ?? "");
+      const key = `${i.type}:${nm}`;
+      if (nm && seenName.has(key)) continue;
       seenId.add(i._id);
-      if (kept === undefined) seenKey.set(key, { ns: ns(i._id), vid });
+      if (nm) seenName.add(key);
       out.push(i);
       if (out.length >= 100) break;
     }
     return out;
   }, [items, simklCw, localCwVer, cwVersion, settings.animeOnlyInAnimeRoom, animeDetectVer]);
-  const cwItems = useCwAdvance(continueWatching, settings.tmdbKey, settings.cwAdvanceNext);
+  const cwItems = useCwAdvance(
+    continueWatching,
+    settings.tmdbKey,
+    settings.cwAdvanceNext,
+    items,
+    settings.animeOnlyInAnimeRoom ? "exclude" : "all",
+  );
 
   useEffect(() => {
     void detectAnimeForCw(items);
@@ -655,7 +664,7 @@ export function Home({ active = true }: { active?: boolean }) {
   return (
     <main
       ref={scrollCb}
-      className="flex-1 overflow-y-auto px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
     >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="relative flex flex-col gap-12">
@@ -678,7 +687,10 @@ export function Home({ active = true }: { active?: boolean }) {
             </div>
           )}
           {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && (
-            <div data-scroll-anchor="hero" className="relative">
+            <div
+              data-scroll-anchor="hero"
+              className={`relative ${settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
+            >
               {editMode && (
                 <PinnedRowControls
                   label={t("Featured hero")}
@@ -686,7 +698,11 @@ export function Home({ active = true }: { active?: boolean }) {
                   onToggleHidden={() => handleToggleHidden("hero")}
                 />
               )}
-              <HeroCarousel slides={heroSlides} />
+              <HeroCarousel
+                slides={heroSlides}
+                full={settings.heroFull}
+                fullQuality={settings.heroFullQuality}
+              />
               {!editMode && (
                 <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
                   <CustomizeBar
@@ -794,6 +810,7 @@ export function Home({ active = true }: { active?: boolean }) {
               hideWatched={settings.hideWatchedInCatalogs}
               watchedSet={traktWatched}
               localWatched={localWatched}
+              stremioWatched={stremioWatchedIds}
               homeLanguages={settings.homeLanguages}
             />
           )}

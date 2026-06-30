@@ -81,7 +81,7 @@ export function TweakSlider({
   );
 }
 
-const PICTURE_TEMPLATES: Array<{ label: string; sub: string; patch: Record<string, string | null> }> = [
+export const PICTURE_TEMPLATES: Array<{ label: string; sub: string; patch: Record<string, string | null> }> = [
   {
     label: "Brighten dark movies",
     sub: "Lifts shadows so the pitch-black scenes are actually watchable.",
@@ -104,7 +104,7 @@ const PICTURE_TEMPLATES: Array<{ label: string; sub: string; patch: Record<strin
   },
 ];
 
-const PICTURE_KEYS = ["brightness", "contrast", "saturation", "gamma", "sharpen"];
+export const PICTURE_KEYS = ["brightness", "contrast", "saturation", "gamma", "sharpen"];
 
 export function PictureDialsSection() {
   const t = useT();

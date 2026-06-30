@@ -135,13 +135,21 @@ export async function isFfmpegPresent(): Promise<boolean> {
   return ffmpegPresentCache;
 }
 
-export function guessContentType(url: string): string {
-  const lower = url.toLowerCase().split("?")[0];
+function mimeFromExt(s: string): string | undefined {
+  const lower = s.toLowerCase().split("?")[0];
   if (lower.endsWith(".mp4") || lower.endsWith(".m4v")) return "video/mp4";
   if (lower.endsWith(".webm")) return "video/webm";
   if (lower.endsWith(".mkv")) return "video/x-matroska";
+  if (lower.endsWith(".avi")) return "video/x-msvideo";
+  if (lower.endsWith(".mov")) return "video/quicktime";
   if (lower.endsWith(".m3u8")) return "application/vnd.apple.mpegurl";
   if (lower.endsWith(".mpd")) return "application/dash+xml";
   if (lower.endsWith(".ts")) return "video/mp2t";
-  return "video/mp4";
+  return undefined;
+}
+
+export function guessContentType(url: string, fallbackName?: string): string {
+  return (
+    mimeFromExt(url) ?? (fallbackName ? mimeFromExt(fallbackName) : undefined) ?? "video/mp4"
+  );
 }

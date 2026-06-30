@@ -242,7 +242,13 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     publishResumeStates(continueWatching);
   }, [continueWatching]);
 
-  const cwItems = useCwAdvance(continueWatching, settings.tmdbKey, settings.cwAdvanceNext);
+  const cwItems = useCwAdvance(
+    continueWatching,
+    settings.tmdbKey,
+    settings.cwAdvanceNext,
+    libItems,
+    "only",
+  );
 
   useEffect(() => {
     void detectAnimeForCw(libItems);

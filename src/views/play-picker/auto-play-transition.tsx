@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { HarborLoader } from "@/components/harbor-loader";
 import type { Meta } from "@/lib/cinemeta";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
+import { useActiveKid } from "@/lib/profiles";
 import { type PlayEpisode } from "@/lib/view";
 import { LogoOrText } from "./logo-or-text";
 
@@ -19,6 +20,7 @@ export function AutoPlayTransition({
   onCancel: () => void;
 }) {
   void resolving;
+  const kid = useActiveKid();
   const backdrop = episode?.still || meta.background || meta.poster;
   const [stubNotice, setStubNotice] = useState<string | null>(null);
   useEffect(() => {
@@ -29,17 +31,62 @@ export function AutoPlayTransition({
     return () => window.clearTimeout(t);
   }, []);
   return (
-    <main className="fixed inset-0 z-[120] overflow-hidden bg-black">
+    <main className={`fixed inset-0 z-[120] overflow-hidden ${kid ? "bg-[#0c4a6e]" : "bg-black"}`}>
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-20 h-16" />
       {backdrop && (
         <img
           src={backdrop}
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover opacity-40 blur-[28px] saturate-150"
+          className={`absolute inset-0 h-full w-full object-cover saturate-150 ${
+            kid ? "opacity-20 blur-[36px]" : "opacity-40 blur-[28px]"
+          }`}
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/55 to-black/85" />
+      <div
+        className={`absolute inset-0 ${
+          kid
+            ? "bg-gradient-to-b from-[#3aa6c4]/85 via-[#1c789f]/88 to-[#0a3d5c]/94"
+            : "bg-gradient-to-b from-black/65 via-black/55 to-black/85"
+        }`}
+      />
+      {kid && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {[8, 22, 38, 55, 70, 84, 93].map((left, i) => (
+            <span
+              key={i}
+              className="curfew-bubble absolute bottom-0 rounded-full bg-white/25"
+              style={{
+                left: `${left}%`,
+                width: 12 + (i % 3) * 6,
+                height: 12 + (i % 3) * 6,
+                animationDelay: `-${(1 + ((i * 1.7) % 6)).toFixed(1)}s`,
+                animationDuration: `${6 + (i % 4)}s`,
+              }}
+            />
+          ))}
+          <div className="curfew-bob absolute bottom-[14%] left-[10%]">
+            <img
+              src="/kids/doodles/liloctored.png"
+              alt=""
+              draggable={false}
+              className="h-24 w-auto opacity-85"
+            />
+          </div>
+          <img
+            src="/kids/doodles/lilpurpocto.png"
+            alt=""
+            draggable={false}
+            className="absolute bottom-[12%] right-[12%] h-20 w-auto opacity-75"
+          />
+          <img
+            src="/kids/doodles/lilorangestar2.png"
+            alt=""
+            draggable={false}
+            className="absolute right-[18%] top-[18%] h-10 w-auto opacity-90"
+          />
+        </div>
+      )}
       <div className="relative flex h-full flex-col items-center justify-center gap-7 px-8 text-center">
         <LogoOrText
           logo={meta.logo ?? null}

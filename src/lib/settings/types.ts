@@ -81,9 +81,13 @@ export type Settings = {
   serveWebUi: boolean;
   trailerQuality: "auto" | "360p" | "720p" | "1080p" | "best";
   detailTrailerAutoplay: boolean;
+  detailTrailerAudio: boolean;
   heroShadow: number;
+  heroFull: boolean;
+  heroFullQuality: boolean;
   resumePrompt: boolean;
   resumePlayback: boolean;
+  keepFullscreenOnExit: boolean;
   badgePlacement: "top" | "bottom";
   watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
   showWatchedButton: boolean;
@@ -124,6 +128,7 @@ export type Settings = {
   playerEngine: "auto" | "html5" | "mpv";
   playerShellId: string;
   playerChromeTheme: "auto" | "default" | "stremio";
+  playerMenuBlack: boolean;
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
   rememberLastStream: boolean;
@@ -140,6 +145,8 @@ export type Settings = {
   directTorrentStream: boolean;
   p2pAutoConsent: boolean;
   streamCacheRetentionHours: number;
+  streamCacheMaxGb: number;
+  deleteWatchedDownloads: boolean;
   streamCacheDir: string;
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
@@ -173,6 +180,8 @@ export type Settings = {
   betaUpdates: boolean;
   autoSkipIntro: boolean;
   autoSkipAd: boolean;
+  showSkipButton: boolean;
+  skipButtonHideSec: number;
   trackBlockWords: string[];
   forcedSubsWhenNativeAudio: boolean;
   tmdbLanguage: string;

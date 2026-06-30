@@ -25,6 +25,9 @@ import { useDedupedRows } from "./discover/use-deduped-rows";
 import { ANCHOR_AWARDS, ANCHOR_TOP_RATED } from "@/lib/feed/daily-rows-anchors";
 import type { HomeRow } from "./home/home-types";
 import { CatalogCustomizeBar } from "@/components/catalog/customize-bar";
+import { CatalogBrowser } from "@/views/discover/catalog-browser";
+import { SurpriseMe } from "@/views/discover/surprise-me";
+import { SectionEditBar } from "@/views/discover/section-edit-bar";
 import { RowControls } from "@/views/home/row-controls";
 import { useT } from "@/lib/i18n";
 import {
@@ -105,7 +108,9 @@ export function Discover({ active = true }: { active?: boolean }) {
   const railPagesRef = useRef<Record<string, number>>({});
   const railExhaustedRef = useRef<Record<string, boolean>>({});
   const railLoadingRef = useRef<Record<string, boolean>>({});
-  const genRef = useRef(0);
+  const [epoch, setEpoch] = useState(0);
+  const epochRef = useRef(0);
+  epochRef.current = epoch;
 
   const dailyRows = useMemo(
     () => selectDailyRows(settings.tmdbKey, getStore().affinity, settings, ROW_COUNT),
@@ -211,41 +216,49 @@ export function Discover({ active = true }: { active?: boolean }) {
       if (railLoadingRef.current[railId]) return;
       const def = dailyRows.find((r) => r.id === railId);
       if (!def) return;
-      const gen = genRef.current;
+      const myEpoch = epoch;
       railLoadingRef.current[railId] = true;
       def
         .fetch(1)
         .then((list) => {
-          if (genRef.current !== gen) return;
+          if (epochRef.current !== myEpoch) return;
           railPagesRef.current[railId] = 1;
           if (list.length < MIN_PAGE_YIELD) railExhaustedRef.current[railId] = true;
           setRails((prev) => ({ ...prev, [railId]: list }));
         })
         .catch(() => {
-          if (genRef.current !== gen) return;
+          if (epochRef.current !== myEpoch) return;
           railPagesRef.current[railId] = 1;
           railExhaustedRef.current[railId] = true;
           setRails((prev) => ({ ...prev, [railId]: [] }));
         })
         .finally(() => {
-          if (genRef.current === gen) railLoadingRef.current[railId] = false;
+          if (epochRef.current === myEpoch) railLoadingRef.current[railId] = false;
         });
     },
-    [dailyRows],
+    [dailyRows, epoch],
   );
 
   const ensureLoadedRef = useRef(ensureLoaded);
   ensureLoadedRef.current = ensureLoaded;
 
+  const didInitRef = useRef(false);
   useEffect(() => {
-    genRef.current += 1;
+    if (!didInitRef.current) {
+      didInitRef.current = true;
+      return;
+    }
     setRails({});
     railPagesRef.current = {};
     railExhaustedRef.current = {};
     railLoadingRef.current = {};
-    for (const id of DEDUP_PRIORITY) ensureLoadedRef.current(id);
+    setEpoch((e) => e + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowSig, settings.tmdbKey, settings.region, settings.streaming, settings.tmdbLanguage]);
+
+  useEffect(() => {
+    for (const id of DEDUP_PRIORITY) ensureLoadedRef.current(id);
+  }, [epoch]);
 
   const loadMore = useCallback(
     (railId: string) => {
@@ -311,22 +324,84 @@ export function Discover({ active = true }: { active?: boolean }) {
     () => orderedRowKeys(railKeys, pageRows.custom),
     [railKeys, pageRows.custom],
   );
+  const surprisePool = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Meta[] = [];
+    for (const m of [...featured, ...criticsPickList, ...Object.values(rails).flat()]) {
+      if (!m.poster || seen.has(m.id)) continue;
+      seen.add(m.id);
+      out.push(m);
+    }
+    return out;
+  }, [featured, criticsPickList, rails]);
+
+  const hiddenFeatured = pageRows.custom.hidden.includes("section-featured");
+  const hiddenCatalog = pageRows.custom.hidden.includes("section-catalog");
+  const hiddenSurprise = pageRows.custom.hidden.includes("section-surprise");
+  const customizeBar = (
+    <CatalogCustomizeBar
+      editMode={pageRows.editMode}
+      hasChanges={hasPageRowChanges(pageRows.custom)}
+      onToggleEdit={() => pageRows.setEditMode((v) => !v)}
+      onReset={() => pageRows.persist(resetPageRows())}
+    />
+  );
 
   return (
     <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pb-20 pt-28">
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-14">
-          <div className="relative">
-            <FeaturedBanner items={featured} />
-            <div className="absolute end-0 bottom-4 z-10">
-              <CatalogCustomizeBar
-                editMode={pageRows.editMode}
-                hasChanges={hasPageRowChanges(pageRows.custom)}
-                onToggleEdit={() => pageRows.setEditMode((v) => !v)}
-                onReset={() => pageRows.persist(resetPageRows())}
-              />
+          {pageRows.editMode || !hiddenFeatured ? (
+            <div className="relative">
+              {pageRows.editMode && (
+                <SectionEditBar
+                  name={t("Featured & Recommended")}
+                  hidden={hiddenFeatured}
+                  onToggle={() => pageRows.persist(togglePageRowHidden(pageRows.custom, "section-featured"))}
+                />
+              )}
+              <div className={hiddenFeatured ? "pointer-events-none opacity-40" : ""}>
+                <FeaturedBanner items={featured} />
+              </div>
+              <div className="absolute end-0 bottom-4 z-10">{customizeBar}</div>
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-end">{customizeBar}</div>
+          )}
+
+          {pageRows.editMode ? (
+            <div className="flex flex-col gap-4">
+              <div>
+                <SectionEditBar
+                  name={t("Browse your catalogs")}
+                  hidden={hiddenCatalog}
+                  onToggle={() => pageRows.persist(togglePageRowHidden(pageRows.custom, "section-catalog"))}
+                />
+                <div className={hiddenCatalog ? "pointer-events-none opacity-40" : ""}>
+                  <CatalogBrowser />
+                </div>
+              </div>
+              <div>
+                <SectionEditBar
+                  name={t("Can't decide?")}
+                  hidden={hiddenSurprise}
+                  onToggle={() => pageRows.persist(togglePageRowHidden(pageRows.custom, "section-surprise"))}
+                />
+                <div className={hiddenSurprise ? "pointer-events-none opacity-40" : ""}>
+                  <SurpriseMe pool={surprisePool} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            (!hiddenCatalog || !hiddenSurprise) && (
+              <div
+                className={`flex flex-wrap items-stretch gap-x-6 gap-y-4 ${!hiddenFeatured ? "-mt-8" : ""}`}
+              >
+                {!hiddenCatalog && <CatalogBrowser />}
+                {!hiddenSurprise && <SurpriseMe pool={surprisePool} />}
+              </div>
+            )
+          )}
 
           {letterboxdRows.map((row, i) => {
             const catalogId = row.key.replace("letterboxd-", "");

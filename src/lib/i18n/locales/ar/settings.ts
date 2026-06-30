@@ -1,4 +1,10 @@
 const settings: Record<string, string> = {
+  "Home hero": "واجهة العنوان المميّز",
+  "Make the featured banner on Home bigger and sharper.": "اجعل لافتة العنوان المميّز في الصفحة الرئيسية أكبر وأوضح.",
+  "Full hero banner": "لافتة بطل كاملة",
+  "Stretch the featured hero edge to edge and taller, across every layout.": "تمدّد لافتة البطل من الحافة إلى الحافة وبارتفاع أكبر، في جميع التخطيطات.",
+  "Full quality hero image": "صورة البطل بأعلى جودة",
+  "Load the highest-resolution artwork for the featured hero. Uses more bandwidth.": "تحميل صورة البطل المميّز بأعلى دقة. يستهلك بيانات أكثر.",
   "Display language": "لغة العرض",
   "Interface language": "لغة الواجهة",
   "Metadata language": "لغة البيانات الوصفية",
@@ -1642,6 +1648,9 @@ const settings: Record<string, string> = {
   "Could not resolve that Letterboxd list URL.": "لا يمكن جلب رابط قائمة ليتربوكسد هذه.",
   "Choose an avatar": "اختر صورة رمزية",
   "{n} avatars across film, TV, and anime.": "{n} صورة رمزية من الأفلام والتلفزيون والأنمي.",
+  "Rights and usage": "الحقوق والاستخدام",
+  "Fan-made avatars for personal use. Harbor claims no rights to these characters; they belong to their creators and studios, shown here under fair use. Every one is optimized down to a tiny WebP.":
+    "صور رمزية من صنع المعجبين للاستخدام الشخصي. لا تدّعي Harbor أي حقوق على هذه الشخصيات؛ فهي ملك لمبدعيها واستوديوهاتها، وتُعرض هنا ضمن الاستخدام العادل. كل صورة محسّنة إلى ملف WebP صغير.",
   "or use one of our avatars": "أو استخدم إحدى صورنا الرمزية",
   "Random avatar": "صورة رمزية عشوائية",
   "More soon": "المزيد قريباً",
@@ -1650,6 +1659,64 @@ const settings: Record<string, string> = {
   "Scroll right": "تمرير لليمين",
   "Preview": "معاينة",
   "Hover to peek": "مرّر للمعاينة",
+  "Merged": "مدمج",
+  "Every row": "كل الصفوف",
+  "Trending": "رائج",
+  "Popular": "شائع",
+  "Trending · Cinemeta": "رائج · Cinemeta",
+  "Popular · AIO": "شائع · AIO",
+  "On: addon rails that duplicate the built-ins show too, instead of folding into one.":
+    "عند التفعيل: تظهر صفوف الإضافات المكرّرة للصفوف المدمجة أيضاً بدلاً من دمجها في صف واحد.",
+  "auto": "تلقائي",
+  "On: only titles you bookmarked. Off: also keeps the ones Stremio added when you hit play.":
+    "عند التفعيل: العناوين التي حفظتها فقط. عند الإيقاف: تشمل أيضاً ما أضافه Stremio عند الضغط على تشغيل.",
+  "Adds a Playlists tab to the nav for your M3U and Xtream libraries.":
+    "يضيف تبويب قوائم التشغيل إلى الشريط لمكتبات M3U وXtream.",
+  "Home · Continue Watching": "الرئيسية · متابعة المشاهدة",
+  "anime": "أنمي",
+  "Anime tab": "تبويب الأنمي",
+  "Anime leaves Home Continue Watching and stays in the Anime tab's own row.":
+    "يغادر الأنمي متابعة المشاهدة في الرئيسية ويبقى في صف تبويب الأنمي الخاص به.",
+  "0m left": "باقٍ 0 د",
+  "24m": "24 د",
+  "Finish an episode and the card jumps to the next one instead of sitting at 0m left.":
+    "أنهِ حلقة لتنتقل البطاقة إلى الحلقة التالية بدلاً من بقائها عند 0 دقيقة متبقية.",
+  "Movies you've finished and shows in progress leave the catalog rows. Continue Watching is never touched.":
+    "تختفي الأفلام التي أنهيتها والمسلسلات قيد المشاهدة من صفوف الكتالوج. لا تتأثّر متابعة المشاهدة أبداً.",
+  "No filter. Home shows every language.": "بدون تصفية. تعرض الرئيسية كل اللغات.",
+  "language. Home filters to it.": "لغة. تصفّي الرئيسية إليها.",
+  "languages. Home filters to these.": "لغات. تصفّي الرئيسية إليها.",
+  "Tamil": "التاميلية",
+  "Each episode shows its IMDb rating, right on the still.":
+    "تظهر لكل حلقة درجة IMDb مباشرةً على الصورة.",
+  "Turn on to show each episode's synopsis under the still.":
+    "فعّلها لإظهار ملخّص كل حلقة أسفل الصورة.",
+  "Loads full-resolution artwork instead of the lighter, softer version.":
+    "يحمّل الصورة بدقّتها الكاملة بدلاً من النسخة الأخف والأقل وضوحاً.",
+  "Lighter (w300)": "أخف (w300)",
+  "Original": "الأصلية",
+  "Saved frame": "الإطار المحفوظ",
+  "AI search": "البحث بالذكاء الاصطناعي",
+  "Type what you want in plain language and let a model find it. Bring your own OpenRouter key.":
+    "اكتب ما تريد بلغة طبيعية ودع النموذج يجده. استخدم مفتاح OpenRouter الخاص بك.",
+  "Model": "النموذج",
+  "Choose a model": "اختر نموذجاً",
+  "What gets through": "ما الذي يمر",
+  "No filtering": "بدون تصفية",
+  "blocked": "محظور",
+  "shown": "معروض",
+  "Likely cam": "نسخة كام محتملة",
+  "Wrong year": "سنة خاطئة",
+  "Size outlier": "حجم شاذ",
+  "Suspicious file": "ملف مريب",
+  "Top pick": "أفضل اختيار",
+  "All sources": "كل المصادر",
+  "Play": "تشغيل",
+  "When a flagged ad plays, a Skip button slides in so you jump straight past it.":
+    "عند تشغيل إعلان مُبلَّغ عنه، يظهر زر التخطّي لتقفز فوقه مباشرةً.",
+  "Picks up right where you left off": "يكمل من حيث توقّفت تماماً",
+  "Back out mid-episode and the card keeps the exact frame you stopped on, with your progress, so it looks like a pause instead of a thumbnail.":
+    "اخرج في منتصف الحلقة وستحتفظ البطاقة بالإطار الذي توقّفت عنده تماماً مع تقدّمك، فتبدو كأنها إيقاف مؤقت لا مجرّد صورة مصغّرة.",
   "The Last Stand": "الصمود الأخير",
   "With the city surrounded, an unlikely alliance forms as a long-buried secret finally comes to light.":
     "مع تطويق المدينة، يتشكّل تحالف غير متوقّع بينما يخرج سرّ دفين إلى النور.",

@@ -1,6 +1,5 @@
 import { Check, Play, Eye } from "lucide-react";
 import { useMemo } from "react";
-import { MalLogo } from "@/components/icons/mal-logo";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
@@ -14,6 +13,7 @@ import { EpisodeGrid } from "./episode-grid";
 import type { GridEpisode } from "./episode-grid-types";
 import { FillerBadge, UpcomingBadge } from "./badges";
 import { isUpcomingDate } from "./helpers";
+import { EpisodeRatingBadge } from "./episode-rating-badge";
 
 type Progress = { ratio: number; watched: boolean; startedAt: number };
 
@@ -49,7 +49,8 @@ export function AnimeEpisodeStrip({
         runtime: ep.length,
         airDate: ep.airdate,
         overview: ep.synopsis || undefined,
-        rating: Number(meta.imdbRating) || undefined,
+        rating: ep.rating ?? undefined,
+        ratingIsImdb: ep.rating != null ? !!ep.ratingIsImdb : false,
         filler: ep.filler,
         upcoming: isUpcomingDate(ep.airdate),
         play: () =>
@@ -164,12 +165,9 @@ function AnimeEpisodeStripCard({
 
         {/* Persistent bottom gradient with Synopsis */}
         <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
-          {settings.showEpisodeRating && meta.imdbRating ? (
+          {settings.showEpisodeRating && ep.rating != null && ep.rating > 0 ? (
             <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
-              <MalLogo className="h-2.5 w-auto text-white shadow-sm" />
-              <span className="text-[10px] font-bold text-white">
-                {meta.imdbRating}
-              </span>
+              <EpisodeRatingBadge value={ep.rating} isImdb={!!ep.ratingIsImdb} />
             </div>
           ) : null}
           {ep.synopsis && (

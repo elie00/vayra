@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { getSeekHovering, subscribeSeekHovering } from "@/lib/player/playback-clock";
 import { CHROME_HIDE_MS_PAUSED, CHROME_HIDE_MS_PLAYING, CHROME_HIDE_MS_RESUME } from "../player-utils";
 
+const UI_SCALE_ACTIVITY_EVENT = "harbor:ui-scale-activity";
+const UI_SCALE_RESIZE_HOLD_MS = 700;
+
 export function useChromeVisibility(params: {
   playing: boolean;
   drawMode: boolean;
@@ -16,6 +19,8 @@ export function useChromeVisibility(params: {
   }, [chromeVisible]);
 
   const hideTimer = useRef<number | null>(null);
+  const resizeTimer = useRef<number | null>(null);
+  const resizingUiRef = useRef(false);
   const anyMenuOpenRef = useRef(false);
   const resumeHideRef = useRef(false);
 
@@ -23,7 +28,7 @@ export function useChromeVisibility(params: {
     setChromeVisible(true);
     setChromeHidden(pipMode);
     if (hideTimer.current) window.clearTimeout(hideTimer.current);
-    if (anyMenuOpenRef.current || getSeekHovering()) return;
+    if (resizingUiRef.current || anyMenuOpenRef.current || getSeekHovering()) return;
     let wait = playing && !drawMode ? CHROME_HIDE_MS_PLAYING : CHROME_HIDE_MS_PAUSED;
     if (resumeHideRef.current) {
       resumeHideRef.current = false;
@@ -48,9 +53,29 @@ export function useChromeVisibility(params: {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("touchstart", onMove);
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
+      if (resizeTimer.current) window.clearTimeout(resizeTimer.current);
       setChromeHidden(false);
     };
   }, [wakeChrome, setChromeHidden]);
+
+  useEffect(() => {
+    const onScaleActivity = () => {
+      resizingUiRef.current = true;
+      setChromeVisible(true);
+      setChromeHidden(pipMode);
+      if (hideTimer.current) window.clearTimeout(hideTimer.current);
+      if (resizeTimer.current) window.clearTimeout(resizeTimer.current);
+      resizeTimer.current = window.setTimeout(() => {
+        resizingUiRef.current = false;
+        wakeChrome();
+      }, UI_SCALE_RESIZE_HOLD_MS);
+    };
+    window.addEventListener(UI_SCALE_ACTIVITY_EVENT, onScaleActivity);
+    return () => {
+      window.removeEventListener(UI_SCALE_ACTIVITY_EVENT, onScaleActivity);
+      if (resizeTimer.current) window.clearTimeout(resizeTimer.current);
+    };
+  }, [pipMode, setChromeHidden, wakeChrome]);
 
   useEffect(() => {
     const onLeave = (e: MouseEvent) => {

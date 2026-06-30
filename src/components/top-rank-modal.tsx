@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
 import { ImdbIcon } from "@/components/icons/imdb-icon";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
 import { useRankings, type KnownForEntry, type PersonEntry } from "@/lib/rankings";
 import { useSettings } from "@/lib/settings";
 import { useTopRankModal, type TopRankDept } from "@/lib/top-rank-modal";
@@ -240,7 +240,14 @@ function PersonRow({
 }
 
 function KnownChip({ entry, onClick }: { entry: KnownForEntry; onClick: () => void }) {
-  const poster = entry.posterPath ? `https://image.tmdb.org/t/p/w92${entry.posterPath}` : null;
+  const { settings } = useSettings();
+  const rawPoster = entry.posterPath ? `https://image.tmdb.org/t/p/w92${entry.posterPath}` : undefined;
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    `tmdb:${entry.mediaType}:${entry.id}`,
+    rawPoster,
+    entry.mediaType === "tv" ? "series" : "movie",
+  );
   return (
     <button
       onClick={onClick}
@@ -248,8 +255,8 @@ function KnownChip({ entry, onClick }: { entry: KnownForEntry; onClick: () => vo
       title={entry.title}
     >
       <span className="h-7 w-5 shrink-0 overflow-hidden rounded-full bg-canvas">
-        {poster ? (
-          <img src={poster} alt="" loading="lazy" className="h-full w-full object-cover" />
+        {poster.src ? (
+          <img src={poster.src} alt="" loading="lazy" onError={poster.onError} className="h-full w-full object-cover" />
         ) : (
           <span className="block h-full w-full bg-gradient-to-br from-canvas to-elevated" />
         )}

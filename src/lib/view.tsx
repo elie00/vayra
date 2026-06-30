@@ -5,7 +5,7 @@ import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
 import { getWindowFullscreen, suppressFullscreenExitOnce } from "./fullscreen-state";
-export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "library" | "live" | "vod" | "downloads";
+export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads";
 
 export type PlayEpisode = {
   season: number;
@@ -59,6 +59,7 @@ export type GridSpec = {
   title: string;
   fetcher: (page: number) => Promise<Meta[]>;
   initial?: Meta[];
+  kidsHero?: { grad: string; art: string; name: string };
 };
 
 export type MetaFilter =
@@ -81,6 +82,7 @@ export type Frame =
   | { kind: "queue" }
   | { kind: "movies" }
   | { kind: "shows" }
+  | { kind: "kids" }
   | { kind: "library" }
   | { kind: "live" }
   | { kind: "vod" }
@@ -212,6 +214,8 @@ function frameKey(f: Frame): string {
       return "movies";
     case "shows":
       return "shows";
+    case "kids":
+      return "kids";
     case "library":
       return "library";
     case "live":
@@ -322,6 +326,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (f.kind === "calendar") return "calendar";
       if (f.kind === "movies") return "movies";
       if (f.kind === "shows") return "shows";
+      if (f.kind === "kids") return "kids";
       if (f.kind === "library") return "library";
       if (f.kind === "live") return "live";
       if (f.kind === "vod") return "vod";
@@ -464,6 +469,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         scrollMem.current.clear();
         rowScrollMem.current.clear();
         return [{ kind: "shows" }];
+      }
+      if (v === "kids") {
+        scrollMem.current.clear();
+        rowScrollMem.current.clear();
+        return [{ kind: "kids" }];
       }
       if (v === "library") {
         scrollMem.current.clear();

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { fetchTrailer, resolveTrailerQuality, trailerSrc } from "@/lib/trailer";
 import { isMacDesktop } from "@/lib/platform";
+import { openUrl } from "@/lib/window";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -122,7 +123,11 @@ export function TrailerOverlay({
         {streamUrl ? (
           <NativeTrailerPlayer src={streamUrl} videoRef={videoRef} />
         ) : extractFailed ? (
-          <YouTubeEmbed id={id} title={title} />
+          isMacDesktop() ? (
+            <ExternalTrailerFallback id={id} title={title} logo={logo} />
+          ) : (
+            <YouTubeEmbed id={id} title={title} />
+          )
         ) : (
           <TrailerLoader title={title} logo={logo} />
         )}
@@ -142,10 +147,7 @@ export function TrailerOverlay({
 }
 
 function YouTubeEmbed({ id, title }: { id: string; title: string }) {
-  const httpOrigin =
-    typeof window !== "undefined" && /^https?:$/.test(window.location?.protocol ?? "")
-      ? window.location.origin
-      : "https://www.youtube.com";
+  const t = useT();
   const params = new URLSearchParams({
     autoplay: "1",
     modestbranding: "1",
@@ -153,18 +155,64 @@ function YouTubeEmbed({ id, title }: { id: string; title: string }) {
     iv_load_policy: "3",
     playsinline: "1",
     fs: "1",
-    origin: httpOrigin,
-    widget_referrer: "https://www.youtube.com",
   });
+  const proto = typeof window !== "undefined" ? (window.location?.protocol ?? "") : "";
+  if (/^https?:$/.test(proto) && window.location?.origin) {
+    params.set("origin", window.location.origin);
+  }
   return (
-    <iframe
-      src={`https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`}
-      title={`${title} trailer`}
-      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-      allowFullScreen
-      referrerPolicy="strict-origin-when-cross-origin"
-      className="absolute inset-0 h-full w-full border-0"
-    />
+    <>
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`}
+        title={`${title} trailer`}
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+        className="absolute inset-0 h-full w-full border-0"
+      />
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          openUrl(`https://www.youtube.com/watch?v=${id}`);
+        }}
+        className="absolute bottom-4 end-4 z-10 flex items-center gap-1.5 rounded-full bg-canvas/90 px-3.5 py-2 text-[12.5px] font-semibold text-ink shadow-[0_8px_22px_rgba(0,0,0,0.4)] backdrop-blur-sm transition-colors hover:bg-canvas"
+      >
+        {t("Watch on YouTube")}
+      </button>
+    </>
+  );
+}
+
+function ExternalTrailerFallback({ id, title, logo }: { id: string; title: string; logo?: string }) {
+  const t = useT();
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-8 text-center">
+      {logo ? (
+        <img
+          src={logo}
+          alt={title}
+          className="max-h-24 w-auto max-w-[55%] object-contain opacity-90 drop-shadow-[0_18px_45px_rgba(0,0,0,0.55)]"
+        />
+      ) : (
+        <p className="font-display text-[40px] font-medium leading-[0.98] tracking-tight text-white drop-shadow-[0_18px_45px_rgba(0,0,0,0.55)]">
+          {title}
+        </p>
+      )}
+      <p className="max-w-sm text-[14px] leading-relaxed text-white/55">
+        {t("This trailer plays on YouTube.")}
+      </p>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          openUrl(`https://www.youtube.com/watch?v=${id}`);
+        }}
+        className="flex h-11 items-center rounded-full bg-white px-6 text-[14px] font-semibold text-black shadow-[0_8px_22px_rgba(0,0,0,0.4)] transition-transform active:scale-[0.97]"
+      >
+        {t("Watch on YouTube")}
+      </button>
+    </div>
   );
 }
 

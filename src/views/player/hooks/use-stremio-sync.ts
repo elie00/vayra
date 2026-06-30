@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { cloudWriteId, libraryGetOne, libraryPut, type LibraryItem } from "@/lib/stremio";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, subscribePlaybackClock } from "@/lib/player/playback-clock";
+import { useProfiles } from "@/lib/profiles";
+import { recordWatchedBy } from "@/lib/watched-by";
 import type { PlayerSrc } from "@/lib/view";
 
 const TICK_MS = 30000;
@@ -26,6 +28,11 @@ export function useStremioSync(params: {
 }) {
   const { src, snap, authKey, resolvedImdbId, resolvedImdbVerified, resolutionSettled, castActiveRef } = params;
   const canonicalId = cloudWriteId(src.meta.id, resolvedImdbId, resolvedImdbVerified);
+  const watcherProfileId = useProfiles().activeProfile?.id ?? null;
+  useEffect(() => {
+    if (!resolutionSettled || !canonicalId) return;
+    recordWatchedBy(canonicalId, watcherProfileId);
+  }, [resolutionSettled, canonicalId, watcherProfileId]);
   const sessionStartRef = useRef<number>(Date.now());
   const lastSyncedRef = useRef(0);
   const baseItemRef = useRef<LibraryItem | null>(null);

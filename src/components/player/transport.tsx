@@ -5,6 +5,8 @@ import type { Meta } from "@/lib/cinemeta";
 import { CastModal } from "./cast-modal";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { TransportStremio } from "./transport-stremio";
+import { TransportKids } from "./transport-kids";
+import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { resolveChromeTheme } from "@/lib/theme";
@@ -147,6 +149,7 @@ export function Transport({
 }) {
   const t = useT();
   const { settings } = useSettings();
+  const kid = useActiveKid();
   const isStremioLayout = resolveChromeTheme(settings.theme, settings.playerChromeTheme) === "stremio";
   if (isStremioLayout && !pipMode) {
     return (
@@ -208,6 +211,28 @@ export function Transport({
         onDownloadReset={onDownloadReset}
         onOpenDvr={onOpenDvr}
         sleep={sleep}
+      />
+    );
+  }
+  if (kid && !pipMode) {
+    return (
+      <TransportKids
+        snap={snap}
+        capabilities={capabilities}
+        visible={visible}
+        fullscreen={fullscreen}
+        title={title}
+        resolution={resolution}
+        onBack={onBack}
+        onPlayPause={onPlayPause}
+        onSeek={onSeek}
+        onSeekStep={onSeekStep}
+        onMute={onMute}
+        onVolume={onVolume}
+        onSubtitle={onSubtitle}
+        onFullscreen={onFullscreen}
+        onPickAnother={onPickAnother}
+        canPickAnother={canPickAnother}
       />
     );
   }

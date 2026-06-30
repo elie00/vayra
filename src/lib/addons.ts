@@ -346,8 +346,12 @@ export async function fetchAddonCatalogPage(
   type: string,
   id: string,
   skip: number,
+  extra?: { name: string; value: string },
 ): Promise<Meta[]> {
-  const seg = skip > 0 ? `/skip=${skip}` : "";
+  const parts: string[] = [];
+  if (extra) parts.push(`${encodeURIComponent(extra.name)}=${encodeURIComponent(extra.value)}`);
+  if (skip > 0) parts.push(`skip=${skip}`);
+  const seg = parts.length ? `/${parts.join("&")}` : "";
   const res = await fetchWithTimeout(`${base}/catalog/${type}/${id}${seg}.json`);
   if (!res || !res.ok) return [];
   try {

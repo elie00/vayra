@@ -16,7 +16,7 @@ export function DetailHeroTrailer({
   const { settings } = useSettings();
   const [info, setInfo] = useState<TrailerInfo | null>(null);
   const [ready, setReady] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(!settings.detailTrailerAudio);
   const videoRef = useRef<HTMLVideoElement>(null);
   const pageVisible = usePageVisible();
   const wantsPlayback = !!info && !paused && pageVisible;
@@ -24,7 +24,7 @@ export function DetailHeroTrailer({
   useEffect(() => {
     setInfo(null);
     setReady(false);
-    setMuted(true);
+    setMuted(!settings.detailTrailerAudio);
     if (!candidateId) return;
     let cancelled = false;
     fetchTrailer(candidateId, resolveTrailerQuality(settings.trailerQuality)).then((i) => {
@@ -38,8 +38,17 @@ export function DetailHeroTrailer({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (wantsPlayback) v.play().catch(() => {});
-    else v.pause();
+    if (wantsPlayback) {
+      v.play().catch(() => {
+        if (!v.muted) {
+          v.muted = true;
+          setMuted(true);
+          v.play().catch(() => {});
+        }
+      });
+    } else {
+      v.pause();
+    }
   }, [wantsPlayback]);
 
   useEffect(() => {
@@ -78,7 +87,7 @@ export function DetailHeroTrailer({
           onClick={() => setMuted((m) => !m)}
           aria-label={muted ? t("Unmute trailer") : t("Mute trailer")}
           title={muted ? t("Unmute trailer") : t("Mute trailer")}
-          className="absolute bottom-8 end-8 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-canvas/55 text-ink backdrop-blur-md transition-colors hover:bg-canvas/80"
+          className="absolute bottom-8 end-8 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-md transition-colors hover:bg-black/75"
         >
           {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>

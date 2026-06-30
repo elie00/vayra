@@ -44,17 +44,20 @@ export async function fetchAddonStreams(
       skipped.push(`${addon.manifest.name}(status-addon)`);
       continue;
     }
-    const id = pickId(addon, req.type, req.ids);
-    if (!id) {
+    const ids = pickIds(addon, req.type, req.ids);
+    if (ids.length === 0) {
       skipped.push(`${addon.manifest.name}(no-matching-id)`);
       continue;
     }
-    namedTasks.push({
-      name: addon.manifest.name,
-      p: fetchOne(addon, req.type, id, signal).then((ss) =>
-        ss.map((s) => ({ ...s, addonPriority: priority })),
-      ),
-    });
+    for (const id of ids) {
+      const name = ids.length > 1 ? `${addon.manifest.name}[${idScheme(id)}]` : addon.manifest.name;
+      namedTasks.push({
+        name,
+        p: fetchOne(addon, req.type, id, signal).then((ss) =>
+          ss.map((s) => ({ ...s, addonPriority: priority })),
+        ),
+      });
+    }
   }
   if (skipped.length > 0) console.info(`[addons] skipped: ${skipped.join(", ")}`);
   console.info(`[addons] querying ${namedTasks.length}: ${namedTasks.map((t) => t.name).join(", ")}`);
@@ -95,6 +98,22 @@ function pickId(addon: Addon, type: string, ids: string[]): string | null {
     if (addonAcceptsId(addon, type, id)) return id;
   }
   return null;
+}
+
+const ANIME_SCHEMES = ["kitsu", "mal", "anidb", "anilist"];
+
+function idScheme(id: string): string {
+  return id.startsWith("tt") ? "imdb" : id.split(":")[0];
+}
+
+function pickIds(addon: Addon, type: string, ids: string[]): string[] {
+  const sorted = [...ids].sort((a, b) => idPriority(a) - idPriority(b));
+  const accepted = sorted.filter((id) => addonAcceptsId(addon, type, id));
+  if (accepted.length === 0) return [];
+  const animeId = accepted.find((id) => ANIME_SCHEMES.some((s) => id.startsWith(s)));
+  const ttId = accepted.find((id) => id.startsWith("tt"));
+  if (animeId && ttId) return [animeId, ttId];
+  return [accepted[0]];
 }
 
 function addonAcceptsId(addon: Addon, type: string, id: string): boolean {

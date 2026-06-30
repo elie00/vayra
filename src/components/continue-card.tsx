@@ -10,8 +10,10 @@ import { readSnapshot, useSnapshotVersion } from "@/lib/snapshots";
 import { episodeFromVideoId, isAnimeCwItem, libraryMetaType, type LibraryItem } from "@/lib/stremio";
 import { useHasNewEpisode } from "@/lib/new-episodes";
 import { Tooltip } from "@/views/detail/tooltip";
+import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useView, type PlayEpisode } from "@/lib/view";
+import { getWatchedBy } from "@/lib/watched-by";
 
 type Props = {
   item: LibraryItem;
@@ -23,6 +25,10 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
   const { openMeta, openPicker } = useView();
   const t = useT();
   const { settings } = useSettings();
+  const { profiles, activeProfile } = useProfiles();
+  const watcherId = getWatchedBy(item._id);
+  const watcher = watcherId ? profiles.find((p) => p.id === watcherId) : null;
+  const showWatcher = !!watcher && watcher.id !== activeProfile?.id;
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const { open: openContextMenu } = useContextMenu();
@@ -206,7 +212,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
         onContextMenu={(e) => openContextMenu(e, { kind: "meta", meta })}
         className="flex w-full min-w-0 flex-col gap-2.5 text-start"
       >
-      <div className="harbor-poster relative aspect-[16/9] overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-transform duration-[220ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.02]">
+      <div className="harbor-poster relative aspect-[16/9] overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] will-change-transform [transform:translate3d(0,0,0)] transition-transform duration-[220ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.02]">
         <div className="absolute inset-0 bg-gradient-to-br from-raised via-elevated to-surface" />
         {src && (
           <img
@@ -269,6 +275,23 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
             ) : (
               remaining && <span className="text-ink-muted">{remaining}</span>
             )}
+          </div>
+        )}
+        {showWatcher && watcher && (
+          <div
+            className="absolute bottom-2.5 end-2 z-[1]"
+            title={t("Watched by {name}", { name: watcher.name })}
+          >
+            <span
+              className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-elevated text-[11px] font-bold text-white"
+              style={{ boxShadow: `0 0 0 2px ${watcher.color}, 0 2px 8px rgba(0,0,0,0.5)` }}
+            >
+              {watcher.avatar ? (
+                <img src={watcher.avatar} alt="" className="h-full w-full object-cover" draggable={false} />
+              ) : (
+                (watcher.name.trim()[0]?.toUpperCase() ?? "?")
+              )}
+            </span>
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-canvas/40">

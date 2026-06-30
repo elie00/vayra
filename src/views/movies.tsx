@@ -102,8 +102,6 @@ export function Movies({ active = true }: { active?: boolean }) {
       const seen = recentlyPlayed();
       if (settings.tmdbKey) {
         const heroPool = await buildMovieHero(settings.tmdbKey, seen).catch(() => [] as Meta[]);
-        if (cancelled) return;
-        setHero(heroPool);
         const specs = movieSpecs(settings.tmdbKey, settings.region);
         const firstPages = await Promise.all(
           specs.map((s) => s.fetcher(1).catch(() => [] as Meta[])),
@@ -119,53 +117,56 @@ export function Movies({ active = true }: { active?: boolean }) {
             fetcher: spec.noPaginate ? undefined : spec.fetcher,
           }))
           .filter((r) => r.metas.length > 0);
-        setRows(built);
-      } else {
-        const genreList = [
-          "Action",
-          "Drama",
-          "Comedy",
-          "Sci-Fi",
-          "Thriller",
-          "Horror",
-          "Romance",
-          "Animation",
-          "Adventure",
-          "Crime",
-          "Mystery",
-          "Fantasy",
-          "Documentary",
-        ];
-        const [top, ...byGenre] = await Promise.all([
-          topMovies().catch(() => [] as Meta[]),
-          ...genreList.map((g) => topMovies(g).catch(() => [] as Meta[])),
-        ]);
-        if (cancelled) return;
-        setHero(rotateDaily(top.filter((m) => m.background), HERO_POOL_TARGET, seen));
-        const built: MovieRow[] = [
-          {
-            key: "cinemeta-top",
-            title: "Top Movies",
-            metas: top.slice(0, 30),
-            page: 1,
-            hasMore: false,
-            fetcher: listPager(top),
-          },
-        ];
-        for (let i = 0; i < genreList.length; i++) {
-          const list = byGenre[i] ?? [];
-          if (list.length === 0) continue;
-          built.push({
-            key: `cinemeta-genre-${genreList[i].toLowerCase().replace(/[^a-z]/g, "")}`,
-            title: `Top ${genreList[i]}`,
-            metas: list.slice(0, 30),
-            page: 1,
-            hasMore: false,
-            fetcher: listPager(list),
-          });
+        if (built.length > 0) {
+          setHero(heroPool);
+          setRows(built);
+          return;
         }
-        setRows(built);
       }
+      const genreList = [
+        "Action",
+        "Drama",
+        "Comedy",
+        "Sci-Fi",
+        "Thriller",
+        "Horror",
+        "Romance",
+        "Animation",
+        "Adventure",
+        "Crime",
+        "Mystery",
+        "Fantasy",
+        "Documentary",
+      ];
+      const [top, ...byGenre] = await Promise.all([
+        topMovies().catch(() => [] as Meta[]),
+        ...genreList.map((g) => topMovies(g).catch(() => [] as Meta[])),
+      ]);
+      if (cancelled) return;
+      setHero(rotateDaily(top.filter((m) => m.background), HERO_POOL_TARGET, seen));
+      const built: MovieRow[] = [
+        {
+          key: "cinemeta-top",
+          title: "Top Movies",
+          metas: top.slice(0, 30),
+          page: 1,
+          hasMore: false,
+          fetcher: listPager(top),
+        },
+      ];
+      for (let i = 0; i < genreList.length; i++) {
+        const list = byGenre[i] ?? [];
+        if (list.length === 0) continue;
+        built.push({
+          key: `cinemeta-genre-${genreList[i].toLowerCase().replace(/[^a-z]/g, "")}`,
+          title: `Top ${genreList[i]}`,
+          metas: list.slice(0, 30),
+          page: 1,
+          hasMore: false,
+          fetcher: listPager(list),
+        });
+      }
+      setRows(built);
     })().catch(console.error);
     return () => {
       cancelled = true;

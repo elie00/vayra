@@ -143,7 +143,7 @@ export function WatchlistTab() {
         traktStatus === "loading" ? tr("Syncing Trakt…") : tr("{n} on Trakt", { n: trakt.length }),
       );
     else parts.push(tr("Connect Trakt in Settings to sync"));
-    parts.push(tr("{n} saved here", { n: localEntries.length }));
+    parts.push(tr("{n} saved on this device", { n: localEntries.length }));
     if (authKey && rawCount > 0) parts.push(tr("{n} in your Stremio library", { n: rawCount }));
     return parts.join(" · ");
   })();

@@ -17,6 +17,9 @@ import {
 import { ExtLink, KeyField, Section, ToggleRow } from "./shared";
 import { ManualAddonCard, ServiceCard } from "./streaming-panel";
 import { AioStatusModal } from "./aiostatus-modal";
+import { StreamFilterPreview } from "./stream-filter-preview";
+import { PickerLayoutPreview, StreamDescriptionPreview, TorrentNamePreview } from "./picker-previews";
+import { AdSkipShowcase } from "./ad-skip-showcase";
 import { useT } from "@/lib/i18n";
 
 export type DebridKey = "rd" | "tb" | "ad" | "pm" | "dl";
@@ -61,6 +64,7 @@ export function StreamingSourcesPanel({
           value={settings.streamFilterLevel}
           onChange={(v) => update({ streamFilterLevel: v })}
         />
+        <StreamFilterPreview level={settings.streamFilterLevel} />
       </Section>
 
       <Section
@@ -71,6 +75,7 @@ export function StreamingSourcesPanel({
           value={settings.pickerLayout}
           onChange={(v) => update({ pickerLayout: v })}
         />
+        <PickerLayoutPreview value={settings.pickerLayout} />
       </Section>
 
       <Section
@@ -83,6 +88,7 @@ export function StreamingSourcesPanel({
           value={settings.pickerShowFilename}
           onChange={(v) => update({ pickerShowFilename: v })}
         />
+        <TorrentNamePreview on={settings.pickerShowFilename} />
       </Section>
 
       <Section
@@ -95,12 +101,14 @@ export function StreamingSourcesPanel({
           value={settings.fullStreamDescription}
           onChange={(v) => update({ fullStreamDescription: v })}
         />
+        <StreamDescriptionPreview full={settings.fullStreamDescription} />
       </Section>
 
       <Section
         title={t("Injected ad skip (experimental)")}
         subtitle={t("Some cam and new-release rips have ads spliced into the video itself. When the community has marked one, a Skip button appears. You can also report ads you spot for review. Off by default.")}
       >
+        <AdSkipShowcase />
         <ToggleRow
           label={t("Enable injected ad skip")}
           sub={t("Show a Skip button when a known injected ad plays, and a small report button on new releases so you can mark ads for review.")}

@@ -353,6 +353,13 @@ export function PlayerLayoutPanel() {
         }}
       />
 
+      <ToggleRow
+        label="True black menus"
+        sub="Force player menus and panels to pure black, ignoring your theme tint."
+        value={settings.playerMenuBlack}
+        onChange={(v) => update({ playerMenuBlack: v })}
+      />
+
       <EditLayoutCard
         theme={theme}
         visibleCount={visibleCount}

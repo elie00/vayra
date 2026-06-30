@@ -1,9 +1,10 @@
 import { Check, ChevronDown, Minus, Plus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/anchored-menu";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
 import { anilistMediaToMeta } from "@/lib/anilist/to-meta";
 import type { AnilistMediaEntry, MediaListStatus } from "@/lib/anilist/types";
+import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 
@@ -39,11 +40,19 @@ export function AnilistEntryCard({
   onRemove: () => void;
 }) {
   const t = useT();
+  const { settings } = useSettings();
   const { openMeta } = useView();
   const m = entry.media;
   const name = m.title.userPreferred || m.title.english || m.title.romaji || t("Untitled");
   const total = m.episodes ?? null;
   const atCeiling = total != null && entry.progress >= total;
+  const metaId = m.idMal != null ? `mal:${m.idMal}` : `anilist:${m.id}`;
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    metaId,
+    m.coverImage.extraLarge ?? m.coverImage.large ?? undefined,
+    m.format === "MOVIE" ? "movie" : "series",
+  );
 
   const open = () => {
     const meta = anilistMediaToMeta(m);
@@ -58,7 +67,8 @@ export function AnilistEntryCard({
         className="relative aspect-[2/3] overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:scale-[1.02]"
       >
         <Poster
-          src={m.coverImage.extraLarge ?? m.coverImage.large ?? undefined}
+          src={poster.src}
+          onError={poster.onError}
           seed={String(m.id)}
           className="h-full w-full"
         />

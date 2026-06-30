@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
 import type { CalendarItem } from "@/lib/calendar";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { formatDateLong } from "./utils";
 
 export function DayModal({
@@ -74,6 +75,13 @@ function DayModalRow({
   onOpen: (item: CalendarItem) => void;
 }) {
   const t = useT();
+  const { settings } = useSettings();
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    item.id,
+    item.poster ?? undefined,
+    item.type === "tv" ? "series" : "movie",
+  );
   const tag = item.isAnime ? t("Anime") : item.type === "movie" ? t("Movie") : t("TV");
   const tagClass = item.isAnime
     ? "bg-rose-400/20 text-rose-200"
@@ -87,7 +95,13 @@ function DayModalRow({
     >
       <div className="h-[78px] w-[52px] shrink-0 overflow-hidden rounded-md bg-elevated/50 ring-1 ring-edge-soft">
         {item.poster ? (
-          <Poster src={item.poster} seed={item.id} ratio="portrait" className="h-full w-full" />
+          <Poster
+            src={poster.src}
+            onError={poster.onError}
+            seed={item.id}
+            ratio="portrait"
+            className="h-full w-full"
+          />
         ) : null}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">

@@ -22,6 +22,7 @@ type Tab = {
   label: string;
   view: View;
   parentalKey?: LockableTab;
+  hideKey?: "anime" | "liveTv" | "sports";
 };
 
 const PRIMARY: Tab[] = [
@@ -29,8 +30,8 @@ const PRIMARY: Tab[] = [
   { label: "Discover", view: "discover", parentalKey: "discover" },
   { label: "Movies", view: "movies", parentalKey: "movies" },
   { label: "Shows", view: "shows", parentalKey: "shows" },
-  { label: "Anime", view: "anime", parentalKey: "anime" },
-  { label: "Live TV", view: "live", parentalKey: "liveTv" },
+  { label: "Anime", view: "anime", parentalKey: "anime", hideKey: "anime" },
+  { label: "Live TV", view: "live", parentalKey: "liveTv", hideKey: "liveTv" },
   { label: "Playlists", view: "vod" },
 ];
 
@@ -66,6 +67,7 @@ export function TopDock() {
     .filter(
       (tab) =>
         (tab.view !== "vod" || settings.showPlaylistsTab) &&
+        (!tab.hideKey || !settings.hideContent[tab.hideKey]) &&
         (!tab.parentalKey || !locked || !hiddenTabs[tab.parentalKey]),
     )
     .map((tab) => {
@@ -318,10 +320,14 @@ function ProfileChipCompact({
                   className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-white/10"
                 >
                   <span
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-canvas"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-bold text-canvas"
                     style={{ background: p.color }}
                   >
-                    {p.name.slice(0, 1).toUpperCase()}
+                    {p.avatar ? (
+                      <img src={p.avatar} alt="" draggable={false} className="h-full w-full object-cover" />
+                    ) : (
+                      p.name.slice(0, 1).toUpperCase()
+                    )}
                   </span>
                   <span className="truncate text-[12.5px] text-ink">{p.name}</span>
                 </button>

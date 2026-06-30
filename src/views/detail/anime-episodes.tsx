@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { EpisodeJumper } from "@/components/episode-jumper";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress } from "@/lib/episode-progress";
+import { scrollToDataEp } from "@/lib/episode-scroll";
 import { franchiseTags, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
@@ -149,6 +150,17 @@ export function AnimeEpisodes({
     io.observe(el);
     return () => io.disconnect();
   }, [settings.episodeLayout, hasMore, grow, scrollRef]);
+
+  const didJumpRef = useRef("");
+  useEffect(() => {
+    if (nextUpNum == null || didJumpRef.current === meta.id) return;
+    const idx = episodes.findIndex((ep) => ep.number === nextUpNum);
+    if (idx < 12) return;
+    didJumpRef.current = meta.id;
+    if ((scrollRef.current?.scrollTop ?? 0) > 240) return;
+    reveal(nextUpNum);
+    scrollToDataEp(scrollRef.current, nextUpNum, { behavior: "auto", center: true });
+  }, [nextUpNum, episodes, meta.id, reveal, scrollRef]);
 
   const isOneOff = meta.type === "movie" || episodes.length <= 1;
   return (

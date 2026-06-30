@@ -90,11 +90,36 @@ export function QualityPanel() {
         subtitle={t("Harbor finds intro and credits timing from AniSkip, TheIntroDB, and the file's own chapters, then shows a Skip button at the right moment.")}
       >
         <ToggleRow
+          label={t("Show the Skip button")}
+          sub={t("Show a Skip Intro / Skip Credits button when Harbor detects one. Turn this off to never show it. You can also tap the X on the button to dismiss a wrong one for the rest of the episode.")}
+          value={settings.showSkipButton}
+          onChange={(v) => update({ showSkipButton: v })}
+        />
+        <ToggleRow
           label={t("Auto-skip intros")}
           sub={t("Jump past openings automatically the moment one starts. The Skip button still shows either way, and seeking back into an intro replays it without skipping again.")}
           value={settings.autoSkipIntro}
           onChange={(v) => update({ autoSkipIntro: v })}
         />
+        {settings.showSkipButton && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[13.5px] font-medium text-ink">{t("Auto-hide the Skip button after")}</span>
+            <Segmented
+              value={String(settings.skipButtonHideSec)}
+              options={[
+                { value: "0", label: t("Off") },
+                { value: "5", label: t("5s") },
+                { value: "10", label: t("10s") },
+                { value: "15", label: t("15s") },
+                { value: "30", label: t("30s") },
+              ]}
+              onChange={(v) => update({ skipButtonHideSec: Number(v) })}
+            />
+            <span className="text-[12.5px] leading-relaxed text-ink-subtle">
+              {t("Hides the button on its own after a few seconds so a wrong one doesn't sit there the whole episode.")}
+            </span>
+          </div>
+        )}
       </Section>
 
       <Section

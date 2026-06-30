@@ -1,6 +1,7 @@
-import { Ratio } from "lucide-react";
+import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CROP_PRESETS } from "@/views/player/hooks/use-video-fill";
+import { PICTURE_KEYS, PICTURE_TEMPLATES, TweakSlider, useTweaks } from "@/views/settings/mpv-panel/dials";
 import { useT } from "@/lib/i18n";
 import { Tooltip } from "./tooltip";
 
@@ -16,6 +17,7 @@ export function AspectMenu({
   const t = useT();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const { tweaks, setTweak, applyPatch } = useTweaks();
   useEffect(() => {
     onOpenChange?.(open);
   }, [open, onOpenChange]);
@@ -27,28 +29,66 @@ export function AspectMenu({
     window.addEventListener("mousedown", close);
     return () => window.removeEventListener("mousedown", close);
   }, [open]);
-  const active = mode !== "fit";
-  const accent = open || active;
+  const aspectActive = mode !== "fit";
+  const pictureActive = PICTURE_KEYS.some((k) => tweaks[k] != null && tweaks[k] !== "");
+  const accent = open || aspectActive || pictureActive;
   const current = CROP_PRESETS.find((m) => m.id === mode);
   return (
     <div ref={wrap} className="relative">
-      <Tooltip label={t("Aspect ratio")}>
+      <Tooltip label={t("Picture")}>
         <button
           onClick={() => setOpen((o) => !o)}
-          aria-label={t("Aspect ratio")}
+          aria-label={t("Picture")}
           className={`flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color] ${
             accent ? "bg-white/22 text-white hover:bg-white/30" : "text-white/85 hover:bg-white/10 hover:text-white"
           }`}
         >
-          <Ratio size={22} strokeWidth={1.9} />
-          {active && current ? (
+          <SlidersHorizontal size={21} strokeWidth={1.9} />
+          {aspectActive && current ? (
             <span className="text-[11px] font-bold tabular-nums tracking-wider">{current.label}</span>
           ) : null}
         </button>
       </Tooltip>
       {open && (
-        <div className="absolute bottom-[calc(100%+10px)] end-0 w-[240px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-          <div className="p-2">
+        <div className="absolute bottom-[calc(100%+10px)] end-0 flex max-h-[70vh] w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-y-auto rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+          <div className="p-3">
+            <div className="flex items-center justify-between px-1 pb-2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+                {t("Picture")}
+              </span>
+              {pictureActive && (
+                <button
+                  type="button"
+                  onClick={() => applyPatch(Object.fromEntries(PICTURE_KEYS.map((k) => [k, null])))}
+                  className="flex items-center gap-1 text-[11.5px] font-semibold text-ink-subtle transition-colors hover:text-ink"
+                >
+                  <RotateCcw size={11} strokeWidth={2.4} />
+                  {t("Reset")}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5 px-1">
+              {PICTURE_TEMPLATES.map((tpl) => (
+                <button
+                  key={tpl.label}
+                  type="button"
+                  title={t(tpl.sub)}
+                  onClick={() => applyPatch(tpl.patch)}
+                  className="rounded-full border border-edge-soft bg-canvas/40 px-3 py-1.5 text-[12px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
+                >
+                  {t(tpl.label)}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 flex flex-col">
+              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="brightness" label={t("Brightness")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="contrast" label={t("Contrast")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="saturation" label={t("Saturation")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="gamma" label={t("Gamma")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="sharpen" label={t("Sharpen")} min={0} max={2} step={0.05} def={0} fmt={(v) => v.toFixed(2)} />
+            </div>
+          </div>
+          <div className="border-t border-edge-soft/60 p-2">
             <div className="px-3 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
               {t("Aspect ratio")}
             </div>

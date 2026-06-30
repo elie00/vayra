@@ -22,6 +22,7 @@ import {
 import {
   nextProfileColor,
   useProfiles,
+  type KidConfig,
   type Profile,
   type ProfileColor,
 } from "@/lib/profiles";
@@ -40,6 +41,8 @@ import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
 import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
 import { avatarUrl } from "@/lib/avatars/catalog";
 import { ColorPicker } from "@/views/settings/color-picker";
+import { KidToggle } from "./kid-toggle";
+import { KidsSetupPanel } from "./kids-setup-panel";
 import { PinEntry } from "./pin-entry";
 
 type SubView =
@@ -93,6 +96,8 @@ export function EditorView({
   const [draftLockedTabs, setDraftLockedTabs] = useState<HiddenTabs | null>(
     editing?.lockedTabs ?? null,
   );
+  const [draftKid, setDraftKid] = useState<KidConfig | null>(editing?.kid ?? null);
+  const [draftParentPin, setDraftParentPin] = useState<string | null>(null);
   const [subView, setSubView] = useState<SubView>({ kind: "main" });
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -178,15 +183,28 @@ export function EditorView({
 
   const submit = async () => {
     if (!canSave) return;
+    let kidToSave = draftKid;
+    if (draftKid) {
+      let parentPinHash = editing?.kid?.parentPinHash ?? null;
+      if (draftParentPin && draftParentPin.length === 4) {
+        parentPinHash = await hashProfilePassword(draftParentPin);
+      }
+      kidToSave = {
+        age: draftKid.age,
+        curfewMinutes: draftKid.curfewMinutes ?? null,
+        parentPinHash,
+      };
+    }
     if (editing) {
       updateProfile(editing.id, {
         name: trimmed,
         avatar,
         color,
+        kid: kidToSave,
         ...(canShare ? { shareStremioWith: shareWith } : {}),
       });
     } else {
-      const p = createProfile({ name: trimmed, avatar, color });
+      const p = createProfile({ name: trimmed, avatar, color, kid: kidToSave });
       const patch: Parameters<typeof updateProfile>[1] = {};
       if (canShare && shareWith !== p.shareStremioWith) patch.shareStremioWith = shareWith;
       if (draftPin) patch.passwordHash = await hashProfilePassword(draftPin);
@@ -422,7 +440,26 @@ export function EditorView({
         <ColorPicker value={color} onChange={setColor} />
       </div>
 
-      {showAdvanced && (
+      {showAdvanced && !isPrimary && (
+        <KidToggle value={draftKid} onChange={setDraftKid} />
+      )}
+
+      {draftKid && (
+        <KidsSetupPanel
+          avatar={avatar}
+          setAvatar={(v) => {
+            setAvatar(v);
+            setAvatarSource("builtin");
+          }}
+          kid={draftKid}
+          setKid={setDraftKid}
+          parentPin={draftParentPin}
+          setParentPin={setDraftParentPin}
+          hasExistingPin={!!editing?.kid?.parentPinHash}
+        />
+      )}
+
+      {showAdvanced && !draftKid && (
         <SecurityRow
           locked={locked}
           lockedTabs={editing?.lockedTabs ?? draftLockedTabs}
@@ -430,7 +467,7 @@ export function EditorView({
         />
       )}
 
-      {showAdvanced && canShare && primary && (
+      {showAdvanced && !draftKid && canShare && primary && (
         <div className="flex flex-col gap-1.5">
           <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
             {t("Stremio account")}

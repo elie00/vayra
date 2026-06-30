@@ -62,6 +62,8 @@ export function useResumeAutosave(params: {
     if (!id || id.startsWith("iptv:")) return;
     const pos = getPlaybackPosition() || lastGoodPosRef.current;
     if (pos < MIN_POSITION_SEC) return;
+    const finished =
+      (sn.durationSec > 0 && pos / sn.durationSec >= WATCHED_RATIO) || sn.status === "ended";
     lastSavedRef.current = pos * 1000;
     saveResumeMs(id, pos * 1000, se, ep);
     if (isExternalPlaylistId(id)) return;
@@ -74,8 +76,7 @@ export function useResumeAutosave(params: {
       s.meta.type === "series" &&
       typeof se === "number" &&
       typeof ep === "number" &&
-      sn.durationSec > 0 &&
-      pos / sn.durationSec >= WATCHED_RATIO &&
+      finished &&
       !isManuallyWatched(id, se, ep)
     ) {
       setManualWatched(id, se, ep, true);
@@ -100,11 +101,10 @@ export function useResumeAutosave(params: {
     if (autoSyncRef.current && trackId) {
       void markAnimeWatching(trackId, s.meta.name);
     }
-    const ratio = sn.durationSec > 0 ? pos / sn.durationSec : 0;
-    if (ratio >= WATCHED_RATIO && autoSyncRef.current && trackId) {
+    if (finished && autoSyncRef.current && trackId) {
       void syncAnimeProgress(trackId, ep, s.meta.name);
     }
-    const kind = ratio >= WATCHED_RATIO ? "watched" : "play";
+    const kind = finished ? "watched" : "play";
     const key = `${id}|${kind}`;
     if (taughtRef.current.has(key)) return;
     taughtRef.current.add(key);

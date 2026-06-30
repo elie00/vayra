@@ -18,6 +18,12 @@ export function isAnimeId(id: string): boolean {
   );
 }
 
+function animeSeriesFromStreamId(streamId: string | undefined): string | null {
+  if (!streamId) return null;
+  const m = /^(kitsu|mal|anilist|anidb):(\d+):/.exec(streamId);
+  return m ? `${m[1]}:${m[2]}` : null;
+}
+
 async function resolveAnimeKitsuId(id: string): Promise<number | null> {
   const direct = parseKitsuId(id);
   if (direct != null) return direct;
@@ -52,6 +58,7 @@ async function getAnimeEpisodes(id: string): Promise<PlayEpisode[] | null> {
       name: v.title || undefined,
       still: v.thumbnail ?? undefined,
       overview: v.overview ?? undefined,
+      airDate: v.released,
     };
     if (v.id) ep.kitsuStreamId = v.id;
     if (v.imdb_id ?? addonMeta?.imdb_id) ep.imdbId = v.imdb_id ?? addonMeta?.imdb_id;
@@ -121,8 +128,14 @@ async function getAddonEpisodes(id: string): Promise<PlayEpisode[] | null> {
 export async function fetchAdjacentEpisodes(
   meta: Meta,
   current: { season: number; episode: number },
-  opts: { tmdbKey: string },
+  opts: { tmdbKey: string; kitsuStreamId?: string },
 ): Promise<Adjacent> {
+  const animeSeries = animeSeriesFromStreamId(opts.kitsuStreamId);
+  if (animeSeries) {
+    const eps = await getAnimeEpisodes(animeSeries);
+    if (eps) return computeAdjacent(eps, current);
+  }
+
   if (meta.type !== "series" && !isAnimeId(meta.id)) return { prev: null, next: null };
 
   if (meta.id.startsWith("tt")) {
@@ -199,6 +212,8 @@ async function loadCinemetaEpisodes(id: string): Promise<PlayEpisode[] | null> {
     thumbnail?: string;
     overview?: string;
     description?: string;
+    released?: string;
+    firstAired?: string;
   }>;
   const eps: PlayEpisode[] = [];
   for (const v of raw) {
@@ -217,6 +232,7 @@ async function loadCinemetaEpisodes(id: string): Promise<PlayEpisode[] | null> {
       name: v.title || v.name || undefined,
       still: v.thumbnail,
       overview: v.overview || v.description,
+      airDate: v.released || v.firstAired,
     });
   }
   eps.sort((a, b) => a.season - b.season || a.episode - b.episode);

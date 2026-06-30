@@ -1,6 +1,6 @@
 import { FolderPlus, HardDrive, Loader2, Play, RefreshCw, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
 import {
   addLocalEntries,
   parseFilename,
@@ -203,6 +203,13 @@ function OwnedCard({ entry }: { entry: LocalEntry }) {
   const t = useT();
   const [confirm, setConfirm] = useState(false);
   const { openPlayer } = useView();
+  const { settings } = useSettings();
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    entry.imdbId ?? `local:${entry.id}`,
+    entry.poster ?? undefined,
+    entry.type === "show" ? "series" : "movie",
+  );
 
   const onPlay = useCallback(() => {
     openPlayer({
@@ -237,16 +244,13 @@ function OwnedCard({ entry }: { entry: LocalEntry }) {
         }}
         className="relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] outline-none ring-offset-2 ring-offset-canvas focus-visible:ring-2 focus-visible:ring-ink"
       >
-        {entry.poster ? (
-          <img
-            src={entry.poster}
-            alt=""
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-            loading="lazy"
-          />
-        ) : (
-          <Poster src={undefined} seed={entry.id} className="h-full w-full" />
-        )}
+        <Poster
+          src={poster.src}
+          onError={poster.onError}
+          seed={entry.id}
+          lazy
+          className="h-full w-full transition-transform duration-200 group-hover:scale-[1.02]"
+        />
         <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-md bg-canvas/85 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink-muted backdrop-blur-sm">
           <HardDrive size={9} strokeWidth={2.4} />
           {entry.resolution ?? t("local")}

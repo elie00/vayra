@@ -404,12 +404,12 @@ export const jikanSearchByTitle = (title: string, limit = 1) =>
     q: title,
     limit,
     order_by: "popularity",
-    sort: "asc",
+    sort: "desc",
     sfw: "true",
   });
 
 export async function jikanResolveMalId(title: string): Promise<number | null> {
-  const url = `${JIKAN}/anime?q=${encodeURIComponent(title)}&limit=1&sfw=true&order_by=popularity&sort=asc`;
+  const url = `${JIKAN}/anime?q=${encodeURIComponent(title)}&limit=1&sfw=true&order_by=popularity&sort=desc`;
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 12000);
   try {

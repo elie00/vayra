@@ -6,6 +6,16 @@ import { effectiveBinding, eventToBinding, isTypingTarget, type HotkeyId } from 
 import { useSettings } from "@/lib/settings";
 import { round2 } from "../player-utils";
 
+function customSeekStep(direction: "back" | "forward", fallback: number): number {
+  try {
+    const saved = localStorage.getItem(`harbor.seek-step.${direction}`);
+    const n = saved ? Number(saved) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function useKeyboardShortcuts(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
   snap: PlayerSnapshot;
@@ -138,22 +148,22 @@ export function useKeyboardShortcuts(params: {
       }
       if (match("playerSeekBack10")) {
         e.preventDefault();
-        seekStep(-10);
+        seekStep(-customSeekStep("back", 10));
         return;
       }
       if (match("playerSeekForward10")) {
         e.preventDefault();
-        seekStep(10);
+        seekStep(customSeekStep("forward", 10));
         return;
       }
       if (match("playerSeekBack30")) {
         e.preventDefault();
-        seekStep(-30);
+        seekStep(-customSeekStep("back", 30));
         return;
       }
       if (match("playerSeekForward30")) {
         e.preventDefault();
-        seekStep(30);
+        seekStep(customSeekStep("forward", 30));
         return;
       }
       if (match("playerFrameForward") && onFrameStep) {

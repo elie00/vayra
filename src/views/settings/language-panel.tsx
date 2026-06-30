@@ -102,6 +102,22 @@ export function LanguagePanel() {
         options={[{ value: "", label: t("English (default)") }, ...TMDB_LANGUAGES]}
         className="w-full max-w-[340px]"
       />
+      {settings.tmdbLanguage !== "" && (
+        <>
+          <ToggleRow
+            label={t("Translate titles")}
+            sub={t("Off keeps the original title (usually English) so it stays easy to recognize and search. Overviews still follow the language above.")}
+            value={settings.translateTitles}
+            onChange={(v) => update({ translateTitles: v })}
+          />
+          <ToggleRow
+            label={t("Translate overviews")}
+            sub={t("Translate plot descriptions and taglines into the language above. Turn off to keep English overviews.")}
+            value={settings.translateDescriptions}
+            onChange={(v) => update({ translateDescriptions: v })}
+          />
+        </>
+      )}
     </Section>
 
     <Section

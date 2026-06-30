@@ -336,10 +336,10 @@ function PlacementPad({ settings, update }: { settings: Settings; update: (p: Pa
   return (
     <div className="flex h-11 shrink-0 items-center gap-1.5 rounded-[10px] bg-raised px-2">
       <div className="flex flex-col">
-        <button aria-label={t("Raise subtitles")} onClick={() => update({ subMarginY: clamp(settings.subMarginY + 2, 0, 40) })} className="flex h-[18px] w-7 items-center justify-center text-ink-muted transition-colors hover:text-ink">
+        <button aria-label={t("Raise subtitles")} onClick={() => update({ subMarginY: clamp(settings.subMarginY + 2, 0, 100) })} className="flex h-[18px] w-7 items-center justify-center text-ink-muted transition-colors hover:text-ink">
           <ChevronLeft size={13} className="rotate-90" />
         </button>
-        <button aria-label={t("Lower subtitles")} onClick={() => update({ subMarginY: clamp(settings.subMarginY - 2, 0, 40) })} className="flex h-[18px] w-7 items-center justify-center text-ink-muted transition-colors hover:text-ink">
+        <button aria-label={t("Lower subtitles")} onClick={() => update({ subMarginY: clamp(settings.subMarginY - 2, 0, 100) })} className="flex h-[18px] w-7 items-center justify-center text-ink-muted transition-colors hover:text-ink">
           <ChevronRight size={13} className="rotate-90" />
         </button>
       </div>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  exitWindowFullscreen,
+  exitWindowFullscreenOnPlayerClose,
   getWindowFullscreen,
   setWindowFullscreen,
   subscribeFullscreen,
@@ -14,7 +14,7 @@ export function useFullscreen() {
 
   useEffect(
     () => () => {
-      void exitWindowFullscreen();
+      void exitWindowFullscreenOnPlayerClose();
     },
     [],
   );

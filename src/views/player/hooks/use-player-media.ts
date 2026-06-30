@@ -1,5 +1,8 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { useAuth } from "@/lib/auth";
+import { downloadText } from "@/lib/download-text";
+import { fetchAndParse } from "@/lib/subtitles/parser";
+import { toSrt } from "@/lib/subtitles/serialize";
 import { isWindowsDesktop } from "@/lib/platform";
 import { isAssTrack, isImageSubTrack } from "@/lib/player/sub-format";
 import { clearImportedSubs } from "@/lib/player/imported-subs";
@@ -56,19 +59,26 @@ export function usePlayerMedia(params: {
   } = params;
 
   useWebviewMemory(engine === "mpv");
+  const progressRef = useRef(0);
+  useEffect(() => {
+    progressRef.current = snap.durationSec > 0 ? snap.positionSec / snap.durationSec : 0;
+  }, [snap.positionSec, snap.durationSec]);
+
   const prevEngineHashRef = useRef<string | null>(null);
   useEffect(() => {
     const hash = isLocalEngineUrl(src.url) ? src.streamRef?.infoHash ?? null : null;
     const prev = prevEngineHashRef.current;
-    const purge = settings.streamCacheRetentionHours === 0;
+    const purge = () =>
+      settings.streamCacheRetentionHours === 0 ||
+      (settings.deleteWatchedDownloads && progressRef.current >= 0.9);
     if (prev && prev !== hash) {
       cancelTorrentRemoval(prev);
-      void torrentEngineRemove(prev, purge);
+      void torrentEngineRemove(prev, purge());
     }
     if (hash) cancelTorrentRemoval(hash);
     prevEngineHashRef.current = hash;
     return () => {
-      if (hash) scheduleTorrentRemoval(hash, purge);
+      if (hash) scheduleTorrentRemoval(hash, purge());
     };
   }, [src.url, src.streamRef?.infoHash]);
 
@@ -136,14 +146,38 @@ export function usePlayerMedia(params: {
   useSimklScrobble({ src, snap });
   const download = useVideoDownload({ url: src.url, meta: src.meta, episode: src.episode });
 
+  const doDownloadSubtitle = useCallback(async () => {
+    const b = bridgeRef.current;
+    if (!b) return;
+    const base = src.episode
+      ? `${src.meta.name ?? "Subtitle"} S${src.episode.season}E${src.episode.episode}`
+      : src.meta.name ?? "Subtitle";
+    const fileName = `${base.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Subtitle"}.srt`;
+    const url = b.getSelectedTrackUrl();
+    if (url && /^https?:/i.test(url)) {
+      try {
+        const cues = await fetchAndParse(url);
+        if (cues.length > 0) {
+          await downloadText(fileName, toSrt(cues), ["srt"], "Subtitle");
+          return;
+        }
+      } catch {}
+    }
+    const cues = b.getSelectedTrackCues();
+    if (cues && cues.length > 0) await downloadText(fileName, toSrt(cues), ["srt"], "Subtitle");
+  }, [bridgeRef, src.meta.name, src.episode]);
+  const canDownloadSub = snap.subtitleTracks.some((trk) => trk.selected);
+
   useEffect(() => {
     setPlayerActions({
       download: download.start,
       toggleFullscreen,
       canDownload: !!src.url,
+      downloadSubtitle: doDownloadSubtitle,
+      canDownloadSubtitle: canDownloadSub,
     });
     return () => setPlayerActions(null);
-  }, [download.start, toggleFullscreen, src.url]);
+  }, [download.start, toggleFullscreen, src.url, doDownloadSubtitle, canDownloadSub]);
 
   useResumeAutosave({ src, snap, season, episode });
   useStremioSync({ src, snap, authKey, resolvedImdbId, resolvedImdbVerified, resolutionSettled, castActiveRef });

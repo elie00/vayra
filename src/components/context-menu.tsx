@@ -2,6 +2,7 @@ import { Bookmark, BookmarkCheck, ClipboardPaste, Copy, Download, Info, ListChec
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
+import { useT } from "@/lib/i18n";
 import { usePlayerActions } from "@/lib/player-actions";
 import { useTogether } from "@/lib/together/provider";
 import type { ParticipantLocation } from "@/lib/together/protocol";
@@ -48,6 +49,7 @@ export function ContextMenu() {
   } = useView();
   const { snapshot, sendSummon, hostLocation, clientId } = useTogether();
   const playerActions = usePlayerActions();
+  const t = useT();
   const activeAddon = useActiveAddon();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -250,6 +252,19 @@ export function ContextMenu() {
             label="Download Video"
             onClick={() => {
               playerActions.download();
+              close();
+            }}
+          />,
+        );
+      }
+      if (playerActions.canDownloadSubtitle) {
+        items.push(
+          <Item
+            key="download-subtitle"
+            icon={<Download size={14} strokeWidth={2} />}
+            label={t("Download Subtitle")}
+            onClick={() => {
+              playerActions.downloadSubtitle();
               close();
             }}
           />,

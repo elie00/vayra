@@ -46,10 +46,12 @@ export const PickCard = memo(function PickCard({
   meta,
   flagRerun = false,
   awardLookupName,
+  kids = false,
 }: {
   meta: Meta;
   flagRerun?: boolean;
   awardLookupName?: string;
+  kids?: boolean;
 }) {
   const { openMeta } = useView();
   const { open: openContextMenu } = useContextMenu();
@@ -113,6 +115,7 @@ export const PickCard = memo(function PickCard({
   const [animeTvdb, setAnimeTvdb] = useState<string | undefined>();
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
+  const animeTmdb = useTmdbIdFromImdb(animeImdb) ?? undefined;
   const posterAltId = needsImdbForPoster(settings.rpdbKey, meta.id)
     ? imdbId
     : wantTmdbPoster
@@ -122,7 +125,7 @@ export const PickCard = memo(function PickCard({
     const seen = new Set<string>();
     const out: string[] = [];
     for (const u of [
-      animeImdb ? rpdbPoster(settings.rpdbKey, animeImdb, meta.poster) : undefined,
+      animeImdb ? rpdbPoster(settings.rpdbKey, animeImdb, meta.poster, animeTmdb) : undefined,
       animeTvdb ? rpdbPoster(settings.rpdbKey, `tvdb:${animeTvdb}`, meta.poster) : undefined,
       rpdbPoster(settings.rpdbKey, meta.id, meta.poster, posterAltId),
       meta.poster,
@@ -133,7 +136,7 @@ export const PickCard = memo(function PickCard({
       out.push(u);
     }
     return out;
-  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb]);
+  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb, animeTmdb]);
   const posterSrc = posterCandidates[imgIdx];
 
   useEffect(() => {
@@ -245,7 +248,7 @@ export const PickCard = memo(function PickCard({
         data-preview-anchor
         onPointerEnter={(e) => hoverPreviewEnter(meta, e.currentTarget, e.buttons)}
         onPointerLeave={(e) => hoverPreviewLeave(e.currentTarget)}
-        className="relative transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] group-hover:-translate-y-2"
+        className="relative transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] will-change-transform group-hover:[-webkit-transform:translate3d(0,-0.5rem,0)] group-hover:[transform:translate3d(0,-0.5rem,0)]"
       >
         <Poster
           src={posterSrc}
@@ -259,7 +262,7 @@ export const PickCard = memo(function PickCard({
           <>
             {rerun && <RerunBadge year={meta.releaseInfo} />}
             {showCinema && <CinemaBadge />}
-            {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} />}
+            {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} kids={kids} />}
             <AnimeAwardBadge
               name={awardLookupName ?? meta.name}
               fallbackName={meta.name}
@@ -277,14 +280,24 @@ export const PickCard = memo(function PickCard({
             <Bookmark size={11} strokeWidth={2.6} fill="currentColor" />
           </span>
         )}
-        <ScoreStack
-          badges={cardBadges}
-          limit={settings.cardBadgeLimit}
-          placement={settings.badgePlacement}
-        />
+        {kids ? (
+          cardRating && <KidsStarBadge value={cardRating} placement={settings.badgePlacement} />
+        ) : (
+          <ScoreStack
+            badges={cardBadges}
+            limit={settings.cardBadgeLimit}
+            placement={settings.badgePlacement}
+          />
+        )}
       </div>
       {!settings.hidePosterTitles && (
-        <p className="line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink">
+        <p
+          className={
+            kids
+              ? "line-clamp-2 min-h-9 text-[15px] font-bold leading-snug text-[#0e3a43]"
+              : "line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink"
+          }
+        >
           {meta.name}
         </p>
       )}
@@ -399,9 +412,10 @@ function ScoreStack({
 
 type BadgeTone = "default" | "accent";
 
-function Badge({ label, tone = "default" }: { label: string; tone?: BadgeTone }) {
-  const styles =
-    tone === "accent"
+function Badge({ label, tone = "default", kids = false }: { label: string; tone?: BadgeTone; kids?: boolean }) {
+  const styles = kids
+    ? "bg-black text-white"
+    : tone === "accent"
       ? "bg-accent/90 text-canvas"
       : "border border-edge-soft bg-canvas/95 text-ink";
   return (
@@ -409,6 +423,26 @@ function Badge({ label, tone = "default" }: { label: string; tone?: BadgeTone })
       className={`absolute start-2 top-2 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${styles}`}
     >
       {label}
+    </span>
+  );
+}
+
+function KidsStarBadge({ value, placement = "bottom" }: { value: string; placement?: "top" | "bottom" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute end-1 grid h-9 w-9 place-items-center ${
+        placement === "top" ? "top-1" : "bottom-1"
+      }`}
+    >
+      <img
+        src="/kids/starbadge.svg"
+        alt=""
+        draggable={false}
+        className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
+      />
+      <span className="relative translate-y-[1px] text-[9px] font-extrabold leading-none text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
+        {value}
+      </span>
     </span>
   );
 }

@@ -162,6 +162,24 @@ export function DisplaySection() {
       </Section>
 
       <Section
+        title={t("Home hero")}
+        subtitle={t("Make the featured banner on Home bigger and sharper.")}
+      >
+        <ToggleRow
+          label={t("Full hero banner")}
+          sub={t("Stretch the featured hero edge to edge and taller, across every layout.")}
+          value={settings.heroFull}
+          onChange={(v) => update({ heroFull: v })}
+        />
+        <ToggleRow
+          label={t("Full quality hero image")}
+          sub={t("Load the highest-resolution artwork for the featured hero. Uses more bandwidth.")}
+          value={settings.heroFullQuality}
+          onChange={(v) => update({ heroFullQuality: v })}
+        />
+      </Section>
+
+      <Section
         title={t("Home hero shadow")}
         subtitle={t("How dark the gradient behind the featured title on Home is. 100% is the classic look; lower it to let more of the artwork show through.")}
       >
@@ -211,6 +229,14 @@ export function DisplaySection() {
           value={settings.detailTrailerAutoplay}
           onChange={(v) => update({ detailTrailerAutoplay: v })}
         />
+        {settings.detailTrailerAutoplay && (
+          <ToggleRow
+            label={t("Start trailers with audio")}
+            sub={t("Detail page trailers begin unmuted. Falls back to muted if the browser blocks sound until you interact.")}
+            value={settings.detailTrailerAudio}
+            onChange={(v) => update({ detailTrailerAudio: v })}
+          />
+        )}
       </Section>
     </>
   );

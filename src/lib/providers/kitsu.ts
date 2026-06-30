@@ -91,6 +91,8 @@ export type KitsuEpisode = {
   imdbEpisode?: number;
   filler?: boolean;
   absoluteNumber?: number;
+  rating?: number;
+  ratingIsImdb?: boolean;
 };
 
 export type KitsuCharacter = {

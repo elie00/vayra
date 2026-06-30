@@ -3,6 +3,7 @@ import { Check, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
 import { animeDetails, franchiseTags, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
 import { stripFranchiseSuffix } from "@/lib/providers/jikan";
+import { useMalRating } from "@/lib/mal-rating";
 import type { KitsuEpisode, KitsuStreamer } from "@/lib/providers/kitsu";
 import { AnimeAwardsBlock } from "@/components/anime-awards-block";
 import { AwardsBlock } from "@/components/awards-block";
@@ -58,6 +59,7 @@ import { isTitleUpcoming } from "./detail/helpers";
 import { HeroAwardsCorner } from "./detail/hero-awards";
 import { CrunchyrollAwardsCorner } from "./detail/crunchyroll-corner";
 import { findAnyAwardWins, parseAwardYear } from "@/lib/anime-awards";
+import { LazyMount } from "@/components/lazy-mount";
 
 function animeAwardLookupName(
   releaseYear: number | undefined,
@@ -396,7 +398,24 @@ export function DetailView({
             return null;
           }
           setAnimeEpisodes(res.episodes);
-          setFranchise(res.franchise);
+          setFranchise([]);
+          void res.franchisePromise
+            .then((fr) => {
+              if (!cancelled) setFranchise(fr);
+            })
+            .catch(() => {});
+          void res.enrichPromise
+            .then((eps) => {
+              if (!cancelled) setAnimeEpisodes([...eps]);
+            })
+            .catch(() => {});
+          void res.extrasPromise
+            .then((patch) => {
+              if (cancelled) return;
+              setDetail((prev) => (prev ? { ...prev, ...patch } : prev));
+              if (patch.gallery?.backdrops?.length) setBackdrops(patch.gallery.backdrops);
+            })
+            .catch(() => {});
           setAnimeCanonicalId(`kitsu:${res.kitsuId}`);
           setStreamers(res.streamers);
           setBackdrops(res.backdrops);
@@ -514,7 +533,12 @@ export function DetailView({
   const releaseYearNum = parseAwardYear(year);
   const imdbRatingValue =
     scores?.imdbRating ?? cinemetaRating ?? (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
-  const rating = imdbRatingValue ?? detail?.rating ?? meta.imdbRating;
+  const malRating = useMalRating(
+    isAnime
+      ? { ...meta, id: animeCanonicalId ?? meta.id, imdbRating: detail?.rating ?? meta.imdbRating }
+      : undefined,
+  );
+  const rating = isAnime ? malRating : (imdbRatingValue ?? detail?.rating ?? meta.imdbRating);
   const runtime = detail?.runtime;
   const genres = detail?.genres ?? meta.genres ?? [];
   const recommendations = detail?.recommendations ?? [];
@@ -1033,6 +1057,7 @@ export function DetailView({
             scrollRef={scrollRef}
             cinemetaVideos={cinemetaFull?.videos}
             stremioWatched={stremioWatched}
+            resumeSeason={lastPlay?.season}
           />
           </FadeInUp>
         )}
@@ -1252,8 +1277,6 @@ export function DetailView({
             </>
           );
         })()}
-
-
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">
             {t("Add a TMDB key in Settings to see cast, related titles, and trailers here.")}

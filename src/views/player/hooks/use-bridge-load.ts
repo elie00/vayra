@@ -72,7 +72,7 @@ export function useBridgeLoad(params: {
         cloudWriteId(src.meta.id, src.imdbId ?? null, src.imdbIdVerified === true),
       );
       const resolved = isLive
-        ? { ms: 0, fromRemote: false }
+        ? { ms: 0, fromRemote: false, finished: false }
         : await resolveStartMs(
             src.meta.id,
             season,
@@ -85,7 +85,8 @@ export function useBridgeLoad(params: {
       const startMs = resolved.ms;
       const runtimeMin = src.episode?.runtime ?? null;
       const durationMs = runtimeMin && runtimeMin > 0 ? runtimeMin * 60_000 : 0;
-      const finishedNearEnd = durationMs > 0 && startMs / durationMs >= RESTART_THRESHOLD;
+      const finishedNearEnd =
+        resolved.finished || (durationMs > 0 && startMs / durationMs >= RESTART_THRESHOLD);
       const startSec = (!resumePlaybackRef.current || finishedNearEnd ? 0 : startMs) / 1000;
       const guestInRoom = inRoomRef.current && !isHostRef.current;
       const eligibleForPrompt =
@@ -161,9 +162,10 @@ async function resolveStartMs(
   imdbId: string | null,
   imdbVerified: boolean,
   openingVid: string | null,
-): Promise<{ ms: number; fromRemote: boolean }> {
+): Promise<{ ms: number; fromRemote: boolean; finished: boolean }> {
   const local = readResumeMs(metaId, season, episode);
-  if (!authKey) return { ms: local, fromRemote: false };
+  const isEpisode = typeof season === "number" && typeof episode === "number";
+  if (!authKey) return { ms: local, fromRemote: false, finished: false };
   const matchesEpisode = (
     item: { state?: { season?: number; episode?: number; video_id?: string } } | null,
   ) => {
@@ -185,11 +187,13 @@ async function resolveStartMs(
     if (!remote || !matchesEpisode(remote)) continue;
     const remoteMs = remote.state?.timeOffset ?? 0;
     if (remoteMs <= 0) continue;
+    const remoteDuration = remote.state?.duration ?? 0;
+    const finished = isEpisode && remoteDuration > 0 && remoteMs / remoteDuration >= RESTART_THRESHOLD;
     if (remoteMs >= local) {
       if (remoteMs > local) saveResumeMs(metaId, remoteMs, season, episode);
-      return { ms: remoteMs, fromRemote: true };
+      return { ms: remoteMs, fromRemote: true, finished };
     }
-    break;
+    return { ms: local, fromRemote: false, finished };
   }
-  return { ms: local, fromRemote: false };
+  return { ms: local, fromRemote: false, finished: false };
 }

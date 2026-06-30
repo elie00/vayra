@@ -12,6 +12,7 @@ import type { SkipSegment } from "./types";
 export type { SkipSegment, SkipKind, SkipSource } from "./types";
 
 const MIN_OUTRO_START_FRACTION = 0.5;
+const MAX_SEGMENT_SEC = 360;
 
 function parseKitsuId(id: string): number | null {
   if (!id.startsWith("kitsu:")) return null;
@@ -41,19 +42,19 @@ export function useSkipSegments(
 
   useEffect(() => {
     setAniSkip([]);
-    if (kitsuId == null || epNum == null) return;
+    if (kitsuId == null || epNum == null || durationSec <= 0) return;
     let cancelled = false;
     (async () => {
       const malId = await kitsuToMal(kitsuId);
       if (cancelled || malId == null) return;
-      const segs = await fetchAniSkipSegments(malId, epNum);
+      const segs = await fetchAniSkipSegments(malId, epNum, durationSec);
       if (cancelled) return;
       setAniSkip(segs);
     })().catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [kitsuId, epNum]);
+  }, [kitsuId, epNum, durationSec]);
 
   useEffect(() => {
     setIntroDb([]);
@@ -87,7 +88,10 @@ export function useSkipSegments(
     return base
       .filter((s) => s.startSec < durationSec)
       .map((s) => (s.endSec > durationSec ? { ...s, endSec: durationSec } : s))
-      .filter((s) => s.endSec - s.startSec >= 2)
+      .filter((s) => {
+        const len = s.endSec - s.startSec;
+        return len >= 2 && len <= MAX_SEGMENT_SEC;
+      })
       .filter((s) => s.kind !== "outro" || s.startSec >= minOutroStart);
   }, [aniSkip, introDb, fromChapters, durationSec, adSegments]);
 }

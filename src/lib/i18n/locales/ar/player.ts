@@ -1,6 +1,7 @@
 const player: Record<string, string> = {
   Play: "تشغيل",
   Pause: "إيقاف مؤقت",
+  "Download Subtitle": "تحميل الترجمة",
   "Play · Space": "تشغيل · مسافة",
   "Pause · Space": "إيقاف مؤقت · مسافة",
   "Play now": "التشغيل الآن",

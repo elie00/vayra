@@ -20,12 +20,16 @@ export const Hero = memo(function Hero({
   playTrailer = false,
   active = true,
   loadBackdrop = true,
+  full = false,
+  fullQuality = false,
 }: {
   meta: Meta;
   rank?: { label: string; position: number };
   playTrailer?: boolean;
   active?: boolean;
   loadBackdrop?: boolean;
+  full?: boolean;
+  fullQuality?: boolean;
 }) {
   const { settings } = useSettings();
   const { openMeta } = useView();
@@ -34,7 +38,7 @@ export const Hero = memo(function Hero({
   const inWatchlist = useInWatchlist(meta.id, [resolvedImdb]);
   const [bgUrl, setBgUrl] = useState<string | undefined>(meta.background);
   const [bgResolved, setBgResolved] = useState<boolean>(!!meta.background);
-  const bg = bgUrl ? upsizeTmdb(bgUrl) : bgResolved ? meta.poster : undefined;
+  const bg = bgUrl ? upsizeTmdb(bgUrl, fullQuality) : bgResolved ? meta.poster : undefined;
   const [trailerCandidates, setTrailerCandidates] = useState<string[]>([]);
   const [trailerInfo, setTrailerInfo] = useState<TrailerInfo | null>(null);
   const [videoReady, setVideoReady] = useState(false);
@@ -171,7 +175,7 @@ export const Hero = memo(function Hero({
   return (
     <section
       onClick={() => openMeta({ ...meta, logo: logo ?? meta.logo })}
-      className="group relative h-[560px] cursor-pointer overflow-hidden rounded-[28px] bg-canvas"
+      className={`group relative cursor-pointer overflow-hidden bg-canvas ${full ? "h-[clamp(560px,82vh,920px)] rounded-none" : "h-[560px] rounded-[28px]"}`}
       style={{ isolation: "isolate" }}
     >
       {bg && loadBackdrop && (
@@ -180,13 +184,13 @@ export const Hero = memo(function Hero({
           alt=""
           decoding="async"
           fetchPriority={active ? "high" : "low"}
-          className="absolute inset-[2px] h-[calc(100%-4px)] w-[calc(100%-4px)] rounded-[26px] object-cover transition-opacity duration-500"
+          className={`absolute object-cover transition-opacity duration-500 ${full ? "inset-0 h-full w-full rounded-none" : "inset-[2px] h-[calc(100%-4px)] w-[calc(100%-4px)] rounded-[26px]"}`}
           style={{ opacity: wantsPlayback && videoReady ? 0 : 0.9 }}
         />
       )}
       {trailerInfo && (
         <div
-          className="pointer-events-none absolute inset-[2px] overflow-hidden rounded-[26px] transition-opacity duration-500"
+          className={`pointer-events-none absolute overflow-hidden transition-opacity duration-500 ${full ? "inset-0 rounded-none" : "inset-[2px] rounded-[26px]"}`}
           style={{ opacity: wantsPlayback && videoReady ? 1 : 0 }}
         >
           <video
@@ -208,7 +212,7 @@ export const Hero = memo(function Hero({
       <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-canvas via-canvas/70 via-50% to-transparent" />
       <MetaAwardsCorner meta={meta} imdbId={resolvedImdb} />
 
-      <div className="relative flex h-full flex-col justify-center p-14">
+      <div className={`relative flex h-full flex-col justify-center p-14 ${full ? "pt-28 lg:pt-32" : ""}`}>
         <div className="max-w-2xl">
           {rank && (
             <div className="mb-5 inline-flex items-center gap-1.5 self-start rounded-md bg-canvas/85 px-2.5 py-1 text-[12px] font-semibold text-ink">
@@ -329,7 +333,8 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function upsizeTmdb(url?: string): string | undefined {
+function upsizeTmdb(url?: string, full = false): string | undefined {
   if (!url) return url;
-  return url.replace("/t/p/w780/", "/t/p/w1280/");
+  const size = full ? "original" : "w1280";
+  return url.replace("/t/p/w780/", `/t/p/${size}/`);
 }

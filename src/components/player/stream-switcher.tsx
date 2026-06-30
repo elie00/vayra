@@ -15,7 +15,9 @@ import { addonInstanceKey, buildAddonOptions } from "@/views/play-picker/picker-
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { useActiveKid } from "@/lib/profiles";
 import { AddonFilterMenu, QualityFilterMenu } from "./stream-switcher/filter-dropdowns";
+import { KidsStreamSwitcher } from "./stream-switcher/kids-switcher";
 import { abbreviateLanguages, normalizeLangCode, streamMatchesLangs } from "./stream-switcher/lang-utils";
 import { QUALITY_BADGE, QUALITY_LABEL, QUALITY_ORDER, qualityKey, type QualityKey } from "./stream-switcher/quality";
 import { streamKey, SwitcherRow } from "./stream-switcher/switcher-row";
@@ -48,6 +50,7 @@ export function StreamSwitcher({
   hostSource?: SourceDescriptor | null;
 }) {
   const t = useT();
+  const kid = useActiveKid();
   const { authKey } = useAuth();
   const { settings } = useSettings();
   const baseLangs = settings.preferredLanguages ?? [];
@@ -226,6 +229,18 @@ export function StreamSwitcher({
   void cache?.episode;
 
   if (!open) return null;
+
+  if (kid) {
+    return (
+      <KidsStreamSwitcher
+        list={list}
+        onPick={onPick}
+        onClose={onClose}
+        resolvingKey={resolvingKey}
+        currentUrl={currentUrl}
+      />
+    );
+  }
 
   return (
     <div
