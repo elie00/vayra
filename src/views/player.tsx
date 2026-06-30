@@ -355,6 +355,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     exitPlayback,
     openPicker,
   });
+  useEffect(() => {
+    const onLocalBack = (e: Event) => {
+      e.preventDefault();
+      void closePlayer();
+    };
+    window.addEventListener("harbor:local-back", onLocalBack);
+    return () => window.removeEventListener("harbor:local-back", onLocalBack);
+  }, [closePlayer]);
 
   const [dvrOpen, setDvrOpen] = useState(false);
   const pickAnotherOrGuide = useCallback(() => {
