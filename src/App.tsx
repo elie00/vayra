@@ -402,7 +402,7 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 }
 
 function Shell() {
-  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, goBack, openMeta, stackKinds, chromeHidden } = useView();
+  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
   const uiScaleRef = useRef(settings.uiScale);
   const { activeProfile } = useProfiles();
@@ -422,6 +422,27 @@ function Shell() {
   useViewPreloader();
 
   useEffect(() => startMaintenance(), []);
+
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 3) {
+        const localBack = new Event("harbor:local-back", { cancelable: true });
+        if (!window.dispatchEvent(localBack)) {
+          e.preventDefault();
+          return;
+        }
+        if (canGoBack) {
+          e.preventDefault();
+          goBack();
+        }
+      } else if (e.button === 4 && canGoForward) {
+        e.preventDefault();
+        goForward();
+      }
+    };
+    window.addEventListener("mousedown", onMouseDown, true);
+    return () => window.removeEventListener("mousedown", onMouseDown, true);
+  }, [canGoBack, goBack, canGoForward, goForward]);
 
   useEffect(() => {
     uiScaleRef.current = settings.uiScale;
