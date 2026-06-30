@@ -105,10 +105,16 @@ export function usePosterChain(
   };
 }
 
-const ASPECT: Record<Ratio, string> = {
-  portrait: "aspect-[2/3]",
-  landscape: "aspect-[16/9]",
-  wide: "aspect-[16/7]",
+// Height is reserved with an in-flow padding spacer (see render below) instead of
+// relying solely on CSS `aspect-ratio`. Older WebView2/Chromium engines (≲124, e.g.
+// the 123.x runtime shipped on debloated Windows builds) fail to size `aspect-ratio`
+// grid items, collapsing every poster card to 0px height so artwork never shows.
+// The padding-top hack works identically on every engine.
+// https://github.com/harborstremio/harbor/issues/403
+const ASPECT_PAD: Record<Ratio, string> = {
+  portrait: "150%", // 3 / 2
+  landscape: "56.25%", // 9 / 16
+  wide: "43.75%", // 7 / 16
 };
 
 export function Poster({
@@ -198,9 +204,10 @@ export function Poster({
 
   return (
     <div
-      className={`harbor-poster your-card relative overflow-hidden rounded-[var(--poster-radius,12px)] ${ASPECT[ratio]} ${className}`}
+      className={`harbor-poster your-card relative w-full overflow-hidden rounded-[var(--poster-radius,12px)] ${className}`}
       style={showPlate ? { background: gradient(hue) } : undefined}
     >
+      <div aria-hidden style={{ paddingTop: ASPECT_PAD[ratio] }} />
       {current && (
         <img
           key={current}
