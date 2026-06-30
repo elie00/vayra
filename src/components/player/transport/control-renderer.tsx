@@ -74,6 +74,8 @@ export type ControlContext = {
   controlVariants?: Partial<Record<PlayerControlId, ControlVariant>>;
   timeFormat?: TimeFormat;
   volumeStyle?: VolumeStyle;
+  seekBackStepSec: number;
+  seekForwardStepSec: number;
   title?: string;
   subtitle?: string;
   titleClickable?: boolean;

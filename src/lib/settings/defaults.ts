@@ -176,6 +176,8 @@ export const DEFAULT: Settings = {
   svpScope: "all",
   playerHdrOpaqueWindow: false,
   playerEscExitsFullscreen: true,
+  seekBackStepSec: 10,
+  seekForwardStepSec: 10,
   playerHdrStage: "auto",
   opensubtitlesApiKey: "",
   jimakuToken: "",

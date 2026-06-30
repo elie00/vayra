@@ -204,6 +204,8 @@ export type Settings = {
   svpScope: "all" | "anime" | "non-anime";
   playerHdrOpaqueWindow: boolean;
   playerEscExitsFullscreen: boolean;
+  seekBackStepSec: number;
+  seekForwardStepSec: number;
   playerHdrStage: "auto" | "off" | "always";
   opensubtitlesApiKey: string;
   jimakuToken: string;

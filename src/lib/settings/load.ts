@@ -6,10 +6,22 @@ import {
   type ThemeSettings,
 } from "@/lib/theme";
 import { languageName } from "@/lib/subtitles/language";
+import { sanitizeSeekStep } from "@/lib/seek-step";
 import { DEFAULT, STORAGE_KEY } from "./defaults";
 import type { Settings } from "./types";
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
+
+function legacySeekStep(direction: "back" | "forward"): number | undefined {
+  try {
+    const raw = localStorage.getItem(`harbor.seek-step.${direction}`);
+    if (!raw) return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function sanitizeCustomColors(c: unknown): CustomColors | null {
   if (!c || typeof c !== "object") return null;
@@ -62,7 +74,13 @@ export function sanitizeTheme(t: Partial<ThemeSettings> | undefined): ThemeSetti
 
 export function loadStoredSettings(): Settings {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return DEFAULT;
+  if (!raw) {
+    return {
+      ...DEFAULT,
+      seekBackStepSec: sanitizeSeekStep(legacySeekStep("back"), DEFAULT.seekBackStepSec),
+      seekForwardStepSec: sanitizeSeekStep(legacySeekStep("forward"), DEFAULT.seekForwardStepSec),
+    };
+  }
   try {
     const parsed = JSON.parse(raw) as Partial<Settings> & {
       _subStyleV2?: boolean;
@@ -159,6 +177,14 @@ export function loadStoredSettings(): Settings {
       traktRefreshToken: parsed.traktRefreshToken ?? DEFAULT.traktRefreshToken,
       traktExpiresAt: parsed.traktExpiresAt ?? DEFAULT.traktExpiresAt,
       traktUsername: parsed.traktUsername ?? DEFAULT.traktUsername,
+      seekBackStepSec: sanitizeSeekStep(
+        parsed.seekBackStepSec ?? legacySeekStep("back"),
+        DEFAULT.seekBackStepSec,
+      ),
+      seekForwardStepSec: sanitizeSeekStep(
+        parsed.seekForwardStepSec ?? legacySeekStep("forward"),
+        DEFAULT.seekForwardStepSec,
+      ),
       theme: sanitizeTheme(parsed.theme),
       webhooks: {
         ...DEFAULT.webhooks,
