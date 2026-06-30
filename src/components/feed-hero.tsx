@@ -2,7 +2,6 @@ import { Bookmark, BookmarkCheck, Info, Play, SkipForward, ThumbsDown } from "lu
 import type { FeedItem } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
-import { rpdbPoster } from "@/lib/providers/rpdb";
 import { useSettings } from "@/lib/settings";
 import { smartPlayEpisode } from "@/lib/smart-play";
 import { useView } from "@/lib/view";
@@ -37,7 +36,8 @@ export function FeedHero({
     <article className="relative h-[clamp(480px,46vh,560px)] overflow-hidden rounded-[28px] border border-edge-soft bg-canvas">
       <div className="absolute inset-0">
         <Poster
-          src={rpdbPoster(settings.rpdbKey, meta.id, backdrop)}
+          src={backdrop}
+          fallbacks={[meta.poster]}
           seed={meta.id}
           ratio="wide"
           className="h-full w-full rounded-none"

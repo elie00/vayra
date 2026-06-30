@@ -48,31 +48,32 @@ async function fetchAnilistBrowse(sort: string, count: number): Promise<Meta[]> 
   return out.slice(0, count);
 }
 
-const BANNER_QUERY = `query ($search: String) {
-  Media(type: ANIME, search: $search) {
+const ART_BY_ID_QUERY = `query ($id: Int) {
+  Media(id: $id, type: ANIME) {
     bannerImage
+    coverImage { extraLarge }
   }
 }`;
 
-const bannerCache = new Map<string, string | null>();
+const artByIdCache = new Map<number, { banner?: string; cover?: string }>();
 
-export async function anilistBannerByTitle(title: string): Promise<string | undefined> {
-  const key = title.trim().toLowerCase();
-  if (!key) return undefined;
-  if (bannerCache.has(key)) return bannerCache.get(key) ?? undefined;
+export async function anilistArtById(id: number): Promise<{ banner?: string; cover?: string }> {
+  const cached = artByIdCache.get(id);
+  if (cached) return cached;
   try {
-    const data = await anilistRequest<{ Media: { bannerImage: string | null } | null }>(
-      BANNER_QUERY,
-      { search: title },
-      undefined,
-      true,
-    );
-    const url = data?.Media?.bannerImage ?? null;
-    bannerCache.set(key, url);
-    return url ?? undefined;
+    const data = await anilistRequest<{
+      Media: { bannerImage: string | null; coverImage: { extraLarge: string | null } | null } | null;
+    }>(ART_BY_ID_QUERY, { id }, undefined, true);
+    const art = {
+      banner: data?.Media?.bannerImage ?? undefined,
+      cover: data?.Media?.coverImage?.extraLarge ?? undefined,
+    };
+    artByIdCache.set(id, art);
+    return art;
   } catch {
-    bannerCache.set(key, null);
-    return undefined;
+    const empty = {};
+    artByIdCache.set(id, empty);
+    return empty;
   }
 }
 

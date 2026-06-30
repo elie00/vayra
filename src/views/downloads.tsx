@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { Check, Download as DownloadIcon, FolderOpen, Play, Trash2, X } from "lucide-react";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
+import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { DownloadDirBar } from "./downloads/download-dir-bar";
 import {
@@ -138,6 +139,8 @@ function EmptyState() {
 }
 
 function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> }) {
+  const { settings } = useSettings();
+  const poster = usePosterChain(settings.rpdbKey, group.metaId, group.poster ?? undefined, "series");
   const episodes = useMemo(
     () =>
       [...group.items].sort(
@@ -153,7 +156,7 @@ function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> 
     <div className="overflow-hidden rounded-2xl border border-edge-soft bg-elevated/25">
       <div className="flex items-center gap-3 px-3 py-2.5">
         <div className="h-[52px] w-[36px] shrink-0 overflow-hidden rounded-md">
-          <Poster src={group.poster ?? undefined} seed={group.metaId} ratio="portrait" />
+          <Poster src={poster.src} onError={poster.onError} seed={group.metaId} ratio="portrait" />
         </div>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-[14px] font-semibold text-ink">{group.title}</span>
@@ -174,6 +177,13 @@ function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> 
 
 function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolean }) {
   const { openPlayer } = useView();
+  const { settings } = useSettings();
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    d.metaId,
+    d.poster ?? undefined,
+    d.season != null ? "series" : "movie",
+  );
   const pct = Math.round(d.ratio * 100);
   const downloading = d.status === "downloading";
   const playLocal = () =>
@@ -194,7 +204,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
       <div
         className={`${compact ? "h-[44px] w-[30px]" : "h-[68px] w-[46px]"} shrink-0 overflow-hidden rounded-lg`}
       >
-        <Poster src={d.poster ?? undefined} seed={d.metaId} ratio="portrait" />
+        <Poster src={poster.src} onError={poster.onError} seed={d.metaId} ratio="portrait" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex min-w-0 items-baseline gap-2">

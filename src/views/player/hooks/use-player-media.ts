@@ -1,13 +1,14 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { useAuth } from "@/lib/auth";
+import { downloadText } from "@/lib/download-text";
+import { fetchAndParse } from "@/lib/subtitles/parser";
+import { toSrt } from "@/lib/subtitles/serialize";
 import { isWindowsDesktop } from "@/lib/platform";
 import { isAssTrack, isImageSubTrack } from "@/lib/player/sub-format";
 import { clearImportedSubs } from "@/lib/player/imported-subs";
 import { readPlayerVolume } from "@/lib/player-volume";
 import { setPlayerActions } from "@/lib/player-actions";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
-import { fetchAndParse } from "@/lib/subtitles/parser";
-import { toSrt } from "@/lib/subtitles/serialize";
 import { useSettings } from "@/lib/settings";
 import { isLocalEngineUrl } from "@/lib/stremio-server";
 import { useSimklScrobble } from "@/lib/simkl/scrobble-hook";
@@ -58,19 +59,26 @@ export function usePlayerMedia(params: {
   } = params;
 
   useWebviewMemory(engine === "mpv");
+  const progressRef = useRef(0);
+  useEffect(() => {
+    progressRef.current = snap.durationSec > 0 ? snap.positionSec / snap.durationSec : 0;
+  }, [snap.positionSec, snap.durationSec]);
+
   const prevEngineHashRef = useRef<string | null>(null);
   useEffect(() => {
     const hash = isLocalEngineUrl(src.url) ? src.streamRef?.infoHash ?? null : null;
     const prev = prevEngineHashRef.current;
-    const purge = settings.streamCacheRetentionHours === 0;
+    const purge = () =>
+      settings.streamCacheRetentionHours === 0 ||
+      (settings.deleteWatchedDownloads && progressRef.current >= 0.9);
     if (prev && prev !== hash) {
       cancelTorrentRemoval(prev);
-      void torrentEngineRemove(prev, purge);
+      void torrentEngineRemove(prev, purge());
     }
     if (hash) cancelTorrentRemoval(hash);
     prevEngineHashRef.current = hash;
     return () => {
-      if (hash) scheduleTorrentRemoval(hash, purge);
+      if (hash) scheduleTorrentRemoval(hash, purge());
     };
   }, [src.url, src.streamRef?.infoHash]);
 
@@ -138,59 +146,38 @@ export function usePlayerMedia(params: {
   useSimklScrobble({ src, snap });
   const download = useVideoDownload({ url: src.url, meta: src.meta, episode: src.episode });
 
+  const doDownloadSubtitle = useCallback(async () => {
+    const b = bridgeRef.current;
+    if (!b) return;
+    const base = src.episode
+      ? `${src.meta.name ?? "Subtitle"} S${src.episode.season}E${src.episode.episode}`
+      : src.meta.name ?? "Subtitle";
+    const fileName = `${base.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Subtitle"}.srt`;
+    const url = b.getSelectedTrackUrl();
+    if (url && /^https?:/i.test(url)) {
+      try {
+        const cues = await fetchAndParse(url);
+        if (cues.length > 0) {
+          await downloadText(fileName, toSrt(cues), ["srt"], "Subtitle");
+          return;
+        }
+      } catch {}
+    }
+    const cues = b.getSelectedTrackCues();
+    if (cues && cues.length > 0) await downloadText(fileName, toSrt(cues), ["srt"], "Subtitle");
+  }, [bridgeRef, src.meta.name, src.episode]);
+  const canDownloadSub = snap.subtitleTracks.some((trk) => trk.selected);
+
   useEffect(() => {
-    const doDownloadSubtitle = async () => {
-      const b = bridgeRef.current;
-      if (!b) return;
-
-      // Try URL-based download first (works for all external/addon/opensubtitles tracks)
-      const url = b.getSelectedTrackUrl();
-      if (url && /^https?:/i.test(url)) {
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            const text = await res.text();
-            const ext = url.split(/[?#]/)[0].match(/\.([a-z]{2,4})$/i)?.[1]?.toLowerCase() || "srt";
-            const filename = `subtitle.${ext}`;
-            const { downloadText } = await import("@/lib/download-text");
-            await downloadText(filename, text, [ext], "Subtitle");
-            return;
-          }
-        } catch {
-          // fall through to cues-based
-        }
-      }
-
-      // Fallback: get cues from bridge (works for embedded/parsed tracks)
-      let cues = b.getSelectedTrackCues();
-      if ((!cues || cues.length === 0) && url) {
-        try {
-          const readableUrl =
-            /^(https?|blob|data|tauri|asset):/i.test(url) ? url : null;
-          if (readableUrl) {
-            cues = await fetchAndParse(readableUrl);
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      if (!cues || cues.length === 0) return;
-      const { downloadText } = await import("@/lib/download-text");
-      await downloadText("subtitle.srt", toSrt(cues), ["srt"], "Subtitle");
-    };
-
-    const selectedSub = snap.subtitleTracks.find((t) => t.selected) ?? null;
-    const canSub = selectedSub !== null;
-
     setPlayerActions({
       download: download.start,
       toggleFullscreen,
       canDownload: !!src.url,
       downloadSubtitle: doDownloadSubtitle,
-      canDownloadSubtitle: canSub,
+      canDownloadSubtitle: canDownloadSub,
     });
     return () => setPlayerActions(null);
-  }, [download.start, toggleFullscreen, src.url, snap.subtitleTracks]);
+  }, [download.start, toggleFullscreen, src.url, doDownloadSubtitle, canDownloadSub]);
 
   useResumeAutosave({ src, snap, season, episode });
   useStremioSync({ src, snap, authKey, resolvedImdbId, resolvedImdbVerified, resolutionSettled, castActiveRef });

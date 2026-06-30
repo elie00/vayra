@@ -82,7 +82,7 @@ const library: Record<string, string> = {
   "Syncing Trakt…": "جارٍ المزامنة مع Trakt…",
   "{n} on Trakt": "{n} على Trakt",
   "Connect Trakt in Settings to sync": "اربط Trakt في الإعدادات للمزامنة",
-  "{n} saved here": "{n} محفوظ هنا",
+  "{n} saved on this device": "{n} محفوظ على هذا الجهاز",
   "{n} in your Stremio library": "{n} في مكتبة Stremio لديك",
 
   "Trakt watchlist": "قائمة مشاهدة Trakt",
@@ -128,7 +128,6 @@ const library: Record<string, string> = {
   "Add a TMDB key in Settings to unlock the full discovery feed.":
     "أضف مفتاح TMDB في الإعدادات لفتح موجز الاكتشاف الكامل.",
   "No picks loaded. TMDB might be unreachable.": "لم تُحمّل أي اختيارات. قد يتعذّر الوصول إلى TMDB.",
-
 };
 
 export default library;

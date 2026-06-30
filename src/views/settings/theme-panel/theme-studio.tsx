@@ -7,6 +7,7 @@ import { CodePopout } from "./theme-studio/code-popout";
 import { buildChrome, DEFAULT_CHROME } from "./theme-studio/chrome-config";
 import { SUITE_CHROME as STABLE_CHROME } from "./theme-studio/suite-theme";
 import { useStudioPreview } from "./theme-studio/hooks/use-studio-preview";
+import { useDraftHistory } from "./theme-studio/hooks/use-draft-history";
 import type { Draft } from "./theme-studio/studio-types";
 import type { CodeLang } from "@/components/code-editor";
 import { saveCustomTheme, type CustomTheme } from "@/lib/custom-themes";
@@ -105,7 +106,7 @@ const STUDIO_AUTHORITY_ID = "harbor-studio-authority-css";
 
 export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: () => void }) {
   const { settings, update } = useSettings();
-  const [draft, setDraft] = useState<Draft>(() => emptyDraft(seed));
+  const { draft, setDraft, undo, redo, canUndo, canRedo } = useDraftHistory(() => emptyDraft(seed));
   const restoreRef = useState(() => settings.theme.preset)[0];
   const liveThemeRef = useRef(settings.theme);
   liveThemeRef.current = settings.theme;
@@ -210,15 +211,24 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (confirmClose) setConfirmClose(false);
-      else if (popoutTab) setPopoutTab(null);
-      else if (inspectorHidden) setInspectorHidden(false);
-      else requestClose();
+      if (e.key === "Escape") {
+        if (confirmClose) setConfirmClose(false);
+        else if (popoutTab) setPopoutTab(null);
+        else if (inspectorHidden) setInspectorHidden(false);
+        else requestClose();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === "z" || e.key === "Z")) {
+        const el = e.target as HTMLElement | null;
+        if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, inspectorHidden, setInspectorHidden, popoutTab, confirmClose, dirty]);
+  }, [onClose, inspectorHidden, setInspectorHidden, popoutTab, confirmClose, dirty, undo, redo]);
 
   const runJs = () => {
     const code = draft.js.trim();
@@ -321,6 +331,10 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           name={trimmedName}
           onCancel={requestClose}
           onHidePanel={() => setInspectorHidden(true)}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
         <Inspector
           draft={draft}
@@ -373,6 +387,10 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           onChange={onPatch}
           onRunJs={runJs}
           onClose={() => setPopoutTab(null)}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
       )}
 
@@ -386,7 +404,6 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
             onClick={(e) => e.stopPropagation()}
             className="animate-in zoom-in-95 fade-in w-[340px] max-w-full overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_30px_80px_-24px_rgba(0,0,0,0.8)] duration-150"
           >
-            <div className="h-1 w-full" style={{ background: "var(--color-accent)" }} />
             <div className="flex flex-col px-6 pb-6 pt-5">
               <h2 className="text-[17px] font-semibold tracking-tight text-ink">
                 Leave without saving?

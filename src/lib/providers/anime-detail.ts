@@ -1,7 +1,7 @@
 import type { Meta } from "@/lib/cinemeta";
 import { aniZipByKitsu, pickEpisodeTitle } from "@/lib/providers/anizip";
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
-import { kitsuToTvdb, externalToKitsu } from "@/lib/providers/anime-mapping";
+import { kitsuToTvdb, kitsuToImdb, externalToKitsu } from "@/lib/providers/anime-mapping";
 import { anilistFranchise, type AnilistFranchiseNode } from "@/lib/anilist/relations";
 import { enrichEpisodes } from "@/lib/providers/anime-episode-enrich";
 import { fanartMovie, fanartTv } from "@/lib/providers/fanart";
@@ -30,13 +30,17 @@ export type FranchiseEntry = {
   isUpcoming: boolean;
 };
 
+export type AnimeDetailExtras = Partial<TmdbDetail>;
+
 export type AnimeDetailResult = {
   detail: TmdbDetail;
   episodes: KitsuEpisode[];
   streamers: KitsuStreamer[];
   backdrops: string[];
   imdbId?: string;
-  franchise: FranchiseEntry[];
+  franchisePromise: Promise<FranchiseEntry[]>;
+  enrichPromise: Promise<KitsuEpisode[]>;
+  extrasPromise: Promise<AnimeDetailExtras>;
   kitsuId: number;
 };
 
@@ -98,7 +102,7 @@ const STUDIO_ROLE_RANK: Record<string, number> = {
 };
 
 const FRANCHISE_ROLES = new Set(["sequel", "prequel", "parent_story"]);
-const FRANCHISE_MAX_DEPTH = 6;
+const FRANCHISE_MAX_DEPTH = 3;
 
 function makeFranchiseMeta(id: number, anime: import("./kitsu").KitsuAnimeDetail): Meta {
   return {
@@ -262,7 +266,7 @@ export async function animeDetails(
   ]);
   if (!anime) return null;
 
-  const franchisePromise = buildFranchise(kitsuId, anime);
+  const franchisePromise = buildFranchise(kitsuId, anime).catch(() => [] as FranchiseEntry[]);
 
   const slugify = (s: string) =>
     s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -321,6 +325,13 @@ export async function animeDetails(
       if (az.runtime && !ep.length) ep.length = az.runtime;
       if (az.filler) ep.filler = true;
       if (az.absoluteEpisodeNumber) ep.absoluteNumber = az.absoluteEpisodeNumber;
+      if (ep.rating == null && az.rating != null) {
+        const r = Number(az.rating);
+        if (Number.isFinite(r) && r > 0) {
+          ep.rating = r;
+          ep.ratingIsImdb = true;
+        }
+      }
       if (az.seasonNumber != null && az.seasonNumber > 0 && az.episodeNumber != null) {
         if (azImdb) ep.imdbId = azImdb;
         if (ep.imdbSeason == null) ep.imdbSeason = az.seasonNumber;
@@ -329,8 +340,8 @@ export async function animeDetails(
     }
   }
 
-  const seriesImdb = aniZip?.mappings?.imdb_id ?? episodes.find((e) => e.imdbId)?.imdbId ?? null;
-  await enrichEpisodes(episodes, settings, kitsuId, seriesImdb);
+  let seriesImdb = aniZip?.mappings?.imdb_id ?? episodes.find((e) => e.imdbId)?.imdbId ?? null;
+  if (!seriesImdb) seriesImdb = await kitsuToImdb(kitsuId).catch(() => null);
 
   if (seriesImdb?.startsWith("tt")) {
     for (const ep of episodes) {
@@ -349,56 +360,12 @@ export async function animeDetails(
       profilePath: c.image ?? null,
       order: i,
     }));
-  let cast: CastEntry[] = toCast(characters);
-
-  const franchise = await franchisePromise;
-  const castKeys = [meta.id, `kitsu:${kitsuId}`, ...franchise.map((f) => f.meta.id)];
-
-  if (cast.length > 0) {
-    for (const k of castKeys) FRANCHISE_CAST_CACHE.set(k, cast);
-  } else {
-    for (const k of castKeys) {
-      const cached = FRANCHISE_CAST_CACHE.get(k);
-      if (cached?.length) {
-        cast = cached;
-        break;
-      }
-    }
-    if (cast.length === 0) {
-      for (const f of franchise) {
-        if (!f.meta.id.startsWith("kitsu:")) continue;
-        const fid = Number(f.meta.id.replace("kitsu:", ""));
-        if (!Number.isFinite(fid) || fid === kitsuId) continue;
-        const fallback = await kitsuCharacters(fid, 30).catch(() => []);
-        if (fallback.length > 0) {
-          cast = toCast(fallback);
-          for (const k of castKeys) FRANCHISE_CAST_CACHE.set(k, cast);
-          break;
-        }
-      }
-    }
-    if (cast.length === 0 && settings.tmdbKey && franchise.length > 0) {
-      const root = franchise[0];
-      const hit = await tmdbAnimeLogo(settings.tmdbKey, root.meta.name, root.meta.releaseInfo, kind).catch(
-        () => null,
-      );
-      if (hit?.tmdbId) {
-        const full = await tmdbDetails(settings.tmdbKey, {
-          id: `tmdb:${kind === "movie" ? "movie" : "tv"}:${hit.tmdbId}`,
-          type: kind === "movie" ? "movie" : "series",
-          name: root.meta.name,
-        } as Meta).catch(() => null);
-        if (full?.cast?.length) {
-          cast = full.cast;
-          for (const k of castKeys) FRANCHISE_CAST_CACHE.set(k, cast);
-        }
-      }
-    }
-  }
+  const cast: CastEntry[] = toCast(characters);
+  const castKeys = [meta.id, `kitsu:${kitsuId}`];
+  if (cast.length > 0) for (const k of castKeys) FRANCHISE_CAST_CACHE.set(k, cast);
 
   const franchiseIds = new Set<string>([meta.id, `kitsu:${kitsuId}`]);
   for (const r of related) franchiseIds.add(r.meta.id);
-  for (const f of franchise) franchiseIds.add(f.meta.id);
 
   const similarPool: Meta[] = [];
   const poolSeen = new Set<string>();
@@ -418,83 +385,15 @@ export async function animeDetails(
   const productionCompanies = Array.from(new Set(sortedStudios.map((s) => s.name)));
   const networks = Array.from(new Set(streamers.map((s) => s.service)));
 
-  let logo: string | undefined;
-  let backdrop = anime.backdrop;
-  let poster = anime.poster;
-  let backdrops: string[] = backdrop ? [backdrop] : [];
-
-  const rootMeta = kind === "tv" && franchise.length > 0 ? franchise[0].meta : null;
-  const lookupTitle = rootMeta?.name ?? anime.title;
-  const rootYear = rootMeta ? parseInt(rootMeta.releaseInfo ?? "", 10) : NaN;
-  const lookupYear = Number.isFinite(rootYear) ? String(rootYear) : anime.year;
-
-  const [tmdbHit, tvdbId] = await Promise.all([
-    settings.tmdbKey
-      ? tmdbAnimeLogo(settings.tmdbKey, lookupTitle, lookupYear, kind).catch(() => null)
-      : Promise.resolve(null),
-    settings.fanartKey && kind === "tv"
-      ? kitsuToTvdb(kitsuId).catch(() => null)
-      : Promise.resolve(null),
-  ]);
-
-  if (tmdbHit) {
-    if (tmdbHit.logo) logo = tmdbHit.logo;
-    if (tmdbHit.backdrop) {
-      backdrop = tmdbHit.backdrop;
-      backdrops = [tmdbHit.backdrop];
-    }
-  }
-
-  const fanartPromise =
-    settings.fanartKey && kind === "movie" && tmdbHit?.tmdbId
-      ? fanartMovie(settings.fanartKey, tmdbHit.tmdbId).catch(() => null)
-      : settings.fanartKey && kind === "tv" && tvdbId
-        ? fanartTv(settings.fanartKey, tvdbId).catch(() => null)
-        : Promise.resolve(null);
-  const tmdbFullPromise =
-    settings.tmdbKey && tmdbHit?.tmdbId
-      ? tmdbDetails(settings.tmdbKey, {
-          id: `tmdb:${kind === "movie" ? "movie" : "tv"}:${tmdbHit.tmdbId}`,
-          type: kind === "movie" ? "movie" : "series",
-          name: anime.title,
-        } as Meta).catch(() => null)
-      : Promise.resolve(null);
-  const [fa, fullRaw] = await Promise.all([fanartPromise, tmdbFullPromise]);
-
-  if (fa) {
-    if (fa.logo) logo = fa.logo;
-    if (fa.backdrops.length > 0) {
-      backdrop = fa.backdrops[0];
-      backdrops = fa.backdrops;
-    }
-    if (fa.poster) poster = fa.poster;
-  }
-
-  let tmdbFull: TmdbDetail | null = null;
-  if (fullRaw) {
-    const ay = Number(lookupYear);
-    const ty = Number(fullRaw.year);
-    if (!Number.isFinite(ay) || !Number.isFinite(ty) || Math.abs(ty - ay) <= 1) {
-      tmdbFull = fullRaw;
-    }
-  }
-
-  if (logo) {
-    for (const f of franchise) {
-      if (!f.meta.logo) f.meta.logo = logo;
-    }
-  }
-
   const detail: TmdbDetail = {
     ...emptyDetail(kind),
     id: anime.id,
-    imdbId: addonMeta?.imdb_id ?? tmdbFull?.imdbId ?? null,
+    imdbId: addonMeta?.imdb_id ?? null,
     title: anime.title,
     originalTitle: anime.title,
     overview: anime.synopsis,
-    poster,
-    backdrop,
-    logo,
+    poster: anime.poster,
+    backdrop: anime.backdrop,
     year: anime.year,
     rating: meta.imdbRating ?? anime.rating,
     voteCount: anime.popularityRank ?? 0,
@@ -508,22 +407,8 @@ export async function animeDetails(
     networks,
     trailerYtId: anime.trailerYtId ?? null,
     trailerCandidates: anime.trailerYtId ? [anime.trailerYtId] : [],
-    extraVideos: tmdbFull?.extraVideos ?? [],
-    gallery: {
-      backdrops: Array.from(new Set([...backdrops, ...(tmdbFull?.gallery.backdrops ?? [])])),
-      posters: tmdbFull?.gallery.posters ?? [],
-      logos: tmdbFull?.gallery.logos ?? [],
-    },
-    cast: cast.length > 0 ? cast : (tmdbFull?.cast ?? []),
-    crew: tmdbFull?.crew ?? [],
-    directors: tmdbFull?.directors ?? [],
-    writers: tmdbFull?.writers ?? [],
-    creators: tmdbFull?.creators ?? [],
-    producers: tmdbFull?.producers ?? [],
-    composer: tmdbFull?.composer ?? [],
-    cinematography: tmdbFull?.cinematography ?? [],
-    editor: tmdbFull?.editor ?? [],
-    keywords: tmdbFull?.keywords ?? [],
+    gallery: { backdrops: anime.backdrop ? [anime.backdrop] : [], posters: [], logos: [] },
+    cast,
     recommendations: moreLikeThis,
     similar: youMightLike,
     numberOfEpisodes: anime.episodeCount ?? 0,
@@ -532,5 +417,111 @@ export async function animeDetails(
     lastAirDate: anime.endDate,
   };
 
-  return { detail, episodes, streamers, backdrops, imdbId: addonMeta?.imdb_id, franchise, kitsuId };
+  const enrichPromise = enrichEpisodes(episodes, settings, kitsuId, seriesImdb)
+    .then(() => episodes)
+    .catch(() => episodes);
+
+  const extrasPromise: Promise<AnimeDetailExtras> = (async () => {
+    const [tmdbHit, tvdbId] = await Promise.all([
+      settings.tmdbKey
+        ? tmdbAnimeLogo(settings.tmdbKey, anime.title, anime.year, kind).catch(() => null)
+        : Promise.resolve(null),
+      settings.fanartKey && kind === "tv" ? kitsuToTvdb(kitsuId).catch(() => null) : Promise.resolve(null),
+    ]);
+    let logo: string | undefined;
+    let backdrop = anime.backdrop;
+    let poster = anime.poster;
+    let backdrops: string[] = anime.backdrop ? [anime.backdrop] : [];
+    if (tmdbHit) {
+      if (tmdbHit.logo) logo = tmdbHit.logo;
+      if (tmdbHit.backdrop) {
+        backdrop = tmdbHit.backdrop;
+        backdrops = [tmdbHit.backdrop];
+      }
+    }
+    const fanartPromise =
+      settings.fanartKey && kind === "movie" && tmdbHit?.tmdbId
+        ? fanartMovie(settings.fanartKey, tmdbHit.tmdbId).catch(() => null)
+        : settings.fanartKey && kind === "tv" && tvdbId
+          ? fanartTv(settings.fanartKey, tvdbId).catch(() => null)
+          : Promise.resolve(null);
+    const tmdbFullPromise =
+      settings.tmdbKey && tmdbHit?.tmdbId
+        ? tmdbDetails(settings.tmdbKey, {
+            id: `tmdb:${kind === "movie" ? "movie" : "tv"}:${tmdbHit.tmdbId}`,
+            type: kind === "movie" ? "movie" : "series",
+            name: anime.title,
+          } as Meta).catch(() => null)
+        : Promise.resolve(null);
+    const [fa, fullRaw] = await Promise.all([fanartPromise, tmdbFullPromise]);
+    if (fa) {
+      if (fa.logo) logo = fa.logo;
+      if (fa.backdrops.length > 0) {
+        backdrop = fa.backdrops[0];
+        backdrops = fa.backdrops;
+      }
+      if (fa.poster) poster = fa.poster;
+    }
+    let tmdbFull: TmdbDetail | null = null;
+    if (fullRaw) {
+      const ay = Number(anime.year);
+      const ty = Number(fullRaw.year);
+      if (!Number.isFinite(ay) || !Number.isFinite(ty) || Math.abs(ty - ay) <= 1) tmdbFull = fullRaw;
+    }
+    const patch: AnimeDetailExtras = {
+      logo,
+      backdrop,
+      poster,
+      imdbId: addonMeta?.imdb_id ?? tmdbFull?.imdbId ?? null,
+      extraVideos: tmdbFull?.extraVideos ?? [],
+      gallery: {
+        backdrops: Array.from(new Set([...backdrops, ...(tmdbFull?.gallery.backdrops ?? [])])),
+        posters: tmdbFull?.gallery.posters ?? [],
+        logos: tmdbFull?.gallery.logos ?? [],
+      },
+      crew: tmdbFull?.crew ?? [],
+      directors: tmdbFull?.directors ?? [],
+      writers: tmdbFull?.writers ?? [],
+      creators: tmdbFull?.creators ?? [],
+      producers: tmdbFull?.producers ?? [],
+      composer: tmdbFull?.composer ?? [],
+      cinematography: tmdbFull?.cinematography ?? [],
+      editor: tmdbFull?.editor ?? [],
+      keywords: tmdbFull?.keywords ?? [],
+    };
+    if (cast.length === 0) {
+      let fallback: CastEntry[] | undefined;
+      for (const k of castKeys) {
+        const c = FRANCHISE_CAST_CACHE.get(k);
+        if (c?.length) {
+          fallback = c;
+          break;
+        }
+      }
+      if (!fallback && tmdbFull?.cast?.length) {
+        fallback = tmdbFull.cast;
+        for (const k of castKeys) FRANCHISE_CAST_CACHE.set(k, tmdbFull.cast);
+      }
+      if (fallback) patch.cast = fallback;
+    }
+    return patch;
+  })().catch(() => ({}) as AnimeDetailExtras);
+
+  const franchiseResult = (async () => {
+    const [franchise, extras] = await Promise.all([franchisePromise, extrasPromise]);
+    if (extras.logo) for (const f of franchise) if (!f.meta.logo) f.meta.logo = extras.logo;
+    return franchise;
+  })();
+
+  return {
+    detail,
+    episodes,
+    streamers,
+    backdrops: anime.backdrop ? [anime.backdrop] : [],
+    imdbId: addonMeta?.imdb_id,
+    franchisePromise: franchiseResult,
+    enrichPromise,
+    extrasPromise,
+    kitsuId,
+  };
 }

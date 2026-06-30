@@ -40,6 +40,7 @@ import { useT } from "@/lib/i18n";
 import { useEpisodeNavigation } from "./player/hooks/use-episode-navigation";
 import { useAbLoop } from "./player/hooks/use-ab-loop";
 import { useAutoNextEpisode } from "./player/hooks/use-auto-next-episode";
+import { useStartedNearEnd } from "./player/hooks/use-started-near-end";
 import { useFrameGrab } from "./player/hooks/use-frame-grab";
 import { useClipRecorder } from "./player/hooks/use-clip-recorder";
 import { useGifRecorder } from "./player/hooks/use-gif-recorder";
@@ -57,6 +58,7 @@ import { useStreamPill } from "./player/hooks/use-stream-pill";
 import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useVideoFill } from "./player/hooks/use-video-fill";
+import { useLivePictureEq } from "./player/hooks/use-live-picture-eq";
 import { useAnime4k } from "./player/hooks/use-anime4k";
 import { useHdrStage } from "./player/hooks/use-hdr-stage";
 import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
@@ -70,6 +72,17 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const { settings, update } = useSettings();
   const t = useT();
   const chromeTheme = resolveChromeTheme(settings.theme, settings.playerChromeTheme);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!settings.playerMenuBlack) {
+      delete root.dataset.playerBlack;
+      return;
+    }
+    root.dataset.playerBlack = "on";
+    return () => {
+      delete root.dataset.playerBlack;
+    };
+  }, [settings.playerMenuBlack]);
   const {
     avatarsCorner,
     chatCorner,
@@ -226,12 +239,15 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     setAutoNextCancelled(false);
   }, [src.url]);
 
+  const startedNearEndRef = useStartedNearEnd(src.url, snap.status, snap.durationSec);
+
   useAutoNextEpisode({
     src,
     snap,
     nextEp: settings.autoPlayNextEpisode ? adjacent.next : null,
     canChangeEpisode,
     cancelled: autoNextCancelled,
+    startedNearEndRef,
     goToEpisode,
   });
 
@@ -447,7 +463,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     }
   }, [textSync.enterSync, showSyncToast, t]);
 
-  const videoFill = useVideoFill(bridgeRef, src.url);
+  const videoFill = useVideoFill(bridgeRef, src.url, playing);
+  useLivePictureEq(bridgeRef, src.url);
   const anime4k = useAnime4k(bridgeRef, src.url, src);
   const { holdSpeedActive, showStats } = usePlayerHotkeys({
     bridgeRef,
@@ -539,6 +556,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     canChangeEpisode,
     roomGuest,
     isLive: isLiveLike,
+    startedNearEndRef,
     reloadLive,
     closePlayer,
   });

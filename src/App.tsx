@@ -14,7 +14,8 @@ import { TopDock } from "@/chrome/topdock";
 import { CinematicOverlay } from "@/chrome/cinematic-overlay";
 import { Topbar } from "@/chrome/topbar";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
-import { exitWindowFullscreen, toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
+import { exitWindowFullscreenOnPlayerClose, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
@@ -25,6 +26,7 @@ import { DevErrorTrigger } from "@/components/dev-error-trigger";
 import { ErrorView } from "@/components/error-view";
 import { HarborErrorBoundary } from "@/components/error-boundary";
 import { ContextMenu } from "@/components/context-menu";
+import { CurfewGuard } from "@/components/curfew-guard";
 import { HoverPreview } from "@/components/hover-preview";
 import { EmbedViewportRoot } from "@/components/embed-viewport";
 import { InstallerViewportRoot } from "@/components/installer-viewport";
@@ -46,7 +48,7 @@ import { TogetherLeaveForLiveModal } from "@/components/together-leave-for-live-
 import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider } from "@/lib/auth";
-import { ProfilesProvider } from "@/lib/profiles";
+import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
 import { ProfilePickerModal } from "@/components/profile-picker/picker-modal";
 import { WatchlistSync } from "@/lib/watchlist-sync";
@@ -89,6 +91,7 @@ const importEpisodeDetail = () => import("@/views/episode-detail");
 const importPlayPicker = () => import("@/views/play-picker");
 const importPlayer = () => import("@/views/player");
 const importMovies = () => import("@/views/movies");
+const importKids = () => import("@/views/kids");
 const importQueue = () => import("@/views/queue");
 const importService = () => import("@/views/service");
 const importSettings = () => import("@/views/settings");
@@ -116,6 +119,10 @@ const CollectionsView = lazy(() => import("@/views/collections").then((m) => ({ 
 const PlayPicker = lazy(() => importPlayPicker().then((m) => ({ default: m.PlayPicker })));
 const PlayerView = lazy(() => importPlayer().then((m) => ({ default: m.PlayerView })));
 const Movies = lazy(() => importMovies().then((m) => ({ default: m.Movies })));
+const Kids = lazy(() => importKids().then((m) => ({ default: m.Kids })));
+const KidsDetailView = lazy(() =>
+  import("@/views/kids-detail").then((m) => ({ default: m.KidsDetailView })),
+);
 const QueueView = lazy(() => importQueue().then((m) => ({ default: m.QueueView })));
 const ServiceView = lazy(() => importService().then((m) => ({ default: m.ServiceView })));
 const Settings = lazy(() => importSettings().then((m) => ({ default: m.Settings })));
@@ -237,6 +244,7 @@ export function App() {
                     <HarborErrorBoundary>
                       <ProfileIdentitySync />
                       <AnilistAvatarSync />
+                      <MiddleClickScroll />
                       <ThemeBackdrop />
                       <WatchlistSync />
                       <Shell />
@@ -256,6 +264,7 @@ export function App() {
                       <HoverPreview />
                       <TopRankModal />
                       <ProfilePickerModal />
+                      <CurfewGuard />
                       <SearchOverlay />
                       <SearchHotkey />
                       <EmbedViewportRoot />
@@ -393,11 +402,14 @@ function Shell() {
   const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, goBack, openMeta, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
   const uiScaleRef = useRef(settings.uiScale);
+  const { activeProfile } = useProfiles();
+  const kid = activeProfile?.kid ?? null;
   const preview = useThemePreview();
-  const layout = useMemo(
+  const baseLayout = useMemo(
     () => (preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],
   );
+  const layout = kid ? "sidebar" : baseLayout;
   const themeHasTopbar =
     layout === "sidebar" ||
     layout === "dracula" ||
@@ -553,10 +565,26 @@ function Shell() {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
   }, [topKind, settings.hideContent.anime, setView]);
 
+  useEffect(() => {
+    if (!kid || player) return;
+    const allowed =
+      topKind === "kids" ||
+      topKind === "meta" ||
+      topKind === "picker" ||
+      topKind === "grid" ||
+      topKind === "collection";
+    if (!allowed) setView("kids");
+  }, [kid, player, topKind, setView]);
+
+  useEffect(() => {
+    if (!activeProfile) return;
+    if (!activeProfile.kid && topKind === "kids") setView("home");
+  }, [activeProfile?.id]);
+
   const playerActive = !!player;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
   useEffect(() => {
-    if (!playerActive) void exitWindowFullscreen();
+    if (!playerActive) void exitWindowFullscreenOnPlayerClose();
   }, [playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
@@ -582,6 +610,7 @@ function Shell() {
   const serviceTop = topKind === "service";
   const homeTop = topKind === "home";
   const moviesTop = topKind === "movies";
+  const kidsTop = topKind === "kids";
   const showsTop = topKind === "shows";
   const libraryTop = topKind === "library";
   const liveTop = topKind === "live";
@@ -641,6 +670,7 @@ function Shell() {
   const animeAwardAlive = useKeepAlive(animeAwardTop, animeAwardTop && !!animeAwardSource);
   const pickerAlive = useKeepAlive(pickerTop, !!picker);
   const moviesAlive = useIdleEvict(moviesTop);
+  const kidsAlive = useIdleEvict(kidsTop);
   const showsAlive = useIdleEvict(showsTop);
   const libraryAlive = useIdleEvict(libraryTop);
   const liveAlive = useIdleEvict(liveTop);
@@ -648,7 +678,7 @@ function Shell() {
   const downloadsAlive = useIdleEvict(downloadsTop);
 
   return (
-    <div className="relative flex h-full">
+    <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "sidebar" && <Sidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
@@ -716,6 +746,13 @@ function Shell() {
             </Suspense>
           </div>
         )}
+        {kidsAlive && (
+          <div className={layer(kidsTop)}>
+            <Suspense fallback={null}>
+              <Kids active={kidsTop} />
+            </Suspense>
+          </div>
+        )}
         {showsAlive && (
           <div className={layer(showsTop)}>
             <Suspense fallback={null}>
@@ -768,7 +805,11 @@ function Shell() {
         {detailAlive && meta && (
           <div className={layer(detailTop)}>
             <Suspense fallback={null}>
-              <DetailView key={`meta-${meta.id}`} meta={meta} liveContext={metaLiveContext} episodeHint={metaEpisodeHint ?? undefined} />
+              {kid ? (
+                <KidsDetailView key={`kid-meta-${meta.id}`} meta={meta} episodeHint={metaEpisodeHint ?? undefined} />
+              ) : (
+                <DetailView key={`meta-${meta.id}`} meta={meta} liveContext={metaLiveContext} episodeHint={metaEpisodeHint ?? undefined} />
+              )}
             </Suspense>
           </div>
         )}

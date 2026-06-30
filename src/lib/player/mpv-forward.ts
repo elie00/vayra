@@ -66,6 +66,12 @@ export function createForwardingMpvBridge(): ForwardingBridge {
     setAspectOverride(ratio) {
       void set("video-aspect-override", ratio);
     },
+    setStretch(on) {
+      void set("keepaspect", !on);
+    },
+    setVideoEq(name, value) {
+      void set(name, value);
+    },
     setAnime4kShaders(shaders) {
       const sep = typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("windows") ? ";" : ":";
       void set("glsl-shaders", shaders.filter(Boolean).join(sep));

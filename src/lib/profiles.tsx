@@ -25,6 +25,14 @@ export const PROFILE_COLORS = [
 
 export type ProfileColor = string;
 
+export type KidConfig = {
+  age: number;
+  curfewMinutes: number | null;
+  parentPinHash: string | null;
+};
+
+export const DEFAULT_KID: KidConfig = { age: 7, curfewMinutes: null, parentPinHash: null };
+
 export type Profile = {
   id: string;
   name: string;
@@ -35,6 +43,7 @@ export type Profile = {
   passwordHash: string | null;
   hideContent: ContentFilters | null;
   lockedTabs: HiddenTabs | null;
+  kid: KidConfig | null;
   createdAt: number;
 };
 
@@ -59,7 +68,12 @@ type ProfilesValue = {
   setPickerView: (view: PickerView) => void;
   closePicker: () => void;
   selectProfile: (id: string) => void;
-  createProfile: (input: { name: string; avatar?: string | null; color: ProfileColor }) => Profile;
+  createProfile: (input: {
+    name: string;
+    avatar?: string | null;
+    color: ProfileColor;
+    kid?: KidConfig | null;
+  }) => Profile;
   updateProfile: (id: string, patch: Partial<Omit<Profile, "id" | "createdAt" | "isPrimary">>) => void;
   deleteProfile: (id: string) => void;
 };
@@ -155,10 +169,24 @@ function readState(): ProfilesState {
       if (typeof p.lockedTabs === "undefined") {
         next.lockedTabs = p.isPrimary ? legacyParental.hiddenTabs : null;
       }
+      if (typeof p.kid === "undefined" || p.kid == null) {
+        next.kid = null;
+      } else {
+        next.kid = {
+          age: p.kid.age ?? 7,
+          curfewMinutes: p.kid.curfewMinutes ?? null,
+          parentPinHash: p.kid.parentPinHash ?? null,
+        };
+      }
       if (p.isPrimary) {
         if (isPlaceholderName(p.name)) next.name = fallbackName;
         if (identity.color) next.color = identity.color;
-        if (identity.avatar != null) next.avatar = identity.avatar;
+        if (identity.avatar != null && !identity.avatar.startsWith("/kids/avatars/")) {
+          next.avatar = identity.avatar;
+        }
+      }
+      if (next.kid == null && typeof next.avatar === "string" && next.avatar.startsWith("/kids/avatars/")) {
+        next.avatar = null;
       }
       return next;
     });
@@ -204,6 +232,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
         passwordHash: null,
         hideContent: null,
         lockedTabs: legacyParental.hiddenTabs,
+        kid: null,
         createdAt: Date.now(),
       };
       const initial: ProfilesState = { profiles: [primary], activeId: primary.id };
@@ -240,26 +269,30 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     setPickerViewState({ kind: "list" });
   }, []);
 
-  const createProfile = useCallback<ProfilesValue["createProfile"]>(({ name, avatar, color }) => {
-    let created!: Profile;
-    setState((s) => {
-      const primary = s.profiles.find((p) => p.isPrimary) ?? s.profiles[0];
-      created = {
-        id: newId(),
-        name: name.trim().slice(0, 32) || "Profile",
-        avatar: avatar ?? null,
-        color,
-        isPrimary: false,
-        shareStremioWith: primary?.id ?? null,
-        passwordHash: null,
-        hideContent: null,
-        lockedTabs: null,
-        createdAt: Date.now(),
-      };
-      return { ...s, profiles: [...s.profiles, created] };
-    });
-    return created;
-  }, []);
+  const createProfile = useCallback<ProfilesValue["createProfile"]>(
+    ({ name, avatar, color, kid }) => {
+      let created!: Profile;
+      setState((s) => {
+        const primary = s.profiles.find((p) => p.isPrimary) ?? s.profiles[0];
+        created = {
+          id: newId(),
+          name: name.trim().slice(0, 32) || "Profile",
+          avatar: avatar ?? null,
+          color,
+          isPrimary: false,
+          shareStremioWith: primary?.id ?? null,
+          passwordHash: null,
+          hideContent: null,
+          lockedTabs: null,
+          kid: kid ?? null,
+          createdAt: Date.now(),
+        };
+        return { ...s, profiles: [...s.profiles, created] };
+      });
+      return created;
+    },
+    [],
+  );
 
   const updateProfile = useCallback<ProfilesValue["updateProfile"]>((id, patch) => {
     setState((s) => ({
@@ -333,6 +366,11 @@ export function useProfiles(): ProfilesValue {
   const v = useContext(Ctx);
   if (!v) throw new Error("useProfiles outside ProfilesProvider");
   return v;
+}
+
+export function useActiveKid(): KidConfig | null {
+  const { activeProfile } = useProfiles();
+  return activeProfile?.kid ?? null;
 }
 
 export function nextProfileColor(existing: Profile[]): ProfileColor {

@@ -5,7 +5,8 @@ import type { Meta } from "@/lib/cinemeta";
 import { isSaved, toggleSaved } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
 import { kitsuCoverImage, parseKitsuId } from "@/lib/providers/kitsu";
-import { resolveAnimeBackdrop, resolveLogo } from "@/lib/logo";
+import { resolveHeroBackdrop } from "@/lib/anime-backdrop";
+import { resolveLogo } from "@/lib/logo";
 import { useMalRating } from "@/lib/mal-rating";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
@@ -97,7 +98,7 @@ export function AnimeHero({
     if (!current || current.id in hdBackdrops) return;
     let cancelled = false;
     setHdBackdrops((prev) => ({ ...prev, [current.id]: undefined }));
-    resolveAnimeBackdrop(settings.tmdbKey, current)
+    resolveHeroBackdrop(settings.tmdbKey, current)
       .then((url) => {
         if (cancelled) return;
         setHdBackdrops((prev) => ({ ...prev, [current.id]: url }));

@@ -446,6 +446,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     setAspectOverride(ratio) {
       invoke("mpv_set_property", { name: "video-aspect-override", value: ratio }).catch(() => {});
     },
+    setStretch(on) {
+      invoke("mpv_set_property", { name: "keepaspect", value: !on }).catch(() => {});
+    },
+    setVideoEq(name, value) {
+      invoke("mpv_set_property", { name, value }).catch(() => {});
+    },
     setAnime4kShaders(shaders) {
       const sep = typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("windows") ? ";" : ":";
       invoke("mpv_set_property", { name: "glsl-shaders", value: shaders.filter(Boolean).join(sep) }).catch(() => {});

@@ -29,6 +29,7 @@ type Tab = {
   label: string;
   view: View;
   parentalKey?: LockableTab;
+  hideKey?: "anime" | "liveTv" | "sports";
 };
 
 const PRIMARY: Tab[] = [
@@ -36,8 +37,8 @@ const PRIMARY: Tab[] = [
   { label: "Discover", view: "discover", parentalKey: "discover" },
   { label: "Movies", view: "movies", parentalKey: "movies" },
   { label: "Shows", view: "shows", parentalKey: "shows" },
-  { label: "Anime", view: "anime", parentalKey: "anime" },
-  { label: "Live TV", view: "live", parentalKey: "liveTv" },
+  { label: "Anime", view: "anime", parentalKey: "anime", hideKey: "anime" },
+  { label: "Live TV", view: "live", parentalKey: "liveTv", hideKey: "liveTv" },
   { label: "Playlists", view: "vod" },
 ];
 
@@ -75,6 +76,7 @@ export function CinematicOverlay() {
     .filter(
       (tab) =>
         (tab.view !== "vod" || settings.showPlaylistsTab) &&
+        (!tab.hideKey || !settings.hideContent[tab.hideKey]) &&
         (!tab.parentalKey || !locked || !hiddenTabs[tab.parentalKey]),
     )
     .map((tab) => {

@@ -54,6 +54,7 @@ export function EpisodeRow({
   const playEpisode = {
     season: ep.seasonNumber,
     episode: ep.episodeNumber,
+    runtime: ep.runtime ?? undefined,
     name: ep.name || undefined,
     still,
     overview: ep.overview || undefined,

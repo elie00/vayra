@@ -30,11 +30,11 @@ export function resumeDefaultSeason(
   };
 
   const last = lastPlayedEpisode(seriesId);
+  if (last != null && real.some((s) => s.seasonNumber === last.season)) return last.season;
+
   let candidate = first;
   for (const s of real) {
-    const started =
-      watchedInSeason(s.seasonNumber) >= 1 || (last != null && last.season === s.seasonNumber);
-    if (started && s.seasonNumber > candidate) candidate = s.seasonNumber;
+    if (watchedInSeason(s.seasonNumber) >= 1 && s.seasonNumber > candidate) candidate = s.seasonNumber;
   }
   if (candidate === first) return first;
 

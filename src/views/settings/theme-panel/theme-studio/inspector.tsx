@@ -2,6 +2,7 @@ import { ChevronDown, Code2, Layout as LayoutIcon, Palette } from "lucide-react"
 import { useState, type ReactNode } from "react";
 import type { CodeLang } from "@/components/code-editor";
 import type { ChromeConfig, ThemeButtonStyle, ThemeCardStyle, ThemePreset } from "@/lib/theme";
+import { CardCssPopout } from "./card-css-popout";
 import { CodeSection } from "./code-section";
 import { ColorsGrid } from "./colors-grid";
 import { CustomChromeBuilder } from "./custom-chrome-builder";
@@ -9,6 +10,7 @@ import { FontPicker } from "./font-picker";
 import { IdentityRow } from "./identity-row";
 import { LayoutPicker } from "./layout-picker";
 import { StylePicker } from "./style-picker";
+import { StyleSpecimen } from "./style-specimen";
 import type { Draft } from "./studio-types";
 
 type Tab = "look" | "layout" | "code";
@@ -35,6 +37,7 @@ export function Inspector({
   onExpand: (tab: CodeLang) => void;
 }) {
   const [tab, setTab] = useState<Tab>("look");
+  const [cardCssOpen, setCardCssOpen] = useState(false);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -73,12 +76,14 @@ export function Inspector({
             </Group>
             <Group title="Colors" sub="Every surface in Harbor maps to one of these.">
               <ColorsGrid colors={draft.colors} onChange={(colors) => onPatch({ colors })} />
+              <StyleSpecimen colors={draft.colors} />
             </Group>
             <Group title="Cards" sub="How thumbnails and panels render." defaultOpen={false}>
               <StylePicker
                 kind="card"
                 value={draft.cardStyle}
                 onChange={(v) => onPatch({ cardStyle: v as ThemeCardStyle })}
+                onEditCustom={() => setCardCssOpen(true)}
               />
             </Group>
             <Group title="Buttons" sub="Surface treatment for action buttons." defaultOpen={false}>
@@ -126,6 +131,10 @@ export function Inspector({
         )}
         </div>
       </div>
+
+      {cardCssOpen && (
+        <CardCssPopout css={draft.css} onChange={onPatch} onClose={() => setCardCssOpen(false)} />
+      )}
     </div>
   );
 }

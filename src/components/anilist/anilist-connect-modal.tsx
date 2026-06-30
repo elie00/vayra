@@ -78,12 +78,12 @@ export function AnilistConnectModal({ onClose }: { onClose: () => void }) {
         {connectState.kind === "needs-code" && (
           <div className="flex flex-col gap-5">
             <p className="text-[13px] leading-relaxed text-ink-muted">
-              {t("A browser tab opened on AniList. Approve Harbor there, then copy the code it shows and paste it below.")}
+              {t("A browser tab opened on AniList. Approve Harbor there, then copy the text it shows and paste it below.")}
             </p>
             <textarea
               value={draftCode}
               onChange={(e) => setDraftCode(e.target.value)}
-              placeholder={t("Paste the code from AniList")}
+              placeholder={t("Paste the text from AniList")}
               autoFocus
               spellCheck={false}
               rows={3}

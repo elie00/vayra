@@ -22,8 +22,12 @@ export async function kitsuToMal(kitsuId: number): Promise<number | null> {
   return out;
 }
 
-export function fetchAniSkipSegments(malId: number, episode: number): Promise<SkipSegment[]> {
-  const key = `${malId}:${episode}`;
+export function fetchAniSkipSegments(
+  malId: number,
+  episode: number,
+  episodeLengthSec = 0,
+): Promise<SkipSegment[]> {
+  const key = `${malId}:${episode}:${Math.round(episodeLengthSec)}`;
   const hit = segmentCache.get(key);
   if (hit) return Promise.resolve(hit);
   const pending = inflight.get(key);
@@ -31,7 +35,7 @@ export function fetchAniSkipSegments(malId: number, episode: number): Promise<Sk
   const p = (async () => {
     const params = new URLSearchParams();
     for (const t of ["op", "ed", "mixed-op", "mixed-ed", "recap"]) params.append("types", t);
-    params.set("episodeLength", "0");
+    params.set("episodeLength", String(Math.round(episodeLengthSec)));
     const url = `https://api.aniskip.com/v2/skip-times/${malId}/${episode}?${params.toString()}`;
     const res = await fetch(url);
     if (!res.ok) {

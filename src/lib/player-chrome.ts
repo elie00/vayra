@@ -251,7 +251,7 @@ export const CONTROL_META: Record<
   "audio-menu": { label: "Audio tracks", group: "menus", defaultSlot: "bottom-right" },
   "subtitle-menu": { label: "Subtitles", group: "menus", defaultSlot: "bottom-right" },
   "speed-menu": { label: "Playback speed", group: "menus", defaultSlot: "bottom-right" },
-  "aspect-menu": { label: "Aspect ratio", group: "menus", defaultSlot: "bottom-right" },
+  "aspect-menu": { label: "Picture (adjustments & aspect)", group: "menus", defaultSlot: "bottom-right" },
   "anime4k-menu": { label: "Anime4K", group: "menus", defaultSlot: "bottom-right" },
   "hdr-toggle": { label: "HDR to SDR toggle", group: "menus", defaultSlot: "bottom-right" },
   "draw-toggle": { label: "Draw on video", group: "actions", defaultSlot: "bottom-right" },

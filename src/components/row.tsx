@@ -119,6 +119,8 @@ export function Row({
   onEndReached,
   onViewAll,
   viewAllLabel = "View all",
+  titleClassName = "text-ink",
+  titleScale = 1,
 }: {
   title?: React.ReactNode;
   className?: string;
@@ -131,6 +133,8 @@ export function Row({
   onEndReached?: () => void;
   onViewAll?: () => void;
   viewAllLabel?: string;
+  titleClassName?: string;
+  titleScale?: number;
 }) {
   const { settings } = useSettings();
   const t = useT();
@@ -438,8 +442,8 @@ export function Row({
         <div className="flex items-baseline justify-between gap-4 pe-1">
           {title && (
             <h3
-              className="truncate font-medium tracking-tight text-ink"
-              style={{ fontSize: `${Math.round(17 * settings.rowTitleScale)}px` }}
+              className={`truncate font-medium tracking-tight ${titleClassName}`}
+              style={{ fontSize: `${Math.round(17 * settings.rowTitleScale * titleScale)}px` }}
             >
               {title}
             </h3>
@@ -470,7 +474,7 @@ export function Row({
             onPointerCancel={endDrag}
             onClickCapture={onClickCapture}
             onDragStart={(e) => e.preventDefault()}
-            className="grid grid-flow-col items-start gap-5 overflow-x-auto p-5 -m-5 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none]"
+            className="harbor-row-track grid grid-flow-col items-start gap-5 overflow-x-auto p-5 -m-5 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none]"
             style={{
               gridAutoColumns: cellWidth != null ? `${cellWidth}px` : `${effMin}px`,
               willChange: "transform",
@@ -521,7 +525,7 @@ function EdgeArrow({
           onClick={onClick}
           aria-label={label}
           tabIndex={visible ? 0 : -1}
-          className={`mx-1 flex h-12 w-12 items-center justify-center rounded-full border border-edge-soft/50 bg-canvas/90 text-ink shadow-[0_6px_20px_-6px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform duration-150 hover:scale-110 active:scale-95 ${
+          className={`harbor-row-arrow mx-1 flex h-12 w-12 items-center justify-center rounded-full border border-edge-soft/50 bg-canvas/90 text-ink shadow-[0_6px_20px_-6px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform duration-150 hover:scale-110 active:scale-95 ${
             visible ? "pointer-events-auto" : "pointer-events-none"
           }`}
         >
@@ -541,7 +545,7 @@ function EdgeArrow({
         onClick={onClick}
         aria-label={label}
         tabIndex={visible ? 0 : -1}
-        className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-canvas ${
+        className={`harbor-row-arrow pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-canvas ${
           visible ? "opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100" : "pointer-events-none opacity-0"
         }`}
       >

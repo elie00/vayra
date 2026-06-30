@@ -1,3 +1,5 @@
+import { loadStoredSettings } from "@/lib/settings/load";
+
 let windowFullscreen = false;
 let suppressNextExit = false;
 const subs = new Set<() => void>();
@@ -64,6 +66,11 @@ export async function exitWindowFullscreen(): Promise<void> {
   } else if (document.fullscreenElement) {
     void document.exitFullscreen().catch(() => {});
   }
+}
+
+export async function exitWindowFullscreenOnPlayerClose(): Promise<void> {
+  if (loadStoredSettings().keepFullscreenOnExit) return;
+  await exitWindowFullscreen();
 }
 
 export async function toggleWindowFullscreen(): Promise<void> {

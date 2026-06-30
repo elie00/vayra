@@ -31,6 +31,7 @@ export {
   tmdbTrending,
   tmdbDiscover,
   tmdbSearchMovie,
+  tmdbSearchTitle,
 } from "./tmdb/tmdb-catalogs";
 
 export {

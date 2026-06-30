@@ -6,6 +6,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { getCustomIcon, type ControlVariant, type CustomIconMap, type PlayerControlId, type TimeFormat, type VolumeStyle } from "@/lib/player-chrome";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { renderCustomIconControl } from "./custom-icon-renderer";
+import { realQualityLabel } from "@/lib/player/resolution-label";
 
 function getControlState(id: PlayerControlId, ctx: ControlContext): string | undefined {
   const preview = ctx.previewStates?.[id];
@@ -154,14 +155,22 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       const swap = !!ctx.titleSeriesFirst && !!ctx.subtitle;
       const primary = swap ? ctx.subtitle : ctx.title;
       const secondary = swap ? ctx.title : ctx.subtitle;
+      const qual = realQualityLabel(ctx.snap.videoWidth, ctx.snap.videoHeight);
       const lines = (
         <>
-          <h1
-            style={{ fontSize: `${Math.round(19 * scale)}px` }}
-            className="font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
-          >
-            {primary}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1
+              style={{ fontSize: `${Math.round(19 * scale)}px` }}
+              className="font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+            >
+              {primary}
+            </h1>
+            {qual && (
+              <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white/85">
+                {qual}
+              </span>
+            )}
+          </div>
           {secondary && (
             <p
               style={{ fontSize: `${Math.round(13 * scale)}px` }}

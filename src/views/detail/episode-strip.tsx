@@ -59,6 +59,7 @@ export function EpisodeStrip({
               {
                 season: ep.seasonNumber,
                 episode: ep.episodeNumber,
+                runtime: ep.runtime ?? undefined,
                 name: ep.name || undefined,
                 still: stills[0],
                 overview: ep.overview || undefined,
@@ -143,6 +144,7 @@ function EpisodeStripCard({
       {
         season: ep.seasonNumber,
         episode: ep.episodeNumber,
+        runtime: ep.runtime ?? undefined,
         name: ep.name || undefined,
         still,
         overview: ep.overview || undefined,

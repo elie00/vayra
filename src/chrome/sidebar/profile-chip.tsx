@@ -2,8 +2,10 @@ import { Lock, LogIn, LogOut, Pencil, Plus, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AuthModal } from "@/components/auth-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
+import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { verifyProfilePassword } from "@/lib/profile-password";
 import { useProfiles, type Profile } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import type { User } from "@/lib/stremio";
@@ -18,7 +20,21 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [pendingSwitch, setPendingSwitch] = useState<Profile | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  const doSwitch = (p: Profile) => {
+    if (p.passwordHash) openPicker({ kind: "unlock", profileId: p.id });
+    else selectProfile(p.id);
+  };
+  const requestSwitch = (p: Profile) => {
+    setMenuOpen(false);
+    if (activeProfile?.kid?.parentPinHash) {
+      setPendingSwitch(p);
+      return;
+    }
+    doSwitch(p);
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -30,6 +46,10 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
   }, [menuOpen]);
 
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
+  const kid = !!activeProfile?.kid;
+  const harborAvatar = settings.harborAvatar?.startsWith("/kids/avatars/")
+    ? null
+    : settings.harborAvatar;
 
   return (
     <div ref={ref} className="relative">
@@ -40,7 +60,7 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
           collapsed ? "" : "lg:justify-start lg:px-3"
         }`}
       >
-        <ProfileAvatar profile={activeProfile} user={user} fallbackAvatar={settings.harborAvatar} />
+        <ProfileAvatar profile={activeProfile} user={user} fallbackAvatar={harborAvatar} />
         <div className={`hidden min-w-0 flex-1 ${collapsed ? "" : "lg:block"}`}>
           <div className="truncate text-[14.5px] font-medium tracking-tight text-ink">
             {activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback")}
@@ -65,14 +85,7 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
               {otherProfiles.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    if (p.passwordHash) {
-                      openPicker({ kind: "unlock", profileId: p.id });
-                    } else {
-                      selectProfile(p.id);
-                    }
-                  }}
+                  onClick={() => requestSwitch(p)}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-raised"
                 >
                   <span className="relative inline-flex shrink-0">
@@ -98,6 +111,7 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
               ))}
             </div>
           )}
+          {!kid && (
           <div className="flex flex-col">
             <button
               onClick={() => {
@@ -157,10 +171,26 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
               </button>
             )}
           </div>
+          )}
         </div>
       )}
 
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+      {pendingSwitch && activeProfile?.kid?.parentPinHash && (
+        <ParentalPinModal
+          mode={{
+            kind: "unlock",
+            onUnlock: () => {
+              const target = pendingSwitch;
+              setPendingSwitch(null);
+              selectProfile(target.id);
+            },
+            onCancel: () => setPendingSwitch(null),
+          }}
+          verify={(pin) => verifyProfilePassword(pin, activeProfile.kid!.parentPinHash!)}
+          kids
+        />
+      )}
     </div>
   );
 }

@@ -35,6 +35,7 @@ export function SeriesEpisodes({
   scrollRef,
   cinemetaVideos,
   stremioWatched,
+  resumeSeason,
 }: {
   meta: Meta;
   tvId: number;
@@ -44,6 +45,7 @@ export function SeriesEpisodes({
   scrollRef: React.RefObject<HTMLElement | null>;
   cinemetaVideos?: NonNullable<Meta["videos"]>;
   stremioWatched?: Set<string>;
+  resumeSeason?: number;
 }) {
   const t = useT();
   const { settings, update } = useSettings();
@@ -65,6 +67,7 @@ export function SeriesEpisodes({
   const [active, setActive] = useState<number>(() => {
     const saved = getLastSeason(meta.id);
     if (saved != null && seasons.some((s) => s.seasonNumber === saved)) return saved;
+    if (resumeSeason != null && seasons.some((s) => s.seasonNumber === resumeSeason)) return resumeSeason;
     return resumeDefaultSeason(meta.id, seasons, stremioWatched);
   });
   const [episodes, setEpisodes] = useState<Episode[]>([]);
@@ -122,6 +125,15 @@ export function SeriesEpisodes({
       setActive(saved);
     }
   }, [meta.id, seasons]);
+
+  useEffect(() => {
+    if (userPickedRef.current) return;
+    if (resumeSeason == null || !seasons.some((s) => s.seasonNumber === resumeSeason)) return;
+    const saved = getLastSeason(meta.id);
+    if (saved != null && seasons.some((s) => s.seasonNumber === saved)) return;
+    autoSeasonRef.current = true;
+    setActive(resumeSeason);
+  }, [resumeSeason, seasons, meta.id]);
 
   useEffect(() => {
     if (userPickedRef.current || autoSeasonRef.current) return;

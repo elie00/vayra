@@ -1,5 +1,6 @@
 import { Hash } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { scrollToDataEp } from "@/lib/episode-scroll";
 
 const CHUNK_SIZE = 50;
 
@@ -50,21 +51,7 @@ export function EpisodeJumper({
     onReveal?.(n);
     setOpen(false);
     setDraft("");
-    let tries = 0;
-    const tryScroll = () => {
-      const root = scrollRef.current;
-      if (!root) return;
-      const target = root.querySelector<HTMLElement>(`[data-ep="${n}"]`);
-      if (!target) {
-        if (tries++ < 30) requestAnimationFrame(tryScroll);
-        return;
-      }
-      const rootRect = root.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const offset = targetRect.top - rootRect.top + root.scrollTop - 90;
-      root.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
-    };
-    requestAnimationFrame(tryScroll);
+    scrollToDataEp(scrollRef.current, n);
   };
 
   const submit = () => {

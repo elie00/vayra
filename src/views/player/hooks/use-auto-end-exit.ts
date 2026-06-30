@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayEpisode, PlayerSrc } from "@/lib/view";
@@ -15,10 +15,11 @@ export function useAutoEndExit(params: {
   canChangeEpisode: boolean;
   roomGuest: boolean;
   isLive: boolean;
+  startedNearEndRef: RefObject<boolean>;
   reloadLive: () => void;
   closePlayer: () => void | Promise<void>;
 }) {
-  const { src, snap, nextEp, canChangeEpisode, roomGuest, isLive, reloadLive, closePlayer } = params;
+  const { src, snap, nextEp, canChangeEpisode, roomGuest, isLive, startedNearEndRef, reloadLive, closePlayer } = params;
   const firedForRef = useRef<string | null>(null);
   const reloadTimesRef = useRef<number[]>([]);
 
@@ -48,6 +49,7 @@ export function useAutoEndExit(params: {
       reloadTimesRef.current = recent;
     }
 
+    if (!isLive && startedNearEndRef.current) return;
     if ((canChangeEpisode || roomGuest) && nextEp) return;
     if (firedForRef.current === src.url) return;
     firedForRef.current = src.url;

@@ -229,6 +229,14 @@ export function DisplaySection() {
           value={settings.detailTrailerAutoplay}
           onChange={(v) => update({ detailTrailerAutoplay: v })}
         />
+        {settings.detailTrailerAutoplay && (
+          <ToggleRow
+            label={t("Start trailers with audio")}
+            sub={t("Detail page trailers begin unmuted. Falls back to muted if the browser blocks sound until you interact.")}
+            value={settings.detailTrailerAudio}
+            onChange={(v) => update({ detailTrailerAudio: v })}
+          />
+        )}
       </Section>
     </>
   );

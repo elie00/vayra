@@ -13,12 +13,15 @@ import { HomeIcon } from "@/components/icons/home-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
 import { LiveTvIcon } from "@/components/icons/live-tv-icon";
 import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
+import { Popcorn } from "lucide-react";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useParental, type LockableTab } from "@/lib/parental";
+import { useActiveKid } from "@/lib/profiles";
 import { useView, type View } from "@/lib/view";
+import { KidsSidebarDoodles } from "./kids-sidebar-doodles";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 
@@ -36,6 +39,7 @@ const PRIMARY: NavDef[] = [
   { render: (active) => <DiscoverIcon active={active} />, labelKey: "nav.discover", view: "discover", parentalKey: "discover" },
   { render: (active) => <MoviesIcon active={active} />, labelKey: "nav.movies", view: "movies", parentalKey: "movies" },
   { render: (active) => <TvIcon active={active} />, labelKey: "nav.shows", view: "shows", parentalKey: "shows" },
+  { render: (active) => <Popcorn size={26} strokeWidth={2.2} className={active ? "" : "opacity-70"} />, labelKey: "nav.kids", view: "kids" },
   { render: (active) => <AnimeIcon active={active} />, labelKey: "nav.anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
   { render: (active) => <LiveTvIcon active={active} />, labelKey: "nav.live", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
   { render: (active) => <PlaylistVodIcon active={active} />, labelKey: "nav.playlists", view: "vod" },
@@ -53,6 +57,7 @@ export function Sidebar() {
   const { view, setView, chromeHidden } = useView();
   const { locked, unlock, hiddenTabs } = useParental();
   const { settings } = useSettings();
+  const kid = useActiveKid();
   const t = useT();
   const [pendingPinView, setPendingPinView] = useState<View | null>(null);
 
@@ -66,6 +71,7 @@ export function Sidebar() {
     <>
       <aside
         aria-hidden={chromeHidden}
+        data-harbor-sidebar
         className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width] ${
           collapsed ? "" : "lg:w-60"
         } ${
@@ -74,6 +80,7 @@ export function Sidebar() {
             : "translate-x-0 opacity-100"
         }`}
       >
+        {kid && <KidsSidebarDoodles />}
         <div
           data-tauri-drag-region
           className={`flex h-20 shrink-0 items-center justify-center gap-0.5 px-3 text-ink ${
@@ -98,6 +105,24 @@ export function Sidebar() {
                 draggable={false}
                 className="hidden h-8 w-auto object-contain lg:inline-block"
               />
+            ) : kid ? (
+              <span
+                className="hidden whitespace-nowrap text-[42px] font-bold leading-none tracking-tight lg:inline-flex lg:items-center"
+                style={{
+                  fontFamily: '"Fredoka", "Baloo 2", system-ui, sans-serif',
+                  transform: "translateY(1px)",
+                }}
+              >
+                Harb
+                <img
+                  src="/kids/wheel.png"
+                  alt="o"
+                  draggable={false}
+                  className="inline-block h-[0.92em] w-auto"
+                  style={{ transform: "translateY(0.08em)", marginLeft: "-5px", marginRight: "-5px" }}
+                />
+                r
+              </span>
             ) : (
               <span
                 className="hidden whitespace-nowrap text-[44px] font-medium leading-none tracking-tight lg:inline"
@@ -190,8 +215,11 @@ function ScrollableNav({
   onPinNav: (v: View) => void;
 }) {
   const { settings } = useSettings();
+  const kid = useActiveKid();
   const t = useT();
   const isItemVisible = (item: NavDef) => {
+    if (kid) return item.view === "kids";
+    if (item.view === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
     if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
@@ -242,6 +270,7 @@ function ScrollableNav({
               key={item.labelKey}
               {...item}
               collapsed={collapsed}
+              big={!!kid}
               active={item.view ? view === item.view : false}
               onClick={item.view ? () => setView(item.view!) : undefined}
             />
@@ -298,6 +327,7 @@ function NavItem({
   onClick,
   gated,
   collapsed,
+  big,
   view,
 }: {
   render: (active: boolean) => ReactNode;
@@ -306,6 +336,7 @@ function NavItem({
   onClick?: () => void;
   gated?: boolean;
   collapsed?: boolean;
+  big?: boolean;
   view?: View;
 }) {
   const t = useT();
@@ -320,9 +351,9 @@ function NavItem({
       data-active={active ? "" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label }) : label}
       title={gated ? t("chrome.lockedShort", { label }) : label}
-      className={`relative flex h-14 items-center justify-center gap-4 rounded-xl text-[16px] transition-colors duration-150 ${
-        collapsed ? "" : "lg:justify-start lg:px-4"
-      } ${
+      className={`relative flex items-center justify-center gap-4 transition-colors duration-150 ${
+        big ? "h-[68px] rounded-2xl text-[20px] font-bold" : "h-14 rounded-xl text-[16px]"
+      } ${collapsed ? "" : big ? "lg:justify-start lg:px-5" : "lg:justify-start lg:px-4"} ${
         collapsed
           ? active
             ? "text-accent"
@@ -332,7 +363,7 @@ function NavItem({
             : "text-ink-muted hover:bg-elevated/50 hover:text-ink"
       }`}
     >
-      <span className={`relative ${gated ? "opacity-70" : ""}`}>
+      <span className={`relative ${big ? "scale-110" : ""} ${gated ? "opacity-70" : ""}`}>
         {render(hovered)}
         {gated && (
           <span className="absolute -bottom-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink-subtle ring-1 ring-edge">

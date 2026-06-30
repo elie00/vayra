@@ -340,6 +340,11 @@ export function Home({ active = true }: { active?: boolean }) {
 
   const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
   const animeDetectVer = useDetectedAnimeVersion();
+  const stremioWatchedIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const i of items) if ((i.state?.flaggedWatched ?? 0) > 0) s.add(i._id);
+    return s;
+  }, [items]);
   const continueWatching = useMemo(() => {
     const localCwItems: LibraryItem[] = listLocalCw().map((e) => ({
       _id: e.id,
@@ -377,24 +382,28 @@ export function Home({ active = true }: { active?: boolean }) {
       .sort((a, b) => b.k - a.k)
       .map((e) => e.i);
     const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
-    const ns = (id: string) => (id.startsWith("tt") ? "tt" : id.split(":")[0]);
     const seenId = new Set<string>();
-    const seenKey = new Map<string, { ns: string; vid: string }>();
+    const seenName = new Set<string>();
     const out: typeof eligible = [];
     for (const i of eligible) {
       if (seenId.has(i._id)) continue;
-      const key = `${i.type}:${norm(i.name ?? "")}`;
-      const kept = seenKey.get(key);
-      const vid = i.state?.video_id ?? "";
-      if (kept !== undefined && kept.ns !== ns(i._id) && kept.vid === vid) continue;
+      const nm = norm(i.name ?? "");
+      const key = `${i.type}:${nm}`;
+      if (nm && seenName.has(key)) continue;
       seenId.add(i._id);
-      if (kept === undefined) seenKey.set(key, { ns: ns(i._id), vid });
+      if (nm) seenName.add(key);
       out.push(i);
       if (out.length >= 100) break;
     }
     return out;
   }, [items, simklCw, localCwVer, cwVersion, settings.animeOnlyInAnimeRoom, animeDetectVer]);
-  const cwItems = useCwAdvance(continueWatching, settings.tmdbKey, settings.cwAdvanceNext);
+  const cwItems = useCwAdvance(
+    continueWatching,
+    settings.tmdbKey,
+    settings.cwAdvanceNext,
+    items,
+    settings.animeOnlyInAnimeRoom ? "exclude" : "all",
+  );
 
   useEffect(() => {
     void detectAnimeForCw(items);
@@ -458,7 +467,6 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [heroPool, heroSourceRow]);
 
   const scrollRef = useRef<HTMLElement>(null);
-
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const scrollCb = useCallback((el: HTMLElement | null) => {
     (scrollRef as { current: HTMLElement | null }).current = el;
@@ -757,6 +765,7 @@ export function Home({ active = true }: { active?: boolean }) {
               hideWatched={settings.hideWatchedInCatalogs}
               watchedSet={traktWatched}
               localWatched={localWatched}
+              stremioWatched={stremioWatchedIds}
               homeLanguages={settings.homeLanguages}
             />
           )}

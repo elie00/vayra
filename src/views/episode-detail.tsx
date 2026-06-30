@@ -137,6 +137,7 @@ export function EpisodeDetailView({
     const playEpisode: PlayEpisode = {
       season: episodeData.seasonNumber,
       episode: episodeData.episodeNumber,
+      runtime: episodeData.runtime ?? undefined,
       name: episodeData.name,
       still: getImageUrl(episodeData.stillPath, "w300") || undefined,
       overview: episodeData.overview || undefined,

@@ -7,6 +7,8 @@ import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores } from "@/lib/together/source-match";
 import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from "./picker-utils";
 
+const RES_PREF: Record<string, number> = { "1080p": 0, "720p": 1, "480p": 2, "4K": 3, SD: 4 };
+
 export function useAutoCandidates(args: {
   filteredPicker: { all: ScoredStream[]; primary: ScoredStream | null } | null;
   previousPlayback: PlaybackEntry | null;
@@ -17,8 +19,9 @@ export function useAutoCandidates(args: {
   isTorrentioStream: (s: ScoredStream) => boolean;
   preferredLangs: string[];
   hostSource?: SourceDescriptor | null;
+  prefer1080?: boolean;
 }): ScoredStream[] {
-  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource } = args;
+  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080 } = args;
   return useMemo(() => {
     if (!filteredPicker) return [];
     const key = (s: ScoredStream) => s.url ?? s.infoHash ?? `${s.addonId}:${s.title ?? ""}`;
@@ -45,6 +48,10 @@ export function useAutoCandidates(args: {
       const ad = needsDownload(a) ? 1 : 0;
       const bd = needsDownload(b) ? 1 : 0;
       if (ad !== bd) return ad - bd;
+      if (prefer1080) {
+        const dr = (RES_PREF[a.resolution] ?? 5) - (RES_PREF[b.resolution] ?? 5);
+        if (dr !== 0) return dr;
+      }
       if (hasStrongAddon) {
         const at = isTorrentioStream(a) ? 1 : 0;
         const bt = isTorrentioStream(b) ? 1 : 0;
@@ -83,5 +90,5 @@ export function useAutoCandidates(args: {
     }
     for (const s of sorted) push(s);
     return out;
-  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource]);
+  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080]);
 }

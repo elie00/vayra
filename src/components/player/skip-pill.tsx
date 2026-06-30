@@ -18,6 +18,7 @@ export function SkipPill({
   onSkip,
   onNextEpisode,
   onCancelAutoNext,
+  onDismiss,
 }: {
   segment: SkipSegment | null;
   hasNextEp: boolean;
@@ -28,6 +29,7 @@ export function SkipPill({
   onSkip: () => void;
   onNextEpisode: () => void;
   onCancelAutoNext?: () => void;
+  onDismiss?: () => void;
 }) {
   const t = useT();
   const [mounted, setMounted] = useState<SkipSegment | null>(segment);
@@ -78,7 +80,7 @@ export function SkipPill({
 
   return (
     <div
-      className={`pointer-events-none absolute end-7 z-30 transition-all duration-200 ease-out ${
+      className={`pointer-events-none absolute end-7 z-30 flex items-center gap-2 transition-all duration-200 ease-out ${
         visible && show
           ? "bottom-44 opacity-100 translate-y-0"
           : "bottom-40 opacity-0 translate-y-2"
@@ -94,6 +96,17 @@ export function SkipPill({
         {isAd ? <AdSkipIcon className="h-[18px] w-[18px]" /> : <Icon size={18} strokeWidth={2.2} />}
         {label}
       </button>
+      {onDismiss && !isOutroNext && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={t("Hide this Skip button")}
+          title={t("Hide this Skip button")}
+          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/75 text-white/70 shadow-[0_18px_50px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-colors hover:bg-black/90 hover:text-white active:scale-[0.97]"
+        >
+          <X size={16} strokeWidth={2.4} />
+        </button>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { ArrowLeft, Search, Users } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { TogetherPopover } from "@/components/together-modal";
@@ -12,6 +13,7 @@ import {
   isTypingTarget,
 } from "@/lib/hotkeys";
 import { useT } from "@/lib/i18n";
+import { useActiveKid } from "@/lib/profiles";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
@@ -28,11 +30,13 @@ const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in windo
 export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const { chromeHidden, canGoBack, view, setView, topKind } = useView();
   const { settings } = useSettings();
+  const kid = useActiveKid();
   const t = useT();
+  const [closeConfirm, setCloseConfirm] = useState(false);
   const preview = useThemePreview();
   const fullscreen = useWindowFullscreen();
   if (chromeHidden && !connecting) return null;
-  const layout = preview ? preview.layout : activeLayout(settings.theme);
+  const layout = kid ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
   const sidebarHidden = connecting || view === "settings" || onLiveRoot || topKind === "picker";
   const hideSearch = view === "addons";
@@ -84,7 +88,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
           {...dragProps}
           className={`min-w-0 max-w-full transition-[width] duration-200 ease-out ${searchWidth}`}
         >
-          {!hideSearch && <SearchPill />}
+          {!hideSearch && !kid && <SearchPill />}
         </div>
         <div
           {...dragProps}
@@ -92,7 +96,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
         >
           <RecordingPill />
           <DownloadsButton />
-          {!onLiveRoot && <TogetherButton />}
+          {!onLiveRoot && !kid && <TogetherButton />}
           {IS_TAURI && !settings.useNativeTitleBar && (
             <div className="ms-1 flex items-center gap-2">
               <Control label={t("chrome.minimize")} onClick={minimize}>
@@ -112,7 +116,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
                   )}
                 </svg>
               </Control>
-              <Control label={t("common.close")} onClick={close}>
+              <Control label={t("common.close")} onClick={kid ? () => setCloseConfirm(true) : close} danger>
                 <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
                   <path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
@@ -121,7 +125,52 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
           )}
         </div>
       </div>
+      {closeConfirm && (
+        <CloseConfirmKids onConfirm={close} onCancel={() => setCloseConfirm(false)} />
+      )}
     </header>
+  );
+}
+
+function CloseConfirmKids({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  const t = useT();
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[290] flex items-center justify-center bg-black/60 px-8 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
+      <div className="relative w-full max-w-md overflow-hidden rounded-[28px] bg-gradient-to-b from-[#3aa6c4] via-[#1c789f] to-[#0c4a6e] p-8 text-center text-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+        <img
+          src="/kids/doodles/lilbluewhale.png"
+          alt=""
+          draggable={false}
+          className="pointer-events-none absolute -bottom-2 -right-2 h-20 w-auto opacity-85"
+          style={{ transform: "scaleX(-1)" }}
+        />
+        <h2 className="relative font-display text-[32px] font-bold">{t("Close Harbor?")}</h2>
+        <p className="relative mt-2 text-[16px] font-medium text-white/85">
+          {t("Ask a grown-up before you close.")}
+        </p>
+        <div className="relative mt-7 flex gap-4">
+          <button
+            onClick={onCancel}
+            autoFocus
+            className="h-16 flex-1 rounded-full bg-white text-[20px] font-extrabold text-[#0c4a6e] transition-transform hover:scale-105 active:scale-95"
+          >
+            {t("Stay")}
+          </button>
+          <button
+            onClick={onConfirm}
+            className="h-16 flex-1 rounded-full bg-[#e5484d] text-[20px] font-extrabold text-white transition-transform hover:scale-105 active:scale-95"
+          >
+            {t("Close")}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -191,7 +240,7 @@ export function TogetherButton({
       <button
         aria-label={t("chrome.watchTogether")}
         onClick={() => (modalOpen ? closeModal() : openModal())}
-        className={`relative flex items-center transition-colors duration-150 ${modalOpen && !above ? "harbor-wt-tab" : ""} ${sizing} ${chrome}`}
+        className={`harbor-together-btn relative flex items-center transition-colors duration-150 ${modalOpen && !above ? "harbor-wt-tab" : ""} ${sizing} ${chrome}`}
       >
         {live ? (
           <>
@@ -284,7 +333,7 @@ function SearchPill() {
       type="button"
       data-tauri-drag-region="false"
       onClick={() => setOpen(true)}
-      className="flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/60 bg-elevated/80 px-5 text-start opacity-80 transition-[opacity,background-color] duration-200 hover:bg-elevated hover:opacity-100"
+      className="harbor-search-pill flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/60 bg-elevated/80 px-5 text-start opacity-80 transition-[opacity,background-color] duration-200 hover:bg-elevated hover:opacity-100"
     >
       <Search size={16} strokeWidth={1.75} className="text-ink-subtle" />
       <span className="flex-1 truncate text-[14px] text-ink-subtle">{t("search.placeholder")}</span>
@@ -298,17 +347,21 @@ function SearchPill() {
 function Control({
   label,
   onClick,
+  danger = false,
   children,
 }: {
   label: string;
   onClick: () => void;
+  danger?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       aria-label={label}
       onClick={onClick}
-      className="flex h-11 w-12 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
+      className={`harbor-win-control ${danger ? "harbor-win-close" : ""} flex h-11 w-12 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 ${
+        danger ? "hover:bg-[#e5484d] hover:text-white" : "hover:bg-elevated hover:text-ink"
+      }`}
     >
       {children}
     </button>

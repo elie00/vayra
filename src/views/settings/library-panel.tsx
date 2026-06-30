@@ -11,6 +11,11 @@ import previewPoster2 from "@/assets/preview/poster2.webp";
 import previewPoster3 from "@/assets/preview/poster3.webp";
 import previewPoster4 from "@/assets/preview/poster4.webp";
 import { SpoilerPreview } from "./spoiler-preview";
+import { HomeRowPreview } from "./home-layout-previews";
+import { HomeLanguagePicker } from "./home-language-picker";
+import { EpisodeCardPreview } from "./episode-card-previews";
+import { CwSnapshotShowcase } from "./cw-snapshot-showcase";
+import { AiSearchSection } from "./ai-search-section";
 import rpdbLogo from "@/assets/addon-logos/rpdb.png";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
 import tvdbLogo from "@/assets/addon-logos/tvdb.svg";
@@ -92,7 +97,6 @@ export function LibraryPanel({
   }, [enabledBadgeCount]);
   const [mdblistDraft, setMdblistDraft] = useState(settings.mdblistKey);
   const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
-  const [aiKeyDraft, setAiKeyDraft] = useState(settings.aiSearchKey);
   const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | null>(null);
   const [tmdbGuide, setTmdbGuide] = useState(false);
   const extraTimerRef = useRef<number | null>(null);
@@ -122,36 +126,42 @@ export function LibraryPanel({
           sub={t("By default, addon rails that duplicate the built-in ones (Trending, Popular, Top Rated, etc.) are merged so you don't see the same row twice. Turn this on to show every one, duplicates and all.")}
           value={settings.homeShowAllAddonRows}
           onChange={(v) => update({ homeShowAllAddonRows: v })}
+          preview={<HomeRowPreview kind="all-addon-rows" />}
         />
         <ToggleRow
           label={t("Watchlist shows only saved titles")}
           sub={t("Keep the Library Watchlist tab limited to titles you added in Stremio. Turn this off to also include anything Stremio auto-added when you pressed play.")}
           value={settings.libraryBookmarkedOnly}
           onChange={(v) => update({ libraryBookmarkedOnly: v })}
+          preview={<HomeRowPreview kind="watchlist-saved" />}
         />
         <ToggleRow
           label={t("Show Playlists tab")}
           sub={t("Adds a Playlists item to the navigation for browsing movies and shows from your M3U or Xtream playlists (the same ones you add for Live TV). Off by default to keep the nav tidy.")}
           value={settings.showPlaylistsTab}
           onChange={(v) => update({ showPlaylistsTab: v })}
+          preview={<HomeRowPreview kind="playlists-tab" />}
         />
         <ToggleRow
           label={t("Keep anime in the Anime room only")}
           sub={t("Hides anime from the Home Continue Watching row. It still appears in the Anime tab's own Continue Watching.")}
           value={settings.animeOnlyInAnimeRoom}
           onChange={(v) => update({ animeOnlyInAnimeRoom: v })}
+          preview={<HomeRowPreview kind="anime-room" />}
         />
         <ToggleRow
           label={t("Advance Continue Watching to the next episode")}
           sub={t("When you finish an episode, the Home Continue Watching card moves on to the next episode instead of sitting at 0 minutes left.")}
           value={settings.cwAdvanceNext}
           onChange={(v) => update({ cwAdvanceNext: v })}
+          preview={<HomeRowPreview kind="cw-advance" />}
         />
         <ToggleRow
           label={t("Hide watched titles in catalogs")}
           sub={t("Movies you've watched and shows you've made progress on stop appearing in the built-in catalog rows, using your local watch history (and Trakt if connected). Continue Watching is never touched.")}
           value={settings.hideWatchedInCatalogs}
           onChange={(v) => update({ hideWatchedInCatalogs: v })}
+          preview={<HomeRowPreview kind="hide-watched" />}
         />
       </Section>
 
@@ -159,37 +169,7 @@ export function LibraryPanel({
         title={t("Home languages")}
         subtitle={t("Only show titles in these original languages on the Home catalogs. Leave all off to show everything.")}
       >
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ["en", "English"], ["es", "Spanish"], ["fr", "French"], ["de", "German"],
-              ["it", "Italian"], ["pt", "Portuguese"], ["ar", "Arabic"], ["hi", "Hindi"],
-              ["ja", "Japanese"], ["ko", "Korean"], ["zh", "Chinese"], ["ru", "Russian"],
-              ["tr", "Turkish"],
-            ] as Array<[string, string]>
-          ).map(([code, label]) => {
-            const on = settings.homeLanguages.includes(code);
-            return (
-              <button
-                key={code}
-                onClick={() =>
-                  update({
-                    homeLanguages: on
-                      ? settings.homeLanguages.filter((c) => c !== code)
-                      : [...settings.homeLanguages, code],
-                  })
-                }
-                className={`rounded-full px-3 py-1.5 text-[13px] font-medium ring-1 transition-colors ${
-                  on
-                    ? "bg-accent text-canvas ring-accent"
-                    : "bg-elevated text-ink-muted ring-edge-soft hover:text-ink"
-                }`}
-              >
-                {t(label)}
-              </button>
-            );
-          })}
-        </div>
+        <HomeLanguagePicker />
       </Section>
 
       <Section
@@ -251,18 +231,21 @@ export function LibraryPanel({
           sub={t("Shows each episode's rating. Add your free OMDb API key for real IMDb scores; without it, ratings fall back to TMDB.")}
           value={settings.showEpisodeRating}
           onChange={(v) => update({ showEpisodeRating: v })}
+          preview={<EpisodeCardPreview kind="rating" />}
         />
         <ToggleRow
           label={t("Show episode description")}
           sub={t("Shows the episode synopsis on the cards. Turn it off to hide it.")}
           value={settings.showEpisodeDescription}
           onChange={(v) => update({ showEpisodeDescription: v })}
+          preview={<EpisodeCardPreview kind="description" />}
         />
         <ToggleRow
           label={t("High-quality episode images")}
           sub={t("Loads full-resolution episode artwork (original) instead of lighter w300 images. Turn off for slow connections or low-end devices.")}
           value={settings.hdEpisodeImages}
           onChange={(v) => update({ hdEpisodeImages: v })}
+          preview={<EpisodeCardPreview kind="hd" />}
         />
       </Section>
 
@@ -270,6 +253,7 @@ export function LibraryPanel({
         title={t("Continue Watching screenshots")}
         subtitle={t("When you back out of a title, Harbor saves a frame so the Continue Watching card looks like the spot you left. Tune how long they stick around, or wipe them all.")}
       >
+        <CwSnapshotShowcase />
         <RetentionPicker
           value={settings.cwSnapshotRetentionDays}
           onChange={(v) => update({ cwSnapshotRetentionDays: v })}
@@ -283,6 +267,8 @@ export function LibraryPanel({
       >
         <RegionField />
       </Section>
+
+      <AiSearchSection />
 
       <Section
         title={t("Metadata providers")}
@@ -400,36 +386,6 @@ export function LibraryPanel({
             </>
           }
         />
-        <KeyField
-          label={t("AI Search · natural-language search")}
-          placeholder={t("OpenRouter API key (sk-or-...)")}
-          value={aiKeyDraft}
-          onChange={setAiKeyDraft}
-          onSave={() => {
-            update({ aiSearchKey: aiKeyDraft.trim() });
-            flashExtra("ai");
-          }}
-          saved={extraSaved === "ai"}
-          help={
-            <>
-              Adds an "Ask AI" button to search, so you can type things like{" "}
-              <em>popular French TV shows last year</em>. Get a key at{" "}
-              <ExtLink href="https://openrouter.ai/keys">openrouter.ai/keys</ExtLink>. It only runs
-              when you tap that button, so it never costs anything unless you ask.
-            </>
-          }
-        />
-        <div className="-mt-1 flex items-center gap-2.5 px-1">
-          <span className="shrink-0 text-[12px] text-ink-subtle">{t("AI model (optional)")}</span>
-          <input
-            type="text"
-            defaultValue={settings.aiSearchModel}
-            onBlur={(e) => update({ aiSearchModel: e.target.value.trim() })}
-            placeholder="openai/gpt-4o-mini"
-            spellCheck={false}
-            className="min-w-0 flex-1 rounded-lg border border-edge-soft bg-canvas/60 px-2.5 py-1.5 font-mono text-[11.5px] text-ink placeholder:text-ink-subtle outline-none focus:border-edge"
-          />
-        </div>
         <ToggleRow
           label={t("Hide titles under posters")}
           sub={t("Cleaner grid when your poster service already prints the title on the artwork.")}

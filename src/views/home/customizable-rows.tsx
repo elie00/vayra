@@ -59,6 +59,7 @@ export function CustomizableRows({
   hideWatched,
   watchedSet,
   localWatched,
+  stremioWatched,
   homeLanguages,
 }: {
   rows: HomeRow[];
@@ -76,6 +77,7 @@ export function CustomizableRows({
   hideWatched?: boolean;
   watchedSet?: Set<string>;
   localWatched?: WatchedSet;
+  stremioWatched?: Set<string>;
   homeLanguages?: string[];
 }) {
   const { openGrid } = useView();
@@ -90,6 +92,7 @@ export function CustomizableRows({
     return out;
   }, [watchedSet]);
   const isWatched = (m: { id: string; name?: string }) => {
+    if (stremioWatched?.has(m.id)) return true;
     const key = metaTitleKey(m);
     if (key != null && watchedTitleKeys.has(key)) return true;
     if (localWatched) {

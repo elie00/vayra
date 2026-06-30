@@ -20,7 +20,7 @@ export const Hero = memo(function Hero({
   playTrailer = false,
   active = true,
   loadBackdrop = true,
-  full = false,      
+  full = false,
   fullQuality = false,
 }: {
   meta: Meta;

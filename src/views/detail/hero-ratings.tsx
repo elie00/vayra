@@ -5,6 +5,7 @@ import { MalLogo } from "@/components/icons/mal-logo";
 import { RtBadge } from "@/components/rt-badge";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import type { OmdbScores } from "@/lib/providers/omdb";
 import type { MdblistScores } from "@/lib/providers/mdblist";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
@@ -76,11 +77,17 @@ export function HeroRatings({
   ratingSource?: "imdb" | "tmdb";
 }) {
   const t = useT();
+  const { settings } = useSettings();
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
+  const showPrimary = isAnime
+    ? settings.showMalBadge
+    : ratingSource === "tmdb"
+      ? settings.showTmdbBadge
+      : settings.showImdbBadge;
 
   const items: ReactNode[] = [];
 
-  if (rating) {
+  if (rating && showPrimary) {
     items.push(
       <ScoreItem
         key="imdb"
@@ -113,7 +120,7 @@ export function HeroRatings({
     );
   }
 
-  if (showRtBadge && mdblist?.rtAudience != null) {
+  if (settings.showPopcornBadge && mdblist?.rtAudience != null) {
     items.push(
       <ScoreItem key="rt-audience" label={t("Rotten Tomatoes Audience")} sublabel={t("Popcornmeter")}>
         <Popcorn
@@ -126,7 +133,7 @@ export function HeroRatings({
     );
   }
 
-  if (mdblist?.letterboxd != null) {
+  if (settings.showLetterboxdBadge && mdblist?.letterboxd != null) {
     items.push(
       <ScoreItem
         key="letterboxd"
@@ -144,7 +151,7 @@ export function HeroRatings({
     );
   }
 
-  if (metacritic != null) {
+  if (settings.showMetacriticBadge && metacritic != null) {
     items.push(
       <ScoreItem key="metacritic" label={t("Metacritic")} sublabel={t("Metascore")}>
         <span
@@ -156,7 +163,7 @@ export function HeroRatings({
     );
   }
 
-  if (mdblist?.trakt != null) {
+  if (settings.showTraktBadge && mdblist?.trakt != null) {
     items.push(
       <ScoreItem
         key="trakt"
@@ -169,7 +176,7 @@ export function HeroRatings({
     );
   }
 
-  if (mdblist?.score != null) {
+  if (settings.showMdblistBadge && mdblist?.score != null) {
     items.push(
       <ScoreItem
         key="mdblist"

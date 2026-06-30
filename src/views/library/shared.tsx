@@ -1,6 +1,6 @@
 import { Bookmark, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
 import { narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useSettings } from "@/lib/settings";
@@ -360,6 +360,12 @@ export function WatchlistCard({ meta, onRemove }: { meta: Meta; onRemove?: () =>
   }, [meta.id, meta.type, meta.poster, meta.name, settings.tmdbKey, posterFailed]);
   const display: Meta = hydrated ? { ...meta, ...hydrated, id: meta.id, type: meta.type } : meta;
   const open = () => openMeta(display);
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    display.id,
+    display.poster,
+    display.type === "series" ? "series" : "movie",
+  );
   return (
     <div
       ref={cardRef}
@@ -379,10 +385,13 @@ export function WatchlistCard({ meta, onRemove }: { meta: Meta; onRemove?: () =>
         className="relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] outline-none ring-offset-2 ring-offset-canvas transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-ink group-hover:scale-[1.02]"
       >
         <Poster
-          src={display.poster}
+          src={poster.src}
           seed={display.id}
           className="h-full w-full"
-          onError={onPosterError}
+          onError={() => {
+            poster.onError();
+            onPosterError();
+          }}
         />
         {inList && (
           <span className="absolute start-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink/80 text-canvas backdrop-blur-sm">

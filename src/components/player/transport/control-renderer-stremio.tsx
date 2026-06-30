@@ -12,6 +12,7 @@ import {
   SkipForward,
   Tv,
 } from "lucide-react";
+import { realQualityLabel } from "@/lib/player/resolution-label";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
 import { getCustomIcon, type CustomIconMap, type PlayerControlId, type TimeFormat, type VolumeStyle } from "@/lib/player-chrome";
@@ -167,6 +168,7 @@ export function RenderedStremioControl({
     case "title-info": {
       if (!ctx.title) return null;
       const showQuality = qualityInfoOn() && !!ctx.quality;
+      const res = realQualityLabel(ctx.snap.videoWidth, ctx.snap.videoHeight) ?? ctx.resolution;
       if (ctx.titleClickable && ctx.onTitleClick) {
         return (
           <button
@@ -180,9 +182,9 @@ export function RenderedStremioControl({
                 {ctx.subtitle && (
                   <span className="shrink-0 text-[13px] font-normal text-white/55">{ctx.subtitle}</span>
                 )}
-                {!showQuality && ctx.resolution && (
+                {!showQuality && res && (
                   <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white/80">
-                    {ctx.resolution}
+                    {res}
                   </span>
                 )}
               </span>
@@ -203,12 +205,12 @@ export function RenderedStremioControl({
               <p className="truncate text-[12px] tabular-nums text-white/50">{ctx.quality}</p>
             </>
           ) : (
-            (ctx.subtitle || ctx.resolution) && (
+            (ctx.subtitle || res) && (
               <p className="flex items-center gap-1.5 text-[13px] text-white/55">
                 {ctx.subtitle && <span className="truncate">{ctx.subtitle}</span>}
-                {ctx.resolution && (
+                {res && (
                   <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white/80">
-                    {ctx.resolution}
+                    {res}
                   </span>
                 )}
               </p>

@@ -40,6 +40,7 @@ import { StremioLayout } from "./play-picker/stremio-layout";
 import { SourceDrawer } from "./play-picker/source-drawer";
 import { TierStrip } from "./play-picker/tier-strip";
 import { usePickHandler } from "./play-picker/use-pick-handler";
+import { useActiveKid } from "@/lib/profiles";
 import { useAutoCandidates } from "./play-picker/use-auto-candidates";
 import { useAutoFire } from "./play-picker/use-auto-fire";
 import { useRoomInvite } from "./play-picker/use-room-invite";
@@ -261,6 +262,8 @@ export function PlayPicker({
     [meta.id, meta.type, settings.keepSourceNextEpisode, autoPlay],
   );
 
+  const kidProfile = useActiveKid();
+  const p2pAutoConsent = settings.p2pAutoConsent || !!kidProfile;
   const autoCandidates = useAutoCandidates({
     filteredPicker,
     previousPlayback,
@@ -271,6 +274,7 @@ export function PlayPicker({
     isTorrentioStream,
     preferredLangs,
     hostSource: hostSourceForMedia,
+    prefer1080: !!kidProfile,
   });
 
   const autoFiredRef = useRef(false);
@@ -319,7 +323,7 @@ export function PlayPicker({
     attempt,
     debrids,
     isCached,
-    p2pAutoConsent: settings.p2pAutoConsent,
+    p2pAutoConsent,
     inSession,
     canInvite,
     inviteSentRef,
@@ -374,7 +378,7 @@ export function PlayPicker({
     pipelineDone,
     firstResultAt,
     isCached,
-    p2pAutoConsent: settings.p2pAutoConsent,
+    p2pAutoConsent,
     preferredLangs,
     hasStrongAddon,
     isTorrentioStream,

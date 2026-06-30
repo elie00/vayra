@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, Plus, Search, X } from "lucide-react";
 import { AVATAR_CATALOG, avatarUrl } from "@/lib/avatars/catalog";
 import { useT } from "@/lib/i18n";
 
@@ -77,9 +77,12 @@ export function AvatarCatalogModal({
             <h2 className="font-display text-[22px] font-medium tracking-tight text-ink">
               {t("Choose an avatar")}
             </h2>
-            <p className="text-[12.5px] text-ink-subtle">
-              {t("{n} avatars across film, TV, and anime.", { n: items.length })}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[12.5px] text-ink-subtle">
+                {t("{n} avatars across film, TV, and anime.", { n: items.length })}
+              </p>
+              <Disclaimer />
+            </div>
           </div>
           <div className="relative hidden sm:block">
             <Search
@@ -181,6 +184,40 @@ export function AvatarCatalogModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function Disclaimer() {
+  const t = useT();
+  const [hover, setHover] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const show = hover || pinned;
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        onClick={() => setPinned((v) => !v)}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        onFocus={() => setHover(true)}
+        onBlur={() => setHover(false)}
+        aria-label={t("Rights and usage")}
+        className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
+          show ? "bg-elevated text-ink-muted" : "text-ink-subtle hover:bg-elevated hover:text-ink-muted"
+        }`}
+      >
+        <Info size={13} strokeWidth={2.2} />
+      </button>
+      {show && (
+        <div className="animate-popover-in absolute start-0 top-full z-20 mt-1.5 w-[290px] rounded-xl border border-edge-soft bg-elevated/97 px-3.5 py-3 text-start shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] backdrop-blur-md">
+          <p className="text-[12px] leading-relaxed text-ink-muted">
+            {t(
+              "Fan-made avatars for personal use. Harbor claims no rights to these characters; they belong to their creators and studios, shown here under fair use. Every one is optimized down to a tiny WebP.",
+            )}
+          </p>
+        </div>
+      )}
+    </span>
   );
 }
 

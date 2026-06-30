@@ -38,7 +38,10 @@ export function useEpisodeNavigation(params: {
     }
     let cancelled = false;
     const cur = { season: src.episode.season, episode: src.episode.episode };
-    fetchAdjacentEpisodes(src.meta, cur, { tmdbKey: settings.tmdbKey }).then((r) => {
+    fetchAdjacentEpisodes(src.meta, cur, {
+      tmdbKey: settings.tmdbKey,
+      kitsuStreamId: src.episode.kitsuStreamId,
+    }).then((r) => {
       if (!cancelled) setAdjacent(r);
     });
     return () => {

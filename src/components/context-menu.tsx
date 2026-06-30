@@ -2,6 +2,7 @@ import { Bookmark, BookmarkCheck, ClipboardPaste, Copy, Download, Info, ListChec
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
+import { useT } from "@/lib/i18n";
 import { usePlayerActions } from "@/lib/player-actions";
 import { useTogether } from "@/lib/together/provider";
 import type { ParticipantLocation } from "@/lib/together/protocol";
@@ -11,7 +12,6 @@ import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { useInLocalWatchlist, useLocalWatchlist } from "@/lib/local-watchlist";
 import { clearTitleBackdrop, getTitleBackdrop, setTitleBackdrop } from "@/lib/title-backdrop";
-import { useT } from "@/lib/i18n";
 
 const MENU_WIDTH = 220;
 const MENU_HEIGHT = 120;
@@ -34,7 +34,6 @@ const VIEW_LABELS: Record<ViewSummonable, string> = {
 
 export function ContextMenu() {
   const { state, close, open } = useContextMenu();
-  const t = useT();
   const {
     openMeta,
     setView,
@@ -50,6 +49,7 @@ export function ContextMenu() {
   } = useView();
   const { snapshot, sendSummon, hostLocation, clientId } = useTogether();
   const playerActions = usePlayerActions();
+  const t = useT();
   const activeAddon = useActiveAddon();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -493,4 +493,3 @@ function Item({
 function Separator() {
   return <span aria-hidden className="my-1 h-px bg-edge-soft/60" />;
 }
-
