@@ -88,6 +88,7 @@ export type Settings = {
   harborAvatar: string | null;
   harborColor: string;
   anilistAutoSync: boolean;
+  anilistBlurComments: boolean;
   useAnilistAvatar: boolean;
   useTraktAvatar: boolean;
   useSimklAvatar: boolean;

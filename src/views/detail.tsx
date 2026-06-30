@@ -59,6 +59,7 @@ import { isTitleUpcoming } from "./detail/helpers";
 import { HeroAwardsCorner } from "./detail/hero-awards";
 import { CrunchyrollAwardsCorner } from "./detail/crunchyroll-corner";
 import { findAnyAwardWins, parseAwardYear } from "@/lib/anime-awards";
+import { LazyMount } from "@/components/lazy-mount";
 
 function animeAwardLookupName(
   releaseYear: number | undefined,
@@ -90,6 +91,7 @@ import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
 import { TraktComments } from "./detail/trakt-comments";
+import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
 
@@ -1242,6 +1244,33 @@ export function DetailView({
           );
         })()}
 
+
+        <div id="anime-awards-section" style={{ scrollMarginTop: 96 }}>
+          <LazyMount minHeight={160}>
+            <AnimeAwardsBlock
+              name={
+                animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
+                stickyAwardName.current ??
+                title
+              }
+              year={releaseYearNum}
+            />
+          </LazyMount>
+        </div>
+        {detail && awards && (
+          <div id="awards-section" style={{ scrollMarginTop: 96 }}>
+            <LazyMount minHeight={200}>
+              <AwardsBlock awards={awards} />
+            </LazyMount>
+          </div>
+        )}
+        {detail && (
+          <LazyMount minHeight={200}>
+            <InfoBlock detail={detail} isAnime={isAnime} />
+          </LazyMount>
+        )}
+        {!isAnime && <TraktComments resolution={traktResolution} />}
+        {isAnime && <AnilistComments harborId={animeCanonicalId ?? meta.id} />}
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">
             {t("Add a TMDB key in Settings to see cast, related titles, and trailers here.")}
