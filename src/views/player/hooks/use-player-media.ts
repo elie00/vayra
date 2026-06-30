@@ -116,12 +116,23 @@ export function usePlayerMedia(params: {
     (settings.playerHdrOpaqueWindow || (settings.playerMpvEmbed && settings.playerHdrStage !== "off"));
   const selectedSubTrack = snap.subtitleTracks.find((t) => t.selected) ?? null;
   const subAssOverridden = settings.subAssOverride !== "no" && settings.subAssOverride !== "scale";
+  const selectedAssSub = isAssTrack(selectedSubTrack);
+  const selectedImageSub = isImageSubTrack(selectedSubTrack);
   const subAssNative =
-    subEmbed && isAssTrack(selectedSubTrack) && (!subAssOverridden || !selectedSubTrack?.external);
+    subEmbed && selectedAssSub && (!subAssOverridden || !selectedSubTrack?.external);
   const subNativeRender =
-    hdrNativeSurface || subAssNative || (subEmbed && isImageSubTrack(selectedSubTrack));
+    hdrNativeSurface || subAssNative || (subEmbed && selectedImageSub);
+  const assNativeActive = selectedAssSub && (subNativeRender || !subEmbed);
+  const imageNativeActive = selectedImageSub && (subNativeRender || !subEmbed);
   const suppressHtmlSubs = subAssNative || hdrNativeSurface;
-  useSubStyleApply({ engine, settings, subAssNative, bridgeReady, bridgeKey });
+  useSubStyleApply({
+    engine,
+    settings,
+    assNativeActive,
+    imageNativeActive,
+    bridgeReady,
+    bridgeKey,
+  });
   useEffect(() => {
     if (!subEmbed && !hdrNativeSurface) return;
     if (!bridgeReady) return;

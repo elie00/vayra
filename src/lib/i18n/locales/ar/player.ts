@@ -69,6 +69,7 @@ const player: Record<string, string> = {
   "Forced subs with native audio": "ترجمة إجبارية مع الصوت الأصلي",
   "HI/SDH": "للصمّ وضعاف السمع",
   "No styling": "بلا تنسيق",
+  "Position and size only": "الموضع والحجم فقط",
   "Show HI/SDH": "إظهار ترجمة الصمّ وضعاف السمع",
   "Prefer embedded subtitles": "تفضيل الترجمات المدمجة",
   "Start with subtitles off": "البدء مع إيقاف الترجمة",

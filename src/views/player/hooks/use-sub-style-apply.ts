@@ -7,18 +7,23 @@ import type { useSettings } from "@/lib/settings";
 export function useSubStyleApply(params: {
   engine: "html5" | "mpv";
   settings: ReturnType<typeof useSettings>["settings"];
-  subAssNative: boolean;
+  assNativeActive: boolean;
+  imageNativeActive: boolean;
   bridgeReady: boolean;
   bridgeKey: string | number;
 }) {
-  const { engine, settings, subAssNative, bridgeReady, bridgeKey } = params;
+  const { engine, settings, assNativeActive, imageNativeActive, bridgeReady, bridgeKey } = params;
 
   useEffect(() => {
     if (engine !== "mpv") return;
-    void applySubStyle(settings, subAssNative);
+    if (!bridgeReady) return;
+    void applySubStyle(settings, { assNativeActive, imageNativeActive });
   }, [
     engine,
-    subAssNative,
+    bridgeReady,
+    bridgeKey,
+    assNativeActive,
+    imageNativeActive,
     settings.subFontSize,
     settings.subFontColor,
     settings.subBorderColor,
