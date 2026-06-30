@@ -75,8 +75,8 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: "playerAnime4kOn", scope: "Player", group: "Playback", label: "Anime4K on", description: "Turn Anime4K upscaling on. Only active when shaders are available.", defaultBinding: "ctrl+1" },
   { id: "playerAnime4kOff", scope: "Player", group: "Playback", label: "Anime4K off", description: "Turn Anime4K upscaling off.", defaultBinding: "ctrl+0" },
 
-  { id: "playerSeekBack10", scope: "Player", group: "Seeking", label: "Seek back 10s", description: "Jump back ten seconds.", defaultBinding: "ArrowLeft" },
-  { id: "playerSeekForward10", scope: "Player", group: "Seeking", label: "Seek forward 10s", description: "Jump forward ten seconds.", defaultBinding: "ArrowRight" },
+  { id: "playerSeekBack10", scope: "Player", group: "Seeking", label: "Seek back", description: "Jump back by the Back seek step set under Behavior.", defaultBinding: "ArrowLeft" },
+  { id: "playerSeekForward10", scope: "Player", group: "Seeking", label: "Seek forward", description: "Jump forward by the Forward seek step set under Behavior.", defaultBinding: "ArrowRight" },
   { id: "playerSeekBack30", scope: "Player", group: "Seeking", label: "Seek back 30s", description: "Jump back thirty seconds.", defaultBinding: "," },
   { id: "playerSeekForward30", scope: "Player", group: "Seeking", label: "Seek forward 30s", description: "Jump forward thirty seconds.", defaultBinding: "." },
   { id: "playerFrameBack", scope: "Player", group: "Seeking", label: "Previous frame", description: "Step back one frame and pause. Frame-accurate on mpv.", defaultBinding: "shift+<" },

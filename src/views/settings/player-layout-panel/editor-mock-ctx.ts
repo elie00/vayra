@@ -71,6 +71,8 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     controlVariants: opts.controlVariants,
     timeFormat: opts.timeFormat,
     volumeStyle: opts.volumeStyle,
+    seekBackStepSec: 10,
+    seekForwardStepSec: 10,
     title: isLive ? "Sample Channel" : "Sample Movie Title",
     subtitle: isLive ? "Live now" : "Season 1 · Episode 3",
     titleClickable: !isLive,

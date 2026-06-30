@@ -331,6 +331,8 @@ export function Transport({
     ),
     timeFormat: chromeConfig.options.timeFormat,
     volumeStyle: chromeConfig.options.volumeStyle,
+    seekBackStepSec: settings.seekBackStepSec,
+    seekForwardStepSec: settings.seekForwardStepSec,
     title,
     subtitle,
     titleClickable,
