@@ -170,6 +170,8 @@ type ViewValue = {
   openAddonDetail: (id: string) => void;
   canGoBack: boolean;
   goBack: () => void;
+  canGoForward: boolean;
+  goForward: () => void;
   exitPlayback: () => void;
   exitPickerToDetail: (m: Meta) => void;
   exitPlayer: () => void;
@@ -284,6 +286,11 @@ function lastOfKind<K extends Frame["kind"]>(
 
 export function ViewProvider({ children }: { children: ReactNode }) {
   const [stack, setStack] = useState<Frame[]>([{ kind: "home" }]);
+  const [forwardStack, setForwardStack] = useState<Frame[]>([]);
+  const stackRef = useRef(stack);
+  const forwardStackRef = useRef(forwardStack);
+  stackRef.current = stack;
+  forwardStackRef.current = forwardStack;
   const [chromeHidden, setChromeHidden] = useState(false);
   const [homeResetTick, setHomeResetTick] = useState(0);
   const scrollMem = useRef<Map<string, ScrollSnapshot>>(new Map());
@@ -371,21 +378,52 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       : null;
   const player = top.kind === "player" ? top.src : null;
   const canGoBack = stack.length > 1;
+  const canGoForward = forwardStack.length > 0;
 
   const pop = useCallback(() => {
-    setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+    const cur = stackRef.current;
+    if (cur.length <= 1) return;
+    const nextStack = cur.slice(0, -1);
+    const nextForwardStack = pushFrame(forwardStackRef.current, cur[cur.length - 1]);
+    stackRef.current = nextStack;
+    forwardStackRef.current = nextForwardStack;
+    setStack(nextStack);
+    setForwardStack(nextForwardStack);
   }, []);
 
+  const goForward = useCallback(() => {
+    const curForward = forwardStackRef.current;
+    const nextFrame = curForward[curForward.length - 1];
+    if (!nextFrame) return;
+    const nextForwardStack = curForward.slice(0, -1);
+    const nextStack = pushFrame(stackRef.current, nextFrame);
+    stackRef.current = nextStack;
+    forwardStackRef.current = nextForwardStack;
+    setStack(nextStack);
+    setForwardStack(nextForwardStack);
+  }, []);
+
+  const clearForwardStack = useCallback(() => {
+    if (forwardStackRef.current.length === 0) return;
+    forwardStackRef.current = [];
+    setForwardStack([]);
+  }, []);
+
+  const setNavStack = useCallback((updater: (s: Frame[]) => Frame[]) => {
+    clearForwardStack();
+    setStack(updater);
+  }, [clearForwardStack]);
+
   const exitPlayback = useCallback(() => {
-    setStack((s) => {
+    setNavStack((s) => {
       let i = s.length - 1;
       while (i > 0 && (s[i].kind === "player" || s[i].kind === "picker")) i--;
       return s.slice(0, i + 1);
     });
-  }, []);
+  }, [setNavStack]);
 
   const exitPickerToDetail = useCallback((m: Meta) => {
-    setStack((s) => {
+    setNavStack((s) => {
       let i = s.length - 1;
       while (i > 0 && (s[i].kind === "player" || s[i].kind === "picker")) i--;
       const base = s.slice(0, i + 1);
@@ -393,10 +431,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (top && top.kind === "meta") return base;
       return [...base, { kind: "meta", meta: m }];
     });
-  }, []);
+  }, [setNavStack]);
 
   const exitPlayer = useCallback(() => {
-    setStack((s) => {
+    setNavStack((s) => {
       let i = s.length - 1;
       while (i > 0 && s[i].kind === "player") i--;
       const next = s.slice(0, i + 1);
@@ -406,7 +444,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
-  }, []);
+  }, [setNavStack]);
 
   const [sectionReq, setSectionReq] = useState<{ section: SettingsSection | null; nonce: number }>({
     section: null,
@@ -428,7 +466,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       window.requestAnimationFrame(fireScrollTop);
       window.setTimeout(fireScrollTop, 60);
     }
-    setStack((s) => {
+    setNavStack((s) => {
       const t = s[s.length - 1];
       if (v === "home") {
         scrollMem.current.clear();
@@ -493,35 +531,35 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (t.kind === "settings") return s;
       return pushFrame(s, { kind: "settings" });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openSettings = useCallback((section?: SettingsSection) => {
     setSectionReq((r) => ({ section: section ?? null, nonce: r.nonce + 1 }));
-    setStack((s) => {
+    setNavStack((s) => {
       const t = s[s.length - 1];
       if (t.kind === "settings") return s;
       return pushFrame(s, { kind: "settings" });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openService = useCallback((s: StreamingService | null) => {
     if (s === null) {
-      setStack((cur) => {
+      setNavStack((cur) => {
         scrollMem.current.clear();
         rowScrollMem.current.clear();
         return cur.length === 1 && cur[0].kind === "home" ? cur : [{ kind: "home" }];
       });
       return;
     }
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (t.kind === "service" && t.service === s) return cur;
       return pushFrame(cur, { kind: "service", service: s });
     });
-  }, []);
+  }, [setNavStack]);
 
   const promoteMetaToRoot = useCallback(() => {
-    setStack((s) => {
+    setNavStack((s) => {
       if (s.length === 0) return s;
       const top = s[s.length - 1];
       if (top.kind !== "meta") return s;
@@ -532,15 +570,15 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       else root = { kind: "movies" };
       return [root, { kind: "meta", meta: m }];
     });
-  }, []);
+  }, [setNavStack]);
 
   const openMeta = useCallback(
     (m: Meta | null, opts?: { liveContext?: boolean; episodeHint?: { season: number; episode: number } }) => {
       if (m === null) {
-        setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+        setNavStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
         return;
       }
-      setStack((cur) => {
+      setNavStack((cur) => {
         const t = cur[cur.length - 1];
         if (t.kind === "meta" && t.meta.id === m.id) return cur;
         trackEvent(m.id, "open", profileFromMeta(m));
@@ -552,48 +590,48 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         });
       });
     },
-    [],
+    [setNavStack],
   );
 
   const openPerson = useCallback((id: number | null) => {
     if (id === null) {
-      setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+      setNavStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
       return;
     }
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (t.kind === "person" && t.id === id) return cur;
       return pushFrame(cur, { kind: "person", id });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openQueue = useCallback(() => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (t.kind === "queue") return cur;
       return pushFrame(cur, { kind: "queue" });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openCollection = useCallback((id: number) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (t.kind === "collection" && t.id === id) return cur;
       return pushFrame(cur, { kind: "collection", id });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openMatchDetail = useCallback((game: SportsGame) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (t.kind === "match-detail" && t.game.id === game.id) return cur;
       return pushFrame(cur, { kind: "match-detail", game });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openEpisodeDetail = useCallback(
     (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => {
-      setStack((cur) => {
+      setNavStack((cur) => {
         const t = cur[cur.length - 1];
         if (
           t.kind === "episode-detail" &&
@@ -606,27 +644,27 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         return pushFrame(cur, { kind: "episode-detail", seriesId, season, episode, seriesMeta });
       });
     },
-    [],
+    [setNavStack],
   );
 
   const openAward = useCallback((t: import("./providers/wikidata").AwardType) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const top = cur[cur.length - 1];
       if (top.kind === "award" && top.awardType === t) return cur;
       return pushFrame(cur, { kind: "award", awardType: t });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openAnimeAward = useCallback((s: import("./anime-awards").AwardSourceId) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const top = cur[cur.length - 1];
       if (top.kind === "anime-award" && top.sourceId === s) return cur;
       return pushFrame(cur, { kind: "anime-award", sourceId: s });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openFilter = useCallback((f: MetaFilter) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (
         t.kind === "filter" &&
@@ -638,28 +676,28 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       }
       return pushFrame(cur, { kind: "filter", filter: f });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openGrid = useCallback((g: GridSpec) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (t.kind === "grid" && t.grid.title === g.title) return cur;
       return pushFrame(cur, { kind: "grid", grid: g });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openCollections = useCallback(() => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const t = cur[cur.length - 1];
       if (t.kind === "collections") return cur;
       return pushFrame(cur, { kind: "collections" });
     });
-  }, []);
+  }, [setNavStack]);
 
   const openPicker = useCallback(
     (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }) => {
       if (opts?.autoPlay && getWindowFullscreen()) suppressFullscreenExitOnce();
-      setStack((cur) => {
+      setNavStack((cur) => {
         const t = cur[cur.length - 1];
         if (
           t.kind === "picker" &&
@@ -680,7 +718,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         });
       });
     },
-    [],
+    [setNavStack],
   );
 
   const together = useTogether();
@@ -695,35 +733,35 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       setPendingLiveSrc(src);
       return;
     }
-    setStack((cur) => pushFrame(cur, { kind: "player", src }));
-  }, []);
+    setNavStack((cur) => pushFrame(cur, { kind: "player", src }));
+  }, [setNavStack]);
 
   const confirmLeavePartyForLive = useCallback(() => {
     const src = pendingLiveSrcRef.current;
     setPendingLiveSrc(null);
     if (!src) return;
     togetherRef.current.leaveSession();
-    setStack((cur) => pushFrame(cur, { kind: "player", src }));
-  }, []);
+    setNavStack((cur) => pushFrame(cur, { kind: "player", src }));
+  }, [setNavStack]);
 
   const cancelLeavePartyForLive = useCallback(() => setPendingLiveSrc(null), []);
 
   const replacePlayerSrc = useCallback((src: PlayerSrc) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const top = cur[cur.length - 1];
       if (top.kind !== "player") return cur;
       return [...cur.slice(0, -1), { kind: "player", src }];
     });
-  }, []);
+  }, [setNavStack]);
 
   const openAddonDetail = useCallback((id: string) => {
-    setStack((cur) => {
+    setNavStack((cur) => {
       const top = cur[cur.length - 1];
       if (top.kind === "addon-detail" && top.id === id) return cur;
       if (top.kind === "addon-detail") return [...cur.slice(0, -1), { kind: "addon-detail", id }];
       return pushFrame(cur, { kind: "addon-detail", id });
     });
-  }, []);
+  }, [setNavStack]);
 
   const addonDetailId = top.kind === "addon-detail" ? top.id : null;
 
@@ -778,6 +816,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openAddonDetail,
       canGoBack,
       goBack: pop,
+      canGoForward,
+      goForward,
       exitPlayback,
       exitPickerToDetail,
       exitPlayer,
@@ -811,6 +851,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       picker,
       player,
       canGoBack,
+      canGoForward,
       setView,
       openSettings,
       sectionReq,
@@ -831,6 +872,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       confirmLeavePartyForLive,
       cancelLeavePartyForLive,
       pop,
+      goForward,
       exitPlayback,
       exitPickerToDetail,
       exitPlayer,

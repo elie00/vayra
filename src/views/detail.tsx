@@ -59,7 +59,6 @@ import { isTitleUpcoming } from "./detail/helpers";
 import { HeroAwardsCorner } from "./detail/hero-awards";
 import { CrunchyrollAwardsCorner } from "./detail/crunchyroll-corner";
 import { findAnyAwardWins, parseAwardYear } from "@/lib/anime-awards";
-import { LazyMount } from "@/components/lazy-mount";
 
 function animeAwardLookupName(
   releaseYear: number | undefined,
