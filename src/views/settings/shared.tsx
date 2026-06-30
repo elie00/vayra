@@ -11,6 +11,7 @@ export type SectionId =
   | "trakt"
   | "anilist"
   | "simkl"
+  | "letterboxd"
   | "relay"
   | "streaming"
   | "p2p"

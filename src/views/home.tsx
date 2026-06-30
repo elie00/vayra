@@ -46,6 +46,8 @@ import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
 import { buildSimklHomeRows } from "@/lib/simkl/home-rails";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
 import { useSimkl } from "@/lib/simkl/provider";
+import { useLetterboxd } from "@/lib/stremboxd/provider";
+import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
 import { useMediaFavorites, type MediaEntry } from "@/lib/media-favorites";
 import { useLocalWatchlist } from "@/lib/local-watchlist";
 import { useScrollMemory, useView } from "@/lib/view";
@@ -78,6 +80,7 @@ export function Home({ active = true }: { active?: boolean }) {
   const [arabicRows, setArabicRows] = useState<HomeRow[]>([]);
   const [traktRows, setTraktRows] = useState<HomeRow[]>([]);
   const [simklRows, setSimklRows] = useState<HomeRow[]>([]);
+  const [letterboxdRows, setLetterboxdRows] = useState<HomeRow[]>([]);
   const [simklCw, setSimklCw] = useState<LibraryItem[]>([]);
   const [traktWatched, setTraktWatched] = useState<Set<string>>(() => new Set());
   const [localWatched, setLocalWatched] = useState<WatchedSet>(() => recentlyPlayed());
@@ -89,6 +92,7 @@ export function Home({ active = true }: { active?: boolean }) {
   const [addonsTick, setAddonsTick] = useState(0);
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
+  const letterboxd = useLetterboxd();
   const rowsRef = useRef<HomeRow[]>([]);
   const loadingRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -257,6 +261,47 @@ export function Home({ active = true }: { active?: boolean }) {
       cancelled = true;
     };
   }, [simklConnected]);
+
+  useEffect(() => {
+    if (!letterboxd.isActive) {
+      setLetterboxdRows([]);
+      return;
+    }
+    // Full mode needs session; public mode needs configSegment
+    if (letterboxd.mode === "full" && !letterboxd.session) {
+      setLetterboxdRows([]);
+      return;
+    }
+    if (letterboxd.mode === "public" && !letterboxd.configSegment) {
+      setLetterboxdRows([]);
+      return;
+    }
+    let cancelled = false;
+    buildLetterboxdHomeRows({
+      configSegment: letterboxd.configSegment,
+      selectedCatalogs: letterboxd.selectedCatalogs,
+      hiddenCatalogs: letterboxd.hiddenCatalogs,
+      catalogOrder: letterboxd.catalogOrder,
+      session: letterboxd.session,
+      listRefs: letterboxd.listRefs,
+    })
+      .then((rs) => {
+        if (!cancelled) setLetterboxdRows(rs);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    letterboxd.isActive,
+    letterboxd.mode,
+    letterboxd.configSegment,
+    letterboxd.selectedCatalogs,
+    letterboxd.hiddenCatalogs,
+    letterboxd.catalogOrder,
+    letterboxd.session,
+    letterboxd.listRefs,
+  ]);
 
   const trackedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -441,10 +486,10 @@ export function Home({ active = true }: { active?: boolean }) {
   const heroSourceRow = useMemo<HomeRow | null>(() => {
     const key = settings.homeRows.heroSource;
     if (!key) return null;
-    const all = [...personalRows, ...traktRows, ...simklRows, ...rows, ...animeRows];
+    const all = [...personalRows, ...traktRows, ...simklRows, ...letterboxdRows, ...rows, ...animeRows];
     const hit = all.find((r) => r.key === key);
     return hit && hit.metas.some((m) => m.background || m.poster) ? hit : null;
-  }, [settings.homeRows.heroSource, personalRows, traktRows, simklRows, rows, animeRows]);
+  }, [settings.homeRows.heroSource, personalRows, traktRows, simklRows, letterboxdRows, rows, animeRows]);
 
   const heroSlides = useMemo<Slide[]>(() => {
     const pool = (
@@ -526,8 +571,8 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [homeRowsCustom.customSources]);
 
   const allCustomizableRows = useMemo(
-    () => [...sourceRows, ...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...restRows, ...animeRows],
-    [sourceRows, arabicRows, personalRows, traktRows, simklRows, restRows, animeRows],
+    () => [...sourceRows, ...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...letterboxdRows, ...restRows, ...animeRows],
+    [sourceRows, arabicRows, personalRows, traktRows, simklRows, letterboxdRows, restRows, animeRows],
   );
   const visibleRows = useMemo(
     () => applyHomeRowCustomization(allCustomizableRows, homeRowsCustom, false),

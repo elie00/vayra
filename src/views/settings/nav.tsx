@@ -239,6 +239,16 @@ function IconSimkl(p: IconProps) {
   );
 }
 
+function IconLetterboxd(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <circle cx="5" cy="12" r="3.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="3.5" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
 const LANG_ABBR: Record<string, string> = {
   English: "EN",
   Spanish: "ES",
@@ -319,6 +329,12 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         label: "Simkl",
         Icon: IconSimkl,
         keywords: ["scrobble", "sync", "watched", "history", "watchlist", "anime"],
+      },
+      {
+        id: "letterboxd",
+        label: "Letterboxd",
+        Icon: IconLetterboxd,
+        keywords: ["letterboxd", "stremboxd", "watchlist", "diary", "films", "ratings", "friends"],
       },
     ],
   },
@@ -559,6 +575,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Trakt connection", section: "trakt", keywords: ["trakt", "scrobble", "sync", "watchlist", "connect", "disconnect", "avatar", "history"] },
   { label: "AniList connection", section: "anilist", keywords: ["anilist", "anime", "lists", "sync", "connect", "disconnect", "avatar", "watch progress", "mal", "kitsu"] },
   { label: "Simkl connection", section: "simkl", keywords: ["simkl", "sync", "watched", "watchlist", "connect", "disconnect", "avatar", "anime"] },
+  { label: "Letterboxd connection", section: "letterboxd", keywords: ["letterboxd", "stremboxd", "watchlist", "diary", "films", "ratings", "friends", "connect", "disconnect", "top 250", "popular"] },
   { label: "Webhooks (Discord / Telegram)", section: "webhooks", keywords: ["webhooks", "discord", "telegram", "notifications", "alerts", "calendar sources", "rules", "upcoming"] },
   { label: "Hotkeys / keyboard shortcuts", section: "hotkeys", keywords: ["hotkeys", "shortcuts", "keybindings", "keyboard", "rebind", "reset shortcuts"] },
   { label: "Player layout / chrome", section: "playerLayout", keywords: ["player layout", "chrome", "controls", "buttons", "overlay", "arrange", "rearrange", "trickplay", "thumbnail", "hide buttons"] },
@@ -647,6 +664,7 @@ export function SettingsNav({
     trakt: null,
     anilist: null,
     simkl: null,
+    letterboxd: settings.letterboxd.enabled ? (settings.letterboxd.mode === "full" ? "FULL" : "ON") : null,
     relay: relayLive,
     streaming: debridChip,
     p2p: null,

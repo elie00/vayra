@@ -135,6 +135,10 @@ export function loadStoredSettings(): Settings {
         ...DEFAULT.homeRows,
         ...(parsed.homeRows ?? {}),
       },
+      letterboxd: {
+        ...DEFAULT.letterboxd,
+        ...(parsed.letterboxd ?? {}),
+      },
       preferredSubLangs: (parsed.preferredSubLangs ?? DEFAULT.preferredSubLangs).map(languageName),
       preferredAudioLangs: (parsed.preferredAudioLangs ?? DEFAULT.preferredAudioLangs).map(
         languageName,

@@ -5,6 +5,8 @@ import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import { CustomSourcesRow } from "@/components/custom-sources-row";
 import { TopRankCard } from "@/components/top-rank-card";
+import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
+import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { useT } from "@/lib/i18n";
 import type { HomeRowCustomization } from "@/lib/home-customization";
 import { useView } from "@/lib/view";
@@ -26,7 +28,28 @@ function metaTitleKey(meta: { id?: string }): string | null {
 function RowTitle({ row }: { row: HomeRow }) {
   const t = useT();
   const { openGrid } = useView();
-  if (!row.fetcher) return <>{t(row.name)}</>;
+  const lb = useLetterboxd();
+  const isLetterboxd = row.key.startsWith("letterboxd-");
+  const catalogId = isLetterboxd ? row.key.replace("letterboxd-", "") : "";
+
+  const badge = isLetterboxd ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
+      Letterboxd
+    </span>
+  ) : null;
+
+  const menu = isLetterboxd ? (
+    <LetterboxdRowMenu
+      canMoveUp={lb.catalogOrder.indexOf(catalogId) > 0}
+      canMoveDown={lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 && lb.catalogOrder.indexOf(catalogId) !== -1}
+      hidden={lb.hiddenCatalogs.includes(catalogId)}
+      onMoveUp={() => lb.moveCatalog(catalogId, -1)}
+      onMoveDown={() => lb.moveCatalog(catalogId, 1)}
+      onToggleHidden={() => lb.toggleHidden(catalogId)}
+    />
+  ) : null;
+
+  if (!row.fetcher) return <>{t(row.name)}{badge}{menu}</>;
   return (
     <button
       onClick={() =>
@@ -35,11 +58,29 @@ function RowTitle({ row }: { row: HomeRow }) {
       className="group/see inline-flex items-center gap-1.5 text-ink transition-colors hover:text-ink-muted"
     >
       {t(row.name)}
+      {badge}
       <span className="inline-flex items-center gap-0.5 text-[12px] font-medium text-ink-subtle opacity-0 transition-opacity duration-200 group-hover/see:opacity-100">
         {t("See all")}
         <ChevronRight size={14} strokeWidth={2.4} className="dir-icon" />
       </span>
     </button>
+  );
+}
+
+function RowTitleExtra({ row }: { row: HomeRow }) {
+  const lb = useLetterboxd();
+  const isLetterboxd = row.key.startsWith("letterboxd-");
+  if (!isLetterboxd) return null;
+  const catalogId = row.key.replace("letterboxd-", "");
+  return (
+    <LetterboxdRowMenu
+      canMoveUp={lb.catalogOrder.indexOf(catalogId) > 0}
+      canMoveDown={lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 && lb.catalogOrder.indexOf(catalogId) !== -1}
+      hidden={lb.hiddenCatalogs.includes(catalogId)}
+      onMoveUp={() => lb.moveCatalog(catalogId, -1)}
+      onMoveDown={() => lb.moveCatalog(catalogId, 1)}
+      onToggleHidden={() => lb.toggleHidden(catalogId)}
+    />
   );
 }
 
@@ -133,6 +174,7 @@ export function CustomizableRows({
           rowEl = (
             <Row
               title={<RowTitle row={row} />}
+              titleExtra={<RowTitleExtra row={row} />}
               min={180}
               shape="rank"
               scrollKey={`home:${row.key}`}
@@ -147,6 +189,7 @@ export function CustomizableRows({
           rowEl = (
             <Row
               title={<RowTitle row={row} />}
+              titleExtra={<RowTitleExtra row={row} />}
               scrollKey={`home:${row.key}`}
               onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
               onViewAll={viewAll}

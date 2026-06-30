@@ -91,6 +91,8 @@ import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
 import { TraktComments } from "./detail/trakt-comments";
+import { LetterboxdPanel } from "./detail/letterboxd-panel";
+import { LetterboxdReviews } from "./detail/letterboxd-reviews";
 import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
@@ -1192,12 +1194,44 @@ export function DetailView({
               node: <InfoBlock detail={detail} isAnime={isAnime} />,
             });
           }
-          if (settings.showTraktComments === true) {
+          if (settings.showTraktComments === true && !isAnime) {
             railSections.push({
               key: "traktComments",
               label: t("Comments"),
               minHeight: 120,
               node: <TraktComments resolution={traktResolution} />,
+            });
+          }
+          if (!isAnime) {
+            railSections.push({
+              key: "letterboxdPanel",
+              label: t("Letterboxd"),
+              minHeight: 120,
+              node: (
+                <LetterboxdPanel
+                  meta={meta}
+                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                />
+              ),
+            });
+            railSections.push({
+              key: "letterboxdReviews",
+              label: t("Letterboxd Reviews"),
+              minHeight: 120,
+              node: (
+                <LetterboxdReviews
+                  meta={meta}
+                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                />
+              ),
+            });
+          }
+          if (isAnime) {
+            railSections.push({
+              key: "anilistComments",
+              label: t("Anilist Comments"),
+              minHeight: 120,
+              node: <AnilistComments harborId={animeCanonicalId ?? meta.id} />,
             });
           }
           if (railSections.length === 0) return null;
@@ -1243,34 +1277,6 @@ export function DetailView({
             </>
           );
         })()}
-
-
-        <div id="anime-awards-section" style={{ scrollMarginTop: 96 }}>
-          <LazyMount minHeight={160}>
-            <AnimeAwardsBlock
-              name={
-                animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-                stickyAwardName.current ??
-                title
-              }
-              year={releaseYearNum}
-            />
-          </LazyMount>
-        </div>
-        {detail && awards && (
-          <div id="awards-section" style={{ scrollMarginTop: 96 }}>
-            <LazyMount minHeight={200}>
-              <AwardsBlock awards={awards} />
-            </LazyMount>
-          </div>
-        )}
-        {detail && (
-          <LazyMount minHeight={200}>
-            <InfoBlock detail={detail} isAnime={isAnime} />
-          </LazyMount>
-        )}
-        {!isAnime && <TraktComments resolution={traktResolution} />}
-        {isAnime && <AnilistComments harborId={animeCanonicalId ?? meta.id} />}
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">
             {t("Add a TMDB key in Settings to see cast, related titles, and trailers here.")}

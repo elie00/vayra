@@ -75,6 +75,7 @@ import { ParentalProvider } from "@/lib/parental";
 import { TraktProvider } from "@/lib/trakt/provider";
 import { AnilistProvider } from "@/lib/anilist/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
+import { LetterboxdProvider } from "@/lib/stremboxd/provider";
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
@@ -229,6 +230,7 @@ export function App() {
       <TraktProvider>
       <AnilistProvider>
       <SimklProvider>
+      <LetterboxdProvider>
       <RankingsProvider>
         <AuthProvider>
           <OnboardingProvider>
@@ -285,6 +287,7 @@ export function App() {
           </OnboardingProvider>
         </AuthProvider>
       </RankingsProvider>
+      </LetterboxdProvider>
       </SimklProvider>
       </AnilistProvider>
       </TraktProvider>
