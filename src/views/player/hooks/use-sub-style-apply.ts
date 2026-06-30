@@ -10,17 +10,20 @@ export function useSubStyleApply(params: {
   assNativeActive: boolean;
   imageNativeActive: boolean;
   bridgeReady: boolean;
+  mediaReady: boolean;
   bridgeKey: string | number;
 }) {
-  const { engine, settings, assNativeActive, imageNativeActive, bridgeReady, bridgeKey } = params;
+  const { engine, settings, assNativeActive, imageNativeActive, bridgeReady, mediaReady, bridgeKey } = params;
 
   useEffect(() => {
     if (engine !== "mpv") return;
     if (!bridgeReady) return;
+    if (!mediaReady) return;
     void applySubStyle(settings, { assNativeActive, imageNativeActive });
   }, [
     engine,
     bridgeReady,
+    mediaReady,
     bridgeKey,
     assNativeActive,
     imageNativeActive,

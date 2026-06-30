@@ -54,7 +54,7 @@ export async function applySubStyle(
   ];
   if (context.imageNativeActive) {
     props.push(["sub-pos", clamp(100 - subMarginY, 0, 100)]);
-  } else if (!context.assNativeActive) {
+  } else {
     props.push(["sub-pos", 100]);
   }
   await Promise.all(

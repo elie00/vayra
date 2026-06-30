@@ -124,6 +124,13 @@ export function usePlayerMedia(params: {
     hdrNativeSurface || subAssNative || (subEmbed && selectedImageSub);
   const assNativeActive = selectedAssSub && (subNativeRender || !subEmbed);
   const imageNativeActive = selectedImageSub && (subNativeRender || !subEmbed);
+  const mpvMediaReadyForStyle =
+    snap.status !== "idle" &&
+    snap.status !== "loading" &&
+    (snap.durationSec > 0 ||
+      snap.videoWidth > 0 ||
+      snap.audioTracks.length > 0 ||
+      snap.subtitleTracks.length > 0);
   const suppressHtmlSubs = subAssNative || hdrNativeSurface;
   useSubStyleApply({
     engine,
@@ -131,6 +138,7 @@ export function usePlayerMedia(params: {
     assNativeActive,
     imageNativeActive,
     bridgeReady,
+    mediaReady: mpvMediaReadyForStyle,
     bridgeKey,
   });
   useEffect(() => {
