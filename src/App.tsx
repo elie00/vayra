@@ -425,9 +425,16 @@ function Shell() {
 
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
-      if (e.button === 3 && canGoBack) {
-        e.preventDefault();
-        goBack();
+      if (e.button === 3) {
+        const localBack = new Event("harbor:local-back", { cancelable: true });
+        if (!window.dispatchEvent(localBack)) {
+          e.preventDefault();
+          return;
+        }
+        if (canGoBack) {
+          e.preventDefault();
+          goBack();
+        }
       } else if (e.button === 4 && canGoForward) {
         e.preventDefault();
         goForward();

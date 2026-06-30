@@ -121,6 +121,21 @@ export function LiveView({ active }: { active: boolean }) {
     setModeState(m);
     writeMode(m);
   }, []);
+  const goLiveHome = useCallback(() => {
+    setMode("home");
+    setQuery("");
+    setGroup(favoritesCountRef.current > 0 ? FAVORITES_GROUP_KEY : null);
+  }, [setMode]);
+  useEffect(() => {
+    if (!active) return;
+    const onLocalBack = (e: Event) => {
+      if (mode === "home" && !query && group === (favoritesCountRef.current > 0 ? FAVORITES_GROUP_KEY : null)) return;
+      e.preventDefault();
+      goLiveHome();
+    };
+    window.addEventListener("harbor:local-back", onLocalBack);
+    return () => window.removeEventListener("harbor:local-back", onLocalBack);
+  }, [active, goLiveHome, group, mode, query]);
   const [immersive, setImmersive] = useState(false);
   useEffect(() => {
     const onImm = (e: Event) => setImmersive((e as CustomEvent<boolean>).detail === true);
