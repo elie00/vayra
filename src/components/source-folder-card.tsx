@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useView } from "@/lib/view";
 import type { SourceFolder } from "@/lib/custom-sources";
 import { useAuth } from "@/lib/auth";
-import { gatherCatalogAddons, fetchAddonCatalogPage } from "@/lib/addons";
+import { createAddonCatalogFetcher, gatherCatalogAddons } from "@/lib/addons";
 import { Pencil, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { EditFolderImagesModal } from "./edit-folder-images-modal";
@@ -122,12 +122,11 @@ export function SourceFolderCard({
 
       openGrid({
         title: folder.title,
-        fetcher: async (page: number) => {
-          const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
-          const skip = (page - 1) * 20;
-          const metas = await fetchAddonCatalogPage(base, source.type, source.catalogId, skip);
-          return metas;
-        },
+        fetcher: createAddonCatalogFetcher({
+          base: addon.transportUrl.replace(/\/manifest\.json$/, ""),
+          type: source.type,
+          id: source.catalogId,
+        }),
       });
     } finally {
       setLoading(false);

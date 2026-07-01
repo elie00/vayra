@@ -1,7 +1,5 @@
-import { fetchAddonCatalogPage, gatherCatalogAddons } from "./addons";
-import type { Meta } from "./cinemeta";
+import { createAddonCatalogFetcher, gatherCatalogAddons, type CatalogExtra } from "./addons";
 
-const PAGE = 100;
 const NON_CONTENT = new Set(["addon_catalog"]);
 
 export type BrowseCatalog = {
@@ -44,9 +42,7 @@ export async function listBrowseCatalogs(authKey: string | null): Promise<Browse
 }
 
 export function browseFetcher(cat: BrowseCatalog, genre: string | null) {
-  return (page: number): Promise<Meta[]> => {
-    const skip = (page - 1) * PAGE;
-    const extra = genre && cat.genreExtra ? { name: cat.genreExtra, value: genre } : undefined;
-    return fetchAddonCatalogPage(cat.base, cat.type, cat.id, skip, extra);
-  };
+  const extras: CatalogExtra[] | undefined =
+    genre && cat.genreExtra ? [{ name: cat.genreExtra, value: genre }] : undefined;
+  return createAddonCatalogFetcher({ base: cat.base, type: cat.type, id: cat.id, extras });
 }
