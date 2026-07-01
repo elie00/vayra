@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
-import { applySubStyle } from "@/lib/player/sub-style";
 import { langScore, pickBestTrack } from "@/lib/subtitles/language";
 import { searchSubtitles } from "@/lib/subtitles/search";
 import { readPlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
@@ -175,7 +174,6 @@ export function useTrackAutoload(params: {
     if (autoTrackKeyRef.current === key) return;
     if (snap.audioTracks.length === 0 && snap.subtitleTracks.length === 0) return;
     autoTrackKeyRef.current = key;
-    if (engine === "mpv") void applySubStyle(settings);
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
 

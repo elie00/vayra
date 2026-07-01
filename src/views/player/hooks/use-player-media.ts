@@ -116,12 +116,31 @@ export function usePlayerMedia(params: {
     (settings.playerHdrOpaqueWindow || (settings.playerMpvEmbed && settings.playerHdrStage !== "off"));
   const selectedSubTrack = snap.subtitleTracks.find((t) => t.selected) ?? null;
   const subAssOverridden = settings.subAssOverride !== "no" && settings.subAssOverride !== "scale";
+  const selectedAssSub = isAssTrack(selectedSubTrack);
+  const selectedImageSub = isImageSubTrack(selectedSubTrack);
   const subAssNative =
-    subEmbed && isAssTrack(selectedSubTrack) && (!subAssOverridden || !selectedSubTrack?.external);
+    subEmbed && selectedAssSub && (!subAssOverridden || !selectedSubTrack?.external);
   const subNativeRender =
-    hdrNativeSurface || subAssNative || (subEmbed && isImageSubTrack(selectedSubTrack));
+    hdrNativeSurface || subAssNative || (subEmbed && selectedImageSub);
+  const assNativeActive = selectedAssSub && (subNativeRender || !subEmbed);
+  const imageNativeActive = selectedImageSub && (subNativeRender || !subEmbed);
+  const mpvMediaReadyForStyle =
+    snap.status !== "idle" &&
+    snap.status !== "loading" &&
+    (snap.durationSec > 0 ||
+      snap.videoWidth > 0 ||
+      snap.audioTracks.length > 0 ||
+      snap.subtitleTracks.length > 0);
   const suppressHtmlSubs = subAssNative || hdrNativeSurface;
-  useSubStyleApply({ engine, settings, subAssNative, bridgeReady, bridgeKey });
+  useSubStyleApply({
+    engine,
+    settings,
+    assNativeActive,
+    imageNativeActive,
+    bridgeReady,
+    mediaReady: mpvMediaReadyForStyle,
+    bridgeKey,
+  });
   useEffect(() => {
     if (!subEmbed && !hdrNativeSurface) return;
     if (!bridgeReady) return;

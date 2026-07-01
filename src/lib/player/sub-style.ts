@@ -20,9 +20,23 @@ function mpvFontFor(id: string): string {
   }
 }
 
-export async function applySubStyle(s: Settings, assActive = false): Promise<void> {
+export type SubRenderContext = {
+  assNativeActive: boolean;
+  imageNativeActive: boolean;
+};
+
+function clamp(n: number, lo: number, hi: number): number {
+  if (!Number.isFinite(n)) return lo;
+  return Math.max(lo, Math.min(hi, n));
+}
+
+export async function applySubStyle(
+  s: Settings,
+  context: SubRenderContext = { assNativeActive: false, imageNativeActive: false },
+): Promise<void> {
   const override = s.subAssOverride;
-  const assMargins = assActive && override !== "no" ? "yes" : "no";
+  const assMargins = context.assNativeActive && override !== "no" ? "yes" : "no";
+  const subMarginY = clamp(Number(s.subMarginY) || 0, 0, 100);
   const props: Array<[string, unknown]> = [
     ["sub-font-size", 32],
     ["sub-font", mpvFontFor(s.subFontFamily)],
@@ -30,7 +44,7 @@ export async function applySubStyle(s: Settings, assActive = false): Promise<voi
     ["sub-color", hexToBgr(s.subFontColor)],
     ["sub-border-color", hexToBgr(s.subBorderColor)],
     ["sub-border-size", s.subBorderSize],
-    ["sub-margin-y", s.subMarginY],
+    ["sub-margin-y", subMarginY],
     ["sub-align-x", s.subAlignX],
     ["sub-ass-override", override],
     ["sub-ass-force-margins", assMargins],
@@ -38,6 +52,11 @@ export async function applySubStyle(s: Settings, assActive = false): Promise<voi
     ["sub-spacing", s.subLineSpacing],
     ["sub-bold", s.subBold ? "yes" : "no"],
   ];
+  if (context.imageNativeActive) {
+    props.push(["sub-pos", clamp(100 - subMarginY, 0, 100)]);
+  } else {
+    props.push(["sub-pos", 100]);
+  }
   await Promise.all(
     props.map(([name, value]) =>
       invoke("mpv_set_property", { name, value }).catch(() => {}),
