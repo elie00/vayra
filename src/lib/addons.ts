@@ -44,10 +44,17 @@ export type AddonRow = {
   type: string;
   name: string;
   metas: Meta[];
-  more?: { base: string; type: string; id: string; extras?: CatalogExtra[] };
+  more?: AddonCatalogCursor;
 };
 
 export type CatalogExtra = { name: string; value: string };
+
+export type AddonCatalogCursor = {
+  base: string;
+  type: string;
+  id: string;
+  extras?: CatalogExtra[];
+};
 
 export function addonAccepts(addon: Addon, resource: string, type: string, id: string): boolean {
   const m = addon.manifest;
@@ -259,6 +266,7 @@ export async function gatherCatalogAddons(authKey: string | null): Promise<Addon
 }
 
 const NON_CONTENT_TYPES = new Set(["addon_catalog"]);
+const DEFAULT_CATALOG_PAGE_SIZE = 20;
 
 function normalizeCatalogExtras(extra?: CatalogExtra | CatalogExtra[]): CatalogExtra[] {
   if (!extra) return [];
@@ -380,6 +388,23 @@ export async function fetchAddonCatalogPage(
   } catch {
     return [];
   }
+}
+
+export function createAddonCatalogFetcher(
+  cursor: AddonCatalogCursor,
+  opts: {
+    initialPageSize?: number;
+    mapMeta?: (meta: Meta) => Meta;
+  } = {},
+): (page: number) => Promise<Meta[]> {
+  let pageSize = opts.initialPageSize && opts.initialPageSize > 0 ? opts.initialPageSize : null;
+  return async (page: number): Promise<Meta[]> => {
+    const step = pageSize ?? DEFAULT_CATALOG_PAGE_SIZE;
+    const skip = page <= 1 ? 0 : (page - 1) * step;
+    const metas = await fetchAddonCatalogPage(cursor.base, cursor.type, cursor.id, skip, cursor.extras);
+    if (metas.length > 0 && pageSize == null) pageSize = metas.length;
+    return opts.mapMeta ? metas.map(opts.mapMeta) : metas;
+  };
 }
 
 const TMDB_PROVIDER_ID_PATTERNS: RegExp[] = [

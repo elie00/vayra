@@ -9,7 +9,7 @@ import { PickCard } from "@/components/pick-card";
 import { Row, ScrollRootContext } from "@/components/row";
 import { AnimeRankCard } from "@/components/top-rank-card";
 import { useAuth } from "@/lib/auth";
-import { fetchAddonCatalogPage, loadAddonRows, normalizeName, type AddonRow } from "@/lib/addons";
+import { createAddonCatalogFetcher, loadAddonRows, normalizeName, type AddonRow } from "@/lib/addons";
 import type { Meta } from "@/lib/cinemeta";
 import { findTopAward, parseAwardYear, uniqueWinnerFranchisesAcrossSources } from "@/lib/anime-awards";
 import { publishResumeStates } from "@/lib/hover-preview/store";
@@ -519,16 +519,10 @@ export function AnimeView({ active = true }: { active?: boolean }) {
                     ? () =>
                         openGrid({
                           title: row.name,
-                          fetcher: async (p) =>
-                            (
-                              await fetchAddonCatalogPage(
-                                row.more!.base,
-                                row.more!.type,
-                                row.more!.id,
-                                (p - 1) * row.metas.length,
-                                row.more!.extras,
-                              )
-                            ).map(cleanMeta),
+                          fetcher: createAddonCatalogFetcher(row.more!, {
+                            initialPageSize: row.metas.length,
+                            mapMeta: cleanMeta,
+                          }),
                           initial: row.metas.map(cleanMeta),
                         })
                     : undefined
