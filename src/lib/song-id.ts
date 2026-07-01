@@ -6,6 +6,11 @@ export type SongResult = {
   album: string;
   artwork: string; // may be "" when no cover art is available
   link: string;
+  /** Total length of the identified track, in seconds (0 when unknown). */
+  durationSec: number;
+  /** Offset inside the track at the moment of identification, in seconds
+   *  (AudD "timecode"; 0 when unknown). */
+  startSec: number;
 } | null;
 
 export type SongIdToastMsg = {
@@ -15,6 +20,10 @@ export type SongIdToastMsg = {
   art?: string;
   /** External link to open on click (YouTube search for the track). */
   href?: string;
+  /** Song length in seconds (for the progress bar / time display). */
+  durationSec?: number;
+  /** Song offset at identification, in seconds. */
+  startSec?: number;
 };
 
 const TOAST_EVENT = "harbor:song-id-toast";
@@ -71,6 +80,8 @@ export async function identifyNowPlaying(apiToken: string): Promise<void> {
       body: `${res.artist}${res.album ? " · " + res.album : ""}`,
       art: res.artwork || undefined,
       href: youtubeSearchUrl(res.artist, res.title),
+      durationSec: res.durationSec || undefined,
+      startSec: res.startSec || undefined,
     });
   } catch (e) {
     console.error("song-id failed", e);

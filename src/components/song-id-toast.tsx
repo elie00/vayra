@@ -3,6 +3,8 @@ import { Music, Shuffle, SkipBack, SkipForward, Repeat, Play } from "lucide-reac
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useSettings } from "@/lib/settings";
 import { onSongIdToast, type SongIdToastMsg } from "@/lib/song-id";
+import { usePlaybackPositionGated } from "@/lib/player/playback-clock";
+import { fmtTime } from "@/components/player/transport/transport-utils";
 
 type SongCardStyle = "compact" | "cinematic";
 
@@ -13,12 +15,18 @@ type SongCardStyle = "compact" | "cinematic";
  *  Clicking a result opens the track on YouTube. */
 export function SongIdToast() {
   const { settings } = useSettings();
+  // Live video position — used ONLY as a clock. The identified song plays in
+  // sync with the video, so it advances/pauses together with playback.
+  const position = usePlaybackPositionGated(true);
   const style = (settings.songCardStyle ?? "cinematic") as SongCardStyle;
   const showDetails = settings.songCardDetails ?? true;
 
   const [msg, setMsg] = useState<SongIdToastMsg | null>(null);
   const [enter, setEnter] = useState(false);
+  // Anchor: video position + song offset captured when a result arrives.
+  const [base, setBase] = useState<{ pos: number; off: number } | null>(null);
   const timer = useRef<number | undefined>(undefined);
+  const posRef = useRef(0);
 
   useEffect(() => {
     const off = onSongIdToast((t) => {
@@ -46,11 +54,36 @@ export function SongIdToast() {
     return () => cancelAnimationFrame(id);
   }, [msg]);
 
+  // Keep latest video position without re-anchoring the song on every frame.
+  useEffect(() => {
+    posRef.current = position;
+  }, [position]);
+
+  // Anchor the song timeline when a result with a known duration arrives.
+  useEffect(() => {
+    if (msg && msg.kind === "result" && msg.durationSec) {
+      setBase({ pos: posRef.current, off: msg.startSec ?? 0 });
+    } else {
+      setBase(null);
+    }
+  }, [msg]);
+
   if (!msg) return null;
 
   const listening = msg.kind === "info";
   const isResult = msg.kind === "result";
   const body = showDetails ? msg.body : undefined;
+
+  // Real elapsed / total time of the SONG (not the movie). Advance from the
+  // AudD match offset by however much the video has moved since identification.
+  const songDur = msg.durationSec ?? 0;
+  const songElapsed =
+    base && songDur > 0
+      ? Math.max(0, Math.min(songDur, base.off + (position - base.pos)))
+      : 0;
+  const pct = songDur > 0 ? (songElapsed / songDur) * 100 : 0;
+  const elapsed = songDur > 0 ? fmtTime(songElapsed) : "";
+  const total = songDur > 0 ? fmtTime(songDur) : "";
 
   const open = () => {
     if (msg.href) openUrl(msg.href).catch((e) => console.error("open failed", e));
@@ -92,7 +125,7 @@ export function SongIdToast() {
               ) : null}
             </div>
           </div>
-          {isResult ? <Controls /> : null}
+          {isResult ? <Controls pct={pct} elapsed={elapsed} total={total} /> : null}
         </div>
       ) : (
         <div
@@ -116,7 +149,7 @@ export function SongIdToast() {
               <span className="mt-1 text-xs text-white/40">Tap to open on YouTube</span>
             ) : null}
           </div>
-          {isResult ? <Controls /> : null}
+          {isResult ? <Controls pct={pct} elapsed={elapsed} total={total} /> : null}
         </div>
       )}
     </div>
@@ -152,12 +185,29 @@ function Vinyl({
   );
 }
 
-function Controls() {
+function Controls({
+  pct,
+  elapsed,
+  total,
+}: {
+  pct: number;
+  elapsed: string;
+  total: string;
+}) {
+  const fillStyle = { width: `${pct}%` };
   return (
-    <div className="flex w-full flex-col gap-3">
-      <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/15">
-        <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-white/80" />
-      </div>
+    <div className="flex w-full flex-col gap-2">
+      {total ? (
+        <>
+          <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/15">
+            <div className="absolute inset-y-0 left-0 rounded-full bg-white/80" style={fillStyle} />
+          </div>
+          <div className="flex w-full items-center justify-between font-mono text-[11px] tabular-nums text-white/50">
+            <span>{elapsed}</span>
+            <span>{total}</span>
+          </div>
+        </>
+      ) : null}
       <div className="flex items-center justify-center gap-6 text-white/80">
         <Shuffle size={18} className="opacity-50" />
         <SkipBack size={20} className="opacity-70" />

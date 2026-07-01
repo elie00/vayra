@@ -10,6 +10,10 @@ pub struct SongResult {
     pub album: String,
     pub artwork: String,
     pub link: String,
+    #[serde(rename = "durationSec")]
+    pub duration_sec: f64,
+    #[serde(rename = "startSec")]
+    pub start_sec: f64,
 }
 
 #[tauri::command]
@@ -107,6 +111,13 @@ fn pcm_to_wav(pcm: &[u8], sample_rate: u32, channels: u16, bits: u16) -> Result<
 }
 
 #[cfg(windows)]
+fn parse_timecode(tc: &str) -> f64 {
+    // "MM:SS" or "HH:MM:SS" -> seconds.
+    tc.split(':')
+        .fold(0.0f64, |acc, p| acc * 60.0 + p.parse::<f64>().unwrap_or(0.0))
+}
+
+#[cfg(windows)]
 async fn audd_recognize(wav: Vec<u8>, api_token: String) -> Result<Option<SongResult>, String> {
     use reqwest::multipart::{Form, Part};
 
@@ -152,5 +163,23 @@ async fn audd_recognize(wav: Vec<u8>, api_token: String) -> Result<Option<SongRe
         artwork = u.to_string();
     }
 
-    Ok(Some(SongResult { title, artist, album, artwork, link }))
+    // Offset inside the song at the moment of the match (AudD "timecode", "MM:SS").
+    let start_sec = r["timecode"].as_str().map(parse_timecode).unwrap_or(0.0);
+
+    // Total track length: Apple Music (ms) -> Spotify (ms) -> 0 if unknown.
+    let duration_sec = r["apple_music"]["durationInMillis"]
+        .as_f64()
+        .map(|ms| ms / 1000.0)
+        .or_else(|| r["spotify"]["duration_ms"].as_f64().map(|ms| ms / 1000.0))
+        .unwrap_or(0.0);
+
+    Ok(Some(SongResult {
+        title,
+        artist,
+        album,
+        artwork,
+        link,
+        duration_sec,
+        start_sec,
+    }))
 }
