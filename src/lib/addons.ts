@@ -44,8 +44,10 @@ export type AddonRow = {
   type: string;
   name: string;
   metas: Meta[];
-  more?: { base: string; type: string; id: string };
+  more?: { base: string; type: string; id: string; extras?: CatalogExtra[] };
 };
+
+export type CatalogExtra = { name: string; value: string };
 
 export function addonAccepts(addon: Addon, resource: string, type: string, id: string): boolean {
   const m = addon.manifest;
@@ -258,17 +260,33 @@ export async function gatherCatalogAddons(authKey: string | null): Promise<Addon
 
 const NON_CONTENT_TYPES = new Set(["addon_catalog"]);
 
-function catalogRequestUrl(base: string, cat: CatalogDef): string | null {
+function normalizeCatalogExtras(extra?: CatalogExtra | CatalogExtra[]): CatalogExtra[] {
+  if (!extra) return [];
+  return Array.isArray(extra) ? extra : [extra];
+}
+
+function catalogExtraPath(extras: CatalogExtra[], skip = 0): string {
+  const parts = extras.map((e) => `${encodeURIComponent(e.name)}=${encodeURIComponent(e.value)}`);
+  if (skip > 0) parts.push(`skip=${skip}`);
+  return parts.length ? `/${parts.join("&")}` : "";
+}
+
+function catalogRequest(base: string, cat: CatalogDef): { url: string; extras: CatalogExtra[] } | null {
   const required = (cat.extra ?? []).filter((e) => e.isRequired);
-  if (required.length === 0) return `${base}/catalog/${cat.type}/${cat.id}.json`;
-  const parts: string[] = [];
+  if (required.length === 0) {
+    return { url: `${base}/catalog/${cat.type}/${cat.id}.json`, extras: [] };
+  }
+  const extras: CatalogExtra[] = [];
   for (const e of required) {
     if (e.name === "search") return null;
     const opt = e.options?.[0];
     if (!opt) return null;
-    parts.push(`${encodeURIComponent(e.name)}=${encodeURIComponent(opt)}`);
+    extras.push({ name: e.name, value: opt });
   }
-  return `${base}/catalog/${cat.type}/${cat.id}/${parts.join("&")}.json`;
+  return {
+    url: `${base}/catalog/${cat.type}/${cat.id}${catalogExtraPath(extras)}.json`,
+    extras,
+  };
 }
 
 export async function loadAddonRows(
@@ -283,9 +301,9 @@ export async function loadAddonRows(
       .filter((c) => c && c.name && c.type && c.id && !NON_CONTENT_TYPES.has(c.type.toLowerCase()))
       .map(async (cat): Promise<AddonRow | null> => {
         const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
-        const url = catalogRequestUrl(base, cat);
-        if (!url) return null;
-        const res = await fetchWithTimeout(url);
+        const request = catalogRequest(base, cat);
+        if (!request) return null;
+        const res = await fetchWithTimeout(request.url);
         if (!res || !res.ok) return null;
         try {
           const json = await res.json();
@@ -303,7 +321,12 @@ export async function loadAddonRows(
             type: cat.type,
             name: cat.name,
             metas,
-            more: { base, type: cat.type, id: cat.id },
+            more: {
+              base,
+              type: cat.type,
+              id: cat.id,
+              extras: request.extras.length > 0 ? request.extras : undefined,
+            },
           };
         } catch {
           return null;
@@ -346,12 +369,9 @@ export async function fetchAddonCatalogPage(
   type: string,
   id: string,
   skip: number,
-  extra?: { name: string; value: string },
+  extra?: CatalogExtra | CatalogExtra[],
 ): Promise<Meta[]> {
-  const parts: string[] = [];
-  if (extra) parts.push(`${encodeURIComponent(extra.name)}=${encodeURIComponent(extra.value)}`);
-  if (skip > 0) parts.push(`skip=${skip}`);
-  const seg = parts.length ? `/${parts.join("&")}` : "";
+  const seg = catalogExtraPath(normalizeCatalogExtras(extra), skip);
   const res = await fetchWithTimeout(`${base}/catalog/${type}/${id}${seg}.json`);
   if (!res || !res.ok) return [];
   try {

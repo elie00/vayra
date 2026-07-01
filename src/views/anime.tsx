@@ -526,6 +526,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
                                 row.more!.type,
                                 row.more!.id,
                                 (p - 1) * row.metas.length,
+                                row.more!.extras,
                               )
                             ).map(cleanMeta),
                           initial: row.metas.map(cleanMeta),

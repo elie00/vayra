@@ -262,7 +262,13 @@ export function mergeRows(
       fetcher:
         canPage && more
           ? async (page) => {
-              const ms = await fetchAddonCatalogPage(more.base, more.type, more.id, (page - 1) * step);
+              const ms = await fetchAddonCatalogPage(
+                more.base,
+                more.type,
+                more.id,
+                (page - 1) * step,
+                more.extras,
+              );
               return origin ? ms.map((m) => ({ ...m, addonOrigin: origin })) : ms;
             }
           : undefined,
