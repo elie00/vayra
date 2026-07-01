@@ -190,6 +190,7 @@ export type Settings = {
   hoverPreview: boolean;
   hoverPreviewPlacement: "over" | "side";
   mdblistKey: string;
+  auddKey: string;
   aiSearchKey: string;
   aiSearchModel: string;
   playerD3d11Flip: boolean;
@@ -223,6 +224,8 @@ export type Settings = {
   spoilerHideDescriptions: boolean;
   spoilerSkipNext: boolean;
   streamBackdropBlur: boolean;
+  songCardStyle: "compact" | "cinematic";
+  songCardDetails: boolean;
   hideContent: ContentFilters;
   theme: ThemeSettings;
   homeMode: "harbor" | "classic";
