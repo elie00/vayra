@@ -26,7 +26,6 @@ jobs:
           org.gnome.Platform//49 org.gnome.Sdk//49
           org.freedesktop.Sdk.Extension.rust-stable//25.08
           org.freedesktop.Sdk.Extension.node22//25.08
-          org.freedesktop.Platform.codecs-extra//25.08
       - name: Validate metadata
         run: |
           desktop-file-validate flatpak/site.harbor.Harbor.desktop

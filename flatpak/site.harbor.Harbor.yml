@@ -8,14 +8,6 @@ sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
   - org.freedesktop.Sdk.Extension.node22
 
-add-extensions:
-  org.freedesktop.Platform.codecs-extra:
-    directory: lib/codecs-extra
-    version: '25.08'
-    add-ld-path: lib
-    autodelete: false
-    no-autodownload: false
-
 finish-args:
   - --share=ipc
   - --share=network

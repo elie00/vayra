@@ -1,9 +1,9 @@
 # Flatpak packaging
 
 Harbor is built as `site.harbor.Harbor` against the pinned GNOME 49 SDK. mpv is
-built in the sandbox, FFmpeg tools come from the SDK and use the matching
-`org.freedesktop.Platform.codecs-extra` runtime extension, and yt-dlp is installed
-at a digest-pinned version. No host multimedia tools are visible to the application.
+built in the sandbox, FFmpeg tools come from the SDK and use the codecs supplied
+through the matching platform runtime, and yt-dlp is installed at a digest-pinned
+version. No host multimedia tools are visible to the application.
 
 Build locally with the runtimes listed in the manifest installed:
 
