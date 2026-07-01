@@ -6,16 +6,6 @@ import { effectiveBinding, eventToBinding, isTypingTarget, type HotkeyId } from 
 import { useSettings } from "@/lib/settings";
 import { round2 } from "../player-utils";
 
-function customSeekStep(direction: "back" | "forward", fallback: number): number {
-  try {
-    const saved = localStorage.getItem(`harbor.seek-step.${direction}`);
-    const n = saved ? Number(saved) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 export function useKeyboardShortcuts(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
   snap: PlayerSnapshot;
@@ -90,6 +80,8 @@ export function useKeyboardShortcuts(params: {
   } = params;
   const { settings } = useSettings();
   const overrides = settings.hotkeys ?? {};
+  const seekBackStepSec = settings.seekBackStepSec;
+  const seekForwardStepSec = settings.seekForwardStepSec;
   const holdRef = useRef<{
     key: string | null;
     timer: number | null;
@@ -148,22 +140,22 @@ export function useKeyboardShortcuts(params: {
       }
       if (match("playerSeekBack10")) {
         e.preventDefault();
-        seekStep(-customSeekStep("back", 10));
+        seekStep(-seekBackStepSec);
         return;
       }
       if (match("playerSeekForward10")) {
         e.preventDefault();
-        seekStep(customSeekStep("forward", 10));
+        seekStep(seekForwardStepSec);
         return;
       }
       if (match("playerSeekBack30")) {
         e.preventDefault();
-        seekStep(-customSeekStep("back", 30));
+        seekStep(-30);
         return;
       }
       if (match("playerSeekForward30")) {
         e.preventDefault();
-        seekStep(customSeekStep("forward", 30));
+        seekStep(30);
         return;
       }
       if (match("playerFrameForward") && onFrameStep) {
@@ -388,7 +380,7 @@ export function useKeyboardShortcuts(params: {
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep]);
+  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep]);
 
   return { holdSpeedActive };
 }

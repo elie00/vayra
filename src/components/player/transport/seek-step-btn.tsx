@@ -1,9 +1,9 @@
 import { RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { SEEK_STEP_OPTIONS, sanitizeSeekStep } from "@/lib/seek-step";
+import { useSettings } from "@/lib/settings";
 import { Tooltip } from "./tooltip";
-
-const SKIP_OPTIONS = [5, 10, 15, 30, 60, 90];
 
 export function SeekStepBtn({
   direction,
@@ -15,14 +15,13 @@ export function SeekStepBtn({
   onSeekStep: (delta: number) => void;
 }) {
   const t = useT();
+  const { settings, update } = useSettings();
   const Icon = direction === "back" ? RotateCcw : RotateCw;
   const word = direction === "back" ? t("Back") : t("Forward");
-  const storageKey = `harbor.seek-step.${direction}`;
-  const [seconds, setSeconds] = useState<number>(() => {
-    const saved = typeof localStorage !== "undefined" ? localStorage.getItem(storageKey) : null;
-    const n = saved ? Number(saved) : NaN;
-    return Number.isFinite(n) && SKIP_OPTIONS.includes(n) ? n : defaultSeconds;
-  });
+  const seconds = sanitizeSeekStep(
+    direction === "back" ? settings.seekBackStepSec : settings.seekForwardStepSec,
+    defaultSeconds,
+  );
   const [pickerOpen, setPickerOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const holdTimerRef = useRef<number | null>(null);
@@ -79,10 +78,8 @@ export function SeekStepBtn({
   };
 
   const commitChoice = (s: number) => {
-    setSeconds(s);
-    try {
-      localStorage.setItem(storageKey, String(s));
-    } catch {}
+    if (direction === "back") update({ seekBackStepSec: s });
+    else update({ seekForwardStepSec: s });
     setPickerOpen(false);
   };
 
@@ -116,7 +113,7 @@ export function SeekStepBtn({
             {word}
           </div>
           <div className="flex flex-col-reverse gap-1 pt-1.5">
-            {SKIP_OPTIONS.map((s) => {
+            {SEEK_STEP_OPTIONS.map((s) => {
               const isSel = s === seconds;
               return (
                 <button

@@ -3,8 +3,13 @@ use std::path::PathBuf;
 fn main() {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-    #[cfg(target_os = "windows")]
-    {
+    // Branch on the *target* OS, not the host. In a build script `cfg!(target_os)`
+    // reflects the machine running the build, which breaks cross-compilation
+    // (e.g. Linux -> Windows would take the Linux branch and fail to find libmpv).
+    // `CARGO_CFG_TARGET_OS` is the platform we're actually building for.
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+
+    if target_os == "windows" {
         let libmpv = manifest.join("libmpv");
         if libmpv.join("mpv.lib").exists() {
             println!("cargo:rustc-link-search=native={}", libmpv.display());
@@ -15,8 +20,7 @@ fn main() {
         }
     }
 
-    #[cfg(target_os = "macos")]
-    {
+    if target_os == "macos" {
         let mut prefixes: Vec<String> = Vec::new();
         if let Ok(p) = std::env::var("HOMEBREW_PREFIX") {
             if !p.is_empty() {
@@ -48,8 +52,7 @@ fn main() {
         }
     }
 
-    #[cfg(target_os = "linux")]
-    {
+    if target_os == "linux" {
         let mut found = false;
         if let Ok(out) = std::process::Command::new("pkg-config")
             .args(["--variable=libdir", "mpv"])
