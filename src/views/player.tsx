@@ -65,6 +65,7 @@ import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
+import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
 
 export function PlayerView({ src }: { src: PlayerSrc }) {
@@ -471,6 +472,36 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     }
   }, [textSync.enterSync, showSyncToast, t]);
 
+  const volumeIndicatorTimerRef = useRef<number | null>(null);
+  const [volumeIndicator, setVolumeIndicator] = useState<VolumeIndicatorState>({
+    visible: false,
+    volume: snap.volume,
+    muted: snap.muted,
+    seq: 0,
+  });
+  const showVolumeFeedback = useCallback((volume: number, muted: boolean) => {
+    if (volumeIndicatorTimerRef.current != null) {
+      window.clearTimeout(volumeIndicatorTimerRef.current);
+    }
+    setVolumeIndicator((current) => ({
+      visible: true,
+      volume,
+      muted,
+      seq: current.seq + 1,
+    }));
+    volumeIndicatorTimerRef.current = window.setTimeout(() => {
+      setVolumeIndicator((current) => ({ ...current, visible: false }));
+      volumeIndicatorTimerRef.current = null;
+    }, 1200);
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (volumeIndicatorTimerRef.current != null) {
+        window.clearTimeout(volumeIndicatorTimerRef.current);
+      }
+    };
+  }, []);
+
   const videoFill = useVideoFill(bridgeRef, src.url, playing);
   useLivePictureEq(bridgeRef, src.url);
   const anime4k = useAnime4k(bridgeRef, src.url, src);
@@ -518,6 +549,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     gif,
     clip,
     videoFill,
+    onVolumeFeedback: showVolumeFeedback,
   });
 
   const { pendingResumeSec, acknowledgeResume, pendingSeekSec, clearPendingSeek } = useBridgeLoad({
@@ -653,11 +685,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   }, [snap.volume]);
   const onVolumeWheel = useCallback((deltaY: number) => {
     const dir = deltaY < 0 ? 1 : -1;
-    const next = Math.min(6, Math.max(0, volumeRef.current + dir * 0.05));
+    const max = bridgeRef.current?.capabilities().engine === "mpv" ? 6 : 1;
+    const next = Math.min(max, Math.max(0, volumeRef.current + dir * 0.05));
     volumeRef.current = next;
     bridgeRef.current?.setVolume(next);
-    writePlayerVolume({ volume: next });
-  }, []);
+    bridgeRef.current?.setMuted(false);
+    writePlayerVolume({ volume: next, muted: false });
+    showVolumeFeedback(next, false);
+  }, [showVolumeFeedback]);
 
   const overlayProps: PlayerOverlayLayersProps = {
     snap,
@@ -669,6 +704,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     subAssNative,
     showStats,
     holdSpeedActive,
+    volumeIndicator,
     videoFillPill: videoFill.pill,
     cropMode: videoFill.mode,
     onCropMode: videoFill.setMode,
@@ -684,6 +720,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     playPauseToggle,
     toggleFullscreen,
     onVolumeWheel,
+    onVolumeFeedback: showVolumeFeedback,
     isLocalSrc,
     swappingEp,
     swapResolvingKey,

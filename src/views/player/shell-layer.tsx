@@ -59,6 +59,7 @@ export function ShellLayer({
   download,
   onOpenDvr,
   sleep,
+  onVolumeFeedback,
 }: {
   shellId: string;
   shellSnap: PlayerSnapshot;
@@ -112,6 +113,7 @@ export function ShellLayer({
   download: ReturnType<typeof useVideoDownload>;
   onOpenDvr?: () => void;
   sleep: PlayerShellProps["sleep"];
+  onVolumeFeedback?: (volume: number, muted: boolean) => void;
 }) {
   const ActiveShell = getPlayerShell(shellId).Component;
   return (
@@ -135,10 +137,13 @@ export function ShellLayer({
         const next = !snapRef.current.muted;
         bridgeRef.current?.setMuted(next);
         writePlayerVolume({ muted: next });
+        onVolumeFeedback?.(snapRef.current.volume, next);
       }}
       onVolume={(v) => {
         bridgeRef.current?.setVolume(v);
-        writePlayerVolume({ volume: v });
+        bridgeRef.current?.setMuted(false);
+        writePlayerVolume({ volume: v, muted: false });
+        onVolumeFeedback?.(v, false);
       }}
       onAudio={(id) => {
         bridgeRef.current?.setAudioTrack(id);

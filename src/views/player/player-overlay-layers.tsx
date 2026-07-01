@@ -40,6 +40,7 @@ export type PlayerOverlayLayersProps = {
   subAssNative: boolean;
   showStats: boolean;
   holdSpeedActive: boolean;
+  volumeIndicator: ComponentProps<typeof StageOverlays>["volumeIndicator"];
   videoFillPill: string | null;
   subDropToast: string | null;
   pipMode: boolean;
@@ -50,6 +51,7 @@ export type PlayerOverlayLayersProps = {
   playPauseToggle: () => void;
   toggleFullscreen: () => void;
   onVolumeWheel: (deltaY: number) => void;
+  onVolumeFeedback: (volume: number, muted: boolean) => void;
   isLocalSrc: boolean;
   swappingEp: boolean;
   swapResolvingKey: string | null;
@@ -181,6 +183,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         subAssNative={p.subAssNative}
         showStats={p.showStats}
         holdSpeedActive={p.holdSpeedActive}
+        volumeIndicator={p.volumeIndicator}
         videoFillPill={p.videoFillPill}
         subDropToast={p.subDropToast}
         onSubDelay={(s) => { p.bridgeRef.current?.setSubDelay(s); }}
@@ -326,6 +329,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
           download={p.download}
           onOpenDvr={p.openDvr}
           sleep={p.sleep}
+          onVolumeFeedback={p.onVolumeFeedback}
         />
       )}
 
