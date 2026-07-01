@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:build:linux-system": "tauri build --config src-tauri/tauri.linux-system.conf.json",
+    "tauri:build:flatpak": "tauri build --config src-tauri/tauri.flatpak.conf.json --no-bundle",
     "setup:libmpv": "node scripts/fetch-libmpv.mjs",
     "setup:ffmpeg": "node scripts/fetch-ffmpeg.mjs",
     "setup:fonts": "node scripts/fetch-fonts.mjs"

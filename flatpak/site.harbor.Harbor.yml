@@ -1,0 +1,79 @@
+app-id: site.harbor.Harbor
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+command: harbor
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node22
+  - org.freedesktop.Sdk.Extension.ffmpeg-full
+
+add-extensions:
+  org.freedesktop.Platform.ffmpeg-full:
+    directory: lib/ffmpeg
+    version: '25.08'
+    add-ld-path: .
+    autodelete: false
+    no-autodownload: false
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --filesystem=xdg-run/discord-ipc-0
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin:/usr/lib/sdk/ffmpeg-full/bin
+  prepend-pkg-config-path: /usr/lib/sdk/ffmpeg-full/lib/pkgconfig
+  env:
+    CARGO_HOME: /run/build/harbor/cargo
+    npm_config_cache: /run/build/harbor/npm-cache
+
+modules:
+  - name: mpv
+    buildsystem: meson
+    config-opts:
+      - -Dlibmpv=true
+      - -Dcplayer=true
+      - -Dbuild-date=false
+      - -Dmanpage-build=disabled
+      - -Dtests=false
+      - -Dlua=disabled
+      - -Djavascript=disabled
+    sources:
+      - type: git
+        url: https://github.com/mpv-player/mpv.git
+        commit: e48ac7ce08462f5e33af6ef9deeac6fa87eef01e
+
+  - name: yt-dlp
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 yt-dlp /app/bin/yt-dlp
+    sources:
+      - type: file
+        url: https://github.com/yt-dlp/yt-dlp/releases/download/2026.06.09/yt-dlp
+        sha256: e5d57466682cfa9d61e9cf7c8a4f09b00f4a62af37d3bbdc4bcffdf63615feac
+
+  - name: harbor
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+    build-commands:
+      - corepack pnpm install --frozen-lockfile
+      - corepack pnpm tauri build --config src-tauri/tauri.flatpak.conf.json --no-bundle
+      - install -Dm755 src-tauri/target/release/harbor /app/bin/harbor
+      - install -Dm644 flatpak/site.harbor.Harbor.desktop /app/share/applications/site.harbor.Harbor.desktop
+      - install -Dm644 flatpak/site.harbor.Harbor.metainfo.xml /app/share/metainfo/site.harbor.Harbor.metainfo.xml
+      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/512x512/apps/site.harbor.Harbor.png
+      - ln -s /usr/lib/ffmpeg/bin/ffmpeg /app/bin/ffmpeg
+      - ln -s /usr/lib/ffmpeg/bin/ffprobe /app/bin/ffprobe
+    sources:
+      - type: dir
+        path: ..

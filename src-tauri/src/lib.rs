@@ -57,6 +57,11 @@ fn harbor_flush_done() {
 }
 
 #[tauri::command]
+fn harbor_is_flatpak() -> bool {
+    std::env::var_os("FLATPAK_ID").is_some()
+}
+
+#[tauri::command]
 fn close_aux_windows(app: tauri::AppHandle) {
     use tauri::Manager;
     for (label, window) in app.webview_windows() {
@@ -402,8 +407,13 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_deep_link::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_deep_link::init());
+    let app_builder = if harbor_is_flatpak() {
+        app_builder
+    } else {
+        app_builder.plugin(tauri_plugin_updater::Builder::new().build())
+    };
+    let app_builder = app_builder
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_window_state::Builder::default()
@@ -536,6 +546,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             harbor_flush_done,
+            harbor_is_flatpak,
             close_aux_windows,
             power::power_inhibit,
             harbor_set_webview_memory_low,
