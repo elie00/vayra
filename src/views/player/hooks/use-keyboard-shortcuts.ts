@@ -41,6 +41,7 @@ export function useKeyboardShortcuts(params: {
   onToggleAnime4k?: () => void;
   onAnime4kOn?: () => void;
   onAnime4kOff?: () => void;
+  onVolumeFeedback?: (volume: number, muted: boolean) => void;
 }) {
   const {
     bridgeRef,
@@ -77,6 +78,7 @@ export function useKeyboardShortcuts(params: {
     onToggleAnime4k,
     onAnime4kOn,
     onAnime4kOff,
+    onVolumeFeedback,
   } = params;
   const { settings } = useSettings();
   const overrides = settings.hotkeys ?? {};
@@ -171,22 +173,31 @@ export function useKeyboardShortcuts(params: {
       if (match("playerVolumeUp")) {
         e.preventDefault();
         const step = e.shiftKey ? 0.5 : 0.05;
-        const next = Math.min(6, Math.max(0, snap.volume + step));
+        const max = bridgeRef.current?.capabilities().engine === "mpv" ? 6 : 1;
+        const next = Math.min(max, Math.max(0, snap.volume + step));
         bridgeRef.current?.setVolume(next);
-        writePlayerVolume({ volume: next });
+        bridgeRef.current?.setMuted(false);
+        writePlayerVolume({ volume: next, muted: false });
+        onVolumeFeedback?.(next, false);
         return;
       }
       if (match("playerVolumeDown")) {
         e.preventDefault();
         const step = e.shiftKey ? 0.5 : 0.05;
-        const next = Math.max(0, snap.volume - step);
+        const max = bridgeRef.current?.capabilities().engine === "mpv" ? 6 : 1;
+        const next = Math.min(max, Math.max(0, snap.volume - step));
         bridgeRef.current?.setVolume(next);
-        writePlayerVolume({ volume: next });
+        bridgeRef.current?.setMuted(false);
+        writePlayerVolume({ volume: next, muted: false });
+        onVolumeFeedback?.(next, false);
         return;
       }
       if (match("playerMute")) {
         e.preventDefault();
-        bridgeRef.current?.setMuted(!snap.muted);
+        const next = !snap.muted;
+        bridgeRef.current?.setMuted(next);
+        writePlayerVolume({ muted: next });
+        onVolumeFeedback?.(snap.volume, next);
         return;
       }
       if (match("playerFullscreen")) {
@@ -380,7 +391,7 @@ export function useKeyboardShortcuts(params: {
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep]);
+  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep, onVolumeFeedback]);
 
   return { holdSpeedActive };
 }
