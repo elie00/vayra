@@ -29,6 +29,7 @@ mod pip_mac;
 mod power;
 mod airplay;
 mod settings_store;
+mod song_id;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
@@ -613,6 +614,7 @@ pub fn run() {
             local_lib::harbor_scan_folder,
             tray::tray_set_prefs,
             stremio_auth::stremio_auth_start,
+            song_id::recognize_now_playing,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
         ])

@@ -9,6 +9,7 @@ import {
   type PlayerSlot,
 } from "@/lib/player-chrome";
 import { CastModal } from "./cast-modal";
+import { SongIdToast } from "@/components/song-id-toast";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { SeekBar } from "./transport/seek-bar";
 import { LiveBadge, GoToLive, LiveSeekBar } from "./transport/live-controls";
@@ -249,6 +250,7 @@ export function TransportStremio(p: TransportStremioProps) {
 
   return (
     <>
+      <SongIdToast />
       <div
         data-tauri-drag-region={fullscreen ? undefined : ""}
         className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex h-[88px] items-center justify-between bg-gradient-to-b from-black/35 via-black/15 to-transparent px-6 transition-opacity duration-200 ${

@@ -47,6 +47,7 @@ import { SeekStepBtn } from "./seek-step-btn";
 import { EpisodeNavBtn } from "./episode-nav-btn";
 import { TimeStart, TimeEnd } from "./time-display";
 import { WindowControlButtons } from "./window-control-buttons";
+import { IdentifySongButton } from "@/components/identify-song-button";
 
 export type ControlContext = {
   t?: (key: string, vars?: Record<string, string | number>) => string;
@@ -440,9 +441,13 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
             <Maximize size={22} strokeWidth={1.9} />
           )}
         </BigButton>
-      );
+        );
+      }
+      case "song-id": {
+        if (ctx.tight) return null;
+        return <IdentifySongButton />;
+      }
+      case "window-controls":
+        return <WindowControlButtons t={t} />; 
+      }
     }
-    case "window-controls":
-      return <WindowControlButtons t={t} />;
-  }
-}

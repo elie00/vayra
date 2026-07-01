@@ -14,6 +14,7 @@ import { SpoilerPreview } from "./spoiler-preview";
 import { HomeRowPreview } from "./home-layout-previews";
 import { HomeLanguagePicker } from "./home-language-picker";
 import { EpisodeCardPreview } from "./episode-card-previews";
+import { SongCardStylePicker } from "./song-card-style-picker";
 import { CwSnapshotShowcase } from "./cw-snapshot-showcase";
 import { AiSearchSection } from "./ai-search-section";
 import rpdbLogo from "@/assets/addon-logos/rpdb.png";
@@ -97,10 +98,11 @@ export function LibraryPanel({
   }, [enabledBadgeCount]);
   const [mdblistDraft, setMdblistDraft] = useState(settings.mdblistKey);
   const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
-  const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | null>(null);
+  const [auddDraft, setAuddDraft] = useState(settings.auddKey); 
+  const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | "audd" | null>(null);
   const [tmdbGuide, setTmdbGuide] = useState(false);
   const extraTimerRef = useRef<number | null>(null);
-  const flashExtra = (k: "mdblist" | "postersrv" | "ai") => {
+  const flashExtra = (k: "mdblist" | "postersrv" | "ai" | "audd") => {
     setExtraSaved(k);
     if (extraTimerRef.current) window.clearTimeout(extraTimerRef.current);
     extraTimerRef.current = window.setTimeout(() => setExtraSaved(null), 1800);
@@ -249,6 +251,8 @@ export function LibraryPanel({
         />
       </Section>
 
+      <SongCardStylePicker />
+
       <Section
         title={t("Continue Watching screenshots")}
         subtitle={t("When you back out of a title, Harbor saves a frame so the Continue Watching card looks like the spot you left. Tune how long they stick around, or wipe them all.")}
@@ -361,6 +365,23 @@ export function LibraryPanel({
               Free key at <ExtLink href="https://mdblist.com/preferences/">mdblist.com</ExtLink>.
               Adds Letterboxd and Trakt community ratings to detail pages, covering what OMDb
               misses.
+            </>
+          }
+        />
+        <KeyField
+          label={t("AudD · in-player song ID")}
+          placeholder={t("AudD API token")}
+          value={auddDraft}
+          onChange={setAuddDraft}
+          onSave={() => {
+            update({ auddKey: auddDraft.trim() });
+            flashExtra("audd");
+          }}
+          saved={extraSaved === "audd"}
+          help={
+            <>
+              Powers the Identify-song button in the player. Get a token at{" "}
+              <ExtLink href="https://dashboard.audd.io/">dashboard.audd.io</ExtLink>.
             </>
           }
         />

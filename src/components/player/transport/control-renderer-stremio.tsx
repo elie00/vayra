@@ -35,6 +35,7 @@ import { StremioBtn } from "./stremio-btn";
 import { StremioVolume } from "./stremio-volume";
 import { renderCustomIconControlStremio } from "./custom-icon-renderer";
 import { WindowControlButtons } from "./window-control-buttons";
+import { IdentifySongButton } from "@/components/identify-song-button";
 
 function qualityInfoOn(): boolean {
   try {
@@ -406,6 +407,8 @@ export function RenderedStremioControl({
           </StremioBtn>
         </Tooltip>
       );
+    case "song-id":
+      return <IdentifySongButton />;
     case "window-controls":
       return <WindowControlButtons t={tr} />;
     default:

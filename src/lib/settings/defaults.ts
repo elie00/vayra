@@ -162,6 +162,7 @@ export const DEFAULT: Settings = {
   hoverPreview: false,
   hoverPreviewPlacement: "over",
   mdblistKey: "",
+  auddKey: "",
   aiSearchKey: "",
   aiSearchModel: "",
   playerD3d11Flip: true,
@@ -193,6 +194,8 @@ export const DEFAULT: Settings = {
   spoilerHideDescriptions: true,
   spoilerSkipNext: true,
   streamBackdropBlur: true,
+  songCardStyle: "cinematic" as "compact" | "cinematic",
+  songCardDetails: true,
   hideContent: {
     anime: false,
     liveTv: false,

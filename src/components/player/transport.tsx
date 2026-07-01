@@ -21,6 +21,7 @@ import {
   type PlayerChromeConfig,
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
+import { SongIdToast } from "@/components/song-id-toast";
 
 export function Transport({
   snap,
@@ -384,6 +385,7 @@ export function Transport({
   };
   return (
     <>
+      <SongIdToast />
       <div
         data-tauri-drag-region={fullscreen ? undefined : ""}
         className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent px-7 pt-4 pb-8 transition-opacity duration-300 ${
