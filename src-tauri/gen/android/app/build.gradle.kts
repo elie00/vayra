@@ -13,7 +13,7 @@ val tauriProperties = Properties().apply {
     }
 }
 
-val keyProperties = java.util.Properties().apply {
+val keyProperties = Properties().apply {
     val f = rootProject.file("key.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
