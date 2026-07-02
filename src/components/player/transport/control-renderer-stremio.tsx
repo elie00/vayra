@@ -311,7 +311,7 @@ export function RenderedStremioControl({
         />
       );
     case "aspect-menu":
-      if (ctx.engine !== "mpv" || !ctx.onCropMode) return null;
+      if ((ctx.engine !== "mpv" && ctx.engine !== "exo") || !ctx.onCropMode) return null;
       return (
         <AspectMenu
           mode={ctx.cropMode ?? "fit"}
@@ -379,7 +379,6 @@ export function RenderedStremioControl({
         />
       );
     case "screenshot":
-      if (ctx.engine === "exo") return null;
       return (
         <Tooltip label={tr("Screenshot")}>
           <StremioBtn onClick={ctx.onScreenshot} ariaLabel={tr("Screenshot")}>

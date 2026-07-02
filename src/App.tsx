@@ -22,6 +22,7 @@ import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
 import { OfflineBanner } from "@/chrome/offline-banner";
 import { MobileNotice } from "@/components/mobile-notice";
+import { MobileIntegration } from "@/components/mobile-integration";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { TogetherCursors } from "@/components/together-cursors";
@@ -236,6 +237,7 @@ export function App() {
                       <AnilistAvatarSync />
                       <ThemeBackdrop />
                       <WatchlistSync />
+                      <MobileIntegration />
                       <Shell />
                       <Suspense fallback={null}>
                         <OnboardingModal />

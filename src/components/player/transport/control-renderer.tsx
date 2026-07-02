@@ -367,7 +367,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       );
     }
     case "aspect-menu": {
-      if (ctx.tight || ctx.engine !== "mpv" || !ctx.onCropMode) return null;
+      if (ctx.tight || (ctx.engine !== "mpv" && ctx.engine !== "exo") || !ctx.onCropMode) return null;
       return (
         <AspectMenu
           mode={ctx.cropMode ?? "fit"}
@@ -402,7 +402,6 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       );
     }
     case "screenshot": {
-      if (ctx.engine === "exo") return null;
       return (
         <BigButton onClick={ctx.onScreenshot} ariaLabel={t("Screenshot")} tooltip={t("Screenshot")}>
           <Camera size={24} strokeWidth={1.9} />

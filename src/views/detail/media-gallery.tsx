@@ -6,6 +6,8 @@ import { t } from "@/lib/i18n";
 import type { TmdbDetail } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { resolveTrailerQuality } from "@/lib/trailer";
+import { isMobileTauri } from "@/lib/platform";
+import { openUrl } from "@/lib/window";
 import { TrailerOverlay } from "./trailer-overlay";
 import { MediaLightbox } from "./media-lightbox";
 import { MediaRail } from "./media-gallery/media-rail";
@@ -101,7 +103,16 @@ export function MediaGallery({ detail, title, logo }: { detail: TmdbDetail; titl
       {current === "videos" && (
         <MediaRail>
           {videos.map((v) => (
-            <VideoTile key={v.ytId} v={v} onPlay={() => setTrailer(v.ytId)} onDownload={() => downloadVideo(v)} />
+            <VideoTile
+              key={v.ytId}
+              v={v}
+              onPlay={() =>
+                isMobileTauri()
+                  ? openUrl(`https://www.youtube.com/watch?v=${v.ytId}`)
+                  : setTrailer(v.ytId)
+              }
+              onDownload={() => downloadVideo(v)}
+            />
           ))}
         </MediaRail>
       )}

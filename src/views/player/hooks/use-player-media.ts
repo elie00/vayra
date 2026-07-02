@@ -111,7 +111,7 @@ export function usePlayerMedia(params: {
   const subNativeRender =
     hdrNativeSurface || subAssNative || (subEmbed && isImageSubTrack(selectedSubTrack));
   const suppressHtmlSubs = subAssNative || hdrNativeSurface;
-  useSubStyleApply({ engine, settings, subAssNative, bridgeReady, bridgeKey });
+  useSubStyleApply({ engine, settings, subAssNative, bridgeReady, bridgeKey, bridgeRef });
   useEffect(() => {
     if (!subEmbed && !hdrNativeSurface) return;
     if (!bridgeReady) return;
