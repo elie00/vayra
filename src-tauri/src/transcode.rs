@@ -35,6 +35,10 @@ fn default_max_height() -> u32 {
 }
 
 pub fn locate_ffmpeg() -> Option<std::path::PathBuf> {
+    if std::env::var_os("FLATPAK_ID").is_some() {
+        let path = std::path::PathBuf::from("/app/bin/ffmpeg");
+        return path.is_file().then_some(path);
+    }
     let mut owned: Vec<String> = Vec::new();
     if cfg!(windows) {
         owned.push("ffmpeg.exe".into());
@@ -156,6 +160,10 @@ pub fn ffmpeg_present() -> bool {
 }
 
 pub fn locate_ffprobe() -> Option<std::path::PathBuf> {
+    if std::env::var_os("FLATPAK_ID").is_some() {
+        let path = std::path::PathBuf::from("/app/bin/ffprobe");
+        return path.is_file().then_some(path);
+    }
     let name = if cfg!(windows) { "ffprobe.exe" } else { "ffprobe" };
     if let Some(ffmpeg) = locate_ffmpeg() {
         if let Some(parent) = ffmpeg.parent() {

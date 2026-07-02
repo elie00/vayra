@@ -57,6 +57,11 @@ fn harbor_flush_done() {
 }
 
 #[tauri::command]
+fn harbor_is_flatpak() -> bool {
+    std::env::var_os("FLATPAK_ID").is_some()
+}
+
+#[tauri::command]
 fn close_aux_windows(app: tauri::AppHandle) {
     use tauri::Manager;
     for (label, window) in app.webview_windows() {
@@ -68,6 +73,9 @@ fn close_aux_windows(app: tauri::AppHandle) {
 
 #[tauri::command]
 async fn deeplink_set_stremio(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    if harbor_is_flatpak() {
+        return Ok(());
+    }
     use tauri_plugin_deep_link::DeepLinkExt;
     if enabled {
         app.deep_link()
@@ -81,6 +89,9 @@ async fn deeplink_set_stremio(app: tauri::AppHandle, enabled: bool) -> Result<()
 
 #[tauri::command]
 async fn deeplink_is_stremio_registered(app: tauri::AppHandle) -> Result<bool, String> {
+    if harbor_is_flatpak() {
+        return Ok(true);
+    }
     use tauri_plugin_deep_link::DeepLinkExt;
     app.deep_link()
         .is_registered("stremio")
@@ -368,7 +379,18 @@ pub fn run() {
     #[cfg(windows)]
     svp::prime_svp_env();
     #[cfg(target_os = "linux")]
-    mpv_render_linux::enforce_nvidia_x11();
+    {
+        mpv_render_linux::enforce_nvidia_x11();
+        if harbor_is_flatpak() {
+            // This must happen before Tauri initializes GTK and creates any
+            // windows. It covers both native Wayland and the XWayland path
+            // Harbor uses on NVIDIA.
+            gtk::glib::set_prgname(Some("site.harbor.Harbor"));
+            unsafe {
+                gtk::gdk::ffi::gdk_set_program_class(c"site.harbor.Harbor".as_ptr());
+            }
+        }
+    }
     let _ = rustls::crypto::ring::default_provider().install_default();
     trailer::sweep_cache();
     let proxy_state = tauri::async_runtime::block_on(stream_proxy::ProxyState::start())
@@ -390,7 +412,12 @@ pub fn run() {
                 let _ = w.unminimize();
                 let _ = w.set_focus();
             }
-            if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
+            if let Some(url) = args
+                .iter()
+                .find(|a| a.starts_with("harbor://") || a.starts_with("stremio://"))
+            {
+                let scheme = url.split_once(':').map(|(scheme, _)| scheme).unwrap_or("unknown");
+                eprintln!("[harbor::deep-link] forwarding {scheme} URL to running instance");
                 let _ = app.emit("harbor:stremio-deeplink", url.clone());
             }
             if let Some(path) = media_file_from_args(&args) {
@@ -402,8 +429,13 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_deep_link::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_deep_link::init());
+    let app_builder = if harbor_is_flatpak() {
+        app_builder
+    } else {
+        app_builder.plugin(tauri_plugin_updater::Builder::new().build())
+    };
+    let app_builder = app_builder
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_window_state::Builder::default()
@@ -441,9 +473,11 @@ pub fn run() {
         .setup(move |app| {
             #[cfg(any(windows, target_os = "linux"))]
             {
-                use tauri_plugin_deep_link::DeepLinkExt;
-                if let Err(e) = app.deep_link().register_all() {
-                    eprintln!("[harbor::deep-link] register_all failed: {:?}", e);
+                if !harbor_is_flatpak() {
+                    use tauri_plugin_deep_link::DeepLinkExt;
+                    if let Err(e) = app.deep_link().register_all() {
+                        eprintln!("[harbor::deep-link] register_all failed: {:?}", e);
+                    }
                 }
             }
             #[cfg(windows)]
@@ -536,6 +570,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             harbor_flush_done,
+            harbor_is_flatpak,
             close_aux_windows,
             power::power_inhibit,
             harbor_set_webview_memory_low,

@@ -255,7 +255,11 @@ fn apply_pre_init(
     }
     set("input-default-bindings", "no")?;
     set("input-cursor", "no")?;
-    set("osc", "no")?;
+    if !crate::harbor_is_flatpak() {
+        // The Flatpak mpv build omits Lua/JavaScript, so the built-in OSC
+        // option is unavailable. Harbor renders its own controls.
+        set("osc", "no")?;
+    }
     set("osd-level", "0")?;
     set("cursor-autohide", "200")?;
     set("volume-max", "600")?;
@@ -1799,4 +1803,3 @@ fn position_embedded_mpv_child(
     }
     Ok(())
 }
-
