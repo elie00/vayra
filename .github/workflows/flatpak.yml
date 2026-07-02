@@ -6,9 +6,15 @@ on:
     paths:
       - flatpak/**
       - src-tauri/**
+      - harbor-core/**
       - src/**
+      - public/**
+      - index.html
+      - vite.config.*
+      - tsconfig*.json
       - package.json
       - pnpm-lock.yaml
+      - pnpm-workspace.yaml
       - .github/workflows/flatpak.yml
 
 jobs:
@@ -17,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Flatpak tooling
-        run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder appstream desktop-file-utils
+        run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder appstream desktop-file-utils ostree
       - name: Configure Flathub
         run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
       - name: Install pinned SDK
@@ -28,15 +34,18 @@ jobs:
           org.freedesktop.Sdk.Extension.node22//25.08
       - name: Validate metadata
         run: |
+          flatpak/update-flatpak.sh --check
           desktop-file-validate flatpak/site.harbor.Harbor.desktop
           appstreamcli validate --no-net flatpak/site.harbor.Harbor.metainfo.xml
           flatpak-builder --show-manifest flatpak/site.harbor.Harbor.yml >/dev/null
       - name: Build repository
-        run: flatpak-builder --user --force-clean --repo=/tmp/harbor-flatpak-repo /tmp/harbor-flatpak-build flatpak/site.harbor.Harbor.yml
+        run: flatpak-builder --user --force-clean --state-dir=.flatpak-work/state --repo=.flatpak-work/repo .flatpak-work/build flatpak/site.harbor.Harbor.yml
       - name: Build single-file bundle
-        run: flatpak build-bundle /tmp/harbor-flatpak-repo Harbor.flatpak site.harbor.Harbor
+        run: flatpak build-bundle .flatpak-work/repo Harbor.flatpak site.harbor.Harbor
       - name: Validate bundle
-        run: flatpak build-import-bundle --update-appstream --no-update-summary /tmp/harbor-validation-repo Harbor.flatpak
+        run: |
+          ostree init --repo=.flatpak-work/validation-repo --mode=archive-z2
+          flatpak build-import-bundle --update-appstream --no-update-summary .flatpak-work/validation-repo Harbor.flatpak
       - uses: actions/upload-artifact@v4
         with:
           name: Harbor-flatpak-x86_64

@@ -8,8 +8,8 @@ version. No host multimedia tools are visible to the application.
 Build locally with the runtimes listed in the manifest installed:
 
 ```sh
-flatpak-builder --user --force-clean --repo=/tmp/harbor-flatpak-repo /tmp/harbor-flatpak-build flatpak/site.harbor.Harbor.yml
-flatpak build-bundle /tmp/harbor-flatpak-repo Harbor.flatpak site.harbor.Harbor
+flatpak-builder --user --force-clean --state-dir=.flatpak-work/state --repo=.flatpak-work/repo .flatpak-work/build flatpak/site.harbor.Harbor.yml
+flatpak build-bundle .flatpak-work/repo Harbor.flatpak site.harbor.Harbor
 flatpak install --user Harbor.flatpak
 ```
 
@@ -22,3 +22,21 @@ links, tray integration, Discord IPC, and portal-selected media/download paths.
 To audit the sandbox, run `flatpak run --command=sh site.harbor.Harbor` and verify
 that `/usr/bin/mpv`, `/usr/bin/ffmpeg`, and `/usr/bin/yt-dlp` do not exist; the
 packaged commands must resolve under `/app/bin`.
+
+## Updating JavaScript or Rust dependencies
+
+After updating Harbor's version and lockfiles, refresh all Flatpak release
+metadata and pinned dependency sources with:
+
+```sh
+flatpak/update-flatpak.sh
+```
+
+The script uses a pinned revision of
+[`flatpak-builder-tools`](https://github.com/flatpak/flatpak-builder-tools).
+Set `RELEASE_DATE=YYYY-MM-DD` when preparing a release for a date other than
+today. Commit its output before running the Flatpak workflow.
+
+The script also updates the pnpm archive URL and SHA-256 when `packageManager`
+changes. Keep `--offline`, `--frozen-lockfile`, and `CARGO_NET_OFFLINE=true`;
+removing them would hide a missing generated source until CI or a Flathub build.

@@ -8,4 +8,4 @@ Type=Application
 Categories=AudioVideo;Video;Player;
 MimeType=x-scheme-handler/harbor;x-scheme-handler/stremio;
 StartupNotify=true
-
+StartupWMClass=site.harbor.Harbor

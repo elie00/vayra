@@ -11,6 +11,7 @@ _backups/
 !.env.example
 
 target
+.flatpak-work/
 
 *.tsbuildinfo
 /vite.config.js

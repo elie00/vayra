@@ -23,12 +23,40 @@ build-options:
   append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
   env:
     CARGO_HOME: /run/build/harbor/cargo
+    CARGO_NET_OFFLINE: 'true'
     npm_config_cache: /run/build/harbor/npm-cache
+    CI: 'true'
 
 modules:
+  - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+
+  - name: libass
+    buildsystem: autotools
+    config-opts:
+      - --libdir=/app/lib
+      - --disable-static
+      - --enable-shared
+    sources:
+      - type: git
+        url: https://github.com/libass/libass.git
+        commit: e46aedea0a0d17da4c4ef49d84b94a7994664ab5
+
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - --libdir=lib
+      - -Ddefault_library=shared
+      - -Dtests=false
+      - -Ddemos=false
+    sources:
+      - type: git
+        url: https://github.com/haasn/libplacebo.git
+        commit: cee9b076f2c63104ccfd497fa79c39a867293ec4
+
   - name: mpv
     buildsystem: meson
     config-opts:
+      - --libdir=lib
       - -Dlibmpv=true
       - -Dcplayer=true
       - -Dbuild-date=false
@@ -52,18 +80,31 @@ modules:
 
   - name: harbor
     buildsystem: simple
-    build-options:
-      build-args:
-        - --share=network
     build-commands:
-      - corepack pnpm install --frozen-lockfile
-      - corepack pnpm tauri build --config src-tauri/tauri.flatpak.conf.json --no-bundle
+      - node flatpak-node/pnpm-cli/bin/pnpm.cjs install --offline --frozen-lockfile --trust-lockfile
+      - node node_modules/@tauri-apps/cli/tauri.js build --config src-tauri/tauri.flatpak.conf.json --no-bundle
       - install -Dm755 src-tauri/target/release/harbor /app/bin/harbor
       - install -Dm644 flatpak/site.harbor.Harbor.desktop /app/share/applications/site.harbor.Harbor.desktop
       - install -Dm644 flatpak/site.harbor.Harbor.metainfo.xml /app/share/metainfo/site.harbor.Harbor.metainfo.xml
+      - install -Dm644 src-tauri/icons/32x32.png /app/share/icons/hicolor/32x32/apps/site.harbor.Harbor.png
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/site.harbor.Harbor.png
       - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/512x512/apps/site.harbor.Harbor.png
       - install -Dm755 /usr/bin/ffmpeg /app/bin/ffmpeg
       - install -Dm755 /usr/bin/ffprobe /app/bin/ffprobe
     sources:
       - type: dir
         path: ..
+        skip:
+          - .git
+          - .flatpak-builder
+          - .flatpak-work
+          - node_modules
+          - dist
+          - harbor-core/target
+          - src-tauri/target
+      - type: archive
+        url: https://registry.npmjs.org/pnpm/-/pnpm-11.9.0.tgz
+        sha256: 2b567aa66026238078ac2e0a33bec3febd60e962987aac697456f3180819b287
+        dest: flatpak-node/pnpm-cli
+      - node-sources.json
+      - cargo-sources.json

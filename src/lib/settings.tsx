@@ -5,6 +5,7 @@ import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmd
 import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
+import { isFlatpak } from "@/lib/runtime";
 import { STORAGE_KEY } from "./settings/defaults";
 import { loadStoredSettings } from "./settings/load";
 import { readSettingsFile, writeSettingsFile } from "./settings/file-store";
@@ -187,12 +188,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings.cwSnapshotRetentionDays]);
 
   useEffect(() => {
-    window.__harborStremioDeeplink = settings.stremioDeeplinkInstall;
-    if (!("__TAURI_INTERNALS__" in window)) return;
-    void import("@tauri-apps/api/core").then(({ invoke }) => {
-      void invoke("deeplink_set_stremio", { enabled: settings.stremioDeeplinkInstall }).catch(
-        (e) => console.warn("[harbor] deeplink_set_stremio failed", e),
-      );
+    void isFlatpak().then((sandboxed) => {
+      window.__harborStremioDeeplink = sandboxed || settings.stremioDeeplinkInstall;
+      if (sandboxed || !("__TAURI_INTERNALS__" in window)) return;
+      void import("@tauri-apps/api/core").then(({ invoke }) => {
+        void invoke("deeplink_set_stremio", { enabled: settings.stremioDeeplinkInstall }).catch(
+          (e) => console.warn("[harbor] deeplink_set_stremio failed", e),
+        );
+      });
     });
   }, [settings.stremioDeeplinkInstall]);
 

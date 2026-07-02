@@ -92,7 +92,7 @@ export function AdvancedPanel() {
         </Section>
       )}
 
-      {isTauri && (
+      {isTauri && !flatpak && (
         <Section
           title={t("Stremio install links")}
           subtitle={t("Harbor catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.")}
