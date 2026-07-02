@@ -1362,12 +1362,26 @@ html[data-theme-card="crunch"][dir="rtl"] .harbor-profile-dropdown {
 
 
 /* Android (Tauri): keep the app clear of the status bar and gesture insets.
-   The nav chrome (top bars, sidebars, docks) lives inside #root, so insetting
-   the root covers it. Fullscreen video intentionally bleeds past these. */
+   Android WebView often reports env(safe-area-inset-top) as 0 even under the
+   status bar, so the top inset falls back to a fixed ~28px. */
+html[data-os="android"] {
+  --harbor-status-bar: max(env(safe-area-inset-top), 28px);
+}
 html[data-os="android"] #root {
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+/* The top bar is position:fixed, so #root padding can't move it; give it its
+   own status-bar inset and grow its height so the 80px control row is preserved
+   and simply pushed below the status bar. */
+html[data-os="android"] [data-harbor-topbar] {
+  box-sizing: border-box;
+  height: calc(5rem + var(--harbor-status-bar));
+  padding-top: var(--harbor-status-bar);
+}
+/* The mobile nav drawer is fixed full-height; keep its logo clear of the bar. */
+html[data-os="android"] [data-harbor-nav-drawer] {
+  padding-top: var(--harbor-status-bar);
 }

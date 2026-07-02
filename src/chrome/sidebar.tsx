@@ -22,6 +22,8 @@ import { useParental, type LockableTab } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
+import { isMobileTauri } from "@/lib/platform";
+import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 
 type NavDef = {
   render: (active: boolean) => ReactNode;
@@ -58,23 +60,48 @@ export function Sidebar() {
   const t = useT();
   const [pendingPinView, setPendingPinView] = useState<View | null>(null);
 
+  // On mobile Tauri the rail becomes a slide-over drawer so it never reserves
+  // horizontal space; on desktop it stays the in-flow collapsible rail.
+  const mobile = isMobileTauri();
+  const drawerOpen = useNavDrawer();
+  const navigate = (v: View) => {
+    setView(v);
+    if (mobile) setNavDrawer(false);
+  };
+
   const themePreset =
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
   const customMark = themePreset?.logo?.mark ?? null;
   const customWordmark = themePreset?.logo?.wordmark ?? null;
-  const collapsed = settings.sidebarCollapsed;
+  const collapsed = mobile ? true : settings.sidebarCollapsed;
 
   return (
     <>
+      {mobile && drawerOpen && !chromeHidden && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[2px]"
+          onClick={() => setNavDrawer(false)}
+          aria-hidden
+        />
+      )}
       <aside
-        aria-hidden={chromeHidden}
-        className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width] ${
-          collapsed ? "" : "lg:w-60"
-        } ${
-          chromeHidden
-            ? "pointer-events-none -translate-x-2 rtl:translate-x-2 opacity-0"
-            : "translate-x-0 opacity-100"
-        }`}
+        data-harbor-nav-drawer={mobile ? "" : undefined}
+        aria-hidden={chromeHidden || (mobile && !drawerOpen)}
+        className={
+          mobile
+            ? `fixed inset-y-0 start-0 z-[80] flex w-[72px] flex-col border-e border-edge-soft bg-canvas transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                drawerOpen && !chromeHidden
+                  ? "translate-x-0"
+                  : "pointer-events-none -translate-x-full rtl:translate-x-full"
+              }`
+            : `relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width] ${
+                collapsed ? "" : "lg:w-60"
+              } ${
+                chromeHidden
+                  ? "pointer-events-none -translate-x-2 rtl:translate-x-2 opacity-0"
+                  : "translate-x-0 opacity-100"
+              }`
+        }
       >
         <div
           data-tauri-drag-region
@@ -121,7 +148,7 @@ export function Sidebar() {
         </div>
         <ScrollableNav
           view={view}
-          setView={setView}
+          setView={navigate}
           locked={locked}
           collapsed={collapsed}
           hiddenTabs={hiddenTabs}
@@ -134,9 +161,11 @@ export function Sidebar() {
               collapsed ? "" : "lg:inset-x-4"
             }`}
           />
-          <div className={`flex pb-1 ${collapsed ? "justify-center" : ""}`}>
-            <CollapseToggle collapsed={collapsed} />
-          </div>
+          {!mobile && (
+            <div className={`flex pb-1 ${collapsed ? "justify-center" : ""}`}>
+              <CollapseToggle collapsed={collapsed} />
+            </div>
+          )}
           {locked ? (
             <div
               className={`flex w-full items-center justify-center gap-3 rounded-xl py-2.5 ${
@@ -165,7 +194,7 @@ export function Sidebar() {
             onUnlock: () => {
               const v = pendingPinView;
               setPendingPinView(null);
-              if (v) setView(v);
+              if (v) navigate(v);
             },
             onCancel: () => setPendingPinView(null),
           }}

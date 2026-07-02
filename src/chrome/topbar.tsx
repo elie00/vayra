@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, Users } from "lucide-react";
+import { ArrowLeft, Menu, Search, Users } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
@@ -22,6 +22,8 @@ import { useView } from "@/lib/view";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { close, minimize } from "@/lib/window";
+import { isMobileTauri } from "@/lib/platform";
+import { toggleNavDrawer } from "@/lib/nav-drawer";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -36,8 +38,13 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const onLiveRoot = topKind === "live";
   const sidebarHidden = connecting || view === "settings" || onLiveRoot || topKind === "picker";
   const hideSearch = view === "addons";
-  const sidebarOffset =
-    layout === "stremio"
+  // On mobile the sidebar is a slide-over drawer, so the header must not reserve
+  // the desktop rail's horizontal space; a hamburger opens the drawer instead.
+  const mobile = isMobileTauri();
+  const showHamburger = mobile && layout === "sidebar" && !sidebarHidden;
+  const sidebarOffset = mobile
+    ? ""
+    : layout === "stremio"
       ? "ps-[80px]"
       : settings.sidebarCollapsed
         ? "ps-[84px]"
@@ -47,7 +54,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
     : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
   const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
   return (
-    <header className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}>
+    <header data-harbor-topbar className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}>
       <div
         {...dragProps}
         className="relative z-10 grid h-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-8"
@@ -60,6 +67,16 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
               : `flex h-full min-w-0 items-center justify-start ${sidebarOffset}`
           }
         >
+          {showHamburger && (
+            <button
+              onClick={toggleNavDrawer}
+              aria-label={t("Open menu")}
+              data-tauri-drag-region="false"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated/70 text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
+            >
+              <Menu size={20} strokeWidth={2} />
+            </button>
+          )}
           {onLiveRoot && (
             <button
               onClick={() => setView("home")}
