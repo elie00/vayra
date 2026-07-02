@@ -15,6 +15,10 @@ jobs:
             runner: windows-latest
             target: x86_64-pc-windows-msvc
             bundle: msi
+          - name: Windows-ARM64
+            runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            bundle: msi
           - name: macOS-AppleSilicon
             runner: macos-latest
             target: aarch64-apple-darwin
@@ -74,9 +78,40 @@ jobs:
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
 
+      # ARM64 links against libmpv too, but there is no bare ARM64 libmpv-2.dll
+      # hosted by Harbor and the committed src-tauri/libmpv/mpv.lib is x64-only.
+      # Set up the ARM64 MSVC dev environment so lib.exe is available to rebuild
+      # the import library for the ARM64 target from the committed libmpv.def.
+      - name: Set up MSVC (Windows ARM64)
+        if: matrix.platform.target == 'aarch64-pc-windows-msvc'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: arm64
+
       - name: Fetch libmpv (Windows)
         if: contains(matrix.platform.runner, 'windows')
-        run: pnpm run setup:libmpv
+        shell: pwsh
+        run: |
+          if ('${{ matrix.platform.target }}' -like '*aarch64*') {
+            # Pinned upstream ARM64 libmpv dev bundle (shinchiro). Verify the
+            # archive, extract libmpv-2.dll, and generate an ARM64 import lib
+            # from the committed libmpv.def (same approach as setup-libmpv.ps1,
+            # but /machine:arm64).
+            $tag = '20260610'
+            $asset = "mpv-dev-aarch64-$tag-git-304426c.7z"
+            $sha = 'd9dd60db1c7b24db2e19d041f70abf0a4995f3e9eadf80a34e54f72300df6ed4'
+            curl.exe -L "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$tag/$asset" -o mpv-dev.7z
+            $got = (Get-FileHash mpv-dev.7z -Algorithm SHA256).Hash
+            if ($got -ne $sha.ToUpper()) { throw "libmpv checksum mismatch: got $got" }
+            7z x -y mpv-dev.7z -ompv-dev | Out-Null
+            New-Item -ItemType Directory -Force src-tauri/libmpv | Out-Null
+            $dll = (Get-ChildItem -Recurse mpv-dev -Filter libmpv-2.dll | Select-Object -First 1).FullName
+            Copy-Item $dll src-tauri/libmpv/libmpv-2.dll -Force
+            lib /def:src-tauri/libmpv/libmpv.def /machine:arm64 /out:src-tauri/libmpv/mpv.lib
+            Remove-Item -Recurse -Force mpv-dev, mpv-dev.7z
+          } else {
+            pnpm run setup:libmpv
+          }
 
       - name: Fetch external binaries
         shell: bash
@@ -99,7 +134,8 @@ jobs:
 
           echo "Fetching ffmpeg and ffprobe..."
           if [[ "$TARGET" == *"windows"* ]]; then
-            curl -L "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -o ffmpeg.zip
+            if [[ "$TARGET" == *"aarch64"* ]]; then FFARCH="winarm64"; else FFARCH="win64"; fi
+            curl -L "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-${FFARCH}-gpl.zip" -o ffmpeg.zip
             unzip -j ffmpeg.zip "*/bin/ffmpeg.exe" "*/bin/ffprobe.exe"
             mv ffmpeg.exe "ffmpeg-${TARGET}${EXT}"
             mv ffprobe.exe "ffprobe-${TARGET}${EXT}"
@@ -121,6 +157,17 @@ jobs:
             tar -xf ffmpeg.tar.xz --strip-components=1 --wildcards '*/ffmpeg' '*/ffprobe'
             mv ffmpeg "ffmpeg-${TARGET}${EXT}"
             mv ffprobe "ffprobe-${TARGET}${EXT}"
+          fi
+
+          # tauri.windows.conf.json bundles an mpv.exe resource (referenced under
+          # the x86_64 filename regardless of arch). Provide the ARM64 player build
+          # for the ARM64 target.
+          if [[ "$TARGET" == *"aarch64"* && "$TARGET" == *"windows"* ]]; then
+            echo "Fetching ARM64 mpv.exe..."
+            curl -L "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20260610/mpv-aarch64-20260610-git-304426c.7z" -o mpv-player.7z
+            7z x -y mpv-player.7z -o./mpv-player >/dev/null
+            cp "$(find mpv-player -name mpv.exe | head -1)" "mpv-x86_64-pc-windows-msvc.exe"
+            rm -rf mpv-player mpv-player.7z
           fi
 
       - name: harbor-core check
