@@ -17,16 +17,22 @@ declare global {
 // Mobile-only glue for the native Android shell: a synchronous Back handler and
 // a lifecycle/pagehide flush of watch progress. Renders nothing.
 export function MobileIntegration() {
-  const { player, canGoBack, goBack } = useView();
+  const { player, canGoBack, goBack, topKind, setView } = useView();
   const { open: searchOpen, setOpen: setSearchOpen } = useSearch();
   const drawerOpen = useNavDrawer();
 
   // Mirror the latest state/actions into refs so the global handler can read
   // them synchronously without re-registering on every change.
-  const stateRef = useRef({ player: false, canGoBack: false, searchOpen: false, drawerOpen: false });
-  stateRef.current = { player: !!player, canGoBack, searchOpen, drawerOpen };
-  const actionsRef = useRef({ goBack, setSearchOpen });
-  actionsRef.current = { goBack, setSearchOpen };
+  const stateRef = useRef({
+    player: false,
+    canGoBack: false,
+    searchOpen: false,
+    drawerOpen: false,
+    topKind: "home" as string,
+  });
+  stateRef.current = { player: !!player, canGoBack, searchOpen, drawerOpen, topKind };
+  const actionsRef = useRef({ goBack, setSearchOpen, setView });
+  actionsRef.current = { goBack, setSearchOpen, setView };
 
   useEffect(() => {
     if (!isMobileTauri()) return;
@@ -34,7 +40,9 @@ export function MobileIntegration() {
       const s = stateRef.current;
       const a = actionsRef.current;
       // Priority: close the drawer, then any open overlay, then walk back in
-      // Harbor's own view history (which also closes the player), else exit.
+      // Harbor's own view history (which also closes the player). Top-level
+      // views reached via the drawer have no history, so — per Android/Material
+      // convention — Back goes to Home first; only Home itself exits the app.
       if (s.drawerOpen) {
         setNavDrawer(false);
         return "handled";
@@ -45,6 +53,10 @@ export function MobileIntegration() {
       }
       if (s.player || s.canGoBack) {
         a.goBack();
+        return "handled";
+      }
+      if (s.topKind !== "home") {
+        a.setView("home");
         return "handled";
       }
       return "exit";
