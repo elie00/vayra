@@ -53,7 +53,9 @@ export const Hero = memo(function Hero({
     setTrailerCandidates([]);
     setTrailerInfo(null);
     setVideoReady(false);
-    if (!playTrailer) return;
+    // No inline trailer autoplay on mobile (no yt-dlp sidecar); trailers open
+    // externally from the media gallery instead.
+    if (!playTrailer || isMobileTauri()) return;
     let cancelled = false;
     const isTmdb = meta.id.startsWith("tmdb:");
     const lookup: Promise<string[]> = isTmdb

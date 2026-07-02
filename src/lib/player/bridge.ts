@@ -48,6 +48,14 @@ export type PlayerSnapshot = {
   errorMessage: string | null;
   errorCode: "decode" | "codec" | "network" | "source" | "unknown" | null;
   noAudio?: boolean;
+  pip?: boolean;
+};
+
+export type SubtitleStyle = {
+  fgColor: string;
+  bgColor: string;
+  edge: "none" | "outline" | "shadow";
+  sizeFraction: number;
 };
 
 export type PlayerSource = {
@@ -73,6 +81,7 @@ export type PlayerBridge = {
   setAudioTrack: (id: string) => void;
   setSubtitleTrack: (id: string | null) => void;
   setSubVisible: (on: boolean) => void;
+  setSubStyle?: (style: SubtitleStyle) => void;
   setSubDelay: (sec: number) => void;
   setAudioDelay: (sec: number) => void;
   setPanscan: (value: number) => void;

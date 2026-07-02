@@ -3,6 +3,7 @@ import { Volume2, VolumeX } from "lucide-react";
 import { fetchTrailer, resolveTrailerQuality, trailerSrc, type TrailerInfo } from "@/lib/trailer";
 import { useSettings } from "@/lib/settings";
 import { usePageVisible } from "@/lib/visibility";
+import { isMobileTauri } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 
 export function DetailHeroTrailer({
@@ -25,7 +26,7 @@ export function DetailHeroTrailer({
     setInfo(null);
     setReady(false);
     setMuted(true);
-    if (!candidateId) return;
+    if (!candidateId || isMobileTauri()) return;
     let cancelled = false;
     fetchTrailer(candidateId, resolveTrailerQuality(settings.trailerQuality)).then((i) => {
       if (!cancelled) setInfo(i);

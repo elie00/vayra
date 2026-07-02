@@ -1,3 +1,4 @@
+import { isMobileTauri } from "@/lib/platform";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
 import crunchPreview from "@/assets/theme-previews/crunchy.png";
 import draculaPreview from "@/assets/theme-previews/dracula.png";
@@ -551,6 +552,9 @@ export function applyTheme(theme: ThemeSettings): void {
 }
 
 export function activeLayout(theme: ThemeSettings): ThemeLayout {
+  // On mobile Tauri every theme uses the drawer-capable "sidebar" layout, since
+  // that is the only chrome adapted for a phone (hamburger + slide-over drawer).
+  if (isMobileTauri()) return "sidebar";
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   return preset?.layout ?? "sidebar";
 }
