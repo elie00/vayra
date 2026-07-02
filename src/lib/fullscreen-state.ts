@@ -1,3 +1,5 @@
+import { hasDesktopFeatures } from "@/lib/platform";
+
 let windowFullscreen = false;
 let suppressNextExit = false;
 let syncStarted = false;
@@ -10,8 +12,10 @@ export function suppressFullscreenExitOnce(): void {
   }, 1000);
 }
 
+// Native window fullscreen (window_fullscreen_enter/exit + fs:// events) is
+// desktop-only. On mobile Tauri and web we fall back to the DOM Fullscreen API.
 function isTauri(): boolean {
-  return typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
+  return hasDesktopFeatures();
 }
 
 function emit(): void {

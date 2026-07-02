@@ -1,7 +1,9 @@
 import { useSettings } from "@/lib/settings";
 import { startResize, type ResizeDir } from "@/lib/window";
+import { hasDesktopFeatures } from "@/lib/platform";
 
-const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// Manual window resize edges are a desktop-only, borderless-window affordance.
+const IS_TAURI = hasDesktopFeatures();
 
 const EDGES: Array<{ dir: ResizeDir; cls: string }> = [
   { dir: "North", cls: "inset-x-0 top-0 h-2 cursor-ns-resize" },

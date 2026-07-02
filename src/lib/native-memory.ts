@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { hasDesktopFeatures } from "@/lib/platform";
 
 export type NativeMem = {
   harborRss: number;
@@ -9,7 +10,8 @@ export type NativeMem = {
 
 export type RamTier = "tiny" | "low" | "mid" | "high";
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// harbor_process_memory is a desktop-only webview memory helper.
+const isTauri = hasDesktopFeatures();
 const MB = 1024 * 1024;
 
 let latest: NativeMem = { harborRss: 0, webviewRss: 0, total: 0, totalPhys: 0 };

@@ -31,9 +31,13 @@ import { Section } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
+import { hasDesktopFeatures } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// Updater, system tray, stremio deeplink handler and Discord presence are all
+// desktop-only; on mobile Tauri they behave like the web build (hidden).
+const desktopOnly = hasDesktopFeatures();
 const DOWNLOAD_URL = "https://harbor.site/download";
 const SOURCE_URL = "https://github.com/harborstremio/harbor";
 
@@ -41,9 +45,9 @@ export function AdvancedPanel() {
   const t = useT();
   return (
     <>
-      {!isTauri && <WebBuildBanner />}
+      {!desktopOnly && <WebBuildBanner />}
 
-      {isTauri && (
+      {desktopOnly && (
         <Section
           title={t("Updates")}
           subtitle={t("Harbor checks harbor.site for new versions and installs them in place. Nothing installs until you choose to, and a dismissed update never nags you again.")}
@@ -78,7 +82,7 @@ export function AdvancedPanel() {
         <PrivacyRow />
       </Section>
 
-      {isTauri && (
+      {desktopOnly && (
         <Section
           title={t("System tray")}
           subtitle={t("Keep Harbor a click away. Close it to the system tray instead of quitting, and control it from the tray menu. These also mirror into the tray menu live.")}
@@ -87,7 +91,7 @@ export function AdvancedPanel() {
         </Section>
       )}
 
-      {isTauri && (
+      {desktopOnly && (
         <Section
           title={t("Stremio install links")}
           subtitle={t("Harbor catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.")}
@@ -96,7 +100,7 @@ export function AdvancedPanel() {
         </Section>
       )}
 
-      {isTauri && (
+      {desktopOnly && (
         <Section
           title={t("Discord Rich Presence")}
           subtitle={t("Let your Discord friends see what you are watching, with the show poster and a live progress bar. Desktop only, and only your own Discord client is involved (nothing touches a Harbor server).")}

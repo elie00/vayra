@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
+import { hasDesktopFeatures } from "@/lib/platform";
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// The harbor_*_webview memory helpers are desktop-only; no-op on mobile Tauri.
+const isTauri = hasDesktopFeatures();
 
 export function setWebviewMemoryLow(low: boolean): void {
   if (!isTauri) return;

@@ -2,7 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
-import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { isAndroidTauri, isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { ModalOverlayApp } from "@/views/modal-overlay-app";
 import { HdrOverlayApp } from "@/views/hdr-overlay-app";
 import { PipApp } from "@/views/pip";
@@ -49,13 +49,15 @@ if (isModal || isHdrOverlay) {
   }
 }
 if (!isPip && !isModal && !isHdrOverlay) {
-  document.documentElement.dataset.os = isLinuxDesktop()
-    ? "linux"
-    : isMacDesktop()
-      ? "macos"
-      : isWindowsDesktop()
-        ? "windows"
-        : "web";
+  document.documentElement.dataset.os = isAndroidTauri()
+    ? "android"
+    : isLinuxDesktop()
+      ? "linux"
+      : isMacDesktop()
+        ? "macos"
+        : isWindowsDesktop()
+          ? "windows"
+          : "web";
 }
 if (import.meta.env.DEV) console.log("[harbor] entry: pip =", isPip, "modal =", isModal, "hdr =", isHdrOverlay, "label =", (() => { try { return getCurrentWindow().label; } catch { return "?"; } })());
 if (import.meta.env.DEV && !isPip && !isModal && !isHdrOverlay) {

@@ -2,6 +2,7 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Section, Segmented, ToggleRow } from "./shared";
 import { isTauri } from "./player-panel/internals";
+import { isMobileTauri } from "@/lib/platform";
 import { QualityProfile } from "./mpv-panel/profile";
 import { PictureDialsSection, ColorHdrSection } from "./mpv-panel/dials";
 import { AdvancedMpvSection } from "./mpv-panel/advanced";
@@ -10,7 +11,7 @@ export function MpvPanel() {
   const { settings, update } = useSettings();
   const t = useT();
 
-  if (!isTauri) {
+  if (!isTauri || isMobileTauri()) {
     return (
       <Section
         title={t("Desktop only")}

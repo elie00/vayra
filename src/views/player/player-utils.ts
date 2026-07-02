@@ -1,7 +1,7 @@
 import { createHtml5Bridge } from "@/lib/player/html5";
 import { createMpvBridge, probeMpv, type MpvRect } from "@/lib/player/mpv";
 import type { PlayerBridge } from "@/lib/player/bridge";
-import { isLinuxDesktop, isMacDesktop } from "@/lib/platform";
+import { isLinuxDesktop, isMacDesktop, isMobileTauri } from "@/lib/platform";
 
 export const SYNC_DRIFT_TOLERANCE_S = 0.6;
 export const SYNC_SUPPRESS_MS = 1400;
@@ -66,6 +66,8 @@ export async function pickBridge(
     getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
   },
 ): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" }> {
+  // Mobile Tauri has no libmpv sidecar; always decode in-webview via HTML5.
+  if (isMobileTauri()) return { bridge: createHtml5Bridge(), engine: "html5" };
   if (want === "html5") return { bridge: createHtml5Bridge(), engine: "html5" };
   if (want === "mpv") {
     const probe = await probeMpv();

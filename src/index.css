@@ -1360,3 +1360,14 @@ html[data-theme-card="crunch"][dir="rtl"] .harbor-profile-dropdown {
   box-shadow: 10px 0 30px -10px color-mix(in srgb, var(--color-canvas) 65%, transparent) !important;
 }
 
+
+/* Android (Tauri): keep the app clear of the status bar and gesture insets.
+   The nav chrome (top bars, sidebars, docks) lives inside #root, so insetting
+   the root covers it. Fullscreen video intentionally bleeds past these. */
+html[data-os="android"] #root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

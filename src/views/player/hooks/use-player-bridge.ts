@@ -5,7 +5,7 @@ import { mergeMpvOptions } from "@/lib/player/mpv-tuning";
 import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock } from "@/lib/player/playback-clock";
-import { isWindowsDesktop } from "@/lib/platform";
+import { isMobileTauri, isWindowsDesktop } from "@/lib/platform";
 import { pickBridge } from "../player-utils";
 
 function snapChangedIgnoringClock(a: PlayerSnapshot, b: PlayerSnapshot): boolean {
@@ -60,8 +60,13 @@ export function usePlayerBridge(params: {
   const isLiveLike =
     !!src.meta.id?.startsWith("iptv:") ||
     (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
-  const chosenEngine =
-    isLiveLike && !src.notWebReady ? "html5" : autoFallbackTried ? "mpv" : settings.playerEngine;
+  const chosenEngine = isMobileTauri()
+    ? "html5"
+    : isLiveLike && !src.notWebReady
+      ? "html5"
+      : autoFallbackTried
+        ? "mpv"
+        : settings.playerEngine;
   const bridgeKey = `${chosenEngine}|${anime4kOn}|${settings.playerHdrToSdr}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}`;
   const [bridgeReady, setBridgeReady] = useState(false);
   useEffect(() => {

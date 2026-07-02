@@ -2,6 +2,7 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow } from "./shared";
 import { isTauri } from "./player-panel/internals";
+import { isMobileTauri } from "@/lib/platform";
 import { Anime4kShaderList } from "./player-panel/anime4k-shader-list";
 import { SvpSection } from "./anime-panel/svp-section";
 
@@ -9,7 +10,7 @@ export function AnimePanel() {
   const { settings, update } = useSettings();
   const t = useT();
 
-  if (!isTauri) {
+  if (!isTauri || isMobileTauri()) {
     return (
       <Section
         title={t("Desktop only")}

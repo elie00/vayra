@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge } from "@/lib/player/bridge";
+import { hasDesktopFeatures } from "@/lib/platform";
 
 export function usePipMode(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
@@ -11,8 +12,8 @@ export function usePipMode(params: {
   setChromeHiddenRef.current = setChromeHidden;
 
   useEffect(() => {
-    const isTauri = "__TAURI__" in window || "__TAURI_INTERNALS__" in window;
-    if (!isTauri) return;
+    // Native window-PiP (window_pip_enter/exit + pip:// events) is desktop-only.
+    if (!hasDesktopFeatures()) return;
     let unlistenEntered: (() => void) | null = null;
     let unlistenExited: (() => void) | null = null;
     let cancelled = false;
@@ -71,8 +72,7 @@ export function usePipMode(params: {
   }, []);
 
   const togglePipMode = useCallback(async () => {
-    const isTauri = "__TAURI__" in window || "__TAURI_INTERNALS__" in window;
-    if (!isTauri) {
+    if (!hasDesktopFeatures()) {
       bridgeRef.current?.requestPiP();
       return;
     }

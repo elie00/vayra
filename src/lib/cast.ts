@@ -1,6 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
+import { hasDesktopFeatures } from "@/lib/platform";
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// Casting (chromecast/dlna/roku/airplay) is desktop-only; on mobile Tauri it
+// behaves like the web build (no devices, disabled).
+const isTauri = hasDesktopFeatures();
 
 export type CastDeviceInfo = {
   id: string;

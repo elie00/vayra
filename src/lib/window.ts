@@ -2,6 +2,7 @@ import { openUrl as tauriOpenUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
+import { isMobileTauri } from "@/lib/platform";
 
 const win: Window | null = isTauri() ? getCurrentWindow() : null;
 
@@ -116,7 +117,9 @@ function isIframeHostile(url: string): boolean {
 
 export function openInAppBrowser(url: string, title?: string) {
   if (!url) return;
-  if (isIframeHostile(url)) {
+  // The in-app embed viewport is a desktop-only child webview; on mobile Tauri
+  // open links in the system browser instead.
+  if (isIframeHostile(url) || isMobileTauri()) {
     openUrl(url);
     return;
   }

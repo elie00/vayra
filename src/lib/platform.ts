@@ -6,6 +6,30 @@ export function isWeb(): boolean {
   return typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
 }
 
+// Tauri running on Android. The native backend keeps a subset of commands
+// (torrent engine, stream proxy, settings, streams pipeline, http fetch,
+// stremio auth, downloads, web serve, cloudflare relay) but returns Err for
+// all desktop-only ones (mpv, cast, tray, pip, discord, multiview, dvr,
+// window management, webview memory helpers, HDR/modal overlays, in-app
+// browser, updater).
+export function isAndroidTauri(): boolean {
+  if (!isTauri()) return false;
+  return /android/i.test(navigator.userAgent || "");
+}
+
+// Mobile Tauri = Android for now (iOS would be added here). Used as the single
+// switch for "behave like the web build for desktop-only features".
+export function isMobileTauri(): boolean {
+  return isAndroidTauri();
+}
+
+// True only for Tauri on a desktop OS. Any feature backed by a desktop-only
+// native command must gate on this so that on mobile Tauri it stays hidden /
+// disabled exactly like it is in the web build.
+export function hasDesktopFeatures(): boolean {
+  return isTauri() && !isMobileTauri();
+}
+
 export function isLinuxDesktop(): boolean {
   if (!isTauri()) return false;
   const ua = (navigator.userAgent || "").toLowerCase();

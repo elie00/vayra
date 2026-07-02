@@ -4,8 +4,11 @@ import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { hasDesktopFeatures } from "@/lib/platform";
 
-const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+// Custom window controls (minimize/maximize/close) only exist on desktop Tauri;
+// Android has no custom titlebar.
+const IS_TAURI = hasDesktopFeatures();
 
 export function WindowControls() {
   const { settings } = useSettings();

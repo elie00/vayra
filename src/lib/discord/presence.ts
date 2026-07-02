@@ -1,4 +1,8 @@
-const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+import { hasDesktopFeatures } from "@/lib/platform";
+
+// Discord Rich Presence talks to the local Discord IPC socket via desktop-only
+// commands; inert on mobile Tauri (behaves like the web build).
+const IS_TAURI = hasDesktopFeatures();
 
 const HARBOR_LOGO = "https://harbor.site/discord/harbordiscord.png";
 
