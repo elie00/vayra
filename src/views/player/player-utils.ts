@@ -1,5 +1,6 @@
 import { createHtml5Bridge } from "@/lib/player/html5";
 import { createMpvBridge, probeMpv, type MpvRect } from "@/lib/player/mpv";
+import { createExoBridge, hasHarborExo } from "@/lib/player/exo/bridge";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import { isLinuxDesktop, isMacDesktop, isMobileTauri } from "@/lib/platform";
 
@@ -27,7 +28,7 @@ export function round2(v: number): number {
 }
 
 export function embedFlags(
-  engine: "html5" | "mpv",
+  engine: "html5" | "mpv" | "exo",
   mpvEmbed: boolean,
   videoWidth: number,
   videoHeight: number,
@@ -42,7 +43,9 @@ export function embedFlags(
   const linuxShowing = embedOn && isLinuxDesktop() && hasFrame;
   return {
     mpvEmbedWindowsActive,
-    stageBg: mpvEmbedWindowsActive || macShowing || linuxShowing ? "" : "bg-black",
+    // exo renders on a native surface behind the transparent webview, so the
+    // stage must stay transparent (like a showing mpv embed).
+    stageBg: engine === "exo" || mpvEmbedWindowsActive || macShowing || linuxShowing ? "" : "bg-black",
   };
 }
 
@@ -54,7 +57,7 @@ export function formatNames(names: string[]): string {
 }
 
 export async function pickBridge(
-  want: "auto" | "html5" | "mpv",
+  want: "auto" | "html5" | "mpv" | "exo",
   notWebReady: boolean,
   mpvOpts: {
     anime4k: boolean;
@@ -65,8 +68,12 @@ export async function pickBridge(
     extraOptions?: string;
     getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
   },
-): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" }> {
-  // Mobile Tauri has no libmpv sidecar; always decode in-webview via HTML5.
+): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" | "exo" }> {
+  // Mobile Tauri: prefer the native ExoPlayer bridge when the app exposes it;
+  // fall back to in-webview HTML5 (no libmpv sidecar on Android).
+  if (want === "exo" || (isMobileTauri() && hasHarborExo())) {
+    return { bridge: createExoBridge(), engine: "exo" };
+  }
   if (isMobileTauri()) return { bridge: createHtml5Bridge(), engine: "html5" };
   if (want === "html5") return { bridge: createHtml5Bridge(), engine: "html5" };
   if (want === "mpv") {

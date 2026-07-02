@@ -59,7 +59,7 @@ export type StremioRenderCtx = {
   canPickAnother: boolean;
   hasPrevEp: boolean;
   hasNextEp: boolean;
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   useOverlayPopups?: boolean;
   customIcons?: CustomIconMap;
   previewStates?: Partial<Record<PlayerControlId, string>>;
@@ -311,7 +311,7 @@ export function RenderedStremioControl({
         />
       );
     case "aspect-menu":
-      if (ctx.engine === "html5" || !ctx.onCropMode) return null;
+      if (ctx.engine !== "mpv" || !ctx.onCropMode) return null;
       return (
         <AspectMenu
           mode={ctx.cropMode ?? "fit"}
@@ -320,7 +320,7 @@ export function RenderedStremioControl({
         />
       );
     case "anime4k-menu":
-      if (ctx.engine === "html5" || !ctx.onAnime4kMode || !ctx.anime4kAvailable) return null;
+      if (ctx.engine !== "mpv" || !ctx.onAnime4kMode || !ctx.anime4kAvailable) return null;
       return (
         <Anime4kMenu
           mode={(ctx.anime4kMode as Anime4kChoice) ?? "auto"}
@@ -329,7 +329,7 @@ export function RenderedStremioControl({
         />
       );
     case "hdr-toggle":
-      if (ctx.engine === "html5") return null;
+      if (ctx.engine !== "mpv") return null;
       return <HdrToggleStremioBtn />;
     case "cast":
       return <CastButton onClick={ctx.onCast} capabilities={ctx.capabilities} />;
@@ -379,6 +379,7 @@ export function RenderedStremioControl({
         />
       );
     case "screenshot":
+      if (ctx.engine === "exo") return null;
       return (
         <Tooltip label={tr("Screenshot")}>
           <StremioBtn onClick={ctx.onScreenshot} ariaLabel={tr("Screenshot")}>

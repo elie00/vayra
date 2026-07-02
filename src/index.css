@@ -1385,3 +1385,11 @@ html[data-os="android"] [data-harbor-topbar] {
 html[data-os="android"] [data-harbor-nav-drawer] {
   padding-top: var(--harbor-status-bar);
 }
+/* While the native ExoPlayer surface is active it sits BEHIND the WebView, so
+   the document background must be transparent for the video to show through the
+   (transparent) player stage. Restored automatically when the flag is cleared. */
+html[data-os="android"][data-exo-active="1"],
+html[data-os="android"][data-exo-active="1"] body,
+html[data-os="android"][data-exo-active="1"] #root {
+  background: transparent !important;
+}

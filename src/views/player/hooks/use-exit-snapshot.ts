@@ -31,7 +31,7 @@ function nearEnd(cur: number, dur: number, ended: boolean): boolean {
 
 export function useExitSnapshot(params: {
   src: PlayerSrc;
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   status: PlayerStatus;
   durationSec: number;
   videoMountRef: RefObject<HTMLDivElement | null>;

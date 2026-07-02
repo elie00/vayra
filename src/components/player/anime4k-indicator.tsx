@@ -9,7 +9,7 @@ function shadersActive(v: unknown): boolean {
   return typeof v === "string" && v.trim().length > 0;
 }
 
-export function Anime4kIndicator({ engine, chromeVisible }: { engine: "html5" | "mpv"; chromeVisible: boolean }) {
+export function Anime4kIndicator({ engine, chromeVisible }: { engine: "html5" | "mpv" | "exo"; chromeVisible: boolean }) {
   const { settings } = useSettings();
   const enabled = settings.playerAnime4kIndicator && engine === "mpv" && isTauri;
   const [active, setActive] = useState(false);

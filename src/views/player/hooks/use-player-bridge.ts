@@ -6,6 +6,7 @@ import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock } from "@/lib/player/playback-clock";
 import { isMobileTauri, isWindowsDesktop } from "@/lib/platform";
+import { hasHarborExo } from "@/lib/player/exo/bridge";
 import { pickBridge } from "../player-utils";
 
 function snapChangedIgnoringClock(a: PlayerSnapshot, b: PlayerSnapshot): boolean {
@@ -41,7 +42,7 @@ export function usePlayerBridge(params: {
 
   const [snap, setSnap] = useState<PlayerSnapshot>(emptySnapshot);
   const prevSnapRef = useRef<PlayerSnapshot>(emptySnapshot);
-  const [engine, setEngine] = useState<"html5" | "mpv">("html5");
+  const [engine, setEngine] = useState<"html5" | "mpv" | "exo">("html5");
   const [autoFallbackTried, setAutoFallbackTried] = useState(false);
 
   const hdrOpaqueWindow = isWindowsDesktop() && settings.playerHdrOpaqueWindow;
@@ -61,7 +62,9 @@ export function usePlayerBridge(params: {
     !!src.meta.id?.startsWith("iptv:") ||
     (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
   const chosenEngine = isMobileTauri()
-    ? "html5"
+    ? hasHarborExo()
+      ? "exo"
+      : "html5"
     : isLiveLike && !src.notWebReady
       ? "html5"
       : autoFallbackTried

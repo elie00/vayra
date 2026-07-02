@@ -12,7 +12,7 @@ export type HdrStagePayload = {
   snap: PlayerSnapshot;
   src: PlayerSrc;
   shellId: string;
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   visible: boolean;
   fullscreen: boolean;
   resolvedImdbId: string | null;

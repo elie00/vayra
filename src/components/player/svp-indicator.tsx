@@ -12,7 +12,7 @@ export function SvpIndicator({
   engine,
   chromeVisible,
 }: {
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   chromeVisible: boolean;
 }) {
   const { settings } = useSettings();

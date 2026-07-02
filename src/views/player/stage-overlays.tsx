@@ -22,7 +22,7 @@ export function StageOverlays({
   chromeVisible,
 }: {
   snap: PlayerSnapshot;
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   pipMode: boolean;
   subShowInPip: boolean;
   subAssNative: boolean;

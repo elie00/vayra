@@ -66,7 +66,7 @@ export type ControlContext = {
   hasPrevEp: boolean;
   hasNextEp: boolean;
   canPickAnother: boolean;
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   useOverlayPopups?: boolean;
   customIcons?: CustomIconMap;
   previewStates?: Partial<Record<PlayerControlId, string>>;
@@ -367,7 +367,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       );
     }
     case "aspect-menu": {
-      if (ctx.tight || ctx.engine === "html5" || !ctx.onCropMode) return null;
+      if (ctx.tight || ctx.engine !== "mpv" || !ctx.onCropMode) return null;
       return (
         <AspectMenu
           mode={ctx.cropMode ?? "fit"}
@@ -377,7 +377,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       );
     }
     case "anime4k-menu": {
-      if (ctx.tight || ctx.engine === "html5" || !ctx.onAnime4kMode || !ctx.anime4kAvailable) return null;
+      if (ctx.tight || ctx.engine !== "mpv" || !ctx.onAnime4kMode || !ctx.anime4kAvailable) return null;
       return (
         <Anime4kMenu
           mode={(ctx.anime4kMode as Anime4kChoice) ?? "auto"}
@@ -387,7 +387,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       );
     }
     case "hdr-toggle": {
-      if (ctx.tight || ctx.engine === "html5") return null;
+      if (ctx.tight || ctx.engine !== "mpv") return null;
       return <HdrToggleBigBtn />;
     }
     case "draw-toggle": {
@@ -402,6 +402,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       );
     }
     case "screenshot": {
+      if (ctx.engine === "exo") return null;
       return (
         <BigButton onClick={ctx.onScreenshot} ariaLabel={t("Screenshot")} tooltip={t("Screenshot")}>
           <Camera size={24} strokeWidth={1.9} />

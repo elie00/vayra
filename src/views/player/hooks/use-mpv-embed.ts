@@ -3,7 +3,7 @@ import { modalOverlayClose, modalOverlaySync } from "@/lib/modal-overlay";
 import { isLinuxDesktop } from "@/lib/platform";
 import type { Settings } from "@/lib/settings";
 
-export function useMpvEmbed(params: { engine: "html5" | "mpv"; settings: Settings }) {
+export function useMpvEmbed(params: { engine: "html5" | "mpv" | "exo"; settings: Settings }) {
   const { engine, settings } = params;
 
   useEffect(() => {

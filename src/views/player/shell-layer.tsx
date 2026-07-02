@@ -68,7 +68,7 @@ export function ShellLayer({
   shellSnap: PlayerSnapshot;
   snapRef: RefObject<PlayerSnapshot>;
   bridgeRef: RefObject<PlayerBridge | null>;
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   visible: boolean;
   fullscreen: boolean;
   drawMode: boolean;

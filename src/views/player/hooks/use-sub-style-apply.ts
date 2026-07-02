@@ -5,7 +5,7 @@ import { applySubStyle } from "@/lib/player/sub-style";
 import type { useSettings } from "@/lib/settings";
 
 export function useSubStyleApply(params: {
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
   settings: ReturnType<typeof useSettings>["settings"];
   subAssNative: boolean;
   bridgeReady: boolean;

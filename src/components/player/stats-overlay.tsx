@@ -46,7 +46,7 @@ export function StatsOverlay({
   engine,
 }: {
   snap: PlayerSnapshot;
-  engine: "html5" | "mpv";
+  engine: "html5" | "mpv" | "exo";
 }) {
   const tr = useT();
   const [stats, setStats] = useState<MpvStats>(EMPTY_STATS);
