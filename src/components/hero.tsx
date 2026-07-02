@@ -13,6 +13,7 @@ import { fetchTrailer, prefetchTrailer, trailerSrc, type TrailerInfo } from "@/l
 import { useView } from "@/lib/view";
 import { usePageVisible } from "@/lib/visibility";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import { isMobileTauri } from "@/lib/platform";
 
 export const Hero = memo(function Hero({
   meta,
@@ -208,7 +209,7 @@ export const Hero = memo(function Hero({
       <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-canvas via-canvas/70 via-50% to-transparent" />
       <MetaAwardsCorner meta={meta} imdbId={resolvedImdb} />
 
-      <div className="relative flex h-full flex-col justify-center p-14">
+      <div className={`relative flex h-full flex-col justify-center ${isMobileTauri() ? "p-6" : "p-14"}`}>
         <div className="max-w-2xl">
           {rank && (
             <div className="mb-5 inline-flex items-center gap-1.5 self-start rounded-md bg-canvas/85 px-2.5 py-1 text-[12px] font-semibold text-ink">
@@ -241,7 +242,7 @@ export const Hero = memo(function Hero({
             {meta.runtime && <Stat label={t("Runtime")} value={meta.runtime} />}
           </div>
           <div
-            className="mt-9 flex gap-3"
+            className="mt-9 flex flex-wrap gap-3"
             onMouseEnter={() => setOverControls(true)}
             onMouseLeave={() => setOverControls(false)}
           >
