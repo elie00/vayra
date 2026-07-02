@@ -1,10 +1,17 @@
 package app.harbor
 
 import android.app.Activity
+import android.app.PictureInPictureParams
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
+import android.util.Rational
 import android.view.LayoutInflater
+import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -25,8 +32,12 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -54,6 +65,17 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
     private var currentVolume = 1.0f
     private var muted = false
 
+    // main-thread confined
+    private var resizeModeStr = "fit"
+    private var abLoopA = -1.0
+    private var abLoopB = -1.0
+    private var currentUri: String? = null
+    private var currentSubs = ArrayList<MediaItem.SubtitleConfiguration>()
+    private var pendingSubSelectId: String? = null
+
+    @Volatile
+    private var pipActive = false
+
     @Volatile
     private var lastError: String? = null
 
@@ -78,10 +100,8 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         val startSec = opts.optDouble("startSec", 0.0)
         val speed = opts.optDouble("speed", 1.0)
         val headers = parseHeaders(opts.optJSONObject("headers"))
-        val subs = opts.optJSONArray("subs")
-
-        val item = try {
-            buildMediaItem(url, subs)
+        val subConfigs = try {
+            buildSubConfigs(opts.optJSONArray("subs"))
         } catch (e: Exception) {
             return "error:cannot build media item: ${e.message}"
         }
@@ -90,9 +110,14 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
             ensurePlayer()
             val p = player ?: return@post
             lastError = null
+            abLoopA = -1.0
+            abLoopB = -1.0
+            pendingSubSelectId = null
+            currentUri = url
+            currentSubs = ArrayList(subConfigs)
             httpFactory?.setDefaultRequestProperties(headers)
             p.setPlaybackParameters(PlaybackParameters(speed.toFloat().coerceAtLeast(0.1f)))
-            p.setMediaItem(item)
+            p.setMediaItem(buildMediaItem(url, currentSubs))
             p.prepare()
             if (startSec > 0.0) p.seekTo((startSec * 1000).toLong())
             p.playWhenReady = true
@@ -175,6 +200,160 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
     }
 
     @JavascriptInterface
+    fun setResize(mode: String): String = post {
+        resizeModeStr = when (mode) {
+            "fill" -> "fill"
+            "zoom" -> "zoom"
+            else -> "fit"
+        }
+        playerView?.resizeMode = when (mode) {
+            "fill" -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+            "zoom" -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
+        emitState()
+    }
+
+    @JavascriptInterface
+    fun setAbLoop(json: String): String {
+        if (json == "off" || json == "\"off\"") {
+            return post {
+                abLoopA = -1.0
+                abLoopB = -1.0
+            }
+        }
+        val a: Double
+        val b: Double
+        try {
+            val o = JSONObject(json)
+            a = o.getDouble("a")
+            b = o.getDouble("b")
+        } catch (e: Exception) {
+            return "error:bad ab loop: ${e.message}"
+        }
+        return post {
+            abLoopA = a
+            abLoopB = b
+        }
+    }
+
+    @JavascriptInterface
+    fun addSubtitle(json: String): String {
+        val url: String
+        val obj: JSONObject
+        try {
+            obj = JSONObject(json)
+            url = obj.getString("url")
+        } catch (e: Exception) {
+            return "error:bad subtitle: ${e.message}"
+        }
+        val mime = optStr(obj, "mime") ?: guessSubMime(url)
+        val lang = optStr(obj, "lang")
+        val label = optStr(obj, "label")
+        return post {
+            val p = player ?: return@post
+            val uri = currentUri ?: return@post
+            val cfg = MediaItem.SubtitleConfiguration.Builder(Uri.parse(url))
+                .setId(url)
+                .setMimeType(mime)
+                .setLanguage(lang)
+                .setLabel(label)
+                .build()
+            currentSubs.add(cfg)
+            val pos = p.currentPosition
+            val wasPlaying = p.playWhenReady
+            p.setMediaItem(buildMediaItem(uri, currentSubs), /* resetPosition = */ false)
+            p.prepare()
+            p.seekTo(pos)
+            p.playWhenReady = wasPlaying
+            pendingSubSelectId = url
+            emitState()
+        }
+    }
+
+    @JavascriptInterface
+    fun setSubStyle(json: String): String {
+        val o: JSONObject
+        try {
+            o = JSONObject(json)
+        } catch (e: Exception) {
+            return "error:bad style: ${e.message}"
+        }
+        return post {
+            val sv = playerView?.subtitleView ?: return@post
+            val fg = parseColorOr(o.optString("fgColor", ""), Color.WHITE)
+            val bgRaw = o.optString("bgColor", "")
+            val bg = if (bgRaw == "transparent") Color.TRANSPARENT else parseColorOr(bgRaw, Color.TRANSPARENT)
+            val edge = when (o.optString("edge", "")) {
+                "none" -> CaptionStyleCompat.EDGE_TYPE_NONE
+                "shadow" -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
+                else -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
+            }
+            sv.setApplyEmbeddedStyles(false)
+            sv.setStyle(CaptionStyleCompat(fg, bg, Color.TRANSPARENT, edge, Color.BLACK, null))
+            if (o.has("sizeFraction")) sv.setFractionalTextSize(o.getDouble("sizeFraction").toFloat())
+        }
+    }
+
+    @JavascriptInterface
+    fun screenshot(): String {
+        val latch = CountDownLatch(1)
+        val holder = arrayOfNulls<String>(1)
+        mainHandler.post {
+            try {
+                val tv = playerView?.videoSurfaceView as? TextureView
+                val bmp = tv?.bitmap
+                if (bmp == null) {
+                    holder[0] = "error:no frame available"
+                } else {
+                    val baos = ByteArrayOutputStream()
+                    bmp.compress(Bitmap.CompressFormat.PNG, 100, baos)
+                    holder[0] = "data:image/png;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+                }
+            } catch (e: Exception) {
+                holder[0] = "error:${e.message}"
+            } finally {
+                latch.countDown()
+            }
+        }
+        return try {
+            if (latch.await(2, TimeUnit.SECONDS)) holder[0] ?: "error:null result" else "error:timeout"
+        } catch (e: InterruptedException) {
+            "error:interrupted"
+        }
+    }
+
+    @JavascriptInterface
+    fun enterPip(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return "error:pip requires api 26"
+        val latch = CountDownLatch(1)
+        val holder = arrayOfNulls<String>(1)
+        mainHandler.post {
+            try {
+                val builder = PictureInPictureParams.Builder()
+                val w = player?.videoSize?.width ?: 0
+                val h = player?.videoSize?.height ?: 0
+                if (w > 0 && h > 0) {
+                    val ratio = w.toDouble() / h.toDouble()
+                    // Android only accepts aspect ratios in [0.4185, 2.39]
+                    if (ratio in 0.42..2.39) builder.setAspectRatio(Rational(w, h))
+                }
+                holder[0] = if (activity.enterPictureInPictureMode(builder.build())) "ok"
+                else "error:enter pip refused"
+            } catch (e: Exception) {
+                holder[0] = "error:${e.message}"
+            } finally {
+                latch.countDown()
+            }
+        }
+        return try {
+            if (latch.await(2, TimeUnit.SECONDS)) holder[0] ?: "error:null result" else "error:timeout"
+        } catch (e: InterruptedException) {
+            "error:interrupted"
+        }
+    }
+
+    @JavascriptInterface
     fun getState(): String = stateJson
 
     @JavascriptInterface
@@ -189,6 +368,11 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         playerView = null
         httpFactory = null
         visible = false
+        currentUri = null
+        currentSubs = ArrayList()
+        pendingSubSelectId = null
+        abLoopA = -1.0
+        abLoopB = -1.0
         webView.setBackgroundColor(Color.BLACK)
         activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         stateJson = emptyState()
@@ -266,25 +450,39 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
 
     // ---- MediaItem building -----------------------------------------------
 
-    private fun buildMediaItem(url: String, subs: JSONArray?): MediaItem {
+    private fun buildMediaItem(url: String, subs: List<MediaItem.SubtitleConfiguration>): MediaItem {
         val builder = MediaItem.Builder().setUri(url)
-        if (subs != null && subs.length() > 0) {
-            val configs = ArrayList<MediaItem.SubtitleConfiguration>()
-            for (i in 0 until subs.length()) {
-                val s = subs.optJSONObject(i) ?: continue
-                val subUrl = s.optString("url", "")
-                if (subUrl.isEmpty()) continue
-                val mime = s.optString("mime", "").ifEmpty { guessSubMime(subUrl) }
-                val cfg = MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subUrl))
+        if (subs.isNotEmpty()) builder.setSubtitleConfigurations(subs)
+        return builder.build()
+    }
+
+    private fun buildSubConfigs(subs: JSONArray?): ArrayList<MediaItem.SubtitleConfiguration> {
+        val configs = ArrayList<MediaItem.SubtitleConfiguration>()
+        if (subs == null) return configs
+        for (i in 0 until subs.length()) {
+            val s = subs.optJSONObject(i) ?: continue
+            val subUrl = s.optString("url", "")
+            if (subUrl.isEmpty()) continue
+            val mime = s.optString("mime", "").ifEmpty { guessSubMime(subUrl) }
+            configs.add(
+                MediaItem.SubtitleConfiguration.Builder(Uri.parse(subUrl))
+                    .setId(subUrl)
                     .setMimeType(mime)
                     .setLanguage(optStr(s, "lang"))
                     .setLabel(optStr(s, "label"))
                     .build()
-                configs.add(cfg)
-            }
-            if (configs.isNotEmpty()) builder.setSubtitleConfigurations(configs)
+            )
         }
-        return builder.build()
+        return configs
+    }
+
+    private fun parseColorOr(value: String, fallback: Int): Int {
+        if (value.isEmpty()) return fallback
+        return try {
+            Color.parseColor(value)
+        } catch (e: Exception) {
+            fallback
+        }
     }
 
     private fun guessSubMime(url: String): String {
@@ -351,7 +549,10 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
             emitState()
         }
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = emitState()
-        override fun onTracksChanged(tracks: Tracks) = emitState()
+        override fun onTracksChanged(tracks: Tracks) {
+            maybeSelectPendingSub(tracks)
+            emitState()
+        }
         override fun onVideoSizeChanged(videoSize: VideoSize) = emitState()
         override fun onPositionDiscontinuity(
             oldPosition: Player.PositionInfo,
@@ -367,8 +568,37 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
 
     private val ticker = object : Runnable {
         override fun run() {
+            enforceAbLoop()
             emitState()
             if (player?.isPlaying == true) mainHandler.postDelayed(this, 500)
+        }
+    }
+
+    private fun enforceAbLoop() {
+        val p = player ?: return
+        if (abLoopA >= 0 && abLoopB > abLoopA && p.currentPosition / 1000.0 >= abLoopB) {
+            p.seekTo((abLoopA * 1000).toLong())
+        }
+    }
+
+    /** After tracks appear, select the sideloaded text track added via addSubtitle(). */
+    private fun maybeSelectPendingSub(tracks: Tracks) {
+        val target = pendingSubSelectId ?: return
+        val p = player ?: return
+        val groups = tracks.groups
+        for (gi in groups.indices) {
+            val g = groups[gi]
+            if (g.type != C.TRACK_TYPE_TEXT) continue
+            for (ti in 0 until g.length) {
+                if (g.getTrackFormat(ti).id == target) {
+                    p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+                        .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                        .setOverrideForType(TrackSelectionOverride(g.mediaTrackGroup, ti))
+                        .build()
+                    pendingSubSelectId = null
+                    return
+                }
+            }
         }
     }
 
@@ -383,12 +613,42 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
 
     private fun emitState() {
         rebuildState()
-        val payload = "{\"type\":\"state\",\"state\":$stateJson}"
+        emitEvent("{\"type\":\"state\",\"state\":$stateJson}")
+    }
+
+    private fun emitEvent(payload: String) {
         webView.post {
             webView.evaluateJavascript(
                 "window.__HARBOR_EXO_EVENT__&&window.__HARBOR_EXO_EVENT__($payload)",
                 null
             )
+        }
+    }
+
+    // ---- Activity callbacks (called from MainActivity, main thread) --------
+
+    /** Reflect PiP mode changes (from MainActivity.onPictureInPictureModeChanged). */
+    fun onPipChanged(active: Boolean) {
+        mainHandler.post {
+            pipActive = active
+            emitEvent("{\"type\":\"pip\",\"active\":$active}")
+            emitState()
+        }
+    }
+
+    /** Push a foreground/background lifecycle event (from MainActivity.onStart/onStop). */
+    fun pushLifecycle(state: String) {
+        emitEvent("{\"type\":\"lifecycle\",\"state\":\"$state\"}")
+    }
+
+    /** Route the Android back button through the web app; background the task on "exit". */
+    fun handleBack() {
+        webView.post {
+            webView.evaluateJavascript(
+                "window.__HARBOR_BACK__ ? window.__HARBOR_BACK__() : 'exit'"
+            ) { result ->
+                if (result != null && result.contains("exit")) activity.moveTaskToBack(true)
+            }
         }
     }
 
@@ -402,12 +662,15 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         val durationMs = p.duration
         json.put("position", p.currentPosition / 1000.0)
         json.put("duration", if (durationMs == C.TIME_UNSET) -1.0 else durationMs / 1000.0)
+        json.put("buffered", p.bufferedPosition / 1000.0)
         json.put("paused", !p.playWhenReady)
         json.put("buffering", p.playbackState == Player.STATE_BUFFERING)
         json.put("ended", p.playbackState == Player.STATE_ENDED)
         json.put("speed", p.playbackParameters.speed.toDouble())
         json.put("volume", currentVolume.toDouble())
         json.put("muted", muted)
+        json.put("pip", pipActive)
+        json.put("resizeMode", resizeModeStr)
         json.put("videoWidth", p.videoSize.width)
         json.put("videoHeight", p.videoSize.height)
 
@@ -444,12 +707,15 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         return JSONObject().apply {
             put("position", 0.0)
             put("duration", -1.0)
+            put("buffered", 0.0)
             put("paused", true)
             put("buffering", false)
             put("ended", false)
             put("speed", 1.0)
             put("volume", currentVolume.toDouble())
             put("muted", muted)
+            put("pip", pipActive)
+            put("resizeMode", resizeModeStr)
             put("videoWidth", 0)
             put("videoHeight", 0)
             put("audioTracks", JSONArray())
