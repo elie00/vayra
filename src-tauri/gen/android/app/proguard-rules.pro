@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# Pont JS ExoPlayer : la WebView appelle window.HarborExo par réflexion
+-keepclassmembers class app.harbor.HarborExoBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keep class app.harbor.HarborExoBridge { *; }

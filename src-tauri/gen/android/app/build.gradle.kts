@@ -13,9 +13,24 @@ val tauriProperties = Properties().apply {
     }
 }
 
+val keyProperties = java.util.Properties().apply {
+    val f = rootProject.file("key.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
     compileSdk = 36
     namespace = "app.harbor"
+    signingConfigs {
+        if (keyProperties.containsKey("storeFile")) {
+            create("release") {
+                storeFile = file(keyProperties.getProperty("storeFile"))
+                storePassword = keyProperties.getProperty("storePassword")
+                keyAlias = keyProperties.getProperty("keyAlias")
+                keyPassword = keyProperties.getProperty("keyPassword")
+            }
+        }
+    }
     defaultConfig {
         // Harbor streame depuis http://127.0.0.1 (proxy/torrents) et des addons Stremio en HTTP simple
         manifestPlaceholders["usesCleartextTraffic"] = "true"
@@ -38,6 +53,9 @@ android {
             }
         }
         getByName("release") {
+            if (keyProperties.containsKey("storeFile")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
