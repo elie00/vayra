@@ -17,7 +17,8 @@ android {
     compileSdk = 36
     namespace = "app.harbor"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        // Harbor streame depuis http://127.0.0.1 (proxy/torrents) et des addons Stremio en HTTP simple
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "app.harbor"
         minSdk = 24
         targetSdk = 36
