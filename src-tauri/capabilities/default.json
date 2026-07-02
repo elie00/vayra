@@ -52,7 +52,6 @@
     "dialog:allow-message",
     "fs:default",
     "deep-link:default",
-    "updater:default",
     "process:default",
     "clipboard-manager:allow-write-image",
     {

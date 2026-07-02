@@ -1,45 +1,127 @@
-mod anime4k;
-mod browser;
-mod cast;
+// Modules multiplateformes (cœur : streaming, torrent, proxy, auth, réglages…).
 mod cast_hls;
-mod cast_server;
 mod cast_subs;
 mod cf_relay;
-mod discord_rp;
-mod dlna;
 mod download;
-mod dvr;
 mod fonts;
-mod fullscreen;
-mod hdr_overlay;
 mod http_fetch;
 mod local_lib;
-mod modal_overlay;
-mod mpv;
-mod multiview;
-mod proc_mem;
-mod roku;
-#[cfg(target_os = "macos")]
-mod mpv_render_mac;
-#[cfg(target_os = "linux")]
-mod mpv_render_linux;
-mod pip;
-#[cfg(target_os = "macos")]
-mod pip_mac;
 mod power;
-mod airplay;
 mod settings_store;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
-mod svp;
-mod thumbs;
 mod torrent_engine;
 mod trailer;
 mod transcode;
-mod tray;
 mod web_server;
+
+// Modules desktop-only : mpv, cast, fenêtres/overlays… stubbés sur Android
+// pour garder la liste generate_handler! identique.
+#[cfg(desktop)]
+mod anime4k;
+#[cfg(mobile)]
+#[path = "mobile_stubs/anime4k.rs"]
+mod anime4k;
+#[cfg(desktop)]
+mod browser;
+#[cfg(mobile)]
+#[path = "mobile_stubs/browser.rs"]
+mod browser;
+#[cfg(desktop)]
+mod cast;
+#[cfg(mobile)]
+#[path = "mobile_stubs/cast.rs"]
+mod cast;
+#[cfg(desktop)]
+mod cast_server;
+#[cfg(mobile)]
+#[path = "mobile_stubs/cast_server.rs"]
+mod cast_server;
+#[cfg(desktop)]
+mod discord_rp;
+#[cfg(mobile)]
+#[path = "mobile_stubs/discord_rp.rs"]
+mod discord_rp;
+#[cfg(desktop)]
+mod dlna;
+#[cfg(mobile)]
+#[path = "mobile_stubs/dlna.rs"]
+mod dlna;
+#[cfg(desktop)]
+mod dvr;
+#[cfg(mobile)]
+#[path = "mobile_stubs/dvr.rs"]
+mod dvr;
+#[cfg(desktop)]
+mod fullscreen;
+#[cfg(mobile)]
+#[path = "mobile_stubs/fullscreen.rs"]
+mod fullscreen;
+#[cfg(desktop)]
+mod hdr_overlay;
+#[cfg(mobile)]
+#[path = "mobile_stubs/hdr_overlay.rs"]
+mod hdr_overlay;
+#[cfg(desktop)]
+mod modal_overlay;
+#[cfg(mobile)]
+#[path = "mobile_stubs/modal_overlay.rs"]
+mod modal_overlay;
+#[cfg(desktop)]
+mod mpv;
+#[cfg(mobile)]
+#[path = "mobile_stubs/mpv.rs"]
+mod mpv;
+#[cfg(desktop)]
+mod multiview;
+#[cfg(mobile)]
+#[path = "mobile_stubs/multiview.rs"]
+mod multiview;
+#[cfg(desktop)]
+mod proc_mem;
+#[cfg(mobile)]
+#[path = "mobile_stubs/proc_mem.rs"]
+mod proc_mem;
+#[cfg(desktop)]
+mod pip;
+#[cfg(mobile)]
+#[path = "mobile_stubs/pip.rs"]
+mod pip;
+#[cfg(desktop)]
+mod svp;
+#[cfg(mobile)]
+#[path = "mobile_stubs/svp.rs"]
+mod svp;
+#[cfg(desktop)]
+mod thumbs;
+#[cfg(mobile)]
+#[path = "mobile_stubs/thumbs.rs"]
+mod thumbs;
+#[cfg(desktop)]
+mod tray;
+#[cfg(mobile)]
+#[path = "mobile_stubs/tray.rs"]
+mod tray;
+#[cfg(desktop)]
 mod webview_helpers;
+#[cfg(mobile)]
+#[path = "mobile_stubs/webview_helpers.rs"]
+mod webview_helpers;
+
+// Découverte cast bas niveau : uniquement consommée par `cast`, donc desktop-only sans stub.
+#[cfg(desktop)]
+mod roku;
+#[cfg(desktop)]
+mod airplay;
+
+// Rendu mpv natif par plateforme.
+#[cfg(target_os = "macos")]
+mod mpv_render_mac;
+#[cfg(target_os = "linux")]
+mod mpv_render_linux;
+#[cfg(target_os = "macos")]
+mod pip_mac;
 
 pub(crate) fn shutdown_services(app: &tauri::AppHandle) {
     cast_server::stop();
@@ -50,6 +132,7 @@ pub(crate) fn shutdown_services(app: &tauri::AppHandle) {
 pub static CLOSE_FLUSH_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static CLOSE_IN_PROGRESS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+#[cfg(desktop)]
 fn emit_window_fullscreen_state(window: &tauri::Window) {
     use tauri::Emitter;
     let event = if window.is_fullscreen().unwrap_or(false) {
@@ -67,12 +150,17 @@ fn harbor_flush_done() {
 
 #[tauri::command]
 fn close_aux_windows(app: tauri::AppHandle) {
-    use tauri::Manager;
-    for (label, window) in app.webview_windows() {
-        if label != "main" {
-            let _ = window.close();
+    #[cfg(desktop)]
+    {
+        use tauri::Manager;
+        for (label, window) in app.webview_windows() {
+            if label != "main" {
+                let _ = window.close();
+            }
         }
     }
+    #[cfg(not(desktop))]
+    let _ = &app;
 }
 
 #[tauri::command]
@@ -294,6 +382,7 @@ fn harbor_resume_webview(app: tauri::AppHandle) {
     }
 }
 
+#[cfg(desktop)]
 fn ensure_window_on_screen(app: &tauri::AppHandle) {
     use tauri::Manager;
     let Some(window) = app.get_webview_window("main") else {
@@ -354,36 +443,46 @@ pub fn run() {
     let dvr_state = dvr::DvrState::new();
     let multiview_state = multiview::MultiviewState::new();
     let modal_overlay_state = modal_overlay::ModalOverlayState::new();
-    let app_builder = tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            use tauri::{Emitter, Manager};
-            if let Some(w) = app.get_webview_window("main") {
-                let _ = w.unminimize();
-                let _ = w.set_focus();
-            }
-            if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
-                let _ = app.emit("harbor:stremio-deeplink", url.clone());
-            }
-        }))
+    let app_builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    let app_builder = app_builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+        use tauri::{Emitter, Manager};
+        if let Some(w) = app.get_webview_window("main") {
+            let _ = w.unminimize();
+            let _ = w.set_focus();
+        }
+        if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
+            let _ = app.emit("harbor:stremio-deeplink", url.clone());
+        }
+    }));
+
+    let app_builder = app_builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_deep_link::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(
-            tauri_plugin_window_state::Builder::default()
-                .with_state_flags(
-                    tauri_plugin_window_state::StateFlags::SIZE
-                        | tauri_plugin_window_state::StateFlags::POSITION
-                        | tauri_plugin_window_state::StateFlags::MAXIMIZED
-                        | tauri_plugin_window_state::StateFlags::FULLSCREEN,
-                )
-                .build(),
-        )
+        .plugin(tauri_plugin_clipboard_manager::init());
+
+    #[cfg(desktop)]
+    let app_builder = app_builder.plugin(tauri_plugin_updater::Builder::new().build());
+
+    #[cfg(desktop)]
+    let app_builder = app_builder.plugin(
+        tauri_plugin_window_state::Builder::default()
+            .with_state_flags(
+                tauri_plugin_window_state::StateFlags::SIZE
+                    | tauri_plugin_window_state::StateFlags::POSITION
+                    | tauri_plugin_window_state::StateFlags::MAXIMIZED
+                    | tauri_plugin_window_state::StateFlags::FULLSCREEN,
+            )
+            .build(),
+    );
+
+    let app_builder = app_builder
         .manage(proxy_state)
         .manage(mpv_state)
         .manage(pip_state)
@@ -407,7 +506,7 @@ pub fn run() {
             .unwrap()
     });
 
-    app_builder
+    let app_builder = app_builder
         .setup(move |app| {
             #[cfg(any(windows, target_os = "linux"))]
             {
@@ -430,6 +529,7 @@ pub fn run() {
                     }
                 }
             }
+            #[cfg(desktop)]
             ensure_window_on_screen(app.handle());
             #[cfg(target_os = "macos")]
             {
@@ -448,6 +548,7 @@ pub fn run() {
             }
             cast_server::ensure_started_on_setup(app.handle());
             torrent_engine::ensure_started_on_setup(app.handle());
+            #[cfg(desktop)]
             {
                 let handle = app.handle().clone();
                 std::thread::spawn(move || discord_rp::run_loop(handle));
@@ -457,8 +558,10 @@ pub fn run() {
                 eprintln!("[harbor::tray] build failed: {:?}", e);
             }
             Ok(())
-        })
-        .on_window_event(|window, event| {
+        });
+
+    #[cfg(desktop)]
+    let app_builder = app_builder.on_window_event(|window, event| {
             if window.label() != "main" {
                 return;
             }
@@ -512,7 +615,9 @@ pub fn run() {
                 }
                 _ => {}
             }
-        })
+        });
+
+    app_builder
         .invoke_handler(tauri::generate_handler![
             harbor_flush_done,
             close_aux_windows,
