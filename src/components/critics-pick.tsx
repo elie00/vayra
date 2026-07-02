@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ExternalLink, Play, Quote } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Play, Quote, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { pickRandom } from "@/lib/feed/tags";
@@ -258,7 +258,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                 <>
                   <span aria-hidden className="text-ink/40">·</span>
                   <span className="inline-flex items-center gap-1.5">
-                    <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
+                    {meta.id.startsWith("tt") ? <ImdbIcon className="h-[12px] w-auto rounded-[2px]" /> : <Star className="h-[12px] w-[12px] text-amber-400" fill="currentColor" strokeWidth={0} />}
                     {meta.imdbRating}
                   </span>
                 </>
@@ -331,7 +331,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                 <div className="flex items-center gap-3">
                   {meta.imdbRating && (
                     <span className="inline-flex items-center gap-1.5">
-                      <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
+                      {meta.id.startsWith("tt") ? <ImdbIcon className="h-[12px] w-auto rounded-[2px]" /> : <Star className="h-[12px] w-[12px] text-amber-400" fill="currentColor" strokeWidth={0} />}
                       {meta.imdbRating}
                     </span>
                   )}

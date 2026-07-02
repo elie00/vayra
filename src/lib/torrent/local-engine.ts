@@ -65,11 +65,16 @@ export function lastEngineAddError(): string | null {
 export async function torrentEngineAdd(
   magnet: string,
   trackers: string[],
+  fileIdx?: number,
 ): Promise<AddResult | null> {
   if (!isTauri) return null;
   try {
     lastAddError = null;
-    return await invoke<AddResult>("torrent_engine_add", { magnet, trackers });
+    return await invoke<AddResult>("torrent_engine_add", {
+      magnet,
+      trackers,
+      fileIdx: typeof fileIdx === "number" && fileIdx >= 0 ? fileIdx : null,
+    });
   } catch (e) {
     lastAddError = String(e);
     console.warn("[engine] add failed", e);

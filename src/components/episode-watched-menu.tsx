@@ -1,7 +1,13 @@
 import { Check, Eye, EyeOff } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { setManualWatched, setManualWatchedMany, setManualWatchedUpTo } from "@/lib/manual-watched";
+import {
+  recordManualWatchedMeta,
+  setManualWatched,
+  setManualWatchedMany,
+  setManualWatchedUpTo,
+  type ManualWatchedMeta,
+} from "@/lib/manual-watched";
 import { markEpisodesWatched, unmarkEpisodeWatched } from "@/lib/simkl/history";
 import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { useSimkl } from "@/lib/simkl/provider";
@@ -16,11 +22,13 @@ export type WatchedMenuTarget = {
 
 export function EpisodeWatchedMenu({
   metaId,
+  meta,
   target,
   allEpisodes,
   onClose,
 }: {
   metaId: string;
+  meta: ManualWatchedMeta;
   target: WatchedMenuTarget;
   allEpisodes?: Array<{ season: number; episode: number }>;
   onClose: () => void;
@@ -74,6 +82,7 @@ export function EpisodeWatchedMenu({
             icon={<Check size={14} strokeWidth={2} />}
             label="Mark as watched"
             onClick={() => {
+              recordManualWatchedMeta(metaId, meta);
               setManualWatched(metaId, target.season, target.episode, true);
               if (showIds) void markEpisodesWatched(showIds, target.season, [target.episode]);
               onClose();
@@ -83,6 +92,7 @@ export function EpisodeWatchedMenu({
             icon={<Eye size={14} strokeWidth={2} />}
             label="Mark watched up to here"
             onClick={() => {
+              recordManualWatchedMeta(metaId, meta);
               if (allEpisodes && allEpisodes.length > 0) {
                 const upTo = allEpisodes.filter(
                   (e) =>

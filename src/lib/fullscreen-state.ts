@@ -2,6 +2,7 @@ import { loadStoredSettings } from "@/lib/settings/load";
 
 let windowFullscreen = false;
 let suppressNextExit = false;
+let marathonReenter = false;
 const subs = new Set<() => void>();
 
 export function suppressFullscreenExitOnce(): void {
@@ -9,6 +10,23 @@ export function suppressFullscreenExitOnce(): void {
   setTimeout(() => {
     suppressNextExit = false;
   }, 1000);
+}
+
+export function beginMarathonAdvance(): void {
+  suppressFullscreenExitOnce();
+  marathonReenter = windowFullscreen;
+  void isAnyFullscreen().then((fs) => {
+    if (fs) marathonReenter = true;
+  });
+  setTimeout(() => {
+    marathonReenter = false;
+  }, 10000);
+}
+
+export function consumeMarathonReenter(): boolean {
+  const v = marathonReenter;
+  marathonReenter = false;
+  return v;
 }
 
 function isTauri(): boolean {
@@ -76,4 +94,43 @@ export async function exitWindowFullscreenOnPlayerClose(): Promise<void> {
 export async function toggleWindowFullscreen(): Promise<void> {
   if (windowFullscreen) await exitWindowFullscreen();
   else await enterWindowFullscreen();
+}
+
+async function osWindowFullscreen(): Promise<boolean> {
+  if (!isTauri()) return false;
+  try {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    return await getCurrentWindow().isFullscreen().catch(() => false);
+  } catch {
+    return false;
+  }
+}
+
+export async function isAnyFullscreen(): Promise<boolean> {
+  if (windowFullscreen) return true;
+  if (typeof document !== "undefined" && document.fullscreenElement) return true;
+  return osWindowFullscreen();
+}
+
+export async function exitAnyFullscreen(): Promise<void> {
+  if (typeof document !== "undefined" && document.fullscreenElement) {
+    await document.exitFullscreen().catch(() => {});
+  }
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const w = getCurrentWindow();
+      if (await w.isFullscreen().catch(() => false)) await w.setFullscreen(false).catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }
+  if (windowFullscreen) await exitWindowFullscreen();
+}
+
+if (isTauri()) {
+  const before = windowFullscreen;
+  void osWindowFullscreen().then((os) => {
+    if (windowFullscreen === before && os !== windowFullscreen) setWindowFullscreen(os);
+  });
 }

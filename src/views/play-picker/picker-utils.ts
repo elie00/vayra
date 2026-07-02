@@ -382,6 +382,10 @@ export function hasUncachedMarker(s: ScoredStream): boolean {
   return UNCACHED_MARKER_RX.test(haystack);
 }
 
+export function anyStreamCached(s: ScoredStream): boolean {
+  return Object.values(s.cached).some((v) => v === true);
+}
+
 const DEBRID_FAIL_CODES = new Set([
   "all-debrids-failed",
   "stub-or-error-video",

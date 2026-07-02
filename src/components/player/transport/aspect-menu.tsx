@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { CROP_PRESETS } from "@/views/player/hooks/use-video-fill";
 import { PICTURE_KEYS, PICTURE_TEMPLATES, TweakSlider, useTweaks } from "@/views/settings/mpv-panel/dials";
 import { useT } from "@/lib/i18n";
+import { useMenuSide } from "../menu-side";
 import { Tooltip } from "./tooltip";
 
 export function AspectMenu({
@@ -17,6 +18,7 @@ export function AspectMenu({
   const t = useT();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const { side, measure } = useMenuSide(wrap, 360);
   const { tweaks, setTweak, applyPatch } = useTweaks();
   useEffect(() => {
     onOpenChange?.(open);
@@ -37,7 +39,10 @@ export function AspectMenu({
     <div ref={wrap} className="relative">
       <Tooltip label={t("Picture")}>
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => {
+            if (!open) measure();
+            setOpen((o) => !o);
+          }}
           aria-label={t("Picture")}
           className={`flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color] ${
             accent ? "bg-white/22 text-white hover:bg-white/30" : "text-white/85 hover:bg-white/10 hover:text-white"
@@ -50,7 +55,7 @@ export function AspectMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="absolute bottom-[calc(100%+10px)] end-0 flex max-h-[70vh] w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-y-auto rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} flex max-h-[70vh] w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-y-auto rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
           <div className="p-3">
             <div className="flex items-center justify-between px-1 pb-2">
               <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">

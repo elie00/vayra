@@ -132,6 +132,7 @@ export function CinemetaEpisodes({
       {watchedMenu && (
         <EpisodeWatchedMenu
           metaId={meta.id}
+          meta={{ type: "series", name: meta.name, poster: meta.poster, background: meta.background }}
           target={watchedMenu}
           allEpisodes={allEpisodesOrdered}
           onClose={() => setWatchedMenu(null)}

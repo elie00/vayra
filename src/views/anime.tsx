@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AnimeGenrePicker } from "@/components/anime-genre-picker";
 import { AnimeHero } from "@/components/anime-hero";
 import { BackToTop } from "@/components/back-to-top";
@@ -38,6 +38,8 @@ import { animeFranchiseKey, stripFranchiseSuffix } from "@/lib/providers/jikan";
 import { useSettings } from "@/lib/settings";
 import { isAdultAnime } from "@/lib/addons-store/adult-filter";
 import { isAnimeCwItem, isCwMember, library, type LibraryItem } from "@/lib/stremio";
+import { clearLocalCw } from "@/lib/local-cw";
+import { dismissManualWatched, manualWatchedLibraryItems, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
@@ -242,12 +244,23 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     publishResumeStates(continueWatching);
   }, [continueWatching]);
 
+  const manualWatchedVer = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
+  const resurfaceLibrary = useMemo(() => {
+    const manual = manualWatchedLibraryItems().filter(isAnimeCwItem);
+    if (manual.length === 0) return libItems;
+    const cwMemberIds = new Set(libItems.filter(isCwMember).map((i) => i._id));
+    const usable = manual.filter((i) => !cwMemberIds.has(i._id));
+    if (usable.length === 0) return libItems;
+    const overrideIds = new Set(usable.map((i) => i._id));
+    return [...libItems.filter((i) => !overrideIds.has(i._id)), ...usable];
+  }, [libItems, manualWatchedVer]);
   const cwItems = useCwAdvance(
     continueWatching,
     settings.tmdbKey,
     settings.cwAdvanceNext,
-    libItems,
+    resurfaceLibrary,
     "only",
+    manualWatchedVer,
   );
 
   useEffect(() => {
@@ -445,7 +458,17 @@ export function AnimeView({ active = true }: { active?: boolean }) {
           {cwItems.length > 0 && (
             <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="anime:cw">
               {cwItems.map((item) => (
-                <ContinueCard key={item._id} item={item} onDismiss={(it) => dismissCw(it, authKey)} />
+                <ContinueCard
+                  key={item._id}
+                  item={item}
+                  onDismiss={(it) =>
+                    it.manualWatched
+                      ? dismissManualWatched(it._id)
+                      : it.local
+                        ? clearLocalCw(it._id)
+                        : dismissCw(it, authKey)
+                  }
+                />
               ))}
             </Row>
           )}

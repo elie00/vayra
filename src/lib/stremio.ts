@@ -38,6 +38,7 @@ export type LibraryItem = {
   isAnime?: boolean;
   upNext?: boolean;
   local?: boolean;
+  manualWatched?: boolean;
 };
 
 export function libraryMetaType(t: string): import("@/lib/cinemeta").MetaType {

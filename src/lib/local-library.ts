@@ -14,6 +14,8 @@ export type LocalEntry = {
   poster?: string | null;
   tmdbId?: number | null;
   imdbId?: string | null;
+  season?: number | null;
+  episode?: number | null;
   addedAt: number;
 };
 

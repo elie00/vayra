@@ -231,7 +231,12 @@ export async function resolveViaDebrids(
 
 async function tryLocalEngine(stream: ParsedStream | ScoredStream): Promise<DirectLink | null> {
   if (!stream.infoHash || !localTorrentAllowed()) return null;
-  const added = await torrentEngineAdd(magnetFromHash(stream.infoHash), trackersFromSources(stream.sources));
+  const addIdx = typeof stream.fileIdx === "number" && stream.fileIdx >= 0 ? stream.fileIdx : undefined;
+  const added = await torrentEngineAdd(
+    magnetFromHash(stream.infoHash),
+    trackersFromSources(stream.sources),
+    addIdx,
+  );
   if (!added || added.files.length === 0) return null;
   const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName ?? null;
   let chosenIdx = stream.fileIdx;

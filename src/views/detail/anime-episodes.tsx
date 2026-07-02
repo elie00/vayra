@@ -13,7 +13,12 @@ import { useTrakt } from "@/lib/trakt/provider";
 import { useView } from "@/lib/view";
 import { useAnilistWatched } from "@/lib/anilist/use-anilist-watched";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
-import { manualWatchedVersion, setManualWatchedMany, subscribeManualWatched } from "@/lib/manual-watched";
+import {
+  manualWatchedVersion,
+  recordManualWatchedMeta,
+  setManualWatchedMany,
+  subscribeManualWatched,
+} from "@/lib/manual-watched";
 import { useT } from "@/lib/i18n";
 import { AnimeEpisodeRow } from "./anime-episodes/episode-row";
 import { AnimeEpisodeStrip } from "./anime-episode-strip";
@@ -114,6 +119,13 @@ export function AnimeEpisodes({
     episodes.length > 0 && episodes.every((ep) => progressByNum.get(ep.number)?.watched);
   const markSeason = (watched: boolean) => {
     if (episodes.length === 0) return;
+    if (watched)
+      recordManualWatchedMeta(meta.id, {
+        type: "series",
+        name: meta.name,
+        poster: meta.poster,
+        background: meta.background,
+      });
     setManualWatchedMany(
       meta.id,
       episodes.map((ep) => ({ season: ep.seasonNumber || 1, episode: ep.number })),
@@ -231,6 +243,7 @@ export function AnimeEpisodes({
       {watchedMenu && (
         <EpisodeWatchedMenu
           metaId={meta.id}
+          meta={{ type: "series", name: meta.name, poster: meta.poster, background: meta.background }}
           target={watchedMenu}
           onClose={() => setWatchedMenu(null)}
         />

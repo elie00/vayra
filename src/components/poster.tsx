@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { needsImdbForPoster, needsTmdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
 import {
   tmdbIdFromImdb,
@@ -97,11 +97,23 @@ export function usePosterChain(
     }
     return out;
   }, [rpdbKey, metaId, altId, metaPoster, animeImdb, animeTvdb, animeTmdb]);
-  const [idx, setIdx] = useState(0);
-  useEffect(() => setIdx(0), [candidates]);
+  const sig = candidates.join("|");
+  const failedRef = useRef<Set<string>>(new Set());
+  const sigRef = useRef(sig);
+  const [, bump] = useReducer((n: number) => n + 1, 0);
+  if (sigRef.current !== sig) {
+    sigRef.current = sig;
+    failedRef.current = new Set();
+  }
+  const src = candidates.find((u) => !failedRef.current.has(u));
   return {
-    src: candidates[idx],
-    onError: () => setIdx((i) => (i + 1 < candidates.length ? i + 1 : i)),
+    src,
+    onError: () => {
+      if (src && !failedRef.current.has(src)) {
+        failedRef.current.add(src);
+        bump();
+      }
+    },
   };
 }
 
@@ -146,6 +158,7 @@ export function Poster({
   const [retry, setRetry] = useState(0);
   const failedRef = useRef<Set<string>>(new Set());
   const firedRef = useRef(false);
+  const failBurstRef = useRef<{ t: number; n: number }>({ t: 0, n: 0 });
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
   useEffect(() => {
@@ -185,6 +198,14 @@ export function Poster({
   }, [exhausted, retry]);
 
   const fail = useCallback((url: string) => {
+    const now = Date.now();
+    const b = failBurstRef.current;
+    if (now - b.t > 1000) {
+      b.t = now;
+      b.n = 0;
+    }
+    if (++b.n > 24) return;
+    if (failedRef.current.has(url)) return;
     failedRef.current.add(url);
     setLoaded(false);
     setIdx((i) => i + 1);

@@ -48,7 +48,7 @@ export function CinematicPlayerLoader({
   const heavyForP2p = isInfoHash && streamBytes != null && streamBytes > 20 * 1024 ** 3;
   const everPlayedRef = useRef(false);
   const hasProgress = usePlaybackFlag(() => getPlaybackPosition() > 0.3);
-  if (snap.durationSec > 0 && hasProgress) {
+  if (hasProgress && (snap.durationSec > 0 || snap.status === "playing")) {
     everPlayedRef.current = true;
   }
   const sessionKey = `${src.meta.id}::${src.episode?.season ?? ""}:${src.episode?.episode ?? ""}`;

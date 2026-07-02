@@ -4,6 +4,7 @@ import { StreamSwitcher } from "@/components/player/stream-switcher";
 import { StreamCheckPill } from "@/components/player/stream-check-pill";
 import { AdReportButton } from "@/components/player/ad-report-button";
 import { P2pStatusChip } from "@/components/player/p2p-status-chip";
+import type { VolumeHudPosition, VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import type { PlayerSrc, PlayEpisode } from "@/lib/view";
 import { CastLayer } from "./cast-layer";
@@ -40,7 +41,8 @@ export type PlayerOverlayLayersProps = {
   subAssNative: boolean;
   showStats: boolean;
   holdSpeedActive: boolean;
-  volumeIndicator: ComponentProps<typeof StageOverlays>["volumeIndicator"];
+  volumeIndicator: VolumeIndicatorState;
+  volumeHudPosition: VolumeHudPosition;
   videoFillPill: string | null;
   subDropToast: string | null;
   pipMode: boolean;
@@ -140,6 +142,8 @@ export type PlayerOverlayLayersProps = {
   onPlayWithoutSync: () => void;
   guestHostSource: Room["guestHostSource"];
   liveUrl: string;
+  currentInfoHash?: string | null;
+  currentFileIdx?: number | null;
   switcherOpen: boolean;
   foreignNotice: Room["foreignNotice"];
   onDismissForeign: () => void;
@@ -184,6 +188,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         showStats={p.showStats}
         holdSpeedActive={p.holdSpeedActive}
         volumeIndicator={p.volumeIndicator}
+        volumeHudPosition={p.volumeHudPosition}
         videoFillPill={p.videoFillPill}
         subDropToast={p.subDropToast}
         onSubDelay={(s) => { p.bridgeRef.current?.setSubDelay(s); }}
@@ -408,6 +413,8 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         onPick={p.onSwitchStream}
         resolvingKey={p.swapResolvingKey}
         currentUrl={p.liveUrl}
+        currentInfoHash={p.currentInfoHash ?? null}
+        currentFileIdx={p.currentFileIdx ?? null}
         debridSlugs={p.debridSlugs}
         meta={p.src.meta}
         episode={p.src.episode}

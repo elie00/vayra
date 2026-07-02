@@ -2,6 +2,7 @@ import { openUrl as tauriOpenUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
+import { getWindowFullscreen } from "@/lib/fullscreen-state";
 
 const win: Window | null = isTauri() ? getCurrentWindow() : null;
 
@@ -37,6 +38,7 @@ export type ResizeDir =
   | "West";
 
 export function startResize(direction: ResizeDir) {
+  if (getWindowFullscreen()) return;
   win?.startResizeDragging(direction).catch(() => {});
 }
 

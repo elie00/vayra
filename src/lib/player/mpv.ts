@@ -29,6 +29,16 @@ export async function probeMpv(): Promise<MpvProbe> {
   }
 }
 
+export type MpvAudioDevice = { name: string; description: string };
+
+export async function listMpvAudioDevices(): Promise<MpvAudioDevice[]> {
+  try {
+    return await invoke<MpvAudioDevice[]>("mpv_audio_devices");
+  } catch {
+    return [];
+  }
+}
+
 type MpvEvent =
   | {
       event: "property-change";
@@ -409,6 +419,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       invoke("mpv_set_property", { name: "mute", value: m }).catch(() => {});
     },
     setRate(r) {
+      snap.rate = r;
+      emit();
       invoke("mpv_set_property", { name: "speed", value: r }).catch(() => {});
     },
     setAudioTrack(id) {
@@ -495,6 +507,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     setAudioProfile(profile) {
       profileAf = AUDIO_PROFILE_AF[profile] ?? "";
       applyAudioFilters();
+    },
+    setAudioDevice(name) {
+      invoke("mpv_set_property", {
+        name: "audio-device",
+        value: name && name !== "auto" ? name : "auto",
+      }).catch(() => {});
     },
     setMediaInfo(info) {
       invoke("mpv_set_property", { name: "force-media-title", value: info.title }).catch(() => {});

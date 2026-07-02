@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useSettings } from "@/lib/settings";
+import { listMpvAudioDevices, type MpvAudioDevice } from "@/lib/player/mpv";
 import { PlayModePanel, PlayerEnginePanel } from "./player-panel";
 import { Section, Segmented, ToggleRow, useSettingsActiveContext } from "./shared";
 import { CROP_PRESETS } from "@/views/player/hooks/use-video-fill";
@@ -83,6 +85,7 @@ export function QualityPanel() {
             {t("Night mode gently compresses loud moments for late-night watching. Profiles take effect when the next track loads and stack with the normalizer.")}
           </p>
         </div>
+        <AudioOutputRow />
       </Section>
 
       <Section
@@ -153,6 +156,48 @@ const NEXT_EP_LEADS = [
   { value: "90", label: "1.5 min", sec: 90 },
   { value: "120", label: "2 min", sec: 120 },
 ] as const;
+
+function AudioOutputRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  const [devices, setDevices] = useState<MpvAudioDevice[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    listMpvAudioDevices()
+      .then((d) => alive && setDevices(d))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const known = settings.audioDevice === "" || devices.some((d) => d.name === settings.audioDevice);
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-edge-soft pt-3.5">
+      <div className="flex min-w-0 flex-col">
+        <span className="text-[13.5px] font-medium text-ink">{t("Output device")}</span>
+        <span className="text-[12px] leading-relaxed text-ink-subtle">
+          {loading
+            ? t("Detecting devices...")
+            : t("Send audio to specific speakers, headphones or a receiver. System default follows Windows.")}
+        </span>
+      </div>
+      <select
+        value={settings.audioDevice}
+        onChange={(e) => update({ audioDevice: e.target.value })}
+        className="h-9 max-w-[200px] shrink-0 rounded-lg border border-edge bg-raised px-2.5 text-[12.5px] text-ink outline-none transition-colors focus:border-ink"
+      >
+        <option value="">{t("System default")}</option>
+        {devices.map((d) => (
+          <option key={d.name} value={d.name}>
+            {d.description || d.name}
+          </option>
+        ))}
+        {!known && <option value={settings.audioDevice}>{settings.audioDevice}</option>}
+      </select>
+    </div>
+  );
+}
 
 function nextEpLeadKey(sec: number): string {
   return NEXT_EP_LEADS.find((o) => o.sec === sec)?.value ?? "auto";

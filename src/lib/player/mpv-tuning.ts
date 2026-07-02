@@ -10,6 +10,7 @@ const QUALITY_LINES: Record<Settings["mpvQuality"], string[]> = {
     "deband=no",
     "vd-lavc-fast=yes",
     "interpolation=no",
+    "hdr-compute-peak=no",
   ],
   quality: [
     "scale=ewa_lanczossharp",
@@ -21,6 +22,7 @@ const QUALITY_LINES: Record<Settings["mpvQuality"], string[]> = {
     "correct-downscaling=yes",
     "linear-downscaling=yes",
     "sigmoid-upscaling=yes",
+    "hdr-compute-peak=yes",
   ],
 };
 
@@ -30,6 +32,8 @@ export function compileMpvOptions(s: Settings): string {
   else if (s.mpvHwdec === "off") lines.push("hwdec=no");
   if (s.mpvBufferBoost) lines.push("cache=yes", "demuxer-max-bytes=150MiB", "demuxer-readahead-secs=20");
   if (s.mpvDownmixStereo) lines.push("audio-channels=stereo");
+  if (s.audioDevice && s.audioDevice !== "auto") lines.push(`audio-device=${s.audioDevice}`);
+  if (s.playerDisplayPanel === "oled" && s.playerHdrToSdr) lines.push("target-contrast=inf");
   for (const [k, v] of Object.entries(s.mpvTweaks ?? {})) {
     if (v !== "" && v != null) lines.push(`${k}=${v}`);
   }

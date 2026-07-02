@@ -2,14 +2,14 @@ import { lruSet } from "@/lib/cache";
 import type { Meta } from "@/lib/cinemeta";
 import { registerCache } from "@/lib/memory-profiler";
 import { registerEvictable } from "@/lib/maintenance";
-import { anilistArtById } from "@/lib/anilist/browse";
+import { anilistArtById, anilistArtByMalId } from "@/lib/anilist/browse";
+import { anilistFranchise } from "@/lib/anilist/relations";
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
-import { kitsuToAnilist } from "@/lib/providers/anime-mapping";
-import { kitsuCoverImage, parseKitsuId } from "@/lib/providers/kitsu";
+import { externalToKitsu, kitsuToAnilist } from "@/lib/providers/anime-mapping";
+import { stripFranchiseSuffix } from "@/lib/providers/jikan";
+import { parseKitsuId } from "@/lib/providers/kitsu";
 import { tmdbAnimeLogo } from "@/lib/providers/tmdb";
 
-const GOOD_W = 1280;
-const GOOD_H = 720;
 const CACHE_MAX = 600;
 const cache = new Map<string, string | undefined>();
 const inflight = new Map<string, Promise<string | undefined>>();
@@ -21,56 +21,6 @@ registerEvictable("anime-backdrop", (aggressive) => {
 
 const isAnimeId = (id: string) => /^(kitsu|mal|anilist|anidb):/.test(id);
 
-function probeSize(url: string): Promise<{ w: number; h: number }> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    let done = false;
-    const finish = (w: number, h: number) => {
-      if (done) return;
-      done = true;
-      resolve({ w, h });
-    };
-    const timer = window.setTimeout(() => finish(0, 0), 7000);
-    img.onload = () => {
-      window.clearTimeout(timer);
-      finish(img.naturalWidth || 0, img.naturalHeight || 0);
-    };
-    img.onerror = () => {
-      window.clearTimeout(timer);
-      finish(0, 0);
-    };
-    img.src = url;
-  });
-}
-
-type Producer = () => Promise<string | undefined>;
-
-async function pickHiRes(producers: Producer[]): Promise<string | undefined> {
-  let best: string | undefined;
-  let bestArea = 0;
-  let fallback: string | undefined;
-  let fallbackWidth = 0;
-  const seen = new Set<string>();
-  for (const produce of producers) {
-    const url = await produce().catch(() => undefined);
-    if (!url || seen.has(url)) continue;
-    seen.add(url);
-    const { w, h } = await probeSize(url);
-    if (w >= GOOD_W && h >= GOOD_H) return url;
-    if (w >= GOOD_W) {
-      const area = w * h;
-      if (area > bestArea) {
-        bestArea = area;
-        best = url;
-      }
-    } else if (w > fallbackWidth) {
-      fallbackWidth = w;
-      fallback = url;
-    }
-  }
-  return best ?? fallback;
-}
-
 export async function resolveHeroBackdrop(tmdbKey: string, meta: Meta): Promise<string | undefined> {
   if (!isAnimeId(meta.id)) return meta.background ?? meta.poster;
   if (cache.has(meta.id)) return cache.get(meta.id);
@@ -78,26 +28,59 @@ export async function resolveHeroBackdrop(tmdbKey: string, meta: Meta): Promise<
   if (existing) return existing;
   const p = (async () => {
     const akm = await animeKitsuMeta(meta.id).catch(() => null);
-    const name = akm?.name ?? meta.name ?? "";
     const kind: "movie" | "tv" = meta.type === "movie" ? "movie" : "tv";
     const year = akm?.releaseInfo ?? meta.releaseInfo;
-    const kitsuId = parseKitsuId(meta.id);
-    let anilistId = meta.id.startsWith("anilist:") ? Number(meta.id.split(":")[1]) || null : null;
-    const producers: Producer[] = [
-      async () =>
-        tmdbKey && name ? (await tmdbAnimeLogo(tmdbKey, name, year, kind))?.backdrop : undefined,
-      async () => {
-        if (anilistId == null && kitsuId != null) anilistId = await kitsuToAnilist(kitsuId);
-        return anilistId != null ? (await anilistArtById(anilistId)).banner : undefined;
-      },
-      async () => (anilistId != null ? (await anilistArtById(anilistId)).cover : undefined),
-      async () => (kitsuId != null ? (await kitsuCoverImage(kitsuId)) ?? undefined : undefined),
-      async () => meta.background,
-      async () => meta.poster,
+    const names = [
+      ...new Set(
+        [
+          stripFranchiseSuffix(meta.name ?? ""),
+          stripFranchiseSuffix(akm?.name ?? ""),
+          akm?.name ?? "",
+        ].filter(Boolean),
+      ),
     ];
-    return (await pickHiRes(producers)) ?? meta.background ?? meta.poster;
+    if (tmdbKey) {
+      for (const n of names) {
+        const hit = await tmdbAnimeLogo(tmdbKey, n, year, kind).catch(() => null);
+        if (hit?.backdrop) return hit.backdrop;
+      }
+      if (names[0]) {
+        const hit = await tmdbAnimeLogo(tmdbKey, names[0], undefined, kind).catch(() => null);
+        if (hit?.backdrop) return hit.backdrop;
+      }
+    }
+    const kitsuId = parseKitsuId(meta.id);
+    const malId = meta.id.startsWith("mal:") ? Number(meta.id.split(":")[1]) || null : null;
+    let anilistId = meta.id.startsWith("anilist:") ? Number(meta.id.split(":")[1]) || null : null;
+    if (anilistId == null && kitsuId != null) {
+      anilistId = await kitsuToAnilist(kitsuId).catch(() => null);
+    }
+    if (anilistId == null && malId != null) {
+      const art = await anilistArtByMalId(malId);
+      if (art.banner) return art.banner;
+      anilistId = art.id ?? null;
+    }
+    if (anilistId != null) {
+      const art = await anilistArtById(anilistId).catch(() => null);
+      if (art?.banner) return art.banner;
+      const fam = await anilistFranchise(anilistId).catch(() => []);
+      const rooted = fam
+        .filter((n) => !n.upcoming)
+        .sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
+      const rootBanner = rooted.find((n) => n.banner)?.banner;
+      if (rootBanner) return rootBanner;
+      for (const n of rooted.slice(0, 2)) {
+        const rootKitsu = await externalToKitsu("anilist", n.id).catch(() => null);
+        if (rootKitsu == null) continue;
+        const rootMeta = await animeKitsuMeta(`kitsu:${rootKitsu}`).catch(() => null);
+        if (rootMeta?.background) return rootMeta.background;
+      }
+    }
+    return meta.background ?? meta.poster;
   })().then((url) => {
-    lruSet(cache, meta.id, url, CACHE_MAX);
+    if (url && url !== meta.background && url !== meta.poster) {
+      lruSet(cache, meta.id, url, CACHE_MAX);
+    }
     inflight.delete(meta.id);
     return url;
   });

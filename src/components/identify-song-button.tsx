@@ -4,19 +4,19 @@ import { useSettings } from "@/lib/settings";
 import { identifyNowPlaying } from "@/lib/song-id";
 import { Tooltip } from "@/components/player/transport/tooltip";
 
-/** Player control button that triggers AudD song identification.
- *  Reads the AudD key from Settings → Library & metadata.
- *  Uses the shared Tooltip so the hint shows instantly, matching the
- *  other transport controls (no slow native title tooltip). */
 export function IdentifySongButton({
   className,
   tight,
+  editing,
 }: {
   className?: string;
   tight?: boolean;
+  editing?: boolean;
 }) {
   const { settings } = useSettings();
   const [pending, setPending] = useState(false);
+
+  if (!settings.songIdEnabled && !editing) return null;
 
   const onClick = async () => {
     if (pending) return;

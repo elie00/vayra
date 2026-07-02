@@ -4,6 +4,16 @@ const ISO_3_TO_1: Record<string, string> = {
   hin: "hi", tha: "th", vie: "vi", tur: "tr", pol: "pl", dut: "nl", nld: "nl",
   swe: "sv", nor: "no", dan: "da", fin: "fi", heb: "he", ind: "id", ces: "cs",
   cze: "cs", ell: "el", gre: "el", hun: "hu", rum: "ro", ron: "ro", ukr: "uk",
+  tam: "ta", tel: "te", mal: "ml", kan: "kn", ben: "bn", mar: "mr", guj: "gu",
+  pan: "pa", urd: "ur", ori: "or", ory: "or", asm: "as", nep: "ne", sin: "si",
+  msa: "ms", may: "ms", fil: "tl", tgl: "tl", mya: "my", bur: "my", khm: "km",
+  lao: "lo", fas: "fa", per: "fa", pus: "ps", kur: "ku", aze: "az", kat: "ka",
+  geo: "ka", hye: "hy", arm: "hy", kaz: "kk", uzb: "uz", bul: "bg", srp: "sr",
+  hrv: "hr", bos: "bs", slk: "sk", slo: "sk", slv: "sl", lit: "lt", lav: "lv",
+  est: "et", isl: "is", ice: "is", gle: "ga", cat: "ca", eus: "eu", baq: "eu",
+  glg: "gl", cym: "cy", wel: "cy", mlt: "mt", sqi: "sq", alb: "sq", mkd: "mk",
+  mac: "mk", bel: "be", swa: "sw", amh: "am", afr: "af", hau: "ha", yor: "yo",
+  ibo: "ig", zul: "zu",
 };
 
 const NAMES: Record<string, string> = {
@@ -15,7 +25,20 @@ const NAMES: Record<string, string> = {
   pl: "Polish", nl: "Dutch", sv: "Swedish", no: "Norwegian", da: "Danish",
   fi: "Finnish", he: "Hebrew", id: "Indonesian", cs: "Czech", el: "Greek",
   hu: "Hungarian", ro: "Romanian", uk: "Ukrainian",
+  ta: "Tamil", te: "Telugu", ml: "Malayalam", kn: "Kannada", bn: "Bengali",
+  mr: "Marathi", gu: "Gujarati", pa: "Punjabi", ur: "Urdu", or: "Odia",
+  as: "Assamese", ne: "Nepali", si: "Sinhala", ms: "Malay", tl: "Filipino",
+  my: "Burmese", km: "Khmer", lo: "Lao", fa: "Persian", ps: "Pashto",
+  ku: "Kurdish", az: "Azerbaijani", ka: "Georgian", hy: "Armenian", kk: "Kazakh",
+  uz: "Uzbek", bg: "Bulgarian", sr: "Serbian", hr: "Croatian", bs: "Bosnian",
+  sk: "Slovak", sl: "Slovenian", lt: "Lithuanian", lv: "Latvian", et: "Estonian",
+  is: "Icelandic", ga: "Irish", ca: "Catalan", eu: "Basque", gl: "Galician",
+  cy: "Welsh", mt: "Maltese", sq: "Albanian", mk: "Macedonian", be: "Belarusian",
+  sw: "Swahili", am: "Amharic", af: "Afrikaans", ha: "Hausa", yo: "Yoruba",
+  ig: "Igbo", zu: "Zulu",
 };
+
+export const ALL_LANGUAGE_NAMES: string[] = Object.values(NAMES);
 
 const LATAM_ALIASES = new Set([
   "es-419", "es-la", "lat", "latam", "latino", "latin american spanish",

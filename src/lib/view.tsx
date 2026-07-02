@@ -4,7 +4,7 @@ import { profileFromMeta, trackEvent } from "./discover";
 import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
-import { getWindowFullscreen, suppressFullscreenExitOnce } from "./fullscreen-state";
+import { beginMarathonAdvance } from "./fullscreen-state";
 export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads";
 
 export type PlayEpisode = {
@@ -34,6 +34,8 @@ export type PlayerSrc = {
   notWebReady?: boolean;
   subtitles?: Array<{ url: string; lang?: string; id?: string }>;
   attempt?: number;
+  autoFired?: boolean;
+  resume?: boolean;
   streamRef?: PlayerStreamRef;
   liveProgram?: string;
   isLive?: boolean;
@@ -696,7 +698,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
 
   const openPicker = useCallback(
     (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }) => {
-      if (opts?.autoPlay && getWindowFullscreen()) suppressFullscreenExitOnce();
+      if (opts?.autoPlay) beginMarathonAdvance();
       setNavStack((cur) => {
         const t = cur[cur.length - 1];
         if (

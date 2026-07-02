@@ -48,6 +48,21 @@ export function onDeepLinkOpen(handler: (open: DeepLinkOpen) => void): () => voi
   return () => window.removeEventListener(OPEN_EVENT, listener);
 }
 
+const OPEN_FILE_EVENT = "harbor:open-local-file";
+
+export function emitOpenLocalFile(path: string): void {
+  window.dispatchEvent(new CustomEvent<{ path: string }>(OPEN_FILE_EVENT, { detail: { path } }));
+}
+
+export function onOpenLocalFile(handler: (path: string) => void): () => void {
+  const listener = (e: Event) => {
+    const ev = e as CustomEvent<{ path: string }>;
+    if (ev.detail?.path) handler(ev.detail.path);
+  };
+  window.addEventListener(OPEN_FILE_EVENT, listener);
+  return () => window.removeEventListener(OPEN_FILE_EVENT, listener);
+}
+
 function parseDetailPath(path: string): DeepLinkOpen | null {
   const parts = path.split("/").filter((p) => p.length > 0);
   if (parts[0] !== "detail" || parts.length < 3) return null;
@@ -130,6 +145,14 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       "harbor://browser-stremio-capture",
       forwardLinuxBrowserInstall,
     );
+    const unlistenOpenFile = await listen<string>("harbor:open-file", (e) => {
+      if (typeof e.payload === "string" && e.payload) emitOpenLocalFile(e.payload);
+    });
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const pending = await invoke<string | null>("harbor_take_pending_file");
+      if (typeof pending === "string" && pending) emitOpenLocalFile(pending);
+    } catch {}
     try {
       const initial = await mod.getCurrent();
       if (initial && initial.length > 0) handle(initial);
@@ -143,6 +166,9 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       } catch {}
       try {
         unlistenBrowserCap();
+      } catch {}
+      try {
+        unlistenOpenFile();
       } catch {}
     };
   } catch (e) {

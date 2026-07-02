@@ -1,5 +1,6 @@
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { DisplayPanelSelector } from "./display-panel-selector";
 
 type HdrMode = "sdr" | "hdrWindow" | "hdrEmbedded";
 
@@ -98,6 +99,7 @@ export function HdrModePicker() {
           );
         })}
       </div>
+      <DisplayPanelSelector />
     </div>
   );
 }

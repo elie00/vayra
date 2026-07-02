@@ -186,7 +186,19 @@ async function buildFranchise(
     depth++;
   }
 
-  const anilistNodes = await anilistPromise;
+  const rootAnilist = await anilistPromise;
+  const siblingIds = [...items.values()]
+    .filter((e) => !e.isCurrent)
+    .sort((a, b) => (a.year || 9999) - (b.year || 9999))
+    .map((e) => parseKitsuId(e.meta.id))
+    .filter((x): x is number => x != null)
+    .slice(0, 2);
+  const siblingBatches = await Promise.all(
+    siblingIds.map((id) => anilistFranchise(id).catch(() => [] as AnilistFranchiseNode[])),
+  );
+  const anilistById = new Map<number, AnilistFranchiseNode>();
+  for (const n of [rootAnilist, ...siblingBatches].flat()) anilistById.set(n.id, n);
+  const anilistNodes = [...anilistById.values()];
   const anilistEntries: FranchiseEntry[] = anilistNodes.map((n) => ({
     meta: {
       id: `anilist:${n.id}`,
@@ -327,10 +339,7 @@ export async function animeDetails(
       if (az.absoluteEpisodeNumber) ep.absoluteNumber = az.absoluteEpisodeNumber;
       if (ep.rating == null && az.rating != null) {
         const r = Number(az.rating);
-        if (Number.isFinite(r) && r > 0) {
-          ep.rating = r;
-          ep.ratingIsImdb = true;
-        }
+        if (Number.isFinite(r) && r > 0) ep.rating = r;
       }
       if (az.seasonNumber != null && az.seasonNumber > 0 && az.episodeNumber != null) {
         if (azImdb) ep.imdbId = azImdb;

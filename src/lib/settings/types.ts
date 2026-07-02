@@ -1,6 +1,7 @@
 import type { ThemeSettings } from "@/lib/theme";
 import type { CustomList } from "@/lib/lists/types";
 import type { SourceRow } from "@/lib/custom-sources";
+import type { CustomStreamFilter } from "@/lib/streams/custom-filters";
 
 export type StreamingService =
   | "netflix"
@@ -62,10 +63,12 @@ export type Settings = {
   showTmdbBadge: boolean;
   showRtBadge: boolean;
   showMalBadge: boolean;
+  animeCardRating: "mal" | "imdb";
   showMetacriticBadge: boolean;
   showLetterboxdBadge: boolean;
   showMdblistBadge: boolean;
   showTraktBadge: boolean;
+  showDetailRatings: boolean;
   showTraktComments: boolean;
   cardBadgeLimit: number;
   showQualityBadge: boolean;
@@ -88,6 +91,8 @@ export type Settings = {
   resumePrompt: boolean;
   resumePlayback: boolean;
   keepFullscreenOnExit: boolean;
+  playerVolumeHud: boolean;
+  playerVolumeHudPosition: "center" | "top" | "top-left" | "top-right";
   badgePlacement: "top" | "bottom";
   watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
   showWatchedButton: boolean;
@@ -101,6 +106,7 @@ export type Settings = {
   harborColor: string;
   anilistAutoSync: boolean;
   anilistBlurComments: boolean;
+  showAnilistComments: boolean;
   useAnilistAvatar: boolean;
   useTraktAvatar: boolean;
   useSimklAvatar: boolean;
@@ -134,6 +140,7 @@ export type Settings = {
   rememberLastStream: boolean;
   keepSourceNextEpisode: boolean;
   playerHdrToSdr: boolean;
+  playerDisplayPanel: "auto" | "oled" | "lcd";
   playerMotionInterp: boolean;
   playerAnime4k: boolean;
   playerAnime4kAnimeOnly: boolean;
@@ -177,6 +184,7 @@ export type Settings = {
   subShowInPip: boolean;
   subtitlesOffByDefault: boolean;
   preferEmbeddedSubs: boolean;
+  subtitleAutoUpgrade: boolean;
   betaUpdates: boolean;
   autoSkipIntro: boolean;
   autoSkipAd: boolean;
@@ -203,19 +211,22 @@ export type Settings = {
   playerSvp: boolean;
   svpVpyPath: string;
   svpScope: "all" | "anime" | "non-anime";
-  playerHdrOpaqueWindow: boolean;
-  playerEscExitsFullscreen: boolean;
   seekBackStepSec: number;
   seekForwardStepSec: number;
+  playerHdrOpaqueWindow: boolean;
+  playerEscExitsFullscreen: boolean;
+  playerConfirmLeave: boolean;
   playerHdrStage: "auto" | "off" | "always";
   opensubtitlesApiKey: string;
   jimakuToken: string;
   audioNormalize: boolean;
   audioProfile: "off" | "bass" | "voice" | "bass-reduce" | "night";
+  audioDevice: string;
   bandwidthMbps: number;
   nextEpisodeLeadSec: number;
   autoPlayNextEpisode: boolean;
   hideWatchedInCatalogs: boolean;
+  hideUnreleased: boolean;
   showPlaylistsTab: boolean;
   sportsLeagues: string[];
   hideSpoilers: boolean;
@@ -224,6 +235,7 @@ export type Settings = {
   spoilerHideDescriptions: boolean;
   spoilerSkipNext: boolean;
   streamBackdropBlur: boolean;
+  songIdEnabled: boolean;
   songCardStyle: "compact" | "cinematic";
   songCardDetails: boolean;
   hideContent: ContentFilters;
@@ -259,6 +271,7 @@ export type Settings = {
   streamSort: "harbor" | "addon";
   fullStreamDescription: boolean;
   pickerShowFilename: boolean;
+  customStreamFilters: CustomStreamFilter[];
   seekBarStyle: "flat" | "glass" | "pinstripe" | "rainbow" | "image";
   seekBarHeight: number;
   seekBarColor: string;

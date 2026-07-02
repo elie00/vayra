@@ -20,6 +20,7 @@ import { LetterboxdPanel } from "./settings/letterboxd-panel";
 import { RelaySection, type RelayMode } from "./settings/relay-section";
 import { SettingsActiveContext, type SectionId } from "./settings/shared";
 import { StreamingSourcesPanel, type DebridKey } from "./settings/streaming-sources-panel";
+import { StreamFiltersPanel } from "./settings/stream-filters-panel";
 import { ThemePanel } from "./settings/theme-panel";
 import { WebhooksPanel } from "./settings/webhooks-panel";
 import { BackToTop } from "@/components/back-to-top";
@@ -68,6 +69,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   streaming: {
     label: "Streaming sources",
     sub: "How Harbor finds and resolves playable streams. Debrid keys and addon installs live here.",
+  },
+  streamFilters: {
+    label: "Stream filters",
+    sub: "Build a named filter once, then apply it in the source picker to trim a noisy stream list down to exactly what you want.",
   },
   p2p: {
     label: "P2P & servers",
@@ -283,6 +288,8 @@ export function Settings() {
               saveKey={saveKey}
             />
           )}
+
+          {active === "streamFilters" && <StreamFiltersPanel />}
 
           {active === "p2p" && <P2PPanel />}
 

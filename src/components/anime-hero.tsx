@@ -38,6 +38,10 @@ export function AnimeHero({
   const [savedTick, setSavedTick] = useState(0);
 
   useEffect(() => {
+    setHdBackdrops({});
+  }, [settings.tmdbKey]);
+
+  useEffect(() => {
     if (slides.length === 0) return;
     const el = document.getElementById("anime-hero-section");
     if (!el) return;

@@ -4,7 +4,7 @@ import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
 import { isExternalPlaylistId } from "@/lib/iptv/vod";
 import { saveLocalCw } from "@/lib/local-cw";
-import { isManuallyWatched, setManualWatched } from "@/lib/manual-watched";
+import { isManuallyWatched, recordManualWatchedMeta, setManualWatched } from "@/lib/manual-watched";
 import { savePlayback } from "@/lib/playback-history";
 import { saveResumeMs } from "@/lib/resume";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
@@ -79,6 +79,12 @@ export function useResumeAutosave(params: {
       finished &&
       !isManuallyWatched(id, se, ep)
     ) {
+      recordManualWatchedMeta(id, {
+        type: "series",
+        name: s.meta.name,
+        poster: s.meta.poster,
+        background: s.meta.background,
+      });
       setManualWatched(id, se, ep, true);
     }
     if ((s.meta.type === "series" || s.meta.type === "movie") && !CLOUD_OK.test(id)) {

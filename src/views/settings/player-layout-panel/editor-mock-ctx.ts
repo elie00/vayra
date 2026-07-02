@@ -115,6 +115,7 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     anime4kMode: "auto",
     onAnime4kMode: NOOP_STR,
     anime4kAvailable: true,
+    editing: true,
   };
 }
 

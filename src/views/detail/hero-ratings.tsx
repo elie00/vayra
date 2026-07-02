@@ -60,30 +60,26 @@ export function HeroRatings({
   isAnime,
   scores,
   mdblist,
-  showRtBadge,
   imdbId,
   mediaType,
   onOpenUrl,
   ratingSource = "imdb",
+  animeImdbRating,
 }: {
   rating?: string;
   isAnime: boolean;
   scores: OmdbScores | null;
   mdblist: MdblistScores | null;
-  showRtBadge: boolean;
   imdbId: string | null;
   mediaType: "movie" | "show";
   onOpenUrl: (url: string) => void;
   ratingSource?: "imdb" | "tmdb";
+  animeImdbRating?: string | null;
 }) {
   const t = useT();
   const { settings } = useSettings();
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
-  const showPrimary = isAnime
-    ? settings.showMalBadge
-    : ratingSource === "tmdb"
-      ? settings.showTmdbBadge
-      : settings.showImdbBadge;
+  const showPrimary = settings.showDetailRatings;
 
   const items: ReactNode[] = [];
 
@@ -111,7 +107,21 @@ export function HeroRatings({
     );
   }
 
-  if (showRtBadge && scores?.rtCritics != null) {
+  if (isAnime && animeImdbRating && showPrimary) {
+    items.push(
+      <ScoreItem
+        key="anime-imdb"
+        label={t("IMDb")}
+        sublabel={t("Rating /10")}
+        onClick={imdbId ? () => onOpenUrl(`https://www.imdb.com/title/${imdbId}/`) : undefined}
+      >
+        <ImdbIcon className="h-[15px] w-auto rounded-[3px]" />
+        <span>{animeImdbRating}</span>
+      </ScoreItem>,
+    );
+  }
+
+  if (settings.showDetailRatings && scores?.rtCritics != null) {
     items.push(
       <ScoreItem key="rt-critics" label={t("Rotten Tomatoes Critics")} sublabel={t("Tomatometer")}>
         <RtBadge score={scores.rtCritics} className="h-[16px] w-auto" />
@@ -120,7 +130,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showPopcornBadge && mdblist?.rtAudience != null) {
+  if (settings.showDetailRatings && mdblist?.rtAudience != null) {
     items.push(
       <ScoreItem key="rt-audience" label={t("Rotten Tomatoes Audience")} sublabel={t("Popcornmeter")}>
         <Popcorn
@@ -133,7 +143,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showLetterboxdBadge && mdblist?.letterboxd != null) {
+  if (settings.showDetailRatings && mdblist?.letterboxd != null) {
     items.push(
       <ScoreItem
         key="letterboxd"
@@ -151,7 +161,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showMetacriticBadge && metacritic != null) {
+  if (settings.showDetailRatings && metacritic != null) {
     items.push(
       <ScoreItem key="metacritic" label={t("Metacritic")} sublabel={t("Metascore")}>
         <span
@@ -163,7 +173,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showTraktBadge && mdblist?.trakt != null) {
+  if (settings.showDetailRatings && mdblist?.trakt != null) {
     items.push(
       <ScoreItem
         key="trakt"
@@ -176,7 +186,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showMdblistBadge && mdblist?.score != null) {
+  if (settings.showDetailRatings && mdblist?.score != null) {
     items.push(
       <ScoreItem
         key="mdblist"

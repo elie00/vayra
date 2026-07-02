@@ -2,6 +2,7 @@ import { Clock, Gauge } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { SLEEP_PRESETS, type SleepTimerState } from "@/views/player/hooks/use-sleep-timer";
 import { useT } from "@/lib/i18n";
+import { useMenuSide } from "../menu-side";
 import { Tooltip } from "./tooltip";
 
 function formatRemaining(ms: number): string {
@@ -25,6 +26,7 @@ export function SpeedMenu({
   const t = useT();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const { side, measure } = useMenuSide(wrap, 400);
   useEffect(() => {
     onOpenChange?.(open);
   }, [open, onOpenChange]);
@@ -54,7 +56,10 @@ export function SpeedMenu({
     <div ref={wrap} className="relative">
       <Tooltip label={sleep ? t("Speed & sleep") : t("Playback speed")}>
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => {
+            if (!open) measure();
+            setOpen((o) => !o);
+          }}
           aria-label={t("Speed and sleep timer")}
           className={`flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color] ${
             accent ? "bg-white/22 text-white hover:bg-white/30" : "text-white/85 hover:bg-white/10 hover:text-white"
@@ -72,7 +77,7 @@ export function SpeedMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="absolute bottom-[calc(100%+10px)] end-0 w-[400px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} w-[400px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
           <div className={`grid ${sleep ? "grid-cols-2" : "grid-cols-1"}`}>
             <Section title={t("Playback speed")}>
               {choices.map((r) => {

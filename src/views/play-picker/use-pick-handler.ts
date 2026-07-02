@@ -23,6 +23,7 @@ export function usePickHandler({
   imdbIdVerified,
   episode,
   attempt,
+  resume,
   debrids,
   isCached,
   p2pAutoConsent,
@@ -49,6 +50,7 @@ export function usePickHandler({
   imdbIdVerified?: boolean;
   episode?: PlayEpisode;
   attempt?: number;
+  resume?: boolean;
   debrids: DebridStore[];
   isCached: (s: ScoredStream) => boolean;
   p2pAutoConsent: boolean;
@@ -75,6 +77,7 @@ export function usePickHandler({
   const [p2pConfirm, setP2pConfirm] = useState<{ stream: ScoredStream; forceP2p?: boolean } | null>(null);
   const debridFailStreakRef = useRef(0);
   const resolveAcRef = useRef<AbortController | null>(null);
+  const autoPickRef = useRef(false);
 
   const advanceAuto = () => {
     if (!autoActive) return;
@@ -190,6 +193,8 @@ export function usePickHandler({
         notWebReady: r.data.notWebReady,
         subtitles: r.data.subtitles,
         attempt: attempt ?? 0,
+        autoFired: autoPickRef.current,
+        resume: !!resume,
         streamRef: {
           infoHash: stream.infoHash ?? null,
           fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
@@ -244,7 +249,8 @@ export function usePickHandler({
     void resolveAndOpen(stream, committed, forceP2p);
   };
 
-  const onPlay = (stream: ScoredStream, committed = true, skipP2pConfirm = false) => {
+  const onPlay = (stream: ScoredStream, committed = true, skipP2pConfirm = false, auto = false) => {
+    autoPickRef.current = auto;
     if (!stream.url && stream.externalUrl) {
       openUrl(stream.externalUrl);
       return;

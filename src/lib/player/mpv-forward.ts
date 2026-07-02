@@ -86,6 +86,9 @@ export function createForwardingMpvBridge(): ForwardingBridge {
     },
     setAudioNormalize() {},
     setAudioProfile() {},
+    setAudioDevice(name) {
+      void set("audio-device", name && name !== "auto" ? name : "auto");
+    },
     getSelectedTrackCues() { return null; },
     getSelectedTrackUrl() { return null; },
     setMediaInfo() {},

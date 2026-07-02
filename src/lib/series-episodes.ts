@@ -279,6 +279,35 @@ export async function fetchSeasonEpisodes(
   return (eps ?? []).filter((e) => e.season === season);
 }
 
+export async function fetchEpisodeList(meta: Meta, opts: { tmdbKey: string }): Promise<PlayEpisode[]> {
+  if (meta.type !== "series" && !isAnimeId(meta.id)) return [];
+  if (meta.id.startsWith("tt")) return (await loadCinemetaEpisodes(meta.id)) ?? [];
+  if (meta.id.startsWith("tmdb:tv:") && opts.tmdbKey) {
+    const seasons = await fetchSeasonList(meta, opts);
+    const all: PlayEpisode[] = [];
+    for (const s of seasons) all.push(...(await fetchSeasonEpisodes(meta, s, opts)));
+    return all;
+  }
+  return (await getNonStandardEpisodes(meta)) ?? [];
+}
+
+export function nextUnwatchedAfter(
+  eps: PlayEpisode[],
+  from: { season: number; episode: number },
+  isWatched: (season: number, episode: number) => boolean,
+): PlayEpisode | null {
+  const sorted = eps
+    .filter((e) => e.season >= 1)
+    .slice()
+    .sort((a, b) => a.season - b.season || a.episode - b.episode);
+  let idx = sorted.findIndex((e) => e.season === from.season && e.episode === from.episode);
+  if (idx < 0) idx = 0;
+  for (let i = idx; i < sorted.length; i++) {
+    if (!isWatched(sorted[i].season, sorted[i].episode)) return sorted[i];
+  }
+  return null;
+}
+
 function computeAdjacent(eps: PlayEpisode[], current: { season: number; episode: number }): Adjacent {
   const idx = eps.findIndex((v) => v.season === current.season && v.episode === current.episode);
   if (idx === -1) return { prev: null, next: null };

@@ -86,6 +86,7 @@ export type PlayerBridge = {
   getSelectedTrackUrl: () => string | null;
   setAudioNormalize: (on: boolean) => void;
   setAudioProfile?: (profile: string) => void;
+  setAudioDevice?: (name: string) => void;
   setMediaInfo?: (info: { title: string; artist?: string; artwork?: string }) => void;
   screenshot: (path: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
   setAbLoop: (a: number | null, b: number | null) => void;

@@ -13,26 +13,16 @@ export function Anime4kIndicator({ engine, chromeVisible }: { engine: "html5" | 
   const { settings } = useSettings();
   const enabled = settings.playerAnime4kIndicator && engine === "mpv" && isTauri;
   const [active, setActive] = useState(false);
-  const [fps, setFps] = useState<number | null>(null);
 
   useEffect(() => {
     if (!enabled) {
       setActive(false);
-      setFps(null);
       return;
     }
     let cancelled = false;
     const tick = async () => {
       const shaders = await invoke("mpv_get_property", { name: "glsl-shaders" }).catch(() => null);
-      const on = shadersActive(shaders);
-      if (cancelled) return;
-      setActive(on);
-      if (!on) {
-        setFps(null);
-        return;
-      }
-      const f = await invoke<number>("mpv_get_property", { name: "estimated-vf-fps" }).catch(() => null);
-      if (!cancelled) setFps(typeof f === "number" && f > 0 ? Math.round(f) : null);
+      if (!cancelled) setActive(shadersActive(shaders));
     };
     void tick();
     const id = window.setInterval(() => void tick(), 2000);
@@ -51,7 +41,6 @@ export function Anime4kIndicator({ engine, chromeVisible }: { engine: "html5" | 
       <Sparkles size={13} className="text-accent" />
       <span>Anime4K</span>
       {settings.playerAnime4kMode && <span className="text-ink-subtle">{settings.playerAnime4kMode}</span>}
-      {fps != null && <span className="tabular-nums text-ink-muted">{fps} fps</span>}
     </div>
   );
 }

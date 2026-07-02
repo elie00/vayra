@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ChevronRight,
@@ -67,7 +67,29 @@ function timeAgo(timestamp: number): string {
   return `${months}mo ago`;
 }
 
+function sanitizeHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc
+    .querySelectorAll("script, style, iframe, object, embed, link, meta, form, input, button, svg")
+    .forEach((el) => el.remove());
+  doc.querySelectorAll("*").forEach((el) => {
+    for (const attr of [...el.attributes]) {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.replace(/\s+/g, "").toLowerCase();
+      if (
+        name.startsWith("on") ||
+        ((name === "href" || name === "src" || name === "xlink:href") &&
+          /^(javascript|data|vbscript):/.test(value))
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+  return doc.body.innerHTML;
+}
+
 function HtmlContent({ html, className }: { html: string; className?: string }) {
+  const safe = useMemo(() => sanitizeHtml(html), [html]);
   const handleClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const anchor = target.closest("a");
@@ -86,7 +108,7 @@ function HtmlContent({ html, className }: { html: string; className?: string }) 
     <div
       className={className}
       dir="auto"
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: safe }}
       onClick={handleClick}
     />
   );

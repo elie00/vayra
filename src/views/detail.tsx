@@ -16,6 +16,7 @@ import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
+import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
 import { awardSummary, useAwards } from "@/lib/providers/wikidata";
 import { mergeBundledAwards } from "@/lib/awards-history";
 import {
@@ -181,6 +182,7 @@ export function DetailView({
   const [layoutEdit, setLayoutEdit] = useState(false);
   const [scores, setScores] = useState<OmdbScores | null>(null);
   const [cinemetaRating, setCinemetaRating] = useState<string | null>(null);
+  const [harborImdbRating, setHarborImdbRating] = useState<string | null>(null);
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([]);
   const mdblist = useMdblistScores(
     settings.mdblistKey,
@@ -197,12 +199,26 @@ export function DetailView({
   const isFav = useIsFavorite(meta.id, [detail?.imdbId]);
   const inSession = roomSnapshot.state === "joined" && roomSnapshot.participants.length >= 2;
   useScrollMemory(`meta:${meta.id}`, scrollRef);
-  const idAnime = meta.id.startsWith("kitsu:") || meta.id.startsWith("mal:");
+  const idAnime = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const isAnime = idAnime || detectedKitsu != null;
   const stickyAwardName = useRef<string | null>(null);
   useEffect(() => {
     stickyAwardName.current = null;
   }, [meta.id]);
+  useEffect(() => {
+    setHarborImdbRating(null);
+    const tt = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
+    if (!tt || !tt.startsWith("tt")) return;
+    let cancelled = false;
+    harborImdbTitle(tt)
+      .then((r) => {
+        if (!cancelled && r != null) setHarborImdbRating(r.toFixed(1));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [detail?.imdbId, meta.id]);
   const addonNative = liveContext || isAddonNativeMeta(meta);
   const trailerCandidate =
     detail?.trailerCandidates?.[0] ?? meta.trailerStreams?.[0]?.ytId ?? null;
@@ -531,7 +547,10 @@ export function DetailView({
   const year = detail?.year ?? meta.releaseInfo;
   const releaseYearNum = parseAwardYear(year);
   const imdbRatingValue =
-    scores?.imdbRating ?? cinemetaRating ?? (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
+    harborImdbRating ??
+    scores?.imdbRating ??
+    cinemetaRating ??
+    (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
   const malRating = useMalRating(
     isAnime
       ? { ...meta, id: animeCanonicalId ?? meta.id, imdbRating: detail?.rating ?? meta.imdbRating }
@@ -749,10 +768,10 @@ export function DetailView({
                   isAnime={isAnime}
                   scores={scores}
                   mdblist={mdblist}
-                  showRtBadge={settings.showRtBadge}
                   imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
                   mediaType={meta.type === "movie" ? "movie" : "show"}
                   ratingSource={imdbRatingValue != null ? "imdb" : "tmdb"}
+                  animeImdbRating={harborImdbRating}
                   onOpenUrl={openUrl}
                 />
                 {runtime && (
@@ -1193,12 +1212,20 @@ export function DetailView({
               node: <InfoBlock detail={detail} isAnime={isAnime} />,
             });
           }
-          if (settings.showTraktComments === true && !isAnime) {
+          if (!isAnime && settings.showTraktComments === true) {
             railSections.push({
               key: "traktComments",
               label: t("Comments"),
               minHeight: 120,
               node: <TraktComments resolution={traktResolution} />,
+            });
+          }
+          if (isAnime && settings.showAnilistComments === true) {
+            railSections.push({
+              key: "anilistComments",
+              label: t("AniList Comments"),
+              minHeight: 120,
+              node: <AnilistComments harborId={animeCanonicalId ?? meta.id} />,
             });
           }
           if (!isAnime) {
@@ -1223,14 +1250,6 @@ export function DetailView({
                   imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
                 />
               ),
-            });
-          }
-          if (isAnime) {
-            railSections.push({
-              key: "anilistComments",
-              label: t("Anilist Comments"),
-              minHeight: 120,
-              node: <AnilistComments harborId={animeCanonicalId ?? meta.id} />,
             });
           }
           if (railSections.length === 0) return null;
@@ -1276,6 +1295,7 @@ export function DetailView({
             </>
           );
         })()}
+
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">
             {t("Add a TMDB key in Settings to see cast, related titles, and trailers here.")}

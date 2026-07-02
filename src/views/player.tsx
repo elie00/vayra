@@ -63,8 +63,10 @@ import { useAnime4k } from "./player/hooks/use-anime4k";
 import { useHdrStage } from "./player/hooks/use-hdr-stage";
 import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
+import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
+import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
 
@@ -365,6 +367,23 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     return () => window.removeEventListener("harbor:local-back", onLocalBack);
   }, [closePlayer]);
 
+  const autoAdvancedRef = useRef(false);
+  useEffect(() => {
+    autoAdvancedRef.current = false;
+  }, [src.url]);
+  useEffect(() => {
+    if (snap.status !== "error" || autoAdvancedRef.current) return;
+    if (!src.autoFired || hasStarted || src.isLive || inRoom) return;
+    autoAdvancedRef.current = true;
+    if (src.streamRef) markStreamDead(src.streamRef, "load-failed", STUB_TTL_MS);
+    exitPlayback();
+    openPicker(src.meta, src.episode, {
+      autoPlay: true,
+      attempt: (src.attempt ?? 0) + 1,
+      resume: src.resume,
+    });
+  }, [snap.status, src, hasStarted, inRoom, exitPlayback, openPicker]);
+
   const [dvrOpen, setDvrOpen] = useState(false);
   const pickAnotherOrGuide = useCallback(() => {
     if (liveOverlay.isLive) {
@@ -477,23 +496,22 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     visible: false,
     volume: snap.volume,
     muted: snap.muted,
-    seq: 0,
   });
-  const showVolumeFeedback = useCallback((volume: number, muted: boolean) => {
-    if (volumeIndicatorTimerRef.current != null) {
-      window.clearTimeout(volumeIndicatorTimerRef.current);
-    }
-    setVolumeIndicator((current) => ({
-      visible: true,
-      volume,
-      muted,
-      seq: current.seq + 1,
-    }));
-    volumeIndicatorTimerRef.current = window.setTimeout(() => {
-      setVolumeIndicator((current) => ({ ...current, visible: false }));
-      volumeIndicatorTimerRef.current = null;
-    }, 1200);
-  }, []);
+  const volumeHudEnabled = settings.playerVolumeHud;
+  const showVolumeFeedback = useCallback(
+    (volume: number, muted: boolean) => {
+      if (!volumeHudEnabled) return;
+      if (volumeIndicatorTimerRef.current != null) {
+        window.clearTimeout(volumeIndicatorTimerRef.current);
+      }
+      setVolumeIndicator({ visible: true, volume, muted });
+      volumeIndicatorTimerRef.current = window.setTimeout(() => {
+        setVolumeIndicator((current) => ({ ...current, visible: false }));
+        volumeIndicatorTimerRef.current = null;
+      }, 1200);
+    },
+    [volumeHudEnabled],
+  );
   useEffect(() => {
     return () => {
       if (volumeIndicatorTimerRef.current != null) {
@@ -504,7 +522,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   const videoFill = useVideoFill(bridgeRef, src.url, playing);
   useLivePictureEq(bridgeRef, src.url);
-  const anime4k = useAnime4k(bridgeRef, src.url, src);
+  const anime4k = useAnime4k(bridgeRef, src.url, src, snap.videoWidth);
   const { holdSpeedActive, showStats } = usePlayerHotkeys({
     bridgeRef,
     snap,
@@ -615,7 +633,11 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   const playStreamRef = liveStreamRef ?? src.streamRef;
   const playUrl = liveUrl ?? src.url;
-  useTrickplay({ url: playUrl, enabled: settings.seekPreviewEnabled });
+  useTrickplay({
+    url: playUrl,
+    enabled: settings.seekPreviewEnabled,
+    isLive: src.meta.id?.startsWith("iptv:") ?? false,
+  });
   const adSegments = useAdSegments(
     src.meta.id,
     src.imdbId ?? null,
@@ -705,6 +727,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     showStats,
     holdSpeedActive,
     volumeIndicator,
+    volumeHudPosition: settings.playerVolumeHudPosition,
     videoFillPill: videoFill.pill,
     cropMode: videoFill.mode,
     onCropMode: videoFill.setMode,
@@ -809,6 +832,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     onPlayWithoutSync: lobby.playWithoutSync,
     guestHostSource,
     liveUrl,
+    currentInfoHash: playStreamRef?.infoHash ?? null,
+    currentFileIdx: playStreamRef?.fileIdx ?? null,
     switcherOpen,
     foreignNotice,
     onDismissForeign: () => setForeignNotice(null),
@@ -863,6 +888,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
         }}
       />
       {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
+      <LeaveConfirmModal />
       <HdrStageBridge
         active={hdrStageRequested}
         payload={{

@@ -4,10 +4,8 @@ import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
-import { useImdbRating } from "@/lib/imdb-rating";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
-import { ImdbIcon } from "../icons/imdb-icon";
 import { MetaAwardsCorner } from "../meta-awards-corner";
 import { ThumbsDock } from "./thumbs-dock";
 import { FADE_MS, upsizeTmdb } from "./types";
@@ -39,7 +37,6 @@ export function BigCardStack({
   const t = useT();
   const current = items[active] ?? items[0];
   const resolvedImdb = useTmdbImdbId(current.id);
-  const imdbRating = useImdbRating(current, resolvedImdb);
   const [logos, setLogos] = useState<LogoMap>(() => seedLogos(settings.tmdbKey, items));
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; pointerId: number; moved: boolean } | null>(null);
@@ -189,15 +186,6 @@ export function BigCardStack({
         <TitlePlate title={current.name} logo={logo} />
         <div className="flex items-center gap-2.5 text-[13px] text-ink/80">
           {current.releaseInfo && <span>{current.releaseInfo}</span>}
-          {imdbRating && (
-            <>
-              <Dot />
-              <span className="inline-flex items-center gap-1.5">
-                <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
-                {imdbRating}
-              </span>
-            </>
-          )}
         </div>
       </div>
       <div className="pointer-events-none absolute end-7 top-6 z-10">
@@ -272,6 +260,3 @@ function TitlePlate({ title, logo }: { title: string; logo?: string }) {
   );
 }
 
-function Dot() {
-  return <span aria-hidden className="text-ink/40">·</span>;
-}

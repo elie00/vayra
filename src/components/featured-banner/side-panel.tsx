@@ -1,8 +1,10 @@
+import { Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { pickRandom } from "@/lib/feed/tags";
 import { tmdbMovieImages } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { useLiveImdbRating } from "@/lib/live-imdb";
 import { ImdbIcon } from "../icons/imdb-icon";
 import type { LightboxState } from "./types";
 
@@ -19,6 +21,7 @@ export function SidePanel({
 }) {
   const { settings } = useSettings();
   const [stills, setStills] = useState<string[]>([]);
+  const live = useLiveImdbRating(meta);
 
   useEffect(() => {
     if (!settings.tmdbKey) {
@@ -84,10 +87,14 @@ export function SidePanel({
           {meta.description}
         </p>
       )}
-      {meta.imdbRating && (
+      {live.value && (
         <div className="mt-auto flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/40 px-2.5 py-1 text-[12px] font-semibold text-ink self-start">
-          <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
-          <span>{meta.imdbRating}</span>
+          {live.isImdb ? (
+            <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
+          ) : (
+            <Star className="h-[12px] w-[12px] text-amber-400" fill="currentColor" strokeWidth={0} />
+          )}
+          <span>{live.value}</span>
           <span className="text-ink-subtle">· Top Rated</span>
         </div>
       )}

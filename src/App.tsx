@@ -57,7 +57,7 @@ import { TopRankModalProvider } from "@/lib/top-rank-modal";
 import { OnboardingProvider } from "@/lib/onboarding";
 import { RankingsProvider } from "@/lib/rankings";
 import { SettingsProvider } from "@/lib/settings";
-import { SearchProvider } from "@/lib/search-context";
+import { SearchProvider, useSearch } from "@/lib/search-context";
 import { SearchOverlay } from "@/components/search/search-overlay";
 import { SearchHotkey } from "@/components/search/search-hotkey";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
@@ -402,8 +402,9 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 }
 
 function Shell() {
-  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, stackKinds, chromeHidden } = useView();
+  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openPlayer, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
+  const { setOpen: setSearchOpen } = useSearch();
   const uiScaleRef = useRef(settings.uiScale);
   const { activeProfile } = useProfiles();
   const kid = activeProfile?.kid ?? null;
@@ -544,8 +545,9 @@ function Shell() {
       ...(w.harbor ?? {}),
       navigate: (v: string) => setView(v as View),
       back: () => goBack(),
+      search: () => setSearchOpen(true),
     };
-  }, [setView, goBack]);
+  }, [setView, goBack, setSearchOpen]);
 
   useEffect(() => {
     if (topKind !== "live") {
@@ -563,7 +565,7 @@ function Shell() {
 
   useEffect(() => {
     let dispose: (() => void) | null = null;
-    void import("@/lib/deep-link").then(({ startDeepLinkBridge, onDeepLinkInstall, onDeepLinkOpen }) => {
+    void import("@/lib/deep-link").then(({ startDeepLinkBridge, onDeepLinkInstall, onDeepLinkOpen, onOpenLocalFile }) => {
       void startDeepLinkBridge().then((stopBridge) => {
         const stopListener = onDeepLinkInstall(() => {
           if (window.__harborInstallerOpen) return;
@@ -573,17 +575,22 @@ function Shell() {
           const hint = parseDeepLinkEpisode(videoId);
           openMeta({ id, type: type as MetaType, name: "" }, hint ? { episodeHint: hint } : undefined);
         });
+        const stopFile = onOpenLocalFile((path) => {
+          const name = (path.replace(/\\/g, "/").split("/").pop() || "Video").replace(/\.[^.]+$/, "");
+          openPlayer({ meta: { id: `local:${path}`, type: "movie", name }, url: path, title: name, notWebReady: true });
+        });
         dispose = () => {
           stopBridge();
           stopListener();
           stopOpen();
+          stopFile();
         };
       });
     });
     return () => {
       dispose?.();
     };
-  }, [setView, openMeta]);
+  }, [setView, openMeta, openPlayer]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");

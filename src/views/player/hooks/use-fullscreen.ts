@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  consumeMarathonReenter,
+  enterWindowFullscreen,
   exitWindowFullscreenOnPlayerClose,
   getWindowFullscreen,
   setWindowFullscreen,
@@ -18,6 +20,12 @@ export function useFullscreen() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (consumeMarathonReenter() && !getWindowFullscreen()) {
+      void enterWindowFullscreen();
+    }
+  }, []);
 
   useEffect(() => {
     const onChange = () => {

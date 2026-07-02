@@ -62,6 +62,12 @@ export function LanguagePanel() {
         value={settings.forcedSubsWhenNativeAudio}
         onChange={(v) => update({ forcedSubsWhenNativeAudio: v })}
       />
+      <ToggleRow
+        label={t("Upgrade subtitles when better ones load")}
+        sub={t("Downloaded subtitles can arrive a moment after playback starts. Leave this off to keep whatever subtitle is already showing; turn it on to switch to the best language match as soon as it loads.")}
+        value={settings.subtitleAutoUpgrade}
+        onChange={(v) => update({ subtitleAutoUpgrade: v })}
+      />
       <div className="flex flex-col gap-1.5 pt-1">
         <p className="text-[13.5px] font-medium text-ink">{t("Never auto-select tracks containing")}</p>
         <p className="text-[12px] leading-relaxed text-ink-subtle">

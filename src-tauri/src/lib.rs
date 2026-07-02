@@ -327,8 +327,46 @@ fn ensure_window_on_screen(app: &tauri::AppHandle) {
     eprintln!("[harbor::window] launched off-screen; recentered to {},{}", cx, cy);
 }
 
+const MEDIA_EXTS: &[&str] = &[
+    "mkv", "mp4", "avi", "mov", "webm", "m4v", "ts", "m2ts", "mpg", "mpeg", "wmv", "flv", "ogv", "3gp",
+];
+
+fn media_file_from_args(args: &[String]) -> Option<String> {
+    for a in args {
+        let lower = a.to_lowercase();
+        if MEDIA_EXTS.iter().any(|e| lower.ends_with(&format!(".{e}")))
+            && std::path::Path::new(a).is_file()
+        {
+            return Some(a.clone());
+        }
+    }
+    None
+}
+
+static PENDING_OPEN_FILE: std::sync::OnceLock<std::sync::Mutex<Option<String>>> =
+    std::sync::OnceLock::new();
+
+fn pending_open_file() -> &'static std::sync::Mutex<Option<String>> {
+    PENDING_OPEN_FILE.get_or_init(|| std::sync::Mutex::new(None))
+}
+
+#[tauri::command]
+fn harbor_take_pending_file() -> Option<String> {
+    pending_open_file().lock().ok().and_then(|mut g| g.take())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    {
+        let args: Vec<String> = std::env::args().skip(1).collect();
+        if let Some(p) = media_file_from_args(&args) {
+            if let Ok(mut g) = pending_open_file().lock() {
+                *g = Some(p);
+            }
+        }
+    }
+    #[cfg(windows)]
+    svp::prime_svp_env();
     #[cfg(target_os = "linux")]
     mpv_render_linux::enforce_nvidia_x11();
     let _ = rustls::crypto::ring::default_provider().install_default();
@@ -355,6 +393,9 @@ pub fn run() {
             if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
                 let _ = app.emit("harbor:stremio-deeplink", url.clone());
             }
+            if let Some(path) = media_file_from_args(&args) {
+                let _ = app.emit("harbor:open-file", path);
+            }
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
@@ -369,8 +410,7 @@ pub fn run() {
                 .with_state_flags(
                     tauri_plugin_window_state::StateFlags::SIZE
                         | tauri_plugin_window_state::StateFlags::POSITION
-                        | tauri_plugin_window_state::StateFlags::MAXIMIZED
-                        | tauri_plugin_window_state::StateFlags::FULLSCREEN,
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
                 )
                 .build(),
         )
@@ -531,6 +571,7 @@ pub fn run() {
             mpv::mpv_command,
             mpv::mpv_set_property,
             mpv::mpv_get_property,
+            mpv::mpv_audio_devices,
             mpv::mpv_set_geometry,
             mpv::mpv_force_below,
             mpv::mpv_export_log,
@@ -617,6 +658,7 @@ pub fn run() {
             song_id::recognize_now_playing,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
+            harbor_take_pending_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

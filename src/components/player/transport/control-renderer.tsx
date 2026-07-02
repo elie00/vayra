@@ -70,6 +70,7 @@ export type ControlContext = {
   canPickAnother: boolean;
   engine: "html5" | "mpv";
   useOverlayPopups?: boolean;
+  editing?: boolean;
   customIcons?: CustomIconMap;
   previewStates?: Partial<Record<PlayerControlId, string>>;
   controlVariants?: Partial<Record<PlayerControlId, ControlVariant>>;
@@ -418,6 +419,10 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
         </BigButton>
       );
     }
+    case "song-id": {
+      if (ctx.tight) return null;
+      return <IdentifySongButton editing={ctx.editing} />;
+    }
     case "pip": {
       if (!ctx.capabilities.pictureInPicture) return null;
       return (
@@ -443,13 +448,9 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
             <Maximize size={22} strokeWidth={1.9} />
           )}
         </BigButton>
-        );
-      }
-      case "song-id": {
-        if (ctx.tight) return null;
-        return <IdentifySongButton />;
-      }
-      case "window-controls":
-        return <WindowControlButtons t={t} />; 
-      }
+      );
     }
+    case "window-controls":
+      return <WindowControlButtons t={t} />;
+  }
+}

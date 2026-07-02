@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchAdjacentEpisodes } from "@/lib/series-episodes";
+import { fetchEpisodeList, nextUnwatchedAfter } from "@/lib/series-episodes";
 import type { Meta } from "@/lib/cinemeta";
+import type { PlayEpisode } from "@/lib/view";
+import { manualWatchedState } from "@/lib/manual-watched";
 import { episodeFromVideoId, libraryMetaType, type LibraryItem } from "@/lib/stremio";
 import { isNextAired, resurfaceCandidates, type AnimeMode } from "@/lib/cw-resurface";
 
@@ -23,9 +25,25 @@ function currentEpisode(i: LibraryItem): { season: number; episode: number } | n
   return episodeFromVideoId(vid);
 }
 
+function watchedPredicate(i: LibraryItem, cur: { season: number; episode: number }) {
+  const finished = isFinishedSeries(i);
+  return (season: number, episode: number): boolean => {
+    const ms = manualWatchedState(i._id, season, episode);
+    if (ms !== undefined) return ms;
+    if (season === cur.season && episode === cur.episode) return finished;
+    return false;
+  };
+}
+
 function sameMap(a: Map<string, LibraryItem>, b: Map<string, LibraryItem>): boolean {
   if (a.size !== b.size) return false;
   for (const [k, v] of a) if (b.get(k) !== v) return false;
+  return true;
+}
+
+function sameSet(a: Set<string>, b: Set<string>): boolean {
+  if (a.size !== b.size) return false;
+  for (const k of a) if (!b.has(k)) return false;
   return true;
 }
 
@@ -35,13 +53,12 @@ export function useCwAdvance(
   enabled: boolean,
   library?: LibraryItem[],
   animeMode: AnimeMode = "all",
+  watchedVersion = 0,
 ): LibraryItem[] {
   const [advanced, setAdvanced] = useState<Map<string, LibraryItem>>(new Map());
   const [extra, setExtra] = useState<LibraryItem[]>([]);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
-  const cacheRef = useRef<Map<string, { season: number; episode: number; airDate?: string } | null>>(
-    new Map(),
-  );
+  const listCacheRef = useRef<Map<string, PlayEpisode[]>>(new Map());
 
   useEffect(() => {
     if (!enabled) {
@@ -51,16 +68,18 @@ export function useCwAdvance(
       return;
     }
     let cancelled = false;
-    const targets = items.filter((i) => currentEpisode(i) && isFinishedSeries(i));
+    const targets = items.filter((i) => {
+      const cur = currentEpisode(i);
+      return cur != null && watchedPredicate(i, cur)(cur.season, cur.episode);
+    });
     void (async () => {
       const next = new Map<string, LibraryItem>();
       const remove = new Set<string>();
       for (const i of targets) {
         const cur = currentEpisode(i)!;
-        const key = `${i._id}:${cur.season}:${cur.episode}`;
-        let nx = cacheRef.current.get(key);
-        let fetchOk = nx !== undefined;
-        if (nx === undefined) {
+        let list = listCacheRef.current.get(i._id);
+        let fetchOk = list !== undefined;
+        if (list === undefined) {
           const meta: Meta = {
             id: i._id,
             type: libraryMetaType(i.type),
@@ -68,32 +87,32 @@ export function useCwAdvance(
             poster: i.poster,
             background: i.background,
           };
-          const adj = await fetchAdjacentEpisodes(meta, cur, { tmdbKey })
-            .then((a) => ({ ok: true, next: a.next }))
-            .catch(() => ({ ok: false, next: null }));
+          const res = await fetchEpisodeList(meta, { tmdbKey })
+            .then((eps) => ({ ok: true, eps }))
+            .catch(() => ({ ok: false, eps: [] as PlayEpisode[] }));
           if (cancelled) return;
-          fetchOk = adj.ok;
-          if (adj.ok) {
-            nx = adj.next
-              ? { season: adj.next.season, episode: adj.next.episode, airDate: adj.next.airDate }
-              : null;
-            cacheRef.current.set(key, nx);
+          fetchOk = res.ok;
+          if (res.ok) {
+            list = res.eps;
+            listCacheRef.current.set(i._id, list);
           }
         }
-        if (nx && isNextAired(i._id, nx.airDate)) {
+        if (!list) continue;
+        const nextEp = nextUnwatchedAfter(list, cur, watchedPredicate(i, cur));
+        if (nextEp && isNextAired(i._id, nextEp.airDate)) {
           next.set(i._id, {
             ...i,
             state: {
               ...i.state!,
-              season: nx.season,
-              episode: nx.episode,
-              video_id: `${i._id}:${nx.season}:${nx.episode}`,
+              season: nextEp.season,
+              episode: nextEp.episode,
+              video_id: `${i._id}:${nextEp.season}:${nextEp.episode}`,
               timeOffset: 0,
               flaggedWatched: 0,
             },
             upNext: true,
           });
-        } else if (fetchOk) {
+        } else if (fetchOk && list.length > 0) {
           remove.add(i._id);
         }
       }
@@ -130,18 +149,16 @@ export function useCwAdvance(
     return () => {
       cancelled = true;
     };
-  }, [items, tmdbKey, enabled, library, animeMode]);
+  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion]);
 
   if (!enabled) return items;
   const base =
     advanced.size === 0 && removed.size === 0
       ? items
       : items.map((i) => advanced.get(i._id) ?? i).filter((i) => !removed.has(i._id));
-  return extra.length === 0 ? base : base.concat(extra);
-}
-
-function sameSet(a: Set<string>, b: Set<string>): boolean {
-  if (a.size !== b.size) return false;
-  for (const k of a) if (!b.has(k)) return false;
-  return true;
+  if (extra.length === 0) return base;
+  const keyOf = (i: LibraryItem) => `${i.type}|${(i.name ?? "").trim().toLowerCase()}`;
+  const baseKeys = new Set(base.map(keyOf));
+  const dedupExtra = extra.filter((i) => !baseKeys.has(keyOf(i)));
+  return dedupExtra.length === 0 ? base : base.concat(dedupExtra);
 }

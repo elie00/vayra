@@ -13,7 +13,8 @@ export function useSubStyleApply(params: {
   mediaReady: boolean;
   bridgeKey: string | number;
 }) {
-  const { engine, settings, assNativeActive, imageNativeActive, bridgeReady, mediaReady, bridgeKey } = params;
+  const { engine, settings, assNativeActive, imageNativeActive, bridgeReady, mediaReady, bridgeKey } =
+    params;
 
   useEffect(() => {
     if (engine !== "mpv") return;

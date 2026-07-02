@@ -13,6 +13,7 @@ import { useView } from "@/lib/view";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
 import { watchTitleKey, type WatchedSet } from "@/lib/playback-history";
+import { useSettings } from "@/lib/settings";
 
 function metaTitleKey(meta: { id?: string }): string | null {
   const id = meta.id;
@@ -23,6 +24,16 @@ function metaTitleKey(meta: { id?: string }): string | null {
     if (Number.isFinite(num)) return `tmdb:${num}`;
   }
   return null;
+}
+
+function isUnreleased(m: { releaseDate?: string; releaseInfo?: string }): boolean {
+  if (m.releaseDate) {
+    const t = Date.parse(m.releaseDate);
+    if (!Number.isNaN(t)) return t > Date.now();
+  }
+  const yr = m.releaseInfo ? Number.parseInt(m.releaseInfo.slice(0, 4), 10) : NaN;
+  if (!Number.isNaN(yr)) return yr > new Date().getFullYear();
+  return false;
 }
 
 function RowTitle({ row }: { row: HomeRow }) {
@@ -123,6 +134,8 @@ export function CustomizableRows({
 }) {
   const { openGrid } = useView();
   const t = useT();
+  const { settings } = useSettings();
+  const hideUnreleased = settings.hideUnreleased;
   const watchedTitleKeys = useMemo(() => {
     const out = new Set<string>();
     if (!watchedSet) return out;
@@ -153,8 +166,9 @@ export function CustomizableRows({
           metas = metas.filter((m) => !m.originalLanguage || homeLanguages.includes(m.originalLanguage));
         }
         if (hideWatched) metas = metas.filter((m) => !isWatched(m));
+        if (hideUnreleased) metas = metas.filter((m) => !isUnreleased(m));
         if (
-          (hideWatched || (homeLanguages && homeLanguages.length > 0)) &&
+          (hideWatched || hideUnreleased || (homeLanguages && homeLanguages.length > 0)) &&
           metas.length === 0 &&
           !editMode &&
           !row.sourceRow

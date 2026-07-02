@@ -18,6 +18,7 @@ import { SongCardStylePicker } from "./song-card-style-picker";
 import { CwSnapshotShowcase } from "./cw-snapshot-showcase";
 import { AiSearchSection } from "./ai-search-section";
 import rpdbLogo from "@/assets/addon-logos/rpdb.png";
+import auddLogo from "@/assets/addon-logos/auddio.webp";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
 import tvdbLogo from "@/assets/addon-logos/tvdb.svg";
 import { ImdbIcon } from "@/components/icons/imdb-icon";
@@ -98,7 +99,7 @@ export function LibraryPanel({
   }, [enabledBadgeCount]);
   const [mdblistDraft, setMdblistDraft] = useState(settings.mdblistKey);
   const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
-  const [auddDraft, setAuddDraft] = useState(settings.auddKey); 
+  const [auddDraft, setAuddDraft] = useState(settings.auddKey);
   const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | "audd" | null>(null);
   const [tmdbGuide, setTmdbGuide] = useState(false);
   const extraTimerRef = useRef<number | null>(null);
@@ -164,6 +165,12 @@ export function LibraryPanel({
           value={settings.hideWatchedInCatalogs}
           onChange={(v) => update({ hideWatchedInCatalogs: v })}
           preview={<HomeRowPreview kind="hide-watched" />}
+        />
+        <ToggleRow
+          label={t("Hide unreleased titles")}
+          sub={t("Movies and shows with a future release date stop appearing in the built-in home catalog rows, so Home only shows what you can watch right now.")}
+          value={settings.hideUnreleased}
+          onChange={(v) => update({ hideUnreleased: v })}
         />
       </Section>
 
@@ -378,6 +385,8 @@ export function LibraryPanel({
             flashExtra("audd");
           }}
           saved={extraSaved === "audd"}
+          iconSrc={auddLogo}
+          iconBg="#EE1066"
           help={
             <>
               Powers the Identify-song button in the player. Get a token at{" "}
@@ -468,6 +477,12 @@ export function LibraryPanel({
               onChange={(v) => update({ showCardBadges: v })}
             />
             <ToggleRow
+              label={t("Show ratings on detail pages")}
+              sub={t("Detail pages show every available rating regardless of the card score toggles below. Turn this off to hide ratings on detail pages too.")}
+              value={settings.showDetailRatings}
+              onChange={(v) => update({ showDetailRatings: v })}
+            />
+            <ToggleRow
               label={t("Show IMDb score on cards")}
               sub={t("The yellow chip in the poster corner.")}
               leading={<ImdbBadge />}
@@ -520,6 +535,38 @@ export function LibraryPanel({
               value={settings.showMalBadge}
               onChange={(v) => update({ showMalBadge: v })}
             />
+            {settings.showMalBadge && (
+              <div className="flex items-center justify-between gap-4 rounded-xl bg-canvas/40 px-4 py-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[13.5px] font-medium text-ink">{t("Anime card rating source")}</span>
+                  <span className="text-[12px] leading-snug text-ink-muted">
+                    {t("Pick which score anime cards show. IMDb falls back to MAL when a title has no IMDb rating yet.")}
+                  </span>
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  {(
+                    [
+                      { id: "mal", label: t("MAL") },
+                      { id: "imdb", label: t("IMDb") },
+                    ] as const
+                  ).map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => update({ animeCardRating: s.id })}
+                      aria-pressed={settings.animeCardRating === s.id}
+                      className={`rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                        settings.animeCardRating === s.id
+                          ? "bg-ink text-canvas"
+                          : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated hover:text-ink"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <ToggleRow
               label={t("Show Metacritic score on cards")}
               sub={t("Metascore (0-100), colored green / yellow / red.")}

@@ -1,4 +1,4 @@
-import { ArrowUpRight, Bookmark, BookmarkCheck, Play } from "lucide-react";
+import { ArrowUpRight, Bookmark, BookmarkCheck, Play, Star } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import type { PreviewData } from "@/lib/hover-preview/preview-data";
 import { tmdbImdbCached } from "@/lib/providers/tmdb";
@@ -13,6 +13,8 @@ function DecisionLine({ data }: { data: PreviewData }) {
       <span key="rating" className="inline-flex items-center gap-1 align-middle">
         {data.rating.kind === "mal" ? (
           <MalLogo className="h-[11px] w-auto text-ink-muted" />
+        ) : data.rating.kind === "tmdb" ? (
+          <Star className="h-[11px] w-[11px] text-amber-400" fill="currentColor" strokeWidth={0} />
         ) : (
           <ImdbIcon className="h-[11px] w-auto rounded-[2px]" />
         )}

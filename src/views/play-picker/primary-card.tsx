@@ -10,7 +10,7 @@ import type { ScoredStream } from "@/lib/streams/types";
 import { directStreamAvailable } from "@/lib/torrent/stremio-stream";
 import type { PlayEpisode } from "@/lib/view";
 import { EditionChip } from "./edition-chip";
-import { confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts, torrentFilename } from "./picker-utils";
+import { anyStreamCached, confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts, torrentFilename } from "./picker-utils";
 import { PlayProvenance } from "./play-provenance";
 
 export function PrimaryCard({
@@ -46,9 +46,11 @@ export function PrimaryCard({
   const cachedDebrid = cachedDebrids[0] ?? null;
   const externalOnly = !stream.url && !stream.infoHash && !!(stream.externalUrl || stream.ytId);
   const link = resolveStreamLink(stream);
+  const addonCached = anyStreamCached(stream);
   const isCached =
     (stream.url != null && !stream.infoHash && !hasUncachedMarker(stream)) ||
     cachedDebrid != null ||
+    addonCached ||
     isPreviouslyPlayed;
   const queueTarget = debrids.find((d) => d.queueCache);
   const canStream = !isCached && directStreamAvailable(stream);
@@ -155,7 +157,7 @@ export function PrimaryCard({
               </div>
             )}
 
-            {(cachedDebrid || queued || (debrids.length > 0 && !stream.url) || stream.remux || stream.releaseGroupNormalized || stream.edition) && (
+            {(cachedDebrid || addonCached || queued || (debrids.length > 0 && !stream.url) || stream.remux || stream.releaseGroupNormalized || stream.edition) && (
               <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
                 {libraryDebrids.length > 0 ? (
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-accent">
@@ -166,6 +168,11 @@ export function PrimaryCard({
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-ink-muted">
                     <Zap size={13} fill="currentColor" strokeWidth={0} />
                     Cached on {cachedDebrids.map((d) => d.name).join(" + ")}
+                  </span>
+                ) : addonCached ? (
+                  <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-ink-muted">
+                    <Zap size={13} fill="currentColor" strokeWidth={0} />
+                    Cached
                   </span>
                 ) : queued ? (
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-emerald-300">

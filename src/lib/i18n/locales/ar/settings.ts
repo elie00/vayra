@@ -402,6 +402,8 @@ const settings: Record<string, string> = {
     "التعليقات في صفحات الحلقات/العروض تكون معمّاة حتى تظهرها، حتى لو لم تكن موسومة كحرق.",
   "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.":
     "التعليقات في صفحات الأنمي تكون معمّاة حتى تظهرها، حتى لو لم تكن موسومة كحرق.",
+  "Show AniList comments": "إظهار تعليقات AniList",
+  "Show forum threads and comments from AniList on anime detail pages.": "إظهار مواضيع المنتدى والتعليقات من AniList في صفحات تفاصيل الأنمي.",
   "today": "اليوم",
   "Connect your Simkl account": "ربط حساب Simkl الخاص بك",
   "Connect Simkl": "ربط Simkl",

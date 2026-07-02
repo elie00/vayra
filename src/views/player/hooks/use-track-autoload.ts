@@ -168,6 +168,10 @@ export function useTrackAutoload(params: {
     autoSubIdRef.current = null;
   }, [src.url]);
   useEffect(() => {
+    if (engine !== "mpv") return;
+    bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
+  }, [engine, settings.audioDevice, bridgeRef]);
+  useEffect(() => {
     const subIdSig = snap.subtitleTracks.map((t) => t.id).join(",");
     const audioIdSig = snap.audioTracks.map((t) => t.id).join(",");
     const key = `${src.url}|${audioIdSig}|${subIdSig}`;
@@ -176,6 +180,7 @@ export function useTrackAutoload(params: {
     autoTrackKeyRef.current = key;
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
+    bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
 
     const prefs = readPlayerPrefs(src.meta.id);
     const isAnime =
@@ -218,7 +223,9 @@ export function useTrackAutoload(params: {
       const current = snap.subtitleTracks.find((t) => t.selected) ?? null;
       const userPicked =
         current != null && autoSubIdRef.current != null && current.id !== autoSubIdRef.current;
-      if (!userPicked) {
+      const lockedToAuto =
+        current != null && autoSubIdRef.current != null && !settings.subtitleAutoUpgrade;
+      if (!userPicked && !lockedToAuto) {
         const nativeAudio =
           settings.forcedSubsWhenNativeAudio &&
           effAudio != null &&
@@ -230,8 +237,8 @@ export function useTrackAutoload(params: {
               (a, b) => langScore(b.lang ?? "", subLangs) - langScore(a.lang ?? "", subLangs),
             )[0] ?? null)
           : pickDesiredSub(allow(snap.subtitleTracks), subLangs, settings.preferEmbeddedSubs);
-        if (want && want.id !== current?.id) {
-          bridgeRef.current?.setSubtitleTrack(want.id);
+        if (want) {
+          if (want.id !== current?.id) bridgeRef.current?.setSubtitleTrack(want.id);
           autoSubIdRef.current = want.id;
         }
       }

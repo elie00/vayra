@@ -60,24 +60,16 @@ export function SubStyleBar() {
       <div
         role="toolbar"
         aria-label={t("Subtitle appearance")}
-        className="pointer-events-auto flex max-w-[calc(100vw-56px)] items-stretch gap-1.5 overflow-x-auto rounded-[14px] border border-edge bg-elevated px-1.5 py-1.5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.85)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="pointer-events-auto flex max-w-[calc(100vw-56px)] flex-wrap items-center justify-center gap-1.5 rounded-[14px] border border-edge bg-elevated px-1.5 py-1.5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.85)]"
       >
         <FontMenu value={settings.subFontFamily} fonts={settings.customFonts} onChange={(f) => update({ subFontFamily: f })} />
-        <Divider />
         <SizeStepper value={settings.subFontSize} onChange={(n) => update({ subFontSize: clamp(n, 16, 120) })} />
-        <Divider />
         <BoldToggle settings={settings} update={update} />
-        <Divider />
         <ColorRow value={settings.subFontColor} onChange={(c) => update({ subFontColor: c })} portal />
-        <Divider />
         <OutlineToggle settings={settings} update={update} />
-        <Divider />
         <SpacingStepper value={settings.subLineSpacing ?? 0} onChange={(n) => update({ subLineSpacing: clamp(n, 0, 12) })} />
-        <Divider />
         <PlacementPad settings={settings} update={update} />
-        <Divider />
         <AssOverrideToggle settings={settings} update={update} />
-        <Divider />
         <PresetCluster settings={settings} update={update} />
         <button
           type="button"
@@ -90,10 +82,6 @@ export function SubStyleBar() {
       </div>
     </div>
   );
-}
-
-function Divider() {
-  return <span aria-hidden className="my-1 w-px shrink-0 self-stretch bg-edge-soft" />;
 }
 
 const BUILT_IN_FONTS: Array<{ id: string; label: string }> = [
@@ -474,7 +462,7 @@ function PresetCluster({ settings, update }: { settings: Settings; update: (p: P
   }
 
   return (
-    <div className="flex h-11 shrink-0 items-center gap-1 rounded-[10px] bg-raised px-1.5">
+    <div className="flex min-h-11 max-w-full flex-wrap items-center gap-1 rounded-[10px] bg-raised px-1.5 py-1">
       {list.map((p) => {
         const isSel = p.id === selectedId;
         const matches = styleMatches(settings, p);

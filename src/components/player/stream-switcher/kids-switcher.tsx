@@ -2,7 +2,7 @@ import { Loader2, Play, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import type { ScoredStream } from "@/lib/streams/types";
 import { QUALITY_LABEL, qualityKey } from "./quality";
-import { streamKey } from "./switcher-row";
+import { isCurrentStream, streamKey } from "./switcher-row";
 
 const BUBBLES = [10, 26, 44, 62, 78, 90];
 
@@ -12,12 +12,16 @@ export function KidsStreamSwitcher({
   onClose,
   resolvingKey,
   currentUrl,
+  currentInfoHash,
+  currentFileIdx,
 }: {
   list: ScoredStream[];
   onPick: (stream: ScoredStream) => void;
   onClose: () => void;
   resolvingKey: string | null;
   currentUrl: string;
+  currentInfoHash?: string | null;
+  currentFileIdx?: number | null;
 }) {
   const t = useT();
   const options = list.slice(0, 6);
@@ -83,7 +87,7 @@ export function KidsStreamSwitcher({
           <div className="flex w-full flex-col gap-3.5">
             {options.map((s, i) => {
               const resolving = resolvingKey === streamKey(s);
-              const isCurrent = s.url != null && s.url === currentUrl;
+              const isCurrent = isCurrentStream(s, currentUrl, currentInfoHash, currentFileIdx);
               const quality = QUALITY_LABEL[qualityKey(s)];
               return (
                 <button

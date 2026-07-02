@@ -164,6 +164,53 @@ pub async fn mpv_probe(_app: AppHandle) -> MpvProbe {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AudioDevice {
+    pub name: String,
+    pub description: String,
+}
+
+fn read_audio_devices(mpv: &Mpv) -> Vec<AudioDevice> {
+    let node = match mpv.get_property::<MpvNode>("audio-device-list") {
+        Ok(n) => n,
+        Err(_) => return Vec::new(),
+    };
+    let mut out = Vec::new();
+    if let Some(arr) = node.array() {
+        for item in arr {
+            let mut name = String::new();
+            let mut description = String::new();
+            if let Some(map) = item.map() {
+                for (k, v) in map {
+                    match k.as_str() {
+                        "name" => name = v.str().unwrap_or_default().to_string(),
+                        "description" => description = v.str().unwrap_or_default().to_string(),
+                        _ => {}
+                    }
+                }
+            }
+            if !name.is_empty() && name != "auto" {
+                out.push(AudioDevice { name, description });
+            }
+        }
+    }
+    out
+}
+
+#[tauri::command]
+pub async fn mpv_audio_devices(state: State<'_, MpvState>) -> Result<Vec<AudioDevice>, String> {
+    let existing = {
+        let g = state.inner.lock().await;
+        g.as_ref().map(|s| s.mpv.clone())
+    };
+    if let Some(mpv) = existing {
+        return Ok(read_audio_devices(&mpv));
+    }
+    force_c_numeric_locale();
+    let mpv = Mpv::new().map_err(|e| format!("mpv init: {}", e))?;
+    Ok(read_audio_devices(&mpv))
+}
+
 fn apply_pre_init(
     init: &MpvInitializer,
     args: &MpvStartArgs,
@@ -233,19 +280,26 @@ fn apply_pre_init(
         set("ontop", "yes")?;
     }
 
+    let opt = |k: &str, v: &str| {
+        let _ = init.set_property(k, v);
+    };
     if args.hdr_to_sdr.unwrap_or(false) {
-        set("tone-mapping", "bt.2446a")?;
+        opt("tone-mapping", "bt.2446a");
+        opt("gamut-mapping-mode", "perceptual");
+        opt("hdr-contrast-recovery", "0.30");
+        opt("hdr-peak-percentile", "99.995");
+        opt("dither-depth", "auto");
     } else {
         #[cfg(windows)]
         {
-            set("target-colorspace-hint", "yes")?;
+            opt("target-colorspace-hint", "yes");
             if embed_hwnd.is_some() {
-                set("gpu-api", "d3d11")?;
+                opt("gpu-api", "d3d11");
             }
         }
         #[cfg(target_os = "macos")]
         {
-            set("target-colorspace-hint", "yes")?;
+            opt("target-colorspace-hint", "yes");
         }
     }
 
@@ -254,7 +308,7 @@ fn apply_pre_init(
         if !cleaned.is_empty() {
             let sep = if cfg!(windows) { ";" } else { ":" };
             let joined = cleaned.join(sep);
-            set("glsl-shaders", &joined)?;
+            opt("glsl-shaders", &joined);
         }
     }
 
@@ -496,6 +550,23 @@ pub async fn mpv_start(
         apply_extra_mpv_options(&mpv, extra);
     }
 
+    if is_live {
+        for (k, v) in [
+            ("scale", "bilinear"),
+            ("dscale", "bilinear"),
+            ("cscale", "bilinear"),
+            ("dither", "no"),
+            ("deband", "no"),
+            ("correct-downscaling", "no"),
+            ("linear-downscaling", "no"),
+            ("sigmoid-upscaling", "no"),
+            ("hdr-compute-peak", "no"),
+            ("interpolation", "no"),
+        ] {
+            let _ = mpv.set_property(k, v);
+        }
+    }
+
     let mpv_arc = Arc::new(mpv);
 
     let event_ctx = EventContext::new(mpv_arc.ctx);
@@ -636,6 +707,9 @@ pub async fn mpv_command(
         return Err("empty command".into());
     }
     let head = cmd[0].as_str().ok_or_else(|| "first arg must be string".to_string())?;
+    if !MPV_ALLOWED_COMMANDS.contains(&head) {
+        return Err(format!("mpv command not allowed: {}", head));
+    }
     let tail: Vec<String> = cmd[1..].iter().map(value_to_arg).collect();
     let mut argv: Vec<&str> = Vec::with_capacity(tail.len() + 1);
     argv.push(head);
@@ -643,6 +717,19 @@ pub async fn mpv_command(
         argv.push(s.as_str());
     }
     mpv_argv_command(&mpv, &argv)
+}
+
+const MPV_ALLOWED_COMMANDS: &[&str] = &[
+    "af", "seek", "stop", "frame-step", "frame-back-step", "loadfile",
+];
+
+fn mpv_property_blocked(name: &str) -> bool {
+    let n = name.to_ascii_lowercase();
+    const BLOCKED: &[&str] = &[
+        "script", "input-", "load-scripts", "ytdl-raw", "screenshot-directory",
+        "screenshot-template", "sub-add",
+    ];
+    BLOCKED.iter().any(|b| n.starts_with(b))
 }
 
 fn value_to_arg(v: &Value) -> String {
@@ -665,6 +752,9 @@ pub async fn mpv_set_property(
         let g = state.inner.lock().await;
         g.as_ref().map(|s| s.mpv.clone()).ok_or_else(|| "mpv not started".to_string())?
     };
+    if mpv_property_blocked(&name) {
+        return Err(format!("mpv property not allowed: {}", name));
+    }
     let str_val = value_to_arg(&value);
     mpv.set_property(&name, str_val.as_str()).map_err(|e| format!("set {}: {}", name, e))
 }

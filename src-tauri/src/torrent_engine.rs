@@ -267,6 +267,7 @@ pub async fn torrent_engine_add(
     app: AppHandle,
     magnet: String,
     trackers: Vec<String>,
+    file_idx: Option<usize>,
 ) -> Result<AddResult, String> {
     let session = ensure_session(&app).await?;
     let seed = match current_side_dht() {
@@ -276,6 +277,7 @@ pub async fn torrent_engine_add(
     let opts = AddTorrentOptions {
         overwrite: true,
         paused: true,
+        only_files: file_idx.map(|i| vec![i]),
         trackers: Some(merge_trackers(trackers)),
         initial_peers: (!seed.is_empty()).then_some(seed),
         peer_opts: Some(PeerConnectionOptions {
@@ -318,7 +320,10 @@ pub async fn torrent_engine_add(
         .await
         .map_err(|_| "torrent init timed out".to_string())?
         .map_err(|e| format!("{e:#}"))?;
-    if let Some(idx) = files.iter().max_by_key(|f| f.length).map(|f| f.idx) {
+    let narrow_idx = file_idx
+        .filter(|&i| i < files.len())
+        .or_else(|| files.iter().max_by_key(|f| f.length).map(|f| f.idx));
+    if let Some(idx) = narrow_idx {
         let only: HashSet<usize> = HashSet::from([idx]);
         if let Err(e) = session.update_only_files(&handle, &only).await {
             eprintln!("[torrent-engine] initial file narrowing failed: {e:#}");

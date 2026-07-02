@@ -14,6 +14,7 @@ export type SectionId =
   | "letterboxd"
   | "relay"
   | "streaming"
+  | "streamFilters"
   | "p2p"
   | "language"
   | "player"
@@ -78,6 +79,7 @@ export function KeyField({
   saved,
   help,
   iconSrc,
+  iconBg,
   headerExtra,
   badge,
 }: {
@@ -89,6 +91,7 @@ export function KeyField({
   saved: boolean;
   help: React.ReactNode;
   iconSrc?: string;
+  iconBg?: string;
   headerExtra?: React.ReactNode;
   badge?: string;
 }) {
@@ -152,12 +155,21 @@ export function KeyField({
         }`}
       >
         {iconSrc ? (
-          <img
-            src={iconSrc}
-            alt=""
-            draggable={false}
-            className="h-7 w-7 shrink-0 rounded-md object-contain"
-          />
+          iconBg ? (
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md p-1"
+              style={{ backgroundColor: iconBg }}
+            >
+              <img src={iconSrc} alt="" draggable={false} className="h-full w-full object-contain" />
+            </span>
+          ) : (
+            <img
+              src={iconSrc}
+              alt=""
+              draggable={false}
+              className="h-7 w-7 shrink-0 rounded-md object-contain"
+            />
+          )
         ) : (
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-canvas text-ink-subtle ring-1 ring-edge-soft">
             <Key size={14} />

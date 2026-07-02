@@ -29,6 +29,7 @@ import { publishResumeStates } from "@/lib/hover-preview/store";
 import { readResumeEntry, saveResumeBatch } from "@/lib/resume";
 import { dismissCw, isCwDismissed, useCwDismissVersion } from "@/lib/cw-dismiss";
 import { clearLocalCw, listLocalCw, localCwVersion, subscribeLocalCw } from "@/lib/local-cw";
+import { dismissManualWatched, manualWatchedLibraryItems, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { repairLibraryNames } from "@/lib/stremio-repair";
 import {
   cwSortKey,
@@ -384,6 +385,7 @@ export function Home({ active = true }: { active?: boolean }) {
   }, [authKey, active]);
 
   const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
+  const manualWatchedVer = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
   const animeDetectVer = useDetectedAnimeVersion();
   const stremioWatchedIds = useMemo(() => {
     const s = new Set<string>();
@@ -442,12 +444,22 @@ export function Home({ active = true }: { active?: boolean }) {
     }
     return out;
   }, [items, simklCw, localCwVer, cwVersion, settings.animeOnlyInAnimeRoom, animeDetectVer]);
+  const resurfaceLibrary = useMemo(() => {
+    const manual = manualWatchedLibraryItems();
+    if (manual.length === 0) return items;
+    const cwMemberIds = new Set(items.filter(isCwMember).map((i) => i._id));
+    const usable = manual.filter((i) => !cwMemberIds.has(i._id));
+    if (usable.length === 0) return items;
+    const overrideIds = new Set(usable.map((i) => i._id));
+    return [...items.filter((i) => !overrideIds.has(i._id)), ...usable];
+  }, [items, manualWatchedVer]);
   const cwItems = useCwAdvance(
     continueWatching,
     settings.tmdbKey,
     settings.cwAdvanceNext,
-    items,
+    resurfaceLibrary,
     settings.animeOnlyInAnimeRoom ? "exclude" : "all",
+    manualWatchedVer,
   );
 
   useEffect(() => {
@@ -460,7 +472,8 @@ export function Home({ active = true }: { active?: boolean }) {
 
   const onDismissCw = useCallback(
     (item: LibraryItem) => {
-      if (item.local) clearLocalCw(item._id);
+      if (item.manualWatched) dismissManualWatched(item._id);
+      else if (item.local) clearLocalCw(item._id);
       else dismissCw(item, authKey);
     },
     [authKey],

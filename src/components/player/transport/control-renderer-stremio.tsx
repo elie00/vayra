@@ -63,6 +63,7 @@ export type StremioRenderCtx = {
   hasNextEp: boolean;
   engine: "html5" | "mpv";
   useOverlayPopups?: boolean;
+  editing?: boolean;
   customIcons?: CustomIconMap;
   previewStates?: Partial<Record<PlayerControlId, string>>;
   timeFormat?: TimeFormat;
@@ -389,6 +390,8 @@ export function RenderedStremioControl({
           </StremioBtn>
         </Tooltip>
       );
+    case "song-id":
+      return <IdentifySongButton editing={ctx.editing} />;
     case "pip":
       if (!ctx.capabilities.pictureInPicture) return null;
       return (
@@ -407,8 +410,6 @@ export function RenderedStremioControl({
           </StremioBtn>
         </Tooltip>
       );
-    case "song-id":
-      return <IdentifySongButton />;
     case "window-controls":
       return <WindowControlButtons t={tr} />;
     default:

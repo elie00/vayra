@@ -6,17 +6,44 @@ export type VolumeIndicatorState = {
   visible: boolean;
   volume: number;
   muted: boolean;
-  seq: number;
+};
+
+export type VolumeHudPosition = "center" | "top" | "top-left" | "top-right";
+
+const POS: Record<VolumeHudPosition, { base: string; shown: string; hidden: string }> = {
+  center: {
+    base: "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+    shown: "scale-100 opacity-100",
+    hidden: "scale-95 opacity-0",
+  },
+  top: {
+    base: "left-1/2 top-9 -translate-x-1/2",
+    shown: "translate-y-0 scale-100 opacity-100",
+    hidden: "-translate-y-2 scale-95 opacity-0",
+  },
+  "top-left": {
+    base: "left-6 top-9",
+    shown: "translate-y-0 scale-100 opacity-100",
+    hidden: "-translate-y-2 scale-95 opacity-0",
+  },
+  "top-right": {
+    base: "right-6 top-9",
+    shown: "translate-y-0 scale-100 opacity-100",
+    hidden: "-translate-y-2 scale-95 opacity-0",
+  },
 };
 
 export function VolumeIndicator({
   state,
   allowBoost,
+  position,
 }: {
   state: VolumeIndicatorState;
   allowBoost: boolean;
+  position: VolumeHudPosition;
 }) {
   const t = useT();
+  const pos = POS[position];
   const max = allowBoost ? VOL_MAX : 1;
   const volume = Math.max(0, Math.min(max, state.volume));
   const muted = state.muted || volume <= 0;
@@ -28,9 +55,8 @@ export function VolumeIndicator({
 
   return (
     <div
-      key={state.seq}
-      className={`pointer-events-none absolute left-1/2 top-9 z-30 flex min-w-[16rem] -translate-x-1/2 items-center gap-3.5 rounded-[20px] border border-white/14 bg-black/82 py-3 ps-3 pe-4 text-white shadow-[0_22px_58px_-22px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${
-        state.visible ? "translate-y-0 scale-100 opacity-100" : "-translate-y-2 scale-95 opacity-0"
+      className={`pointer-events-none absolute z-30 flex min-w-[16rem] items-center gap-3.5 rounded-[20px] border border-white/14 bg-black/82 py-3 ps-3 pe-4 text-white shadow-[0_22px_58px_-22px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl transition-[opacity,transform] duration-200 ease-out ${pos.base} ${
+        state.visible ? pos.shown : pos.hidden
       }`}
     >
       <span

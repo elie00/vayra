@@ -1,4 +1,5 @@
-import { ChevronLeft, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronLeft, RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import type { PlayEpisode } from "@/lib/view";
@@ -52,11 +53,7 @@ export function PickerHeader({
           <h1 className="font-display text-[64px] font-medium leading-[0.96] tracking-tight text-ink">
             {episode.name || `Episode ${episode.episode}`}
           </h1>
-          {episode.overview && (
-            <p className="mt-2 max-w-2xl text-[14.5px] leading-relaxed text-ink-muted">
-              {episode.overview}
-            </p>
-          )}
+          {episode.overview && <CollapsibleOverview text={episode.overview} />}
         </>
       ) : (
         <>
@@ -72,5 +69,44 @@ export function PickerHeader({
         </>
       )}
     </header>
+  );
+}
+
+function CollapsibleOverview({ text }: { text: string }) {
+  const t = useT();
+  const [expanded, setExpanded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || expanded) return;
+    const check = () => setTruncated(el.scrollHeight - el.clientHeight > 2);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [text, expanded]);
+  return (
+    <div className="mt-2 max-w-2xl">
+      <p
+        ref={ref}
+        className={`text-[14.5px] leading-relaxed text-ink-muted ${expanded ? "" : "line-clamp-2"}`}
+      >
+        {text}
+      </p>
+      {(truncated || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-ink-subtle transition-colors hover:text-ink"
+        >
+          {expanded ? t("Show less") : t("View more")}
+          <ChevronDown
+            size={14}
+            strokeWidth={2.4}
+            className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
+    </div>
   );
 }

@@ -252,13 +252,6 @@ export function mergeRows(
     const more = a.more;
     const origin = a.metas[0]?.addonOrigin;
     const canPage = !!more && step > 0;
-    const fetcher =
-      canPage && more
-        ? createAddonCatalogFetcher(more, {
-            initialPageSize: step,
-            mapMeta: origin ? (m) => ({ ...m, addonOrigin: origin }) : undefined,
-          })
-        : undefined;
     out.push({
       key: a.key,
       type: a.type as "movie" | "series",
@@ -266,7 +259,13 @@ export function mergeRows(
       metas: a.metas,
       page: 1,
       hasMore: canPage,
-      fetcher,
+      fetcher:
+        canPage && more
+          ? createAddonCatalogFetcher(more, {
+              initialPageSize: step,
+              mapMeta: origin ? (m) => ({ ...m, addonOrigin: origin }) : undefined,
+            })
+          : undefined,
     });
   }
   return out;

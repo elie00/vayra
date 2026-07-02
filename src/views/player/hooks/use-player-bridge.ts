@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { emptySnapshot, type PlayerBridge, type PlayerSnapshot } from "@/lib/player/bridge";
 import { probeMpv } from "@/lib/player/mpv";
 import { mergeMpvOptions } from "@/lib/player/mpv-tuning";
+import { anime4kShadersFor, type Anime4kChoice } from "./use-anime4k";
 import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock } from "@/lib/player/playback-clock";
@@ -91,9 +92,11 @@ export function usePlayerBridge(params: {
         hdrToSdr: settings.playerHdrToSdr,
         embed: embedActive,
         d3d11Flip: settings.playerD3d11Flip,
-        anime4kShaders: anime4kOn && settings.playerAnime4kShaders.length > 0
-          ? settings.playerAnime4kShaders
-          : [],
+        anime4kShaders: anime4kShadersFor(
+          settings,
+          src,
+          (settings.playerAnime4kOverride as Anime4kChoice) || "auto",
+        ),
         extraOptions: mergeMpvOptions(settings, svpOn),
         getEmbedRect,
       });

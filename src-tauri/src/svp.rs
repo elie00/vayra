@@ -54,6 +54,23 @@ fn vsscript_dir(root: &Path) -> Option<PathBuf> {
     find_file_dir(root, &["VSScript.dll"], 5)
 }
 
+pub fn prime_svp_env() {
+    let Some(root) = svp_root() else {
+        return;
+    };
+    let Some(vs) = vsscript_dir(&root) else {
+        return;
+    };
+    let vs_str = vs.to_string_lossy().into_owned();
+    let current = std::env::var("PATH").unwrap_or_default();
+    if !current.split(';').any(|p| p.eq_ignore_ascii_case(&vs_str)) {
+        std::env::set_var("PATH", format!("{};{}", vs_str, current));
+    }
+    if std::env::var("VSSCRIPT_PATH").is_err() {
+        std::env::set_var("VSSCRIPT_PATH", &vs_str);
+    }
+}
+
 #[tauri::command]
 pub fn svp_status() -> SvpStatus {
     let root = svp_root();
@@ -118,14 +135,9 @@ smooth.set_output()
 pub fn svp_apply(app: tauri::AppHandle, target_fps: String) -> Result<String, String> {
     let root = svp_root().ok_or_else(|| "SVP is not installed".to_string())?;
     let flow = svpflow_dir(&root).ok_or_else(|| "svpflow plugins not found in the SVP install".to_string())?;
-    let vs = vsscript_dir(&root)
+    vsscript_dir(&root)
         .ok_or_else(|| "VapourSynth (VSScript.dll) not found in the SVP install".to_string())?;
-
-    let vs_str = vs.to_string_lossy().into_owned();
-    let current = std::env::var("PATH").unwrap_or_default();
-    if !current.split(';').any(|p| p.eq_ignore_ascii_case(&vs_str)) {
-        std::env::set_var("PATH", format!("{};{}", vs_str, current));
-    }
+    prime_svp_env();
 
     let out_dir = app
         .path()

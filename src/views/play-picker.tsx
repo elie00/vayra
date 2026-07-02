@@ -246,6 +246,7 @@ export function PlayPicker({
     setSelectedTier((s) => s ?? filteredPicker.primary!.tier);
   }, [filteredPicker]);
 
+  const isAnimeMetaId = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const previousPlayback = useMemo(
   () =>
     settings.rememberLastStream
@@ -275,6 +276,8 @@ export function PlayPicker({
     preferredLangs,
     hostSource: hostSourceForMedia,
     prefer1080: !!kidProfile,
+    season: !isAnimeMetaId ? episode?.season ?? null : null,
+    episode: !isAnimeMetaId ? episode?.episode ?? null : null,
   });
 
   const autoFiredRef = useRef(false);
@@ -297,8 +300,12 @@ export function PlayPicker({
 
   const previousMatch: ScoredStream | null = useMemo(() => {
     if (!filteredPicker || !previousPlayback) return null;
-    return filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null;
-  }, [filteredPicker, previousPlayback]);
+    const m = filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null;
+    if (!m || isAnimeMetaId || !episode) return m;
+    if (m.episode != null && m.episode !== episode.episode) return null;
+    if (m.episode != null && m.season != null && episode.season != null && m.season !== episode.season) return null;
+    return m;
+  }, [filteredPicker, previousPlayback, episode, isAnimeMetaId]);
 
   const sameSourceMatch: ScoredStream | null = useMemo(() => {
     if (!filteredPicker || !lastSeriesSource || previousMatch) return null;
@@ -321,6 +328,7 @@ export function PlayPicker({
     imdbIdVerified: resolvedImdb.verified,
     episode,
     attempt,
+    resume,
     debrids,
     isCached,
     p2pAutoConsent,
@@ -364,7 +372,7 @@ export function PlayPicker({
   useEffect(() => {
     if (rememberedFiredRef.current || !rememberedHandledFirst || !previousMatch) return;
     rememberedFiredRef.current = true;
-    onPlay(previousMatch, true);
+    onPlay(previousMatch, true, false, true);
   }, [rememberedHandledFirst, previousMatch, onPlay]);
 
   useAutoFire({

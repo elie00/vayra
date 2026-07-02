@@ -12,6 +12,7 @@ import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { FilterBar, Grid, type TypeKey } from "./shared";
+import { episodeLabel, groupLocal, localPlayerSrc, ShowGroupCard } from "./local-tab/show-group";
 
 export function LocalTab() {
   const t = useT();
@@ -63,6 +64,8 @@ export function LocalTab() {
           poster: tmdb.poster ?? null,
           tmdbId: tmdb.tmdbId ?? null,
           imdbId: tmdb.imdbId ?? null,
+          season: parsed.season,
+          episode: parsed.episode,
           addedAt: Date.now(),
         });
         setProgress({ found: i + 1, total: scanned.length });
@@ -96,6 +99,7 @@ export function LocalTab() {
       return true;
     });
   }, [items, type, query]);
+  const groups = useMemo(() => groupLocal(visible), [visible]);
 
   if (items.length === 0) {
     return (
@@ -137,15 +141,19 @@ export function LocalTab() {
           {error}
         </p>
       )}
-      {visible.length === 0 ? (
+      {groups.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-6 py-10 text-center text-[13px] text-ink-muted">
           {t("No matches for these filters.")}
         </p>
       ) : (
         <Grid>
-          {visible.map((it) => (
-            <OwnedCard key={it.id} entry={it} />
-          ))}
+          {groups.map((g) =>
+            g.kind === "movie" ? (
+              <OwnedCard key={g.entry.id} entry={g.entry} />
+            ) : (
+              <ShowGroupCard key={g.key} head={g.head} episodes={g.episodes} />
+            ),
+          )}
         </Grid>
       )}
     </section>
@@ -211,21 +219,8 @@ function OwnedCard({ entry }: { entry: LocalEntry }) {
     entry.type === "show" ? "series" : "movie",
   );
 
-  const onPlay = useCallback(() => {
-    openPlayer({
-      meta: {
-        id: entry.imdbId ?? `local:${entry.id}`,
-        type: entry.type === "show" ? "series" : "movie",
-        name: entry.title,
-        poster: entry.poster ?? undefined,
-        releaseInfo: entry.year ? String(entry.year) : undefined,
-      },
-      url: entry.path,
-      title: entry.title,
-      subtitle: entry.year ? String(entry.year) : entry.filename,
-      notWebReady: true,
-    });
-  }, [entry, openPlayer]);
+  const epLabel = episodeLabel(entry);
+  const onPlay = useCallback(() => openPlayer(localPlayerSrc(entry)), [entry, openPlayer]);
 
   return (
     <div
@@ -289,12 +284,17 @@ function OwnedCard({ entry }: { entry: LocalEntry }) {
         <p className="truncate text-[13px] font-medium text-ink transition-colors hover:text-accent" title={entry.filename}>
           {entry.title}
         </p>
-        {entry.year != null && (
+        {epLabel ? (
+          <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">
+            {epLabel}
+            {entry.year ? ` · ${entry.year}` : ""}
+          </p>
+        ) : entry.year != null ? (
           <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">
             {entry.year}
             {entry.type === "show" && t(" · Series")}
           </p>
-        )}
+        ) : null}
       </button>
     </div>
   );
@@ -315,8 +315,19 @@ async function tmdbLookup(
   const json = await r.json();
   const top = json.results?.[0];
   if (!top) return {};
+  let imdbId: string | undefined;
+  try {
+    const ext = await fetch(`https://api.themoviedb.org/3/${path}/${top.id}/external_ids?api_key=${key}`);
+    if (ext.ok) {
+      const ej = await ext.json();
+      if (typeof ej.imdb_id === "string" && ej.imdb_id.startsWith("tt")) imdbId = ej.imdb_id;
+    }
+  } catch {
+    /* noop */
+  }
   return {
     tmdbId: top.id,
+    imdbId,
     poster: top.poster_path ? `https://image.tmdb.org/t/p/w342${top.poster_path}` : undefined,
   };
 }

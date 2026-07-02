@@ -16,11 +16,12 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
-import { AddonFilterMenu, QualityFilterMenu } from "./stream-switcher/filter-dropdowns";
+import { AddonFilterMenu, QualityFilterMenu, SourceFilterMenu } from "./stream-switcher/filter-dropdowns";
+import { sourceGroup } from "@/views/play-picker/quality-filter";
 import { KidsStreamSwitcher } from "./stream-switcher/kids-switcher";
 import { abbreviateLanguages, normalizeLangCode, streamMatchesLangs } from "./stream-switcher/lang-utils";
 import { QUALITY_BADGE, QUALITY_LABEL, QUALITY_ORDER, qualityKey, type QualityKey } from "./stream-switcher/quality";
-import { streamKey, SwitcherRow } from "./stream-switcher/switcher-row";
+import { isCurrentStream, streamKey, SwitcherRow } from "./stream-switcher/switcher-row";
 
 function isHiddenAddon(addonId: string, addonName?: string): boolean {
   const id = (addonId || "").toLowerCase();
@@ -34,6 +35,8 @@ export function StreamSwitcher({
   onPick,
   resolvingKey,
   currentUrl,
+  currentInfoHash,
+  currentFileIdx,
   debridSlugs,
   meta,
   episode,
@@ -44,6 +47,8 @@ export function StreamSwitcher({
   onPick: (stream: ScoredStream) => void;
   resolvingKey: string | null;
   currentUrl: string;
+  currentInfoHash?: string | null;
+  currentFileIdx?: number | null;
   debridSlugs: string[];
   meta: Meta;
   episode?: PlayEpisode;
@@ -73,7 +78,6 @@ export function StreamSwitcher({
   }, [baseLangs, settings.preferredAudioLangs, isAnimeRequest]);
   const [cache, setCache] = useState(() => peekPickerCache(meta, episode));
   const [addonLogos, setAddonLogos] = useState<Map<string, string | null>>(new Map());
-  const [addonRank, setAddonRank] = useState<Map<string, number>>(new Map());
   const [filterToPreferred, setFilterToPreferred] = useState(
     settings.requirePreferredLanguage === true && preferredLangs.length > 0,
   );
@@ -91,21 +95,13 @@ export function StreamSwitcher({
       const stremio = authKey ? await userAddons(authKey).catch(() => [] as Addon[]) : [];
       if (cancelled) return;
       const m = new Map<string, string | null>();
-      const r = new Map<string, number>();
       const merged = [...installed, ...stremio];
-      const seenId = new Set<string>();
-      let idx = 0;
       for (const a of merged) {
         const id = a.manifest?.id;
         if (!id) continue;
-        if (!seenId.has(id)) {
-          seenId.add(id);
-          r.set(id, idx++);
-        }
         m.set(id, resolveAddonLogo(a.manifest.logo, a.transportUrl));
       }
       setAddonLogos(m);
-      setAddonRank(r);
     })();
     return () => {
       cancelled = true;
@@ -158,6 +154,8 @@ export function StreamSwitcher({
   const [addonMenuOpen, setAddonMenuOpen] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityKey>("all");
   const [qualityMenuOpen, setQualityMenuOpen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
   const qualityOptions = useMemo(() => {
     const counts = new Map<Exclude<QualityKey, "all">, number>();
     for (const s of allStreams) {
@@ -176,6 +174,23 @@ export function StreamSwitcher({
       setQualityFilter("all");
     }
   }, [qualityOptions, qualityFilter]);
+  const sourceOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of allStreams) {
+      const g = sourceGroup(s);
+      if (g == null) continue;
+      counts.set(g, (counts.get(g) ?? 0) + 1);
+    }
+    const order = ["Remux", "BluRay", "WEB-DL", "WEBRip", "HDTV", "CAM"];
+    return order
+      .filter((g) => (counts.get(g) ?? 0) > 0)
+      .map((g) => ({ id: g, name: g, count: counts.get(g) ?? 0 }));
+  }, [allStreams]);
+  useEffect(() => {
+    if (sourceFilter !== "all" && !sourceOptions.some((o) => o.id === sourceFilter)) {
+      setSourceFilter("all");
+    }
+  }, [sourceOptions, sourceFilter]);
   const addonOptions = useMemo(() => buildAddonOptions(allStreams), [allStreams]);
   useEffect(() => {
     if (addonFilter !== "all" && !addonOptions.some((o) => o.id === addonFilter)) {
@@ -196,19 +211,14 @@ export function StreamSwitcher({
     if (qualityFilter !== "all") {
       list = list.filter((s) => qualityKey(s) === qualityFilter);
     }
-    if (addonFilter === "all") {
-      list = list.slice().sort((a, b) => {
-        if (matchScores) {
-          const dm = (matchScores.get(b) ?? 0) - (matchScores.get(a) ?? 0);
-          if (dm !== 0) return dm;
-        }
-        const ar = addonRank.get(a.addonId) ?? 9999;
-        const br = addonRank.get(b.addonId) ?? 9999;
-        return ar - br;
-      });
+    if (sourceFilter !== "all") {
+      list = list.filter((s) => sourceGroup(s) === sourceFilter);
+    }
+    if (addonFilter === "all" && matchScores) {
+      list = list.slice().sort((a, b) => (matchScores.get(b) ?? 0) - (matchScores.get(a) ?? 0));
     }
     return list;
-  }, [baseList, addonFilter, qualityFilter, addonRank, matchScores]);
+  }, [baseList, addonFilter, qualityFilter, sourceFilter, matchScores]);
   const matchedStreams = useMemo(
     () =>
       preferredLangs.length === 0
@@ -220,7 +230,7 @@ export function StreamSwitcher({
   const [showCount, setShowCount] = useState(80);
   useEffect(() => {
     setShowCount(80);
-  }, [addonFilter, qualityFilter, filterToPreferred, cachedOnly, list.length]);
+  }, [addonFilter, qualityFilter, sourceFilter, filterToPreferred, cachedOnly, list.length]);
   const hiddenCount = addonFilteredList.length - matchedStreams.length;
   const uncachedHidden = allStreams.length - cachedStreams.length;
   const activeAddonName =
@@ -238,6 +248,8 @@ export function StreamSwitcher({
         onClose={onClose}
         resolvingKey={resolvingKey}
         currentUrl={currentUrl}
+        currentInfoHash={currentInfoHash}
+        currentFileIdx={currentFileIdx}
       />
     );
   }
@@ -272,7 +284,7 @@ export function StreamSwitcher({
                   aria-pressed={showFiltered}
                 >
                   <Filter size={11} strokeWidth={2.2} />
-                  {showFiltered ? t("Flagged shown") : t("Show flagged ({n})", { n: rejectedStreams.length })}
+                  {showFiltered ? t("Flagged shown") : t("Flagged ({n})", { n: rejectedStreams.length })}
                 </button>
               </Tooltip>
             )}
@@ -312,6 +324,16 @@ export function StreamSwitcher({
                 totalCount={allStreams.length}
               />
             )}
+            {sourceOptions.length > 1 && (
+              <SourceFilterMenu
+                sourceFilter={sourceFilter}
+                setSourceFilter={setSourceFilter}
+                open={sourceMenuOpen}
+                setOpen={setSourceMenuOpen}
+                sourceOptions={sourceOptions}
+                totalCount={allStreams.length}
+              />
+            )}
             {preferredLangs.length > 0 && hiddenCount > 0 && (
               <button
                 onClick={() => setFilterToPreferred((v) => !v)}
@@ -325,7 +347,7 @@ export function StreamSwitcher({
                 <Languages size={13} strokeWidth={2.2} />
                 {filterToPreferred
                   ? t("{langs} only · {n} hidden", { langs: abbreviateLanguages(preferredLangs), n: hiddenCount })
-                  : t("Show {langs} only", { langs: abbreviateLanguages(preferredLangs) })}
+                  : t("{langs} only", { langs: abbreviateLanguages(preferredLangs) })}
               </button>
             )}
             <button
@@ -354,7 +376,7 @@ export function StreamSwitcher({
                 onPick={() => onPick(s)}
                 resolving={resolvingKey === streamKey(s)}
                 divider={i > 0}
-                isCurrent={s.url != null && s.url === currentUrl}
+                isCurrent={isCurrentStream(s, currentUrl, currentInfoHash, currentFileIdx)}
                 match={matchBadge(matchScores?.get(s))}
               />
             ))}

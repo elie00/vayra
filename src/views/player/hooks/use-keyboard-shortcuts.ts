@@ -4,6 +4,8 @@ import { writePlayerPrefs } from "@/lib/player-prefs";
 import { writePlayerVolume } from "@/lib/player-volume";
 import { effectiveBinding, eventToBinding, isTypingTarget, type HotkeyId } from "@/lib/hotkeys";
 import { useSettings } from "@/lib/settings";
+import { isAnyFullscreen, exitAnyFullscreen } from "@/lib/fullscreen-state";
+import { getLeaveConfirm, openLeaveConfirm } from "@/lib/player/leave-confirm";
 import { round2 } from "../player-utils";
 
 export function useKeyboardShortcuts(params: {
@@ -55,7 +57,6 @@ export function useKeyboardShortcuts(params: {
     onFrameStep,
     toggleFullscreen,
     togglePip,
-    fullscreen,
     cycleSubtitles,
     setShowStats,
     metaId,
@@ -80,7 +81,7 @@ export function useKeyboardShortcuts(params: {
     onAnime4kOff,
     onVolumeFeedback,
   } = params;
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const overrides = settings.hotkeys ?? {};
   const seekBackStepSec = settings.seekBackStepSec;
   const seekForwardStepSec = settings.seekForwardStepSec;
@@ -116,9 +117,25 @@ export function useKeyboardShortcuts(params: {
       }
 
       if (match("playerClose")) {
-        if (drawMode) setDrawMode(false);
-        else if (fullscreen && settings.playerEscExitsFullscreen) toggleFullscreen();
-        else closePlayer();
+        if (getLeaveConfirm().open) return;
+        if (drawMode) {
+          setDrawMode(false);
+          return;
+        }
+        void (async () => {
+          if (settings.playerEscExitsFullscreen && (await isAnyFullscreen())) {
+            await exitAnyFullscreen();
+            return;
+          }
+          if (settings.playerConfirmLeave) {
+            openLeaveConfirm((remember) => {
+              if (remember) update({ playerConfirmLeave: false });
+              closePlayer();
+            });
+            return;
+          }
+          closePlayer();
+        })();
         return;
       }
       if (match("playerPip")) {
@@ -391,7 +408,7 @@ export function useKeyboardShortcuts(params: {
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep, onVolumeFeedback]);
+  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep, onVolumeFeedback, settings.playerEscExitsFullscreen, settings.playerConfirmLeave, update]);
 
   return { holdSpeedActive };
 }

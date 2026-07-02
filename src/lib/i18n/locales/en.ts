@@ -120,12 +120,14 @@ const en: Record<string, string> = {
   "No comments yet": "No comments yet",
   "Loading more": "Loading more",
   "Failed to post comment": "Failed to post comment",
+  "Show AniList comments": "Show AniList comments",
+  "Show forum threads and comments from AniList on anime detail pages.": "Show forum threads and comments from AniList on anime detail pages.",
+  "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.":
+    "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.",
 
   "Blur comments by default": "Blur comments by default",
   "Comments on episode/show pages are blurred until you reveal them, even if they are not tagged as spoilers.":
     "Comments on episode/show pages are blurred until you reveal them, even if they are not tagged as spoilers.",
-  "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.":
-    "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.",
   "Blur episode images on detail page": "Blur episode images on detail page",
   "Blurs the hero image and stills on the episode detail page until you click reveal.":
     "Blurs the hero image and stills on the episode detail page until you click reveal.",

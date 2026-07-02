@@ -5,6 +5,7 @@ import type { ScoredStream } from "@/lib/streams/types";
 import { streamMatchesEntry, streamMatchesSource, type PlaybackEntry } from "@/lib/playback-history";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores } from "@/lib/together/source-match";
+import { hostSourceStream } from "@/lib/together/host-stream";
 import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from "./picker-utils";
 
 const RES_PREF: Record<string, number> = { "1080p": 0, "720p": 1, "480p": 2, "4K": 3, SD: 4 };
@@ -20,12 +21,31 @@ export function useAutoCandidates(args: {
   preferredLangs: string[];
   hostSource?: SourceDescriptor | null;
   prefer1080?: boolean;
+  season?: number | null;
+  episode?: number | null;
 }): ScoredStream[] {
-  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080 } = args;
+  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, season, episode } = args;
   return useMemo(() => {
-    if (!filteredPicker) return [];
+    const hostFallback = (): ScoredStream[] => {
+      if (!hostSource) return [];
+      const hs = hostSourceStream(hostSource);
+      return hs ? [hs] : [];
+    };
+    if (!filteredPicker) return hostFallback();
     const key = (s: ScoredStream) => s.url ?? s.infoHash ?? `${s.addonId}:${s.title ?? ""}`;
-    const instantTier = (s: ScoredStream) => (isCached(s) ? 0 : 1);
+    const episodeConflict = (s: ScoredStream) => {
+      if (episode == null || s.episode == null) return false;
+      if (s.episode !== episode) return true;
+      return season != null && s.season != null && s.season !== season;
+    };
+    const episodeExact = (s: ScoredStream) =>
+      episode != null &&
+      s.episode === episode &&
+      (season == null || s.season == null || s.season === season);
+    const instantTier = (s: ScoredStream) => {
+      if (!isCached(s)) return 2;
+      return episodeExact(s) ? 0 : 1;
+    };
     const addonRank = new Map<string, number>();
     (addons ?? []).forEach((a, i) => {
       if (a.manifest?.id) addonRank.set(a.manifest.id, i);
@@ -76,6 +96,7 @@ export function useAutoCandidates(args: {
       if (!s) return;
       if (isStreamDead(s)) return;
       if (isWatchHub(s)) return;
+      if (episodeConflict(s)) return;
       if (!isCached(s) && !s.url && !engineP2pEligible(s)) return;
       const k = key(s);
       if (seen.has(k)) return;
@@ -89,6 +110,7 @@ export function useAutoCandidates(args: {
       push(previousMatch);
     }
     for (const s of sorted) push(s);
+    if (out.length === 0) return hostFallback();
     return out;
-  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080]);
+  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, season, episode]);
 }

@@ -4,7 +4,11 @@ import { StatsOverlay } from "@/components/player/stats-overlay";
 import { SubStyleBar } from "@/components/player/sub-style-bar";
 import { SubSyncBar } from "@/components/player/sub-sync-bar";
 import { SubtitleOverlay } from "@/components/player/subtitle-overlay";
-import { VolumeIndicator, type VolumeIndicatorState } from "@/components/player/volume-indicator";
+import {
+  VolumeIndicator,
+  type VolumeHudPosition,
+  type VolumeIndicatorState,
+} from "@/components/player/volume-indicator";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { useT } from "@/lib/i18n";
 
@@ -17,6 +21,7 @@ export function StageOverlays({
   showStats,
   holdSpeedActive,
   volumeIndicator,
+  volumeHudPosition,
   videoFillPill,
   subDropToast,
   onSubDelay,
@@ -31,6 +36,7 @@ export function StageOverlays({
   showStats: boolean;
   holdSpeedActive: boolean;
   volumeIndicator: VolumeIndicatorState;
+  volumeHudPosition: VolumeHudPosition;
   videoFillPill: string | null;
   subDropToast: string | null;
   onSubDelay: (sec: number) => void;
@@ -57,9 +63,10 @@ export function StageOverlays({
         <VolumeIndicator
           state={{ ...volumeIndicator, visible: showVolumeIndicator }}
           allowBoost={engine === "mpv"}
+          position={volumeHudPosition}
         />
       )}
-      {videoFillPill && !holdSpeedActive && !showVolumeIndicator && !pipMode && (
+      {videoFillPill && !holdSpeedActive && !pipMode && !(showVolumeIndicator && volumeHudPosition === "top") && (
         <div className="pointer-events-none absolute left-1/2 top-8 z-30 -translate-x-1/2 rounded-full bg-canvas/85 px-3.5 py-1.5 text-[13px] font-semibold text-ink backdrop-blur-md">
           {videoFillPill}
         </div>

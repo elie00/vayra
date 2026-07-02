@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EpisodeJumper } from "@/components/episode-jumper";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
-import { manualWatchedVersion, setManualWatchedMany, subscribeManualWatched } from "@/lib/manual-watched";
+import {
+  manualWatchedVersion,
+  recordManualWatchedMeta,
+  setManualWatchedMany,
+  subscribeManualWatched,
+} from "@/lib/manual-watched";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
 import { getLastSeason, setLastSeason } from "@/lib/last-season";
 import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { tvdbEpisodes, tvdbSeriesByImdb, type TvdbEpisode } from "@/lib/providers/tvdb";
 import { omdbSeasonRatings } from "@/lib/providers/omdb";
+import { harborImdbEpisodes } from "@/lib/providers/harbor-imdb";
 import { useSettings } from "@/lib/settings";
 import { spoilerMaskFor } from "@/lib/spoilers";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
@@ -73,6 +79,7 @@ export function SeriesEpisodes({
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [tvdbBySeason, setTvdbBySeason] = useState<Map<number, Map<number, TvdbEpisode>>>(new Map());
   const [omdbBySeason, setOmdbBySeason] = useState<Map<number, Map<number, number>>>(new Map());
+  const [harborImdb, setHarborImdb] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [traktWatched, setTraktWatched] = useState<Set<string>>(() => new Set());
   const [simklWatched, setSimklWatched] = useState<Set<string>>(() => new Set());
@@ -211,10 +218,21 @@ export function SeriesEpisodes({
     };
   }, [imdbId, active, settings.omdbKey, omdbBySeason]);
 
+  useEffect(() => {
+    if (!imdbId) return;
+    let cancelled = false;
+    void harborImdbEpisodes(imdbId).then((map) => {
+      if (!cancelled && map.size > 0) setHarborImdb(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [imdbId]);
+
   const tvdbForSeason = tvdbBySeason.get(active);
   const omdbForSeason = omdbBySeason.get(active);
   const enrichedEpisodes = useMemo<Episode[]>(() => {
-    if (!tvdbForSeason && !omdbForSeason) return episodes;
+    if (!tvdbForSeason && !omdbForSeason && harborImdb.size === 0) return episodes;
     return episodes.map((ep): Episode => {
       let next: Episode = ep;
       const tv = tvdbForSeason?.get(ep.episodeNumber);
@@ -231,13 +249,14 @@ export function SeriesEpisodes({
           airDate: next.airDate ?? tv.aired ?? null,
         };
       }
-      const imdbRating = omdbForSeason?.get(ep.episodeNumber);
+      const imdbRating =
+        harborImdb.get(`${active}:${ep.episodeNumber}`) ?? omdbForSeason?.get(ep.episodeNumber);
       if (imdbRating != null && imdbRating > 0) {
         next = { ...next, imdbRating };
       }
       return next;
     });
-  }, [episodes, tvdbForSeason, omdbForSeason]);
+  }, [episodes, tvdbForSeason, omdbForSeason, harborImdb, active]);
 
   const activeSeason = seasons.find((s) => s.seasonNumber === active);
 
@@ -277,6 +296,13 @@ export function SeriesEpisodes({
     enrichedEpisodes.every((ep) => progressByEp.get(ep.episodeNumber)?.watched);
   const markSeason = (watched: boolean) => {
     if (enrichedEpisodes.length === 0) return;
+    if (watched)
+      recordManualWatchedMeta(meta.id, {
+        type: "series",
+        name: meta.name,
+        poster: meta.poster,
+        background: meta.background,
+      });
     setManualWatchedMany(
       meta.id,
       enrichedEpisodes.map((ep) => ({ season: ep.seasonNumber, episode: ep.episodeNumber })),
@@ -396,6 +422,7 @@ export function SeriesEpisodes({
       {watchedMenu && (
         <EpisodeWatchedMenu
           metaId={meta.id}
+          meta={{ type: "series", name: meta.name, poster: meta.poster, background: meta.background }}
           target={watchedMenu}
           onClose={() => setWatchedMenu(null)}
         />

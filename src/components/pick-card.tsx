@@ -13,6 +13,7 @@ import {
 import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
 import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
 import { cinemetaRatingPrefetch, useCinemetaRating } from "@/lib/providers/cinemeta-rating";
+import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
 import { mdblistCardPrefetch, useMdblistCardScores } from "@/lib/providers/mdblist-batch";
 import { needsImdbForPoster, needsTmdbForPoster, rpdbPoster } from "@/lib/providers/rpdb";
 import { externalToKitsu, kitsuToImdb, kitsuToTvdb } from "@/lib/providers/anime-mapping";
@@ -30,6 +31,7 @@ import { ClapperMini } from "./icons/clapper-mini";
 import { ImdbIcon } from "./icons/imdb-icon";
 import { MalLogo } from "./icons/mal-logo";
 import { Poster } from "./poster";
+import { ElegantHoverActions } from "./pick-card/elegant-hover";
 import { RtBadge } from "./rt-badge";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
@@ -53,9 +55,10 @@ export const PickCard = memo(function PickCard({
   awardLookupName?: string;
   kids?: boolean;
 }) {
-  const { openMeta } = useView();
+  const { openMeta, openPicker } = useView();
   const { open: openContextMenu } = useContextMenu();
   const { settings } = useSettings();
+  const elegantHover = !kids && String(settings.theme.preset) === "elegantfin";
   const t = useT();
   const isAnimeCardId = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const inCinema = isInCinema(meta);
@@ -65,6 +68,24 @@ export const PickCard = memo(function PickCard({
   const resolvedImdb = useTmdbImdbId(meta.id);
   const imdbId = resolvedImdb ?? undefined;
   const cached = useOmdbScores(imdbId);
+  const [animeImdb, setAnimeImdb] = useState<string | undefined>();
+  const [animeTvdb, setAnimeTvdb] = useState<string | undefined>();
+  const animeWantsImdb = isAnimeCardId && settings.animeCardRating === "imdb";
+  const ratingTt = isAnimeCardId ? (animeWantsImdb ? animeImdb : undefined) : imdbId;
+  const [harborRating, setHarborRating] = useState<string | undefined>();
+  useEffect(() => {
+    setHarborRating(undefined);
+    if (!ratingTt || !ratingTt.startsWith("tt")) return;
+    let cancelled = false;
+    harborImdbTitle(ratingTt)
+      .then((r) => {
+        if (!cancelled && r != null) setHarborRating(r.toFixed(1));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [ratingTt]);
   const mediaKind = meta.type === "series" ? "show" : "movie";
   const wantMdblist =
     settings.showPopcornBadge ||
@@ -78,10 +99,15 @@ export const PickCard = memo(function PickCard({
   const cinemetaRating = useCinemetaRating(wantCinemetaRating ? imdbId : undefined);
   const cardImdbValue = isAnimeCardId
     ? undefined
-    : cached?.imdbRating ?? cinemetaRating ?? (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
+    : harborRating ??
+      cached?.imdbRating ??
+      cinemetaRating ??
+      (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
   const cardRating = isAnimeCardId
     ? settings.showMalBadge
-      ? meta.imdbRating
+      ? animeWantsImdb && harborRating
+        ? harborRating
+        : meta.imdbRating
       : undefined
     : cardImdbValue
       ? settings.showImdbBadge
@@ -90,7 +116,13 @@ export const PickCard = memo(function PickCard({
       : settings.showTmdbBadge
         ? meta.imdbRating
         : undefined;
-  const cardRatingSource = isAnimeCardId ? "mal" : cardImdbValue ? "imdb" : "tmdb";
+  const cardRatingSource = isAnimeCardId
+    ? animeWantsImdb && harborRating
+      ? "imdb"
+      : "mal"
+    : cardImdbValue
+      ? "imdb"
+      : "tmdb";
   const cardBadges: CardBadge[] = [];
   if (cardRating) cardBadges.push({ kind: "rating", source: cardRatingSource, value: cardRating });
   if (settings.showRtBadge && cached?.rtCritics != null)
@@ -111,8 +143,6 @@ export const PickCard = memo(function PickCard({
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
-  const [animeImdb, setAnimeImdb] = useState<string | undefined>();
-  const [animeTvdb, setAnimeTvdb] = useState<string | undefined>();
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
   const animeTmdb = useTmdbIdFromImdb(animeImdb) ?? undefined;
@@ -150,7 +180,7 @@ export const PickCard = memo(function PickCard({
   }, [meta.id]);
 
   useEffect(() => {
-    if (!isAnimeCardId || (!settings.rpdbKey && !settings.posterBaseUrl)) return;
+    if (!isAnimeCardId || (!settings.rpdbKey && !settings.posterBaseUrl && !animeWantsImdb)) return;
     const m = meta.id.match(/^(kitsu|mal|anilist|anidb):(\d+)/);
     if (!m) return;
     const source = m[1];
@@ -175,7 +205,7 @@ export const PickCard = memo(function PickCard({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, isAnimeCardId, settings.rpdbKey, settings.posterBaseUrl]);
+  }, [meta.id, isAnimeCardId, settings.rpdbKey, settings.posterBaseUrl, animeWantsImdb]);
 
   useEffect(() => {
     if (posterSrc !== undefined || hydratedPoster) return;
@@ -256,8 +286,21 @@ export const PickCard = memo(function PickCard({
           lowResImdb={imdbId}
           ratio="portrait"
           onError={() => setImgIdx((i) => i + 1)}
-          className="harbor-card-ring rounded-[var(--poster-radius,12px)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)]"
+          className={`harbor-card-ring rounded-[var(--poster-radius,12px)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)] ${
+            elegantHover
+              ? "overflow-hidden [&_img]:transition-[filter,transform] [&_img]:duration-200 group-hover:[&_img]:scale-110 group-hover:[&_img]:blur-[10px]"
+              : ""
+          }`}
         />
+        {elegantHover && (
+          <ElegantHoverActions
+            meta={meta}
+            onPlay={() => {
+              if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
+              else openMeta(meta);
+            }}
+          />
+        )}
         {settings.showCardBadges && (
           <>
             {rerun && <RerunBadge year={meta.releaseInfo} />}

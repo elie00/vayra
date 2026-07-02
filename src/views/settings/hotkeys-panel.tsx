@@ -87,6 +87,12 @@ export function HotkeysPanel() {
           value={settings.playerEscExitsFullscreen}
           onChange={(v) => update({ playerEscExitsFullscreen: v })}
         />
+        <ToggleRow
+          label={t("Ask before leaving")}
+          sub={t("When Esc would close the player, show a quick confirm first. You can tick \"Don't ask me again\" in that prompt to always leave on Esc.")}
+          value={settings.playerConfirmLeave}
+          onChange={(v) => update({ playerConfirmLeave: v })}
+        />
         <SeekStepRow
           back={settings.seekBackStepSec}
           forward={settings.seekForwardStepSec}

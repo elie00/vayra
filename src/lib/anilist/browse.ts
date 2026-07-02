@@ -77,6 +77,43 @@ export async function anilistArtById(id: number): Promise<{ banner?: string; cov
   }
 }
 
+const ART_BY_MAL_QUERY = `query ($mal: Int) {
+  Media(idMal: $mal, type: ANIME) {
+    id
+    bannerImage
+    coverImage { extraLarge }
+  }
+}`;
+
+const artByMalCache = new Map<number, { id?: number; banner?: string; cover?: string }>();
+
+export async function anilistArtByMalId(
+  malId: number,
+): Promise<{ id?: number; banner?: string; cover?: string }> {
+  const cached = artByMalCache.get(malId);
+  if (cached) return cached;
+  try {
+    const data = await anilistRequest<{
+      Media: {
+        id: number;
+        bannerImage: string | null;
+        coverImage: { extraLarge: string | null } | null;
+      } | null;
+    }>(ART_BY_MAL_QUERY, { mal: malId }, undefined, true);
+    const art = {
+      id: data?.Media?.id ?? undefined,
+      banner: data?.Media?.bannerImage ?? undefined,
+      cover: data?.Media?.coverImage?.extraLarge ?? undefined,
+    };
+    artByMalCache.set(malId, art);
+    return art;
+  } catch {
+    const empty = {};
+    artByMalCache.set(malId, empty);
+    return empty;
+  }
+}
+
 export function fetchAnilistTopAnime(count = 100): Promise<Meta[]> {
   return fetchAnilistBrowse("SCORE_DESC", count);
 }
