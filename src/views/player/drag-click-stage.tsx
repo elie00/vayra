@@ -1,3 +1,5 @@
+import { isMobileTauri } from "@/lib/platform";
+
 export function DragClickStage(props: {
   drawMode: boolean;
   pipMode: boolean;
@@ -30,9 +32,13 @@ export function DragClickStage(props: {
             dragStarted = true;
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
-            import("@tauri-apps/api/window")
-              .then(({ getCurrentWindow }) => getCurrentWindow().startDragging())
-              .catch(() => {});
+            // Dragging the OS window by the video is desktop-only; the window
+            // API rejects on mobile.
+            if (!isMobileTauri()) {
+              import("@tauri-apps/api/window")
+                .then(({ getCurrentWindow }) => getCurrentWindow().startDragging())
+                .catch(() => {});
+            }
           }
         };
         const onUp = () => {
