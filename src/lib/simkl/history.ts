@@ -74,6 +74,35 @@ export async function addToHistory(target: SimklTarget): Promise<boolean> {
       });
       return (r?.added?.movies ?? 0) > 0;
     }
+    if (target.kind === "anime-episode") {
+      const r = await simklRequest<{ added?: { episodes?: number; anime?: number } }>(
+        "/sync/history",
+        {
+          method: "POST",
+          body: {
+            anime: [
+              {
+                ids: target.anime.ids,
+                seasons: [
+                  {
+                    number: target.season,
+                    episodes: [{ number: target.number, watched_at: watchedAt }],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      );
+      return (r?.added?.episodes ?? r?.added?.anime ?? 0) > 0;
+    }
+    if (target.kind === "anime") {
+      const r = await simklRequest<{ added?: { anime?: number } }>("/sync/history", {
+        method: "POST",
+        body: { anime: [{ ids: target.ids, watched_at: watchedAt }] },
+      });
+      return (r?.added?.anime ?? 0) > 0;
+    }
     if (target.kind === "episode") {
       const r = await simklRequest<{ added?: { episodes?: number; shows?: number } }>(
         "/sync/history",
@@ -113,11 +142,13 @@ export async function markEpisodesWatched(
 ): Promise<boolean> {
   if (episodes.length === 0) return false;
   const watchedAt = new Date().toISOString();
+  const isAnime = show.mal != null || show.kitsu != null || show.anidb != null;
+  const key = isAnime ? "anime" : "shows";
   try {
     await simklRequest("/sync/history", {
       method: "POST",
       body: {
-        shows: [
+        [key]: [
           {
             ids: show,
             seasons: [
@@ -141,11 +172,13 @@ export async function unmarkEpisodeWatched(
   season: number,
   episode: number,
 ): Promise<boolean> {
+  const isAnime = show.mal != null || show.kitsu != null || show.anidb != null;
+  const key = isAnime ? "anime" : "shows";
   try {
     await simklRequest("/sync/history/remove", {
       method: "POST",
       body: {
-        shows: [{ ids: show, seasons: [{ number: season, episodes: [{ number: episode }] }] }],
+        [key]: [{ ids: show, seasons: [{ number: season, episodes: [{ number: episode }] }] }],
       },
     });
     return true;

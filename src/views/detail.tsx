@@ -49,6 +49,8 @@ import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
+import { SimklRatingPicker } from "./detail/simkl-rating-picker";
+import { useSimkl } from "@/lib/simkl/provider";
 import { CollectionRow } from "./detail/collection-row";
 import { MediaGallery } from "./detail/media-gallery";
 import { useTitleBackdrop } from "@/lib/title-backdrop";
@@ -188,6 +190,7 @@ export function DetailView({
   const { openPicker, openFilter, promoteMetaToRoot } = useView();
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();
+  const { isConnected: simklConnected } = useSimkl();
   const inWatchlist = useInWatchlist(meta.id, [detail?.imdbId]);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(meta.id, [detail?.imdbId]);
@@ -1001,6 +1004,13 @@ export function DetailView({
                     harborId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
                     title={title || meta.name}
                     type={meta.type === "movie" ? "movie" : "series"}
+                  />
+                )}
+                {actionStage < 2 && settings.simklEnableUserRatings && (
+                  <SimklRatingPicker
+                    harborId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
+                    type={meta.type === "movie" ? "movie" : "series"}
+                    simklConnected={simklConnected}
                   />
                 )}
                 {actionStage >= 1 ? (

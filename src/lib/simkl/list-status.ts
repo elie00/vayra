@@ -1,6 +1,7 @@
 import { simklRequest } from "./client";
-import { subscribeSession } from "./session";
+import { subscribeSession, getSession } from "./session";
 import type { SimklTarget } from "./types";
+import { getCachedSimklData, updateCachedStatusByTarget, clearLocalCache } from "./activities";
 
 export type WatchlistStatus = "watching" | "plantowatch" | "hold" | "completed" | "dropped";
 
@@ -30,15 +31,6 @@ type RawIds = {
   anilist?: number | string;
   anidb?: number | string;
 };
-type RawEpisode = { number?: number; watched_at?: string | null };
-type RawSeason = { number?: number; episodes?: RawEpisode[] };
-type RawEntry = {
-  status?: string;
-  movie?: { ids?: RawIds };
-  show?: { ids?: RawIds };
-  seasons?: RawSeason[];
-};
-type RawAllItems = { movies?: RawEntry[]; shows?: RawEntry[]; anime?: RawEntry[] };
 
 type SimklData = {
   statuses: Map<string, WatchlistStatus>;
@@ -64,7 +56,12 @@ function idKeys(ids: RawIds | undefined, kind: "movie" | "show"): string[] {
 }
 
 function targetKeys(target: SimklTarget): string[] {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const ids =
+    target.kind === "episode"
+      ? target.show.ids
+      : target.kind === "anime-episode"
+        ? target.anime.ids
+        : target.ids;
   return idKeys(ids as RawIds, target.kind === "movie" ? "movie" : "show");
 }
 
@@ -72,37 +69,18 @@ let cache: Promise<SimklData> | null = null;
 
 subscribeSession(() => {
   cache = null;
+  const session = getSession();
+  if (!session) {
+    clearLocalCache();
+  }
 });
 
+export function invalidateListStatusCache() {
+  cache = null;
+}
+
 async function pull(): Promise<SimklData> {
-  const data = await simklRequest<RawAllItems>(
-    "/sync/all-items/all/all?extended=full&episode_watched_at=yes",
-  ).catch(() => ({}) as RawAllItems);
-  const statuses = new Map<string, WatchlistStatus>();
-  const watched = new Map<string, Set<string>>();
-  const add = (entries: RawEntry[] | undefined, kind: "movie" | "show") => {
-    for (const e of entries ?? []) {
-      const node = kind === "movie" ? e.movie : e.show;
-      const keys = idKeys(node?.ids, kind);
-      if (keys.length === 0) continue;
-      if (isStatus(e.status)) for (const k of keys) statuses.set(k, e.status);
-      if (kind === "show" && e.seasons) {
-        const eps = new Set<string>();
-        for (const s of e.seasons) {
-          for (const ep of s.episodes ?? []) {
-            if (ep.watched_at && s.number != null && ep.number != null) {
-              eps.add(`${s.number}:${ep.number}`);
-            }
-          }
-        }
-        if (eps.size > 0) for (const k of keys) watched.set(k, eps);
-      }
-    }
-  };
-  add(data.movies, "movie");
-  add(data.shows, "show");
-  add(data.anime, "show");
-  return { statuses, watched };
+  return getCachedSimklData();
 }
 
 function loadData(): Promise<SimklData> {
@@ -141,8 +119,17 @@ export async function setSimklStatus(
   target: SimklTarget,
   status: WatchlistStatus,
 ): Promise<WatchlistStatus> {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
-  const bucket = target.kind === "movie" ? "movies" : "shows";
+  const ids =
+    target.kind === "episode"
+      ? target.show.ids
+      : target.kind === "anime-episode"
+        ? target.anime.ids
+        : target.ids;
+  const isAnime =
+    target.kind === "anime" ||
+    target.kind === "anime-episode" ||
+    (ids && (ids.mal != null || ids.kitsu != null || ids.anidb != null));
+  const bucket = target.kind === "movie" ? "movies" : isAnime ? "anime" : "shows";
   const r = await simklRequest<{ added?: Record<string, Array<{ to?: string }>> }>(
     "/sync/add-to-list",
     { method: "POST", body: { to: status, [bucket]: [{ to: status, ids }] } },
@@ -151,13 +138,24 @@ export async function setSimklStatus(
   const final = isStatus(echoed) ? echoed : status;
   const statuses = (await loadData()).statuses;
   for (const k of targetKeys(target)) statuses.set(k, final);
+  updateCachedStatusByTarget(target, final);
   return final;
 }
 
 export async function clearSimklStatus(target: SimklTarget): Promise<void> {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
-  const bucket = target.kind === "movie" ? "movies" : "shows";
+  const ids =
+    target.kind === "episode"
+      ? target.show.ids
+      : target.kind === "anime-episode"
+        ? target.anime.ids
+        : target.ids;
+  const isAnime =
+    target.kind === "anime" ||
+    target.kind === "anime-episode" ||
+    (ids && (ids.mal != null || ids.kitsu != null || ids.anidb != null));
+  const bucket = target.kind === "movie" ? "movies" : isAnime ? "anime" : "shows";
   await simklRequest("/sync/history/remove", { method: "POST", body: { [bucket]: [{ ids }] } });
   const statuses = (await loadData()).statuses;
   for (const k of targetKeys(target)) statuses.delete(k);
+  updateCachedStatusByTarget(target, null);
 }

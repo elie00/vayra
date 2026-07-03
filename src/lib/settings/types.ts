@@ -42,7 +42,30 @@ export type LetterboxdSettings = {
   listRefs: Array<{ id: string; name: string; owner?: string; filmCount?: number }>;
 };
 
+export interface SimklGranularFilters {
+  movies: {
+    plantowatch: boolean;
+    completed: boolean;
+    dropped: boolean;
+  };
+  shows: {
+    watching: boolean;
+    plantowatch: boolean;
+    completed: boolean;
+    hold: boolean;
+    dropped: boolean;
+  };
+  anime: {
+    watching: boolean;
+    plantowatch: boolean;
+    completed: boolean;
+    hold: boolean;
+    dropped: boolean;
+  };
+}
+
 export type Settings = {
+  simklGranularFilters: SimklGranularFilters;
   blurComments: boolean;
   blurEpisodes: boolean;
   tmdbKey: string;
@@ -70,6 +93,9 @@ export type Settings = {
   showTraktBadge: boolean;
   showDetailRatings: boolean;
   showTraktComments: boolean;
+  showSimklBadge: boolean;
+  simklShowCommunityRatings: boolean;
+  simklEnableUserRatings: boolean;
   cardBadgeLimit: number;
   showQualityBadge: boolean;
   showCardBadges: boolean;
@@ -320,6 +346,9 @@ export type Settings = {
     | "custom"
     | "simkl"
     | "simkl-anticipated";
+  simklCalendarPremieresEnabled: boolean;
+  simklHomeRailsEnabled: boolean;
+  simklScrobbleEnabled: boolean;
   weekStartsMonday: boolean;
   customCalendar: {
     trackedPeople: Array<{

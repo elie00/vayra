@@ -4,6 +4,27 @@ import type { Settings } from "./types";
 export const STORAGE_KEY = "harbor.settings";
 
 export const DEFAULT: Settings = {
+  simklGranularFilters: {
+    movies: {
+      plantowatch: true,
+      completed: true,
+      dropped: true,
+    },
+    shows: {
+      watching: true,
+      plantowatch: true,
+      completed: true,
+      hold: true,
+      dropped: true,
+    },
+    anime: {
+      watching: true,
+      plantowatch: true,
+      completed: true,
+      hold: true,
+      dropped: true,
+    },
+  },
   blurComments: false,
   blurEpisodes: false,
   tmdbKey: "",
@@ -31,6 +52,9 @@ export const DEFAULT: Settings = {
   showTraktBadge: false,
   showDetailRatings: true,
   showTraktComments: false,
+  showSimklBadge: true,
+  simklShowCommunityRatings: true,
+  simklEnableUserRatings: true,
   cardBadgeLimit: 3,
   showQualityBadge: true,
   showCardBadges: true,
@@ -282,6 +306,9 @@ export const DEFAULT: Settings = {
     },
   },
   calendarSource: "library",
+  simklCalendarPremieresEnabled: true,
+  simklHomeRailsEnabled: true,
+  simklScrobbleEnabled: true,
   weekStartsMonday: false,
   customCalendar: {
     trackedPeople: [],

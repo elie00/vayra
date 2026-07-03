@@ -72,18 +72,20 @@ export function SourceSwitcher({
   onChange,
   traktConnected,
   simklConnected,
+  simklCalendarPremieresEnabled = true,
 }: {
   value: Source;
   onChange: (s: Source) => void;
   traktConnected: boolean;
   simklConnected: boolean;
+  simklCalendarPremieresEnabled?: boolean;
 }) {
   const t = useT();
   const visible = OPTIONS.filter(
     (o) =>
       (o.id !== "trakt" || traktConnected) &&
-      (o.id !== "simkl" || simklConnected) &&
-      (o.id !== "simkl-anticipated" || simklConnected),
+      (o.id !== "simkl" || (simklConnected && simklCalendarPremieresEnabled)) &&
+      (o.id !== "simkl-anticipated" || (simklConnected && simklCalendarPremieresEnabled)),
   );
   return (
     <div className="flex items-center gap-1 rounded-full border border-edge-soft bg-elevated/30 p-1">

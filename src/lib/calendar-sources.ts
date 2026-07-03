@@ -8,7 +8,7 @@ import {
 import type { CalendarItem } from "./calendar";
 import { resolveSavedCalendar, type SavedCandidate } from "./calendar-library";
 import { fetchWatchlist as fetchSimklWatchlist } from "./simkl/watchlist";
-import { fetchSimklPremieres, resolveSimklIds } from "./simkl/premieres";
+import { fetchSimklCdnCalendar } from "./simkl/calendar";
 import { isAuthenticated as simklConnected } from "./simkl/session";
 
 export { fetchLibraryCalendar } from "./calendar-library";
@@ -17,34 +17,7 @@ export async function fetchSimklPremieresCalendar(
   year: number,
   month: number,
 ): Promise<CalendarItem[]> {
-  const premieres = await fetchSimklPremieres(year).catch(() => []);
-  const thisMonth = premieres.filter((p) => inMonth(p.date, year, month));
-  const resolved = await Promise.all(
-    thisMonth.map(async (p) => ({ p, ids: await resolveSimklIds(p.simklId, p.isAnime).catch(() => null) })),
-  );
-  const out: CalendarItem[] = [];
-  for (const { p, ids } of resolved) {
-    const id =
-      ids?.imdb ??
-      (ids?.tmdb ? `tmdb:tv:${ids.tmdb}` : null) ??
-      (ids?.kitsu ? `kitsu:${ids.kitsu}` : null) ??
-      (ids?.mal ? `mal:${ids.mal}` : null) ??
-      `simkl:${p.simklId}`;
-    out.push({
-      id,
-      imdbId: ids?.imdb ?? null,
-      type: "tv",
-      name: `${p.title} (premiere)`,
-      poster: p.poster,
-      background: null,
-      releaseDate: p.date,
-      isAnime: p.isAnime,
-      overview: "",
-      voteAverage: 0,
-    });
-  }
-  out.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
-  return out;
+  return fetchSimklCdnCalendar(year, month).catch(() => []);
 }
 
 export async function fetchSimklCalendar(

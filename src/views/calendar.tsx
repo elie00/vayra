@@ -200,6 +200,7 @@ export function CalendarView() {
             onChange={(s) => update({ calendarSource: s })}
             traktConnected={traktConnected}
             simklConnected={simklConnected}
+            simklCalendarPremieresEnabled={settings.simklCalendarPremieresEnabled}
           />
           <button
             onClick={() => update({ weekStartsMonday: !settings.weekStartsMonday })}

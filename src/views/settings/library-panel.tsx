@@ -3,6 +3,7 @@ import fanartLogo from "@/assets/addon-logos/fanarttv.svg";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import traktLogo from "@/assets/trakt.svg";
+import simklLogo from "@/assets/simkl.png";
 import harborStyleImg from "@/assets/onboarding/harborstyle.png";
 import traditionalStyleImg from "@/assets/onboarding/traditional.png";
 import omdbLogo from "@/assets/addon-logos/omdb.png";
@@ -662,6 +663,14 @@ export function LibraryPanel({
               lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
             />
             <ToggleRow
+              label={t("Show SIMKL score on cards")}
+              sub={t("SIMKL community rating out of 10.")}
+              leading={<SimklBadge />}
+              value={settings.showSimklBadge}
+              onChange={(v) => update({ showSimklBadge: v, simklShowCommunityRatings: v })}
+              lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
+            />
+            <ToggleRow
               label={t("Mark watched button")}
               sub={t("Show a button on the detail page to mark a title or episode as watched. Syncs to Trakt and Simkl if connected.")}
               value={settings.showWatchedButton}
@@ -839,6 +848,10 @@ function MdblistBadge() {
 
 function TraktBadge() {
   return <img src={traktLogo} alt="" className="h-7 w-7 shrink-0 object-contain" />;
+}
+
+function SimklBadge() {
+  return <img src={simklLogo} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain" />;
 }
 
 type PreviewFlags = {

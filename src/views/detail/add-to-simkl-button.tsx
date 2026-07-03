@@ -62,9 +62,13 @@ export function AddToSimklButton({
         setTarget(null);
         return;
       }
+      if (type === "series" && tgt.kind === "movie") tgt = { kind: "show", ids: tgt.ids };
+      if (type === "movie" && (tgt.kind === "show" || tgt.kind === "anime")) tgt = { kind: "movie", ids: tgt.ids };
       setTarget(tgt);
       const malKey =
-        tgt.kind !== "episode" && tgt.ids.mal != null ? `mal:${tgt.ids.mal}` : null;
+        tgt.kind === "movie" || tgt.kind === "show" || tgt.kind === "anime"
+          ? (tgt.ids.mal != null ? `mal:${tgt.ids.mal}` : null)
+          : null;
       try {
         const map = await loadSimklStatusMap();
         if (cancelled) return;
