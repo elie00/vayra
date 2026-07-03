@@ -38,7 +38,7 @@ export function SubtitleModal({ state, onSelect, onDelay, onAddSubtitle, onClose
         role="dialog"
         aria-modal="true"
         aria-label="Subtitles"
-        className="m-3 mb-[110px] me-[120px] flex max-h-[520px] w-[400px] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+        className="m-3 mb-[110px] me-[120px] flex max-h-[520px] w-[400px] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-xl max-sm:me-3 max-sm:mb-24 max-sm:max-h-[65vh] max-sm:w-[calc(100vw-1.5rem)]"
         onClick={(e) => e.stopPropagation()}
       >
         <SubtitleMenuBody

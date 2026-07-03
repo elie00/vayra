@@ -4,7 +4,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { isMobileTauri } from "@/lib/platform";
 
-const win: Window | null = isTauri() ? getCurrentWindow() : null;
+// Mobile Tauri rejects every plugin:window|* invoke ("Window API not available
+// on mobile"), so never hold a window handle there — the desktop titlebar/resize
+// chrome that uses it is hidden on mobile anyway. Prevents an unhandled rejection
+// at boot from useMaximized()'s isMaximized()/isFullscreen() probe.
+const win: Window | null = isTauri() && !isMobileTauri() ? getCurrentWindow() : null;
 
 const IS_MAC =
   typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);

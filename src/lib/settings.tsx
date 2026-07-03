@@ -5,6 +5,7 @@ import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmd
 import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
+import { isMobileTauri } from "@/lib/platform";
 import { STORAGE_KEY } from "./settings/defaults";
 import { loadStoredSettings } from "./settings/load";
 import { readSettingsFile, writeSettingsFile } from "./settings/file-store";
@@ -197,7 +198,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings.stremioDeeplinkInstall]);
 
   useEffect(() => {
-    if (!("__TAURI_INTERNALS__" in window)) return;
+    // Native-titlebar decorations are a desktop window concept; the window API
+    // rejects on mobile.
+    if (!("__TAURI_INTERNALS__" in window) || isMobileTauri()) return;
     void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
       getCurrentWindow()
         .setDecorations(settings.useNativeTitleBar)

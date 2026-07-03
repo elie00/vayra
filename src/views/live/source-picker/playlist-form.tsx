@@ -86,7 +86,7 @@ export function PlaylistForm({
   return (
     <div className="flex flex-col gap-3 p-3">
       <Field label={t("Type")}>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
           {KINDS.map((k) => {
             const selected = kind === k.id;
             return (

@@ -270,7 +270,7 @@ export function StreamingSourcesPanel({
         title={t("Streaming catalogs")}
         subtitle={t("Top titles per service. Toggle off the ones you don't pay for.")}
       >
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           {(Object.keys(SERVICES) as StreamingService[]).map((svc) => (
             <ServiceCard
               key={svc}
