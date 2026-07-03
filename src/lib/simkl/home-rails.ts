@@ -309,7 +309,7 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
     return hydrateSimklItems(slice, tmdbKey);
   };
 
-  if (watchMetas.length >= 4) {
+  if (watchMetas.length >= 4 && (settings.simklGranularFilters.shows.watching || settings.simklGranularFilters.anime.watching)) {
     rows.push({
       key: "simkl-watching",
       type: watching[0]?.type === "show" ? "series" : "movie",
@@ -322,7 +322,7 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
     });
   }
 
-  if (upcomingMetas.length >= 4) {
+  if (upcomingMetas.length >= 4 && (settings.simklGranularFilters.shows.watching || settings.simklGranularFilters.shows.plantowatch || settings.simklGranularFilters.anime.watching || settings.simklGranularFilters.anime.plantowatch)) {
     rows.push({
       key: "simkl-upcoming",
       type: "series",
@@ -335,7 +335,7 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
     });
   }
 
-  if (planMetas.length >= 4) {
+  if (planMetas.length >= 4 && (settings.simklGranularFilters.movies.plantowatch || settings.simklGranularFilters.shows.plantowatch || settings.simklGranularFilters.anime.plantowatch)) {
     rows.push({
       key: "simkl-plantowatch",
       type: plan[0]?.type === "show" ? "series" : "movie",

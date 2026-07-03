@@ -47,6 +47,7 @@ export function FilterBar({
   setQuery,
   counts,
   trailing,
+  hideTypePills,
 }: {
   type: TypeKey;
   setType: (t: TypeKey) => void;
@@ -54,21 +55,24 @@ export function FilterBar({
   setQuery: (q: string) => void;
   counts: { all: number; movie: number; series: number };
   trailing?: React.ReactNode;
+  hideTypePills?: boolean;
 }) {
   const t = useT();
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
-        <FilterPill active={type === "all"} onClick={() => setType("all")}>
-          {t("All")} <span className="ms-1 text-ink-subtle">{counts.all}</span>
-        </FilterPill>
-        <FilterPill active={type === "movie"} onClick={() => setType("movie")}>
-          {t("Movies")} <span className="ms-1 text-ink-subtle">{counts.movie}</span>
-        </FilterPill>
-        <FilterPill active={type === "series"} onClick={() => setType("series")}>
-          {t("Shows")} <span className="ms-1 text-ink-subtle">{counts.series}</span>
-        </FilterPill>
-      </div>
+      {!hideTypePills && (
+        <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
+          <FilterPill active={type === "all"} onClick={() => setType("all")}>
+            {t("All")} <span className="ms-1 text-ink-subtle">{counts.all}</span>
+          </FilterPill>
+          <FilterPill active={type === "movie"} onClick={() => setType("movie")}>
+            {t("Movies")} <span className="ms-1 text-ink-subtle">{counts.movie}</span>
+          </FilterPill>
+          <FilterPill active={type === "series"} onClick={() => setType("series")}>
+            {t("Shows")} <span className="ms-1 text-ink-subtle">{counts.series}</span>
+          </FilterPill>
+        </div>
+      )}
       <input
         type="search"
         value={query}

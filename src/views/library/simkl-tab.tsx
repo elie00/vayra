@@ -23,16 +23,6 @@ const STATUS_LABELS: Record<string, string> = {
   dropped: "Dropped",
 };
 
-function isStatusEnabled(
-  subTab: "movies" | "shows" | "anime",
-  status: string,
-  filters: any
-): boolean {
-  const group = filters[subTab];
-  if (!group) return false;
-  return !!group[status];
-}
-
 function cacheItemToMeta(item: SimklCacheItem, cache: SimklCache): Meta | null {
   let id: string | null = null;
   const simklId = item.simklId;
@@ -105,27 +95,7 @@ export function SimklTab() {
     };
   }, []);
 
-  const isMoviesVisible = Object.values(settings.simklGranularFilters.movies).some((v) => v);
-  const isShowsVisible = Object.values(settings.simklGranularFilters.shows).some((v) => v);
-  const isAnimeVisible = Object.values(settings.simklGranularFilters.anime).some((v) => v);
-
-  const initialSubTab = useMemo(() => {
-    if (isMoviesVisible) return "movies";
-    if (isShowsVisible) return "shows";
-    if (isAnimeVisible) return "anime";
-    return "movies";
-  }, [isMoviesVisible, isShowsVisible, isAnimeVisible]);
-
   const [subTab, setSubTab] = useState<"movies" | "shows" | "anime">("movies");
-
-  // Keep subTab updated if the active one gets hidden
-  useEffect(() => {
-    const isCurrentVisible =
-      subTab === "movies" ? isMoviesVisible : subTab === "shows" ? isShowsVisible : isAnimeVisible;
-    if (!isCurrentVisible) {
-      setSubTab(initialSubTab);
-    }
-  }, [initialSubTab, subTab, isMoviesVisible, isShowsVisible, isAnimeVisible]);
 
   const allowedStatuses = useMemo(() => {
     if (subTab === "movies") {
@@ -136,21 +106,12 @@ export function SimklTab() {
 
   const [statusFilter, setStatusFilter] = useState<string>("plantowatch");
 
-  // Keep statusFilter aligned when changing sub-tabs or filters
+  // Keep statusFilter aligned when changing sub-tabs
   useEffect(() => {
-    const isCurrentAllowedAndEnabled =
-      (allowedStatuses as readonly string[]).includes(statusFilter) &&
-      isStatusEnabled(subTab, statusFilter, settings.simklGranularFilters);
-
-    if (!isCurrentAllowedAndEnabled) {
-      const firstActive = allowedStatuses.find((s) =>
-        isStatusEnabled(subTab, s, settings.simklGranularFilters)
-      );
-      if (firstActive) {
-        setStatusFilter(firstActive);
-      }
+    if (!(allowedStatuses as readonly string[]).includes(statusFilter)) {
+      setStatusFilter(allowedStatuses[0]);
     }
-  }, [subTab, settings.simklGranularFilters, allowedStatuses, statusFilter]);
+  }, [subTab, allowedStatuses, statusFilter]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -178,9 +139,6 @@ export function SimklTab() {
       .filter((item) => {
         if (item.type !== targetType) return false;
         if (item.status !== statusFilter) return false;
-
-        const isEnabled = isStatusEnabled(subTab, item.status, settings.simklGranularFilters);
-        if (!isEnabled) return false;
         return true;
       })
       .map((item) => {
@@ -193,75 +151,53 @@ export function SimklTab() {
         };
       })
       .filter((x): x is WatchlistMerged => x !== null);
-  }, [cache, subTab, statusFilter, settings.simklGranularFilters]);
+  }, [cache, subTab, statusFilter]);
 
   const counts = useMemo(() => countByType(filteredItems), [filteredItems]);
   const visible = useMemo(() => applyFilter(filteredItems, type, query), [filteredItems, type, query]);
-
-  const allDisabled = !isMoviesVisible && !isShowsVisible && !isAnimeVisible;
-
-  if (allDisabled) {
-    return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-16 text-center">
-        <h2 className="text-[16px] font-semibold text-ink">{tr("All SIMKL sync filters are disabled")}</h2>
-        <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
-          {tr("Enable at least one watchlist status toggle in Settings to view your SIMKL library here.")}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <section className="flex flex-col gap-6">
       {/* Sub-tabs Selector */}
       <div className="flex gap-2 border-b border-edge-soft/60 pb-3">
-        {isMoviesVisible && (
-          <button
-            type="button"
-            onClick={() => setSubTab("movies")}
-            className={`rounded-lg px-4 py-2 text-[14px] font-semibold transition-all ${
-              subTab === "movies"
-                ? "bg-accent/15 text-accent border border-accent/30"
-                : "text-ink-muted hover:text-ink border border-transparent hover:bg-canvas/50"
-            }`}
-          >
-            {tr("Movies")}
-          </button>
-        )}
-        {isShowsVisible && (
-          <button
-            type="button"
-            onClick={() => setSubTab("shows")}
-            className={`rounded-lg px-4 py-2 text-[14px] font-semibold transition-all ${
-              subTab === "shows"
-                ? "bg-accent/15 text-accent border border-accent/30"
-                : "text-ink-muted hover:text-ink border border-transparent hover:bg-canvas/50"
-            }`}
-          >
-            {tr("TV Shows")}
-          </button>
-        )}
-        {isAnimeVisible && (
-          <button
-            type="button"
-            onClick={() => setSubTab("anime")}
-            className={`rounded-lg px-4 py-2 text-[14px] font-semibold transition-all ${
-              subTab === "anime"
-                ? "bg-accent/15 text-accent border border-accent/30"
-                : "text-ink-muted hover:text-ink border border-transparent hover:bg-canvas/50"
-            }`}
-          >
-            {tr("Anime")}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setSubTab("movies")}
+          className={`rounded-lg px-4 py-2 text-[14px] font-semibold transition-all ${
+            subTab === "movies"
+              ? "bg-accent/15 text-accent border border-accent/30"
+              : "text-ink-muted hover:text-ink border border-transparent hover:bg-canvas/50"
+          }`}
+        >
+          {tr("Movies")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubTab("shows")}
+          className={`rounded-lg px-4 py-2 text-[14px] font-semibold transition-all ${
+            subTab === "shows"
+              ? "bg-accent/15 text-accent border border-accent/30"
+              : "text-ink-muted hover:text-ink border border-transparent hover:bg-canvas/50"
+          }`}
+        >
+          {tr("TV Shows")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubTab("anime")}
+          className={`rounded-lg px-4 py-2 text-[14px] font-semibold transition-all ${
+            subTab === "anime"
+              ? "bg-accent/15 text-accent border border-accent/30"
+              : "text-ink-muted hover:text-ink border border-transparent hover:bg-canvas/50"
+          }`}
+        >
+          {tr("Anime")}
+        </button>
       </div>
 
       {/* Status Pills */}
       <div className="flex flex-wrap gap-2">
         {allowedStatuses.map((statusKey) => {
-          const isEnabled = isStatusEnabled(subTab, statusKey, settings.simklGranularFilters);
-          if (!isEnabled) return null;
-
           const count = statusCounts[statusKey] ?? 0;
           const isActive = statusFilter === statusKey;
 
@@ -292,6 +228,7 @@ export function SimklTab() {
           setQuery={setQuery}
           counts={counts}
           trailing={<SortControl />}
+          hideTypePills={true}
         />
       )}
 

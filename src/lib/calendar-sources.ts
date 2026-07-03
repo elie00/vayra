@@ -7,7 +7,7 @@ import {
 } from "./trakt/calendar";
 import type { CalendarItem } from "./calendar";
 import { resolveSavedCalendar, type SavedCandidate } from "./calendar-library";
-import { fetchWatchlist as fetchSimklWatchlist } from "./simkl/watchlist";
+import { fetchWatchlist as fetchSimklWatchlist, fetchWatchingItems } from "./simkl/watchlist";
 import { fetchSimklCdnCalendar } from "./simkl/calendar";
 import { isAuthenticated as simklConnected } from "./simkl/session";
 
@@ -26,8 +26,13 @@ export async function fetchSimklCalendar(
   opts: { tmdbKey: string },
 ): Promise<CalendarItem[]> {
   if (!simklConnected()) return [];
-  const items = await fetchSimklWatchlist().catch(() => []);
+  const [watchlist, watching] = await Promise.all([
+    fetchSimklWatchlist().catch(() => []),
+    fetchWatchingItems().catch(() => []),
+  ]);
+  const items = [...watchlist, ...watching];
   const candidates: SavedCandidate[] = [];
+  const seenIds = new Set<string>();
   for (const it of items) {
     const id =
       it.ids.imdb ??
@@ -39,6 +44,8 @@ export async function fetchSimklCalendar(
           ? `mal:${it.ids.mal}`
           : null);
     if (!id) continue;
+    if (seenIds.has(id)) continue;
+    seenIds.add(id);
     candidates.push({
       id,
       type: it.type === "show" ? "series" : "movie",

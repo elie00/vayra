@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import type { OmdbScores } from "@/lib/providers/omdb";
 import type { MdblistScores } from "@/lib/providers/mdblist";
+import { useSimklCommunityRating } from "@/lib/simkl/ratings";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import traktLogo from "@/assets/trakt.svg";
@@ -81,6 +82,10 @@ export function HeroRatings({
   const { settings } = useSettings();
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
   const showPrimary = settings.showDetailRatings;
+
+  // Fetch SIMKL community rating directly from the SIMKL API (decoupled from MDBList).
+  // Always called to respect React hooks rules; the hook early-returns when imdbId is null.
+  const { rating: simklCommunityRating } = useSimklCommunityRating(imdbId);
 
   const items: ReactNode[] = [];
 
@@ -187,7 +192,11 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showSimklBadge && settings.simklShowCommunityRatings && mdblist?.simkl != null) {
+  // Prefer the direct SIMKL API fetch; fall back to MDBList's simkl score if the
+  // hook returned null (e.g. API failure or no matching title).
+  const effectiveSimklRating = simklCommunityRating ?? mdblist?.simkl ?? null;
+
+  if (settings.showSimklBadge && settings.simklShowCommunityRatings && effectiveSimklRating != null) {
     items.push(
       <ScoreItem
         key="simkl"
@@ -200,7 +209,7 @@ export function HeroRatings({
           alt=""
           className="h-[14px] w-[14px] rounded-[3px] object-contain"
         />
-        <span>{mdblist.simkl.toFixed(1)}</span>
+        <span>{effectiveSimklRating.toFixed(1)}</span>
       </ScoreItem>,
     );
   }
