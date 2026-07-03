@@ -13,7 +13,7 @@ function MetaRow({ m, onClose }: { m: Meta; onClose: () => void }) {
         openMeta(m);
         onClose();
       }}
-      className="group flex items-center gap-4 rounded-2xl border border-transparent px-3 py-2.5 text-start transition-colors hover:border-edge-soft hover:bg-elevated/50 active:scale-[0.997]"
+      className="group flex min-w-0 items-center gap-4 rounded-2xl border border-transparent px-3 py-2.5 text-start transition-colors hover:border-edge-soft hover:bg-elevated/50 active:scale-[0.997]"
     >
       <div className="h-[96px] w-[64px] shrink-0 overflow-hidden rounded-xl shadow-[0_6px_16px_-8px_rgba(0,0,0,0.55)] ring-1 ring-edge-soft">
         <ResultPoster id={m.id} poster={m.poster} className="block h-full w-full" />
@@ -53,11 +53,11 @@ export function MetaList({
 }) {
   if (items.length === 0) return null;
   return (
-    <section>
+    <section className="min-w-0">
       <h3 className="mb-3 text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
         {title}
       </h3>
-      <div className="grid gap-1">
+      <div className="grid min-w-0 gap-1">
         {items.map((m) => (
           <MetaRow key={m.id} m={m} onClose={onClose} />
         ))}
