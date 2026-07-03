@@ -5,7 +5,7 @@ import { BasicsPanel } from "./settings/basics-panel";
 import { BugReportPanel } from "./settings/bug-report-panel";
 import { LibraryPanel, type LibraryKey } from "./settings/library-panel";
 import { LanguagePanel } from "./settings/language-panel";
-import { SettingsNav } from "./settings/nav";
+import { SettingsNav, SettingsTabs } from "./settings/nav";
 import { SettingsJumpBar } from "./settings/jump-bar";
 import { HotkeysPanel } from "./settings/hotkeys-panel";
 import { PlayerLayoutPanel } from "./settings/player-layout-panel";
@@ -221,11 +221,14 @@ export function Settings() {
 
   return (
     <SettingsActiveContext.Provider value={{ setActive }}>
-    <div className="flex h-full bg-canvas">
+    <div className="flex h-full bg-canvas max-sm:flex-col">
       <SettingsNav active={active} onChange={handleNav} />
+      <div className="hidden shrink-0 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] max-sm:block">
+        <SettingsTabs active={active} onChange={handleNav} />
+      </div>
       <main
         ref={scrollRef}
-        className="flex-1 overflow-y-auto pt-28 pb-16"
+        className="flex-1 overflow-y-auto pt-28 pb-16 max-sm:pt-3"
       >
         <div data-tauri-drag-region className="mx-auto flex max-w-3xl flex-col gap-10 px-12 max-sm:px-4 max-sm:gap-6">
           {!(active === "relay" && relayMode !== "panel") && (

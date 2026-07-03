@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { activeLayout } from "@/lib/theme";
@@ -565,6 +565,52 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Report a bug", section: "bug", keywords: ["bug report", "report", "feedback", "issue", "crash", "screenshot", "diagnostics"] },
 ];
 
+// Mobile settings navigation: a horizontally scrollable strip of section chips
+// shown above the panel content (the vertical SettingsNav is hidden < 640px), so
+// the panel gets nearly full width. The active chip auto-scrolls into view.
+export function SettingsTabs({
+  active,
+  onChange,
+}: {
+  active: SectionId;
+  onChange: (id: SectionId, anchor?: string) => void;
+}) {
+  const t = useT();
+  const railRef = useRef<HTMLDivElement>(null);
+  const items = useMemo(() => NAV_GROUPS.flatMap((g) => g.items), []);
+  useEffect(() => {
+    railRef.current
+      ?.querySelector('[data-active="true"]')
+      ?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [active]);
+  return (
+    <div
+      ref={railRef}
+      className="flex gap-2 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {items.map(({ id, label, Icon }) => {
+        const isActive = id === active;
+        return (
+          <button
+            key={id}
+            data-active={isActive ? "true" : undefined}
+            aria-current={isActive ? "page" : undefined}
+            onClick={() => onChange(id)}
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
+              isActive
+                ? "bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-edge)]"
+                : "bg-elevated/60 text-ink-muted hover:text-ink"
+            }`}
+          >
+            <Icon size={15} strokeWidth={1.7} />
+            <span className="whitespace-nowrap">{t(label)}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function SettingsNav({
   active,
   onChange,
@@ -715,7 +761,7 @@ export function SettingsNav({
   };
 
   return (
-    <nav className="relative flex w-72 max-sm:w-[168px] shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)]">
+    <nav className="relative flex w-72 max-sm:hidden shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)]">
       <div data-tauri-drag-region className="h-3 shrink-0" />
       {showBack && (
         <div className="px-3 pb-1.5">
