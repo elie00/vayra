@@ -4,6 +4,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { pickRandom } from "@/lib/feed/tags";
 import { tmdbMovieImages } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { useLiveImdbRating } from "@/lib/live-imdb";
 import { ImdbIcon } from "../icons/imdb-icon";
 import type { LightboxState } from "./types";
@@ -21,6 +22,7 @@ export function SidePanel({
 }) {
   const { settings } = useSettings();
   const [stills, setStills] = useState<string[]>([]);
+  const description = useLocalizedOverview(meta);
   const live = useLiveImdbRating(meta);
 
   useEffect(() => {
@@ -82,9 +84,9 @@ export function SidePanel({
           />
         ))}
       </div>
-      {meta.description && (
+      {description && (
         <p className="text-[12.5px] leading-snug text-ink-muted line-clamp-3">
-          {meta.description}
+          {description}
         </p>
       )}
       {live.value && (

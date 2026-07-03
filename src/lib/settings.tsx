@@ -102,6 +102,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     window.location.reload();
   }, [settings.tmdbLanguage, settings.uiLanguage]);
 
+  // Image-language changes come from an add/remove picker, so debounce the
+  // reload and let the user finish editing before refreshing catalog art.
+  const imgLangRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sig = settings.tmdbImageLangs.join(",");
+    if (imgLangRef.current === null) {
+      imgLangRef.current = sig;
+      return;
+    }
+    if (imgLangRef.current === sig) return;
+    imgLangRef.current = sig;
+    const t = window.setTimeout(() => window.location.reload(), 1200);
+    return () => window.clearTimeout(t);
+  }, [settings.tmdbImageLangs]);
+
   useEffect(() => {
     applyTheme(settings.theme);
   }, [settings.theme]);

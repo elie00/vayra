@@ -6,6 +6,7 @@ import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { tmdbLogo, tmdbTrailerList, useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useImdbRating } from "@/lib/imdb-rating";
 import { useSettings } from "@/lib/settings";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { smartPlayEpisode } from "@/lib/smart-play";
 import { fetchTrailer, prefetchTrailer, trailerSrc, type TrailerInfo } from "@/lib/trailer";
 import { useT } from "@/lib/i18n";
@@ -205,6 +206,7 @@ function CinemaSlide({
   const t = useT();
   const { settings } = useSettings();
   const { openMeta, openPicker } = useView();
+  const description = useLocalizedOverview(meta);
   const resolvedImdb = useTmdbImdbId(meta.id);
   const imdbRating = useImdbRating(meta, resolvedImdb);
   const [logo, setLogo] = useState<string | undefined>(meta.logo);
@@ -224,7 +226,7 @@ function CinemaSlide({
     if (!logoResolved) {
       const isTmdb = meta.id.startsWith("tmdb:");
       const lookup = isTmdb
-        ? tmdbLogo(settings.tmdbKey, meta.id)
+        ? tmdbLogo(settings.tmdbKey, meta.id, meta.originalLanguage)
         : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) => full?.logo);
       lookup
         .then((url) => {
@@ -375,9 +377,9 @@ function CinemaSlide({
               <span>{meta.genres.slice(0, 3).join(" · ")}</span>
             )}
           </div>
-          {meta.description && (
+          {description && (
             <p className="line-clamp-2 max-w-[560px] text-[15.5px] leading-relaxed text-ink-muted">
-              {meta.description}
+              {description}
             </p>
           )}
           <div className="mt-2 flex items-center gap-3">

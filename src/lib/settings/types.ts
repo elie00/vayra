@@ -43,7 +43,6 @@ export type LetterboxdSettings = {
 };
 
 export type Settings = {
-  translatePosters: boolean;
   blurComments: boolean;
   blurEpisodes: boolean;
   tmdbKey: string;
@@ -193,6 +192,7 @@ export type Settings = {
   trackBlockWords: string[];
   forcedSubsWhenNativeAudio: boolean;
   tmdbLanguage: string;
+  tmdbImageLangs: string[];
   posterBaseUrl: string;
   hidePosterTitles: boolean;
   hoverPreview: boolean;

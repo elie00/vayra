@@ -242,9 +242,13 @@ const LANGUAGE_OPTIONS = ALL_LANGUAGE_NAMES;
 export function LanguagesPicker({
   value,
   onChange,
+  options = LANGUAGE_OPTIONS,
+  placeholder = "Search languages (Tamil, Telugu, ...)",
 }: {
   value: string[];
   onChange: (next: string[]) => void;
+  options?: string[];
+  placeholder?: string;
 }) {
   const [query, setQuery] = useState("");
   const selected = new Set(value);
@@ -255,7 +259,7 @@ export function LanguagesPicker({
     onChange([...next]);
   };
   const q = query.trim().toLowerCase();
-  const available = LANGUAGE_OPTIONS.filter((l) => !selected.has(l));
+  const available = options.filter((l) => !selected.has(l));
   const matches = q ? available.filter((l) => l.toLowerCase().includes(q)) : available;
   const COMMON = 24;
   const shown = q ? matches : matches.slice(0, COMMON);
@@ -287,7 +291,7 @@ export function LanguagesPicker({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search languages (Tamil, Telugu, ...)"
+          placeholder={placeholder}
           spellCheck={false}
           className="h-10 w-full rounded-xl border border-edge bg-canvas ps-9 pe-3 text-[13.5px] text-ink outline-none transition-colors focus:border-ink placeholder:text-ink-subtle/60"
         />

@@ -1,7 +1,7 @@
 import { lruSet } from "@/lib/cache";
 import { registerCache } from "@/lib/memory-profiler";
-import { loadStoredSettings } from "@/lib/settings/load";
-import { get, IMG, tmdbLanguageIso } from "./tmdb-client";
+import { get, IMG } from "./tmdb-client";
+import { imageLangParam, imageLangRank, pickedImageLangs } from "./tmdb-image-lang";
 
 export type LogoEntry = { file_path: string; iso_639_1: string | null; vote_average?: number };
 
@@ -17,47 +17,63 @@ const movieAssetsInflight = new Map<string, Promise<RawImages | null>>();
 
 registerCache("tmdb:movieAssets", () => movieAssetsCache.size);
 
-export async function fetchMovieAssets(key: string, metaId: string): Promise<RawImages | null> {
+export async function fetchMovieAssets(
+  key: string,
+  metaId: string,
+  originalLang?: string | null,
+): Promise<RawImages | null> {
   if (!key) return null;
   const match = metaId.match(/^tmdb:(movie|tv):(\d+)$/);
   if (!match) return null;
-  const cached = movieAssetsCache.get(metaId);
+  const cacheKey = originalLang ? `${metaId}|${originalLang}` : metaId;
+  const cached = movieAssetsCache.get(cacheKey);
   if (cached) return cached;
-  const inflight = movieAssetsInflight.get(metaId);
+  const inflight = movieAssetsInflight.get(cacheKey);
   if (inflight) return inflight;
   const [, kind, id] = match;
-  const iso = tmdbLanguageIso();
-  const settings = loadStoredSettings();
-  const translatePosters = settings.translatePosters && !settings.posterBaseUrl;
   const p = get<RawImages>(key, `${kind}/${id}/images`, {
-    include_image_language: translatePosters && iso && iso !== "en" ? `${iso},en,null` : "en,null",
+    include_image_language: imageLangParam(originalLang),
   }).then((data) => {
-    movieAssetsInflight.delete(metaId);
-    if (data) lruSet(movieAssetsCache, metaId, data, MOVIE_ASSETS_MAX);
+    movieAssetsInflight.delete(cacheKey);
+    if (data) lruSet(movieAssetsCache, cacheKey, data, MOVIE_ASSETS_MAX);
     return data;
   });
-  movieAssetsInflight.set(metaId, p);
+  movieAssetsInflight.set(cacheKey, p);
   return p;
 }
 
-export const pickLogo = (logos: LogoEntry[]): string | undefined => {
+export const pickLogo = (logos: LogoEntry[], originalLang?: string | null): string | undefined => {
   if (!logos?.length) return undefined;
-  const iso = tmdbLanguageIso();
   const score = (l: LogoEntry) => {
-    const lang =
-      iso && iso !== "en" && l.iso_639_1 === iso
-        ? 150
-        : l.iso_639_1 === "en"
-          ? 100
-          : l.iso_639_1 == null
-            ? 50
-            : 0;
+    const r = imageLangRank(l.iso_639_1, originalLang);
+    const base = r >= 0 ? r * 100 : 0;
     const isPng = l.file_path?.toLowerCase().endsWith(".png") ? 5 : 0;
-    return lang + isPng + (l.vote_average ?? 0);
+    return base + isPng + (l.vote_average ?? 0);
   };
   const best = [...logos].sort((a, b) => score(b) - score(a))[0];
   return best?.file_path ? `${IMG}/w342${best.file_path}` : undefined;
 };
+
+// Best poster for a title in one of the user's picked languages (e.g. Arabic then
+// English). Returns undefined when the title has no poster in a preferred language,
+// so callers fall back to the catalog poster (the title's original-language art).
+export async function tmdbLocalizedPoster(key: string, metaId: string): Promise<string | undefined> {
+  const picks = pickedImageLangs();
+  if (!picks.length) return undefined;
+  const assets = await fetchMovieAssets(key, metaId);
+  const posters = (assets?.posters ?? []).filter(
+    (p) => typeof p.iso_639_1 === "string" && picks.includes(p.iso_639_1),
+  );
+  if (!posters.length) return undefined;
+  const rank = (iso?: string | null) => {
+    const i = picks.indexOf(iso ?? "");
+    return i === -1 ? -1 : picks.length - i;
+  };
+  const best = [...posters].sort(
+    (a, b) => rank(b.iso_639_1) - rank(a.iso_639_1) || (b.vote_average ?? 0) - (a.vote_average ?? 0),
+  )[0];
+  return best?.file_path ? `${IMG}/w342${best.file_path}` : undefined;
+}
 
 export async function tmdbMovieImages(key: string, metaId: string): Promise<string[]> {
   const data = await fetchMovieAssets(key, metaId);
@@ -77,7 +93,8 @@ export async function tmdbMovieImages(key: string, metaId: string): Promise<stri
 export async function tmdbLogo(
   key: string,
   metaId: string,
+  originalLang?: string | null,
 ): Promise<string | undefined> {
-  const data = await fetchMovieAssets(key, metaId);
-  return pickLogo(data?.logos ?? []);
+  const data = await fetchMovieAssets(key, metaId, originalLang);
+  return pickLogo(data?.logos ?? [], originalLang);
 }

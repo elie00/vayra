@@ -30,7 +30,7 @@ import { useInWatchlist } from "@/lib/watchlist";
 import { ClapperMini } from "./icons/clapper-mini";
 import { ImdbIcon } from "./icons/imdb-icon";
 import { MalLogo } from "./icons/mal-logo";
-import { Poster } from "./poster";
+import { Poster, useLocalizedPoster } from "./poster";
 import { ElegantHoverActions } from "./pick-card/elegant-hover";
 import { RtBadge } from "./rt-badge";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
@@ -143,6 +143,7 @@ export const PickCard = memo(function PickCard({
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
+  const localizedPoster = useLocalizedPoster(meta.id);
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
   const animeTmdb = useTmdbIdFromImdb(animeImdb) ?? undefined;
@@ -152,12 +153,16 @@ export const PickCard = memo(function PickCard({
       ? resolvedTmdb ?? undefined
       : undefined;
   const posterCandidates = useMemo(() => {
+    // Prefer the language-localized poster; RPDB (when configured) still wins, and
+    // the catalog poster stays the fallback.
+    const base = localizedPoster ?? meta.poster;
     const seen = new Set<string>();
     const out: string[] = [];
     for (const u of [
-      animeImdb ? rpdbPoster(settings.rpdbKey, animeImdb, meta.poster, animeTmdb) : undefined,
-      animeTvdb ? rpdbPoster(settings.rpdbKey, `tvdb:${animeTvdb}`, meta.poster) : undefined,
-      rpdbPoster(settings.rpdbKey, meta.id, meta.poster, posterAltId),
+      animeImdb ? rpdbPoster(settings.rpdbKey, animeImdb, base, animeTmdb) : undefined,
+      animeTvdb ? rpdbPoster(settings.rpdbKey, `tvdb:${animeTvdb}`, base) : undefined,
+      rpdbPoster(settings.rpdbKey, meta.id, base, posterAltId),
+      localizedPoster,
       meta.poster,
       hydratedPoster,
     ]) {
@@ -166,7 +171,7 @@ export const PickCard = memo(function PickCard({
       out.push(u);
     }
     return out;
-  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb, animeTmdb]);
+  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb, animeTmdb, localizedPoster]);
   const posterSrc = posterCandidates[imgIdx];
 
   useEffect(() => {

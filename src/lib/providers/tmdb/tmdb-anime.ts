@@ -1,6 +1,6 @@
-import { get, tmdbLanguageIso } from "./tmdb-client";
+import { get } from "./tmdb-client";
 import { pickLogo } from "./tmdb-images";
-import { loadStoredSettings } from "@/lib/settings/load";
+import { imageLangParam } from "./tmdb-image-lang";
 
 type SearchTvHit = {
   id: number;
@@ -49,7 +49,7 @@ export async function tmdbAnimeMatch(
   name: string,
   year: string | undefined,
   kind: "movie" | "tv",
-): Promise<number | null> {
+): Promise<{ id: number; originalLang?: string } | null> {
   if (!key || !name) return null;
   const params: Record<string, string> = { query: name, include_adult: "false" };
   if (year) params[kind === "tv" ? "first_air_date_year" : "year"] = year;
@@ -60,6 +60,7 @@ export async function tmdbAnimeMatch(
     const ranked = hits
       .map((h) => ({
         id: h.id,
+        originalLang: h.original_language,
         score: scoreHit(
           name,
           {
@@ -73,7 +74,7 @@ export async function tmdbAnimeMatch(
         ),
       }))
       .sort((a, b) => b.score - a.score);
-    return ranked[0]?.id ?? null;
+    return ranked[0] ? { id: ranked[0].id, originalLang: ranked[0].originalLang } : null;
   }
   const data = await get<{ results?: SearchMovieHit[] }>(key, "search/movie", params);
   const hits = data?.results ?? [];
@@ -81,6 +82,7 @@ export async function tmdbAnimeMatch(
   const ranked = hits
     .map((h) => ({
       id: h.id,
+      originalLang: h.original_language,
       score: scoreHit(
         name,
         {
@@ -94,7 +96,7 @@ export async function tmdbAnimeMatch(
       ),
     }))
     .sort((a, b) => b.score - a.score);
-  return ranked[0]?.id ?? null;
+  return ranked[0] ? { id: ranked[0].id, originalLang: ranked[0].originalLang } : null;
 }
 
 export async function tmdbAnimeLogo(
@@ -103,17 +105,15 @@ export async function tmdbAnimeLogo(
   year: string | undefined,
   kind: "movie" | "tv",
 ): Promise<{ logo?: string; backdrop?: string; tmdbId?: number } | null> {
-  const id = await tmdbAnimeMatch(key, name, year, kind);
-  if (!id) return null;
-  const iso = tmdbLanguageIso();
-  const settings = loadStoredSettings();
-  const translatePosters = settings.translatePosters && !settings.posterBaseUrl;
+  const match = await tmdbAnimeMatch(key, name, year, kind);
+  if (!match) return null;
+  const { id, originalLang } = match;
   const imgs = await get<{ logos?: any[]; backdrops?: any[] }>(
     key,
     `${kind}/${id}/images`,
-    { include_image_language: translatePosters && iso && iso !== "en" ? `${iso},en,null` : "en,null" },
+    { include_image_language: imageLangParam(originalLang) },
   );
-  const logo = pickLogo(imgs?.logos ?? []);
+  const logo = pickLogo(imgs?.logos ?? [], originalLang);
   const backdropPath = (imgs?.backdrops ?? [])[0]?.file_path;
   return {
     logo,

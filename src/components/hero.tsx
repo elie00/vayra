@@ -9,6 +9,7 @@ import { omdbPrefetch, useOmdbScores } from "@/lib/providers/omdb";
 import { useImdbRating } from "@/lib/imdb-rating";
 import { tmdbImdbId, tmdbLogo, tmdbMovieImages, tmdbTrailerList, useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { fetchTrailer, prefetchTrailer, trailerSrc, type TrailerInfo } from "@/lib/trailer";
 import { useView } from "@/lib/view";
 import { usePageVisible } from "@/lib/visibility";
@@ -34,6 +35,7 @@ export const Hero = memo(function Hero({
   const { settings } = useSettings();
   const { openMeta } = useView();
   const t = useT();
+  const description = useLocalizedOverview(meta);
   const resolvedImdb = useTmdbImdbId(meta.id);
   const inWatchlist = useInWatchlist(meta.id, [resolvedImdb]);
   const [bgUrl, setBgUrl] = useState<string | undefined>(meta.background);
@@ -95,7 +97,7 @@ export const Hero = memo(function Hero({
     const isTmdb = meta.id.startsWith("tmdb:");
     const resolve: Promise<{ logo?: string; background?: string }> = isTmdb
       ? Promise.all([
-          tmdbLogo(settings.tmdbKey, meta.id),
+          tmdbLogo(settings.tmdbKey, meta.id, meta.originalLanguage),
           tmdbMovieImages(settings.tmdbKey, meta.id).then((urls) => urls[0]),
         ]).then(([logo, background]) => ({ logo, background }))
       : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) => ({
@@ -223,9 +225,9 @@ export const Hero = memo(function Hero({
             </div>
           )}
           <HeroTitlePlate name={meta.name} logo={logo} loaded={logoLoaded} resolved={logoResolved} onLoad={() => setLogoLoaded(true)} onError={() => { setLogo(undefined); setLogoResolved(true); }} />
-          {meta.description && (
+          {description && (
             <p className="mt-6 line-clamp-3 max-w-xl text-[16px] leading-relaxed text-ink-muted">
-              {meta.description}
+              {description}
             </p>
           )}
           <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[14px]">

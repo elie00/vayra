@@ -539,7 +539,10 @@ export function DetailView({
 
   const rawTitle = detail?.title ?? meta.name;
   const title = isAnime ? stripFranchiseSuffix(rawTitle) : rawTitle;
-  const overview = detail?.overview ?? meta.description ?? "";
+  // For TMDB titles the catalog description is in the (image) request language, so
+  // wait for the localized detail rather than flashing it. Non-TMDB metas are already
+  // in the reading language, so show them immediately.
+  const overview = detail?.overview ?? (meta.id.startsWith("tmdb:") ? "" : meta.description) ?? "";
   const tagline = detail?.tagline ?? "";
   const backdrop =
     pinnedBackdropHi || backdrops[backdropIdx] || meta.background || detail?.backdrop || (loading ? undefined : meta.poster) || undefined;

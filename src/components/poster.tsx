@@ -8,6 +8,28 @@ import {
 } from "@/lib/providers/tmdb/tmdb-imdb-resolve";
 import { useSettings } from "@/lib/settings";
 import { externalToKitsu, kitsuToImdb, kitsuToTvdb } from "@/lib/providers/anime-mapping";
+import { tmdbLocalizedPoster } from "@/lib/providers/tmdb/tmdb-images";
+import { shouldLocalizePosters } from "@/lib/providers/tmdb/tmdb-image-lang";
+
+// Resolves a card's poster in the user's picked image languages (e.g. Arabic then
+// English) via a per-title /images lookup, lazily and cached. Only runs when the top
+// image language is non-English; falls back to the catalog poster otherwise.
+export function useLocalizedPoster(metaId: string): string | undefined {
+  const { settings } = useSettings();
+  const [url, setUrl] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    setUrl(undefined);
+    if (!settings.tmdbKey || !metaId.startsWith("tmdb:") || !shouldLocalizePosters()) return;
+    let alive = true;
+    void tmdbLocalizedPoster(settings.tmdbKey, metaId).then((u) => {
+      if (alive && u) setUrl(u);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [metaId, settings.tmdbKey]);
+  return url;
+}
 
 type Ratio = "portrait" | "landscape" | "wide";
 
@@ -81,13 +103,18 @@ export function usePosterChain(
 ) {
   const altId = useRpdbAltId(rpdbKey, metaId, type);
   const { animeImdb, animeTvdb, animeTmdb } = useAnimeRpdbIds(rpdbKey, metaId);
+  const localized = useLocalizedPoster(metaId);
   const candidates = useMemo(() => {
+    // Prefer the language-localized poster; RPDB (when configured) still wins, and
+    // the catalog poster remains the final fallback.
+    const base = localized ?? metaPoster;
     const out: string[] = [];
     const seen = new Set<string>();
     for (const u of [
-      animeImdb ? rpdbPoster(rpdbKey, animeImdb, metaPoster, animeTmdb) : undefined,
-      animeTvdb ? rpdbPoster(rpdbKey, `tvdb:${animeTvdb}`, metaPoster) : undefined,
-      rpdbPoster(rpdbKey, metaId, metaPoster, altId),
+      animeImdb ? rpdbPoster(rpdbKey, animeImdb, base, animeTmdb) : undefined,
+      animeTvdb ? rpdbPoster(rpdbKey, `tvdb:${animeTvdb}`, base) : undefined,
+      rpdbPoster(rpdbKey, metaId, base, altId),
+      localized,
       metaPoster,
     ]) {
       if (u && !seen.has(u)) {
@@ -96,7 +123,7 @@ export function usePosterChain(
       }
     }
     return out;
-  }, [rpdbKey, metaId, altId, metaPoster, animeImdb, animeTvdb, animeTmdb]);
+  }, [rpdbKey, metaId, altId, metaPoster, animeImdb, animeTvdb, animeTmdb, localized]);
   const sig = candidates.join("|");
   const failedRef = useRef<Set<string>>(new Set());
   const sigRef = useRef(sig);

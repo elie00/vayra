@@ -170,7 +170,6 @@ export async function searchAll(
   const data = await get<Page<MultiItem>>(key, "search/multi", {
     query: trimmed,
     include_adult: "false",
-    language: "en-US",
   });
   const exclude = new Set(opts.excludeGenres ?? []);
   const hasExcludedGenre = (gs?: number[]) => (gs ?? []).some((id) => exclude.has(id));

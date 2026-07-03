@@ -46,7 +46,7 @@ async function doResolve(tmdbKey: string, m: Meta): Promise<string | undefined> 
   }
   if (m.id.startsWith("tmdb:")) {
     if (tmdbKey) {
-      const fromTmdb = await tmdbLogo(tmdbKey, m.id);
+      const fromTmdb = await tmdbLogo(tmdbKey, m.id, m.originalLanguage);
       if (fromTmdb) return fromTmdb;
       const tt = await tmdbImdbId(tmdbKey, m.id);
       if (tt) {
