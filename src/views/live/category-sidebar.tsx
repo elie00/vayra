@@ -80,7 +80,7 @@ export function CategorySidebar({
     <aside
       role="listbox"
       aria-label={t("Channel categories")}
-      className="flex w-[220px] shrink-0 flex-col border-e border-s border-edge-soft/40 bg-surface/45"
+      className="flex w-[220px] max-sm:w-[150px] shrink-0 flex-col border-e border-s border-edge-soft/40 bg-surface/45"
       onKeyDown={handleKey}
     >
       <div className="border-b border-edge-soft/40 px-3 py-2">
