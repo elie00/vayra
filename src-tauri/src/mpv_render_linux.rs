@@ -355,8 +355,8 @@ fn do_render(rc: &RenderContext, area: &gtk::GLArea) {
         None => {
             let scale = area.scale_factor().max(1);
             (
-                area.allocated_width().max(1) * scale,
-                area.allocated_height().max(1) * scale,
+                area.allocated_width().max(1),
+                area.allocated_height().max(1),
                 false,
             )
         }
@@ -388,16 +388,15 @@ pub fn resize_to(
     let Some(embed) = guard.as_ref() else {
         return Ok(());
     };
-    let widget_scale = embed.area.scale_factor().max(1) as f64;
     let sx = if css_view_w > 0.0 { embed.gtk_window.allocated_width().max(1) as f64 / css_view_w } else { 1.0 };
     let sy = if css_view_h > 0.0 { embed.gtk_window.allocated_height().max(1) as f64 / css_view_h } else { 1.0 };
-    let lw = (w * sx / widget_scale).round().max(1.0) as i32;
-    let lh = (h * sy / widget_scale).round().max(1.0) as i32;
+    let lw = (w * sx).round().max(1.0) as i32;
+    let lh = (h * sy).round().max(1.0) as i32;
     embed.area.set_size_request(lw, lh);
     if let Some(parent) = embed.area.parent() {
         if let Some(fixed) = parent.downcast_ref::<gtk::Fixed>() {
-            let lx = (x * sx / widget_scale).round() as i32;
-            let ly = (y * sy / widget_scale).round() as i32;
+            let lx = (x * sx).round() as i32;
+            let ly = (y * sy).round() as i32;
             fixed.move_(&embed.area, lx, ly);
         }
     }
