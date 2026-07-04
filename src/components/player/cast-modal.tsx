@@ -77,7 +77,8 @@ export function CastModal({
       : `${IMG}/w342${detail.poster}`
     : null;
   const poster = detailPoster ?? meta.poster;
-  const overview = detail?.overview?.trim() || meta.description?.trim() || "";
+  const overview =
+    detail?.overview?.trim() || (meta.id.startsWith("tmdb:") ? "" : meta.description?.trim()) || "";
   const year = detail?.year ?? meta.releaseInfo ?? meta.releaseDate?.slice(0, 4) ?? "";
   const rating = detail?.rating ?? meta.imdbRating ?? "";
   const runtime = detail?.runtime ?? meta.runtime ?? "";

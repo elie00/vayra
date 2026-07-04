@@ -1,7 +1,8 @@
 import type { Meta } from "../../cinemeta";
-import { get, IMG, tmdbLanguageIso } from "./tmdb-client";
+import { get, IMG, effectiveTmdbLanguage } from "./tmdb-client";
 import { loadStoredSettings } from "@/lib/settings/load";
-import { pickLogo } from "./tmdb-images";
+import { pickLogo, fetchMovieAssets } from "./tmdb-images";
+import { imageLangParam, imageLangRank } from "./tmdb-image-lang";
 import { pickTrailers, type Video } from "./tmdb-trailers";
 import type { PersonRef } from "./tmdb-people";
 
@@ -188,16 +189,29 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
     return null;
   }
 
-  const iso = tmdbLanguageIso();
   const settings = loadStoredSettings();
-  const translatePosters = settings.translatePosters && !settings.posterBaseUrl;
+  // Text (title, overview, cast/crew, genres) uses the metadata language — the
+  // image language only drives which artwork is returned (include_image_language).
+  const metaLang = effectiveTmdbLanguage() || "en";
   const raw = await get<any>(key, `${kind}/${id}`, {
     append_to_response: "credits,aggregate_credits,recommendations,similar,videos,external_ids,images,keywords,translations",
-    include_image_language: translatePosters && iso && iso !== "en" ? `${iso},en,null` : "en,null",
+    language: metaLang,
+    include_image_language: imageLangParam(),
   });
   if (!raw) return null;
 
-  const logo = pickLogo(raw.images?.logos ?? []);
+  const origLang = typeof raw.original_language === "string" ? raw.original_language : "";
+  let logo = pickLogo(raw.images?.logos ?? [], origLang);
+  let posterSource = raw.images?.posters;
+  // If nothing matched the preferred languages, re-fetch including the title's own
+  // (original) language so we show real art instead of falling back to plain text.
+  if (!logo && origLang && !imageLangParam().split(",").includes(origLang)) {
+    const assets = await fetchMovieAssets(key, `tmdb:${kind}:${id}`, origLang);
+    if (assets) {
+      logo = pickLogo(assets.logos ?? [], origLang);
+      posterSource = assets.posters ?? posterSource;
+    }
+  }
   const rawKeywords = raw.keywords?.keywords ?? raw.keywords?.results ?? [];
   const keywords: number[] = rawKeywords
     .map((k: any) => k?.id)
@@ -292,22 +306,28 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
   let overview = raw.overview ?? "";
   let tagline = raw.tagline ?? "";
   if (!settings.translateDescriptions) {
-    const enTrans = raw.translations?.translations?.find((t: any) => t.iso_639_1 === "en");
-    if (enTrans?.data?.overview) overview = enTrans.data.overview;
-    if (enTrans?.data?.tagline) tagline = enTrans.data.tagline;
+    const enTrans = raw.translations?.translations?.find((t: any) => t.iso_639_1 === "en")?.data;
+    if (enTrans?.overview) overview = enTrans.overview;
+    if (enTrans?.tagline) tagline = enTrans.tagline;
   }
 
   let finalPosterPath = raw.poster_path;
-  if (!translatePosters && raw.images?.posters?.length) {
-    const enPoster = raw.images.posters.find((p: any) => p.iso_639_1 === "en") || raw.images.posters[0];
-    if (enPoster) finalPosterPath = enPoster.file_path;
+  if (!settings.posterBaseUrl && posterSource?.length) {
+    const best = [...posterSource].sort(
+      (a: any, b: any) =>
+        imageLangRank(b.iso_639_1, origLang) - imageLangRank(a.iso_639_1, origLang) ||
+        (b.vote_average ?? 0) - (a.vote_average ?? 0),
+    )[0];
+    if (best) finalPosterPath = best.file_path;
   }
 
   return {
     kind,
     id: raw.id,
     imdbId: raw.external_ids?.imdb_id ?? null,
-    title: raw.title ?? raw.name,
+    title: settings.translateTitles
+      ? (raw.title || raw.name)
+      : (raw.original_title || raw.original_name || raw.title || raw.name),
     originalTitle: raw.original_title ?? raw.original_name ?? "",
     tagline,
     overview,
@@ -380,7 +400,9 @@ export async function tmdbSeasonEpisodes(
   seasonNumber: number,
 ): Promise<Episode[]> {
   if (!key) return [];
-  const data = await get<any>(key, `tv/${tvId}/season/${seasonNumber}`);
+  const data = await get<any>(key, `tv/${tvId}/season/${seasonNumber}`, {
+    language: effectiveTmdbLanguage() || "en",
+  });
   if (!data?.episodes) return [];
   return data.episodes.map((e: any) => ({
     id: e.id,

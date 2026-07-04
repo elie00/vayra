@@ -45,7 +45,8 @@ export function KidsDetailView({
 
   const backdrop = detail?.backdrop || base?.background || meta.background || meta.poster;
   const logo = detail?.logo || base?.logo || meta.logo;
-  const overview = detail?.overview || base?.description || meta.description || "";
+  const overview =
+    detail?.overview || base?.description || (meta.id.startsWith("tmdb:") ? "" : meta.description) || "";
   const genres = (detail?.genres?.length ? detail.genres : base?.genres) ?? [];
   const runtime = detail?.runtime;
   const year = meta.releaseInfo || base?.releaseInfo;

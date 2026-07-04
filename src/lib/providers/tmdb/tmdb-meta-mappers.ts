@@ -55,11 +55,14 @@ function genresFromIds(ids: number[] | undefined, kind: "movie" | "tv"): string[
 }
 
 export const movieMeta = (m: RawMovie): Meta => {
-  const translate = loadStoredSettings().translateTitles;
+  const s = loadStoredSettings();
+  // The request language can be driven by the image language, so only show the
+  // translated title when the user actually picked a metadata language.
+  const useTranslated = !!s.tmdbLanguage && s.translateTitles;
   return {
     id: `tmdb:movie:${m.id}`,
     type: "movie",
-    name: translate ? m.title : m.original_title || m.title,
+    name: useTranslated ? m.title : m.original_title || m.title,
     poster: poster(m.poster_path),
     background: back(m.backdrop_path),
     description: m.overview,
@@ -71,12 +74,14 @@ export const movieMeta = (m: RawMovie): Meta => {
   };
 };
 
-export const seriesMeta = (s: RawSeries): Meta => {
-  const translate = loadStoredSettings().translateTitles;
+export const seriesMeta = (item: RawSeries): Meta => {
+  const settings = loadStoredSettings();
+  const useTranslated = !!settings.tmdbLanguage && settings.translateTitles;
+  const s = item;
   return {
     id: `tmdb:tv:${s.id}`,
     type: "series",
-    name: translate ? s.name : s.original_name || s.name,
+    name: useTranslated ? s.name : s.original_name || s.name,
     poster: poster(s.poster_path),
     background: back(s.backdrop_path),
     description: s.overview,

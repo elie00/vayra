@@ -8,6 +8,9 @@ import { Section, ToggleRow } from "./shared";
 import { SubtitleStylePanel } from "./player-panel";
 import { LanguagesPicker } from "./streaming-panel";
 import { DisplayLanguageSection } from "./language-panel/display-language-section";
+import { ALL_LANGUAGE_NAMES } from "@/lib/subtitles/language";
+
+const IMAGE_LANG_OPTIONS = ["Original", ...ALL_LANGUAGE_NAMES];
 
 const TMDB_LANGUAGES: DropdownOption[] = [
   { value: "es-ES", label: "Español (España)" },
@@ -124,6 +127,17 @@ export function LanguagePanel() {
           />
         </>
       )}
+    </Section>
+
+    <Section
+      title={t("Image languages")}
+      subtitle={t("Posters, logos, and title art load in the first available language from this list, falling back down the order. \"Original\" uses the title's own language. Put your main language first. Needs a TMDB key.")}
+    >
+      <LanguagesPicker
+        value={settings.tmdbImageLangs}
+        onChange={(langs) => update({ tmdbImageLangs: langs })}
+        options={IMAGE_LANG_OPTIONS}
+      />
     </Section>
 
     <Section

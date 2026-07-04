@@ -4,7 +4,6 @@ import type { Settings } from "./types";
 export const STORAGE_KEY = "harbor.settings";
 
 export const DEFAULT: Settings = {
-  translatePosters: false,
   blurComments: false,
   blurEpisodes: false,
   tmdbKey: "",
@@ -164,6 +163,7 @@ export const DEFAULT: Settings = {
   trackBlockWords: ["commentary"],
   forcedSubsWhenNativeAudio: false,
   tmdbLanguage: "",
+  tmdbImageLangs: ["English", "Original"],
   posterBaseUrl: "",
   hidePosterTitles: false,
   hoverPreview: false,

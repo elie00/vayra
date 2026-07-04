@@ -3,6 +3,7 @@ import type { FeedItem } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { smartPlayEpisode } from "@/lib/smart-play";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
@@ -28,6 +29,7 @@ export function FeedHero({
   const { openMeta, openPicker } = useView();
   const t = useT();
   const meta = item.meta;
+  const description = useLocalizedOverview(meta);
   const resolvedImdb = useTmdbImdbId(meta.id);
   const live = useLiveImdbRating(meta);
   const saved = useInWatchlist(meta.id, [resolvedImdb]);
@@ -119,9 +121,9 @@ export function FeedHero({
               </>
             )}
           </div>
-          {meta.description && (
+          {description && (
             <p className="max-w-[68ch] text-[15.5px] leading-[1.55] text-ink/80 line-clamp-2">
-              {meta.description}
+              {description}
             </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
