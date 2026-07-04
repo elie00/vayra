@@ -143,7 +143,7 @@ export const PickCard = memo(function PickCard({
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
-  const localizedPoster = useLocalizedPoster(meta.id);
+  const localizedPoster = useLocalizedPoster(meta.id, meta.originalLanguage);
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
   const animeTmdb = useTmdbIdFromImdb(animeImdb) ?? undefined;

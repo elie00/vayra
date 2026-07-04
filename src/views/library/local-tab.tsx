@@ -2,7 +2,6 @@ import { FolderPlus, HardDrive, Loader2, Play, RefreshCw, Trash2 } from "lucide-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { effectiveTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
-import { imageRequestLang } from "@/lib/providers/tmdb/tmdb-image-lang";
 import { tmdbLiteMeta } from "@/lib/providers/tmdb/tmdb-lite";
 import {
   addLocalEntries,
@@ -325,7 +324,7 @@ async function tmdbLookup(
 ): Promise<{ tmdbId?: number; imdbId?: string; poster?: string }> {
   const path = type === "movie" ? "movie" : "tv";
   const params = new URLSearchParams({ api_key: key, query: title });
-  const lang = effectiveTmdbLanguage() || imageRequestLang();
+  const lang = effectiveTmdbLanguage();
   if (lang) params.set("language", lang);
   if (year && type === "movie") params.set("year", String(year));
   if (year && type === "show") params.set("first_air_date_year", String(year));

@@ -1,5 +1,6 @@
 import { loadStoredSettings } from "@/lib/settings/load";
 import { normalizeLang } from "@/lib/subtitles/language";
+import { tmdbLanguageIso } from "./tmdb-client";
 
 // User-ordered image-language priority. null = "Original" (TMDB no-language art).
 // Reads settings.tmdbImageLangs (display names) and maps to TMDB ISO codes.
@@ -23,7 +24,9 @@ export function imageLangPriority(): (string | null)[] {
 // ("Original" in the user's list just pins those fallbacks earlier.) This is why a
 // logo/poster always appears when one exists in any form, instead of bare text.
 function effectiveOrder(originalLang?: string | null): (string | null)[] {
-  const orig = originalLang ? normalizeLang(originalLang) || originalLang : null;
+  const orig = originalLang
+    ? (normalizeLang(originalLang) || originalLang).toLowerCase()
+    : null;
   const order: (string | null)[] = [];
   const add = (c: string | null) => {
     if (!order.includes(c)) order.push(c);
@@ -54,21 +57,15 @@ export function imageLangRank(iso: string | null | undefined, originalLang?: str
   return idx === -1 ? -1 : order.length - idx;
 }
 
-// Top concrete (non-"Original") language for localizing bulk catalog/list posters
-// via TMDB's `language` param. Returns "" when the list is Original-only/empty.
-export function imageRequestLang(): string {
-  for (const c of imageLangPriority()) if (c) return c;
-  return "";
-}
-
-// Concrete picked languages in order (drops the "Original" placeholder).
-export function pickedImageLangs(): string[] {
-  return imageLangPriority().filter((c): c is string => c !== null);
-}
-
-// Whether per-card poster enrichment is worthwhile: only when the top preference is
-// a non-English language, since English is already TMDB's default catalog fallback.
+// Whether per-card poster enrichment is worthwhile. TMDB's list endpoints return
+// poster_path in the bulk request `language` (the metadata language, or English when
+// unset), so the catalog poster follows the TEXT language. We enrich per-card only
+// when the user's top image preference differs from that bulk poster language — this
+// is what keeps posters independent of the metadata language (e.g. Arabic text but
+// English posters). "Original" first always needs a per-title fetch.
 export function shouldLocalizePosters(): boolean {
-  const top = imageRequestLang();
-  return !!top && top !== "en";
+  const [first] = imageLangPriority();
+  const bulk = tmdbLanguageIso() || "en";
+  if (first == null) return true;
+  return first !== bulk;
 }

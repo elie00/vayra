@@ -1,7 +1,7 @@
 import { lruSet } from "@/lib/cache";
 import { registerCache } from "@/lib/memory-profiler";
 import { get, IMG } from "./tmdb-client";
-import { imageLangParam, imageLangRank, pickedImageLangs } from "./tmdb-image-lang";
+import { imageLangParam, imageLangRank } from "./tmdb-image-lang";
 
 export type LogoEntry = { file_path: string; iso_639_1: string | null; vote_average?: number };
 
@@ -54,24 +54,24 @@ export const pickLogo = (logos: LogoEntry[], originalLang?: string | null): stri
   return best?.file_path ? `${IMG}/w342${best.file_path}` : undefined;
 };
 
-// Best poster for a title in one of the user's picked languages (e.g. Arabic then
-// English). Returns undefined when the title has no poster in a preferred language,
-// so callers fall back to the catalog poster (the title's original-language art).
-export async function tmdbLocalizedPoster(key: string, metaId: string): Promise<string | undefined> {
-  const picks = pickedImageLangs();
-  if (!picks.length) return undefined;
-  const assets = await fetchMovieAssets(key, metaId);
-  const posters = (assets?.posters ?? []).filter(
-    (p) => typeof p.iso_639_1 === "string" && picks.includes(p.iso_639_1),
-  );
+// Best poster for a title in the user's image-language order — picked languages
+// first, then the title's own original language, then textless art. Fetched via a
+// per-title /images lookup restricted to those languages, so it is fully independent
+// of the metadata (text) language: the catalog poster's language never leaks in.
+// Returns undefined only when the title has no usable poster in any of those
+// languages, so callers fall back to the catalog poster.
+export async function tmdbLocalizedPoster(
+  key: string,
+  metaId: string,
+  originalLang?: string | null,
+): Promise<string | undefined> {
+  const assets = await fetchMovieAssets(key, metaId, originalLang);
+  const posters = assets?.posters ?? [];
   if (!posters.length) return undefined;
-  const rank = (iso?: string | null) => {
-    const i = picks.indexOf(iso ?? "");
-    return i === -1 ? -1 : picks.length - i;
-  };
-  const best = [...posters].sort(
-    (a, b) => rank(b.iso_639_1) - rank(a.iso_639_1) || (b.vote_average ?? 0) - (a.vote_average ?? 0),
-  )[0];
+  const best = posters
+    .map((p) => ({ p, r: imageLangRank(p.iso_639_1 ?? null, originalLang) }))
+    .filter((x) => x.r >= 0)
+    .sort((a, b) => b.r - a.r || (b.p.vote_average ?? 0) - (a.p.vote_average ?? 0))[0]?.p;
   return best?.file_path ? `${IMG}/w342${best.file_path}` : undefined;
 }
 
