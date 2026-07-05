@@ -7,22 +7,14 @@ export const DEFAULT: Settings = {
   simklGranularFilters: {
     movies: {
       plantowatch: true,
-      completed: true,
-      dropped: true,
     },
     shows: {
       watching: true,
       plantowatch: true,
-      completed: true,
-      hold: true,
-      dropped: true,
     },
     anime: {
       watching: true,
       plantowatch: true,
-      completed: true,
-      hold: true,
-      dropped: true,
     },
   },
   blurComments: false,
@@ -306,8 +298,9 @@ export const DEFAULT: Settings = {
     },
   },
   calendarSource: "library",
-  simklCalendarPremieresEnabled: true,
   simklHomeRailsEnabled: true,
+  simklUpNextRailEnabled: true,
+  simklTrendingRailEnabled: true,
   simklScrobbleEnabled: true,
   weekStartsMonday: false,
   customCalendar: {

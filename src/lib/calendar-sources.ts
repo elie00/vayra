@@ -13,11 +13,81 @@ import { isAuthenticated as simklConnected } from "./simkl/session";
 
 export { fetchLibraryCalendar } from "./calendar-library";
 
+/* ─── In-memory cache with stale-while-revalidate for calendar sources ─────── */
+
+interface CacheEntry {
+  items: CalendarItem[];
+  timestamp: number;
+}
+
+const calendarCache = new Map<string, CacheEntry>();
+const calendarInFlight = new Map<string, Promise<CalendarItem[]>>();
+const CACHE_STALE_MS = 30 * 60 * 1000; // 30 minutes
+
+/**
+ * Wrap a calendar fetch function with in-memory caching.
+ * Returns cached data instantly if available (stale-while-revalidate).
+ * Deduplicates in-flight requests for the same cache key.
+ */
+function withCalendarCache(
+  cacheKey: string,
+  fetcher: () => Promise<CalendarItem[]>,
+): Promise<CalendarItem[]> {
+  const cached = calendarCache.get(cacheKey);
+  const now = Date.now();
+
+  // Return cached data immediately if available
+  if (cached) {
+    // If stale, trigger background refresh but return cached data
+    if (now - cached.timestamp >= CACHE_STALE_MS) {
+      if (!calendarInFlight.has(cacheKey)) {
+        const promise = fetcher()
+          .then((items) => {
+            calendarCache.set(cacheKey, { items, timestamp: Date.now() });
+            return items;
+          })
+          .catch(() => cached.items) // On error, keep cached data
+          .finally(() => {
+            calendarInFlight.delete(cacheKey);
+          });
+        calendarInFlight.set(cacheKey, promise);
+      }
+    }
+    return Promise.resolve(cached.items);
+  }
+
+  // No cache — check if there's an in-flight request
+  if (calendarInFlight.has(cacheKey)) {
+    return calendarInFlight.get(cacheKey)!;
+  }
+
+  // Fresh fetch
+  const promise = fetcher()
+    .then((items) => {
+      calendarCache.set(cacheKey, { items, timestamp: Date.now() });
+      return items;
+    })
+    .finally(() => {
+      calendarInFlight.delete(cacheKey);
+    });
+  calendarInFlight.set(cacheKey, promise);
+  return promise;
+}
+
+/** Clear all cached calendar data (e.g. on SIMKL disconnect). */
+export function clearCalendarSourceCache() {
+  calendarCache.clear();
+  calendarInFlight.clear();
+}
+
 export async function fetchSimklPremieresCalendar(
   year: number,
   month: number,
 ): Promise<CalendarItem[]> {
-  return fetchSimklCdnCalendar(year, month).catch(() => []);
+  const cacheKey = `simkl-premieres:${year}-${month}`;
+  return withCalendarCache(cacheKey, () =>
+    fetchSimklCdnCalendar(year, month).catch(() => []),
+  );
 }
 
 export async function fetchSimklCalendar(
@@ -26,36 +96,39 @@ export async function fetchSimklCalendar(
   opts: { tmdbKey: string },
 ): Promise<CalendarItem[]> {
   if (!simklConnected()) return [];
-  const [watchlist, watching] = await Promise.all([
-    fetchSimklWatchlist().catch(() => []),
-    fetchWatchingItems().catch(() => []),
-  ]);
-  const items = [...watchlist, ...watching];
-  const candidates: SavedCandidate[] = [];
-  const seenIds = new Set<string>();
-  for (const it of items) {
-    const id =
-      it.ids.imdb ??
-      (it.ids.tmdb
-        ? it.type === "movie"
-          ? `tmdb:movie:${it.ids.tmdb}`
-          : `tmdb:tv:${it.ids.tmdb}`
-        : it.ids.mal
-          ? `mal:${it.ids.mal}`
-          : null);
-    if (!id) continue;
-    if (seenIds.has(id)) continue;
-    seenIds.add(id);
-    candidates.push({
-      id,
-      type: it.type === "show" ? "series" : "movie",
-      name: it.title,
-      mtime: 0,
-      temp: false,
-    });
-  }
-  if (candidates.length === 0) return [];
-  return resolveSavedCalendar(candidates, year, month, opts);
+  const cacheKey = `simkl-calendar:${year}-${month}`;
+  return withCalendarCache(cacheKey, async () => {
+    const [watchlist, watching] = await Promise.all([
+      fetchSimklWatchlist().catch(() => []),
+      fetchWatchingItems().catch(() => []),
+    ]);
+    const items = [...watchlist, ...watching];
+    const candidates: SavedCandidate[] = [];
+    const seenIds = new Set<string>();
+    for (const it of items) {
+      const id =
+        it.ids.imdb ??
+        (it.ids.tmdb
+          ? it.type === "movie"
+            ? `tmdb:movie:${it.ids.tmdb}`
+            : `tmdb:tv:${it.ids.tmdb}`
+          : it.ids.mal
+            ? `mal:${it.ids.mal}`
+            : null);
+      if (!id) continue;
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+      candidates.push({
+        id,
+        type: it.type === "show" ? "series" : "movie",
+        name: it.title,
+        mtime: 0,
+        temp: false,
+      });
+    }
+    if (candidates.length === 0) return [];
+    return resolveSavedCalendar(candidates, year, month, opts);
+  });
 }
 
 const TRAKT_MAX_FORWARD_MONTHS = 6;

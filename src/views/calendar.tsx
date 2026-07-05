@@ -81,9 +81,9 @@ export function CalendarView() {
   const libraryNames = useMemo(() => buildLibraryNameSet(libraryItems), [libraryItems]);
 
   const filtered = useMemo(() => {
-    if (source !== "all") return items;
+    if (source !== "all" && source !== "simkl-anticipated") return items;
     let out = applyCalendarFilter(items, filter);
-    if (watchlistOnly) {
+    if (source === "all" && watchlistOnly) {
       out = out.filter((i) => {
         const t = i.type === "tv" ? "tv" : "movie";
         return libraryNames.has(`${normalizeName(i.name)}::${t}`);
@@ -130,6 +130,7 @@ export function CalendarView() {
   const dayModalItems = dayModal ? grouped.get(dayModal) ?? [] : [];
 
   const showAllControls = source === "all";
+  const showPremiereFilters = source === "simkl-anticipated";
 
   let body: React.ReactNode;
   if (source === "library" && !authKey) {
@@ -200,7 +201,6 @@ export function CalendarView() {
             onChange={(s) => update({ calendarSource: s })}
             traktConnected={traktConnected}
             simklConnected={simklConnected}
-            simklCalendarPremieresEnabled={settings.simklCalendarPremieresEnabled}
           />
           <button
             onClick={() => update({ weekStartsMonday: !settings.weekStartsMonday })}
@@ -268,6 +268,40 @@ export function CalendarView() {
                   />
                   {t("Watchlist only")}
                 </button>
+              </div>
+            </>
+          )}
+          {showPremiereFilters && (
+            <>
+              <span className="mx-1 h-5 w-px bg-edge-soft" />
+              <div className="flex flex-wrap items-center gap-2">
+                {FILTERS.map((f) => {
+                  const active = filter === f.id;
+                  const count =
+                    f.id === "all"
+                      ? items.length
+                      : applyCalendarFilter(items, f.id).length;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setFilter(f.id)}
+                      className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                        active
+                          ? "bg-ink text-canvas"
+                          : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
+                      }`}
+                    >
+                      {t(f.label)}
+                      <span
+                        className={`text-[11px] tabular-nums ${
+                          active ? "text-canvas/65" : "text-ink-subtle"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </>
           )}

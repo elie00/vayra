@@ -10,6 +10,8 @@ import { useT } from "@/lib/i18n";
 import { Section, ToggleRow } from "./shared";
 import { clearCalendarCache } from "@/lib/simkl/calendar";
 import { clearHomeRailsCache } from "@/lib/simkl/home-rails";
+import { clearCalendarSourceCache } from "@/lib/calendar-sources";
+import { clearAnimeGroupingCache } from "@/lib/simkl/anime-grouping";
 
 export function SimklPanel() {
   const t = useT();
@@ -142,6 +144,18 @@ export function SimklPanel() {
               onChange={(val) => update({ simklHomeRailsEnabled: val })}
             />
             <ToggleRow
+              label={t("Show Up Next on Simkl rail")}
+              sub={t("Display upcoming episodes from your watching and plan-to-watch lists.")}
+              value={settings.simklUpNextRailEnabled}
+              onChange={(val) => update({ simklUpNextRailEnabled: val })}
+            />
+            <ToggleRow
+              label={t("Show Simkl Trending Today rail")}
+              sub={t("Display today's trending movies, TV shows, and anime from Simkl.")}
+              value={settings.simklTrendingRailEnabled}
+              onChange={(val) => update({ simklTrendingRailEnabled: val })}
+            />
+            <ToggleRow
               label={t("Scrobble to SIMKL")}
               sub={t("Automatically track what you are playing and save watch progress in real-time.")}
               value={settings.simklScrobbleEnabled}
@@ -188,19 +202,22 @@ export function SimklPanel() {
                         useSimklAvatar: false,
                         harborAvatar: null,
                         simklScrobbleEnabled: true,
-                        simklCalendarPremieresEnabled: true,
                         simklShowCommunityRatings: true,
                         simklEnableUserRatings: true,
                         simklHomeRailsEnabled: true,
+                        simklUpNextRailEnabled: true,
+                        simklTrendingRailEnabled: true,
                         showSimklBadge: true,
                         simklGranularFilters: {
-                          movies: { plantowatch: true, completed: true, dropped: true },
-                          shows: { watching: true, plantowatch: true, completed: true, hold: true, dropped: true },
-                          anime: { watching: true, plantowatch: true, completed: true, hold: true, dropped: true },
+                          movies: { plantowatch: true },
+                          shows: { watching: true, plantowatch: true },
+                          anime: { watching: true, plantowatch: true },
                         },
                       });
                       clearCalendarCache();
                       clearHomeRailsCache();
+                      clearCalendarSourceCache();
+                      clearAnimeGroupingCache();
                       disconnect();
                       setConfirmDisconnect(false);
                     }}
@@ -215,11 +232,11 @@ export function SimklPanel() {
           </Section>
 
           <Section
-            title={t("Granular Sync Settings")}
-            subtitle={t("Choose which list categories and statuses sync to your library.")}
+            title={t("Home Rail Settings")}
+            subtitle={t("Choose which Simkl rails appear on your home screen.")}
           >
             <div className="flex flex-col gap-6">
-              {/* Movies Granular */}
+              {/* Movies */}
               <div className="flex flex-col gap-2 rounded-xl border border-edge-soft/60 bg-canvas/30 p-4">
                 <h3 className="text-[14px] font-bold text-ink">{t("Movies")}</h3>
                 <ToggleRow
@@ -234,33 +251,9 @@ export function SimklPanel() {
                     })
                   }
                 />
-                <ToggleRow
-                  label={t("Completed")}
-                  value={settings.simklGranularFilters.movies.completed}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        movies: { ...settings.simklGranularFilters.movies, completed: val },
-                      },
-                    })
-                  }
-                />
-                <ToggleRow
-                  label={t("Dropped")}
-                  value={settings.simklGranularFilters.movies.dropped}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        movies: { ...settings.simklGranularFilters.movies, dropped: val },
-                      },
-                    })
-                  }
-                />
               </div>
 
-              {/* TV Shows Granular */}
+              {/* TV Shows */}
               <div className="flex flex-col gap-2 rounded-xl border border-edge-soft/60 bg-canvas/30 p-4">
                 <h3 className="text-[14px] font-bold text-ink">{t("TV Shows")}</h3>
                 <ToggleRow
@@ -287,45 +280,9 @@ export function SimklPanel() {
                     })
                   }
                 />
-                <ToggleRow
-                  label={t("Completed")}
-                  value={settings.simklGranularFilters.shows.completed}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        shows: { ...settings.simklGranularFilters.shows, completed: val },
-                      },
-                    })
-                  }
-                />
-                <ToggleRow
-                  label={t("On Hold")}
-                  value={settings.simklGranularFilters.shows.hold}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        shows: { ...settings.simklGranularFilters.shows, hold: val },
-                      },
-                    })
-                  }
-                />
-                <ToggleRow
-                  label={t("Dropped")}
-                  value={settings.simklGranularFilters.shows.dropped}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        shows: { ...settings.simklGranularFilters.shows, dropped: val },
-                      },
-                    })
-                  }
-                />
               </div>
 
-              {/* Anime Granular */}
+              {/* Anime */}
               <div className="flex flex-col gap-2 rounded-xl border border-edge-soft/60 bg-canvas/30 p-4">
                 <h3 className="text-[14px] font-bold text-ink">{t("Anime")}</h3>
                 <ToggleRow
@@ -348,42 +305,6 @@ export function SimklPanel() {
                       simklGranularFilters: {
                         ...settings.simklGranularFilters,
                         anime: { ...settings.simklGranularFilters.anime, plantowatch: val },
-                      },
-                    })
-                  }
-                />
-                <ToggleRow
-                  label={t("Completed")}
-                  value={settings.simklGranularFilters.anime.completed}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        anime: { ...settings.simklGranularFilters.anime, completed: val },
-                      },
-                    })
-                  }
-                />
-                <ToggleRow
-                  label={t("On Hold")}
-                  value={settings.simklGranularFilters.anime.hold}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        anime: { ...settings.simklGranularFilters.anime, hold: val },
-                      },
-                    })
-                  }
-                />
-                <ToggleRow
-                  label={t("Dropped")}
-                  value={settings.simklGranularFilters.anime.dropped}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        anime: { ...settings.simklGranularFilters.anime, dropped: val },
                       },
                     })
                   }

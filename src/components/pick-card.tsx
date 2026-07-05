@@ -24,6 +24,9 @@ import {
   useTmdbImdbId,
 } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { useSimklCardScores, useSimklCardScoresByAnimeId } from "@/lib/simkl/ratings";
+import { simklRequest } from "@/lib/simkl/client";
+import simklLogo from "@/assets/simkl.png";
 import { useView } from "@/lib/view";
 import { observe } from "@/lib/visibility";
 import { useInWatchlist } from "@/lib/watchlist";
@@ -67,7 +70,7 @@ export const PickCard = memo(function PickCard({
   const customProps = activeCustom ? customHoverPosterProps(activeCustom) : null;
   const badgeFade = inCardHover !== "none" || activeCustom ? "transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0" : "";
   const t = useT();
-  const isAnimeCardId = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
+  const isAnimeCardId = /^(kitsu|mal|anilist|anidb|simkl):/.test(meta.id);
   const inCinema = isInCinema(meta);
   const rerun = (inCinema || flagRerun) && isRerun(meta);
   const showCinema = inCinema && !rerun;
@@ -130,8 +133,17 @@ export const PickCard = memo(function PickCard({
     : cardImdbValue
       ? "imdb"
       : "tmdb";
+  const simklCardScoreImdb = useSimklCardScores(
+    settings.showSimklBadge && !isAnimeCardId ? imdbId : undefined,
+  );
+  const simklCardScoreAnime = useSimklCardScoresByAnimeId(
+    settings.showSimklBadge && isAnimeCardId ? meta.id : undefined,
+  );
+  const simklCardScore = isAnimeCardId ? simklCardScoreAnime : simklCardScoreImdb;
   const cardBadges: CardBadge[] = [];
   if (cardRating) cardBadges.push({ kind: "rating", source: cardRatingSource, value: cardRating });
+  if (settings.showSimklBadge && simklCardScore.score != null)
+    cardBadges.push({ kind: "simkl", value: simklCardScore.score });
   if (settings.showRtBadge && cached?.rtCritics != null)
     cardBadges.push({ kind: "rt", value: cached.rtCritics });
   if (settings.showPopcornBadge && cardScores?.rtAudience != null)
@@ -226,11 +238,23 @@ export const PickCard = memo(function PickCard({
       meta.id.startsWith("mal:") ||
       meta.id.startsWith("anilist:") ||
       meta.id.startsWith("anidb:");
-    const hydrator = isAnimeId
-      ? animeKitsuMeta(meta.id).then((m) => (m ? { poster: m.poster } : null))
-      : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) =>
-          full ? { poster: full.poster } : null,
-        );
+    const isSimklId = meta.id.startsWith("simkl:");
+    const hydrator = isSimklId
+      ? (async () => {
+          const simklId = meta.id.slice(5);
+          const detail = await simklRequest<{ poster?: string }>(
+            `/anime/${simklId}`,
+            { method: "GET", authed: false },
+          ).catch(() => null);
+          return detail?.poster
+            ? { poster: `https://simkl.in/posters/${detail.poster}_m.jpg` }
+            : null;
+        })()
+      : isAnimeId
+        ? animeKitsuMeta(meta.id).then((m) => (m ? { poster: m.poster } : null))
+        : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) =>
+            full ? { poster: full.poster } : null,
+          );
     hydrator
       .then((res) => {
         if (cancelled || !res?.poster) return;
@@ -387,7 +411,8 @@ type CardBadge =
   | { kind: "metacritic"; value: number }
   | { kind: "letterboxd"; value: number }
   | { kind: "mdblist"; value: number }
-  | { kind: "trakt"; value: number };
+  | { kind: "trakt"; value: number }
+  | { kind: "simkl"; value: number };
 
 function metacriticTone(v: number): string {
   if (v >= 61) return "bg-emerald-500";
@@ -451,6 +476,13 @@ function BadgeContent({ badge }: { badge: CardBadge }) {
         <span className="flex items-center gap-0.5">
           <img src={traktLogo} alt="" className="h-[11px] w-[11px] object-contain" />
           <span>{Math.round(badge.value)}%</span>
+        </span>
+      );
+    case "simkl":
+      return (
+        <span className="flex items-center gap-0.5">
+          <img src={simklLogo} alt="" className="h-[11px] w-[11px] rounded-[2px] object-contain" />
+          <span>{Math.round(badge.value)}</span>
         </span>
       );
   }

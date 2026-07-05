@@ -45,22 +45,14 @@ export type LetterboxdSettings = {
 export interface SimklGranularFilters {
   movies: {
     plantowatch: boolean;
-    completed: boolean;
-    dropped: boolean;
   };
   shows: {
     watching: boolean;
     plantowatch: boolean;
-    completed: boolean;
-    hold: boolean;
-    dropped: boolean;
   };
   anime: {
     watching: boolean;
     plantowatch: boolean;
-    completed: boolean;
-    hold: boolean;
-    dropped: boolean;
   };
 }
 
@@ -346,8 +338,9 @@ export type Settings = {
     | "custom"
     | "simkl"
     | "simkl-anticipated";
-  simklCalendarPremieresEnabled: boolean;
   simklHomeRailsEnabled: boolean;
+  simklUpNextRailEnabled: boolean;
+  simklTrendingRailEnabled: boolean;
   simklScrobbleEnabled: boolean;
   weekStartsMonday: boolean;
   customCalendar: {

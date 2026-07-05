@@ -51,7 +51,7 @@ const OPTIONS: Option[] = [
     id: "simkl",
     label: "My Simkl",
     icon: SimklGlyph,
-    hint: "Upcoming episodes and movies from your Simkl plan-to-watch list",
+    hint: "Upcoming episodes and movies from your Simkl watching and plan-to-watch lists",
   },
   {
     id: "simkl-anticipated",
@@ -72,20 +72,18 @@ export function SourceSwitcher({
   onChange,
   traktConnected,
   simklConnected,
-  simklCalendarPremieresEnabled = true,
 }: {
   value: Source;
   onChange: (s: Source) => void;
   traktConnected: boolean;
   simklConnected: boolean;
-  simklCalendarPremieresEnabled?: boolean;
 }) {
   const t = useT();
   const visible = OPTIONS.filter(
     (o) =>
       (o.id !== "trakt" || traktConnected) &&
-      (o.id !== "simkl" || (simklConnected && simklCalendarPremieresEnabled)) &&
-      (o.id !== "simkl-anticipated" || (simklConnected && simklCalendarPremieresEnabled)),
+      (o.id !== "simkl" || simklConnected) &&
+      (o.id !== "simkl-anticipated" || simklConnected),
   );
   return (
     <div className="flex items-center gap-1 rounded-full border border-edge-soft bg-elevated/30 p-1">

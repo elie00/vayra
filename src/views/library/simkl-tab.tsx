@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { getLocalCache, syncWatchlistCache, type SimklCacheItem, type SimklCache } from "@/lib/simkl/activities";
+import { groupAnimeByFranchise, formatYearRange } from "@/lib/simkl/anime-grouping";
 import type { Meta } from "@/lib/cinemeta";
 import {
   FilterBar,
@@ -52,8 +53,10 @@ function cacheItemToMeta(item: SimklCacheItem, cache: SimklCache): Meta | null {
     const kitsuId = Object.keys(cache.kitsuToSimkl).find((k) => cache.kitsuToSimkl[k] === simklId);
     if (kitsuId) id = `kitsu:${kitsuId}`;
   }
-
-  if (!id) return null;
+  // 5. Fallback: use simkl:{id} — ensures all items are visible even without external IDs
+  if (!id) {
+    id = `simkl:${simklId}`;
+  }
 
   return {
     id,
@@ -117,7 +120,24 @@ export function SimklTab() {
     const counts: Record<string, number> = {};
     if (!cache) return counts;
 
-    const targetType = subTab === "movies" ? "movie" : subTab === "shows" ? "show" : "anime";
+    if (subTab === "anime") {
+      // For anime, count franchises per status (a franchise counts if ANY season has that status)
+      const animeItems = Object.values(cache.items).filter((item) => item.type === "anime");
+      const franchises = groupAnimeByFranchise(animeItems);
+      for (const franchise of franchises) {
+        const statuses = new Set(franchise.items.map((i) => i.status));
+        for (const status of statuses) {
+          // Only count if at least one item in the franchise has a valid meta
+          const hasValidMeta = franchise.items.some((item) => cacheItemToMeta(item, cache));
+          if (hasValidMeta) {
+            counts[status] = (counts[status] ?? 0) + 1;
+          }
+        }
+      }
+      return counts;
+    }
+
+    const targetType = subTab === "movies" ? "movie" : "show";
     for (const item of Object.values(cache.items)) {
       if (item.type !== targetType) continue;
       const meta = cacheItemToMeta(item, cache);
@@ -133,8 +153,46 @@ export function SimklTab() {
 
   const filteredItems = useMemo<WatchlistMerged[]>(() => {
     if (!cache) return [];
-    const targetType = subTab === "movies" ? "movie" : subTab === "shows" ? "show" : "anime";
 
+    if (subTab === "anime") {
+      // Group anime by franchise, then filter by status
+      const animeItems = Object.values(cache.items).filter((item) => item.type === "anime");
+      const franchises = groupAnimeByFranchise(animeItems);
+
+      return franchises
+        .filter((franchise) => {
+          // A franchise shows up under a status if ANY of its seasons has that status
+          return franchise.items.some((item) => item.status === statusFilter);
+        })
+        .map((franchise) => {
+          // Use the first item that has a valid meta as the representative
+          const representativeItem = franchise.items.find((item) => cacheItemToMeta(item, cache));
+          if (!representativeItem) return null;
+          const meta = cacheItemToMeta(representativeItem, cache);
+          if (!meta) return null;
+
+          // Override the title and year with franchise-level info
+          meta.name = franchise.name;
+          if (franchise.yearStart != null) {
+            meta.releaseInfo = formatYearRange(franchise.yearStart, franchise.yearEnd);
+          }
+
+          // Use the latest watchedAt from any season in the franchise
+          const dates = franchise.items
+            .map((i) => i.watchedAt)
+            .filter((d): d is string => d != null)
+            .sort((a, b) => b.localeCompare(a));
+
+          return {
+            key: `simkl-franchise-${franchise.key}`,
+            meta,
+            date: dates.length > 0 ? parseTs(dates[0]) : null,
+          };
+        })
+        .filter((x): x is WatchlistMerged => x !== null);
+    }
+
+    const targetType = subTab === "movies" ? "movie" : "show";
     return Object.values(cache.items)
       .filter((item) => {
         if (item.type !== targetType) return false;
