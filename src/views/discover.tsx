@@ -33,6 +33,8 @@ import {
   togglePageRowHidden,
   usePageRows,
 } from "@/lib/page-rows";
+import { isMobileTauri } from "@/lib/platform";
+import { MobileDiscover } from "@/mobile/discover";
 
 const MAX_RAIL_PAGES = 10;
 const MIN_PAGE_YIELD = 4;
@@ -265,6 +267,17 @@ export function Discover({ active = true }: { active?: boolean }) {
     () => orderedRowKeys(railKeys, pageRows.custom),
     [railKeys, pageRows.custom],
   );
+
+  if (isMobileTauri())
+    return (
+      <MobileDiscover
+        featured={featured}
+        rails={visibleRails}
+        deduped={deduped}
+        loadMore={loadMore}
+        ensureLoaded={ensureLoaded}
+      />
+    );
 
   return (
     <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pb-20 pt-28">

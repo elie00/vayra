@@ -65,6 +65,8 @@ import type { HomeRow } from "./home/home-types";
 import { RowSkeleton } from "./home/row-skeleton";
 import { AddSourceModal } from "@/components/add-source-modal";
 import type { SourceRow } from "@/lib/custom-sources";
+import { isMobileTauri } from "@/lib/platform";
+import { MobileHome } from "@/mobile/home";
 
 export function Home({ active = true }: { active?: boolean }) {
   const { authKey, user } = useAuth();
@@ -606,6 +608,21 @@ export function Home({ active = true }: { active?: boolean }) {
         : [],
     [settings.tmdbKey, settings.streaming],
   );
+
+  if (isMobileTauri())
+    return (
+      <MobileHome
+        nudgeSuppress={tmdbProvidedByAddon || settings.homeMode === "classic"}
+        heroSlides={heroSlides}
+        signedIn={!!authKey}
+        cwItems={cwItems}
+        onDismissCw={onDismissCw}
+        top10={top10}
+        top10Title={displayed.top10Title}
+        rows={visibleRows}
+        loadMore={loadMore}
+      />
+    );
 
   return (
     <main
