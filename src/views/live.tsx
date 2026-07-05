@@ -225,14 +225,14 @@ export function LiveView({ active }: { active: boolean }) {
 
   if (sources.length === 0) {
     return (
-      <main data-rail-flush className="relative flex min-h-0 flex-1 flex-col overflow-y-auto pt-20">
+      <main data-rail-flush className="relative flex min-h-0 flex-1 flex-col overflow-y-auto pt-20 max-sm:pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]">
         <PlaylistEmpty onSave={(entry) => addPlaylist(entry)} />
       </main>
     );
   }
 
   return (
-    <main data-rail-flush className={`relative flex min-h-0 flex-1 ${immersive ? "pt-0" : "pt-20"}`}>
+    <main data-rail-flush className={`relative flex min-h-0 flex-1 ${immersive ? "pt-0" : "pt-20 max-sm:pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]"}`}>
       {playlist && sortedGroups.length > 0 && mode !== "multiview" && mode !== "home" && state.kind !== "error" && (
         <CategorySidebar
           groups={sortedGroups}
@@ -272,11 +272,11 @@ export function LiveView({ active }: { active: boolean }) {
             loading={state.kind === "loading"}
           />
           {mode === "multiview" ? (
-            <div className="flex h-11 flex-1 min-w-[220px] items-center px-1 text-[13px] text-ink-subtle">
+            <div className="flex h-11 flex-1 min-w-[220px] items-center px-1 text-[13px] text-ink-subtle max-sm:min-w-0">
               {t("Pick channels into the grid below. Audio follows the highlighted tile.")}
             </div>
           ) : (
-            <div className="flex h-11 flex-1 min-w-[220px] items-center gap-2.5 rounded-xl border border-edge-soft/55 bg-elevated px-3.5">
+            <div className="flex h-11 flex-1 min-w-[220px] items-center gap-2.5 rounded-xl border border-edge-soft/55 bg-elevated px-3.5 max-sm:min-w-0">
               <Search size={15} strokeWidth={2} className="text-ink-subtle" />
               <input
                 type="text"

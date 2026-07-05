@@ -145,7 +145,7 @@ export function MobileDetail({
                 className="max-h-24 w-auto max-w-[80%] object-contain object-left drop-shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
               />
             ) : (
-              <h1 className="text-[34px] font-semibold leading-[1.02] tracking-tight text-ink">
+              <h1 className="text-[28px] font-semibold leading-[1.05] tracking-tight text-ink">
                 {title}
               </h1>
             )}

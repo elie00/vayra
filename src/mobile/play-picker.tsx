@@ -188,7 +188,7 @@ export function MobilePlayPicker({
         </div>
 
         {/* Header */}
-        <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-1">
+        <header className="flex shrink-0 items-start justify-between gap-3 px-4 pb-3 pt-1">
           <div className="min-w-0">
             {subtitle && (
               <p className="truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-subtle">

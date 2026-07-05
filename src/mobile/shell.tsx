@@ -141,7 +141,7 @@ function PlusScreen() {
       data-harbor-plus
       className="fixed inset-0 z-[80] overflow-y-auto bg-canvas pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+env(safe-area-inset-bottom))]"
     >
-      <div className="px-5">
+      <div className="px-4">
         <ProfileChip />
         <div className="mt-5 grid grid-cols-3 gap-3">
           {dests.map((d) => (

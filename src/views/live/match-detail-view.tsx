@@ -31,11 +31,11 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
   return (
     <div className="flex h-full flex-col bg-canvas pb-8">
       {/* Header */}
-      <div className="relative shrink-0 pb-10 pt-24">
+      <div className="relative shrink-0 pb-10 pt-24 max-sm:pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]">
         <div className="absolute inset-x-0 top-0 h-full bg-gradient-to-b from-brand/10 via-brand/5 to-transparent opacity-80" />
         <button
           onClick={goBack}
-          className="absolute start-6 top-24 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-elevated/80 text-ink shadow-lg ring-1 ring-edge-soft/50 transition-colors hover:bg-elevated hover:text-ink-muted md:top-20"
+          className="absolute start-6 top-24 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-elevated/80 text-ink shadow-lg ring-1 ring-edge-soft/50 transition-colors hover:bg-elevated hover:text-ink-muted md:top-20 max-sm:top-[calc(5rem+var(--harbor-status-bar,1.75rem))]"
         >
           <ArrowLeft size={20} className="dir-icon" />
         </button>
@@ -50,12 +50,12 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
             {game.league}
           </div>
           <div className="flex w-full items-center justify-center gap-4 md:gap-12">
-            <div className="flex flex-1 flex-col items-center gap-4 text-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-elevated/40 p-3 shadow-xl ring-1 ring-edge-soft/50 backdrop-blur-sm md:h-32 md:w-32 md:p-5">
+            <div className="flex flex-1 flex-col items-center gap-4 text-center max-sm:min-w-0">
+              <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-elevated/40 p-3 shadow-xl ring-1 ring-edge-soft/50 backdrop-blur-sm md:h-32 md:w-32 md:p-5 max-sm:h-14 max-sm:w-14 max-sm:p-2">
                 {game.home.logo ? <img src={game.home.logo} className="h-full w-full object-contain drop-shadow-md" alt="" /> : <div className="h-full w-full rounded-full bg-canvas" />}
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-xl font-bold leading-tight md:text-2xl">{game.home.name}</span>
+              <div className="flex flex-col items-center gap-2 max-sm:w-full">
+                <span className="text-xl font-bold leading-tight md:text-2xl max-sm:w-full max-sm:text-base max-sm:line-clamp-2">{game.home.name}</span>
                 {detail && (hYellow > 0 || hRed > 0) && (
                   <div className="flex items-center gap-1">
                     {hYellow > 0 && Array.from({ length: hYellow }).map((_, i) => <div key={`y-${i}`} className="h-3.5 w-2.5 rounded-[2px] bg-yellow-400 shadow-sm ring-1 ring-black/20" />)}
@@ -66,20 +66,20 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
             </div>
             <div className="flex flex-col items-center gap-4">
               <div className="flex items-center justify-center gap-4 rounded-[2rem] border border-edge-soft/30 bg-elevated/50 px-6 py-4 shadow-2xl ring-1 ring-inset ring-white/5 backdrop-blur-xl md:px-8 md:py-5">
-                <span className="text-5xl font-black tabular-nums tracking-tighter text-ink drop-shadow-sm md:text-7xl">{game.home.score || "0"}</span>
-                <span className="text-3xl font-black text-ink-subtle md:text-5xl">-</span>
-                <span className="text-5xl font-black tabular-nums tracking-tighter text-ink drop-shadow-sm md:text-7xl">{game.away.score || "0"}</span>
+                <span className="text-5xl font-black tabular-nums tracking-tighter text-ink drop-shadow-sm md:text-7xl max-sm:text-4xl">{game.home.score || "0"}</span>
+                <span className="text-3xl font-black text-ink-subtle md:text-5xl max-sm:text-2xl">-</span>
+                <span className="text-5xl font-black tabular-nums tracking-tighter text-ink drop-shadow-sm md:text-7xl max-sm:text-4xl">{game.away.score || "0"}</span>
               </div>
               <div className="rounded-full bg-ink px-4 py-1.5 text-[13px] font-bold tracking-wide text-canvas shadow-md">
                 {game.detail || (game.state === "in" ? t("Live") : game.state === "post" ? t("Final") : t("Upcoming"))}
               </div>
             </div>
-            <div className="flex flex-1 flex-col items-center gap-4 text-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-elevated/40 p-3 shadow-xl ring-1 ring-edge-soft/50 backdrop-blur-sm md:h-32 md:w-32 md:p-5">
+            <div className="flex flex-1 flex-col items-center gap-4 text-center max-sm:min-w-0">
+              <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-elevated/40 p-3 shadow-xl ring-1 ring-edge-soft/50 backdrop-blur-sm md:h-32 md:w-32 md:p-5 max-sm:h-14 max-sm:w-14 max-sm:p-2">
                 {game.away.logo ? <img src={game.away.logo} className="h-full w-full object-contain drop-shadow-md" alt="" /> : <div className="h-full w-full rounded-full bg-canvas" />}
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-xl font-bold leading-tight md:text-2xl">{game.away.name}</span>
+              <div className="flex flex-col items-center gap-2 max-sm:w-full">
+                <span className="text-xl font-bold leading-tight md:text-2xl max-sm:w-full max-sm:text-base max-sm:line-clamp-2">{game.away.name}</span>
                 {detail && (aYellow > 0 || aRed > 0) && (
                   <div className="flex items-center gap-1">
                     {aYellow > 0 && Array.from({ length: aYellow }).map((_, i) => <div key={`y-${i}`} className="h-3.5 w-2.5 rounded-[2px] bg-yellow-400 shadow-sm ring-1 ring-black/20" />)}
@@ -374,7 +374,7 @@ function MmaProfileTab({ detail }: { detail: SportsMatchDetail }) {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-ink/5" />
         
         <div className="flex-1 flex flex-col items-center z-10">
-          <div className="h-64 sm:h-80 relative w-full flex justify-center">
+          <div className="h-64 sm:h-80 relative w-full flex justify-center max-sm:h-44">
              {hP.fullImage && (
                <img src={hP.fullImage} className="max-h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)]" alt={detail.home.name} />
              )}
@@ -385,7 +385,7 @@ function MmaProfileTab({ detail }: { detail: SportsMatchDetail }) {
         <div className="shrink-0 flex items-center justify-center font-black text-ink-muted px-4 z-10 opacity-30 text-2xl">VS</div>
 
         <div className="flex-1 flex flex-col items-center z-10">
-          <div className="h-64 sm:h-80 relative w-full flex justify-center">
+          <div className="h-64 sm:h-80 relative w-full flex justify-center max-sm:h-44">
              {aP.fullImage && (
                <img src={aP.fullImage} className="max-h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)]" alt={detail.away.name} />
              )}
