@@ -356,4 +356,5 @@ export type Settings = {
   adSkipEnabled: boolean;
   adReportAlwaysShow: boolean;
   adReportFirstSeen: boolean;
+  imdbApiFallback: boolean;
 };

@@ -321,6 +321,12 @@ export function LibraryPanel({
             </>
           }
         />
+        <ToggleRow
+          label={t("Use free IMDb API as fallback")}
+          sub={t("When no TMDB key is set, show cast, crew, and title details from the free IMDb API (imdbapi.dev). Requires an internet connection.")}
+          value={settings.imdbApiFallback}
+          onChange={(v) => update({ imdbApiFallback: v })}
+        />
         <KeyField
           label={t("OMDb · Rotten Tomatoes scores")}
           placeholder={t("8-character key")}
