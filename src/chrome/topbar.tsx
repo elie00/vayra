@@ -54,6 +54,38 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
     ? "w-[14rem] sm:w-[18rem] lg:w-[22rem] xl:w-[24rem]"
     : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
   const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
+
+  // Mobile: the topbar is ONE clean full-width search pill on tab-level views,
+  // or the contextual Back chrome on stacked views — never both, and none of the
+  // desktop right-cluster (recording/downloads/together) or window controls.
+  if (mobile) {
+    return (
+      <header
+        data-harbor-topbar
+        className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}
+      >
+        <div className="flex h-full items-center gap-2 px-4">
+          {onLiveRoot ? (
+            <div className="flex items-center gap-1.5 text-ink">
+              <HarborMark className="h-7 w-7" />
+              <span className="font-display text-[18px] font-semibold leading-none tracking-tight">
+                {t("Live")}
+              </span>
+            </div>
+          ) : canGoBack && !connecting ? (
+            <BackChrome />
+          ) : (
+            !hideSearch && (
+              <div className="min-w-0 flex-1">
+                <SearchPill />
+              </div>
+            )
+          )}
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header data-harbor-topbar className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}>
       <div

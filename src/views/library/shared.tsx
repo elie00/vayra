@@ -7,6 +7,7 @@ import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useInWatchlist } from "@/lib/watchlist";
 import { useT } from "@/lib/i18n";
+import { isMobileTauri } from "@/lib/platform";
 
 export type Tab = "watchlist" | "history" | "local" | "trakt" | "anilist" | "simkl";
 
@@ -27,7 +28,7 @@ export function TabBtn({
     <button
       type="button"
       onClick={onClick}
-      className={`relative -mb-px flex items-center gap-2 px-4 pb-3 pt-2 text-[13.5px] font-semibold transition-colors ${
+      className={`relative -mb-px flex items-center gap-2 px-4 pb-3 pt-2 text-[13.5px] font-semibold transition-colors max-sm:shrink-0 ${
         active ? "text-ink" : "text-ink-muted hover:text-ink"
       }`}
     >
@@ -443,7 +444,9 @@ export function EmptyWatchlist({ connected }: { connected: boolean }) {
 
 export function Grid({ children }: { children: React.ReactNode }) {
   const { settings } = useSettings();
-  const base = Math.round(150 * settings.posterScale);
+  // Mobile (Android): tighter min column so posters land ~3-across at 412px
+  // instead of 2. Desktop/web keep the original 150px base byte-for-byte.
+  const base = Math.round((isMobileTauri() ? 110 : 150) * settings.posterScale);
   return (
     <div
       className="grid gap-4"
