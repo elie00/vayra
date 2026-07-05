@@ -136,12 +136,16 @@ function PlusScreen() {
     { label: "nav.addons", icon: <AddonsIcon />, onGo: () => view.setView("addons") },
     { label: "nav.settings", icon: <SettingsIcon />, onGo: () => view.openSettings() },
   ];
+  // The fixed layer must NOT scroll itself: Android WebView leaves a stale ghost
+  // copy of a scrolled position:fixed+overflow element (the "two offset grids /
+  // white bands" bug). So the fixed element is a stable opaque compositing layer
+  // (transform-gpu + isolate) and the scroll lives on a normal in-flow child.
   return (
     <div
       data-harbor-plus
-      className="fixed inset-0 z-[80] overflow-y-auto bg-canvas pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+env(safe-area-inset-bottom))]"
+      className="fixed inset-0 z-[80] isolate transform-gpu bg-canvas"
     >
-      <div className="px-4">
+      <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
         <ProfileChip />
         <div className="mt-5 grid grid-cols-3 gap-3">
           {dests.map((d) => (
@@ -149,7 +153,7 @@ function PlusScreen() {
               key={d.label}
               type="button"
               onClick={() => go(d.onGo)}
-              className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-edge-soft/60 bg-elevated/50 px-2 py-5 text-ink-muted transition-transform active:scale-95"
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-edge-soft/60 bg-elevated px-2 py-5 text-ink-muted transition-transform active:scale-95"
             >
               {d.icon}
               <span className="text-[12px] font-medium text-ink">{t(d.label)}</span>
