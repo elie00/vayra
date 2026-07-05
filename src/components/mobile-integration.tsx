@@ -3,6 +3,7 @@ import { isMobileTauri } from "@/lib/platform";
 import { useView } from "@/lib/view";
 import { useSearch } from "@/lib/search-context";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
+import { getPlusOpen, setPlusOpen } from "@/mobile/shell";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 
 declare global {
@@ -43,6 +44,10 @@ export function MobileIntegration() {
       // Harbor's own view history (which also closes the player). Top-level
       // views reached via the drawer have no history, so — per Android/Material
       // convention — Back goes to Home first; only Home itself exits the app.
+      if (getPlusOpen()) {
+        setPlusOpen(false);
+        return "handled";
+      }
       if (s.drawerOpen) {
         setNavDrawer(false);
         return "handled";
