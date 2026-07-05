@@ -14,6 +14,8 @@ import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
 import { useView, type PlayEpisode } from "@/lib/view";
+import { isMobileTauri } from "@/lib/platform";
+import { MobilePlayPicker } from "@/mobile/play-picker";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
 import { AutoPlayTransition } from "./play-picker/auto-play-transition";
@@ -542,6 +544,48 @@ export function PlayPicker({
       />
     );
   }
+
+  if (isMobileTauri())
+    return (
+      <MobilePlayPicker
+        meta={meta}
+        episode={episode}
+        onBack={backToDetail}
+        onRefresh={refresh}
+        refreshing={loading}
+        backdropSrc={backdropSrc}
+        addonsSettled={addonsSettled}
+        hasStreams={!!filteredPicker && filteredPicker.all.length > 0}
+        streams={displayStreams}
+        addons={addons}
+        pipelineDone={pipelineDone}
+        loadingAddonCount={Math.max(0, (addons?.length ?? 0) - addonCount)}
+        failedStreams={failedStreams}
+        preserveOrder={addonOrderMode || !!hostMatch}
+        matchFor={hostMatch ? matchFor : undefined}
+        onPlay={playManually}
+        hostSource={hostSourceForMedia}
+        isDownload={isDownload}
+        stubBanner={stubBanner}
+        resolveError={resolveError}
+        engineWarming={engineWarming}
+        result={result}
+        streamIds={streamIds}
+        debridCount={debrids.length}
+        addonCount={addonCount}
+        allCount={allCount}
+        rawCount={rawCount}
+        strictMode={strictMode}
+        forceShowAll={forceShowAll}
+        onOpenLibrarySettings={() => openSettings("library")}
+        onOpenStreamingSettings={() => openSettings("streaming")}
+        onShowAll={() => setForceShowAll(true)}
+        onSearchWider={() => {
+          if (strictMode) setStrictMode(false);
+          else setForceShowAll(true);
+        }}
+      />
+    );
 
   return (
     <main className="absolute inset-0 z-50 overflow-y-auto bg-canvas">

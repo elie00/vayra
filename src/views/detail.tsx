@@ -38,6 +38,8 @@ import { openUrl } from "@/lib/window";
 import { profileFromDetail, trackEvent } from "@/lib/discover";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { useScrollMemory, useView } from "@/lib/view";
+import { isMobileTauri } from "@/lib/platform";
+import { MobileDetail } from "@/mobile/detail";
 import { useT } from "@/lib/i18n";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
@@ -663,6 +665,44 @@ export function DetailView({
     : isSeries && lastPlay
       ? t("Resume S{s}:E{e}", { s: lastPlay.season, e: lastPlay.episode })
       : t("Play");
+
+  if (isMobileTauri())
+    return (
+      <MobileDetail
+        meta={meta}
+        playMeta={playMeta}
+        title={title}
+        logo={logo}
+        backdrop={backdrop}
+        year={year}
+        rating={rating}
+        runtime={runtime}
+        overview={overview}
+        isSeries={isSeries}
+        isAnime={isAnime}
+        detail={detail}
+        recommendations={recommendations}
+        similar={similar}
+        cinemetaVideos={cinemetaFull?.videos}
+        stremioWatched={stremioWatched}
+        animeEpisodes={animeEpisodes}
+        franchise={franchise}
+        animeCanonicalId={animeCanonicalId}
+        inWatchlist={inWatchlist}
+        onToggleWatchlist={() =>
+          toggleWatchlist({
+            id: meta.id,
+            type: meta.type,
+            name: title || meta.name,
+            poster: meta.poster ?? detail?.poster,
+            imdbId: detail?.imdbId,
+          })
+        }
+        onPlay={() => smartPlay(false)}
+        playLabel={smartPlayLabel}
+        trailerCandidate={trailerCandidate}
+      />
+    );
 
   return (
     <main
