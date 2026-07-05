@@ -1393,3 +1393,12 @@ html[data-os="android"][data-exo-active="1"] body,
 html[data-os="android"][data-exo-active="1"] #root {
   background: transparent !important;
 }
+/* Mobile bottom tab bar (MobileShell): reserve its height so the main scroll
+   views don't hide their last items behind it. Targets the primary content
+   scrollers (flex-1 + overflow-y-auto); centered modal panels don't match. */
+html[data-os="android"] {
+  --harbor-tabbar: calc(4rem + env(safe-area-inset-bottom));
+}
+html[data-os="android"] .flex-1.overflow-y-auto {
+  padding-bottom: var(--harbor-tabbar);
+}
