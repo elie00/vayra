@@ -5,6 +5,8 @@ import { useT } from "@/lib/i18n";
 import { DEFAULT_SPORTS_LEAGUES, LEAGUES } from "@/lib/sports/espn";
 import { useSettings } from "@/lib/settings";
 import { useScrollMemory, useView } from "@/lib/view";
+import { isMobileTauri } from "@/lib/platform";
+import { MobileSports } from "@/mobile/sports";
 import { SportsMarquee } from "./live/live-home/sports/sports-marquee";
 import { SportsCard } from "./live/live-home/sports/sports-card";
 import { useSports } from "./live/live-home/use-sports";
@@ -55,6 +57,18 @@ export function SportsHome({ active }: { active: boolean }) {
     setScrollEl(el);
   }, []);
   useScrollMemory("sports", scrollRef, active);
+
+  if (isMobileTauri())
+    return (
+      <MobileSports
+        games={games}
+        selected={sportsLeague}
+        onLeague={pickLeague}
+        selectedLeagues={userSportsLeagues}
+        onLeaguesChange={saveSportsLeagues}
+        onSelect={openMatchDetail}
+      />
+    );
 
   return (
     <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pt-28 pb-14">
