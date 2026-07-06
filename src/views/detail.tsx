@@ -42,6 +42,7 @@ import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
+import { AddToMalButton } from "@/components/mal/add-to-mal-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
 import { CollectionRow } from "./detail/collection-row";
 import { MediaGallery } from "./detail/media-gallery";
@@ -896,6 +897,12 @@ export function DetailView({
                 )}
                 {actionStage < 2 && isAnime && (
                   <AddToAnilistButton
+                    harborId={animeCanonicalId ?? meta.id}
+                    title={title || meta.name}
+                  />
+                )}
+                {actionStage < 2 && isAnime && (
+                  <AddToMalButton
                     harborId={animeCanonicalId ?? meta.id}
                     title={title || meta.name}
                   />

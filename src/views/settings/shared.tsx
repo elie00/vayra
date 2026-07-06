@@ -10,6 +10,7 @@ export type SectionId =
   | "library"
   | "trakt"
   | "anilist"
+  | "mal"
   | "simkl"
   | "letterboxd"
   | "relay"
