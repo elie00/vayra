@@ -20,7 +20,8 @@ type RawNode = {
 type RawEntry = { node: RawNode };
 type ListResponse = { data: RawEntry[]; paging: { next?: string } | null };
 
-function parseNode(n: RawNode): MalListEntry {
+function parseNode(n: RawNode): MalListEntry | null {
+  if (!n.list_status) return null;
   return {
     status: n.list_status.status as MalListStatus,
     score: n.list_status.score,
@@ -42,7 +43,7 @@ export async function fetchMalList(): Promise<MalListGroup[]> {
   let cursor: string | null = `/users/@me/animelist?fields=list_status,num_episodes,mean,main_picture,alternative_titles&nsfw=true&limit=1000`;
   while (cursor) {
     const data: ListResponse = await malRequest(cursor);
-    for (const entry of data.data) all.push(parseNode(entry.node));
+    for (const entry of data.data) { const parsed = parseNode(entry.node); if (parsed) all.push(parsed); }
     cursor = data.paging?.next ?? null;
   }
 
