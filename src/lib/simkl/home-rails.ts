@@ -10,7 +10,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { SIMKL_CLIENT_ID } from "./config";
 import { getLocalCache } from "./activities";
 import type { Settings } from "@/lib/settings";
-import { groupAnimeByFranchise, type AnimeFranchise } from "./anime-grouping";
+import { groupAnimeByFranchise, enhanceGroupsWithRelations, type AnimeFranchise } from "./anime-grouping";
 import { simklRequest } from "./client";
 
 const PER_RAIL = 24;
@@ -25,6 +25,8 @@ interface SimklCdnItem {
     slug?: string;
     tmdb?: string | number;
     imdb?: string;
+    mal?: string | number;
+    kitsu?: string | number;
   };
   episode?: {
     season?: number;
@@ -198,21 +200,28 @@ export async function hydrateSimklItems(items: SimklItem[], tmdbKey: string): Pr
  * The grouping function works with SimklCacheItem, so we adapt SimklItem to that shape.
  */
 function groupSimklItemsByFranchise(items: SimklItem[]): AnimeFranchise[] {
-  const cacheLikeItems = items.map((it) => ({
-    simklId: it.ids.simkl ?? 0,
-    type: "anime" as const,
-    title: it.title,
-    year: it.year,
-    status: "watching" as const,
-    userRating: null,
-    watchedAt: null,
-  }));
+  const cache = getLocalCache();
+  const cacheLikeItems = items.map((it) => {
+    const simklId = it.ids.simkl;
+    const cached = cache && simklId ? cache.items[String(simklId)] : null;
+    return {
+      simklId: simklId ?? 0,
+      type: (cached?.type ?? (it.type === "movie" ? "movie" : "anime")) as any,
+      title: it.title,
+      year: it.year,
+      status: cached?.status ?? "watching" as const,
+      userRating: cached?.userRating ?? null,
+      watchedAt: cached?.watchedAt ?? null,
+      watchedEpisodes: cached?.watchedEpisodes ?? [],
+      poster: cached?.poster ?? null,
+    };
+  });
   return groupAnimeByFranchise(cacheLikeItems);
 }
 
 /**
- * Hydrate franchise groups — uses the first item in each franchise as representative.
- * Fetches poster from SIMKL /anime/{id} endpoint.
+ * Hydrate franchise groups — uses the representative item (prioritizing active progress)
+ * and resolves its poster with cached poster fallback.
  */
 async function hydrateSimklItemsFranchise(
   franchises: AnimeFranchise[],
@@ -220,24 +229,79 @@ async function hydrateSimklItemsFranchise(
 ): Promise<Meta[]> {
   const metas = await Promise.all(
     franchises.map(async (f) => {
-      const first = f.items[0];
-      if (!first || !first.simklId) return null;
-      try {
-        const detail = await simklRequest<{ title?: string; poster?: string; year?: number }>(
-          `/anime/${first.simklId}`,
-          { method: "GET", authed: false },
-        );
-        if (!detail?.poster) return null;
-        return {
-          id: `simkl:${first.simklId}`,
-          type: "series" as const,
-          name: f.name,
-          poster: `https://simkl.in/posters/${detail.poster}_m.jpg`,
-          releaseInfo: f.yearStart ? String(f.yearStart) : undefined,
-        } as Meta;
-      } catch {
-        return null;
+      // Prioritize active progress representative
+      const representative = (() => {
+        const watching = f.items.filter((it) => it.status === "watching");
+        if (watching.length > 0) {
+          watching.sort((a, b) => {
+            const tA = a.watchedAt ? new Date(a.watchedAt).getTime() : 0;
+            const tB = b.watchedAt ? new Date(b.watchedAt).getTime() : 0;
+            return tB - tA;
+          });
+          return watching[0];
+        }
+        return f.items[0];
+      })();
+
+      if (!representative || !representative.simklId) return null;
+
+      let posterUrl: string | undefined = undefined;
+
+      // 1. Try to use representative's cached poster
+      if (representative.poster) {
+        posterUrl = `https://simkl.in/posters/${representative.poster}_m.jpg`;
       }
+
+      // 2. Fall back to other items in the franchise if they have a cached poster
+      if (!posterUrl) {
+        const fallbackItem = f.items.find((it) => it.poster);
+        if (fallbackItem?.poster) {
+          posterUrl = `https://simkl.in/posters/${fallbackItem.poster}_m.jpg`;
+        }
+      }
+
+      // 3. Fall back to calling the SIMKL details API for the representative
+      if (!posterUrl) {
+        try {
+          const detail = await simklRequest<{ title?: string; poster?: string; year?: number }>(
+            `/anime/${representative.simklId}`,
+            { method: "GET", authed: false },
+          );
+          if (detail?.poster) {
+            posterUrl = `https://simkl.in/posters/${detail.poster}_m.jpg`;
+          }
+        } catch {
+          // Ignore
+        }
+      }
+
+      // 4. If we still don't have a poster, fall back to first item's details
+      if (!posterUrl && representative !== f.items[0] && f.items[0]?.simklId) {
+        try {
+          const detail = await simklRequest<{ title?: string; poster?: string; year?: number }>(
+            `/anime/${f.items[0].simklId}`,
+            { method: "GET", authed: false },
+          );
+          if (detail?.poster) {
+            posterUrl = `https://simkl.in/posters/${detail.poster}_m.jpg`;
+          }
+        } catch {
+          // Ignore
+        }
+      }
+
+      if (!posterUrl) return null;
+
+      // The meta ID matches the representative item to support progress-based navigation target
+      const targetId = `simkl:${representative.simklId}`;
+
+      return {
+        id: targetId,
+        type: "series" as const,
+        name: f.name,
+        poster: posterUrl,
+        releaseInfo: f.yearStart ? String(f.yearStart) : undefined,
+      } as Meta;
     }),
   );
   return metas.filter((m): m is Meta => !!m && !!m.poster);
@@ -278,14 +342,27 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
         }
 
         let matchedSimklId: number | null = null;
-        if (cdnItem.ids?.simkl_id && cache.items[String(cdnItem.ids.simkl_id)]) {
-          matchedSimklId = cdnItem.ids.simkl_id;
-        } else if (cdnItem.ids?.imdb && cache.imdbToSimkl[cdnItem.ids.imdb]) {
-          matchedSimklId = cache.imdbToSimkl[cdnItem.ids.imdb];
-        } else if (cdnItem.ids?.tmdb) {
-          const tmdbKey = `tv:${cdnItem.ids.tmdb}`;
-          if (cache.tmdbToSimkl[tmdbKey]) {
-            matchedSimklId = cache.tmdbToSimkl[tmdbKey];
+        if (cdnItem.ids) {
+          const { simkl_id, imdb, tmdb, mal, kitsu } = cdnItem.ids;
+          if (simkl_id && cache.items[String(simkl_id)]) {
+            matchedSimklId = simkl_id;
+          }
+          if (!matchedSimklId && imdb && cache.imdbToSimkl[imdb]) {
+            matchedSimklId = cache.imdbToSimkl[imdb];
+          }
+          if (!matchedSimklId && tmdb) {
+            const tmdbStr = String(tmdb);
+            if (cache.tmdbToSimkl[`tv:${tmdbStr}`]) {
+              matchedSimklId = cache.tmdbToSimkl[`tv:${tmdbStr}`];
+            } else if (cache.tmdbToSimkl[`movie:${tmdbStr}`]) {
+              matchedSimklId = cache.tmdbToSimkl[`movie:${tmdbStr}`];
+            }
+          }
+          if (!matchedSimklId && mal && cache.malToSimkl[String(mal)]) {
+            matchedSimklId = cache.malToSimkl[String(mal)];
+          }
+          if (!matchedSimklId && kitsu && cache.kitsuToSimkl[String(kitsu)]) {
+            matchedSimklId = cache.kitsuToSimkl[String(kitsu)];
           }
         }
 
@@ -346,17 +423,21 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
   ]);
 
   // Split items by type for individual rails
-  // Anime items have type "show" but possess mal/anidb IDs
-  const isAnimeType = (it: SimklItem) => it.ids.mal != null || it.ids.anidb != null;
+  // Anime items possess mal, anidb, or kitsu IDs
+  const isAnimeType = (it: SimklItem) => it.ids.mal != null || it.ids.anidb != null || it.ids.kitsu != null;
   const watchingShows = watching.filter((it) => it.type === "show" && !isAnimeType(it));
-  const watchingAnimeRaw = watching.filter((it) => it.type === "show" && isAnimeType(it));
-  const planMovies = plan.filter((it) => it.type === "movie");
+  const watchingAnimeRaw = watching.filter((it) => (it.type === "show" || it.type === "movie") && isAnimeType(it));
+  const planMovies = plan.filter((it) => it.type === "movie" && !isAnimeType(it));
   const planShows = plan.filter((it) => it.type === "show" && !isAnimeType(it));
-  const planAnimeRaw = plan.filter((it) => it.type === "show" && isAnimeType(it));
+  const planAnimeRaw = plan.filter((it) => (it.type === "show" || it.type === "movie") && isAnimeType(it));
 
   // Group anime by franchise so seasons appear as a single card
-  const watchingAnime = groupSimklItemsByFranchise(watchingAnimeRaw);
-  const planAnime = groupSimklItemsByFranchise(planAnimeRaw);
+  let watchingAnime = groupSimklItemsByFranchise(watchingAnimeRaw);
+  let planAnime = groupSimklItemsByFranchise(planAnimeRaw);
+
+  // Enhance groups with relations asynchronously (awaited)
+  watchingAnime = await enhanceGroupsWithRelations(watchingAnime).catch(() => watchingAnime);
+  planAnime = await enhanceGroupsWithRelations(planAnime).catch(() => planAnime);
 
   // Hydrate metas for all individual rails
   const [
@@ -462,7 +543,7 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
   }
 
   // Rail 6: Up Next on Simkl (combined, with its own toggle)
-  if (upcomingMetas.length >= 4 && settings.simklUpNextRailEnabled) {
+  if (upcomingMetas.length >= 1 && settings.simklUpNextRailEnabled) {
     rows.push({
       key: "simkl-upcoming",
       type: "series",

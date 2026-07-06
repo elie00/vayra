@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { getLocalCache, syncWatchlistCache, type SimklCacheItem, type SimklCache } from "@/lib/simkl/activities";
-import { groupAnimeByFranchise, formatYearRange } from "@/lib/simkl/anime-grouping";
+import { groupAnimeByFranchise, enhanceGroupsWithRelations, type AnimeFranchise, formatYearRange } from "@/lib/simkl/anime-grouping";
 import type { Meta } from "@/lib/cinemeta";
 import {
   FilterBar,
@@ -63,6 +63,7 @@ function cacheItemToMeta(item: SimklCacheItem, cache: SimklCache): Meta | null {
     type: item.type === "movie" ? "movie" : "series",
     name: item.title || "Unknown Title",
     releaseInfo: item.year ? String(item.year) : undefined,
+    poster: item.poster ? `https://simkl.in/posters/${item.poster}_m.jpg` : undefined,
   };
 }
 
@@ -71,6 +72,41 @@ export function SimklTab() {
   const { settings } = useSettings();
   const [cache, setCache] = useState<SimklCache | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [enhancedFranchises, setEnhancedFranchises] = useState<AnimeFranchise[]>([]);
+
+  useEffect(() => {
+    if (!cache) {
+      setEnhancedFranchises([]);
+      return;
+    }
+
+    const animeItems = Object.values(cache.items).filter((item) => {
+      if (item.type === "anime") return true;
+      if (item.type === "movie") {
+        const simklId = item.simklId;
+        const hasMal = Object.values(cache.malToSimkl).includes(simklId);
+        const hasKitsu = Object.values(cache.kitsuToSimkl).includes(simklId);
+        return hasMal || hasKitsu;
+      }
+      return false;
+    });
+    const syncFranchises = groupAnimeByFranchise(animeItems);
+    setEnhancedFranchises(syncFranchises);
+
+    let cancelled = false;
+    enhanceGroupsWithRelations(syncFranchises)
+      .then((enhanced) => {
+        if (cancelled) return;
+        setEnhancedFranchises(enhanced);
+      })
+      .catch((err) => {
+        console.error("Failed to enhance groups with relations:", err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cache]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,8 +158,7 @@ export function SimklTab() {
 
     if (subTab === "anime") {
       // For anime, count franchises per status (a franchise counts if ANY season has that status)
-      const animeItems = Object.values(cache.items).filter((item) => item.type === "anime");
-      const franchises = groupAnimeByFranchise(animeItems);
+      const franchises = enhancedFranchises;
       for (const franchise of franchises) {
         const statuses = new Set(franchise.items.map((i) => i.status));
         for (const status of statuses) {
@@ -137,7 +172,21 @@ export function SimklTab() {
       return counts;
     }
 
-    const targetType = subTab === "movies" ? "movie" : "show";
+    if (subTab === "movies") {
+      for (const item of Object.values(cache.items)) {
+        if (item.type !== "movie") continue;
+        const hasMal = Object.values(cache.malToSimkl).includes(item.simklId);
+        const hasKitsu = Object.values(cache.kitsuToSimkl).includes(item.simklId);
+        if (hasMal || hasKitsu) continue;
+        const meta = cacheItemToMeta(item, cache);
+        if (!meta) continue;
+
+        counts[item.status] = (counts[item.status] ?? 0) + 1;
+      }
+      return counts;
+    }
+
+    const targetType = "show";
     for (const item of Object.values(cache.items)) {
       if (item.type !== targetType) continue;
       const meta = cacheItemToMeta(item, cache);
@@ -146,7 +195,7 @@ export function SimklTab() {
       counts[item.status] = (counts[item.status] ?? 0) + 1;
     }
     return counts;
-  }, [cache, subTab]);
+  }, [cache, subTab, enhancedFranchises]);
 
   const [type, setType] = useState<TypeKey>("all");
   const [query, setQuery] = useState("");
@@ -156,8 +205,7 @@ export function SimklTab() {
 
     if (subTab === "anime") {
       // Group anime by franchise, then filter by status
-      const animeItems = Object.values(cache.items).filter((item) => item.type === "anime");
-      const franchises = groupAnimeByFranchise(animeItems);
+      const franchises = enhancedFranchises;
 
       return franchises
         .filter((franchise) => {
@@ -165,8 +213,22 @@ export function SimklTab() {
           return franchise.items.some((item) => item.status === statusFilter);
         })
         .map((franchise) => {
-          // Use the first item that has a valid meta as the representative
-          const representativeItem = franchise.items.find((item) => cacheItemToMeta(item, cache));
+          // Prioritize active progress representative (status === "watching")
+          const representativeItem = (() => {
+            const watching = franchise.items.filter(
+              (item) => item.status === "watching" && cacheItemToMeta(item, cache) !== null
+            );
+            if (watching.length > 0) {
+              watching.sort((a, b) => {
+                const tA = a.watchedAt ? new Date(a.watchedAt).getTime() : 0;
+                const tB = b.watchedAt ? new Date(b.watchedAt).getTime() : 0;
+                return tB - tA;
+              });
+              return watching[0];
+            }
+            return franchise.items.find((item) => cacheItemToMeta(item, cache) !== null);
+          })();
+
           if (!representativeItem) return null;
           const meta = cacheItemToMeta(representativeItem, cache);
           if (!meta) return null;
@@ -175,6 +237,15 @@ export function SimklTab() {
           meta.name = franchise.name;
           if (franchise.yearStart != null) {
             meta.releaseInfo = formatYearRange(franchise.yearStart, franchise.yearEnd);
+          }
+
+          // Use the representative item's poster if available.
+          // Fall back to other items in the franchise if needed.
+          if (!meta.poster) {
+            const fallbackItem = franchise.items.find((it) => it.poster && cacheItemToMeta(it, cache) !== null);
+            if (fallbackItem?.poster) {
+              meta.poster = `https://simkl.in/posters/${fallbackItem.poster}_m.jpg`;
+            }
           }
 
           // Use the latest watchedAt from any season in the franchise
@@ -192,7 +263,29 @@ export function SimklTab() {
         .filter((x): x is WatchlistMerged => x !== null);
     }
 
-    const targetType = subTab === "movies" ? "movie" : "show";
+    if (subTab === "movies") {
+      return Object.values(cache.items)
+        .filter((item) => {
+          if (item.type !== "movie") return false;
+          if (item.status !== statusFilter) return false;
+          const hasMal = Object.values(cache.malToSimkl).includes(item.simklId);
+          const hasKitsu = Object.values(cache.kitsuToSimkl).includes(item.simklId);
+          if (hasMal || hasKitsu) return false;
+          return true;
+        })
+        .map((item) => {
+          const meta = cacheItemToMeta(item, cache);
+          if (!meta) return null;
+          return {
+            key: `simkl-${item.simklId}`,
+            meta,
+            date: item.watchedAt ? parseTs(item.watchedAt) : null,
+          };
+        })
+        .filter((x): x is WatchlistMerged => x !== null);
+    }
+
+    const targetType = "show";
     return Object.values(cache.items)
       .filter((item) => {
         if (item.type !== targetType) return false;
@@ -209,7 +302,7 @@ export function SimklTab() {
         };
       })
       .filter((x): x is WatchlistMerged => x !== null);
-  }, [cache, subTab, statusFilter]);
+  }, [cache, subTab, statusFilter, enhancedFranchises]);
 
   const counts = useMemo(() => countByType(filteredItems), [filteredItems]);
   const visible = useMemo(() => applyFilter(filteredItems, type, query), [filteredItems, type, query]);

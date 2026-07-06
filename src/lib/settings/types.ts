@@ -342,6 +342,7 @@ export type Settings = {
   simklUpNextRailEnabled: boolean;
   simklTrendingRailEnabled: boolean;
   simklScrobbleEnabled: boolean;
+  simklAnimeTitleLanguage: "english" | "romaji" | "native";
   weekStartsMonday: boolean;
   customCalendar: {
     trackedPeople: Array<{

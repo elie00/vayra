@@ -13,6 +13,7 @@ export type SimklCacheItem = {
   userRating: number | null;          // 1-10 value or null
   watchedAt: string | null;           // Date when added or watched
   watchedEpisodes?: string[];         // For shows & anime: array of "season:episode" watched
+  poster?: string | null;             // Caches paths like "19/198249"
 };
 
 export type SimklCache = {
@@ -81,6 +82,7 @@ interface RawNode {
   title?: string;
   year?: number | null;
   ids?: RawIds;
+  poster?: string | null;
 }
 
 interface RawEntry {
@@ -206,6 +208,7 @@ function parseAndMergeEntry(cache: SimklCache, entry: RawEntry, type: "movie" | 
     userRating: userRating ?? existing?.userRating ?? null,
     watchedAt: entry.added_to_watchlist_at ?? existing?.watchedAt ?? null,
     watchedEpisodes: watchedEpisodes ?? existing?.watchedEpisodes,
+    poster: (entry.anime?.poster || entry.show?.poster || entry.movie?.poster) ?? existing?.poster ?? null,
   };
 
   cache.items[simklIdStr] = item;
@@ -502,6 +505,7 @@ export function updateCachedStatus(
       userRating: existing?.userRating ?? null,
       watchedAt: existing?.watchedAt ?? new Date().toISOString(),
       watchedEpisodes: existing?.watchedEpisodes,
+      poster: existing?.poster ?? null,
     };
     cache.items[simklIdStr] = item;
     if (externalIds) {

@@ -302,6 +302,7 @@ export const DEFAULT: Settings = {
   simklUpNextRailEnabled: true,
   simklTrendingRailEnabled: true,
   simklScrobbleEnabled: true,
+  simklAnimeTitleLanguage: "english",
   weekStartsMonday: false,
   customCalendar: {
     trackedPeople: [],

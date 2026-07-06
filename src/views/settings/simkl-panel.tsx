@@ -173,6 +173,21 @@ export function SimklPanel() {
               value={settings.simklEnableUserRatings}
               onChange={(val) => update({ simklEnableUserRatings: val })}
             />
+            <div className="flex flex-col gap-1.5 pt-1">
+              <p className="text-[13px] font-medium text-ink">{t("Anime Title Language")}</p>
+              <p className="text-[12px] leading-relaxed text-ink-subtle">
+                {t("Preferred language for anime titles displayed on poster cards.")}
+              </p>
+              <select
+                value={settings.simklAnimeTitleLanguage}
+                onChange={(e) => update({ simklAnimeTitleLanguage: e.target.value as "english" | "romaji" | "native" })}
+                className="h-11 w-full max-w-[340px] rounded-xl border border-edge-soft bg-canvas/40 px-3.5 text-[13.5px] text-ink outline-none transition-colors hover:border-edge focus:border-accent cursor-pointer"
+              >
+                <option value="english" className="bg-elevated text-ink">{t("English")}</option>
+                <option value="romaji" className="bg-elevated text-ink">{t("Romaji")}</option>
+                <option value="native" className="bg-elevated text-ink">{t("Native/Japanese")}</option>
+              </select>
+            </div>
             {!confirmDisconnect ? (
               <button
                 onClick={() => setConfirmDisconnect(true)}
@@ -208,6 +223,7 @@ export function SimklPanel() {
                         simklUpNextRailEnabled: true,
                         simklTrendingRailEnabled: true,
                         showSimklBadge: true,
+                        simklAnimeTitleLanguage: "english",
                         simklGranularFilters: {
                           movies: { plantowatch: true },
                           shows: { watching: true, plantowatch: true },

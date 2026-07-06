@@ -40,8 +40,8 @@ export interface AnimeFranchise {
  * Conservative — only strips clear season suffixes to avoid false positives.
  */
 const SEASON_PATTERNS: RegExp[] = [
-  // Trailing punctuation: ".", "°", "'", ":", "!", "?", "..."
-  /[.\u00b0'`:!?]+$/,
+  // Trailing punctuation: ".", "°", "'", ":", "!", "?", "...", and bracket characters
+  /[.\u00b0'`:!?,_\-\(\)\[\]{}#]+$/,
   // "Season N" or "S N" at the end
   /\s+season\s*\d+$/i,
   /\s+s\d+$/i,
@@ -72,6 +72,17 @@ const SEASON_PATTERNS: RegExp[] = [
   /\s+r\d?$/i,
   // "TV" at the end (e.g., "Gintama TV")
   /\s+tv$/i,
+  // Custom enhanced suffixes (e.g. Gintama Porori Hen / Enchousen)
+  /\s+porori\s+hen$/i,
+  /\s+enchousen$/i,
+  /\s+hen$/i,
+  /\s+season$/i,
+  /\s*\(tv\)$/i,
+  /\s*\(movie\)$/i,
+  /\s*\(ova\)$/i,
+  /\s*\[tv\]$/i,
+  /\s*\[movie\]$/i,
+  /\s*\[ova\]$/i,
 ];
 
 /**
@@ -135,10 +146,10 @@ const relationsCache = new Map<number, Set<number>>();
 const relationsInFlight = new Map<number, Promise<Set<number>>>();
 
 /**
- * Fetch related anime SIMKL IDs from the /anime/{id} endpoint.
+ * Fetch related anime SIMKL IDs from the appropriate endpoint.
  * Results are cached in-memory.
  */
-async function fetchRelations(simklId: number): Promise<Set<number>> {
+async function fetchRelations(simklId: number, type: "movie" | "show" | "anime"): Promise<Set<number>> {
   if (relationsCache.has(simklId)) {
     return relationsCache.get(simklId)!;
   }
@@ -148,8 +159,9 @@ async function fetchRelations(simklId: number): Promise<Set<number>> {
 
   const promise = (async () => {
     try {
+      const endpoint = type === "movie" ? `/movies/${simklId}` : `/anime/${simklId}`;
       const detail = await simklRequest<SimklAnimeDetail>(
-        `/anime/${simklId}`,
+        endpoint,
         { method: "GET", authed: false },
       );
       const related = new Set<number>();
@@ -267,26 +279,28 @@ export async function enhanceGroupsWithRelations(
     }
   }
 
-  // Identify singletons (franchises with only 1 item) — these are candidates for merging
-  const singletons = franchises.filter((f) => f.items.length === 1);
-  const singletonsToCheck = singletons.slice(0, maxApiCalls);
+  // Identify all groups - check all groups to bridge Romaji/English variations
+  const groupsToCheck = franchises.slice(0, maxApiCalls);
 
-  // Fetch relations for each singleton in parallel (limited concurrency)
+  // Fetch relations for each group in parallel (limited concurrency)
   const BATCH_SIZE = 10;
   const mergePairs: Array<[number, number]> = []; // [franchiseIndexA, franchiseIndexB]
 
-  for (let i = 0; i < singletonsToCheck.length; i += BATCH_SIZE) {
-    const batch = singletonsToCheck.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < groupsToCheck.length; i += BATCH_SIZE) {
+    const batch = groupsToCheck.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(
       batch.map(async (franchise) => {
-        const simklId = franchise.simklIds[0];
-        const relations = await fetchRelations(simklId);
+        const representative = franchise.items[0];
+        if (!representative) return { franchise, relations: new Set<number>() };
+        const relations = await fetchRelations(representative.simklId, representative.type);
         return { franchise, relations };
       }),
     );
 
     for (const { franchise, relations } of results) {
-      const currentIdx = simklIdToFranchise.get(franchise.simklIds[0])!;
+      const representative = franchise.items[0];
+      if (!representative) continue;
+      const currentIdx = simklIdToFranchise.get(representative.simklId)!;
       for (const relatedId of relations) {
         const targetIdx = simklIdToFranchise.get(relatedId);
         if (targetIdx != null && targetIdx !== currentIdx) {
