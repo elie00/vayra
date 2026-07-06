@@ -2,6 +2,7 @@ import { Loader2, Star, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { animeDetails } from "@/lib/providers/anime-detail";
+import { imdbapiDetails } from "@/lib/providers/imdbapi/imdbapi-details";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { activeLayout } from "@/lib/theme";
@@ -31,7 +32,7 @@ export function CastModal({
 
   useEffect(() => {
     if (!open) return;
-    if (!anime && !tmdbKey) {
+    if (!anime && !tmdbKey && !(settings.imdbApiFallback && meta.id.startsWith("tt"))) {
       setDetail(null);
       return;
     }
@@ -39,7 +40,9 @@ export function CastModal({
     setLoading(true);
     const fetch: Promise<TmdbDetail | null> = anime
       ? animeDetails(settings, meta).then((r) => r?.detail ?? null)
-      : tmdbDetails(tmdbKey as string, meta);
+      : tmdbKey
+        ? tmdbDetails(tmdbKey, meta)
+        : imdbapiDetails(meta.id);
     fetch
       .then((d) => {
         if (!cancelled) setDetail(d);
@@ -273,7 +276,7 @@ function CastStrip({ cast }: { cast: CastEntry[] }) {
         <div key={c.id} className="flex flex-col items-center gap-1.5 text-center">
           {c.profilePath ? (
             <img
-              src={`${IMG}/w185${c.profilePath}`}
+              src={c.profilePath.startsWith("http") ? c.profilePath : `${IMG}/w185${c.profilePath}`}
               alt=""
               loading="lazy"
               className="h-20 w-20 rounded-full object-cover ring-1 ring-edge-soft"

@@ -306,4 +306,5 @@ export const DEFAULT: Settings = {
   adSkipEnabled: false,
   adReportAlwaysShow: false,
   adReportFirstSeen: false,
+  imdbApiFallback: true,
 };
