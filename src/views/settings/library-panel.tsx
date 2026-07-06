@@ -33,7 +33,8 @@ import { Bookmark, HelpCircle, Popcorn } from "lucide-react";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
 import { RegionField } from "./region-cascade";
-import { ExtLink, KeyField, Section, ToggleRow } from "./shared";
+import { Dropdown, type DropdownOption } from "@/components/dropdown";
+import { ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
 import { TmdbGuideModal } from "./tmdb-tutorial-modal";
 
 export type LibraryKey = "tmdb" | "omdb" | "rpdb" | "fanart" | "tvdb";
@@ -763,7 +764,94 @@ export function LibraryPanel({
         />
       </Section>
 
+      <Section
+        title={t("Local library")}
+        subtitle={t("Options for the Library → Local tab: folders you scan from your own drive. When you export metadata, Harbor writes a Kodi-style .nfo and downloads artwork next to each file at the sizes below.")}
+      >
+        <ToggleRow
+          label={t("Show an “on disk” badge on cards")}
+          sub={t("Marks movies and shows across Home, the catalogs, and detail pages when a matching file already exists in your local library.")}
+          value={settings.showLocalLibraryBadge}
+          onChange={(v) => update({ showLocalLibraryBadge: v })}
+        />
+        <div className="flex flex-col gap-2 rounded-xl bg-canvas/40 px-4 py-3.5">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[13.5px] font-medium text-ink">{t("When a title is in your local library")}</span>
+            <span className="text-[12px] leading-snug text-ink-muted">
+              {t("What Play does when a movie or episode also exists on your disk. Autoplay always prefers the local copy unless set to Stream.")}
+            </span>
+          </div>
+          <Segmented
+            value={settings.localPlaybackMode}
+            onChange={(v) => update({ localPlaybackMode: v })}
+            options={[
+              { value: "ask", label: t("Ask") },
+              { value: "local", label: t("Play local") },
+              { value: "stream", label: t("Stream") },
+            ]}
+          />
+        </div>
+        <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <ExportSizeField
+            label={t("Poster size")}
+            value={settings.nfoPosterSize}
+            options={POSTER_SIZES}
+            onChange={(v) => update({ nfoPosterSize: v })}
+          />
+          <ExportSizeField
+            label={t("Backdrop size")}
+            value={settings.nfoBackdropSize}
+            options={BACKDROP_SIZES}
+            onChange={(v) => update({ nfoBackdropSize: v })}
+          />
+          <ExportSizeField
+            label={t("Logo size")}
+            value={settings.nfoLogoSize}
+            options={LOGO_SIZES}
+            onChange={(v) => update({ nfoLogoSize: v })}
+          />
+        </div>
+      </Section>
+
     </>
+  );
+}
+
+const POSTER_SIZES: DropdownOption[] = [
+  { value: "w342", label: "342px (small)" },
+  { value: "w500", label: "500px (recommended)" },
+  { value: "w780", label: "780px (large)" },
+  { value: "original", label: "Original" },
+];
+const BACKDROP_SIZES: DropdownOption[] = [
+  { value: "w780", label: "780px (small)" },
+  { value: "w1280", label: "1280px (recommended)" },
+  { value: "original", label: "Original" },
+];
+const LOGO_SIZES: DropdownOption[] = [
+  { value: "w300", label: "300px (small)" },
+  { value: "w500", label: "500px (recommended)" },
+  { value: "original", label: "Original" },
+];
+
+function ExportSizeField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: DropdownOption[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+        {label}
+      </span>
+      <Dropdown value={value} options={options} onChange={onChange} />
+    </div>
   );
 }
 

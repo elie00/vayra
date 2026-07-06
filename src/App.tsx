@@ -26,6 +26,8 @@ import { DevErrorTrigger } from "@/components/dev-error-trigger";
 import { ErrorView } from "@/components/error-view";
 import { HarborErrorBoundary } from "@/components/error-boundary";
 import { ContextMenu } from "@/components/context-menu";
+import { WatchLocalModal } from "@/components/player/watch-local-modal";
+import { LocalEpisodesModal } from "@/components/player/local-episodes-modal";
 import { CurfewGuard } from "@/components/curfew-guard";
 import { HoverPreview } from "@/components/hover-preview";
 import { CustomHoverCssMount } from "@/components/custom-hover-css-mount";
@@ -264,6 +266,8 @@ export function App() {
                       <TogetherLocationPublisher />
                       <DiscordPresence />
                       <ContextMenu />
+                      <WatchLocalModal />
+                      <LocalEpisodesModal />
                       <HoverPreview />
                       <CustomHoverCssMount />
                       <TopRankModal />

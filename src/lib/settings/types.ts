@@ -201,6 +201,14 @@ export type Settings = {
   forcedSubsWhenNativeAudio: boolean;
   tmdbLanguage: string;
   tmdbImageLangs: string[];
+  // TMDB image size buckets used when exporting artwork next to local files.
+  nfoPosterSize: string;
+  nfoBackdropSize: string;
+  nfoLogoSize: string;
+  // Show an "on disk" badge on catalog cards for titles already in the local library.
+  showLocalLibraryBadge: boolean;
+  // When a title/episode is in the local library: prompt, always play local, or ignore local.
+  localPlaybackMode: "ask" | "local" | "stream";
   posterBaseUrl: string;
   hidePosterTitles: boolean;
   hoverPreviewEnabled: boolean;

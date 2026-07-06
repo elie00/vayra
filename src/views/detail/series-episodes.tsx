@@ -373,6 +373,8 @@ export function SeriesEpisodes({
             <EpisodeStrip
               layout={settings.episodeLayout === "grid" ? "grid" : "strip"}
               meta={meta}
+              seriesImdbId={imdbId}
+              cinemetaVideos={cinemetaVideos}
               episodes={enrichedEpisodes}
               progressFor={(ep) =>
                 getEpisodeProgress(
@@ -407,6 +409,8 @@ export function SeriesEpisodes({
                       (v) => v.season === ep.seasonNumber && v.episode === ep.episodeNumber,
                     )?.thumbnail
                   }
+                  cinemetaVideos={cinemetaVideos}
+                  seriesImdbId={imdbId}
                   progress={progressByEp.get(ep.episodeNumber)!}
                   spoiler={spoilerFor(ep.episodeNumber)}
                   onContextMenu={openWatchedMenu}

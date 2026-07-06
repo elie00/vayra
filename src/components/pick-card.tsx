@@ -28,6 +28,8 @@ import { useView } from "@/lib/view";
 import { observe } from "@/lib/visibility";
 import { useInWatchlist } from "@/lib/watchlist";
 import { useMetaWatched } from "@/lib/watched-flag";
+import { useInLocalLibrary } from "@/lib/local-library";
+import { LocalDot } from "@/components/local-badge";
 import { ClapperMini } from "./icons/clapper-mini";
 import { ImdbIcon } from "./icons/imdb-icon";
 import { MalLogo } from "./icons/mal-logo";
@@ -148,6 +150,7 @@ export const PickCard = memo(function PickCard({
   const altIds = useMemo(() => [imdbId], [imdbId]);
   const inWatchlist = useInWatchlist(meta.id, altIds);
   const watched = useMetaWatched(meta.id, meta.type);
+  const inLocalLibrary = useInLocalLibrary(meta.id, altIds);
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
@@ -353,6 +356,12 @@ export const PickCard = memo(function PickCard({
           >
             <Check size={12} strokeWidth={3} />
           </span>
+        )}
+        {settings.showLocalLibraryBadge && inLocalLibrary && (
+          <LocalDot
+            title={t("In your local library")}
+            className={`bottom-1.5 ${settings.watchlistBadge === "bottomStart" ? "start-9" : "start-1.5"}`}
+          />
         )}
         {kids ? (
           cardRating && <KidsStarBadge value={cardRating} placement={settings.badgePlacement} />

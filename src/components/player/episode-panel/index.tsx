@@ -11,6 +11,8 @@ import { preflightCheck } from "@/lib/streams/preflight";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
 import { useView, type PlayEpisode } from "@/lib/view";
+import { playLocalAware } from "@/lib/local-library/playback";
+import { localPlayerSrc } from "@/lib/local-library/player-src";
 import { useT } from "@/lib/i18n";
 import { EpisodeRow } from "./episode-row";
 import { SeasonPicker } from "./season-picker";
@@ -41,7 +43,7 @@ export function EpisodePanel({
   onRestart?: () => void;
 }) {
   const t = useT();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { openPicker, replacePlayerSrc } = useView();
   const debrids = useDebridClients();
   const { seasons, season, setSeason, episodes, loading } = useSeasonBrowser(
@@ -67,12 +69,26 @@ export function EpisodePanel({
   const manualMode = !settings.instantPlay;
   const handlePlay = (ep: PlayEpisode) => {
     if (roomGuest) return;
-    if (manualMode) {
-      setPickingFor(ep);
-    } else {
-      onClose();
-      openPicker(meta, ep, { autoPlay: true });
-    }
+    const streamFlow = () => {
+      if (manualMode) {
+        setPickingFor(ep);
+      } else {
+        onClose();
+        openPicker(meta, ep, { autoPlay: true });
+      }
+    };
+    playLocalAware({
+      meta,
+      episode: ep,
+      mode: settings.localPlaybackMode,
+      source: "manual",
+      playLocal: (e) => {
+        onClose();
+        replacePlayerSrc(localPlayerSrc(e));
+      },
+      playStream: streamFlow,
+      setMode: (m) => update({ localPlaybackMode: m }),
+    });
   };
   const handlePickStream = async (stream: ScoredStream) => {
     if (!pickingFor || roomGuest) return;

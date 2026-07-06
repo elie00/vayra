@@ -1,11 +1,27 @@
-import { HardDrive, ListVideo, Play, RefreshCw, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { Poster, usePosterChain } from "@/components/poster";
+import {
+  AlertTriangle,
+  CheckSquare,
+  Download,
+  Info,
+  ListVideo,
+  RefreshCw,
+  Square,
+  Trash2,
+  Wand2,
+} from "lucide-react";
+import { useState } from "react";
+import { Poster } from "@/components/poster";
 import { removeLocalEntry, type LocalEntry } from "@/lib/local-library";
-import { useSettings } from "@/lib/settings";
-import { useView, type PlayerSrc } from "@/lib/view";
+import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { LocalBadge } from "@/components/local-badge";
+import { CardIconButton, type LocalCardProps } from "./card-actions";
+import { episodeLabel, localPlayerSrc } from "@/lib/local-library/player-src";
+import { openLocalEpisodes } from "@/lib/player/local-episodes-modal";
+import { useLocalPoster } from "./use-local-poster";
+
+// Re-exported here so existing imports (`./local-tab/show-group`) keep working.
+export { episodeLabel, localPlayerSrc };
 
 export type LocalGroup =
   | { kind: "movie"; entry: LocalEntry }
@@ -36,59 +52,52 @@ export function groupLocal(items: LocalEntry[]): LocalGroup[] {
   return out;
 }
 
-export function episodeLabel(e: LocalEntry): string | null {
-  if (e.type === "show" && e.season != null && e.episode != null) {
-    return `S${String(e.season).padStart(2, "0")}E${String(e.episode).padStart(2, "0")}`;
-  }
-  return null;
-}
-
-export function localPlayerSrc(entry: LocalEntry): PlayerSrc {
-  const epLabel = episodeLabel(entry);
-  return {
-    meta: {
-      id: entry.imdbId ?? `local:${entry.id}`,
-      type: entry.type === "show" ? "series" : "movie",
-      name: entry.title,
-      poster: entry.poster ?? undefined,
-      releaseInfo: entry.year ? String(entry.year) : undefined,
-    },
-    imdbId: entry.imdbId ?? undefined,
-    episode: epLabel
-      ? { season: entry.season as number, episode: entry.episode as number, imdbId: entry.imdbId ?? undefined }
-      : undefined,
-    url: entry.path,
-    title: entry.title,
-    subtitle: epLabel ?? (entry.year ? String(entry.year) : entry.filename),
-    notWebReady: true,
-  };
-}
-
-export function ShowGroupCard({ head, episodes }: { head: LocalEntry; episodes: LocalEntry[] }) {
+export function ShowGroupCard({
+  head,
+  episodes,
+  selectMode,
+  selected,
+  onToggleSelect,
+  onFixMatch,
+  onExport,
+  onOpenDetail,
+}: { head: LocalEntry; episodes: LocalEntry[] } & LocalCardProps) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const { openPlayer } = useView();
   const [confirm, setConfirm] = useState(false);
-  const { settings } = useSettings();
-  const poster = usePosterChain(
-    settings.rpdbKey,
-    head.imdbId ?? `local:${head.id}`,
-    head.poster ?? undefined,
-    "series",
-  );
+  const poster = useLocalPoster(head);
+  const episodeIds = episodes.map((e) => e.id);
+  const isSelected = episodeIds.every((id) => selected.has(id));
+  const needsReview = episodes.some((e) => e.needsReview);
   const countLabel = episodes.length === 1 ? t("1 episode") : t("{n} episodes", { n: episodes.length });
+  const onActivate = () => {
+    if (selectMode) {
+      onToggleSelect(episodeIds);
+      return;
+    }
+    openLocalEpisodes({
+      title: head.title,
+      tmdbId: head.tmdbId ?? null,
+      imdbId: head.imdbId ?? null,
+      poster: poster.src,
+      onPlayLocal: (e) => openPlayer(localPlayerSrc(e)),
+    });
+  };
   return (
     <div className="group relative flex flex-col gap-2 text-start" onMouseLeave={() => setConfirm(false)}>
       <div
         role="button"
         tabIndex={0}
-        onClick={() => setOpen(true)}
+        onClick={onActivate}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            setOpen(true);
+            onActivate();
           }
         }}
-        className="relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] outline-none ring-offset-2 ring-offset-canvas focus-visible:ring-2 focus-visible:ring-ink"
+        className={`relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] outline-none ring-offset-2 ring-offset-canvas focus-visible:ring-2 focus-visible:ring-ink ${
+          isSelected ? "ring-2 ring-accent" : ""
+        }`}
       >
         <Poster
           src={poster.src}
@@ -97,117 +106,77 @@ export function ShowGroupCard({ head, episodes }: { head: LocalEntry; episodes: 
           lazy
           className="h-full w-full transition-transform duration-200 group-hover:scale-[1.02]"
         />
-        <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-md bg-canvas/85 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink-muted backdrop-blur-sm">
-          <HardDrive size={9} strokeWidth={2.4} />
-          {t("local")}
-        </span>
+        <LocalBadge label={t("local")} className="absolute start-2 top-2" />
         <span className="absolute bottom-2 end-2 inline-flex items-center gap-1 rounded-md bg-canvas/85 px-2 py-0.5 text-[10.5px] font-semibold text-ink backdrop-blur-sm">
           <ListVideo size={11} strokeWidth={2.2} />
           {episodes.length}
         </span>
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-canvas/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas shadow-[0_4px_14px_rgba(0,0,0,0.45)]">
-            <ListVideo size={18} strokeWidth={2.2} />
+        {needsReview && !selectMode && (
+          <span className="absolute bottom-2 start-2 inline-flex items-center gap-1 rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-black">
+            <AlertTriangle size={9} strokeWidth={2.6} />
+            {t("review")}
           </span>
-        </span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (confirm) {
-              episodes.forEach((ep) => removeLocalEntry(ep.id));
-              setConfirm(false);
-            } else {
-              setConfirm(true);
-            }
-          }}
-          className={`absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
-            confirm
-              ? "bg-danger"
-              : "bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"
-          }`}
-          aria-label={confirm ? t("Confirm remove") : t("Remove from library")}
-        >
-          {confirm ? <RefreshCw size={11} strokeWidth={2.4} /> : <Trash2 size={11} strokeWidth={2.2} />}
-        </button>
+        )}
+        {selectMode && (
+          <span
+            className={`absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-md ${
+              isSelected ? "bg-accent text-white" : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
+            }`}
+          >
+            {isSelected ? <CheckSquare size={14} strokeWidth={2.4} /> : <Square size={14} strokeWidth={2.2} />}
+          </span>
+        )}
+        {!selectMode && (
+          <>
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-canvas/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas shadow-[0_4px_14px_rgba(0,0,0,0.45)]">
+                <ListVideo size={18} strokeWidth={2.2} />
+              </span>
+            </span>
+            <div className="absolute end-2 top-2 flex flex-col gap-1.5">
+              {(head.tmdbId != null || head.imdbId) && (
+                <CardIconButton title={t("Open details")} onClick={() => onOpenDetail(head)}>
+                  <Info size={11} strokeWidth={2.2} />
+                </CardIconButton>
+              )}
+              <CardIconButton title={t("Fix match")} onClick={() => onFixMatch(episodes)}>
+                <Wand2 size={11} strokeWidth={2.2} />
+              </CardIconButton>
+              {head.tmdbId != null && (
+                <CardIconButton title={t("Export .nfo and artwork")} onClick={() => onExport(episodes)}>
+                  <Download size={11} strokeWidth={2.2} />
+                </CardIconButton>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm) {
+                    episodes.forEach((ep) => removeLocalEntry(ep.id));
+                    setConfirm(false);
+                  } else {
+                    setConfirm(true);
+                  }
+                }}
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
+                  confirm
+                    ? "bg-danger"
+                    : "bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"
+                }`}
+                aria-label={confirm ? t("Confirm remove") : t("Remove from library")}
+              >
+                {confirm ? <RefreshCw size={11} strokeWidth={2.4} /> : <Trash2 size={11} strokeWidth={2.2} />}
+              </button>
+            </div>
+          </>
+        )}
       </div>
-      <button type="button" onClick={() => setOpen(true)} className="text-start">
+      <button type="button" onClick={onActivate} className="text-start">
         <p className="truncate text-[13px] font-medium text-ink transition-colors hover:text-accent" title={head.title}>
           {head.title}
         </p>
         <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">{countLabel}</p>
       </button>
-      {open && <EpisodeListModal head={head} episodes={episodes} onClose={() => setOpen(false)} />}
     </div>
-  );
-}
-
-function EpisodeListModal({
-  head,
-  episodes,
-  onClose,
-}: {
-  head: LocalEntry;
-  episodes: LocalEntry[];
-  onClose: () => void;
-}) {
-  const t = useT();
-  const { openPlayer } = useView();
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-  return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 p-4"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="animate-modal-in flex max-h-[82vh] w-[min(94vw,540px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-edge-soft px-5 pb-3.5 pt-4">
-          <div className="flex min-w-0 flex-col">
-            <h2 className="truncate font-display text-[18px] font-medium text-ink">{head.title}</h2>
-            <span className="text-[12px] text-ink-subtle">
-              {episodes.length === 1 ? t("1 episode") : t("{n} episodes", { n: episodes.length })}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("Close")}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
-          >
-            <X size={17} />
-          </button>
-        </div>
-        <div className="flex flex-col gap-1 overflow-y-auto p-2.5">
-          {episodes.map((ep) => (
-            <button
-              key={ep.id}
-              type="button"
-              onClick={() => {
-                openPlayer(localPlayerSrc(ep));
-                onClose();
-              }}
-              className="group/ep flex items-center gap-3 rounded-xl px-3 py-2.5 text-start transition-colors hover:bg-raised"
-            >
-              <span className="flex h-8 w-14 shrink-0 items-center justify-center rounded-md bg-canvas/60 font-mono text-[12px] font-bold tabular-nums text-ink-muted ring-1 ring-edge-soft">
-                {episodeLabel(ep) ?? "-"}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-[13px] text-ink" title={ep.filename}>
-                {ep.filename}
-              </span>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors group-hover/ep:bg-ink group-hover/ep:text-canvas">
-                <Play size={13} strokeWidth={2.4} fill="currentColor" className="ml-0.5" />
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 }
