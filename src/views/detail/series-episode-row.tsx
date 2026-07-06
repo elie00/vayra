@@ -68,7 +68,7 @@ export function EpisodeRow({
       className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
-        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay })}
+        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay || settings.seasonSourceLock })}
         className="flex min-w-0 flex-1 gap-6 text-start"
       >
         <div className="relative w-[200px] shrink-0 overflow-hidden rounded-lg">

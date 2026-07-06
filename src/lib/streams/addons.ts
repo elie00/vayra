@@ -2,6 +2,8 @@ import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Addon } from "@/lib/addons";
 import { dlog, dwarn } from "@/lib/debug";
 import { isAddonRanked, isStatusOnlyAddon } from "./addon-detect";
+import { hasUncachedMarker } from "./cached";
+import { infoHashFromSources, infoHashFromUrl } from "@/lib/torrent/magnet";
 import type { Stream } from "./types";
 
 const TIMEOUT_MS_FAST = 8000;
@@ -54,7 +56,7 @@ export async function fetchAddonStreams(
       namedTasks.push({
         name,
         p: fetchOne(addon, req.type, id, signal).then((ss) =>
-          ss.map((s) => ({ ...s, addonPriority: priority })),
+          ss.map((s, idx) => ({ ...s, addonPriority: priority, addonReturnIdx: idx })),
         ),
       });
     }
@@ -175,14 +177,25 @@ async function fetchOne(
     const json = (await res.json()) as { streams?: RawStream[] };
     const list = json.streams ?? [];
     const ranked = isAddonRanked(addon);
-    return list.map((s) => ({
-      ...s,
-      infoHash: s.infoHash?.toLowerCase(),
-      addonId: addon.manifest.id,
-      addonName: addon.manifest.name,
-      addonUrl: addon.transportUrl,
-      addonRanked: ranked,
-    }));
+    return list.map((s) => {
+      const mapped = {
+        ...s,
+        infoHash: s.infoHash?.toLowerCase(),
+        addonId: addon.manifest.id,
+        addonName: addon.manifest.name,
+        addonUrl: addon.transportUrl,
+        addonRanked: ranked,
+      };
+      if (!mapped.infoHash && hasUncachedMarker(s)) {
+        const fromUrl = s.url ? infoHashFromUrl(s.url) : null;
+        const hash = fromUrl?.infoHash ?? infoHashFromSources(s.sources);
+        if (hash) {
+          mapped.infoHash = hash;
+          if (mapped.fileIdx == null && fromUrl?.fileIdx != null) mapped.fileIdx = fromUrl.fileIdx;
+        }
+      }
+      return mapped;
+    });
   } catch (e) {
     if (timedOut) {
       dwarn(`[addons] ${addon.manifest.name} timed out after ${limit}ms — dropped`);

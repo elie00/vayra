@@ -5,6 +5,7 @@ import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
 import { hasInstantMarker, streamMatchesLangs } from "./picker-utils";
 
 const AUTO_SETTLE_MS = 1500;
+const AUTO_SETTLE_PACK_MS = 4000;
 const HIGH_CONFIDENCE_GRACE_MS = 350;
 const HOST_SOURCE_WAIT_MS = 12_000;
 
@@ -25,6 +26,8 @@ export function useAutoFire(args: {
   isTorrentioStream: (s: ScoredStream) => boolean;
   expectHostSource?: boolean;
   hostSource?: SourceDescriptor | null;
+  season?: number | null;
+  episode?: number | null;
   autoFiredRef: React.MutableRefObject<boolean>;
   setAutoSettleReady: (v: boolean) => void;
   setAutoCancelled: (v: boolean) => void;
@@ -33,9 +36,12 @@ export function useAutoFire(args: {
   const {
     autoActive, rememberedHandledFirst, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady,
     pipelineDone, firstResultAt, isCached, p2pAutoConsent, preferredLangs, hasStrongAddon, isTorrentioStream,
-    expectHostSource, hostSource,
+    expectHostSource, hostSource, season, episode,
     autoFiredRef, setAutoSettleReady, setAutoCancelled, onPlay,
   } = args;
+  const exactEpisode = (s: ScoredStream) =>
+    episode == null ||
+    (s.episode === episode && (season == null || s.season == null || s.season === season));
   const highConfidenceSinceRef = useRef<number | null>(null);
   const [highConfidenceTick, setHighConfidenceTick] = useState(0);
 
@@ -52,7 +58,7 @@ export function useAutoFire(args: {
     if (!autoActive || autoFiredRef.current || pipelineDone || autoSettleReady) return;
     const top = autoCandidates[0];
     const langOk = preferredLangs.length === 0 || (top != null && streamMatchesLangs(top, preferredLangs));
-    if (!top || !hasInstantMarker(top) || !isCached(top) || !langOk || (hasStrongAddon && isTorrentioStream(top))) {
+    if (!top || !hasInstantMarker(top) || !isCached(top) || !langOk || !exactEpisode(top) || (hasStrongAddon && isTorrentioStream(top))) {
       highConfidenceSinceRef.current = null;
       return;
     }
@@ -63,11 +69,13 @@ export function useAutoFire(args: {
   useEffect(() => {
     if (!autoActive || autoSettleReady || pipelineDone) return;
     if (firstResultAt == null) return;
+    const hasCachedExact = autoCandidates.some((c) => isCached(c) && exactEpisode(c));
+    const settleMs = episode != null && !hasCachedExact ? AUTO_SETTLE_PACK_MS : AUTO_SETTLE_MS;
     const elapsed = performance.now() - firstResultAt;
-    const remaining = Math.max(0, AUTO_SETTLE_MS - elapsed);
+    const remaining = Math.max(0, settleMs - elapsed);
     const t = window.setTimeout(() => setAutoSettleReady(true), remaining);
     return () => window.clearTimeout(t);
-  }, [autoActive, autoSettleReady, pipelineDone, firstResultAt, setAutoSettleReady]);
+  }, [autoActive, autoSettleReady, pipelineDone, firstResultAt, setAutoSettleReady, autoCandidates, isCached, episode]);
 
   useEffect(() => {
     if (!autoActive || autoFiredRef.current) return;
@@ -77,7 +85,7 @@ export function useAutoFire(args: {
     const isFirstAttempt = (attempt ?? 0) === 0 && autoAttemptIdx === 0;
     const langOk = preferredLangs.length === 0 || (top != null && streamMatchesLangs(top, preferredLangs));
     const highConfidenceTop =
-      top != null && hasInstantMarker(top) && isCached(top) && langOk &&
+      top != null && hasInstantMarker(top) && isCached(top) && langOk && exactEpisode(top) &&
       (!hasStrongAddon || !isTorrentioStream(top));
     if (isFirstAttempt && !pipelineDone) {
       if (highConfidenceTop) {

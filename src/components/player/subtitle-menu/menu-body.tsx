@@ -5,6 +5,7 @@ import { markImportedSub } from "@/lib/player/imported-subs";
 import { useT } from "@/lib/i18n";
 import { openSyncBar } from "@/lib/player/sub-sync";
 import { Tooltip } from "../transport/tooltip";
+import { AutoSyncToggle } from "./auto-sync-toggle";
 import { SearchSection } from "./search-section";
 import { VariantRow } from "./variant-row";
 import type { SubtitleMenuProps } from "./types";
@@ -107,8 +108,9 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
         </div>
 
         <div className="flex items-center gap-1">
+          <AutoSyncToggle />
           {/* ── Sync button → opens the floating player-level bar ── */}
-          <Tooltip label={tr("Subtitle sync")} align="end">
+          <Tooltip label={tr("Subtitle sync")} side="bottom" align="end">
             <button
               type="button"
               onClick={() => {

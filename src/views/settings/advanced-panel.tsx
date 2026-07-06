@@ -32,7 +32,6 @@ import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
 import { useT } from "@/lib/i18n";
-import { isFlatpak } from "@/lib/runtime";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 const DOWNLOAD_URL = "https://harbor.site/download";
@@ -40,15 +39,11 @@ const SOURCE_URL = "https://github.com/harborstremio/harbor";
 
 export function AdvancedPanel() {
   const t = useT();
-  const [flatpak, setFlatpak] = useState(true);
-  useEffect(() => {
-    void isFlatpak().then(setFlatpak);
-  }, []);
   return (
     <>
       {!isTauri && <WebBuildBanner />}
 
-      {isTauri && !flatpak && (
+      {isTauri && (
         <Section
           title={t("Updates")}
           subtitle={t("Harbor checks harbor.site for new versions and installs them in place. Nothing installs until you choose to, and a dismissed update never nags you again.")}
@@ -92,7 +87,7 @@ export function AdvancedPanel() {
         </Section>
       )}
 
-      {isTauri && !flatpak && (
+      {isTauri && (
         <Section
           title={t("Stremio install links")}
           subtitle={t("Harbor catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.")}

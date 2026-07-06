@@ -36,6 +36,7 @@ export function ShellLayer({
   openCastMenu,
   onToggleDraw,
   onToggleHideOthers,
+  onClearDraw,
   onScreenshot,
   onPickAnother,
   canPickAnother,
@@ -90,6 +91,7 @@ export function ShellLayer({
   openCastMenu: (anchor: { right: number; bottom: number } | null) => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
@@ -191,6 +193,7 @@ export function ShellLayer({
       }}
       onToggleDraw={onToggleDraw}
       onToggleHideOthers={onToggleHideOthers}
+      onClearDraw={onClearDraw}
       onScreenshot={onScreenshot}
       onPickAnother={onPickAnother}
       canPickAnother={canPickAnother}

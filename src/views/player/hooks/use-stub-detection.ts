@@ -1,21 +1,24 @@
 import { useEffect, useRef } from "react";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
+import { SHORT_PLAYBACK_SEC } from "@/lib/dead-streams";
 
 export function useStubDetection(params: {
   src: PlayerSrc;
   snap: PlayerSnapshot;
   onStub: () => void;
+  instantPlay: boolean;
 }) {
-  const { src, snap, onStub } = params;
+  const { src, snap, onStub, instantPlay } = params;
   const stubCheckedRef = useRef<string | null>(null);
   useEffect(() => {
+    if (!instantPlay) return;
     if (stubCheckedRef.current === src.url) return;
     if (src.meta.id?.startsWith("iptv:")) return;
     const metaType = String(src.meta.type ?? "").toLowerCase();
     if (metaType && !["movie", "series", "anime"].includes(metaType)) return;
     if (/\.m3u8(\?|#|$)/i.test(src.url)) return;
-    if (snap.durationSec <= 0 || snap.durationSec >= 60) return;
+    if (snap.durationSec <= 0 || snap.durationSec >= SHORT_PLAYBACK_SEC) return;
     if (snap.status !== "playing") return;
     stubCheckedRef.current = src.url;
     const runtimeMin = src.meta.runtime ? parseInt(src.meta.runtime, 10) : null;
@@ -44,5 +47,5 @@ export function useStubDetection(params: {
         onStub();
       },
     );
-  }, [snap.durationSec, snap.status, src.url, src.meta, src.streamRef, src.title]);
+  }, [instantPlay, snap.durationSec, snap.status, src.url, src.meta, src.streamRef, src.title]);
 }

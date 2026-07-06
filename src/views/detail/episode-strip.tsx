@@ -64,11 +64,11 @@ export function EpisodeStrip({
                 still: stills[0],
                 overview: ep.overview || undefined,
               },
-              { autoPlay: settings.instantPlay },
+              { autoPlay: settings.instantPlay || settings.seasonSourceLock },
             ),
         };
       }),
-    [episodes, thumbnailFor, meta, openPicker, settings.instantPlay, settings.hdEpisodeImages, t],
+    [episodes, thumbnailFor, meta, openPicker, settings.instantPlay, settings.seasonSourceLock, settings.hdEpisodeImages, t],
   );
   const epByNumber = useMemo(() => {
     const m = new Map<number, Episode>();
@@ -149,7 +149,7 @@ function EpisodeStripCard({
         still,
         overview: ep.overview || undefined,
       },
-      { autoPlay: settings.instantPlay },
+      { autoPlay: settings.instantPlay || settings.seasonSourceLock },
     );
   };
 

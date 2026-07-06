@@ -69,7 +69,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
   const cardRef = useRef<HTMLButtonElement>(null);
 
   const candidates = useMemo(() => {
-    const thumb = item.type === "movie" ? snapshot : undefined;
+    const thumb = upNext ? undefined : snapshot;
     const seen = new Set<string>();
     const out: string[] = [];
     for (const u of [thumb, metaBg, item.background, item.poster]) {
@@ -80,7 +80,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       out.push(d);
     }
     return out;
-  }, [snapshot, metaBg, item.background, item.poster, item.type]);
+  }, [snapshot, metaBg, item.background, item.poster, upNext]);
 
   const src = candidates[imgIdx];
 
@@ -110,7 +110,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
               logo: m.logo,
             });
             if (m.logo) setLogo(m.logo);
-            const bg = m.background || m.poster;
+            const bg = m.background || (item.background ? undefined : m.poster);
             if (bg) setMetaBg(bg);
             if (kitsuThreeSeg) {
               const vid =
@@ -133,7 +133,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
               poster: m.poster ?? item.poster,
               background: m.background ?? item.background,
             });
-            const bg = m.background || m.poster;
+            const bg = m.background || (item.background ? undefined : m.poster);
             if (bg) setMetaBg(bg);
           })
           .catch(() => {});
@@ -145,7 +145,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
           if (cancelled || !full) return;
           setHydratedMeta(full);
           if (full.logo) setLogo(full.logo);
-          const bg = full.background || full.poster;
+          const bg = full.background || (item.background ? undefined : full.poster);
           if (bg) setMetaBg(bg);
         })
         .catch(() => {});
@@ -177,7 +177,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       };
 
   const onClick = () => {
-    openMeta(meta);
+    openMeta(meta, ep ? { episodeHint: ep } : undefined);
   };
 
   const onPlay = (e: React.MouseEvent) => {

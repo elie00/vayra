@@ -17,6 +17,7 @@ const TICK_MS = 4000;
 const MIN_POSITION_SEC = 5;
 const TASTE_MIN_SEC = 90;
 const WATCHED_RATIO = 0.85;
+const STUB_MAX_SEC = 150;
 
 const isAnimeId = (id: string) =>
   id.startsWith("kitsu:") || id.startsWith("mal:") || id.startsWith("anilist:");
@@ -60,6 +61,7 @@ export function useResumeAutosave(params: {
   const record = (s: PlayerSrc, sn: PlayerSnapshot, se?: number, ep?: number): void => {
     const id = s.meta.id;
     if (!id || id.startsWith("iptv:")) return;
+    if (sn.durationSec > 0 && sn.durationSec < STUB_MAX_SEC) return;
     const pos = getPlaybackPosition() || lastGoodPosRef.current;
     if (pos < MIN_POSITION_SEC) return;
     const finished =

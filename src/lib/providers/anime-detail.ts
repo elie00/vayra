@@ -221,7 +221,19 @@ async function buildFranchise(
     (e.meta.id.startsWith("kitsu:") ? 4 : 0) +
     (e.startDate ? 2 : 0) +
     ((e.episodeCount ?? 0) > 0 ? 1 : 0);
-  const norm = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const ORD: Record<string, string> = {
+    first: "1", second: "2", third: "3", fourth: "4", fifth: "5", sixth: "6", seventh: "7", eighth: "8",
+  };
+  const norm = (s: string) => {
+    let x = s.trim().toLowerCase();
+    for (const w in ORD) x = x.replace(new RegExp(`\\b${w}\\b`, "g"), ORD[w]);
+    const m = x.match(/(\d+)\s*(?:st|nd|rd|th)?\s*season|season\s*(\d+)/);
+    const num = m ? m[1] ?? m[2] : "";
+    const base = x
+      .replace(/\d+\s*(?:st|nd|rd|th)?\s*season|season\s*\d+/g, " ")
+      .replace(/[^a-z0-9]+/g, "");
+    return num ? `${base}#${num}` : base;
+  };
   const byName = new Map<string, FranchiseEntry>();
   for (const e of [...items.values(), ...anilistEntries]) {
     const key = norm(e.meta.name);

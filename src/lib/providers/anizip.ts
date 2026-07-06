@@ -46,6 +46,10 @@ export async function aniZipByMal(malId: number): Promise<AniZipMapping | null> 
   return get(`mal_id=${malId}`);
 }
 
+export async function aniZipByAnidb(anidbId: number): Promise<AniZipMapping | null> {
+  return get(`anidb_id=${anidbId}`);
+}
+
 export async function aniZipByImdb(imdbId: string): Promise<AniZipMapping | null> {
   return get(`imdb_id=${imdbId}`);
 }

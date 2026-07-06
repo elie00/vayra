@@ -5,7 +5,15 @@ import { markMovieWatched } from "@/lib/mark-watched";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import { useT } from "@/lib/i18n";
 
-export function ElegantHoverActions({ meta, onPlay }: { meta: Meta; onPlay: () => void }) {
+export function ElegantHoverActions({
+  meta,
+  onPlay,
+  preview,
+}: {
+  meta: Meta;
+  onPlay: () => void;
+  preview?: boolean;
+}) {
   const t = useT();
   const inWatchlist = useInWatchlist(meta.id);
   const [watched, setWatched] = useState(false);
@@ -15,14 +23,19 @@ export function ElegantHoverActions({ meta, onPlay }: { meta: Meta; onPlay: () =
     e.stopPropagation();
     fn();
   };
+  const btn = preview ? "pointer-events-none" : "pointer-events-auto";
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex items-end justify-between rounded-[var(--poster-radius,12px)] bg-black/25 p-2.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+    <div
+      className={`pointer-events-none absolute inset-0 z-20 flex items-end justify-between rounded-[var(--poster-radius,12px)] bg-black/25 p-2.5 transition-opacity duration-150 ${
+        preview ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+      }`}
+    >
       <span
         role="button"
         aria-label={t("Play")}
         title={t("Play")}
         onClick={(e) => act(e, onPlay)}
-        className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#22a45d] text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.7)] transition-transform hover:scale-110"
+        className={`${btn} flex h-11 w-11 items-center justify-center rounded-full bg-[#22a45d] text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.7)] transition-transform hover:scale-110`}
       >
         <Play size={17} fill="currentColor" strokeWidth={0} className="translate-x-[1px]" />
       </span>
@@ -42,7 +55,7 @@ export function ElegantHoverActions({ meta, onPlay }: { meta: Meta; onPlay: () =
                 );
               })
             }
-            className={`pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full transition-transform hover:scale-110 ${
+            className={`${btn} flex h-9 w-9 items-center justify-center rounded-full transition-transform hover:scale-110 ${
               watched ? "text-emerald-400" : "text-white"
             }`}
           >
@@ -58,7 +71,7 @@ export function ElegantHoverActions({ meta, onPlay }: { meta: Meta; onPlay: () =
               toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });
             })
           }
-          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full text-white transition-transform hover:scale-110"
+          className={`${btn} flex h-9 w-9 items-center justify-center rounded-full text-white transition-transform hover:scale-110`}
         >
           <Heart size={17} strokeWidth={2.2} fill={inWatchlist ? "currentColor" : "none"} />
         </span>

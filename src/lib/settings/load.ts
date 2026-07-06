@@ -91,6 +91,7 @@ export function loadStoredSettings(): Settings {
       _mpvEmbedV4?: boolean;
       _anime4kIndicatorOffV1?: boolean;
       _pickerLayoutStremio?: boolean;
+      _pickerLayoutStremioV2?: boolean;
       _stremioDeeplinkOnByDefault?: boolean;
       _anilistSyncOnV1?: boolean;
       _streamSortAddonV1?: boolean;
@@ -98,9 +99,10 @@ export function loadStoredSettings(): Settings {
       scrapersAcknowledged?: boolean;
       _scrapersV2?: boolean;
     };
-    if (!parsed._pickerLayoutStremio) {
+    if (!parsed._pickerLayoutStremioV2) {
       if (parsed.pickerLayout === "condensed") parsed.pickerLayout = "stremio";
       parsed._pickerLayoutStremio = true;
+      parsed._pickerLayoutStremioV2 = true;
     }
     if (!parsed._stremioDeeplinkOnByDefault) {
       parsed.stremioDeeplinkInstall = true;
@@ -225,6 +227,9 @@ export function loadStoredSettings(): Settings {
       animeAnilistRowsHidden: Array.isArray(parsed.animeAnilistRowsHidden)
         ? parsed.animeAnilistRowsHidden.filter((k): k is string => typeof k === "string")
         : DEFAULT.animeAnilistRowsHidden,
+      tmdbImageLangs: Array.isArray(parsed.tmdbImageLangs)
+        ? parsed.tmdbImageLangs.filter((l): l is string => typeof l === "string")
+        : DEFAULT.tmdbImageLangs,
     };
   } catch {
     return DEFAULT;

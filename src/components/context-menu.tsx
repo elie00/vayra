@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, ClipboardPaste, Copy, Download, Info, ListChecks, ListPlus, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, EyeOff, Info, ListChecks, ListPlus, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
@@ -8,6 +8,8 @@ import { useTogether } from "@/lib/together/provider";
 import type { ParticipantLocation } from "@/lib/together/protocol";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import { markMetaWatched, unmarkMetaWatched } from "@/lib/mark-watched";
+import { useMetaWatched } from "@/lib/watched-flag";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { useInLocalWatchlist, useLocalWatchlist } from "@/lib/local-watchlist";
@@ -57,7 +59,9 @@ export function ContextMenu() {
   const isHost = inSession && snapshot.hostClientId === clientId;
   const canGoToHost = inSession && !isHost && hostLocation != null;
   const targetMetaId = state?.target.kind === "meta" ? state.target.meta.id : undefined;
+  const targetType = state?.target.kind === "meta" ? state.target.meta.type : undefined;
   const targetImdb = useTmdbImdbId(targetMetaId);
+  const isWatched = useMetaWatched(targetMetaId, targetType);
   const isWatchlisted = useInWatchlist(targetMetaId, [targetImdb]);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(targetMetaId);
@@ -221,6 +225,27 @@ export function ContextMenu() {
         accent={isLocal}
       />,
     );
+    if (!playerActions) {
+      items.push(
+        <Item
+          key="watched"
+          icon={isWatched ? <EyeOff size={14} strokeWidth={2} /> : <CheckCheck size={14} strokeWidth={2} />}
+          label={
+            isWatched
+              ? "Mark as unwatched"
+              : meta.type === "series"
+                ? "Mark all watched"
+                : "Mark as watched"
+          }
+          onClick={() => {
+            if (isWatched) void unmarkMetaWatched(meta);
+            else void markMetaWatched(meta, targetImdb);
+            close();
+          }}
+          accent={isWatched}
+        />,
+      );
+    }
     if (inSession && !playerActions) {
       items.push(
         <Item

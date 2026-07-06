@@ -1,7 +1,7 @@
 import { simklRequest } from "./client";
 import type { SimklIds, SimklItem, SimklTarget } from "./types";
 
-type RawIds = {
+export type RawIds = {
   simkl?: number;
   imdb?: string;
   tmdb?: number | string;
@@ -13,7 +13,7 @@ type RawNode = { title?: string; year?: number | null; ids?: RawIds };
 type RawEntry = { added_to_watchlist_at?: string; movie?: RawNode; show?: RawNode };
 type RawAllItems = { movies?: RawEntry[]; shows?: RawEntry[]; anime?: RawEntry[] };
 
-function num(v: number | string | undefined): number | undefined {
+export function num(v: number | string | undefined): number | undefined {
   if (typeof v === "number") return v;
   if (typeof v === "string" && v.trim() !== "") {
     const n = Number(v);
@@ -22,7 +22,7 @@ function num(v: number | string | undefined): number | undefined {
   return undefined;
 }
 
-function mapIds(ids: RawIds | undefined): SimklIds {
+export function mapIds(ids: RawIds | undefined): SimklIds {
   return {
     simkl: ids?.simkl,
     imdb: ids?.imdb,

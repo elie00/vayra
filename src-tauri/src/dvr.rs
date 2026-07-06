@@ -63,10 +63,6 @@ impl DvrState {
 }
 
 pub(crate) fn locate_mpv() -> Option<PathBuf> {
-    if std::env::var_os("FLATPAK_ID").is_some() {
-        let path = PathBuf::from("/app/bin/mpv");
-        return path.is_file().then_some(path);
-    }
     let candidates = if cfg!(windows) {
         vec!["mpv.exe", "mpv"]
     } else if cfg!(target_os = "macos") {

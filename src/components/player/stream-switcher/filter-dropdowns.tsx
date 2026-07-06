@@ -90,6 +90,15 @@ export function AddonFilterMenu({
   );
 }
 
+const SOURCE_BADGE: Record<string, BadgeKind> = {
+  Remux: "remux",
+  BluRay: "bluray",
+  "WEB-DL": "webdl",
+  WEBRip: "webrip",
+  HDTV: "hdtv",
+  CAM: "cam",
+};
+
 export function SourceFilterMenu({
   sourceFilter,
   setSourceFilter,
@@ -119,7 +128,11 @@ export function SourceFilterMenu({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <Disc3 size={13} strokeWidth={2.2} />
+        {sourceFilter !== "all" && SOURCE_BADGE[sourceFilter] ? (
+          <FormatBadge kind={SOURCE_BADGE[sourceFilter]} size="sm" />
+        ) : (
+          <Disc3 size={13} strokeWidth={2.2} />
+        )}
         <span className="max-w-[120px] truncate">{activeName}</span>
         <ChevronDown
           size={12}
@@ -155,8 +168,14 @@ export function SourceFilterMenu({
                 sourceFilter === opt.id ? "text-ink font-semibold" : "text-ink-muted"
               }`}
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-raised text-[10px] font-bold uppercase text-ink-subtle">
-                {opt.name.slice(0, 2)}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+                {SOURCE_BADGE[opt.id] ? (
+                  <FormatBadge kind={SOURCE_BADGE[opt.id]} size="sm" />
+                ) : (
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-raised text-[10px] font-bold uppercase text-ink-subtle">
+                    {opt.name.slice(0, 2)}
+                  </span>
+                )}
               </span>
               <span className="flex-1 truncate">{opt.name}</span>
               <span className="text-[11px] tabular-nums text-ink-subtle">{opt.count}</span>

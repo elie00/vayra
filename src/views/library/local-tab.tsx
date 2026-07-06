@@ -2,6 +2,7 @@ import { FolderPlus, HardDrive, Loader2, Play, RefreshCw, Trash2 } from "lucide-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { effectiveTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
+import { imageRequestLang } from "@/lib/providers/tmdb/tmdb-image-lang";
 import { tmdbLiteMeta } from "@/lib/providers/tmdb/tmdb-lite";
 import {
   addLocalEntries,
@@ -214,8 +215,6 @@ function OwnedCard({ entry }: { entry: LocalEntry }) {
   const [confirm, setConfirm] = useState(false);
   const { openPlayer } = useView();
   const { settings } = useSettings();
-  // Resolve the poster live in the current image language, so it follows the
-  // Image languages setting instead of the (English) poster cached at scan time.
   const [livePoster, setLivePoster] = useState<string | undefined>(undefined);
   useEffect(() => {
     if (!entry.tmdbId || !settings.tmdbKey) return;
@@ -324,7 +323,7 @@ async function tmdbLookup(
 ): Promise<{ tmdbId?: number; imdbId?: string; poster?: string }> {
   const path = type === "movie" ? "movie" : "tv";
   const params = new URLSearchParams({ api_key: key, query: title });
-  const lang = effectiveTmdbLanguage();
+  const lang = effectiveTmdbLanguage() || imageRequestLang();
   if (lang) params.set("language", lang);
   if (year && type === "movie") params.set("year", String(year));
   if (year && type === "show") params.set("first_air_date_year", String(year));

@@ -43,6 +43,28 @@ export function readLocalLibrary(): LocalEntry[] {
   return read();
 }
 
+export function localShowEpisodes(show: { imdbId?: string | null; title?: string | null }): LocalEntry[] {
+  const wantImdb = show.imdbId ?? null;
+  const wantTitle = (show.title ?? "").trim().toLowerCase();
+  return read()
+    .filter((e) => {
+      if (e.type !== "show" || e.season == null || e.episode == null) return false;
+      if (wantImdb) return e.imdbId === wantImdb;
+      return !!wantTitle && e.title.trim().toLowerCase() === wantTitle;
+    })
+    .sort((a, b) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0));
+}
+
+export function findLocalEpisode(
+  show: { imdbId?: string | null; title?: string | null },
+  season: number,
+  episode: number,
+): LocalEntry | null {
+  return (
+    localShowEpisodes(show).find((e) => e.season === season && e.episode === episode) ?? null
+  );
+}
+
 export function addLocalEntries(entries: LocalEntry[]): void {
   if (entries.length === 0) return;
   const existing = read();

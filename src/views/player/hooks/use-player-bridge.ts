@@ -7,6 +7,7 @@ import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock } from "@/lib/player/playback-clock";
 import { isWindowsDesktop } from "@/lib/platform";
+import { svpEnsureRunning } from "@/lib/svp";
 import { pickBridge } from "../player-utils";
 
 function snapChangedIgnoringClock(a: PlayerSnapshot, b: PlayerSnapshot): boolean {
@@ -52,12 +53,18 @@ export function usePlayerBridge(params: {
     !!src.meta.id?.startsWith("mal:") ||
     !!src.meta.id?.startsWith("anilist:") ||
     !!src.meta.id?.startsWith("anidb:") ||
-    (src.meta.genres ?? []).some((g) => g.toLowerCase() === "anime");
+    (src.meta.genres ?? []).some((g) => {
+      const l = g.toLowerCase();
+      return l === "anime" || l === "animation";
+    });
   const anime4kOn = settings.playerAnime4k && (!settings.playerAnime4kAnimeOnly || isAnimeSrc);
   const svpOn =
     settings.playerSvp &&
     !!settings.svpVpyPath &&
     (settings.svpScope === "all" || (settings.svpScope === "anime" ? isAnimeSrc : !isAnimeSrc));
+  useEffect(() => {
+    if (svpOn) void svpEnsureRunning().catch(() => {});
+  }, [svpOn]);
   const isLiveLike =
     !!src.meta.id?.startsWith("iptv:") ||
     (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
@@ -97,6 +104,7 @@ export function usePlayerBridge(params: {
           src,
           (settings.playerAnime4kOverride as Anime4kChoice) || "auto",
         ),
+        macEdr: false,
         extraOptions: mergeMpvOptions(settings, svpOn),
         getEmbedRect,
       });

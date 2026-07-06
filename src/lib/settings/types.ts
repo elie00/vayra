@@ -48,6 +48,7 @@ export type Settings = {
   tmdbKey: string;
   omdbKey: string;
   rpdbKey: string;
+  imdbApiFallback: boolean;
   fanartKey: string;
   tvdbKey: string;
   rdKey: string;
@@ -90,8 +91,12 @@ export type Settings = {
   resumePrompt: boolean;
   resumePlayback: boolean;
   keepFullscreenOnExit: boolean;
+  fullscreenRestorePosition: boolean;
+  contentAdvisoryToast: boolean;
   playerVolumeHud: boolean;
   playerVolumeHudPosition: "center" | "top" | "top-left" | "top-right";
+  customPlaybackSpeeds: number[];
+  customSleepMinutes: number[];
   badgePlacement: "top" | "bottom";
   watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
   showWatchedButton: boolean;
@@ -136,9 +141,11 @@ export type Settings = {
   playerMenuBlack: boolean;
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
+  seasonSourceLock: boolean;
   rememberLastStream: boolean;
   keepSourceNextEpisode: boolean;
   playerHdrToSdr: boolean;
+  playerMacEdr: boolean;
   playerDisplayPanel: "auto" | "oled" | "lcd";
   playerMotionInterp: boolean;
   playerAnime4k: boolean;
@@ -181,6 +188,7 @@ export type Settings = {
   subLineSpacing: number;
   subProvidersEnabled: { wyzie: boolean; opensubtitles: boolean; jimaku: boolean; addons: boolean };
   subShowInPip: boolean;
+  subtitleAutoSync: boolean;
   subtitlesOffByDefault: boolean;
   preferEmbeddedSubs: boolean;
   subtitleAutoUpgrade: boolean;
@@ -195,8 +203,10 @@ export type Settings = {
   tmdbImageLangs: string[];
   posterBaseUrl: string;
   hidePosterTitles: boolean;
-  hoverPreview: boolean;
+  hoverPreviewEnabled: boolean;
   hoverPreviewPlacement: "over" | "side";
+  cardHoverStyle: "none" | "default" | "elegant" | "frosted" | "cinema" | "spotlight" | "custom";
+  customHoverId: string;
   mdblistKey: string;
   auddKey: string;
   aiSearchKey: string;
@@ -228,6 +238,9 @@ export type Settings = {
   hideWatchedInCatalogs: boolean;
   hideUnreleased: boolean;
   showPlaylistsTab: boolean;
+  skipProfileScreen: boolean;
+  profilePromptInterval: "launch" | "15m" | "30m" | "never";
+  defaultProfileId: string;
   sportsLeagues: string[];
   hideSpoilers: boolean;
   spoilerHideThumbnails: boolean;
@@ -253,6 +266,7 @@ export type Settings = {
   pauseMinimized: boolean;
   pauseUnfocused: boolean;
   cwSnapshotRetentionDays: number;
+  cwSnapshotFullQuality: boolean;
   streamFilterLevel: "strict" | "balanced" | "off";
   blockTrackers: boolean;
   homeRows: {
@@ -276,6 +290,8 @@ export type Settings = {
   seekBarHeight: number;
   seekBarColor: string;
   seekBarImage: string;
+  seekBarFill: boolean;
+  seekBarFillOpacity: number;
   seekDotShape: "circle" | "square" | "image" | "hidden";
   seekDotSize: number;
   seekDotImage: string;
@@ -356,5 +372,4 @@ export type Settings = {
   adSkipEnabled: boolean;
   adReportAlwaysShow: boolean;
   adReportFirstSeen: boolean;
-  imdbApiFallback: boolean;
 };

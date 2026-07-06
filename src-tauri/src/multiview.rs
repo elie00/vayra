@@ -447,6 +447,7 @@ fn spawn_mpv(
         .arg("--no-osd-bar")
         .arg("--osd-level=0")
         .arg("--input-default-bindings=no")
+        .arg("--input-media-keys=no")
         .arg("--no-input-cursor")
         .arg("--cursor-autohide=no")
         .arg("--no-terminal")

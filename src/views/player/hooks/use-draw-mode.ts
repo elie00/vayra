@@ -7,7 +7,7 @@ const STROKE_GC_MS = 9500;
 
 type SendDraw = (
   strokeId: string,
-  phase: "start" | "point" | "end",
+  phase: "start" | "point" | "end" | "clear",
   path: string,
   x?: number,
   y?: number,
@@ -48,12 +48,20 @@ export function useDrawMode(params: {
     setStrokes((prev) => prev.filter((s) => Date.now() - s.bornAt < STROKE_GC_MS));
     if (inRoom) sendDraw(id, "end", topPath);
   };
+  const clearStrokes = () => {
+    setStrokes((prev) => prev.filter((s) => s.path !== topPath));
+    if (inRoom) sendDraw("", "clear", topPath);
+  };
 
   useEffect(() => {
     if (!inRoom) return;
     return onIncomingDraw((e) => {
       if (e.from === clientId) return;
       if (e.path !== topPath) return;
+      if (e.phase === "clear") {
+        setStrokes((prev) => prev.filter((s) => s.path !== topPath));
+        return;
+      }
       if (e.x == null || e.y == null) {
         if (e.phase === "end") setStrokes((prev) => prev.filter((s) => Date.now() - s.bornAt < STROKE_GC_MS));
         return;
@@ -108,5 +116,6 @@ export function useDrawMode(params: {
     onDrawStart,
     onDrawPoint,
     onDrawEnd,
+    clearStrokes,
   };
 }

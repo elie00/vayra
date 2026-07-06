@@ -11,28 +11,24 @@ import { externalToKitsu, kitsuToImdb, kitsuToTvdb } from "@/lib/providers/anime
 import { tmdbLocalizedPoster } from "@/lib/providers/tmdb/tmdb-images";
 import { shouldLocalizePosters } from "@/lib/providers/tmdb/tmdb-image-lang";
 
-// Resolves a card's poster in the user's image-language order (e.g. Arabic then
-// English, then the title's original language) via a per-title /images lookup, lazily
-// and cached. Independent of the metadata (text) language. Only runs when the top
-// image language differs from the catalog poster language; falls back otherwise.
-export function useLocalizedPoster(metaId: string, originalLang?: string | null): string | undefined {
+type Ratio = "portrait" | "landscape" | "wide";
+
+export function useLocalizedPoster(metaId: string): string | undefined {
   const { settings } = useSettings();
   const [url, setUrl] = useState<string | undefined>(undefined);
   useEffect(() => {
     setUrl(undefined);
     if (!settings.tmdbKey || !metaId.startsWith("tmdb:") || !shouldLocalizePosters()) return;
     let alive = true;
-    void tmdbLocalizedPoster(settings.tmdbKey, metaId, originalLang).then((u) => {
+    void tmdbLocalizedPoster(settings.tmdbKey, metaId).then((u) => {
       if (alive && u) setUrl(u);
     });
     return () => {
       alive = false;
     };
-  }, [metaId, originalLang, settings.tmdbKey]);
+  }, [metaId, settings.tmdbKey]);
   return url;
 }
-
-type Ratio = "portrait" | "landscape" | "wide";
 
 export function useRpdbAltId(
   rpdbKey: string,
@@ -101,14 +97,11 @@ export function usePosterChain(
   metaId: string,
   metaPoster?: string,
   type?: "movie" | "series",
-  originalLang?: string | null,
 ) {
   const altId = useRpdbAltId(rpdbKey, metaId, type);
   const { animeImdb, animeTvdb, animeTmdb } = useAnimeRpdbIds(rpdbKey, metaId);
-  const localized = useLocalizedPoster(metaId, originalLang);
+  const localized = useLocalizedPoster(metaId);
   const candidates = useMemo(() => {
-    // Prefer the language-localized poster; RPDB (when configured) still wins, and
-    // the catalog poster remains the final fallback.
     const base = localized ?? metaPoster;
     const out: string[] = [];
     const seen = new Set<string>();
@@ -184,6 +177,7 @@ export function Poster({
   const sig = candidates.join("|");
   const [idx, setIdx] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [displayed, setDisplayed] = useState<string | undefined>(undefined);
   const [retry, setRetry] = useState(0);
   const failedRef = useRef<Set<string>>(new Set());
   const firedRef = useRef(false);
@@ -244,12 +238,14 @@ export function Poster({
   const handleImgRef = useCallback(
     (el: HTMLImageElement | null) => {
       if (!el || !el.complete) return;
-      if (el.naturalWidth > 0) setLoaded(true);
-      else if (currentRef.current) fail(currentRef.current);
+      if (el.naturalWidth > 0) {
+        setLoaded(true);
+        setDisplayed(currentRef.current);
+      } else if (currentRef.current) fail(currentRef.current);
     },
     [fail],
   );
-  const showPlate = !current || !loaded;
+  const showPlate = !displayed && (!current || !loaded);
   const hue = hash(seed) % 360;
 
   return (
@@ -258,6 +254,15 @@ export function Poster({
       style={showPlate ? { background: gradient(hue) } : undefined}
     >
       <div aria-hidden style={{ paddingTop: ASPECT_PAD[ratio] }} />
+      {displayed && displayed !== current && (
+        <img
+          src={displayed}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
       {current && (
         <img
           key={current}
@@ -266,7 +271,10 @@ export function Poster({
           alt=""
           decoding="async"
           loading={lazy ? "lazy" : undefined}
-          onLoad={() => setLoaded(true)}
+          onLoad={() => {
+            setLoaded(true);
+            setDisplayed(current);
+          }}
           onError={() => fail(current)}
           className="absolute inset-0 h-full w-full object-cover"
           style={

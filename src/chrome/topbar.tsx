@@ -39,7 +39,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const layout = kid ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
   const sidebarHidden = connecting || view === "settings" || onLiveRoot || topKind === "picker";
-  const hideSearch = view === "addons";
+  const hideSearch = view === "addons" || connecting;
   const sidebarOffset =
     layout === "stremio"
       ? "ps-[80px]"

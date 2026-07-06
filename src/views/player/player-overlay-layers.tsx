@@ -5,6 +5,7 @@ import { StreamCheckPill } from "@/components/player/stream-check-pill";
 import { AdReportButton } from "@/components/player/ad-report-button";
 import { P2pStatusChip } from "@/components/player/p2p-status-chip";
 import type { VolumeHudPosition, VolumeIndicatorState } from "@/components/player/volume-indicator";
+import type { ParentalCategory } from "@/lib/providers/harbor-imdb";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import type { PlayerSrc, PlayEpisode } from "@/lib/view";
 import { CastLayer } from "./cast-layer";
@@ -58,6 +59,7 @@ export type PlayerOverlayLayersProps = {
   swappingEp: boolean;
   swapResolvingKey: string | null;
   closePlayer: () => void;
+  cancelToPicker: () => void;
   engineStats: Loader["engineStats"];
   isP2pEngine: boolean;
   setLoaderShowing: (v: boolean) => void;
@@ -71,6 +73,7 @@ export type PlayerOverlayLayersProps = {
   onDrawStart: (stroke: Stroke) => void;
   onDrawPoint: (id: string, x: number, y: number) => void;
   onDrawEnd: (id: string) => void;
+  clearStrokes: () => void;
   showWaiting: boolean;
   pendingResumeSec: number | null;
   pendingSeekSec: number | null;
@@ -111,6 +114,7 @@ export type PlayerOverlayLayersProps = {
   setHideOthersDrawings: (fn: (h: boolean) => boolean) => void;
   canPickAnother: boolean;
   resolvedImdbId: string | null;
+  contentAdvisory: { categories: ParentalCategory[]; playKey: string };
   tmdbKey: string | null;
   download: Shell["download"];
   liveOverlay: Live["liveOverlay"];
@@ -144,6 +148,7 @@ export type PlayerOverlayLayersProps = {
   liveUrl: string;
   currentInfoHash?: string | null;
   currentFileIdx?: number | null;
+  currentRef?: Switcher["currentRef"];
   switcherOpen: boolean;
   foreignNotice: Room["foreignNotice"];
   onDismissForeign: () => void;
@@ -191,6 +196,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         volumeHudPosition={p.volumeHudPosition}
         videoFillPill={p.videoFillPill}
         subDropToast={p.subDropToast}
+        contentAdvisory={p.contentAdvisory}
         onSubDelay={(s) => { p.bridgeRef.current?.setSubDelay(s); }}
         onEnterSync={p.onEnterSync}
         chromeVisible={p.showChrome}
@@ -215,10 +221,11 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         snap={p.snap}
         isLocalSrc={p.isLocalSrc}
         forceShow={p.swappingEp || p.swapResolvingKey != null}
-        onCancel={p.closePlayer}
+        onCancel={p.cancelToPicker}
         engineStats={p.engineStats}
         onShowingChange={p.setLoaderShowing}
         onRetry={p.onLoaderRetry}
+        onBrowseChannels={p.liveOverlay.isLive ? () => p.liveOverlay.setOpen(true) : undefined}
       />
 
       {!p.pipMode && !p.cast.castDevice && (
@@ -307,6 +314,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
             p.wakeChrome();
           }}
           onToggleHideOthers={() => p.setHideOthersDrawings((h) => !h)}
+          onClearDraw={p.clearStrokes}
           onScreenshot={p.onScreenshot}
           onPickAnother={p.pickAnotherOrGuide}
           canPickAnother={p.canPickAnother}
@@ -415,9 +423,11 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         currentUrl={p.liveUrl}
         currentInfoHash={p.currentInfoHash ?? null}
         currentFileIdx={p.currentFileIdx ?? null}
+        currentRef={p.currentRef ?? null}
         debridSlugs={p.debridSlugs}
         meta={p.src.meta}
         episode={p.src.episode}
+        imdbId={p.resolvedImdbId}
         hostSource={p.guestHostSource}
       />
 

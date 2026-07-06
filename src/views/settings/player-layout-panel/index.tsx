@@ -385,6 +385,13 @@ export function PlayerLayoutPanel() {
         onChange={(v) => update({ playerP2pChip: v })}
       />
 
+      <ToggleRow
+        label={t("Content advisory on start")}
+        sub={t("When a movie or episode starts, briefly show its IMDb parental guide (violence, profanity, substances, frightening scenes and more) with severity. Fades on its own.")}
+        value={settings.contentAdvisoryToast}
+        onChange={(v) => update({ contentAdvisoryToast: v })}
+      />
+
       <FooterBar
         dirty={dirty}
         justSaved={justSaved}

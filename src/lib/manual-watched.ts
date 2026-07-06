@@ -1,4 +1,5 @@
 import type { LibraryItem } from "@/lib/stremio";
+import { setItemWithRecovery } from "@/lib/storage-recovery";
 
 const KEY = "harbor.manualwatched.v1";
 const UNKEY = "harbor.manualunwatched.v1";
@@ -90,12 +91,8 @@ function unwatchedSet(): Set<string> {
 function persist(on: Set<string>, off: Set<string>): void {
   watchedCache = on;
   unwatchedCache = off;
-  try {
-    localStorage.setItem(KEY, JSON.stringify([...on]));
-    localStorage.setItem(UNKEY, JSON.stringify([...off]));
-  } catch {
-    return;
-  }
+  setItemWithRecovery(KEY, JSON.stringify([...on]));
+  setItemWithRecovery(UNKEY, JSON.stringify([...off]));
   version += 1;
   for (const fn of subs) fn();
 }

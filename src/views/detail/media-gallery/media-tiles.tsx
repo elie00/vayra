@@ -35,22 +35,28 @@ function TileButton({
 export function VideoTile({ v, onPlay, onDownload }: { v: GalleryVideo; onPlay: () => void; onDownload: () => void }) {
   return (
     <div className="group flex w-[300px] shrink-0 flex-col gap-2.5">
-      <button type="button" onClick={onPlay} className="relative aspect-video overflow-hidden rounded-xl bg-elevated/40 text-start">
-        <img
-          src={VIDEO_THUMB(v.ytId)}
-          alt={v.name}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        <span className="absolute inset-0 flex items-center justify-center bg-canvas/30 opacity-0 transition-opacity group-hover:opacity-100">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas">
-            <Play size={18} fill="currentColor" />
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onPlay}
+          className="relative block aspect-video w-full overflow-hidden rounded-xl bg-elevated/40 text-start"
+        >
+          <img
+            src={VIDEO_THUMB(v.ytId)}
+            alt={v.name}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+          <span className="absolute inset-0 flex items-center justify-center bg-canvas/30 opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas">
+              <Play size={18} fill="currentColor" />
+            </span>
           </span>
-        </span>
+        </button>
         <span className="absolute end-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
           <TileButton icon={<Download size={15} strokeWidth={2.2} />} label={t("Download")} onClick={onDownload} />
         </span>
-      </button>
+      </div>
       <div className="flex flex-col gap-0.5 px-0.5">
         <span className="truncate text-[13.5px] font-semibold text-ink">{v.name}</span>
         <span className="text-[11.5px] text-ink-subtle">{v.type}</span>

@@ -5,8 +5,14 @@ export function PlayModePanel() {
   const { settings, update } = useSettings();
   const t = useT();
 
+  const mode = settings.seasonSourceLock ? "season" : settings.instantPlay ? "instant" : "manual";
+  const selectMode = (id: "instant" | "manual" | "season") => {
+    if (id === "season") update({ seasonSourceLock: true });
+    else update({ instantPlay: id === "instant", seasonSourceLock: false });
+  };
+
   const choices: Array<{
-    id: "instant" | "manual";
+    id: "instant" | "manual" | "season";
     label: string;
     sub: string;
     recommended?: boolean;
@@ -22,17 +28,22 @@ export function PlayModePanel() {
       label: t("Manual picker"),
       sub: t("Hitting Play opens the source list so you can choose quality, debrid, and audio yourself."),
     },
+    {
+      id: "season",
+      label: t("Lock to season server"),
+      sub: t("Pick a source once and Harbor keeps playing the rest of that season from the same release, no re-picking. Works best with a debrid season pack. Skipped for anime."),
+    },
   ];
 
   return (
     <div className="flex flex-col gap-2.5">
       {choices.map((c) => {
-        const selected = (c.id === "instant") === settings.instantPlay;
+        const selected = mode === c.id;
         return (
           <button
             key={c.id}
             type="button"
-            onClick={() => update({ instantPlay: c.id === "instant" })}
+            onClick={() => selectMode(c.id)}
             className={`flex items-start gap-3.5 rounded-2xl border px-5 py-4 text-start transition-colors ${
               selected
                 ? "border-ink bg-elevated"
@@ -153,6 +164,25 @@ export function PlayModePanel() {
           <span className="text-[15px] font-semibold text-ink">{t("Stay in fullscreen after closing the player")}</span>
           <span className="text-[12.5px] leading-snug text-ink-muted">
             {t("When you exit playback, keep the window fullscreen instead of dropping back to a window. Turn off to leave fullscreen automatically whenever the player closes.")}
+          </span>
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={() => update({ fullscreenRestorePosition: !settings.fullscreenRestorePosition })}
+        className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
+      >
+        <span
+          className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+            settings.fullscreenRestorePosition ? "justify-end bg-accent" : "justify-start bg-edge"
+          }`}
+        >
+          <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-[15px] font-semibold text-ink">{t("Restore window position after fullscreen")}</span>
+          <span className="text-[12.5px] leading-snug text-ink-muted">
+            {t("When you exit fullscreen, return the window to exactly where it was. Turn off to center it on screen instead.")}
           </span>
         </div>
       </button>

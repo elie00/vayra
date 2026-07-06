@@ -27,7 +27,7 @@ export function RandomEpisodeButton({ meta, seasons }: { meta: Meta; seasons: Se
   const onClick = () => {
     const pick = pickRandomEpisode(seasons);
     if (!pick) return;
-    openPicker(meta, pick, { autoPlay: settings.instantPlay });
+    openPicker(meta, pick, { autoPlay: settings.instantPlay || settings.seasonSourceLock });
   };
   return (
     <button

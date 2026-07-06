@@ -7,13 +7,19 @@ type HeroTier = "full" | "compact" | "hidden";
 
 export function HeroAwardsCorner({
   summary,
+  inline,
 }: {
   summary: { type: string; wins: number; nominations: number }[];
+  inline?: boolean;
 }) {
   const t = useT();
   const ref = useRef<HTMLButtonElement | null>(null);
   const [tier, setTier] = useState<HeroTier>("full");
   useLayoutEffect(() => {
+    if (inline) {
+      setTier("full");
+      return;
+    }
     const host = ref.current?.offsetParent as HTMLElement | null;
     if (!host) return;
     const check = () => {
@@ -24,7 +30,7 @@ export function HeroAwardsCorner({
     const ro = new ResizeObserver(check);
     ro.observe(host);
     return () => ro.disconnect();
-  }, []);
+  }, [inline]);
 
   const top = summary[0];
   if (!top || tier === "hidden") return null;
@@ -63,7 +69,9 @@ export function HeroAwardsCorner({
         e.stopPropagation();
         document.getElementById("awards-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }}
-      className="group absolute bottom-14 end-12 flex max-w-[44%] items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45"
+      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${
+        inline ? "max-w-md" : "absolute bottom-14 end-12 max-w-[44%]"
+      }`}
     >
       <span
         className="shrink-0 text-accent transition-transform duration-200 group-hover:scale-105"

@@ -1,8 +1,36 @@
+import { anidbToMal, anilistToMal, kitsuToMal } from "@/lib/providers/anime-mapping";
 import type { SimklTarget } from "./types";
 
 export type IdResolution =
   | { ok: true; target: SimklTarget }
   | { ok: false; reason: "anime" | "unrecognized" };
+
+async function animeIdToMal(harborId: string): Promise<number | null> {
+  const n = Number(harborId.split(":")[1]);
+  if (!Number.isFinite(n)) return null;
+  if (harborId.startsWith("kitsu:")) return kitsuToMal(n).catch(() => null);
+  if (harborId.startsWith("anilist:")) return anilistToMal(n).catch(() => null);
+  if (harborId.startsWith("anidb:")) return anidbToMal(n).catch(() => null);
+  return null;
+}
+
+export async function resolveSimklTarget(
+  harborId: string,
+  type: "movie" | "series",
+): Promise<SimklTarget | null> {
+  let tgt: SimklTarget | null = null;
+  const resolution = stremioIdToSimklTarget(harborId);
+  if (resolution.ok) {
+    tgt = resolution.target;
+  } else {
+    const mal = await animeIdToMal(harborId);
+    if (mal != null) tgt = { kind: "show", ids: { mal } };
+  }
+  if (!tgt) return null;
+  if (type === "series" && tgt.kind === "movie") tgt = { kind: "show", ids: tgt.ids };
+  if (type === "movie" && tgt.kind === "show") tgt = { kind: "movie", ids: tgt.ids };
+  return tgt;
+}
 
 export function stremioIdToSimklTarget(
   metaId: string,

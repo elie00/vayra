@@ -11,6 +11,8 @@ type Snap = {
   durationSec: number;
 };
 
+const STUB_MAX_SEC = 150;
+
 export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }): void {
   const { isConnected } = useSimkl();
   const { settings } = useSettings();
@@ -32,6 +34,7 @@ export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
 
   useEffect(() => {
     if (!isConnected || snap.durationSec <= 0) return;
+    if (snap.durationSec < STUB_MAX_SEC) return;
     const pos = Math.max(snap.positionSec || 0, getPlaybackPosition());
     const progress = Math.min(100, (pos / snap.durationSec) * 100);
     latestRef.current = { metaId, episode: src.episode, progress };

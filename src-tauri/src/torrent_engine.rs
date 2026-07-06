@@ -26,6 +26,7 @@ struct EngineState {
     ready: bool,
     last_error: Option<String>,
     server: Option<tokio::task::JoinHandle<()>>,
+    sweeper: Option<tokio::task::JoinHandle<()>>,
 }
 
 fn engine() -> &'static Mutex<EngineState> {
@@ -39,7 +40,23 @@ fn engine() -> &'static Mutex<EngineState> {
             ready: false,
             last_error: None,
             server: None,
+            sweeper: None,
         })
+    })
+}
+
+const CACHE_SWEEP_INTERVAL_SECS: u64 = 30;
+
+fn spawn_cache_sweeper(app: AppHandle) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(CACHE_SWEEP_INTERVAL_SECS)).await;
+            let cfg = read_config(&app);
+            let Ok(dir) = engine_dir(&app, &cfg) else { continue };
+            let retention = cfg.retention_hours.unwrap_or(24);
+            let max_gb = cfg.max_gb.unwrap_or(0);
+            let _ = tokio::task::spawn_blocking(move || cache_sweep::run(&dir, retention, max_gb)).await;
+        }
     })
 }
 
@@ -189,8 +206,12 @@ async fn init(app: AppHandle) -> Result<(), String> {
             eprintln!("[torrent-engine] server error: {e}");
         }
     });
+    let sweeper = spawn_cache_sweeper(app.clone());
     let mut st = engine().lock().unwrap();
     if let Some(old) = st.server.take() {
+        old.abort();
+    }
+    if let Some(old) = st.sweeper.take() {
         old.abort();
     }
     st.session = Some(session);
@@ -200,6 +221,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     st.ready = true;
     st.last_error = None;
     st.server = Some(server);
+    st.sweeper = Some(sweeper);
     eprintln!("[torrent-engine] ready on 127.0.0.1:{port} (dht tier {dht_tier})");
     Ok(())
 }
@@ -228,6 +250,9 @@ pub fn stop() {
     let mut st = engine().lock().unwrap();
     if let Some(server) = st.server.take() {
         server.abort();
+    }
+    if let Some(sweeper) = st.sweeper.take() {
+        sweeper.abort();
     }
     st.session = None;
     st.side_dht = None;
@@ -369,13 +394,21 @@ pub async fn torrent_engine_stats(
         Some(i) => s.file_progress.get(i).copied().unwrap_or(s.progress_bytes),
         None => s.progress_bytes,
     };
+    let stream_len = match file_idx {
+        Some(i) => handle
+            .with_metadata(|m| m.file_infos.get(i).map(|fi| fi.len))
+            .ok()
+            .flatten()
+            .unwrap_or(s.total_bytes),
+        None => s.total_bytes,
+    };
     Ok(TorrentEngineStats {
         peers,
         unchoked: peers,
         downloaded: s.progress_bytes,
         download_speed,
         stream_progress,
-        stream_len: s.total_bytes,
+        stream_len,
         peer_search_running,
         finished: s.finished,
         state: format!("{:?}", s.state),

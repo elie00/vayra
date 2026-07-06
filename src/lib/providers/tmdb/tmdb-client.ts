@@ -1,4 +1,5 @@
 import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
+import { imageRequestLang } from "./tmdb-image-lang";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -98,10 +99,7 @@ export async function get<T>(
   if (!key) return null;
   const url = new URL(`${TMDB}/${path}`);
   url.searchParams.set("api_key", key);
-  // Only the metadata (text) language drives the bulk `language` param. Posters/art
-  // are localized separately per-title via include_image_language + /images, so the
-  // image language never leaks into the catalog text and vice-versa.
-  const lang = effectiveTmdbLanguage();
+  const lang = effectiveTmdbLanguage() || imageRequestLang();
   if (lang && !params.language) url.searchParams.set("language", lang);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const target = url.toString();

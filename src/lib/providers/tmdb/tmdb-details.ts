@@ -190,8 +190,6 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
   }
 
   const settings = loadStoredSettings();
-  // Text (title, overview, cast/crew, genres) uses the metadata language — the
-  // image language only drives which artwork is returned (include_image_language).
   const metaLang = effectiveTmdbLanguage() || "en";
   const raw = await get<any>(key, `${kind}/${id}`, {
     append_to_response: "credits,aggregate_credits,recommendations,similar,videos,external_ids,images,keywords,translations",
@@ -203,8 +201,6 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
   const origLang = typeof raw.original_language === "string" ? raw.original_language : "";
   let logo = pickLogo(raw.images?.logos ?? [], origLang);
   let posterSource = raw.images?.posters;
-  // If nothing matched the preferred languages, re-fetch including the title's own
-  // (original) language so we show real art instead of falling back to plain text.
   if (!logo && origLang && !imageLangParam().split(",").includes(origLang)) {
     const assets = await fetchMovieAssets(key, `tmdb:${kind}:${id}`, origLang);
     if (assets) {

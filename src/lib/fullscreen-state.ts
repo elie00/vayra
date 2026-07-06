@@ -77,7 +77,9 @@ export async function exitWindowFullscreen(): Promise<void> {
   if (isTauri()) {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("window_fullscreen_exit");
+      await invoke("window_fullscreen_exit", {
+        restorePosition: loadStoredSettings().fullscreenRestorePosition !== false,
+      });
     } catch {
       /* ignore */
     }

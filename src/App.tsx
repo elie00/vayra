@@ -28,6 +28,7 @@ import { HarborErrorBoundary } from "@/components/error-boundary";
 import { ContextMenu } from "@/components/context-menu";
 import { CurfewGuard } from "@/components/curfew-guard";
 import { HoverPreview } from "@/components/hover-preview";
+import { CustomHoverCssMount } from "@/components/custom-hover-css-mount";
 import { EmbedViewportRoot } from "@/components/embed-viewport";
 import { InstallerViewportRoot } from "@/components/installer-viewport";
 import { UpdateRoot } from "@/components/update/update-root";
@@ -264,6 +265,7 @@ export function App() {
                       <DiscordPresence />
                       <ContextMenu />
                       <HoverPreview />
+                      <CustomHoverCssMount />
                       <TopRankModal />
                       <ProfilePickerModal />
                       <CurfewGuard />

@@ -15,6 +15,7 @@ import { HomeRowPreview } from "./home-layout-previews";
 import { HomeLanguagePicker } from "./home-language-picker";
 import { EpisodeCardPreview } from "./episode-card-previews";
 import { SongCardStylePicker } from "./song-card-style-picker";
+import { HoverStyleGallery } from "./hover-style-preview";
 import { CwSnapshotShowcase } from "./cw-snapshot-showcase";
 import { AiSearchSection } from "./ai-search-section";
 import rpdbLogo from "@/assets/addon-logos/rpdb.png";
@@ -261,6 +262,55 @@ export function LibraryPanel({
       <SongCardStylePicker />
 
       <Section
+        title={t("Hover preview")}
+        subtitle={t("Rest the cursor on a poster to peek at it without opening. Off by default.")}
+      >
+        <ToggleRow
+          label={t("Hover preview")}
+          sub={t("Rest the cursor on a poster to peek at the rating, story, and quick actions without opening it.")}
+          value={settings.hoverPreviewEnabled}
+          onChange={(v) => update({ hoverPreviewEnabled: v })}
+        />
+        {settings.hoverPreviewEnabled && (
+          <div className="mt-4 flex flex-col gap-3">
+            <HoverStyleGallery
+              value={settings.cardHoverStyle}
+              customHoverId={settings.customHoverId}
+              onChange={(style, customId) =>
+                update(customId != null ? { cardHoverStyle: style, customHoverId: customId } : { cardHoverStyle: style })
+              }
+            />
+            {settings.cardHoverStyle === "default" && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
+            <span className="text-[13px] text-ink-muted">{t("Open preview")}</span>
+            <div className="flex gap-1.5">
+              {(
+                [
+                  { v: "over", label: t("On the card") },
+                  { v: "side", label: t("To the side") },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  onClick={() => update({ hoverPreviewPlacement: o.v })}
+                  className={`rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                    settings.hoverPreviewPlacement === o.v
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-edge hover:text-ink"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+
+      <Section
         title={t("Continue Watching screenshots")}
         subtitle={t("When you back out of a title, Harbor saves a frame so the Continue Watching card looks like the spot you left. Tune how long they stick around, or wipe them all.")}
       >
@@ -268,6 +318,12 @@ export function LibraryPanel({
         <RetentionPicker
           value={settings.cwSnapshotRetentionDays}
           onChange={(v) => update({ cwSnapshotRetentionDays: v })}
+        />
+        <ToggleRow
+          label={t("Full quality frames")}
+          sub={t("Save sharper frames instead of light thumbnails. They look crisper on the card but take more space, so fewer are kept before the oldest roll off.")}
+          value={settings.cwSnapshotFullQuality}
+          onChange={(v) => update({ cwSnapshotFullQuality: v })}
         />
         <ClearSnapshotsButton />
       </Section>
@@ -322,8 +378,8 @@ export function LibraryPanel({
           }
         />
         <ToggleRow
-          label={t("Use free IMDb API as fallback")}
-          sub={t("When no TMDB key is set, show cast, crew, and title details from the free IMDb API (imdbapi.dev). Requires an internet connection.")}
+          label={t("Use free IMDb data without a TMDB key")}
+          sub={t("With no TMDB key, the About panel pulls cast, crew, and title info from a free IMDb source. TMDB is still used whenever a key is set.")}
           value={settings.imdbApiFallback}
           onChange={(v) => update({ imdbApiFallback: v })}
         />
@@ -605,38 +661,6 @@ export function LibraryPanel({
               onChange={(v) => update({ showTraktBadge: v })}
               lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
             />
-            <ToggleRow
-              label={t("Hover preview")}
-              sub={t("Rest the cursor on a poster to peek at the rating, runtime, and story without opening it.")}
-              value={settings.hoverPreview}
-              onChange={(v) => update({ hoverPreview: v })}
-            />
-            {settings.hoverPreview && (
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
-                <span className="text-[13px] text-ink-muted">{t("Open preview")}</span>
-                <div className="flex gap-1.5">
-                  {(
-                    [
-                      { v: "over", label: t("On the card") },
-                      { v: "side", label: t("To the side") },
-                    ] as const
-                  ).map((o) => (
-                    <button
-                      key={o.v}
-                      type="button"
-                      onClick={() => update({ hoverPreviewPlacement: o.v })}
-                      className={`rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                        settings.hoverPreviewPlacement === o.v
-                          ? "border-accent bg-accent/15 text-accent"
-                          : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-edge hover:text-ink"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             <ToggleRow
               label={t("Mark watched button")}
               sub={t("Show a button on the detail page to mark a title or episode as watched. Syncs to Trakt and Simkl if connected.")}

@@ -9,6 +9,10 @@ export async function hdrOverlayClose(): Promise<void> {
   await invoke("hdr_overlay_close").catch(() => {});
 }
 
+export async function hdrOverlayHide(): Promise<void> {
+  await invoke("hdr_overlay_hide").catch(() => {});
+}
+
 export async function hdrOverlaySync(): Promise<void> {
   await invoke("hdr_overlay_sync").catch(() => {});
 }

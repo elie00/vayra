@@ -9,6 +9,7 @@ import { hostSourceStream } from "@/lib/together/host-stream";
 import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from "./picker-utils";
 
 const RES_PREF: Record<string, number> = { "1080p": 0, "720p": 1, "480p": 2, "4K": 3, SD: 4 };
+const LIKELY_PACK_BYTES = 12 * 1024 * 1024 * 1024;
 
 export function useAutoCandidates(args: {
   filteredPicker: { all: ScoredStream[]; primary: ScoredStream | null } | null;
@@ -21,10 +22,11 @@ export function useAutoCandidates(args: {
   preferredLangs: string[];
   hostSource?: SourceDescriptor | null;
   prefer1080?: boolean;
+  preferPacks?: boolean;
   season?: number | null;
   episode?: number | null;
 }): ScoredStream[] {
-  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, season, episode } = args;
+  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode } = args;
   return useMemo(() => {
     const hostFallback = (): ScoredStream[] => {
       if (!hostSource) return [];
@@ -46,6 +48,12 @@ export function useAutoCandidates(args: {
       if (!isCached(s)) return 2;
       return episodeExact(s) ? 0 : 1;
     };
+    const isLikelyPack = (s: ScoredStream) => {
+      if (episode == null) return false;
+      if (s.seasonPack) return true;
+      if (episodeExact(s)) return false;
+      return s.size != null && s.size > LIKELY_PACK_BYTES;
+    };
     const addonRank = new Map<string, number>();
     (addons ?? []).forEach((a, i) => {
       if (a.manifest?.id) addonRank.set(a.manifest.id, i);
@@ -65,6 +73,9 @@ export function useAutoCandidates(args: {
       const ai0 = instantTier(a);
       const bi0 = instantTier(b);
       if (ai0 !== bi0) return ai0 - bi0;
+      const ap = isLikelyPack(a) ? 1 : 0;
+      const bp = isLikelyPack(b) ? 1 : 0;
+      if (ap !== bp) return preferPacks ? bp - ap : ap - bp;
       const ad = needsDownload(a) ? 1 : 0;
       const bd = needsDownload(b) ? 1 : 0;
       if (ad !== bd) return ad - bd;
@@ -110,7 +121,15 @@ export function useAutoCandidates(args: {
       push(previousMatch);
     }
     for (const s of sorted) push(s);
-    if (out.length === 0) return hostFallback();
-    return out;
-  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, season, episode]);
+    if (out.length > 0) return out;
+    const synthetic = hostFallback();
+    if (synthetic.length > 0) return synthetic;
+    if (hostSource) {
+      const ownBest = sorted.find(
+        (s) => !isStreamDead(s) && !isWatchHub(s) && !episodeConflict(s),
+      );
+      if (ownBest) return [ownBest];
+    }
+    return [];
+  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode]);
 }

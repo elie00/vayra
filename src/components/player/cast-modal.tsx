@@ -2,12 +2,12 @@ import { Loader2, Star, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { animeDetails } from "@/lib/providers/anime-detail";
-import { imdbapiDetails } from "@/lib/providers/imdbapi/imdbapi-details";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { activeLayout } from "@/lib/theme";
 import { IMG } from "@/lib/providers/tmdb/tmdb-client";
 import { tmdbDetails, type CastEntry, type TmdbDetail } from "@/lib/providers/tmdb/tmdb-details";
+import { imdbapiDetails } from "@/lib/providers/imdbapi/imdbapi-details";
 
 function isAnimeId(id: string): boolean {
   return id.startsWith("kitsu:") || id.startsWith("mal:") || id.startsWith("anilist:");
@@ -29,10 +29,12 @@ export function CastModal({
   const [detail, setDetail] = useState<TmdbDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const anime = isAnimeId(meta.id);
+  const usedImdbFallback =
+    !anime && !tmdbKey && settings.imdbApiFallback && meta.id.startsWith("tt");
 
   useEffect(() => {
     if (!open) return;
-    if (!anime && !tmdbKey && !(settings.imdbApiFallback && meta.id.startsWith("tt"))) {
+    if (!anime && !tmdbKey && !usedImdbFallback) {
       setDetail(null);
       return;
     }
@@ -56,7 +58,7 @@ export function CastModal({
     return () => {
       cancelled = true;
     };
-  }, [open, tmdbKey, meta, anime, settings]);
+  }, [open, tmdbKey, meta, anime, settings, usedImdbFallback]);
 
   useEffect(() => {
     if (!open) return;
@@ -139,7 +141,7 @@ export function CastModal({
 
           {detail && detail.cast.length > 0 ? (
             <CastStrip cast={detail.cast} />
-          ) : !anime && !tmdbKey ? (
+          ) : !anime && !tmdbKey && !usedImdbFallback ? (
             <div className="px-6 pb-5 text-[13.5px] leading-relaxed text-ink-muted">
               {t("Add a TMDB key in Settings to see the cast for every title.")}
             </div>

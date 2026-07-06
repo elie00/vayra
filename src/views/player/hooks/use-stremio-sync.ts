@@ -10,6 +10,7 @@ const TICK_MS = 30000;
 const BASE_REFRESH_MS = 30000;
 const MIN_POSITION_SEC = 6;
 const CREDITS_RATIO = 0.9;
+const STUB_MAX_SEC = 150;
 
 let activeFlusher: (() => Promise<void>) | null = null;
 
@@ -41,6 +42,7 @@ export function useStremioSync(params: {
   const sessionCidRef = useRef<string | null>(null);
   const lastGoodPosRef = useRef(0);
   const wroteOnceRef = useRef(false);
+  const loadResetSeenRef = useRef(true);
   const latestRef = useRef({ src, snap, authKey, canonicalId, resolutionSettled });
   latestRef.current = { src, snap, authKey, canonicalId, resolutionSettled };
 
@@ -78,7 +80,15 @@ export function useStremioSync(params: {
   useEffect(() => {
     sessionStartRef.current = Date.now();
     lastGoodPosRef.current = 0;
+    loadResetSeenRef.current = false;
   }, [ourVideoId, src.url]);
+
+  useEffect(() => {
+    if (loadResetSeenRef.current) return;
+    if (snap.status === "loading" || (snap.positionSec === 0 && snap.durationSec === 0)) {
+      loadResetSeenRef.current = true;
+    }
+  }, [snap.status, snap.positionSec, snap.durationSec]);
 
   useEffect(() => {
     sessionCidRef.current = null;
@@ -121,7 +131,7 @@ export function useStremioSync(params: {
 
   const writeWithFreshBase = async (isTerminal: boolean, withGet: boolean) => {
     const { src: s, snap: sn, authKey: ak, canonicalId: liveCid, resolutionSettled: settled } = latestRef.current;
-    if (!ak || !settled) return;
+    if (!ak || !settled || !loadResetSeenRef.current) return;
     const cid = sessionCidRef.current ?? liveCid;
     if (!cid) return;
     const pos = getPlaybackPosition() || lastGoodPosRef.current;
@@ -157,7 +167,7 @@ export function useStremioSync(params: {
 
   const writeFlushFast = (): Promise<void> => {
     const { src: s, snap: sn, authKey: ak, canonicalId: liveCid, resolutionSettled: settled } = latestRef.current;
-    if (!ak || !settled) return Promise.resolve();
+    if (!ak || !settled || !loadResetSeenRef.current) return Promise.resolve();
     const cid = sessionCidRef.current ?? liveCid;
     if (!cid) return Promise.resolve();
     const pos = getPlaybackPosition() || lastGoodPosRef.current;
@@ -183,7 +193,7 @@ export function useStremioSync(params: {
     const id = window.setInterval(() => {
       const { snap: sn } = latestRef.current;
       const active = sn.status === "playing" || castActiveRef?.current === true;
-      if (!active) return;
+      if (!active || !loadResetSeenRef.current) return;
       const pos = getPlaybackPosition();
       if (pos < MIN_POSITION_SEC || sn.durationSec <= 0) return;
       if (import.meta.env.DEV && Date.now() - sessionStartRef.current > 30000 && !wroteOnceRef.current) {
@@ -285,6 +295,7 @@ async function writeLibraryItem(
   isTerminal: boolean,
   vidOverride?: string,
 ): Promise<string | null> {
+  if (snap.durationSec > 0 && snap.durationSec < STUB_MAX_SEC) return null;
   const baseName = typeof base?.name === "string" ? base.name.trim() : "";
   const metaName = (src.meta.name ?? "").trim();
   const isAnimeWrite = /^(kitsu|mal|anilist|anidb):/.test(canonicalId) || src.meta.type === "anime";

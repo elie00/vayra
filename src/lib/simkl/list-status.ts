@@ -27,6 +27,8 @@ type RawIds = {
   tmdb?: number | string;
   mal?: number | string;
   kitsu?: number | string;
+  anilist?: number | string;
+  anidb?: number | string;
 };
 type RawEpisode = { number?: number; watched_at?: string | null };
 type RawSeason = { number?: number; episodes?: RawEpisode[] };
@@ -56,6 +58,8 @@ function idKeys(ids: RawIds | undefined, kind: "movie" | "show"): string[] {
   if (ids.tmdb != null) keys.push(kind === "movie" ? `tmdb:movie:${ids.tmdb}` : `tmdb:tv:${ids.tmdb}`);
   if (ids.mal != null) keys.push(`mal:${ids.mal}`);
   if (ids.kitsu != null) keys.push(`kitsu:${ids.kitsu}`);
+  if (ids.anilist != null) keys.push(`anilist:${ids.anilist}`);
+  if (ids.anidb != null) keys.push(`anidb:${ids.anidb}`);
   return keys;
 }
 

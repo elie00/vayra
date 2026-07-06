@@ -66,6 +66,7 @@ export type MpvOptions = {
   embed?: boolean;
   anime4kShaders?: string[];
   d3d11Flip?: boolean;
+  macEdr?: boolean;
   extraOptions?: string;
   getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
 };
@@ -112,7 +113,18 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let geomTauriUnlisten: Array<() => void> = [];
   let mpvStarted = false;
   let suppressEndFileUntil = 0;
+  let svpFilterFailed = false;
   const urlByExternalFilename = new Map<string, string>();
+
+  const handleSvpFilterFailure = () => {
+    if (svpFilterFailed) return;
+    if (!(mpvOptions?.extraOptions ?? "").includes("vapoursynth")) return;
+    svpFilterFailed = true;
+    invoke("mpv_set_property", { name: "vf", value: "" }).catch(() => {});
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("harbor:svp-failed"));
+    }
+  };
 
   const emit = () => {
     const next: PlayerSnapshot = { ...snap };
@@ -120,6 +132,18 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   };
 
   const handleEvent = (raw: MpvEvent) => {
+    if (raw.event === "log") {
+      const prefix = String((raw as { prefix?: unknown }).prefix ?? "");
+      const level = String((raw as { level?: unknown }).level ?? "");
+      const text = String((raw as { text?: unknown }).text ?? "");
+      if (
+        text.includes("Creating filter 'vapoursynth' failed") ||
+        (prefix.includes("vapoursynth") && (level === "fatal" || level === "error"))
+      ) {
+        handleSvpFilterFailure();
+      }
+      return;
+    }
     if (raw.event === "property-change") {
       const name = raw.name;
       const data = raw.data;
@@ -190,7 +214,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "sub-start" && typeof data === "number") snap.subStartSec = data;
       if (name === "dwidth" && typeof data === "number") snap.videoWidth = data;
       if (name === "dheight" && typeof data === "number") snap.videoHeight = data;
-      if (name === "video-params/gamma") snap.hdrGamma = typeof data === "string" ? data : "";
+      if (name === "video-params/gamma" && typeof data === "string" && data) snap.hdrGamma = data;
+      if (name === "demuxer-cache-duration" && typeof data === "number") snap.bufferedSec = data;
       if (name === "af") {
         const repr = typeof data === "string" ? data : JSON.stringify(data ?? "");
         snap.audioNormalize = repr.includes("dynaudnorm");
@@ -254,6 +279,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       host = null;
     },
     async load(src: PlayerSource) {
+      svpFilterFailed = false;
       snap.status = "loading";
       snap.errorCode = null;
       snap.errorMessage = null;
@@ -323,6 +349,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             embed: opts.embed === true,
             anime4kShaders: opts.anime4kShaders ?? [],
             d3d11Flip: opts.d3d11Flip === true,
+            macEdr: opts.macEdr === true,
             isLive: src.isLive === true,
             headers: src.headers ?? null,
             extraOptions: opts.extraOptions || undefined,

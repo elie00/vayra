@@ -33,7 +33,34 @@ export function preflightCheck(url: string, signal?: AbortSignal): Promise<Prefl
   return p;
 }
 
+const PROBE_ATTEMPTS = 3;
+const PROBE_RETRY_MS = 1000;
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const t = window.setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      window.clearTimeout(t);
+      resolve();
+    });
+  });
+}
+
 async function run(url: string, signal?: AbortSignal): Promise<PreflightResult> {
+  let last: PreflightResult | null = null;
+  for (let attempt = 0; attempt < PROBE_ATTEMPTS; attempt++) {
+    if (signal?.aborted) break;
+    const r = await probe(url, signal);
+    if (r.ok) return r;
+    if (r.reason === "stub" && r.sizeBytes != null && r.sizeBytes > 0) return r;
+    if (r.reason === "unreachable") return r;
+    last = r;
+    if (attempt < PROBE_ATTEMPTS - 1) await sleep(PROBE_RETRY_MS, signal);
+  }
+  return { ok: false, reason: "unreachable", sizeBytes: last?.sizeBytes ?? null };
+}
+
+async function probe(url: string, signal?: AbortSignal): Promise<PreflightResult> {
   const ctrl = new AbortController();
   const onAbort = () => ctrl.abort();
   signal?.addEventListener("abort", onAbort);

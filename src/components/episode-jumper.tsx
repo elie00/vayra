@@ -1,5 +1,6 @@
 import { Hash } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { scrollToDataEp } from "@/lib/episode-scroll";
 
 const CHUNK_SIZE = 50;
@@ -59,7 +60,7 @@ export function EpisodeJumper({
     if (Number.isFinite(n) && n >= 1 && n <= totalEpisodes) jumpToEpisode(n);
   };
 
-  return (
+  return createPortal(
     <div ref={popoverRef} className="fixed bottom-16 end-5 z-40">
       {open && (
         <div className="absolute bottom-full end-0 mb-2 flex w-[280px] flex-col gap-2.5 rounded-xl border border-edge-soft/60 bg-canvas/95 p-3 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md animate-popover-in">
@@ -112,6 +113,7 @@ export function EpisodeJumper({
         <Hash size={12} strokeWidth={2.2} />
         <span>Jump</span>
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }

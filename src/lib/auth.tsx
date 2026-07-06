@@ -21,6 +21,8 @@ type AuthValue = {
 
 const PROFILE_KEY_PREFIX = "harbor.auth.";
 
+let liveStremioAuthKey: string | null = null;
+
 function profileAuthKey(id: string): string {
   return PROFILE_KEY_PREFIX + id;
 }
@@ -47,6 +49,7 @@ function writeProfileSession(id: string, session: Session | null): void {
 }
 
 export function readActiveStremioAuthKey(): string | null {
+  if (liveStremioAuthKey) return liveStremioAuthKey;
   try {
     const raw = localStorage.getItem("harbor.profiles.v1");
     if (!raw) return null;
@@ -74,6 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setSession(sourceId ? readProfileSession(sourceId) : null);
   }, [sourceId]);
+
+  useEffect(() => {
+    liveStremioAuthKey = session?.authKey ?? null;
+  }, [session]);
 
   const commitSession = useCallback(
     (fresh: Session) => {

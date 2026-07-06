@@ -80,21 +80,6 @@ async fn run_yt_dlp(
     timeout: Duration,
     label: &str,
 ) -> Result<YtDlpOutput, String> {
-    if std::env::var_os("FLATPAK_ID").is_some() {
-        let output = tokio::time::timeout(
-            timeout,
-            tokio::process::Command::new("/app/bin/yt-dlp").args(args).output(),
-        )
-        .await
-        .map_err(|_| format!("yt-dlp {label} timed out"))?
-        .map_err(|e| format!("yt-dlp {label}: {e}"))?;
-        return Ok(YtDlpOutput {
-            success: output.status.success(),
-            stdout: output.stdout,
-            stderr: output.stderr,
-        });
-    }
-
     match app.shell().sidecar("yt-dlp") {
         Ok(cmd) => {
             let sidecar_args = args.clone();

@@ -1,6 +1,10 @@
 const BASE = "https://harbor.site/api/imdb";
 
+export type ParentalCategory = { category: string; severity: string };
+
 const titleCache = new Map<string, number | null>();
+const parentalCache = new Map<string, ParentalCategory[]>();
+const parentalInflight = new Map<string, Promise<ParentalCategory[]>>();
 const episodeCache = new Map<string, Map<string, number>>();
 const episodeInflight = new Map<string, Promise<Map<string, number>>>();
 
@@ -56,4 +60,35 @@ export async function harborImdbTitle(tt: string): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+export async function harborImdbParental(tt: string): Promise<ParentalCategory[]> {
+  if (!tt.startsWith("tt")) return [];
+  const cached = parentalCache.get(tt);
+  if (cached) return cached;
+  const pending = parentalInflight.get(tt);
+  if (pending) return pending;
+  const p = (async () => {
+    try {
+      const res = await fetch(`${BASE}/parental/${tt}`);
+      const out: ParentalCategory[] = [];
+      if (res.ok) {
+        const j = (await res.json()) as { categories?: ParentalCategory[] };
+        for (const c of j.categories ?? []) {
+          if (c && typeof c.category === "string" && typeof c.severity === "string") {
+            out.push({ category: c.category, severity: c.severity });
+          }
+        }
+      }
+      parentalCache.set(tt, out);
+      return out;
+    } catch {
+      parentalCache.set(tt, []);
+      return [];
+    } finally {
+      parentalInflight.delete(tt);
+    }
+  })();
+  parentalInflight.set(tt, p);
+  return p;
 }

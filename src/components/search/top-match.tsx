@@ -14,8 +14,6 @@ export function TopMatch({
   const { openMeta } = useView();
   const yearTxt = match.meta.releaseInfo ?? "";
   const rating = match.voteAverage && match.voteAverage > 0 ? match.voteAverage.toFixed(1) : null;
-  // Same metadata-language handling as the heroes: show the plot in the reading
-  // language, not the (image-language) search response language.
   const synopsis = (useLocalizedOverview(match.meta) ?? "").trim();
 
   const handleOpen = () => {

@@ -67,6 +67,7 @@ export function useAutoRetry(params: {
   const sameUrlRetriedRef = useRef(false);
   const debridFailoverTriedRef = useRef(false);
   const liveRetryCountRef = useRef(0);
+  const livePlayedRef = useRef(false);
   const [transcodedUrl, setTranscodedUrl] = useState<string | null>(null);
   useEffect(() => {
     autoRetriedRef.current = false;
@@ -74,20 +75,26 @@ export function useAutoRetry(params: {
     sameUrlRetriedRef.current = false;
     debridFailoverTriedRef.current = false;
     liveRetryCountRef.current = 0;
+    livePlayedRef.current = false;
     dlRef.current = { bytes: 0, at: Date.now() };
     setTranscodedUrl(null);
   }, [src.url]);
 
   useEffect(() => {
+    if (isLive && hasProgress) livePlayedRef.current = true;
+  }, [isLive, hasProgress]);
+
+  useEffect(() => {
     if (!isLive) return;
     if (snap.errorCode == null) return;
-    if (liveRetryCountRef.current >= 2) return;
+    const maxAttempts = livePlayedRef.current ? 2 : 1;
+    if (liveRetryCountRef.current >= maxAttempts) return;
     const b = bridgeRef.current;
     if (!b) return;
     const attempt = liveRetryCountRef.current + 1;
     const timer = window.setTimeout(() => {
       liveRetryCountRef.current = attempt;
-      console.warn(`[player] live auto-reconnect attempt ${attempt}/2`);
+      console.warn(`[player] live auto-reconnect attempt ${attempt}/${maxAttempts}`);
       void b.load({
         url: src.url,
         subtitles: src.subtitles,
@@ -95,7 +102,7 @@ export function useAutoRetry(params: {
         isLive: true,
         headers: src.headers,
       });
-    }, 4000);
+    }, livePlayedRef.current ? 4000 : 1500);
     return () => window.clearTimeout(timer);
   }, [isLive, snap.errorCode, src.url, src.subtitles, src.notWebReady, bridgeRef]);
 
@@ -150,7 +157,10 @@ export function useAutoRetry(params: {
       debridFailoverTriedRef.current = true;
       const cached = Object.fromEntries((src.streamRef?.cachedSlugs ?? []).map((s) => [s, true]));
       const ac = new AbortController();
-      void resolveViaDebrids(failoverHash, src.streamRef?.fileIdx ?? undefined, cached, debrids, ac.signal, false).then(
+      const hint = src.episode
+        ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
+        : undefined;
+      void resolveViaDebrids(failoverHash, src.streamRef?.fileIdx ?? undefined, cached, debrids, ac.signal, false, {}, hint).then(
         async (r) => {
           const b = bridgeRef.current;
           if (r.ok && b) {

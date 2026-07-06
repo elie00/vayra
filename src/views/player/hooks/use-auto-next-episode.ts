@@ -3,6 +3,8 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayEpisode, PlayerSrc } from "@/lib/view";
 
+const STUB_MAX_SEC = 150;
+
 export function useAutoNextEpisode(params: {
   src: PlayerSrc;
   snap: PlayerSnapshot;
@@ -20,6 +22,7 @@ export function useAutoNextEpisode(params: {
     if (!nextEp) return;
     if (!canChangeEpisode) return;
     if (snap.durationSec <= 0) return;
+    if (snap.durationSec < STUB_MAX_SEC) return;
     if (startedNearEndRef.current) return;
     const pos = getPlaybackPosition();
     const naturalEnd = snap.status === "ended";

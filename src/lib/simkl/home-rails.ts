@@ -45,7 +45,7 @@ async function hydrateSimklAnime(it: SimklItem): Promise<Meta | null> {
   };
 }
 
-async function hydrateSimklItems(items: SimklItem[], tmdbKey: string): Promise<Meta[]> {
+export async function hydrateSimklItems(items: SimklItem[], tmdbKey: string): Promise<Meta[]> {
   const metas = await Promise.all(
     items.map((it) =>
       isAnimeItem(it)

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Check, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
 import { animeDetails, franchiseTags, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
+import { kitsuAnime } from "@/lib/providers/kitsu";
 import { stripFranchiseSuffix } from "@/lib/providers/jikan";
 import { useMalRating } from "@/lib/mal-rating";
 import type { KitsuEpisode, KitsuStreamer } from "@/lib/providers/kitsu";
@@ -15,6 +16,7 @@ import { fetchAddonMeta } from "@/lib/addons";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
+import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
 import { awardSummary, useAwards } from "@/lib/providers/wikidata";
@@ -29,8 +31,12 @@ import {
 import { cinemetaDetails } from "@/lib/providers/cinemeta-details";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
-import { CLOUD_OK, episodeFromVideoId, libraryGetOne, type LibraryItem } from "@/lib/stremio";
-import { decodeWatchedEpisodes } from "@/lib/stremio-watched";
+import { CLOUD_OK, cloudWriteId, episodeFromVideoId, libraryGetOne, type LibraryItem } from "@/lib/stremio";
+import { decodeWatchedEpisodes, stremioMovieWatched } from "@/lib/stremio-watched";
+import { setEpisodesWatchedStremio } from "@/lib/stremio-watched-sync";
+import { isDetectedAnime } from "@/lib/anime-detect";
+import { isMovieWatchedLocal, movieWatchedVersion, subscribeMovieWatched } from "@/lib/movie-watched";
+import { manualWatchedState, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { useTogether } from "@/lib/together/provider";
 import { useTrakt } from "@/lib/trakt/provider";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
@@ -56,6 +62,7 @@ import {
   type DetailCustomization,
 } from "@/lib/detail-customization";
 import { EpisodeDownloadButton } from "./detail/episode-download-button";
+import { HeroBackdrop } from "./detail/hero-backdrop";
 import { isTitleUpcoming } from "./detail/helpers";
 import { HeroAwardsCorner } from "./detail/hero-awards";
 import { CrunchyrollAwardsCorner } from "./detail/crunchyroll-corner";
@@ -97,35 +104,23 @@ import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
 
-function HeroBackdrop({ url }: { url: string }) {
-  const lowUrl = url.replace(/\/t\/p\/(w\d+|original)\//, "/t/p/w300/");
-  const highUrl = url.replace(/\/t\/p\/(w\d+|original)\//, "/t/p/original/");
-  const canBlurUp = lowUrl !== highUrl;
-  const [ready, setReady] = useState(false);
-  return (
-    <>
-      {canBlurUp && (
-        <img
-          src={lowUrl}
-          alt=""
-          aria-hidden="true"
-          decoding="async"
-          className="absolute inset-0 h-full w-full scale-105 object-cover blur-2xl"
-        />
-      )}
-      <img
-        src={highUrl}
-        alt=""
-        decoding="async"
-        fetchPriority="high"
-        ref={(el) => {
-          if (el?.complete) setReady(true);
-        }}
-        onLoad={() => setReady(true)}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${ready ? "opacity-100" : "opacity-0"}`}
-      />
-    </>
-  );
+function parseYear(v: string | number | undefined | null): number {
+  if (v == null) return 0;
+  const n = Number(String(v).slice(0, 4));
+  return Number.isFinite(n) && n > 1900 ? n : 0;
+}
+
+async function kitsuYearVerdict(
+  kitsuId: number,
+  releaseInfo: string | undefined,
+  detailYear: string | undefined,
+): Promise<"ok" | "reject" | "wait"> {
+  const showYear = parseYear(releaseInfo) || parseYear(detailYear);
+  if (!showYear) return "wait";
+  const ka = await kitsuAnime(kitsuId).catch(() => null);
+  const animeYear = parseYear(ka?.year);
+  if (!animeYear) return "ok";
+  return Math.abs(animeYear - showYear) <= 3 ? "ok" : "reject";
 }
 
 if (typeof document !== "undefined") {
@@ -177,7 +172,6 @@ export function DetailView({
   const { authKey } = useAuth();
   const [loading, setLoading] = useState(true);
   const [trailerOpen, setTrailerOpen] = useState(false);
-  const [watchedMark, setWatchedMark] = useState(false);
   const [layout, setLayout] = useState<DetailCustomization>(loadDetailCustomization);
   const [layoutEdit, setLayoutEdit] = useState(false);
   const [scores, setScores] = useState<OmdbScores | null>(null);
@@ -266,7 +260,12 @@ export function DetailView({
       let k = tmdbTv != null && Number.isFinite(tmdbTv) ? await tmdbTvToKitsu(tmdbTv) : null;
       if (k == null && imdb) k = await imdbToKitsu(imdb);
       if (cancelled) return;
-      if (k != null && k !== failedKitsu.current) setDetectedKitsu(k);
+      if (k != null && k !== failedKitsu.current) {
+        const verdict = await kitsuYearVerdict(k, meta.releaseInfo, detail?.year);
+        if (cancelled) return;
+        if (verdict === "ok") setDetectedKitsu(k);
+        else if (verdict === "reject") failedKitsu.current = k;
+      }
       setDetectingAnime(false);
     })().catch(() => {
       if (!cancelled) setDetectingAnime(false);
@@ -274,7 +273,17 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [idAnime, detectedKitsu, addonNative, meta.id, detail?.imdbId]);
+  }, [idAnime, detectedKitsu, addonNative, meta.id, detail?.imdbId, detail?.year, meta.releaseInfo]);
+
+  useEffect(() => {
+    if (idAnime || detectedKitsu == null) return;
+    const showYear = parseYear(meta.releaseInfo);
+    const loadedYear = parseYear(detail?.year);
+    if (showYear && loadedYear && Math.abs(showYear - loadedYear) > 3) {
+      failedKitsu.current = detectedKitsu;
+      setDetectedKitsu(null);
+    }
+  }, [idAnime, detectedKitsu, detail?.year, meta.releaseInfo]);
 
   useEffect(() => {
     if (meta.type !== "series") return;
@@ -539,9 +548,6 @@ export function DetailView({
 
   const rawTitle = detail?.title ?? meta.name;
   const title = isAnime ? stripFranchiseSuffix(rawTitle) : rawTitle;
-  // For TMDB titles the catalog description is in the (image) request language, so
-  // wait for the localized detail rather than flashing it. Non-TMDB metas are already
-  // in the reading language, so show them immediately.
   const overview = detail?.overview ?? (meta.id.startsWith("tmdb:") ? "" : meta.description) ?? "";
   const tagline = detail?.tagline ?? "";
   const backdrop =
@@ -570,6 +576,26 @@ export function DetailView({
     [liveAwards, meta.name, releaseYearNum],
   );
   const heroAwardSummary = awardSummary(awards).slice(0, 2);
+  const heroAwardsInline = (() => {
+    if (isAnime) {
+      const animeName =
+        animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
+        stickyAwardName.current;
+      if (animeName) {
+        stickyAwardName.current = animeName;
+        return <CrunchyrollAwardsCorner name={animeName} year={releaseYearNum} inline />;
+      }
+    }
+    if (heroAwardSummary.length > 0) {
+      return <HeroAwardsCorner summary={heroAwardSummary} inline />;
+    }
+    const resolved =
+      animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
+      stickyAwardName.current;
+    if (resolved) stickyAwardName.current = resolved;
+    if (resolved) return <CrunchyrollAwardsCorner name={resolved} year={releaseYearNum} inline />;
+    return null;
+  })();
   const isSeries = detail?.kind != null
     ? detail.kind === "tv"
     : meta.type === "series";
@@ -601,6 +627,62 @@ export function DetailView({
     behaviorHints: meta.behaviorHints ?? cinemetaFull?.behaviorHints,
     videos: meta.videos ?? cinemetaFull?.videos,
   };
+
+  useSyncExternalStore(subscribeMovieWatched, movieWatchedVersion, movieWatchedVersion);
+  const watchedMark = meta.type === "movie" && (isMovieWatchedLocal(meta.id) || stremioMovieWatched(libraryItem));
+  const markThisMovieWatched = () => {
+    void markMovieWatched(meta, detail?.imdbId, meta.id.startsWith("tmdb:") ? meta.id.split(":")[2] : null);
+  };
+
+  const seriesWatchedVer = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion, manualWatchedVersion);
+  const prevSeriesWatchedVerRef = useRef(-1);
+  const stremioVideosRef = useRef<{ imdb: string; videos: NonNullable<Meta["videos"]> } | null>(null);
+  useEffect(() => {
+    if (seriesWatchedVer === prevSeriesWatchedVerRef.current) return;
+    if (!authKey || !isSeries || isAnime || isDetectedAnime(meta.id)) return;
+    const imdb =
+      meta.id.startsWith("tt") ? meta.id : detail?.imdbId?.startsWith("tt") ? detail.imdbId : null;
+    const cid = cloudWriteId(meta.id, detail?.imdbId ?? null, !!detail?.imdbId);
+    if (!cid) return;
+    let cancelled = false;
+    void (async () => {
+      let videos = cinemetaFull?.videos;
+      const aligned = imdb ? (videos?.[0]?.id?.startsWith(imdb) ?? false) : true;
+      if (imdb && !aligned) {
+        if (stremioVideosRef.current?.imdb === imdb) {
+          videos = stremioVideosRef.current.videos;
+        } else {
+          const full = await fetchCinemetaMeta(narrowMediaType(meta.type), imdb).catch(() => null);
+          if (full?.videos?.length) {
+            videos = full.videos;
+            stremioVideosRef.current = { imdb, videos: full.videos };
+          }
+        }
+      }
+      if (cancelled || !videos || videos.length === 0) return;
+      const prior = await decodeWatchedEpisodes(libraryItem?.state?.watched, videos).catch(
+        () => new Set<string>(),
+      );
+      const merged = new Set<string>(prior);
+      for (const v of videos) {
+        if (v.season == null || v.episode == null) continue;
+        const k = `${v.season}:${v.episode}`;
+        const manual = manualWatchedState(meta.id, v.season, v.episode);
+        if (manual === true) merged.add(k);
+        else if (manual === false) merged.delete(k);
+      }
+      if (cancelled) return;
+      prevSeriesWatchedVerRef.current = seriesWatchedVer;
+      const unchanged = merged.size === prior.size && [...merged].every((k) => prior.has(k));
+      if (unchanged) return;
+      await setEpisodesWatchedStremio(authKey, playMeta, cid, merged, videos);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seriesWatchedVer, authKey, isSeries, isAnime, cinemetaFull?.videos, detail?.imdbId, meta.id]);
+
   const upcoming = !loading && isTitleUpcoming(detail, meta);
   const currentFranchiseId = animeCanonicalId ?? meta.id;
   const franchiseIdx = isAnime
@@ -620,21 +702,35 @@ export function DetailView({
 
   const lastPlay = useMemo(() => {
     if (episodeHint) return episodeHint;
+    if (isAnime) return lastPlayedEpisode(meta.id);
+    const candidates: Array<{ season: number; episode: number; t: number }> = [];
+    const lc = localCwEntry(meta.id);
+    if (
+      lc?.type === "series" &&
+      typeof lc.season === "number" &&
+      typeof lc.episode === "number" &&
+      lc.season >= 1 &&
+      lc.episode >= 1
+    ) {
+      candidates.push({ season: lc.season, episode: lc.episode, t: lc.t });
+    }
+    const lp = lastPlayedEpisode(meta.id);
+    if (lp && lp.season >= 1 && lp.episode >= 1) {
+      candidates.push({ season: lp.season, episode: lp.episode, t: lp.t });
+    }
     const st = libraryItem?.state;
-    if (!isAnime && libraryItem?.type === "series" && st && (st.timeOffset ?? 0) > 0) {
+    if (libraryItem?.type === "series" && st && (st.timeOffset ?? 0) > 0) {
       const se = episodeFromVideoId(st.video_id);
       const season = st.season ?? se?.season;
       const episode = st.episode ?? se?.episode;
-      if (
-        typeof season === "number" &&
-        typeof episode === "number" &&
-        season >= 1 &&
-        episode >= 1
-      ) {
-        return { season, episode };
+      if (typeof season === "number" && typeof episode === "number" && season >= 1 && episode >= 1) {
+        const mt = Date.parse(libraryItem._mtime ?? st.lastWatched ?? "");
+        candidates.push({ season, episode, t: Number.isFinite(mt) ? mt : 0 });
       }
     }
-    return lastPlayedEpisode(meta.id);
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => b.t - a.t);
+    return { season: candidates[0].season, episode: candidates[0].episode };
   }, [meta.id, libraryItem, isAnime, episodeHint]);
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
@@ -735,7 +831,7 @@ export function DetailView({
               />
             ))
           ) : backdrop ? (
-            <HeroBackdrop key={backdrop} url={backdrop} />
+            <HeroBackdrop url={backdrop} />
           ) : (
             <div className="absolute inset-0 animate-pulse bg-white/[0.02]" />
           )}
@@ -924,14 +1020,7 @@ export function DetailView({
                     canDownload={meta.type === "movie"}
                     showWatched={settings.showWatchedButton && meta.type === "movie"}
                     watchedMark={watchedMark}
-                    onWatched={() => {
-                      setWatchedMark(true);
-                      void markMovieWatched(
-                        meta,
-                        detail?.imdbId,
-                        meta.id.startsWith("tmdb:") ? meta.id.split(":")[2] : null,
-                      );
-                    }}
+                    onWatched={markThisMovieWatched}
                     showSync={actionStage >= 2}
                     inWatchlist={inWatchlist}
                     onToggleWatchlist={() =>
@@ -974,14 +1063,7 @@ export function DetailView({
                     {settings.showWatchedButton && meta.type === "movie" && (
                       <button
                         type="button"
-                        onClick={() => {
-                          setWatchedMark(true);
-                          void markMovieWatched(
-                            meta,
-                            detail?.imdbId,
-                            meta.id.startsWith("tmdb:") ? meta.id.split(":")[2] : null,
-                          );
-                        }}
+                        onClick={markThisMovieWatched}
                         aria-label={t("Mark watched")}
                         title={watchedMark ? t("Marked watched") : t("Mark watched")}
                         className={`group flex h-12 w-12 items-center justify-center rounded-full border transition-[transform,background-color,border-color] duration-200 active:scale-[0.94] ${
@@ -1023,31 +1105,18 @@ export function DetailView({
               </div>
             </div>
           </div>
-          {(() => {
-            if (isAnime) {
-              const animeName =
-                animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-                stickyAwardName.current;
-              if (animeName) {
-                stickyAwardName.current = animeName;
-                return <CrunchyrollAwardsCorner name={animeName} year={releaseYearNum} />;
-              }
-            }
-            if (heroAwardSummary.length > 0) {
-              return <HeroAwardsCorner summary={heroAwardSummary} />;
-            }
-            const resolved =
-              animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-              stickyAwardName.current;
-            if (resolved) stickyAwardName.current = resolved;
-            if (resolved) return <CrunchyrollAwardsCorner name={resolved} year={releaseYearNum} />;
-            return null;
-          })()}
         </div>
       </section>
 
       <div data-tauri-drag-region className="flex flex-col gap-16 px-12 pb-24 pt-14">
-        {overview && <Synopsis text={overview} />}
+        {(overview || heroAwardsInline) && (
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+            {overview && <Synopsis text={overview} />}
+            {heroAwardsInline && (
+              <div className="lg:ms-auto lg:shrink-0">{heroAwardsInline}</div>
+            )}
+          </div>
+        )}
         {loading && (meta.type === "series" || isAnime) && <EpisodeGridSkeleton />}
 
         {isAnime && streamers.length > 0 && <FadeInUp><StreamingLinks streamers={streamers} /></FadeInUp>}
@@ -1084,6 +1153,7 @@ export function DetailView({
         )}
 
         {!liveContext &&
+          !loading &&
           (!detail || detail.seasons.length === 0) &&
           !isAnime &&
           (isSeries || (addonNative && (meta.type === "channel" || meta.type === "tv"))) &&

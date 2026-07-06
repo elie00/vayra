@@ -1,17 +1,15 @@
 {
   "name": "harbor",
   "private": true,
-  "version": "0.9.20",
+  "version": "0.9.69",
   "type": "module",
   "license": "MIT",
-  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:build:linux-system": "tauri build --config src-tauri/tauri.linux-system.conf.json",
-    "tauri:build:flatpak": "tauri build --config src-tauri/tauri.flatpak.conf.json --no-bundle",
     "setup:libmpv": "node scripts/fetch-libmpv.mjs",
     "setup:ffmpeg": "node scripts/fetch-ffmpeg.mjs",
     "setup:fonts": "node scripts/fetch-fonts.mjs"
@@ -48,5 +46,10 @@
     "cheerio": "^1.2.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

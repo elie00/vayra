@@ -22,6 +22,7 @@ import { useStremioSync } from "./use-stremio-sync";
 import { useSubDrop } from "./use-sub-drop";
 import { useSubStyleApply } from "./use-sub-style-apply";
 import { useTrackAutoload } from "./use-track-autoload";
+import { useAutoSync } from "./use-auto-sync";
 import { useVideoDownload } from "./use-video-download";
 import { useWebviewMemory } from "./use-webview-memory";
 
@@ -106,6 +107,8 @@ export function usePlayerMedia(params: {
     settings,
     authKey,
   });
+
+  useAutoSync({ bridgeRef, src, snap, engine, settings });
 
   const subEmbed = engine === "mpv" && settings.playerMpvEmbed;
   const hdrNativeSurface =

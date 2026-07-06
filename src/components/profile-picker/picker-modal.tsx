@@ -1,4 +1,4 @@
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
 import { useProfiles } from "@/lib/profiles";
@@ -7,27 +7,17 @@ import { PasswordPrompt } from "./password-prompt";
 import { ProfileTile } from "./profile-tile";
 
 export function ProfilePickerModal() {
-  const { profiles, activeId, pickerOpen, pickerView, closePicker, setPickerView, selectProfile } = useProfiles();
-  const t = useT();
+  const { profiles, pickerOpen, pickerView, setPickerView, selectProfile } = useProfiles();
 
   if (!pickerOpen) return null;
 
-  const hasActive = !!activeId;
   const goList = () => setPickerView({ kind: "list" });
 
   return createPortal(
-    <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/85 backdrop-blur-2xl animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
-      {hasActive && (
-        <button
-          type="button"
-          onClick={closePicker}
-          style={{ position: "fixed", top: 24, right: 24, zIndex: 190 }}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white/85 ring-1 ring-white/15 transition-colors hover:bg-black/75 hover:text-white"
-          aria-label={t("common.close")}
-        >
-          <X size={18} />
-        </button>
-      )}
+    <div
+      data-tauri-drag-region
+      className="fixed inset-0 z-[180] flex items-center justify-center bg-black/85 backdrop-blur-2xl animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+    >
       <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col items-center overflow-y-auto overscroll-contain px-10 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-3 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
         {pickerView.kind === "list" && (
           <ListView
@@ -59,7 +49,7 @@ export function ProfilePickerModal() {
           return (
             <PasswordPrompt
               profile={target}
-              onSuccess={() => selectProfile(target.id)}
+              onSuccess={() => selectProfile(target.id, { unlocked: true })}
               onCancel={goList}
             />
           );

@@ -86,11 +86,11 @@ export function AspectMenu({
               ))}
             </div>
             <div className="mt-2 flex flex-col">
-              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="brightness" label={t("Brightness")} min={-50} max={50} step={1} def={0} />
-              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="contrast" label={t("Contrast")} min={-50} max={50} step={1} def={0} />
-              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="saturation" label={t("Saturation")} min={-50} max={50} step={1} def={0} />
-              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="gamma" label={t("Gamma")} min={-50} max={50} step={1} def={0} />
-              <TweakSlider tweaks={tweaks} setTweak={setTweak} mpvKey="sharpen" label={t("Sharpen")} min={0} max={2} step={0.05} def={0} fmt={(v) => v.toFixed(2)} />
+              <TweakSlider compact tweaks={tweaks} setTweak={setTweak} mpvKey="brightness" label={t("Brightness")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider compact tweaks={tweaks} setTweak={setTweak} mpvKey="contrast" label={t("Contrast")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider compact tweaks={tweaks} setTweak={setTweak} mpvKey="saturation" label={t("Saturation")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider compact tweaks={tweaks} setTweak={setTweak} mpvKey="gamma" label={t("Gamma")} min={-50} max={50} step={1} def={0} />
+              <TweakSlider compact tweaks={tweaks} setTweak={setTweak} mpvKey="sharpen" label={t("Sharpen")} min={0} max={2} step={0.05} def={0} fmt={(v) => v.toFixed(2)} />
             </div>
           </div>
           <div className="border-t border-edge-soft/60 p-2">

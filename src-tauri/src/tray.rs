@@ -49,9 +49,11 @@ fn current_prefs() -> TrayPrefs {
 
 fn show_main(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.unminimize();
         let _ = window.show();
+        let _ = window.unminimize();
         let _ = window.set_focus();
+        #[cfg(windows)]
+        crate::force_show_foreground(&window);
     }
 }
 
@@ -183,12 +185,18 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
-                button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
-                ..
-            } = event
-            {
+            let restore = matches!(
+                event,
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } | TrayIconEvent::DoubleClick {
+                    button: MouseButton::Left,
+                    ..
+                }
+            );
+            if restore {
                 show_main(tray.app_handle());
             }
         });

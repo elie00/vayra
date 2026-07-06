@@ -2,10 +2,14 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import type { Meta } from "@/lib/cinemeta";
 import type { DebridStore } from "@/lib/debrid/types";
 import { savePlayback } from "@/lib/playback-history";
+import { saveSeasonLock } from "@/lib/season-lock";
 import { markStreamDead, recordStubEvent } from "@/lib/dead-streams";
 
 const PREFLIGHT_STUB_TTL_MS = 15 * 60 * 1000;
+const SAME_SOURCE_MAX_RETRIES = 4;
+const SAME_SOURCE_RETRY_DELAY_MS = 1500;
 import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
+import { hasUncachedMarker } from "@/lib/streams/cached";
 import { preflightCheck } from "@/lib/streams/preflight";
 import { resolveStream } from "@/lib/streams/resolve";
 import { registerStreamProxy } from "@/lib/stream-proxy";
@@ -26,6 +30,7 @@ export function usePickHandler({
   resume,
   debrids,
   isCached,
+  seasonLock,
   p2pAutoConsent,
   inSession,
   canInvite,
@@ -53,6 +58,7 @@ export function usePickHandler({
   resume?: boolean;
   debrids: DebridStore[];
   isCached: (s: ScoredStream) => boolean;
+  seasonLock: boolean;
   p2pAutoConsent: boolean;
   inSession: boolean;
   canInvite: boolean;
@@ -78,6 +84,25 @@ export function usePickHandler({
   const debridFailStreakRef = useRef(0);
   const resolveAcRef = useRef<AbortController | null>(null);
   const autoPickRef = useRef(false);
+  const sameSourceRetryRef = useRef(0);
+  const retryTimerRef = useRef<number | null>(null);
+
+  const scheduleSameSourceRetry = (
+    stream: ScoredStream,
+    committed: boolean,
+    forceP2p: boolean,
+  ): boolean => {
+    if (!seasonLock && autoActive) return false;
+    if (sameSourceRetryRef.current >= SAME_SOURCE_MAX_RETRIES) return false;
+    const n = (sameSourceRetryRef.current += 1);
+    const delay = SAME_SOURCE_RETRY_DELAY_MS * n;
+    console.warn(`[picker] same-source retry ${n}/${SAME_SOURCE_MAX_RETRIES} in ${delay}ms`);
+    if (retryTimerRef.current != null) window.clearTimeout(retryTimerRef.current);
+    retryTimerRef.current = window.setTimeout(() => {
+      void resolveAndOpen(stream, committed, forceP2p);
+    }, delay);
+    return true;
+  };
 
   const advanceAuto = () => {
     if (!autoActive) return;
@@ -96,7 +121,8 @@ export function usePickHandler({
     resolveAcRef.current = ac;
     let opened = false;
     try {
-      const r = await resolveStream(stream, debrids, ac.signal, userCommitted, forceP2p);
+      const hint = episode ? { season: episode.season ?? null, episode: episode.episode ?? null } : undefined;
+      const r = await resolveStream(stream, debrids, ac.signal, userCommitted, forceP2p, hint);
       if (ac.signal.aborted) return;
       if (!r.ok) {
         if (r.code === "web-page" && r.webUrl) {
@@ -107,6 +133,7 @@ export function usePickHandler({
         }
         setFailedStreams((prev) => new Set(prev).add(stream));
         const isDebridSide = isDebridFailure(r.code, r.tried);
+        if (isDebridSide && scheduleSameSourceRetry(stream, userCommitted, forceP2p)) return;
         if (isDebridSide && debrids.length > 0) {
           debridFailStreakRef.current += 1;
           if (debridFailStreakRef.current >= 2) {
@@ -153,6 +180,7 @@ export function usePickHandler({
           setP2pConfirm({ stream, forceP2p: true });
           return;
         }
+        if (scheduleSameSourceRetry(stream, userCommitted, forceP2p)) return;
         recordStubEvent(reasonStr);
         const willRetry = autoActive && autoAttemptIdx + 1 < autoCandidatesLength;
         advanceAuto();
@@ -213,27 +241,27 @@ export function usePickHandler({
         },
       });
       opened = true;
+      sameSourceRetryRef.current = 0;
       if (meta.id && !meta.id.startsWith("iptv:")) {
-        savePlayback(
-          meta.id,
-          {
-            infoHash: stream.infoHash ?? null,
-            fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
-            addonId: stream.addonId ?? null,
-            url: playUrl,
-            title: meta.name,
-            parsedTitle: stream.parsedTitle ?? null,
-            resolution: stream.resolution ?? null,
-            source: stream.source ?? null,
-            size: stream.size ?? null,
-            bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
-            cachedSlugs: Object.entries(stream.cached ?? {})
-              .filter(([, v]) => v === true)
-              .map(([k]) => k),
-          },
-          episode?.season,
-          episode?.episode,
-        );
+        const entry = {
+          infoHash: stream.infoHash ?? null,
+          fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
+          addonId: stream.addonId ?? null,
+          url: playUrl,
+          title: meta.name,
+          parsedTitle: stream.parsedTitle ?? null,
+          resolution: stream.resolution ?? null,
+          source: stream.source ?? null,
+          size: stream.size ?? null,
+          bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
+          cachedSlugs: Object.entries(stream.cached ?? {})
+            .filter(([, v]) => v === true)
+            .map(([k]) => k),
+        };
+        savePlayback(meta.id, entry, episode?.season, episode?.episode);
+        if (seasonLock && episode && meta.type === "series") {
+          saveSeasonLock(meta.id, entry, episode.season ?? null);
+        }
       }
     } finally {
       if (!opened && !ac.signal.aborted) {
@@ -245,6 +273,11 @@ export function usePickHandler({
   const startResolve = (stream: ScoredStream, committed: boolean, forceP2p = false) => {
     setResolveError(null);
     setQueuedHash(null);
+    sameSourceRetryRef.current = 0;
+    if (retryTimerRef.current != null) {
+      window.clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
     setResolving({ stream });
     void resolveAndOpen(stream, committed, forceP2p);
   };
@@ -264,7 +297,7 @@ export function usePickHandler({
       !skipP2pConfirm &&
       !p2pAutoConsent &&
       !isCached(stream) &&
-      !stream.url &&
+      (!stream.url || hasUncachedMarker(stream)) &&
       engineP2pEligible(stream)
     ) {
       setP2pConfirm({ stream });
@@ -306,7 +339,13 @@ export function usePickHandler({
     setQueuedHash(stream.infoHash);
   };
 
-  useEffect(() => () => resolveAcRef.current?.abort(), []);
+  useEffect(
+    () => () => {
+      resolveAcRef.current?.abort();
+      if (retryTimerRef.current != null) window.clearTimeout(retryTimerRef.current);
+    },
+    [],
+  );
 
   const resetDebridDown = () => {
     debridFailStreakRef.current = 0;

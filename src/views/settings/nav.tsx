@@ -81,6 +81,14 @@ function IconStreaming(p: IconProps) {
   );
 }
 
+function IconFilters(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <path d="M4 5.5h16l-6.1 7.2v5.2l-3.8 1.9v-7.1z" />
+    </IconBase>
+  );
+}
+
 function IconP2P(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -369,7 +377,7 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
       {
         id: "streamFilters",
         label: "Stream filters",
-        Icon: IconStreaming,
+        Icon: IconFilters,
         keywords: [
           "stream filter",
           "custom filter",
@@ -654,6 +662,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Show MDBList score on cards", section: "library", anchorTitle: "Metadata providers", keywords: ["mdblist score", "aggregate score", "all sources", "card badge"] },
   { label: "Show Trakt score on cards", section: "library", anchorTitle: "Metadata providers", keywords: ["trakt rating", "percent", "community rating", "card badge"] },
   { label: "Hover preview", section: "library", anchorTitle: "Metadata providers", keywords: ["hover preview", "peek", "poster hover", "current", "elegant", "preview style", "popup card"] },
+  { label: "Hover style", section: "library", anchorTitle: "Metadata providers", keywords: ["hover style", "card hover", "poster hover", "peek", "elegantfin", "frosted glass", "cinema", "spotlight", "minimal", "glare", "overview", "preview style"] },
   { label: "Open preview", section: "library", anchorTitle: "Metadata providers", keywords: ["on the card", "to the side", "preview placement", "hover position"] },
   { label: "Mark watched button", section: "library", anchorTitle: "Metadata providers", keywords: ["mark watched", "watched button", "detail page", "trakt sync", "simkl sync", "check"] },
   { label: "Badge position", section: "library", anchorTitle: "Metadata providers", keywords: ["badge placement", "top", "bottom", "score position", "chip position"] },

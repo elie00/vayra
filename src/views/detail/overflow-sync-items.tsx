@@ -6,8 +6,7 @@ import { deleteListEntry, fetchListEntry, saveListEntry } from "@/lib/anilist/mu
 import { useAnilist } from "@/lib/anilist/provider";
 import { resolveAnilistMediaId } from "@/lib/anilist/sync";
 import type { MediaListStatus } from "@/lib/anilist/types";
-import { kitsuToMal } from "@/lib/providers/anime-mapping";
-import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
+import { resolveSimklTarget } from "@/lib/simkl/ids";
 import {
   clearSimklStatus,
   loadSimklStatusMap,
@@ -122,18 +121,8 @@ export function SimklMenuItems({
     if (!isConnected) return;
     let cancelled = false;
     void (async () => {
-      let t: SimklTarget | null = null;
-      const r = stremioIdToSimklTarget(harborId);
-      if (r.ok) {
-        t = r.target;
-      } else if (harborId.startsWith("kitsu:")) {
-        const n = Number(harborId.split(":")[1]);
-        const mal = Number.isFinite(n) ? await kitsuToMal(n).catch(() => null) : null;
-        if (mal != null) t = { kind: "show", ids: { mal } };
-      }
+      const t = await resolveSimklTarget(harborId, type);
       if (cancelled || !t) return;
-      if (type === "series" && t.kind === "movie") t = { kind: "show", ids: t.ids };
-      if (type === "movie" && t.kind === "show") t = { kind: "movie", ids: t.ids };
       setTarget(t);
       const malKey = t.kind !== "episode" && t.ids.mal != null ? `mal:${t.ids.mal}` : null;
       try {

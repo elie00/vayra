@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ArrowUpCircle, X } from "lucide-react";
 import {
   dismissUpdate,
@@ -9,21 +9,12 @@ import {
   useUpdate,
 } from "@/lib/updater/use-update";
 import { UpdateCard } from "./update-card";
-import { isFlatpak } from "@/lib/runtime";
 
 export function UpdateRoot() {
   const u = useUpdate();
-  const [enabled, setEnabled] = useState(false);
   useEffect(() => {
-    void isFlatpak().then((sandboxed) => {
-      if (!sandboxed) {
-        setEnabled(true);
-        startUpdateWatcher();
-      }
-    });
+    startUpdateWatcher();
   }, []);
-
-  if (!enabled) return null;
 
   if (u.panelOpen) return createPortal(<UpdateCard />, document.body);
   if (!updateAvailable(u)) return null;

@@ -80,7 +80,8 @@ export function EpisodePanel({
     const ep = pickingFor;
     setResolvingFor(ep);
     try {
-      const r = await resolveStream(stream, debrids, new AbortController().signal, true);
+      const hint = { season: ep.season ?? null, episode: ep.episode ?? null };
+      const r = await resolveStream(stream, debrids, new AbortController().signal, true, false, hint);
       if (!r.ok) {
         setResolvingFor(null);
         return;

@@ -87,6 +87,7 @@ export type Stream = {
   addonUrl?: string;
   addonRanked?: boolean;
   addonPriority?: number;
+  addonReturnIdx?: number;
   contributors?: Array<{ id: string; name: string }>;
 };
 

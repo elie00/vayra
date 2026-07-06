@@ -45,8 +45,11 @@ import { fetchWatchedKeySet } from "@/lib/trakt/history";
 import { recentlyPlayed, subscribePlayback, type WatchedSet } from "@/lib/playback-history";
 import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
 import { buildSimklHomeRows } from "@/lib/simkl/home-rails";
+import { loadSimklWatchedMap, loadSimklStatusMap, type WatchlistStatus } from "@/lib/simkl/list-status";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
 import { useSimkl } from "@/lib/simkl/provider";
+import { useAnilist } from "@/lib/anilist/provider";
+import { loadAnilistWatchedMap } from "@/lib/anilist/watched-map";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
 import { useMediaFavorites, type MediaEntry } from "@/lib/media-favorites";
@@ -84,6 +87,9 @@ export function Home({ active = true }: { active?: boolean }) {
   const [letterboxdRows, setLetterboxdRows] = useState<HomeRow[]>([]);
   const [simklCw, setSimklCw] = useState<LibraryItem[]>([]);
   const [traktWatched, setTraktWatched] = useState<Set<string>>(() => new Set());
+  const [simklWatchedMap, setSimklWatchedMap] = useState<Map<string, Set<string>>>(() => new Map());
+  const [simklStatusMap, setSimklStatusMap] = useState<Map<string, WatchlistStatus>>(() => new Map());
+  const [anilistWatchedMap, setAnilistWatchedMap] = useState<Map<string, Set<string>>>(() => new Map());
   const [localWatched, setLocalWatched] = useState<WatchedSet>(() => recentlyPlayed());
   useEffect(() => subscribePlayback(() => setLocalWatched(recentlyPlayed())), []);
   const [heroPool, setHeroPool] = useState<Meta[]>([]);
@@ -93,6 +99,7 @@ export function Home({ active = true }: { active?: boolean }) {
   const [addonsTick, setAddonsTick] = useState(0);
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
+  const { isConnected: anilistConnected } = useAnilist();
   const letterboxd = useLetterboxd();
   const rowsRef = useRef<HomeRow[]>([]);
   const loadingRef = useRef<Set<string>>(new Set());
@@ -246,6 +253,28 @@ export function Home({ active = true }: { active?: boolean }) {
       cancelled = true;
     };
   }, [simklConnected, settings.tmdbKey]);
+
+  useEffect(() => {
+    if (!simklConnected) {
+      setSimklWatchedMap(new Map());
+      setSimklStatusMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    loadSimklWatchedMap()
+      .then((map) => {
+        if (!cancelled) setSimklWatchedMap(map);
+      })
+      .catch(() => {});
+    loadSimklStatusMap()
+      .then((map) => {
+        if (!cancelled) setSimklStatusMap(map);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [simklConnected]);
 
   useEffect(() => {
     if (!simklConnected) {
@@ -453,6 +482,23 @@ export function Home({ active = true }: { active?: boolean }) {
     const overrideIds = new Set(usable.map((i) => i._id));
     return [...items.filter((i) => !overrideIds.has(i._id)), ...usable];
   }, [items, manualWatchedVer]);
+  useEffect(() => {
+    if (!anilistConnected) {
+      setAnilistWatchedMap((prev) => (prev.size ? new Map() : prev));
+      return;
+    }
+    let cancelled = false;
+    const ids = continueWatching.filter((i) => /^(kitsu|mal|anilist):/.test(i._id)).map((i) => i._id);
+    loadAnilistWatchedMap(ids)
+      .then((m) => {
+        if (!cancelled) setAnilistWatchedMap(m);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [anilistConnected, continueWatching]);
+
   const cwItems = useCwAdvance(
     continueWatching,
     settings.tmdbKey,
@@ -460,6 +506,10 @@ export function Home({ active = true }: { active?: boolean }) {
     resurfaceLibrary,
     settings.animeOnlyInAnimeRoom ? "exclude" : "all",
     manualWatchedVer,
+    traktWatched,
+    simklWatchedMap,
+    anilistWatchedMap,
+    simklStatusMap,
   );
 
   useEffect(() => {

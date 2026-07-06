@@ -96,6 +96,7 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     onCast: NOOP,
     onToggleDraw: NOOP,
     onToggleHideOthers: NOOP,
+    onClearDraw: NOOP,
     onScreenshot: NOOP,
     onPickAnother: NOOP,
     onPrevEp: NOOP,

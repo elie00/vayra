@@ -917,6 +917,9 @@ main.absolute.inset-0 .rounded-xl.border.bg-elevated\\/70 {
 [data-scroll-anchor="hero"] .overflow-hidden {
   border-radius: 0 !important;
 }
+[data-scroll-anchor="hero"].harbor-anime-hero {
+  margin: 0 !important;
+}
 
 /* ==========================================================================
    HOVER PREVIEW GLASS

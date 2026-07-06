@@ -14,6 +14,8 @@ type Snap = {
 
 type LastAction = "start" | "pause" | "stop" | null;
 
+const STUB_MAX_SEC = 150;
+
 export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }): void {
   const { isConnected, resolveTarget, scrobble } = useTrakt();
   const { settings } = useSettings();
@@ -22,6 +24,8 @@ export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
   const lastActionRef = useRef<LastAction>(null);
   const lastKeyRef = useRef<string | null>(null);
   const prevIdentityRef = useRef({ metaId: src.meta.id, episode: src.episode });
+  const progressRef = useRef(0);
+  const loadResetSeenRef = useRef(true);
 
   const metaId = src.meta.id;
   const season = src.episode?.season;
@@ -51,33 +55,46 @@ export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
 
   useEffect(() => {
     if (lastKeyRef.current && lastKeyRef.current !== key) {
-      const prevPos = getPlaybackPosition();
-      const prevDur = snap.durationSec;
-      if (prevDur > 0 && pauseOnPauseRef.current) {
-        const progress = Math.min(100, (prevPos / prevDur) * 100);
-        const prev = prevIdentityRef.current;
-        scrobble("pause", { metaId: prev.metaId, episode: prev.episode, progress });
+      const prev = prevIdentityRef.current;
+      const prevProgress = progressRef.current;
+      if (lastActionRef.current !== "stop") {
+        if (prevProgress >= 80) {
+          scrobble("stop", { metaId: prev.metaId, episode: prev.episode, progress: 100 });
+        } else if (prevProgress > 0 && pauseOnPauseRef.current) {
+          scrobble("pause", { metaId: prev.metaId, episode: prev.episode, progress: prevProgress });
+        }
       }
-      lastActionRef.current = "pause";
+      lastActionRef.current = null;
+      progressRef.current = 0;
+      loadResetSeenRef.current = false;
     }
     lastKeyRef.current = key;
     prevIdentityRef.current = { metaId, episode: src.episode };
-  }, [key, metaId, src.episode, scrobble, snap.durationSec]);
+  }, [key, metaId, src.episode, scrobble]);
 
   useEffect(() => {
     if (!isConnected) return;
     const target = resolveTarget(metaId, src.episode);
     if (!target) return;
-    if (snap.durationSec <= 0) return;
-    const progress = Math.min(100, Math.max(0, (getPlaybackPosition() / snap.durationSec) * 100));
-
     if (snap.status === "ended") {
-      if (lastActionRef.current === "start" || lastActionRef.current === "pause") {
+      if (
+        snap.durationSec >= STUB_MAX_SEC &&
+        (lastActionRef.current === "start" || lastActionRef.current === "pause")
+      ) {
         scrobble("stop", { metaId, episode: src.episode, progress: 100 });
         lastActionRef.current = "stop";
       }
       return;
     }
+    if (!loadResetSeenRef.current) {
+      if (snap.status === "loading" || snap.durationSec <= 0) loadResetSeenRef.current = true;
+      return;
+    }
+    if (snap.durationSec <= 0) return;
+    if (snap.durationSec < STUB_MAX_SEC) return;
+    const progress = Math.min(100, Math.max(0, (getPlaybackPosition() / snap.durationSec) * 100));
+    if (progress > progressRef.current) progressRef.current = progress;
+
     if (lastActionRef.current === "stop") return;
 
     if (snap.status === "playing" && lastActionRef.current !== "start") {
@@ -103,6 +120,7 @@ export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
   useEffect(() => {
     if (!isConnected) return;
     if (snap.durationSec <= 0) return;
+    if (snap.durationSec < STUB_MAX_SEC) return;
     if (lastActionRef.current !== "start") {
       seekTrackRef.current = { pos: getPlaybackPosition(), at: Date.now(), lastResyncAt: 0 };
       return;
@@ -112,6 +130,10 @@ export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
       const now = Date.now();
       const ref = seekTrackRef.current;
       const pos = getPlaybackPosition();
+      if (snap.durationSec > 0) {
+        const pct = (pos / snap.durationSec) * 100;
+        if (pct > progressRef.current) progressRef.current = pct;
+      }
       const dPos = pos - ref.pos;
       const dT = (now - ref.at) / 1000;
       ref.pos = pos;
@@ -151,18 +173,17 @@ function sendBeacon(
 ): void {
   const session = getSession();
   if (!session) return;
+  if (target.kind === "show") return;
   const clamped = Math.max(0, Math.min(100, Number(progress.toFixed(2))));
   let body: object;
   if (target.kind === "movie") {
     body = { movie: { ids: target.ids }, progress: clamped };
-  } else if (target.kind === "episode") {
+  } else {
     body = {
       show: { ids: target.show.ids },
       episode: { season: target.season, number: target.number },
       progress: clamped,
     };
-  } else {
-    body = { show: { ids: target.ids }, progress: clamped };
   }
   const url = `${TRAKT_API_BASE}/scrobble/${action}`;
   try {

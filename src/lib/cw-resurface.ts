@@ -13,9 +13,9 @@ const ANIME_ID = /^(kitsu|mal|anilist|anidb):/;
 
 export type AnimeMode = "all" | "exclude" | "only";
 
-export function isNextAired(id: string, airDate: string | undefined): boolean {
+export function isNextAired(isAnime: boolean, airDate: string | undefined): boolean {
   const t = airDate ? Date.parse(airDate) : NaN;
-  if (ANIME_ID.test(id)) return Number.isFinite(t) && t <= Date.now();
+  if (isAnime) return Number.isFinite(t) && t <= Date.now();
   return !airDate || !Number.isFinite(t) || t <= Date.now();
 }
 
@@ -55,6 +55,7 @@ export async function resurfaceCandidates(
   });
   for (const i of candidates) {
     const cur = currentEpisode(i)!;
+    const anime = isAnimeCwItem(i) || ANIME_ID.test(i._id);
     const key = `${i._id}:${cur.season}:${cur.episode}`;
     const cached = cache.get(key);
     let nx: { season: number; episode: number } | null;
@@ -70,7 +71,7 @@ export async function resurfaceCandidates(
       };
       nx = await fetchAdjacentEpisodes(meta, cur, { tmdbKey: opts.tmdbKey })
         .then((adj) =>
-          adj.next && isNextAired(i._id, adj.next.airDate)
+          adj.next && isNextAired(anime, adj.next.airDate)
             ? { season: adj.next.season, episode: adj.next.episode }
             : null,
         )

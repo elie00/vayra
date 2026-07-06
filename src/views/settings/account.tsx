@@ -20,7 +20,7 @@ export function AccountStub() {
   const { user, signOut } = useAuth();
   const { settings, update } = useSettings();
   const { displayName, setDisplayName } = useTogether();
-  const { activeProfile, updateProfile } = useProfiles();
+  const { activeProfile, updateProfile, profiles } = useProfiles();
   const pushIdentity = (patch: { harborColor?: string; harborAvatar?: string | null }) => {
     update(patch);
     if (!activeProfile) return;
@@ -171,6 +171,76 @@ export function AccountStub() {
               onChange={(c) => pushIdentity({ harborColor: c })}
             />
           </div>
+        </div>
+      </Section>
+
+      <Section
+        title={t("Profiles")}
+        subtitle={t("With more than one profile, Harbor shows Who's watching on launch so you can choose. With a single profile, it opens straight to home.")}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-ink">{t("Show Who's watching")}</span>
+            <span className="text-[12.5px] text-ink-muted">
+              {t("How often the profile screen appears when you have more than one profile. Set it to Never to always open to your last profile.")}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["launch", t("Every launch")],
+                ["15m", t("Every 15 min")],
+                ["30m", t("Every 30 min")],
+                ["never", t("Never")],
+              ] as const
+            ).map(([val, label]) => {
+              const active = (settings.profilePromptInterval ?? "launch") === val;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => update({ profilePromptInterval: val })}
+                  className={`h-9 rounded-full border px-4 text-[13px] font-medium transition-colors ${
+                    active
+                      ? "border-ink bg-ink text-canvas"
+                      : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-ink-subtle hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {profiles.length > 1 && (
+            <div className="flex flex-col gap-1 pt-1">
+              <span className="text-[14px] font-medium text-ink">{t("Default profile")}</span>
+              <span className="text-[12.5px] text-ink-muted">
+                {t("Skip Who's watching and always start as this profile. PIN-locked profiles can't be a default.")}
+              </span>
+              <div className="flex flex-wrap gap-2 pt-1.5">
+                {[
+                  { id: "", label: t("Ask each time") },
+                  ...profiles.filter((p) => !p.passwordHash).map((p) => ({ id: p.id, label: p.name })),
+                ].map(({ id, label }) => {
+                  const active = (settings.defaultProfileId ?? "") === id;
+                  return (
+                    <button
+                      key={id || "ask"}
+                      type="button"
+                      onClick={() => update({ defaultProfileId: id })}
+                      className={`h-9 rounded-full border px-4 text-[13px] font-medium transition-colors ${
+                        active
+                          ? "border-ink bg-ink text-canvas"
+                          : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-ink-subtle hover:text-ink"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </Section>
 

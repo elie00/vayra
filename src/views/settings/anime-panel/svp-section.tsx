@@ -19,6 +19,7 @@ export function SvpSection() {
 
   const installed = status?.installed ?? false;
   const ready = status?.ready ?? false;
+  const loadFailed = ready && status?.loadable === false;
 
   const openSvp = async () => {
     setBusy(true);
@@ -55,13 +56,15 @@ export function SvpSection() {
       title={t("SVP frame interpolation")}
       subtitle={t("Genuine 48/60fps motion on anime, rendered right inside Harbor's player. SVP supplies the engine (VapourSynth + svpflow) and runs in your tray for licensing; Harbor's own player applies the interpolation, so it stays embedded and fully under your control. One-time install, then flip it on.")}
     >
-      <Step n={1} title={t("SVP (free)")} ok={ready}>
+      <Step n={1} title={t("SVP (free)")} ok={ready && !loadFailed}>
         <p className="text-[12.5px] leading-relaxed text-ink-muted">
-          {ready
-            ? t("Installed and detected. Harbor found its interpolation engine and will drive it directly.")
-            : installed
-              ? t("SVP is installed but Harbor couldn't find its engine files (svpflow + VapourSynth). Try repairing the SVP install, or reopen SVP once.")
-              : t("Install SVP once (the free tier is enough). It bundles VapourSynth + svpflow; Harbor reuses them, no extra setup.")}
+          {loadFailed
+            ? t("SVP's files are here but its VapourSynth engine won't load ({err}). This usually means a stale VapourSynth entry or a missing Microsoft VC++ runtime. Reinstall SVP, or install the latest \"Visual C++ Redistributable (x64)\" from Microsoft, then reopen Harbor.", { err: status?.load_error ?? "load error" })
+            : ready
+              ? t("Installed and detected. Harbor found its interpolation engine and will drive it directly.")
+              : installed
+                ? t("SVP is installed but Harbor couldn't find its engine files (svpflow + VapourSynth). Try repairing the SVP install, or reopen SVP once.")
+                : t("Install SVP once (the free tier is enough). It bundles VapourSynth + svpflow; Harbor reuses them, no extra setup.")}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {installed ? (

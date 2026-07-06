@@ -34,6 +34,7 @@ export function TweakSlider({
   step,
   def,
   fmt,
+  compact = false,
 }: {
   tweaks: Record<string, string>;
   setTweak: (k: string, v: string | null) => void;
@@ -44,14 +45,17 @@ export function TweakSlider({
   step: number;
   def: number;
   fmt?: (v: number) => string;
+  compact?: boolean;
 }) {
   const t = useT();
   const raw = tweaks[mpvKey];
   const value = raw != null && raw !== "" ? parseFloat(raw) : def;
   const active = raw != null && raw !== "" && parseFloat(raw) !== def;
   return (
-    <div className="flex items-center gap-4 px-1 py-1.5">
-      <span className="w-36 shrink-0 text-[13.5px] font-medium text-ink">{label}</span>
+    <div className={`flex items-center px-1 py-1.5 ${compact ? "gap-2.5" : "gap-4"}`}>
+      <span className={`shrink-0 font-medium text-ink ${compact ? "w-[76px] text-[12.5px]" : "w-36 text-[13.5px]"}`}>
+        {label}
+      </span>
       <input
         type="range"
         min={min}
@@ -62,9 +66,11 @@ export function TweakSlider({
           const v = parseFloat(e.target.value);
           setTweak(mpvKey, v === def ? null : String(v));
         }}
-        className="h-1 flex-1 appearance-none rounded-full bg-edge-soft accent-ink"
+        className="h-1 min-w-0 flex-1 appearance-none rounded-full bg-edge-soft accent-ink"
       />
-      <span className={`w-16 shrink-0 text-end text-[13px] tabular-nums ${active ? "text-ink" : "text-ink-subtle"}`}>
+      <span
+        className={`shrink-0 text-end tabular-nums ${compact ? "w-10 text-[12px]" : "w-16 text-[13px]"} ${active ? "text-ink" : "text-ink-subtle"}`}
+      >
         {fmt ? fmt(value) : value}
       </span>
       {active ? (
@@ -75,7 +81,7 @@ export function TweakSlider({
           {t("Reset")}
         </button>
       ) : (
-        <span className="w-[34px] shrink-0" />
+        <span className={`shrink-0 ${compact ? "w-7" : "w-[34px]"}`} />
       )}
     </div>
   );

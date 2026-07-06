@@ -1,4 +1,4 @@
-import { Filter, Languages, MousePointerClick, X, Zap } from "lucide-react";
+import { Filter, Languages, MousePointerClick, RefreshCw, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { resolveAddonLogo } from "@/components/addon-logo";
 import { HostSourceBanner } from "@/components/host-source-banner";
@@ -13,7 +13,7 @@ import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores, matchBadge } from "@/lib/together/source-match";
 import { addonInstanceKey, buildAddonOptions } from "@/views/play-picker/picker-utils";
 import type { Meta } from "@/lib/cinemeta";
-import type { PlayEpisode } from "@/lib/view";
+import type { PlayEpisode, PlayerStreamRef } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
 import { AddonFilterMenu, QualityFilterMenu, SourceFilterMenu } from "./stream-switcher/filter-dropdowns";
@@ -22,6 +22,7 @@ import { KidsStreamSwitcher } from "./stream-switcher/kids-switcher";
 import { abbreviateLanguages, normalizeLangCode, streamMatchesLangs } from "./stream-switcher/lang-utils";
 import { QUALITY_BADGE, QUALITY_LABEL, QUALITY_ORDER, qualityKey, type QualityKey } from "./stream-switcher/quality";
 import { isCurrentStream, streamKey, SwitcherRow } from "./stream-switcher/switcher-row";
+import { useSwitcherRefresh } from "./stream-switcher/use-switcher-refresh";
 
 function isHiddenAddon(addonId: string, addonName?: string): boolean {
   const id = (addonId || "").toLowerCase();
@@ -37,9 +38,11 @@ export function StreamSwitcher({
   currentUrl,
   currentInfoHash,
   currentFileIdx,
+  currentRef,
   debridSlugs,
   meta,
   episode,
+  imdbId,
   hostSource,
 }: {
   open: boolean;
@@ -49,9 +52,11 @@ export function StreamSwitcher({
   currentUrl: string;
   currentInfoHash?: string | null;
   currentFileIdx?: number | null;
+  currentRef?: PlayerStreamRef | null;
   debridSlugs: string[];
   meta: Meta;
   episode?: PlayEpisode;
+  imdbId?: string | null;
   hostSource?: SourceDescriptor | null;
 }) {
   const t = useT();
@@ -86,6 +91,8 @@ export function StreamSwitcher({
     () => subscribePickerCache(() => setCache(peekPickerCache(meta, episode))),
     [meta, episode],
   );
+
+  const { refreshing, refresh } = useSwitcherRefresh({ meta, episode, imdbId: imdbId ?? null, active: open });
 
   useEffect(() => {
     if (!open) return;
@@ -226,7 +233,31 @@ export function StreamSwitcher({
         : addonFilteredList.filter((s) => streamMatchesLangs(s, preferredLangs)),
     [addonFilteredList, preferredLangs],
   );
-  const list = filterToPreferred && preferredLangs.length > 0 ? matchedStreams : addonFilteredList;
+  const filteredList = filterToPreferred && preferredLangs.length > 0 ? matchedStreams : addonFilteredList;
+  const matchCurrent = useMemo(() => {
+    const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
+    return (s: ScoredStream): boolean => {
+      if (isCurrentStream(s, currentUrl, currentInfoHash, currentFileIdx)) return true;
+      if (!currentRef) return false;
+      const ref = currentRef;
+      if (ref.infoHash) return false;
+      const titleMatch = !!norm(ref.parsedTitle) && norm(ref.parsedTitle) === norm(s.parsedTitle);
+      if (!titleMatch) return false;
+      const addonMatch = !ref.addonId || ref.addonId === s.addonId;
+      const resMatch = !ref.resolution || norm(ref.resolution) === norm(s.resolution);
+      const sizeMatch = ref.size == null || s.size == null || ref.size === s.size;
+      return addonMatch && resMatch && sizeMatch;
+    };
+  }, [currentUrl, currentInfoHash, currentFileIdx, currentRef]);
+  const currentStream = useMemo(
+    () => allStreams.find((s) => matchCurrent(s)) ?? null,
+    [allStreams, matchCurrent],
+  );
+  const list = useMemo(() => {
+    if (!currentStream) return filteredList;
+    const curKey = streamKey(currentStream);
+    return [currentStream, ...filteredList.filter((s) => streamKey(s) !== curKey)];
+  }, [filteredList, currentStream]);
   const [showCount, setShowCount] = useState(80);
   useEffect(() => {
     setShowCount(80);
@@ -263,12 +294,23 @@ export function StreamSwitcher({
     >
       <div className="flex h-full max-h-[82vh] w-full max-w-[880px] flex-col overflow-hidden rounded-[8px] border border-edge bg-elevated shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-2 duration-150 backdrop-blur-xl">
         <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-6 py-4">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
-              {t("Switch stream")}
-            </span>
-            <span className="text-[14px] font-medium text-ink">
-              {cache ? t("{n} sources available", { n: list.length }) : t("No sources cached")}
+          <div className="flex items-center gap-2.5">
+            <Tooltip label={t("Refresh sources")} side="bottom">
+              <button
+                onClick={() => refresh()}
+                disabled={refreshing}
+                className="flex h-9 w-9 items-center justify-center rounded-md bg-raised text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-default disabled:opacity-70"
+                aria-label={t("Refresh sources")}
+              >
+                <RefreshCw size={15} strokeWidth={2.2} className={refreshing ? "animate-spin" : ""} />
+              </button>
+            </Tooltip>
+            <span className="text-[13px] font-semibold tracking-[0.01em] text-ink-muted whitespace-nowrap">
+              {refreshing
+                ? t("Refreshing…")
+                : cache
+                  ? t("{n} sources", { n: list.length })
+                  : t("No sources")}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -363,8 +405,18 @@ export function StreamSwitcher({
         {hostSource && <HostSourceBanner source={hostSource} compact />}
 
         {!cache || list.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center px-8 py-12 text-center text-[13.5px] text-ink-muted">
-            {t("Sources are not cached for this title. Open the picker page to refresh.")}
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-12 text-center">
+            <p className="text-[13.5px] text-ink-muted">
+              {refreshing ? t("Looking for sources…") : t("No sources loaded for this title yet.")}
+            </p>
+            <button
+              onClick={() => refresh()}
+              disabled={refreshing}
+              className="flex h-10 items-center gap-2 rounded-md bg-raised px-4 text-[13px] font-semibold text-ink transition-colors hover:bg-elevated disabled:opacity-70"
+            >
+              <RefreshCw size={14} strokeWidth={2.2} className={refreshing ? "animate-spin" : ""} />
+              {t("Refresh sources")}
+            </button>
           </div>
         ) : (
           <ul className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-ink/25 [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb:hover]:bg-ink/40">
@@ -376,7 +428,7 @@ export function StreamSwitcher({
                 onPick={() => onPick(s)}
                 resolving={resolvingKey === streamKey(s)}
                 divider={i > 0}
-                isCurrent={isCurrentStream(s, currentUrl, currentInfoHash, currentFileIdx)}
+                isCurrent={matchCurrent(s)}
                 match={matchBadge(matchScores?.get(s))}
               />
             ))}

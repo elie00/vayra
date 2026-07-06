@@ -44,7 +44,8 @@ fn main_rect(app: &AppHandle) -> Result<((f64, f64), (f64, f64)), String> {
 
 #[tauri::command]
 pub async fn hdr_overlay_open(app: AppHandle) -> Result<(), String> {
-    if app.get_webview_window(HDR_OVERLAY_LABEL).is_some() {
+    if let Some(w) = app.get_webview_window(HDR_OVERLAY_LABEL) {
+        let _ = w.show();
         return hdr_overlay_sync(app).await;
     }
     let ((px, py), (sw, sh)) = main_rect(&app)?;
@@ -95,6 +96,14 @@ pub async fn hdr_overlay_open(app: AppHandle) -> Result<(), String> {
 pub async fn hdr_overlay_close(app: AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window(HDR_OVERLAY_LABEL) {
         let _ = w.close();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn hdr_overlay_hide(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window(HDR_OVERLAY_LABEL) {
+        let _ = w.hide();
     }
     Ok(())
 }

@@ -198,6 +198,10 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
       title: d.title,
       subtitle: d.subtitle ?? undefined,
       notWebReady: true,
+      episode:
+        d.season != null && d.episode != null
+          ? { season: d.season, episode: d.episode }
+          : undefined,
     });
   return (
     <li className="group flex items-center gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-3 transition-colors hover:bg-elevated/70">

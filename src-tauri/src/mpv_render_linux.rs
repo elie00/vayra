@@ -352,14 +352,11 @@ fn do_render(rc: &RenderContext, area: &gtk::GLArea) {
     let fbo = current_fbo();
     let (w, h, measured) = match fbo_color_size() {
         Some((mw, mh)) => (mw, mh, true),
-        None => {
-            let scale = area.scale_factor().max(1);
-            (
-                area.allocated_width().max(1),
-                area.allocated_height().max(1),
-                false,
-            )
-        }
+        None => (
+            area.allocated_width().max(1),
+            area.allocated_height().max(1),
+            false,
+        ),
     };
     let packed = ((w as u64) << 32) | (h as u32 as u64);
     if LAST_SURFACE.swap(packed, Ordering::Relaxed) != packed {

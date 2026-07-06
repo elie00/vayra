@@ -1,4 +1,4 @@
-import { Bookmark, Popcorn, RefreshCcw } from "lucide-react";
+import { Bookmark, Check, Popcorn, RefreshCcw } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { awardSourceMeta, findTopAward, parseAwardYear, type AwardWin } from "@/lib/anime-awards";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
@@ -27,11 +27,14 @@ import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { observe } from "@/lib/visibility";
 import { useInWatchlist } from "@/lib/watchlist";
+import { useMetaWatched } from "@/lib/watched-flag";
 import { ClapperMini } from "./icons/clapper-mini";
 import { ImdbIcon } from "./icons/imdb-icon";
 import { MalLogo } from "./icons/mal-logo";
 import { Poster, useLocalizedPoster } from "./poster";
-import { ElegantHoverActions } from "./pick-card/elegant-hover";
+import { CardHoverOverlay, cardHoverPosterClass, type CardHoverStyle } from "./pick-card/card-hover";
+import { CustomHoverOverlay, customHoverPosterProps } from "./pick-card/custom-hover";
+import { getCustomHover } from "@/lib/custom-hover";
 import { RtBadge } from "./rt-badge";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
@@ -58,7 +61,11 @@ export const PickCard = memo(function PickCard({
   const { openMeta, openPicker } = useView();
   const { open: openContextMenu } = useContextMenu();
   const { settings } = useSettings();
-  const elegantHover = !kids && String(settings.theme.preset) === "elegantfin";
+  const cardStyle: CardHoverStyle = kids || !settings.hoverPreviewEnabled ? "none" : settings.cardHoverStyle;
+  const activeCustom = cardStyle === "custom" ? getCustomHover(settings.customHoverId) : null;
+  const inCardHover: CardHoverStyle = cardStyle === "default" || cardStyle === "custom" ? "none" : cardStyle;
+  const customProps = activeCustom ? customHoverPosterProps(activeCustom) : null;
+  const badgeFade = inCardHover !== "none" || activeCustom ? "transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0" : "";
   const t = useT();
   const isAnimeCardId = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const inCinema = isInCinema(meta);
@@ -140,10 +147,11 @@ export const PickCard = memo(function PickCard({
   const ref = useRef<HTMLButtonElement>(null);
   const altIds = useMemo(() => [imdbId], [imdbId]);
   const inWatchlist = useInWatchlist(meta.id, altIds);
+  const watched = useMetaWatched(meta.id, meta.type);
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
-  const localizedPoster = useLocalizedPoster(meta.id, meta.originalLanguage);
+  const localizedPoster = useLocalizedPoster(meta.id);
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
   const animeTmdb = useTmdbIdFromImdb(animeImdb) ?? undefined;
@@ -153,8 +161,6 @@ export const PickCard = memo(function PickCard({
       ? resolvedTmdb ?? undefined
       : undefined;
   const posterCandidates = useMemo(() => {
-    // Prefer the language-localized poster; RPDB (when configured) still wins, and
-    // the catalog poster stays the fallback.
     const base = localizedPoster ?? meta.poster;
     const seen = new Set<string>();
     const out: string[] = [];
@@ -277,12 +283,14 @@ export const PickCard = memo(function PickCard({
       onContextMenu={(e) => openContextMenu(e, { kind: "meta", meta })}
       onFocus={(e) => hoverPreviewFocus(meta, e.currentTarget)}
       onBlur={(e) => hoverPreviewBlur(e.currentTarget)}
+      data-no-card-ring={inCardHover !== "none" || activeCustom ? "" : undefined}
       className="group flex w-full min-w-0 flex-col gap-2.5 text-start"
     >
       <div
         data-preview-anchor
         onPointerEnter={(e) => hoverPreviewEnter(meta, e.currentTarget, e.buttons)}
         onPointerLeave={(e) => hoverPreviewLeave(e.currentTarget)}
+        style={customProps?.style}
         className="relative w-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] will-change-transform group-hover:[-webkit-transform:translate3d(0,-0.5rem,0)] group-hover:[transform:translate3d(0,-0.5rem,0)]"
       >
         <Poster
@@ -292,20 +300,29 @@ export const PickCard = memo(function PickCard({
           ratio="portrait"
           onError={() => setImgIdx((i) => i + 1)}
           className={`harbor-card-ring rounded-[var(--poster-radius,12px)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)] ${
-            elegantHover
-              ? "overflow-hidden [&_img]:transition-[filter,transform] [&_img]:duration-200 group-hover:[&_img]:scale-110 group-hover:[&_img]:blur-[10px]"
-              : ""
+            customProps ? customProps.className : cardHoverPosterClass(inCardHover)
           }`}
         />
-        {elegantHover && (
-          <ElegantHoverActions
+        {activeCustom ? (
+          <CustomHoverOverlay
+            config={activeCustom}
             meta={meta}
             onPlay={() => {
               if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
               else openMeta(meta);
             }}
           />
-        )}
+        ) : inCardHover !== "none" ? (
+          <CardHoverOverlay
+            meta={meta}
+            style={inCardHover}
+            onPlay={() => {
+              if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
+              else openMeta(meta);
+            }}
+          />
+        ) : null}
+        <div className={badgeFade}>
         {settings.showCardBadges && (
           <>
             {rerun && <RerunBadge year={meta.releaseInfo} />}
@@ -328,6 +345,15 @@ export const PickCard = memo(function PickCard({
             <Bookmark size={11} strokeWidth={2.6} fill="currentColor" />
           </span>
         )}
+        {watched && (
+          <span
+            className="pointer-events-none absolute bottom-1.5 start-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 text-white ring-1 ring-emerald-300/40 backdrop-blur-sm"
+            title={t("Watched")}
+            aria-label={t("Watched")}
+          >
+            <Check size={12} strokeWidth={3} />
+          </span>
+        )}
         {kids ? (
           cardRating && <KidsStarBadge value={cardRating} placement={settings.badgePlacement} />
         ) : (
@@ -337,6 +363,7 @@ export const PickCard = memo(function PickCard({
             placement={settings.badgePlacement}
           />
         )}
+        </div>
       </div>
       {!settings.hidePosterTitles && (
         <p

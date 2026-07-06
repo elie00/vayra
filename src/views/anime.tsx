@@ -41,6 +41,8 @@ import { isAnimeCwItem, isCwMember, library, type LibraryItem } from "@/lib/stre
 import { clearLocalCw } from "@/lib/local-cw";
 import { dismissManualWatched, manualWatchedLibraryItems, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
+import { loadSimklWatchedMap, loadSimklStatusMap, type WatchlistStatus } from "@/lib/simkl/list-status";
+import { loadAnilistWatchedMap } from "@/lib/anilist/watched-map";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
 
@@ -181,6 +183,9 @@ export function AnimeView({ active = true }: { active?: boolean }) {
   const { isConnected: simklConnected } = useSimkl();
   const [libItems, setLibItems] = useState<LibraryItem[]>([]);
   const [simklCw, setSimklCw] = useState<LibraryItem[]>([]);
+  const [simklWatchedMap, setSimklWatchedMap] = useState<Map<string, Set<string>>>(() => new Map());
+  const [simklStatusMap, setSimklStatusMap] = useState<Map<string, WatchlistStatus>>(() => new Map());
+  const [anilistWatchedMap, setAnilistWatchedMap] = useState<Map<string, Set<string>>>(() => new Map());
   const [addonRows, setAddonRows] = useState<AddonRow[]>([]);
   useEffect(() => {
     if (!authKey) {
@@ -254,6 +259,40 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     const overrideIds = new Set(usable.map((i) => i._id));
     return [...libItems.filter((i) => !overrideIds.has(i._id)), ...usable];
   }, [libItems, manualWatchedVer]);
+  useEffect(() => {
+    if (!simklConnected) {
+      setSimklWatchedMap(new Map());
+      setSimklStatusMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    loadSimklWatchedMap()
+      .then((m) => {
+        if (!cancelled) setSimklWatchedMap(m);
+      })
+      .catch(() => {});
+    loadSimklStatusMap()
+      .then((m) => {
+        if (!cancelled) setSimklStatusMap(m);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [simklConnected]);
+  useEffect(() => {
+    let cancelled = false;
+    const ids = continueWatching.filter((i) => /^(kitsu|mal|anilist):/.test(i._id)).map((i) => i._id);
+    loadAnilistWatchedMap(ids)
+      .then((m) => {
+        if (!cancelled) setAnilistWatchedMap(m);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [continueWatching]);
+  const emptyTrakt = useMemo(() => new Set<string>(), []);
   const cwItems = useCwAdvance(
     continueWatching,
     settings.tmdbKey,
@@ -261,6 +300,10 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     resurfaceLibrary,
     "only",
     manualWatchedVer,
+    emptyTrakt,
+    simklWatchedMap,
+    anilistWatchedMap,
+    simklStatusMap,
   );
 
   useEffect(() => {
@@ -437,7 +480,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-12">
           {heroMetas.length > 0 && (
-            <div data-scroll-anchor="hero" className="relative">
+            <div data-scroll-anchor="hero" className="relative harbor-anime-hero">
               <AnimeHero slides={heroMetas} topPicks={topPicks} />
               <button
                 type="button"

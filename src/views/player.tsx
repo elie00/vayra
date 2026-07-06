@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveChromeTheme } from "@/lib/theme";
+import { useActiveKid } from "@/lib/profiles";
 import { type PlayerBridge } from "@/lib/player/bridge";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
@@ -14,6 +15,7 @@ import { isLocalUrl } from "@/lib/player/local-url";
 import { useAuth } from "@/lib/auth";
 import { embedFlags } from "./player/player-utils";
 import { useFullscreen } from "./player/hooks/use-fullscreen";
+import { useSvpGuard } from "./player/hooks/use-svp-guard";
 import { usePlayerCast } from "./player/hooks/use-player-cast";
 import { useCastReturnPublish } from "./player/hooks/use-cast-return-publish";
 import { useChromeConfig } from "./player/hooks/use-chrome-config";
@@ -23,6 +25,8 @@ import { useChromeVisibility } from "./player/hooks/use-chrome-visibility";
 import { useAutoRetry } from "./player/hooks/use-auto-retry";
 import { useWakeReconnect } from "./player/hooks/use-wake-reconnect";
 import { useEngineStats } from "./player/hooks/use-engine-stats";
+import { useContentAdvisory } from "./player/hooks/use-content-advisory";
+import { setPlaybackDownloaded } from "@/lib/player/playback-clock";
 import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 import { usePauseOnInactive } from "./player/hooks/use-pause-on-inactive";
 import { spoilerMaskFor } from "@/lib/spoilers";
@@ -73,6 +77,7 @@ import type { ToastInfo } from "@/views/addons/addons-types";
 export function PlayerView({ src }: { src: PlayerSrc }) {
   const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
   const { settings, update } = useSettings();
+  const isKid = useActiveKid() != null;
   const t = useT();
   const chromeTheme = resolveChromeTheme(settings.theme, settings.playerChromeTheme);
   useEffect(() => {
@@ -139,6 +144,19 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     fileIdx: src.streamRef?.fileIdx ?? null,
     active: snap.status !== "ended" && (snap.videoWidth <= 0 || isP2pEngine),
   });
+  useEffect(() => {
+    const isLive = src.isLive || !!src.meta.id?.startsWith("iptv:");
+    const isHls = src.url.includes("/hlsv2/");
+    if (isP2pEngine) {
+      const len = engineStats?.streamLen ?? 0;
+      const prog = engineStats?.streamProgress ?? 0;
+      setPlaybackDownloaded(len > 0 ? prog / len : 0);
+    } else if (!isLive && !isHls) {
+      setPlaybackDownloaded(1);
+    } else {
+      setPlaybackDownloaded(0);
+    }
+  }, [engineStats?.streamProgress, engineStats?.streamLen, src.url, isP2pEngine, src.isLive, src.meta.id]);
   const shellSnapRef = useRef(snap);
   const snapRef = useRef(snap);
   snapRef.current = snap;
@@ -197,6 +215,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     onDrawStart,
     onDrawPoint,
     onDrawEnd,
+    clearStrokes,
   } = useDrawMode({
     inRoom,
     participantCount: roomSnapshot.participants.length,
@@ -273,6 +292,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   });
   const gif = useGifRecorder({ src });
   const clip = useClipRecorder({ src });
+  const svpToast = useSvpGuard(settings.playerSvp && !!settings.svpVpyPath);
 
   const { resolvedImdbId, subAssNative, captureExitSnapshot, download, subDropToast } = usePlayerMedia({
     src,
@@ -289,6 +309,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     season,
     episode,
   });
+
+  const contentAdvisory = useContentAdvisory(
+    settings.contentAdvisoryToast,
+    resolvedImdbId,
+    src.url,
+    playing,
+  );
 
   const {
     streamCheckOpen,
@@ -591,7 +618,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     inRoomRef,
   });
 
-  useStubDetection({ src, snap, onStub: onStubEject });
+  useStubDetection({ src, snap, onStub: onStubEject, instantPlay: settings.instantPlay });
 
   const isLiveLike =
     liveOverlay.isLive ||
@@ -707,14 +734,15 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   }, [snap.volume]);
   const onVolumeWheel = useCallback((deltaY: number) => {
     const dir = deltaY < 0 ? 1 : -1;
-    const max = bridgeRef.current?.capabilities().engine === "mpv" ? 6 : 1;
+    const boost = !isKid && bridgeRef.current?.capabilities().engine === "mpv";
+    const max = boost ? 6 : 1;
     const next = Math.min(max, Math.max(0, volumeRef.current + dir * 0.05));
     volumeRef.current = next;
     bridgeRef.current?.setVolume(next);
     bridgeRef.current?.setMuted(false);
     writePlayerVolume({ volume: next, muted: false });
     showVolumeFeedback(next, false);
-  }, [showVolumeFeedback]);
+  }, [showVolumeFeedback, isKid]);
 
   const overlayProps: PlayerOverlayLayersProps = {
     snap,
@@ -734,7 +762,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     anime4kMode: anime4k.mode,
     onAnime4kMode: anime4k.setMode,
     anime4kAvailable: anime4k.available,
-    subDropToast,
+    subDropToast: svpToast ?? subDropToast,
     pipMode,
     drawMode,
     cast,
@@ -748,6 +776,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     swappingEp,
     swapResolvingKey,
     closePlayer,
+    cancelToPicker: () => {
+      if (isLocalSrc || src.meta.id?.startsWith("iptv:")) {
+        void closePlayer();
+        return;
+      }
+      openPicker(src.meta, src.episode, { autoPlay: false });
+    },
     engineStats,
     isP2pEngine,
     setLoaderShowing,
@@ -766,6 +801,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     onDrawStart,
     onDrawPoint,
     onDrawEnd,
+    clearStrokes,
     showWaiting,
     pendingResumeSec,
     pendingSeekSec,
@@ -801,6 +837,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     setHideOthersDrawings,
     canPickAnother: !liveOverlay.isLive || !inRoom || isHost,
     resolvedImdbId,
+    contentAdvisory,
     tmdbKey: settings.tmdbKey ?? null,
     download,
     liveOverlay,
@@ -834,6 +871,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     liveUrl,
     currentInfoHash: playStreamRef?.infoHash ?? null,
     currentFileIdx: playStreamRef?.fileIdx ?? null,
+    currentRef: playStreamRef ?? null,
     switcherOpen,
     foreignNotice,
     onDismissForeign: () => setForeignNotice(null),

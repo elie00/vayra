@@ -3,6 +3,7 @@ import { useSettings } from "@/lib/settings";
 import {
   usePlaybackPositionGated,
   usePlaybackBufferedGated,
+  usePlaybackDownloadedGated,
   setSeekHovering,
 } from "@/lib/player/playback-clock";
 import { useTrickplayState } from "@/lib/trickplay";
@@ -33,10 +34,14 @@ export function SeekBar({
   const { active: trickplayActive, bufferedOnly } = useTrickplayState();
   const position = usePlaybackPositionGated(active);
   const buffered = usePlaybackBufferedGated(active);
+  const downloaded = usePlaybackDownloadedGated(active);
   const dur = durationSec || 1;
   const value = scrub ?? pending ?? position;
   const pct = Math.max(0, Math.min(1, value / dur)) * 100;
-  const bufferedPct = Math.max(0, Math.min(1, (position + buffered) / dur)) * 100;
+  const cacheFill = Math.max(0, Math.min(1, (position + buffered) / dur));
+  const fullyCached = downloaded >= 0.999;
+  const bufferedPct =
+    fullyCached || settings.seekBarFill === false ? 0 : Math.max(cacheFill, downloaded) * 100;
   const skipSegments = useSkipSegmentsView();
   const segmentSpans = skipSegments
     .filter((s) => s.endSec > s.startSec && durationSec > 0)

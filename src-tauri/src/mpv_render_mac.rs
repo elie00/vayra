@@ -9,7 +9,7 @@ use libmpv2::render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamA
 use libmpv2_sys::mpv_handle;
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
-use objc2::{msg_send, AnyThread, ClassType, MainThreadOnly};
+use objc2::{msg_send, AnyThread, ClassType, MainThreadOnly, Message};
 use objc2_app_kit::{
     NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLView, NSView, NSWindow, NSWindowOrderingMode,
 };
@@ -18,10 +18,18 @@ use objc2_foundation::{MainThreadMarker, NSNumber, NSString};
 const NSOPENGLPFA_OPENGL_PROFILE: u32 = 99;
 const NSOPENGLPFA_DOUBLEBUFFER: u32 = 5;
 const NSOPENGLPFA_COLOR_SIZE: u32 = 8;
+const NSOPENGLPFA_COLOR_FLOAT: u32 = 58;
 const NSOPENGLPFA_DEPTH_SIZE: u32 = 12;
 const NSOPENGLPFA_ACCELERATED: u32 = 73;
 const NSOPENGLPFA_NO_RECOVERY: u32 = 72;
 const NSOPENGL_PROFILE_VERSION_3_2_CORE: u32 = 0x3200;
+
+#[link(name = "CoreGraphics", kind = "framework")]
+extern "C" {
+    static kCGColorSpaceExtendedLinearDisplayP3: *const c_void;
+    fn CGColorSpaceCreateWithName(name: *const c_void) -> *mut c_void;
+    fn CGColorSpaceRelease(space: *mut c_void);
+}
 
 const NS_VIEW_AUTORESIZE_WIDTH: usize = 2;
 const NS_VIEW_AUTORESIZE_HEIGHT: usize = 16;
@@ -51,6 +59,8 @@ pub struct Embed {
     view: Retained<NSOpenGLView>,
     web_view: Option<Retained<NSView>>,
     web_view_was_opaque: bool,
+    ns_window: Retained<NSWindow>,
+    edr: bool,
     render: Arc<Mutex<RenderContext>>,
 }
 
@@ -63,7 +73,7 @@ fn slot() -> &'static Mutex<Option<Embed>> {
     EMBED.get_or_init(|| Mutex::new(None))
 }
 
-pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64) -> Result<(), String> {
+pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64, edr: bool) -> Result<(), String> {
     let mtm = MainThreadMarker::new()
         .ok_or_else(|| "mpv_render_mac::install must run on main thread".to_string())?;
     if ns_window_ptr == 0 {
@@ -90,26 +100,54 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64) -> Result<(), S
             bounds.size.width, bounds.size.height
         );
 
-        let attrs: [u32; 13] = [
-            NSOPENGLPFA_OPENGL_PROFILE,
-            NSOPENGL_PROFILE_VERSION_3_2_CORE,
-            NSOPENGLPFA_DOUBLEBUFFER,
-            1,
-            NSOPENGLPFA_ACCELERATED,
-            1,
-            NSOPENGLPFA_NO_RECOVERY,
-            1,
-            NSOPENGLPFA_COLOR_SIZE,
-            24,
-            NSOPENGLPFA_DEPTH_SIZE,
-            16,
-            0,
-        ];
+        let make_pf = |float: bool| -> Option<Retained<NSOpenGLPixelFormat>> {
+            let attrs: [u32; 15] = if float {
+                [
+                    NSOPENGLPFA_OPENGL_PROFILE,
+                    NSOPENGL_PROFILE_VERSION_3_2_CORE,
+                    NSOPENGLPFA_DOUBLEBUFFER,
+                    1,
+                    NSOPENGLPFA_ACCELERATED,
+                    1,
+                    NSOPENGLPFA_NO_RECOVERY,
+                    1,
+                    NSOPENGLPFA_COLOR_FLOAT,
+                    1,
+                    NSOPENGLPFA_COLOR_SIZE,
+                    64,
+                    NSOPENGLPFA_DEPTH_SIZE,
+                    16,
+                    0,
+                ]
+            } else {
+                [
+                    NSOPENGLPFA_OPENGL_PROFILE,
+                    NSOPENGL_PROFILE_VERSION_3_2_CORE,
+                    NSOPENGLPFA_DOUBLEBUFFER,
+                    1,
+                    NSOPENGLPFA_ACCELERATED,
+                    1,
+                    NSOPENGLPFA_NO_RECOVERY,
+                    1,
+                    NSOPENGLPFA_COLOR_SIZE,
+                    24,
+                    NSOPENGLPFA_DEPTH_SIZE,
+                    16,
+                    0,
+                    0,
+                    0,
+                ]
+            };
+            let pf_alloc = NSOpenGLPixelFormat::alloc();
+            msg_send![pf_alloc, initWithAttributes: attrs.as_ptr()]
+        };
 
-        let pf_alloc = NSOpenGLPixelFormat::alloc();
-        let pf: Option<Retained<NSOpenGLPixelFormat>> =
-            msg_send![pf_alloc, initWithAttributes: attrs.as_ptr()];
-        let pf = pf.ok_or_else(|| "NSOpenGLPixelFormat init failed".to_string())?;
+        let pf = if edr {
+            make_pf(true).or_else(|| make_pf(false))
+        } else {
+            make_pf(false)
+        }
+        .ok_or_else(|| "NSOpenGLPixelFormat init failed".to_string())?;
 
         let view_alloc = NSOpenGLView::alloc(mtm);
         let view: Option<Retained<NSOpenGLView>> = msg_send![
@@ -119,6 +157,9 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64) -> Result<(), S
         ];
         let view = view.ok_or_else(|| "NSOpenGLView init failed".to_string())?;
         let _: () = msg_send![&*view, setWantsBestResolutionOpenGLSurface: true];
+        if edr {
+            let _: () = msg_send![&*view, setWantsExtendedDynamicRangeOpenGLSurface: true];
+        }
         let view_as_view: &NSView = view.as_super();
 
         let subviews = content_view.subviews();
@@ -187,12 +228,45 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64) -> Result<(), S
             view,
             web_view: first_subview,
             web_view_was_opaque,
+            ns_window: ns_window.retain(),
+            edr,
             render: Arc::new(Mutex::new(render)),
         });
 
         eprintln!("[harbor::mpv_mac] installed");
     }
     Ok(())
+}
+
+pub fn set_hdr_active(active: bool, _bt2020: bool) {
+    let Ok(guard) = slot().lock() else {
+        return;
+    };
+    let Some(embed) = guard.as_ref() else {
+        return;
+    };
+    if !embed.edr {
+        return;
+    }
+    unsafe {
+        let view_as_view: &NSView = embed.view.as_super();
+        let _: () = msg_send![view_as_view, setWantsExtendedDynamicRangeOpenGLSurface: active];
+        if active {
+            let cg = CGColorSpaceCreateWithName(kCGColorSpaceExtendedLinearDisplayP3);
+            if !cg.is_null() {
+                let nscs_alloc: *mut AnyObject = msg_send![objc2::class!(NSColorSpace), alloc];
+                let nscs: *mut AnyObject = msg_send![nscs_alloc, initWithCGColorSpace: cg];
+                if !nscs.is_null() {
+                    let _: () = msg_send![&*embed.ns_window, setColorSpace: nscs];
+                }
+                CGColorSpaceRelease(cg);
+            }
+        } else {
+            let nil: *mut AnyObject = std::ptr::null_mut();
+            let _: () = msg_send![&*embed.ns_window, setColorSpace: nil];
+        }
+    }
+    schedule_redraw();
 }
 
 pub fn install_window_rounding(ns_window_ptr: i64) -> Result<(), String> {

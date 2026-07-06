@@ -1,5 +1,6 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dlog, dwarn } from "@/lib/debug";
+import { matchEpisodeFileIndex, type EpisodeHint } from "@/lib/streams/episode-file";
 import {
   hashFromMagnet,
   magnetFromHash,
@@ -116,6 +117,7 @@ export function createAllDebrid(apiKey: string): DebridStore {
     magnet: string,
     fileIdx: number | undefined,
     signal: AbortSignal,
+    hint?: EpisodeHint,
   ): Promise<DebridResult<DirectLink>> {
     const fullMagnet = magnetFromHash(magnet);
     const hash = hashFromMagnet(magnet);
@@ -148,7 +150,7 @@ export function createAllDebrid(apiKey: string): DebridStore {
         continue;
       }
       if (entry.statusCode === READY_STATUS_CODE) {
-        chosenLink = pickAdLink(entry.links ?? [], fileIdx);
+        chosenLink = pickAdLink(entry.links ?? [], fileIdx, hint);
         break;
       }
       if (TERMINAL_FAIL_STATUS.has(entry.statusCode)) {
@@ -257,13 +259,15 @@ async function wrap<T>(call: () => Promise<Response>): Promise<DebridResult<T>> 
   return { ok: true, data: body.data as T };
 }
 
-function pickAdLink(links: AdMagnetLink[], fileIdx: number | undefined): AdMagnetLink | null {
+function pickAdLink(links: AdMagnetLink[], fileIdx: number | undefined, hint?: EpisodeHint): AdMagnetLink | null {
   if (links.length === 0) return null;
   if (fileIdx != null && links[fileIdx]) return links[fileIdx];
   const videos = links.filter((l) =>
     VIDEO_EXTS.some((ext) => l.filename.toLowerCase().endsWith(ext)),
   );
   const pool = videos.length > 0 ? videos : links;
+  const mi = matchEpisodeFileIndex(pool.map((l) => l.filename), hint);
+  if (mi >= 0) return pool[mi];
   return pool.slice().sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
 }
 

@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/safe-fetch";
 import type { TmdbDetail } from "../tmdb/tmdb-details";
 
 const BASE = "https://api.imdbapi.dev/titles";
@@ -54,7 +55,7 @@ const cache = new Map<string, TmdbDetail>();
 
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) return null;
@@ -141,38 +142,28 @@ export async function imdbapiDetails(
 ): Promise<TmdbDetail | null> {
   if (!metaId.startsWith("tt")) return null;
 
-  const cacheKey = season !== undefined && episode !== undefined
-    ? `${metaId}:s${season}e${episode}`
-    : metaId;
+  const cacheKey =
+    season !== undefined && episode !== undefined ? `${metaId}:s${season}e${episode}` : metaId;
 
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
-  // Fetch series/movie title
   const title = await fetchJson<ImdbTitleResponse>(`${BASE}/${metaId}`);
   if (!title) return null;
 
   let targetId = metaId;
 
-  // If season/episode requested, find the episode tt ID
   if (season !== undefined && episode !== undefined && title.type !== "movie") {
-    const eps = await fetchJson<{ episodes: ImdbEpisodeEntry[] }>(
-      `${BASE}/${metaId}/episodes`,
-    );
+    const eps = await fetchJson<{ episodes: ImdbEpisodeEntry[] }>(`${BASE}/${metaId}/episodes`);
     const match = eps?.episodes?.find(
       (e) => Number(e.season) === season && e.episodeNumber === episode,
     );
     if (match) targetId = match.id;
   }
 
-  // Fetch credits for the target (series or specific episode)
-  const creditsResp = await fetchJson<{ credits: ImdbCreditsEntry[] }>(
-    `${BASE}/${targetId}/credits`,
-  );
-
+  const creditsResp = await fetchJson<{ credits: ImdbCreditsEntry[] }>(`${BASE}/${targetId}/credits`);
   const cast = creditsResp ? creditsToCast(creditsResp.credits) : [];
 
-  // If we fetched episode-level, also get that episode's metadata
   let detail = title;
   if (targetId !== metaId) {
     const epTitle = await fetchJson<ImdbTitleResponse>(`${BASE}/${targetId}`);

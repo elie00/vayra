@@ -2,9 +2,8 @@ import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import simklLogo from "@/assets/simkl.png";
 import { AnchoredMenu } from "@/components/anchored-menu";
-import { kitsuToMal } from "@/lib/providers/anime-mapping";
 import { SimklApiError } from "@/lib/simkl/client";
-import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
+import { resolveSimklTarget } from "@/lib/simkl/ids";
 import { useSimkl } from "@/lib/simkl/provider";
 import {
   clearSimklStatus,
@@ -57,22 +56,12 @@ export function AddToSimklButton({
     let cancelled = false;
     setReady(false);
     void (async () => {
-      let tgt: SimklTarget | null = null;
-      const resolution = stremioIdToSimklTarget(harborId);
-      if (resolution.ok) {
-        tgt = resolution.target;
-      } else if (harborId.startsWith("kitsu:")) {
-        const n = Number(harborId.split(":")[1]);
-        const mal = Number.isFinite(n) ? await kitsuToMal(n).catch(() => null) : null;
-        if (mal != null) tgt = { kind: "show", ids: { mal } };
-      }
+      const tgt = await resolveSimklTarget(harborId, type);
       if (cancelled) return;
       if (!tgt) {
         setTarget(null);
         return;
       }
-      if (type === "series" && tgt.kind === "movie") tgt = { kind: "show", ids: tgt.ids };
-      if (type === "movie" && tgt.kind === "show") tgt = { kind: "movie", ids: tgt.ids };
       setTarget(tgt);
       const malKey =
         tgt.kind !== "episode" && tgt.ids.mal != null ? `mal:${tgt.ids.mal}` : null;

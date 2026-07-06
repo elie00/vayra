@@ -967,6 +967,29 @@ html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover > .r
   transform: none;
 }
 
+.harbor-custom-hover img {
+  transition: transform 0.3s ease-out, filter 0.3s ease-out;
+}
+.group:hover .harbor-custom-hover img,
+.group:focus-within .harbor-custom-hover img {
+  transform: scale(var(--ch-scale, 1));
+  filter: blur(var(--ch-blur, 0px)) brightness(var(--ch-dim, 1));
+}
+.harbor-custom-hover.ch-glow {
+  transition: box-shadow 0.3s ease-out;
+}
+.group:hover .harbor-custom-hover.ch-glow,
+.group:focus-within .harbor-custom-hover.ch-glow {
+  box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.6), 0 0 34px -6px rgba(242, 196, 102, 0.55);
+}
+.harbor-custom-hover-preview img {
+  transform: scale(var(--ch-scale, 1));
+  filter: blur(var(--ch-blur, 0px)) brightness(var(--ch-dim, 1));
+}
+.harbor-custom-hover-preview.ch-glow {
+  box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.6), 0 0 34px -6px rgba(242, 196, 102, 0.55);
+}
+
 html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster {
   box-shadow: none !important;
 }

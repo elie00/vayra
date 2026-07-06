@@ -11,9 +11,11 @@ function hasVapoursynth(v: unknown): boolean {
 export function SvpIndicator({
   engine,
   chromeVisible,
+  suppressed = false,
 }: {
   engine: "html5" | "mpv";
   chromeVisible: boolean;
+  suppressed?: boolean;
 }) {
   const { settings } = useSettings();
   const enabled = settings.playerSvp && engine === "mpv" && isTauri;
@@ -31,9 +33,12 @@ export function SvpIndicator({
     };
     void tick();
     const id = window.setInterval(() => void tick(), 2000);
+    const onFailed = () => setActive(false);
+    window.addEventListener("harbor:svp-failed", onFailed);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("harbor:svp-failed", onFailed);
     };
   }, [enabled]);
 
@@ -41,7 +46,7 @@ export function SvpIndicator({
 
   return (
     <div
-      className={`pointer-events-none absolute top-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-edge-soft bg-canvas/85 px-3 py-1.5 text-[11px] font-semibold tracking-wide text-ink/85 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md transition-opacity duration-300 ${chromeVisible ? "opacity-100" : "opacity-0"}`}
+      className={`pointer-events-none absolute top-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-edge-soft bg-canvas/85 px-3 py-1.5 text-[11px] font-semibold tracking-wide text-ink/85 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md transition-opacity duration-300 ${chromeVisible && !suppressed ? "opacity-100" : "opacity-0"}`}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-accent" />
       <span>SVP active</span>

@@ -33,6 +33,7 @@ mod song_id;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
+mod subsync;
 mod svp;
 mod thumbs;
 mod torrent_engine;
@@ -57,11 +58,6 @@ fn harbor_flush_done() {
 }
 
 #[tauri::command]
-fn harbor_is_flatpak() -> bool {
-    std::env::var_os("FLATPAK_ID").is_some()
-}
-
-#[tauri::command]
 fn close_aux_windows(app: tauri::AppHandle) {
     use tauri::Manager;
     for (label, window) in app.webview_windows() {
@@ -73,9 +69,6 @@ fn close_aux_windows(app: tauri::AppHandle) {
 
 #[tauri::command]
 async fn deeplink_set_stremio(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
-    if harbor_is_flatpak() {
-        return Ok(());
-    }
     use tauri_plugin_deep_link::DeepLinkExt;
     if enabled {
         app.deep_link()
@@ -89,9 +82,6 @@ async fn deeplink_set_stremio(app: tauri::AppHandle, enabled: bool) -> Result<()
 
 #[tauri::command]
 async fn deeplink_is_stremio_registered(app: tauri::AppHandle) -> Result<bool, String> {
-    if harbor_is_flatpak() {
-        return Ok(true);
-    }
     use tauri_plugin_deep_link::DeepLinkExt;
     app.deep_link()
         .is_registered("stremio")
@@ -135,6 +125,24 @@ fn make_main_transparent(app: &tauri::AppHandle) {
     });
     if let Err(e) = res {
         eprintln!("[harbor::transparent] with_webview FAILED: {:?}", e);
+    }
+}
+
+#[cfg(windows)]
+pub(crate) fn force_show_foreground(window: &tauri::WebviewWindow) {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        IsIconic, SetForegroundWindow, ShowWindow, SW_RESTORE, SW_SHOW,
+    };
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    unsafe {
+        if IsIconic(hwnd).as_bool() {
+            let _ = ShowWindow(hwnd, SW_RESTORE);
+        } else {
+            let _ = ShowWindow(hwnd, SW_SHOW);
+        }
+        let _ = SetForegroundWindow(hwnd);
     }
 }
 
@@ -379,18 +387,7 @@ pub fn run() {
     #[cfg(windows)]
     svp::prime_svp_env();
     #[cfg(target_os = "linux")]
-    {
-        mpv_render_linux::enforce_nvidia_x11();
-        if harbor_is_flatpak() {
-            // This must happen before Tauri initializes GTK and creates any
-            // windows. It covers both native Wayland and the XWayland path
-            // Harbor uses on NVIDIA.
-            gtk::glib::set_prgname(Some("site.harbor.Harbor"));
-            unsafe {
-                gtk::gdk::ffi::gdk_set_program_class(c"site.harbor.Harbor".as_ptr());
-            }
-        }
-    }
+    mpv_render_linux::enforce_nvidia_x11();
     let _ = rustls::crypto::ring::default_provider().install_default();
     trailer::sweep_cache();
     let proxy_state = tauri::async_runtime::block_on(stream_proxy::ProxyState::start())
@@ -409,15 +406,13 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             use tauri::{Emitter, Manager};
             if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
                 let _ = w.unminimize();
                 let _ = w.set_focus();
+                #[cfg(windows)]
+                force_show_foreground(&w);
             }
-            if let Some(url) = args
-                .iter()
-                .find(|a| a.starts_with("harbor://") || a.starts_with("stremio://"))
-            {
-                let scheme = url.split_once(':').map(|(scheme, _)| scheme).unwrap_or("unknown");
-                eprintln!("[harbor::deep-link] forwarding {scheme} URL to running instance");
+            if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
                 let _ = app.emit("harbor:stremio-deeplink", url.clone());
             }
             if let Some(path) = media_file_from_args(&args) {
@@ -429,13 +424,8 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_deep_link::init());
-    let app_builder = if harbor_is_flatpak() {
-        app_builder
-    } else {
-        app_builder.plugin(tauri_plugin_updater::Builder::new().build())
-    };
-    let app_builder = app_builder
+        .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_window_state::Builder::default()
@@ -473,11 +463,9 @@ pub fn run() {
         .setup(move |app| {
             #[cfg(any(windows, target_os = "linux"))]
             {
-                if !harbor_is_flatpak() {
-                    use tauri_plugin_deep_link::DeepLinkExt;
-                    if let Err(e) = app.deep_link().register_all() {
-                        eprintln!("[harbor::deep-link] register_all failed: {:?}", e);
-                    }
+                use tauri_plugin_deep_link::DeepLinkExt;
+                if let Err(e) = app.deep_link().register_all() {
+                    eprintln!("[harbor::deep-link] register_all failed: {:?}", e);
                 }
             }
             #[cfg(windows)]
@@ -570,7 +558,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             harbor_flush_done,
-            harbor_is_flatpak,
             close_aux_windows,
             power::power_inhibit,
             harbor_set_webview_memory_low,
@@ -578,6 +565,8 @@ pub fn run() {
             harbor_try_suspend_webview,
             harbor_resume_webview,
             save_text_file,
+            subsync::moviehash::compute_moviehash,
+            subsync::sync_subtitle,
             cast_server::stop_stremio_sidecar,
             cast_server::cast_server_stop,
             web_server::web_serve_start,
@@ -587,6 +576,7 @@ pub fn run() {
             anime4k::anime4k_dir,
             svp::svp_status,
             svp::svp_launch,
+            svp::svp_ensure_running,
             svp::svp_apply,
             settings_store::settings_read,
             settings_store::settings_write,
@@ -628,6 +618,7 @@ pub fn run() {
             modal_overlay::modal_overlay_get_pending,
             hdr_overlay::hdr_overlay_open,
             hdr_overlay::hdr_overlay_close,
+            hdr_overlay::hdr_overlay_hide,
             hdr_overlay::hdr_overlay_sync,
             hdr_overlay::hdr_overlay_emit_props,
             hdr_overlay::hdr_overlay_emit_action,

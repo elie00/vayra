@@ -66,7 +66,7 @@ type TogetherValue = {
   dismissSummon: () => void;
   sendCursor: (x: number, y: number, visible: boolean, path: string) => void;
   remoteCursors: RemoteCursor[];
-  sendDraw: (strokeId: string, phase: "start" | "point" | "end", path: string, x?: number, y?: number, color?: string) => void;
+  sendDraw: (strokeId: string, phase: "start" | "point" | "end" | "clear", path: string, x?: number, y?: number, color?: string) => void;
   onIncomingDraw: (cb: (e: IncomingDraw) => void) => () => void;
   sendPresence: (location?: ParticipantLocation) => void;
   presenceMap: Map<string, number>;
@@ -361,7 +361,7 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
   const sendDraw = useCallback(
     (
       strokeId: string,
-      phase: "start" | "point" | "end",
+      phase: "start" | "point" | "end" | "clear",
       path: string,
       x?: number,
       y?: number,

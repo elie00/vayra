@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { langScore, pickBestTrack } from "@/lib/subtitles/language";
 import { searchSubtitles } from "@/lib/subtitles/search";
@@ -100,6 +101,10 @@ export function useTrackAutoload(params: {
         episode: src.episode?.episode,
         langs,
       });
+      const { videoHash, videoSize } = settings.subtitleAutoSync
+        ? await resolveVideoHash(src)
+        : {};
+      if (videoHash) console.info(`[subs/autoload] moviehash ${videoHash} (${videoSize})`);
       const results = await searchSubtitles(
         {
           imdbId: resolvedImdbId,
@@ -108,6 +113,9 @@ export function useTrackAutoload(params: {
           season: src.episode?.season,
           episode: src.episode?.episode,
           langs,
+          videoHash,
+          videoSize,
+          filename: src.streamRef?.parsedTitle ?? src.streamRef?.title ?? undefined,
         },
         {
           providers: {
@@ -326,6 +334,38 @@ function resolveLangPreference(
 function isJapanese(lang: string): boolean {
   const l = lang.trim().toLowerCase();
   return l === "ja" || l === "jpn" || l === "jp" || l === "japanese";
+}
+
+function isLoopback(url: string): boolean {
+  return /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])[:/]/i.test(url);
+}
+
+function raceTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    p,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+async function resolveVideoHash(
+  src: PlayerSrc,
+): Promise<{ videoHash?: string; videoSize?: number }> {
+  if (isLoopback(src.url)) return {};
+  if (!src.url || src.url.startsWith("blob:")) return {};
+  try {
+    const mh = await raceTimeout(
+      invoke<{ hash: string; size: number }>("compute_moviehash", {
+        url: src.url,
+        headers: src.headers,
+        size: src.streamRef?.size ?? undefined,
+      }),
+      1800,
+    );
+    if (mh?.hash) return { videoHash: mh.hash, videoSize: mh.size };
+  } catch {
+    return {};
+  }
+  return {};
 }
 
 function labelForTrack(r: { title?: string; source: string; release?: string | null }): string {

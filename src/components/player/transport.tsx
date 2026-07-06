@@ -18,7 +18,9 @@ import {
   controlsInSlot,
   PLAYER_CHROME_CHANGED_EVENT,
   readPlayerChromeConfig,
+  writePlayerChromeConfig,
   type PlayerChromeConfig,
+  type TimeFormat,
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 import { SongIdToast } from "@/components/song-id-toast";
@@ -55,6 +57,7 @@ export function Transport({
   onCast,
   onToggleDraw,
   onToggleHideOthers,
+  onClearDraw,
   onScreenshot,
   onPickAnother,
   canPickAnother,
@@ -117,6 +120,7 @@ export function Transport({
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
@@ -184,6 +188,7 @@ export function Transport({
         onCast={onCast}
         onToggleDraw={onToggleDraw}
         onToggleHideOthers={onToggleHideOthers}
+        onClearDraw={onClearDraw}
         onScreenshot={onScreenshot}
         onPickAnother={onPickAnother}
         canPickAnother={canPickAnother}
@@ -305,6 +310,13 @@ export function Transport({
       />
     );
   }
+  const onCycleTimeFormat = () => {
+    const cur = readPlayerChromeConfig("default");
+    const nextFmt: TimeFormat = cur.options.timeFormat === "remaining" ? "start-end" : "remaining";
+    const next = { ...cur, options: { ...cur.options, timeFormat: nextFmt } };
+    writePlayerChromeConfig("default", next);
+    setChromeConfig(next);
+  };
   const ctx: ControlContext = {
     t,
     snap,
@@ -331,6 +343,7 @@ export function Transport({
       chromeConfig.controls.map((c) => [c.id, c.variant ?? "auto"]),
     ),
     timeFormat: chromeConfig.options.timeFormat,
+    onCycleTimeFormat,
     volumeStyle: chromeConfig.options.volumeStyle,
     seekBackStepSec: settings.seekBackStepSec,
     seekForwardStepSec: settings.seekForwardStepSec,
@@ -365,6 +378,7 @@ export function Transport({
     onCast,
     onToggleDraw,
     onToggleHideOthers,
+    onClearDraw,
     onScreenshot,
     onPickAnother,
     onPrevEp,

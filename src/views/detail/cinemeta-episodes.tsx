@@ -1,5 +1,6 @@
 import { Check, ChevronDown, Play } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
 import { manualWatchedState, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
@@ -176,7 +177,7 @@ export function CinemetaEpisodeRow({
       className="group flex items-center gap-4 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
-        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay })}
+        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay || settings.seasonSourceLock })}
         className="flex min-w-0 flex-1 gap-6 text-start"
       >
         <div className="relative w-[200px] shrink-0 overflow-hidden rounded-lg">
@@ -228,29 +229,50 @@ function SeasonDropdown({
   onChange: (n: number) => void;
 }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [menu, setMenu] = useState<{ right: number; top?: number; bottom?: number; maxH: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const open = menu != null;
 
   useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
+    if (!menu) return;
+    const close = () => setMenu(null);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") close();
     };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", close);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
     return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
     };
-  }, [open]);
+  }, [menu]);
+
+  const openMenu = () => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const margin = 16;
+    const below = window.innerHeight - r.bottom - margin;
+    const above = r.top - margin;
+    const up = below < 240 && above > below;
+    const maxH = Math.max(160, Math.min(0.6 * window.innerHeight, up ? above : below));
+    const right = Math.max(margin, window.innerWidth - r.right);
+    setMenu(
+      up
+        ? { right, bottom: window.innerHeight - r.top + 8, maxH }
+        : { right, top: r.bottom + 8, maxH },
+    );
+  };
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={() => (menu ? setMenu(null) : openMenu())}
         className="flex h-10 items-center gap-2 rounded-full border border-edge-soft bg-canvas/90 ps-4 pe-3 text-[13.5px] font-medium text-ink transition-colors hover:bg-canvas"
       >
         <span>{seasonLabel(t, active)}</span>
@@ -259,32 +281,38 @@ function SeasonDropdown({
           className={`text-ink-muted transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open && (
-        <div className="animate-fade-in absolute end-0 top-full z-30 mt-2 w-44 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl">
-          <div className="max-h-[60vh] overflow-y-auto">
-            {seasons.map((s) => {
-              const isActive = s === active;
-              return (
-                <button
-                  key={s}
-                  onClick={() => {
-                    onChange(s);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-center px-4 py-2.5 text-start text-[13.5px] transition-colors ${
-                    isActive
-                      ? "bg-ink/10 text-ink"
-                      : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
-                  }`}
-                >
-                  {seasonLabel(t, s)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+      {menu &&
+        createPortal(
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{ right: menu.right, top: menu.top, bottom: menu.bottom }}
+            className="animate-fade-in fixed z-[200] w-44 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl"
+          >
+            <div className="overflow-y-auto" style={{ maxHeight: menu.maxH }}>
+              {seasons.map((s) => {
+                const isActive = s === active;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      onChange(s);
+                      setMenu(null);
+                    }}
+                    className={`flex w-full items-center px-4 py-2.5 text-start text-[13.5px] transition-colors ${
+                      isActive
+                        ? "bg-ink/10 text-ink"
+                        : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+                    }`}
+                  >
+                    {seasonLabel(t, s)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 

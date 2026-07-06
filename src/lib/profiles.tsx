@@ -67,7 +67,8 @@ type ProfilesValue = {
   openPicker: (view?: PickerView) => void;
   setPickerView: (view: PickerView) => void;
   closePicker: () => void;
-  selectProfile: (id: string) => void;
+  selectProfile: (id: string, opts?: { unlocked?: boolean }) => void;
+  sessionUnlockedIds: Set<string>;
   createProfile: (input: {
     name: string;
     avatar?: string | null;
@@ -139,6 +140,70 @@ function readSettingsIdentity(): { color: string | null; avatar: string | null }
     return { color, avatar };
   } catch {
     return { color: null, avatar: null };
+  }
+}
+
+type ProfilePromptInterval = "launch" | "15m" | "30m" | "never";
+function readProfilePromptInterval(): ProfilePromptInterval {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return "launch";
+    const parsed = JSON.parse(raw) as { profilePromptInterval?: unknown; skipProfileScreen?: unknown };
+    const v = parsed.profilePromptInterval;
+    if (v === "launch" || v === "15m" || v === "30m" || v === "never") return v;
+    return parsed.skipProfileScreen === true ? "never" : "launch";
+  } catch {
+    return "launch";
+  }
+}
+function intervalMinutes(i: ProfilePromptInterval): number {
+  return i === "15m" ? 15 : i === "30m" ? 30 : 0;
+}
+function readDefaultProfileId(): string {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return "";
+    const v = (JSON.parse(raw) as { defaultProfileId?: unknown }).defaultProfileId;
+    return typeof v === "string" ? v : "";
+  } catch {
+    return "";
+  }
+}
+function launchDefault(profiles: Profile[]): Profile | null {
+  const id = readDefaultProfileId();
+  if (!id) return null;
+  const p = profiles.find((x) => x.id === id);
+  return p && !p.passwordHash ? p : null;
+}
+const LAST_SELECT_KEY = "harbor.profile.lastSelectAt";
+function readLastProfileSelectAt(): number {
+  try {
+    return Number(localStorage.getItem(LAST_SELECT_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+function markProfileSelectedNow(): void {
+  try {
+    localStorage.setItem(LAST_SELECT_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
+
+const PICKER_SESSION_KEY = "harbor.pickerShown";
+function launchPickerShownThisSession(): boolean {
+  try {
+    return sessionStorage.getItem(PICKER_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function markLaunchPickerShown(): void {
+  try {
+    sessionStorage.setItem(PICKER_SESSION_KEY, "1");
+  } catch {
+    /* ignore */
   }
 }
 
@@ -239,9 +304,22 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       writeState(initial);
       return initial;
     }
-    return loaded;
+    const def = launchDefault(loaded.profiles);
+    return def ? { ...loaded, activeId: def.id } : loaded;
   });
-  const [pickerOpen, setPickerOpen] = useState<boolean>(() => state.activeId == null);
+  const [pickerOpen, setPickerOpen] = useState<boolean>(() => {
+    if (state.activeId == null) return true;
+    if (state.profiles.length <= 1) return false;
+    if (launchDefault(state.profiles)) return false;
+    const interval = readProfilePromptInterval();
+    if (interval === "never") return false;
+    if (interval === "launch") {
+      const shownThisSession = launchPickerShownThisSession();
+      markLaunchPickerShown();
+      return !shownThisSession;
+    }
+    return Date.now() - readLastProfileSelectAt() >= intervalMinutes(interval) * 60000;
+  });
   const [pickerView, setPickerViewState] = useState<PickerView>({ kind: "list" });
 
   useEffect(() => {
@@ -253,11 +331,29 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     [state.profiles, state.activeId],
   );
 
-  const selectProfile = useCallback((id: string) => {
+  const [sessionUnlockedIds, setSessionUnlockedIds] = useState<Set<string>>(() => new Set());
+  const selectProfile = useCallback((id: string, opts?: { unlocked?: boolean }) => {
+    if (opts?.unlocked) {
+      setSessionUnlockedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+    }
+    markProfileSelectedNow();
     setState((s) => ({ ...s, activeId: id }));
     setPickerOpen(false);
     setPickerViewState({ kind: "list" });
   }, []);
+
+  useEffect(() => {
+    const onFocus = () => {
+      const mins = intervalMinutes(readProfilePromptInterval());
+      if (mins <= 0 || state.activeId == null || state.profiles.length <= 1) return;
+      if (Date.now() - readLastProfileSelectAt() >= mins * 60000) {
+        setPickerViewState({ kind: "list" });
+        setPickerOpen(true);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [state.activeId, state.profiles.length]);
 
   const openPicker = useCallback((view: PickerView = { kind: "list" }) => {
     setPickerViewState(view);
@@ -339,6 +435,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       setPickerView,
       closePicker,
       selectProfile,
+      sessionUnlockedIds,
       createProfile,
       updateProfile,
       deleteProfile,
@@ -349,6 +446,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       activeProfile,
       pickerOpen,
       pickerView,
+      sessionUnlockedIds,
       openPicker,
       setPickerView,
       closePicker,

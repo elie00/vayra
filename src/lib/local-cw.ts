@@ -66,6 +66,10 @@ export function listLocalCw(): LocalCwEntry[] {
   return Object.values(readAll()).sort((a, b) => b.t - a.t);
 }
 
+export function localCwEntry(id: string): LocalCwEntry | null {
+  return readAll()[id] ?? null;
+}
+
 export function clearLocalCw(id: string): void {
   const all = readAll();
   if (!(id in all)) return;

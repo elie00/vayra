@@ -16,9 +16,6 @@ type RawLite = {
   backdrop_path?: string | null;
 };
 
-// Overview in the metadata language (titles/overviews), independent of the image
-// language that may be driving list requests. Defaults to English. Used to keep
-// hero/detail plot text in the user's reading language even when posters are localized.
 const overviewCache = new Map<string, string>();
 export async function tmdbMetadataOverview(key: string, metaId: string): Promise<string | undefined> {
   if (!key) return undefined;

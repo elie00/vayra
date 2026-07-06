@@ -10,6 +10,7 @@ import { buildMatchScores, matchBadge, MATCH_CLOSE } from "@/lib/together/source
 import { HostSourceBanner } from "@/components/host-source-banner";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
 import { readPlayback, readLastSeriesPlayback, streamMatchesEntry, streamMatchesSource } from "@/lib/playback-history";
+import { readSeasonLock } from "@/lib/season-lock";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
@@ -36,6 +37,7 @@ import {
 import { PickerHeader } from "./play-picker/picker-header";
 import { PrimaryCard } from "./play-picker/primary-card";
 import { SourceDiagnostic } from "./play-picker/source-diagnostic";
+import { CachedTip } from "./play-picker/cached-tip";
 import { StremioLayout } from "./play-picker/stremio-layout";
 import { SourceDrawer } from "./play-picker/source-drawer";
 import { TierStrip } from "./play-picker/tier-strip";
@@ -206,18 +208,10 @@ export function PlayPicker({
     return { primary, byTier, all };
   }, [result, langFilter, preferredLangs, cachedOnly, debrids.length, isCached, hostMatch]);
 
-  const anyAddonRanked = useMemo(() => {
-    const all = filteredPicker?.all ?? [];
-    if (all.length === 0 || !addons) return false;
-    const byUrl = new Map(addons.map((a) => [a.transportUrl, a]));
-    const usedUrls = new Set(all.map((s) => s.addonUrl).filter(Boolean) as string[]);
-    if (usedUrls.size === 0) return false;
-    for (const url of usedUrls) {
-      const a = byUrl.get(url);
-      if (a && isAddonRanked(a)) return true;
-    }
-    return false;
-  }, [filteredPicker, addons]);
+  const anyAddonRanked = useMemo(
+    () => (addons ?? []).some((a) => isAddonRanked(a)),
+    [addons],
+  );
   const addonOrderMode = settings.streamSort === "addon" || anyAddonRanked;
   const displayStreams = useMemo(() => {
     const all = filteredPicker?.all ?? [];
@@ -255,12 +249,18 @@ export function PlayPicker({
   [meta.id, episode?.season, episode?.episode, settings.rememberLastStream],
   );
 
+  const seasonLock = settings.seasonSourceLock && meta.type === "series" && !isAnimeMetaId;
+  const seasonLockEntry = useMemo(
+    () => (seasonLock ? readSeasonLock(meta.id, episode?.season ?? null) : null),
+    [seasonLock, meta.id, episode?.season],
+  );
   const lastSeriesSource = useMemo(
     () =>
-      settings.keepSourceNextEpisode && !!autoPlay && meta.type === "series"
+      seasonLockEntry ??
+      (settings.keepSourceNextEpisode && !!autoPlay && meta.type === "series"
         ? readLastSeriesPlayback(meta.id)
-        : null,
-    [meta.id, meta.type, settings.keepSourceNextEpisode, autoPlay],
+        : null),
+    [seasonLockEntry, meta.id, meta.type, settings.keepSourceNextEpisode, autoPlay],
   );
 
   const kidProfile = useActiveKid();
@@ -276,6 +276,7 @@ export function PlayPicker({
     preferredLangs,
     hostSource: hostSourceForMedia,
     prefer1080: !!kidProfile,
+    preferPacks: seasonLock,
     season: !isAnimeMetaId ? episode?.season ?? null : null,
     episode: !isAnimeMetaId ? episode?.episode ?? null : null,
   });
@@ -331,6 +332,7 @@ export function PlayPicker({
     resume,
     debrids,
     isCached,
+    seasonLock,
     p2pAutoConsent,
     inSession,
     canInvite,
@@ -392,6 +394,8 @@ export function PlayPicker({
     isTorrentioStream,
     expectHostSource,
     hostSource: hostSourceForMedia,
+    season: !isAnimeMetaId ? episode?.season ?? null : null,
+    episode: !isAnimeMetaId ? episode?.episode ?? null : null,
     autoFiredRef,
     setAutoSettleReady,
     setAutoCancelled,
@@ -604,6 +608,8 @@ export function PlayPicker({
             else setForceShowAll(true);
           }}
         />
+
+        {debrids.length > 0 && filteredPicker && filteredPicker.all.length > 0 && <CachedTip />}
 
         {(settings.pickerLayout === "stremio" || isDownload) && filteredPicker && filteredPicker.all.length > 0 ? (
           <StremioLayout

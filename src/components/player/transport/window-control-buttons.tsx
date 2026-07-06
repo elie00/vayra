@@ -1,9 +1,10 @@
-import { Minus, Square, X } from "lucide-react";
-import { close, minimize, toggleMaximize } from "@/lib/window";
+import { Copy, Minus, Square, X } from "lucide-react";
+import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export function WindowControlButtons({ t }: { t: (key: string) => string }) {
+  const maxed = useMaximized();
   if (!IS_TAURI) return null;
   return (
     <div className="pointer-events-auto flex items-center gap-1">
@@ -16,10 +17,10 @@ export function WindowControlButtons({ t }: { t: (key: string) => string }) {
       </button>
       <button
         onClick={toggleMaximize}
-        aria-label={t("chrome.maximize")}
+        aria-label={maxed ? t("chrome.restore") : t("chrome.maximize")}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white/85 backdrop-blur-md transition-colors hover:bg-black/70 hover:text-white"
       >
-        <Square size={13} strokeWidth={2.2} />
+        {maxed ? <Copy size={13} strokeWidth={2.2} /> : <Square size={13} strokeWidth={2.2} />}
       </button>
       <button
         onClick={close}

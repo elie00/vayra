@@ -2,11 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import { fetchEpisodeList, nextUnwatchedAfter } from "@/lib/series-episodes";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
-import { manualWatchedState } from "@/lib/manual-watched";
-import { episodeFromVideoId, libraryMetaType, type LibraryItem } from "@/lib/stremio";
+import { getEpisodeProgress } from "@/lib/episode-progress";
+import { simklWatchedForId, statusForId, type WatchlistStatus } from "@/lib/simkl/list-status";
+import { episodeFromVideoId, isAnimeCwItem, libraryMetaType, type LibraryItem } from "@/lib/stremio";
 import { isNextAired, resurfaceCandidates, type AnimeMode } from "@/lib/cw-resurface";
 
 const FINISHED_RATIO = 0.9;
+const ANIME_ID = /^(kitsu|mal|anilist|anidb):/;
+
+const EMPTY_TRAKT_WATCHED: Set<string> = new Set();
+const EMPTY_SIMKL_WATCHED: Map<string, Set<string>> = new Map();
+const EMPTY_ANILIST_WATCHED: Map<string, Set<string>> = new Map();
+const EMPTY_SIMKL_STATUS: Map<string, WatchlistStatus> = new Map();
 
 function isFinishedSeries(i: LibraryItem): boolean {
   if (i.type !== "series" || !i.state) return false;
@@ -21,17 +28,41 @@ function currentEpisode(i: LibraryItem): { season: number; episode: number } | n
   const episode = i.state?.episode;
   if (season && episode) return { season, episode };
   const vid = i.state?.video_id ?? "";
-  if (/^(kitsu|mal|anilist|anidb):/.test(i._id) && vid.split(":").length === 3) return null;
+  if (/^(kitsu|mal|anilist|anidb):/.test(i._id) && vid.split(":").length === 3) {
+    const ep = Number(vid.split(":")[2]);
+    return Number.isFinite(ep) && ep > 0 ? { season: 1, episode: ep } : null;
+  }
   return episodeFromVideoId(vid);
 }
 
-function watchedPredicate(i: LibraryItem, cur: { season: number; episode: number }) {
+function watchedPredicate(
+  i: LibraryItem,
+  cur: { season: number; episode: number },
+  traktWatched: Set<string>,
+  simklWatched: Map<string, Set<string>>,
+  anilistWatched: Map<string, Set<string>>,
+  simklStatus: Map<string, WatchlistStatus>,
+) {
   const finished = isFinishedSeries(i);
+  const traktImdb = i._id.startsWith("tt") ? i._id : null;
+  const simklSet = simklWatchedForId(simklWatched, i._id);
+  const aniSet = anilistWatched.get(i._id);
+  const simklCompleted = statusForId(simklStatus, i._id) === "completed";
   return (season: number, episode: number): boolean => {
-    const ms = manualWatchedState(i._id, season, episode);
-    if (ms !== undefined) return ms;
+    const prog = getEpisodeProgress(
+      i._id,
+      season,
+      episode,
+      null,
+      traktImdb,
+      traktWatched,
+      undefined,
+      aniSet,
+      simklSet,
+    );
+    if (prog.watched) return true;
     if (season === cur.season && episode === cur.episode) return finished;
-    return false;
+    return simklCompleted;
   };
 }
 
@@ -47,6 +78,16 @@ function sameSet(a: Set<string>, b: Set<string>): boolean {
   return true;
 }
 
+function sameList(a: LibraryItem[], b: LibraryItem[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i]._id !== b[i]._id) return false;
+    if (a[i].state?.season !== b[i].state?.season) return false;
+    if (a[i].state?.episode !== b[i].state?.episode) return false;
+  }
+  return true;
+}
+
 export function useCwAdvance(
   items: LibraryItem[],
   tmdbKey: string,
@@ -54,6 +95,10 @@ export function useCwAdvance(
   library?: LibraryItem[],
   animeMode: AnimeMode = "all",
   watchedVersion = 0,
+  traktWatched: Set<string> = EMPTY_TRAKT_WATCHED,
+  simklWatched: Map<string, Set<string>> = EMPTY_SIMKL_WATCHED,
+  anilistWatched: Map<string, Set<string>> = EMPTY_ANILIST_WATCHED,
+  simklStatus: Map<string, WatchlistStatus> = EMPTY_SIMKL_STATUS,
 ): LibraryItem[] {
   const [advanced, setAdvanced] = useState<Map<string, LibraryItem>>(new Map());
   const [extra, setExtra] = useState<LibraryItem[]>([]);
@@ -70,7 +115,13 @@ export function useCwAdvance(
     let cancelled = false;
     const targets = items.filter((i) => {
       const cur = currentEpisode(i);
-      return cur != null && watchedPredicate(i, cur)(cur.season, cur.episode);
+      return (
+        cur != null &&
+        watchedPredicate(i, cur, traktWatched, simklWatched, anilistWatched, simklStatus)(
+          cur.season,
+          cur.episode,
+        )
+      );
     });
     void (async () => {
       const next = new Map<string, LibraryItem>();
@@ -98,8 +149,12 @@ export function useCwAdvance(
           }
         }
         if (!list) continue;
-        const nextEp = nextUnwatchedAfter(list, cur, watchedPredicate(i, cur));
-        if (nextEp && isNextAired(i._id, nextEp.airDate)) {
+        const nextEp = nextUnwatchedAfter(
+          list,
+          cur,
+          watchedPredicate(i, cur, traktWatched, simklWatched, anilistWatched, simklStatus),
+        );
+        if (nextEp && isNextAired(isAnimeCwItem(i) || ANIME_ID.test(i._id), nextEp.airDate)) {
           next.set(i._id, {
             ...i,
             state: {
@@ -113,7 +168,13 @@ export function useCwAdvance(
             upNext: true,
           });
         } else if (fetchOk && list.length > 0) {
-          remove.add(i._id);
+          const finaleEp = list[list.length - 1];
+          const freshMidResume =
+            animeMode === "only" &&
+            (i.state?.timeOffset ?? 0) > 0 &&
+            finaleEp != null &&
+            cur.episode < finaleEp.episode;
+          if (!freshMidResume) remove.add(i._id);
         }
       }
       const lib = library ?? items;
@@ -142,14 +203,14 @@ export function useCwAdvance(
       }
       if (!cancelled) {
         setAdvanced((prev) => (sameMap(prev, next) ? prev : next));
-        setExtra(extraItems);
+        setExtra((prev) => (sameList(prev, extraItems) ? prev : extraItems));
         setRemoved((prev) => (sameSet(prev, remove) ? prev : remove));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion]);
+  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus]);
 
   if (!enabled) return items;
   const base =

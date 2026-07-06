@@ -32,7 +32,7 @@ type ParentalValue = {
 const Ctx = createContext<ParentalValue | null>(null);
 
 export function ParentalProvider({ children }: { children: ReactNode }) {
-  const { activeProfile, updateProfile } = useProfiles();
+  const { activeProfile, updateProfile, sessionUnlockedIds } = useProfiles();
 
   const hiddenTabs: HiddenTabs = useMemo(
     () => ({ ...DEFAULT_HIDDEN, ...(activeProfile?.lockedTabs ?? {}) }),
@@ -47,7 +47,8 @@ export function ParentalProvider({ children }: { children: ReactNode }) {
     setSessionUnlockedFor(null);
   }, [activeProfile?.id]);
 
-  const locked = wantsLock && sessionUnlockedFor !== activeProfile?.id;
+  const loginUnlocked = !!activeProfile && sessionUnlockedIds.has(activeProfile.id);
+  const locked = wantsLock && sessionUnlockedFor !== activeProfile?.id && !loginUnlocked;
 
   const setTabHidden = useCallback(
     (tab: LockableTab, hidden: boolean) => {

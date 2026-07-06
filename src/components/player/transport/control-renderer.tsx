@@ -75,6 +75,7 @@ export type ControlContext = {
   previewStates?: Partial<Record<PlayerControlId, string>>;
   controlVariants?: Partial<Record<PlayerControlId, ControlVariant>>;
   timeFormat?: TimeFormat;
+  onCycleTimeFormat?: () => void;
   volumeStyle?: VolumeStyle;
   seekBackStepSec: number;
   seekForwardStepSec: number;
@@ -109,6 +110,7 @@ export type ControlContext = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   onPrevEp: () => void;
@@ -224,6 +226,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           isLiveChannel={ctx.isLiveChannel}
           tight={ctx.tight}
           active={ctx.active}
+          onCycle={ctx.editing ? undefined : ctx.onCycleTimeFormat}
         />
       );
     }
@@ -331,7 +334,6 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     }
     case "audio-menu": {
       if (ctx.tight || ctx.engine === "html5") return null;
-      if (ctx.isLiveChannel && ctx.snap.audioTracks.length < 2) return null;
       return (
         <AudioMenu
           tracks={ctx.snap.audioTracks}
@@ -409,6 +411,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           hideOthers={ctx.hideOthersDrawings}
           onToggle={ctx.onToggleDraw}
           onToggleHideOthers={ctx.onToggleHideOthers}
+          onClear={ctx.onClearDraw}
         />
       );
     }

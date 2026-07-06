@@ -67,6 +67,7 @@ export type StremioRenderCtx = {
   customIcons?: CustomIconMap;
   previewStates?: Partial<Record<PlayerControlId, string>>;
   timeFormat?: TimeFormat;
+  onCycleTimeFormat?: () => void;
   volumeStyle?: VolumeStyle;
   fullscreen?: boolean;
   title?: string;
@@ -110,6 +111,7 @@ export type StremioRenderCtx = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   onPrevEp: () => void;
@@ -272,6 +274,7 @@ export function RenderedStremioControl({
           timeFormat={ctx.timeFormat}
           isLiveChannel={ctx.isLiveChannel}
           active={ctx.active}
+          onCycle={ctx.editing ? undefined : ctx.onCycleTimeFormat}
         />
       );
     }
@@ -359,7 +362,6 @@ export function RenderedStremioControl({
       );
     case "audio-menu":
       if (ctx.engine === "html5") return null;
-      if (ctx.isLiveChannel && ctx.snap.audioTracks.length < 2) return null;
       return (
         <AudioMenu
           tracks={ctx.snap.audioTracks}
@@ -380,6 +382,7 @@ export function RenderedStremioControl({
           hideOthers={ctx.hideOthersDrawings}
           onToggle={ctx.onToggleDraw}
           onToggleHideOthers={ctx.onToggleHideOthers}
+          onClear={ctx.onClearDraw}
         />
       );
     case "screenshot":

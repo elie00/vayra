@@ -173,7 +173,10 @@ export const AVATAR_CATALOG: AvatarGroup[] = [
     items: [
       { id: "bmo", name: "BMO" },
       { id: "finn_the_human", name: "Finn" },
+      { id: "gunther", name: "Gunther" },
+      { id: "ice_king", name: "Ice King" },
       { id: "jake_the_dog", name: "Jake" },
+      { id: "lemongrab", name: "Lemongrab" },
       { id: "marceline", name: "Marceline" },
       { id: "princess_bubblegum", name: "Princess Bubblegum" },
     ],
@@ -477,7 +480,6 @@ export const AVATAR_CATALOG: AvatarGroup[] = [
   {
     group: "Team America",
     items: [
-      { id: "cult_chris_teamamerica", name: "Chris" },
       { id: "cult_gary_johnston", name: "Gary Johnston" },
       { id: "cult_lisa_teamamerica", name: "Lisa" },
       { id: "cult_matt_damon", name: "Matt Damon" },
@@ -1536,12 +1538,6 @@ export const AVATAR_CATALOG: AvatarGroup[] = [
     ],
   },
   {
-    group: "Monkey King",
-    items: [
-      { id: "global_sun_wukong", name: "Sun Wukong" },
-    ],
-  },
-  {
     group: "Moomin",
     items: [
       { id: "global_moomin", name: "Moomin" },
@@ -1712,7 +1708,9 @@ export const AVATAR_CATALOG: AvatarGroup[] = [
   {
     group: "Spider-Verse",
     items: [
-      { id: "milesmorales_v2", name: "Miles Morales" },
+      { id: "milesmorales", name: "Miles Morales" },
+      { id: "spider_gwen", name: "Spider-Gwen" },
+      { id: "milesmorales_v2", name: "Spider-Man" },
     ],
   },
   {
