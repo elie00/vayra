@@ -888,12 +888,7 @@ export function DetailView({
   const [currentSeason, setCurrentSeason] = useState<number>(
     () => getLastSeason(meta.id) ?? lastPlay?.season ?? 1,
   );
-  const animeSeason =
-    isAnime && seasonPillTag?.kind === "season"
-      ? seasonPillTag.seasonNum
-      : 1;
-  void currentSeason;
-  void animeSeason;
+
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
     const opts = { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay };
@@ -1292,6 +1287,14 @@ export function DetailView({
                       </button>
                     )}
                     {meta.type === "movie" && <EpisodeDownloadButton meta={meta} variant="bar" />}
+                    {(isSeries || isAnime) && (
+                      <EpisodeDownloadButton
+                        meta={meta}
+                        episode={{ season: currentSeason, episode: 1 }}
+                        variant="bar"
+                        intent="download-season"
+                      />
+                    )}
                   </>
                 )}
                 {liveContext && (
