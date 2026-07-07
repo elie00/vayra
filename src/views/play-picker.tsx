@@ -212,7 +212,7 @@ export function PlayPicker({
           if (seen.has(s.infoHash)) continue;
           seen.add(s.infoHash);
           grouped.push({ ...s, name: `${s.name} (${byHash.get(s.infoHash)!.length} episodes)` });
-        } else if (s.size != null && s.size > 20 * 1024 * 1024 * 1024) {
+        } else if (s.size != null && s.size > (isAnimeRequest ? 3 : 15) * 1024 * 1024 * 1024) {
           grouped.push(s);
         }
       }
@@ -233,7 +233,7 @@ export function PlayPicker({
     );
     const primary = primaryCandidates[0] ?? null;
     return { primary, byTier, all };
-  }, [result, langFilter, preferredLangs, cachedOnly, debrids.length, isCached, hostMatch]);
+  }, [result, langFilter, preferredLangs, cachedOnly, debrids.length, isCached, hostMatch, isAnimeRequest]);
 
   const anyAddonRanked = useMemo(
     () => (addons ?? []).some((a) => isAddonRanked(a)),
