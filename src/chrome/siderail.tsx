@@ -5,38 +5,18 @@ import { ProfileBlock } from "@/chrome/siderail/profile-block";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { RecordingPill } from "@/chrome/recording-pill";
 import { TogetherButton } from "@/chrome/topbar";
+import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { close, minimize, toggleMaximize } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-type Tab = {
-  label: string;
-  view: View;
-  parentalKey?: LockableTab;
-};
-
-const PRIMARY: Tab[] = [
-  { label: "Home", view: "home" },
-  { label: "Discover", view: "discover", parentalKey: "discover" },
-  { label: "Movies", view: "movies", parentalKey: "movies" },
-  { label: "Shows", view: "shows", parentalKey: "shows" },
-  { label: "Anime", view: "anime", parentalKey: "anime" },
-  { label: "Live TV", view: "live", parentalKey: "liveTv" },
-  { label: "Playlists", view: "vod" },
-];
-
-const SECONDARY: Tab[] = [
-  { label: "Calendar", view: "calendar", parentalKey: "calendar" },
-  { label: "Library", view: "library", parentalKey: "library" },
-  { label: "Downloads", view: "downloads" },
-  { label: "Addons", view: "addons", parentalKey: "addons" },
-];
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "anime", "live", "vod"]);
 
 export function SideRail() {
   const { view, setView, chromeHidden } = useView();
@@ -47,20 +27,25 @@ export function SideRail() {
   const [pinFor, setPinFor] = useState<View | null>(null);
   const collapsed = settings.sidebarCollapsed;
 
-  const navigate = (tab: Tab) => {
-    if (tab.parentalKey && locked && hiddenTabs[tab.parentalKey]) {
-      setPinFor(tab.view);
+  const navigate = (item: NavItem) => {
+    if (item.parentalKey && locked && hiddenTabs[item.parentalKey]) {
+      setPinFor(item.view);
       return;
     }
-    setView(tab.view);
+    setView(item.view);
   };
 
-  const visible = (tabs: Tab[]) =>
-    tabs.filter(
-      (item) =>
-        (item.view !== "vod" || settings.showPlaylistsTab) &&
-        (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]),
-    );
+  const isVisible = (item: NavItem) =>
+    item.id !== "kids" &&
+    (item.view !== "vod" || settings.showPlaylistsTab) &&
+    (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]);
+
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const primary = items.filter((item) => PRIMARY_IDS.has(item.id) && isVisible(item));
+  const secondary = items.filter(
+    (item) => item.id !== "settings" && !PRIMARY_IDS.has(item.id) && isVisible(item),
+  );
+  const settingsItem = items.find((item) => item.id === "settings");
 
   return (
     <>
@@ -101,24 +86,30 @@ export function SideRail() {
 
         <div className="flex-1 overflow-y-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex flex-col gap-0.5">
-            {visible(PRIMARY).map((tab) => (
-              <RailItem key={tab.view} label={tab.label} active={view === tab.view} collapsed={collapsed} onClick={() => navigate(tab)} />
+            {primary.map((item) => (
+              <RailItem key={item.id} label={item.label} active={view === item.view} collapsed={collapsed} onClick={() => navigate(item)} />
             ))}
           </nav>
 
-          <GoldRule collapsed={collapsed} />
+          {secondary.length > 0 && (
+            <>
+              <GoldRule collapsed={collapsed} />
+              <nav className="flex flex-col gap-0.5">
+                {secondary.map((item) => (
+                  <RailItem key={item.id} label={item.label} active={view === item.view} collapsed={collapsed} onClick={() => navigate(item)} />
+                ))}
+              </nav>
+            </>
+          )}
 
-          <nav className="flex flex-col gap-0.5">
-            {visible(SECONDARY).map((tab) => (
-              <RailItem key={tab.view} label={tab.label} active={view === tab.view} collapsed={collapsed} onClick={() => navigate(tab)} />
-            ))}
-          </nav>
-
-          <GoldRule collapsed={collapsed} />
-
-          <nav className="flex flex-col gap-0.5">
-            <RailItem label="Settings" active={view === "settings"} collapsed={collapsed} onClick={() => setView("settings")} />
-          </nav>
+          {settingsItem && (
+            <>
+              <GoldRule collapsed={collapsed} />
+              <nav className="flex flex-col gap-0.5">
+                <RailItem key={settingsItem.id} label={settingsItem.label} active={view === settingsItem.view} collapsed={collapsed} onClick={() => setView(settingsItem.view)} />
+              </nav>
+            </>
+          )}
         </div>
 
         <div className={`relative flex flex-col gap-2 py-4 ${collapsed ? "px-2" : "px-4"}`}>

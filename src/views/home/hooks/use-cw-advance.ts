@@ -99,6 +99,7 @@ export function useCwAdvance(
   simklWatched: Map<string, Set<string>> = EMPTY_SIMKL_WATCHED,
   anilistWatched: Map<string, Set<string>> = EMPTY_ANILIST_WATCHED,
   simklStatus: Map<string, WatchlistStatus> = EMPTY_SIMKL_STATUS,
+  animeVersion = 0,
 ): LibraryItem[] {
   const [advanced, setAdvanced] = useState<Map<string, LibraryItem>>(new Map());
   const [extra, setExtra] = useState<LibraryItem[]>([]);
@@ -210,7 +211,7 @@ export function useCwAdvance(
     return () => {
       cancelled = true;
     };
-  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus]);
+  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus, animeVersion]);
 
   if (!enabled) return items;
   const base =

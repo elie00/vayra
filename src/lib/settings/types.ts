@@ -57,7 +57,6 @@ export interface SimklGranularFilters {
 }
 
 export type Settings = {
-  simklGranularFilters: SimklGranularFilters;
   blurComments: boolean;
   blurEpisodes: boolean;
   tmdbKey: string;
@@ -88,6 +87,7 @@ export type Settings = {
   showSimklBadge: boolean;
   simklShowCommunityRatings: boolean;
   simklEnableUserRatings: boolean;
+  simklGranularFilters: SimklGranularFilters;
   cardBadgeLimit: number;
   showQualityBadge: boolean;
   showCardBadges: boolean;
@@ -124,6 +124,10 @@ export type Settings = {
   showEpisodeRating: boolean;
   showEpisodeDescription: boolean;
   hdEpisodeImages: boolean;
+  episodeArcGroups: boolean;
+  episodeOrderProvider: "default" | "tmdb" | "tvdb";
+  tvdbSeasonType: "official" | "dvd" | "absolute" | "alternate" | "regional";
+  tvdbPin: string;
   harborAvatar: string | null;
   harborColor: string;
   anilistAutoSync: boolean;
@@ -165,6 +169,7 @@ export type Settings = {
   rememberLastStream: boolean;
   keepSourceNextEpisode: boolean;
   playerHdrToSdr: boolean;
+  playerRtxHdr: boolean;
   playerMacEdr: boolean;
   playerDisplayPanel: "auto" | "oled" | "lcd";
   playerMotionInterp: boolean;
@@ -176,6 +181,7 @@ export type Settings = {
   showQualityInfo: boolean;
   stremioServerTranscode: boolean;
   directTorrentStream: boolean;
+  torrentFullDownload: boolean;
   p2pAutoConsent: boolean;
   streamCacheRetentionHours: number;
   streamCacheMaxGb: number;
@@ -221,6 +227,11 @@ export type Settings = {
   forcedSubsWhenNativeAudio: boolean;
   tmdbLanguage: string;
   tmdbImageLangs: string[];
+  nfoPosterSize: string;
+  nfoBackdropSize: string;
+  nfoLogoSize: string;
+  showLocalLibraryBadge: boolean;
+  localPlaybackMode: "ask" | "local" | "stream";
   posterBaseUrl: string;
   hidePosterTitles: boolean;
   hoverPreviewEnabled: boolean;
@@ -296,6 +307,11 @@ export type Settings = {
     numerals: string[];
     heroSource: string | null;
     customSources: SourceRow[];
+  };
+  navCustomization: {
+    order: string[];
+    hidden: string[];
+    renamed: Record<string, string>;
   };
   hotkeys: Record<string, string>;
   animeFavoriteGenres: number[];

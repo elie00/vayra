@@ -4,7 +4,13 @@ import { simklScrobble, buildBody } from "./scrobble";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { useSettings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
-import { SIMKL_API_BASE, SIMKL_CLIENT_ID, SIMKL_WATCHED_RATIO } from "./config";
+import {
+  SIMKL_API_BASE,
+  SIMKL_APP_NAME,
+  SIMKL_APP_VERSION,
+  SIMKL_CLIENT_ID,
+  SIMKL_WATCHED_RATIO,
+} from "./config";
 import { getSession } from "./session";
 
 type Snap = {
@@ -15,10 +21,12 @@ type Snap = {
 
 type LastAction = "start" | "pause" | "stop" | null;
 
+const STUB_MAX_SEC = 150;
+
 export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }): void {
   const { isConnected } = useSimkl();
   const { settings } = useSettings();
-  const enabled = isConnected && settings.simklScrobbleEnabled;
+  const enabled = isConnected;
   const pauseOnPauseRef = useRef(settings.pauseListStatusOnPause);
   pauseOnPauseRef.current = settings.pauseListStatusOnPause;
   const lastActionRef = useRef<LastAction>(null);
@@ -37,7 +45,7 @@ export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
     if (!enabled) return;
     const onPageHide = () => {
       const a = stopArgsRef.current;
-      if (a.snap.durationSec <= 0) return;
+      if (a.snap.durationSec < STUB_MAX_SEC) return;
       if (lastActionRef.current !== "start" && lastActionRef.current !== "pause") return;
       const progress = Math.min(100, Math.max(0, (getPlaybackPosition() / a.snap.durationSec) * 100));
       if (progress < SIMKL_WATCHED_RATIO * 100 && !pauseOnPauseRef.current) return;
@@ -54,7 +62,7 @@ export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
     if (lastKeyRef.current && lastKeyRef.current !== key) {
       const prevPos = getPlaybackPosition();
       const prevDur = snap.durationSec;
-      if (prevDur > 0 && pauseOnPauseRef.current) {
+      if (prevDur >= STUB_MAX_SEC && pauseOnPauseRef.current) {
         const progress = Math.min(100, (prevPos / prevDur) * 100);
         const prev = prevIdentityRef.current;
         void simklScrobble("pause", prev.metaId, prev.episode, progress);
@@ -67,7 +75,7 @@ export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
 
   useEffect(() => {
     if (!enabled) return;
-    if (snap.durationSec <= 0) return;
+    if (snap.durationSec < STUB_MAX_SEC) return;
     const progress = Math.min(100, Math.max(0, (getPlaybackPosition() / snap.durationSec) * 100));
 
     if (snap.status === "ended") {
@@ -88,18 +96,12 @@ export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
       }
       lastActionRef.current = "pause";
     }
-  }, [
-    enabled,
-    metaId,
-    src.episode,
-    snap.status,
-    snap.durationSec,
-  ]);
+  }, [enabled, metaId, src.episode, snap.status, snap.durationSec]);
 
   const seekTrackRef = useRef({ pos: 0, at: 0, lastResyncAt: 0 });
   useEffect(() => {
     if (!enabled) return;
-    if (snap.durationSec <= 0) return;
+    if (snap.durationSec < STUB_MAX_SEC) return;
     if (lastActionRef.current !== "start") {
       seekTrackRef.current = { pos: getPlaybackPosition(), at: Date.now(), lastResyncAt: 0 };
       return;
@@ -128,7 +130,7 @@ export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }):
       if (!enabled) return;
       if (lastActionRef.current !== "start" && lastActionRef.current !== "pause") return;
       const a = stopArgsRef.current;
-      if (a.snap.durationSec > 0) {
+      if (a.snap.durationSec >= STUB_MAX_SEC) {
         const progress = Math.min(100, (getPlaybackPosition() / a.snap.durationSec) * 100);
         const action = progress >= SIMKL_WATCHED_RATIO * 100 ? "stop" : "pause";
         if (action === "stop" || pauseOnPauseRef.current) {
@@ -146,7 +148,7 @@ function sendBeacon(
   metaId: string,
   episode: PlayerSrc["episode"],
   progress: number,
-  action: "stop" | "pause"
+  action: "stop" | "pause",
 ): void {
   const session = getSession();
   if (!session) return;
@@ -156,8 +158,8 @@ function sendBeacon(
 
   const url = new URL(`${SIMKL_API_BASE}/scrobble/${action}`);
   url.searchParams.set("client_id", SIMKL_CLIENT_ID);
-  url.searchParams.set("app-name", "harbor");
-  url.searchParams.set("app-version", "0.9.19");
+  url.searchParams.set("app-name", SIMKL_APP_NAME);
+  url.searchParams.set("app-version", SIMKL_APP_VERSION);
 
   try {
     void fetch(url.toString(), {
@@ -165,7 +167,6 @@ function sendBeacon(
       keepalive: true,
       headers: {
         "Content-Type": "application/json",
-        "User-Agent": "harbor/0.9.19",
         "simkl-api-key": SIMKL_CLIENT_ID,
         Authorization: `Bearer ${session.accessToken}`,
       },

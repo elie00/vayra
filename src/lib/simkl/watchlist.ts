@@ -1,7 +1,6 @@
 import { simklRequest } from "./client";
-import type { SimklItem, SimklTarget, SimklIds } from "./types";
-import { getLocalCache, syncWatchlistCache, updateCachedStatusByTarget } from "./activities";
-import type { WatchlistStatus } from "./list-status";
+import { simklTargetIds } from "./ids";
+import type { SimklIds, SimklItem, SimklTarget } from "./types";
 
 export type RawIds = {
   simkl?: number;
@@ -11,6 +10,9 @@ export type RawIds = {
   mal?: number;
   anidb?: number;
 };
+type RawNode = { title?: string; year?: number | null; ids?: RawIds };
+type RawEntry = { added_to_watchlist_at?: string; movie?: RawNode; show?: RawNode };
+type RawAllItems = { movies?: RawEntry[]; shows?: RawEntry[]; anime?: RawEntry[] };
 
 export function num(v: number | string | undefined): number | undefined {
   if (typeof v === "number") return v;
@@ -32,43 +34,32 @@ export function mapIds(ids: RawIds | undefined): SimklIds {
   };
 }
 
-async function fetchByStatus(status: WatchlistStatus): Promise<SimklItem[]> {
-  let cache = getLocalCache();
-  if (!cache || !cache.lastSync) {
-    cache = await syncWatchlistCache().catch(() => null);
-  }
-  if (!cache) return [];
+async function fetchByStatus(status: string): Promise<SimklItem[]> {
+  const data = await simklRequest<RawAllItems>(`/sync/all-items/all/${status}`).catch(
+    () => ({}) as RawAllItems,
+  );
   const out: SimklItem[] = [];
-  for (const simklIdStr of Object.keys(cache.items)) {
-    const item = cache.items[simklIdStr];
-    if (item.status === status) {
-      const ids: any = { simkl: item.simklId };
-      for (const [imdbId, sId] of Object.entries(cache.imdbToSimkl)) {
-        if (sId === item.simklId) ids.imdb = imdbId;
-      }
-      for (const [tmdbKey, sId] of Object.entries(cache.tmdbToSimkl)) {
-        if (sId === item.simklId) {
-          const parts = tmdbKey.split(":");
-          if (parts.length === 2) {
-            ids.tmdb = Number.isFinite(Number(parts[1])) ? Number(parts[1]) : parts[1];
-          }
-        }
-      }
-      for (const [malId, sId] of Object.entries(cache.malToSimkl)) {
-        if (sId === item.simklId) ids.mal = Number(malId);
-      }
-      for (const [kitsuId, sId] of Object.entries(cache.kitsuToSimkl)) {
-        if (sId === item.simklId) ids.kitsu = Number(kitsuId);
-      }
-
-      out.push({
-        type: item.type === "movie" ? "movie" : "show",
-        title: item.title,
-        year: item.year,
-        ids,
-        watchedAt: item.watchedAt ?? undefined,
-      });
-    }
+  for (const e of data.movies ?? []) {
+    const m = e.movie;
+    if (!m) continue;
+    out.push({
+      type: "movie",
+      title: m.title ?? "",
+      year: m.year ?? null,
+      ids: mapIds(m.ids),
+      watchedAt: e.added_to_watchlist_at,
+    });
+  }
+  for (const e of [...(data.shows ?? []), ...(data.anime ?? [])]) {
+    const s = e.show;
+    if (!s) continue;
+    out.push({
+      type: "show",
+      title: s.title ?? "",
+      year: s.year ?? null,
+      ids: mapIds(s.ids),
+      watchedAt: e.added_to_watchlist_at,
+    });
   }
   return out;
 }
@@ -88,24 +79,13 @@ export async function addToWatchlist(target: SimklTarget): Promise<boolean> {
         method: "POST",
         body: { movies: [{ to: "plantowatch", ids: target.ids }] },
       });
-      updateCachedStatusByTarget(target, "plantowatch");
       return true;
     }
-    const isAnime = target.kind === "anime" || target.kind === "anime-episode";
-    const bucket = isAnime ? "anime" : "shows";
-    const ids =
-      target.kind === "anime"
-        ? target.ids
-        : target.kind === "anime-episode"
-          ? target.anime.ids
-          : target.kind === "show"
-            ? target.ids
-            : target.show.ids;
+    const ids = simklTargetIds(target);
     await simklRequest("/sync/add-to-list", {
       method: "POST",
-      body: { [bucket]: [{ to: "plantowatch", ids }] },
+      body: { shows: [{ to: "plantowatch", ids }] },
     });
-    updateCachedStatusByTarget(target, "plantowatch");
     return true;
   } catch {
     return false;
@@ -119,24 +99,13 @@ export async function removeFromWatchlist(target: SimklTarget): Promise<boolean>
         method: "POST",
         body: { movies: [{ ids: target.ids }] },
       });
-      updateCachedStatusByTarget(target, null);
       return true;
     }
-    const isAnime = target.kind === "anime" || target.kind === "anime-episode";
-    const bucket = isAnime ? "anime" : "shows";
-    const ids =
-      target.kind === "anime"
-        ? target.ids
-        : target.kind === "anime-episode"
-          ? target.anime.ids
-          : target.kind === "show"
-            ? target.ids
-            : target.show.ids;
+    const ids = simklTargetIds(target);
     await simklRequest("/sync/history/remove", {
       method: "POST",
-      body: { [bucket]: [{ ids }] },
+      body: { shows: [{ ids }] },
     });
-    updateCachedStatusByTarget(target, null);
     return true;
   } catch {
     return false;

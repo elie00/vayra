@@ -252,7 +252,14 @@ export function Home({ active = true }: { active?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [simklConnected, settings.tmdbKey, settings.simklHomeRailsEnabled]);
+  }, [
+    simklConnected,
+    settings.tmdbKey,
+    settings.simklHomeRailsEnabled,
+    settings.simklUpNextRailEnabled,
+    settings.simklTrendingRailEnabled,
+    settings.simklGranularFilters,
+  ]);
 
   useEffect(() => {
     if (!simklConnected) {
@@ -510,6 +517,7 @@ export function Home({ active = true }: { active?: boolean }) {
     simklWatchedMap,
     anilistWatchedMap,
     simklStatusMap,
+    animeDetectVer,
   );
 
   useEffect(() => {

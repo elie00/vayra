@@ -5,9 +5,6 @@ import { updateCachedRatingByTarget, getCachedRatingByTarget } from "./activitie
 
 export { getCachedRatingByTarget };
 
-/* ─── SIMKL community rating hook ─────────────────────────────────────────── */
-
-/** Module-level cache: IMDb ID → community rating (or null when lookup failed). */
 const communityRatingCache = new Map<string, number | null>();
 
 interface SimklSearchIdItem {
@@ -20,14 +17,35 @@ interface SimklDetailResponse {
   ratings?: { simkl?: { rating?: number } };
 }
 
-/**
- * Fetch the SIMKL community rating for a title by its IMDb ID, independently of
- * MDBList.  Uses the public `/search/id` endpoint (only `client_id` required)
- * to resolve the IMDb ID to a SIMKL ID + media type, then fetches the rating
- * from the appropriate detail endpoint.
- *
- * Results are cached in-memory per IMDb ID to avoid repeated API calls.
- */
+function detailPathFor(type: string | undefined, simklId: number): string {
+  return type === "movie"
+    ? `/movies/${simklId}`
+    : type === "anime"
+      ? `/anime/${simklId}`
+      : `/tv/${simklId}`;
+}
+
+async function resolveScoreByImdb(imdbId: string): Promise<number | null> {
+  const results = await simklRequest<SimklSearchIdItem[]>(
+    `/search/id?imdb=${encodeURIComponent(imdbId)}`,
+    { method: "GET", authed: false },
+  );
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  const item = results[0];
+  const directRating = item.ratings?.simkl?.rating;
+  if (directRating != null) return directRating;
+
+  const simklId = item.ids?.simkl;
+  if (simklId == null) return null;
+
+  const detail = await simklRequest<SimklDetailResponse>(detailPathFor(item.type, simklId), {
+    method: "GET",
+    authed: false,
+  });
+  return detail.ratings?.simkl?.rating ?? null;
+}
+
 export function useSimklCommunityRating(
   imdbId: string | null,
 ): { rating: number | null; loading: boolean } {
@@ -40,8 +58,6 @@ export function useSimklCommunityRating(
       setLoading(false);
       return;
     }
-
-    // Serve from cache if available
     if (communityRatingCache.has(imdbId)) {
       setRating(communityRatingCache.get(imdbId) ?? null);
       setLoading(false);
@@ -53,63 +69,10 @@ export function useSimklCommunityRating(
 
     (async () => {
       try {
-        // Step 1 — resolve IMDb ID → SIMKL ID + type via /search/id (public)
-        const results = await simklRequest<SimklSearchIdItem[]>(
-          `/search/id?imdb=${encodeURIComponent(imdbId)}`,
-          { method: "GET", authed: false },
-        );
-
-        if (!Array.isArray(results) || results.length === 0) {
-          if (!cancelled) {
-            communityRatingCache.set(imdbId, null);
-            setRating(null);
-            setLoading(false);
-          }
-          return;
-        }
-
-        const item = results[0];
-
-        // Fast path: some responses include ratings directly
-        const directRating = item.ratings?.simkl?.rating;
-        if (directRating != null) {
-          if (!cancelled) {
-            communityRatingCache.set(imdbId, directRating);
-            setRating(directRating);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // Step 2 — fetch from the detail endpoint for the media type
-        const simklId = item.ids?.simkl;
-        if (simklId == null) {
-          if (!cancelled) {
-            communityRatingCache.set(imdbId, null);
-            setRating(null);
-            setLoading(false);
-          }
-          return;
-        }
-
-        const type = item.type; // "movie" | "tv" | "anime"
-        const detailPath =
-          type === "movie"
-            ? `/movies/${simklId}`
-            : type === "anime"
-              ? `/anime/${simklId}`
-              : `/tv/${simklId}`;
-
-        const detail = await simklRequest<SimklDetailResponse>(detailPath, {
-          method: "GET",
-          authed: false,
-        });
-
-        const communityRating = detail.ratings?.simkl?.rating ?? null;
-
+        const result = await resolveScoreByImdb(imdbId);
         if (!cancelled) {
-          communityRatingCache.set(imdbId, communityRating);
-          setRating(communityRating);
+          communityRatingCache.set(imdbId, result);
+          setRating(result);
           setLoading(false);
         }
       } catch {
@@ -129,20 +92,9 @@ export function useSimklCommunityRating(
   return { rating, loading };
 }
 
-/* ─── SIMKL card scores hook (for poster badges) ───────────────────────────── */
-
-/**
- * Module-level cache + in-flight deduplication for SIMKL community scores by IMDb ID.
- * Shared across all poster cards to avoid redundant API calls.
- */
 const cardScoreCache = new Map<string, number | null>();
 const cardScoreInFlight = new Map<string, Promise<number | null>>();
 
-/**
- * Resolve a single IMDb ID to a SIMKL community rating.
- * Uses the same /search/id fast-path as useSimklCommunityRating.
- * Results are cached in-memory.
- */
 async function resolveSimklCardScore(imdbId: string): Promise<number | null> {
   if (cardScoreCache.has(imdbId)) {
     return cardScoreCache.get(imdbId) ?? null;
@@ -153,33 +105,7 @@ async function resolveSimklCardScore(imdbId: string): Promise<number | null> {
 
   const promise = (async () => {
     try {
-      const results = await simklRequest<SimklSearchIdItem[]>(
-        `/search/id?imdb=${encodeURIComponent(imdbId)}`,
-        { method: "GET", authed: false },
-      );
-      if (!Array.isArray(results) || results.length === 0) {
-        cardScoreCache.set(imdbId, null);
-        return null;
-      }
-      const item = results[0];
-      const directRating = item.ratings?.simkl?.rating;
-      if (directRating != null) {
-        cardScoreCache.set(imdbId, directRating);
-        return directRating;
-      }
-      const simklId = item.ids?.simkl;
-      if (simklId == null) {
-        cardScoreCache.set(imdbId, null);
-        return null;
-      }
-      const type = item.type;
-      const detailPath =
-        type === "movie" ? `/movies/${simklId}` : type === "anime" ? `/anime/${simklId}` : `/tv/${simklId}`;
-      const detail = await simklRequest<SimklDetailResponse>(detailPath, {
-        method: "GET",
-        authed: false,
-      });
-      const rating = detail.ratings?.simkl?.rating ?? null;
+      const rating = await resolveScoreByImdb(imdbId);
       cardScoreCache.set(imdbId, rating);
       return rating;
     } catch {
@@ -194,12 +120,10 @@ async function resolveSimklCardScore(imdbId: string): Promise<number | null> {
   return promise;
 }
 
-/**
- * React hook that returns the SIMKL community score for a given IMDb ID.
- * Designed for use in poster cards (PickCard). Independent of MDBList.
- * Results are cached in-memory and shared across all cards.
- */
-export function useSimklCardScores(imdbId: string | undefined): { score: number | null; loading: boolean } {
+export function useSimklCardScores(imdbId: string | undefined): {
+  score: number | null;
+  loading: boolean;
+} {
   const [score, setScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -230,18 +154,9 @@ export function useSimklCardScores(imdbId: string | undefined): { score: number 
   return { score, loading };
 }
 
-/* ─── SIMKL card scores by anime ID (MAL/Kitsu/AniDB/AniList) ─────────────── */
-
-/**
- * Module-level cache + in-flight dedup for SIMKL community scores by anime ID.
- * Keys are namespaced as "anime:{source}:{id}" to avoid collision with IMDb cache.
- */
 const animeScoreCache = new Map<string, number | null>();
 const animeScoreInFlight = new Map<string, Promise<number | null>>();
 
-/**
- * Map anime ID prefix to the SIMKL /search/id query parameter name.
- */
 const ANIME_ID_PARAM: Record<string, string> = {
   mal: "mal",
   kitsu: "kitsu",
@@ -249,11 +164,6 @@ const ANIME_ID_PARAM: Record<string, string> = {
   anilist: "anilist",
 };
 
-/**
- * Resolve a single anime ID (e.g. "mal:16498") to a SIMKL community rating.
- * Uses /search/id?{source}={id} — the SIMKL API supports mal, kitsu, anidb, anilist params.
- * Results are cached in-memory.
- */
 async function resolveSimklCardScoreByAnimeId(animeId: string): Promise<number | null> {
   const cacheKey = `anime:${animeId}`;
   if (animeScoreCache.has(cacheKey)) {
@@ -263,7 +173,6 @@ async function resolveSimklCardScoreByAnimeId(animeId: string): Promise<number |
     return animeScoreInFlight.get(cacheKey)!;
   }
 
-  // Parse the anime ID prefix
   const simklMatch = animeId.match(/^simkl:(\d+)$/);
   const externalMatch = animeId.match(/^(mal|kitsu|anidb|anilist):(\d+)$/);
 
@@ -272,34 +181,28 @@ async function resolveSimklCardScoreByAnimeId(animeId: string): Promise<number |
     return null;
   }
 
-  // Capture resolved values before async closure (TypeScript null-safety)
   const resolvedSimklId = simklMatch ? Number(simklMatch[1]) : null;
   const resolvedParam = externalMatch ? ANIME_ID_PARAM[externalMatch[1]] : null;
   const resolvedIdValue = externalMatch ? externalMatch[2] : null;
 
   const promise = (async () => {
     try {
-      // Direct SIMKL ID — skip /search/id, go straight to detail endpoint
       if (resolvedSimklId != null) {
-        // Try anime endpoint first (most simkl: IDs in our context are anime)
-        const detail = await simklRequest<SimklDetailResponse>(
-          `/anime/${resolvedSimklId}`,
-          { method: "GET", authed: false },
-        );
+        const detail = await simklRequest<SimklDetailResponse>(`/anime/${resolvedSimklId}`, {
+          method: "GET",
+          authed: false,
+        });
         const rating = detail.ratings?.simkl?.rating ?? null;
         animeScoreCache.set(cacheKey, rating);
         return rating;
       }
 
-      // External ID (mal/kitsu/anidb/anilist) — resolve via /search/id
       if (resolvedParam == null || resolvedIdValue == null) {
         animeScoreCache.set(cacheKey, null);
         return null;
       }
-      const param = resolvedParam;
-      const idValue = resolvedIdValue;
       const results = await simklRequest<SimklSearchIdItem[]>(
-        `/search/id?${param}=${encodeURIComponent(idValue)}`,
+        `/search/id?${resolvedParam}=${encodeURIComponent(resolvedIdValue)}`,
         { method: "GET", authed: false },
       );
       if (!Array.isArray(results) || results.length === 0) {
@@ -317,10 +220,7 @@ async function resolveSimklCardScoreByAnimeId(animeId: string): Promise<number |
         animeScoreCache.set(cacheKey, null);
         return null;
       }
-      const type = item.type;
-      const detailPath =
-        type === "movie" ? `/movies/${simklId}` : type === "anime" ? `/anime/${simklId}` : `/tv/${simklId}`;
-      const detail = await simklRequest<SimklDetailResponse>(detailPath, {
+      const detail = await simklRequest<SimklDetailResponse>(detailPathFor(item.type, simklId), {
         method: "GET",
         authed: false,
       });
@@ -339,15 +239,10 @@ async function resolveSimklCardScoreByAnimeId(animeId: string): Promise<number |
   return promise;
 }
 
-/**
- * React hook that returns the SIMKL community score for a given anime ID
- * (e.g. "mal:16498", "kitsu:12345"). Designed for use in poster cards (PickCard)
- * for anime items that don't have IMDb IDs. Independent of MDBList.
- * Results are cached in-memory and shared across all cards.
- */
-export function useSimklCardScoresByAnimeId(
-  animeId: string | undefined,
-): { score: number | null; loading: boolean } {
+export function useSimklCardScoresByAnimeId(animeId: string | undefined): {
+  score: number | null;
+  loading: boolean;
+} {
   const [score, setScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -379,8 +274,6 @@ export function useSimklCardScoresByAnimeId(
   return { score, loading };
 }
 
-/* ─── User rating CRUD ─────────────────────────────────────────────────────── */
-
 function getRatingPayload(target: SimklTarget): { key: string; ids: SimklIds } {
   const isMovie = target.kind === "movie";
   const isAnime = target.kind === "anime" || target.kind === "anime-episode";
@@ -401,9 +294,7 @@ export async function addSimklRating(target: SimklTarget, rating: number): Promi
   try {
     await simklRequest("/sync/ratings", {
       method: "POST",
-      body: {
-        [key]: [{ rating, ids }],
-      },
+      body: { [key]: [{ rating, ids }] },
     });
     updateCachedRatingByTarget(target, rating);
     return true;
@@ -418,9 +309,7 @@ export async function removeSimklRating(target: SimklTarget): Promise<boolean> {
   try {
     await simklRequest("/sync/ratings/remove", {
       method: "POST",
-      body: {
-        [key]: [{ ids }],
-      },
+      body: { [key]: [{ ids }] },
     });
     updateCachedRatingByTarget(target, null);
     return true;

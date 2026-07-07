@@ -8,6 +8,7 @@ import type { Episode } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { useView } from "@/lib/view";
+import { useLocalAwareSeriesPlay } from "@/lib/local-library/use-series-play";
 import { useT } from "@/lib/i18n";
 import { EpisodeGrid } from "./episode-grid";
 import type { GridEpisode } from "./episode-grid-types";
@@ -23,6 +24,8 @@ export function EpisodeStrip({
   spoilerFor,
   onContextMenu,
   layout = "strip",
+  seriesImdbId,
+  cinemetaVideos,
 }: {
   meta: Meta;
   episodes: Episode[];
@@ -31,9 +34,11 @@ export function EpisodeStrip({
   spoilerFor?: (ep: Episode) => SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
   layout?: "strip" | "grid";
+  seriesImdbId?: string | null;
+  cinemetaVideos?: Meta["videos"];
 }) {
-  const { openPicker } = useView();
   const { settings } = useSettings();
+  const playLocalAware = useLocalAwareSeriesPlay();
   const t = useT();
 
   const gridEpisodes = useMemo<GridEpisode[]>(
@@ -54,9 +59,9 @@ export function EpisodeStrip({
           ratingIsImdb: ep.imdbRating != null,
           upcoming: isUpcomingDate(ep.airDate),
           play: () =>
-            openPicker(
+            playLocalAware({
               meta,
-              {
+              episode: {
                 season: ep.seasonNumber,
                 episode: ep.episodeNumber,
                 runtime: ep.runtime ?? undefined,
@@ -64,11 +69,13 @@ export function EpisodeStrip({
                 still: stills[0],
                 overview: ep.overview || undefined,
               },
-              { autoPlay: settings.instantPlay || settings.seasonSourceLock },
-            ),
+              opts: { autoPlay: settings.instantPlay || settings.seasonSourceLock },
+              imdbId: seriesImdbId,
+              videos: cinemetaVideos,
+            }),
         };
       }),
-    [episodes, thumbnailFor, meta, openPicker, settings.instantPlay, settings.seasonSourceLock, settings.hdEpisodeImages, t],
+    [episodes, thumbnailFor, meta, playLocalAware, settings.instantPlay, settings.seasonSourceLock, settings.hdEpisodeImages, t, seriesImdbId, cinemetaVideos],
   );
   const epByNumber = useMemo(() => {
     const m = new Map<number, Episode>();
@@ -98,6 +105,8 @@ export function EpisodeStrip({
             thumbnail={thumbnailFor(ep)}
             spoiler={spoilerFor?.(ep)}
             onContextMenu={onContextMenu}
+            seriesImdbId={seriesImdbId}
+            cinemetaVideos={cinemetaVideos}
           />
         </div>
       ))}
@@ -112,6 +121,8 @@ function EpisodeStripCard({
   thumbnail,
   spoiler,
   onContextMenu,
+  seriesImdbId,
+  cinemetaVideos,
 }: {
   meta: Meta;
   ep: Episode;
@@ -119,9 +130,12 @@ function EpisodeStripCard({
   thumbnail?: string;
   spoiler?: SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
+  seriesImdbId?: string | null;
+  cinemetaVideos?: Meta["videos"];
 }) {
   const t = useT();
-  const { openPicker, openEpisodeDetail } = useView();
+  const { openEpisodeDetail } = useView();
+  const playLocalAware = useLocalAwareSeriesPlay();
   const { settings } = useSettings();
   const ratingValue = ep.imdbRating ?? ep.voteAverage;
   const ratingIsImdb = ep.imdbRating != null;
@@ -139,9 +153,9 @@ function EpisodeStripCard({
   }, [ep.stillPath, imgIdx, thumbnail, settings.hdEpisodeImages]);
 
   const handlePlayClick = () => {
-    openPicker(
+    playLocalAware({
       meta,
-      {
+      episode: {
         season: ep.seasonNumber,
         episode: ep.episodeNumber,
         runtime: ep.runtime ?? undefined,
@@ -149,8 +163,10 @@ function EpisodeStripCard({
         still,
         overview: ep.overview || undefined,
       },
-      { autoPlay: settings.instantPlay || settings.seasonSourceLock },
-    );
+      opts: { autoPlay: settings.instantPlay || settings.seasonSourceLock },
+      imdbId: seriesImdbId,
+      videos: cinemetaVideos,
+    });
   };
 
   return (

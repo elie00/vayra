@@ -155,6 +155,10 @@ export function loadStoredSettings(): Settings {
         ...DEFAULT.homeRows,
         ...(parsed.homeRows ?? {}),
       },
+      navCustomization: {
+        ...DEFAULT.navCustomization,
+        ...(parsed.navCustomization ?? {}),
+      },
       letterboxd: {
         ...DEFAULT.letterboxd,
         ...(parsed.letterboxd ?? {}),

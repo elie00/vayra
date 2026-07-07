@@ -83,8 +83,6 @@ export function HeroRatings({
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
   const showPrimary = settings.showDetailRatings;
 
-  // Fetch SIMKL community rating directly from the SIMKL API (decoupled from MDBList).
-  // Always called to respect React hooks rules; the hook early-returns when imdbId is null.
   const { rating: simklCommunityRating } = useSimklCommunityRating(imdbId);
 
   const items: ReactNode[] = [];
@@ -192,8 +190,6 @@ export function HeroRatings({
     );
   }
 
-  // Prefer the direct SIMKL API fetch; fall back to MDBList's simkl score if the
-  // hook returned null (e.g. API failure or no matching title).
   const effectiveSimklRating = simklCommunityRating ?? mdblist?.simkl ?? null;
 
   if (settings.showSimklBadge && settings.simklShowCommunityRatings && effectiveSimklRating != null) {

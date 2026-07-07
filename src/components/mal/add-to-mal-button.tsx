@@ -1,9 +1,13 @@
 import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/anchored-menu";
-import { deleteListEntry, fetchListEntry, saveListEntry } from "@/lib/mal/mutations";
+import {
+  deleteListEntry,
+  fetchListEntry,
+  resolveMalMediaId,
+  saveListEntry,
+} from "@/lib/mal/mutations";
 import { useMal } from "@/lib/mal/provider";
-import { resolveMalMediaId } from "@/lib/mal/mutations";
 import type { MalListStatus } from "@/lib/mal/types";
 import { useT } from "@/lib/i18n";
 

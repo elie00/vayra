@@ -43,6 +43,20 @@ type ResolvedSeries = {
   episodes: ResolvedEpisode[];
 };
 
+const CACHE_TTL_MS = 30 * 60 * 1000;
+const seriesCache = new Map<string, { at: number; series: ResolvedSeries | null }>();
+const movieCache = new Map<string, { at: number; movie: CalendarItem | null }>();
+
+function wideWindow(): (iso: string) => boolean {
+  const lo = Date.now() - 31 * 864e5;
+  const hi = Date.now() + 400 * 864e5;
+  return (iso) => {
+    if (!iso) return false;
+    const t = Date.parse(iso);
+    return Number.isFinite(t) && t >= lo && t <= hi;
+  };
+}
+
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -126,30 +140,65 @@ async function tmdbSeries(
   return tmdbTvUpcoming(tmdbKey, tvId, inWindow);
 }
 
+async function cinemetaSeriesUpcoming(
+  id: string,
+  inWindow: (date: string) => boolean,
+): Promise<ResolvedSeries | null> {
+  const imdb = id.startsWith("tt") ? id.split(":")[0] : null;
+  if (!imdb) return null;
+  const m = await cinemetaMeta("series", imdb).catch(() => null);
+  if (!m?.videos) return null;
+  const episodes: ResolvedEpisode[] = [];
+  for (const v of m.videos) {
+    const date = (v.released ?? v.firstAired ?? "").slice(0, 10);
+    if (!date || !inWindow(date)) continue;
+    const number = v.episode ?? v.number;
+    if (number == null) continue;
+    episodes.push({
+      season: v.season ?? 0,
+      number,
+      name: v.name ?? v.title ?? "",
+      airDate: date,
+      image: v.thumbnail ?? null,
+      overview: "",
+      voteAverage: 0,
+    });
+  }
+  if (episodes.length === 0) return null;
+  return { name: m.name, poster: m.poster ?? null, isAnime: isAnimationGenre(m.genres), episodes };
+}
+
 async function seriesUpcoming(
   c: Candidate,
   inWindow: (date: string) => boolean,
   tmdbKey: string,
 ): Promise<ResolvedSeries | null> {
   if (isAnimeId(c.id)) return animeUpcoming(c.id, inWindow);
-  if (tmdbKey) return tmdbSeries(c.id, inWindow, tmdbKey);
   if (c.id.startsWith("tt")) {
-    const up = await tvmazeUpcoming(c.id.split(":")[0], inWindow);
-    if (!up) return null;
-    return {
-      name: up.show.name,
-      poster: up.show.image,
-      isAnime: up.show.isAnime,
-      episodes: up.episodes.map((e) => ({
-        season: e.season,
-        number: e.number,
-        name: e.name,
-        airDate: e.airdate,
-        image: e.image,
-        overview: e.summary,
-        voteAverage: 0,
-      })),
-    };
+    const cm = await cinemetaSeriesUpcoming(c.id, inWindow);
+    if (cm) return cm;
+  }
+  if (tmdbKey) {
+    const t = await tmdbSeries(c.id, inWindow, tmdbKey).catch(() => null);
+    if (t) return t;
+  } else if (c.id.startsWith("tt")) {
+    const up = await tvmazeUpcoming(c.id.split(":")[0], inWindow).catch(() => null);
+    if (up) {
+      return {
+        name: up.show.name,
+        poster: up.show.image,
+        isAnime: up.show.isAnime,
+        episodes: up.episodes.map((e) => ({
+          season: e.season,
+          number: e.number,
+          name: e.name,
+          airDate: e.airdate,
+          image: e.image,
+          overview: e.summary,
+          voteAverage: 0,
+        })),
+      };
+    }
   }
   return null;
 }
@@ -276,13 +325,29 @@ export async function fetchLibraryCalendar(
   return resolveSavedCalendar(candidates, year, month, { tmdbKey: opts.tmdbKey });
 }
 
+async function resolveSeriesCached(c: SavedCandidate, tmdbKey: string): Promise<ResolvedSeries | null> {
+  const hit = seriesCache.get(c.id);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.series;
+  const series = await seriesUpcoming(c, wideWindow(), tmdbKey).catch(() => null);
+  seriesCache.set(c.id, { at: Date.now(), series });
+  return series;
+}
+
+async function resolveMovieCached(c: SavedCandidate, tmdbKey: string): Promise<CalendarItem | null> {
+  const hit = movieCache.get(c.id);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.movie;
+  const movie = await movieRelease(c, wideWindow(), tmdbKey).catch(() => null);
+  movieCache.set(c.id, { at: Date.now(), movie });
+  return movie;
+}
+
 export async function resolveSavedCalendar(
   candidates: SavedCandidate[],
   year: number,
   month: number,
   opts: { tmdbKey: string },
 ): Promise<CalendarItem[]> {
-  const inWindow = inMonthFactory(year, month);
+  const inMonth = inMonthFactory(year, month);
   const series = candidates.filter((c) => c.type === "series").sort(curatedFirst).slice(0, SERIES_LIMIT);
   const movies = candidates.filter((c) => c.type === "movie").sort(curatedFirst).slice(0, MOVIE_LIMIT);
 
@@ -291,13 +356,14 @@ export async function resolveSavedCalendar(
   const seriesConc = opts.tmdbKey ? TMDB_CONCURRENCY : TVMAZE_CONCURRENCY;
   const seriesResults = await mapLimit(series, seriesConc, async (c) => ({
     c,
-    r: await seriesUpcoming(c, inWindow, opts.tmdbKey).catch(() => null),
+    r: await resolveSeriesCached(c, opts.tmdbKey),
   }));
   for (const { c, r } of seriesResults) {
     if (!r) continue;
     const showName = r.name || c.name;
     for (const ep of r.episodes) {
       if (ep.season === 0 && ep.number === 0) continue;
+      if (!inMonth(ep.airDate)) continue;
       const epLabel = `S${pad(ep.season)}E${pad(ep.number)}`;
       out.push({
         id: `${c.id}:${ep.season}:${ep.number}`,
@@ -314,10 +380,8 @@ export async function resolveSavedCalendar(
     }
   }
 
-  const movieResults = await mapLimit(movies, TMDB_CONCURRENCY, (c) =>
-    movieRelease(c, inWindow, opts.tmdbKey).catch(() => null),
-  );
-  for (const mi of movieResults) if (mi) out.push(mi);
+  const movieResults = await mapLimit(movies, TMDB_CONCURRENCY, (c) => resolveMovieCached(c, opts.tmdbKey));
+  for (const mi of movieResults) if (mi && inMonth(mi.releaseDate)) out.push(mi);
 
   const seen = new Set<string>();
   const deduped: CalendarItem[] = [];

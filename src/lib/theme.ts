@@ -78,6 +78,11 @@ export type ThemePreset = {
   buttonStyle?: ThemeButtonStyle;
   bokeh?: boolean;
   chrome?: ChromeConfig;
+  navCustomization?: {
+    order: string[];
+    hidden: string[];
+    renamed: Record<string, string>;
+  };
   previewImage?: string;
   fontPair?: FontPairId;
   css?: string;

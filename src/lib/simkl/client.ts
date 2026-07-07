@@ -1,4 +1,4 @@
-import { SIMKL_API_BASE, SIMKL_CLIENT_ID } from "./config";
+import { SIMKL_API_BASE, SIMKL_APP_NAME, SIMKL_APP_VERSION, SIMKL_CLIENT_ID } from "./config";
 import { getSession, setSession } from "./session";
 
 export type SimklRequestOptions = {
@@ -20,7 +20,6 @@ export class SimklApiError extends Error {
 function baseHeaders(method: string): Record<string, string> {
   const headers: Record<string, string> = {
     "simkl-api-key": SIMKL_CLIENT_ID,
-    "User-Agent": "harbor/0.9.19",
   };
   if (method === "POST" || method === "PUT") {
     headers["Content-Type"] = "application/json";
@@ -40,8 +39,8 @@ async function doFetch(path: string, opts: SimklRequestOptions): Promise<Respons
 
   const url = new URL(`${SIMKL_API_BASE}${path}`);
   url.searchParams.set("client_id", SIMKL_CLIENT_ID);
-  url.searchParams.set("app-name", "harbor");
-  url.searchParams.set("app-version", "0.9.19");
+  url.searchParams.set("app-name", SIMKL_APP_NAME);
+  url.searchParams.set("app-version", SIMKL_APP_VERSION);
 
   return fetch(url.toString(), {
     method,

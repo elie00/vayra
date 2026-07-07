@@ -16,7 +16,9 @@ import {
   type WatchlistStatus,
 } from "@/lib/simkl/list-status";
 import type { SimklTarget } from "@/lib/simkl/types";
+import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { SimklRatingPicker } from "./simkl-rating-picker";
 
 type Translator = (key: string, vars?: Record<string, string | number>) => string;
 
@@ -40,6 +42,7 @@ export function AddToSimklButton({
 }) {
   const t = useT();
   const { isConnected } = useSimkl();
+  const { settings } = useSettings();
   const [target, setTarget] = useState<SimklTarget | null>(null);
   const [status, setStatus] = useState<WatchlistStatus | null>(null);
   const [ready, setReady] = useState(false);
@@ -56,21 +59,18 @@ export function AddToSimklButton({
     let cancelled = false;
     setReady(false);
     void (async () => {
-      let tgt = await resolveSimklTarget(harborId, type);
+      const tgt = await resolveSimklTarget(harborId, type);
       if (cancelled) return;
       if (!tgt) {
         setTarget(null);
         return;
       }
-      if (type === "series" && tgt.kind === "movie") {
-        tgt = { kind: "show", ids: tgt.ids };
-      } else if (type === "movie" && (tgt.kind === "show" || tgt.kind === "anime")) {
-        tgt = { kind: "movie", ids: tgt.ids };
-      }
       setTarget(tgt);
       const malKey =
         tgt.kind === "movie" || tgt.kind === "show" || tgt.kind === "anime"
-          ? (tgt.ids.mal != null ? `mal:${tgt.ids.mal}` : null)
+          ? tgt.ids.mal != null
+            ? `mal:${tgt.ids.mal}`
+            : null
           : null;
       try {
         const map = await loadSimklStatusMap();
@@ -162,7 +162,7 @@ export function AddToSimklButton({
             anchorRef={btnRef}
             open={menuOpen}
             onClose={() => setMenuOpen(false)}
-            width={224}
+            width={256}
           >
             <div className="overflow-hidden rounded-2xl border border-edge bg-raised py-1.5 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]">
               {order.map((s) => (
@@ -178,6 +178,17 @@ export function AddToSimklButton({
                   {s === status && <Check size={15} className="text-ink" />}
                 </button>
               ))}
+              {settings.simklEnableUserRatings && (
+                <>
+                  <div className="my-1 h-px bg-edge-soft" />
+                  <div className="px-4 pb-1 pt-1.5">
+                    <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+                      {t("Your rating")}
+                    </div>
+                    <SimklRatingPicker harborId={harborId} type={type} simklConnected={isConnected} />
+                  </div>
+                </>
+              )}
               <div className="my-1 h-px bg-edge-soft" />
               <button
                 type="button"

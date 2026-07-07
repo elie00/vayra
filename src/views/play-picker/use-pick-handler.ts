@@ -297,8 +297,8 @@ export function usePickHandler({
       !skipP2pConfirm &&
       !p2pAutoConsent &&
       !isCached(stream) &&
-      (!stream.url || hasUncachedMarker(stream)) &&
-      engineP2pEligible(stream)
+      engineP2pEligible(stream) &&
+      (hasUncachedMarker(stream) || (!stream.url && debrids.length === 0))
     ) {
       setP2pConfirm({ stream });
       return;

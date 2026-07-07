@@ -81,6 +81,26 @@ function harborStyleToObject(
   }
   if (Object.keys(chrome).length) value.chrome = chrome;
 
+  const nav: Record<string, unknown> = {};
+  if (manifest["nav-order"]) {
+    nav.order = manifest["nav-order"].split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  if (manifest["nav-hidden"]) {
+    nav.hidden = manifest["nav-hidden"].split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  if (manifest["nav-renamed"]) {
+    const renamed: Record<string, string> = {};
+    for (const pair of manifest["nav-renamed"].split(",")) {
+      const eq = pair.indexOf("=");
+      if (eq === -1) continue;
+      const k = pair.slice(0, eq).trim();
+      const v = pair.slice(eq + 1).trim();
+      if (k && v) renamed[k] = v;
+    }
+    nav.renamed = renamed;
+  }
+  if (Object.keys(nav).length) value.navCustomization = nav;
+
   if (blocks.tokens) {
     const tokens: Record<string, string> = {};
     for (const raw of blocks.tokens) {
@@ -129,6 +149,13 @@ export function serializeHarborStyle(theme: ThemePreset | CustomTheme): string {
     lines.push(`chrome-position: ${theme.chrome.position}`);
     if (theme.chrome.brand) lines.push(`chrome-brand: ${theme.chrome.brand}`);
     if (theme.chrome.items.length) lines.push(`chrome-items: ${theme.chrome.items.join(", ")}`);
+  }
+  if (theme.navCustomization) {
+    const nav = theme.navCustomization;
+    if (nav.order.length) lines.push(`nav-order: ${nav.order.join(", ")}`);
+    if (nav.hidden.length) lines.push(`nav-hidden: ${nav.hidden.join(", ")}`);
+    const renamed = Object.entries(nav.renamed);
+    if (renamed.length) lines.push(`nav-renamed: ${renamed.map(([k, v]) => `${k}=${v}`).join(", ")}`);
   }
 
   lines.push("", "@tokens");

@@ -1,11 +1,11 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { CalendarItem } from "@/lib/calendar";
-import { SIMKL_CLIENT_ID } from "./config";
+import { SIMKL_APP_NAME, SIMKL_APP_VERSION, SIMKL_CLIENT_ID } from "./config";
 
 export type SimklCdnItem = {
   title: string;
   poster?: string;
-  date: string; // ISO date string e.g., "2026-06-30T00:00:00-05:00"
+  date: string;
   release_date?: string;
   ratings?: {
     simkl?: {
@@ -25,6 +25,16 @@ export type SimklCdnItem = {
   };
 };
 
+const UA = `${SIMKL_APP_NAME}/${SIMKL_APP_VERSION}`;
+
+function cdnUrl(path: string): string {
+  return `https://data.simkl.in/calendar/${path}?client_id=${SIMKL_CLIENT_ID}&app-name=${SIMKL_APP_NAME}&app-version=${SIMKL_APP_VERSION}`;
+}
+
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
 function mapCdnItem(item: SimklCdnItem, type: "tv" | "movie", isAnime: boolean): CalendarItem {
   const tmdbId = item.ids?.tmdb ? String(item.ids.tmdb) : null;
   const id =
@@ -37,9 +47,7 @@ function mapCdnItem(item: SimklCdnItem, type: "tv" | "movie", isAnime: boolean):
 
   let name = item.title;
   if (type === "tv" && item.episode?.season !== undefined && item.episode?.episode !== undefined) {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const epLabel = `S${pad(item.episode.season)}E${pad(item.episode.episode)}`;
-    name = `${item.title} ${epLabel}`;
+    name = `${item.title} S${pad(item.episode.season)}E${pad(item.episode.episode)}`;
   }
 
   const poster = item.poster ? `https://simkl.in/posters/${item.poster}_m.jpg` : null;
@@ -60,14 +68,12 @@ function mapCdnItem(item: SimklCdnItem, type: "tv" | "movie", isAnime: boolean):
 
 export async function fetchSimklCdnRolling(catalog: "tv" | "anime" | "movie"): Promise<CalendarItem[]> {
   const filename = catalog === "movie" ? "movie_release.json" : `${catalog}.json`;
-  const url = `https://data.simkl.in/calendar/${filename}?client_id=${SIMKL_CLIENT_ID}&app-name=harbor&app-version=0.9.19`;
   try {
-    const res = await fetch(url, { headers: { "User-Agent": "harbor/0.9.19" } });
+    const res = await fetch(cdnUrl(filename), { headers: { "User-Agent": UA } });
     if (!res.ok) return [];
     const data = (await res.json()) as SimklCdnItem[];
     const type = catalog === "movie" ? "movie" : "tv";
-    const isAnime = catalog === "anime";
-    return data.map((item) => mapCdnItem(item, type, isAnime));
+    return data.map((item) => mapCdnItem(item, type, catalog === "anime"));
   } catch {
     return [];
   }
@@ -75,19 +81,19 @@ export async function fetchSimklCdnRolling(catalog: "tv" | "anime" | "movie"): P
 
 export async function fetchSimklCdnArchive(
   year: number,
-  month: number, // 0-indexed (0 = Jan)
+  month: number,
   catalog: "tv" | "anime" | "movie",
 ): Promise<CalendarItem[]> {
   const filename = catalog === "movie" ? "movie_release.json" : `${catalog}.json`;
-  const simklMonth = month + 1; // 1-indexed for Simkl CDN
-  const url = `https://data.simkl.in/calendar/${year}/${simklMonth}/${filename}?client_id=${SIMKL_CLIENT_ID}&app-name=harbor&app-version=0.9.19`;
+  const simklMonth = month + 1;
   try {
-    const res = await fetch(url, { headers: { "User-Agent": "harbor/0.9.19" } });
+    const res = await fetch(cdnUrl(`${year}/${simklMonth}/${filename}`), {
+      headers: { "User-Agent": UA },
+    });
     if (!res.ok) return [];
     const data = (await res.json()) as SimklCdnItem[];
     const type = catalog === "movie" ? "movie" : "tv";
-    const isAnime = catalog === "anime";
-    return data.map((item) => mapCdnItem(item, type, isAnime));
+    return data.map((item) => mapCdnItem(item, type, catalog === "anime"));
   } catch {
     return [];
   }

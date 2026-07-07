@@ -279,6 +279,9 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "")
         .slice(0, 40) || "theme";
+    const nav = settings.navCustomization;
+    const hasNav =
+      nav.order.length > 0 || nav.hidden.length > 0 || Object.keys(nav.renamed).length > 0;
     return {
       id: `user:${slug}-${Date.now().toString(36)}`,
       name: trimmedName.slice(0, 60),
@@ -292,6 +295,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
       bokeh: draft.bokeh,
       ...(draft.customFontId ? { customFontId: draft.customFontId } : {}),
       ...(draft.layout === "custom" ? { chrome: draft.chrome } : {}),
+      ...(hasNav ? { navCustomization: nav } : {}),
       ...(draft.css.trim() ? { css: draft.css } : {}),
       ...(draft.js.trim() ? { js: draft.js } : {}),
       ...(draft.html.trim() ? { html: draft.html } : {}),

@@ -148,6 +148,13 @@ export function LocalEngineSection() {
         onChange={(v) => update({ playerP2pChip: v })}
       />
 
+      <ToggleRow
+        label={t("Download the whole file while streaming")}
+        sub={t("Keeps fetching the full torrent in the background, even when paused, so you can pre-buffer big remuxes and scrub a finished file with no re-downloading. Uses more bandwidth and disk; cleaned up when you switch or close like normal.")}
+        value={settings.torrentFullDownload}
+        onChange={(v) => update({ torrentFullDownload: v })}
+      />
+
       <div className="flex items-center gap-2">
         <button
           type="button"

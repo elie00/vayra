@@ -9,6 +9,7 @@ import type { Episode } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { useView } from "@/lib/view";
+import { useLocalAwareSeriesPlay } from "@/lib/local-library/use-series-play";
 import { useT } from "@/lib/i18n";
 import { NewBadge, UpcomingBadge } from "./badges";
 import { EpisodeDownloadButton } from "./episode-download-button";
@@ -19,6 +20,8 @@ export function EpisodeRow({
   ep,
   progress,
   cinemetaThumbnail,
+  cinemetaVideos,
+  seriesImdbId,
   spoiler,
   onContextMenu,
 }: {
@@ -26,11 +29,14 @@ export function EpisodeRow({
   ep: Episode;
   progress: { ratio: number; watched: boolean; startedAt: number };
   cinemetaThumbnail?: string;
+  cinemetaVideos?: Meta["videos"];
+  seriesImdbId?: string | null;
   spoiler?: SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
 }) {
   const t = useT();
-  const { openPicker, openEpisodeDetail } = useView();
+  const { openEpisodeDetail } = useView();
+  const playEpisodeLocalAware = useLocalAwareSeriesPlay();
   const { settings } = useSettings();
   const ratingValue = ep.imdbRating ?? ep.voteAverage;
   const ratingIsImdb = ep.imdbRating != null;
@@ -68,7 +74,15 @@ export function EpisodeRow({
       className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
-        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay || settings.seasonSourceLock })}
+        onClick={() =>
+          playEpisodeLocalAware({
+            meta,
+            episode: playEpisode,
+            opts: { autoPlay: settings.instantPlay || settings.seasonSourceLock },
+            imdbId: seriesImdbId,
+            videos: cinemetaVideos,
+          })
+        }
         className="flex min-w-0 flex-1 gap-6 text-start"
       >
         <div className="relative w-[200px] shrink-0 overflow-hidden rounded-lg">

@@ -307,6 +307,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     simklWatchedMap,
     anilistWatchedMap,
     simklStatusMap,
+    animeDetectVer,
   );
 
   useEffect(() => {

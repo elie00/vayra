@@ -13,8 +13,6 @@ import { isAuthenticated as simklConnected } from "./simkl/session";
 
 export { fetchLibraryCalendar } from "./calendar-library";
 
-/* ─── In-memory cache with stale-while-revalidate for calendar sources ─────── */
-
 interface CacheEntry {
   items: CalendarItem[];
   timestamp: number;
@@ -22,13 +20,8 @@ interface CacheEntry {
 
 const calendarCache = new Map<string, CacheEntry>();
 const calendarInFlight = new Map<string, Promise<CalendarItem[]>>();
-const CACHE_STALE_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_STALE_MS = 30 * 60 * 1000;
 
-/**
- * Wrap a calendar fetch function with in-memory caching.
- * Returns cached data instantly if available (stale-while-revalidate).
- * Deduplicates in-flight requests for the same cache key.
- */
 function withCalendarCache(
   cacheKey: string,
   fetcher: () => Promise<CalendarItem[]>,
@@ -36,9 +29,7 @@ function withCalendarCache(
   const cached = calendarCache.get(cacheKey);
   const now = Date.now();
 
-  // Return cached data immediately if available
   if (cached) {
-    // If stale, trigger background refresh but return cached data
     if (now - cached.timestamp >= CACHE_STALE_MS) {
       if (!calendarInFlight.has(cacheKey)) {
         const promise = fetcher()
@@ -46,7 +37,7 @@ function withCalendarCache(
             calendarCache.set(cacheKey, { items, timestamp: Date.now() });
             return items;
           })
-          .catch(() => cached.items) // On error, keep cached data
+          .catch(() => cached.items)
           .finally(() => {
             calendarInFlight.delete(cacheKey);
           });
@@ -56,12 +47,10 @@ function withCalendarCache(
     return Promise.resolve(cached.items);
   }
 
-  // No cache — check if there's an in-flight request
   if (calendarInFlight.has(cacheKey)) {
     return calendarInFlight.get(cacheKey)!;
   }
 
-  // Fresh fetch
   const promise = fetcher()
     .then((items) => {
       calendarCache.set(cacheKey, { items, timestamp: Date.now() });
@@ -74,7 +63,6 @@ function withCalendarCache(
   return promise;
 }
 
-/** Clear all cached calendar data (e.g. on SIMKL disconnect). */
 export function clearCalendarSourceCache() {
   calendarCache.clear();
   calendarInFlight.clear();
@@ -85,9 +73,7 @@ export async function fetchSimklPremieresCalendar(
   month: number,
 ): Promise<CalendarItem[]> {
   const cacheKey = `simkl-premieres:${year}-${month}`;
-  return withCalendarCache(cacheKey, () =>
-    fetchSimklCdnCalendar(year, month).catch(() => []),
-  );
+  return withCalendarCache(cacheKey, () => fetchSimklCdnCalendar(year, month).catch(() => []));
 }
 
 export async function fetchSimklCalendar(

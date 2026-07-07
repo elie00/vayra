@@ -47,8 +47,10 @@ export function SimklRatingPicker({
         return;
       }
       if (type === "series" && tgt.kind === "movie") tgt = { kind: "show", ids: tgt.ids };
-      if (type === "movie" && (tgt.kind === "show" || tgt.kind === "anime")) tgt = { kind: "movie", ids: tgt.ids };
-      
+      if (type === "movie" && (tgt.kind === "show" || tgt.kind === "anime")) {
+        tgt = { kind: "movie", ids: tgt.ids };
+      }
+
       setTarget(tgt);
       setCurrentRating(getCachedRatingByTarget(tgt));
       setReady(true);
@@ -85,24 +87,20 @@ export function SimklRatingPicker({
 
           return (
             <div key={n} className="relative h-5 w-5 text-ink-subtle">
-              {/* Background Star (Empty) */}
               <Star size={20} className="text-ink-muted/30" />
 
-              {/* Half Star Overlay */}
               {isHalf && (
-                <div className="absolute inset-0 overflow-hidden w-[50%] pointer-events-none">
+                <div className="absolute inset-0 w-[50%] overflow-hidden pointer-events-none">
                   <Star size={20} className="fill-amber-400 text-amber-400" />
                 </div>
               )}
 
-              {/* Full Star Overlay */}
               {isFilled && (
                 <div className="absolute inset-0 pointer-events-none">
                   <Star size={20} className="fill-amber-400 text-amber-400" />
                 </div>
               )}
 
-              {/* Hover / Click triggers */}
               <div
                 className="absolute left-0 top-0 h-full w-1/2 cursor-pointer"
                 onMouseEnter={() => setHoverRating(2 * n - 1)}
@@ -123,7 +121,7 @@ export function SimklRatingPicker({
         {loading ? (
           <Loader2 size={13} className="animate-spin text-ink-subtle" />
         ) : currentRating !== null ? (
-          <span className="text-amber-400 font-bold">{currentRating}/10</span>
+          <span className="font-bold text-amber-400">{currentRating}/10</span>
         ) : (
           <span className="text-ink-subtle">{t("Rate on SIMKL")}</span>
         )}

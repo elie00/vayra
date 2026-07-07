@@ -26,6 +26,7 @@ import {
   scrobbleStart,
   scrobbleStop,
 } from "./scrobble";
+import { pushWatched } from "./history";
 import type { DeviceCode, TraktSession, TraktTarget } from "./types";
 
 export type ConnectState =
@@ -134,7 +135,10 @@ export function TraktProvider({ children }: { children: ReactNode }) {
       const progress = Math.max(0, Math.min(100, args.progress));
       if (action === "start") await scrobbleStart(target, progress);
       else if (action === "pause") await scrobblePause(target, progress);
-      else await scrobbleStop(target, progress);
+      else {
+        const res = await scrobbleStop(target, progress);
+        if (!res) await pushWatched(target);
+      }
     },
     [resolveTarget],
   );

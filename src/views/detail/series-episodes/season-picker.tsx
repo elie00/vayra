@@ -22,6 +22,7 @@ export function SeasonPicker({
   const t = useT();
   const [menu, setMenu] = useState<MenuPos | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const current = seasons.find((s) => s.seasonNumber === active);
   const isNew = (s: Season) => isNewSeason(s, lastEpisodeAir);
   const open = menu != null;
@@ -33,14 +34,18 @@ export function SeasonPicker({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
+    const onScroll = (e: Event) => {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      close();
+    };
     window.addEventListener("mousedown", close);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", close);
     return () => {
       window.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", close);
     };
   }, [menu]);
@@ -85,6 +90,7 @@ export function SeasonPicker({
       {menu &&
         createPortal(
           <div
+            ref={menuRef}
             onMouseDown={(e) => e.stopPropagation()}
             style={{ right: menu.right, top: menu.top, bottom: menu.bottom }}
             className="animate-fade-in fixed z-[200] w-64 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl"

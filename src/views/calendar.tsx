@@ -278,9 +278,7 @@ export function CalendarView() {
                 {FILTERS.map((f) => {
                   const active = filter === f.id;
                   const count =
-                    f.id === "all"
-                      ? items.length
-                      : applyCalendarFilter(items, f.id).length;
+                    f.id === "all" ? items.length : applyCalendarFilter(items, f.id).length;
                   return (
                     <button
                       key={f.id}

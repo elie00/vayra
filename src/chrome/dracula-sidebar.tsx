@@ -1,52 +1,16 @@
 import { Lock } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { AddonsIcon } from "@/components/icons/addons-icon";
-import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
-import { AnimeIcon } from "@/components/icons/anime-icon";
-import { CalendarIcon } from "@/components/icons/calendar-icon";
-import { DiscoverIcon } from "@/components/icons/discover-icon";
-import { HomeIcon } from "@/components/icons/home-icon";
-import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
-import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
-import { MoviesIcon } from "@/components/icons/movies-icon";
-import { SettingsIcon } from "@/components/icons/settings-icon";
-import { TvIcon } from "@/components/icons/tv-icon";
+import { useState } from "react";
 import { HarborMark } from "@/components/icons/harbor-mark";
+import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useT } from "@/lib/i18n";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 
-type NavDef = {
-  render: (active: boolean) => ReactNode;
-  labelKey: string;
-  view: View;
-  hideKey?: "anime" | "liveTv" | "sports";
-  parentalKey?: LockableTab;
-  pinGated?: boolean;
-};
-
-const PRIMARY: NavDef[] = [
-  { render: (a) => <HomeIcon active={a} />, labelKey: "nav.home", view: "home" },
-  { render: (a) => <DiscoverIcon active={a} />, labelKey: "nav.discover", view: "discover", parentalKey: "discover" },
-  { render: (a) => <MoviesIcon active={a} />, labelKey: "nav.movies", view: "movies", parentalKey: "movies" },
-  { render: (a) => <TvIcon active={a} />, labelKey: "nav.shows", view: "shows", parentalKey: "shows" },
-  { render: (a) => <AnimeIcon active={a} />, labelKey: "nav.anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
-  { render: (a) => <LiveTvIcon active={a} />, labelKey: "nav.live", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
-  { render: (a) => <PlaylistVodIcon active={a} />, labelKey: "nav.playlists", view: "vod" },
-];
-
-const COLLECTIONS: NavDef[] = [
-  { render: (a) => <CalendarIcon active={a} />, labelKey: "nav.calendar", view: "calendar", parentalKey: "calendar" },
-  { render: (a) => <LibraryIcon active={a} />, labelKey: "nav.library", view: "library", parentalKey: "library" },
-  { render: (a) => <DownloadsNavIcon active={a} />, labelKey: "nav.downloads", view: "downloads" },
-  { render: (a) => <AddonsIcon active={a} />, labelKey: "nav.addons", view: "addons", parentalKey: "addons" },
-  { render: (a) => <SettingsIcon active={a} />, labelKey: "nav.settings", view: "settings", pinGated: true },
-];
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "anime", "live", "vod"]);
 
 export function DraculaSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -56,14 +20,19 @@ export function DraculaSidebar() {
   const collapsed = settings.sidebarCollapsed;
   const [pinFor, setPinFor] = useState<View | null>(null);
 
-  const isVisible = (item: NavDef) => {
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const primary = items.filter((i) => PRIMARY_IDS.has(i.id));
+  const collections = items.filter((i) => !PRIMARY_IDS.has(i.id));
+
+  const isVisible = (item: NavItem) => {
+    if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
     if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };
 
-  const go = (item: NavDef) => {
+  const go = (item: NavItem) => {
     if (item.pinGated && locked) {
       setPinFor(item.view);
       return;
@@ -121,9 +90,9 @@ export function DraculaSidebar() {
           </div>
 
           <nav className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-4 pt-1 [scrollbar-width:none] lg:px-4 [&::-webkit-scrollbar]:hidden">
-            {PRIMARY.filter(isVisible).map((item) => (
+            {primary.filter(isVisible).map((item) => (
               <NavPill
-                key={item.view}
+                key={item.id}
                 item={item}
                 active={view === item.view}
                 collapsed={collapsed}
@@ -131,9 +100,9 @@ export function DraculaSidebar() {
               />
             ))}
 
-            {COLLECTIONS.filter(isVisible).map((item) => (
+            {collections.filter(isVisible).map((item) => (
               <NavPill
-                key={item.view}
+                key={item.id}
                 item={item}
                 active={view === item.view}
                 gated={!!item.pinGated && locked}
@@ -199,14 +168,14 @@ function NavPill({
   collapsed,
   onClick,
 }: {
-  item: NavDef;
+  item: NavItem;
   active: boolean;
   gated?: boolean;
   collapsed?: boolean;
   onClick: () => void;
 }) {
   const t = useT();
-  const label = t(item.labelKey);
+  const label = t(item.label);
   return (
     <button
       onClick={onClick}

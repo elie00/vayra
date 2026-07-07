@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { getLocalCache, syncWatchlistCache, type SimklCacheItem, type SimklCache } from "@/lib/simkl/activities";
-import { groupAnimeByFranchise, enhanceGroupsWithRelations, type AnimeFranchise, formatYearRange } from "@/lib/simkl/anime-grouping";
+import {
+  groupAnimeByFranchise,
+  enhanceGroupsWithRelations,
+  type AnimeFranchise,
+  formatYearRange,
+} from "@/lib/simkl/anime-grouping";
 import type { Meta } from "@/lib/cinemeta";
 import {
   FilterBar,
@@ -28,12 +33,10 @@ function cacheItemToMeta(item: SimklCacheItem, cache: SimklCache): Meta | null {
   let id: string | null = null;
   const simklId = item.simklId;
 
-  // 1. Search imdbToSimkl mapping
   const imdbId = Object.keys(cache.imdbToSimkl).find((k) => cache.imdbToSimkl[k] === simklId);
   if (imdbId) {
     id = imdbId;
   } else {
-    // 2. Search tmdbToSimkl mapping
     const tmdbKey = Object.keys(cache.tmdbToSimkl).find((k) => cache.tmdbToSimkl[k] === simklId);
     if (tmdbKey) {
       const parts = tmdbKey.split(":");
@@ -43,17 +46,14 @@ function cacheItemToMeta(item: SimklCacheItem, cache: SimklCache): Meta | null {
     }
   }
 
-  // 3. Search malToSimkl mapping
   if (!id) {
     const malId = Object.keys(cache.malToSimkl).find((k) => cache.malToSimkl[k] === simklId);
     if (malId) id = `mal:${malId}`;
   }
-  // 4. Search kitsuToSimkl mapping
   if (!id) {
     const kitsuId = Object.keys(cache.kitsuToSimkl).find((k) => cache.kitsuToSimkl[k] === simklId);
     if (kitsuId) id = `kitsu:${kitsuId}`;
   }
-  // 5. Fallback: use simkl:{id} — ensures all items are visible even without external IDs
   if (!id) {
     id = `simkl:${simklId}`;
   }
@@ -110,7 +110,7 @@ export function SimklTab() {
 
   useEffect(() => {
     let cancelled = false;
-    
+
     const initial = getLocalCache();
     if (initial) {
       setCache(initial);
@@ -145,7 +145,6 @@ export function SimklTab() {
 
   const [statusFilter, setStatusFilter] = useState<string>("plantowatch");
 
-  // Keep statusFilter aligned when changing sub-tabs
   useEffect(() => {
     if (!(allowedStatuses as readonly string[]).includes(statusFilter)) {
       setStatusFilter(allowedStatuses[0]);
@@ -157,15 +156,12 @@ export function SimklTab() {
     if (!cache) return counts;
 
     if (subTab === "anime") {
-      // For anime, count franchises per status (a franchise counts if ANY season has that status)
-      const franchises = enhancedFranchises;
-      for (const franchise of franchises) {
+      for (const franchise of enhancedFranchises) {
         const statuses = new Set(franchise.items.map((i) => i.status));
-        for (const status of statuses) {
-          // Only count if at least one item in the franchise has a valid meta
+        for (const st of statuses) {
           const hasValidMeta = franchise.items.some((item) => cacheItemToMeta(item, cache));
           if (hasValidMeta) {
-            counts[status] = (counts[status] ?? 0) + 1;
+            counts[st] = (counts[st] ?? 0) + 1;
           }
         }
       }
@@ -204,19 +200,12 @@ export function SimklTab() {
     if (!cache) return [];
 
     if (subTab === "anime") {
-      // Group anime by franchise, then filter by status
-      const franchises = enhancedFranchises;
-
-      return franchises
-        .filter((franchise) => {
-          // A franchise shows up under a status if ANY of its seasons has that status
-          return franchise.items.some((item) => item.status === statusFilter);
-        })
+      return enhancedFranchises
+        .filter((franchise) => franchise.items.some((item) => item.status === statusFilter))
         .map((franchise) => {
-          // Prioritize active progress representative (status === "watching")
           const representativeItem = (() => {
             const watching = franchise.items.filter(
-              (item) => item.status === "watching" && cacheItemToMeta(item, cache) !== null
+              (item) => item.status === "watching" && cacheItemToMeta(item, cache) !== null,
             );
             if (watching.length > 0) {
               watching.sort((a, b) => {
@@ -233,22 +222,20 @@ export function SimklTab() {
           const meta = cacheItemToMeta(representativeItem, cache);
           if (!meta) return null;
 
-          // Override the title and year with franchise-level info
           meta.name = franchise.name;
           if (franchise.yearStart != null) {
             meta.releaseInfo = formatYearRange(franchise.yearStart, franchise.yearEnd);
           }
 
-          // Use the representative item's poster if available.
-          // Fall back to other items in the franchise if needed.
           if (!meta.poster) {
-            const fallbackItem = franchise.items.find((it) => it.poster && cacheItemToMeta(it, cache) !== null);
+            const fallbackItem = franchise.items.find(
+              (it) => it.poster && cacheItemToMeta(it, cache) !== null,
+            );
             if (fallbackItem?.poster) {
               meta.poster = `https://simkl.in/posters/${fallbackItem.poster}_m.jpg`;
             }
           }
 
-          // Use the latest watchedAt from any season in the franchise
           const dates = franchise.items
             .map((i) => i.watchedAt)
             .filter((d): d is string => d != null)
@@ -309,7 +296,6 @@ export function SimklTab() {
 
   return (
     <section className="flex flex-col gap-6">
-      {/* Sub-tabs Selector */}
       <div className="flex gap-2 border-b border-edge-soft/60 pb-3">
         <button
           type="button"
@@ -346,7 +332,6 @@ export function SimklTab() {
         </button>
       </div>
 
-      {/* Status Pills */}
       <div className="flex flex-wrap gap-2">
         {allowedStatuses.map((statusKey) => {
           const count = statusCounts[statusKey] ?? 0;
@@ -370,7 +355,6 @@ export function SimklTab() {
         })}
       </div>
 
-      {/* Search and Filters */}
       {filteredItems.length > 0 && (
         <FilterBar
           type={type}
@@ -398,9 +382,7 @@ export function SimklTab() {
         </p>
       )}
 
-      {visible.length > 0 && (
-        <GroupedGrid groups={sortedGroups(visible, settings.librarySort)} />
-      )}
+      {visible.length > 0 && <GroupedGrid groups={sortedGroups(visible, settings.librarySort)} />}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import malIcon from "@/assets/mal.png";
+import { MalLogo } from "@/components/icons/mal-logo";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 
@@ -17,7 +17,7 @@ export function MalRowControls() {
   return (
     <div className="flex items-center gap-2 ps-[9px]">
       <span className="me-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-        <img src={malIcon} alt="" className="h-[15px] w-[15px] rounded-[3px]" />
+        <MalLogo className="h-[11px] w-auto text-[#2e51a2]" />
         {t("MAL rows")}
       </span>
       {ROWS.map((r) => {

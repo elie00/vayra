@@ -210,18 +210,17 @@ export function SimklPanel() {
                   </button>
                   <button
                     onClick={() => {
-                      if (settings.useSimklAvatar && activeProfile) {
-                        updateProfile(activeProfile.id, { avatar: null });
+                      if (settings.useSimklAvatar && settings.harborAvatar === simklAvatar) {
+                        pushAvatar(null);
                       }
                       update({
                         useSimklAvatar: false,
-                        harborAvatar: null,
                         simklScrobbleEnabled: true,
                         simklShowCommunityRatings: true,
                         simklEnableUserRatings: true,
-                        simklHomeRailsEnabled: true,
-                        simklUpNextRailEnabled: true,
-                        simklTrendingRailEnabled: true,
+                        simklHomeRailsEnabled: false,
+                        simklUpNextRailEnabled: false,
+                        simklTrendingRailEnabled: false,
                         showSimklBadge: true,
                         simklAnimeTitleLanguage: "english",
                         simklGranularFilters: {
@@ -252,7 +251,6 @@ export function SimklPanel() {
             subtitle={t("Choose which Simkl rails appear on your home screen.")}
           >
             <div className="flex flex-col gap-6">
-              {/* Movies */}
               <div className="flex flex-col gap-2 rounded-xl border border-edge-soft/60 bg-canvas/30 p-4">
                 <h3 className="text-[14px] font-bold text-ink">{t("Movies")}</h3>
                 <ToggleRow
@@ -269,7 +267,6 @@ export function SimklPanel() {
                 />
               </div>
 
-              {/* TV Shows */}
               <div className="flex flex-col gap-2 rounded-xl border border-edge-soft/60 bg-canvas/30 p-4">
                 <h3 className="text-[14px] font-bold text-ink">{t("TV Shows")}</h3>
                 <ToggleRow
@@ -298,7 +295,6 @@ export function SimklPanel() {
                 />
               </div>
 
-              {/* Anime */}
               <div className="flex flex-col gap-2 rounded-xl border border-edge-soft/60 bg-canvas/30 p-4">
                 <h3 className="text-[14px] font-bold text-ink">{t("Anime")}</h3>
                 <ToggleRow

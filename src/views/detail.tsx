@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Check, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
+import { Check, HardDrive, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
 import { animeDetails, franchiseTags, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
 import { kitsuAnime } from "@/lib/providers/kitsu";
@@ -40,18 +40,20 @@ import { manualWatchedState, manualWatchedVersion, subscribeManualWatched } from
 import { useTogether } from "@/lib/together/provider";
 import { useTrakt } from "@/lib/trakt/provider";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import { findLocalSeriesEpisodes, useInLocalLibrary } from "@/lib/local-library";
+import { localPlayerSrc } from "@/lib/local-library/player-src";
+import { playLocalAware } from "@/lib/local-library/playback";
+import { openLocalEpisodes } from "@/lib/player/local-episodes-modal";
 import { markMovieWatched } from "@/lib/mark-watched";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { openUrl } from "@/lib/window";
 import { profileFromDetail, trackEvent } from "@/lib/discover";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
-import { useScrollMemory, useView } from "@/lib/view";
+import { useScrollMemory, useView, type PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToMalButton } from "@/components/mal/add-to-mal-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
-import { SimklRatingPicker } from "./detail/simkl-rating-picker";
-import { useSimkl } from "@/lib/simkl/provider";
 import { getLocalCache, saveLocalCache } from "@/lib/simkl/activities";
 import { simklRequest } from "@/lib/simkl/client";
 import { CollectionRow } from "./detail/collection-row";
@@ -153,7 +155,7 @@ export function DetailView({
   episodeHint?: { season: number; episode: number };
 }) {
   const t = useT();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const [detail, setDetail] = useState<TmdbDetail | null>(null);
@@ -190,11 +192,11 @@ export function DetailView({
   );
   const scrollRef = useRef<HTMLElement>(null);
 
-  const { setNavStack, openPicker, openFilter, promoteMetaToRoot } = useView();
+  const { setNavStack, openPicker, openPlayer, openFilter, promoteMetaToRoot } = useView();
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();
-  const { isConnected: simklConnected } = useSimkl();
   const inWatchlist = useInWatchlist(meta.id, [detail?.imdbId]);
+  const inLocalLibrary = useInLocalLibrary(meta.id, [detail?.imdbId]);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(meta.id, [detail?.imdbId]);
   const inSession = roomSnapshot.state === "joined" && roomSnapshot.participants.length >= 2;
@@ -212,38 +214,33 @@ export function DetailView({
       const cache = getLocalCache();
 
       if (cache) {
-        // 1. IMDb mapping check
         const imdbKey = Object.keys(cache.imdbToSimkl).find(
-          (k) => cache.imdbToSimkl[k] === simklId
+          (k) => cache.imdbToSimkl[k] === simklId,
         );
         if (imdbKey) resolvedId = imdbKey;
 
-        // 2. Kitsu mapping check
         if (!resolvedId) {
           const kitsuKey = Object.keys(cache.kitsuToSimkl).find(
-            (k) => cache.kitsuToSimkl[k] === simklId
+            (k) => cache.kitsuToSimkl[k] === simklId,
           );
           if (kitsuKey) resolvedId = `kitsu:${kitsuKey}`;
         }
 
-        // 3. MAL mapping check
         if (!resolvedId) {
           const malKey = Object.keys(cache.malToSimkl).find(
-            (k) => cache.malToSimkl[k] === simklId
+            (k) => cache.malToSimkl[k] === simklId,
           );
           if (malKey) resolvedId = `mal:${malKey}`;
         }
 
-        // 4. TMDB mapping check
         if (!resolvedId) {
           const tmdbKey = Object.keys(cache.tmdbToSimkl).find(
-            (k) => cache.tmdbToSimkl[k] === simklId
+            (k) => cache.tmdbToSimkl[k] === simklId,
           );
           if (tmdbKey) resolvedId = `tmdb:${tmdbKey}`;
         }
       }
 
-      // If not found in local cache, query the SIMKL detail endpoint
       if (!resolvedId) {
         const mediaType =
           cache?.items[simklIdStr]?.type ||
@@ -271,7 +268,6 @@ export function DetailView({
               resolvedId = `tmdb:${tmdbType}:${ids.tmdb}`;
             }
 
-            // Save to local cache indexes for future queries
             if (resolvedId && cache) {
               if (ids.imdb) cache.imdbToSimkl[ids.imdb] = simklId;
               if (ids.kitsu) cache.kitsuToSimkl[String(ids.kitsu)] = simklId;
@@ -291,17 +287,18 @@ export function DetailView({
       if (cancelled) return;
 
       if (resolvedId) {
+        const target = resolvedId;
         setNavStack((stack) =>
           stack.map((frame) =>
             frame.kind === "meta" && frame.meta.id === meta.id
-              ? { ...frame, meta: { ...frame.meta, id: resolvedId } }
-              : frame
-          )
+              ? { ...frame, meta: { ...frame.meta, id: target } }
+              : frame,
+          ),
         );
       }
     };
 
-    resolveSimklId();
+    void resolveSimklId();
 
     return () => {
       cancelled = true;
@@ -849,8 +846,45 @@ export function DetailView({
   }, [meta.id, libraryItem, isAnime, episodeHint]);
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
+    const opts = { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay };
+    const launch = (episode: PlayEpisode | undefined) => {
+      const stream = () => openPicker(playMeta, episode, opts);
+      if (forcePicker) {
+        stream();
+        return;
+      }
+      if (isSeries && !isAnime && settings.localPlaybackMode !== "stream") {
+        const tmdbMatch = meta.id.match(/^tmdb:tv:(\d+)$/);
+        const tmdbId = tmdbMatch ? parseInt(tmdbMatch[1], 10) : null;
+        const seriesImdb = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
+        if (findLocalSeriesEpisodes(tmdbId, seriesImdb).length > 0) {
+          openLocalEpisodes({
+            title: playMeta.name,
+            tmdbId,
+            imdbId: seriesImdb,
+            poster: playMeta.poster,
+            videos: cinemetaFull?.videos,
+            initialSeason: episode?.season,
+            highlightEpisode: episode?.episode,
+            onPlayLocal: (e) => openPlayer(localPlayerSrc(e)),
+            onStream: stream,
+          });
+          return;
+        }
+      }
+      playLocalAware({
+        meta: playMeta,
+        episode: episode ?? null,
+        extraImdb: detail?.imdbId,
+        mode: settings.localPlaybackMode,
+        source: "manual",
+        playLocal: (e) => openPlayer(localPlayerSrc(e)),
+        playStream: stream,
+        setMode: (m) => update({ localPlaybackMode: m }),
+      });
+    };
     if (!isSeries) {
-      openPicker(playMeta, undefined, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
+      launch(undefined);
       return;
     }
     if (isAnime) {
@@ -860,32 +894,24 @@ export function DetailView({
           )
         : animeEpisodes[0];
       if (wantedEp) {
-        openPicker(
-          playMeta,
-          {
-            season: wantedEp.seasonNumber || 1,
-            episode: wantedEp.number,
-            name: wantedEp.title,
-            still: wantedEp.thumbnail ?? undefined,
-            overview: wantedEp.synopsis || undefined,
-            kitsuStreamId: wantedEp.streamId,
-            imdbId: wantedEp.imdbId,
-            imdbSeason: wantedEp.imdbSeason,
-            imdbEpisode: wantedEp.imdbEpisode,
-          },
-          { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay },
-        );
+        launch({
+          season: wantedEp.seasonNumber || 1,
+          episode: wantedEp.number,
+          name: wantedEp.title,
+          still: wantedEp.thumbnail ?? undefined,
+          overview: wantedEp.synopsis || undefined,
+          kitsuStreamId: wantedEp.streamId,
+          imdbId: wantedEp.imdbId,
+          imdbSeason: wantedEp.imdbSeason,
+          imdbEpisode: wantedEp.imdbEpisode,
+        });
         return;
       }
-      openPicker(playMeta, undefined, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
+      launch(undefined);
       return;
     }
     if (lastPlay) {
-      openPicker(
-        playMeta,
-        { season: lastPlay.season, episode: lastPlay.episode },
-        { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay },
-      );
+      launch({ season: lastPlay.season, episode: lastPlay.episode });
       return;
     }
     if (authKey) {
@@ -908,15 +934,15 @@ export function DetailView({
             season >= 1 &&
             episode >= 1
           ) {
-            openPicker(playMeta, { season, episode }, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
+            launch({ season, episode });
             return;
           }
         }
         if (item) break;
       }
     }
-    openPicker(playMeta, { season: 1, episode: 1 }, { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay });
-  }, [isSeries, isAnime, animeEpisodes, lastPlay, openPicker, playMeta, settings.instantPlay, inSession, claimHost, authKey, meta.id, detail?.imdbId]);
+    launch({ season: 1, episode: 1 });
+  }, [isSeries, isAnime, animeEpisodes, lastPlay, openPicker, openPlayer, playMeta, settings.instantPlay, settings.localPlaybackMode, update, inSession, claimHost, authKey, meta.id, detail?.imdbId, cinemetaFull?.videos]);
   const smartPlayLabel = inSession && !liveContext
     ? t("Play Together")
     : isSeries && lastPlay
@@ -975,6 +1001,14 @@ export function DetailView({
                     }}
                   >
                     {year}
+                  </Pill>
+                )}
+                {inLocalLibrary && (
+                  <Pill>
+                    <span className="flex items-center gap-1.5">
+                      <HardDrive size={12} strokeWidth={2.4} />
+                      {t("In your local library")}
+                    </span>
                   </Pill>
                 )}
                 <HeroRatings
@@ -1122,13 +1156,6 @@ export function DetailView({
                     harborId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
                     title={title || meta.name}
                     type={meta.type === "movie" ? "movie" : "series"}
-                  />
-                )}
-                {actionStage < 2 && settings.simklEnableUserRatings && (
-                  <SimklRatingPicker
-                    harborId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
-                    type={meta.type === "movie" ? "movie" : "series"}
-                    simklConnected={simklConnected}
                   />
                 )}
                 {actionStage >= 1 ? (

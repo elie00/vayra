@@ -8,7 +8,7 @@ import { getLastSeason, setLastSeason } from "@/lib/last-season";
 import { lastPlayedEpisode } from "@/lib/resume";
 import { Poster } from "@/components/poster";
 import { useSettings } from "@/lib/settings";
-import { useView } from "@/lib/view";
+import { useLocalAwareSeriesPlay } from "@/lib/local-library/use-series-play";
 import { useT } from "@/lib/i18n";
 import { EpisodeDownloadButton } from "./episode-download-button";
 
@@ -157,7 +157,7 @@ export function CinemetaEpisodeRow({
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
 }) {
   const t = useT();
-  const { openPicker } = useView();
+  const playLocalAware = useLocalAwareSeriesPlay();
   const { settings } = useSettings();
   const aired = ep.released ?? ep.firstAired ?? null;
   const epNumber = ep.episode ?? ep.number ?? flatIndex ?? 1;
@@ -177,7 +177,13 @@ export function CinemetaEpisodeRow({
       className="group flex items-center gap-4 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
-        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay || settings.seasonSourceLock })}
+        onClick={() =>
+          playLocalAware({
+            meta,
+            episode: playEpisode,
+            opts: { autoPlay: settings.instantPlay || settings.seasonSourceLock },
+          })
+        }
         className="flex min-w-0 flex-1 gap-6 text-start"
       >
         <div className="relative w-[200px] shrink-0 overflow-hidden rounded-lg">
@@ -231,6 +237,7 @@ function SeasonDropdown({
   const t = useT();
   const [menu, setMenu] = useState<{ right: number; top?: number; bottom?: number; maxH: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const open = menu != null;
 
   useEffect(() => {
@@ -239,14 +246,18 @@ function SeasonDropdown({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
+    const onScroll = (e: Event) => {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      close();
+    };
     window.addEventListener("mousedown", close);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", close);
     return () => {
       window.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", close);
     };
   }, [menu]);
@@ -284,6 +295,7 @@ function SeasonDropdown({
       {menu &&
         createPortal(
           <div
+            ref={menuRef}
             onMouseDown={(e) => e.stopPropagation()}
             style={{ right: menu.right, top: menu.top, bottom: menu.bottom }}
             className="animate-fade-in fixed z-[200] w-44 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl"

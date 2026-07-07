@@ -195,6 +195,39 @@ export async function tvdbEpisodes(
     }));
 }
 
+export async function tvdbEpisodesByType(
+  apiKey: string,
+  seriesId: number,
+  seasonType: string,
+): Promise<TvdbEpisode[]> {
+  if (!apiKey || !seriesId) return [];
+  const out: TvdbEpisode[] = [];
+  for (let page = 0; page < 20; page++) {
+    const data = await getJson<any>(
+      apiKey,
+      `/series/${seriesId}/episodes/${seasonType}?page=${page}`,
+    );
+    const arr = (data?.episodes ?? []) as any[];
+    if (arr.length === 0) break;
+    for (const e of arr) {
+      if (typeof e.number !== "number") continue;
+      out.push({
+        id: e.id,
+        number: e.number,
+        seasonNumber: typeof e.seasonNumber === "number" ? e.seasonNumber : 0,
+        absoluteNumber: typeof e.absoluteNumber === "number" ? e.absoluteNumber : undefined,
+        name: e.name,
+        overview: e.overview,
+        aired: e.aired,
+        runtime: e.runtime,
+        image: e.image,
+      });
+    }
+    if (arr.length < 500) break;
+  }
+  return out;
+}
+
 export async function tvdbEpisodesAbsolute(
   apiKey: string,
   seriesId: number,

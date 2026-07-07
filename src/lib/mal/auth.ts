@@ -1,9 +1,4 @@
-import {
-  MAL_AUTHORIZE_URL,
-  MAL_CLIENT_ID,
-  MAL_CLIENT_SECRET,
-  MAL_TOKEN_URL,
-} from "./config";
+import { MAL_AUTHORIZE_URL, MAL_CLIENT_ID, MAL_TOKEN_PROXY } from "./config";
 import { getSession, setSession } from "./session";
 import type { MalSession } from "./types";
 
@@ -79,17 +74,14 @@ async function exchangeCode(
   code: string,
   codeVerifier: string,
 ): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
-  if (!MAL_CLIENT_ID || !MAL_CLIENT_SECRET) throw new Error("MAL not configured. Set VITE_MAL_CLIENT_ID and VITE_MAL_CLIENT_SECRET in your .env");
-  const res = await tauriFetch(MAL_TOKEN_URL, {
+  const res = await tauriFetch(MAL_TOKEN_PROXY, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: MAL_CLIENT_ID,
-      client_secret: MAL_CLIENT_SECRET,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      grant_type: "authorization_code",
       code,
       code_verifier: codeVerifier,
-      grant_type: "authorization_code",
-    }).toString(),
+    }),
   });
 
   if (!res.ok) {
@@ -102,19 +94,16 @@ async function exchangeCode(
 }
 
 export async function refreshAccessToken(): Promise<MalSession | null> {
-  if (!MAL_CLIENT_ID || !MAL_CLIENT_SECRET) return null;
   const current = getSession();
   if (!current?.refreshToken) return null;
   try {
-    const res = await tauriFetch(MAL_TOKEN_URL, {
+    const res = await tauriFetch(MAL_TOKEN_PROXY, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: MAL_CLIENT_ID,
-        client_secret: MAL_CLIENT_SECRET,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         grant_type: "refresh_token",
         refresh_token: current.refreshToken,
-      }).toString(),
+      }),
     });
     if (!res.ok) {
       setSession(null);

@@ -28,11 +28,12 @@ import { useSimklCardScores, useSimklCardScoresByAnimeId } from "@/lib/simkl/rat
 import { simklRequest } from "@/lib/simkl/client";
 import { getLocalCache } from "@/lib/simkl/activities";
 import { aniZipByKitsu, aniZipByMal } from "@/lib/providers/anizip";
-import simklLogo from "@/assets/simkl.png";
 import { useView } from "@/lib/view";
 import { observe } from "@/lib/visibility";
 import { useInWatchlist } from "@/lib/watchlist";
 import { useMetaWatched } from "@/lib/watched-flag";
+import { useInLocalLibrary } from "@/lib/local-library";
+import { LocalDot } from "@/components/local-badge";
 import { ClapperMini } from "./icons/clapper-mini";
 import { ImdbIcon } from "./icons/imdb-icon";
 import { MalLogo } from "./icons/mal-logo";
@@ -44,6 +45,7 @@ import { RtBadge } from "./rt-badge";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import traktLogo from "@/assets/trakt.svg";
+import simklLogo from "@/assets/simkl.png";
 
 const WATCHLIST_POS: Record<string, string> = {
   topStart: "top-1.5 start-1.5",
@@ -176,6 +178,7 @@ export const PickCard = memo(function PickCard({
   const altIds = useMemo(() => [imdbId], [imdbId]);
   const inWatchlist = useInWatchlist(meta.id, altIds);
   const watched = useMetaWatched(meta.id, meta.type);
+  const inLocalLibrary = useInLocalLibrary(meta.id, altIds);
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
@@ -328,7 +331,6 @@ export const PickCard = memo(function PickCard({
     const preferred = settings.simklAnimeTitleLanguage;
 
     const fetchTitles = async () => {
-      // 1. Try AniZip by MAL ID
       if (malId) {
         const map = await aniZipByMal(malId).catch(() => null);
         if (cancelled) return;
@@ -341,7 +343,6 @@ export const PickCard = memo(function PickCard({
         }
       }
 
-      // 2. Try AniZip by Kitsu ID
       if (kitsuId) {
         const map = await aniZipByKitsu(kitsuId).catch(() => null);
         if (cancelled) return;
@@ -354,11 +355,10 @@ export const PickCard = memo(function PickCard({
         }
       }
 
-      // 3. Try Kitsu Details API directly
       if (kitsuId) {
         try {
           const res = await fetch(`https://kitsu.io/api/edge/anime/${kitsuId}`, {
-            headers: { Accept: "application/vnd.api+json" }
+            headers: { Accept: "application/vnd.api+json" },
           });
           if (res.ok) {
             const j = await res.json();
@@ -373,7 +373,7 @@ export const PickCard = memo(function PickCard({
             }
           }
         } catch {
-          // ignore
+          /* ignore */
         }
       }
     };
@@ -496,6 +496,12 @@ export const PickCard = memo(function PickCard({
           >
             <Check size={12} strokeWidth={3} />
           </span>
+        )}
+        {settings.showLocalLibraryBadge && inLocalLibrary && (
+          <LocalDot
+            title={t("In your local library")}
+            className={`bottom-1.5 ${settings.watchlistBadge === "bottomStart" ? "start-9" : "start-1.5"}`}
+          />
         )}
         {kids ? (
           cardRating && <KidsStarBadge value={cardRating} placement={settings.badgePlacement} />

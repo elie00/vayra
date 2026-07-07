@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import { ChevronDown, Plus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
 import { useProfiles } from "@/lib/profiles";
@@ -7,53 +8,102 @@ import { PasswordPrompt } from "./password-prompt";
 import { ProfileTile } from "./profile-tile";
 
 export function ProfilePickerModal() {
-  const { profiles, pickerOpen, pickerView, setPickerView, selectProfile } = useProfiles();
+  const { profiles, pickerOpen, pickerView, setPickerView, selectProfile, closePicker } = useProfiles();
+  const t = useT();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const update = () => setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 24);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [pickerView.kind, pickerOpen]);
 
   if (!pickerOpen) return null;
 
   const goList = () => setPickerView({ kind: "list" });
+  const showClose = pickerView.kind === "create" || pickerView.kind === "edit";
 
   return createPortal(
     <div
       data-tauri-drag-region
       className="fixed inset-0 z-[180] flex items-center justify-center bg-black/85 backdrop-blur-2xl animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
     >
-      <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col items-center overflow-y-auto overscroll-contain px-10 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-3 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
-        {pickerView.kind === "list" && (
-          <ListView
-            onCreate={() => setPickerView({ kind: "create" })}
-            onEdit={(id) => setPickerView({ kind: "edit", profileId: id })}
-            onSelect={(id) => {
-              const target = profiles.find((p) => p.id === id);
-              if (target?.passwordHash) {
-                setPickerView({ kind: "unlock", profileId: id });
-              } else {
-                selectProfile(id);
-              }
-            }}
-          />
+      <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col animate-in fade-in zoom-in-95 slide-in-from-bottom-3 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+        {showClose && (
+          <button
+            type="button"
+            onClick={closePicker}
+            aria-label={t("common.close")}
+            className="absolute end-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-canvas/70 text-ink-muted ring-1 ring-edge-soft backdrop-blur transition-colors hover:bg-elevated hover:text-ink"
+          >
+            <X size={16} strokeWidth={2.4} />
+          </button>
         )}
-        {pickerView.kind === "create" && <EditorView mode={{ kind: "create" }} onCancel={goList} onDone={goList} />}
-        {pickerView.kind === "edit" && (() => {
-          const target = profiles.find((p) => p.id === pickerView.profileId);
-          if (!target) {
-            return <NotFoundFallback onBack={goList} />;
-          }
-          return <EditorView mode={{ kind: "edit", profile: target }} onCancel={goList} onDone={goList} />;
-        })()}
-        {pickerView.kind === "unlock" && (() => {
-          const target = profiles.find((p) => p.id === pickerView.profileId);
-          if (!target || !target.passwordHash) {
-            return <NotFoundFallback onBack={goList} />;
-          }
-          return (
-            <PasswordPrompt
-              profile={target}
-              onSuccess={() => selectProfile(target.id, { unlocked: true })}
-              onCancel={goList}
+        <div
+          ref={scrollRef}
+          className="flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto overscroll-contain px-10 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {pickerView.kind === "list" && (
+            <ListView
+              onCreate={() => setPickerView({ kind: "create" })}
+              onEdit={(id) => setPickerView({ kind: "edit", profileId: id })}
+              onSelect={(id) => {
+                const target = profiles.find((p) => p.id === id);
+                if (target?.passwordHash) {
+                  setPickerView({ kind: "unlock", profileId: id });
+                } else {
+                  selectProfile(id);
+                }
+              }}
             />
-          );
-        })()}
+          )}
+          {pickerView.kind === "create" && <EditorView mode={{ kind: "create" }} onCancel={goList} onDone={goList} />}
+          {pickerView.kind === "edit" && (() => {
+            const target = profiles.find((p) => p.id === pickerView.profileId);
+            if (!target) {
+              return <NotFoundFallback onBack={goList} />;
+            }
+            return <EditorView mode={{ kind: "edit", profile: target }} onCancel={goList} onDone={goList} />;
+          })()}
+          {pickerView.kind === "unlock" && (() => {
+            const target = profiles.find((p) => p.id === pickerView.profileId);
+            if (!target || !target.passwordHash) {
+              return <NotFoundFallback onBack={goList} />;
+            }
+            return (
+              <PasswordPrompt
+                profile={target}
+                onSuccess={() => selectProfile(target.id, { unlocked: true })}
+                onCancel={goList}
+              />
+            );
+          })()}
+        </div>
+        {moreBelow && (
+          <>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
+            <button
+              type="button"
+              onClick={() =>
+                scrollRef.current?.scrollBy({ top: scrollRef.current.clientHeight * 0.8, behavior: "smooth" })
+              }
+              aria-label={t("Scroll down")}
+              className="absolute bottom-3 left-1/2 z-20 flex h-8 w-8 -translate-x-1/2 animate-bounce items-center justify-center rounded-full bg-canvas/80 text-ink-muted ring-1 ring-edge-soft backdrop-blur transition-colors hover:text-ink"
+            >
+              <ChevronDown size={16} strokeWidth={2.4} />
+            </button>
+          </>
+        )}
       </div>
     </div>,
     document.body,

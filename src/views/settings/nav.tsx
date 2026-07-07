@@ -173,9 +173,12 @@ function IconHotkeys(p: IconProps) {
 function IconAdvanced(p: IconProps) {
   return (
     <IconBase {...p}>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 5.5l2.6 6.5L12 18.5l-2.6-6.5z" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="12" r="1.2" fill="var(--color-canvas)" stroke="none" />
+      <path d="M4 7h7M17 7h3" />
+      <path d="M4 12h2M12 12h8" />
+      <path d="M4 17h8M18 17h2" />
+      <circle cx="14" cy="7" r="2.3" fill="var(--color-canvas)" />
+      <circle cx="9" cy="12" r="2.3" fill="var(--color-canvas)" />
+      <circle cx="15" cy="17" r="2.3" fill="var(--color-canvas)" />
     </IconBase>
   );
 }
@@ -626,6 +629,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Random avatar", section: "account", anchorTitle: "Harbor identity", keywords: ["random", "shuffle", "surprise avatar", "dice"] },
   { label: "Reset to Stremio avatar", section: "account", anchorTitle: "Harbor identity", keywords: ["reset avatar", "default avatar", "remove photo", "revert", "reset to default"] },
   { label: "Your color", section: "account", anchorTitle: "Harbor identity", keywords: ["color", "cursor color", "chat color", "name pill", "custom color", "hex picker", "swatch"] },
+  { label: "Profiles (switch, add, edit)", section: "account", anchorTitle: "Harbor identity", keywords: ["profiles", "profile", "who's watching", "whos watching", "who is watching", "switch profile", "add profile", "new profile", "edit profile", "manage profiles", "default profile", "kids profile", "child profile", "multiple profiles", "profile screen", "startup profile", "household"] },
   { label: "Sign in", section: "account", anchorTitle: "Stremio account", keywords: ["login", "sign in", "stremio", "connect account", "not signed in"] },
   { label: "Re-authenticate", section: "account", anchorTitle: "Stremio account", keywords: ["reauth", "refresh session", "login again", "expired token", "re-login"] },
   { label: "Sign out", section: "account", anchorTitle: "Stremio account", keywords: ["logout", "sign out", "log off", "disconnect account"] },

@@ -43,8 +43,16 @@ export function MalProvider({ children }: { children: ReactNode }) {
   }, [session?.accessToken]);
 
   const beginConnect = useCallback(() => {
-    setConnectState({ kind: "needs-code" });
-    openUrl(buildAuthorizeUrl());
+    try {
+      const url = buildAuthorizeUrl();
+      setConnectState({ kind: "needs-code" });
+      openUrl(url);
+    } catch (e) {
+      setConnectState({
+        kind: "error",
+        message: e instanceof Error ? e.message : "MyAnimeList is not configured in this build.",
+      });
+    }
   }, []);
 
   const submitCode = useCallback((code: string) => {
