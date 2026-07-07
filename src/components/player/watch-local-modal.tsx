@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { HardDrive, Wifi } from "lucide-react";
+import { Check, HardDrive, RotateCcw, Wifi } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import {
   closeWatchLocalConfirm,
@@ -8,6 +8,16 @@ import {
   subscribeWatchLocalConfirm,
   type WatchLocalChoice,
 } from "@/lib/player/watch-local-confirm";
+
+// Format a millisecond offset as "h:mm:ss" / "m:ss" for the resume button.
+function formatClock(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
 
 // The "Watch locally or stream?" prompt. Mounted once at the app root; opened
 // imperatively from the play chain. The caller's onChoose applies the remember flag.
@@ -61,15 +71,39 @@ export function WatchLocalModal() {
           </p>
         </div>
         <div className="flex flex-col gap-2.5">
-          <button
-            type="button"
-            autoFocus
-            onClick={() => choose("local")}
-            className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
-          >
-            <HardDrive size={16} strokeWidth={2.2} />
-            {t("Watch my local copy")}
-          </button>
+          {state.hasResume ? (
+            <>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => choose("local")}
+                className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
+              >
+                <HardDrive size={16} strokeWidth={2.2} />
+                {state.resumeMs > 0
+                  ? `${t("Continue from last watched")} · ${formatClock(state.resumeMs)}`
+                  : t("Continue from last watched")}
+              </button>
+              <button
+                type="button"
+                onClick={() => choose("local-restart")}
+                className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-canvas/50 text-[14px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-canvas/70"
+              >
+                <RotateCcw size={16} strokeWidth={2.2} />
+                {t("Watch from the beginning")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              autoFocus
+              onClick={() => choose("local")}
+              className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
+            >
+              <HardDrive size={16} strokeWidth={2.2} />
+              {t("Watch my local copy")}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => choose("stream")}
@@ -79,15 +113,26 @@ export function WatchLocalModal() {
             {t("Stream / addons")}
           </button>
         </div>
-        <label className="inline-flex cursor-pointer items-center justify-center gap-2.5 text-[13px] text-ink-muted">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(e) => setRemember(e.target.checked)}
-            className="h-[16px] w-[16px] cursor-pointer"
-          />
+        <button
+          type="button"
+          role="switch"
+          aria-checked={remember}
+          onClick={() => setRemember((v) => !v)}
+          className={`mx-auto inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+            remember
+              ? "bg-accent/15 text-accent ring-1 ring-accent/40"
+              : "text-ink-muted ring-1 ring-edge-soft hover:bg-raised hover:text-ink"
+          }`}
+        >
+          <span
+            className={`flex h-[18px] w-[18px] items-center justify-center rounded-md transition-colors ${
+              remember ? "bg-accent text-canvas" : "ring-1 ring-edge"
+            }`}
+          >
+            {remember && <Check size={12} strokeWidth={3} />}
+          </span>
           {t("Remember my choice")}
-        </label>
+        </button>
       </div>
     </div>,
     document.body,

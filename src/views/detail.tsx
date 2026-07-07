@@ -709,19 +709,31 @@ export function DetailView({
     if (episodeHint) return episodeHint;
     if (isAnime) return lastPlayedEpisode(meta.id);
     const candidates: Array<{ season: number; episode: number; t: number }> = [];
-    const lc = localCwEntry(meta.id);
-    if (
-      lc?.type === "series" &&
-      typeof lc.season === "number" &&
-      typeof lc.episode === "number" &&
-      lc.season >= 1 &&
-      lc.episode >= 1
-    ) {
-      candidates.push({ season: lc.season, episode: lc.episode, t: lc.t });
-    }
-    const lp = lastPlayedEpisode(meta.id);
-    if (lp && lp.season >= 1 && lp.episode >= 1) {
-      candidates.push({ season: lp.season, episode: lp.episode, t: lp.t });
+    // Local progress may be saved under any of these ids depending on how it was
+    // played (catalog meta.id via Continue Watching, or entry.imdbId via a local
+    // play), so probe all of them — otherwise a search-entry (tmdb:tv:X) misses it.
+    const ids = Array.from(
+      new Set(
+        [meta.id, detail?.imdbId ?? null, detail?.id != null ? `tmdb:tv:${detail.id}` : null].filter(
+          (x): x is string => !!x,
+        ),
+      ),
+    );
+    for (const id of ids) {
+      const lc = localCwEntry(id);
+      if (
+        lc?.type === "series" &&
+        typeof lc.season === "number" &&
+        typeof lc.episode === "number" &&
+        lc.season >= 1 &&
+        lc.episode >= 1
+      ) {
+        candidates.push({ season: lc.season, episode: lc.episode, t: lc.t });
+      }
+      const lp = lastPlayedEpisode(id);
+      if (lp && lp.season >= 1 && lp.episode >= 1) {
+        candidates.push({ season: lp.season, episode: lp.episode, t: lp.t });
+      }
     }
     const st = libraryItem?.state;
     if (libraryItem?.type === "series" && st && (st.timeOffset ?? 0) > 0) {
@@ -736,7 +748,7 @@ export function DetailView({
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => b.t - a.t);
     return { season: candidates[0].season, episode: candidates[0].episode };
-  }, [meta.id, libraryItem, isAnime, episodeHint]);
+  }, [meta.id, detail?.imdbId, detail?.id, libraryItem, isAnime, episodeHint]);
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
     const opts = { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay };
@@ -777,7 +789,7 @@ export function DetailView({
         extraImdb: detail?.imdbId,
         mode: settings.localPlaybackMode,
         source: "manual",
-        playLocal: (e) => openPlayer(localPlayerSrc(e)),
+        playLocal: (e, o) => openPlayer({ ...localPlayerSrc(e), startFromZero: o?.fromStart }),
         playStream: stream,
         setMode: (m) => update({ localPlaybackMode: m }),
       });
@@ -1196,6 +1208,7 @@ export function DetailView({
             cinemetaVideos={cinemetaFull?.videos}
             stremioWatched={stremioWatched}
             resumeSeason={lastPlay?.season}
+            resumeEpisode={lastPlay?.episode}
           />
           </FadeInUp>
         )}
