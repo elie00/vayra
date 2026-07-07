@@ -4,6 +4,19 @@ import type { Settings } from "./types";
 export const STORAGE_KEY = "harbor.settings";
 
 export const DEFAULT: Settings = {
+  simklGranularFilters: {
+    movies: {
+      plantowatch: true,
+    },
+    shows: {
+      watching: true,
+      plantowatch: true,
+    },
+    anime: {
+      watching: true,
+      plantowatch: true,
+    },
+  },
   blurComments: false,
   blurEpisodes: false,
   tmdbKey: "",
@@ -31,6 +44,9 @@ export const DEFAULT: Settings = {
   showTraktBadge: false,
   showDetailRatings: true,
   showTraktComments: false,
+  showSimklBadge: true,
+  simklShowCommunityRatings: true,
+  simklEnableUserRatings: true,
   cardBadgeLimit: 3,
   showQualityBadge: true,
   showCardBadges: true,
@@ -282,6 +298,11 @@ export const DEFAULT: Settings = {
     },
   },
   calendarSource: "library",
+  simklHomeRailsEnabled: true,
+  simklUpNextRailEnabled: true,
+  simklTrendingRailEnabled: true,
+  simklScrobbleEnabled: true,
+  simklAnimeTitleLanguage: "english",
   weekStartsMonday: false,
   customCalendar: {
     trackedPeople: [],

@@ -24,6 +24,11 @@ import {
   useTmdbImdbId,
 } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { useSimklCardScores, useSimklCardScoresByAnimeId } from "@/lib/simkl/ratings";
+import { simklRequest } from "@/lib/simkl/client";
+import { getLocalCache } from "@/lib/simkl/activities";
+import { aniZipByKitsu, aniZipByMal } from "@/lib/providers/anizip";
+import simklLogo from "@/assets/simkl.png";
 import { useView } from "@/lib/view";
 import { observe } from "@/lib/visibility";
 import { useInWatchlist } from "@/lib/watchlist";
@@ -47,6 +52,20 @@ const WATCHLIST_POS: Record<string, string> = {
   bottomEnd: "bottom-1.5 end-1.5",
 };
 
+function getTitleFromAniZip(titles: Record<string, string>, lang: "english" | "romaji" | "native"): string | null {
+  if (lang === "english") return titles.en || titles.en_jp || titles.ja || null;
+  if (lang === "romaji") return titles["x-jat"] || titles.en_jp || titles.en || null;
+  if (lang === "native") return titles.ja || titles["x-jat"] || titles.en || null;
+  return null;
+}
+
+function getTitleFromKitsu(titles: { en?: string; en_jp?: string; ja_jp?: string }, lang: "english" | "romaji" | "native"): string | null {
+  if (lang === "english") return titles.en || titles.en_jp || titles.ja_jp || null;
+  if (lang === "romaji") return titles.en_jp || titles.en || titles.ja_jp || null;
+  if (lang === "native") return titles.ja_jp || titles.en_jp || titles.en || null;
+  return null;
+}
+
 export const PickCard = memo(function PickCard({
   meta,
   flagRerun = false,
@@ -67,7 +86,7 @@ export const PickCard = memo(function PickCard({
   const customProps = activeCustom ? customHoverPosterProps(activeCustom) : null;
   const badgeFade = inCardHover !== "none" || activeCustom ? "transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0" : "";
   const t = useT();
-  const isAnimeCardId = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
+  const isAnimeCardId = /^(kitsu|mal|anilist|anidb|simkl):/.test(meta.id);
   const inCinema = isInCinema(meta);
   const rerun = (inCinema || flagRerun) && isRerun(meta);
   const showCinema = inCinema && !rerun;
@@ -130,8 +149,17 @@ export const PickCard = memo(function PickCard({
     : cardImdbValue
       ? "imdb"
       : "tmdb";
+  const simklCardScoreImdb = useSimklCardScores(
+    settings.showSimklBadge && !isAnimeCardId ? imdbId : undefined,
+  );
+  const simklCardScoreAnime = useSimklCardScoresByAnimeId(
+    settings.showSimklBadge && isAnimeCardId ? meta.id : undefined,
+  );
+  const simklCardScore = isAnimeCardId ? simklCardScoreAnime : simklCardScoreImdb;
   const cardBadges: CardBadge[] = [];
   if (cardRating) cardBadges.push({ kind: "rating", source: cardRatingSource, value: cardRating });
+  if (settings.showSimklBadge && simklCardScore.score != null)
+    cardBadges.push({ kind: "simkl", value: simklCardScore.score });
   if (settings.showRtBadge && cached?.rtCritics != null)
     cardBadges.push({ kind: "rt", value: cached.rtCritics });
   if (settings.showPopcornBadge && cardScores?.rtAudience != null)
@@ -226,11 +254,23 @@ export const PickCard = memo(function PickCard({
       meta.id.startsWith("mal:") ||
       meta.id.startsWith("anilist:") ||
       meta.id.startsWith("anidb:");
-    const hydrator = isAnimeId
-      ? animeKitsuMeta(meta.id).then((m) => (m ? { poster: m.poster } : null))
-      : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) =>
-          full ? { poster: full.poster } : null,
-        );
+    const isSimklId = meta.id.startsWith("simkl:");
+    const hydrator = isSimklId
+      ? (async () => {
+          const simklId = meta.id.slice(5);
+          const detail = await simklRequest<{ poster?: string }>(
+            `/anime/${simklId}`,
+            { method: "GET", authed: false },
+          ).catch(() => null);
+          return detail?.poster
+            ? { poster: `https://simkl.in/posters/${detail.poster}_m.jpg` }
+            : null;
+        })()
+      : isAnimeId
+        ? animeKitsuMeta(meta.id).then((m) => (m ? { poster: m.poster } : null))
+        : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) =>
+            full ? { poster: full.poster } : null,
+          );
     hydrator
       .then((res) => {
         if (cancelled || !res?.poster) return;
@@ -241,6 +281,109 @@ export const PickCard = memo(function PickCard({
       cancelled = true;
     };
   }, [posterSrc, hydratedPoster, meta.type, meta.id]);
+
+  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTranslatedTitle(null);
+    if (!isAnimeCardId) return;
+
+    let cancelled = false;
+    const cache = getLocalCache();
+    let kitsuId: number | null = null;
+    let malId: number | null = null;
+
+    if (cache) {
+      const parts = meta.id.split(":");
+      const type = parts[0];
+      const idVal = parts[1];
+
+      if (type === "kitsu") {
+        kitsuId = Number(idVal);
+      } else if (type === "mal") {
+        malId = Number(idVal);
+      }
+
+      let simklId: number | null = null;
+      if (type === "simkl") {
+        simklId = Number(idVal);
+      } else if (type === "kitsu" && kitsuId) {
+        simklId = cache.kitsuToSimkl[String(kitsuId)] ?? null;
+      } else if (type === "mal" && malId) {
+        simklId = cache.malToSimkl[String(malId)] ?? null;
+      }
+
+      if (simklId) {
+        if (!kitsuId) {
+          const kStr = Object.keys(cache.kitsuToSimkl).find((k) => cache.kitsuToSimkl[k] === simklId);
+          if (kStr) kitsuId = Number(kStr);
+        }
+        if (!malId) {
+          const mStr = Object.keys(cache.malToSimkl).find((k) => cache.malToSimkl[k] === simklId);
+          if (mStr) malId = Number(mStr);
+        }
+      }
+    }
+
+    const preferred = settings.simklAnimeTitleLanguage;
+
+    const fetchTitles = async () => {
+      // 1. Try AniZip by MAL ID
+      if (malId) {
+        const map = await aniZipByMal(malId).catch(() => null);
+        if (cancelled) return;
+        if (map?.titles) {
+          const title = getTitleFromAniZip(map.titles, preferred);
+          if (title) {
+            setTranslatedTitle(title);
+            return;
+          }
+        }
+      }
+
+      // 2. Try AniZip by Kitsu ID
+      if (kitsuId) {
+        const map = await aniZipByKitsu(kitsuId).catch(() => null);
+        if (cancelled) return;
+        if (map?.titles) {
+          const title = getTitleFromAniZip(map.titles, preferred);
+          if (title) {
+            setTranslatedTitle(title);
+            return;
+          }
+        }
+      }
+
+      // 3. Try Kitsu Details API directly
+      if (kitsuId) {
+        try {
+          const res = await fetch(`https://kitsu.io/api/edge/anime/${kitsuId}`, {
+            headers: { Accept: "application/vnd.api+json" }
+          });
+          if (res.ok) {
+            const j = await res.json();
+            const attr = j?.data?.attributes;
+            if (attr?.titles) {
+              const title = getTitleFromKitsu(attr.titles, preferred) || attr.canonicalTitle;
+              if (cancelled) return;
+              if (title) {
+                setTranslatedTitle(title);
+                return;
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    fetchTitles().catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [meta.id, isAnimeCardId, settings.simklAnimeTitleLanguage]);
 
   useEffect(() => {
     if (
@@ -373,7 +516,7 @@ export const PickCard = memo(function PickCard({
               : "line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink"
           }
         >
-          {meta.name}
+          {translatedTitle || meta.name}
         </p>
       )}
     </button>
@@ -387,7 +530,8 @@ type CardBadge =
   | { kind: "metacritic"; value: number }
   | { kind: "letterboxd"; value: number }
   | { kind: "mdblist"; value: number }
-  | { kind: "trakt"; value: number };
+  | { kind: "trakt"; value: number }
+  | { kind: "simkl"; value: number };
 
 function metacriticTone(v: number): string {
   if (v >= 61) return "bg-emerald-500";
@@ -451,6 +595,13 @@ function BadgeContent({ badge }: { badge: CardBadge }) {
         <span className="flex items-center gap-0.5">
           <img src={traktLogo} alt="" className="h-[11px] w-[11px] object-contain" />
           <span>{Math.round(badge.value)}%</span>
+        </span>
+      );
+    case "simkl":
+      return (
+        <span className="flex items-center gap-0.5">
+          <img src={simklLogo} alt="" className="h-[11px] w-[11px] rounded-[2px] object-contain" />
+          <span>{Math.round(badge.value)}</span>
         </span>
       );
   }

@@ -39,14 +39,73 @@ export function stremioIdToSimklTarget(
   if (!metaId) return { ok: false, reason: "unrecognized" };
 
   if (metaId.startsWith("mal:")) {
-    const n = Number(metaId.split(":")[1]);
-    if (!Number.isFinite(n)) return { ok: false, reason: "unrecognized" };
-    if (episode) return { ok: false, reason: "anime" };
-    return { ok: true, target: { kind: "show", ids: { mal: n } } };
+    const parts = metaId.split(":");
+    const malId = Number(parts[1]);
+    if (!Number.isFinite(malId)) return { ok: false, reason: "unrecognized" };
+
+    if (parts.length >= 3) {
+      const episodeNum = Number(parts[2]);
+      if (Number.isFinite(episodeNum)) {
+        return {
+          ok: true,
+          target: {
+            kind: "anime-episode",
+            anime: { ids: { mal: malId } },
+            season: 1,
+            number: episodeNum,
+          },
+        };
+      }
+    }
+
+    if (episode) {
+      return {
+        ok: true,
+        target: {
+          kind: "anime-episode",
+          anime: { ids: { mal: malId } },
+          season: episode.season,
+          number: episode.episode,
+        },
+      };
+    }
+
+    return { ok: true, target: { kind: "anime", ids: { mal: malId } } };
   }
 
   if (metaId.startsWith("kitsu:")) {
-    return { ok: false, reason: "anime" };
+    const parts = metaId.split(":");
+    const kitsuId = Number(parts[1]);
+    if (!Number.isFinite(kitsuId)) return { ok: false, reason: "unrecognized" };
+
+    if (parts.length >= 3) {
+      const episodeNum = Number(parts[2]);
+      if (Number.isFinite(episodeNum)) {
+        return {
+          ok: true,
+          target: {
+            kind: "anime-episode",
+            anime: { ids: { kitsu: kitsuId } },
+            season: 1,
+            number: episodeNum,
+          },
+        };
+      }
+    }
+
+    if (episode) {
+      return {
+        ok: true,
+        target: {
+          kind: "anime-episode",
+          anime: { ids: { kitsu: kitsuId } },
+          season: episode.season,
+          number: episode.episode,
+        },
+      };
+    }
+
+    return { ok: true, target: { kind: "anime", ids: { kitsu: kitsuId } } };
   }
 
   if (metaId.startsWith("tt")) {

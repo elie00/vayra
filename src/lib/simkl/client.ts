@@ -5,6 +5,7 @@ export type SimklRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   authed?: boolean;
+  token?: string;
 };
 
 export class SimklApiError extends Error {
@@ -16,21 +17,34 @@ export class SimklApiError extends Error {
   }
 }
 
-function baseHeaders(): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
+function baseHeaders(method: string): Record<string, string> {
+  const headers: Record<string, string> = {
     "simkl-api-key": SIMKL_CLIENT_ID,
+    "User-Agent": "harbor/0.9.19",
   };
+  if (method === "POST" || method === "PUT") {
+    headers["Content-Type"] = "application/json";
+  }
+  return headers;
 }
 
 async function doFetch(path: string, opts: SimklRequestOptions): Promise<Response> {
-  const headers = baseHeaders();
-  if (opts.authed !== false) {
+  const method = opts.method ?? "GET";
+  const headers = baseHeaders(method);
+  if (opts.token) {
+    headers["Authorization"] = `Bearer ${opts.token}`;
+  } else if (opts.authed !== false) {
     const session = getSession();
     if (session) headers["Authorization"] = `Bearer ${session.accessToken}`;
   }
-  return fetch(`${SIMKL_API_BASE}${path}`, {
-    method: opts.method ?? "GET",
+
+  const url = new URL(`${SIMKL_API_BASE}${path}`);
+  url.searchParams.set("client_id", SIMKL_CLIENT_ID);
+  url.searchParams.set("app-name", "harbor");
+  url.searchParams.set("app-version", "0.9.19");
+
+  return fetch(url.toString(), {
+    method,
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });

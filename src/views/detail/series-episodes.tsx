@@ -310,7 +310,7 @@ export function SeriesEpisodes({
     );
     if (!simklConnected) return;
     const r = stremioIdToSimklTarget(meta.id, { season: active, episode: 1 });
-    const showIds = r.ok && r.target.kind === "episode" ? r.target.show.ids : null;
+    const showIds = r.ok && (r.target.kind === "episode" ? r.target.show.ids : r.target.kind === "anime-episode" ? r.target.anime.ids : null);
     if (!showIds) return;
     if (watched) {
       void markEpisodesWatched(showIds, active, enrichedEpisodes.map((e) => e.episodeNumber));

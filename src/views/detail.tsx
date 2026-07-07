@@ -49,6 +49,10 @@ import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
+import { SimklRatingPicker } from "./detail/simkl-rating-picker";
+import { useSimkl } from "@/lib/simkl/provider";
+import { getLocalCache, saveLocalCache } from "@/lib/simkl/activities";
+import { simklRequest } from "@/lib/simkl/client";
 import { CollectionRow } from "./detail/collection-row";
 import { MediaGallery } from "./detail/media-gallery";
 import { useTitleBackdrop } from "@/lib/title-backdrop";
@@ -185,14 +189,124 @@ export function DetailView({
   );
   const scrollRef = useRef<HTMLElement>(null);
 
-  const { openPicker, openFilter, promoteMetaToRoot } = useView();
+  const { setNavStack, openPicker, openFilter, promoteMetaToRoot } = useView();
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();
+  const { isConnected: simklConnected } = useSimkl();
   const inWatchlist = useInWatchlist(meta.id, [detail?.imdbId]);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(meta.id, [detail?.imdbId]);
   const inSession = roomSnapshot.state === "joined" && roomSnapshot.participants.length >= 2;
   useScrollMemory(`meta:${meta.id}`, scrollRef);
+
+  useEffect(() => {
+    if (!meta.id.startsWith("simkl:")) return;
+
+    let cancelled = false;
+    const simklIdStr = meta.id.slice(6);
+    const simklId = parseInt(simklIdStr, 10);
+
+    const resolveSimklId = async () => {
+      let resolvedId: string | null = null;
+      const cache = getLocalCache();
+
+      if (cache) {
+        // 1. IMDb mapping check
+        const imdbKey = Object.keys(cache.imdbToSimkl).find(
+          (k) => cache.imdbToSimkl[k] === simklId
+        );
+        if (imdbKey) resolvedId = imdbKey;
+
+        // 2. Kitsu mapping check
+        if (!resolvedId) {
+          const kitsuKey = Object.keys(cache.kitsuToSimkl).find(
+            (k) => cache.kitsuToSimkl[k] === simklId
+          );
+          if (kitsuKey) resolvedId = `kitsu:${kitsuKey}`;
+        }
+
+        // 3. MAL mapping check
+        if (!resolvedId) {
+          const malKey = Object.keys(cache.malToSimkl).find(
+            (k) => cache.malToSimkl[k] === simklId
+          );
+          if (malKey) resolvedId = `mal:${malKey}`;
+        }
+
+        // 4. TMDB mapping check
+        if (!resolvedId) {
+          const tmdbKey = Object.keys(cache.tmdbToSimkl).find(
+            (k) => cache.tmdbToSimkl[k] === simklId
+          );
+          if (tmdbKey) resolvedId = `tmdb:${tmdbKey}`;
+        }
+      }
+
+      // If not found in local cache, query the SIMKL detail endpoint
+      if (!resolvedId) {
+        const mediaType =
+          cache?.items[simklIdStr]?.type ||
+          (meta.type === "movie" ? "movie" : meta.type === "anime" ? "anime" : "show");
+        const path =
+          mediaType === "movie"
+            ? `/movies/${simklId}`
+            : mediaType === "anime"
+              ? `/anime/${simklId}`
+              : `/tv/${simklId}`;
+
+        try {
+          const data = await simklRequest<any>(path);
+          if (cancelled) return;
+          if (data && data.ids) {
+            const ids = data.ids;
+            if (ids.imdb) {
+              resolvedId = ids.imdb;
+            } else if (ids.kitsu) {
+              resolvedId = `kitsu:${ids.kitsu}`;
+            } else if (ids.mal) {
+              resolvedId = `mal:${ids.mal}`;
+            } else if (ids.tmdb) {
+              const tmdbType = mediaType === "movie" ? "movie" : "tv";
+              resolvedId = `tmdb:${tmdbType}:${ids.tmdb}`;
+            }
+
+            // Save to local cache indexes for future queries
+            if (resolvedId && cache) {
+              if (ids.imdb) cache.imdbToSimkl[ids.imdb] = simklId;
+              if (ids.kitsu) cache.kitsuToSimkl[String(ids.kitsu)] = simklId;
+              if (ids.mal) cache.malToSimkl[String(ids.mal)] = simklId;
+              if (ids.tmdb) {
+                const tmdbType = mediaType === "movie" ? "movie" : "tv";
+                cache.tmdbToSimkl[`${tmdbType}:${ids.tmdb}`] = simklId;
+              }
+              saveLocalCache(cache);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to resolve SIMKL ID via API", e);
+        }
+      }
+
+      if (cancelled) return;
+
+      if (resolvedId) {
+        setNavStack((stack) =>
+          stack.map((frame) =>
+            frame.kind === "meta" && frame.meta.id === meta.id
+              ? { ...frame, meta: { ...frame.meta, id: resolvedId } }
+              : frame
+          )
+        );
+      }
+    };
+
+    resolveSimklId();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [meta.id, meta.type, setNavStack]);
+
   const idAnime = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const isAnime = idAnime || detectedKitsu != null;
   const stickyAwardName = useRef<string | null>(null);
@@ -323,7 +437,7 @@ export function DetailView({
   useEffect(() => {
     if (meta.type !== "series") return;
     if (meta.addonOrigin?.base) return;
-    if (/^(tt\d|tmdb:|kitsu:|mal:|anilist:|anidb:)/.test(meta.id)) return;
+    if (/^(tt\d|tmdb:|kitsu:|mal:|anilist:|anidb:|simkl:)/.test(meta.id)) return;
     if (cinemetaFull?.videos && cinemetaFull.videos.length > 0) return;
     let cancelled = false;
     resolveMeta(authKey, narrowMediaType(meta.type), meta.id)
@@ -339,7 +453,7 @@ export function DetailView({
 
   useEffect(() => {
     setLibraryItem(null);
-    if (!authKey) return;
+    if (!authKey || meta.id.startsWith("simkl:")) return;
     const candidates: string[] = [];
     if (meta.id.startsWith("tt")) candidates.push(meta.id);
     if (detail?.imdbId?.startsWith("tt") && !candidates.includes(detail.imdbId)) {
@@ -1001,6 +1115,13 @@ export function DetailView({
                     harborId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
                     title={title || meta.name}
                     type={meta.type === "movie" ? "movie" : "series"}
+                  />
+                )}
+                {actionStage < 2 && settings.simklEnableUserRatings && (
+                  <SimklRatingPicker
+                    harborId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
+                    type={meta.type === "movie" ? "movie" : "series"}
+                    simklConnected={simklConnected}
                   />
                 )}
                 {actionStage >= 1 ? (

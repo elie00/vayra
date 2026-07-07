@@ -56,15 +56,22 @@ export function AddToSimklButton({
     let cancelled = false;
     setReady(false);
     void (async () => {
-      const tgt = await resolveSimklTarget(harborId, type);
+      let tgt = await resolveSimklTarget(harborId, type);
       if (cancelled) return;
       if (!tgt) {
         setTarget(null);
         return;
       }
+      if (type === "series" && tgt.kind === "movie") {
+        tgt = { kind: "show", ids: tgt.ids };
+      } else if (type === "movie" && (tgt.kind === "show" || tgt.kind === "anime")) {
+        tgt = { kind: "movie", ids: tgt.ids };
+      }
       setTarget(tgt);
       const malKey =
-        tgt.kind !== "episode" && tgt.ids.mal != null ? `mal:${tgt.ids.mal}` : null;
+        tgt.kind === "movie" || tgt.kind === "show" || tgt.kind === "anime"
+          ? (tgt.ids.mal != null ? `mal:${tgt.ids.mal}` : null)
+          : null;
       try {
         const map = await loadSimklStatusMap();
         if (cancelled) return;

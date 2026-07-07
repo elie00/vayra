@@ -244,7 +244,7 @@ export function Home({ active = true }: { active?: boolean }) {
       return;
     }
     let cancelled = false;
-    buildSimklHomeRows(settings.tmdbKey)
+    buildSimklHomeRows(settings)
       .then((rs) => {
         if (!cancelled) setSimklRows(rs);
       })
@@ -252,7 +252,7 @@ export function Home({ active = true }: { active?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [simklConnected, settings.tmdbKey]);
+  }, [simklConnected, settings.tmdbKey, settings.simklHomeRailsEnabled]);
 
   useEffect(() => {
     if (!simklConnected) {

@@ -121,10 +121,18 @@ export function SimklMenuItems({
     if (!isConnected) return;
     let cancelled = false;
     void (async () => {
-      const t = await resolveSimklTarget(harborId, type);
+      let t = await resolveSimklTarget(harborId, type);
       if (cancelled || !t) return;
+      if (type === "series" && t.kind === "movie") {
+        t = { kind: "show", ids: t.ids };
+      } else if (type === "movie" && (t.kind === "show" || t.kind === "anime")) {
+        t = { kind: "movie", ids: t.ids };
+      }
       setTarget(t);
-      const malKey = t.kind !== "episode" && t.ids.mal != null ? `mal:${t.ids.mal}` : null;
+      const malKey =
+        t.kind === "movie" || t.kind === "show" || t.kind === "anime"
+          ? (t.ids.mal != null ? `mal:${t.ids.mal}` : null)
+          : null;
       try {
         const m = await loadSimklStatusMap();
         if (cancelled) return;
