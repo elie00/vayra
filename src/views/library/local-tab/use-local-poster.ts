@@ -7,17 +7,6 @@ import { IMG } from "@/lib/providers/tmdb/tmdb-client";
 import { useSettings } from "@/lib/settings";
 import type { LocalEntry } from "@/lib/local-library";
 
-// Poster resolution shared by both local card types (movies and show groups) so
-// they behave identically. Priority:
-//   1. artwork saved on disk (from a .nfo import/export) — always wins.
-//   2. the best TMDB poster whose language is actually in the user's image-language
-//      list (e.g. Arabic, then English), found via /images so it catches localized
-//      posters TMDB's single primary endpoint misses.
-//   3. the scan-time cached poster (the metadata-language default, i.e. the plain
-//      English one) — used when no poster matches the preferred languages, instead
-//      of falling through to a random textless poster.
-// A .nfo/exported artwork value is either a local file path (show via the asset
-// protocol) or a remote URL the .nfo referenced (use as-is).
 function artSrc(value: string): string {
   return /^https?:\/\//i.test(value) ? value : convertFileSrc(value);
 }
@@ -33,8 +22,6 @@ export function useLocalPoster(entry: LocalEntry) {
     let alive = true;
     const kind = entry.type === "show" ? "tv" : "movie";
     const metaId = `tmdb:${kind}:${entry.tmdbId}`;
-    // Only the explicit user languages count here (null/"Original" only if the user
-    // actually picked it), so we never override the English default with textless art.
     const langs = imageLangPriority();
     const rankOf = (iso: string | null | undefined) => langs.indexOf(iso ? iso.toLowerCase() : null);
     void fetchMovieAssets(settings.tmdbKey, metaId).then((assets) => {

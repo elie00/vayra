@@ -4,9 +4,6 @@ import { IMG } from "@/lib/providers/tmdb/tmdb-client";
 
 export type ArtworkPaths = { poster?: string; logo?: string; backdrop?: string };
 
-// Highest-ranked file_path for a language-tagged image set, following the user's
-// image-language priority (posters/logos). Backdrops are usually textless, so
-// they fall back to the highest-voted one.
 function pickByLang<T extends { file_path?: string; iso_639_1?: string | null; vote_average?: number }>(
   entries: T[] | undefined,
   originalLang?: string | null,
@@ -18,9 +15,6 @@ function pickByLang<T extends { file_path?: string; iso_639_1?: string | null; v
   return ranked[0]?.e.file_path ?? undefined;
 }
 
-// Resolve the best poster / logo / backdrop TMDB file_paths for a title, honoring
-// the image-language priority. Returns bare paths (e.g. "/abc.jpg"); build a URL
-// with artworkUrl().
 export async function resolveArtworkPaths(
   key: string,
   metaId: string,
@@ -38,7 +32,6 @@ export async function resolveArtworkPaths(
   };
 }
 
-// Full TMDB image URL for a file_path at a given size bucket (e.g. "w500").
 export function artworkUrl(filePath: string, size: string): string {
   return `${IMG}/${size}${filePath}`;
 }

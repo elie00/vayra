@@ -5,9 +5,6 @@ import { useT } from "@/lib/i18n";
 
 export type ScanMode = "tmdb" | "nfo";
 
-// Shown right after a folder is picked. Lets the user choose whether Harbor should
-// match every file against TMDB, or import metadata and artwork from existing .nfo
-// sidecar files (offline-first), filling any missing images from TMDB.
 export function ScanModeModal({
   isOpen,
   nfoCount,
@@ -46,7 +43,7 @@ export function ScanModeModal({
             <p className="text-[12.5px] leading-relaxed text-ink-muted">
               {nfoCount > 0
                 ? t("Found {n} .nfo file in this folder.", { n: nfoCount })
-                : t("No .nfo files detected — TMDB matching is recommended.")}
+                : t("No .nfo files detected. TMDB matching is recommended.")}
             </p>
           </div>
           <button

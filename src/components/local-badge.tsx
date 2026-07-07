@@ -1,7 +1,5 @@
 import { HardDrive } from "lucide-react";
 
-// The "LOCAL" / resolution pill shown on cards backed by a file on disk. Used in
-// the Library → Local grid and as an "on disk" marker on catalog cards.
 export function LocalBadge({
   label,
   className = "",
@@ -19,8 +17,6 @@ export function LocalBadge({
   );
 }
 
-// A compact circular "on disk" indicator for catalog card corners, mirroring the
-// watchlist bookmark pill.
 export function LocalDot({
   className = "",
   title,

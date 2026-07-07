@@ -1,4 +1,5 @@
 import { simklRequest } from "./client";
+import { simklTargetIds } from "./ids";
 import type { SimklIds, SimklItem, SimklTarget } from "./types";
 
 export type RawIds = {
@@ -80,7 +81,7 @@ export async function addToWatchlist(target: SimklTarget): Promise<boolean> {
       });
       return true;
     }
-    const ids = target.kind === "show" ? target.ids : target.show.ids;
+    const ids = simklTargetIds(target);
     await simklRequest("/sync/add-to-list", {
       method: "POST",
       body: { shows: [{ to: "plantowatch", ids }] },
@@ -100,7 +101,7 @@ export async function removeFromWatchlist(target: SimklTarget): Promise<boolean>
       });
       return true;
     }
-    const ids = target.kind === "show" ? target.ids : target.show.ids;
+    const ids = simklTargetIds(target);
     await simklRequest("/sync/history/remove", {
       method: "POST",
       body: { shows: [{ ids }] },

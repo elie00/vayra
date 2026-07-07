@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { isLinuxDesktop, isMacDesktop } from "@/lib/platform";
 import { applyMotionInterp } from "@/lib/player/motion-interp";
+import { applyRtxHdr } from "@/lib/player/rtx-hdr";
 import { applySubStyle } from "@/lib/player/sub-style";
 import type { useSettings } from "@/lib/settings";
 
@@ -38,6 +39,10 @@ export function useSubStyleApply(params: {
     settings.subStyle,
     settings.subFontFamily,
     settings.subLineSpacing,
+    settings.subOpacity,
+    settings.subBoxOpacity,
+    settings.subBoxColor,
+    settings.subBold,
   ]);
 
   useEffect(() => {
@@ -46,12 +51,14 @@ export function useSubStyleApply(params: {
     if (!bridgeReady) return;
     const svpActive = settings.playerSvp && !!settings.svpVpyPath;
     void applyMotionInterp(settings.playerMotionInterp && !svpActive);
+    void applyRtxHdr(settings.playerRtxHdr, svpActive);
   }, [
     engine,
     bridgeReady,
     bridgeKey,
     settings.playerMpvEmbed,
     settings.playerMotionInterp,
+    settings.playerRtxHdr,
     settings.playerSvp,
     settings.svpVpyPath,
   ]);

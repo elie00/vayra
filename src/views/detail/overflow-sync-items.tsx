@@ -124,7 +124,7 @@ export function SimklMenuItems({
       const t = await resolveSimklTarget(harborId, type);
       if (cancelled || !t) return;
       setTarget(t);
-      const malKey = t.kind !== "episode" && t.ids.mal != null ? `mal:${t.ids.mal}` : null;
+      const malKey = "ids" in t && t.ids.mal != null ? `mal:${t.ids.mal}` : null;
       try {
         const m = await loadSimklStatusMap();
         if (cancelled) return;

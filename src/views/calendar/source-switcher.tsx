@@ -51,7 +51,7 @@ const OPTIONS: Option[] = [
     id: "simkl",
     label: "My Simkl",
     icon: SimklGlyph,
-    hint: "Upcoming episodes and movies from your Simkl plan-to-watch list",
+    hint: "Upcoming episodes and movies from your Simkl watching and plan-to-watch lists",
   },
   {
     id: "simkl-anticipated",

@@ -2,9 +2,9 @@ import { simklRequest } from "./client";
 
 export type ScrobbleAction = "start" | "pause" | "stop";
 
-type EpisodeRef = { season?: number; episode?: number } | undefined;
+export type EpisodeRef = { season?: number; episode?: number } | undefined;
 
-function buildBody(metaId: string, episode: EpisodeRef, progress: number): Record<string, unknown> | null {
+export function buildBody(metaId: string, episode: EpisodeRef, progress: number): Record<string, unknown> | null {
   const p = Math.min(100, Math.max(0, progress));
 
   if (metaId.startsWith("tt")) {

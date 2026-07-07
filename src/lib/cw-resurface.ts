@@ -19,6 +19,11 @@ export function isNextAired(isAnime: boolean, airDate: string | undefined): bool
   return !airDate || !Number.isFinite(t) || t <= Date.now();
 }
 
+function resurfaceAired(airDate: string | undefined): boolean {
+  const t = airDate ? Date.parse(airDate) : NaN;
+  return Number.isFinite(t) && t <= Date.now();
+}
+
 function currentEpisode(i: LibraryItem): { season: number; episode: number } | null {
   const season = i.state?.season;
   const episode = i.state?.episode;
@@ -33,6 +38,10 @@ const RECENT_MS = 45 * 864e5;
 
 type CacheVal = { next: { season: number; episode: number } | null; t: number };
 const cache = new Map<string, CacheVal>();
+
+export function clearResurfaceCache(): void {
+  cache.clear();
+}
 
 export async function resurfaceCandidates(
   library: LibraryItem[],
@@ -55,7 +64,6 @@ export async function resurfaceCandidates(
   });
   for (const i of candidates) {
     const cur = currentEpisode(i)!;
-    const anime = isAnimeCwItem(i) || ANIME_ID.test(i._id);
     const key = `${i._id}:${cur.season}:${cur.episode}`;
     const cached = cache.get(key);
     let nx: { season: number; episode: number } | null;
@@ -71,7 +79,7 @@ export async function resurfaceCandidates(
       };
       nx = await fetchAdjacentEpisodes(meta, cur, { tmdbKey: opts.tmdbKey })
         .then((adj) =>
-          adj.next && isNextAired(anime, adj.next.airDate)
+          adj.next && resurfaceAired(adj.next.airDate)
             ? { season: adj.next.season, episode: adj.next.episode }
             : null,
         )

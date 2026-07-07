@@ -320,19 +320,19 @@ export function EditorView({
   const showAdvanced = canEditAdvanced || mode.kind === "create";
 
   return (
-    <div className="flex w-full max-w-[640px] flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[10.5px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
+    <div className="flex w-full max-w-[680px] flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
           {t("Harbor identity")}
         </span>
-        <h1 className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
+        <h1 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
           {editing ? t("Edit {name}", { name: editing.name }) : t("profile.new")}
         </h1>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
-        <div className="flex items-center gap-4">
-          <AvatarRing src={avatar} size={80} onClick={() => fileRef.current?.click()} />
+      <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+        <div className="flex items-center gap-5">
+          <AvatarRing src={avatar} size={96} onClick={() => fileRef.current?.click()} />
           <input
             ref={fileRef}
             type="file"
@@ -340,7 +340,7 @@ export function EditorView({
             onChange={onPickFile}
             className="hidden"
           />
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2.5">
             <input
               type="text"
               value={name}
@@ -349,7 +349,7 @@ export function EditorView({
               autoFocus
               placeholder={t("Display name")}
               maxLength={32}
-              className="h-11 rounded-xl border border-edge bg-canvas px-3.5 text-[15px] font-medium text-ink outline-none transition-colors focus:border-ink-subtle"
+              className="h-12 rounded-xl border border-edge bg-canvas px-4 text-[15.5px] font-medium text-ink outline-none transition-colors focus:border-ink-subtle"
             />
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -437,12 +437,12 @@ export function EditorView({
             )}
           </div>
         </div>
-        <ColorPicker value={color} onChange={setColor} />
+        <div className="border-t border-edge-soft/60 pt-4">
+          <ColorPicker value={color} onChange={setColor} />
+        </div>
       </div>
 
-      {showAdvanced && !isPrimary && (
-        <KidToggle value={draftKid} onChange={setDraftKid} />
-      )}
+      {showAdvanced && !isPrimary && <KidToggle value={draftKid} onChange={setDraftKid} />}
 
       {draftKid && (
         <KidsSetupPanel

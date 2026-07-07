@@ -1,28 +1,5 @@
-import {
-  AlertTriangle,
-  ArrowDownUp,
-  ArrowDownWideNarrow,
-  ArrowUpNarrowWide,
-  Check,
-  CheckSquare,
-  ChevronDown,
-  Download,
-  FlipHorizontal2,
-  FolderPlus,
-  HardDrive,
-  Info,
-  Loader2,
-  Play,
-  RefreshCw,
-  Square,
-  Trash2,
-  Wand2,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Poster } from "@/components/poster";
-import { effectiveTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
-import { imageRequestLang } from "@/lib/providers/tmdb/tmdb-image-lang";
-import { useLocalPoster } from "./local-tab/use-local-poster";
+import { AlertTriangle, CheckSquare, FolderPlus, HardDrive, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addLocalEntries,
   localEntryToMeta,
@@ -33,76 +10,23 @@ import {
   useLocalLibrary,
   type LocalEntry,
 } from "@/lib/local-library";
-import {
-  clearSidecarCache,
-  countNfoFor,
-  findLocalArt,
-  findNfo,
-  findShowArt,
-  findShowNfo,
-  readNfo,
-} from "@/lib/local-library/sidecars";
+import { clearSidecarCache, countNfoFor } from "@/lib/local-library/sidecars";
 import { exportMovie, exportSeries, type ExportSizes } from "@/lib/local-library/export";
 import { confirmDialog } from "@/lib/dialog";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
-import { LocalBadge } from "@/components/local-badge";
 import { FilterBar, Grid, type TypeKey } from "./shared";
-import {
-  episodeLabel,
-  groupLocal,
-  localPlayerSrc,
-  ShowGroupCard,
-  type LocalGroup,
-} from "./local-tab/show-group";
+import { groupLocal, ShowGroupCard } from "./local-tab/show-group";
 import { ScanModeModal, type ScanMode } from "./local-tab/scan-mode-modal";
 import { IdentifyModal, type IdentifyResolution } from "./local-tab/identify-modal";
-import { CardIconButton, type LocalCardProps } from "./local-tab/card-actions";
+import { type LocalCardProps } from "./local-tab/card-actions";
+import { OwnedCard } from "./local-tab/movie-card";
+import { BulkBar, SortMenu, sortGroups, type LocalSortKey, type SortDir } from "./local-tab/toolbar";
+import { buildNfoEntry, buildTmdbEntry, type ScannedFile } from "./local-tab/scan";
 
-type ScannedFile = { path: string; filename: string; size: number };
 type PendingScan = { folder: string; files: ScannedFile[]; nfoCount: number };
-
 type Tr = (key: string, vars?: Record<string, string | number>) => string;
-
-type LocalSortKey = "added" | "title" | "year" | "rating" | "runtime";
-type SortDir = "asc" | "desc";
-
-// The entry that represents a card for sorting (the movie, or a series' head),
-// plus the group's effective "date added" (most recently added episode).
-function groupSortEntry(g: LocalGroup): { entry: LocalEntry; added: number } {
-  if (g.kind === "movie") return { entry: g.entry, added: g.entry.addedAt };
-  return { entry: g.head, added: Math.max(...g.episodes.map((e) => e.addedAt)) };
-}
-
-// Sort grouped cards by the chosen field/direction. Titles compare
-// alphabetically; numeric fields sort with missing values always last so absent
-// ratings/durations never dominate the top of the list.
-function sortGroups(groups: LocalGroup[], key: LocalSortKey, dir: SortDir): LocalGroup[] {
-  const mul = dir === "asc" ? 1 : -1;
-  const decorated = groups.map((g) => ({ g, ...groupSortEntry(g) }));
-  decorated.sort((a, b) => {
-    if (key === "title") {
-      return mul * (a.entry.title ?? "").localeCompare(b.entry.title ?? "", undefined, { sensitivity: "base" });
-    }
-    // When sorting by duration, TV shows (per-episode runtime) always rank above
-    // movies (feature-length) regardless of direction; runtime orders within each.
-    if (key === "runtime") {
-      const ra = a.g.kind === "show" ? 0 : 1;
-      const rb = b.g.kind === "show" ? 0 : 1;
-      if (ra !== rb) return ra - rb;
-    }
-    const pick = (e: LocalEntry, added: number): number | null =>
-      key === "year" ? e.year ?? null : key === "rating" ? e.rating ?? null : key === "runtime" ? e.runtime ?? null : added;
-    const av = pick(a.entry, a.added);
-    const bv = pick(b.entry, b.added);
-    if (av == null && bv == null) return 0;
-    if (av == null) return 1;
-    if (bv == null) return -1;
-    return mul * (av - bv);
-  });
-  return decorated.map((d) => d.g);
-}
 
 export function LocalTab() {
   const t = useT();
@@ -212,9 +136,6 @@ export function LocalTab() {
     });
   }, []);
 
-  // Export a batch: movies write a stem .nfo + stem-prefixed artwork next to the
-  // file; each series writes one tvshow.nfo + artwork at the show root plus a
-  // per-episode .nfo. Reports how many titles succeeded/failed.
   const runExport = useCallback(
     async (entries: LocalEntry[]): Promise<{ ok: number; fail: number; reason?: string }> => {
       const key = settings.tmdbKey?.trim();
@@ -334,7 +255,6 @@ export function LocalTab() {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<LocalSortKey>("added");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  // Review is tracked per title (a whole series counts once, not per episode).
   const reviewGroups = useMemo(
     () =>
       groupLocal(items)
@@ -373,7 +293,6 @@ export function LocalTab() {
   const selectAll = useCallback(() => {
     setSelected((prev) => {
       if (visible.every((i) => prev.has(i.id))) {
-        // Everything visible is already selected → clear it.
         const next = new Set(prev);
         visible.forEach((i) => next.delete(i.id));
         return next;
@@ -418,13 +337,13 @@ export function LocalTab() {
     );
   }
 
-  const cardProps = {
+  const cardProps: LocalCardProps = {
     selectMode,
     selected,
     onToggleSelect: toggleSelect,
-    onFixMatch: (e: LocalEntry | LocalEntry[]) => setIdentify(Array.isArray(e) ? e : [e]),
+    onFixMatch: (e) => setIdentify(Array.isArray(e) ? e : [e]),
     onExport: onExportOne,
-    onOpenDetail: (e: LocalEntry) => {
+    onOpenDetail: (e) => {
       const m = localEntryToMeta(e);
       if (m) openMeta(m);
     },
@@ -531,162 +450,6 @@ export function LocalTab() {
   );
 }
 
-function SortMenu({
-  sortKey,
-  setSortKey,
-  sortDir,
-  setSortDir,
-}: {
-  sortKey: LocalSortKey;
-  setSortKey: (k: LocalSortKey) => void;
-  sortDir: SortDir;
-  setSortDir: (d: SortDir) => void;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const options: Array<[LocalSortKey, string]> = [
-    ["added", t("Date added")],
-    ["title", t("Title")],
-    ["year", t("Year")],
-    ["rating", t("Rating")],
-    ["runtime", t("Duration")],
-  ];
-  const activeLabel = options.find(([k]) => k === sortKey)?.[1] ?? "";
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-  const dirLabel = sortDir === "asc" ? t("Ascending") : t("Descending");
-  return (
-    <div className="flex items-center gap-1.5">
-      <div ref={ref} className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-raised px-3.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
-        >
-          <ArrowDownUp size={13} strokeWidth={2.2} />
-          {activeLabel}
-          <ChevronDown size={13} className={`transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
-        {open && (
-          <div className="absolute end-0 top-[calc(100%+6px)] z-50 w-44 rounded-xl border border-edge bg-elevated p-1 shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in">
-            {options.map(([k, label]) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => {
-                  setSortKey(k);
-                  setOpen(false);
-                }}
-                className={`flex h-9 w-full items-center justify-between gap-3 rounded-lg px-3 text-start text-[13px] transition-colors ${
-                  sortKey === k ? "bg-raised text-ink" : "text-ink-muted hover:bg-raised/60 hover:text-ink"
-                }`}
-              >
-                <span>{label}</span>
-                {sortKey === k && <Check size={14} strokeWidth={2.4} className="text-accent" />}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => setSortDir(sortDir === "asc" ? "desc" : "asc")}
-        title={dirLabel}
-        aria-label={dirLabel}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-raised text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
-      >
-        {sortDir === "asc" ? (
-          <ArrowUpNarrowWide size={15} strokeWidth={2.2} />
-        ) : (
-          <ArrowDownWideNarrow size={15} strokeWidth={2.2} />
-        )}
-      </button>
-    </div>
-  );
-}
-
-function BulkBar({
-  count,
-  allSelected,
-  onSelectAll,
-  onInvert,
-  onDelete,
-  onExport,
-  onCancel,
-}: {
-  count: number;
-  allSelected: boolean;
-  onSelectAll: () => void;
-  onInvert: () => void;
-  onDelete: () => void;
-  onExport: () => void;
-  onCancel: () => void;
-}) {
-  const t = useT();
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-elevated/70 px-3.5 py-2.5 ring-1 ring-edge-soft">
-      <span className="text-[12.5px] font-semibold text-ink">
-        {count === 1 ? t("1 selected") : t("{n} selected", { n: count })}
-      </span>
-      <button
-        type="button"
-        onClick={onSelectAll}
-        className="flex h-8 items-center gap-1.5 rounded-full bg-raised px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
-      >
-        <CheckSquare size={13} strokeWidth={2.2} />
-        {allSelected ? t("Deselect all") : t("Select all")}
-      </button>
-      <button
-        type="button"
-        onClick={onInvert}
-        className="flex h-8 items-center gap-1.5 rounded-full bg-raised px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
-      >
-        <FlipHorizontal2 size={13} strokeWidth={2.2} />
-        {t("Invert")}
-      </button>
-      <div className="ms-auto flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onExport}
-          disabled={count === 0}
-          className="flex h-8 items-center gap-1.5 rounded-full bg-raised px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas hover:text-ink disabled:opacity-40"
-        >
-          <Download size={13} strokeWidth={2.2} />
-          {t("Export")}
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={count === 0}
-          className="flex h-8 items-center gap-1.5 rounded-full bg-danger/90 px-3 text-[12px] font-semibold text-white transition-colors hover:bg-danger disabled:opacity-40"
-        >
-          <Trash2 size={13} strokeWidth={2.2} />
-          {t("Remove")}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex h-8 items-center rounded-full px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:text-ink"
-        >
-          {t("Cancel")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function scanLabel(progress: { found: number; total: number } | null, t: Tr): string {
   if (!progress) return t("Scanning");
   return `${progress.found} / ${progress.total}`;
@@ -729,354 +492,4 @@ function EmptyOwned({
       )}
     </div>
   );
-}
-
-function OwnedCard({
-  entry,
-  selectMode,
-  selected,
-  onToggleSelect,
-  onFixMatch,
-  onExport,
-  onOpenDetail,
-}: { entry: LocalEntry } & LocalCardProps) {
-  const t = useT();
-  const [confirm, setConfirm] = useState(false);
-  const { openPlayer } = useView();
-  const isSelected = selected.has(entry.id);
-  const poster = useLocalPoster(entry);
-
-  const epLabel = episodeLabel(entry);
-  const onActivate = useCallback(() => {
-    if (selectMode) onToggleSelect([entry.id]);
-    else openPlayer(localPlayerSrc(entry));
-  }, [selectMode, entry, openPlayer, onToggleSelect]);
-
-  return (
-    <div
-      className="group relative flex flex-col gap-2 text-start"
-      onMouseLeave={() => setConfirm(false)}
-    >
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={onActivate}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onActivate();
-          }
-        }}
-        className={`relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] outline-none ring-offset-2 ring-offset-canvas focus-visible:ring-2 focus-visible:ring-ink ${
-          isSelected ? "ring-2 ring-accent" : ""
-        }`}
-      >
-        <Poster
-          src={poster.src}
-          onError={poster.onError}
-          seed={entry.id}
-          lazy
-          className="h-full w-full transition-transform duration-200 group-hover:scale-[1.02]"
-        />
-        <LocalBadge label={entry.resolution ?? t("local")} className="absolute start-2 top-2" />
-        {entry.needsReview && !selectMode && (
-          <span className="absolute bottom-2 start-2 inline-flex items-center gap-1 rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-black">
-            <AlertTriangle size={9} strokeWidth={2.6} />
-            {t("review")}
-          </span>
-        )}
-        {selectMode && (
-          <span
-            className={`absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-md ${
-              isSelected ? "bg-accent text-white" : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
-            }`}
-          >
-            {isSelected ? <CheckSquare size={14} strokeWidth={2.4} /> : <Square size={14} strokeWidth={2.2} />}
-          </span>
-        )}
-        {!selectMode && (
-          <>
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-canvas/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-canvas shadow-[0_4px_14px_rgba(0,0,0,0.45)]">
-                <Play size={18} strokeWidth={2.4} fill="currentColor" className="ml-0.5" />
-              </span>
-            </span>
-            <div className="absolute end-2 top-2 flex flex-col gap-1.5">
-              {(entry.tmdbId != null || entry.imdbId) && (
-                <CardIconButton title={t("Open details")} onClick={() => onOpenDetail(entry)}>
-                  <Info size={11} strokeWidth={2.2} />
-                </CardIconButton>
-              )}
-              <CardIconButton
-                title={t("Fix match")}
-                onClick={() => onFixMatch([entry])}
-              >
-                <Wand2 size={11} strokeWidth={2.2} />
-              </CardIconButton>
-              {entry.tmdbId != null && (
-                <CardIconButton title={t("Export .nfo and artwork")} onClick={() => onExport(entry)}>
-                  <Download size={11} strokeWidth={2.2} />
-                </CardIconButton>
-              )}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm) {
-                    removeLocalEntry(entry.id);
-                    setConfirm(false);
-                  } else {
-                    setConfirm(true);
-                  }
-                }}
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
-                  confirm
-                    ? "bg-danger"
-                    : "bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"
-                }`}
-                aria-label={confirm ? t("Confirm remove") : t("Remove from library")}
-              >
-                {confirm ? <RefreshCw size={11} strokeWidth={2.4} /> : <Trash2 size={11} strokeWidth={2.2} />}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-      <button type="button" onClick={onActivate} className="text-start">
-        <p className="truncate text-[13px] font-medium text-ink transition-colors hover:text-accent" title={entry.filename}>
-          {entry.title}
-        </p>
-        {epLabel ? (
-          <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">
-            {epLabel}
-            {entry.year ? ` · ${entry.year}` : ""}
-          </p>
-        ) : entry.year != null ? (
-          <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">
-            {entry.year}
-            {entry.type === "show" && t(" · Series")}
-          </p>
-        ) : null}
-      </button>
-    </div>
-  );
-}
-
-// Build a library entry by matching the filename against TMDB (default mode).
-async function buildTmdbEntry(
-  f: ScannedFile,
-  parsed: ReturnType<typeof parseFilename>,
-  tmdbKey: string | null,
-): Promise<LocalEntry> {
-  let tmdb: TmdbLookup = {};
-  if (tmdbKey) tmdb = await tmdbLookup(tmdbKey, parsed.title, parsed.year, parsed.type).catch(() => ({}));
-  const needsReview = tmdbKey ? lowConfidence(parsed, tmdb) : false;
-  // Once confidently identified, show the real TMDB name (and its year) instead of
-  // the messy filename-derived title. Low-confidence matches keep the parsed name
-  // so the user can still recognise and fix them in the review queue.
-  const identified = tmdb.tmdbId != null && !needsReview;
-  return {
-    id: hashPath(f.path),
-    path: f.path,
-    filename: f.filename,
-    title: identified ? tmdb.matchedTitle?.trim() || parsed.title : parsed.title,
-    year: (identified ? tmdb.matchedYear : null) ?? parsed.year,
-    type: parsed.type,
-    resolution: parsed.resolution,
-    rating: tmdb.rating ?? null,
-    runtime: tmdb.runtime ?? null,
-    poster: tmdb.poster ?? null,
-    tmdbId: tmdb.tmdbId ?? null,
-    imdbId: tmdb.imdbId ?? null,
-    season: parsed.season,
-    episode: parsed.episode,
-    addedAt: Date.now(),
-    source: "tmdb",
-    needsReview: needsReview || undefined,
-  };
-}
-
-// Build a library entry from a .nfo sidecar and local artwork, filling gaps from TMDB.
-async function buildNfoEntry(
-  f: ScannedFile,
-  parsed: ReturnType<typeof parseFilename>,
-  tmdbKey: string | null,
-): Promise<LocalEntry> {
-  const nfoPath = await findNfo(f.path);
-  const nfo = nfoPath ? await readNfo(nfoPath) : null;
-
-  // For a show, a per-episode <episodedetails> .nfo carries the EPISODE title and
-  // the episode's own ids/thumbnail — using those would split one series into a
-  // card per episode. The series identity + artwork live in the folder-level
-  // tvshow.nfo (often one directory up from the episodes), so read that instead.
-  const isShow = parsed.type === "show";
-  let seriesNfo: Awaited<ReturnType<typeof readNfo>> = null;
-  if (isShow) {
-    const showNfoPath = await findShowNfo(f.path);
-    seriesNfo = showNfoPath ? await readNfo(showNfoPath) : null;
-  }
-  const meta = isShow ? seriesNfo : nfo;
-
-  const files = isShow ? await findShowArt(f.path, parsed.season) : await findLocalArt(f.path);
-
-  // Artwork priority per slot: a real file on disk (season poster / poster.jpg /
-  // fanart …), then the URL the series .nfo references (TMM/Kodi embed TMDB art
-  // URLs), then nothing. Never the per-episode thumbnail.
-  const art = {
-    poster: files.poster ?? meta?.art?.poster,
-    logo: files.logo ?? meta?.art?.logo,
-    backdrop: files.backdrop ?? meta?.art?.backdrop,
-  };
-
-  // Title is always the SERIES name for shows (tvshow.nfo <title>, else the
-  // episode's <showtitle>, else the filename-derived show title) — never the
-  // per-episode <title>.
-  let title = (
-    isShow ? meta?.title || nfo?.showTitle || parsed.title : nfo?.title || parsed.title
-  ).trim();
-  const year = meta?.year ?? parsed.year;
-  let tmdbId = meta?.tmdbId ?? null;
-  let imdbId = meta?.imdbId ?? null;
-  let poster: string | null = null;
-  let rating = meta?.rating ?? null;
-  let runtime = meta?.runtime ?? null;
-
-  // If the sidecar didn't identify the title, match it against TMDB to fill in the
-  // ids and a poster. When it already has a tmdbId, the card live-fetches any
-  // missing poster/art from TMDB in the current image language, so no search here.
-  if (tmdbKey && !tmdbId) {
-    const look = await tmdbLookup(tmdbKey, title, year, parsed.type).catch(() => ({} as TmdbLookup));
-    if (look.tmdbId) tmdbId = look.tmdbId;
-    if (!imdbId && look.imdbId) imdbId = look.imdbId;
-    if (!art.poster && look.poster) poster = look.poster;
-    if (rating == null && look.rating != null) rating = look.rating;
-    if (runtime == null && look.runtime != null) runtime = look.runtime;
-    // Prefer the real TMDB name when the .nfo didn't provide a clean series title.
-    const hadNfoTitle = isShow ? !!(meta?.title || nfo?.showTitle) : !!nfo?.title;
-    if (!hadNfoTitle && look.matchedTitle) title = look.matchedTitle.trim();
-  }
-
-  const localArt = art.poster || art.logo || art.backdrop ? art : undefined;
-  const needsReview = !tmdbId && !imdbId && !art.poster;
-
-  return {
-    id: hashPath(f.path),
-    path: f.path,
-    filename: f.filename,
-    title,
-    year,
-    type: parsed.type,
-    resolution: parsed.resolution,
-    rating,
-    runtime,
-    poster,
-    tmdbId,
-    imdbId,
-    season: parsed.season,
-    episode: parsed.episode,
-    addedAt: Date.now(),
-    source: "nfo",
-    localArt,
-    needsReview: needsReview || undefined,
-  };
-}
-
-type TmdbLookup = {
-  tmdbId?: number;
-  imdbId?: string;
-  poster?: string;
-  matchedTitle?: string;
-  matchedYear?: number | null;
-  rating?: number;
-  runtime?: number;
-};
-
-// Heuristic: is a TMDB match too weak to trust? Flags for review when there was no
-// match at all, the years disagree by more than a year, or the matched title
-// shares no words with the parsed title (a likely wrong pick).
-function lowConfidence(parsed: ReturnType<typeof parseFilename>, tmdb: TmdbLookup): boolean {
-  if (!tmdb.tmdbId) return true;
-  if (
-    parsed.year != null &&
-    tmdb.matchedYear != null &&
-    Math.abs(parsed.year - tmdb.matchedYear) > 1
-  ) {
-    return true;
-  }
-  if (tmdb.matchedTitle) {
-    const a = tokenize(parsed.title);
-    const b = tokenize(tmdb.matchedTitle);
-    if (a.length && b.length && !a.some((w) => b.includes(w))) return true;
-  }
-  return false;
-}
-
-function tokenize(s: string): string[] {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .split(" ")
-    .filter((w) => w.length > 1);
-}
-
-async function tmdbLookup(
-  key: string,
-  title: string,
-  year: number | null,
-  type: "movie" | "show",
-): Promise<TmdbLookup> {
-  const path = type === "movie" ? "movie" : "tv";
-  const params = new URLSearchParams({ api_key: key, query: title });
-  const lang = effectiveTmdbLanguage() || imageRequestLang();
-  if (lang) params.set("language", lang);
-  if (year && type === "movie") params.set("year", String(year));
-  if (year && type === "show") params.set("first_air_date_year", String(year));
-  const r = await fetch(`https://api.themoviedb.org/3/search/${path}?${params}`);
-  if (!r.ok) return {};
-  const json = await r.json();
-  const top = json.results?.[0];
-  if (!top) return {};
-  // One details call (with external_ids appended) gives the imdb id, rating, and
-  // runtime together — same request count as the old external_ids-only fetch.
-  let imdbId: string | undefined;
-  let rating: number | undefined;
-  let runtime: number | undefined;
-  try {
-    const dparams = new URLSearchParams({ api_key: key, append_to_response: "external_ids" });
-    if (lang) dparams.set("language", lang);
-    const dr = await fetch(`https://api.themoviedb.org/3/${path}/${top.id}?${dparams}`);
-    if (dr.ok) {
-      const dj = await dr.json();
-      const imdb = dj.imdb_id ?? dj.external_ids?.imdb_id;
-      if (typeof imdb === "string" && imdb.startsWith("tt")) imdbId = imdb;
-      if (typeof dj.vote_average === "number" && dj.vote_average > 0) rating = dj.vote_average;
-      if (type === "movie" && typeof dj.runtime === "number" && dj.runtime > 0) runtime = dj.runtime;
-      if (type === "show" && Array.isArray(dj.episode_run_time) && dj.episode_run_time[0] > 0) {
-        runtime = dj.episode_run_time[0];
-      }
-    }
-  } catch {
-    /* noop */
-  }
-  if (rating == null && typeof top.vote_average === "number" && top.vote_average > 0) {
-    rating = top.vote_average;
-  }
-  const date: string | undefined = top.release_date ?? top.first_air_date;
-  return {
-    tmdbId: top.id,
-    imdbId,
-    poster: top.poster_path ? `https://image.tmdb.org/t/p/w342${top.poster_path}` : undefined,
-    matchedTitle: top.title ?? top.name,
-    matchedYear: date ? parseInt(date.slice(0, 4), 10) : null,
-    rating,
-    runtime,
-  };
-}
-
-function hashPath(path: string): string {
-  let hash = 5381;
-  for (let i = 0; i < path.length; i++) {
-    hash = ((hash << 5) + hash + path.charCodeAt(i)) | 0;
-  }
-  return `local-${(hash >>> 0).toString(36)}`;
 }

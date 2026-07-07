@@ -55,20 +55,16 @@ async function resolveImdb(key: string, kind: "movie" | "tv", id: number): Promi
   }
 }
 
-// Strip trailing episode markers from a seed query so a stuck "Taboo S01 E07"
-// searches as "Taboo".
 function seedQuery(title: string): string {
-  return title
-    .replace(/\bs\d{1,2}[\s._-]*e\d{1,3}.*$/i, "")
-    .replace(/\b\d{1,2}x\d{1,3}.*$/i, "")
-    .replace(/\bseason[\s._-]*\d.*$/i, "")
-    .trim() || title;
+  return (
+    title
+      .replace(/\bs\d{1,2}[\s._-]*e\d{1,3}.*$/i, "")
+      .replace(/\b\d{1,2}x\d{1,3}.*$/i, "")
+      .replace(/\bseason[\s._-]*\d.*$/i, "")
+      .trim() || title
+  );
 }
 
-// Search-and-match popup: seeded with the entry's parsed title, it lets the user
-// pick the correct TMDB title for a scanned file. Used from the "Needs review"
-// queue and the per-card "Fix match" action. `target` is the group of entries the
-// match applies to — one for a movie, all episodes for a series.
 export function IdentifyModal({
   target,
   onClose,
@@ -88,7 +84,6 @@ export function IdentifyModal({
   const [loading, setLoading] = useState(false);
   const [picking, setPicking] = useState<number | null>(null);
 
-  // Seed state whenever a new target opens the modal.
   useEffect(() => {
     if (!head) return;
     setKind(head.type === "show" ? "tv" : "movie");
@@ -105,7 +100,6 @@ export function IdentifyModal({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [head, onClose]);
 
-  // Debounced live search.
   useEffect(() => {
     if (!head || !key) return;
     const q = query.trim();

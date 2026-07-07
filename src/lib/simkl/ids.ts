@@ -1,9 +1,15 @@
 import { anidbToMal, anilistToMal, kitsuToMal } from "@/lib/providers/anime-mapping";
-import type { SimklTarget } from "./types";
+import type { SimklIds, SimklTarget } from "./types";
 
 export type IdResolution =
   | { ok: true; target: SimklTarget }
   | { ok: false; reason: "anime" | "unrecognized" };
+
+export function simklTargetIds(target: SimklTarget): SimklIds {
+  if (target.kind === "episode") return target.show.ids;
+  if (target.kind === "anime-episode") return target.anime.ids;
+  return target.ids;
+}
 
 async function animeIdToMal(harborId: string): Promise<number | null> {
   const n = Number(harborId.split(":")[1]);

@@ -1,8 +1,3 @@
-// Discovery and parsing of Kodi / TinyMediaManager sidecar files that live next
-// to a video file: a `.nfo` metadata document and local poster/backdrop/logo
-// artwork. Everything here runs against the real filesystem via the Tauri fs
-// plugin, so it only works inside the desktop app.
-
 export type LocalArt = { poster?: string; logo?: string; backdrop?: string };
 
 export type ParsedNfo = {
@@ -11,14 +6,9 @@ export type ParsedNfo = {
   tmdbId?: number | null;
   imdbId?: string | null;
   plot?: string | null;
-  // The series title, present on per-episode <episodedetails> .nfo files whose
-  // own <title> is the episode name. Used to recover the show name when no
-  // folder-level tvshow.nfo is available.
   showTitle?: string;
   rating?: number | null;
   runtime?: number | null;
-  // Artwork the .nfo itself references (TinyMediaManager/Kodi embed TMDB URLs in
-  // <thumb>/<fanart> tags). May be remote URLs or local paths.
   art?: LocalArt;
 };
 
@@ -28,7 +18,6 @@ async function pathMod() {
   return await import("@tauri-apps/api/path");
 }
 
-// Directory + extension-less stem for a video file path.
 async function splitVideoPath(videoPath: string): Promise<{ dir: string; stem: string }> {
   const p = await pathMod();
   const dir = await p.dirname(videoPath);
@@ -37,15 +26,12 @@ async function splitVideoPath(videoPath: string): Promise<{ dir: string; stem: s
   return { dir, stem };
 }
 
-// Per-scan cache of directory listings, so probing many files in the same folder
-// costs one readDir. Cleared at the start of a scan and after writing artwork.
 const dirCache = new Map<string, Map<string, string>>();
 
 export function clearSidecarCache(): void {
   dirCache.clear();
 }
 
-// Case-insensitive listing of a directory as a lowercase-name -> actual-name map.
 async function dirIndex(dir: string): Promise<Map<string, string>> {
   const cached = dirCache.get(dir);
   if (cached) return cached;
@@ -58,14 +44,12 @@ async function dirIndex(dir: string): Promise<Map<string, string>> {
       if (e.isFile) out.set(e.name.toLowerCase(), e.name);
     }
   } catch {
-    /* unreadable dir — treat as empty */
+    /* unreadable dir */
   }
   dirCache.set(dir, out);
   return out;
 }
 
-// How many of the given video files have an adjacent .nfo sidecar. Used to hint
-// the scan-mode popup. Directory listings are cached, so this is cheap.
 export async function countNfoFor(videoPaths: string[]): Promise<number> {
   if (!isTauri) return 0;
   let count = 0;
@@ -75,8 +59,6 @@ export async function countNfoFor(videoPaths: string[]): Promise<number> {
   return count;
 }
 
-// Resolve the first candidate filename that exists in the directory index,
-// returning the absolute path (preserving the real on-disk casing).
 async function resolveIn(
   dir: string,
   index: Map<string, string>,
@@ -90,16 +72,12 @@ async function resolveIn(
   return null;
 }
 
-// The video's own directory and its parent — TV episodes usually live in a
-// `Season NN` / `SNN` subfolder while the series-level tvshow.nfo and artwork
-// (poster.jpg, fanart.jpg, seasonNN-poster.jpg …) sit one level up.
 async function dirAndParent(dir: string): Promise<string[]> {
   const p = await pathMod();
   const parent = await p.dirname(dir);
   return parent && parent !== dir ? [dir, parent] : [dir];
 }
 
-// Resolve the first candidate across several directories, nearest dir first.
 async function resolveInDirs(dirs: string[], candidates: string[]): Promise<string | null> {
   for (const dir of dirs) {
     const hit = await resolveIn(dir, await dirIndex(dir), candidates);
@@ -108,8 +86,6 @@ async function resolveInDirs(dirs: string[], candidates: string[]): Promise<stri
   return null;
 }
 
-// Find the .nfo sidecar for a video: `<stem>.nfo` first, then a folder-level
-// `movie.nfo` / `tvshow.nfo`.
 export async function findNfo(videoPath: string): Promise<string | null> {
   if (!isTauri) return null;
   const { dir, stem } = await splitVideoPath(videoPath);
@@ -117,8 +93,6 @@ export async function findNfo(videoPath: string): Promise<string | null> {
   return resolveIn(dir, index, [`${stem}.nfo`, "movie.nfo", "tvshow.nfo"]);
 }
 
-// Find local poster / backdrop / logo artwork next to a video, following the
-// common Kodi naming conventions (stem-prefixed first, then folder-level).
 export async function findLocalArt(videoPath: string): Promise<LocalArt> {
   if (!isTauri) return {};
   const { dir, stem } = await splitVideoPath(videoPath);
@@ -141,19 +115,12 @@ export async function findLocalArt(videoPath: string): Promise<LocalArt> {
   return art;
 }
 
-// Find the series-level tvshow.nfo for an episode file: in the episode's own
-// directory, else one level up (the common `Show/Season NN/episode` layout).
 export async function findShowNfo(videoPath: string): Promise<string | null> {
   if (!isTauri) return null;
   const { dir } = await splitVideoPath(videoPath);
   return resolveInDirs(await dirAndParent(dir), ["tvshow.nfo"]);
 }
 
-// Find series-level artwork for an episode file. Uses the whole-series poster
-// (poster.jpg/folder.jpg) — NOT a per-season poster, which is the wrong image
-// for a series card — and only falls back to a season poster when no series
-// poster exists at all. Searches the parent directory too, since art usually
-// lives beside tvshow.nfo rather than next to the video.
 export async function findShowArt(
   videoPath: string,
   season: number | null,
@@ -179,7 +146,6 @@ export async function findShowArt(
   return art;
 }
 
-// Read + parse a .nfo file at the given path. Returns null when unreadable.
 export async function readNfo(nfoPath: string): Promise<ParsedNfo | null> {
   if (!isTauri) return null;
   try {
@@ -191,8 +157,6 @@ export async function readNfo(nfoPath: string): Promise<ParsedNfo | null> {
   }
 }
 
-// Parse a Kodi-style .nfo XML string. Handles <movie>, <tvshow>, and
-// <episodedetails> roots and the various id encodings TMM/Kodi have used.
 export function parseNfo(xml: string): ParsedNfo {
   const out: ParsedNfo = {};
   let doc: Document;
@@ -217,18 +181,15 @@ export function parseNfo(xml: string): ParsedNfo {
 
   out.plot = text("plot") ?? text("outline") ?? null;
 
-  // rating: a plain <rating> or the default <ratings><rating><value>.
   const ratingRaw =
     text("rating") ?? doc.querySelector("ratings rating value")?.textContent?.trim();
   const ratingNum = ratingRaw ? parseFloat(ratingRaw) : NaN;
   out.rating = Number.isFinite(ratingNum) && ratingNum > 0 ? ratingNum : null;
 
-  // runtime in minutes (strip any stray non-digits).
   const runtimeRaw = text("runtime");
   const runtimeNum = runtimeRaw ? parseInt(runtimeRaw.replace(/\D/g, ""), 10) : NaN;
   out.runtime = Number.isFinite(runtimeNum) && runtimeNum > 0 ? runtimeNum : null;
 
-  // ids: prefer <uniqueid type="..."> then legacy <tmdbid>/<imdbid>/<id>.
   let tmdb: string | undefined;
   let imdb: string | undefined;
   for (const el of Array.from(doc.querySelectorAll("uniqueid"))) {
@@ -253,11 +214,6 @@ export function parseNfo(xml: string): ParsedNfo {
   return out;
 }
 
-// Extract poster/logo/backdrop from a .nfo's <thumb>/<fanart> tags. Movies carry a
-// plain <thumb aspect="poster">; TV shows often carry ONLY per-season posters, which
-// are the wrong image for a whole-series card — so we take only a non-season poster
-// here and let the series poster be fetched from TMDB otherwise. Values are usually
-// TMDB URLs.
 function parseNfoArt(doc: Document): LocalArt | undefined {
   const thumbs = Array.from(doc.querySelectorAll("thumb"));
   const val = (el: Element | undefined) => el?.textContent?.trim() || undefined;

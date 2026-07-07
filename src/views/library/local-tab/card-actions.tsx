@@ -1,7 +1,5 @@
 import type { LocalEntry } from "@/lib/local-library";
 
-// Shared props threaded from the Local tab into each card (movie card and show
-// group card) for selection mode and the per-card fix-match / export actions.
 export type LocalCardProps = {
   selectMode: boolean;
   selected: Set<string>;
@@ -11,7 +9,6 @@ export type LocalCardProps = {
   onOpenDetail: (entry: LocalEntry) => void;
 };
 
-// A small circular hover-action button used on library cards.
 export function CardIconButton({
   title,
   onClick,

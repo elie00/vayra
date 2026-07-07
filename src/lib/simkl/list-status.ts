@@ -1,4 +1,5 @@
 import { simklRequest } from "./client";
+import { simklTargetIds } from "./ids";
 import { subscribeSession } from "./session";
 import type { SimklTarget } from "./types";
 
@@ -64,7 +65,7 @@ function idKeys(ids: RawIds | undefined, kind: "movie" | "show"): string[] {
 }
 
 function targetKeys(target: SimklTarget): string[] {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const ids = simklTargetIds(target);
   return idKeys(ids as RawIds, target.kind === "movie" ? "movie" : "show");
 }
 
@@ -141,7 +142,7 @@ export async function setSimklStatus(
   target: SimklTarget,
   status: WatchlistStatus,
 ): Promise<WatchlistStatus> {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const ids = simklTargetIds(target);
   const bucket = target.kind === "movie" ? "movies" : "shows";
   const r = await simklRequest<{ added?: Record<string, Array<{ to?: string }>> }>(
     "/sync/add-to-list",
@@ -155,7 +156,7 @@ export async function setSimklStatus(
 }
 
 export async function clearSimklStatus(target: SimklTarget): Promise<void> {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const ids = simklTargetIds(target);
   const bucket = target.kind === "movie" ? "movies" : "shows";
   await simklRequest("/sync/history/remove", { method: "POST", body: { [bucket]: [{ ids }] } });
   const statuses = (await loadData()).statuses;

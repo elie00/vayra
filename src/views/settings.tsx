@@ -15,6 +15,7 @@ import { P2PPanel } from "./settings/p2p-panel";
 import { AnimePanel } from "./settings/anime-panel";
 import { TraktPanel } from "./settings/trakt-panel";
 import { AnilistPanel } from "./settings/anilist-panel";
+import { MalPanel } from "./settings/mal-panel";
 import { SimklPanel } from "./settings/simkl-panel";
 import { LetterboxdPanel } from "./settings/letterboxd-panel";
 import { RelaySection, type RelayMode } from "./settings/relay-section";
@@ -51,6 +52,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   anilist: {
     label: "AniList",
     sub: "Connect your AniList account to show your anime lists as rails on the Anime page.",
+  },
+  mal: {
+    label: "MyAnimeList",
+    sub: "Connect your MyAnimeList account to sync your watch progress and browse your list.",
   },
   simkl: {
     label: "Simkl",
@@ -308,6 +313,8 @@ export function Settings() {
           {active === "trakt" && <TraktPanel />}
 
           {active === "anilist" && <AnilistPanel />}
+
+          {active === "mal" && <MalPanel />}
 
           {active === "simkl" && <SimklPanel />}
 

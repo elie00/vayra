@@ -3,6 +3,7 @@ import { dwarn } from "@/lib/debug";
 import { hasUncachedMarker } from "./cached";
 import { magnetFromHash, type DebridResult, type DebridStore, type DirectLink } from "@/lib/debrid/types";
 import { lastEngineAddError, torrentEngineAdd, torrentEngineSelect } from "@/lib/torrent/local-engine";
+import { fullDownloadEnabled, startFullDownload } from "@/lib/torrent/full-download";
 import {
   directTorrentEnabled,
   engineP2pEligible,
@@ -60,10 +61,10 @@ export async function resolveStream(
     return { ok: false, code: engineFailureCode(), tried };
   }
 
-  const skipUncachedDirect =
+  const probeUncachedDirect =
     userCommitted && hasUncachedMarker(stream) && !!stream.infoHash && directTorrentEnabled();
 
-  if (stream.url && stream.url !== "#" && !skipUncachedDirect) {
+  if (stream.url && stream.url !== "#") {
     const headers = stream.behaviorHints?.proxyHeaders?.request ?? stream.behaviorHints?.headers;
     const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName;
     if (!stream.infoHash && !VIDEO_EXT_RE.test(stream.url)) {
@@ -80,7 +81,7 @@ export async function resolveStream(
       notWebReady: stream.behaviorHints?.notWebReady,
       subtitles: stream.subtitles?.map((s) => ({ url: s.url, lang: s.lang, id: s.id })),
     };
-    const ok = await validateLink(data, expectedSize, headers, signal, false);
+    const ok = await validateLink(data, expectedSize, headers, signal, probeUncachedDirect);
     if (ok) return { ok: true, data, via: "direct" };
     tried.push({ slug: "direct", code: "stub-or-error-video" });
     if (debrids.length === 0 || !stream.infoHash) {
@@ -119,7 +120,7 @@ export async function resolveStream(
   const cachedMap = stream.cached ?? {};
   const libMap = (stream as { inLibrary?: Record<string, boolean> }).inLibrary ?? {};
   const anyCached = sorted.some((d) => cachedMap[d.slug] === true || libMap[d.slug] === true);
-  if (userCommitted && !anyCached && engineP2pEligible(stream)) {
+  if (userCommitted && !anyCached && hasUncachedMarker(stream) && engineP2pEligible(stream)) {
     const direct = await tryTorrentEngine(stream, hint);
     if (direct) return { ok: true, data: direct, via: "p2p" };
   }
@@ -256,8 +257,10 @@ async function tryLocalEngine(
     chosenIdx = selectEngineFileIdx(added.files, season, episode);
   }
   await torrentEngineSelect(added.info_hash, chosenIdx);
+  const engineUrl = `${added.stream_base}/${added.info_hash.toLowerCase()}/${chosenIdx}`;
+  if (fullDownloadEnabled()) startFullDownload(added.info_hash.toLowerCase(), engineUrl);
   return {
-    url: `${added.stream_base}/${added.info_hash.toLowerCase()}/${chosenIdx}`,
+    url: engineUrl,
     fileIdx: chosenIdx,
     filename: filename ?? undefined,
     notWebReady: stream.behaviorHints?.notWebReady,

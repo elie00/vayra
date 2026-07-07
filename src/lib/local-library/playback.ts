@@ -6,7 +6,6 @@ import { openWatchLocalConfirm } from "@/lib/player/watch-local-confirm";
 
 export type LocalPlaybackMode = "ask" | "local" | "stream";
 
-// Parse a catalog meta id into a TMDB id / IMDb id for local matching.
 function idsFromMeta(meta: Meta, extraImdb?: string | null): { tmdbId: number | null; imdbId: string | null } {
   let tmdbId: number | null = null;
   let imdbId: string | null = extraImdb ?? null;
@@ -17,8 +16,6 @@ function idsFromMeta(meta: Meta, extraImdb?: string | null): { tmdbId: number | 
   return { tmdbId, imdbId };
 }
 
-// The local file that would satisfy playing this meta (optionally a specific
-// episode), or null if there's nothing on disk for it.
 export function resolveLocalPlay(
   meta: Meta,
   episode?: { season: number; episode: number } | null,
@@ -32,10 +29,6 @@ export function resolveLocalPlay(
   return findLocalMovie(tmdbId, imdbId);
 }
 
-// Decide between playing a local file and streaming, honoring the user's mode.
-// - no local / mode "stream" → playStream()
-// - autoplay, or mode "local"  → playLocal() (no prompt)
-// - manual + mode "ask"        → prompt; the choice (optionally remembered) routes it
 export function playLocalAware(opts: {
   meta: Meta;
   episode?: { season: number; episode: number } | null;

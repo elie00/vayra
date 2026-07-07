@@ -173,9 +173,12 @@ function IconHotkeys(p: IconProps) {
 function IconAdvanced(p: IconProps) {
   return (
     <IconBase {...p}>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 5.5l2.6 6.5L12 18.5l-2.6-6.5z" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="12" r="1.2" fill="var(--color-canvas)" stroke="none" />
+      <path d="M4 7h7M17 7h3" />
+      <path d="M4 12h2M12 12h8" />
+      <path d="M4 17h8M18 17h2" />
+      <circle cx="14" cy="7" r="2.3" fill="var(--color-canvas)" />
+      <circle cx="9" cy="12" r="2.3" fill="var(--color-canvas)" />
+      <circle cx="15" cy="17" r="2.3" fill="var(--color-canvas)" />
     </IconBase>
   );
 }
@@ -234,6 +237,18 @@ function IconAnilist(p: IconProps) {
       <path d="M8 16.5l3-9 3 9" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M9 13.5h4" strokeLinecap="round" />
       <path d="M15.5 7.5v9h2" strokeLinecap="round" strokeLinejoin="round" />
+    </IconBase>
+  );
+}
+
+function IconMal(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
+      <path d="M6 15V9l2.5 3 2.5-3v6" strokeLinejoin="round" />
+      <path d="M11.5 15 13.25 9 15 15" strokeLinejoin="round" />
+      <path d="M12.2 12.5h2.1" />
+      <path d="M15.5 9v6h3.8" strokeLinejoin="round" />
     </IconBase>
   );
 }
@@ -330,7 +345,13 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         id: "anilist",
         label: "AniList",
         Icon: IconAnilist,
-        keywords: ["anime", "lists", "watching", "mal", "kitsu"],
+        keywords: ["anime", "lists", "watching", "kitsu"],
+      },
+      {
+        id: "mal",
+        label: "MyAnimeList",
+        Icon: IconMal,
+        keywords: ["mal", "myanimelist", "anime", "lists", "watching", "jikan"],
       },
       {
         id: "simkl",
@@ -608,6 +629,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Random avatar", section: "account", anchorTitle: "Harbor identity", keywords: ["random", "shuffle", "surprise avatar", "dice"] },
   { label: "Reset to Stremio avatar", section: "account", anchorTitle: "Harbor identity", keywords: ["reset avatar", "default avatar", "remove photo", "revert", "reset to default"] },
   { label: "Your color", section: "account", anchorTitle: "Harbor identity", keywords: ["color", "cursor color", "chat color", "name pill", "custom color", "hex picker", "swatch"] },
+  { label: "Profiles (switch, add, edit)", section: "account", anchorTitle: "Harbor identity", keywords: ["profiles", "profile", "who's watching", "whos watching", "who is watching", "switch profile", "add profile", "new profile", "edit profile", "manage profiles", "default profile", "kids profile", "child profile", "multiple profiles", "profile screen", "startup profile", "household"] },
   { label: "Sign in", section: "account", anchorTitle: "Stremio account", keywords: ["login", "sign in", "stremio", "connect account", "not signed in"] },
   { label: "Re-authenticate", section: "account", anchorTitle: "Stremio account", keywords: ["reauth", "refresh session", "login again", "expired token", "re-login"] },
   { label: "Sign out", section: "account", anchorTitle: "Stremio account", keywords: ["logout", "sign out", "log off", "disconnect account"] },
@@ -690,6 +712,12 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Show AniList comments", section: "anilist", keywords: ["anilist comments", "forum threads", "anime discussion", "detail pages"] },
   { label: "Blur AniList comments by default", section: "anilist", keywords: ["blur comments by default", "blur comments", "spoilers", "hide comments", "reveal", "anime pages"] },
   { label: "Disconnect from AniList", section: "anilist", keywords: ["disconnect", "unlink", "remove anilist", "stop sync"] },
+  { label: "Connect your MyAnimeList account", section: "mal", keywords: ["mal", "myanimelist", "connect", "anime lists", "link account", "anime tracking", "oauth"] },
+  { label: "MAL Client ID", section: "mal", keywords: ["mal client id", "api key", "myanimelist api", "client id", "register app"] },
+  { label: "Connect MyAnimeList", section: "mal", keywords: ["mal login", "authorize", "oauth", "pin code", "link"] },
+  { label: "About MyAnimeList", section: "mal", keywords: ["myanimelist.net", "info", "website", "what is mal"] },
+  { label: "Open MAL profile", section: "mal", keywords: ["open profile", "mal profile", "view profile", "profile page", "myanimelist profile"] },
+  { label: "Disconnect from MyAnimeList", section: "mal", keywords: ["disconnect", "unlink", "remove mal", "stop sync"] },
   { label: "Connect your Simkl account", section: "simkl", keywords: ["simkl", "connect", "tracking", "plan to watch", "mark watched", "sync"] },
   { label: "Connect Simkl", section: "simkl", keywords: ["simkl login", "device code", "authorize", "link"] },
   { label: "About Simkl", section: "simkl", keywords: ["simkl.com", "info", "website", "what is simkl"] },
@@ -1110,6 +1138,7 @@ export function SettingsNav({
     library: libraryKeys > 0 ? `${libraryKeys}/5` : null,
     trakt: null,
     anilist: null,
+    mal: null,
     simkl: null,
     letterboxd: settings.letterboxd.enabled ? (settings.letterboxd.mode === "full" ? "FULL" : "ON") : null,
     relay: relayLive,

@@ -8,9 +8,11 @@ import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import type { OmdbScores } from "@/lib/providers/omdb";
 import type { MdblistScores } from "@/lib/providers/mdblist";
+import { useSimklCommunityRating } from "@/lib/simkl/ratings";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import traktLogo from "@/assets/trakt.svg";
+import simklLogo from "@/assets/simkl.png";
 
 function ScoreItem({
   label,
@@ -80,6 +82,8 @@ export function HeroRatings({
   const { settings } = useSettings();
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
   const showPrimary = settings.showDetailRatings;
+
+  const { rating: simklCommunityRating } = useSimklCommunityRating(imdbId);
 
   const items: ReactNode[] = [];
 
@@ -182,6 +186,26 @@ export function HeroRatings({
       >
         <img src={traktLogo} alt="" className="h-[14px] w-[14px] object-contain" />
         <span>{Math.round(mdblist.trakt)}%</span>
+      </ScoreItem>,
+    );
+  }
+
+  const effectiveSimklRating = simklCommunityRating ?? mdblist?.simkl ?? null;
+
+  if (settings.showSimklBadge && settings.simklShowCommunityRatings && effectiveSimklRating != null) {
+    items.push(
+      <ScoreItem
+        key="simkl"
+        label={t("SIMKL")}
+        sublabel={t("Average /10")}
+        onClick={imdbId ? () => onOpenUrl(`https://simkl.com/search/id/?i=${imdbId}`) : undefined}
+      >
+        <img
+          src={simklLogo}
+          alt=""
+          className="h-[14px] w-[14px] rounded-[3px] object-contain"
+        />
+        <span>{effectiveSimklRating.toFixed(1)}</span>
       </ScoreItem>,
     );
   }

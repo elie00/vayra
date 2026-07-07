@@ -10,37 +10,14 @@ import { useProfiles } from "@/lib/profiles";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
+import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-
-type Tab = {
-  label: string;
-  view: View;
-  parentalKey?: LockableTab;
-  hideKey?: "anime" | "liveTv" | "sports";
-};
-
-const PRIMARY: Tab[] = [
-  { label: "Home", view: "home" },
-  { label: "Discover", view: "discover", parentalKey: "discover" },
-  { label: "Movies", view: "movies", parentalKey: "movies" },
-  { label: "Shows", view: "shows", parentalKey: "shows" },
-  { label: "Anime", view: "anime", parentalKey: "anime", hideKey: "anime" },
-  { label: "Live TV", view: "live", parentalKey: "liveTv", hideKey: "liveTv" },
-  { label: "Playlists", view: "vod" },
-];
-
-const SECONDARY: Tab[] = [
-  { label: "Calendar", view: "calendar", parentalKey: "calendar" },
-  { label: "Library", view: "library", parentalKey: "library" },
-  { label: "Downloads", view: "downloads" },
-  { label: "Addons", view: "addons", parentalKey: "addons" },
-];
 
 export function TopDock() {
   const { view, setView, chromeHidden } = useView();
@@ -55,33 +32,35 @@ export function TopDock() {
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
   const customMark = themePreset?.logo?.mark ?? null;
 
-  const navigate = (tab: Tab) => {
-    if (tab.parentalKey && locked && hiddenTabs[tab.parentalKey]) {
-      setPinFor(tab.view);
+  const navigate = (item: NavItem) => {
+    if (item.parentalKey && locked && hiddenTabs[item.parentalKey]) {
+      setPinFor(item.view);
       return;
     }
-    setView(tab.view);
+    setView(item.view);
   };
 
-  const navEntries: NavEntry[] = [...PRIMARY, ...SECONDARY]
+  const navEntries: NavEntry[] = applyNavCustomization(NAV_ITEMS, settings.navCustomization)
     .filter(
-      (tab) =>
-        (tab.view !== "vod" || settings.showPlaylistsTab) &&
-        (!tab.hideKey || !settings.hideContent[tab.hideKey]) &&
-        (!tab.parentalKey || !locked || !hiddenTabs[tab.parentalKey]),
+      (item) =>
+        item.id !== "settings" &&
+        item.id !== "kids" &&
+        (item.view !== "vod" || settings.showPlaylistsTab) &&
+        (!item.hideKey || !settings.hideContent[item.hideKey]) &&
+        (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]),
     )
-    .map((tab) => {
-      const active = view === tab.view;
-      const label = t(tab.label);
+    .map((item) => {
+      const active = view === item.view;
+      const label = t(item.label);
       return {
-        key: tab.view,
+        key: item.id,
         label,
         active,
-        onSelect: () => navigate(tab),
+        onSelect: () => navigate(item),
         node: (
           <button
             type="button"
-            onClick={() => navigate(tab)}
+            onClick={() => navigate(item)}
             className={`relative h-9 whitespace-nowrap rounded-full px-3 text-[12.5px] font-medium transition-colors ${
               active ? "text-ink" : "text-ink-muted hover:text-ink"
             }`}

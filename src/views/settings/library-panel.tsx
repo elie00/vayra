@@ -3,6 +3,7 @@ import fanartLogo from "@/assets/addon-logos/fanarttv.svg";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import traktLogo from "@/assets/trakt.svg";
+import simklLogo from "@/assets/simkl.png";
 import harborStyleImg from "@/assets/onboarding/harborstyle.png";
 import traditionalStyleImg from "@/assets/onboarding/traditional.png";
 import omdbLogo from "@/assets/addon-logos/omdb.png";
@@ -36,6 +37,7 @@ import { RegionField } from "./region-cascade";
 import { Dropdown, type DropdownOption } from "@/components/dropdown";
 import { ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
 import { TmdbGuideModal } from "./tmdb-tutorial-modal";
+import { EpisodeOrderSetting } from "./episode-order-setting";
 
 export type LibraryKey = "tmdb" | "omdb" | "rpdb" | "fanart" | "tvdb";
 
@@ -80,6 +82,7 @@ export function LibraryPanel({
     showMdblist: settings.showMdblistBadge && !!settings.mdblistKey,
     showTrakt: settings.showTraktBadge && !!settings.mdblistKey,
     showMal: settings.showMalBadge,
+    showSimkl: settings.showSimklBadge,
   };
   const enabledBadgeCount =
     (badgeFlags.showImdb || badgeFlags.showTmdb || badgeFlags.showMal ? 1 : 0) +
@@ -88,7 +91,8 @@ export function LibraryPanel({
     (badgeFlags.showMetacritic ? 1 : 0) +
     (badgeFlags.showLetterboxd ? 1 : 0) +
     (badgeFlags.showMdblist ? 1 : 0) +
-    (badgeFlags.showTrakt ? 1 : 0);
+    (badgeFlags.showTrakt ? 1 : 0) +
+    (badgeFlags.showSimkl ? 1 : 0);
 
   const prevBadgeCountRef = useRef(enabledBadgeCount);
   useEffect(() => {
@@ -257,6 +261,12 @@ export function LibraryPanel({
           value={settings.hdEpisodeImages}
           onChange={(v) => update({ hdEpisodeImages: v })}
           preview={<EpisodeCardPreview kind="hd" />}
+        />
+        <ToggleRow
+          label={t("Group episodes by story arc")}
+          sub={t("Adds a Seasons/Arcs switch on shows that have a story-arc grouping (like One Piece), so you can browse by saga instead of scrolling seasons. Needs a TMDB key. Off by default.")}
+          value={settings.episodeArcGroups}
+          onChange={(v) => update({ episodeArcGroups: v })}
         />
       </Section>
 
@@ -528,6 +538,7 @@ export function LibraryPanel({
             </>
           }
         />
+        <EpisodeOrderSetting />
         <div className="mt-2 border-t border-edge-soft/60 pt-4">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
             {t("Card overlays")}
@@ -661,6 +672,13 @@ export function LibraryPanel({
               value={settings.showTraktBadge}
               onChange={(v) => update({ showTraktBadge: v })}
               lockReason={!settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined}
+            />
+            <ToggleRow
+              label={t("Show SIMKL score on cards")}
+              sub={t("SIMKL community rating. Works independently, no API key required.")}
+              leading={<SimklBadge />}
+              value={settings.showSimklBadge}
+              onChange={(v) => update({ showSimklBadge: v, simklShowCommunityRatings: v })}
             />
             <ToggleRow
               label={t("Mark watched button")}
@@ -929,6 +947,10 @@ function TraktBadge() {
   return <img src={traktLogo} alt="" className="h-7 w-7 shrink-0 object-contain" />;
 }
 
+function SimklBadge() {
+  return <img src={simklLogo} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain" />;
+}
+
 type PreviewFlags = {
   showImdb: boolean;
   showTmdb: boolean;
@@ -939,6 +961,7 @@ type PreviewFlags = {
   showMdblist: boolean;
   showTrakt: boolean;
   showMal: boolean;
+  showSimkl: boolean;
 };
 
 function previewExtras(f: PreviewFlags): React.ReactNode[] {
@@ -975,6 +998,13 @@ function previewExtras(f: PreviewFlags): React.ReactNode[] {
       <span className="flex items-center gap-0.5">
         <img src={traktLogo} alt="" className="h-[10px] w-[10px] object-contain" />
         <span>88%</span>
+      </span>,
+    );
+  if (f.showSimkl)
+    out.push(
+      <span className="flex items-center gap-0.5">
+        <img src={simklLogo} alt="" className="h-[10px] w-[10px] rounded-[2px] object-contain" />
+        <span>8.5</span>
       </span>,
     );
   return out;

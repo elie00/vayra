@@ -9,6 +9,7 @@ import { CustomChromeBuilder } from "./custom-chrome-builder";
 import { FontPicker } from "./font-picker";
 import { IdentityRow } from "./identity-row";
 import { LayoutPicker } from "./layout-picker";
+import { NavEditor } from "./nav-editor";
 import { StylePicker } from "./style-picker";
 import { StyleSpecimen } from "./style-specimen";
 import type { Draft } from "./studio-types";
@@ -120,6 +121,11 @@ export function Inspector({
                 onRegenerate={onRegenerateChrome}
                 onOpenCode={() => onExpand("html")}
               />
+            )}
+            {draft.layout !== "custom" && (
+              <Group title="Navigation items" sub="Reorder, rename, or hide what appears in your nav.">
+                <NavEditor layout={draft.layout} />
+              </Group>
             )}
           </div>
         )}

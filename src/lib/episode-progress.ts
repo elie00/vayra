@@ -57,6 +57,7 @@ export function getEpisodeProgress(
   stremioWatched?: Set<string>,
   anilistWatched?: Set<string>,
   simklWatched?: Set<string>,
+  malWatched?: Set<string>,
   traktSeason?: number,
   traktEpisode?: number,
 ): EpisodeProgress {
@@ -85,8 +86,9 @@ export function getEpisodeProgress(
   const stremioDone = stremioWatched ? stremioWatched.has(`${season}:${episode}`) : false;
   const anilistDone = anilistWatched ? anilistWatched.has(`${season}:${episode}`) : false;
   const simklDone = simklWatched ? simklWatched.has(`${season}:${episode}`) : false;
+  const malDone = malWatched ? malWatched.has(`${season}:${episode}`) : false;
   const manualDone = resumeIds.some((id) => manualWatchedState(id, season, episode) === true);
-  const done = manualDone || traktDone || stremioDone || anilistDone || simklDone;
+  const done = manualDone || traktDone || stremioDone || anilistDone || simklDone || malDone;
 
   return {
     ratio: done ? 1 : ratio,

@@ -186,6 +186,7 @@ type ViewValue = {
   recallRowScroll: (key: string) => number | null;
   chromeHidden: boolean;
   setChromeHidden: (b: boolean) => void;
+  setNavStack: (updater: (s: Frame[]) => Frame[]) => void;
 };
 
 const Ctx = createContext<ViewValue | null>(null);
@@ -832,6 +833,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       recallRowScroll,
       chromeHidden,
       setChromeHidden,
+      setNavStack,
     }),
     [
       view,
@@ -884,6 +886,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       rememberScroll,
       recallScroll,
       chromeHidden,
+      setNavStack,
     ],
   );
 

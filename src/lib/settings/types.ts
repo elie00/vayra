@@ -42,6 +42,20 @@ export type LetterboxdSettings = {
   listRefs: Array<{ id: string; name: string; owner?: string; filmCount?: number }>;
 };
 
+export interface SimklGranularFilters {
+  movies: {
+    plantowatch: boolean;
+  };
+  shows: {
+    watching: boolean;
+    plantowatch: boolean;
+  };
+  anime: {
+    watching: boolean;
+    plantowatch: boolean;
+  };
+}
+
 export type Settings = {
   blurComments: boolean;
   blurEpisodes: boolean;
@@ -70,6 +84,10 @@ export type Settings = {
   showTraktBadge: boolean;
   showDetailRatings: boolean;
   showTraktComments: boolean;
+  showSimklBadge: boolean;
+  simklShowCommunityRatings: boolean;
+  simklEnableUserRatings: boolean;
+  simklGranularFilters: SimklGranularFilters;
   cardBadgeLimit: number;
   showQualityBadge: boolean;
   showCardBadges: boolean;
@@ -106,14 +124,20 @@ export type Settings = {
   showEpisodeRating: boolean;
   showEpisodeDescription: boolean;
   hdEpisodeImages: boolean;
+  episodeArcGroups: boolean;
+  episodeOrderProvider: "default" | "tmdb" | "tvdb";
+  tvdbSeasonType: "official" | "dvd" | "absolute" | "alternate" | "regional";
+  tvdbPin: string;
   harborAvatar: string | null;
   harborColor: string;
   anilistAutoSync: boolean;
+  malAutoSync: boolean;
   anilistBlurComments: boolean;
   showAnilistComments: boolean;
   useAnilistAvatar: boolean;
   useTraktAvatar: boolean;
   useSimklAvatar: boolean;
+  useMalAvatar: boolean;
   traktClientId: string;
   traktClientSecret: string;
   traktAccessToken: string | null;
@@ -145,6 +169,7 @@ export type Settings = {
   rememberLastStream: boolean;
   keepSourceNextEpisode: boolean;
   playerHdrToSdr: boolean;
+  playerRtxHdr: boolean;
   playerMacEdr: boolean;
   playerDisplayPanel: "auto" | "oled" | "lcd";
   playerMotionInterp: boolean;
@@ -156,6 +181,7 @@ export type Settings = {
   showQualityInfo: boolean;
   stremioServerTranscode: boolean;
   directTorrentStream: boolean;
+  torrentFullDownload: boolean;
   p2pAutoConsent: boolean;
   streamCacheRetentionHours: number;
   streamCacheMaxGb: number;
@@ -285,10 +311,16 @@ export type Settings = {
     heroSource: string | null;
     customSources: SourceRow[];
   };
+  navCustomization: {
+    order: string[];
+    hidden: string[];
+    renamed: Record<string, string>;
+  };
   hotkeys: Record<string, string>;
   animeFavoriteGenres: number[];
   animePicksDismissedAt: number;
   animeAnilistRowsHidden: string[];
+  animeMalRowsHidden: string[];
   pickerLayout: "condensed" | "stremio";
   streamSort: "harbor" | "addon";
   fullStreamDescription: boolean;
@@ -328,6 +360,11 @@ export type Settings = {
     | "custom"
     | "simkl"
     | "simkl-anticipated";
+  simklHomeRailsEnabled: boolean;
+  simklUpNextRailEnabled: boolean;
+  simklTrendingRailEnabled: boolean;
+  simklScrobbleEnabled: boolean;
+  simklAnimeTitleLanguage: "english" | "romaji" | "native";
   weekStartsMonday: boolean;
   customCalendar: {
     trackedPeople: Array<{

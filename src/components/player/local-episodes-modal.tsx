@@ -13,15 +13,9 @@ import {
   type LocalEpisodesPayload,
 } from "@/lib/player/local-episodes-modal";
 
-// The local-series episode-availability grid. Mounted once at the app root and
-// opened imperatively (from a local library card, or a series' detail Play). Shows
-// which episodes of the show are on disk vs. only available to stream, lets the
-// user pick a local episode, and — from the Play entry point — offers a stream
-// fallback.
 export function LocalEpisodesModal() {
   const state = useSyncExternalStore(subscribeLocalEpisodes, getLocalEpisodes);
   if (!state.open || !state.payload) return null;
-  // Key by identity so all per-series state resets cleanly between openings.
   return <GridModal key={state.payload.tmdbId ?? state.payload.imdbId ?? state.payload.title} payload={state.payload} />;
 }
 
@@ -32,7 +26,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
   const { tmdbId, imdbId } = payload;
   const all = useLocalLibrary();
 
-  // Live local episodes for this series (reacts to rescans / removals).
   const localEps = useMemo(
     () =>
       all
@@ -45,8 +38,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     [all, tmdbId, imdbId],
   );
 
-  // Full show structure (TMDB). Passed in from the detail page, else fetched here
-  // from the imdb id so undownloaded seasons/episodes still show as empty cells.
   const [videos, setVideos] = useState<Meta["videos"] | undefined>(payload.videos);
   useEffect(() => {
     if (videos && videos.length > 0) return;
@@ -62,7 +53,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     };
   }, [imdbId, videos]);
 
-  // season -> episode -> local file
   const localBySeason = useMemo<SeasonMap>(() => {
     const m: SeasonMap = new Map();
     for (const e of localEps) {
@@ -73,7 +63,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     return m;
   }, [localEps]);
 
-  // season -> episode count (from TMDB when available, else the highest local ep)
   const seasonEpisodeCount = useMemo<Map<number, number>>(() => {
     const m = new Map<number, number>();
     if (videos) {
@@ -89,7 +78,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     return m;
   }, [videos, localBySeason]);
 
-  // episode names from TMDB, for nicer list rows: season -> episode -> name
   const episodeNames = useMemo<Map<string, string>>(() => {
     const m = new Map<string, string>();
     if (videos) {
@@ -102,7 +90,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     return m;
   }, [videos]);
 
-  // Grid rows = all real (non-specials) seasons, sorted. Columns = 1..globalMax.
   const gridSeasons = useMemo(
     () => Array.from(seasonEpisodeCount.keys()).filter((s) => s > 0).sort((a, b) => a - b),
     [seasonEpisodeCount],
@@ -112,7 +99,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     [gridSeasons, seasonEpisodeCount],
   );
 
-  // Selectable seasons for the list below = only seasons with local episodes.
   const localSeasons = useMemo(
     () => Array.from(localBySeason.keys()).filter((s) => s > 0).sort((a, b) => a - b),
     [localBySeason],
@@ -160,7 +146,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
         ? hlSeason
         : localSeasons[0] ?? (hasSpecials ? 0 : 1);
   const [selected, setSelected] = useState<number>(initialSeason);
-  // Keep the selection valid as the store updates in the background.
   useEffect(() => {
     const valid = selected === 0 ? hasSpecials : localSeasons.includes(selected);
     if (!valid) setSelected(localSeasons[0] ?? (hasSpecials ? 0 : 1));
@@ -207,7 +192,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
       }}
     >
       <div className="animate-modal-in flex max-h-[86vh] w-[min(94vw,600px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]">
-        {/* Header */}
         <div className="flex items-center gap-3 border-b border-edge-soft px-5 pb-3.5 pt-4">
           {payload.poster && (
             <img
@@ -235,8 +219,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
         </div>
 
         <div className="flex flex-col gap-4 overflow-y-auto p-4">
-          {/* Availability grid — the card hugs its content and centers, so a short
-              grid doesn't leave a dead strip of empty space on the right. */}
           <div className="mx-auto w-fit max-w-full shrink-0 rounded-xl border border-edge-soft bg-canvas p-3">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
               {t("Availability")}
@@ -298,7 +280,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
             </div>
           </div>
 
-          {/* Season selector — scrolls horizontally for shows with many seasons. */}
           {(localSeasons.length > 1 || hasSpecials) && (
             <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto pb-1">
               {localSeasons.map((s) => (
@@ -314,7 +295,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
             </div>
           )}
 
-          {/* Episode list for the selected season */}
           <div className="flex shrink-0 flex-col gap-1">
             {listEps.map((ep) => {
               const isHighlight = hlSeason === ep.season && hlEpisode === ep.episode;
@@ -383,7 +363,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
           </div>
         </div>
 
-        {/* Stream fallback (detail Play entry point only) */}
         {payload.onStream && (
           <div className="border-t border-edge-soft p-4">
             <button

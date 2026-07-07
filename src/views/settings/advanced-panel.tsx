@@ -12,6 +12,10 @@ import {
 } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
 import { repairStremioLibrary, type RepairProgress, type RepairResult } from "@/lib/stremio-library-repair";
+import { collectAnimeDiagnostics, findCorruptAnimeEntries, healCorruptAnimeEntries } from "@/lib/anime-cw-repair";
+import { clearResurfaceCache } from "@/lib/cw-resurface";
+import { saveTextFileWithPath } from "@/lib/download-text";
+import type { LibraryItem } from "@/lib/stremio";
 import { openUrl } from "@/lib/window";
 import {
   checkForUpdate,
@@ -125,6 +129,8 @@ export function AdvancedPanel() {
       >
         <DesktopOnlyBlock>
           <LibraryRepairRow />
+          <AnimeRepairRow />
+          <AnimeDiagnosticsRow />
         </DesktopOnlyBlock>
       </Section>
 
@@ -708,6 +714,142 @@ function LibraryRepairRow() {
       onClick={run}
       disabled={busy}
       tone={result && result.repaired > 0 && !error ? "success" : undefined}
+    />
+  );
+}
+
+function AnimeRepairRow() {
+  const t = useT();
+  const { authKey } = useAuth();
+  const [phase, setPhase] = useState<"idle" | "scanning" | "scanned" | "removing" | "done" | "error">("idle");
+  const [found, setFound] = useState<LibraryItem[]>([]);
+  const [removed, setRemoved] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const scan = async () => {
+    if (!authKey) return;
+    setPhase("scanning");
+    setError(null);
+    try {
+      const items = await findCorruptAnimeEntries(authKey);
+      setFound(items);
+      setPhase("scanned");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setPhase("error");
+    }
+  };
+
+  const remove = async () => {
+    if (!authKey || found.length === 0) return;
+    setPhase("removing");
+    try {
+      const n = await healCorruptAnimeEntries(authKey, found);
+      clearResurfaceCache();
+      setRemoved(n);
+      setPhase("done");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setPhase("error");
+    }
+  };
+
+  if (!authKey) {
+    return (
+      <ActionRow
+        label={t("Fix corrupted anime")}
+        sub={t("Sign in to Stremio first. This scans the active profile's library.")}
+      />
+    );
+  }
+
+  const names =
+    found.slice(0, 4).map((i) => i.name || i._id).join(", ") + (found.length > 4 ? "…" : "");
+  const showRemove = phase === "scanned" && found.length > 0;
+  const busy = phase === "scanning" || phase === "removing";
+  const sub = (() => {
+    if (error) return t("Failed: {error}", { error });
+    if (phase === "scanning") return t("Scanning your library…");
+    if (phase === "scanned")
+      return found.length === 0
+        ? t("No corrupted anime found. You're clean.")
+        : t("Found {n}: {names}. Saved under the wrong id by the 0.9.65 bug, which breaks Continue Watching and Trakt marking.", { n: found.length, names });
+    if (phase === "removing") return t("Removing…");
+    if (phase === "done") return t("Removed {n}. Rewatch and they re-add correctly.", { n: removed });
+    return t("Finds anime that got saved under a movie/series id by the 0.9.65 bug (breaks Continue Watching + Trakt), and removes just those so they re-add correctly.");
+  })();
+  const cta = (() => {
+    if (phase === "scanning") return t("Scanning…");
+    if (phase === "removing") return t("Removing…");
+    if (showRemove) return t("Remove {n}", { n: found.length });
+    if (phase === "done" || phase === "error" || (phase === "scanned" && found.length === 0))
+      return t("Scan again");
+    return t("Scan for corruption");
+  })();
+
+  return (
+    <ActionRow
+      label={t("Fix corrupted anime")}
+      sub={sub}
+      cta={cta}
+      icon={busy ? <Loader2 size={13} strokeWidth={2.4} className="animate-spin" /> : <Wrench size={13} strokeWidth={2.4} />}
+      onClick={showRemove ? remove : scan}
+      disabled={busy}
+      tone={phase === "done" && removed > 0 ? "success" : undefined}
+    />
+  );
+}
+
+function AnimeDiagnosticsRow() {
+  const t = useT();
+  const { authKey } = useAuth();
+  const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    if (!authKey || busy) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      const { text, count } = await collectAnimeDiagnostics(authKey);
+      const { saved, path } = await saveTextFileWithPath(
+        "harbor-anime-diagnostics.txt",
+        text,
+        ["txt"],
+        "Diagnostics",
+      );
+      if (!saved) {
+        setStatus(t("Save cancelled."));
+      } else {
+        setStatus(
+          path
+            ? t("Saved {n} entries to {path}. Send us that file.", { n: count, path })
+            : t("Saved harbor-anime-diagnostics.txt ({n} entries). Send us that file.", { n: count }),
+        );
+      }
+    } catch (e) {
+      setStatus(t("Failed: {error}", { error: e instanceof Error ? e.message : String(e) }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!authKey) {
+    return (
+      <ActionRow
+        label={t("Download anime diagnostics")}
+        sub={t("Sign in to Stremio first. This reads the active profile's library.")}
+      />
+    );
+  }
+  return (
+    <ActionRow
+      label={t("Download anime diagnostics")}
+      sub={status ?? t("Saves a .txt of your watched anime + series entries so we can see the exact shape and finish the fix. Just titles, ids, and episode numbers.")}
+      cta={busy ? t("Saving…") : t("Save .txt")}
+      icon={busy ? <Loader2 size={13} strokeWidth={2.4} className="animate-spin" /> : <Download size={13} strokeWidth={2.4} />}
+      onClick={save}
+      disabled={busy}
     />
   );
 }

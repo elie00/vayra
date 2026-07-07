@@ -29,8 +29,6 @@ function esc(s: string | number | null | undefined): string {
     .replace(/'/g, "&apos;");
 }
 
-// --- shared .nfo fragments (Kodi / TinyMediaManager style) -----------------
-
 function ratingsBlock(detail: TmdbDetail): string[] {
   if (!detail.rating) return [];
   return [
@@ -43,8 +41,6 @@ function ratingsBlock(detail: TmdbDetail): string[] {
   ];
 }
 
-// <thumb aspect="poster"> + <fanart> + <thumb aspect="clearlogo"> using the
-// resolved TMDB URLs at the user's chosen sizes.
 function artThumbs(art: ArtworkPaths, sizes: ExportSizes): string[] {
   const out: string[] = [];
   if (art.poster) out.push(`  <thumb aspect="poster">${esc(artworkUrl(art.poster, sizes.poster))}</thumb>`);
@@ -84,8 +80,6 @@ function assemble(lines: string[]): string {
   return [...lines, ""].filter((l) => l !== "").join("\n");
 }
 
-// Compact, human-readable reason string for a caught error, so the export toast
-// can show WHY it failed instead of a generic "failed".
 function errText(where: string, err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   return `${where}: ${msg}`.slice(0, 160);
@@ -177,8 +171,6 @@ function buildEpisodeNfo(entry: LocalEntry, detail: TmdbDetail, ep: Episode | un
   ]);
 }
 
-// --- filesystem helpers -----------------------------------------------------
-
 function extFromPath(filePath: string, fallback: string): string {
   const m = filePath.split("?")[0].match(/\.([a-z0-9]{2,4})$/i);
   return m ? m[1].toLowerCase() : fallback;
@@ -197,8 +189,6 @@ async function downloadTo(url: string, dest: string): Promise<boolean> {
   }
 }
 
-// The series root for an episode file: the parent of a `Season NN` / `SNN`
-// subfolder, else the episode's own directory (a flat show folder).
 async function seriesRootDir(
   path: typeof import("@tauri-apps/api/path"),
   videoPath: string,
@@ -211,11 +201,6 @@ async function seriesRootDir(
   return dir;
 }
 
-// --- public API -------------------------------------------------------------
-
-// Write a Kodi-style movie.nfo and download poster/fanart/clearlogo next to the
-// video (stem-prefixed). Returns the on-disk artwork paths so the store can show
-// them.
 export async function exportMovie(
   key: string,
   entry: LocalEntry,
@@ -272,10 +257,6 @@ async function exportMovieInner(
   return { ok: true, localArt };
 }
 
-// Export a whole series: a tvshow.nfo + series poster/fanart/clearlogo and
-// per-season posters at the SHOW ROOT (the folder above the season subfolders),
-// plus a per-episode episodedetails .nfo next to each video. Returns the show-
-// root artwork paths, applied to every episode entry by the caller.
 export async function exportSeries(
   key: string,
   episodes: LocalEntry[],
@@ -309,7 +290,6 @@ async function exportSeriesInner(
   const root = await seriesRootDir(path, episodes[0].path);
   const atRoot = (name: string) => path.join(root, name);
 
-  // tvshow.nfo + series artwork at the show root.
   try {
     await writeTextFile(await atRoot("tvshow.nfo"), buildTvShowNfo(detail, art, sizes));
   } catch (err) {
@@ -329,7 +309,6 @@ async function exportSeriesInner(
     const dest = await atRoot(`clearlogo.${extFromPath(art.logo, "png")}`);
     if (await downloadTo(artworkUrl(art.logo, sizes.logo), dest)) localArt.logo = dest;
   }
-  // Per-season posters at the show root (season01-poster.jpg …).
   for (const s of detail.seasons) {
     if (!s.posterPath || s.seasonNumber < 1) continue;
     const dest = await atRoot(
@@ -338,8 +317,6 @@ async function exportSeriesInner(
     await downloadTo(artworkUrl(s.posterPath, sizes.poster), dest);
   }
 
-  // Per-episode .nfo next to each video, with real episode titles/plots fetched
-  // once per season.
   const seasonCache = new Map<number, Episode[]>();
   for (const ep of episodes) {
     const season = ep.season ?? 0;
@@ -352,7 +329,7 @@ async function exportSeriesInner(
     try {
       await writeTextFile(await path.join(dir, `${stem}.nfo`), buildEpisodeNfo(ep, detail, info));
     } catch {
-      /* skip an episode we can't write, keep going */
+      /* skip */
     }
   }
 

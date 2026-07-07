@@ -18,9 +18,11 @@ import { useAnimeTopPicks } from "@/lib/use-anime-top-picks";
 import { useCrunchyrollAwardMetas } from "@/lib/use-crunchyroll-award-metas";
 import { useWatchHistoryRecommendations } from "@/lib/use-watch-history-recs";
 import { AnilistRows } from "./anime/anilist-rows";
+import { MalRows } from "./anime/mal-rows";
 import { useCwAdvance } from "./home/hooks/use-cw-advance";
 import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
 import { AnilistRowControls } from "./anime/anilist-row-controls";
+import { MalRowControls } from "./anime/mal-row-controls";
 import { AnilistTopRow, AnilistTrendingRow } from "./anime/anilist-top-row";
 import {
   EMPTY_ROW,
@@ -176,6 +178,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
   const { openGrid } = useView();
   const favoriteGenres = settings.animeFavoriteGenres;
   const anilistHidden = settings.animeAnilistRowsHidden;
+  const malRowsHidden = settings.animeMalRowsHidden;
   const [showPicker, setShowPicker] = useState(false);
 
   const { authKey } = useAuth();
@@ -304,6 +307,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     simklWatchedMap,
     anilistWatchedMap,
     simklStatusMap,
+    animeDetectVer,
   );
 
   useEffect(() => {
@@ -515,6 +519,8 @@ export function AnimeView({ active = true }: { active?: boolean }) {
               ))}
             </Row>
           )}
+          {!malRowsHidden.includes("yourMalLists") && <MalRows />}
+          <MalRowControls />
           {!anilistHidden.includes("yourLists") && <AnilistRows />}
           <AnilistRowControls />
           {!anilistHidden.includes("trending") && <AnilistTrendingRow />}

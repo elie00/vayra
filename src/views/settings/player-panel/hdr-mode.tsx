@@ -1,4 +1,5 @@
 import { useSettings } from "@/lib/settings";
+import { isWindowsDesktop } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 import { DisplayPanelSelector } from "./display-panel-selector";
 
@@ -100,6 +101,40 @@ export function HdrModePicker() {
         })}
       </div>
       <DisplayPanelSelector />
+      {isWindowsDesktop() && (
+        <button
+          type="button"
+          onClick={() => update({ playerRtxHdr: !settings.playerRtxHdr })}
+          className={`mt-1 flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 text-start transition-colors ${
+            settings.playerRtxHdr
+              ? "border-ink bg-elevated"
+              : "border-edge-soft bg-canvas/40 hover:border-edge hover:bg-canvas/60"
+          }`}
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[15px] font-semibold text-ink">{t("RTX Video HDR")}</span>
+              <span className="rounded-md bg-ink/10 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-ink-muted">
+                {t("Nvidia only")}
+              </span>
+            </div>
+            <span className="text-[12.5px] leading-snug text-ink-muted">
+              {t("Upconverts SDR video to HDR on an Nvidia RTX GPU (turn on RTX Video HDR in the Nvidia app; needs GPU decode). Experimental. Off if you use SVP.")}
+            </span>
+          </div>
+          <span
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+              settings.playerRtxHdr ? "bg-ink" : "bg-edge"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-canvas transition-transform ${
+                settings.playerRtxHdr ? "translate-x-[22px]" : "translate-x-0.5"
+              }`}
+            />
+          </span>
+        </button>
+      )}
     </div>
   );
 }

@@ -1,46 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AddonsIcon } from "@/components/icons/addons-icon";
-import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
-import { AnimeIcon } from "@/components/icons/anime-icon";
-import { CalendarIcon } from "@/components/icons/calendar-icon";
-import { DiscoverIcon } from "@/components/icons/discover-icon";
-import { HomeIcon } from "@/components/icons/home-icon";
-import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
-import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
-import { MoviesIcon } from "@/components/icons/movies-icon";
-import { SettingsIcon } from "@/components/icons/settings-icon";
-import { TvIcon } from "@/components/icons/tv-icon";
+import { useEffect, useRef, useState } from "react";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useT } from "@/lib/i18n";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
+import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 import { DockButton } from "./minui-dock/dock-button";
 import { FloatingTop } from "./minui-dock/floating-top";
-
-type DockItem = {
-  view: View;
-  label: string;
-  icon: (active: boolean) => ReactNode;
-  hideKey?: "anime" | "liveTv" | "sports";
-  parentalKey?: LockableTab;
-};
-
-const ITEMS: DockItem[] = [
-  { view: "home", label: "Home", icon: (a) => <HomeIcon active={a} /> },
-  { view: "discover", label: "Discover", icon: (a) => <DiscoverIcon active={a} />, parentalKey: "discover" },
-  { view: "movies", label: "Movies", icon: (a) => <MoviesIcon active={a} />, parentalKey: "movies" },
-  { view: "shows", label: "Shows", icon: (a) => <TvIcon active={a} />, parentalKey: "shows" },
-  { view: "anime", label: "Anime", icon: (a) => <AnimeIcon active={a} />, hideKey: "anime", parentalKey: "anime" },
-  { view: "live", label: "Live TV", icon: (a) => <LiveTvIcon active={a} />, hideKey: "liveTv", parentalKey: "liveTv" },
-  { view: "vod", label: "Playlists", icon: (a) => <PlaylistVodIcon active={a} /> },
-  { view: "calendar", label: "Calendar", icon: (a) => <CalendarIcon active={a} />, parentalKey: "calendar" },
-  { view: "library", label: "Library", icon: (a) => <LibraryIcon active={a} />, parentalKey: "library" },
-  { view: "downloads", label: "Downloads", icon: (a) => <DownloadsNavIcon active={a} /> },
-  { view: "addons", label: "Addons", icon: (a) => <AddonsIcon active={a} />, parentalKey: "addons" },
-  { view: "settings", label: "Settings", icon: (a) => <SettingsIcon active={a} /> },
-];
 
 const ICON_BASE = 54;
 const ICON_GAP = 6;
@@ -63,7 +29,9 @@ export function MinUIDock() {
     return () => window.cancelAnimationFrame(id);
   }, []);
 
-  const visible = ITEMS.filter((it) => {
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const visible = items.filter((it) => {
+    if (it.id === "kids") return false;
     if (it.view === "vod" && !settings.showPlaylistsTab) return false;
     if (it.hideKey && settings.hideContent[it.hideKey]) return false;
     if (it.parentalKey && locked && hiddenTabs[it.parentalKey]) return false;
@@ -90,7 +58,7 @@ export function MinUIDock() {
   }
   buttonCentersRef.current = computeCenters(firstPassScales);
 
-  const navigate = (it: DockItem) => {
+  const navigate = (it: NavItem) => {
     if (it.parentalKey && locked && hiddenTabs[it.parentalKey]) {
       setPinFor(it.view);
       return;
@@ -135,7 +103,7 @@ export function MinUIDock() {
               const scale = firstPassScales[i] ?? 1;
               return (
                 <DockButton
-                  key={it.view}
+                  key={it.id}
                   label={t(it.label)}
                   active={active}
                   scale={scale}
@@ -149,7 +117,7 @@ export function MinUIDock() {
                       transition: "transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1)",
                     }}
                   >
-                    {it.icon(active)}
+                    {it.render(active)}
                   </span>
                 </DockButton>
               );

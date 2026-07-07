@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { stopFullDownload } from "./full-download";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -103,6 +104,7 @@ export async function torrentEngineStats(
 
 export async function torrentEngineRemove(infoHash: string, deleteFiles: boolean): Promise<void> {
   if (!isTauri) return;
+  stopFullDownload(infoHash);
   await invoke("torrent_engine_remove", { infoHash, deleteFiles }).catch((e) =>
     console.warn("[engine] remove failed", e),
   );

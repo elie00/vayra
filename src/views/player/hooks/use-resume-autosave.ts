@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { markAnimeWatching, syncAnimeProgress } from "@/lib/anilist/sync";
+import { markMalWatching, syncMalProgress } from "@/lib/mal/sync";
 import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
 import { isExternalPlaylistId } from "@/lib/iptv/vod";
@@ -40,8 +41,10 @@ export function useResumeAutosave(params: {
   const { settings } = useSettings();
   const lastSavedRef = useRef(0);
   const taughtRef = useRef<Set<string>>(new Set());
-  const autoSyncRef = useRef(settings.anilistAutoSync);
-  autoSyncRef.current = settings.anilistAutoSync;
+  const anilistAutoSyncRef = useRef(settings.anilistAutoSync);
+  anilistAutoSyncRef.current = settings.anilistAutoSync;
+  const malAutoSyncRef = useRef(settings.malAutoSync);
+  malAutoSyncRef.current = settings.malAutoSync;
   const latestRef = useRef({ src, snap, season, episode });
   latestRef.current = { src, snap, season, episode };
   const lastGoodPosRef = useRef(0);
@@ -114,11 +117,17 @@ export function useResumeAutosave(params: {
     }
     if (pos < TASTE_MIN_SEC) return;
     const trackId = animeTrackId(s);
-    if (autoSyncRef.current && trackId) {
+    if (anilistAutoSyncRef.current && trackId) {
       void markAnimeWatching(trackId, s.meta.name);
     }
-    if (finished && autoSyncRef.current && trackId) {
+    if (malAutoSyncRef.current && trackId) {
+      void markMalWatching(trackId, s.meta.name);
+    }
+    if (finished && anilistAutoSyncRef.current && trackId) {
       void syncAnimeProgress(trackId, ep, s.meta.name);
+    }
+    if (finished && malAutoSyncRef.current && trackId) {
+      void syncMalProgress(trackId, ep, s.meta.name);
     }
     const kind = finished ? "watched" : "play";
     const key = `${id}|${kind}`;
