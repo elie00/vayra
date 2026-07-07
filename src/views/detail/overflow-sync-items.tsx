@@ -121,10 +121,13 @@ export function SimklMenuItems({
     if (!isConnected) return;
     let cancelled = false;
     void (async () => {
-      const t = await resolveSimklTarget(harborId, type);
+      let t = await resolveSimklTarget(harborId, type);
       if (cancelled || !t) return;
-      if (type === "series" && t.kind === "movie") t = { kind: "show", ids: t.ids };
-      if (type === "movie" && (t.kind === "show" || t.kind === "anime")) t = { kind: "movie", ids: t.ids };
+      if (type === "series" && t.kind === "movie") {
+        t = { kind: "show", ids: t.ids };
+      } else if (type === "movie" && (t.kind === "show" || t.kind === "anime")) {
+        t = { kind: "movie", ids: t.ids };
+      }
       setTarget(t);
       const malKey =
         t.kind === "movie" || t.kind === "show" || t.kind === "anime"

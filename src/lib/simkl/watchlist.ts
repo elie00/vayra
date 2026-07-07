@@ -11,9 +11,6 @@ export type RawIds = {
   mal?: number;
   anidb?: number;
 };
-type RawNode = { title?: string; year?: number | null; ids?: RawIds };
-type RawEntry = { added_to_watchlist_at?: string; movie?: RawNode; show?: RawNode };
-type RawAllItems = { movies?: RawEntry[]; shows?: RawEntry[]; anime?: RawEntry[] };
 
 export function num(v: number | string | undefined): number | undefined {
   if (typeof v === "number") return v;
