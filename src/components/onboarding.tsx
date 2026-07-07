@@ -64,7 +64,7 @@ export function OnboardingModal() {
           <SplashStep onAdvance={next} />
         ) : (
           <>
-            <div className="flex min-h-[440px] flex-col justify-center px-12 py-10">
+            <div className="flex min-h-[440px] flex-col justify-center px-6 py-10 sm:px-12">
               <div key={step} className="animate-step-in">
                 {step === "welcome" && <WelcomeStep />}
                 {step === "layout" && <LayoutStep />}
@@ -76,7 +76,7 @@ export function OnboardingModal() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-edge-soft bg-canvas/40 px-8 py-5">
+            <div className="flex flex-wrap items-center justify-between gap-y-3 border-t border-edge-soft bg-canvas/40 px-4 py-5 sm:px-8">
               <Dots
                 count={STEPS.length - 1}
                 active={Math.max(stepIdx - 1, 0)}
@@ -87,7 +87,7 @@ export function OnboardingModal() {
                   <button
                     key={`skip-${step}`}
                     onClick={next}
-                    className="animate-skip-in h-11 rounded-full px-4 text-[13px] font-medium text-ink-subtle transition-colors hover:text-ink"
+                    className="animate-skip-in h-11 whitespace-nowrap rounded-full px-4 text-[13px] font-medium text-ink-subtle transition-colors hover:text-ink"
                   >
                     {t("Skip for now")}
                   </button>
