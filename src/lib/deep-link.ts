@@ -48,6 +48,45 @@ export function onDeepLinkOpen(handler: (open: DeepLinkOpen) => void): () => voi
   return () => window.removeEventListener(OPEN_EVENT, listener);
 }
 
+// Jumelage : harbor://stremio-auth?key=<authKey> (QR affiché par le desktop,
+// scanné par l'appareil photo du téléphone). Le lien peut arriver avant que
+// l'AuthProvider soit monté (démarrage à froid) → clé mise en attente.
+const AUTH_KEY_EVENT = "harbor:deeplink-stremio-auth";
+let pendingAuthKey: string | null = null;
+
+export function parseStremioAuthKey(url: string): string | null {
+  const m = /^harbor:\/\/stremio-auth\/?\?key=([^&]+)/.exec(url);
+  if (!m) return null;
+  try {
+    const key = decodeURIComponent(m[1]).trim();
+    return key.length > 0 ? key : null;
+  } catch {
+    return null;
+  }
+}
+
+export function emitStremioAuthKey(key: string): void {
+  pendingAuthKey = key;
+  window.dispatchEvent(new CustomEvent<{ key: string }>(AUTH_KEY_EVENT, { detail: { key } }));
+}
+
+export function onStremioAuthKey(handler: (key: string) => void): () => void {
+  if (pendingAuthKey) {
+    const key = pendingAuthKey;
+    pendingAuthKey = null;
+    handler(key);
+  }
+  const listener = (e: Event) => {
+    const ev = e as CustomEvent<{ key: string }>;
+    if (ev.detail?.key) {
+      pendingAuthKey = null;
+      handler(ev.detail.key);
+    }
+  };
+  window.addEventListener(AUTH_KEY_EVENT, listener);
+  return () => window.removeEventListener(AUTH_KEY_EVENT, listener);
+}
+
 function parseDetailPath(path: string): DeepLinkOpen | null {
   const parts = path.split("/").filter((p) => p.length > 0);
   if (parts[0] !== "detail" || parts.length < 3) return null;
@@ -88,6 +127,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
     const handle = (urls: string[]) => {
       for (const u of urls) {
         if (typeof u !== "string" || u.length === 0) continue;
+        const authKey = parseStremioAuthKey(u);
+        if (authKey) {
+          emitStremioAuthKey(authKey);
+          continue;
+        }
         const open = parseStremioOpen(u);
         if (open) {
           emitDeepLinkOpen(open);
