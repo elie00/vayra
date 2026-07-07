@@ -23,9 +23,12 @@ export async function startStremioWebAuth(): Promise<string> {
     let settled = false;
     let unlisten: (() => void) | null = null;
     let timer = 0;
+    let poll = 0;
     const finish = () => {
       settled = true;
       if (timer) window.clearTimeout(timer);
+      if (poll) window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", checkPending);
       if (unlisten) unlisten();
     };
     timer = window.setTimeout(() => {
@@ -43,6 +46,21 @@ export async function startStremioWebAuth(): Promise<string> {
       if (settled) fn();
       else unlisten = fn;
     });
+    // Sur Android la WebView peut être suspendue pendant que l'utilisateur se
+    // connecte dans le navigateur : l'événement peut se perdre. Au retour au
+    // premier plan (et en polling de secours), on va rechercher la clé côté Rust.
+    const checkPending = () => {
+      if (settled || document.visibilityState === "hidden") return;
+      void invoke<string | null>("stremio_auth_take_key")
+        .then((key) => {
+          if (settled || !key) return;
+          finish();
+          resolve(key);
+        })
+        .catch(() => {});
+    };
+    document.addEventListener("visibilitychange", checkPending);
+    poll = window.setInterval(checkPending, 3000);
     openUrl(url);
   });
 }

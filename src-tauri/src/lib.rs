@@ -492,7 +492,8 @@ pub fn run() {
         .manage(multiview_state)
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
-        .manage(download::DownloadState::new());
+        .manage(download::DownloadState::new())
+        .manage(stremio_auth::PendingAuthKey::default());
 
     #[cfg(target_os = "macos")]
     let app_builder = app_builder.register_uri_scheme_protocol("stremio", |ctx, request| {
@@ -739,6 +740,7 @@ pub fn run() {
             local_lib::harbor_scan_folder,
             tray::tray_set_prefs,
             stremio_auth::stremio_auth_start,
+            stremio_auth::stremio_auth_take_key,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
         ])

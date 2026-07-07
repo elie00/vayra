@@ -5,9 +5,21 @@ use axum::Router;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::net::TcpListener;
 use tokio::sync::{oneshot, Mutex};
+
+// Filet de sécurité mobile : si la WebView est suspendue par l'OS pendant que
+// l'utilisateur se connecte dans le navigateur externe, l'événement `stremio-auth`
+// peut se perdre. La clé est donc aussi gardée ici et récupérable au retour au
+// premier plan via `stremio_auth_take_key`.
+#[derive(Default)]
+pub struct PendingAuthKey(std::sync::Mutex<Option<String>>);
+
+#[tauri::command]
+pub fn stremio_auth_take_key(state: tauri::State<'_, PendingAuthKey>) -> Option<String> {
+    state.0.lock().ok().and_then(|mut k| k.take())
+}
 
 const PAGE_OK: &str = r#"<!doctype html><html><head><meta charset="utf-8"><title>Harbor</title><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;background:#0d0f14;color:#e9ebf2}.c{text-align:center;max-width:380px;padding:32px}h1{font-size:21px;margin:0 0 10px;font-weight:600}p{color:#9aa1ad;font-size:14px;line-height:1.55;margin:0}</style></head><body><div class="c"><h1>You're signed in</h1><p>You can close this tab and head back to Harbor.</p></div></body></html>"#;
 
@@ -15,6 +27,11 @@ const PAGE_FAIL: &str = r#"<!doctype html><html><head><meta charset="utf-8"><tit
 
 #[tauri::command]
 pub async fn stremio_auth_start(app: AppHandle) -> Result<u16, String> {
+    if let Some(state) = app.try_state::<PendingAuthKey>() {
+        if let Ok(mut slot) = state.0.lock() {
+            *slot = None;
+        }
+    }
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
         .await
         .map_err(|e| format!("bind failed: {}", e))?;
@@ -40,6 +57,11 @@ pub async fn stremio_auth_start(app: AppHandle) -> Result<u16, String> {
                     .unwrap_or_default();
                 if key.is_empty() {
                     return Html(PAGE_FAIL);
+                }
+                if let Some(state) = app.try_state::<PendingAuthKey>() {
+                    if let Ok(mut slot) = state.0.lock() {
+                        *slot = Some(key.clone());
+                    }
                 }
                 let _ = app.emit("stremio-auth", key);
                 if let Some(sender) = done.lock().await.take() {
