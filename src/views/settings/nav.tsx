@@ -238,6 +238,18 @@ function IconAnilist(p: IconProps) {
   );
 }
 
+function IconMal(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
+      <path d="M6 15V9l2.5 3 2.5-3v6" strokeLinejoin="round" />
+      <path d="M11.5 15 13.25 9 15 15" strokeLinejoin="round" />
+      <path d="M12.2 12.5h2.1" />
+      <path d="M15.5 9v6h3.8" strokeLinejoin="round" />
+    </IconBase>
+  );
+}
+
 function IconSimkl(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -330,7 +342,13 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         id: "anilist",
         label: "AniList",
         Icon: IconAnilist,
-        keywords: ["anime", "lists", "watching", "mal", "kitsu"],
+        keywords: ["anime", "lists", "watching", "kitsu"],
+      },
+      {
+        id: "mal",
+        label: "MyAnimeList",
+        Icon: IconMal,
+        keywords: ["mal", "myanimelist", "anime", "lists", "watching", "jikan"],
       },
       {
         id: "simkl",
@@ -690,6 +708,12 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Show AniList comments", section: "anilist", keywords: ["anilist comments", "forum threads", "anime discussion", "detail pages"] },
   { label: "Blur AniList comments by default", section: "anilist", keywords: ["blur comments by default", "blur comments", "spoilers", "hide comments", "reveal", "anime pages"] },
   { label: "Disconnect from AniList", section: "anilist", keywords: ["disconnect", "unlink", "remove anilist", "stop sync"] },
+  { label: "Connect your MyAnimeList account", section: "mal", keywords: ["mal", "myanimelist", "connect", "anime lists", "link account", "anime tracking", "oauth"] },
+  { label: "MAL Client ID", section: "mal", keywords: ["mal client id", "api key", "myanimelist api", "client id", "register app"] },
+  { label: "Connect MyAnimeList", section: "mal", keywords: ["mal login", "authorize", "oauth", "pin code", "link"] },
+  { label: "About MyAnimeList", section: "mal", keywords: ["myanimelist.net", "info", "website", "what is mal"] },
+  { label: "Open MAL profile", section: "mal", keywords: ["open profile", "mal profile", "view profile", "profile page", "myanimelist profile"] },
+  { label: "Disconnect from MyAnimeList", section: "mal", keywords: ["disconnect", "unlink", "remove mal", "stop sync"] },
   { label: "Connect your Simkl account", section: "simkl", keywords: ["simkl", "connect", "tracking", "plan to watch", "mark watched", "sync"] },
   { label: "Connect Simkl", section: "simkl", keywords: ["simkl login", "device code", "authorize", "link"] },
   { label: "About Simkl", section: "simkl", keywords: ["simkl.com", "info", "website", "what is simkl"] },
@@ -1110,6 +1134,7 @@ export function SettingsNav({
     library: libraryKeys > 0 ? `${libraryKeys}/5` : null,
     trakt: null,
     anilist: null,
+    mal: null,
     simkl: null,
     letterboxd: settings.letterboxd.enabled ? (settings.letterboxd.mode === "full" ? "FULL" : "ON") : null,
     relay: relayLive,

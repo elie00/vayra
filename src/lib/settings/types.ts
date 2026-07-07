@@ -127,11 +127,13 @@ export type Settings = {
   harborAvatar: string | null;
   harborColor: string;
   anilistAutoSync: boolean;
+  malAutoSync: boolean;
   anilistBlurComments: boolean;
   showAnilistComments: boolean;
   useAnilistAvatar: boolean;
   useTraktAvatar: boolean;
   useSimklAvatar: boolean;
+  useMalAvatar: boolean;
   traktClientId: string;
   traktClientSecret: string;
   traktAccessToken: string | null;
@@ -299,6 +301,7 @@ export type Settings = {
   animeFavoriteGenres: number[];
   animePicksDismissedAt: number;
   animeAnilistRowsHidden: string[];
+  animeMalRowsHidden: string[];
   pickerLayout: "condensed" | "stremio";
   streamSort: "harbor" | "addon";
   fullStreamDescription: boolean;

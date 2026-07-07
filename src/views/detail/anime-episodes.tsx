@@ -12,6 +12,7 @@ import { fetchWatchedKeySet } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useView } from "@/lib/view";
 import { useAnilistWatched } from "@/lib/anilist/use-anilist-watched";
+import { useMalWatched } from "@/lib/mal/use-mal-watched";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
 import {
   manualWatchedVersion,
@@ -69,6 +70,10 @@ export function AnimeEpisodes({
     trackId ?? meta.id,
     episodes,
   );
+  const { watchedKeys: malWatched, completed: malCompleted } = useMalWatched(
+    trackId ?? meta.id,
+    episodes,
+  );
   const { settings, update } = useSettings();
   const mwVersion = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
   const [watchedMenu, setWatchedMenu] = useState<WatchedMenuTarget | null>(null);
@@ -97,13 +102,14 @@ export function AnimeEpisodes({
           undefined,
           anilistWatched,
           undefined,
+          malWatched,
           ep.imdbSeason,
           ep.imdbEpisode,
         ),
       );
     }
     return m;
-  }, [episodes, meta.id, traktWatched, anilistWatched, mwVersion]);
+  }, [episodes, meta.id, traktWatched, anilistWatched, malWatched, mwVersion]);
   const progressFor = (ep: KitsuEpisode) =>
     progressByNum.get(ep.number) ?? { ratio: 0, watched: false, startedAt: 0 };
   const nextUpNum = useMemo(() => {
@@ -243,7 +249,7 @@ export function AnimeEpisodes({
       )}
       </div>
       {isOneOff ? (
-        <MovieEntryCard meta={meta} ep={episodes[0]} watched={anilistCompleted} />
+        <MovieEntryCard meta={meta} ep={episodes[0]} watched={anilistCompleted || malCompleted} />
       ) : (
         <div key={settings.episodeLayout} className="animate-fade-in">
           {filteredEpisodes && filteredEpisodes.length === 0 ? (

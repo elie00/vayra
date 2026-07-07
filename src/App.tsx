@@ -45,6 +45,8 @@ import { TogetherSummonToast } from "@/components/together-summon-toast";
 import { TogetherParticipantLeftToast } from "@/components/together-participant-left-toast";
 import { AnilistSyncToast } from "@/components/anilist/anilist-sync-toast";
 import { AnilistAvatarSync } from "@/components/anilist/anilist-avatar-sync";
+import { MalAvatarSync } from "@/components/mal/mal-avatar-sync";
+import { MalSyncToast } from "@/components/mal/mal-sync-toast";
 import { TogetherLeaveForLiveModal } from "@/components/together-leave-for-live-modal";
 import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
@@ -75,6 +77,7 @@ import { Home } from "@/views/home";
 import { ParentalProvider } from "@/lib/parental";
 import { TraktProvider } from "@/lib/trakt/provider";
 import { AnilistProvider } from "@/lib/anilist/provider";
+import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
 
@@ -230,6 +233,7 @@ export function App() {
       <ParentalProvider>
       <TraktProvider>
       <AnilistProvider>
+      <MalProvider>
       <SimklProvider>
       <LetterboxdProvider>
       <RankingsProvider>
@@ -247,6 +251,7 @@ export function App() {
                     <HarborErrorBoundary>
                       <ProfileIdentitySync />
                       <AnilistAvatarSync />
+                      <MalAvatarSync />
                       <MiddleClickScroll />
                       <ThemeBackdrop />
                       <WatchlistSync />
@@ -260,6 +265,7 @@ export function App() {
                       <TogetherSummonToast />
                       <TogetherParticipantLeftToast />
                       <AnilistSyncToast />
+                      <MalSyncToast />
                       <TogetherLeaveForLiveModal />
                       <TogetherLocationPublisher />
                       <DiscordPresence />
@@ -291,6 +297,7 @@ export function App() {
       </RankingsProvider>
       </LetterboxdProvider>
       </SimklProvider>
+      </MalProvider>
       </AnilistProvider>
       </TraktProvider>
       </ParentalProvider>
