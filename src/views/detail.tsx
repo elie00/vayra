@@ -36,6 +36,7 @@ import { decodeWatchedEpisodes, stremioMovieWatched } from "@/lib/stremio-watche
 import { setEpisodesWatchedStremio } from "@/lib/stremio-watched-sync";
 import { isDetectedAnime } from "@/lib/anime-detect";
 import { isMovieWatchedLocal, movieWatchedVersion, subscribeMovieWatched } from "@/lib/movie-watched";
+import { getLastSeason } from "@/lib/last-season";
 import { manualWatchedState, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { useTogether } from "@/lib/together/provider";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -845,7 +846,6 @@ export function DetailView({
     candidates.sort((a, b) => b.t - a.t);
     return { season: candidates[0].season, episode: candidates[0].episode };
   }, [meta.id, libraryItem, isAnime, episodeHint]);
-
   useEffect(() => {
     if (loading) return;
 
@@ -885,6 +885,15 @@ export function DetailView({
     prefetchSegments(playMeta, targetEp);
   }, [loading, isSeries, isAnime, lastPlay, animeEpisodes, cinemetaFull?.videos, playMeta]);
 
+  const [currentSeason, setCurrentSeason] = useState<number>(
+    () => getLastSeason(meta.id) ?? lastPlay?.season ?? 1,
+  );
+  const animeSeason =
+    isAnime && seasonPillTag?.kind === "season"
+      ? seasonPillTag.seasonNum
+      : 1;
+  void currentSeason;
+  void animeSeason;
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
     const opts = { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay };
@@ -1344,6 +1353,7 @@ export function DetailView({
             cinemetaVideos={cinemetaFull?.videos}
             stremioWatched={stremioWatched}
             resumeSeason={lastPlay?.season}
+            onSeasonChange={setCurrentSeason}
           />
           </FadeInUp>
         )}
