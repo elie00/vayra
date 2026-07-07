@@ -387,6 +387,7 @@ export type Settings = {
     channels: { discord: boolean; telegram: boolean };
   }>;
   downloadDir: string;
+  downloadCreateFolders: boolean;
   stremioDeeplinkInstall: boolean;
   iptvPlaylists: Array<{
     id: string;

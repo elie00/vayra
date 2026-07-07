@@ -332,6 +332,7 @@ export const DEFAULT: Settings = {
   },
   webhookRules: [],
   downloadDir: "",
+  downloadCreateFolders: false,
   stremioDeeplinkInstall: true,
   iptvPlaylists: [],
   iptvLiveContainer: "ts",
