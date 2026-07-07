@@ -60,7 +60,7 @@ export function TmdbStep() {
       <div className="flex items-center gap-2.5">
         <div
           key={`pulse-${pulseKey}`}
-          className={`flex flex-1 items-center gap-2.5 rounded-xl border border-edge bg-canvas px-4 transition-colors focus-within:border-ink-subtle ${
+          className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-edge bg-canvas px-4 transition-colors focus-within:border-ink-subtle ${
             status === "ok" ? "animate-verified-pulse" : ""
           }`}
         >
@@ -77,7 +77,7 @@ export function TmdbStep() {
             placeholder={t("v3 API key")}
             spellCheck={false}
             autoComplete="off"
-            className="h-12 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-subtle/60"
+            className="h-12 min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-subtle/60"
           />
           {status === "ok" && (
             <Check

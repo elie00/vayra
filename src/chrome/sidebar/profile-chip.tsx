@@ -11,7 +11,10 @@ import { openUrl } from "@/lib/window";
 
 const STREMIO_REGISTER_URL = "https://www.stremio.com/register";
 
-export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {}) {
+export function ProfileChip({
+  collapsed = false,
+  menuPlacement = "above",
+}: { collapsed?: boolean; menuPlacement?: "above" | "below" } = {}) {
   const { user, signOut } = useAuth();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
@@ -53,9 +56,9 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
 
       {menuOpen && (
         <div
-          className={`absolute bottom-full mb-1.5 overflow-hidden rounded-xl border border-edge bg-elevated shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)] ${
-            collapsed ? "start-0 w-64" : "start-2 end-2 lg:start-4 lg:end-4"
-          }`}
+          className={`absolute overflow-hidden rounded-xl border border-edge bg-elevated shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)] ${
+            menuPlacement === "below" ? "top-full mt-1.5" : "bottom-full mb-1.5"
+          } ${collapsed ? "start-0 w-64" : "start-2 end-2 lg:start-4 lg:end-4"}`}
         >
           {otherProfiles.length > 0 && (
             <div className="flex flex-col gap-0.5 border-b border-edge-soft p-1.5">

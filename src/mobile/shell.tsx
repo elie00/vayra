@@ -146,7 +146,7 @@ function PlusScreen() {
       className="fixed inset-0 z-[80] isolate transform-gpu bg-canvas"
     >
       <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
-        <ProfileChip />
+        <ProfileChip menuPlacement="below" />
         <div className="mt-5 grid grid-cols-3 gap-3">
           {dests.map((d) => (
             <button
