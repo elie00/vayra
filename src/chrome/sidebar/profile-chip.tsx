@@ -1,9 +1,11 @@
-import { Lock, LogIn, LogOut, Pencil, Plus, Users } from "lucide-react";
+import { Lock, LogIn, LogOut, Pencil, Plus, Smartphone, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AuthModal } from "@/components/auth-modal";
+import { ConnectPhoneModal } from "@/components/connect-phone-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { isMobileTauri } from "@/lib/platform";
 import { useProfiles, type Profile } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import type { User } from "@/lib/stremio";
@@ -21,6 +23,7 @@ export function ProfileChip({
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -136,6 +139,18 @@ export function ProfileChip({
                 {t("profile.new")}
               </button>
             )}
+            {user && !isMobileTauri() && (
+              <button
+                onClick={() => {
+                  setConnectOpen(true);
+                  setMenuOpen(false);
+                }}
+                className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+              >
+                <Smartphone size={14} strokeWidth={2.2} />
+                {t("Connect your phone")}
+              </button>
+            )}
             {user ? (
               <button
                 onClick={() => {
@@ -164,6 +179,7 @@ export function ProfileChip({
       )}
 
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+      {connectOpen && <ConnectPhoneModal onClose={() => setConnectOpen(false)} />}
     </div>
   );
 }

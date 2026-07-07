@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { onStremioAuthKey } from "./deep-link";
 import { stremioSourceProfileId, useProfiles, type Profile } from "./profiles";
 import { getUser, login as apiLogin, type User } from "./stremio";
 
@@ -107,6 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [commitSession],
   );
+
+  // Jumelage : un lien harbor://stremio-auth?key=… (QR affiché sur le desktop)
+  // connecte directement ce profil avec la clé de session reçue.
+  useEffect(() => onStremioAuthKey((key) => void signInWithKey(key).catch(() => {})), [
+    signInWithKey,
+  ]);
 
   const signOut = useCallback(() => {
     if (!activeProfile) {

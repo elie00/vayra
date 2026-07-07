@@ -8,13 +8,15 @@ import { openUrl } from "@/lib/window";
 import { StremioWebButton } from "./auth-modal/stremio-web-button";
 
 export function AuthModal({ onClose }: { onClose: () => void }) {
-  const { signIn } = useAuth();
+  const { signIn, signInWithKey } = useAuth();
   const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [keyMode, setKeyMode] = useState(false);
+  const [sessionKey, setSessionKey] = useState("");
   const dialogRef = useRef<HTMLFormElement>(null);
   useFocusTrap(dialogRef, true);
 
@@ -29,7 +31,11 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await signIn(email, password, remember);
+      if (keyMode) {
+        await signInWithKey(sessionKey);
+      } else {
+        await signIn(email, password, remember);
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed");
@@ -70,22 +76,46 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
           <span className="h-px flex-1 bg-edge-soft" />
         </div>
 
-        <div className="flex flex-col gap-3">
+        {keyMode ? (
           <Field
-            label={t("Email")}
-            type="email"
-            value={email}
-            onChange={setEmail}
-            disabled={busy}
-          />
-          <Field
-            label={t("Password")}
+            label={t("Session key")}
             type="password"
-            value={password}
-            onChange={setPassword}
+            value={sessionKey}
+            onChange={setSessionKey}
             disabled={busy}
           />
-        </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <Field
+              label={t("Email")}
+              type="email"
+              value={email}
+              onChange={setEmail}
+              disabled={busy}
+            />
+            <Field
+              label={t("Password")}
+              type="password"
+              value={password}
+              onChange={setPassword}
+              disabled={busy}
+            />
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setKeyMode((v) => !v);
+            setError(null);
+          }}
+          disabled={busy}
+          className="self-start text-[12.5px] text-ink-subtle transition-colors hover:text-ink-muted"
+        >
+          {keyMode
+            ? t("Use email and password instead")
+            : t("Already signed in on another device? Paste its session key")}
+        </button>
 
         <button
           type="button"
@@ -112,7 +142,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
 
         <button
           type="submit"
-          disabled={busy || !email || !password}
+          disabled={busy || (keyMode ? !sessionKey.trim() : !email || !password)}
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-edge bg-elevated text-[14px] font-semibold text-ink transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? (
@@ -120,6 +150,8 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
               <Loader2 size={15} className="animate-spin" />
               {t("Signing in...")}
             </>
+          ) : keyMode ? (
+            t("Sign in with key")
           ) : (
             t("Sign in with email")
           )}
