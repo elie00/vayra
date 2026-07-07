@@ -475,8 +475,8 @@ export function AnimeView({ active = true }: { active?: boolean }) {
               ))}
             </Row>
           )}
-          {!malRowsHidden.includes("yourMalLists") && <MalRows />}
           <MalRowControls />
+          {!malRowsHidden.includes("yourMalLists") && <MalRows />}
           {!anilistHidden.includes("yourLists") && <AnilistRows />}
           <AnilistRowControls />
           {!anilistHidden.includes("trending") && <AnilistTrendingRow />}
