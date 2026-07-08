@@ -287,8 +287,7 @@ export function SeriesEpisodes({
                 lastEpisodeAir={lastEpisodeAir}
               />
             )
-          )}
-          )}
+            )}
         </div>
       </div>
 

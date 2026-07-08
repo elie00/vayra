@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useMal } from "@/lib/mal/provider";
 import { fetchMalList } from "@/lib/mal/lists";
-import type { MalListEntry, MalListStatus } from "@/lib/mal/types";
+import type { MalListEntry, MalListGroup, MalListStatus } from "@/lib/mal/types";
 
 export type MalRail = { key: string; title: string; metas: Meta[] };
 
