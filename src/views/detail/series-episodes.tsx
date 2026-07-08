@@ -9,6 +9,7 @@ import {
 } from "@/lib/manual-watched";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
+import { scrollToDataEp } from "@/lib/episode-scroll";
 import { getLastSeason, setLastSeason } from "@/lib/last-season";
 import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
@@ -43,6 +44,7 @@ export function SeriesEpisodes({
   cinemetaVideos,
   stremioWatched,
   resumeSeason,
+  resumeEpisode,
 }: {
   meta: Meta;
   tvId: number;
@@ -53,6 +55,7 @@ export function SeriesEpisodes({
   cinemetaVideos?: NonNullable<Meta["videos"]>;
   stremioWatched?: Set<string>;
   resumeSeason?: number;
+  resumeEpisode?: number;
 }) {
   const t = useT();
   const { settings, update } = useSettings();
@@ -71,6 +74,9 @@ export function SeriesEpisodes({
   };
   const userPickedRef = useRef(false);
   const autoSeasonRef = useRef(false);
+  // Fires the one-shot auto-scroll to the last-watched episode row exactly once
+  // per title, once its season is active and its episodes have rendered.
+  const scrolledRef = useRef(false);
   const [active, setActive] = useState<number>(() => {
     const saved = getLastSeason(meta.id);
     if (saved != null && seasons.some((s) => s.seasonNumber === saved)) return saved;
@@ -92,6 +98,7 @@ export function SeriesEpisodes({
   useEffect(() => {
     userPickedRef.current = false;
     autoSeasonRef.current = false;
+    scrolledRef.current = false;
   }, [meta.id]);
 
   useEffect(() => {
@@ -174,6 +181,17 @@ export function SeriesEpisodes({
       : orderSeason;
 
   const activeSeason = seasons.find((s) => s.seasonNumber === active);
+
+  // Once the last-watched season is active and its episodes have rendered, scroll
+  // that episode's row into view (centered). Runs once per title so it never
+  // hijacks a manual season change afterward.
+  useEffect(() => {
+    if (scrolledRef.current) return;
+    if (resumeEpisode == null || resumeSeason == null || active !== resumeSeason) return;
+    if (loading || enrichedEpisodes.length === 0) return;
+    scrolledRef.current = true;
+    scrollToDataEp(scrollRef.current, resumeEpisode, { center: true });
+  }, [resumeEpisode, resumeSeason, active, loading, enrichedEpisodes.length, scrollRef]);
 
   const progressByEp = useMemo(() => {
     const m = new Map<number, { ratio: number; watched: boolean; startedAt: number }>();
