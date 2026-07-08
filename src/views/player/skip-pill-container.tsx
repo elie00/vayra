@@ -67,12 +67,22 @@ export function SkipPillContainer({
     if (!allowAutoSkip || !realActiveSkip) return;
     const wantSkip =
       (realActiveSkip.kind === "intro" && settings.autoSkipIntro) ||
+      (realActiveSkip.kind === "recap" && settings.autoSkipRecap) ||
+      (realActiveSkip.kind === "outro" && settings.autoSkipOutro) ||
       (realActiveSkip.kind === "ad" && settings.autoSkipAd);
     if (!wantSkip) return;
     if (autoSkippedRef.current === realActiveSkip) return;
     autoSkippedRef.current = realActiveSkip;
     onSkip(realActiveSkip.endSec);
-  }, [settings.autoSkipIntro, settings.autoSkipAd, allowAutoSkip, realActiveSkip, onSkip]);
+  }, [
+    settings.autoSkipIntro,
+    settings.autoSkipRecap,
+    settings.autoSkipOutro,
+    settings.autoSkipAd,
+    allowAutoSkip,
+    realActiveSkip,
+    onSkip,
+  ]);
 
   const [autoHiddenKey, setAutoHiddenKey] = useState<string | null>(null);
   const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(() => new Set());
@@ -101,6 +111,7 @@ export function SkipPillContainer({
       nextEp={nextEp}
       nextEpMask={nextEpMask}
       remainingSec={remainingSec}
+      leadSec={leadSec}
       visible={visible}
       onSkip={() => {
         if (activeSkip) onSkip(activeSkip.endSec);

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { EpisodeRatingBadge } from "./episode-rating-badge";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
+import { prefetchSegments } from "@/lib/skip-intro";
 import { formatAirDate } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -45,6 +46,7 @@ export function EpisodeGridCard({
   const enter = () => {
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setPreview(true), HOVER_DELAY);
+    prefetchSegments(meta, { season: g.season, episode: g.number });
   };
   const leave = () => {
     window.clearTimeout(timer.current);
@@ -67,6 +69,7 @@ export function EpisodeGridCard({
         data-no-card-ring
         onClick={g.play}
         onContextMenu={ctx}
+        onFocus={() => prefetchSegments(meta, { season: g.season, episode: g.number })}
         className="flex w-full flex-col gap-2.5 text-start"
       >
         <div className="relative aspect-video overflow-hidden rounded-xl">

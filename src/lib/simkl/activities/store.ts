@@ -38,30 +38,55 @@ export interface RawIds {
 }
 
 const CACHE_KEY = "harbor.simkl.cache.v2";
+let memoryCache: SimklCache | null = null;
+let memoryCacheLoaded = false;
+let writeTimeout: number | null = null;
 
 export function getLocalCache(): SimklCache | null {
+  if (memoryCacheLoaded) return memoryCache;
   if (typeof window === "undefined" || typeof localStorage === "undefined") return null;
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as SimklCache;
-  } catch {
-    return null;
+    if (raw) {
+      memoryCache = JSON.parse(raw) as SimklCache;
+    }
+  } catch (e) {
+    console.error("Failed to parse SIMKL cache", e);
   }
+  memoryCacheLoaded = true;
+  return memoryCache;
 }
 
 export function saveLocalCache(cache: SimklCache) {
+  memoryCache = cache;
+  memoryCacheLoaded = true;
   if (typeof window === "undefined" || typeof localStorage === "undefined") return;
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch (e) {
-    console.error("Failed to save SIMKL cache", e);
-  }
+  if (writeTimeout !== null) return;
+  writeTimeout = window.setTimeout(() => {
+    writeTimeout = null;
+    try {
+      if (memoryCache) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(memoryCache));
+      }
+    } catch (e) {
+      console.error("Failed to save SIMKL cache asynchronously", e);
+    }
+  }, 1000); // 1-second debounce
 }
 
 export function clearLocalCache() {
+  memoryCache = null;
+  memoryCacheLoaded = true;
+  if (writeTimeout !== null) {
+    window.clearTimeout(writeTimeout);
+    writeTimeout = null;
+  }
   if (typeof window === "undefined" || typeof localStorage === "undefined") return;
-  localStorage.removeItem(CACHE_KEY);
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch (e) {
+    console.error("Failed to clear SIMKL cache", e);
+  }
 }
 
 export function emptyCache(): SimklCache {
