@@ -89,7 +89,7 @@ export function QualityPanel() {
       </Section>
 
       <Section
-        title={t("Skip intros")}
+        title={t("Skip intros & credits")}
         subtitle={t("Harbor finds intro and credits timing from AniSkip, TheIntroDB, and the file's own chapters, then shows a Skip button at the right moment.")}
       >
         <ToggleRow
@@ -103,6 +103,18 @@ export function QualityPanel() {
           sub={t("Jump past openings automatically the moment one starts. The Skip button still shows either way, and seeking back into an intro replays it without skipping again.")}
           value={settings.autoSkipIntro}
           onChange={(v) => update({ autoSkipIntro: v })}
+        />
+        <ToggleRow
+          label={t("Auto-skip recaps")}
+          sub={t("Automatically jump past recap segments.")}
+          value={settings.autoSkipRecap}
+          onChange={(v) => update({ autoSkipRecap: v })}
+        />
+        <ToggleRow
+          label={t("Auto-skip credit outros")}
+          sub={t("Automatically skip ending credits and trigger the next episode countdown immediately.")}
+          value={settings.autoSkipOutro}
+          onChange={(v) => update({ autoSkipOutro: v })}
         />
         {settings.showSkipButton && (
           <div className="flex flex-col gap-2">

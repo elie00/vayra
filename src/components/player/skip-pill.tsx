@@ -6,7 +6,7 @@ import type { SpoilerMask } from "@/lib/spoilers";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 
-const UP_NEXT_WINDOW_SEC = 15;
+
 
 export function SkipPill({
   segment,
@@ -14,6 +14,7 @@ export function SkipPill({
   nextEp,
   nextEpMask,
   remainingSec,
+  leadSec,
   visible,
   onSkip,
   onNextEpisode,
@@ -25,6 +26,7 @@ export function SkipPill({
   nextEp: PlayEpisode | null;
   nextEpMask?: SpoilerMask;
   remainingSec: number;
+  leadSec?: number;
   visible: boolean;
   onSkip: () => void;
   onNextEpisode: () => void;
@@ -49,8 +51,9 @@ export function SkipPill({
   if (!mounted) return null;
 
   const isOutroNext = mounted.kind === "outro" && hasNextEp && !!nextEp;
+  const finalLeadSec = typeof leadSec === "number" && leadSec > 0 ? leadSec : 15;
   const inCountdownWindow =
-    isOutroNext && remainingSec > 0 && remainingSec <= UP_NEXT_WINDOW_SEC;
+    isOutroNext && remainingSec > 0 && remainingSec <= finalLeadSec;
 
   if (isOutroNext && inCountdownWindow && nextEp) {
     return (
@@ -58,6 +61,7 @@ export function SkipPill({
         ep={nextEp}
         mask={nextEpMask}
         remainingSec={remainingSec}
+        leadSec={finalLeadSec}
         visible={visible && show}
         onPlay={onNextEpisode}
         onCancel={onCancelAutoNext}
@@ -115,6 +119,7 @@ function UpNextCard({
   ep,
   mask,
   remainingSec,
+  leadSec,
   visible,
   onPlay,
   onCancel,
@@ -122,13 +127,14 @@ function UpNextCard({
   ep: PlayEpisode;
   mask?: SpoilerMask;
   remainingSec: number;
+  leadSec: number;
   visible: boolean;
   onPlay: () => void;
   onCancel?: () => void;
 }) {
   const t = useT();
   const seconds = Math.max(0, Math.ceil(remainingSec));
-  const progress = Math.min(1, Math.max(0, 1 - seconds / UP_NEXT_WINDOW_SEC));
+  const progress = Math.min(1, Math.max(0, 1 - seconds / leadSec));
   const epLabel =
     typeof ep.season === "number" && typeof ep.episode === "number"
       ? `S${ep.imdbSeason ?? ep.season} · E${ep.imdbEpisode ?? ep.episode}`

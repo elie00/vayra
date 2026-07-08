@@ -86,6 +86,7 @@ function animeAwardLookupName(
   return null;
 }
 import { Pill } from "./detail/pill";
+import { prefetchSegments } from "@/lib/skip-intro";
 import { Credit } from "./detail/credit";
 import { TitlePlate } from "./detail/title-plate";
 import { PlayModeHint } from "./detail/play-mode-hint";
@@ -844,6 +845,46 @@ export function DetailView({
     candidates.sort((a, b) => b.t - a.t);
     return { season: candidates[0].season, episode: candidates[0].episode };
   }, [meta.id, libraryItem, isAnime, episodeHint]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    let targetEp: PlayEpisode | undefined = undefined;
+    if (isSeries) {
+      if (isAnime) {
+        const wantedEp = lastPlay
+          ? animeEpisodes.find(
+              (e) => (e.seasonNumber || 1) === lastPlay.season && e.number === lastPlay.episode,
+            )
+          : animeEpisodes[0];
+        if (wantedEp) {
+          targetEp = {
+            season: wantedEp.seasonNumber || 1,
+            episode: wantedEp.number,
+            name: wantedEp.title,
+            still: wantedEp.thumbnail ?? undefined,
+            overview: wantedEp.synopsis || undefined,
+            kitsuStreamId: wantedEp.streamId,
+            imdbId: wantedEp.imdbId,
+            imdbSeason: wantedEp.imdbSeason,
+            imdbEpisode: wantedEp.imdbEpisode,
+          };
+        }
+      } else {
+        const lp = lastPlay || { season: 1, episode: 1 };
+        targetEp = { season: lp.season, episode: lp.episode };
+        if (cinemetaFull?.videos) {
+          const v = cinemetaFull.videos.find((x) => x.season === lp.season && x.episode === lp.episode);
+          if (v) {
+            targetEp.imdbId = v.id;
+          }
+        }
+      }
+    }
+
+    prefetchSegments(playMeta, targetEp);
+  }, [loading, isSeries, isAnime, lastPlay, animeEpisodes, cinemetaFull?.videos, playMeta]);
+
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
     const opts = { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker && settings.instantPlay };

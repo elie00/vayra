@@ -189,6 +189,8 @@ export const DEFAULT: Settings = {
   subtitleAutoUpgrade: false,
   betaUpdates: false,
   autoSkipIntro: false,
+  autoSkipRecap: false,
+  autoSkipOutro: false,
   autoSkipAd: false,
   showSkipButton: true,
   skipButtonHideSec: 0,

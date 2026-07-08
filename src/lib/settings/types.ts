@@ -220,6 +220,8 @@ export type Settings = {
   subtitleAutoUpgrade: boolean;
   betaUpdates: boolean;
   autoSkipIntro: boolean;
+  autoSkipRecap: boolean;
+  autoSkipOutro: boolean;
   autoSkipAd: boolean;
   showSkipButton: boolean;
   skipButtonHideSec: number;
