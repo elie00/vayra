@@ -14,7 +14,7 @@ import { readSeasonLock } from "@/lib/season-lock";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
-import { useView, type PlayEpisode } from "@/lib/view";
+import { useScrollMemory, useView, type PlayEpisode } from "@/lib/view";
 import { exitWindowFullscreen } from "@/lib/fullscreen-state";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
@@ -137,6 +137,7 @@ export function PlayPicker({
     settings.requirePreferredLanguage === true && baseLangs.length > 0,
   );
   const [cachedOnly, setCachedOnly] = useState(false);
+  const pickerMainRef = useRef<HTMLElement | null>(null);
 
   const { inviteKey, canInvite, inviteSentRef, hostSourceForMedia, expectHostSource } = useRoomInvite({
     meta,
@@ -489,6 +490,14 @@ export function PlayPicker({
       resolving != null);
   void terminalEmpty;
 
+  const pickerScrollKey = useMemo(() => {
+    const attemptKey = typeof attempt === "number" ? `:a${attempt}` : "";
+    return episode
+      ? `picker:${meta.id}:${episode.season}:${episode.episode}${attemptKey}`
+      : `picker:${meta.id}${attemptKey}`;
+  }, [attempt, episode, meta.id]);
+  useScrollMemory(pickerScrollKey, pickerMainRef, !showAutoTransition);
+
   const noSourcesConfigured =
     addons !== null && addons.length === 0 && debrids.length === 0;
 
@@ -562,7 +571,10 @@ export function PlayPicker({
   }
 
   return (
-    <main className="absolute inset-0 z-50 overflow-y-auto bg-canvas">
+    <main
+      ref={pickerMainRef}
+      className="absolute inset-0 z-50 overflow-y-auto bg-canvas"
+    >
       <BackdropLayer src={backdropSrc} />
 
       <div aria-hidden data-tauri-drag-region={fs ? "false" : "true"} className="absolute inset-x-0 top-0 z-10 h-20" />
