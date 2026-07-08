@@ -8,7 +8,7 @@ type RawNode = {
   alternative_titles: { synonyms: string[]; en: string; ja: string } | null;
   num_episodes: number | null;
   mean: number | null;
-  list_status: {
+  my_list_status: {
     status: string;
     score: number;
     num_episodes_watched: number;
@@ -21,13 +21,13 @@ type RawEntry = { node: RawNode };
 type ListResponse = { data: RawEntry[]; paging: { next?: string } | null };
 
 function parseNode(n: RawNode): MalListEntry | null {
-  if (!n.list_status) return null;
+  if (!n.my_list_status) return null;
   return {
-    status: n.list_status.status as MalListStatus,
-    score: n.list_status.score,
-    numEpisodesWatched: n.list_status.num_episodes_watched,
-    isRewatching: n.list_status.is_rewatching,
-    updatedAt: n.list_status.updated_at,
+    status: n.my_list_status.status as MalListStatus,
+    score: n.my_list_status.score,
+    numEpisodesWatched: n.my_list_status.num_episodes_watched,
+    isRewatching: n.my_list_status.is_rewatching,
+    updatedAt: n.my_list_status.updated_at,
     anime: {
       id: n.id,
       title: n.title,
@@ -40,7 +40,7 @@ function parseNode(n: RawNode): MalListEntry | null {
 
 export async function fetchMalList(): Promise<MalListGroup[]> {
   const all: MalListEntry[] = [];
-  let cursor: string | null = `/users/@me/animelist?fields=list_status,num_episodes,mean,main_picture,alternative_titles&nsfw=true&limit=1000`;
+  let cursor: string | null = `/users/@me/animelist?fields=my_list_status,num_episodes,mean,main_picture,alternative_titles&nsfw=true&limit=1000`;
   while (cursor) {
     const data: ListResponse = await malRequest(cursor);
     for (const entry of data.data) { const parsed = parseNode(entry.node); if (parsed) all.push(parsed); }

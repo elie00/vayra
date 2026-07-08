@@ -13,8 +13,7 @@
     "tauri:build:linux-system": "tauri build --config src-tauri/tauri.linux-system.conf.json",
     "setup:libmpv": "node scripts/fetch-libmpv.mjs",
     "setup:ffmpeg": "node scripts/fetch-ffmpeg.mjs",
-    "setup:fonts": "node scripts/fetch-fonts.mjs",
-    "copy-installer": "node -e \"const fs = require('fs'); fs.mkdirSync('C:/Users/abd20/.gemini/antigravity/brain/81456ec3-555b-4df2-800a-a36f861508d5', { recursive: true }); fs.copyFileSync('src-tauri/target/release/bundle/nsis/Harbor_0.9.20_x64-setup.exe', 'C:/Users/abd20/.gemini/antigravity/brain/81456ec3-555b-4df2-800a-a36f861508d5/Harbor_0.9.20_x64-setup.exe')\""
+    "setup:fonts": "node scripts/fetch-fonts.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

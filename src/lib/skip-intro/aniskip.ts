@@ -1,25 +1,82 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { SkipSegment } from "./types";
+import { getLocalCache } from "@/lib/simkl/activities";
 
-const malCache = new Map<number, number | null>();
+const LOCAL_STORAGE_KEY = "harbor.kitsu-to-mal.cache.v1";
+let kitsuToMalCache: Record<number, number | null> = {};
+
+if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (raw) {
+      kitsuToMalCache = JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error("Failed to load kitsu-to-mal cache from localStorage", e);
+  }
+}
+
+let writeTimeout: number | null = null;
+function scheduleCacheWrite() {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+  if (writeTimeout !== null) return;
+  writeTimeout = window.setTimeout(() => {
+    writeTimeout = null;
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(kitsuToMalCache));
+    } catch (e) {
+      console.error("Failed to write kitsu-to-mal cache to localStorage", e);
+    }
+  }, 1000);
+}
+
 const segmentCache = new Map<string, SkipSegment[]>();
 const inflight = new Map<string, Promise<SkipSegment[]>>();
 
 export async function kitsuToMal(kitsuId: number): Promise<number | null> {
-  if (malCache.has(kitsuId)) return malCache.get(kitsuId)!;
-  const res = await fetch(`https://kitsu.io/api/edge/anime/${kitsuId}/mappings`);
-  if (!res.ok) {
-    malCache.set(kitsuId, null);
+  if (kitsuId in kitsuToMalCache) return kitsuToMalCache[kitsuId];
+
+  try {
+    const simklCache = getLocalCache();
+    if (simklCache) {
+      const simklId = simklCache.kitsuToSimkl[String(kitsuId)];
+      if (simklId != null) {
+        const malEntry = Object.entries(simklCache.malToSimkl).find(([_, sid]) => sid === simklId);
+        if (malEntry) {
+          const malId = parseInt(malEntry[0], 10);
+          if (Number.isFinite(malId)) {
+            kitsuToMalCache[kitsuId] = malId;
+            scheduleCacheWrite();
+            return malId;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Failed to lookup Kitsu ID in SIMKL mappings", e);
+  }
+
+  try {
+    const res = await fetch(`https://kitsu.io/api/edge/anime/${kitsuId}/mappings`);
+    if (!res.ok) {
+      kitsuToMalCache[kitsuId] = null;
+      scheduleCacheWrite();
+      return null;
+    }
+    const json = (await res.json()) as {
+      data?: Array<{ attributes?: { externalSite?: string; externalId?: string } }>;
+    };
+    const mal = json.data?.find((d) => d.attributes?.externalSite === "myanimelist/anime");
+    const id = mal?.attributes?.externalId ? parseInt(mal.attributes.externalId, 10) : null;
+    const out = Number.isFinite(id) ? (id as number) : null;
+    kitsuToMalCache[kitsuId] = out;
+    scheduleCacheWrite();
+    return out;
+  } catch {
+    kitsuToMalCache[kitsuId] = null;
+    scheduleCacheWrite();
     return null;
   }
-  const json = (await res.json()) as {
-    data?: Array<{ attributes?: { externalSite?: string; externalId?: string } }>;
-  };
-  const mal = json.data?.find((d) => d.attributes?.externalSite === "myanimelist/anime");
-  const id = mal?.attributes?.externalId ? parseInt(mal.attributes.externalId, 10) : null;
-  const out = Number.isFinite(id) ? (id as number) : null;
-  malCache.set(kitsuId, out);
-  return out;
 }
 
 export function fetchAniSkipSegments(
