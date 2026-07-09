@@ -36,6 +36,9 @@ export type PlayerSrc = {
   attempt?: number;
   autoFired?: boolean;
   resume?: boolean;
+  // Force playback to start at 0:00, ignoring any saved resume position (the
+  // watch-local modal's "Watch from the beginning" choice sets this).
+  startFromZero?: boolean;
   streamRef?: PlayerStreamRef;
   liveProgram?: string;
   isLive?: boolean;

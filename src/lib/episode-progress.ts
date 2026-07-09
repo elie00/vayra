@@ -61,7 +61,17 @@ export function getEpisodeProgress(
   traktSeason?: number,
   traktEpisode?: number,
 ): EpisodeProgress {
-  const entry = readResumeEntry(resumeId, season, episode);
+  // Local playback may have saved resume/manual-watched under a different id than
+  // the catalog resumeId (e.g. the imdb id when played from a local file, while a
+  // search-entry detail page is keyed tmdb:tv:X). Probe both so per-episode
+  // progress shows regardless of how the page was reached.
+  const resumeIds =
+    traktImdbId && traktImdbId !== resumeId ? [resumeId, traktImdbId] : [resumeId];
+  let entry: { ms: number; t: number } | null = null;
+  for (const id of resumeIds) {
+    const e = readResumeEntry(id, season, episode);
+    if (e && (!entry || e.t > entry.t)) entry = e;
+  }
   const startedAt = entry?.t ?? 0;
 
   const manual = manualWatchedState(resumeId, season, episode);
@@ -77,7 +87,8 @@ export function getEpisodeProgress(
   const anilistDone = anilistWatched ? anilistWatched.has(`${season}:${episode}`) : false;
   const simklDone = simklWatched ? simklWatched.has(`${season}:${episode}`) : false;
   const malDone = malWatched ? malWatched.has(`${season}:${episode}`) : false;
-  const done = manual === true || traktDone || stremioDone || anilistDone || simklDone || malDone;
+  const manualDone = resumeIds.some((id) => manualWatchedState(id, season, episode) === true);
+  const done = manualDone || traktDone || stremioDone || anilistDone || simklDone || malDone;
 
   return {
     ratio: done ? 1 : ratio,
