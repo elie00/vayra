@@ -28,26 +28,62 @@ function decodeUrl(raw: string): string {
 
 function parseHits(md: string): WebHit[] {
   const hits: WebHit[] = [];
+  const seen = new Set<string>();
   const lines = md.split(/\r?\n/);
-  let i = 0;
-  while (i < lines.length && hits.length < MAX_RESULTS) {
-    const m = /^\s*\[([^\]]+)\]\(([^)]+)\)/.exec(lines[i]);
-    if (!m) { i += 1; continue; }
-    const title = m[1].trim();
-    const url = decodeUrl(m[2].trim());
-    if (!/^https?:/.test(url)) { i += 1; continue; }
-    if (url.includes("duckduckgo.com")) { i += 1; continue; }
-    if (!title) { i += 1; continue; }
-    const buf: string[] = [];
-    i += 1;
-    while (i < lines.length && buf.length < 4) {
-      const ln = lines[i];
-      if (/^\s*\[/.test(ln) || /^\s*$/.test(ln)) break;
-      buf.push(ln.replace(/[*_`]/g, "").trim());
-      i += 1;
+  const isHostname = (u: string) => {
+    try { return new URL(u).hostname; } catch { return ""; }
+  };
+
+  const cleanText = (s: string) =>
+    s.replace(/\*+/g, "").replace(/\s+/g, " ").trim();
+
+  for (let i = 0; i < lines.length && hits.length < MAX_RESULTS; i++) {
+    const line = lines[i];
+    if (/^\s*!\[/.test(line)) continue;
+    if (/^\s*\{#/.test(line)) continue;
+    const m = /^\s*##\s*\[([^\]]+)\]\(([^)]+)\)/.exec(line);
+    if (!m) continue;
+
+    let url = decodeUrl(m[2].trim());
+    const host = isHostname(url);
+    if (!host || /duckduckgo\.com|external-content\.duckduckgo\.com/i.test(host)) {
+      let substituted = url;
+      for (let j = i + 1; j < Math.min(lines.length, i + 12); j++) {
+        const ln = lines[j];
+        if (/^\s*!\[/.test(ln)) continue;
+        const pm = /^\s*\[([^\]]+)\]\(([^)]+)\)/.exec(ln);
+        if (!pm) continue;
+        const candidate = decodeUrl(pm[2].trim());
+        const h = isHostname(candidate);
+        if (h && !/duckduckgo\.com|external-content\.duckduckgo\.com/i.test(h)) {
+          substituted = candidate;
+          break;
+        }
+      }
+      url = substituted;
     }
-    const snippet = buf.join(" ").slice(0, MAX_SNIPPET_CHARS);
-    hits.push({ title, url, snippet });
+
+    const finalHost = isHostname(url);
+    if (!finalHost || /duckduckgo\.com|external-content\.duckduckgo\.com/i.test(finalHost)) continue;
+    if (!/^https?:\/\//.test(url)) continue;
+    if (seen.has(url)) continue;
+
+    let title = cleanText(m[1]);
+    for (let j = i + 1; j < Math.min(lines.length, i + 12); j++) {
+      const ln = lines[j];
+      if (/^\s*!\[/.test(ln)) continue;
+      const pm = /^\s*\[([^\]]+)\]\(([^)]+)\)/.exec(ln);
+      if (!pm) continue;
+      const candidate = cleanText(pm[1]);
+      if (candidate.length > 18 && candidate !== title && !candidate.startsWith("![Image")) {
+        title = candidate;
+        break;
+      }
+    }
+    if (title.length < 6) continue;
+
+    seen.add(url);
+    hits.push({ title, url, snippet: title.slice(0, MAX_SNIPPET_CHARS) });
   }
   return hits;
 }
