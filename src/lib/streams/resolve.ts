@@ -61,9 +61,6 @@ export async function resolveStream(
     return { ok: false, code: engineFailureCode(), tried };
   }
 
-  const probeUncachedDirect =
-    userCommitted && hasUncachedMarker(stream) && !!stream.infoHash && directTorrentEnabled();
-
   if (stream.url && stream.url !== "#") {
     const headers = stream.behaviorHints?.proxyHeaders?.request ?? stream.behaviorHints?.headers;
     const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName;
@@ -81,7 +78,7 @@ export async function resolveStream(
       notWebReady: stream.behaviorHints?.notWebReady,
       subtitles: stream.subtitles?.map((s) => ({ url: s.url, lang: s.lang, id: s.id })),
     };
-    const ok = await validateLink(data, expectedSize, headers, signal, probeUncachedDirect);
+    const ok = await validateLink(data, expectedSize, headers, signal, false);
     if (ok) return { ok: true, data, via: "direct" };
     tried.push({ slug: "direct", code: "stub-or-error-video" });
     if (debrids.length === 0 || !stream.infoHash) {
@@ -136,7 +133,10 @@ export async function resolveStream(
       continue;
     }
     const ok = await validateLink(r.data, expectedSize, r.data.headers, signal);
-    if (ok) return { ok: true, data: r.data, via: d.slug };
+    if (ok) {
+      if (fullDownloadEnabled()) startFullDownload(stream.infoHash.toLowerCase(), r.data.url);
+      return { ok: true, data: r.data, via: d.slug };
+    }
     dwarn(`[resolve] ${d.slug} returned suspicious link (likely error/downloading video), trying next debrid`);
     tried.push({ slug: d.slug, code: "stub-or-error-video" });
   }
@@ -230,7 +230,10 @@ export async function resolveViaDebrids(
       continue;
     }
     const ok = await validateLink(r.data, null, r.data.headers, signal);
-    if (ok) return { ok: true, data: r.data, via: d.slug };
+    if (ok) {
+      if (fullDownloadEnabled()) startFullDownload(hash.toLowerCase(), r.data.url);
+      return { ok: true, data: r.data, via: d.slug };
+    }
     tried.push({ slug: d.slug, code: "stub-or-error-video" });
   }
   return { ok: false, code: tried[tried.length - 1]?.code ?? "all-debrids-failed", tried };

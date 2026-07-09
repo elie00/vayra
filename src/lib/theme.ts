@@ -1667,6 +1667,15 @@ export function isKnownPreset(id: string): boolean {
   return getThemeById(id) !== null;
 }
 
+const CYCLE_THEME_IDS: ThemePresetId[] = (Object.keys(THEME_PRESETS) as ThemePresetId[]).filter(
+  (id) => id !== "crunch",
+);
+
+export function nextColorTheme(current: string): ThemePresetId {
+  const i = CYCLE_THEME_IDS.indexOf(current as ThemePresetId);
+  return CYCLE_THEME_IDS[(i + 1) % CYCLE_THEME_IDS.length];
+}
+
 function resolveTokens(theme: ThemeSettings): Record<string, string> {
   if (theme.preset === "custom" && theme.customColors) {
     return customColorsToTokens(theme.customColors);

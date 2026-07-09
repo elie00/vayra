@@ -1,4 +1,4 @@
-import { Check, Play, Eye } from "lucide-react";
+import { Check, Eye } from "lucide-react";
 import { useMemo } from "react";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
@@ -25,14 +25,22 @@ export function AnimeEpisodeStrip({
   onContextMenu,
   layout = "strip",
   onReachEnd,
+  metaForEp,
 }: {
   meta: Meta;
   episodes: KitsuEpisode[];
   progressFor: (ep: KitsuEpisode) => Progress;
   spoilerFor?: (ep: KitsuEpisode) => SpoilerMask;
-  onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    season: number,
+    episode: number,
+    watched: boolean,
+    sourceMetaId?: string,
+  ) => void;
   layout?: "strip" | "grid";
   onReachEnd?: () => void;
+  metaForEp?: (ep: KitsuEpisode) => Meta;
 }) {
   const { openPicker } = useView();
   const { settings } = useSettings();
@@ -40,41 +48,46 @@ export function AnimeEpisodeStrip({
 
   const gridEpisodes = useMemo<GridEpisode[]>(
     () =>
-      episodes.map((ep) => ({
-        key: String(ep.id),
-        number: ep.number,
-        season: ep.seasonNumber || 1,
-        title: ep.title || t("Episode {n}", { n: ep.number }),
-        stills: [ep.thumbnail, ep.thumbnailFallback, meta.background].filter((u): u is string => !!u),
-        runtime: ep.length,
-        airDate: ep.airdate,
-        overview: ep.synopsis || undefined,
-        rating: ep.rating ?? undefined,
-        ratingIsImdb: ep.rating != null ? !!ep.ratingIsImdb : false,
-        filler: ep.filler,
-        upcoming: isUpcomingDate(ep.airdate),
-        play: () =>
-          openPicker(
-            meta,
-            {
-              season: ep.seasonNumber || 1,
-              episode: ep.number,
-              name: ep.title,
-              still: ep.thumbnail ?? undefined,
-              overview: ep.synopsis || undefined,
-              kitsuStreamId: ep.streamId,
-              imdbId: ep.imdbId,
-              imdbSeason: ep.imdbSeason,
-              imdbEpisode: ep.imdbEpisode,
-            },
-            { autoPlay: settings.instantPlay },
-          ),
-      })),
-    [episodes, meta, openPicker, settings.instantPlay, t],
+      episodes.map((ep) => {
+        const epMeta = metaForEp ? metaForEp(ep) : meta;
+        return {
+          key: String(ep.id),
+          number: ep.number,
+          season: ep.seasonNumber || 1,
+          title: ep.title || t("Episode {n}", { n: ep.number }),
+          stills: [ep.thumbnail, ep.thumbnailFallback, meta.background].filter((u): u is string => !!u),
+          runtime: ep.length,
+          airDate: ep.airdate,
+          overview: ep.synopsis || undefined,
+          rating: ep.rating ?? undefined,
+          ratingIsImdb: ep.rating != null ? !!ep.ratingIsImdb : false,
+          filler: ep.filler,
+          upcoming: isUpcomingDate(ep.airdate),
+          meta: epMeta,
+          sourceMetaId: ep.sourceMetaId,
+          play: () =>
+            openPicker(
+              epMeta,
+              {
+                season: ep.seasonNumber || 1,
+                episode: ep.number,
+                name: ep.title,
+                still: ep.thumbnail ?? undefined,
+                overview: ep.synopsis || undefined,
+                kitsuStreamId: ep.streamId,
+                imdbId: ep.imdbId,
+                imdbSeason: ep.imdbSeason,
+                imdbEpisode: ep.imdbEpisode,
+              },
+              { autoPlay: settings.instantPlay },
+            ),
+        };
+      }),
+    [episodes, meta, metaForEp, openPicker, settings.instantPlay, t],
   );
-  const epByNumber = useMemo(() => {
-    const m = new Map<number, KitsuEpisode>();
-    for (const e of episodes) m.set(e.number, e);
+  const epByKey = useMemo(() => {
+    const m = new Map<string, KitsuEpisode>();
+    for (const e of episodes) m.set(String(e.id), e);
     return m;
   }, [episodes]);
 
@@ -83,8 +96,8 @@ export function AnimeEpisodeStrip({
       <EpisodeGrid
         meta={meta}
         episodes={gridEpisodes}
-        progressFor={(g) => progressFor(epByNumber.get(g.number)!)}
-        spoilerFor={spoilerFor ? (g) => spoilerFor(epByNumber.get(g.number)!) : undefined}
+        progressFor={(g) => progressFor(epByKey.get(g.key)!)}
+        spoilerFor={spoilerFor ? (g) => spoilerFor(epByKey.get(g.key)!) : undefined}
         onContextMenu={onContextMenu}
       />
     );
@@ -94,7 +107,7 @@ export function AnimeEpisodeStrip({
       {episodes.map((ep) => (
         <div key={ep.id} className="w-[244px] shrink-0">
           <AnimeEpisodeStripCard
-            meta={meta}
+            meta={metaForEp ? metaForEp(ep) : meta}
             ep={ep}
             progress={progressFor(ep)}
             spoiler={spoilerFor?.(ep)}
@@ -117,7 +130,13 @@ function AnimeEpisodeStripCard({
   ep: KitsuEpisode;
   progress: Progress;
   spoiler?: SpoilerMask;
-  onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    season: number,
+    episode: number,
+    watched: boolean,
+    sourceMetaId?: string,
+  ) => void;
 }) {
   const t = useT();
   const { openPicker, openEpisodeDetail } = useView();
@@ -146,7 +165,9 @@ function AnimeEpisodeStripCard({
     <div
       data-ep={ep.number}
       data-no-card-ring
-      onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber || 1, ep.number, progress.watched)}
+      onContextMenu={(e) =>
+        onContextMenu?.(e, ep.seasonNumber || 1, ep.number, progress.watched, ep.sourceMetaId)
+      }
       className="group flex w-full flex-col gap-2.5 text-start"
     >
       <button
@@ -163,26 +184,18 @@ function AnimeEpisodeStripCard({
           </span>
         )}
 
-        {/* Persistent bottom gradient with Synopsis */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
-          {settings.showEpisodeRating && ep.rating != null && ep.rating > 0 ? (
-            <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
-              <EpisodeRatingBadge value={ep.rating} isImdb={!!ep.ratingIsImdb} />
-            </div>
-          ) : null}
-          {ep.synopsis && (
-            <p className="line-clamp-4 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
+        {settings.showEpisodeRating && ep.rating != null && ep.rating > 0 && (
+          <span className="absolute start-2 top-2 z-[6] opacity-0 drop-shadow-md transition-opacity duration-200 group-hover:opacity-100">
+            <EpisodeRatingBadge value={ep.rating} isImdb={!!ep.ratingIsImdb} />
+          </span>
+        )}
+        {ep.synopsis && (
+          <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/92 via-black/55 to-transparent p-2 pt-10 text-start pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <p className="line-clamp-5 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
               {ep.synopsis}
             </p>
-          )}
-        </div>
-
-        {/* Hover Play Button */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-ink/90 text-canvas backdrop-blur-md">
-            <Play size={16} fill="currentColor" />
           </div>
-        </div>
+        )}
 
         <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink transition-opacity group-hover:opacity-0">
           {ep.number}

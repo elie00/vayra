@@ -178,8 +178,6 @@ const settings: Record<string, string> = {
   ". Leave empty for the default.": ". اتركه فارغًا للوضع الافتراضي.",
   "Fills in where TMDB comes up empty (anime, older catalog). Free at ": "يملأ الفراغات عندما لا توفر TMDB نتائج (الأنمي، الكتالوجات القديمة). مجانًا على ",
   ". Use the \"personal\" key, not the project one.": ". استخدم المفتاح \"الشخصي\" (personal)، وليس مفتاح المشروع.",
-  "Episode titles, alternate names, and network info. Layered on TMDB so the better source wins per field. Free at ": "عناوين الحلقات، الأسماء البديلة، ومعلومات الشبكة. تُدمج مع TMDB بحيث يُستخدم المصدر الأفضل لكل حقل. مجانًا على ",
-  ". Pick the \"Negotiated API key\" path.": ". اختر مسار \"Negotiated API key\".",
   "Show Rotten Tomatoes score on cards": "إظهار تقييم Rotten Tomatoes على البطاقات",
   "Fresh tomatoes for 60% and up, splat for anything under.": "طماطم طازجة لنسبة 60% فأكثر، ولطخة لما دونها.",
   "Show MAL score on cards": "إظهار تقييم MAL على البطاقات",

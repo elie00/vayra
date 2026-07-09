@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Popcorn } from "lucide-react";
 import { AddonsIcon } from "@/components/icons/addons-icon";
+import { CatalogsIcon } from "@/components/icons/catalogs-icon";
 import { AnimeIcon } from "@/components/icons/anime-icon";
 import { CalendarIcon } from "@/components/icons/calendar-icon";
 import { DiscoverIcon } from "@/components/icons/discover-icon";
@@ -18,6 +19,7 @@ import type { View } from "@/lib/view";
 export type NavItemId =
   | "home"
   | "discover"
+  | "catalogs"
   | "movies"
   | "shows"
   | "kids"
@@ -49,6 +51,7 @@ export type NavCustomization = {
 export const NAV_ITEMS: NavItem[] = [
   { id: "home", label: "nav.home", render: (active) => <HomeIcon active={active} />, view: "home" },
   { id: "discover", label: "nav.discover", render: (active) => <DiscoverIcon active={active} />, view: "discover", parentalKey: "discover" },
+  { id: "catalogs", label: "nav.catalogs", render: (active) => <CatalogsIcon active={active} />, view: "catalogs", parentalKey: "discover" },
   { id: "movies", label: "nav.movies", render: (active) => <MoviesIcon active={active} />, view: "movies", parentalKey: "movies" },
   { id: "shows", label: "nav.shows", render: (active) => <TvIcon active={active} />, view: "shows", parentalKey: "shows" },
   { id: "kids", label: "nav.kids", render: (active) => <Popcorn size={26} strokeWidth={2.2} className={active ? "" : "opacity-70"} />, view: "kids" },

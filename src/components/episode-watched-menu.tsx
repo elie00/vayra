@@ -18,6 +18,7 @@ export type WatchedMenuTarget = {
   season: number;
   episode: number;
   watched: boolean;
+  metaId?: string;
 };
 
 export function EpisodeWatchedMenu({

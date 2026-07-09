@@ -103,12 +103,3 @@ export function usePlaybackDownloadedGated(active: boolean): number {
     () => downloadedFraction,
   );
 }
-
-export function usePlaybackPositionSelector<T>(selector: (pos: number) => T): T {
-  return useSyncExternalStore(
-    subscribePlaybackClock,
-    () => selector(positionSec),
-    () => selector(positionSec),
-  );
-}
-

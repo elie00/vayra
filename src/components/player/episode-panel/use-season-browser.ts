@@ -17,13 +17,13 @@ export function useSeasonBrowser(
 } {
   const { settings } = useSettings();
   const [seasons, setSeasons] = useState<number[]>([]);
-  const [season, setSeason] = useState<number>(current?.season ?? 1);
+  const [season, setSeason] = useState<number>(current?.imdbSeason ?? current?.season ?? 1);
   const [episodes, setEpisodes] = useState<PlayEpisode[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open) setSeason(current?.season ?? 1);
-  }, [open, meta.id, current?.season]);
+    if (open) setSeason(current?.imdbSeason ?? current?.season ?? 1);
+  }, [open, meta.id, current?.imdbSeason, current?.season]);
 
   useEffect(() => {
     if (!open || (meta.type !== "series" && !isAnimeId(meta.id))) return;

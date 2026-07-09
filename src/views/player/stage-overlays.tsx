@@ -93,7 +93,7 @@ export function StageOverlays({
           delaySec={snap.subDelaySec}
           onDelay={onSubDelay}
           onEnterSync={onEnterSync}
-          syncAvailable={snap.subtitleTracks.some((t) => t.selected && (t.external || !!(t as { url?: string }).url))}
+          syncAvailable={snap.subtitleTracks.some((t) => t.selected)}
         />
       )}
     </>

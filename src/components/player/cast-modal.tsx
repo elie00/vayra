@@ -1,313 +1,303 @@
-import { Loader2, Star, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronLeft, ListVideo, Search, X } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
-import { animeDetails } from "@/lib/providers/anime-detail";
-import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { activeLayout } from "@/lib/theme";
-import { IMG } from "@/lib/providers/tmdb/tmdb-client";
-import { tmdbDetails, type CastEntry, type TmdbDetail } from "@/lib/providers/tmdb/tmdb-details";
-import { imdbapiDetails } from "@/lib/providers/imdbapi/imdbapi-details";
+import { useQueue } from "@/lib/queue";
+import type { PlayEpisode } from "@/lib/view";
+import { EpisodePicker } from "./cast-modal/episode-picker";
+import { ExitConfirm, SKIP_EXIT_CONFIRM_KEY } from "./cast-modal/exit-confirm";
+import { GenreBackdrop } from "./cast-modal/genre-backdrop";
+import { GenrePanel } from "./cast-modal/genre-panel";
+import { PersonPanel } from "./cast-modal/person-panel";
+import { QueuePanel } from "./cast-modal/queue-panel";
+import { SearchPanel } from "./cast-modal/search-panel";
+import { TitlePanel } from "./cast-modal/title-panel";
 
-function isAnimeId(id: string): boolean {
-  return id.startsWith("kitsu:") || id.startsWith("mal:") || id.startsWith("anilist:");
-}
+type StackView =
+  | { kind: "title"; meta: Meta }
+  | { kind: "person"; id: number; name: string }
+  | { kind: "search" }
+  | { kind: "queue" }
+  | { kind: "episodes"; meta: Meta; imdbId: string | null }
+  | { kind: "genre"; name: string; genreId?: number; mediaType: "movie" | "tv" };
 
 export function CastModal({
   open,
   onClose,
   meta,
   tmdbKey,
+  onOpenDetail,
+  onPlay,
+  currentEpisode,
 }: {
   open: boolean;
   onClose: () => void;
   meta: Meta;
   tmdbKey: string | null;
+  onOpenDetail?: (m: Meta) => void;
+  onPlay?: (m: Meta, episode?: PlayEpisode) => void;
+  currentEpisode?: PlayEpisode | null;
 }) {
   const t = useT();
-  const { settings } = useSettings();
-  const [detail, setDetail] = useState<TmdbDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const anime = isAnimeId(meta.id);
-  const usedImdbFallback =
-    !anime && !tmdbKey && settings.imdbApiFallback && meta.id.startsWith("tt");
+  const queue = useQueue();
+  const [stack, setStack] = useState<StackView[]>([{ kind: "title", meta }]);
 
   useEffect(() => {
-    if (!open) return;
-    if (!anime && !tmdbKey && !usedImdbFallback) {
-      setDetail(null);
-      return;
+    if (open) setStack([{ kind: "title", meta }]);
+  }, [open, meta]);
+
+  const [confirmTarget, setConfirmTarget] = useState<Meta | null>(null);
+  useEffect(() => {
+    if (open) setConfirmTarget(null);
+  }, [open, meta]);
+
+  const [activeGenre, setActiveGenre] = useState<{ id: number; mediaType: "movie" | "tv" } | null>(
+    null,
+  );
+  const reportGenre = useCallback(
+    (id: number, mt: "movie" | "tv") => setActiveGenre({ id, mediaType: mt }),
+    [],
+  );
+
+  const view = stack[stack.length - 1];
+  const canBack = stack.length > 1;
+  const back = () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+  const openTitle = (m: Meta) => setStack((s) => [...s, { kind: "title", meta: m }]);
+  const openPerson = (id: number, name: string) =>
+    setStack((s) => [...s, { kind: "person", id, name }]);
+  const openSearch = () =>
+    setStack((s) => (s[s.length - 1].kind === "search" ? s : [...s, { kind: "search" }]));
+  const openQueueView = () =>
+    setStack((s) => (s[s.length - 1].kind === "queue" ? s : [...s, { kind: "queue" }]));
+  const openEpisodes = (m: Meta, id: string | null) =>
+    setStack((s) => [...s, { kind: "episodes", meta: m, imdbId: id }]);
+  const openGenre = (name: string, genreId: number, mediaType: "movie" | "tv") => {
+    setActiveGenre({ id: genreId, mediaType });
+    setStack((s) => [...s, { kind: "genre", name, genreId, mediaType }]);
+  };
+  const play = (m: Meta, episode?: PlayEpisode) => {
+    if (onPlay) onPlay(m, episode);
+  };
+
+  const requestExit = (m: Meta) => {
+    if (!onOpenDetail) return;
+    let skip = false;
+    try {
+      skip = localStorage.getItem(SKIP_EXIT_CONFIRM_KEY) === "1";
+    } catch {
+      skip = false;
     }
-    let cancelled = false;
-    setLoading(true);
-    const fetch: Promise<TmdbDetail | null> = anime
-      ? animeDetails(settings, meta).then((r) => r?.detail ?? null)
-      : tmdbKey
-        ? tmdbDetails(tmdbKey, meta)
-        : imdbapiDetails(meta.id);
-    fetch
-      .then((d) => {
-        if (!cancelled) setDetail(d);
-      })
-      .catch(() => {
-        if (!cancelled) setDetail(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, tmdbKey, meta, anime, settings, usedImdbFallback]);
+    if (skip) onOpenDetail(m);
+    else setConfirmTarget(m);
+  };
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        onClose();
-      }
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (confirmTarget) setConfirmTarget(null);
+      else if (stack.length > 1) back();
+      else onClose();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [open, onClose]);
+  }, [open, stack.length, onClose, confirmTarget]);
+
+  const headerRef = useRef<HTMLElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [cardHeight, setCardHeight] = useState<number>();
+  useLayoutEffect(() => {
+    if (!open) return;
+    const body = bodyRef.current;
+    if (!body) return;
+    const recompute = () => {
+      const headerH = headerRef.current?.offsetHeight ?? 56;
+      const maxH = window.innerHeight * 0.88;
+      setCardHeight(Math.min(body.scrollHeight + headerH, maxH));
+    };
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    ro.observe(body);
+    window.addEventListener("resize", recompute);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recompute);
+    };
+  }, [open]);
 
   if (!open) return null;
 
-  const title = detail?.title ?? meta.name;
-  const detailPoster = detail?.poster
-    ? detail.poster.startsWith("http")
-      ? detail.poster
-      : `${IMG}/w342${detail.poster}`
-    : null;
-  const poster = detailPoster ?? meta.poster;
-  const overview =
-    detail?.overview?.trim() || (meta.id.startsWith("tmdb:") ? "" : meta.description?.trim()) || "";
-  const year = detail?.year ?? meta.releaseInfo ?? meta.releaseDate?.slice(0, 4) ?? "";
-  const rating = detail?.rating ?? meta.imdbRating ?? "";
-  const runtime = detail?.runtime ?? meta.runtime ?? "";
-  const genres = (detail?.genres?.length ? detail.genres : meta.genres) ?? [];
+  const backdrop = [...stack].reverse().find((v) => v.kind === "title")?.meta.background;
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
+      className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center bg-black/70 p-6 backdrop-blur-md animate-in fade-in duration-200"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && !confirmTarget) onClose();
       }}
     >
-      <div className="flex h-full max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 backdrop-blur-xl">
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-edge-soft px-6 py-4">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
+      <div
+        style={cardHeight ? { height: cardHeight } : undefined}
+        className={`relative flex max-h-[88vh] w-[72vw] min-w-0 max-w-6xl flex-col overflow-hidden rounded-[18px] bg-neutral-950/75 ring-1 ring-white/10 shadow-[0_44px_120px_-32px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-[height,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in zoom-in-95 fade-in ${confirmTarget ? "pointer-events-none opacity-0" : ""}`}
+      >
+        {view.kind === "genre" ? (
+          <GenreBackdrop
+            genreId={activeGenre?.id ?? view.genreId}
+            mediaType={activeGenre?.mediaType ?? view.mediaType}
+            tmdbKey={tmdbKey}
+          />
+        ) : backdrop ? (
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-72">
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-40"
+              style={{ backgroundImage: `url(${backdrop})` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/30 via-neutral-950/70 to-neutral-950" />
+          </div>
+        ) : null}
+
+        <header
+          ref={headerRef}
+          className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-5 py-3.5"
+        >
+          {canBack ? (
+            <button
+              type="button"
+              onClick={back}
+              className="flex items-center gap-1 rounded-full py-1.5 pl-2 pr-3.5 text-[13px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <ChevronLeft size={18} strokeWidth={2.3} />
+              {t("Back")}
+            </button>
+          ) : (
+            <span className="pl-1 text-[11px] font-bold uppercase tracking-[0.28em] text-white/45">
               {t("About this title")}
             </span>
-            <span className="text-[15px] font-medium text-ink">
-              {meta.type === "series" ? t("Series") : t("Movie")}
-            </span>
+          )}
+          <div className="flex shrink-0 items-center gap-1.5">
+            {view.kind !== "queue" && (
+              <button
+                type="button"
+                onClick={openQueueView}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                aria-label={t("Queue")}
+              >
+                <ListVideo size={19} strokeWidth={2.2} />
+                {queue.length > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 text-[10.5px] font-bold text-black">
+                    {queue.length}
+                  </span>
+                )}
+              </button>
+            )}
+            {view.kind !== "search" && (
+              <button
+                type="button"
+                onClick={openSearch}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                aria-label={t("Search")}
+              >
+                <Search size={18} strokeWidth={2.2} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+              aria-label={t("Close")}
+            >
+              <X size={18} strokeWidth={2.2} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-raised text-ink-muted transition-colors hover:bg-canvas/55 hover:text-ink"
-            aria-label={t("Close")}
-          >
-            <X size={18} strokeWidth={2.2} />
-          </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
-          <Header
-            title={title}
-            poster={poster}
-            fallback={meta.poster}
-            year={year}
-            rating={rating}
-            runtime={runtime}
-            genres={genres}
-            overview={overview}
-          />
-
-          {detail && (detail.directors.length > 0 || detail.writers.length > 0) && (
-            <CrewRows directors={detail.directors} writers={detail.writers} />
-          )}
-
-          <div className="flex items-center gap-2 border-t border-edge-soft px-6 pt-4 pb-2">
-            <Users size={14} strokeWidth={2.2} className="text-ink-subtle" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-ink-subtle">
-              {t("Cast")}
-            </span>
-            {loading && <Loader2 size={13} className="animate-spin text-ink-subtle" />}
+        <div className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div ref={bodyRef}>
+            <div
+              key={
+                view.kind === "title"
+                  ? `t:${view.meta.id}`
+                  : view.kind === "person"
+                    ? `p:${view.id}`
+                    : view.kind === "episodes"
+                      ? `e:${view.meta.id}`
+                      : view.kind === "genre"
+                        ? `g:${view.name}:${view.mediaType}`
+                        : view.kind === "queue"
+                          ? "queue"
+                          : "search"
+              }
+              className="animate-in fade-in duration-200"
+            >
+              {view.kind === "title" ? (
+                <TitlePanel
+                  meta={view.meta}
+                  tmdbKey={tmdbKey}
+                  onOpenPerson={openPerson}
+                  onOpenTitle={openTitle}
+                  onOpenDetail={requestExit}
+                  onPlay={onPlay ? play : undefined}
+                  onOpenEpisodes={openEpisodes}
+                  onOpenGenre={openGenre}
+                />
+              ) : view.kind === "genre" ? (
+                <GenrePanel
+                  genreName={view.name}
+                  genreId={view.genreId}
+                  mediaType={view.mediaType}
+                  tmdbKey={tmdbKey}
+                  onOpenTitle={openTitle}
+                  onActiveGenre={reportGenre}
+                />
+              ) : view.kind === "person" ? (
+                <PersonPanel
+                  personId={view.id}
+                  name={view.name}
+                  tmdbKey={tmdbKey}
+                  onOpenTitle={openTitle}
+                />
+              ) : view.kind === "episodes" ? (
+                <EpisodePicker
+                  meta={view.meta}
+                  imdbId={view.imdbId}
+                  onPlayEpisode={(ep) => play(view.meta, ep)}
+                />
+              ) : view.kind === "queue" ? (
+                <QueuePanel onPlay={play} currentMeta={meta} currentEpisode={currentEpisode} />
+              ) : (
+                <SearchPanel tmdbKey={tmdbKey} onOpenTitle={openTitle} onOpenPerson={openPerson} />
+              )}
+            </div>
           </div>
-
-          {detail && detail.cast.length > 0 ? (
-            <CastStrip cast={detail.cast} />
-          ) : !anime && !tmdbKey && !usedImdbFallback ? (
-            <div className="px-6 pb-5 text-[13.5px] leading-relaxed text-ink-muted">
-              {t("Add a TMDB key in Settings to see the cast for every title.")}
-            </div>
-          ) : !loading ? (
-            <div className="px-6 pb-5 text-[13.5px] leading-relaxed text-ink-muted">
-              {t("Cast information isn't available for this title.")}
-            </div>
-          ) : null}
         </div>
       </div>
-    </div>
-  );
-}
 
-function Header({
-  title,
-  poster,
-  fallback,
-  year,
-  rating,
-  runtime,
-  genres,
-  overview,
-}: {
-  title: string;
-  poster: string | undefined;
-  fallback: string | undefined;
-  year: string | undefined;
-  rating: string | undefined;
-  runtime: string | undefined;
-  genres: string[];
-  overview: string;
-}) {
-  const { settings } = useSettings();
-  const [imgSrc, setImgSrc] = useState(poster);
-  useEffect(() => setImgSrc(poster), [poster]);
-  const ratingClass =
-    activeLayout(settings.theme) === "stremio" ? "text-amber-400" : "text-accent";
-  const facts: React.ReactNode[] = [];
-  if (year) facts.push(<span key="year">{year}</span>);
-  if (rating) {
-    facts.push(
-      <span key="rating" className={`inline-flex items-center gap-1 ${ratingClass}`}>
-        <Star size={12} strokeWidth={2.4} fill="currentColor" />
-        {rating}
-      </span>,
-    );
-  }
-  if (runtime) facts.push(<span key="run">{runtime}</span>);
-  return (
-    <div className="flex gap-5 px-6 pt-5 pb-4">
-      {imgSrc && (
-        <img
-          src={imgSrc}
-          alt=""
-          onError={() => {
-            if (fallback && imgSrc !== fallback) setImgSrc(fallback);
+      {confirmTarget && (
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 p-6 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setConfirmTarget(null);
           }}
-          className="h-44 w-28 shrink-0 rounded-lg object-cover ring-1 ring-edge-soft"
-        />
-      )}
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h2 className="text-[20px] font-semibold leading-tight text-ink">{title}</h2>
-        {facts.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] font-medium text-ink-muted">
-            {facts.map((f, i) => (
-              <span key={i} className="inline-flex items-center gap-3">
-                {i > 0 && <span className="text-ink-subtle">·</span>}
-                {f}
-              </span>
-            ))}
-          </div>
-        )}
-        {genres.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {genres.slice(0, 5).map((g) => (
-              <span
-                key={g}
-                className="rounded-full bg-raised px-2.5 py-1 text-[11.5px] font-medium text-ink-muted"
-              >
-                {g}
-              </span>
-            ))}
-          </div>
-        )}
-        {overview && (
-          <p className="pt-1 text-[14px] leading-relaxed text-ink-muted">{overview}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CrewRows({
-  directors,
-  writers,
-}: {
-  directors: TmdbDetail["directors"];
-  writers: TmdbDetail["writers"];
-}) {
-  const t = useT();
-  return (
-    <div className="flex flex-col gap-1 border-t border-edge-soft bg-canvas/30 px-6 py-3">
-      {directors.length > 0 && (
-        <div className="flex items-baseline gap-2 text-[13px]">
-          <span className="w-20 shrink-0 text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-subtle">
-            {t("Director")}
-          </span>
-          <span className="text-ink">{directors.map((p) => p.name).join(", ")}</span>
-        </div>
-      )}
-      {writers.length > 0 && (
-        <div className="flex items-baseline gap-2 text-[13px]">
-          <span className="w-20 shrink-0 text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-subtle">
-            {t("Writer")}
-          </span>
-          <span className="text-ink">
-            {writers
-              .slice(0, 4)
-              .map((p) => p.name)
-              .join(", ")}
-          </span>
+        >
+          <ExitConfirm
+            onCancel={() => setConfirmTarget(null)}
+            onConfirm={(remember) => {
+              if (remember) {
+                try {
+                  localStorage.setItem(SKIP_EXIT_CONFIRM_KEY, "1");
+                } catch {
+                  /* ignore */
+                }
+              }
+              const target = confirmTarget;
+              setConfirmTarget(null);
+              onOpenDetail?.(target);
+            }}
+          />
         </div>
       )}
     </div>
   );
-}
-
-function CastStrip({ cast }: { cast: CastEntry[] }) {
-  const top = cast.slice().sort((a, b) => a.order - b.order).slice(0, 24);
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-3 px-6 pb-6">
-      {top.map((c) => (
-        <div key={c.id} className="flex flex-col items-center gap-1.5 text-center">
-          {c.profilePath ? (
-            <img
-              src={c.profilePath.startsWith("http") ? c.profilePath : `${IMG}/w185${c.profilePath}`}
-              alt=""
-              loading="lazy"
-              className="h-20 w-20 rounded-full object-cover ring-1 ring-edge-soft"
-            />
-          ) : (
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-raised text-[18px] font-semibold text-ink-subtle ring-1 ring-edge-soft">
-              {initials(c.name)}
-            </div>
-          )}
-          <span className="line-clamp-2 text-[12.5px] font-medium leading-tight text-ink">
-            {c.name}
-          </span>
-          {c.character && (
-            <span className="line-clamp-2 text-[11.5px] leading-tight text-ink-subtle">
-              {c.character}
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 }

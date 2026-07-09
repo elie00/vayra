@@ -1,4 +1,15 @@
 import { aniZipByAnidb, aniZipByAnilist, aniZipByImdb, aniZipByKitsu, aniZipByTmdbTv } from "@/lib/providers/anizip";
+import { kitsuMainTvSeries } from "@/lib/providers/kitsu";
+
+const SIDE_ENTRY_TYPES = new Set(["ova", "ona", "special", "music"]);
+
+async function preferMainTv(kitsuId: number, type?: string): Promise<number> {
+  if (type && SIDE_ENTRY_TYPES.has(type.toLowerCase())) {
+    const main = await kitsuMainTvSeries(kitsuId).catch(() => null);
+    if (main != null) return main;
+  }
+  return kitsuId;
+}
 
 const ARM = "https://relations.yuna.moe/api/ids";
 const ANIME_LIST_URL =
@@ -226,7 +237,9 @@ let imdbAnidbIndex: Record<string, number> | null = null;
 export async function imdbToKitsu(imdbId: string): Promise<number | null> {
   if (!imdbId.startsWith("tt")) return null;
   const az = await aniZipByImdb(imdbId).catch(() => null);
-  if (typeof az?.mappings?.kitsu_id === "number") return az.mappings.kitsu_id;
+  if (typeof az?.mappings?.kitsu_id === "number") {
+    return preferMainTv(az.mappings.kitsu_id, (az.mappings as { type?: string }).type);
+  }
   if (typeof az?.mappings?.anidb_id === "number") return externalToKitsu("anidb", az.mappings.anidb_id);
   const maps = await loadAnidbMaps();
   if (!imdbAnidbIndex) {
@@ -244,7 +257,9 @@ export async function imdbToKitsu(imdbId: string): Promise<number | null> {
 
 export async function tmdbTvToKitsu(tmdbId: number): Promise<number | null> {
   const az = await aniZipByTmdbTv(tmdbId).catch(() => null);
-  if (typeof az?.mappings?.kitsu_id === "number") return az.mappings.kitsu_id;
+  if (typeof az?.mappings?.kitsu_id === "number") {
+    return preferMainTv(az.mappings.kitsu_id, (az.mappings as { type?: string }).type);
+  }
   if (typeof az?.mappings?.anidb_id === "number") return externalToKitsu("anidb", az.mappings.anidb_id);
   return null;
 }

@@ -71,7 +71,7 @@ export function useBridgeLoad(params: {
         src,
         cloudWriteId(src.meta.id, src.imdbId ?? null, src.imdbIdVerified === true),
       );
-      const resolved = isLive
+      const resolved = isLive || src.startFromZero
         ? { ms: 0, fromRemote: false, finished: false }
         : await resolveStartMs(
             src.meta.id,
@@ -109,7 +109,9 @@ export function useBridgeLoad(params: {
               ? undefined
               : startSec > 5
                 ? startSec
-                : undefined,
+                : isFirstLoad
+                  ? undefined
+                  : 0,
         });
       } catch (e) {
         if (cancelled) return;

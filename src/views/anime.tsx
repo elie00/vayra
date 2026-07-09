@@ -519,10 +519,12 @@ export function AnimeView({ active = true }: { active?: boolean }) {
               ))}
             </Row>
           )}
-          <MalRowControls />
           {!malRowsHidden.includes("yourMalLists") && <MalRows />}
           {!anilistHidden.includes("yourLists") && <AnilistRows />}
-          <AnilistRowControls />
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5">
+            <AnilistRowControls />
+            <MalRowControls />
+          </div>
           {!anilistHidden.includes("trending") && <AnilistTrendingRow />}
           {!anilistHidden.includes("top100") && <AnilistTopRow />}
           {awardWinnerMetas.length > 0 && (

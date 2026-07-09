@@ -59,6 +59,7 @@ import { CustomizableRows } from "./home/customizable-rows";
 import { CustomizeBar } from "./home/customize-bar";
 import { CWSection } from "./home/cw-section";
 import { useCwAdvance } from "./home/hooks/use-cw-advance";
+import { usePinnedRows } from "./home/hooks/use-pinned-rows";
 import {
   buildAnimeHomeRows,
   buildCinemetaRows,
@@ -641,9 +642,10 @@ export function Home({ active = true }: { active?: boolean }) {
     }));
   }, [homeRowsCustom.customSources]);
 
+  const pinnedRows = usePinnedRows();
   const allCustomizableRows = useMemo(
-    () => [...sourceRows, ...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...letterboxdRows, ...restRows, ...animeRows],
-    [sourceRows, arabicRows, personalRows, traktRows, simklRows, letterboxdRows, restRows, animeRows],
+    () => [...sourceRows, ...pinnedRows, ...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...letterboxdRows, ...restRows, ...animeRows],
+    [sourceRows, pinnedRows, arabicRows, personalRows, traktRows, simklRows, letterboxdRows, restRows, animeRows],
   );
   const visibleRows = useMemo(
     () => applyHomeRowCustomization(allCustomizableRows, homeRowsCustom, false),

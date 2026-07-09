@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Check, HardDrive, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
+import { Check, HardDrive, Layers, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
 import { animeDetails, franchiseTags, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
 import { kitsuAnime } from "@/lib/providers/kitsu";
@@ -51,7 +51,10 @@ import { openUrl } from "@/lib/window";
 import { profileFromDetail, trackEvent } from "@/lib/discover";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { useScrollMemory, useView, type PlayEpisode } from "@/lib/view";
+import { prefetchSegments } from "@/lib/skip-intro";
 import { useT } from "@/lib/i18n";
+import { AddToListMenu } from "@/components/lists/add-to-list-menu";
+import type { ListItemInput } from "@/lib/custom-lists";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToMalButton } from "@/components/mal/add-to-mal-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
@@ -87,7 +90,6 @@ function animeAwardLookupName(
   return null;
 }
 import { Pill } from "./detail/pill";
-import { prefetchSegments } from "@/lib/skip-intro";
 import { Credit } from "./detail/credit";
 import { TitlePlate } from "./detail/title-plate";
 import { PlayModeHint } from "./detail/play-mode-hint";
@@ -332,6 +334,8 @@ export function DetailView({
     detail?.trailerCandidates?.[0] ?? meta.trailerStreams?.[0]?.ytId ?? null;
   const actionRowRef = useRef<HTMLDivElement | null>(null);
   const actionStage = useHeroActionOverflow(actionRowRef, [meta.id]);
+  const addToListRef = useRef<HTMLButtonElement | null>(null);
+  const [addToListOpen, setAddToListOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -662,6 +666,12 @@ export function DetailView({
 
   const rawTitle = detail?.title ?? meta.name;
   const title = isAnime ? stripFranchiseSuffix(rawTitle) : rawTitle;
+  const listSeed: ListItemInput = {
+    id: meta.id,
+    type: meta.type,
+    name: title || meta.name,
+    poster: meta.poster ?? detail?.poster,
+  };
   const overview = detail?.overview ?? (meta.id.startsWith("tmdb:") ? "" : meta.description) ?? "";
   const tagline = detail?.tagline ?? "";
   const backdrop =
@@ -818,19 +828,28 @@ export function DetailView({
     if (episodeHint) return episodeHint;
     if (isAnime) return lastPlayedEpisode(meta.id);
     const candidates: Array<{ season: number; episode: number; t: number }> = [];
-    const lc = localCwEntry(meta.id);
-    if (
-      lc?.type === "series" &&
-      typeof lc.season === "number" &&
-      typeof lc.episode === "number" &&
-      lc.season >= 1 &&
-      lc.episode >= 1
-    ) {
-      candidates.push({ season: lc.season, episode: lc.episode, t: lc.t });
-    }
-    const lp = lastPlayedEpisode(meta.id);
-    if (lp && lp.season >= 1 && lp.episode >= 1) {
-      candidates.push({ season: lp.season, episode: lp.episode, t: lp.t });
+    const ids = Array.from(
+      new Set(
+        [meta.id, detail?.imdbId ?? null, detail?.id != null ? `tmdb:tv:${detail.id}` : null].filter(
+          (x): x is string => !!x,
+        ),
+      ),
+    );
+    for (const id of ids) {
+      const lc = localCwEntry(id);
+      if (
+        lc?.type === "series" &&
+        typeof lc.season === "number" &&
+        typeof lc.episode === "number" &&
+        lc.season >= 1 &&
+        lc.episode >= 1
+      ) {
+        candidates.push({ season: lc.season, episode: lc.episode, t: lc.t });
+      }
+      const lp = lastPlayedEpisode(id);
+      if (lp && lp.season >= 1 && lp.episode >= 1) {
+        candidates.push({ season: lp.season, episode: lp.episode, t: lp.t });
+      }
     }
     const st = libraryItem?.state;
     if (libraryItem?.type === "series" && st && (st.timeOffset ?? 0) > 0) {
@@ -845,11 +864,10 @@ export function DetailView({
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => b.t - a.t);
     return { season: candidates[0].season, episode: candidates[0].episode };
-  }, [meta.id, libraryItem, isAnime, episodeHint]);
+  }, [meta.id, detail?.imdbId, detail?.id, libraryItem, isAnime, episodeHint]);
   useEffect(() => {
     if (loading) return;
-
-    let targetEp: PlayEpisode | undefined = undefined;
+    let targetEp: PlayEpisode | undefined;
     if (isSeries) {
       if (isAnime) {
         const wantedEp = lastPlay
@@ -873,15 +891,10 @@ export function DetailView({
       } else {
         const lp = lastPlay || { season: 1, episode: 1 };
         targetEp = { season: lp.season, episode: lp.episode };
-        if (cinemetaFull?.videos) {
-          const v = cinemetaFull.videos.find((x) => x.season === lp.season && x.episode === lp.episode);
-          if (v) {
-            targetEp.imdbId = v.id;
-          }
-        }
+        const v = cinemetaFull?.videos?.find((x) => x.season === lp.season && x.episode === lp.episode);
+        if (v) targetEp.imdbId = v.id;
       }
     }
-
     prefetchSegments(playMeta, targetEp);
   }, [loading, isSeries, isAnime, lastPlay, animeEpisodes, cinemetaFull?.videos, playMeta]);
 
@@ -923,7 +936,7 @@ export function DetailView({
         extraImdb: detail?.imdbId,
         mode: settings.localPlaybackMode,
         source: "manual",
-        playLocal: (e) => openPlayer(localPlayerSrc(e)),
+        playLocal: (e, o) => openPlayer({ ...localPlayerSrc(e), startFromZero: o?.fromStart }),
         playStream: stream,
         setMode: (m) => update({ localPlaybackMode: m }),
       });
@@ -1222,6 +1235,7 @@ export function DetailView({
                     watchedMark={watchedMark}
                     onWatched={markThisMovieWatched}
                     showSync={actionStage >= 2}
+                    listItem={listSeed}
                     inWatchlist={inWatchlist}
                     onToggleWatchlist={() =>
                       toggleWatchlist({
@@ -1260,6 +1274,22 @@ export function DetailView({
                     >
                       <Star size={20} strokeWidth={isFav ? 0 : 1.9} fill={isFav ? "currentColor" : "none"} />
                     </button>
+                    <button
+                      ref={addToListRef}
+                      type="button"
+                      onClick={() => setAddToListOpen((v) => !v)}
+                      aria-label={t("Add to list")}
+                      title={t("Add to list")}
+                      className="group flex h-12 w-12 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
+                    >
+                      <Layers size={20} strokeWidth={1.9} />
+                    </button>
+                    <AddToListMenu
+                      item={listSeed}
+                      anchorRef={addToListRef}
+                      open={addToListOpen}
+                      onClose={() => setAddToListOpen(false)}
+                    />
                     {settings.showWatchedButton && meta.type === "movie" && (
                       <button
                         type="button"
@@ -1340,6 +1370,11 @@ export function DetailView({
             currentId={currentFranchiseId}
             scrollRef={scrollRef}
             trackId={animeCanonicalId ?? undefined}
+            imdbId={
+              detail.imdbId ??
+              animeEpisodes.find((e) => e.imdbId)?.imdbId ??
+              (meta.id.startsWith("tt") ? meta.id : null)
+            }
           />
           </FadeInUp>
         )}
@@ -1357,6 +1392,7 @@ export function DetailView({
             stremioWatched={stremioWatched}
             resumeSeason={lastPlay?.season}
             onSeasonChange={setCurrentSeason}
+            resumeEpisode={lastPlay?.episode}
           />
           </FadeInUp>
         )}

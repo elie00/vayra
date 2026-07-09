@@ -83,6 +83,15 @@ export type Settings = {
   showMdblistBadge: boolean;
   showTraktBadge: boolean;
   showDetailRatings: boolean;
+  showImdbDetail: boolean;
+  showTmdbDetail: boolean;
+  showMalDetail: boolean;
+  showRtDetail: boolean;
+  showRtAudienceDetail: boolean;
+  showLetterboxdDetail: boolean;
+  showMetacriticDetail: boolean;
+  showTraktDetail: boolean;
+  showMdblistDetail: boolean;
   showTraktComments: boolean;
   showSimklBadge: boolean;
   simklShowCommunityRatings: boolean;
@@ -126,7 +135,8 @@ export type Settings = {
   hdEpisodeImages: boolean;
   episodeArcGroups: boolean;
   episodeOrderProvider: "default" | "tmdb" | "tvdb";
-  tvdbSeasonType: "official" | "dvd" | "absolute" | "alternate" | "regional";
+  tvdbSeasonType: "aired" | "official" | "dvd" | "absolute" | "alternate" | "regional";
+  tvdbOrderPanel: boolean;
   tvdbPin: string;
   harborAvatar: string | null;
   harborColor: string;
@@ -218,6 +228,7 @@ export type Settings = {
   subtitlesOffByDefault: boolean;
   preferEmbeddedSubs: boolean;
   subtitleAutoUpgrade: boolean;
+  subtitlePreselect: boolean;
   betaUpdates: boolean;
   autoSkipIntro: boolean;
   autoSkipRecap: boolean;
@@ -234,6 +245,9 @@ export type Settings = {
   nfoLogoSize: string;
   showLocalLibraryBadge: boolean;
   localPlaybackMode: "ask" | "local" | "stream";
+  localMinFileSizeMb: number;
+  catalogsPinned: string[];
+  catalogsHidden: string[];
   posterBaseUrl: string;
   hidePosterTitles: boolean;
   hoverPreviewEnabled: boolean;
@@ -268,6 +282,7 @@ export type Settings = {
   bandwidthMbps: number;
   nextEpisodeLeadSec: number;
   autoPlayNextEpisode: boolean;
+  keyboardPauseShowsControls: boolean;
   hideWatchedInCatalogs: boolean;
   hideUnreleased: boolean;
   showPlaylistsTab: boolean;
@@ -406,7 +421,7 @@ export type Settings = {
   iptvEpgOffsetHours: number;
   sidebarCollapsed: boolean;
   feedLocaleBias: boolean;
-  uiLanguage: "en" | "ar";
+  uiLanguage: "en" | "ar" | "pt";
   arabicWelcomeSeen: boolean;
   cropMode: string;
   customLists: CustomList[];

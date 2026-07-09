@@ -8,11 +8,9 @@ let kitsuToMalCache: Record<number, number | null> = {};
 if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (raw) {
-      kitsuToMalCache = JSON.parse(raw);
-    }
+    if (raw) kitsuToMalCache = JSON.parse(raw);
   } catch (e) {
-    console.error("Failed to load kitsu-to-mal cache from localStorage", e);
+    console.error("Failed to load kitsu-to-mal cache", e);
   }
 }
 
@@ -25,7 +23,7 @@ function scheduleCacheWrite() {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(kitsuToMalCache));
     } catch (e) {
-      console.error("Failed to write kitsu-to-mal cache to localStorage", e);
+      console.error("Failed to write kitsu-to-mal cache", e);
     }
   }, 1000);
 }
@@ -41,7 +39,7 @@ export async function kitsuToMal(kitsuId: number): Promise<number | null> {
     if (simklCache) {
       const simklId = simklCache.kitsuToSimkl[String(kitsuId)];
       if (simklId != null) {
-        const malEntry = Object.entries(simklCache.malToSimkl).find(([_, sid]) => sid === simklId);
+        const malEntry = Object.entries(simklCache.malToSimkl).find(([, sid]) => sid === simklId);
         if (malEntry) {
           const malId = parseInt(malEntry[0], 10);
           if (Number.isFinite(malId)) {
@@ -53,7 +51,7 @@ export async function kitsuToMal(kitsuId: number): Promise<number | null> {
       }
     }
   } catch (e) {
-    console.error("Failed to lookup Kitsu ID in SIMKL mappings", e);
+    console.error("Failed to resolve Kitsu ID via SIMKL mappings", e);
   }
 
   try {

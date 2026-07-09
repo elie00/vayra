@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/safe-fetch";
 import { SIMKL_API_BASE, SIMKL_APP_NAME, SIMKL_APP_VERSION, SIMKL_CLIENT_ID } from "./config";
 import { getSession, setSession } from "./session";
 
@@ -42,7 +43,7 @@ async function doFetch(path: string, opts: SimklRequestOptions): Promise<Respons
   url.searchParams.set("app-name", SIMKL_APP_NAME);
   url.searchParams.set("app-version", SIMKL_APP_VERSION);
 
-  return fetch(url.toString(), {
+  return safeFetch(url.toString(), {
     method,
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,

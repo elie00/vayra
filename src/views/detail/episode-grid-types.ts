@@ -1,3 +1,5 @@
+import type { Meta } from "@/lib/cinemeta";
+
 export type Progress = { ratio: number; watched: boolean; startedAt: number };
 
 export type GridEpisode = {
@@ -13,5 +15,7 @@ export type GridEpisode = {
   ratingIsImdb?: boolean;
   filler?: boolean;
   upcoming?: boolean;
+  meta?: Meta;
+  sourceMetaId?: string;
   play: () => void;
 };

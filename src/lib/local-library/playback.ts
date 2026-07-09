@@ -1,6 +1,7 @@
 import type { Meta } from "@/lib/cinemeta";
 import { findLocalEpisodeByIds, findLocalMovie, type LocalEntry } from "@/lib/local-library";
 import { episodeLabel } from "@/lib/local-library/player-src";
+import { readResumeMs } from "@/lib/resume";
 import { openWatchLocalConfirm } from "@/lib/player/watch-local-confirm";
 
 export type LocalPlaybackMode = "ask" | "local" | "stream";
@@ -34,11 +35,12 @@ export function playLocalAware(opts: {
   extraImdb?: string | null;
   mode: LocalPlaybackMode;
   source: "manual" | "auto";
-  playLocal: (entry: LocalEntry) => void;
+  playLocal: (entry: LocalEntry, opts?: { fromStart?: boolean }) => void;
   playStream: () => void;
   setMode: (mode: LocalPlaybackMode) => void;
+  resumeId?: string;
 }): void {
-  const { meta, episode, extraImdb, mode, source, playLocal, playStream, setMode } = opts;
+  const { meta, episode, extraImdb, mode, source, playLocal, playStream, setMode, resumeId } = opts;
   const local = mode === "stream" ? null : resolveLocalPlay(meta, episode, extraImdb);
   if (!local) {
     playStream();
@@ -48,13 +50,18 @@ export function playLocalAware(opts: {
     playLocal(local);
     return;
   }
+  const rid = resumeId ?? local.imdbId ?? `local:${local.id}`;
+  const resumeMs = readResumeMs(rid, episode?.season, episode?.episode);
+  const hasResume = resumeMs > 5000;
   openWatchLocalConfirm({
     title: local.title || meta.name,
     subtitle: episodeLabel(local),
+    hasResume,
+    resumeMs,
     onChoose: (choice, remember) => {
-      if (remember) setMode(choice);
-      if (choice === "local") playLocal(local);
-      else playStream();
+      if (remember) setMode(choice === "stream" ? "stream" : "local");
+      if (choice === "stream") playStream();
+      else playLocal(local, { fromStart: choice === "local-restart" });
     },
   });
 }

@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { peekPickerCache, subscribePickerCache } from "@/lib/picker-cache";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
+import { hasCachedMarker } from "@/lib/streams/cached";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores, matchBadge } from "@/lib/together/source-match";
 import { addonInstanceKey, buildAddonOptions } from "@/views/play-picker/picker-utils";
@@ -151,7 +152,8 @@ export function StreamSwitcher({
           s.url != null ||
           debridSlugs.some(
             (slug) => s.cached[slug as keyof typeof s.cached] || s.inLibrary[slug as keyof typeof s.inLibrary],
-          ),
+          ) ||
+          hasCachedMarker(s),
       ),
     [allStreams, debridSlugs],
   );

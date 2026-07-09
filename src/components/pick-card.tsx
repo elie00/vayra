@@ -186,12 +186,18 @@ export const PickCard = memo(function PickCard({
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
   const animeTmdb = useTmdbIdFromImdb(animeImdb) ?? undefined;
-  const posterAltId = needsImdbForPoster(settings.rpdbKey, meta.id)
+  const posterNeedsImdb = needsImdbForPoster(settings.rpdbKey, meta.id);
+  const posterAltId = posterNeedsImdb
     ? imdbId
     : wantTmdbPoster
       ? resolvedTmdb ?? undefined
       : undefined;
+  const posterPending =
+    !!settings.tmdbKey &&
+    ((posterNeedsImdb && resolvedImdb === undefined) ||
+      (wantTmdbPoster && resolvedTmdb === undefined));
   const posterCandidates = useMemo(() => {
+    if (posterPending) return [];
     const base = localizedPoster ?? meta.poster;
     const seen = new Set<string>();
     const out: string[] = [];
@@ -208,7 +214,7 @@ export const PickCard = memo(function PickCard({
       out.push(u);
     }
     return out;
-  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb, animeTmdb, localizedPoster]);
+  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb, animeTmdb, localizedPoster, posterPending]);
   const posterSrc = posterCandidates[imgIdx];
 
   useEffect(() => {
@@ -250,7 +256,7 @@ export const PickCard = memo(function PickCard({
   }, [meta.id, isAnimeCardId, settings.rpdbKey, settings.posterBaseUrl, animeWantsImdb]);
 
   useEffect(() => {
-    if (posterSrc !== undefined || hydratedPoster) return;
+    if (posterSrc !== undefined || hydratedPoster || posterPending) return;
     let cancelled = false;
     const isAnimeId =
       meta.id.startsWith("kitsu:") ||
@@ -283,7 +289,7 @@ export const PickCard = memo(function PickCard({
     return () => {
       cancelled = true;
     };
-  }, [posterSrc, hydratedPoster, meta.type, meta.id]);
+  }, [posterSrc, hydratedPoster, meta.type, meta.id, posterPending]);
 
   const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
 

@@ -120,6 +120,7 @@ export function Row({
   onEndReached,
   onViewAll,
   viewAllLabel = "View all",
+  headerRight,
   titleClassName = "text-ink",
   titleScale = 1,
 }: {
@@ -135,6 +136,7 @@ export function Row({
   onEndReached?: () => void;
   onViewAll?: () => void;
   viewAllLabel?: string;
+  headerRight?: React.ReactNode;
   titleClassName?: string;
   titleScale?: number;
 }) {
@@ -440,7 +442,7 @@ export function Row({
 
   return (
     <div className={`flex min-w-0 flex-col gap-5 ps-[9px] ${className}`}>
-      {(title || onViewAll) && (
+      {(title || onViewAll || headerRight) && (
         <div className="flex items-baseline justify-between gap-4 pe-1">
           {title && (
             <div className="flex min-w-0 items-center gap-2">
@@ -453,19 +455,24 @@ export function Row({
               {titleExtra}
             </div>
           )}
-          {onViewAll && (
-            <button
-              type="button"
-              onClick={onViewAll}
-              className="group/va inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
-            >
-              {t(viewAllLabel)}
-              <ChevronRight
-                size={14}
-                strokeWidth={2.2}
-                className="dir-icon transition-transform duration-200 group-hover/va:translate-x-0.5"
-              />
-            </button>
+          {(onViewAll || headerRight) && (
+            <div className="flex shrink-0 items-center gap-3">
+              {headerRight}
+              {onViewAll && (
+                <button
+                  type="button"
+                  onClick={onViewAll}
+                  className="group/va inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+                >
+                  {t(viewAllLabel)}
+                  <ChevronRight
+                    size={14}
+                    strokeWidth={2.2}
+                    className="dir-icon transition-transform duration-200 group-hover/va:translate-x-0.5"
+                  />
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}

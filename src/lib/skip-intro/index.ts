@@ -27,13 +27,9 @@ export function mergeSegments(sourcesInPriority: SkipSegment[][]): SkipSegment[]
     if (!list) continue;
     for (const segment of list) {
       const hasOverlap = merged.some(
-        (existing) =>
-          segment.startSec < existing.endSec &&
-          segment.endSec > existing.startSec
+        (existing) => segment.startSec < existing.endSec && segment.endSec > existing.startSec,
       );
-      if (!hasOverlap) {
-        merged.push(segment);
-      }
+      if (!hasOverlap) merged.push(segment);
     }
   }
   return merged.sort((a, b) => a.startSec - b.startSec);
@@ -47,18 +43,13 @@ function resolveAnimeToExternalId(metaId: string): string | null {
     if (!cache) return null;
     const simklId = cache.kitsuToSimkl[kitsuStr];
     if (simklId == null) return null;
-
-    const imdbEntry = Object.entries(cache.imdbToSimkl).find(([_, sid]) => sid === simklId);
+    const imdbEntry = Object.entries(cache.imdbToSimkl).find(([, sid]) => sid === simklId);
     if (imdbEntry) return imdbEntry[0];
-
-    const tmdbEntry = Object.entries(cache.tmdbToSimkl).find(([_, sid]) => sid === simklId);
+    const tmdbEntry = Object.entries(cache.tmdbToSimkl).find(([, sid]) => sid === simklId);
     if (tmdbEntry) {
       const tmdbKey = tmdbEntry[0];
-      if (tmdbKey.startsWith("movie:")) {
-        return `tmdb:movie:${tmdbKey.slice("movie:".length)}`;
-      } else if (tmdbKey.startsWith("tv:")) {
-        return `tmdb:tv:${tmdbKey.slice("tv:".length)}`;
-      }
+      if (tmdbKey.startsWith("movie:")) return `tmdb:movie:${tmdbKey.slice("movie:".length)}`;
+      if (tmdbKey.startsWith("tv:")) return `tmdb:tv:${tmdbKey.slice("tv:".length)}`;
     }
   } catch (e) {
     console.error("Failed to resolve anime ID to external ID", e);
@@ -86,7 +77,6 @@ export function useSkipSegments(
       : episode?.imdbId && episode.imdbId.startsWith("tt")
         ? episode.imdbId
         : resolvedExternalId || meta.id;
-
 
   useEffect(() => {
     setAniSkip([]);
@@ -185,26 +175,14 @@ export function prefetchSegments(meta: Meta, episode?: PlayEpisode): void {
   const kitsuId = parseKitsuId(meta.id);
   const epNum = episode?.episode;
 
-  console.log(`[SkipIntro] Prefetching segments for ${meta.name} (id: ${meta.id}, ep: ${epNum ?? "none"})`);
-
-  // 1. Anime resolution & AniSkip prefetch
   if (kitsuId != null && epNum != null) {
     kitsuToMal(kitsuId)
       .then((malId) => {
-        if (malId != null) {
-          console.log(`[SkipIntro] Resolved MAL ID: ${malId} for Kitsu ID: ${kitsuId}. Prefetching AniSkip segments...`);
-          return fetchAniSkipSegments(malId, epNum, 0);
-        }
+        if (malId != null) return fetchAniSkipSegments(malId, epNum, 0);
       })
-      .then((segs) => {
-        if (segs) {
-          console.log(`[SkipIntro] Pre-fetched ${segs.length} AniSkip segments.`);
-        }
-      })
-      .catch((err) => console.error("[SkipIntro] AniSkip prefetch error", err));
+      .catch(() => {});
   }
 
-  // 2. TV/Movie - IntroDB prefetch
   const resolvedExternalId = resolveAnimeToExternalId(meta.id);
   const introDbId =
     meta.id.startsWith("tt") || meta.id.startsWith("tmdb:")
@@ -220,13 +198,6 @@ export function prefetchSegments(meta: Meta, episode?: PlayEpisode): void {
       introSeason != null && introEpisode != null
         ? { season: introSeason, episode: introEpisode }
         : undefined;
-
-    console.log(`[SkipIntro] Prefetching IntroDB segments for query target: ${introDbId}...`);
-    fetchIntroDbSegments(introDbId, ep, 0)
-      .then((segs) => {
-        console.log(`[SkipIntro] Pre-fetched ${segs.length} IntroDB segments.`);
-      })
-      .catch((err) => console.error("[SkipIntro] IntroDB prefetch error", err));
+    fetchIntroDbSegments(introDbId, ep, 0).catch(() => {});
   }
 }
-

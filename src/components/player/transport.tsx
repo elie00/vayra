@@ -9,6 +9,7 @@ import { TransportKids } from "./transport-kids";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { resolveChromeTheme } from "@/lib/theme";
 import { SeekBar } from "./transport/seek-bar";
 import { LiveBadge, GoToLive, LiveSeekBar } from "./transport/live-controls";
@@ -24,6 +25,7 @@ import {
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 import { SongIdToast } from "@/components/song-id-toast";
+import { useCastModalPlay } from "./use-cast-modal-play";
 
 export function Transport({
   snap,
@@ -156,6 +158,55 @@ export function Transport({
   const { settings } = useSettings();
   const kid = useActiveKid();
   const isStremioLayout = resolveChromeTheme(settings.theme, settings.playerChromeTheme) === "stremio";
+  const playing = snap.status === "playing";
+  const showEpisodeNav = hasPrevEp || hasNextEp;
+  const [audioMenuOpen, setAudioMenuOpen] = useState(false);
+  const [subtitleMenuOpen, setSubtitleMenuOpen] = useState(false);
+  const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
+  const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
+  const [castModalOpen, setCastModalOpen] = useState(false);
+  const [chromeConfig, setChromeConfig] = useState<PlayerChromeConfig>(() =>
+    readPlayerChromeConfig("default"),
+  );
+  const isLiveChannel = !!meta?.id?.startsWith("iptv:");
+  const titleClickable = !!meta && !isLiveChannel;
+  const { openMeta, exitPlayer } = useView();
+  const castModalPlay = useCastModalPlay();
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const [mid, setMid] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [tight, setTight] = useState(false);
+  useEffect(() => {
+    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen || anime4kMenuOpen);
+  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, aspectMenuOpen, anime4kMenuOpen, onMenuOpenChange]);
+  useEffect(() => {
+    const refresh = () => setChromeConfig(readPlayerChromeConfig("default"));
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "harbor.player.chrome.profiles.v1") refresh();
+    };
+    window.addEventListener(PLAYER_CHROME_CHANGED_EVENT, refresh);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(PLAYER_CHROME_CHANGED_EVENT, refresh);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+  useEffect(() => {
+    if (pipMode) return;
+    const el = controlsRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      setMid(w < 1300);
+      setCompact(w < 1000);
+      setTight(w < 600);
+    };
+    measure();
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pipMode]);
   if (isStremioLayout && !pipMode) {
     return (
       <TransportStremio
@@ -242,53 +293,6 @@ export function Transport({
       />
     );
   }
-  const playing = snap.status === "playing";
-  const showEpisodeNav = hasPrevEp || hasNextEp;
-  const [audioMenuOpen, setAudioMenuOpen] = useState(false);
-  const [subtitleMenuOpen, setSubtitleMenuOpen] = useState(false);
-  const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
-  const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
-  const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
-  const [castModalOpen, setCastModalOpen] = useState(false);
-  const [chromeConfig, setChromeConfig] = useState<PlayerChromeConfig>(() =>
-    readPlayerChromeConfig("default"),
-  );
-  const isLiveChannel = !!meta?.id?.startsWith("iptv:");
-  const titleClickable = !!meta && !isLiveChannel;
-  const controlsRef = useRef<HTMLDivElement>(null);
-  const [mid, setMid] = useState(false);
-  const [compact, setCompact] = useState(false);
-  const [tight, setTight] = useState(false);
-  useEffect(() => {
-    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen || anime4kMenuOpen);
-  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, aspectMenuOpen, anime4kMenuOpen, onMenuOpenChange]);
-  useEffect(() => {
-    const refresh = () => setChromeConfig(readPlayerChromeConfig("default"));
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "harbor.player.chrome.profiles.v1") refresh();
-    };
-    window.addEventListener(PLAYER_CHROME_CHANGED_EVENT, refresh);
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener(PLAYER_CHROME_CHANGED_EVENT, refresh);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-  useEffect(() => {
-    if (pipMode) return;
-    const el = controlsRef.current;
-    if (!el) return;
-    const measure = () => {
-      const w = el.getBoundingClientRect().width;
-      setMid(w < 1300);
-      setCompact(w < 1000);
-      setTight(w < 600);
-    };
-    measure();
-    const ro = new ResizeObserver(() => measure());
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [pipMode]);
   if (pipMode) {
     return (
       <PipChrome
@@ -479,6 +483,18 @@ export function Transport({
           onClose={() => setCastModalOpen(false)}
           meta={meta}
           tmdbKey={tmdbKey ?? null}
+          onOpenDetail={(m) => {
+            setCastModalOpen(false);
+            exitPlayer();
+            openMeta(m);
+          }}
+          onPlay={(m, ep) => {
+            setCastModalOpen(false);
+            castModalPlay(m, ep);
+          }}
+          currentEpisode={
+            season != null && episode != null ? { season, episode } : null
+          }
         />
       )}
     </>

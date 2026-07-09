@@ -173,12 +173,11 @@ function IconHotkeys(p: IconProps) {
 function IconAdvanced(p: IconProps) {
   return (
     <IconBase {...p}>
-      <path d="M4 7h7M17 7h3" />
-      <path d="M4 12h2M12 12h8" />
-      <path d="M4 17h8M18 17h2" />
-      <circle cx="14" cy="7" r="2.3" fill="var(--color-canvas)" />
-      <circle cx="9" cy="12" r="2.3" fill="var(--color-canvas)" />
-      <circle cx="15" cy="17" r="2.3" fill="var(--color-canvas)" />
+      <path
+        d="M14.7 6.3a3.6 3.6 0 0 0-4.4 4.9l-5.7 5.7a1.7 1.7 0 0 0 2.4 2.4l5.7-5.7a3.6 3.6 0 0 0 4.9-4.4l-2.4 2.4-2-.5-.5-2z"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
     </IconBase>
   );
 }
@@ -442,6 +441,13 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
           "seeders",
           "connecting",
           "dht",
+          "download whole file",
+          "full download",
+          "prebuffer",
+          "buffer ahead",
+          "remux",
+          "scrub freely",
+          "webdav",
         ],
       },
     ],
@@ -654,6 +660,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Show IMDb rating on episodes", section: "library", anchorTitle: "Episode cards", keywords: ["episode rating", "imdb", "omdb", "episode score", "tmdb fallback"] },
   { label: "Show episode description", section: "library", anchorTitle: "Episode cards", keywords: ["episode synopsis", "description", "overview", "cards", "hide synopsis"] },
   { label: "High-quality episode images", section: "library", anchorTitle: "Episode cards", keywords: ["hd images", "full resolution", "episode artwork", "bandwidth", "slow connection", "w300"] },
+  { label: "Group episodes by story arc", section: "library", anchorTitle: "Episode cards", keywords: ["arc", "story arc", "arcs", "saga", "one piece", "seasons arcs switch", "arc grouping", "group by arc", "episode arc", "browse by saga"] },
+  { label: "Episode ordering (TVDB, DVD, absolute, arc order)", section: "library", anchorTitle: "Metadata providers", keywords: ["episode ordering", "episode order", "tvdb order", "dvd order", "absolute order", "aired order", "official order", "arc order", "one piece order", "season order", "tvdb season and order panel", "order tabs", "reorder episodes"] },
   { label: "Identify the current song", section: "library", anchorTitle: "Now Playing card", keywords: ["song id", "shazam", "audd", "music recognition", "identify song", "now playing", "what song"] },
   { label: "Now Playing card", section: "library", anchorTitle: "Now Playing card", keywords: ["song card", "compact", "cinematic", "music card", "disc", "cover style", "card style"] },
   { label: "Show track details", section: "library", anchorTitle: "Now Playing card", keywords: ["artist", "album", "track info", "song details"] },
@@ -769,6 +777,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Delete filter", section: "streamFilters", anchorTitle: "Saved stream filters", keywords: ["delete", "remove filter", "trash", "clear filter"] },
   { label: "Local engine", section: "p2p", anchorTitle: "Local engine", keywords: ["torrent engine", "p2p engine", "built-in engine", "status", "port", "dht", "active torrents", "nodes"] },
   { label: "Show P2P status overlay", section: "p2p", anchorTitle: "Local engine", keywords: ["p2p chip", "peers", "speed", "progress overlay", "status chip", "player overlay"] },
+  { label: "Download the whole file while streaming", section: "p2p", anchorTitle: "Local engine", keywords: ["download whole file", "download the whole file", "full download", "download ahead", "download in background", "background download", "keep downloading", "downloads stop when paused", "stops downloading", "downloading stops", "prebuffer", "pre-buffer", "buffer ahead", "buffer the whole file", "bigger buffer", "pre buffer big remux", "large remux", "remux", "scrub", "scrub freely", "seek freely", "no buffering", "no re-downloading", "cache whole file", "download entire file", "finish downloading", "webdav", "potplayer", "acts like a local file"] },
   { label: "Run self-test", section: "p2p", anchorTitle: "Local engine", keywords: ["self test", "engine test", "diagnostics", "udp", "https", "egress", "tracker test"] },
   { label: "Restart engine", section: "p2p", anchorTitle: "Local engine", keywords: ["restart", "reboot engine", "engine stuck", "fix streams"] },
   { label: "Clear & restart", section: "p2p", anchorTitle: "Local engine", keywords: ["hard reset", "wipe engine", "clear engine", "fresh port", "streams stop loading"] },

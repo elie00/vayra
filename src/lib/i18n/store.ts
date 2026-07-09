@@ -16,7 +16,7 @@ export function getUiLanguage(): UiLanguage {
 }
 
 export function setUiLanguage(lang: UiLanguage): void {
-  const next: UiLanguage = lang === "ar" ? "ar" : "en";
+  const next: UiLanguage = lang === "ar" ? "ar" : lang === "pt" ? "pt" : "en";
   applyDocument(next);
   if (next === current) return;
   current = next;

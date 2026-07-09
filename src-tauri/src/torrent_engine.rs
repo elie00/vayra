@@ -27,6 +27,9 @@ struct EngineState {
     last_error: Option<String>,
     server: Option<tokio::task::JoinHandle<()>>,
     sweeper: Option<tokio::task::JoinHandle<()>>,
+    lan_server: Option<tokio::task::JoinHandle<()>>,
+    lan_port: Option<u16>,
+    lan_error: Option<String>,
 }
 
 fn engine() -> &'static Mutex<EngineState> {
@@ -41,9 +44,14 @@ fn engine() -> &'static Mutex<EngineState> {
             last_error: None,
             server: None,
             sweeper: None,
+            lan_server: None,
+            lan_port: None,
+            lan_error: None,
         })
     })
 }
+
+pub const LAN_SERVER_PORT: u16 = 11470;
 
 const CACHE_SWEEP_INTERVAL_SECS: u64 = 30;
 
@@ -360,6 +368,119 @@ pub async fn torrent_engine_add(
         files,
         stream_base: format!("http://127.0.0.1:{port}/stream"),
     })
+}
+
+fn build_magnet(hash: &str) -> String {
+    format!("magnet:?xt=urn:btih:{hash}")
+}
+
+pub(crate) async fn ensure_added(
+    hash: &str,
+    trackers: Vec<String>,
+    file_idx: Option<usize>,
+) -> Result<(String, Vec<EngineFile>), String> {
+    let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
+    let id = TorrentIdOrHash::parse(hash).map_err(|e| e.to_string())?;
+    let handle = match session.get(id) {
+        Some(h) => h,
+        None => {
+            let magnet = build_magnet(hash);
+            let seed = match current_side_dht() {
+                Some(d) => dht_boot::seed_peers(&d, magnet.as_str(), 40, Duration::from_secs(3)).await,
+                None => Vec::new(),
+            };
+            let opts = AddTorrentOptions {
+                overwrite: true,
+                paused: file_idx.is_none(),
+                only_files: file_idx.map(|i| vec![i]),
+                trackers: Some(merge_trackers(trackers)),
+                initial_peers: (!seed.is_empty()).then_some(seed),
+                peer_opts: Some(PeerConnectionOptions {
+                    connect_timeout: Some(Duration::from_secs(7)),
+                    read_write_timeout: Some(Duration::from_secs(10)),
+                    keep_alive_interval: None,
+                }),
+                force_tracker_interval: Some(Duration::from_secs(300)),
+                ..Default::default()
+            };
+            let added = timeout(
+                Duration::from_secs(60),
+                session.add_torrent(AddTorrent::from_url(magnet.as_str()), Some(opts)),
+            )
+            .await
+            .map_err(|_| "metadata timed out: no peers reached in 60s".to_string())?
+            .map_err(|e| format!("{e:#}"))?;
+            let h = added
+                .into_handle()
+                .ok_or_else(|| "torrent added as list-only".to_string())?;
+            timeout(Duration::from_secs(45), h.wait_until_initialized())
+                .await
+                .map_err(|_| "torrent init timed out".to_string())?
+                .map_err(|e| format!("{e:#}"))?;
+            h
+        }
+    };
+    let info_hash = format!("{:?}", handle.info_hash());
+    let files = handle
+        .with_metadata(|m| {
+            m.file_infos
+                .iter()
+                .enumerate()
+                .map(|(idx, fi)| EngineFile {
+                    idx,
+                    name: fi
+                        .relative_filename
+                        .file_name()
+                        .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_else(|| fi.relative_filename.to_string_lossy().to_string()),
+                    length: fi.len,
+                })
+                .collect::<Vec<_>>()
+        })
+        .map_err(|e| format!("{e:#}"))?;
+    if let Some(idx) = file_idx.filter(|&i| i < files.len()) {
+        let only: HashSet<usize> = HashSet::from([idx]);
+        let _ = session.update_only_files(&handle, &only).await;
+        let _ = session.unpause(&handle).await;
+    }
+    Ok((info_hash, files))
+}
+
+pub fn lan_status() -> (bool, Option<u16>, Option<String>) {
+    let st = engine().lock().unwrap();
+    (st.lan_server.is_some(), st.lan_port, st.lan_error.clone())
+}
+
+pub async fn start_lan_server(app: &AppHandle) -> Result<u16, String> {
+    let session = ensure_session(app).await?;
+    stop_lan_server();
+    let listener = match TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], LAN_SERVER_PORT))).await {
+        Ok(l) => l,
+        Err(e) => {
+            let msg = format!("port {LAN_SERVER_PORT} unavailable: {e}");
+            engine().lock().unwrap().lan_error = Some(msg.clone());
+            return Err(msg);
+        }
+    };
+    let router = stream_route::router(session);
+    let server = tokio::spawn(async move {
+        if let Err(e) = axum::serve(listener, router).await {
+            eprintln!("[torrent-engine] lan server error: {e}");
+        }
+    });
+    let mut st = engine().lock().unwrap();
+    st.lan_server = Some(server);
+    st.lan_port = Some(LAN_SERVER_PORT);
+    st.lan_error = None;
+    Ok(LAN_SERVER_PORT)
+}
+
+pub fn stop_lan_server() {
+    let mut st = engine().lock().unwrap();
+    if let Some(h) = st.lan_server.take() {
+        h.abort();
+    }
+    st.lan_port = None;
 }
 
 #[tauri::command]

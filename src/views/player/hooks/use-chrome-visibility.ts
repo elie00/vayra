@@ -10,9 +10,12 @@ export function useChromeVisibility(params: {
   drawMode: boolean;
   pipMode: boolean;
   setChromeHidden: (hidden: boolean) => void;
+  keyboardPauseShowsControls: boolean;
 }) {
-  const { playing, drawMode, pipMode, setChromeHidden } = params;
+  const { playing, drawMode, pipMode, setChromeHidden, keyboardPauseShowsControls } = params;
   const [chromeVisible, setChromeVisible] = useState(false);
+  const lastInputKeyboardRef = useRef(false);
+  const prevPlayingRef = useRef(playing);
   const chromeVisibleRef = useRef(false);
   useEffect(() => {
     chromeVisibleRef.current = chromeVisible;
@@ -45,18 +48,39 @@ export function useChromeVisibility(params: {
   }, []);
 
   useEffect(() => {
-    wakeChrome();
-    const onMove = () => wakeChrome();
+    const playingChanged = prevPlayingRef.current !== playing;
+    prevPlayingRef.current = playing;
+    if (playingChanged && lastInputKeyboardRef.current && !keyboardPauseShowsControls) {
+      if (hideTimer.current) window.clearTimeout(hideTimer.current);
+      setChromeVisible(false);
+      setChromeHidden(true);
+    } else {
+      wakeChrome();
+    }
+    const onMove = () => {
+      lastInputKeyboardRef.current = false;
+      wakeChrome();
+    };
+    const onPointerDown = () => {
+      lastInputKeyboardRef.current = false;
+    };
+    const onKeyDown = () => {
+      lastInputKeyboardRef.current = true;
+    };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("touchstart", onMove);
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("touchstart", onMove);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
       if (resizeTimer.current) window.clearTimeout(resizeTimer.current);
       setChromeHidden(false);
     };
-  }, [wakeChrome, setChromeHidden]);
+  }, [wakeChrome, setChromeHidden, playing, keyboardPauseShowsControls]);
 
   useEffect(() => {
     const onScaleActivity = () => {

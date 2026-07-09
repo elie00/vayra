@@ -1,13 +1,22 @@
-export type WatchLocalChoice = "local" | "stream";
+export type WatchLocalChoice = "local" | "local-restart" | "stream";
 
 type WatchLocalState = {
   open: boolean;
   title: string;
   subtitle: string | null;
+  hasResume: boolean;
+  resumeMs: number;
   onChoose: ((choice: WatchLocalChoice, remember: boolean) => void) | null;
 };
 
-let state: WatchLocalState = { open: false, title: "", subtitle: null, onChoose: null };
+let state: WatchLocalState = {
+  open: false,
+  title: "",
+  subtitle: null,
+  hasResume: false,
+  resumeMs: 0,
+  onChoose: null,
+};
 const subs = new Set<() => void>();
 
 function emit(): void {
@@ -17,12 +26,16 @@ function emit(): void {
 export function openWatchLocalConfirm(opts: {
   title: string;
   subtitle?: string | null;
+  hasResume?: boolean;
+  resumeMs?: number;
   onChoose: (choice: WatchLocalChoice, remember: boolean) => void;
 }): void {
   state = {
     open: true,
     title: opts.title,
     subtitle: opts.subtitle ?? null,
+    hasResume: opts.hasResume === true,
+    resumeMs: opts.resumeMs ?? 0,
     onChoose: opts.onChoose,
   };
   emit();
@@ -30,7 +43,7 @@ export function openWatchLocalConfirm(opts: {
 
 export function closeWatchLocalConfirm(): void {
   if (!state.open) return;
-  state = { open: false, title: "", subtitle: null, onChoose: null };
+  state = { open: false, title: "", subtitle: null, hasResume: false, resumeMs: 0, onChoose: null };
   emit();
 }
 

@@ -7,6 +7,7 @@ import { useSettings } from "@/lib/settings";
 import { spoilerMaskFor } from "@/lib/spoilers";
 import { EpisodeGridSkeleton } from "../episode-grid-skeleton";
 import { EpisodeRow } from "../series-episode-row";
+import { EpisodeStrip } from "../episode-strip";
 
 export function OrderedEpisodes({
   meta,
@@ -65,6 +66,32 @@ export function OrderedEpisodes({
   }, [episodes, progressByKey]);
 
   if (loading && episodes.length === 0) return <EpisodeGridSkeleton />;
+
+  if (settings.episodeLayout !== "list") {
+    return (
+      <EpisodeStrip
+        meta={meta}
+        episodes={episodes}
+        layout={settings.episodeLayout === "grid" ? "grid" : "strip"}
+        progressFor={(ep) => progressByKey.get(`${ep.seasonNumber}:${ep.episodeNumber}`)!}
+        thumbnailFor={(ep) =>
+          cinemetaVideos?.find(
+            (v) => v.season === ep.seasonNumber && v.episode === ep.episodeNumber,
+          )?.thumbnail
+        }
+        spoilerFor={(ep) => {
+          const k = `${ep.seasonNumber}:${ep.episodeNumber}`;
+          return spoilerMaskFor(settings, {
+            watched: progressByKey.get(k)?.watched ?? false,
+            isNextUp: k === nextUpKey,
+          });
+        }}
+        onContextMenu={onContextMenu}
+        seriesImdbId={seriesImdbId}
+        cinemetaVideos={cinemetaVideos}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-1">

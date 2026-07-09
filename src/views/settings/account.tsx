@@ -13,6 +13,7 @@ import { resizeAvatar } from "./account/avatar-utils";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
 import { ProfilesStrip } from "./account/profiles-strip";
 import { StartupDefaults } from "./account/startup-defaults";
+import { SettingsScopeCard } from "./account/settings-scope-card";
 import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
 import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
 import { avatarUrl } from "@/lib/avatars/catalog";
@@ -185,6 +186,7 @@ export function AccountStub() {
         <div className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
           <ProfilesStrip />
           <StartupDefaults />
+          <SettingsScopeCard />
         </div>
       </Section>
 

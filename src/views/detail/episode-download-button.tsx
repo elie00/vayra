@@ -1,6 +1,7 @@
 import { ArrowDownToLine, Check, Pause, Play, RotateCw } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
-import { activeDownloadFor, pauseDownload, resumeDownload, useDownloads } from "@/lib/download/downloads-store";
+import { activeDownloadFor, cancelDownload, pauseDownload, resumeDownload, useDownloads } from "@/lib/download/downloads-store";
+import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 
@@ -20,7 +21,15 @@ export function EpisodeDownloadButton({
   const t = useT();
   const { openPicker } = useView();
   useDownloads();
+  const tmdbMatch = meta.id.match(/^tmdb:(?:movie|tv):(\d+)$/);
+  const tmdbId = tmdbMatch ? parseInt(tmdbMatch[1], 10) : null;
+  const imdbId = meta.id.startsWith("tt") ? meta.id : null;
+  const isLocal =
+    episode != null
+      ? findLocalEpisodeByIds(episode.season, episode.episode, tmdbId, imdbId) != null
+      : findLocalMovie(tmdbId, imdbId) != null;
   const dl = activeDownloadFor(meta.id, episode?.season ?? null, episode?.episode ?? null);
+  if (isLocal) return null;
   const status = dl?.status;
   const downloading = status === "downloading";
   const paused = status === "paused";

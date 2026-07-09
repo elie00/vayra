@@ -1,10 +1,12 @@
-import { ArrowDownToLine, Bookmark, Check, MoreHorizontal, Pause, Play, RotateCw, Star, X } from "lucide-react";
+import { ArrowDownToLine, Bookmark, Check, Layers, MoreHorizontal, Pause, Play, RotateCw, Star, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
 import { activeDownloadFor, cancelDownload, pauseDownload, resumeDownload, useDownloads } from "@/lib/download/downloads-store";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { AddToListMenu } from "@/components/lists/add-to-list-menu";
+import type { ListItemInput } from "@/lib/custom-lists";
 import { AnilistMenuItems, SimklMenuItems, TraktMenuItems } from "./overflow-sync-items";
 import { PreviewIcon } from "./preview-icon";
 
@@ -69,6 +71,7 @@ export function HeroActionOverflow({
   showSync = false,
   inWatchlist = false,
   onToggleWatchlist,
+  listItem = null,
   simkl = null,
   anilist = null,
 }: {
@@ -84,6 +87,7 @@ export function HeroActionOverflow({
   showSync?: boolean;
   inWatchlist?: boolean;
   onToggleWatchlist?: () => void;
+  listItem?: ListItemInput | null;
   simkl?: { harborId: string; type: "movie" | "series" } | null;
   anilist?: { harborId: string } | null;
 }) {
@@ -92,6 +96,7 @@ export function HeroActionOverflow({
   useDownloads();
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [listMenu, setListMenu] = useState(false);
 
   const dl = canDownload ? activeDownloadFor(meta.id, null, null) : null;
   const downloading = dl?.status === "downloading";
@@ -197,6 +202,16 @@ export function HeroActionOverflow({
                 setMenu(null);
               }}
             />
+            {listItem && (
+              <Item
+                icon={<Layers size={14} strokeWidth={2} />}
+                label={t("Add to list")}
+                onClick={() => {
+                  setMenu(null);
+                  setListMenu(true);
+                }}
+              />
+            )}
             {showWatched && (
               <Item
                 icon={<Check size={14} strokeWidth={2.4} />}
@@ -288,6 +303,14 @@ export function HeroActionOverflow({
           </div>,
           document.body,
         )}
+      {listItem && (
+        <AddToListMenu
+          item={listItem}
+          anchorRef={btnRef}
+          open={listMenu}
+          onClose={() => setListMenu(false)}
+        />
+      )}
     </>
   );
 }

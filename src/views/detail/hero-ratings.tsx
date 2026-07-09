@@ -67,6 +67,8 @@ export function HeroRatings({
   onOpenUrl,
   ratingSource = "imdb",
   animeImdbRating,
+  bare = false,
+  tmdbRating,
 }: {
   rating?: string;
   isAnime: boolean;
@@ -77,17 +79,24 @@ export function HeroRatings({
   onOpenUrl: (url: string) => void;
   ratingSource?: "imdb" | "tmdb";
   animeImdbRating?: string | null;
+  bare?: boolean;
+  tmdbRating?: string | null;
 }) {
   const t = useT();
   const { settings } = useSettings();
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
   const showPrimary = settings.showDetailRatings;
+  const primaryProviderOn = isAnime
+    ? settings.showMalDetail
+    : ratingSource === "tmdb"
+      ? settings.showTmdbDetail
+      : settings.showImdbDetail;
 
   const { rating: simklCommunityRating } = useSimklCommunityRating(imdbId);
 
   const items: ReactNode[] = [];
 
-  if (rating && showPrimary) {
+  if (rating && showPrimary && primaryProviderOn) {
     items.push(
       <ScoreItem
         key="imdb"
@@ -111,7 +120,7 @@ export function HeroRatings({
     );
   }
 
-  if (isAnime && animeImdbRating && showPrimary) {
+  if (isAnime && animeImdbRating && showPrimary && settings.showImdbDetail) {
     items.push(
       <ScoreItem
         key="anime-imdb"
@@ -125,7 +134,16 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showDetailRatings && scores?.rtCritics != null) {
+  if (tmdbRating && showPrimary && settings.showTmdbDetail && ratingSource !== "tmdb" && !isAnime) {
+    items.push(
+      <ScoreItem key="tmdb" label={t("TMDB")} sublabel={t("Rating /10")}>
+        <span className="text-[10px] font-bold tracking-tight text-ink-muted">TMDB</span>
+        <span>{tmdbRating}</span>
+      </ScoreItem>,
+    );
+  }
+
+  if (settings.showDetailRatings && settings.showRtDetail && scores?.rtCritics != null) {
     items.push(
       <ScoreItem key="rt-critics" label={t("Rotten Tomatoes Critics")} sublabel={t("Tomatometer")}>
         <RtBadge score={scores.rtCritics} className="h-[16px] w-auto" />
@@ -134,7 +152,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showDetailRatings && mdblist?.rtAudience != null) {
+  if (settings.showDetailRatings && settings.showRtAudienceDetail && mdblist?.rtAudience != null) {
     items.push(
       <ScoreItem key="rt-audience" label={t("Rotten Tomatoes Audience")} sublabel={t("Popcornmeter")}>
         <Popcorn
@@ -147,7 +165,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showDetailRatings && mdblist?.letterboxd != null) {
+  if (settings.showDetailRatings && settings.showLetterboxdDetail && mdblist?.letterboxd != null) {
     items.push(
       <ScoreItem
         key="letterboxd"
@@ -165,7 +183,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showDetailRatings && metacritic != null) {
+  if (settings.showDetailRatings && settings.showMetacriticDetail && metacritic != null) {
     items.push(
       <ScoreItem key="metacritic" label={t("Metacritic")} sublabel={t("Metascore")}>
         <span
@@ -177,7 +195,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showDetailRatings && mdblist?.trakt != null) {
+  if (settings.showDetailRatings && settings.showTraktDetail && mdblist?.trakt != null) {
     items.push(
       <ScoreItem
         key="trakt"
@@ -210,7 +228,7 @@ export function HeroRatings({
     );
   }
 
-  if (settings.showDetailRatings && mdblist?.score != null) {
+  if (settings.showDetailRatings && settings.showMdblistDetail && mdblist?.score != null) {
     items.push(
       <ScoreItem
         key="mdblist"
@@ -228,6 +246,19 @@ export function HeroRatings({
   }
 
   if (items.length === 0) return null;
+
+  if (bare) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
+        {items.map((item, i) => (
+          <span key={i} className="flex items-center">
+            {i > 0 && <Divider />}
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="inline-flex items-center rounded-full border border-edge-soft bg-canvas/70 px-1 py-0.5">

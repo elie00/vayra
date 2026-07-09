@@ -33,6 +33,7 @@ mod song_id;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
+mod sub_extract;
 mod subsync;
 mod svp;
 mod thumbs;
@@ -567,6 +568,7 @@ pub fn run() {
             save_text_file,
             subsync::moviehash::compute_moviehash,
             subsync::sync_subtitle,
+            sub_extract::subtitle_extract,
             cast_server::stop_stremio_sidecar,
             cast_server::cast_server_stop,
             web_server::web_serve_start,
@@ -680,6 +682,7 @@ pub fn run() {
             streams::streams_core_version,
             local_lib::harbor_scan_folder,
             tray::tray_set_prefs,
+            tray::tray_set_custom_themes,
             stremio_auth::stremio_auth_start,
             song_id::recognize_now_playing,
             deeplink_set_stremio,

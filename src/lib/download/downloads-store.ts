@@ -32,6 +32,7 @@ type EnqueueArgs = {
   episode?: PlayEpisode;
   streamLabel?: string | null;
   url: string;
+  headers?: Record<string, string> | null;
 };
 
 const items = new Map<string, DownloadItem>();
@@ -147,7 +148,7 @@ export function activeDownloadFor(
 }
 
 export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
-  const { meta, episode, streamLabel, url } = args;
+  const { meta, episode, streamLabel, url, headers } = args;
   let dir = await resolveDir();
   try {
     const raw = localStorage.getItem("harbor.settings");
@@ -202,7 +203,7 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
       ratio: p.ratio,
       ...(bps > 0 ? { bytesPerSec: bps } : {}),
     });
-  });
+  }, headers ?? undefined);
   handles.set(id, handle);
   handle.promise
     .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))

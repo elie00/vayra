@@ -4,6 +4,8 @@ import { Play, Wifi, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useLocalLibrary, type LocalEntry } from "@/lib/local-library";
 import { meta as fetchCinemetaMeta, type Meta } from "@/lib/cinemeta";
+import { lastPlayedEpisode, readResumeEntry } from "@/lib/resume";
+import { formatRelativeWatched } from "@/lib/episode-progress";
 import {
   closeLocalEpisodes,
   getLocalEpisodes,
@@ -103,10 +105,41 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
   );
   const hasSpecials = localBySeason.has(0);
 
+  const resumeIds = useMemo(
+    () => [imdbId, tmdbId != null ? `tmdb:tv:${tmdbId}` : null].filter((x): x is string => !!x),
+    [imdbId, tmdbId],
+  );
+  const epProgress = useMemo(() => {
+    return (season: number, episode: number): { ms: number; t: number } | null => {
+      let best: { ms: number; t: number } | null = null;
+      for (const id of resumeIds) {
+        const e = readResumeEntry(id, season, episode);
+        if (e && (!best || e.t > best.t)) best = e;
+      }
+      return best;
+    };
+  }, [resumeIds]);
+
+  const lastWatched = useMemo(() => {
+    let best: { season: number; episode: number; t: number } | null = null;
+    for (const id of resumeIds) {
+      const lp = lastPlayedEpisode(id);
+      if (lp && (!best || lp.t > best.t)) best = lp;
+    }
+    return best;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeIds.join("|"), all]);
+
+  const hlSeason =
+    payload.highlightEpisode != null ? payload.initialSeason ?? null : lastWatched?.season ?? null;
+  const hlEpisode = payload.highlightEpisode ?? lastWatched?.episode ?? null;
+
   const initialSeason =
     payload.initialSeason != null && localBySeason.has(payload.initialSeason)
       ? payload.initialSeason
-      : localSeasons[0] ?? (hasSpecials ? 0 : 1);
+      : hlSeason != null && localBySeason.has(hlSeason)
+        ? hlSeason
+        : localSeasons[0] ?? (hasSpecials ? 0 : 1);
   const [selected, setSelected] = useState<number>(initialSeason);
   useEffect(() => {
     const valid = selected === 0 ? hasSpecials : localSeasons.includes(selected);
@@ -214,15 +247,16 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
                         {cols.map((c) => {
                           if (c > count) return <td key={c} className="h-7 w-7" />;
                           const isLocal = owned?.has(c) ?? false;
+                          const isHighlight = hlSeason === s && hlEpisode === c;
                           return (
                             <td key={c} className="h-7 w-7">
                               <span className="flex h-full w-full items-center justify-center">
                                 <span
-                                  className={
+                                  className={`${
                                     isLocal
                                       ? "h-3 w-3 rounded-full bg-accent"
                                       : "h-3 w-3 rounded-full ring-1 ring-inset ring-edge"
-                                  }
+                                  }${isHighlight ? " ring-2 ring-accent ring-offset-2 ring-offset-canvas" : ""}`}
                                   title={
                                     isLocal
                                       ? `${seasonLabel(s)}E${String(c).padStart(2, "0")} · ${t("on disk")}`
@@ -257,15 +291,19 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
           )}
 
           <div className="flex shrink-0 flex-col gap-1">
-            {listEps.map((ep) => (
+            {listEps.map((ep) => {
+              const isHighlight = hlSeason === ep.season && hlEpisode === ep.episode;
+              const pr = ep.episode != null ? epProgress(ep.season ?? 0, ep.episode) : null;
+              const ratio =
+                pr && ep.runtime && ep.runtime > 0 ? Math.min(1, pr.ms / (ep.runtime * 60_000)) : 0;
+              const watchedAgo = pr ? formatRelativeWatched(pr.t) : "";
+              return (
               <button
                 key={ep.id}
                 type="button"
                 onClick={() => play(ep)}
-                className={`group/ep flex items-center gap-3 rounded-xl px-3 py-2.5 text-start transition-colors hover:bg-raised ${
-                  payload.highlightEpisode === ep.episode && payload.initialSeason === ep.season
-                    ? "bg-accent/10 ring-1 ring-accent"
-                    : ""
+                className={`group/ep relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-start transition-colors hover:bg-raised ${
+                  isHighlight ? "bg-accent/10 ring-1 ring-accent" : ""
                 }`}
               >
                 <span className="flex h-8 w-11 shrink-0 items-center justify-center rounded-md bg-canvas/60 font-mono text-[12px] font-bold tabular-nums text-ink-muted ring-1 ring-edge-soft">
@@ -280,6 +318,19 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
                       {ep.filename}
                     </span>
                   )}
+                  {pr &&
+                    (ratio > 0.01 ? (
+                      <span className="text-[11px] text-accent/85">
+                        {t("{pct}% watched", { pct: Math.round(ratio * 100) })}
+                        {watchedAgo ? ` · ${watchedAgo}` : ""}
+                      </span>
+                    ) : (
+                      watchedAgo && (
+                        <span className="text-[11px] text-emerald-300/85">
+                          {t("Watched {ago}", { ago: watchedAgo })}
+                        </span>
+                      )
+                    ))}
                 </span>
                 {ep.resolution && (
                   <span className="shrink-0 rounded-md bg-raised px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
@@ -289,8 +340,17 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors group-hover/ep:bg-ink group-hover/ep:text-canvas">
                   <Play size={13} strokeWidth={2.4} fill="currentColor" className="ml-0.5" />
                 </span>
+                {ratio > 0.01 && (
+                  <span className="absolute inset-x-0 bottom-0 h-[2px] bg-edge">
+                    <span
+                      className="block h-full bg-accent"
+                      style={{ width: `${Math.max(2, ratio * 100)}%` }}
+                    />
+                  </span>
+                )}
               </button>
-            ))}
+              );
+            })}
             {listEps.length === 0 && (
               <p className="px-3 py-6 text-center text-[13px] text-ink-subtle">
                 {t("No local episodes in this season.")}

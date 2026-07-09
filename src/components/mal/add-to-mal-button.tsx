@@ -1,5 +1,6 @@
 import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import malLogo from "@/assets/mal.png";
 import { AnchoredMenu } from "@/components/anchored-menu";
 import {
   deleteListEntry,
@@ -100,7 +101,7 @@ export function AddToMalButton({ harborId, title }: { harborId: string; title: s
         title={t("Add {title} to MyAnimeList", { title })}
         className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/80 px-6 text-[15px] font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.98] disabled:opacity-60"
       >
-        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[3px] bg-blue-600 text-[10px] font-bold text-white">M</span>
+        <img src={malLogo} alt="" className="h-[18px] w-[18px] rounded-[4px] object-contain" />
         <Plus size={16} strokeWidth={2.2} className="-ms-1" />
         {t("Add to MAL")}
       </button>
@@ -116,7 +117,7 @@ export function AddToMalButton({ harborId, title }: { harborId: string; title: s
         onClick={() => setMenuOpen((v) => !v)}
         className="flex h-12 items-center gap-2.5 rounded-full border border-ink bg-ink/10 px-6 text-[15px] font-medium text-ink transition-[transform,background-color,border-color] duration-200 hover:bg-ink/20 active:scale-[0.98] disabled:opacity-60"
       >
-        <span className="flex h-[18px] w-[18px] items-center justify-center rounded-[3px] bg-blue-600 text-[10px] font-bold text-white">M</span>
+        <img src={malLogo} alt="" className="h-[18px] w-[18px] rounded-[4px] object-contain" />
         {t(STATUS_LABELS[status])}
         <ChevronDown
           size={16}
