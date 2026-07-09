@@ -80,7 +80,7 @@ export function AiModeButton({
         </button>
       </HoverTooltip>
       {open && (
-        <div className="animate-ai-entrance absolute end-0 top-12 z-[210] w-60 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl">
+        <div className="animate-ai-entrance absolute end-0 top-12 z-[210] w-80 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl">
           <div className="px-3.5 pb-1 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
             {t("AI model")}
           </div>
@@ -94,21 +94,28 @@ export function AiModeButton({
                     onSelectModel(m.id);
                     setOpen(false);
                   }}
-                  className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-start transition-colors ${
+                  className={`flex w-full items-start gap-2.5 px-3.5 py-2 text-start transition-colors ${
                     on ? "bg-ink/10" : "hover:bg-elevated/60"
                   }`}
                 >
                   <ProviderLogo provider={m.provider} size={18} round />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate text-[13px] font-medium text-ink">{m.label}</span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="truncate text-[13px] font-medium text-ink">{m.label}</span>
+                    <span className="flex flex-wrap items-center gap-1">
+                      {m.recommended && (
+                        <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-accent">
+                          {t("Recommended")}
+                        </span>
+                      )}
                       {m.free && (
-                        <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-accent">
+                        <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-accent">
                           {m.provider === "groq" ? t("Free tier") : t("Free")}
                         </span>
                       )}
+                      <span className="text-[10px] uppercase tracking-wider text-ink-subtle">
+                        {PROVIDER_NAME[m.provider]}
+                      </span>
                     </span>
-                    <span className="text-[11px] text-ink-subtle">{PROVIDER_NAME[m.provider]}</span>
                   </span>
                 </button>
               );
