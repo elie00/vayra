@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ArrowUp, Loader2 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { resolveAddonLogo } from "@/components/addon-logo";
 import { torrentEngineStatus } from "@/lib/torrent/local-engine";
 import { useAuth } from "@/lib/auth";
@@ -14,7 +15,7 @@ import { readSeasonLock } from "@/lib/season-lock";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
-import { useView, type PlayEpisode } from "@/lib/view";
+import { useView, type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { prefetchSegments } from "@/lib/skip-intro";
 import { exitWindowFullscreen } from "@/lib/fullscreen-state";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
@@ -22,13 +23,13 @@ import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
 import { AutoPlayTransition } from "./play-picker/auto-play-transition";
 import { BackdropLayer } from "./play-picker/backdrop-layer";
 import { CinematicLoader } from "./play-picker/cinematic-loader";
-import { DownloadStarted } from "./play-picker/download-started";
 import { DebridDownModal } from "./play-picker/debrid-down-modal";
 import { P2pConfirmModal } from "./play-picker/p2p-confirm-modal";
 import { CachedFilterPill, LanguageFilterPill } from "./play-picker/filter-pills";
 import { PickerEmptyLadder } from "./play-picker/picker-empty-ladder";
 import { NoSourcesConfiguredModal } from "./play-picker/no-sources-modal";
 import {
+  hasCachedMarker,
   hasUncachedMarker,
   isEngineWarmingError,
   normalizeLangCode,
@@ -51,6 +52,10 @@ import { useAddons } from "./play-picker/use-addons";
 import { useImdbId } from "./play-picker/use-imdb-id";
 import { usePipelineResult } from "./play-picker/use-pipeline-result";
 import { useStreamIds } from "./play-picker/use-stream-ids";
+import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
+import { localPlayerSrc } from "@/lib/local-library/player-src";
+import { LocalStreamCard } from "./play-picker/local-stream-card";
+import { SubtitleSelectStep } from "./play-picker/subtitle-select-step";
 
 const TIER_ORDER: Tier[] = ["4K_DV", "4K_HDR", "4K", "1080p_HDR", "1080p", "720p", "SD", "ROUGH"];
 
@@ -70,7 +75,7 @@ export function PlayPicker({
   resume?: boolean;
 }) {
   const isDownload = intent === "download";
-  const { openPlayer, openSettings, exitPickerToDetail } = useView();
+  const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
   const backToDetail = () => {
     void exitWindowFullscreen();
     exitPickerToDetail(meta);
@@ -82,18 +87,24 @@ export function PlayPicker({
   const { snapshot: roomSnapshot, sendInvite, claimHost, wasInvitedTo, clientId, hostSource, roomGuestPick, lastInviteProto } = useTogether();
   const inSession = roomSnapshot.state === "joined";
   const resolvedImdb = useImdbId(meta, settings.tmdbKey);
-
   useEffect(() => {
     prefetchSegments(meta, episode);
   }, [meta, episode]);
   const imdbId = resolvedImdb.id;
   const streamIds = useStreamIds(meta, episode, imdbId);
+  const localMatch = useMemo(() => {
+    const m = meta.id.match(/^tmdb:(?:movie|tv):(\d+)$/);
+    const tmdbId = m ? parseInt(m[1], 10) : null;
+    if (tmdbId == null && !imdbId) return null;
+    return episode
+      ? findLocalEpisodeByIds(episode.season, episode.episode, tmdbId, imdbId)
+      : findLocalMovie(tmdbId, imdbId);
+  }, [meta.id, imdbId, episode]);
   const { addons } = useAddons(authKey, settings);
   const [resolving, setResolving] = useState<{ stream: ScoredStream } | null>(null);
   const [failedStreams, setFailedStreams] = useState<Set<ScoredStream>>(new Set());
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [downloadConfirm, setDownloadConfirm] = useState<{ label: string | null } | null>(null);
   const [strictMode, setStrictMode] = useState(settings.streamFilterLevel === "strict");
   const [forceShowAll, setForceShowAll] = useState(false);
   const filterDisabled = settings.streamFilterLevel === "off" || forceShowAll || isDownload;
@@ -173,7 +184,8 @@ export function PlayPicker({
   const isCached = useCallback(
     (s: ScoredStream) =>
       (s.url != null && !s.infoHash && !hasUncachedMarker(s)) ||
-      debrids.some((d) => s.cached[d.slug] === true || s.inLibrary[d.slug] === true),
+      debrids.some((d) => s.cached[d.slug] === true || s.inLibrary[d.slug] === true) ||
+      hasCachedMarker(s),
     [debrids],
   );
   const hasStrongAddon = useMemo(
@@ -287,6 +299,7 @@ export function PlayPicker({
   });
 
   const autoFiredRef = useRef(false);
+  const mainRef = useRef<HTMLElement>(null);
   const [autoAttemptIdx, setAutoAttemptIdx] = useState(0);
   const [autoExhausted, setAutoExhausted] = useState(false);
   const [autoCancelled, setAutoCancelled] = useState(false);
@@ -328,6 +341,27 @@ export function PlayPicker({
     return filteredPicker.primary;
   }, [filteredPicker, selectedTier, previousMatch, sameSourceMatch]);
 
+  const [pendingPreselect, setPendingPreselect] = useState<PlayerSrc | null>(null);
+  const openPlayerGated = useCallback(
+    (s: PlayerSrc) => {
+      const applicable =
+        settings.subtitlePreselect &&
+        !isDownload &&
+        !inSession &&
+        !s.autoFired &&
+        !s.isLive &&
+        !s.meta.id?.startsWith("iptv:") &&
+        (s.meta.type === "movie" || s.meta.type === "series" || s.meta.type === "anime");
+      if (!applicable) {
+        openPlayer(s);
+        return;
+      }
+      setResolving(null);
+      setPendingPreselect(s);
+    },
+    [settings.subtitlePreselect, isDownload, inSession, openPlayer],
+  );
+
   const { onPlay, onCache, queuedHash, debridDown, resetDebridDown, abortResolve, p2pConfirm, confirmP2p, cancelP2p } = usePickHandler({
     meta,
     imdbId,
@@ -344,9 +378,9 @@ export function PlayPicker({
     inviteSentRef,
     sendInvite,
     claimHost,
-    openPlayer,
+    openPlayer: openPlayerGated,
     intent,
-    onDownloadStarted: (label) => setDownloadConfirm({ label: label ?? null }),
+    onDownloadStarted: () => setView("downloads"),
     autoActive,
     autoAttemptIdx,
     autoCandidatesLength: autoCandidates.length,
@@ -366,6 +400,8 @@ export function PlayPicker({
     [onPlay],
   );
 
+  const rememberedInstant =
+    !!previousMatch && (isCached(previousMatch) || !!previousMatch.url || p2pAutoConsent);
   const rememberedFiredRef = useRef(false);
   const rememberedHandledFirst =
     !!previousMatch &&
@@ -375,6 +411,7 @@ export function PlayPicker({
     !isDownload &&
     !roomGuestPick &&
     !inSession &&
+    rememberedInstant &&
     (attempt ?? 0) === 0;
   useEffect(() => {
     if (rememberedFiredRef.current || !rememberedHandledFirst || !previousMatch) return;
@@ -490,12 +527,26 @@ export function PlayPicker({
 
   const showAutoTransition =
     !resolveError &&
+    !isDownload &&
     ((autoActive && (streamIds === null || loading || autoCandidates.length > 0)) ||
       resolving != null);
   void terminalEmpty;
 
   const noSourcesConfigured =
     addons !== null && addons.length === 0 && debrids.length === 0;
+
+  if (pendingPreselect) {
+    return (
+      <SubtitleSelectStep
+        src={pendingPreselect}
+        onStart={(finalSrc) => {
+          setPendingPreselect(null);
+          openPlayer(finalSrc);
+        }}
+        onCancel={() => setPendingPreselect(null)}
+      />
+    );
+  }
 
   if (noSourcesConfigured) {
     return <NoSourcesConfiguredModal meta={meta} />;
@@ -522,6 +573,7 @@ export function PlayPicker({
         episode={episode}
         resolving={resolving != null}
         attemptIdx={autoAttemptIdx}
+        download={isDownload}
         onCancel={() => {
           abortResolve();
           setResolving(null);
@@ -555,25 +607,18 @@ export function PlayPicker({
     );
   }
 
-  if (downloadConfirm) {
-    return (
-      <DownloadStarted
-        meta={meta}
-        episode={episode}
-        label={downloadConfirm.label}
-        onDone={backToDetail}
-      />
-    );
-  }
-
   return (
-    <main className="absolute inset-0 z-50 overflow-y-auto bg-canvas">
+    <main ref={mainRef} className="absolute inset-0 z-50 overflow-y-auto bg-canvas">
       <BackdropLayer src={backdropSrc} />
 
       <div aria-hidden data-tauri-drag-region={fs ? "false" : "true"} className="absolute inset-x-0 top-0 z-10 h-20" />
 
       <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-12 px-12 pb-32 pt-32">
         <PickerHeader meta={meta} episode={episode} onBack={backToDetail} onRefresh={refresh} refreshing={loading} />
+
+        {!isDownload && localMatch && (
+          <LocalStreamCard entry={localMatch} onPlay={() => openPlayerGated(localPlayerSrc(localMatch))} />
+        )}
 
         {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
 
@@ -626,6 +671,7 @@ export function PlayPicker({
             preserveOrder={addonOrderMode || !!hostMatch}
             matchFor={hostMatch ? matchFor : undefined}
             onPlay={playManually}
+            download={isDownload}
           />
         ) : (
           <>
@@ -714,7 +760,35 @@ export function PlayPicker({
           </div>
         )}
       </div>
+      {(settings.pickerLayout === "stremio" || isDownload) && filteredPicker && filteredPicker.all.length > 0 && (
+        <PickerScrollTop scrollRef={mainRef} />
+      )}
     </main>
+  );
+}
+
+function PickerScrollTop({ scrollRef }: { scrollRef: React.RefObject<HTMLElement | null> }) {
+  const t = useT();
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => setShow(el.scrollTop > 600);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollRef]);
+  if (!show) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label={t("Scroll to top")}
+      className="animate-in fade-in slide-in-from-bottom-3 fixed bottom-7 end-7 z-[60] flex h-14 items-center gap-2.5 rounded-full bg-accent px-6 text-canvas shadow-[0_16px_40px_-10px_rgba(0,0,0,0.7)] transition-transform duration-200 hover:scale-105 active:scale-95"
+    >
+      <ArrowUp size={24} strokeWidth={2.6} />
+      <span className="text-[16px] font-bold">{t("Top")}</span>
+    </button>
   );
 }
 

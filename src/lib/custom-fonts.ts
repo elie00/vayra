@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSettings } from "./settings";
+import { randomUuid } from "./uuid";
 
 const EXT_FORMAT: Record<string, string> = {
   ttf: "truetype",
@@ -31,7 +32,7 @@ export function useCustomFonts() {
     setBusy(true);
     try {
       const dataUrl = await readDataUrl(file);
-      const id = crypto.randomUUID().slice(0, 8);
+      const id = randomUuid().slice(0, 8);
       await new FontFace(`harbor-font-${id}`, `url(${dataUrl})`, { display: "swap" }).load();
       update({ customFonts: [...fonts, { id, name: prettyName(file.name), dataUrl, format }] });
       return id;

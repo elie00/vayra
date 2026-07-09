@@ -109,10 +109,6 @@ export function useBridgeLoad(params: {
               ? undefined
               : startSec > 5
                 ? startSec
-                // On an episode/source switch (not the first load) with no saved
-                // resume, seek the new media to 0 explicitly so it never inherits
-                // the previous file's playhead. The first load stays undefined so
-                // the engine's own initial-position handling applies.
                 : isFirstLoad
                   ? undefined
                   : 0,

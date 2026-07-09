@@ -20,6 +20,7 @@ export function StremioLayout({
   preserveOrder,
   matchFor,
   onPlay,
+  download = false,
 }: {
   streams: ScoredStream[];
   addons: Addon[] | null;
@@ -29,6 +30,7 @@ export function StremioLayout({
   preserveOrder?: boolean;
   matchFor?: (s: ScoredStream) => "same" | "close" | null;
   onPlay: (stream: ScoredStream) => void;
+  download?: boolean;
 }) {
   const [filter, setFilter] = useState<string>("all");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -196,6 +198,7 @@ export function StremioLayout({
             addonLogo={addonLogoMap.get(s.addonUrl ?? "") ?? addonLogoMap.get(s.addonId) ?? null}
             match={matchFor ? matchFor(s) : null}
             onPlay={() => onPlay(s)}
+            download={download}
           />
         ))}
       </div>

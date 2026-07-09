@@ -10,6 +10,7 @@ import type { Meta } from "@/lib/cinemeta";
 import type { Rejection } from "@/lib/streams/trust";
 import type { Addon } from "@/lib/addons";
 import type { ScoredStream, Stream, Tier } from "@/lib/streams/types";
+import { hasCachedMarker } from "@/lib/streams/cached";
 import type { PlayEpisode } from "@/lib/view";
 
 export async function cinemetaImdbFallback(
@@ -376,9 +377,10 @@ export function hasInstantMarker(s: ScoredStream): boolean {
 }
 
 export { hasUncachedMarker } from "@/lib/streams/cached";
+export { hasCachedMarker };
 
 export function anyStreamCached(s: ScoredStream): boolean {
-  return Object.values(s.cached).some((v) => v === true);
+  return Object.values(s.cached).some((v) => v === true) || hasCachedMarker(s);
 }
 
 const DEBRID_FAIL_CODES = new Set([

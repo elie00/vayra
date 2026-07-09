@@ -44,6 +44,7 @@ export type Profile = {
   hideContent: ContentFilters | null;
   lockedTabs: HiddenTabs | null;
   kid: KidConfig | null;
+  settingsLinked?: boolean;
   createdAt: number;
 };
 
@@ -82,7 +83,16 @@ type ProfilesValue = {
 const STORAGE_KEY = "harbor.profiles.v1";
 const TOGETHER_NAME_KEY = "harbor.together.name";
 const SETTINGS_KEY = "harbor.settings";
+const SHARED_SETTINGS_KEY = "harbor.settings.shared";
 const LEGACY_PARENTAL_KEY = "harbor.parental";
+
+function readLaunchSettingsRaw(): string | null {
+  try {
+    return localStorage.getItem(SHARED_SETTINGS_KEY) ?? localStorage.getItem(SETTINGS_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function readLegacyParental(): { hiddenTabs: HiddenTabs | null; hadPin: boolean } {
   try {
@@ -146,7 +156,7 @@ function readSettingsIdentity(): { color: string | null; avatar: string | null }
 type ProfilePromptInterval = "launch" | "15m" | "30m" | "never";
 function readProfilePromptInterval(): ProfilePromptInterval {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = readLaunchSettingsRaw();
     if (!raw) return "launch";
     const parsed = JSON.parse(raw) as { profilePromptInterval?: unknown; skipProfileScreen?: unknown };
     const v = parsed.profilePromptInterval;
@@ -161,7 +171,7 @@ function intervalMinutes(i: ProfilePromptInterval): number {
 }
 function readDefaultProfileId(): string {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = readLaunchSettingsRaw();
     if (!raw) return "";
     const v = (JSON.parse(raw) as { defaultProfileId?: unknown }).defaultProfileId;
     return typeof v === "string" ? v : "";
@@ -337,6 +347,14 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       setSessionUnlockedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
     }
     markProfileSelectedNow();
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as ProfilesState;
+        parsed.activeId = id;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      }
+    } catch {}
     setState((s) => ({ ...s, activeId: id }));
     setPickerOpen(false);
     setPickerViewState({ kind: "list" });
@@ -381,6 +399,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
           hideContent: null,
           lockedTabs: null,
           kid: kid ?? null,
+          settingsLinked: true,
           createdAt: Date.now(),
         };
         return { ...s, profiles: [...s.profiles, created] };
@@ -417,6 +436,14 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(`harbor.auth.${id}`);
         localStorage.removeItem(`harbor.favorites.v1.${id}`);
         localStorage.removeItem(`harbor.localwatchlist.v1.${id}`);
+        localStorage.removeItem(`harbor.settings.${id}`);
+        localStorage.removeItem(`harbor.trakt.session.v1.${id}`);
+        localStorage.removeItem(`harbor.simkl.session.v1.${id}`);
+        localStorage.removeItem(`harbor.anilist.session.v1.${id}`);
+        localStorage.removeItem(`harbor.mal.session.v1.${id}`);
+        localStorage.removeItem(`harbor.simkl.cache.v2.${id}`);
+        localStorage.removeItem(`harbor.anilist.synced.v1.${id}`);
+        localStorage.removeItem(`harbor.mal.synced.v1.${id}`);
       } catch {
         /* ignore */
       }

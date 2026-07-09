@@ -9,6 +9,7 @@ import { nameColor } from "@/lib/together/colors";
 import { useTogether } from "@/lib/together/provider";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
+import { useQueue, useSleepAtEnd } from "@/lib/queue";
 import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
@@ -50,6 +51,7 @@ import { useClipRecorder } from "./player/hooks/use-clip-recorder";
 import { useGifRecorder } from "./player/hooks/use-gif-recorder";
 import { useSleepTimer } from "./player/hooks/use-sleep-timer";
 import { useAutoEndExit } from "./player/hooks/use-auto-end-exit";
+import { useQueueAdvance } from "./player/hooks/use-queue-advance";
 import { usePipMode } from "./player/hooks/use-pip-mode";
 import { usePlaybackControls } from "./player/hooks/use-playback-controls";
 import { usePlaybackPresence } from "./player/hooks/use-playback-presence";
@@ -75,7 +77,7 @@ import type { VolumeIndicatorState } from "@/components/player/volume-indicator"
 import type { ToastInfo } from "@/views/addons/addons-types";
 
 export function PlayerView({ src }: { src: PlayerSrc }) {
-  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
+  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc, exitPlayer } = useView();
   const { settings, update } = useSettings();
   const isKid = useActiveKid() != null;
   const t = useT();
@@ -230,6 +232,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     drawMode,
     pipMode,
     setChromeHidden,
+    keyboardPauseShowsControls: settings.keyboardPauseShowsControls,
   });
 
   const { adjacent, swappingEp, goToEpisode } = useEpisodeNavigation({
@@ -263,10 +266,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   const startedNearEndRef = useStartedNearEnd(src.url, snap.status, snap.durationSec);
 
+  const queue = useQueue();
+  const sleepAtEndArmed = useSleepAtEnd();
+  const queueOrSleepArmed = queue.length > 0 || sleepAtEndArmed;
+
   useAutoNextEpisode({
     src,
     snap,
-    nextEp: settings.autoPlayNextEpisode ? adjacent.next : null,
+    nextEp: settings.autoPlayNextEpisode && !queueOrSleepArmed ? adjacent.next : null,
     canChangeEpisode,
     cancelled: autoNextCancelled,
     startedNearEndRef,
@@ -504,19 +511,9 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     setSyncToast({ kind, text });
     syncToastTimerRef.current = window.setTimeout(() => setSyncToast(null), kind === "error" ? 5000 : 3000);
   }, []);
-  const handleEnterSync = useCallback(async () => {
-    const res = await textSync.enterSync();
-    if (!res.ok) {
-      const reason = res.reason === "no-cues"
-        ? t("No subtitle cues available")
-        : res.reason === "local-path-unreadable"
-          ? t("Could not read the subtitle file")
-          : res.reason === "no-bridge"
-            ? t("Player not ready")
-            : t("Sync unavailable");
-      showSyncToast("error", reason);
-    }
-  }, [textSync.enterSync, showSyncToast, t]);
+  const handleEnterSync = useCallback(() => {
+    void textSync.enter(src.url, src.headers);
+  }, [textSync.enter, src.url, src.headers]);
 
   const volumeIndicatorTimerRef = useRef<number | null>(null);
   const [volumeIndicator, setVolumeIndicator] = useState<VolumeIndicatorState>({
@@ -641,9 +638,20 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     canChangeEpisode,
     roomGuest,
     isLive: isLiveLike,
+    suspend: queueOrSleepArmed && !isLiveLike,
     startedNearEndRef,
     reloadLive,
     closePlayer,
+  });
+
+  useQueueAdvance({
+    src,
+    snap,
+    queue,
+    isLive: isLiveLike,
+    startedNearEndRef,
+    openPicker,
+    exitPlayer,
   });
 
   const isLocalSrc = isLocalUrl(src.url);
@@ -839,7 +847,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     resolvedImdbId,
     contentAdvisory,
     tmdbKey: settings.tmdbKey ?? null,
-    download,
+    download: isLocalSrc ? undefined : download,
     liveOverlay,
     setDvrOpen,
     openDvr: liveOverlay.isLive ? () => setDvrOpen(true) : undefined,

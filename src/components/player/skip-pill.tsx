@@ -6,8 +6,6 @@ import type { SpoilerMask } from "@/lib/spoilers";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 
-
-
 export function SkipPill({
   segment,
   hasNextEp,

@@ -41,7 +41,9 @@ export function EpisodeRow({
   const { settings } = useSettings();
   const ratingValue = ep.imdbRating ?? ep.voteAverage;
   const ratingIsImdb = ep.imdbRating != null;
-  const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}` : undefined;
+  const tmdbStill = ep.stillPath
+    ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
+    : ep.stillUrl;
   const candidates = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -62,7 +64,6 @@ export function EpisodeRow({
     const v = cinemetaVideos?.find((x) => x.season === ep.seasonNumber && x.episode === ep.episodeNumber);
     return v?.id ?? undefined;
   }, [cinemetaVideos, ep.seasonNumber, ep.episodeNumber]);
-
   const playEpisode = {
     season: ep.seasonNumber,
     episode: ep.episodeNumber,

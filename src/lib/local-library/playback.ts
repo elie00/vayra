@@ -35,14 +35,9 @@ export function playLocalAware(opts: {
   extraImdb?: string | null;
   mode: LocalPlaybackMode;
   source: "manual" | "auto";
-  // opts.fromStart is set when the user chose "watch from the beginning" — the
-  // caller must start the file at 0 (e.g. via a startFromZero PlayerSrc flag).
   playLocal: (entry: LocalEntry, opts?: { fromStart?: boolean }) => void;
   playStream: () => void;
   setMode: (mode: LocalPlaybackMode) => void;
-  // The id the file will actually resume under, so the "continue vs restart"
-  // split matches the player's resume lookup. Defaults to the id localPlayerSrc
-  // uses; the Continue Watching card overrides it to the catalog meta id.
   resumeId?: string;
 }): void {
   const { meta, episode, extraImdb, mode, source, playLocal, playStream, setMode, resumeId } = opts;

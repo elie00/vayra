@@ -93,6 +93,7 @@ export type KitsuEpisode = {
   absoluteNumber?: number;
   rating?: number;
   ratingIsImdb?: boolean;
+  sourceMetaId?: string;
 };
 
 export type KitsuCharacter = {
@@ -438,4 +439,26 @@ export async function kitsuRelated(id: number): Promise<KitsuRelated[]> {
     });
   }
   return out;
+}
+
+const mainTvCache = new Map<number, number | null>();
+
+export async function kitsuMainTvSeries(id: number): Promise<number | null> {
+  if (mainTvCache.has(id)) return mainTvCache.get(id)!;
+  const j = await get<Doc<Resource<{ role?: string }>[], { subtype?: string; episodeCount?: number }>>(
+    `/anime/${id}/media-relationships?include=destination&page[limit]=20`,
+  );
+  let best: number | null = null;
+  let bestEps = -1;
+  for (const inc of j?.included ?? []) {
+    if (inc.type !== "anime" || inc.attributes?.subtype !== "TV") continue;
+    const nid = Number(inc.id);
+    const eps = Number(inc.attributes?.episodeCount ?? 0);
+    if (Number.isFinite(nid) && nid !== id && eps > bestEps) {
+      bestEps = eps;
+      best = nid;
+    }
+  }
+  mainTvCache.set(id, best);
+  return best;
 }

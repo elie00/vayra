@@ -20,7 +20,6 @@ import { episodeLabel, localPlayerSrc } from "@/lib/local-library/player-src";
 import { openLocalEpisodes } from "@/lib/player/local-episodes-modal";
 import { useLocalPoster } from "./use-local-poster";
 
-// Re-exported here so existing imports (`./local-tab/show-group`) keep working.
 export { episodeLabel, localPlayerSrc };
 
 export type LocalGroup =

@@ -55,7 +55,7 @@ export function useMalAnimeRails(): MalRail[] {
         let entries = rail.statuses.flatMap((s) => entriesByStatus.get(s) ?? []);
         if (rail.key === "watching" || rail.key === "completed") {
           entries = [...entries].sort(
-            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
           );
         }
         const metas = entries.map(malEntryToMeta).filter((m): m is Meta => m != null);

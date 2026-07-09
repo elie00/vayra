@@ -8,9 +8,13 @@ type HeroTier = "full" | "compact" | "hidden";
 export function HeroAwardsCorner({
   summary,
   inline,
+  interactive = true,
+  className,
 }: {
   summary: { type: string; wins: number; nominations: number }[];
   inline?: boolean;
+  interactive?: boolean;
+  className?: string;
 }) {
   const t = useT();
   const ref = useRef<HTMLButtonElement | null>(null);
@@ -60,19 +64,9 @@ export function HeroAwardsCorner({
       : t("Award Nominee")
     : `${headlineFor(top.type)} ${won ? t("Winner") : t("Nominee")}`;
   const laurelTint = laurelColorFor(top.type);
-  return (
-    <button
-      ref={ref}
-      type="button"
-      data-hero-awards
-      onClick={(e) => {
-        e.stopPropagation();
-        document.getElementById("awards-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }}
-      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${
-        inline ? "max-w-md" : "absolute bottom-14 end-12 max-w-[44%]"
-      }`}
-    >
+  const positionCls = className ?? (inline ? "max-w-md" : "absolute bottom-14 end-12 max-w-[44%]");
+  const content = (
+    <>
       <span
         className="shrink-0 text-accent transition-transform duration-200 group-hover:scale-105"
         style={laurelTint ? { color: laurelTint } : undefined}
@@ -103,6 +97,29 @@ export function HeroAwardsCorner({
           </div>
         )}
       </div>
+    </>
+  );
+
+  if (!interactive) {
+    return (
+      <div className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end ${positionCls}`}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      data-hero-awards
+      onClick={(e) => {
+        e.stopPropagation();
+        document.getElementById("awards-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }}
+      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${positionCls}`}
+    >
+      {content}
     </button>
   );
 }

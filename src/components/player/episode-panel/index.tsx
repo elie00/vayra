@@ -19,6 +19,14 @@ import { SeasonPicker } from "./season-picker";
 import { StreamsView } from "./streams-view";
 import { useSeasonBrowser } from "./use-season-browser";
 
+function sameEpisode(a: PlayEpisode, b: PlayEpisode): boolean {
+  if (a.kitsuStreamId && b.kitsuStreamId) return a.kitsuStreamId === b.kitsuStreamId;
+  return (
+    (a.imdbSeason ?? a.season) === (b.imdbSeason ?? b.season) &&
+    (a.imdbEpisode ?? a.episode) === (b.imdbEpisode ?? b.episode)
+  );
+}
+
 export function EpisodePanel({
   open,
   onClose,
@@ -240,12 +248,8 @@ export function EpisodePanel({
                 <div className="flex flex-col gap-3">
                   {episodes.map((ep) => {
                     const key = `${ep.season}:${ep.episode}`;
-                    const isCurrent =
-                      !!currentEpisode &&
-                      ep.season === currentEpisode.season &&
-                      ep.episode === currentEpisode.episode;
-                    const isNextUp =
-                      !!nextEp && ep.season === nextEp.season && ep.episode === nextEp.episode;
+                    const isCurrent = !!currentEpisode && sameEpisode(ep, currentEpisode);
+                    const isNextUp = !!nextEp && sameEpisode(ep, nextEp);
                     return (
                       <EpisodeRow
                         key={key}

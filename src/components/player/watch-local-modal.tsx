@@ -9,7 +9,6 @@ import {
   type WatchLocalChoice,
 } from "@/lib/player/watch-local-confirm";
 
-// Format a millisecond offset as "h:mm:ss" / "m:ss" for the resume button.
 function formatClock(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
@@ -19,8 +18,6 @@ function formatClock(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
-// The "Watch locally or stream?" prompt. Mounted once at the app root; opened
-// imperatively from the play chain. The caller's onChoose applies the remember flag.
 export function WatchLocalModal() {
   const t = useT();
   const state = useSyncExternalStore(subscribeWatchLocalConfirm, getWatchLocalConfirm);

@@ -116,9 +116,10 @@ export function useAutoCandidates(args: {
     };
      const sourceMatch =
       sourceEntry ? filteredPicker.all.find((s) => streamMatchesSource(s, sourceEntry)) ?? null : null;
+    const instantPlayable = (s: ScoredStream | null) => !!s && (isCached(s) || !!s.url);
     if (!matchScores) {
-      push(sourceMatch);   
-      push(previousMatch);
+      if (instantPlayable(sourceMatch)) push(sourceMatch);
+      if (instantPlayable(previousMatch)) push(previousMatch);
     }
     for (const s of sorted) push(s);
     if (out.length > 0) return out;

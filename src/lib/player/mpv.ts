@@ -307,10 +307,6 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             suppressEndFileUntil = Date.now() + 1500;
             await invoke("mpv_command", { cmd: ["stop"] });
             await applyHeaderProps(src.headers);
-            // Always pass an explicit start (default 0). Reusing the same mpv
-            // instance across episodes means a resumed episode's start= option
-            // can otherwise carry over to the next loadfile, making an unwatched
-            // episode begin partway through (at the previous episode's offset).
             const startAt =
               typeof src.startAtSec === "number" && src.startAtSec > 0 ? src.startAtSec : 0;
             const cmd: Array<string | number> = ["loadfile", src.url, "replace", 0, `start=${startAt}`];

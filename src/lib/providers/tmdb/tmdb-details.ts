@@ -39,6 +39,7 @@ export type Episode = {
   name: string;
   overview: string;
   stillPath: string | null;
+  stillUrl?: string;
   airDate: string | null;
   runtime: number | null;
   voteAverage: number | null;
@@ -74,6 +75,7 @@ export type TmdbDetail = {
   runtime?: string;
   status: string;
   genres: string[];
+  genresRich?: Array<{ id: number; name: string }>;
   originalLanguage: string;
   spokenLanguages: string[];
   productionCountries: string[];
@@ -336,6 +338,9 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
     runtime,
     status: raw.status ?? "",
     genres: (raw.genres ?? []).map((g: any) => g.name),
+    genresRich: (raw.genres ?? [])
+      .filter((g: any) => typeof g?.id === "number" && g?.name)
+      .map((g: any) => ({ id: g.id as number, name: g.name as string })),
     originalLanguage: (raw.original_language ?? "").toUpperCase(),
     spokenLanguages: (raw.spoken_languages ?? []).map((l: any) => l.english_name ?? l.name),
     productionCountries: (raw.production_countries ?? []).map((c: any) => c.name),

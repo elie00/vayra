@@ -7,6 +7,7 @@ import {
 } from "@/lib/theme";
 import { languageName } from "@/lib/subtitles/language";
 import { sanitizeSeekStep } from "@/lib/seek-step";
+import { migrateModelId } from "@/lib/ai-models";
 import { DEFAULT, STORAGE_KEY } from "./defaults";
 import type { Settings } from "./types";
 
@@ -72,8 +73,8 @@ export function sanitizeTheme(t: Partial<ThemeSettings> | undefined): ThemeSetti
   };
 }
 
-export function loadStoredSettings(): Settings {
-  const raw = localStorage.getItem(STORAGE_KEY);
+export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
+  const raw = localStorage.getItem(rawKey);
   if (!raw) {
     return {
       ...DEFAULT,
@@ -94,6 +95,7 @@ export function loadStoredSettings(): Settings {
       _pickerLayoutStremioV2?: boolean;
       _stremioDeeplinkOnByDefault?: boolean;
       _anilistSyncOnV1?: boolean;
+      _rememberLastStreamOnV1?: boolean;
       _streamSortAddonV1?: boolean;
       scrapers?: unknown;
       scrapersAcknowledged?: boolean;
@@ -112,10 +114,15 @@ export function loadStoredSettings(): Settings {
       parsed.anilistAutoSync = true;
       parsed._anilistSyncOnV1 = true;
     }
+    if (!parsed._rememberLastStreamOnV1) {
+      parsed.rememberLastStream = true;
+      parsed._rememberLastStreamOnV1 = true;
+    }
     if (!parsed._streamSortAddonV1) {
       if (parsed.streamSort === "harbor") parsed.streamSort = "addon";
       parsed._streamSortAddonV1 = true;
     }
+    if (parsed.aiSearchModel) parsed.aiSearchModel = migrateModelId(parsed.aiSearchModel);
     if (!parsed._mpvEmbedV3) {
       parsed.playerMpvEmbed = true;
       parsed._mpvEmbedV3 = true;

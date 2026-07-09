@@ -280,7 +280,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         />
       )}
 
-      {!p.loaderActive && p.syncMode !== "active" && (
+      {!p.loaderActive && p.syncMode === "idle" && (
         <ShellLayer
           shellId={p.playerShellId}
           shellSnap={p.shellSnap}
@@ -346,7 +346,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         />
       )}
 
-      {!p.loaderActive && p.syncMode === "active" && (
+      {!p.loaderActive && p.syncMode !== "idle" && (
         <TextSyncOverlay
           api={p.syncApi}
           playing={p.snap.status === "playing"}

@@ -1,7 +1,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, Wry};
 
@@ -36,6 +37,17 @@ struct TrayItems {
     pause_minimized: CheckMenuItem<Wry>,
     pause_unfocused: CheckMenuItem<Wry>,
     close_to_tray: CheckMenuItem<Wry>,
+}
+
+struct ThemeMenu {
+    submenu: Submenu<Wry>,
+    custom: Mutex<Option<Submenu<Wry>>>,
+}
+
+#[derive(Deserialize)]
+pub struct CustomThemeEntry {
+    pub id: String,
+    pub name: String,
 }
 
 fn current_prefs() -> TrayPrefs {
@@ -102,8 +114,76 @@ pub fn tray_set_prefs(app: AppHandle, prefs: TrayPrefs) {
     apply_always_on_top(&app, prefs.always_on_top);
 }
 
+#[tauri::command]
+pub fn tray_set_custom_themes(app: AppHandle, themes: Vec<CustomThemeEntry>) {
+    let Some(tm) = app.try_state::<ThemeMenu>() else {
+        return;
+    };
+    let Ok(mut guard) = tm.custom.lock() else {
+        return;
+    };
+    if let Some(old) = guard.take() {
+        let _ = tm.submenu.remove(&old);
+    }
+    if themes.is_empty() {
+        return;
+    }
+    let mut items: Vec<MenuItem<Wry>> = Vec::new();
+    for th in &themes {
+        if let Ok(mi) = MenuItem::with_id(
+            &app,
+            format!("tray_theme_{}", th.id),
+            th.name.as_str(),
+            true,
+            None::<&str>,
+        ) {
+            items.push(mi);
+        }
+    }
+    if items.is_empty() {
+        return;
+    }
+    let refs: Vec<&dyn IsMenuItem<Wry>> = items.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
+    if let Ok(sub) = Submenu::with_items(&app, "Custom", true, &refs) {
+        let _ = tm.submenu.append(&sub);
+        *guard = Some(sub);
+    }
+}
+
 pub fn build(app: &AppHandle) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "tray_show", "Show Harbor", true, None::<&str>)?;
+    let themes: [(&str, &str); 13] = [
+        ("cool-grey", "Harbor default"),
+        ("nord", "Nord"),
+        ("stremio", "Stremio"),
+        ("crunch", "Crunchy"),
+        ("tokyo-night", "Royal"),
+        ("dracula", "Dracula"),
+        ("forest", "Forest"),
+        ("noir", "Noir"),
+        ("elegantfin", "ElegantFin"),
+        ("feishin", "Feishin"),
+        ("aurora", "Aurora"),
+        ("minui", "MinUI"),
+        ("velvet", "Velvet"),
+    ];
+    let mut theme_items: Vec<MenuItem<Wry>> = Vec::with_capacity(themes.len());
+    for (id, name) in themes.iter() {
+        theme_items.push(MenuItem::with_id(
+            app,
+            format!("tray_theme_{id}"),
+            *name,
+            true,
+            None::<&str>,
+        )?);
+    }
+    let theme_refs: Vec<&dyn IsMenuItem<Wry>> =
+        theme_items.iter().map(|i| i as &dyn IsMenuItem<Wry>).collect();
+    let theme_menu = Submenu::with_items(app, "Theme", true, &theme_refs)?;
+    app.manage(ThemeMenu {
+        submenu: theme_menu.clone(),
+        custom: Mutex::new(None),
+    });
     let always_on_top = CheckMenuItem::with_id(
         app,
         "tray_aot",
@@ -142,6 +222,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
         app,
         &[
             &show,
+            &theme_menu,
             &always_on_top,
             &pause_minimized,
             &pause_unfocused,
@@ -162,12 +243,18 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
         .tooltip("Harbor")
         .menu(&menu)
         .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| match event.id.as_ref() {
+        .on_menu_event(|app, event| {
+            let id = event.id.as_ref();
+            match id {
             "tray_show" => show_main(app),
             "tray_aot" => toggle(app, Pref::AlwaysOnTop),
             "tray_pmin" => toggle(app, Pref::PauseMinimized),
             "tray_punf" => toggle(app, Pref::PauseUnfocused),
             "tray_ctt" => toggle(app, Pref::CloseToTray),
+            _ if id.starts_with("tray_theme_") => {
+                let theme = id.strip_prefix("tray_theme_").unwrap_or_default().to_string();
+                let _ = app.emit("harbor://set-theme", theme);
+            }
             "tray_quit" => {
                 if let Some(w) = app.get_webview_window("main") {
                     crate::CLOSE_FLUSH_DONE.store(false, Ordering::SeqCst);
@@ -183,6 +270,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
                 app.exit(0);
             }
             _ => {}
+            }
         })
         .on_tray_icon_event(|tray, event| {
             let restore = matches!(

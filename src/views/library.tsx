@@ -1,4 +1,4 @@
-import { Bookmark, Clock, HardDrive } from "lucide-react";
+import { Bookmark, Clock, HardDrive, Layers } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
@@ -14,6 +14,7 @@ import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { AnilistTab } from "./library/anilist-tab";
 import { HistoryTab } from "./library/history-tab";
 import { LocalTab } from "./library/local-tab";
+import { MyListsTab } from "./library/my-lists-tab";
 import { TabBtn, type Tab } from "./library/shared";
 import { SimklTab } from "./library/simkl-tab";
 import { TraktTab } from "./library/trakt-tab";
@@ -30,6 +31,7 @@ function readSavedTab(): Tab {
       v === "watchlist" ||
       v === "history" ||
       v === "local" ||
+      v === "lists" ||
       v === "trakt" ||
       v === "anilist" ||
       v === "simkl" ||
@@ -78,7 +80,9 @@ export function LibraryView({ active }: { active: boolean }) {
         ? "Browsing their watchlist"
         : tab === "history"
           ? "Browsing their watch history"
-          : tab === "trakt"
+          : tab === "lists"
+            ? "Browsing their lists"
+            : tab === "trakt"
             ? "Browsing their Trakt library"
             : tab === "simkl"
               ? "Browsing their Simkl library"
@@ -105,6 +109,7 @@ export function LibraryView({ active }: { active: boolean }) {
         {tab === "watchlist" && <WatchlistTab />}
         {tab === "history" && <HistoryTab />}
         {tab === "local" && <LocalTab />}
+        {tab === "lists" && <MyListsTab />}
         {tab === "trakt" && traktConnected && <TraktTab />}
         {tab === "anilist" && anilistConnected && <AnilistTab />}
         {tab === "simkl" && simklConnected && <SimklTab />}
@@ -157,6 +162,10 @@ function Header({
         <TabBtn active={tab === "local"} onClick={() => onTab("local")}>
           <HardDrive size={14} strokeWidth={2.2} />
           {t("Local")}
+        </TabBtn>
+        <TabBtn active={tab === "lists"} onClick={() => onTab("lists")}>
+          <Layers size={14} strokeWidth={2.2} />
+          {t("My Lists")}
         </TabBtn>
         {traktConnected && (
           <TabBtn active={tab === "trakt"} onClick={() => onTab("trakt")}>

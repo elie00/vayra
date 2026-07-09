@@ -1,3 +1,4 @@
+import { activeProfileId } from "@/lib/active-profile-id";
 import type { WatchlistStatus } from "../list-status";
 
 export type SimklCacheItem = {
@@ -37,7 +38,10 @@ export interface RawIds {
   kitsu?: number | string;
 }
 
-const CACHE_KEY = "harbor.simkl.cache.v2";
+const CACHE_KEY_BASE = "harbor.simkl.cache.v2";
+function cacheKey(): string {
+  return `${CACHE_KEY_BASE}.${activeProfileId()}`;
+}
 let memoryCache: SimklCache | null = null;
 let memoryCacheLoaded = false;
 let writeTimeout: number | null = null;
@@ -46,10 +50,8 @@ export function getLocalCache(): SimklCache | null {
   if (memoryCacheLoaded) return memoryCache;
   if (typeof window === "undefined" || typeof localStorage === "undefined") return null;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (raw) {
-      memoryCache = JSON.parse(raw) as SimklCache;
-    }
+    const raw = localStorage.getItem(cacheKey());
+    if (raw) memoryCache = JSON.parse(raw) as SimklCache;
   } catch (e) {
     console.error("Failed to parse SIMKL cache", e);
   }
@@ -65,13 +67,11 @@ export function saveLocalCache(cache: SimklCache) {
   writeTimeout = window.setTimeout(() => {
     writeTimeout = null;
     try {
-      if (memoryCache) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(memoryCache));
-      }
+      if (memoryCache) localStorage.setItem(cacheKey(), JSON.stringify(memoryCache));
     } catch (e) {
       console.error("Failed to save SIMKL cache asynchronously", e);
     }
-  }, 1000); // 1-second debounce
+  }, 1000);
 }
 
 export function clearLocalCache() {
@@ -83,9 +83,18 @@ export function clearLocalCache() {
   }
   if (typeof window === "undefined" || typeof localStorage === "undefined") return;
   try {
-    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(cacheKey());
   } catch (e) {
     console.error("Failed to clear SIMKL cache", e);
+  }
+}
+
+export function resetForProfile() {
+  memoryCache = null;
+  memoryCacheLoaded = false;
+  if (writeTimeout !== null) {
+    window.clearTimeout(writeTimeout);
+    writeTimeout = null;
   }
 }
 

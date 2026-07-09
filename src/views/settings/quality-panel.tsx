@@ -154,6 +154,12 @@ export function QualityPanel() {
           value={settings.autoPlayNextEpisode}
           onChange={(v) => update({ autoPlayNextEpisode: v })}
         />
+        <ToggleRow
+          label={t("Show controls when pausing with keyboard")}
+          sub={t("Show the player controls when you pause or resume using the keyboard. Turn off to keep them hidden so they don't cover subtitles.")}
+          value={settings.keyboardPauseShowsControls}
+          onChange={(v) => update({ keyboardPauseShowsControls: v })}
+        />
       </Section>
     </>
   );

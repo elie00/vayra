@@ -1,3 +1,4 @@
+import { activeProfileId } from "@/lib/active-profile-id";
 import { malRequest, MalApiError } from "./client";
 import { resolveMalMediaId } from "./mutations";
 import { isAuthenticated } from "./session";
@@ -27,12 +28,15 @@ function emit(e: SyncEvent): void {
   for (const fn of listeners) fn(e);
 }
 
-const SENT_KEY = "harbor.mal.synced.v1";
+const SENT_KEY_BASE = "harbor.mal.synced.v1";
+function sentKey(): string {
+  return `${SENT_KEY_BASE}.${activeProfileId()}`;
+}
 type SentMap = Record<string, number>;
 
 function loadSent(): SentMap {
   try {
-    return JSON.parse(localStorage.getItem(SENT_KEY) ?? "{}") as SentMap;
+    return JSON.parse(localStorage.getItem(sentKey()) ?? "{}") as SentMap;
   } catch {
     return {};
   }
@@ -40,7 +44,7 @@ function loadSent(): SentMap {
 
 function saveSent(map: SentMap): void {
   try {
-    localStorage.setItem(SENT_KEY, JSON.stringify(map));
+    localStorage.setItem(sentKey(), JSON.stringify(map));
   } catch {
     return;
   }
@@ -58,6 +62,11 @@ type SaveResponse = {
 
 const inflight = new Set<string>();
 const watchingMarked = new Set<string>();
+
+export function resetForProfile(): void {
+  inflight.clear();
+  watchingMarked.clear();
+}
 
 export async function markMalWatching(harborId: string, title: string): Promise<void> {
   if (!isAuthenticated()) return;

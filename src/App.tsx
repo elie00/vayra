@@ -39,6 +39,7 @@ import { MemoryHud } from "@/components/memory-hud";
 import { OfflineBanner } from "@/chrome/offline-banner";
 import { MobileNotice } from "@/components/mobile-notice";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
+import { ListToastHost } from "@/components/lists/list-toast";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { TogetherCursors } from "@/components/together-cursors";
 import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
@@ -55,6 +56,8 @@ import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider } from "@/lib/auth";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
+import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
+import { TrackerProfileBridge } from "@/lib/tracker-profile-bridge";
 import { ProfilePickerModal } from "@/components/profile-picker/picker-modal";
 import { WatchlistSync } from "@/lib/watchlist-sync";
 import { ContextMenuProvider } from "@/lib/context-menu";
@@ -88,6 +91,7 @@ const importCalendar = () => import("@/views/calendar");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
+const importCatalogs = () => import("@/views/catalogs");
 const importAward = () => import("@/views/award");
 const importAnimeAward = () => import("@/views/anime-award");
 const importFilter = () => import("@/views/filter");
@@ -115,6 +119,7 @@ const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.Calen
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
 const Discover = lazy(() => importDiscover().then((m) => ({ default: m.Discover })));
+const Catalogs = lazy(() => importCatalogs().then((m) => ({ default: m.Catalogs })));
 const AwardView = lazy(() => importAward().then((m) => ({ default: m.AwardView })));
 const AnimeAwardView = lazy(() => importAnimeAward().then((m) => ({ default: m.AnimeAwardView })));
 const FilterView = lazy(() => importFilter().then((m) => ({ default: m.FilterView })));
@@ -252,6 +257,8 @@ export function App() {
                   <TopRankModalProvider>
                     <HarborErrorBoundary>
                       <ProfileIdentitySync />
+                      <SettingsProfileBridge />
+                      <TrackerProfileBridge />
                       <AnilistAvatarSync />
                       <MalAvatarSync />
                       <MiddleClickScroll />
@@ -268,6 +275,7 @@ export function App() {
                       <TogetherParticipantLeftToast />
                       <AnilistSyncToast />
                       <MalSyncToast />
+                      <ListToastHost />
                       <TogetherLeaveForLiveModal />
                       <TogetherLocationPublisher />
                       <DiscordPresence />
@@ -648,6 +656,7 @@ function Shell() {
   const settingsTop = topKind === "settings";
   const animeTop = topKind === "anime";
   const discoverTop = topKind === "discover";
+  const catalogsTop = topKind === "catalogs";
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
   const queueTop = topKind === "queue";
@@ -690,6 +699,7 @@ function Shell() {
   const settingsAlive = useIdleEvict(settingsTop, overlayPinned);
   const animeAlive = useIdleEvict(animeTop);
   const discoverAlive = useIdleEvict(discoverTop);
+  const catalogsAlive = useIdleEvict(catalogsTop);
   const addonsAlive = useIdleEvict(addonsTop);
   const calendarAlive = useIdleEvict(calendarTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
@@ -766,6 +776,13 @@ function Shell() {
           <div className={layer(discoverTop)}>
             <Suspense fallback={null}>
               <Discover active={discoverTop} />
+            </Suspense>
+          </div>
+        )}
+        {catalogsAlive && (
+          <div className={layer(catalogsTop)}>
+            <Suspense fallback={null}>
+              <Catalogs active={catalogsTop} />
             </Suspense>
           </div>
         )}

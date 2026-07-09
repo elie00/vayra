@@ -1,37 +1,8 @@
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { AI_MODELS, PROVIDER_NAME, type AiProvider } from "@/lib/ai-models";
-import anthropicLogo from "@/assets/ai-logos/anthropic.png";
-import deepseekLogo from "@/assets/ai-logos/deepseek.png";
-import geminiLogo from "@/assets/ai-logos/gemini.png";
-import metaLogo from "@/assets/ai-logos/meta.png";
-import mistralLogo from "@/assets/ai-logos/mistral.png";
-import openaiLogo from "@/assets/ai-logos/openai.png";
-import qwenLogo from "@/assets/ai-logos/qwen.png";
-import xaiLogo from "@/assets/ai-logos/xai.png";
-
-const LOGOS: Record<AiProvider, string> = {
-  openai: openaiLogo,
-  anthropic: anthropicLogo,
-  gemini: geminiLogo,
-  meta: metaLogo,
-  mistral: mistralLogo,
-  deepseek: deepseekLogo,
-  xai: xaiLogo,
-  qwen: qwenLogo,
-};
-
-function ProviderLogo({ provider }: { provider: AiProvider }) {
-  return (
-    <img
-      src={LOGOS[provider]}
-      alt=""
-      draggable={false}
-      className="h-[19px] w-[19px] shrink-0 rounded-[5px] bg-white object-contain ring-1 ring-black/10"
-    />
-  );
-}
+import { AI_MODELS, PROVIDER_NAME } from "@/lib/ai-models";
+import { ProviderLogo } from "@/components/ai-provider-logo";
 
 export function AiModelSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const t = useT();
@@ -91,8 +62,15 @@ export function AiModelSelect({ value, onChange }: { value: string; onChange: (v
                 >
                   <ProviderLogo provider={m.provider} />
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className={`truncate text-[13px] text-ink ${sel ? "font-semibold" : ""}`}>
-                      {m.label}
+                    <span className="flex items-center gap-1.5">
+                      <span className={`truncate text-[13px] text-ink ${sel ? "font-semibold" : ""}`}>
+                        {m.label}
+                      </span>
+                      {m.free && (
+                        <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-accent">
+                          {t("Free")}
+                        </span>
+                      )}
                     </span>
                     <span className="truncate text-[11px] text-ink-subtle">{PROVIDER_NAME[m.provider]}</span>
                   </span>

@@ -1,13 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { applyTheme } from "@/lib/theme";
+import { applyTheme, isKnownPreset, nextColorTheme } from "@/lib/theme";
+import { getCustomThemes, subscribeCustomThemes } from "@/lib/custom-themes";
 import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
 import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
 import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
 import { STORAGE_KEY } from "./settings/defaults";
-import { loadStoredSettings } from "./settings/load";
 import { readSettingsFile, writeSettingsFile } from "./settings/file-store";
+import {
+  forkToProfile,
+  loadEffective,
+  persistEffective,
+  seedSharedFromLegacy,
+  sourceKeyFor,
+} from "./settings/profile-store";
 import type { Settings, StreamingService } from "./settings/types";
 
 export type {
@@ -22,16 +29,44 @@ type SettingsValue = {
   settings: Settings;
   update: (patch: Partial<Settings>) => void;
   toggleStreaming: (s: StreamingService) => void;
+  switchProfile: (profileId: string, linked: boolean) => void;
+  setSettingsLinked: (linked: boolean) => void;
 };
+
+type SettingsSource = { profileId: string; linked: boolean };
+
+function readActiveSource(): SettingsSource {
+  try {
+    const raw = localStorage.getItem("harbor.profiles.v1");
+    if (!raw) return { profileId: "default", linked: true };
+    const s = JSON.parse(raw) as {
+      profiles?: Array<{ id: string; settingsLinked?: boolean }>;
+      activeId?: string | null;
+    };
+    const id = s.activeId || "default";
+    const p = s.profiles?.find((x) => x.id === id);
+    return { profileId: id, linked: p?.settingsLinked !== false };
+  } catch {
+    return { profileId: "default", linked: true };
+  }
+}
 
 const Ctx = createContext<SettingsValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
+  const sourceRef = useRef<SettingsSource>({ profileId: "default", linked: true });
   const [settings, setSettings] = useState<Settings>(() => {
-    const s = loadStoredSettings();
+    seedSharedFromLegacy();
+    const src = readActiveSource();
+    sourceRef.current = src;
+    const s = loadEffective(src.profileId, src.linked);
     setUiLanguage(s.uiLanguage);
     return s;
   });
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   setTmdbLanguage(settings.tmdbLanguage);
 
@@ -53,7 +88,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (cancelled || !raw || localStorage.getItem(STORAGE_KEY)) return;
       try {
         localStorage.setItem(STORAGE_KEY, raw);
-        setSettings(loadStoredSettings());
+        seedSharedFromLegacy();
+        setSettings(loadEffective(sourceRef.current.profileId, sourceRef.current.linked));
       } catch {}
     });
     return () => {
@@ -72,11 +108,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const fileTimerRef = useRef(0);
   useEffect(() => {
     try {
-      const { backgroundImage: _drop, ...themeRest } = settings.theme;
-      void _drop;
-      const settingsToSave = { ...settings, theme: themeRest };
-      const json = JSON.stringify(settingsToSave);
-      localStorage.setItem(STORAGE_KEY, json);
+      const json = persistEffective(settings, sourceRef.current.profileId, sourceRef.current.linked);
       window.clearTimeout(fileTimerRef.current);
       fileTimerRef.current = window.setTimeout(() => void writeSettingsFile(json), 600);
     } catch (e) {
@@ -234,10 +266,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!("__TAURI_INTERNALS__" in window)) return;
-    let unlisten: (() => void) | undefined;
     let cancelled = false;
-    void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen<{ closeToTray: boolean; alwaysOnTop: boolean; pauseMinimized: boolean; pauseUnfocused: boolean }>(
+    const unlisteners: Array<() => void> = [];
+    const track = (u: () => void) => {
+      if (cancelled) u();
+      else unlisteners.push(u);
+    };
+    void import("@tauri-apps/api/event").then(({ listen }) => {
+      void listen<{ closeToTray: boolean; alwaysOnTop: boolean; pauseMinimized: boolean; pauseUnfocused: boolean }>(
         "harbor://tray-prefs",
         (e) => {
           const p = e.payload;
@@ -249,14 +285,37 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             pauseUnfocused: p.pauseUnfocused,
           }));
         },
-      ).then((u) => {
-        if (cancelled) u();
-        else unlisten = u;
-      }),
-    );
+      ).then(track);
+      void listen("harbor://cycle-theme", () => {
+        setSettings((s) => ({ ...s, theme: { ...s.theme, preset: nextColorTheme(s.theme.preset) } }));
+      }).then(track);
+      void listen<string>("harbor://set-theme", (e) => {
+        const id = e.payload;
+        if (!id || (!isKnownPreset(id) && !id.startsWith("user:"))) return;
+        setSettings((s) => ({ ...s, theme: { ...s.theme, preset: id as typeof s.theme.preset } }));
+      }).then(track);
+    });
     return () => {
       cancelled = true;
-      unlisten?.();
+      unlisteners.forEach((u) => u());
+    };
+  }, []);
+
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    let cancelled = false;
+    void import("@tauri-apps/api/core").then(({ invoke }) => {
+      if (cancelled) return;
+      const push = () => {
+        const themes = getCustomThemes().map((t) => ({ id: t.id, name: t.name }));
+        void invoke("tray_set_custom_themes", { themes }).catch(() => {});
+      };
+      push();
+      unsub = subscribeCustomThemes(push);
+    });
+    return () => {
+      cancelled = true;
+      unsub?.();
     };
   }, []);
 
@@ -271,9 +330,37 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const switchProfile = useCallback((profileId: string, linked: boolean) => {
+    const cur = sourceRef.current;
+    if (sourceKeyFor(cur.profileId, cur.linked) === sourceKeyFor(profileId, linked)) {
+      sourceRef.current = { profileId, linked };
+      return;
+    }
+    persistEffective(settingsRef.current, cur.profileId, cur.linked);
+    const next = loadEffective(profileId, linked);
+    setUiLanguage(next.uiLanguage);
+    setTmdbLanguage(next.tmdbLanguage);
+    tmdbLangRef.current = effectiveTmdbLanguage();
+    imgLangRef.current = next.tmdbImageLangs.join(",");
+    sourceRef.current = { profileId, linked };
+    persistEffective(next, profileId, linked);
+    settingsRef.current = next;
+    setSettings(next);
+  }, []);
+
+  const setSettingsLinked = useCallback(
+    (linked: boolean) => {
+      const cur = sourceRef.current;
+      if (cur.linked === linked) return;
+      if (!linked) forkToProfile(cur.profileId);
+      switchProfile(cur.profileId, linked);
+    },
+    [switchProfile],
+  );
+
   const value = useMemo(
-    () => ({ settings, update, toggleStreaming }),
-    [settings, update, toggleStreaming],
+    () => ({ settings, update, toggleStreaming, switchProfile, setSettingsLinked }),
+    [settings, update, toggleStreaming, switchProfile, setSettingsLinked],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

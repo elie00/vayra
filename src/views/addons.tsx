@@ -341,9 +341,11 @@ export function AddonsView() {
               return <span key={tabId}>{btn}</span>;
             })}
           </nav>
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-            <SearchBar value={query} onChange={setQuery} />
-            <div className="min-w-[180px] flex-1">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="min-w-0 max-w-72 flex-1">
+              <SearchBar value={query} onChange={setQuery} />
+            </div>
+            <div className="min-w-0 flex-[1.4]">
               <AddByUrlBar onSubmit={async (raw) => { setInstallModal({ kind: "install", url: raw }); }} compact />
             </div>
             <button

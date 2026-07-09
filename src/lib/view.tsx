@@ -5,7 +5,7 @@ import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
 import { beginMarathonAdvance } from "./fullscreen-state";
-export type View = "home" | "settings" | "anime" | "discover" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads";
+export type View = "home" | "settings" | "anime" | "discover" | "catalogs" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads";
 
 export type PlayEpisode = {
   season: number;
@@ -33,11 +33,10 @@ export type PlayerSrc = {
   subtitle?: string;
   notWebReady?: boolean;
   subtitles?: Array<{ url: string; lang?: string; id?: string }>;
+  subtitlePreselect?: { off: boolean; url?: string; lang?: string; title?: string };
   attempt?: number;
   autoFired?: boolean;
   resume?: boolean;
-  // Force playback to start at 0:00, ignoring any saved resume position (the
-  // watch-local modal's "Watch from the beginning" choice sets this).
   startFromZero?: boolean;
   streamRef?: PlayerStreamRef;
   liveProgram?: string;
@@ -81,6 +80,7 @@ export type Frame =
   | { kind: "settings" }
   | { kind: "anime" }
   | { kind: "discover" }
+  | { kind: "catalogs" }
   | { kind: "addons" }
   | { kind: "addon-detail"; id: string }
   | { kind: "calendar" }
@@ -210,6 +210,8 @@ function frameKey(f: Frame): string {
       return "anime";
     case "discover":
       return "discover";
+    case "catalogs":
+      return "catalogs";
     case "addons":
       return "addons";
     case "addon-detail":
@@ -336,6 +338,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (f.kind === "anime") return "anime";
       if (f.kind === "addons" || f.kind === "addon-detail") return "addons";
       if (f.kind === "discover" || f.kind === "queue") return "discover";
+      if (f.kind === "catalogs") return "catalogs";
       if (f.kind === "calendar") return "calendar";
       if (f.kind === "movies") return "movies";
       if (f.kind === "shows") return "shows";
@@ -488,6 +491,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         scrollMem.current.clear();
         rowScrollMem.current.clear();
         return [{ kind: "discover" }];
+      }
+      if (v === "catalogs") {
+        scrollMem.current.clear();
+        rowScrollMem.current.clear();
+        return [{ kind: "catalogs" }];
       }
       if (v === "addons") {
         scrollMem.current.clear();

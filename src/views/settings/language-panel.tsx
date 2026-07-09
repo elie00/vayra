@@ -71,6 +71,12 @@ export function LanguagePanel() {
         value={settings.subtitleAutoUpgrade}
         onChange={(v) => update({ subtitleAutoUpgrade: v })}
       />
+      <ToggleRow
+        label={t("Choose subtitles before playback")}
+        sub={t("After you pick a source, show a subtitle picker so you can set the exact track and language before the video starts. Off by default, Harbor keeps picking one for you automatically.")}
+        value={settings.subtitlePreselect}
+        onChange={(v) => update({ subtitlePreselect: v })}
+      />
       <div className="flex flex-col gap-1.5 pt-1">
         <p className="text-[13.5px] font-medium text-ink">{t("Never auto-select tracks containing")}</p>
         <p className="text-[12px] leading-relaxed text-ink-subtle">

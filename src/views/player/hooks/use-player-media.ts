@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { useAuth } from "@/lib/auth";
 import { downloadText } from "@/lib/download-text";
-import { fetchAndParse } from "@/lib/subtitles/parser";
+import { getCuesAnySource } from "@/lib/subtitles/extract";
 import { toSrt } from "@/lib/subtitles/serialize";
 import { isWindowsDesktop } from "@/lib/platform";
 import { isAssTrack, isImageSubTrack } from "@/lib/player/sub-format";
@@ -175,19 +175,11 @@ export function usePlayerMedia(params: {
       ? `${src.meta.name ?? "Subtitle"} S${src.episode.season}E${src.episode.episode}`
       : src.meta.name ?? "Subtitle";
     const fileName = `${base.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Subtitle"}.srt`;
-    const url = b.getSelectedTrackUrl();
-    if (url && /^https?:/i.test(url)) {
-      try {
-        const cues = await fetchAndParse(url);
-        if (cues.length > 0) {
-          await downloadText(fileName, toSrt(cues), ["srt"], "Subtitle");
-          return;
-        }
-      } catch {}
+    const res = await getCuesAnySource(b, src.url, src.headers);
+    if (res.ok && res.source.cues.length > 0) {
+      await downloadText(fileName, toSrt(res.source.cues), ["srt"], "Subtitle");
     }
-    const cues = b.getSelectedTrackCues();
-    if (cues && cues.length > 0) await downloadText(fileName, toSrt(cues), ["srt"], "Subtitle");
-  }, [bridgeRef, src.meta.name, src.episode]);
+  }, [bridgeRef, src.meta.name, src.episode, src.url, src.headers]);
   const canDownloadSub = snap.subtitleTracks.some((trk) => trk.selected);
 
   useEffect(() => {

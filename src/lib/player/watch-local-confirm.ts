@@ -1,17 +1,9 @@
-// Imperative store for the "Watch locally or stream?" prompt, so any point in the
-// play chain (detail Play, episode list, autoplay) can raise it. Mirrors the
-// leave-confirm store pattern.
-
-// "local" = play the local copy (resume if there's saved progress); "local-restart"
-// = play the local copy from 0:00; "stream" = go to the source picker.
 export type WatchLocalChoice = "local" | "local-restart" | "stream";
 
 type WatchLocalState = {
   open: boolean;
   title: string;
   subtitle: string | null;
-  // When there's a saved resume position, the modal offers a "continue" vs
-  // "from the beginning" split; resumeMs drives the timestamp on the button.
   hasResume: boolean;
   resumeMs: number;
   onChoose: ((choice: WatchLocalChoice, remember: boolean) => void) | null;

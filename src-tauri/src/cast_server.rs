@@ -1,8 +1,4 @@
-use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
-use tauri_plugin_shell::process::CommandChild;
-
-
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct CastServerStatus {
@@ -13,75 +9,8 @@ pub struct CastServerStatus {
     pub restart_count: u32,
 }
 
-struct State {
-    child: Option<CommandChild>,
-    ready: bool,
-    last_error: Option<String>,
-    restart_count: u32,
-    bundled: bool,
-    user_stopped: bool,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self {
-            child: None,
-            ready: false,
-            last_error: None,
-            restart_count: 0,
-            bundled: false,
-            user_stopped: false,
-        }
-    }
-}
-
-fn state() -> &'static Mutex<State> {
-    static S: OnceLock<Mutex<State>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(State::default()))
-}
-
-pub fn start(app: &AppHandle) {
-    {
-        let mut st = state().lock().unwrap();
-        st.user_stopped = false;
-    }
-    spawn_once(app);
-}
-
-fn spawn_once(_app: &AppHandle) {
-    // No-op under Plan B (stremio-server sidecar dependency dropped).
-}
-
 pub fn stop() {
-    {
-        let mut st = state().lock().unwrap();
-        st.ready = false;
-        st.child.take();
-    }
-}
-
-#[tauri::command]
-pub fn cast_server_status() -> CastServerStatus {
-    let st = state().lock().unwrap();
-    CastServerStatus {
-        bundled: st.bundled,
-        running: st.child.is_some(),
-        ready: st.ready,
-        last_error: st.last_error.clone(),
-        restart_count: st.restart_count,
-    }
-}
-
-#[tauri::command]
-pub fn cast_server_restart(app: AppHandle) -> Result<(), String> {
-    stop();
-    {
-        let mut st = state().lock().unwrap();
-        st.restart_count = 0;
-        st.last_error = None;
-    }
-    start(&app);
-    Ok(())
+    crate::torrent_engine::stop_lan_server();
 }
 
 fn kill_orphan_sidecars() {
@@ -109,14 +38,24 @@ pub fn stop_stremio_sidecar() {
 }
 
 #[tauri::command]
-pub fn cast_server_stop() {
-    {
-        let mut st = state().lock().unwrap();
-        st.user_stopped = true;
-        st.last_error = None;
+pub fn cast_server_status() -> CastServerStatus {
+    let (running, _port, last_error) = crate::torrent_engine::lan_status();
+    CastServerStatus {
+        bundled: running,
+        running,
+        ready: running,
+        last_error,
+        restart_count: 0,
     }
-    stop();
-    kill_orphan_sidecars();
 }
 
+#[tauri::command]
+pub async fn cast_server_restart(app: AppHandle) -> Result<(), String> {
+    crate::torrent_engine::start_lan_server(&app).await.map(|_| ())
+}
 
+#[tauri::command]
+pub fn cast_server_stop() {
+    crate::torrent_engine::stop_lan_server();
+    kill_orphan_sidecars();
+}

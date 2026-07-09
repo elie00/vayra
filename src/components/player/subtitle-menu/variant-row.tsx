@@ -1,9 +1,20 @@
 import { Check, Sparkles } from "lucide-react";
 import type { TrackInfo } from "@/lib/player/bridge";
+import { useContextMenu } from "@/lib/context-menu";
 import { isImageSubTrack } from "@/lib/player/sub-format";
 import { languageName } from "@/lib/subtitles/language";
+import { saveSubtitleToDisk } from "@/lib/subtitles/save-to-disk";
 import { useImportedSubs } from "@/lib/player/imported-subs";
 import { useT } from "@/lib/i18n";
+
+function subExt(track: TrackInfo): string {
+  const fromName = track.externalFilename?.match(/\.([a-z0-9]+)$/i)?.[1];
+  if (fromName) return fromName;
+  const c = track.codec?.toLowerCase() ?? "";
+  if (c.includes("ass") || c.includes("ssa")) return "ass";
+  if (c.includes("vtt") || c.includes("webvtt")) return "vtt";
+  return "srt";
+}
 
 export function VariantRow({
   track,
@@ -15,6 +26,7 @@ export function VariantRow({
   onPick: () => void;
 }) {
   const tr = useT();
+  const { open } = useContextMenu();
   const imported = useImportedSubs();
   const isImported = !!track.title && imported.has(track.title);
   const tags: { label: string; tone: "warn" | "info" | "default" }[] = [];
@@ -32,6 +44,21 @@ export function VariantRow({
   return (
     <button
       onClick={onPick}
+      onContextMenu={(e) =>
+        open(e, {
+          kind: "subtitle",
+          label: titleText,
+          download: track.url
+            ? () =>
+                saveSubtitleToDisk(track.url!, {
+                  title: track.title || titleText,
+                  lang: track.lang,
+                  format: subExt(track),
+                  label: tr("Subtitle"),
+                })
+            : undefined,
+        })
+      }
       className={`flex items-start gap-2.5 rounded-lg px-2.5 py-2 text-start transition-colors ${
         selected
           ? "bg-elevated ring-1 ring-edge"

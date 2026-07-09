@@ -105,8 +105,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
   );
   const hasSpecials = localBySeason.has(0);
 
-  // Local watch progress may be keyed under the imdb id or the tmdb:tv id (which
-  // one depends on how it was played), so probe both when reading resume state.
   const resumeIds = useMemo(
     () => [imdbId, tmdbId != null ? `tmdb:tv:${tmdbId}` : null].filter((x): x is string => !!x),
     [imdbId, tmdbId],
@@ -122,8 +120,6 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     };
   }, [resumeIds]);
 
-  // The last-watched episode (used as the highlight when the caller didn't pass a
-  // specific one — e.g. opened from the local library card).
   const lastWatched = useMemo(() => {
     let best: { season: number; episode: number; t: number } | null = null;
     for (const id of resumeIds) {
@@ -134,11 +130,10 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeIds.join("|"), all]);
 
-  // Effective highlight: the pressed episode when provided, else the last-watched.
-  const hlSeason = payload.highlightEpisode != null ? payload.initialSeason ?? null : lastWatched?.season ?? null;
+  const hlSeason =
+    payload.highlightEpisode != null ? payload.initialSeason ?? null : lastWatched?.season ?? null;
   const hlEpisode = payload.highlightEpisode ?? lastWatched?.episode ?? null;
 
-  // Prefer the pressed season, else the last-watched season, else the first local.
   const initialSeason =
     payload.initialSeason != null && localBySeason.has(payload.initialSeason)
       ? payload.initialSeason
@@ -323,18 +318,19 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
                       {ep.filename}
                     </span>
                   )}
-                  {pr && (ratio > 0.01 ? (
-                    <span className="text-[11px] text-accent/85">
-                      {t("{pct}% watched", { pct: Math.round(ratio * 100) })}
-                      {watchedAgo ? ` · ${watchedAgo}` : ""}
-                    </span>
-                  ) : (
-                    watchedAgo && (
-                      <span className="text-[11px] text-emerald-300/85">
-                        {t("Watched {ago}", { ago: watchedAgo })}
+                  {pr &&
+                    (ratio > 0.01 ? (
+                      <span className="text-[11px] text-accent/85">
+                        {t("{pct}% watched", { pct: Math.round(ratio * 100) })}
+                        {watchedAgo ? ` · ${watchedAgo}` : ""}
                       </span>
-                    )
-                  ))}
+                    ) : (
+                      watchedAgo && (
+                        <span className="text-[11px] text-emerald-300/85">
+                          {t("Watched {ago}", { ago: watchedAgo })}
+                        </span>
+                      )
+                    ))}
                 </span>
                 {ep.resolution && (
                   <span className="shrink-0 rounded-md bg-raised px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-muted">

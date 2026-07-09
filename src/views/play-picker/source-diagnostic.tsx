@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useDebridClients } from "@/lib/debrid/registry";
 import type { PipelineResult } from "@/lib/streams/pipeline";
 import type { Stream } from "@/lib/streams/types";
+import { hasCachedMarker } from "@/lib/streams/cached";
 
 export function SourceDiagnostic({
   result,
@@ -24,7 +25,10 @@ export function SourceDiagnostic({
   }, [result]);
   const totalRaw = counts.reduce((a, [, n]) => a + n, 0);
   const cachedTotal = result.picker.all.filter(
-    (s) => s.url != null || debrids.some((d) => s.cached[d.slug] || s.inLibrary[d.slug]),
+    (s) =>
+      s.url != null ||
+      debrids.some((d) => s.cached[d.slug] || s.inLibrary[d.slug]) ||
+      hasCachedMarker(s),
   ).length;
   const sourceWord = counts.length === 1 ? "source" : "sources";
   return (

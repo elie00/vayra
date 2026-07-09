@@ -8,6 +8,7 @@ import { resolveMeta } from "./meta-resource";
 import { animeKitsuMeta } from "./providers/anime-kitsu-addon";
 import { externalToKitsu } from "./providers/anime-mapping";
 import { parseKitsuId } from "./providers/kitsu";
+import { aniZipByKitsu } from "./providers/anizip";
 
 export function isAnimeId(id: string): boolean {
   return (
@@ -67,6 +68,26 @@ async function getAnimeEpisodes(id: string): Promise<PlayEpisode[] | null> {
     eps.push(ep);
   }
   if (eps.length === 0) return null;
+
+  const distinctReleased = new Set(eps.map((e) => e.airDate).filter(Boolean));
+  const bogusAirdates = eps.length > 1 && distinctReleased.size <= 1;
+  if (bogusAirdates) for (const ep of eps) ep.airDate = undefined;
+
+  if (eps.some((e) => e.imdbSeason == null) || bogusAirdates) {
+    const az = await aniZipByKitsu(kitsuId).catch(() => null);
+    if (az?.episodes) {
+      for (const ep of eps) {
+        const m = az.episodes[String(ep.episode)];
+        if (!m) continue;
+        if (ep.imdbSeason == null && m.seasonNumber != null && m.seasonNumber >= 1) {
+          ep.imdbSeason = m.seasonNumber;
+        }
+        if (ep.imdbEpisode == null && m.episodeNumber != null) ep.imdbEpisode = m.episodeNumber;
+        const air = m.airDateUtc ?? m.airDate;
+        if (air) ep.airDate = air;
+      }
+    }
+  }
   eps.sort((a, b) => a.season - b.season || a.episode - b.episode);
   lruSet(addonEpsCache, cacheKey, eps, SEASON_CACHE_MAX);
   return eps;
@@ -247,6 +268,20 @@ function uniqueSeasons(eps: PlayEpisode[] | null): number[] {
   return [...set].sort((a, b) => a - b);
 }
 
+function animeSeasonKey(e: PlayEpisode): number {
+  return e.imdbSeason != null && e.imdbSeason >= 1 ? e.imdbSeason : e.season;
+}
+
+function uniqueAnimeSeasons(eps: PlayEpisode[] | null): number[] {
+  if (!eps) return [];
+  const set = new Set<number>();
+  for (const e of eps) {
+    const s = animeSeasonKey(e);
+    if (s >= 1) set.add(s);
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
 export async function fetchSeasonList(meta: Meta, opts: { tmdbKey: string }): Promise<number[]> {
   if (meta.type !== "series" && !isAnimeId(meta.id)) return [];
   if (meta.id.startsWith("tt")) {
@@ -257,7 +292,7 @@ export async function fetchSeasonList(meta: Meta, opts: { tmdbKey: string }): Pr
     const nums = (detail?.seasons ?? []).map((s) => s.seasonNumber).filter((n) => n >= 1);
     return [...new Set(nums)].sort((a, b) => a - b);
   }
-  return uniqueSeasons(await getNonStandardEpisodes(meta));
+  return uniqueAnimeSeasons(await getNonStandardEpisodes(meta));
 }
 
 export async function fetchSeasonEpisodes(
@@ -276,7 +311,7 @@ export async function fetchSeasonEpisodes(
     return tmdbSeason(opts.tmdbKey, tvId, season);
   }
   const eps = await getNonStandardEpisodes(meta);
-  return (eps ?? []).filter((e) => e.season === season);
+  return (eps ?? []).filter((e) => animeSeasonKey(e) === season);
 }
 
 export async function fetchEpisodeList(meta: Meta, opts: { tmdbKey: string }): Promise<PlayEpisode[]> {

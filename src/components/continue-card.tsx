@@ -170,8 +170,6 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
     };
   }, [item._id, item.type, item.state?.video_id]);
 
-  // Resolve the last-watched episode's title for the pill (non-anime series;
-  // anime reuses the already-hydrated kitsuVideo.title). Cached per season.
   useEffect(() => {
     setEpTitle(null);
     if (!ep || kitsuThreeSeg) return;
@@ -236,9 +234,6 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       resumeId: meta.id,
       playStream: () => openPicker(meta, episode, { autoPlay: settings.instantPlay, resume: true }),
       playLocal: (entry, o) => {
-        // Play the on-disk file but keep the catalog meta id so the player's
-        // per-episode resume lookup (readResumeMs by src.meta.id) resolves the
-        // Continue Watching offset and picks up where the user left off.
         const s = localPlayerSrc(entry);
         openPlayer({
           ...s,

@@ -1,4 +1,5 @@
 import { CalendarDays, Check, Info, Play, RotateCcw } from "lucide-react";
+import { EpisodeDownloadButton } from "./episode-download-button";
 import { useEffect, useRef, useState } from "react";
 import { EpisodeRatingBadge } from "./episode-rating-badge";
 import { Poster } from "@/components/poster";
@@ -27,10 +28,17 @@ export function EpisodeGridCard({
   g: GridEpisode;
   progress: Progress;
   spoiler?: SpoilerMask;
-  onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    season: number,
+    episode: number,
+    watched: boolean,
+    sourceMetaId?: string,
+  ) => void;
 }) {
   const t = useT();
   const { settings } = useSettings();
+  const cardMeta = g.meta ?? meta;
   const [imgIdx, setImgIdx] = useState(0);
   useEffect(() => setImgIdx(0), [g.key]);
   const [preview, setPreview] = useState(false);
@@ -46,13 +54,13 @@ export function EpisodeGridCard({
   const enter = () => {
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setPreview(true), HOVER_DELAY);
-    prefetchSegments(meta, { season: g.season, episode: g.number });
+    prefetchSegments(cardMeta, { season: g.season, episode: g.number });
   };
   const leave = () => {
     window.clearTimeout(timer.current);
     setPreview(false);
   };
-  const ctx = (e: React.MouseEvent) => onContextMenu?.(e, g.season, g.number, watched);
+  const ctx = (e: React.MouseEvent) => onContextMenu?.(e, g.season, g.number, watched, g.sourceMetaId);
 
   const thumbDim = spoiler?.thumb
     ? SPOILER_THUMB_CLASS
@@ -69,7 +77,7 @@ export function EpisodeGridCard({
         data-no-card-ring
         onClick={g.play}
         onContextMenu={ctx}
-        onFocus={() => prefetchSegments(meta, { season: g.season, episode: g.number })}
+        onFocus={() => prefetchSegments(cardMeta, { season: g.season, episode: g.number })}
         className="flex w-full flex-col gap-2.5 text-start"
       >
         <div className="relative aspect-video overflow-hidden rounded-xl">
@@ -118,7 +126,7 @@ export function EpisodeGridCard({
       </button>
       {preview && !spoilered && (
         <EpisodePreview
-          meta={meta}
+          meta={cardMeta}
           g={g}
           still={still}
           watched={watched}
@@ -234,6 +242,18 @@ function EpisodePreview({
             {watched ? <RotateCcw size={14} strokeWidth={2.4} /> : <Play size={13} fill="currentColor" />}
             {watched ? t("Watch again") : minsLeft > 0 ? t("Resume") : t("Play")}
           </button>
+          <EpisodeDownloadButton
+            meta={meta}
+            episode={{
+              season: g.season,
+              episode: g.number,
+              runtime: g.runtime ?? undefined,
+              name: g.title,
+              still: g.stills[0],
+              overview: g.overview,
+            }}
+            size={36}
+          />
           <button
             onClick={() => openEpisodeDetail(meta.id, g.season, g.number, meta)}
             aria-label={t("Episode details")}

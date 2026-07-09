@@ -12,9 +12,8 @@ import {
 } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
 import { repairStremioLibrary, type RepairProgress, type RepairResult } from "@/lib/stremio-library-repair";
-import { collectAnimeDiagnostics, findCorruptAnimeEntries, healCorruptAnimeEntries } from "@/lib/anime-cw-repair";
+import { findCorruptAnimeEntries, healCorruptAnimeEntries } from "@/lib/anime-cw-repair";
 import { clearResurfaceCache } from "@/lib/cw-resurface";
-import { saveTextFileWithPath } from "@/lib/download-text";
 import type { LibraryItem } from "@/lib/stremio";
 import { openUrl } from "@/lib/window";
 import {
@@ -27,6 +26,7 @@ import {
 import { BetaTag } from "@/components/beta-tag";
 import { IS_BETA_BUILD } from "@/lib/build-info";
 import { BackupRow } from "./backup-row";
+import { SettingsRecoverRow } from "./settings-recover-row";
 import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
@@ -65,6 +65,7 @@ export function AdvancedPanel() {
         title={t("Backup & restore")}
         subtitle={t("Export your entire Harbor setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Stremio sign-in.")}
       >
+        <SettingsRecoverRow />
         <BackupRow />
       </Section>
 
@@ -130,7 +131,6 @@ export function AdvancedPanel() {
         <DesktopOnlyBlock>
           <LibraryRepairRow />
           <AnimeRepairRow />
-          <AnimeDiagnosticsRow />
         </DesktopOnlyBlock>
       </Section>
 
@@ -757,7 +757,7 @@ function AnimeRepairRow() {
   if (!authKey) {
     return (
       <ActionRow
-        label={t("Fix corrupted anime")}
+        label={t("Repair anime library")}
         sub={t("Sign in to Stremio first. This scans the active profile's library.")}
       />
     );
@@ -772,11 +772,11 @@ function AnimeRepairRow() {
     if (phase === "scanning") return t("Scanning your library…");
     if (phase === "scanned")
       return found.length === 0
-        ? t("No corrupted anime found. You're clean.")
-        : t("Found {n}: {names}. Saved under the wrong id by the 0.9.65 bug, which breaks Continue Watching and Trakt marking.", { n: found.length, names });
+        ? t("No issues found. Your anime library looks clean.")
+        : t("Found {n}: {names}. These are saved under the wrong id, which breaks Continue Watching and Trakt marking.", { n: found.length, names });
     if (phase === "removing") return t("Removing…");
     if (phase === "done") return t("Removed {n}. Rewatch and they re-add correctly.", { n: removed });
-    return t("Finds anime that got saved under a movie/series id by the 0.9.65 bug (breaks Continue Watching + Trakt), and removes just those so they re-add correctly.");
+    return t("Finds anime saved under a movie or series id (which breaks Continue Watching and Trakt) and removes just those so they re-add correctly.");
   })();
   const cta = (() => {
     if (phase === "scanning") return t("Scanning…");
@@ -800,56 +800,3 @@ function AnimeRepairRow() {
   );
 }
 
-function AnimeDiagnosticsRow() {
-  const t = useT();
-  const { authKey } = useAuth();
-  const [status, setStatus] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const save = async () => {
-    if (!authKey || busy) return;
-    setBusy(true);
-    setStatus(null);
-    try {
-      const { text, count } = await collectAnimeDiagnostics(authKey);
-      const { saved, path } = await saveTextFileWithPath(
-        "harbor-anime-diagnostics.txt",
-        text,
-        ["txt"],
-        "Diagnostics",
-      );
-      if (!saved) {
-        setStatus(t("Save cancelled."));
-      } else {
-        setStatus(
-          path
-            ? t("Saved {n} entries to {path}. Send us that file.", { n: count, path })
-            : t("Saved harbor-anime-diagnostics.txt ({n} entries). Send us that file.", { n: count }),
-        );
-      }
-    } catch (e) {
-      setStatus(t("Failed: {error}", { error: e instanceof Error ? e.message : String(e) }));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (!authKey) {
-    return (
-      <ActionRow
-        label={t("Download anime diagnostics")}
-        sub={t("Sign in to Stremio first. This reads the active profile's library.")}
-      />
-    );
-  }
-  return (
-    <ActionRow
-      label={t("Download anime diagnostics")}
-      sub={status ?? t("Saves a .txt of your watched anime + series entries so we can see the exact shape and finish the fix. Just titles, ids, and episode numbers.")}
-      cta={busy ? t("Saving…") : t("Save .txt")}
-      icon={busy ? <Loader2 size={13} strokeWidth={2.4} className="animate-spin" /> : <Download size={13} strokeWidth={2.4} />}
-      onClick={save}
-      disabled={busy}
-    />
-  );
-}

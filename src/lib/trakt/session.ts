@@ -1,7 +1,12 @@
+import { activeProfileId, activeProfileIsPrimary } from "@/lib/active-profile-id";
 import { REFRESH_THRESHOLD_SEC } from "./config";
 import type { TraktSession } from "./types";
 
-const STORAGE_KEY = "harbor.trakt.session.v1";
+const BASE_KEY = "harbor.trakt.session.v1";
+
+function keyFor(): string {
+  return `${BASE_KEY}.${activeProfileId()}`;
+}
 
 const subscribers = new Set<() => void>();
 let cached: TraktSession | null = null;
@@ -9,7 +14,16 @@ let loaded = false;
 
 function read(): TraktSession | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = keyFor();
+    let raw = localStorage.getItem(key);
+    if (!raw) {
+      const legacy = localStorage.getItem(BASE_KEY);
+      if (legacy && activeProfileIsPrimary()) {
+        localStorage.setItem(key, legacy);
+        localStorage.removeItem(BASE_KEY);
+        raw = legacy;
+      }
+    }
     if (raw) {
       const parsed = JSON.parse(raw) as TraktSession;
       if (
@@ -21,7 +35,7 @@ function read(): TraktSession | null {
         return parsed;
       }
     }
-    const settingsRaw = localStorage.getItem("harbor.settings");
+    const settingsRaw = activeProfileIsPrimary() ? localStorage.getItem("harbor.settings") : null;
     if (settingsRaw) {
       const s = JSON.parse(settingsRaw);
       if (typeof s?.traktAccessToken === "string" && typeof s?.traktRefreshToken === "string" && typeof s?.traktExpiresAt === "number") {
@@ -48,8 +62,8 @@ function read(): TraktSession | null {
 
 function write(session: TraktSession | null): void {
   try {
-    if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    else localStorage.removeItem(STORAGE_KEY);
+    if (session) localStorage.setItem(keyFor(), JSON.stringify(session));
+    else localStorage.removeItem(keyFor());
   } catch {
     return;
   }
@@ -59,6 +73,12 @@ function ensureLoaded(): void {
   if (loaded) return;
   loaded = true;
   cached = read();
+}
+
+export function resetForProfile(): void {
+  loaded = false;
+  cached = null;
+  for (const fn of subscribers) fn();
 }
 
 export function getSession(): TraktSession | null {
