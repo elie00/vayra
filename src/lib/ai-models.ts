@@ -9,7 +9,13 @@ export type AiProvider =
   | "qwen"
   | "groq";
 
-export type AiModel = { id: string; label: string; provider: AiProvider; free?: boolean };
+export type AiModel = {
+  id: string;
+  label: string;
+  provider: AiProvider;
+  free?: boolean;
+  recommended?: boolean;
+};
 
 export const PROVIDER_NAME: Record<AiProvider, string> = {
   openai: "OpenAI",
@@ -51,13 +57,14 @@ export const AI_MODELS: AiModel[] = [
 ];
 
 export const GROQ_MODELS: AiModel[] = [
-  { id: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant", provider: "groq", free: true },
-  { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile", provider: "groq", free: true },
-  { id: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B", provider: "groq", free: true },
+  { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile", provider: "groq", free: true, recommended: true },
+  { id: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B", provider: "groq", free: true, recommended: true },
+  { id: "meta-llama/llama-4-maverick-17b-128e-instruct", label: "Llama 4 Maverick 17B", provider: "groq", free: true, recommended: true },
+  { id: "moonshotai/kimi-k2-instruct", label: "Kimi K2 Instruct", provider: "groq", free: true },
+  { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", provider: "groq", free: true, recommended: true },
   { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B", provider: "groq", free: true },
-  { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", provider: "groq", free: true },
-  { id: "qwen/qwen3-32b", label: "Qwen 3 32B", provider: "groq", free: true },
-  { id: "qwen/qwen3.6-27b", label: "Qwen 3 27B", provider: "groq", free: true },
+  { id: "qwen/qwen3-32b", label: "Qwen 3 32B", provider: "groq", free: true, recommended: true },
+  { id: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant", provider: "groq", free: true },
 ];
 
 const MODEL_MIGRATIONS: Record<string, string> = {

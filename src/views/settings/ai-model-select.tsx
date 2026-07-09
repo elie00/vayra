@@ -71,18 +71,25 @@ export function AiModelSelect({
                   }`}
                 >
                   <ProviderLogo provider={m.provider} />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="flex items-center gap-1.5">
-                      <span className={`truncate text-[13px] text-ink ${sel ? "font-semibold" : ""}`}>
-                        {m.label}
-                      </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className={`truncate text-[13px] text-ink ${sel ? "font-semibold" : ""}`}>
+                      {m.label}
+                    </span>
+                    <span className="flex flex-wrap items-center gap-1">
+                      {m.recommended && (
+                        <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-accent">
+                          {t("Recommended")}
+                        </span>
+                      )}
                       {m.free && (
-                        <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-accent">
+                        <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-accent">
                           {m.provider === "groq" ? t("Free tier") : t("Free")}
                         </span>
                       )}
+                      <span className="text-[10px] uppercase tracking-wider text-ink-subtle">
+                        {PROVIDER_NAME[m.provider]}
+                      </span>
                     </span>
-                    <span className="truncate text-[11px] text-ink-subtle">{PROVIDER_NAME[m.provider]}</span>
                   </span>
                   {sel && <Check size={14} className="shrink-0 text-accent" />}
                 </button>
