@@ -3,6 +3,7 @@ import { aiSuggest, resolveAiSuggestions, type AiResult } from "@/lib/ai-search"
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { keyForProvider, providerForModel } from "@/lib/ai-models";
+import { enrichWithContent } from "@/lib/jina-search";
 
 export type AiStatus = "idle" | "loading" | "done" | "error";
 
@@ -37,7 +38,16 @@ export function useAiSuggest(query: string, runSignal = 0) {
     setError("");
     setRanQuery(query);
     try {
-      const suggestions = await aiSuggest(activeKey, settings.aiSearchModel, query);
+      let webContext: string | undefined;
+      if (settings.aiWebSearch) {
+        try {
+          const { context } = await enrichWithContent(query, settings.jinaKey);
+          webContext = context || undefined;
+        } catch {
+          webContext = undefined;
+        }
+      }
+      const suggestions = await aiSuggest(activeKey, settings.aiSearchModel, query, webContext);
       if (id !== reqRef.current) return;
       if (suggestions.length === 0) {
         setResults([]);

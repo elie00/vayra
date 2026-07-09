@@ -18,6 +18,7 @@ import { MagnetCard } from "./magnet-card";
 import { UrlCard } from "./url-card";
 import { AiSearchSection } from "./ai-search-section";
 import { AiModeButton } from "./ai-mode-button";
+import { WebSearchButton } from "./web-search-button";
 import { AiExampleHint, SEARCH_EXAMPLES } from "@/components/ai-example-hint";
 import { useSettings } from "@/lib/settings";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
@@ -129,6 +130,13 @@ export function SearchOverlay() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
+                if (e.key === "Enter" && e.shiftKey) {
+                  if (!query.trim()) return;
+                  e.preventDefault();
+                  if (!aiMode) setAiMode(true);
+                  setAiRunSignal((n) => n + 1);
+                  return;
+                }
                 if (e.key !== "Enter") return;
                 if (aiMode) {
                   if (query.trim()) {
@@ -160,17 +168,8 @@ export function SearchOverlay() {
             )}
           </div>
           {status === "loading" && <Loader2 size={18} className="shrink-0 animate-spin text-ink-subtle" />}
-          {query && (
-            <button
-              type="button"
-              aria-label={t("Clear")}
-              onClick={clear}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
-            >
-              <X size={18} strokeWidth={2.2} />
-            </button>
-          )}
           <Hint />
+          <WebSearchButton />
           {(settings.aiSearchKey.trim() || settings.aiGroqKey.trim()) && (
             <AiModeButton
               active={aiMode}
@@ -181,6 +180,16 @@ export function SearchOverlay() {
                 setAiMode(true);
               }}
             />
+          )}
+          {query && (
+            <button
+              type="button"
+              aria-label={t("Clear")}
+              onClick={clear}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
+            >
+              <X size={18} strokeWidth={2.2} />
+            </button>
           )}
         </div>
 

@@ -228,6 +228,8 @@ export const DEFAULT: Settings = {
   aiSearchKey: "",
   aiSearchModel: "",
   aiGroqKey: "",
+  jinaKey: "",
+  aiWebSearch: false,
   playerD3d11Flip: true,
   mpvExtraOptions: "",
   mpvQuality: "balanced",

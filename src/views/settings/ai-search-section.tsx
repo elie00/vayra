@@ -5,7 +5,7 @@ import { AI_MODELS, DEFAULT_AI_MODEL, GROQ_MODELS, providerForModel } from "@/li
 import openrouterLogo from "@/assets/ai-logos/openrouter.png";
 import groqLogo from "@/assets/ai-logos/groq.png";
 import { AiModelSelect } from "./ai-model-select";
-import { ExtLink, KeyField, Section, Segmented } from "./shared";
+import { ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
 
 type ProviderTab = "openrouter" | "groq";
 
@@ -32,11 +32,9 @@ export function AiSearchSection() {
   const initialTab: ProviderTab = currentProvider === "groq" ? "groq" : "openrouter";
   const [tab, _setTab] = useState<ProviderTab>(initialTab);
 
-  // Keep tab in sync if model switches provider somewhere else (e.g. AiModeButton)
-  // We only do this on explicit user toggle elsewhere — no auto-sync to avoid tab flicker.
-
   const [openrouterKey, setOpenrouterKey] = keyDrafts.openrouter;
   const [groqKey, setGroqKey] = keyDrafts.groq;
+  const [jinaDraft, setJinaDraft] = useState(settings.jinaKey);
   const renderedModel =
     tab === "groq" && currentProvider !== "groq"
       ? GROQ_MODELS[0].id
@@ -124,6 +122,39 @@ export function AiSearchSection() {
           />
         </>
       )}
+
+      <div className="mt-1 flex flex-col gap-3 border-t border-edge-soft pt-5">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[15px] font-medium tracking-tight text-ink">
+            {t("Live web (Jina Reader)")}
+          </span>
+          <p className="text-[13px] leading-relaxed text-ink-muted">
+            {t("Augments AI picks with current web results before asking the model. Powered by")}{" "}
+            <ExtLink href="https://jina.ai/reader">Jina Reader</ExtLink>
+            {t(". Works without a key at low volume; add a key for higher quotas.")}
+          </p>
+        </div>
+        <ToggleRow
+          label={t("Use live web context")}
+          sub={t("Fetches DuckDuckGo results and feeds top hits into the model prompt.")}
+          value={settings.aiWebSearch}
+          onChange={(v) => update({ aiWebSearch: v })}
+        />
+        <KeyField
+          label={t("Jina API key (optional)")}
+          placeholder={t("jina_...")}
+          value={jinaDraft}
+          onChange={setJinaDraft}
+          onSave={() => update({ jinaKey: jinaDraft.trim() })}
+          saved={false}
+          help={
+            <>
+              Get a key at <ExtLink href="https://jina.ai/reader">jina.ai/reader</ExtLink>{" "}
+              {t("for higher rate limits; leave blank for the free anonymous tier.")}
+            </>
+          }
+        />
+      </div>
     </Section>
   );
 }
