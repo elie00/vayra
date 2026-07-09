@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { aiSuggest, resolveAiSuggestions, type AiResult } from "@/lib/ai-search";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { keyForProvider, providerForModel } from "@/lib/ai-models";
 
 export type AiStatus = "idle" | "loading" | "done" | "error";
 
@@ -22,8 +23,11 @@ export function useAiSuggest(query: string, runSignal = 0) {
     setRanQuery("");
   }, [query]);
 
+  const provider = providerForModel(settings.aiSearchModel);
+  const activeKey = keyForProvider(settings, provider);
+
   useEffect(() => {
-    if (!runSignal || !query.trim() || !settings.aiSearchKey.trim()) return;
+    if (!runSignal || !query.trim() || !activeKey.trim()) return;
     void run();
   }, [runSignal]);
 
@@ -33,7 +37,7 @@ export function useAiSuggest(query: string, runSignal = 0) {
     setError("");
     setRanQuery(query);
     try {
-      const suggestions = await aiSuggest(settings.aiSearchKey, settings.aiSearchModel, query);
+      const suggestions = await aiSuggest(activeKey, settings.aiSearchModel, query);
       if (id !== reqRef.current) return;
       if (suggestions.length === 0) {
         setResults([]);

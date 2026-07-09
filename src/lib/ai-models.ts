@@ -6,7 +6,8 @@ export type AiProvider =
   | "mistral"
   | "deepseek"
   | "xai"
-  | "qwen";
+  | "qwen"
+  | "groq";
 
 export type AiModel = { id: string; label: string; provider: AiProvider; free?: boolean };
 
@@ -19,7 +20,17 @@ export const PROVIDER_NAME: Record<AiProvider, string> = {
   deepseek: "DeepSeek",
   xai: "xAI",
   qwen: "Alibaba",
+  groq: "Groq",
 };
+
+export type SettingsLike = {
+  aiSearchKey: string;
+  aiGroqKey: string;
+};
+
+export function keyForProvider(settings: SettingsLike, provider: AiProvider): string {
+  return provider === "groq" ? settings.aiGroqKey : settings.aiSearchKey;
+}
 
 export const DEFAULT_AI_MODEL = "openai/gpt-oss-20b:free";
 
@@ -37,6 +48,16 @@ export const AI_MODELS: AiModel[] = [
   { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", provider: "gemini" },
   { id: "mistralai/mistral-large", label: "Mistral Large", provider: "mistral" },
   { id: "x-ai/grok-2-1212", label: "Grok 2", provider: "xai" },
+];
+
+export const GROQ_MODELS: AiModel[] = [
+  { id: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant", provider: "groq", free: true },
+  { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile", provider: "groq", free: true },
+  { id: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B", provider: "groq", free: true },
+  { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B", provider: "groq", free: true },
+  { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", provider: "groq", free: true },
+  { id: "qwen/qwen3-32b", label: "Qwen 3 32B", provider: "groq", free: true },
+  { id: "qwen/qwen3.6-27b", label: "Qwen 3 27B", provider: "groq", free: true },
 ];
 
 const MODEL_MIGRATIONS: Record<string, string> = {
@@ -62,11 +83,19 @@ const PREFIX_PROVIDER: Record<string, AiProvider> = {
   deepseek: "deepseek",
   "x-ai": "xai",
   qwen: "qwen",
+  groq: "groq",
 };
 
+// Groq has bare IDs like "llama-3.1-8b-instant" (no org prefix) that still belong to Groq.
+const BARE_GROQ_PREFIXES = ["llama-", "llama3-"];
+
 export function providerForModel(modelId: string): AiProvider {
-  const known = AI_MODELS.find((m) => m.id === modelId);
-  if (known) return known.provider;
+  const knownInOpenRouter = AI_MODELS.find((m) => m.id === modelId);
+  if (knownInOpenRouter) return knownInOpenRouter.provider;
+  const knownInGroq = GROQ_MODELS.find((m) => m.id === modelId);
+  if (knownInGroq) return knownInGroq.provider;
+  const lowered = modelId.toLowerCase();
+  if (BARE_GROQ_PREFIXES.some((p) => lowered.startsWith(p))) return "groq";
   const prefix = modelId.split("/")[0]?.trim().toLowerCase() ?? "";
   return PREFIX_PROVIDER[prefix] ?? "openai";
 }

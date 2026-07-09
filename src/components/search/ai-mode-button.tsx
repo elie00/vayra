@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { AI_MODELS, PROVIDER_NAME, providerForModel } from "@/lib/ai-models";
+import { AI_MODELS, GROQ_MODELS, PROVIDER_NAME, providerForModel } from "@/lib/ai-models";
 import { ProviderLogo } from "@/components/ai-provider-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
+
+const ALL_MODELS = [...GROQ_MODELS, ...AI_MODELS];
 
 export function AiModeButton({
   active,
@@ -83,7 +85,7 @@ export function AiModeButton({
             {t("AI model")}
           </div>
           <div className="max-h-[320px] overflow-y-auto">
-            {AI_MODELS.map((m) => {
+            {ALL_MODELS.map((m) => {
               const on = m.id === currentModel;
               return (
                 <button
@@ -102,7 +104,7 @@ export function AiModeButton({
                       <span className="truncate text-[13px] font-medium text-ink">{m.label}</span>
                       {m.free && (
                         <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-accent">
-                          {t("Free")}
+                          {m.provider === "groq" ? t("Free tier") : t("Free")}
                         </span>
                       )}
                     </span>

@@ -1,8 +1,9 @@
 import { searchCinemeta } from "./search";
-import { DEFAULT_AI_MODEL, migrateModelId } from "./ai-models";
+import { DEFAULT_AI_MODEL, migrateModelId, providerForModel } from "./ai-models";
 import type { Meta } from "./cinemeta";
 
-const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MAX_SUGGESTIONS = 12;
 
 export type AiSuggestion = {
@@ -31,14 +32,19 @@ export async function aiSuggest(
 ): Promise<AiSuggestion[]> {
   const q = query.trim();
   if (!key.trim() || !q) return [];
-  const res = await fetch(OPENROUTER, {
+  const isGroq = providerForModel(model) === "groq";
+  const url = isGroq ? GROQ_URL : OPENROUTER_URL;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${key.trim()}`,
+    "Content-Type": "application/json",
+  };
+  if (!isGroq) {
+    headers["HTTP-Referer"] = "https://harbor.site";
+    headers["X-Title"] = "Harbor";
+  }
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${key.trim()}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://harbor.site",
-      "X-Title": "Harbor",
-    },
+    headers,
     body: JSON.stringify({
       model: migrateModelId(model.trim()) || DEFAULT_AI_MODEL,
       temperature: 0.4,

@@ -1,10 +1,20 @@
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { AI_MODELS, PROVIDER_NAME } from "@/lib/ai-models";
+import { AiModel, PROVIDER_NAME } from "@/lib/ai-models";
 import { ProviderLogo } from "@/components/ai-provider-logo";
 
-export function AiModelSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function AiModelSelect({
+  value,
+  onChange,
+  models,
+  defaultModel,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  models: AiModel[];
+  defaultModel: string;
+}) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -16,7 +26,7 @@ export function AiModelSelect({ value, onChange }: { value: string; onChange: (v
     window.addEventListener("mousedown", onDown);
     return () => window.removeEventListener("mousedown", onDown);
   }, [open]);
-  const current = AI_MODELS.find((m) => m.id === value);
+  const current = models.find((m) => m.id === value) ?? models.find((m) => m.id === defaultModel);
   return (
     <div className="flex items-center gap-2.5 px-1">
       <span className="shrink-0 text-[12px] text-ink-subtle">{t("Model")}</span>
@@ -47,7 +57,7 @@ export function AiModelSelect({ value, onChange }: { value: string; onChange: (v
         </button>
         {open && (
           <div className="absolute inset-x-0 top-[calc(100%+6px)] z-30 flex max-h-[320px] flex-col overflow-y-auto rounded-2xl border border-edge bg-canvas py-1.5 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] backdrop-blur-xl">
-            {AI_MODELS.map((m) => {
+            {models.map((m) => {
               const sel = m.id === value;
               return (
                 <button
@@ -68,7 +78,7 @@ export function AiModelSelect({ value, onChange }: { value: string; onChange: (v
                       </span>
                       {m.free && (
                         <span className="shrink-0 rounded-[5px] bg-accent/15 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-accent">
-                          {t("Free")}
+                          {m.provider === "groq" ? t("Free tier") : t("Free")}
                         </span>
                       )}
                     </span>

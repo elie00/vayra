@@ -171,7 +171,7 @@ export function SearchOverlay() {
             </button>
           )}
           <Hint />
-          {settings.aiSearchKey.trim() && (
+          {(settings.aiSearchKey.trim() || settings.aiGroqKey.trim()) && (
             <AiModeButton
               active={aiMode}
               currentModel={settings.aiSearchModel}

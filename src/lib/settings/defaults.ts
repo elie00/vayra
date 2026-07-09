@@ -227,6 +227,7 @@ export const DEFAULT: Settings = {
   auddKey: "",
   aiSearchKey: "",
   aiSearchModel: "",
+  aiGroqKey: "",
   playerD3d11Flip: true,
   mpvExtraOptions: "",
   mpvQuality: "balanced",
