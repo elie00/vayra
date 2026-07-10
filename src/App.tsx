@@ -85,7 +85,7 @@ import { AnilistProvider } from "@/lib/anilist/provider";
 import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
-import { useKeyboardNavigation } from './useKeyboardNavigation';
+import { useKeyboardNavigation } from "@/lib/use-keyboard-navigation";
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
@@ -781,7 +781,7 @@ function Shell() {
         {settingsAlive && (
           <div className={layer(settingsTop)}>
             <Suspense fallback={null}>
-              <Settings />
+              <Settings active={settingsTop} />
             </Suspense>
           </div>
         )}

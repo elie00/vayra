@@ -288,6 +288,7 @@ export type Settings = {
   keyboardPauseShowsControls: boolean;
   hideWatchedInCatalogs: boolean;
   hideUnreleased: boolean;
+  localEpisodeSortDesc: boolean;
   showPlaylistsTab: boolean;
   skipProfileScreen: boolean;
   profilePromptInterval: "launch" | "15m" | "30m" | "never";

@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { readSnapshot, useSnapshotVersion } from "@/lib/snapshots";
 import { episodeFromVideoId, isAnimeCwItem, libraryMetaType, type LibraryItem } from "@/lib/stremio";
 import { useHasNewEpisode } from "@/lib/new-episodes";
+import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { Tooltip } from "@/views/detail/tooltip";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
@@ -148,7 +149,17 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
         .then((full) => {
           if (cancelled || !full) return;
           setHydratedMeta(full);
-          if (full.logo) setLogo(full.logo);
+          // Cinemeta's logo is English-only; resolveLogo honours the artwork
+          // language preference and falls back to it when nothing else exists.
+          const key = settingsRef.current.tmdbKey;
+          const cachedLogo = peekCachedLogo(key, full);
+          if (cachedLogo) setLogo(cachedLogo);
+          else
+            void resolveLogo(key, full)
+              .then((l) => {
+                if (!cancelled && l) setLogo(l);
+              })
+              .catch(() => {});
           const bg = full.background || (item.background ? undefined : full.poster);
           if (bg) setMetaBg(bg);
         })
