@@ -1,9 +1,8 @@
-import { Home } from "lucide-react";
 import { PickCard } from "@/components/pick-card";
+import { PinHomeButton } from "@/components/pin-home-button";
 import { Row } from "@/components/row";
 import { useT } from "@/lib/i18n";
-import { togglePinnedCatalog, useIsPinned } from "@/lib/pinned-catalogs";
-import { useAnilistAnimeRails, type AnilistRail } from "@/lib/use-anilist-anime-rails";
+import { useAnilistAnimeRails } from "@/lib/use-anilist-anime-rails";
 
 export function AnilistRows() {
   const t = useT();
@@ -22,7 +21,7 @@ export function AnilistRows() {
               title={
                 <span className="inline-flex items-center gap-2">
                   {label}
-                  <PinHomeButton rail={rail} label={label} />
+                  <PinHomeButton id={`anilist:${rail.key}`} source="anilist" name={label} params={{ railKey: rail.key }} />
                 </span>
               }
               scrollKey={`anime:anilist:${rail.key}`}
@@ -38,26 +37,4 @@ export function AnilistRows() {
   );
 }
 
-function PinHomeButton({ rail, label }: { rail: AnilistRail; label: string }) {
-  const t = useT();
-  const id = `anilist:${rail.key}`;
-  const pinned = useIsPinned(id);
-  return (
-    <button
-      type="button"
-      onClick={() =>
-        togglePinnedCatalog({ id, source: "anilist", name: label, params: { railKey: rail.key } })
-      }
-      aria-pressed={pinned}
-      aria-label={pinned ? t("Remove from Home") : t("Add to Home Screen")}
-      title={pinned ? t("Remove from Home") : t("Add to Home Screen")}
-      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
-        pinned
-          ? "border-accent/50 bg-accent/15 text-accent"
-          : "border-edge-soft bg-canvas/40 text-ink-subtle hover:border-edge hover:text-ink-muted"
-      }`}
-    >
-      <Home size={14} strokeWidth={2.2} />
-    </button>
-  );
-}
+

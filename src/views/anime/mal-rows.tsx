@@ -1,4 +1,5 @@
 import { PickCard } from "@/components/pick-card";
+import { PinHomeButton } from "@/components/pin-home-button";
 import { Row } from "@/components/row";
 import { useT } from "@/lib/i18n";
 import { useMalAnimeRails } from "@/lib/use-mal-anime-rails";
@@ -12,7 +13,12 @@ export function MalRows() {
       {rails.map((rail) => (
         <div key={rail.key} data-scroll-anchor={`row:mal:${rail.key}`}>
           <Row
-            title={t("Your MAL: {name}", { name: rail.title })}
+            title={
+              <span className="inline-flex items-center gap-2">
+                {t("Your MAL: {name}", { name: rail.title })}
+                <PinHomeButton id={`mal:${rail.key}`} source="mal" name={t("Your MAL: {name}", { name: rail.title })} params={{ railKey: rail.key }} />
+              </span>
+            }
             scrollKey={`anime:mal:${rail.key}`}
           >
             {rail.metas.map((m, i) => (
