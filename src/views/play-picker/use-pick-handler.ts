@@ -66,7 +66,7 @@ export function usePickHandler({
   sendInvite: (invite: PlayInvite) => void;
   claimHost: (fresh: boolean) => void;
   openPlayer: (src: PlayerSrc) => void;
-  intent?: "play" | "download";
+  intent?: "play" | "download" | "download-season";
   onDownloadStarted?: (label?: string | null) => void;
   autoActive: boolean;
   autoAttemptIdx: number;
@@ -121,6 +121,59 @@ export function usePickHandler({
     resolveAcRef.current = ac;
     let opened = false;
     try {
+      if (intent === "download-season" && stream.infoHash) {
+        const label =
+          [stream.resolution, stream.source].filter(Boolean).join(" ") ||
+          stream.parsedTitle ||
+          stream.title ||
+          stream.name ||
+          stream.addonName ||
+          null;
+        let enqueued = 0;
+        for (const d of debrids) {
+          if (ac.signal.aborted) break;
+          if (!d.listTorrentFiles) continue;
+          const filesResult = await d.listTorrentFiles(stream.infoHash, ac.signal);
+          if (!filesResult.ok || filesResult.data.length === 0) continue;
+          const videoFiles = filesResult.data.filter((f) =>
+            /\.(mkv|mp4|avi|m4v|webm|ts|mov|wmv)$/i.test(f.name),
+          );
+          if (videoFiles.length === 0) continue;
+          const targetSeason = episode?.season ?? 1;
+          for (let i = 0; i < videoFiles.length; i++) {
+            if (ac.signal.aborted) break;
+            const file = videoFiles[i];
+            if (!file.url) continue;
+            const name = file.name;
+            let seaNum = targetSeason;
+            let epNum: number;
+            const seaEp = name.match(/[Ss](\d+)[Ee](\d+)/);
+            if (seaEp) {
+              seaNum = parseInt(seaEp[1], 10);
+              epNum = parseInt(seaEp[2], 10);
+            } else {
+              const epMatch = name.match(/[Ee]0*(\d+)/);
+              epNum = epMatch ? parseInt(epMatch[1], 10) : i + 1;
+            }
+            if (seaNum !== targetSeason) continue;
+            await enqueueDownload({
+              meta,
+              episode: { season: seaNum, episode: epNum },
+              streamLabel: `${label} S${String(seaNum).padStart(2, "0")}E${String(epNum).padStart(2, "0")}`,
+              url: file.url,
+            });
+            enqueued++;
+          }
+          if (enqueued > 0) break;
+        }
+        if (enqueued > 0) {
+          onDownloadStarted?.(`${enqueued} episodes`);
+          opened = true;
+          setResolving(null);
+          return;
+        }
+      }
+
       const hint = episode ? { season: episode.season ?? null, episode: episode.episode ?? null } : undefined;
       const r = await resolveStream(stream, debrids, ac.signal, userCommitted, forceP2p, hint);
       if (ac.signal.aborted) return;
@@ -189,7 +242,7 @@ export function usePickHandler({
         }
         return;
       }
-      if (intent === "download") {
+      if (intent === "download" || intent === "download-season") {
         const label =
           [stream.resolution, stream.source].filter(Boolean).join(" ") ||
           stream.parsedTitle ||

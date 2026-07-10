@@ -71,10 +71,10 @@ export function PlayPicker({
   episode?: PlayEpisode;
   autoPlay?: boolean;
   attempt?: number;
-  intent?: "play" | "download";
+  intent?: "play" | "download" | "download-season";
   resume?: boolean;
 }) {
-  const isDownload = intent === "download";
+  const isDownload = intent === "download" || intent === "download-season";
   const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
   const backToDetail = () => {
     void exitWindowFullscreen();
@@ -91,7 +91,7 @@ export function PlayPicker({
     prefetchSegments(meta, episode);
   }, [meta, episode]);
   const imdbId = resolvedImdb.id;
-  const streamIds = useStreamIds(meta, episode, imdbId);
+const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-season");
   const localMatch = useMemo(() => {
     const m = meta.id.match(/^tmdb:(?:movie|tv):(\d+)$/);
     const tmdbId = m ? parseInt(m[1], 10) : null;
@@ -208,6 +208,28 @@ export function PlayPicker({
       const cached = all.filter(isCached);
       if (cached.length > 0) all = cached;
     }
+    if (intent === "download-season") {
+      const byHash = new Map<string, ScoredStream[]>();
+      for (const s of all) {
+        if (s.infoHash) {
+          const arr = byHash.get(s.infoHash);
+          if (arr) arr.push(s);
+          else byHash.set(s.infoHash, [s]);
+        }
+      }
+      const grouped: ScoredStream[] = [];
+      const seen = new Set<string>();
+      for (const s of all) {
+        if (s.infoHash && byHash.get(s.infoHash)!.length >= 2) {
+          if (seen.has(s.infoHash)) continue;
+          seen.add(s.infoHash);
+          grouped.push({ ...s, name: `${s.name} (${byHash.get(s.infoHash)!.length} episodes)` });
+        } else if (s.size != null && s.size > (isAnimeRequest ? 3 : 15) * 1024 * 1024 * 1024) {
+          grouped.push(s);
+        }
+      }
+      all = grouped;
+    }
     const cachedFirst = all.slice().sort((a, b) => (isCached(b) ? 1 : 0) - (isCached(a) ? 1 : 0));
     const ranked = hostMatch
       ? cachedFirst.slice().sort((a, b) => (hostMatch.get(b) ?? 0) - (hostMatch.get(a) ?? 0))
@@ -223,7 +245,7 @@ export function PlayPicker({
     );
     const primary = primaryCandidates[0] ?? null;
     return { primary, byTier, all };
-  }, [result, langFilter, preferredLangs, cachedOnly, debrids.length, isCached, hostMatch]);
+  }, [result, langFilter, preferredLangs, cachedOnly, debrids.length, isCached, hostMatch, isAnimeRequest]);
 
   const anyAddonRanked = useMemo(
     () => (addons ?? []).some((a) => isAddonRanked(a)),

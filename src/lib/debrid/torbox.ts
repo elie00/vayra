@@ -6,6 +6,7 @@ import {
   magnetFromHash,
   type Account,
   type CacheMap,
+  type DebridFile,
   type DebridResult,
   type DebridStore,
   type DirectLink,
@@ -241,6 +242,47 @@ export function createTorbox(apiKey: string): DebridStore {
     return { ok: true, data: { id: String(id) } };
   }
 
+  async function listTorrentFiles(hash: string, signal: AbortSignal): Promise<DebridResult<DebridFile[]>> {
+    const fullMagnet = magnetFromHash(hash);
+    const created = await postForm<TbEnvelope<TbCreate>>("/torrents/createtorrent", { magnet: fullMagnet, allow_zip: "false", as_queued: "false" }, signal);
+    if (!created.ok) return created;
+    const id = created.data.data?.torrent_id ?? created.data.data?.queued_id;
+    if (id == null) return { ok: false, code: "no-id", status: 0 };
+
+    for (let attempt = 0; attempt < 60; attempt++) {
+      if (signal.aborted) return { ok: false, code: "aborted", status: 0 };
+      const list = await get<TbEnvelope<TbTorrent[]>>(`/torrents/mylist?bypass_cache=true`, signal);
+      if (!list.ok) return list;
+      const torrent = list.data.data?.find((t) => t.id === id);
+      if (torrent?.download_state === "error" || torrent?.download_state === "stalled") {
+        return { ok: false, code: torrent.download_state, status: 0 };
+      }
+      if (torrent?.files && torrent.files.length > 0 && (torrent.download_finished || torrent.download_present)) {
+        const files: DebridFile[] = [];
+        for (const f of torrent.files) {
+          if (signal.aborted) return { ok: false, code: "aborted", status: 0 };
+          const dl = await get<TbEnvelope<string>>(
+            `/torrents/requestdl?token=${encodeURIComponent(apiKey)}&torrent_id=${id}&file_id=${f.id}&zip_link=false`,
+            signal,
+          );
+          if (!dl.ok) continue;
+          const url = dl.data.data;
+          if (!url || typeof url !== "string") continue;
+          files.push({
+            id: String(f.id),
+            name: f.name ?? f.short_name ?? "",
+            size: f.size ?? 0,
+            url,
+          });
+        }
+        if (files.length === 0) continue;
+        return { ok: true, data: files };
+      }
+      await sleep(1000, signal);
+    }
+    return { ok: false, code: "timeout", status: 0 };
+  }
+
   return {
     slug: "tb",
     name: "TorBox",
@@ -249,6 +291,7 @@ export function createTorbox(apiKey: string): DebridStore {
     playableUrl,
     queueCache,
     listLibrary,
+    listTorrentFiles,
   };
 }
 

@@ -1,10 +1,10 @@
 import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
-import { exists, remove } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, remove } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
-import { buildDefaultFilename } from "./filename";
+import { buildDefaultFilename, sanitizeName } from "./filename";
 import { startDownload, type DownloadHandle } from "./video-download";
 
 export type DownloadItem = {
@@ -18,7 +18,7 @@ export type DownloadItem = {
   streamLabel: string | null;
   url: string;
   path: string;
-  status: "downloading" | "done" | "error" | "canceled" | "interrupted";
+  status: "downloading" | "paused" | "done" | "error" | "canceled" | "interrupted";
   receivedBytes: number;
   totalBytes: number | null;
   ratio: number;
@@ -149,7 +149,16 @@ export function activeDownloadFor(
 
 export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
   const { meta, episode, streamLabel, url, headers } = args;
-  const dir = await resolveDir();
+  let dir = await resolveDir();
+  try {
+    const raw = localStorage.getItem("harbor.settings");
+    const settings = raw ? JSON.parse(raw) as { downloadCreateFolders?: boolean } : null;
+    if (settings?.downloadCreateFolders && dir) {
+      const folderName = sanitizeName(meta.name || "download");
+      dir = `${dir}${dir.endsWith(sep()) ? "" : sep()}${folderName}`;
+      await mkdir(dir, { recursive: true }).catch(() => {});
+    }
+  } catch { /* ignore */ }
   const filename = buildDefaultFilename(meta, episode, url, streamLabel);
   const path = await uniquePath(
     dir ? `${dir}${dir.endsWith(sep()) ? "" : sep()}${filename}` : filename,
@@ -200,6 +209,8 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))
     .catch((e: unknown) => {
       if (e instanceof Error && e.name === "AbortError") {
+        const cur = items.get(id);
+        if (cur?.status === "paused") return;
         patch(id, { status: "canceled", bytesPerSec: 0 });
         return;
       }
@@ -213,7 +224,59 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
 }
 
 export function cancelDownload(id: string): void {
-  handles.get(id)?.abort();
+  const h = handles.get(id);
+  if (h) {
+    h.abort();
+    return;
+  }
+  const cur = items.get(id);
+  if (cur?.status === "paused") {
+    patch(id, { status: "canceled", bytesPerSec: 0 });
+  }
+}
+
+export function pauseDownload(id: string): void {
+  const h = handles.get(id);
+  if (!h) return;
+  patch(id, { status: "paused" });
+  h.abort();
+}
+
+export function resumeDownload(id: string): void {
+  const cur = items.get(id);
+  if (!cur || cur.status !== "paused" || handles.has(id)) return;
+  patch(id, { status: "downloading", error: null, receivedBytes: 0, ratio: 0, bytesPerSec: 0 });
+  const handle = startDownload(id, cur.url, cur.path, (p) => {
+    const now = Date.now();
+    const s = speed.get(id);
+    let bps = 0;
+    if (s && now - s.at >= 500) {
+      bps = ((p.receivedBytes - s.bytes) / (now - s.at)) * 1000;
+      speed.set(id, { bytes: p.receivedBytes, at: now });
+    }
+    patch(id, {
+      receivedBytes: p.receivedBytes,
+      totalBytes: p.totalBytes,
+      ratio: p.ratio,
+      ...(bps > 0 ? { bytesPerSec: bps } : {}),
+    });
+  });
+  handles.set(id, handle);
+  handle.promise
+    .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))
+    .catch((e: unknown) => {
+      if (e instanceof Error && e.name === "AbortError") {
+        const cur = items.get(id);
+        if (cur?.status === "paused") return;
+        patch(id, { status: "canceled", bytesPerSec: 0 });
+        return;
+      }
+      patch(id, { status: "error", error: e instanceof Error ? e.message : "Download failed", bytesPerSec: 0 });
+    })
+    .finally(() => {
+      handles.delete(id);
+      speed.delete(id);
+    });
 }
 
 export function removeDownload(id: string): void {

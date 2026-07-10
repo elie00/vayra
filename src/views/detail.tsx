@@ -36,6 +36,7 @@ import { decodeWatchedEpisodes, stremioMovieWatched } from "@/lib/stremio-watche
 import { setEpisodesWatchedStremio } from "@/lib/stremio-watched-sync";
 import { isDetectedAnime } from "@/lib/anime-detect";
 import { isMovieWatchedLocal, movieWatchedVersion, subscribeMovieWatched } from "@/lib/movie-watched";
+import { getLastSeason } from "@/lib/last-season";
 import { manualWatchedState, manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { useTogether } from "@/lib/together/provider";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -864,7 +865,6 @@ export function DetailView({
     candidates.sort((a, b) => b.t - a.t);
     return { season: candidates[0].season, episode: candidates[0].episode };
   }, [meta.id, detail?.imdbId, detail?.id, libraryItem, isAnime, episodeHint]);
-
   useEffect(() => {
     if (loading) return;
     let targetEp: PlayEpisode | undefined;
@@ -897,6 +897,10 @@ export function DetailView({
     }
     prefetchSegments(playMeta, targetEp);
   }, [loading, isSeries, isAnime, lastPlay, animeEpisodes, cinemetaFull?.videos, playMeta]);
+
+  const [currentSeason, setCurrentSeason] = useState<number>(
+    () => getLastSeason(meta.id) ?? lastPlay?.season ?? 1,
+  );
 
   const smartPlay = useCallback(async (forcePicker = false) => {
     if (inSession) claimHost(true);
@@ -1313,6 +1317,14 @@ export function DetailView({
                       </button>
                     )}
                     {meta.type === "movie" && <EpisodeDownloadButton meta={meta} variant="bar" />}
+                    {(isSeries || isAnime) && (
+                      <EpisodeDownloadButton
+                        meta={meta}
+                        episode={{ season: currentSeason, episode: 1 }}
+                        variant="bar"
+                        intent="download-season"
+                      />
+                    )}
                   </>
                 )}
                 {liveContext && (
@@ -1379,6 +1391,7 @@ export function DetailView({
             cinemetaVideos={cinemetaFull?.videos}
             stremioWatched={stremioWatched}
             resumeSeason={lastPlay?.season}
+            onSeasonChange={setCurrentSeason}
             resumeEpisode={lastPlay?.episode}
           />
           </FadeInUp>

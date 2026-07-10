@@ -45,6 +45,7 @@ export function SeriesEpisodes({
   cinemetaVideos,
   stremioWatched,
   resumeSeason,
+  onSeasonChange,
   resumeEpisode,
 }: {
   meta: Meta;
@@ -56,6 +57,7 @@ export function SeriesEpisodes({
   cinemetaVideos?: NonNullable<Meta["videos"]>;
   stremioWatched?: Set<string>;
   resumeSeason?: number;
+  onSeasonChange?: (season: number) => void;
   resumeEpisode?: number;
 }) {
   const t = useT();
@@ -131,6 +133,7 @@ export function SeriesEpisodes({
       console.debug(`[season-default] ${meta.id} pick=${def} hint=${resumeSeason} [${counts.join(", ")}]`);
     }
     setActive(def);
+    onSeasonChange?.(def);
   }, [meta.id, seasons, combinedWatched, resumeSeason]);
 
   useEffect(() => {
@@ -299,7 +302,7 @@ export function SeriesEpisodes({
                 onModeChange={arcAvailable ? setMode : undefined}
               />
             )
-          )}
+            )}
         </div>
       </div>
 
