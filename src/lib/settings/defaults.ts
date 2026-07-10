@@ -257,6 +257,7 @@ export const DEFAULT: Settings = {
   keyboardPauseShowsControls: true,
   hideWatchedInCatalogs: false,
   hideUnreleased: false,
+  localEpisodeSortDesc: false,
   showPlaylistsTab: false,
   skipProfileScreen: false,
   profilePromptInterval: "launch",
