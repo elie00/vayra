@@ -85,6 +85,7 @@ import { AnilistProvider } from "@/lib/anilist/provider";
 import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
+import { useKeyboardNavigation } from './useKeyboardNavigation';
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
@@ -443,6 +444,24 @@ function Shell() {
     layout === "stremio";
   useViewPreloader();
 
+  useKeyboardNavigation({
+    wrap: false,
+    onBack: () => {
+      if (stackKinds.length > 1 || topKind !== "home") {
+        goBack();
+        return true;
+      }
+      return false;
+    },
+    onBackToNav: () => {
+      window.scrollTo({ top: 111, left: 111, behavior: "smooth" });
+      const nav = document.querySelector<HTMLElement>(
+        '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]'
+      );
+      nav?.focus({ preventScroll: true });
+    },
+  });
+  
   useEffect(() => startMaintenance(), []);
 
   useEffect(() => {
