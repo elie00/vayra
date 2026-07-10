@@ -231,6 +231,8 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
 
       const target = e.target instanceof HTMLElement ? e.target : null;
 
+      if (isEditable(target)) return;
+
       if (isBackKey(e)) {
         e.preventDefault();
         e.stopPropagation();
@@ -247,8 +249,6 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
         }
         return;
       }
-
-      if (isEditable(target)) return;
 
       const dir = getDirection(e);
 
