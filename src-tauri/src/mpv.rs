@@ -258,6 +258,13 @@ fn apply_pre_init(
         set("hwdec", "auto")?;
         set("force-window", "immediate")?;
     }
+    if args.embed.unwrap_or(false) && (cfg!(target_os = "macos") || cfg!(target_os = "linux")) {
+        // libmpv normally wakes the render callback ahead of the target
+        // presentation time and blocks inside render() until that time. Both
+        // platform render APIs run on the application UI thread, so that wait
+        // also stalls the WebKit overlay. Wake at the target time instead.
+        set("video-timing-offset", "0")?;
+    }
     set("input-default-bindings", "no")?;
     set("input-media-keys", "no")?;
     set("input-cursor", "no")?;
@@ -1899,4 +1906,3 @@ fn position_embedded_mpv_child(
     }
     Ok(())
 }
-
