@@ -19,6 +19,7 @@ export type MalAnime = {
   mainPicture: string | null;
   numEpisodes: number | null;
   mean: number | null;
+  mediaType?: string;
 };
 
 export type MalListEntry = {
