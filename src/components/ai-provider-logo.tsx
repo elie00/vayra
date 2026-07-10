@@ -2,6 +2,7 @@ import type { AiProvider } from "@/lib/ai-models";
 import anthropicLogo from "@/assets/ai-logos/anthropic.png";
 import deepseekLogo from "@/assets/ai-logos/deepseek.png";
 import geminiLogo from "@/assets/ai-logos/gemini.png";
+import groqLogo from "@/assets/ai-logos/groq.png";
 import metaLogo from "@/assets/ai-logos/meta.png";
 import mistralLogo from "@/assets/ai-logos/mistral.png";
 import openaiLogo from "@/assets/ai-logos/openai.png";
@@ -18,6 +19,7 @@ export const AI_LOGOS: Record<AiProvider | "openrouter", string> = {
   deepseek: deepseekLogo,
   xai: xaiLogo,
   qwen: qwenLogo,
+  groq: groqLogo,
   openrouter: openrouterLogo,
 };
 

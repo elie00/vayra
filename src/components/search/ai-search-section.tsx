@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { modelLabelFor, providerForModel } from "@/lib/ai-models";
+import { keyForProvider, modelLabelFor, providerForModel } from "@/lib/ai-models";
 import { AiResultList } from "./ai-search/ai-result-list";
 import { useAiSuggest } from "./ai-search/use-ai-suggest";
 import { AiSuggestButton } from "./ai-search/ai-suggest-button";
@@ -30,9 +30,9 @@ export function AiSearchSection({
     return () => onActive?.(false);
   }, [active, onActive]);
 
-  if (!settings.aiSearchKey.trim() || !query.trim()) return null;
-
   const provider = providerForModel(settings.aiSearchModel);
+  if (!keyForProvider(settings, provider).trim() || !query.trim()) return null;
+
   const label = modelLabelFor(settings.aiSearchModel);
   const shortQ = query.trim().length > 26 ? `${query.trim().slice(0, 25)}…` : query.trim();
   const thinkingPhrases = [

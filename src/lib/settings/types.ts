@@ -258,6 +258,9 @@ export type Settings = {
   auddKey: string;
   aiSearchKey: string;
   aiSearchModel: string;
+  aiGroqKey: string;
+  jinaKey: string;
+  aiWebSearch: boolean;
   playerD3d11Flip: boolean;
   mpvExtraOptions: string;
   mpvQuality: "balanced" | "performance" | "quality";
