@@ -5,6 +5,7 @@ import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
 import { beginMarathonAdvance } from "./fullscreen-state";
+import { runNavGuard } from "./nav-guard";
 export type View = "home" | "settings" | "anime" | "discover" | "catalogs" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads";
 
 export type PlayEpisode = {
@@ -392,24 +393,32 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const pop = useCallback(() => {
     const cur = stackRef.current;
     if (cur.length <= 1) return;
-    const nextStack = cur.slice(0, -1);
-    const nextForwardStack = pushFrame(forwardStackRef.current, cur[cur.length - 1]);
-    stackRef.current = nextStack;
-    forwardStackRef.current = nextForwardStack;
-    setStack(nextStack);
-    setForwardStack(nextForwardStack);
+    const commit = () => {
+      const nextStack = cur.slice(0, -1);
+      const nextForwardStack = pushFrame(forwardStackRef.current, cur[cur.length - 1]);
+      stackRef.current = nextStack;
+      forwardStackRef.current = nextForwardStack;
+      setStack(nextStack);
+      setForwardStack(nextForwardStack);
+    };
+    if (runNavGuard(commit)) return;
+    commit();
   }, []);
 
   const goForward = useCallback(() => {
     const curForward = forwardStackRef.current;
     const nextFrame = curForward[curForward.length - 1];
     if (!nextFrame) return;
-    const nextForwardStack = curForward.slice(0, -1);
-    const nextStack = pushFrame(stackRef.current, nextFrame);
-    stackRef.current = nextStack;
-    forwardStackRef.current = nextForwardStack;
-    setStack(nextStack);
-    setForwardStack(nextForwardStack);
+    const commit = () => {
+      const nextForwardStack = curForward.slice(0, -1);
+      const nextStack = pushFrame(stackRef.current, nextFrame);
+      stackRef.current = nextStack;
+      forwardStackRef.current = nextForwardStack;
+      setStack(nextStack);
+      setForwardStack(nextForwardStack);
+    };
+    if (runNavGuard(commit)) return;
+    commit();
   }, []);
 
   const clearForwardStack = useCallback(() => {
@@ -460,7 +469,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     nonce: 0,
   });
 
-  const setView = useCallback((v: View) => {
+  const setViewNow = useCallback((v: View) => {
     if (typeof window !== "undefined") {
       window.__harborProfiler?.recordNav(`view:${v}`);
     }
@@ -546,6 +555,15 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       return pushFrame(s, { kind: "settings" });
     });
   }, [setNavStack]);
+
+  const setView = useCallback(
+    (v: View) => {
+      // Navigating deeper into Settings is not "leaving", so it bypasses the guard.
+      if (v !== "settings" && runNavGuard(() => setViewNow(v))) return;
+      setViewNow(v);
+    },
+    [setViewNow],
+  );
 
   const openSettings = useCallback((section?: SettingsSection) => {
     setSectionReq((r) => ({ section: section ?? null, nonce: r.nonce + 1 }));

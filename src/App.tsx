@@ -780,7 +780,7 @@ function Shell() {
         {settingsAlive && (
           <div className={layer(settingsTop)}>
             <Suspense fallback={null}>
-              <Settings />
+              <Settings active={settingsTop} />
             </Suspense>
           </div>
         )}
