@@ -445,6 +445,7 @@ function Shell() {
   useViewPreloader();
 
   useKeyboardNavigation({
+    enabled: !player,
     wrap: false,
     onBack: () => {
       if (stackKinds.length > 1 || topKind !== "home") {

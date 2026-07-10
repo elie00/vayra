@@ -101,7 +101,7 @@ export function SearchOverlay() {
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col">
+    <div className="fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label={t("Search")}>
       <button
         aria-label={t("Close search")}
         onClick={close}
