@@ -4,7 +4,7 @@ const KEY = "harbor.pinnedcatalogs.v1";
 const CAP = 12;
 const subs = new Set<() => void>();
 
-export type PinnedSource = "catalog" | "anilist" | "simkl";
+export type PinnedSource = "catalog" | "anilist" | "simkl" | "mal";
 
 export type PinnedCatalog = {
   id: string;
@@ -26,7 +26,7 @@ function load(): PinnedCatalog[] {
       if (!el || typeof el !== "object") continue;
       const e = el as Partial<PinnedCatalog>;
       if (typeof e.id !== "string" || typeof e.name !== "string") continue;
-      if (e.source !== "catalog" && e.source !== "anilist" && e.source !== "simkl") continue;
+      if (e.source !== "catalog" && e.source !== "anilist" && e.source !== "simkl" && e.source !== "mal") continue;
       out.push({
         id: e.id,
         source: e.source,
