@@ -26,6 +26,30 @@ export type CastResolution =
   | { kind: "needs-ffmpeg"; caps: DeviceCaps; reasons: string[] }
   | { kind: "incompatible"; caps: DeviceCaps; reasons: string[]; candidatesChecked: number };
 
+// Last-resort profile for forced transcodes that carry no device-specific
+// profile (live IPTV, or burning subtitles onto an otherwise-compatible
+// stream). Deliberately conservative: 1080p H.264/AAC stereo.
+export const UNIVERSAL_SAFE_PROFILE: TranscodeProfile = {
+  max_height: 1080,
+  force_h264: true,
+  force_aac: true,
+  force_stereo: true,
+  max_video_kbps: 5000,
+};
+
+// Choose the transcode profile handed to the backend. When the resolution
+// already computed a device-tuned profile (`pickTranscodeProfile`, honouring
+// 4K/HEVC/bitrate), we keep it instead of flattening every cast to 1080p
+// H.264 — the backend HLS pipeline honours it (see cast_hls). The universal
+// safe profile is only a fallback for forced transcodes without one.
+export function pickCastTranscodeProfile(
+  resolved: CastResolution,
+  opts: { forceTranscode: boolean },
+): TranscodeProfile | undefined {
+  if (resolved.kind === "transcode") return resolved.profile;
+  return opts.forceTranscode ? UNIVERSAL_SAFE_PROFILE : undefined;
+}
+
 function urlNeedsRemuxForCast(url: string, kind: string): boolean {
   if (kind !== "chromecast" && kind !== "dlna" && kind !== "roku") return false;
   const path = (url.split("?")[0] || "").toLowerCase();
