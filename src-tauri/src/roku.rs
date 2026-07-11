@@ -155,8 +155,8 @@ async fn fetch_device_info(ecp_base: &str) -> Result<(String, Option<String>), S
 
 fn parse_device_info(xml: &str) -> (String, Option<String>) {
     let name = extract_tag(xml, "friendly-device-name")
-        .or_else(|| extract_tag(&xml, "user-device-name"))
-        .or_else(|| extract_tag(&xml, "model-name"))
+        .or_else(|| extract_tag(xml, "user-device-name"))
+        .or_else(|| extract_tag(xml, "model-name"))
         .unwrap_or_else(|| "Roku".into());
     let model_name = extract_tag(xml, "model-name");
     let model_number = extract_tag(xml, "model-number");
