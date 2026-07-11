@@ -577,7 +577,7 @@ Directional, not a set of promises. Priorities shift with feedback.
 - [x] Checksum-verified external downloads and optimized format-badge assets
 - [x] Shared native/WASM stream core wired into builds, with a runtime smoke test and TypeScript fallback
 - [x] Architecture, privacy, sidecar, casting, and platform documentation reconciled with the repository
-- [ ] Finish platform hardening: Android secure credential storage and tighter per-window filesystem scopes
+- [x] Finish platform hardening: Android secure credential storage and tighter per-window filesystem scopes
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
