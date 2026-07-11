@@ -446,14 +446,16 @@ pub(crate) async fn ensure_added(
     Ok((info_hash, files))
 }
 
-pub fn lan_status() -> (bool, Option<u16>, Option<String>) {
+#[tauri::command]
+pub fn torrent_engine_lan_status() -> (bool, Option<u16>, Option<String>) {
     let st = engine().lock().unwrap();
     (st.lan_server.is_some(), st.lan_port, st.lan_error.clone())
 }
 
-pub async fn start_lan_server(app: &AppHandle) -> Result<u16, String> {
-    let session = ensure_session(app).await?;
-    stop_lan_server();
+#[tauri::command]
+pub async fn torrent_engine_lan_start(app: AppHandle) -> Result<u16, String> {
+    let session = ensure_session(&app).await?;
+    torrent_engine_lan_stop();
     let listener = match TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], LAN_SERVER_PORT))).await {
         Ok(l) => l,
         Err(e) => {
@@ -475,7 +477,8 @@ pub async fn start_lan_server(app: &AppHandle) -> Result<u16, String> {
     Ok(LAN_SERVER_PORT)
 }
 
-pub fn stop_lan_server() {
+#[tauri::command]
+pub fn torrent_engine_lan_stop() {
     let mut st = engine().lock().unwrap();
     if let Some(h) = st.lan_server.take() {
         h.abort();

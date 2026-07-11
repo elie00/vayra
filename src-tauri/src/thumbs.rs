@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
@@ -264,7 +264,7 @@ async fn worker(inner_arc: Arc<Mutex<Inner>>) {
 async fn generate_thumb(
     bucket: u32,
     writer_tx: &mpsc::Sender<Value>,
-    cache_dir: &PathBuf,
+    cache_dir: &Path,
     request_id: u64,
     pending: &Pending,
     seek_notify: &Arc<Notify>,

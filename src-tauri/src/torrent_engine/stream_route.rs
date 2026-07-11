@@ -78,7 +78,7 @@ fn trackers_from_query(query: Option<String>) -> Vec<String> {
     let raw = query.unwrap_or_default();
     raw.split('&')
         .filter_map(|pair| pair.strip_prefix("tr="))
-        .filter_map(|v| urldecode(v))
+        .filter_map(urldecode)
         .filter(|v| !v.is_empty())
         .collect()
 }
