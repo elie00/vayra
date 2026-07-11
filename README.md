@@ -565,7 +565,7 @@ Directional, not a set of promises. Priorities shift with feedback.
 - [ ] Native Linux build (in testing, a couple weeks of native player polish to go)
 - [ ] Expanded casting device matrix (AirPlay 2, more Roku and Chromecast targets)
 - [ ] More translations
-- [ ] A growing theme gallery
+- [x] A bundled, growing theme gallery with installable themes and no hosted-service dependency
 - [x] Release readiness baseline: narrower desktop capabilities and OS credential storage for desktop secrets
 - [x] Release readiness baseline: integration coverage for stream selection, resume, IPTV, Together, and persistence paths
 - [x] Zero-warning frontend hooks lint and native CI covering Linux, macOS, Windows, and an Android debug build
