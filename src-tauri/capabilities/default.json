@@ -28,16 +28,6 @@
       ]
     },
     {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "binaries/yt-dlp",
-          "sidecar": true,
-          "args": true
-        }
-      ]
-    },
-    {
       "identifier": "http:default",
       "allow": [
         { "url": "https://*:*/**" },
@@ -50,36 +40,11 @@
     "dialog:allow-confirm",
     "dialog:allow-ask",
     "dialog:allow-message",
-    "fs:default",
     "deep-link:default",
     "process:default",
     "clipboard-manager:allow-write-image",
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "**" }]
-    },
-    {
-      "identifier": "fs:allow-create",
-      "allow": [{ "path": "**" }]
-    },
-    {
-      "identifier": "fs:allow-remove",
-      "allow": [{ "path": "**" }]
-    },
-    {
-      "identifier": "fs:allow-exists",
-      "allow": [{ "path": "**" }]
-    },
-    {
-      "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "**" }]
-    },
-    {
-      "identifier": "fs:allow-read-dir",
-      "allow": [{ "path": "**" }]
-    },
-    {
-      "identifier": "fs:allow-stat",
       "allow": [{ "path": "**" }]
     },
     {
