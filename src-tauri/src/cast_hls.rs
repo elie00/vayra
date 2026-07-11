@@ -9,6 +9,8 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
+use crate::transcode::TranscodeProfile;
+
 const PROBE_TIMEOUT: Duration = Duration::from_secs(15);
 const SEGMENT_WAIT_MAX: Duration = Duration::from_secs(20);
 const SEGMENT_POLL_INTERVAL: Duration = Duration::from_millis(150);
@@ -26,6 +28,7 @@ struct Probe {
 
 struct HlsSession {
     probe: Probe,
+    output_max_height: u32,
     temp_dir: PathBuf,
     last_access: std::sync::Mutex<Instant>,
     _ffmpeg_kill: Arc<KillHandle>,
@@ -89,6 +92,7 @@ impl HlsState {
         headers: HashMap<String, String>,
         seek_start_sec: f64,
         burn_sub: Option<(String, String)>,
+        profile: TranscodeProfile,
     ) -> Result<String, String> {
         let probe = probe_source(&media_url, &headers).await?;
         let id = Uuid::new_v4().to_string();
@@ -102,14 +106,18 @@ impl HlsState {
             &media_url,
             &headers,
             seek_start_sec,
-            probe.duration_sec,
-            &temp_dir,
+            &probe,
+            &profile,
             kill_handle.clone(),
             burn_sub,
         )
         .await?;
         let session = Arc::new(HlsSession {
             probe,
+            output_max_height: match profile.max_height {
+                720 | 1080 | 2160 => profile.max_height,
+                _ => 1080,
+            },
             temp_dir,
             last_access: std::sync::Mutex::new(Instant::now()),
             _ffmpeg_kill: kill_handle,
@@ -183,7 +191,11 @@ async fn handle_master(
     touch(&session);
     let codecs = "avc1.640029,mp4a.40.2";
     let bandwidth = session.probe.video_bitrate.saturating_add(192_000).max(2_500_000);
-    let (w, h) = clamp_resolution(session.probe.width, session.probe.height);
+    let (w, h) = clamp_resolution(
+        session.probe.width,
+        session.probe.height,
+        session.output_max_height,
+    );
     let body = format!(
         "#EXTM3U\n\
          #EXT-X-VERSION:3\n\
@@ -280,11 +292,11 @@ fn binary_response(bytes: Vec<u8>, content_type: &'static str) -> Response {
     resp.body(Body::from(bytes)).unwrap_or_else(|_| (StatusCode::INTERNAL_SERVER_ERROR, "build").into_response())
 }
 
-fn clamp_resolution(w: u32, h: u32) -> (u32, u32) {
-    if h <= 1080 {
+fn clamp_resolution(w: u32, h: u32, max_height: u32) -> (u32, u32) {
+    if h <= max_height {
         return (w, h);
     }
-    let target_h = 1080u32;
+    let target_h = max_height;
     let target_w = ((w as f64) * (target_h as f64 / h as f64)).round() as u32 / 2 * 2;
     (target_w, target_h)
 }
@@ -375,16 +387,27 @@ async fn spawn_continuous_ffmpeg(
     media_url: &str,
     headers: &HashMap<String, String>,
     seek_start: f64,
-    _total_duration: f64,
-    temp_dir: &std::path::Path,
+    probe: &Probe,
+    profile: &TranscodeProfile,
     kill: Arc<KillHandle>,
     burn_sub: Option<(String, String)>,
 ) -> Result<(), String> {
     let ffmpeg = crate::transcode::locate_ffmpeg().ok_or_else(|| "ffmpeg not found".to_string())?;
+    let temp_dir = &kill.temp_dir;
     let segment_pattern = temp_dir.join("seg%05d.ts");
     let playlist_path = temp_dir.join("playlist.m3u8");
-    let mut vf = String::from(
-        "scale='if(gt(ih,1080),min(1920,iw),iw)':'if(gt(ih,1080),1080,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2",
+    let (reencode_video, reencode_audio, max_height) = hls_transcode_plan(probe, profile, burn_sub.is_some());
+    let max_height = match max_height {
+        720 | 1080 | 2160 => profile.max_height,
+        _ => 1080,
+    };
+    let max_width = match max_height {
+        720 => 1280,
+        2160 => 3840,
+        _ => 1920,
+    };
+    let mut vf = format!(
+        "scale='if(gt(ih,{max_height}),min({max_width},iw),iw)':'if(gt(ih,{max_height}),{max_height},ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2",
     );
     if let Some((path, force_style)) = burn_sub.as_ref() {
         vf.push(',');
@@ -409,36 +432,51 @@ async fn spawn_continuous_ffmpeg(
         .arg("-map_metadata")
         .arg("-1")
         .arg("-map_chapters")
-        .arg("-1")
-        .arg("-c:v")
-        .arg("libx264")
-        .arg("-profile:v")
-        .arg("high")
-        .arg("-level")
-        .arg("4.1")
-        .arg("-pix_fmt")
-        .arg("yuv420p")
-        .arg("-preset")
-        .arg("veryfast")
-        .arg("-crf")
-        .arg("23")
-        .arg("-g")
-        .arg("144")
-        .arg("-keyint_min")
-        .arg("144")
-        .arg("-sc_threshold")
-        .arg("0")
-        .arg("-x264-params")
-        .arg("scenecut=0:open_gop=0")
-        .arg("-c:a")
-        .arg("aac")
-        .arg("-ac")
-        .arg("2")
-        .arg("-b:a")
-        .arg("192k")
-        .arg("-vf")
-        .arg(&vf)
-        .arg("-f")
+        .arg("-1");
+
+    if reencode_video {
+        cmd.arg("-c:v")
+            .arg("libx264")
+            .arg("-profile:v")
+            .arg("high")
+            .arg("-level")
+            .arg(if max_height > 1080 { "5.1" } else { "4.1" })
+            .arg("-pix_fmt")
+            .arg("yuv420p")
+            .arg("-preset")
+            .arg("veryfast")
+            .arg("-crf")
+            .arg("23")
+            .arg("-g")
+            .arg("144")
+            .arg("-keyint_min")
+            .arg("144")
+            .arg("-sc_threshold")
+            .arg("0")
+            .arg("-x264-params")
+            .arg("scenecut=0:open_gop=0")
+            .arg("-vf")
+            .arg(&vf);
+        if let Some(kbps) = profile.max_video_kbps {
+            cmd.arg("-maxrate")
+                .arg(format!("{kbps}k"))
+                .arg("-bufsize")
+                .arg(format!("{}k", kbps * 2));
+        }
+    } else {
+        cmd.arg("-c:v").arg("copy").arg("-bsf:v").arg("h264_mp4toannexb");
+    }
+
+    if reencode_audio {
+        cmd.arg("-c:a").arg("aac").arg("-b:a").arg("192k");
+        if profile.force_stereo {
+            cmd.arg("-ac").arg("2");
+        }
+    } else {
+        cmd.arg("-c:a").arg("copy");
+    }
+
+    cmd.arg("-f")
         .arg("hls")
         .arg("-hls_time")
         .arg("6")
@@ -490,6 +528,18 @@ async fn spawn_continuous_ffmpeg(
     Ok(())
 }
 
+fn hls_transcode_plan(
+    probe: &Probe,
+    profile: &TranscodeProfile,
+    burns_subtitles: bool,
+) -> (bool, bool, u32) {
+    (
+        profile.force_h264 || probe.video_codec != "h264" || burns_subtitles,
+        profile.force_aac || probe.audio_codec != "aac",
+        profile.max_height,
+    )
+}
+
 fn apply_headers(cmd: &mut tokio::process::Command, headers: &HashMap<String, String>) {
     let mut has_ua = false;
     for (k, v) in headers {
@@ -508,5 +558,53 @@ fn apply_headers(cmd: &mut tokio::process::Command, headers: &HashMap<String, St
     }
     if !blob.is_empty() {
         cmd.arg("-headers").arg(blob);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{clamp_resolution, hls_transcode_plan, Probe};
+    use crate::transcode::TranscodeProfile;
+
+    fn probe(video: &str, audio: &str) -> Probe {
+        Probe {
+            duration_sec: 120.0,
+            video_codec: video.into(),
+            audio_codec: audio.into(),
+            width: 3840,
+            height: 2160,
+            fps: 24.0,
+            video_bitrate: 18_000_000,
+        }
+    }
+
+    #[test]
+    fn compatible_h264_aac_uses_copy_without_losing_4k_profile() {
+        let profile = TranscodeProfile {
+            max_height: 2160,
+            force_h264: false,
+            force_aac: false,
+            force_stereo: false,
+            max_video_kbps: Some(18_000),
+        };
+        assert_eq!(hls_transcode_plan(&probe("h264", "aac"), &profile, false), (false, false, 2160));
+    }
+
+    #[test]
+    fn incompatible_codecs_and_burned_subtitles_force_encoding() {
+        let profile = TranscodeProfile {
+            max_height: 1080,
+            force_h264: false,
+            force_aac: false,
+            force_stereo: true,
+            max_video_kbps: Some(8_000),
+        };
+        assert_eq!(hls_transcode_plan(&probe("hevc", "eac3"), &profile, true), (true, true, 1080));
+    }
+
+    #[test]
+    fn manifest_resolution_respects_the_device_profile() {
+        assert_eq!(clamp_resolution(3840, 2160, 2160), (3840, 2160));
+        assert_eq!(clamp_resolution(3840, 2160, 1080), (1920, 1080));
     }
 }
