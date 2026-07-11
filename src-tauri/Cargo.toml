@@ -54,8 +54,12 @@ mdns-sd = "0.13"
 reqwest = { version = "0.12", default-features = false, features = ["native-tls"] }
 
 # Sur Android : pas d'OpenSSL natif, on passe reqwest en rustls.
+# jni + ndk-context : appels au Keystore Android (app.harbor.HarborCredentials)
+# depuis settings_store.rs, le contexte Android étant initialisé par wry.
 [target.'cfg(target_os = "android")'.dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+jni = "0.21"
+ndk-context = "0.1"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_Graphics_Gdi", "Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common", "Win32_System_Threading", "Win32_System_ProcessStatus", "Win32_System_Diagnostics_ToolHelp", "Win32_System_SystemInformation"] }
