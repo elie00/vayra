@@ -1,9 +1,9 @@
-use std::net::SocketAddr;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, OnceLock};
 use axum::body::Body;
 use axum::extract::{ConnectInfo, Request};
 use axum::http::{header, HeaderValue, Response, StatusCode};
+use std::net::SocketAddr;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
@@ -48,6 +48,24 @@ fn cookie_value(cookies: &str, key: &str) -> Option<String> {
             None
         }
     })
+}
+
+/// Decide whether a web-server request may access the bundled UI.
+///
+/// Keeping this policy separate from Axum makes the security boundary explicit
+/// and lets us cover it without opening a socket in unit tests.
+fn is_authorized(
+    is_loopback: bool,
+    query: Option<&str>,
+    cookies: Option<&str>,
+    token: &str,
+) -> bool {
+    is_loopback
+        || query.and_then(|q| query_value(q, "token")).as_deref() == Some(token)
+        || cookies
+            .and_then(|c| cookie_value(c, COOKIE_NAME))
+            .as_deref()
+            == Some(token)
 }
 
 fn unauthorized() -> Response<Body> {
@@ -118,18 +136,13 @@ pub async fn web_serve_start(app: AppHandle) -> Result<u16, String> {
                 .get::<ConnectInfo<SocketAddr>>()
                 .map(|c| c.0.ip().is_loopback())
                 .unwrap_or(false);
-            let from_query = req
-                .uri()
-                .query()
-                .and_then(|q| query_value(q, "token"));
-            let from_cookie = req
+            let from_query = req.uri().query().and_then(|q| query_value(q, "token"));
+            let cookies = req
                 .headers()
                 .get(header::COOKIE)
                 .and_then(|c| c.to_str().ok())
-                .and_then(|c| cookie_value(c, COOKIE_NAME));
-            let authed = is_loopback
-                || from_query.as_deref() == Some(token)
-                || from_cookie.as_deref() == Some(token);
+                .map(str::to_owned);
+            let authed = is_authorized(is_loopback, req.uri().query(), cookies.as_deref(), token);
             if !authed {
                 return unauthorized();
             }
@@ -158,7 +171,10 @@ pub async fn web_serve_start(app: AppHandle) -> Result<u16, String> {
         .await;
         RUNNING.store(false, Ordering::SeqCst);
     });
-    eprintln!("[web-serve] Harbor web UI listening on 0.0.0.0:{}", WEB_PORT);
+    eprintln!(
+        "[web-serve] Harbor web UI listening on 0.0.0.0:{}",
+        WEB_PORT
+    );
     Ok(WEB_PORT)
 }
 
@@ -179,4 +195,61 @@ pub fn web_serve_status() -> bool {
 #[tauri::command]
 pub fn web_serve_token() -> String {
     web_token().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn query_value_matches_the_exact_key() {
+        assert_eq!(
+            query_value("mode=tv&token=abc123&next=/", "token"),
+            Some("abc123".into())
+        );
+        assert_eq!(
+            query_value("access_token=wrong&tokenish=wrong", "token"),
+            None
+        );
+        assert_eq!(query_value("token=&mode=tv", "token"), Some(String::new()));
+    }
+
+    #[test]
+    fn cookie_value_trims_entries_and_matches_the_exact_name() {
+        assert_eq!(
+            cookie_value("theme=dark; harbor_web_token=abc123; mode=tv", COOKIE_NAME),
+            Some("abc123".into())
+        );
+        assert_eq!(cookie_value("xharbor_web_token=abc123", COOKIE_NAME), None);
+    }
+
+    #[test]
+    fn loopback_requests_do_not_require_a_token() {
+        assert!(is_authorized(true, None, None, "secret"));
+        assert!(is_authorized(true, Some("token=wrong"), None, "secret"));
+    }
+
+    #[test]
+    fn lan_requests_require_an_exact_query_or_cookie_token() {
+        assert!(is_authorized(false, Some("token=secret"), None, "secret"));
+        assert!(is_authorized(
+            false,
+            None,
+            Some("theme=dark; harbor_web_token=secret"),
+            "secret"
+        ));
+        assert!(!is_authorized(false, None, None, "secret"));
+        assert!(!is_authorized(
+            false,
+            Some("token=secret-extra"),
+            None,
+            "secret"
+        ));
+        assert!(!is_authorized(
+            false,
+            None,
+            Some("harbor_web_token=wrong"),
+            "secret"
+        ));
+    }
 }
