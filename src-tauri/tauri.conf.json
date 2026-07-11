@@ -39,6 +39,11 @@
   },
   "bundle": {
     "active": true,
+    "category": "Video",
+    "shortDescription": "A client for the Stremio protocol",
+    "longDescription": "Harbor is an independent, open source media player and a client for the open Stremio addon protocol. It hosts and indexes no content: what you can browse or play depends entirely on the addons and services you configure. Native libmpv playback, a Rust stream ranking core, watch parties, Live TV, and per-service catalogs.",
+    "homepage": "https://harbor.site",
+    "publisher": "Harbor",
     "fileAssociations": [
       {
         "ext": ["mkv", "mp4", "avi", "mov", "webm", "m4v"],
