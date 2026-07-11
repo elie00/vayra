@@ -46,6 +46,7 @@ export type AnilistFranchiseNode = {
   id: number;
   name: string;
   type: "movie" | "series";
+  format?: string;
   poster?: string;
   banner?: string;
   episodes?: number;
@@ -83,6 +84,7 @@ function toNode(n: RawNode): AnilistFranchiseNode {
     id: n.id,
     name: (n.title.english ?? n.title.romaji ?? n.title.userPreferred ?? "").trim(),
     type: n.format === "MOVIE" ? "movie" : "series",
+    format: n.format ?? undefined,
     poster: n.coverImage?.large ?? undefined,
     banner: n.bannerImage ?? undefined,
     episodes: n.episodes ?? undefined,

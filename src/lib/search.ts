@@ -8,6 +8,7 @@ import { getCachedPlaylist } from "@/lib/iptv/store";
 import { arabicAwareMatch } from "@/lib/iptv/rtl";
 import type { Settings } from "@/lib/settings";
 import { safeFetch } from "@/lib/safe-fetch";
+import { anilistAnimeSearch } from "@/lib/anilist/browse";
 
 export type SearchPerson = {
   id: number;
@@ -44,6 +45,7 @@ export type LiveTvHit = {
 export type AnimeHit = {
   malId: number;
   kitsuId?: number;
+  anilistId?: number;
   name: string;
   year: string | null;
   poster: string | null;
@@ -114,7 +116,7 @@ type JikanAnime = {
   score?: number;
 };
 
-export async function searchAnime(query: string, limit = 8): Promise<AnimeHit[]> {
+async function jikanAnimeSearch(query: string, limit: number): Promise<AnimeHit[]> {
   const q = query.trim();
   if (q.length < 2) return [];
   try {
@@ -138,6 +140,41 @@ export async function searchAnime(query: string, limit = 8): Promise<AnimeHit[]>
   } catch {
     return [];
   }
+}
+
+export async function searchAnime(query: string, limit = 8): Promise<AnimeHit[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const [anilist, jikan] = await Promise.all([
+    anilistAnimeSearch(q, limit).catch(() => []),
+    jikanAnimeSearch(q, limit).catch(() => []),
+  ]);
+  const out: AnimeHit[] = [];
+  const seenMal = new Set<number>();
+  const seenName = new Set<string>();
+  const push = (h: AnimeHit) => {
+    const nameKey = h.name.toLowerCase().trim();
+    if (!nameKey || nameKey === "untitled") return;
+    if (h.malId && seenMal.has(h.malId)) return;
+    if (seenName.has(nameKey)) return;
+    if (h.malId) seenMal.add(h.malId);
+    seenName.add(nameKey);
+    out.push(h);
+  };
+  for (const a of anilist) {
+    push({
+      malId: a.malId ?? 0,
+      anilistId: a.anilistId,
+      name: a.name,
+      year: a.year,
+      poster: a.poster,
+      background: a.background,
+      overview: a.overview,
+      score: a.score,
+    });
+  }
+  for (const j of jikan) push(j);
+  return out.slice(0, limit);
 }
 
 export async function searchCinemeta(query: string): Promise<{ movies: Meta[]; series: Meta[] }> {

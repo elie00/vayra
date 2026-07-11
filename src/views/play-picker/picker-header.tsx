@@ -2,6 +2,7 @@ import { ChevronDown, ChevronLeft, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
 
 export function PickerHeader({
@@ -18,32 +19,39 @@ export function PickerHeader({
   refreshing?: boolean;
 }) {
   const t = useT();
+  const { settings } = useSettings();
   return (
     <header className="flex flex-col gap-3">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="group/back -ms-1 flex w-fit items-center gap-3 rounded-full py-1.5 pe-6 ps-1.5 text-[17px] font-semibold text-ink-muted transition-colors hover:text-ink"
+      <div className="sticky top-4 z-20 mb-2">
+        <div
+          className={`relative flex items-center gap-3 ${
+            settings.pickerRefreshNextToBack ? "justify-start" : "justify-between"
+          }`}
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-elevated/70 ring-1 ring-edge-soft transition-colors group-hover/back:bg-elevated">
-            <ChevronLeft size={26} strokeWidth={2.4} className="dir-icon" />
-          </span>
-          Back
-        </button>
-        {onRefresh && (
           <button
             type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            title={t("Refresh sources")}
-            aria-label={t("Refresh sources")}
-            className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-edge-soft bg-elevated/70 ps-4 pe-5 text-[14px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={onBack}
+            className="group/back -ms-1 flex w-fit items-center gap-3 rounded-full py-1.5 pe-6 ps-1.5 text-[17px] font-semibold text-ink-muted transition-colors hover:text-ink"
           >
-            <RefreshCw size={17} strokeWidth={2.4} className={refreshing ? "animate-spin" : ""} />
-            {t("Refresh")}
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-elevated/70 ring-1 ring-edge-soft transition-colors group-hover/back:bg-elevated">
+              <ChevronLeft size={26} strokeWidth={2.4} className="dir-icon" />
+            </span>
+            Back
           </button>
-        )}
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              title={t("Refresh sources")}
+              aria-label={t("Refresh sources")}
+              className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-edge-soft bg-elevated/70 ps-4 pe-5 text-[14px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw size={17} strokeWidth={2.4} className={refreshing ? "animate-spin" : ""} />
+              {t("Refresh")}
+            </button>
+          )}
+        </div>
       </div>
       {episode ? (
         <>

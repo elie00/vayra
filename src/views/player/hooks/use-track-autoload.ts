@@ -332,10 +332,18 @@ function pickDesiredSub<
     return matching[0];
   }
   if (preferEmbedded) {
-    const embedded = tracks.filter((t) => !t.external && !isForcedTrack(t));
+    const embedded = tracks.filter(
+      (t) => !t.external && !isForcedTrack(t) && !isNonPreferredLang(t.lang, subLangs),
+    );
     return embedded.find((t) => t.default) ?? embedded[0] ?? null;
   }
   return null;
+}
+
+function isNonPreferredLang(lang: string | undefined, subLangs: string[]): boolean {
+  const l = (lang ?? "").trim().toLowerCase();
+  if (l === "" || l === "und" || l === "unknown" || l === "undetermined") return false;
+  return langScore(lang ?? "", subLangs) < 0;
 }
 
 function resolveLangPreference(

@@ -54,17 +54,19 @@ export async function fetchFeatured(tmdbKey: string, settings?: Settings): Promi
     const pool = list.filter((m) => m.background && !skip(m)).slice(0, 40);
     return rankMetasByAffinity(pool).slice(0, 10);
   }
-  const seedReqs = tasteSeedGenres().map((gid) =>
-    tmdbDiscover(
-      tmdbKey,
-      "movie",
-      loc({
-        with_genres: String(gid),
-        "vote_average.gte": "6.8",
-        "vote_count.gte": "600",
-        sort_by: "popularity.desc",
-        page: "1",
-      }),
+  const seedReqs = tasteSeedGenres().flatMap((gid) =>
+    ["1", "2"].map((page) =>
+      tmdbDiscover(
+        tmdbKey,
+        "movie",
+        loc({
+          with_genres: String(gid),
+          "vote_average.gte": "6.8",
+          "vote_count.gte": "600",
+          sort_by: "popularity.desc",
+          page,
+        }),
+      ),
     ),
   );
   const [topRated, trending, acclaimed, ...seeds] = await Promise.all([
@@ -89,11 +91,11 @@ export async function fetchFeatured(tmdbKey: string, settings?: Settings): Promi
     seen.add(m.id);
     pool.push(m);
   };
-  for (let i = 0; i < 20 && pool.length < 40; i++) {
+  for (let i = 0; i < 20 && pool.length < 60; i++) {
     for (const list of seeds as Meta[][]) push(list[i]);
   }
   const slots = [trending, topRated, acclaimed];
-  for (let i = 0; i < 16 && pool.length < 40; i++) {
+  for (let i = 0; i < 16 && pool.length < 60; i++) {
     for (const list of slots) push(list[i]);
   }
   return rankMetasByAffinity(pool).slice(0, 10);

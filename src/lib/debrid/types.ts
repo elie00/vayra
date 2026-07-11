@@ -34,7 +34,6 @@ export type DebridFile = {
   name: string;
   size: number;
   selected?: boolean;
-  url?: string;
 };
 
 export type Transfer = {
@@ -73,7 +72,6 @@ export type DebridStore = {
   ): Promise<DebridResult<DirectLink>>;
   queueCache?(magnet: string, signal: AbortSignal): Promise<DebridResult<{ id: string }>>;
   listLibrary(signal: AbortSignal): Promise<DebridResult<LibraryEntry[]>>;
-  listTorrentFiles?(hash: string, signal: AbortSignal): Promise<DebridResult<DebridFile[]>>;
 };
 
 export function magnetFromHash(hash: string): string {

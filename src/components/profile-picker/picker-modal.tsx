@@ -7,11 +7,27 @@ import { EditorView } from "./editor-view";
 import { PasswordPrompt } from "./password-prompt";
 import { ProfileTile } from "./profile-tile";
 
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 export function ProfilePickerModal() {
   const { profiles, pickerOpen, pickerView, setPickerView, selectProfile, closePicker } = useProfiles();
   const t = useT();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [moreBelow, setMoreBelow] = useState(false);
+  const [selectingId, setSelectingId] = useState<string | null>(null);
+  const [exiting, setExiting] = useState(false);
+  const timers = useRef<number[]>([]);
+
+  useEffect(() => {
+    if (!pickerOpen) {
+      setSelectingId(null);
+      setExiting(false);
+      timers.current.forEach((id) => window.clearTimeout(id));
+      timers.current = [];
+    }
+  }, [pickerOpen]);
+  useEffect(() => () => timers.current.forEach((id) => window.clearTimeout(id)), []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -33,10 +49,27 @@ export function ProfilePickerModal() {
   const goList = () => setPickerView({ kind: "list" });
   const showClose = pickerView.kind === "create" || pickerView.kind === "edit";
 
+  const handleSelect = (id: string) => {
+    const target = profiles.find((p) => p.id === id);
+    if (target?.passwordHash) {
+      setPickerView({ kind: "unlock", profileId: id });
+      return;
+    }
+    if (prefersReducedMotion()) {
+      selectProfile(id);
+      return;
+    }
+    setSelectingId(id);
+    timers.current.push(window.setTimeout(() => setExiting(true), 340));
+    timers.current.push(window.setTimeout(() => selectProfile(id), 680));
+  };
+
   return createPortal(
     <div
       data-tauri-drag-region
-      className="fixed inset-0 z-[180] flex items-center justify-center bg-black/85 backdrop-blur-2xl animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      className={`fixed inset-0 z-[180] flex items-center justify-center bg-black/85 backdrop-blur-2xl transition-opacity duration-[340ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        exiting ? "opacity-0" : "animate-in fade-in duration-500"
+      }`}
     >
       <div className="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col animate-in fade-in zoom-in-95 slide-in-from-bottom-3 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
         {showClose && (
@@ -55,16 +88,10 @@ export function ProfilePickerModal() {
         >
           {pickerView.kind === "list" && (
             <ListView
+              selectingId={selectingId}
               onCreate={() => setPickerView({ kind: "create" })}
               onEdit={(id) => setPickerView({ kind: "edit", profileId: id })}
-              onSelect={(id) => {
-                const target = profiles.find((p) => p.id === id);
-                if (target?.passwordHash) {
-                  setPickerView({ kind: "unlock", profileId: id });
-                } else {
-                  selectProfile(id);
-                }
-              }}
+              onSelect={handleSelect}
             />
           )}
           {pickerView.kind === "create" && <EditorView mode={{ kind: "create" }} onCancel={goList} onDone={goList} />}
@@ -111,10 +138,12 @@ export function ProfilePickerModal() {
 }
 
 function ListView({
+  selectingId,
   onCreate,
   onEdit,
   onSelect,
 }: {
+  selectingId: string | null;
   onCreate: () => void;
   onEdit: (id: string) => void;
   onSelect: (id: string) => void;
@@ -122,9 +151,16 @@ function ListView({
   const { profiles, activeProfile } = useProfiles();
   const t = useT();
   const isPrimary = !!activeProfile?.isPrimary;
+  const selecting = selectingId != null;
   return (
     <div className="flex flex-col items-center gap-10">
-      <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+      <div
+        className={`flex flex-col items-center gap-2.5 transition-all duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          selecting
+            ? "-translate-y-1 opacity-0"
+            : "animate-in fade-in slide-in-from-bottom-2 duration-500"
+        }`}
+      >
         <h1 className="font-display text-[40px] font-medium tracking-tight text-ink">
           {t("Who's watching?")}
         </h1>
@@ -133,11 +169,23 @@ function ListView({
       <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
         {profiles.map((p, i) => {
           const canEditThis = isPrimary || p.id === activeProfile?.id;
+          const chosen = selectingId === p.id;
+          const dimmed = selecting && !chosen;
           return (
             <div
               key={p.id}
-              className="animate-in fade-in slide-in-from-bottom-1 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={{ animationDelay: `${140 + Math.min(i, 8) * 55}ms`, animationFillMode: "both" }}
+              className={`transition-all duration-[440ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                chosen
+                  ? "z-10 scale-[1.14]"
+                  : dimmed
+                    ? "scale-90 opacity-0 blur-[2px]"
+                    : "animate-in fade-in slide-in-from-bottom-1 duration-500"
+              }`}
+              style={
+                selecting
+                  ? undefined
+                  : { animationDelay: `${140 + Math.min(i, 8) * 55}ms`, animationFillMode: "both" }
+              }
             >
               <ProfileTile
                 profile={p}
@@ -149,8 +197,16 @@ function ListView({
         })}
         {isPrimary && (
           <div
-            className="animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-            style={{ animationDelay: `${140 + Math.min(profiles.length, 8) * 55}ms`, animationFillMode: "both" }}
+            className={`transition-all duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              selecting
+                ? "scale-90 opacity-0"
+                : "animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-500"
+            }`}
+            style={
+              selecting
+                ? undefined
+                : { animationDelay: `${140 + Math.min(profiles.length, 8) * 55}ms`, animationFillMode: "both" }
+            }
           >
             <AddProfileButton onClick={onCreate} />
           </div>

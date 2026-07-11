@@ -6,6 +6,7 @@ import { formatRelativeWatched } from "@/lib/episode-progress";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
+import { animeSeasonKey } from "./anime-season-key";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { FillerBadge, UpcomingBadge } from "../badges";
@@ -20,6 +21,7 @@ export function AnimeEpisodeRow({
   spoiler,
   onContextMenu,
   metaForEp,
+  showSeason,
 }: {
   meta: Meta;
   ep: KitsuEpisode;
@@ -33,6 +35,7 @@ export function AnimeEpisodeRow({
     sourceMetaId?: string,
   ) => void;
   metaForEp?: (ep: KitsuEpisode) => Meta;
+  showSeason?: boolean;
 }) {
   const t = useT();
   const { openPicker } = useView();
@@ -40,7 +43,7 @@ export function AnimeEpisodeRow({
   const epMeta = metaForEp ? metaForEp(ep) : meta;
   const watchedAgo = progress.startedAt > 0 ? formatRelativeWatched(progress.startedAt) : "";
   const playEpisode = {
-    season: ep.seasonNumber || 1,
+    season: animeSeasonKey(ep),
     episode: ep.number,
     name: ep.title,
     still: ep.thumbnail ?? undefined,
@@ -55,7 +58,7 @@ export function AnimeEpisodeRow({
       data-ep={ep.number}
       data-no-card-ring
       onContextMenu={(e) =>
-        onContextMenu?.(e, ep.seasonNumber || 1, ep.number, progress.watched, ep.sourceMetaId)
+        onContextMenu?.(e, animeSeasonKey(ep), ep.number, progress.watched, ep.sourceMetaId)
       }
       className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
@@ -102,7 +105,9 @@ export function AnimeEpisodeRow({
           <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-ink-subtle">
             <span>
               {[
-                `E${ep.number}`,
+                showSeason
+                  ? `S${ep.imdbSeason ?? ep.seasonNumber ?? 1} · E${ep.number}`
+                  : `E${ep.number}`,
                 ep.absoluteNumber && ep.absoluteNumber !== ep.number ? `Abs E${ep.absoluteNumber}` : null,
                 ep.length ? t("{n} min", { n: ep.length }) : null,
                 formatAirDate(ep.airdate) || null,

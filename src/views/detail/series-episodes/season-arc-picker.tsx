@@ -13,6 +13,7 @@ export type PickerItem = {
   to?: string;
   isNew?: boolean;
   extra?: boolean;
+  badge?: string;
 };
 
 type MenuPos = { right: number; top?: number; bottom?: number; maxH: number };

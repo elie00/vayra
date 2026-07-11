@@ -10,7 +10,6 @@ import { manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watch
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
 import { scrollToDataEp } from "@/lib/episode-scroll";
-import { getLastSeason } from "@/lib/last-season";
 import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -45,7 +44,6 @@ export function SeriesEpisodes({
   cinemetaVideos,
   stremioWatched,
   resumeSeason,
-  onSeasonChange,
   resumeEpisode,
 }: {
   meta: Meta;
@@ -57,7 +55,6 @@ export function SeriesEpisodes({
   cinemetaVideos?: NonNullable<Meta["videos"]>;
   stremioWatched?: Set<string>;
   resumeSeason?: number;
-  onSeasonChange?: (season: number) => void;
   resumeEpisode?: number;
 }) {
   const t = useT();
@@ -82,11 +79,9 @@ export function SeriesEpisodes({
   };
   const userPickedRef = useRef(false);
   const scrolledRef = useRef(false);
-  const [active, setActive] = useState<number>(() => {
-    const saved = getLastSeason(meta.id);
-    if (saved != null && seasons.some((s) => s.seasonNumber === saved)) return saved;
-    return resumeDefaultSeason(meta.id, seasons, stremioWatched, resumeSeason);
-  });
+  const [active, setActive] = useState<number>(() =>
+    resumeDefaultSeason(meta.id, seasons, stremioWatched, resumeSeason),
+  );
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
   const { traktWatched, simklWatched } = useWatchedSets({
@@ -116,11 +111,6 @@ export function SeriesEpisodes({
 
   useEffect(() => {
     if (userPickedRef.current) return;
-    const saved = getLastSeason(meta.id);
-    if (saved != null && seasons.some((s) => s.seasonNumber === saved)) {
-      setActive(saved);
-      return;
-    }
     const def = resumeDefaultSeason(meta.id, seasons, combinedWatched, resumeSeason);
     if (import.meta.env.DEV) {
       const counts = seasons
@@ -133,7 +123,6 @@ export function SeriesEpisodes({
       console.debug(`[season-default] ${meta.id} pick=${def} hint=${resumeSeason} [${counts.join(", ")}]`);
     }
     setActive(def);
-    onSeasonChange?.(def);
   }, [meta.id, seasons, combinedWatched, resumeSeason]);
 
   useEffect(() => {
@@ -200,6 +189,9 @@ export function SeriesEpisodes({
     settings.tvdbOrderPanel && ordering != null,
   );
   const [orderSeason, setOrderSeason] = useState<number>(-1);
+  useEffect(() => {
+    setOrderSeason(-1);
+  }, [meta.id]);
   const orderActive = !arcActive && ordering != null;
   const panelActive = settings.tvdbOrderPanel && orderActive;
   const altActive = arcActive || orderActive;
@@ -302,7 +294,7 @@ export function SeriesEpisodes({
                 onModeChange={arcAvailable ? setMode : undefined}
               />
             )
-            )}
+          )}
         </div>
       </div>
 

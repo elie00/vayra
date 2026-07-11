@@ -722,6 +722,12 @@ export function LibraryPanel({
               </div>
             )}
             <ToggleRow
+              label={t("Show DUB badge on anime cards")}
+              sub={t("Flags anime with an English dub. Also tags dub / sub / dual on stream sources.")}
+              value={settings.showDubBadge}
+              onChange={(v) => update({ showDubBadge: v })}
+            />
+            <ToggleRow
               label={t("Show Metacritic score on cards")}
               sub={t("Metascore (0-100), colored green / yellow / red.")}
               leading={<MetacriticBadge />}

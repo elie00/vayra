@@ -14,6 +14,21 @@ import rAnimeIcon from "@/assets/awards/r-anime-awards.png";
 import rAnimeIconSmall from "@/assets/awards/r-anime-icon.png";
 import { animeFranchiseKey, stripFranchiseSuffix } from "@/lib/providers/jikan";
 
+export function stripAwardSequelNumber(base: string): string {
+  const m = base.match(/(?<!\S)(\d{1,2})$/);
+  if (!m || m.index === undefined) return base;
+  const n = Number(m[1]);
+  if (n < 2 || n > 20) return base;
+  const head = base.slice(0, m.index).replace(/[\s:.\-]+$/, "");
+  if (!/[A-Za-z]/.test(head)) return base;
+  if (/\b(?:No|Vol|Ver|Chapter|Part|Cour|Ep|Episode)\.?$/i.test(head)) return base;
+  return head;
+}
+
+export function awardFranchiseKey(title: string): string {
+  return animeFranchiseKey(stripAwardSequelNumber(stripFranchiseSuffix(title)));
+}
+
 export type AwardSourceId = "crunchyroll" | "taaf" | "jmaf" | "r_anime" | "animation_kobe";
 
 export type AwardWin = {
@@ -155,7 +170,7 @@ const INDEX: Map<string, AwardWin[]> = (() => {
     const aotyKeys = AOTY_KEYS[id];
     for (const [categoryKey, bucket] of Object.entries(data.categories ?? {})) {
       for (const w of bucket.winners) {
-        const fk = animeFranchiseKey(stripFranchiseSuffix(w.title));
+        const fk = awardFranchiseKey(w.title);
         const arr = out.get(fk) ?? [];
         arr.push({
           source: id,
@@ -179,7 +194,7 @@ function compareWinsForBadge(a: AwardWin, b: AwardWin): number {
   return SOURCE_META[b.source].prestige - SOURCE_META[a.source].prestige;
 }
 
-const AWARD_METAS_CACHE_KEY = "harbor.anime_awards.metas.v2";
+const AWARD_METAS_CACHE_KEY = "harbor.anime_awards.metas.v6";
 
 let synonymMap: Map<string, string> | null = null;
 
@@ -192,7 +207,7 @@ function rebuildSynonymMap(): Map<string, string> {
     const cache = JSON.parse(raw) as Record<string, { name?: string } | null>;
     for (const [dataFk, meta] of Object.entries(cache)) {
       if (!meta || !meta.name) continue;
-      const jikanFk = animeFranchiseKey(stripFranchiseSuffix(meta.name));
+      const jikanFk = awardFranchiseKey(meta.name);
       if (!jikanFk || jikanFk === dataFk) continue;
       if (!out.has(jikanFk)) out.set(jikanFk, dataFk);
     }
@@ -231,7 +246,7 @@ function gateByReleaseYear(wins: AwardWin[], releaseYear?: number): AwardWin[] {
 
 export function findAnyAwardWins(animeName: string, releaseYear?: number): AwardWin[] {
   if (!animeName) return [];
-  const fk = animeFranchiseKey(stripFranchiseSuffix(animeName));
+  const fk = awardFranchiseKey(animeName);
   const direct = INDEX.get(fk);
   if (direct && direct.length > 0) return gateByReleaseYear(direct, releaseYear);
   const synFk = getSynonymMap().get(fk);

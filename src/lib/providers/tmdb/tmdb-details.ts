@@ -297,8 +297,8 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
       : undefined
     : raw.episode_run_time?.[0]
       ? `${raw.episode_run_time[0]} min episodes`
-      : raw.number_of_seasons
-        ? `${raw.number_of_seasons} season${raw.number_of_seasons === 1 ? "" : "s"}`
+      : seasons.length > 0
+        ? `${seasons.length} season${seasons.length === 1 ? "" : "s"}`
         : undefined;
 
   let overview = raw.overview ?? "";

@@ -85,10 +85,11 @@ import { AnilistProvider } from "@/lib/anilist/provider";
 import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
-import { useKeyboardNavigation } from "@/lib/use-keyboard-navigation";
+import { useKeyboardNavigation } from "@/lib/keyboard-navigation";
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
+const importWrapped = () => import("@/views/wrapped");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
@@ -117,6 +118,7 @@ const importOnboarding = () => import("@/components/onboarding");
 
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
+const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
 const Discover = lazy(() => importDiscover().then((m) => ({ default: m.Discover })));
@@ -445,7 +447,7 @@ function Shell() {
   useViewPreloader();
 
   useKeyboardNavigation({
-    enabled: !player,
+    enabled: !player && !picker,
     wrap: false,
     onBack: () => {
       if (stackKinds.length > 1 || topKind !== "home") {
@@ -455,14 +457,13 @@ function Shell() {
       return false;
     },
     onBackToNav: () => {
-      window.scrollTo({ top: 111, left: 111, behavior: "smooth" });
       const nav = document.querySelector<HTMLElement>(
-        '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]'
+        '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]',
       );
       nav?.focus({ preventScroll: true });
     },
   });
-  
+
   useEffect(() => startMaintenance(), []);
 
   useEffect(() => {
@@ -679,6 +680,7 @@ function Shell() {
   const catalogsTop = topKind === "catalogs";
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
+  const wrappedTop = topKind === "wrapped";
   const queueTop = topKind === "queue";
   const serviceTop = topKind === "service";
   const homeTop = topKind === "home";
@@ -722,6 +724,7 @@ function Shell() {
   const catalogsAlive = useIdleEvict(catalogsTop);
   const addonsAlive = useIdleEvict(addonsTop);
   const calendarAlive = useIdleEvict(calendarTop);
+  const wrappedAlive = useIdleEvict(wrappedTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
   const serviceAlive = useKeepAlive(serviceTop, serviceTop && !!service);
   const detailAlive = useKeepAlive(detailTop, !!meta);
@@ -781,7 +784,7 @@ function Shell() {
         {settingsAlive && (
           <div className={layer(settingsTop)}>
             <Suspense fallback={null}>
-              <Settings active={settingsTop} />
+              <Settings />
             </Suspense>
           </div>
         )}
@@ -817,6 +820,13 @@ function Shell() {
           <div className={layer(calendarTop)}>
             <Suspense fallback={null}>
               <CalendarView />
+            </Suspense>
+          </div>
+        )}
+        {wrappedAlive && (
+          <div className={layer(wrappedTop)}>
+            <Suspense fallback={null}>
+              <WrappedView active={wrappedTop} />
             </Suspense>
           </div>
         )}
@@ -970,7 +980,7 @@ function Shell() {
                 key={`picker-${picker.meta.id}-${picker.episode?.season ?? ""}-${picker.episode?.episode ?? ""}-${picker.attempt ?? 0}-${picker.intent ?? "play"}`}
                 meta={picker.meta}
                 episode={picker.episode}
-                autoPlay={picker.intent === "download" || picker.intent === "download-season" ? false : picker.autoPlay}
+                autoPlay={picker.intent === "download" ? false : picker.autoPlay}
                 attempt={picker.attempt}
                 intent={picker.intent}
                 resume={picker.resume}

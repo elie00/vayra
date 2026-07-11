@@ -1,15 +1,16 @@
-import { Bookmark, Clock, HardDrive, Layers } from "lucide-react";
+import { BarChart3, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
 import simklLogo from "@/assets/simkl.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
-import malLogo from "@/assets/mal.png";
+import { MalLogo } from "@/components/icons/mal-logo";
 import { useAnilist } from "@/lib/anilist/provider";
 import { useMal } from "@/lib/mal/provider";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useTrakt } from "@/lib/trakt/provider";
-import { useScrollMemory } from "@/lib/view";
+import { useScrollMemory, useView } from "@/lib/view";
+import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { watchlistHas } from "@/lib/watchlist";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
@@ -150,6 +151,8 @@ function Header({
   lbConnected: boolean;
 }) {
   const t = useT();
+  const { setView } = useView();
+  const { settings } = useSettings();
   return (
     <header className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-6">
@@ -164,6 +167,15 @@ function Header({
             {t("Watchlist is what you've saved for later. History is everything you've watched. Local is files on your computer.")}
           </p>
         </div>
+        {settings.wrappedButton && (
+          <button
+            onClick={() => setView("wrapped")}
+            className="flex shrink-0 items-center gap-1.5 self-center text-[13px] font-medium text-ink-muted transition-colors hover:text-ink"
+          >
+            <BarChart3 size={15} strokeWidth={2} />
+            {t("Stats")}
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-1 border-b border-edge-soft">
         <TabBtn active={tab === "watchlist"} onClick={() => onTab("watchlist")}>
@@ -196,7 +208,7 @@ function Header({
         )}
         {malConnected && (
           <TabBtn active={tab === "mal"} onClick={() => onTab("mal")}>
-            <img src={malLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
+            <MalLogo className="h-3.5 w-3.5" />
             MAL
           </TabBtn>
         )}

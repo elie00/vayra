@@ -1,16 +1,14 @@
-import { Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Play, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { awardSourceMeta, findTopAward, parseAwardYear } from "@/lib/anime-awards";
 import type { Meta } from "@/lib/cinemeta";
 import { isSaved, toggleSaved } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
-import { kitsuCoverImage, parseKitsuId } from "@/lib/providers/kitsu";
-import { resolveHeroBackdrop } from "@/lib/anime-backdrop";
-import { resolveLogo } from "@/lib/logo";
 import { useMalRating } from "@/lib/mal-rating";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { observe, usePageVisible } from "@/lib/visibility";
+import { useHeroLogos } from "./anime-hero/use-hero-logos";
 import { MalLogo } from "./icons/mal-logo";
 import { PickCard } from "./pick-card";
 import { Row } from "./row";
@@ -21,25 +19,21 @@ const FADE_MS = 700;
 export function AnimeHero({
   slides,
   topPicks,
+  trendingByMetaId,
 }: {
   slides: Meta[];
   topPicks: Meta[];
+  trendingByMetaId?: Record<string, string>;
 }) {
-  const { settings } = useSettings();
   const { openMeta } = useView();
+  const { settings } = useSettings();
   const t = useT();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const [inView, setInView] = useState(true);
   const visible = usePageVisible();
-  const [logos, setLogos] = useState<Record<string, string | undefined>>({});
-  const [covers, setCovers] = useState<Record<string, string | null>>({});
-  const [hdBackdrops, setHdBackdrops] = useState<Record<string, string | undefined>>({});
   const [savedTick, setSavedTick] = useState(0);
-
-  useEffect(() => {
-    setHdBackdrops({});
-  }, [settings.tmdbKey]);
+  const logos = useHeroLogos(slides, settings.tmdbKey);
 
   useEffect(() => {
     if (slides.length === 0) return;
@@ -58,66 +52,11 @@ export function AnimeHero({
     if (active >= slides.length && slides.length > 0) setActive(0);
   }, [slides.length, active]);
 
-  useEffect(() => {
-    if (slides.length === 0) return;
-    const current = slides[active];
-    if (!current || current.id in logos) return;
-    let cancelled = false;
-    setLogos((prev) => ({ ...prev, [current.id]: undefined }));
-    resolveLogo(settings.tmdbKey, current)
-      .then((url) => {
-        if (cancelled) return;
-        setLogos((prev) => ({ ...prev, [current.id]: url }));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [active, slides, settings.tmdbKey, logos]);
-
-  useEffect(() => {
-    if (slides.length === 0) return;
-    const current = slides[active];
-    if (!current || current.id in covers) return;
-    const kitsuId = parseKitsuId(current.id);
-    if (kitsuId == null) {
-      setCovers((prev) => ({ ...prev, [current.id]: null }));
-      return;
-    }
-    let cancelled = false;
-    kitsuCoverImage(kitsuId)
-      .then((url) => {
-        if (cancelled) return;
-        setCovers((prev) => ({ ...prev, [current.id]: url }));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [active, slides, covers]);
-
-  useEffect(() => {
-    if (slides.length === 0) return;
-    const current = slides[active];
-    if (!current || current.id in hdBackdrops) return;
-    let cancelled = false;
-    setHdBackdrops((prev) => ({ ...prev, [current.id]: undefined }));
-    resolveHeroBackdrop(settings.tmdbKey, current)
-      .then((url) => {
-        if (cancelled) return;
-        setHdBackdrops((prev) => ({ ...prev, [current.id]: url }));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [active, slides, settings.tmdbKey, hdBackdrops]);
-
   const malRating = useMalRating(slides[active]);
   if (slides.length === 0) return null;
 
   const current = slides[active];
-  const logo = logos[current.id];
+  const logo = current.logo ?? logos[current.id];
   const saved = isSaved(current.id);
 
   const next = () => setActive((i) => (i + 1) % slides.length);
@@ -132,9 +71,7 @@ export function AnimeHero({
     >
       <div className="absolute inset-0 z-0 overflow-hidden">
         {slides.map((m, i) => {
-          const hd = hdBackdrops[m.id];
-          const cover = covers[m.id];
-          const src = hd || cover || m.background || m.poster;
+          const src = m.background || m.poster;
           if (!src) return null;
           return (
             <div
@@ -176,6 +113,10 @@ export function AnimeHero({
           style={{ transition: `opacity ${FADE_MS}ms ease-out` }}
         >
           <CrunchyrollBadge name={current.name} year={parseAwardYear(current.releaseInfo)} />
+          {!findTopAward(current.name, parseAwardYear(current.releaseInfo)) &&
+            trendingByMetaId?.[current.id] && (
+              <TrendingBadge source={trendingByMetaId[current.id]} />
+            )}
           <HeroLogo title={current.name} logo={logo} />
           <HeroTags meta={current} />
           {current.description && (
@@ -277,6 +218,48 @@ export function AnimeHero({
   );
 }
 
+export function AnimeHeroSkeleton() {
+  return (
+    <section className="relative -mx-12 -mt-28" aria-hidden>
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-elevated/45 via-surface/30 to-canvas" />
+        <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-[var(--color-canvas)] from-0% via-[color-mix(in_oklch,var(--color-canvas),transparent_50%)] via-55% to-[color-mix(in_oklch,var(--color-canvas),transparent_92%)] to-100%" />
+        <div
+          className="absolute inset-x-0 bottom-0 h-[60%]"
+          style={{
+            background:
+              "linear-gradient(to top, var(--color-canvas), color-mix(in oklch, var(--color-canvas), transparent 60%) 50%, transparent)",
+          }}
+        />
+      </div>
+      <div className="relative z-10 flex min-h-[520px] items-end px-12 pt-24 pb-10">
+        <div className="flex max-w-[520px] flex-col gap-5">
+          <div className="h-4 w-40 animate-pulse rounded-full bg-elevated/50" />
+          <div className="h-16 w-[360px] max-w-full animate-pulse rounded-2xl bg-elevated/50" />
+          <div className="h-4 w-56 animate-pulse rounded-full bg-elevated/40" />
+          <div className="flex flex-col gap-2">
+            <div className="h-3 w-[440px] max-w-full animate-pulse rounded-full bg-elevated/30" />
+            <div className="h-3 w-[400px] max-w-full animate-pulse rounded-full bg-elevated/30" />
+            <div className="h-3 w-[280px] max-w-full animate-pulse rounded-full bg-elevated/30" />
+          </div>
+          <div className="mt-1 flex items-center gap-3">
+            <div className="h-12 w-44 animate-pulse rounded-md bg-elevated/55" />
+            <div className="h-12 w-12 animate-pulse rounded-md bg-elevated/40" />
+          </div>
+        </div>
+      </div>
+      <div className="relative z-10 flex flex-col gap-5 px-12 pb-12">
+        <div className="h-5 w-44 animate-pulse rounded-full bg-elevated/45" />
+        <div className="flex gap-4 overflow-hidden">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="aspect-[2/3] w-36 shrink-0 animate-pulse rounded-xl bg-elevated/35" />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function HeroLogo({ title, logo }: { title: string; logo?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -353,6 +336,18 @@ function CrunchyrollBadge({ name, year }: { name: string; year?: number }) {
           {win.year} ceremony · {win.title}
         </div>
       </div>
+    </div>
+  );
+}
+
+function TrendingBadge({ source }: { source: string }) {
+  const t = useT();
+  return (
+    <div className="inline-flex items-center gap-2 self-start">
+      <TrendingUp size={16} strokeWidth={2.4} className="shrink-0 text-accent" />
+      <span className="text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ink">
+        {t("Trending on {source}", { source })}
+      </span>
     </div>
   );
 }

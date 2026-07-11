@@ -7,6 +7,7 @@ import {
   setManualWatchedMany,
   type ManualWatchedMeta,
 } from "@/lib/manual-watched";
+import { animeSeasonKey } from "./anime-season-key";
 
 export function useAnimeWatchedRouting(meta: Meta, franchise: FranchiseEntry[]) {
   const byId = useMemo(() => {
@@ -31,7 +32,10 @@ export function useAnimeWatchedRouting(meta: Meta, franchise: FranchiseEntry[]) 
     for (const ep of displayEpisodes) {
       const id = ep.sourceMetaId ?? meta.id;
       const list = groups.get(id) ?? [];
-      list.push({ season: ep.seasonNumber || 1, episode: ep.number });
+      list.push({
+        season: animeSeasonKey(ep),
+        episode: ep.number,
+      });
       groups.set(id, list);
     }
     for (const [id, eps] of groups) {

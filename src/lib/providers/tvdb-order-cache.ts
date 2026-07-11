@@ -1,7 +1,7 @@
 import type { Episode, Season } from "@/lib/providers/tmdb";
 import type { TvdbOrder } from "./tvdb-order";
 
-const PREFIX = "harbor.tvdbo.v2.";
+const PREFIX = "harbor.tvdbo.v3.";
 const TTL = 3 * 24 * 60 * 60 * 1000;
 
 type Serialized = {

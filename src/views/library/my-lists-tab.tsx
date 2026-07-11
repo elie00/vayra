@@ -1,6 +1,6 @@
 import { Layers, Plus } from "lucide-react";
 import { useState } from "react";
-import { MAX_LISTS, useCustomLists } from "@/lib/custom-lists";
+import { MAX_LISTS, reorderLists, useCustomLists } from "@/lib/custom-lists";
 import { useT } from "@/lib/i18n";
 import { CreateListModal } from "@/components/lists/create-list-modal";
 import { ListCard } from "@/components/lists/list-card";
@@ -11,6 +11,20 @@ export function MyListsTab() {
   const lists = useCustomLists();
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  const dropOn = (targetId: string) => {
+    if (dragId && dragId !== targetId) {
+      const ids = lists.map((l) => l.id);
+      const to = ids.indexOf(targetId);
+      ids.splice(ids.indexOf(dragId), 1);
+      ids.splice(to, 0, dragId);
+      reorderLists(ids);
+    }
+    setDragId(null);
+    setOverId(null);
+  };
 
   if (selectedListId) {
     return <ListDetail listId={selectedListId} onBack={() => setSelectedListId(null)} />;
@@ -45,7 +59,33 @@ export function MyListsTab() {
           style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}
         >
           {lists.map((l) => (
-            <ListCard key={l.id} list={l} onOpen={setSelectedListId} />
+            <div
+              key={l.id}
+              draggable
+              onMouseDown={(e) => e.stopPropagation()}
+              onDragStart={(e) => {
+                setDragId(l.id);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragId && overId !== l.id) setOverId(l.id);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                dropOn(l.id);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setOverId(null);
+              }}
+              className={`cursor-grab rounded-2xl transition-all active:cursor-grabbing ${dragId === l.id ? "opacity-40" : ""} ${
+                overId === l.id && dragId !== l.id ? "ring-2 ring-accent ring-offset-2 ring-offset-canvas" : ""
+              }`}
+            >
+              <ListCard list={l} onOpen={setSelectedListId} />
+            </div>
           ))}
         </div>
       )}

@@ -235,12 +235,34 @@ async function runCorePipeline(
 }
 
 function mergeAndDedupe(library: Stream[], addons: Stream[]): Stream[] {
-  const out: Stream[] = [];
+  const seen = new Map<string, Stream>();
+  const addContributor = (target: Stream, id: string, name: string) => {
+    const list = target.contributors ?? [{ id: target.addonId, name: target.addonName }];
+    if (!list.some((c) => c.id === id)) list.push({ id, name });
+    target.contributors = list;
+  };
   for (const s of library) {
-    out.push({ ...s, contributors: [{ id: s.addonId, name: s.addonName }] });
+    seen.set(streamKey(s), { ...s, contributors: [{ id: s.addonId, name: s.addonName }] });
   }
   for (const s of addons) {
-    out.push({ ...s, contributors: [{ id: s.addonId, name: s.addonName }] });
+    const key = streamKey(s);
+    const prior = seen.get(key);
+    if (!prior) {
+      seen.set(key, { ...s, contributors: [{ id: s.addonId, name: s.addonName }] });
+      continue;
+    }
+    addContributor(prior, s.addonId, s.addonName);
+    if (s.sources && s.sources.length > 0) {
+      const merged = new Set([...(prior.sources ?? []), ...s.sources]);
+      prior.sources = [...merged];
+    }
+    if (!prior.url && s.url) prior.url = s.url;
   }
-  return out;
+  return [...seen.values()];
+}
+
+function streamKey(s: Stream): string {
+  if (s.infoHash) return `hash:${s.infoHash.toLowerCase()}:${s.fileIdx ?? ""}`;
+  if (s.url) return `url:${s.url}`;
+  return `n:${s.name ?? ""}:${s.title ?? ""}`;
 }
