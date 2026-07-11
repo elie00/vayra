@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Link2, LogOut, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TraktDeviceModal } from "@/components/trakt/trakt-device-modal";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
@@ -32,16 +32,16 @@ export function TraktPanel() {
     };
   }, [isConnected]);
 
-  const pushAvatar = (url: string | null) => {
+  const pushAvatar = useCallback((url: string | null) => {
     update({ harborAvatar: url });
     if (activeProfile) updateProfile(activeProfile.id, { avatar: url });
-  };
+  }, [activeProfile, update, updateProfile]);
 
   useEffect(() => {
     if (settings.useTraktAvatar && traktAvatar && settings.harborAvatar !== traktAvatar) {
       pushAvatar(traktAvatar);
     }
-  }, [settings.useTraktAvatar, traktAvatar]);
+  }, [pushAvatar, settings.harborAvatar, settings.useTraktAvatar, traktAvatar]);
 
   const toggleTraktAvatar = (on: boolean) => {
     if (on) {

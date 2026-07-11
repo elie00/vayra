@@ -92,7 +92,7 @@ export function ServiceView({ service }: { service: StreamingService }) {
     return () => {
       cancelled = true;
     };
-  }, [batch, service, category.id, settings.tmdbKey, settings.region, meta]);
+  }, [batch, service, category.id, settings.tmdbKey, settings.region, meta, category]);
 
   useEffect(() => {
     const el = scrollRef.current;

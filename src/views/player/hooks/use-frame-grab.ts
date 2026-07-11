@@ -72,7 +72,7 @@ export function useFrameGrab(params: {
     } finally {
       busyRef.current = false;
     }
-  }, [bridgeRef, src.meta.name, src.episode]);
+  }, [bridgeRef, src]);
 
   useEffect(() => () => {
     if (dismissTimer.current) window.clearTimeout(dismissTimer.current);

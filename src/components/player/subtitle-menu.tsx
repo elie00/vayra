@@ -63,18 +63,7 @@ export function SubtitleMenu(props: Props) {
   useEffect(() => {
     if (!useOverlay || !open) return;
     void modalOverlayEmitState("subtitle", buildOverlayState(props));
-  }, [
-    useOverlay,
-    open,
-    props.tracks,
-    props.selectedId,
-    props.delaySec,
-    props.metaImdbId,
-    props.metaTitle,
-    props.metaReleaseDate,
-    props.season,
-    props.episode,
-  ]);
+  }, [useOverlay, open, props.tracks, props.selectedId, props.delaySec, props.metaImdbId, props.metaTitle, props.metaReleaseDate, props.season, props.episode, props]);
 
   useEffect(() => {
     return () => {

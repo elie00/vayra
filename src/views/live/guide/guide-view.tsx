@@ -97,7 +97,7 @@ export function GuideView({
     const start = startOfWindow(nowMs, 60);
     const minutes = WINDOW_HOURS * 60;
     return { windowStart: start, windowEnd: start + minutes * 60_000, windowMinutes: minutes };
-  }, [Math.floor(nowMs / (15 * 60_000))]);
+  }, [nowMs]);
 
   useEffect(() => {
     if (scrolledRef.current) return;
@@ -108,7 +108,7 @@ export function GuideView({
     const viewport = el.clientWidth - colPx;
     el.scrollLeft = Math.max(0, nowLeftInGrid - viewport / 3);
     scrolledRef.current = true;
-  }, [channels.length, windowStart, nowMs]);
+  }, [channels.length, windowStart, nowMs, colPx]);
 
   const nowOffsetPx = (nowMs - windowStart) * PX_PER_MS;
   const showNowLine = nowMs >= windowStart && nowMs < windowEnd;

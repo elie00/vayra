@@ -226,7 +226,7 @@ export function useInWatchlist(
     if (id) arr.push(id);
     if (altIds) for (const a of altIds) if (a) arr.push(a);
     return arr;
-  }, [id, altIds?.join("|")]);
+  }, [altIds, id]);
 
   const check = () => {
     if (candidates.length === 0) return false;

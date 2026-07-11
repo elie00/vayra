@@ -445,7 +445,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
             : t("Sync unavailable");
       showSyncToast("error", reason);
     }
-  }, [textSync.enterSync, showSyncToast, t]);
+  }, [textSync, t, showSyncToast]);
 
   const videoFill = useVideoFill(bridgeRef, src.url);
   const anime4k = useAnime4k(bridgeRef, src.url, src);

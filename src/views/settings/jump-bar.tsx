@@ -59,7 +59,7 @@ export function SettingsJumpBar({
       obs?.disconnect();
       window.removeEventListener("resize", rebuild);
     };
-  }, [rebuild, activeSection]);
+  }, [rebuild, activeSection, scrollRef]);
 
   useEffect(() => {
     const root = scrollRef.current;

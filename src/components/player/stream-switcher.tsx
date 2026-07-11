@@ -50,7 +50,7 @@ export function StreamSwitcher({
   const t = useT();
   const { authKey } = useAuth();
   const { settings } = useSettings();
-  const baseLangs = settings.preferredLanguages ?? [];
+  const baseLangs = useMemo(() => settings.preferredLanguages ?? [], [settings.preferredLanguages]);
   const isAnimeRequest =
     typeof meta.id === "string" && (meta.id.startsWith("kitsu:") || meta.id.startsWith("mal:"));
   const preferredLangs = useMemo(() => {
@@ -375,4 +375,3 @@ export function StreamSwitcher({
     </div>
   );
 }
-

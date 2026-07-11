@@ -110,7 +110,7 @@ export function PlayPicker({
     strictMode,
     filterDisabled,
   });
-  const baseLangs = settings.preferredLanguages ?? [];
+  const baseLangs = useMemo(() => settings.preferredLanguages ?? [], [settings.preferredLanguages]);
   const isAnimeRequest = useMemo(
     () => (streamIds ?? []).some((id) => id.startsWith("kitsu:") || id.startsWith("mal:")),
     [streamIds],
@@ -736,4 +736,3 @@ export function PlayPicker({
     </main>
   );
 }
-

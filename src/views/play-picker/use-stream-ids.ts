@@ -12,17 +12,6 @@ export function useStreamIds(
   useEffect(() => {
     const out = buildStreamIds(meta.id, episode, imdbId, meta.behaviorHints?.defaultVideoId);
     setStreamIds(out.length > 0 ? out : null);
-  }, [
-    meta.id,
-    meta.behaviorHints?.defaultVideoId,
-    imdbId,
-    episode?.kitsuStreamId,
-    episode?.videoId,
-    episode?.imdbId,
-    episode?.imdbSeason,
-    episode?.imdbEpisode,
-    episode?.season,
-    episode?.episode,
-  ]);
+  }, [meta.id, meta.behaviorHints?.defaultVideoId, imdbId, episode]);
   return streamIds;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type HTMLAttributes, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type HTMLAttributes, type PointerEvent as ReactPointerEvent } from "react";
 
 type ActiveDrag = { from: number; pointerId: number; y: number };
 
@@ -46,7 +46,7 @@ export function useDragList(count: number, onDrop: (from: number, to: number) =>
     return Math.max(0, Math.min(countRef.current - 1, target));
   };
 
-  const finish = (commit: boolean) => {
+  const finish = useCallback((commit: boolean) => {
     const st = active.current;
     active.current = null;
     cancelAnimationFrame(raf.current);
@@ -57,7 +57,7 @@ export function useDragList(count: number, onDrop: (from: number, to: number) =>
       const target = computeOver(st.y, st.from);
       if (target !== st.from) onDropRef.current(st.from, target);
     }
-  };
+  }, []);
 
   const tick = () => {
     const st = active.current;
@@ -84,7 +84,7 @@ export function useDragList(count: number, onDrop: (from: number, to: number) =>
       window.removeEventListener("keydown", onKey, true);
       cancelAnimationFrame(raf.current);
     };
-  }, []);
+  }, [finish]);
 
   const rowRef = (index: number) => (el: HTMLDivElement | null) => {
     if (el) rows.current.set(index, el);

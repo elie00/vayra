@@ -230,6 +230,7 @@ export function SeriesEpisodes({
   const activeSeason = seasons.find((s) => s.seasonNumber === active);
 
   const progressByEp = useMemo(() => {
+    void mwVersion;
     const m = new Map<number, { ratio: number; watched: boolean; startedAt: number }>();
     for (const ep of enrichedEpisodes) {
       m.set(

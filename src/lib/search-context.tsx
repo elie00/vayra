@@ -157,7 +157,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         publish();
       });
     }, 180);
-  }, [query, settings.tmdbKey, settings.iptvPlaylists, excludeGenres, hiddenTabs.anime, hiddenTabs.liveTv, authKey]);
+  }, [query, settings.tmdbKey, settings.iptvPlaylists, excludeGenres, hiddenTabs.anime, hiddenTabs.liveTv, authKey, ensureAddons]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Link2, LogOut, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SimklDeviceModal } from "@/components/simkl/simkl-device-modal";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
@@ -32,16 +32,16 @@ export function SimklPanel() {
     };
   }, [isConnected]);
 
-  const pushAvatar = (url: string | null) => {
+  const pushAvatar = useCallback((url: string | null) => {
     update({ harborAvatar: url });
     if (activeProfile) updateProfile(activeProfile.id, { avatar: url });
-  };
+  }, [activeProfile, update, updateProfile]);
 
   useEffect(() => {
     if (settings.useSimklAvatar && simklAvatar && settings.harborAvatar !== simklAvatar) {
       pushAvatar(simklAvatar);
     }
-  }, [settings.useSimklAvatar, simklAvatar]);
+  }, [pushAvatar, settings.harborAvatar, settings.useSimklAvatar, simklAvatar]);
 
   const toggleSimklAvatar = (on: boolean) => {
     if (on) {

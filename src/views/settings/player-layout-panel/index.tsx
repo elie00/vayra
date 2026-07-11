@@ -67,8 +67,8 @@ export function PlayerLayoutPanel() {
   const [profileVersion, setProfileVersion] = useState(0);
   const bumpProfiles = useCallback(() => setProfileVersion((v) => v + 1), []);
 
-  const profiles = useMemo(() => listProfiles(theme), [theme, profileVersion]);
-  const activeProfileId = useMemo(() => getActiveProfile(theme)?.id ?? null, [theme, profileVersion]);
+  const profiles = useMemo(() => listProfiles(theme), [theme]);
+  const activeProfileId = useMemo(() => getActiveProfile(theme)?.id ?? null, [theme]);
 
   useEffect(() => {
     const next = readPlayerChromeConfig(theme);
@@ -96,7 +96,7 @@ export function PlayerLayoutPanel() {
       details: editorOpen ? t("Designing the player layout") : t("Customizing the player"),
       state: t("Player layout"),
     });
-  }, [editorOpen]);
+  }, [editorOpen, t]);
 
   useEffect(() => {
     if (!confirmingReset) return;
@@ -220,7 +220,7 @@ export function PlayerLayoutPanel() {
     notifyPlayerChromeChanged(theme);
     setJustSaved(true);
     window.setTimeout(() => setJustSaved(false), 1600);
-  }, [draft, theme, bumpProfiles]);
+  }, [theme, draft, bumpProfiles, t]);
 
   const onSwitchProfile = useCallback(
     async (id: string) => {
@@ -238,7 +238,7 @@ export function PlayerLayoutPanel() {
       bumpProfiles();
       notifyPlayerChromeChanged(theme);
     },
-    [draft, saved, theme, bumpProfiles],
+    [draft, saved, theme, bumpProfiles, t],
   );
 
   const onSaveAsNew = useCallback(
@@ -253,7 +253,7 @@ export function PlayerLayoutPanel() {
       setJustSaved(true);
       window.setTimeout(() => setJustSaved(false), 1600);
     },
-    [draft, theme, bumpProfiles],
+    [theme, draft, bumpProfiles, t],
   );
 
   const onRenameProfile = useCallback(
@@ -266,7 +266,7 @@ export function PlayerLayoutPanel() {
       }
       bumpProfiles();
     },
-    [activeProfileId, bumpProfiles],
+    [activeProfileId, bumpProfiles, t],
   );
 
   const onDeleteProfile = useCallback(async () => {
@@ -280,7 +280,7 @@ export function PlayerLayoutPanel() {
     }
     bumpProfiles();
     notifyPlayerChromeChanged(theme);
-  }, [activeProfileId, theme, bumpProfiles]);
+  }, [activeProfileId, t, bumpProfiles, theme]);
 
   const onExportProfile = useCallback(() => {
     if (!activeProfileId) return;
@@ -310,7 +310,7 @@ export function PlayerLayoutPanel() {
       notifyPlayerChromeChanged(res.profile.themeId);
       if (res.profile.themeId !== theme) setTheme(res.profile.themeId);
     },
-    [theme, bumpProfiles],
+    [bumpProfiles, theme, t],
   );
 
   const onResetToDefaults = useCallback(() => {

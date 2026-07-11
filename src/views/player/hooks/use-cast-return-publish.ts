@@ -34,5 +34,5 @@ export function useCastReturnPublish(params: {
       });
     }
     wasCastingRef.current = casting;
-  }, [casting, inRoom, isHost, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode]);
+  }, [casting, inRoom, isHost, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode, snapRef, hostSourceRef, guestPickRef]);
 }

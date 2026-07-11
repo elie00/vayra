@@ -68,7 +68,7 @@ export function usePipMode(params: {
       unlistenEntered = null;
       unlistenExited = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const togglePipMode = useCallback(async () => {
@@ -91,7 +91,7 @@ export function usePipMode(params: {
       setChromeHidden(false);
       bridgeRef.current?.requestPiP();
     }
-  }, [pipMode, setChromeHidden]);
+  }, [bridgeRef, pipMode, setChromeHidden]);
 
   const exitPip = useCallback(async () => {
     if (!pipMode) return;

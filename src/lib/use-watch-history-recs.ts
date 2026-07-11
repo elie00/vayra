@@ -131,7 +131,7 @@ export function useWatchHistoryRecommendations(cwItems: LibraryItem[]): Meta[] {
     return () => {
       cancelled = true;
     };
-  }, [seeds.map((s) => s._id).join(",")]);
+  }, [seeds]);
 
   return recs;
 }

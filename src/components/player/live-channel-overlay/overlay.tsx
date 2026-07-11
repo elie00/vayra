@@ -57,16 +57,18 @@ export function LiveChannelOverlay({
   const playlist = state.kind === "ready" ? state.playlist : getCachedPlaylist(source.id);
 
   const region = settings.region || "US";
-  const preferredLanguages =
-    settings.preferredLanguages.length > 0 ? settings.preferredLanguages : ["English"];
+  const preferredLanguages = useMemo(
+    () => settings.preferredLanguages.length > 0 ? settings.preferredLanguages : ["English"],
+    [settings.preferredLanguages],
+  );
 
   const sortedChannels = useMemo(
     () => sortChannelsByGroupRelevance(playlist?.channels ?? [], region, preferredLanguages),
-    [playlist?.channels, region, preferredLanguages.join(",")],
+    [playlist?.channels, preferredLanguages, region],
   );
   const sortedGroups = useMemo(
     () => sortGroupsByRelevance(playlist?.groups ?? [], region, preferredLanguages),
-    [playlist?.groups, region, preferredLanguages.join(",")],
+    [playlist?.groups, preferredLanguages, region],
   );
   const topRows = useMemo(() => rowsForRegion(region), [region]);
   const regionChannels = useMemo(

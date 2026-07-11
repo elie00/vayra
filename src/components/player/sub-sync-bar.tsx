@@ -31,7 +31,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
       setLocalDelay(delaySec);
       savedRef.current = delaySec;
     }
-  }, [open]);
+  }, [delaySec, open]);
 
   // Auto-close after idle
   useEffect(() => {

@@ -10,7 +10,7 @@ import { PreviewIcon } from "./preview-icon";
 
 const CIRCLES_SAVED_ESTIMATE = 132;
 
-export function useHeroActionOverflow(rowRef: RefObject<HTMLDivElement | null>, deps: unknown[]) {
+export function useHeroActionOverflow(rowRef: RefObject<HTMLDivElement | null>, refreshKey: unknown) {
   const [stage, setStage] = useState(0);
   const stageRef = useRef(0);
   const widthsRef = useRef<[number, number]>([0, 0]);
@@ -51,7 +51,7 @@ export function useHeroActionOverflow(rowRef: RefObject<HTMLDivElement | null>, 
       mo.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, deps);
+  }, [rowRef, refreshKey]);
 
   return stage;
 }

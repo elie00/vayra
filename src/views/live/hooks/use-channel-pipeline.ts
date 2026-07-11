@@ -41,13 +41,19 @@ export function useChannelPipeline(params: {
     [playlist?.channels],
   );
   const sortedChannels = useMemo(
-    () => sortChannelsByGroupRelevance(liveChannels, region, preferredLanguages),
-    [liveChannels, region, langKey],
+    () => {
+      void langKey;
+      return sortChannelsByGroupRelevance(liveChannels, region, preferredLanguages);
+    },
+    [liveChannels, region, preferredLanguages, langKey],
   );
   const pinnedOrder = usePinnedOrder();
   const statsVersion = useChannelStatsVersion();
   const userChannels = useMemo(
-    () => applyUserChannelOrder(sortedChannels, pinnedOrder),
+    () => {
+      void statsVersion;
+      return applyUserChannelOrder(sortedChannels, pinnedOrder);
+    },
     [sortedChannels, pinnedOrder, statsVersion],
   );
   const shownChannels = useMemo(() => {
@@ -62,7 +68,7 @@ export function useChannelPipeline(params: {
   }, [liveChannels]);
   const sortedGroups = useMemo(
     () => sortGroupsByRelevance(liveGroups, region, preferredLanguages),
-    [liveGroups, region, langKey],
+    [liveGroups, region, preferredLanguages],
   );
   const userGroups = useMemo(
     () => applyUserGroupOrder(sortedGroups, groupPrefs),
@@ -101,7 +107,7 @@ export function useChannelPipeline(params: {
       }
     }
     return sortChannelsByGroupRelevance(out, region, preferredLanguages);
-  }, [allPlaylists, region, langKey]);
+  }, [region, preferredLanguages, allPlaylists]);
 
   const favoriteChannels = useMemo(() => {
     if (!inFavorites) return [];

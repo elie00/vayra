@@ -37,19 +37,7 @@ export function usePlaybackPresence(params: {
       positionSec: getPlaybackPosition(),
       durationSec: snap.durationSec,
     });
-  }, [
-    snap.status,
-    snap.durationSec,
-    src.meta.id,
-    src.meta.name,
-    src.meta.poster,
-    src.meta.releaseInfo,
-    src.episode?.name,
-    src.episode?.still,
-    src.liveProgram,
-    season,
-    episode,
-  ]);
+  }, [snap.status, snap.durationSec, src.meta.id, src.meta.name, src.meta.poster, src.meta.releaseInfo, src.episode?.name, src.episode?.still, src.liveProgram, season, episode, src.episode?.imdbSeason, src.episode?.imdbEpisode]);
 
   useEffect(() => {
     if (!(src.meta.id?.startsWith("iptv:") ?? false)) return;

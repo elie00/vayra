@@ -28,7 +28,7 @@ export function useSports(opts: { enabled: boolean; leagues: string[] }): Sports
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [enabled, key]);
+  }, [enabled, key, leagues]);
 
   return games;
 }

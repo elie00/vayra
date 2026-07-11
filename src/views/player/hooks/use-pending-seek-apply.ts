@@ -19,5 +19,5 @@ export function usePendingSeekApply(params: {
     const t = target <= 5 ? 0 : Math.min(target, durationSec - 1);
     b.seek(t);
     if (!inRoomRef.current) b.play().catch(() => {});
-  }, [pendingSeekSec, durationSec, clearPendingSeek]);
+  }, [pendingSeekSec, durationSec, clearPendingSeek, bridgeRef, inRoomRef]);
 }

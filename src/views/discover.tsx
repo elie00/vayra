@@ -65,7 +65,7 @@ export function Discover({ active = true }: { active?: boolean }) {
 
   const dailyRows = useMemo(
     () => selectDailyRows(settings.tmdbKey, getStore().affinity, settings, ROW_COUNT),
-    [settings.tmdbKey, settings.region, settings.streaming, tasteVersion],
+    [settings],
   );
   const rowSig = useMemo(() => dailyRows.map((r) => r.id).join("|"), [dailyRows]);
 
@@ -75,14 +75,7 @@ export function Discover({ active = true }: { active?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [
-    settings.tmdbKey,
-    settings.tmdbLanguage,
-    settings.region,
-    settings.feedLocaleBias,
-    settings.preferredLanguages,
-    tasteVersion,
-  ]);
+  }, [settings.tmdbKey, settings.tmdbLanguage, settings.region, settings.feedLocaleBias, settings.preferredLanguages, tasteVersion, settings]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,13 +91,7 @@ export function Discover({ active = true }: { active?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [
-    settings.tmdbKey,
-    settings.region,
-    settings.feedLocaleBias,
-    settings.preferredLanguages,
-    settings.tmdbLanguage,
-  ]);
+  }, [settings.tmdbKey, settings.region, settings.feedLocaleBias, settings.preferredLanguages, settings.tmdbLanguage, settings]);
 
   useEffect(() => {
     let timer = 0;
@@ -200,7 +187,7 @@ export function Discover({ active = true }: { active?: boolean }) {
     railExhaustedRef.current = {};
     railLoadingRef.current = {};
     for (const id of DEDUP_PRIORITY) ensureLoadedRef.current(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [rowSig, settings.tmdbKey, settings.region, settings.streaming, settings.tmdbLanguage]);
 
   const loadMore = useCallback(

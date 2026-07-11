@@ -142,13 +142,15 @@ export function Shows({ active = true }: { active?: boolean }) {
   }, [settings.tmdbKey]);
 
   const continueWatching = useMemo(
-    () =>
-      items
+    () => {
+      void cwVersion;
+      return items
         .filter((i) => i.type === "series" && isCwMember(i) && !isCwDismissed(i))
         .map((i) => ({ i, k: cwSortKey(i) }))
         .sort((a, b) => b.k - a.k)
         .map((e) => e.i)
-        .slice(0, 16),
+        .slice(0, 16);
+    },
     [items, cwVersion],
   );
 

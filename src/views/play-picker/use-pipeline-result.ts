@@ -63,7 +63,7 @@ export function usePipelineResult({
           addonUrl: meta.addonOrigin?.base,
         }) as unknown as Stream,
     );
-  }, [meta, episode?.videoId, episode?.season, episode?.episode]);
+  }, [meta.videos, meta.id, meta.addonOrigin?.id, meta.addonOrigin?.name, meta.addonOrigin?.base, episode]);
 
   const configHash = useMemo(
     () =>
@@ -187,24 +187,7 @@ export function usePipelineResult({
         setAutoSettleReady(true);
       });
     return () => ac.abort();
-  }, [
-    streamIds,
-    imdbId,
-    addons,
-    debrids,
-    meta.id,
-    meta.name,
-    meta.type,
-    meta.releaseInfo,
-    episode?.season,
-    episode?.episode,
-    embedded,
-    settings.preferredLanguages,
-    settings.requirePreferredLanguage,
-    strictMode,
-    filterDisabled,
-    refreshNonce,
-  ]);
+  }, [streamIds, imdbId, addons, debrids, meta.id, meta.name, meta.type, meta.releaseInfo, episode?.season, episode?.episode, embedded, settings.preferredLanguages, settings.requirePreferredLanguage, strictMode, filterDisabled, refreshNonce, meta, episode, configHash, settings.preferredAudioLangs, settings.bandwidthMbps, settings.playerEngine, settings.streamSort]);
 
   const refresh = useCallback(() => {
     clearOnePickerCache(meta, episode);

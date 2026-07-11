@@ -42,7 +42,7 @@ export function SkipPill({
     setShow(false);
     const timer = window.setTimeout(() => setMounted(null), 240);
     return () => window.clearTimeout(timer);
-  }, [segment?.kind, segment?.startSec, segment?.endSec]);
+  }, [segment]);
 
   if (!mounted) return null;
 

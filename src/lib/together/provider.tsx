@@ -166,6 +166,9 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
   }, [incomingSummon]);
 
   useEffect(() => {
+    const stateListeners = stateListenersRef.current;
+    const commandListeners = commandListenersRef.current;
+    const drawListeners = drawListenersRef.current;
     if (!relayUrl) {
       clientRef.current = null;
       return;
@@ -199,11 +202,11 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
     return () => {
       off();
       c.leave();
-      stateListenersRef.current.clear();
-      commandListenersRef.current.clear();
-      drawListenersRef.current.clear();
+      stateListeners.clear();
+      commandListeners.clear();
+      drawListeners.clear();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [relayUrl]);
 
   useEffect(() => {
@@ -244,7 +247,7 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
       }
       setModalOpen(true);
     })();
-  }, []);
+  }, [settings.togetherRelayUrl, update]);
 
   useEffect(() => {
     const pending = pendingInviteRef.current;

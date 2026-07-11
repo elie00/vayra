@@ -195,7 +195,7 @@ function CommunityCard({
   const types = useMemo(() => {
     const list = Array.isArray(m?.types) ? m!.types! : [];
     return list.slice(0, 3);
-  }, [m?.types]);
+  }, [m]);
 
   const install = async (e: React.MouseEvent) => {
     e.stopPropagation();

@@ -97,7 +97,7 @@ export function useAutoRetry(params: {
       });
     }, 4000);
     return () => window.clearTimeout(timer);
-  }, [isLive, snap.errorCode, src.url, src.subtitles, src.notWebReady, bridgeRef]);
+  }, [isLive, snap.errorCode, src.url, src.subtitles, src.notWebReady, bridgeRef, src.headers]);
 
   const triggerAutoRetry = useCallback(
     (reason: string) => {
@@ -133,7 +133,7 @@ export function useAutoRetry(params: {
           : { autoPlay: false },
       );
     },
-    [src.attempt, src.meta, src.episode, openPicker, instantPlay, isLocal, isLive, inRoom, src.url, src.subtitles, src.notWebReady, bridgeRef],
+    [src.attempt, src.meta, src.episode, openPicker, instantPlay, isLocal, isLive, inRoom, bridgeRef],
   );
 
   useEffect(() => {
@@ -213,19 +213,7 @@ export function useAutoRetry(params: {
       return;
     }
     triggerAutoRetry(`playback error "${snap.errorCode}"`);
-  }, [
-    snap.errorCode,
-    snap.status,
-    triggerAutoRetry,
-    stremioServerTranscode,
-    transcodedUrl,
-    src.url,
-    src.subtitles,
-    src.notWebReady,
-    bridgeRef,
-    isP2pEngine,
-    engineFailure,
-  ]);
+  }, [snap.errorCode, snap.status, triggerAutoRetry, stremioServerTranscode, transcodedUrl, src.url, src.subtitles, src.notWebReady, bridgeRef, isP2pEngine, engineFailure, isLive, src.streamRef?.infoHash, src.streamRef?.cachedSlugs, src.streamRef?.fileIdx, src.headers, debrids]);
 
   const lastPosRef = useRef({ pos: 0, at: 0, started: false, urlAt: 0 });
   useEffect(() => {
@@ -351,7 +339,7 @@ export function useAutoRetry(params: {
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [isP2pEngine, snap.status, engineFailure, triggerAutoRetry]);
+  }, [isP2pEngine, snap.status, engineFailure, triggerAutoRetry, src.attempt]);
 
   return { slowLoad, transcodedUrl };
 }

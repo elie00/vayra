@@ -70,7 +70,7 @@ export function usePlayerMedia(params: {
     return () => {
       if (hash) scheduleTorrentRemoval(hash, purge);
     };
-  }, [src.url, src.streamRef?.infoHash]);
+  }, [src.url, src.streamRef?.infoHash, settings.streamCacheRetentionHours]);
 
   const volumeRestoredRef = useRef(false);
   useEffect(() => {
@@ -86,7 +86,7 @@ export function usePlayerMedia(params: {
     b.setVolume(saved.volume);
     b.setMuted(saved.muted);
     volumeRestoredRef.current = true;
-  }, [bridgeReady, bridgeKey, snap.status]);
+  }, [bridgeReady, bridgeKey, snap.status, bridgeRef]);
 
   const { resolvedImdbId, resolvedImdbVerified, resolutionSettled } = useTrackAutoload({
     bridgeRef,
@@ -116,7 +116,7 @@ export function usePlayerMedia(params: {
     if (!subEmbed && !hdrNativeSurface) return;
     if (!bridgeReady) return;
     bridgeRef.current?.setSubVisible(subNativeRender);
-  }, [subEmbed, hdrNativeSurface, subNativeRender, selectedSubTrack?.id, bridgeReady, bridgeKey]);
+  }, [subEmbed, hdrNativeSurface, subNativeRender, selectedSubTrack, bridgeReady, bridgeKey, bridgeRef]);
   useEffect(() => {
     clearImportedSubs();
   }, [src.meta.id]);
@@ -160,7 +160,7 @@ export function usePlayerMedia(params: {
       title: mediaTitle,
       artwork: src.meta.poster ?? undefined,
     });
-  }, [engine, src.url, src.meta.name, src.meta.poster, src.episode, snap.durationSec]);
+  }, [engine, src.url, src.meta.name, src.meta.poster, src.episode, snap.durationSec, bridgeRef]);
 
   return { resolvedImdbId, subAssNative: suppressHtmlSubs, captureExitSnapshot, download, subDropToast };
 }

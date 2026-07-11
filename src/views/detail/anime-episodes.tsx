@@ -75,6 +75,7 @@ export function AnimeEpisodes({
   };
 
   const progressByNum = useMemo(() => {
+    void mwVersion;
     const m = new Map<number, { ratio: number; watched: boolean; startedAt: number }>();
     for (const ep of episodes) {
       m.set(

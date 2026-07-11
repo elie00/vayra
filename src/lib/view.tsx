@@ -353,13 +353,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       top.kind === "episode-detail"
         ? { seriesId: top.seriesId, season: top.season, episode: top.episode, seriesMeta: top.seriesMeta }
         : null,
-    [
-      top.kind,
-      top.kind === "episode-detail" ? top.seriesId : "",
-      top.kind === "episode-detail" ? top.season : 0,
-      top.kind === "episode-detail" ? top.episode : 0,
-      top.kind === "episode-detail" && top.seriesMeta ? top.seriesMeta.id : "",
-    ],
+    [top],
   );
   const filterFrame = lastOfKind(stack, "filter");
   const filter = filterFrame ? filterFrame.filter : null;
@@ -367,10 +361,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const grid = gridFrame ? gridFrame.grid : null;
   const awardType = top.kind === "award" ? top.awardType : null;
   const matchDetailGame = top.kind === "match-detail" ? top.game : null;
-  const picker =
-    top.kind === "picker"
+  const picker = useMemo(
+    () => top.kind === "picker"
       ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent, resume: top.resume }
-      : null;
+      : null,
+    [top],
+  );
   const player = top.kind === "player" ? top.src : null;
   const canGoBack = stack.length > 1;
 
@@ -799,57 +795,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       chromeHidden,
       setChromeHidden,
     }),
-    [
-      view,
-      top.kind,
-      topPath,
-      service,
-      meta,
-      metaLiveContext,
-      metaEpisodeHint,
-      promoteMetaToRoot,
-      personId,
-      collectionId,
-      openCollection,
-      episodeDetail,
-      openEpisodeDetail,
-      matchDetailGame,
-      openMatchDetail,
-      openStats,
-      filter,
-      stackKinds,
-      awardType,
-      homeResetTick,
-      picker,
-      player,
-      canGoBack,
-      setView,
-      openSettings,
-      sectionReq,
-      openService,
-      openMeta,
-      openPerson,
-      openQueue,
-      openFilter,
-      grid,
-      openGrid,
-      openCollections,
-      openAward,
-      openAnimeAward,
-      openPicker,
-      openPlayer,
-      replacePlayerSrc,
-      pendingLiveSrc,
-      confirmLeavePartyForLive,
-      cancelLeavePartyForLive,
-      pop,
-      exitPlayback,
-      exitPickerToDetail,
-      exitPlayer,
-      rememberScroll,
-      recallScroll,
-      chromeHidden,
-    ],
+    [view, setView, openSettings, sectionReq, top, topPath, service, openService, meta, metaLiveContext, metaEpisodeHint, openMeta, promoteMetaToRoot, personId, openPerson, collectionId, openCollection, episodeDetail, openEpisodeDetail, matchDetailGame, openMatchDetail, openStats, openQueue, filter, openFilter, grid, openGrid, openCollections, stackKinds, awardType, openAward, openAnimeAward, homeResetTick, picker, openPicker, player, openPlayer, replacePlayerSrc, pendingLiveSrc, confirmLeavePartyForLive, cancelLeavePartyForLive, addonDetailId, openAddonDetail, canGoBack, pop, exitPlayback, exitPickerToDetail, exitPlayer, rememberScroll, recallScroll, rememberRowScroll, recallRowScroll, chromeHidden],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

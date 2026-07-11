@@ -54,6 +54,6 @@ export function useHasNewEpisode(item: LibraryItem): number {
     return () => {
       cancelled = true;
     };
-  }, [item._id, item.state?.lastWatched, item._mtime]);
+  }, [item]);
   return fresh;
 }

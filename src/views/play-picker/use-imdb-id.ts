@@ -63,6 +63,6 @@ export function useImdbId(meta: Meta, tmdbKey: string | undefined): ResolvedImdb
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, meta.addonOrigin?.id, tmdbKey]);
+  }, [meta, tmdbKey]);
   return resolved;
 }

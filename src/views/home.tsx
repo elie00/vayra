@@ -172,7 +172,7 @@ export function Home({ active = true }: { active?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [authKey, settings.tmdbKey, settings.tmdbLanguage, settings.region, settings.homeMode, settings.homeShowAllAddonRows, addonsTick]);
+  }, [authKey, settings.tmdbKey, settings.tmdbLanguage, settings.region, settings.homeMode, settings.homeShowAllAddonRows, addonsTick, settings]);
 
   useEffect(() => {
     if (settings.hideContent.anime || settings.homeMode === "classic") {
@@ -338,11 +338,14 @@ export function Home({ active = true }: { active?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [authKey, active]);
+  }, [authKey, active, user?._id, settings.tmdbKey]);
 
   const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
   const animeDetectVer = useDetectedAnimeVersion();
   const continueWatching = useMemo(() => {
+    void localCwVer;
+    void cwVersion;
+    void animeDetectVer;
     const localCwItems: LibraryItem[] = listLocalCw().map((e) => ({
       _id: e.id,
       type: e.type,

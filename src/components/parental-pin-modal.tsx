@@ -81,7 +81,7 @@ export function ParentalPinModal({
     return () => {
       cancelled = true;
     };
-  }, [pin]);
+  }, [busy, first, mode, pin, stage, t, verify]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
