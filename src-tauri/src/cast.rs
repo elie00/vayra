@@ -10,6 +10,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::str::FromStr;
+use std::sync::mpsc;
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -131,6 +132,108 @@ fn swap_active_proxy(proxy: &ProxyState, session_id: &str) -> Option<(ProxyState
 
 fn take_active_proxy() -> Option<(ProxyState, String)> {
     ACTIVE_PROXY.lock().ok().and_then(|mut g| g.take())
+}
+
+// A Chromecast connection is bound to a dedicated OS thread because `CastDevice`
+// is `!Send` (rust_cast built without the `thread_safe` feature, so it uses
+// `Rc` internally). Instead of tearing the connection down after every status
+// tick — which meant ~1 reconnect/second during playback — we keep the socket
+// open on its worker thread and dispatch closures to it over an mpsc channel.
+//
+// Each job borrows the live `CastDevice` and reports its result back over a
+// oneshot; if the socket is dead the job's own send fails and the caller
+// invalidates the cache, so the worst case degrades to the old reconnect
+// behaviour (never a stale/fake status).
+type CastJob = Box<dyn FnOnce(&CastDevice<'_>) + Send>;
+
+struct ChromecastConn {
+    host: String,
+    port: u16,
+    tx: mpsc::Sender<CastJob>,
+}
+
+impl ChromecastConn {
+    // Open a fresh connection and hand it to a dedicated worker thread. The
+    // handshake happens on that thread (device is `!Send`); we only return once
+    // it succeeds so the cache never holds a half-open connection.
+    fn open(host: &str, port: u16) -> Result<Self, String> {
+        let (tx, rx) = mpsc::channel::<CastJob>();
+        let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
+        let host_owned = host.to_string();
+        std::thread::spawn(move || {
+            let device = match connect_device(&host_owned, port) {
+                Ok(d) => {
+                    let _ = ready_tx.send(Ok(()));
+                    d
+                }
+                Err(e) => {
+                    let _ = ready_tx.send(Err(e));
+                    return;
+                }
+            };
+            // Serve jobs until every sender is dropped (cache invalidated).
+            while let Ok(job) = rx.recv() {
+                job(&device);
+            }
+        });
+        match ready_rx.recv() {
+            Ok(Ok(())) => Ok(ChromecastConn {
+                host: host.to_string(),
+                port,
+                tx,
+            }),
+            Ok(Err(e)) => Err(e),
+            Err(e) => Err(format!("cast worker init: {e}")),
+        }
+    }
+
+    // Run `f` against the live device on its worker thread. Returns `Err` if the
+    // worker is gone (thread exited) so the caller can invalidate + reconnect.
+    fn with_device<T, F>(&self, f: F) -> Result<T, String>
+    where
+        F: FnOnce(&CastDevice<'_>) -> T + Send + 'static,
+        T: Send + 'static,
+    {
+        run_cast_job(&self.tx, f)
+    }
+}
+
+// Dispatch `f` to a cast worker thread over `tx` and wait for its result. A free
+// function (not a `&self` method) so callers can run it against a *cloned*
+// `Sender` — letting the status poller release `STATUS_CONN` before this blocks
+// on the worker round-trip, so `cast_stop`/device switches never wait on an
+// in-flight status read. The worker outlives the dropped cache while any sender
+// clone is alive, so an in-flight job still completes.
+fn run_cast_job<T, F>(tx: &mpsc::Sender<CastJob>, f: F) -> Result<T, String>
+where
+    F: FnOnce(&CastDevice<'_>) -> T + Send + 'static,
+    T: Send + 'static,
+{
+    let (res_tx, res_rx) = mpsc::channel::<T>();
+    let job: CastJob = Box::new(move |device| {
+        let _ = res_tx.send(f(device));
+    });
+    tx.send(job).map_err(|_| "cast worker gone".to_string())?;
+    res_rx.recv().map_err(|_| "cast worker dropped".to_string())
+}
+
+// Live status-polling connection, reused across `cast_status` ticks. Kept
+// separate from the `cast_load` receive-loop connection so playback sync and
+// the stop cycle are untouched. Guarded so `cast_stop` / device switches can
+// drop it (which closes the socket and ends the worker thread).
+static STATUS_CONN: Mutex<Option<ChromecastConn>> = Mutex::new(None);
+
+// Decide whether a cached connection can be reused for the requested endpoint.
+// Pure so it can be unit-tested without a real device.
+fn conn_matches(cached_host: &str, cached_port: u16, want_host: &str, want_port: u16) -> bool {
+    cached_port == want_port && canonical_host_key(cached_host) == canonical_host_key(want_host)
+}
+
+// Drop any cached status connection (closes its socket, ends its worker).
+fn drop_status_conn() {
+    if let Ok(mut guard) = STATUS_CONN.lock() {
+        *guard = None;
+    }
 }
 
 fn parse_friendly_name(properties: &HashMap<String, String>) -> Option<String> {
@@ -572,6 +675,10 @@ async fn cast_load_chromecast(
     poster: Option<String>,
     start_time_sec: Option<f64>,
 ) -> Result<(), String> {
+    // A new load means a new receiver session (possibly a different device), so
+    // any cached status connection is stale — drop it and let the next
+    // `cast_status` tick open a fresh one against the new session.
+    drop_status_conn();
     // Tear down any prior session's receiver app before starting a new one.
     {
         let prior = {
@@ -907,6 +1014,9 @@ pub async fn cast_stop() -> Result<(), String> {
     if let Some((proxy, id)) = take_active_proxy() {
         proxy.release(&id).await;
     }
+    // Close the cached status-polling connection so we don't keep a socket (and
+    // its worker thread) open against a device we're no longer casting to.
+    drop_status_conn();
     cast_subs::cleanup();
     match session {
         Some(ActiveSession::Dlna { control_url }) => dlna::stop(control_url).await,
@@ -957,29 +1067,97 @@ pub async fn cast_status() -> Result<Option<CastStatus>, String> {
     };
     let (host, port, transport_id, msid, seek_start) = snap;
     tokio::task::spawn_blocking(move || -> Result<Option<CastStatus>, String> {
-        let device = connect_device(&host, port)?;
-        device.connection.connect(transport_id.clone()).map_err(|e| format!("{e}"))?;
-        if let Some(msid) = msid {
-            if let Ok(status) = device.media.get_status(&transport_id, Some(msid)) {
-                if let Some(entry) = status.entries.first() {
-                    let raw_state = format!("{:?}", entry.player_state);
-                    let cast_pos = entry.current_time.map(|v| v as f64).unwrap_or(0.0);
-                    return Ok(Some(CastStatus {
-                        position_sec: cast_pos + seek_start,
-                        player_state: normalize_player_state(&raw_state),
-                        connected: true,
-                    }));
-                }
-            }
-        }
-        Ok(Some(CastStatus {
-            position_sec: 0.0,
-            player_state: "UNKNOWN".to_string(),
-            connected: true,
-        }))
+        cached_chromecast_status(&host, port, &transport_id, msid, seek_start).map(Some)
     })
     .await
     .map_err(|e| format!("join: {e}"))?
+}
+
+// Read the media status over a device connection. Any transport/socket error
+// bubbles up as `Err` so the caller can tell a dead connection from a device
+// that simply has no media entry yet (which yields the UNKNOWN sentinel).
+fn read_chromecast_status(
+    device: &CastDevice<'_>,
+    transport_id: &str,
+    msid: Option<i32>,
+    seek_start: f64,
+) -> Result<CastStatus, String> {
+    device
+        .connection
+        .connect(transport_id.to_string())
+        .map_err(|e| format!("connect transport: {e}"))?;
+    if let Some(msid) = msid {
+        let status = device
+            .media
+            .get_status(transport_id, Some(msid))
+            .map_err(|e| format!("get status: {e}"))?;
+        if let Some(entry) = status.entries.first() {
+            let raw_state = format!("{:?}", entry.player_state);
+            let cast_pos = entry.current_time.map(|v| v as f64).unwrap_or(0.0);
+            return Ok(CastStatus {
+                position_sec: cast_pos + seek_start,
+                player_state: normalize_player_state(&raw_state),
+                connected: true,
+            });
+        }
+    }
+    Ok(CastStatus {
+        position_sec: 0.0,
+        player_state: "UNKNOWN".to_string(),
+        connected: true,
+    })
+}
+
+// Reuse the cached status connection if it targets this device; on any failure
+// (dead socket, missing/mismatched cache) drop it and reconnect exactly once.
+// The worst case is therefore equivalent to the old always-reconnect path —
+// a fresh status read — never a stale or fabricated result. Blocking; call
+// from within `spawn_blocking`.
+fn cached_chromecast_status(
+    host: &str,
+    port: u16,
+    transport_id: &str,
+    msid: Option<i32>,
+    seek_start: f64,
+) -> Result<CastStatus, String> {
+    let tid = transport_id.to_string();
+
+    // Fast path: reuse an existing, matching, live connection. Snapshot the
+    // worker's sender under the lock, then release STATUS_CONN *before* the
+    // blocking round-trip — so a concurrent cast_stop / device switch can drop
+    // the cache without waiting on this in-flight status read. The cloned sender
+    // keeps the worker alive for the duration of this job.
+    let cached_tx = {
+        let guard = STATUS_CONN.lock().map_err(|e| format!("lock: {e}"))?;
+        guard
+            .as_ref()
+            .filter(|conn| conn_matches(&conn.host, conn.port, host, port))
+            .map(|conn| conn.tx.clone())
+    };
+    if let Some(tx) = cached_tx {
+        let tid_job = tid.clone();
+        let outcome = run_cast_job(&tx, move |device| {
+            read_chromecast_status(device, &tid_job, msid, seek_start)
+        });
+        // Worker alive and read succeeded: reuse. Any other outcome (a
+        // socket/transport error, or a dead worker thread) falls through and
+        // reconnects below.
+        if let Ok(Ok(status)) = outcome {
+            return Ok(status);
+        }
+    }
+
+    // Slow path: (re)establish a connection, cache it, and read once.
+    drop_status_conn();
+    let conn = ChromecastConn::open(host, port)?;
+    let tid_job = tid.clone();
+    let status = conn
+        .with_device(move |device| read_chromecast_status(device, &tid_job, msid, seek_start))
+        .map_err(|e| format!("cast worker: {e}"))??;
+    if let Ok(mut guard) = STATUS_CONN.lock() {
+        *guard = Some(conn);
+    }
+    Ok(status)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1075,6 +1253,24 @@ mod tests {
         let mut second = device("dlna", None);
         second.host = "2001:db8::20".into();
         assert_eq!(dedupe_by_host(vec![first, second]).len(), 2);
+    }
+
+    #[test]
+    fn conn_matches_same_endpoint_reuses() {
+        assert!(conn_matches("192.0.2.10", 8009, "192.0.2.10", 8009));
+    }
+
+    #[test]
+    fn conn_matches_rejects_different_host_or_port() {
+        assert!(!conn_matches("192.0.2.10", 8009, "192.0.2.11", 8009));
+        assert!(!conn_matches("192.0.2.10", 8009, "192.0.2.10", 8010));
+    }
+
+    #[test]
+    fn conn_matches_normalizes_host_form() {
+        // Same device expressed with a port suffix / bracketed IPv6 must still
+        // count as a cache hit so playback doesn't reconnect every tick.
+        assert!(conn_matches("[2001:db8::10]:8009", 8009, "2001:db8::10", 8009));
     }
 
     #[test]
