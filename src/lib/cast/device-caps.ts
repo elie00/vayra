@@ -299,6 +299,10 @@ export function getDeviceCaps(device: CastDeviceInfo): DeviceCaps {
 
   if (/nest hub max/.test(blob)) return CAPS_NEST_HUB_MAX;
   if (/nest hub|home hub|google home hub/.test(blob)) return CAPS_NEST_HUB;
+  if (/\bgzrnl\b|chromecast\s+with\s+google\s+tv.*4k/.test(blob))
+    return CAPS_CHROMECAST_GOOGLE_TV_4K;
+  if (/\bg454v\b|chromecast\s+with\s+google\s+tv.*(?:hd|1080)/.test(blob))
+    return CAPS_CHROMECAST_GOOGLE_TV_HD;
   if (/chromecast.*ultra/.test(blob)) return CAPS_CHROMECAST_ULTRA;
   if (/google tv streamer|\bstreamer\b/.test(blob)) return CAPS_GOOGLE_TV_STREAMER;
   if (/\bshield\b/.test(blob)) return CAPS_NVIDIA_SHIELD;
@@ -308,7 +312,7 @@ export function getDeviceCaps(device: CastDeviceInfo): DeviceCaps {
   if (/google tv/.test(blob)) {
     if (/4k|2160/.test(blob)) return CAPS_CHROMECAST_GOOGLE_TV_4K;
     if (/hd|1080/.test(blob)) return CAPS_CHROMECAST_GOOGLE_TV_HD;
-    return CAPS_CHROMECAST_GOOGLE_TV_4K;
+    return CAPS_CHROMECAST_GOOGLE_TV_HD;
   }
   if (/fire\s*tv|firetv|aftt|aftr|aftm/.test(blob)) return CAPS_FIRE_TV_4K;
   if (/chromecast/.test(blob)) return CAPS_CHROMECAST_GEN1_2;
