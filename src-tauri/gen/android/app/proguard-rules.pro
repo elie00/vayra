@@ -33,3 +33,7 @@
 -keepclassmembers class app.tauri.** { *; }
 -keep @app.tauri.annotation.TauriPlugin class * { *; }
 -keep @app.tauri.annotation.InvokeArg class * { *; }
+
+# Stockage credentials Android Keystore : objet Kotlin appelé uniquement par
+# réflexion JNI depuis Rust (settings_store.rs) — sans -keep, R8 le strippe.
+-keep class app.harbor.HarborCredentials { *; }
