@@ -120,23 +120,31 @@ pub async fn discover(timeout_ms: u64) -> Vec<DlnaDevice> {
         .await
         .unwrap_or_default();
     let mut by_device: HashMap<String, Vec<String>> = HashMap::new();
-    for (id, location) in locations {
-        by_device.entry(id).or_default().push(location);
+    let mut hint_by_device: HashMap<String, String> = HashMap::new();
+    for (id, location, hint) in locations {
+        by_device.entry(id.clone()).or_default().push(location);
+        if !hint.is_empty() {
+            hint_by_device.entry(id).or_default().push_str(&hint);
+        }
     }
     let mut handles = Vec::new();
-    for (id, mut candidate_locations) in by_device {
-        if let Some(host) = candidate_locations
+    for (id, candidate_locations) in by_device {
+        let host = candidate_locations
             .first()
             .and_then(|loc| host_from_url(loc))
             .map(|h| h.split(':').next().unwrap_or("").to_string())
-        {
-            for fallback in samsung_dlna_fallback_urls(&host) {
-                if !candidate_locations.contains(&fallback) {
-                    candidate_locations.push(fallback);
-                }
-            }
-        }
-        handles.push(tokio::spawn(resolve_device(id, candidate_locations)));
+            .unwrap_or_default();
+        let hint = hint_by_device.get(&id).cloned().unwrap_or_default();
+        let samsung_fallbacks = samsung_dlna_fallback_urls(&host);
+        // Samsung-looking devices probe fallbacks up front (alongside their real
+        // locations); everything else only falls back if all real locations fail.
+        let eager_fallback = should_try_samsung_fallback(&hint, false);
+        handles.push(tokio::spawn(resolve_device(
+            id,
+            candidate_locations,
+            if eager_fallback { samsung_fallbacks.clone() } else { Vec::new() },
+            if eager_fallback { Vec::new() } else { samsung_fallbacks },
+        )));
     }
     let mut out = Vec::new();
     for h in handles {
@@ -151,9 +159,34 @@ pub async fn discover(timeout_ms: u64) -> Vec<DlnaDevice> {
     out
 }
 
-async fn resolve_device(id: String, candidate_locations: Vec<String>) -> Option<DlnaDevice> {
+async fn resolve_device(
+    id: String,
+    mut candidate_locations: Vec<String>,
+    eager_fallbacks: Vec<String>,
+    lazy_fallbacks: Vec<String>,
+) -> Option<DlnaDevice> {
+    // Eager fallbacks (Samsung-looking devices) are probed alongside the real
+    // SSDP locations from the first round.
+    for fallback in eager_fallbacks {
+        if !candidate_locations.contains(&fallback) {
+            candidate_locations.push(fallback);
+        }
+    }
+    if let Some(device) = probe_locations(&id, &candidate_locations).await {
+        return Some(device);
+    }
+    // All real locations failed: last-resort Samsung fallback probe for a TV
+    // that under-advertised over SSDP (e.g. dropped its description location).
+    if !lazy_fallbacks.is_empty() && should_try_samsung_fallback("", true) {
+        return probe_locations(&id, &lazy_fallbacks).await;
+    }
+    None
+}
+
+async fn probe_locations(id: &str, candidate_locations: &[String]) -> Option<DlnaDevice> {
     let mut attempts = Vec::new();
     for loc in candidate_locations {
+        let loc = loc.clone();
         attempts.push(tokio::spawn(async move {
             let result = fetch_device(&loc).await;
             (loc, result)
@@ -180,7 +213,7 @@ async fn resolve_device(id: String, candidate_locations: Vec<String>) -> Option<
                     name, vendor, manufacturer, model
                 );
                 return Some(DlnaDevice {
-                    id,
+                    id: id.to_string(),
                     name: name.clone(),
                     model: model.clone(),
                     manufacturer: manufacturer.clone(),
@@ -195,6 +228,21 @@ async fn resolve_device(id: String, candidate_locations: Vec<String>) -> Option<
         }
     }
     None
+}
+
+/// Decide whether Samsung DLNA fallback URLs are worth probing for a device.
+///
+/// The 14 Samsung `smp_*`/`dmr` fallback URLs used to be appended blindly to
+/// every SSDP device, turning a multi-device network into dozens of useless
+/// Samsung requests. We now only probe them when either:
+///   - the SSDP hint (server header / USN / location) looks Samsung, or
+///   - every real SSDP description location for the device failed to resolve
+///     (last-resort recovery for a Samsung TV that under-advertises).
+fn should_try_samsung_fallback(ssdp_hint: &str, real_locations_all_failed: bool) -> bool {
+    if ssdp_hint.to_lowercase().contains("samsung") {
+        return true;
+    }
+    real_locations_all_failed
 }
 
 fn samsung_dlna_fallback_urls(host_ip: &str) -> Vec<String> {
@@ -219,8 +267,12 @@ fn samsung_dlna_fallback_urls(host_ip: &str) -> Vec<String> {
     ]
 }
 
-fn ssdp_search(timeout_ms: u64) -> Vec<(String, String)> {
+fn ssdp_search(timeout_ms: u64) -> Vec<(String, String, String)> {
     let mut found: HashMap<String, Vec<String>> = HashMap::new();
+    // Vendor hints gathered from the SSDP `server` header / `usn` / location,
+    // keyed by the same device id as `found`. Used to decide whether Samsung
+    // fallback URLs are worth probing.
+    let mut hints: HashMap<String, String> = HashMap::new();
     let mut sockets: Vec<UdpSocket> = Vec::new();
     for iface in local_ipv4_interfaces() {
         match UdpSocket::bind(SocketAddr::new(IpAddr::V4(iface), 0)) {
@@ -279,30 +331,36 @@ fn ssdp_search(timeout_ms: u64) -> Vec<(String, String)> {
     while Instant::now() < deadline {
         for s in &sockets {
             match s.recv_from(&mut buf) {
-                Ok((n, _)) => handle_ssdp_packet(&buf[..n], &mut found),
+                Ok((n, _)) => handle_ssdp_packet(&buf[..n], &mut found, &mut hints),
                 Err(_) => continue,
             }
         }
         if let Some(s) = &notify_socket {
             match s.recv_from(&mut buf) {
-                Ok((n, _)) => handle_ssdp_packet(&buf[..n], &mut found),
+                Ok((n, _)) => handle_ssdp_packet(&buf[..n], &mut found, &mut hints),
                 Err(_) => continue,
             }
         }
     }
-    let mut out: Vec<(String, String)> = Vec::new();
+    let mut out: Vec<(String, String, String)> = Vec::new();
     for (id, locs) in found {
+        let hint = hints.get(&id).cloned().unwrap_or_default();
         for loc in locs {
-            out.push((id.clone(), loc));
+            out.push((id.clone(), loc, hint.clone()));
         }
     }
     out
 }
 
-fn handle_ssdp_packet(bytes: &[u8], found: &mut HashMap<String, Vec<String>>) {
+fn handle_ssdp_packet(
+    bytes: &[u8],
+    found: &mut HashMap<String, Vec<String>>,
+    hints: &mut HashMap<String, String>,
+) {
     let resp = String::from_utf8_lossy(bytes);
     let location = extract_header(&resp, "location");
     let usn = extract_header(&resp, "usn");
+    let server = extract_header(&resp, "server");
     // M-SEARCH replies use "ST:"; NOTIFY broadcasts use "NT:". Accept either.
     let st = extract_header(&resp, "st")
         .or_else(|| extract_header(&resp, "nt"))
@@ -313,6 +371,17 @@ fn handle_ssdp_packet(bytes: &[u8], found: &mut HashMap<String, Vec<String>>) {
     }
     if let (Some(loc), Some(usn_val)) = (location, usn) {
         let id = parse_uuid_from_usn(&usn_val).unwrap_or_else(|| loc.clone());
+        // Accumulate every hint fragment we see for this device (server header,
+        // USN and location text) so a Samsung marker in any packet is retained.
+        let hint = hints.entry(id.clone()).or_default();
+        if let Some(server_val) = &server {
+            hint.push_str(server_val);
+            hint.push(' ');
+        }
+        hint.push_str(&usn_val);
+        hint.push(' ');
+        hint.push_str(&loc);
+        hint.push(' ');
         let entry = found.entry(id).or_default();
         if !entry.contains(&loc) {
             entry.push(loc);
@@ -754,6 +823,39 @@ mod tests {
             Some("Samsung QLED (QN55Q80)"),
         );
         assert_eq!(combine_model(None, Some("OLED55C3".into())).as_deref(), Some("OLED55C3"));
+    }
+
+    #[test]
+    fn samsung_hint_triggers_fallback_even_before_failure() {
+        // Server header carries the Samsung marker: probe fallbacks eagerly.
+        assert!(should_try_samsung_fallback(
+            "Linux/4.1 UPnP/1.0 Samsung UPnP SDK/1.0",
+            false,
+        ));
+        // USN / location text also counts.
+        assert!(should_try_samsung_fallback(
+            "uuid:abc http://10.0.0.5:7676/smp_2_ samsung",
+            false,
+        ));
+    }
+
+    #[test]
+    fn non_samsung_device_gets_no_fallback_while_locations_resolve() {
+        // A Sony/LG/generic renderer whose real locations resolve fine must not
+        // trigger the 14 Samsung requests.
+        assert!(!should_try_samsung_fallback(
+            "Linux UPnP/1.0 Sony/BRAVIA",
+            false,
+        ));
+        assert!(!should_try_samsung_fallback("", false));
+    }
+
+    #[test]
+    fn falls_back_when_all_real_locations_failed() {
+        // Even a non-Samsung hint gets a last-resort Samsung probe once every
+        // real location failed to resolve.
+        assert!(should_try_samsung_fallback("", true));
+        assert!(should_try_samsung_fallback("Linux UPnP/1.0 LG webOS", true));
     }
 
     #[test]
