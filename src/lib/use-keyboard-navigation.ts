@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { SFX } from '@/lib/sfx';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
 
@@ -14,62 +15,29 @@ const SELECTOR = [
 ].join(', ');
 
 const KEY_TO_DIR: Record<string, Dir> = {
-  ArrowUp: 'up',
-  ArrowDown: 'down',
-  ArrowLeft: 'left',
-  ArrowRight: 'right',
-  Up: 'up',
-  Down: 'down',
-  Left: 'left',
-  Right: 'right',
-  w: 'up',
-  W: 'up',
-  s: 'down',
-  S: 'down',
-  a: 'left',
-  A: 'left',
-  d: 'right',
-  D: 'right',
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+  Up: 'up', Down: 'down', Left: 'left', Right: 'right',
+  w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right',
 };
 
 const CODE_TO_DIR: Record<string, Dir> = {
-  ArrowUp: 'up',
-  ArrowDown: 'down',
-  ArrowLeft: 'left',
-  ArrowRight: 'right',
-  KeyW: 'up',
-  KeyS: 'down',
-  KeyA: 'left',
-  KeyD: 'right',
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+  KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
 };
 
 const KEYCODE_TO_DIR: Record<number, Dir> = {
-  38: 'up',
-  40: 'down',
-  37: 'left',
-  39: 'right',
-  19: 'up',
-  20: 'down',
-  21: 'left',
-  22: 'right',
-  87: 'up',
-  83: 'down',
-  65: 'left',
-  68: 'right',
+  38: 'up', 40: 'down', 37: 'left', 39: 'right',
+  19: 'up', 20: 'down', 21: 'left', 22: 'right',
+  87: 'up', 83: 'down', 65: 'left', 68: 'right',
 };
 
 const CENTER_KEYCODES = new Set([13, 23, 32]);
-
 const BACK_KEYCODES = new Set([27, 4, 461, 10009, 166]);
 const BACK_KEYS = new Set(['Escape', 'Esc', 'BrowserBack', 'GoBack', 'Back']);
 
 const MODAL_SELECTOR = '[role="dialog"], [aria-modal="true"]';
 const LOCAL_KEYBOARD_SELECTOR = [
-  '[role="listbox"]',
-  '[role="menu"]',
-  '[role="grid"]',
-  '[role="tree"]',
-  '[role="tablist"]',
+  '[role="listbox"]', '[role="menu"]', '[role="grid"]', '[role="tree"]', '[role="tablist"]',
 ].join(', ');
 
 const AXIS_TOLERANCE = 24;
@@ -96,14 +64,9 @@ function isSearchLikeField(el: HTMLElement | null) {
   const name = (el.getAttribute('name') || '').toLowerCase();
 
   return (
-    type === 'search' ||
-    role === 'searchbox' ||
-    inputMode === 'search' ||
-    ariaLabel.includes('search') ||
-    placeholder.includes('search') ||
-    placeholder.includes('بحث') ||
-    name.includes('search') ||
-    name.includes('query')
+    type === 'search' || role === 'searchbox' || inputMode === 'search' ||
+    ariaLabel.includes('search') || placeholder.includes('search') ||
+    placeholder.includes('بحث') || name.includes('search') || name.includes('query')
   );
 }
 
@@ -112,11 +75,7 @@ function isVisible(el: HTMLElement) {
   if (el.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
 
   const style = window.getComputedStyle(el);
-  if (
-    style.display === 'none' ||
-    style.visibility === 'hidden' ||
-    parseFloat(style.opacity) === 0
-  ) {
+  if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) {
     return false;
   }
 
@@ -141,15 +100,23 @@ function zoneOf(el: HTMLElement): 'nav' | 'hero' | 'content' {
   return 'content';
 }
 
+function getSoundType(el: HTMLElement): 'light' | 'movie' {
+  if (isInNav(el)) return 'light';
+  if (el.closest('[role="dialog"], [role="menu"], [role="tablist"], [role="switch"], form, .settings-panel')) return 'light';
+  
+  const isMovieContainer = el.closest('[data-media-card], [data-movie-card], .media-card, [data-tv-hero-zone]');
+  if (isMovieContainer && (el.querySelector('img') || el.hasAttribute('data-media-card') || el.classList.contains('media-card'))) {
+    return 'movie';
+  }
+  return 'light';
+}
+
 function getFocusable(root: ParentNode = document): HTMLElement[] {
   const all = Array.from(root.querySelectorAll<HTMLElement>(SELECTOR)).filter(isVisible);
   return all.filter((el) => !all.some((other) => other !== el && other.contains(el)));
 }
 
-function getFocusableInZone(
-  zone: 'nav' | 'hero' | 'content',
-  root: ParentNode = document
-): HTMLElement[] {
+function getFocusableInZone(zone: 'nav' | 'hero' | 'content', root: ParentNode = document): HTMLElement[] {
   return getFocusable(root).filter((el) => zoneOf(el) === zone);
 }
 
@@ -160,14 +127,9 @@ function getNavCandidates(root: ParentNode = document): HTMLElement[] {
 function getRect(el: HTMLElement) {
   const r = el.getBoundingClientRect();
   return {
-    left: r.left,
-    right: r.right,
-    top: r.top,
-    bottom: r.bottom,
-    width: r.width,
-    height: r.height,
-    cx: r.left + r.width / 2,
-    cy: r.top + r.height / 2,
+    left: r.left, right: r.right, top: r.top, bottom: r.bottom,
+    width: r.width, height: r.height,
+    cx: r.left + r.width / 2, cy: r.top + r.height / 2,
   };
 }
 
@@ -192,7 +154,6 @@ function findClosestByY(from: HTMLElement, candidates: HTMLElement[]): HTMLEleme
       best = el;
     }
   }
-
   return best;
 }
 
@@ -210,11 +171,7 @@ function hasLeftNeighborInRow(active: HTMLElement, root: ParentNode = document):
 function getActiveModal(target: HTMLElement | null): HTMLElement | null {
   const owned = target?.closest<HTMLElement>(MODAL_SELECTOR);
   if (owned && isVisible(owned)) return owned;
-
-  const visible = Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTOR)).filter(
-    isVisible
-  );
-
+  const visible = Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTOR)).filter(isVisible);
   return visible[visible.length - 1] ?? null;
 }
 
@@ -257,7 +214,7 @@ function ensureFocusStyles() {
 }
 
 function focusElement(el: HTMLElement) {
-  ensureFocusStyles();
+  ensureFocusStyles(); 
 
   if (lastFocusedEl && lastFocusedEl !== el) {
     lastFocusedEl.removeAttribute('data-tv-focused');
@@ -265,19 +222,13 @@ function focusElement(el: HTMLElement) {
 
   el.setAttribute('data-tv-focused', 'true');
   lastFocusedEl = el;
-
   el.focus({ preventScroll: true });
 
   if (isInHero(el)) {
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     return;
   }
-
-  el.scrollIntoView({
-    block: 'center',
-    inline: 'center',
-    behavior: 'smooth',
-  });
+  el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
 }
 
 function enterSearchEditMode(el: HTMLElement) {
@@ -287,25 +238,18 @@ function enterSearchEditMode(el: HTMLElement) {
 
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     const len = el.value.length;
-    try {
-      el.setSelectionRange(len, len);
-    } catch {
-      // ignore selection errors
-    }
+    try { el.setSelectionRange(len, len); } catch { }
   }
 }
 
 function exitSearchEditMode() {
   if (!activeSearchEditEl) return;
-
   const el = activeSearchEditEl;
   activeSearchEditEl = null;
   el.removeAttribute('data-search-editing');
-
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     el.blur();
   }
-
   focusElement(el);
 }
 
@@ -316,7 +260,6 @@ function findBest(focused: HTMLElement, candidates: HTMLElement[], dir: Dir): HT
 
   for (const el of candidates) {
     if (el === focused) continue;
-
     const dst = getRect(el);
 
     if (dir === 'right' && dst.cx <= src.cx + AXIS_TOLERANCE) continue;
@@ -325,22 +268,12 @@ function findBest(focused: HTMLElement, candidates: HTMLElement[], dir: Dir): HT
     if (dir === 'up' && dst.cy >= src.cy - AXIS_TOLERANCE) continue;
 
     const horizontal = dir === 'left' || dir === 'right';
-
-    const primary =
-      dir === 'right'
-        ? Math.max(0, dst.left - src.right)
-        : dir === 'left'
-          ? Math.max(0, src.left - dst.right)
-          : dir === 'down'
-            ? Math.max(0, dst.top - src.bottom)
-            : Math.max(0, src.top - dst.bottom);
+    const primary = dir === 'right' ? Math.max(0, dst.left - src.right) :
+                    dir === 'left' ? Math.max(0, src.left - dst.right) :
+                    dir === 'down' ? Math.max(0, dst.top - src.bottom) : Math.max(0, src.top - dst.bottom);
 
     const secondary = horizontal ? Math.abs(dst.cy - src.cy) : Math.abs(dst.cx - src.cx);
-
-    const axisOverlap = horizontal
-      ? overlap(src.top, src.bottom, dst.top, dst.bottom)
-      : overlap(src.left, src.right, dst.left, dst.right);
-
+    const axisOverlap = horizontal ? overlap(src.top, src.bottom, dst.top, dst.bottom) : overlap(src.left, src.right, dst.left, dst.right);
     const overlapBonus = axisOverlap > 0 ? axisOverlap * 10 : 0;
     const score = primary * 10 + secondary * 3 - overlapBonus;
 
@@ -349,7 +282,6 @@ function findBest(focused: HTMLElement, candidates: HTMLElement[], dir: Dir): HT
       best = el;
     }
   }
-
   return best;
 }
 
@@ -357,7 +289,6 @@ function getSpatialOrder(list: HTMLElement[]) {
   return [...list].sort((a, b) => {
     const ra = getRect(a);
     const rb = getRect(b);
-
     if (Math.abs(ra.top - rb.top) > 8) return ra.top - rb.top;
     return ra.left - rb.left;
   });
@@ -381,8 +312,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
 
       const target = e.target instanceof HTMLElement ? e.target : null;
-      const active =
-        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
       const activeModal = getActiveModal(target);
       const activeIsSearch = isSearchLikeField(active);
@@ -391,52 +321,38 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
       if (e.key === 'Escape' && isEditingSearch) {
         e.preventDefault();
         e.stopPropagation();
+        SFX.close();
         exitSearchEditMode();
         return;
       }
 
       if (isBackKey(e)) {
         if (activeModal) return;
-
         e.preventDefault();
         e.stopPropagation();
+        SFX.close();
 
         const handled = onBack ? onBack() : false;
-
         if (!handled) {
           if (onBackToNav) {
             onBackToNav();
           } else {
-            const nav = document.querySelector<HTMLElement>(
-              '[data-harbor-nav] [data-focusable="true"], [data-harbor-nav] a[href], [data-harbor-nav] button'
-            );
+            const nav = document.querySelector<HTMLElement>('[data-harbor-nav] [data-focusable="true"], [data-harbor-nav] a[href], [data-harbor-nav] button');
             if (nav) focusElement(nav);
           }
         }
-
         return;
       }
 
       if (isLocallyManaged(target)) return;
-
-      if (activeIsSearch && isEditingSearch) {
-        return;
-      }
-
-      if (isEditable(target) && !isSearchLikeField(target)) {
-        return;
-      }
+      if (activeIsSearch && isEditingSearch) return;
+      if (isEditable(target) && !isSearchLikeField(target)) return;
 
       const dir = getDirection(e);
 
       if (dir) {
-        if (activeIsSearch && !isEditingSearch) {
-          e.preventDefault();
-          e.stopPropagation();
-        } else {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+        e.preventDefault();
+        e.stopPropagation();
 
         const root = activeModal ?? document;
 
@@ -445,6 +361,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
             const navItems = getNavCandidates(root);
             const targetNav = findClosestByY(active, navItems);
             if (targetNav) {
+              SFX.navigate(dir, getSoundType(targetNav));
               focusElement(targetNav);
               return;
             }
@@ -455,6 +372,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
           const contentItems = getFocusable(root).filter((el) => !isInNav(el));
           const targetContent = findClosestByY(active, contentItems);
           if (targetContent) {
+            SFX.navigate(dir, getSoundType(targetContent));
             focusElement(targetContent);
             return;
           }
@@ -462,12 +380,14 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
 
         const zone = active ? zoneOf(active) : 'content';
         const all = getFocusableInZone(zone, root);
-
         if (!all.length) return;
 
         if (!active || !all.includes(active)) {
           const first = getInitialFocus(all);
-          if (first) focusElement(first);
+          if (first) {
+            SFX.navigate(dir, getSoundType(first));
+            focusElement(first);
+          }
           return;
         }
 
@@ -475,13 +395,17 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
           if (dir === 'down') {
             const contentItems = getFocusableInZone('content', root);
             const first = getInitialFocus(contentItems);
-            if (first) focusElement(first);
+            if (first) {
+              SFX.navigate(dir, getSoundType(first));
+              focusElement(first);
+            }
           }
           return;
         }
 
         const best = findBest(active, all, dir);
         if (best) {
+          SFX.navigate(dir, getSoundType(best));
           focusElement(best);
           return;
         }
@@ -489,53 +413,44 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
         if (wrap) {
           const ordered = getSpatialOrder(all);
           const idx = ordered.indexOf(active);
-
           if (idx >= 0) {
-            const next =
-              dir === 'down' || dir === 'right'
-                ? ordered[idx + 1] ?? ordered[0]
-                : ordered[idx - 1] ?? ordered[ordered.length - 1];
-
-            if (next) focusElement(next);
+            const next = dir === 'down' || dir === 'right' ? ordered[idx + 1] ?? ordered[0] : ordered[idx - 1] ?? ordered[ordered.length - 1];
+            if (next) {
+              SFX.navigate(dir, getSoundType(next));
+              focusElement(next);
+            }
           }
         }
-
         return;
       }
 
-      const isCenter =
-        CENTER_KEYCODES.has(e.keyCode) || e.key === 'Enter' || e.code === 'Enter';
-
+      const isCenter = CENTER_KEYCODES.has(e.keyCode) || e.key === 'Enter' || e.code === 'Enter';
       if (!isCenter) return;
+      if (isLocallyManaged(target)) return;
 
-      const currentActive =
-        document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
+      const currentActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       if (!currentActive) return;
 
       if (isSearchLikeField(currentActive)) {
         e.preventDefault();
         e.stopPropagation();
+        SFX.open();
         enterSearchEditMode(currentActive);
         return;
       }
 
       if (isEditable(currentActive) && !isSearchLikeField(currentActive)) return;
 
-      const nativeClickable = currentActive.matches(
-        'button, a[href], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"]'
-      );
-
+      const nativeClickable = currentActive.matches('button, a[href], input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"]');
       if (e.key === ' ' && nativeClickable) return;
       if (e.key === 'Enter' && nativeClickable) return;
 
       e.preventDefault();
       e.stopPropagation();
-      currentActive.click();
+      currentActive.click(); 
     };
 
     window.addEventListener('keydown', onKeyDown, true);
-
     return () => {
       window.removeEventListener('keydown', onKeyDown, true);
       if (activeSearchEditEl) {
