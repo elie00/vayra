@@ -89,7 +89,7 @@ export function IdentifyModal({
     setKind(head.type === "show" ? "tv" : "movie");
     setQuery(seedQuery(head.title ?? ""));
     setResults([]);
-  }, [head?.id]);
+  }, [head]);
 
   useEffect(() => {
     if (!head) return;
@@ -122,7 +122,7 @@ export function IdentifyModal({
       alive = false;
       window.clearTimeout(timer);
     };
-  }, [head?.id, key, kind, query]);
+  }, [head, key, kind, query]);
 
   const noKey = useMemo(() => !key, [key]);
 

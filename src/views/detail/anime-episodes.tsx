@@ -275,7 +275,7 @@ export function AnimeEpisodes({
     if ((scrollRef.current?.scrollTop ?? 0) > 240) return;
     reveal(nextUpNum);
     scrollToDataEp(scrollRef.current, nextUpNum, { behavior: "auto", center: true });
-  }, [nextUpNum, episodes, meta.id, reveal, scrollRef]);
+  }, [nextUpNum, episodes, meta.id, reveal, scrollRef, order, tvdbPanel.panel]);
 
   const isOneOff = meta.type === "movie" || episodes.length <= 1;
   return (

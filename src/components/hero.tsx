@@ -124,7 +124,7 @@ export const Hero = memo(function Hero({
     return () => {
       cancelled = true;
     };
-  }, [logoResolved, bgResolved, meta.id, meta.type, settings.tmdbKey]);
+  }, [logoResolved, bgResolved, meta.id, meta.type, settings.tmdbKey, meta.originalLanguage]);
 
   useEffect(() => {
     if (!active || !settings.omdbKey) return;

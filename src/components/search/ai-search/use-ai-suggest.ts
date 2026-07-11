@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { aiSuggest, resolveAiSuggestions, type AiResult } from "@/lib/ai-search";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -27,12 +27,7 @@ export function useAiSuggest(query: string, runSignal = 0) {
   const provider = providerForModel(settings.aiSearchModel);
   const activeKey = keyForProvider(settings, provider);
 
-  useEffect(() => {
-    if (!runSignal || !query.trim() || !activeKey.trim()) return;
-    void run();
-  }, [runSignal]);
-
-  const run = async () => {
+  const run = useCallback(async () => {
     const id = ++reqRef.current;
     setStatus("loading");
     setError("");
@@ -63,7 +58,12 @@ export function useAiSuggest(query: string, runSignal = 0) {
       setError(e instanceof Error ? e.message : t("Something went wrong."));
       setStatus("error");
     }
-  };
+  }, [activeKey, query, settings.aiSearchModel, settings.aiWebSearch, settings.jinaKey, t]);
+
+  useEffect(() => {
+    if (!runSignal || !query.trim() || !activeKey.trim()) return;
+    void run();
+  }, [activeKey, query, run, runSignal]);
 
   return { status, results, error, ranQuery, run };
 }

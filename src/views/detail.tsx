@@ -366,7 +366,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, addonNative]);
+  }, [meta.id, meta.type, addonNative, meta]);
 
   useEffect(() => {
     if (idAnime || detectedKitsu != null || addonNative) return;
@@ -424,7 +424,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, detail?.imdbId, meta.type, cinemetaFull?.videos?.length]);
+  }, [meta.id, detail?.imdbId, meta.type, cinemetaFull?.videos]);
 
   useEffect(() => {
     if (meta.type !== "series" && !addonNative) return;
@@ -441,7 +441,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, meta.addonOrigin?.base, addonNative, cinemetaFull?.videos?.length]);
+  }, [meta.id, meta.type, meta.addonOrigin?.base, addonNative, cinemetaFull?.videos]);
 
   useEffect(() => {
     if (meta.type !== "series") return;
@@ -458,7 +458,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, meta.addonOrigin?.base, authKey, cinemetaFull?.videos?.length]);
+  }, [meta.id, meta.type, meta.addonOrigin?.base, authKey, cinemetaFull?.videos]);
 
   useEffect(() => {
     setLibraryItem(null);
@@ -586,17 +586,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [
-    meta.id,
-    meta.type,
-    settings.tmdbKey,
-    settings.fanartKey,
-    settings.tvdbKey,
-    settings.tmdbLanguage,
-    isAnime,
-    addonNative,
-    detectedKitsu,
-  ]);
+  }, [meta.id, meta.type, settings.tmdbKey, settings.fanartKey, settings.tvdbKey, settings.tmdbLanguage, isAnime, addonNative, detectedKitsu, meta]);
 
   useEffect(() => {
     if (!detail) return;
@@ -769,7 +759,7 @@ export function DetailView({
     }
     return stremioIdToTraktTarget(meta.id);
   }, [meta.id, isSeries, isAnime, detail?.imdbId, detail?.id, detail?.kind]);
-  const playMeta: Meta = {
+  const playMeta: Meta = useMemo(() => ({
     ...meta,
     name: title,
     logo,
@@ -778,7 +768,7 @@ export function DetailView({
     releaseInfo: detail?.year ?? meta.releaseInfo,
     behaviorHints: meta.behaviorHints ?? cinemetaFull?.behaviorHints,
     videos: meta.videos ?? cinemetaFull?.videos,
-  };
+  }), [meta, title, logo, backdrop, detail?.releaseDate, detail?.year, cinemetaFull?.behaviorHints, cinemetaFull?.videos]);
 
   useEffect(() => {
     if (!isAnime) return;

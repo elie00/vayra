@@ -36,7 +36,7 @@ export function useSubtitleChoices(src: PlayerSrc) {
       : settings.preferredLanguages ?? [];
     const base = primary.length > 0 ? primary : ["English"];
     return isAnimeSrc(src) ? base : base.filter((l) => !isJapanese(l));
-  }, [settings.preferredSubLangs, settings.preferredLanguages, src.meta.id]);
+  }, [settings.preferredSubLangs, settings.preferredLanguages, src]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,7 +91,7 @@ export function useSubtitleChoices(src: PlayerSrc) {
     return () => {
       cancelled = true;
     };
-  }, [src.url, authKey, preferredLangs, settings.subProvidersEnabled]);
+  }, [src.url, authKey, preferredLangs, settings.subProvidersEnabled, src.imdbId, src.meta.id, src.meta.type, src.episode?.season, src.episode?.episode, src.streamRef?.parsedTitle, src.streamRef?.title, src.streamRef?.source, src.streamRef?.resolution]);
 
   const groups = useMemo<SubtitleLangGroup[]>(() => {
     if (!results) return [];

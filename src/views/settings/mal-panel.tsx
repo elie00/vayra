@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Link2, LogOut, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MalConnectModal } from "@/components/mal/mal-connect-modal";
 import { fetchMalAvatar } from "@/lib/mal/profile";
 import { useMal } from "@/lib/mal/provider";
@@ -32,16 +32,16 @@ export function MalPanel() {
     };
   }, [isConnected]);
 
-  const pushAvatar = (url: string | null) => {
+  const pushAvatar = useCallback((url: string | null) => {
     update({ harborAvatar: url });
     if (activeProfile) updateProfile(activeProfile.id, { avatar: url });
-  };
+  }, [activeProfile, update, updateProfile]);
 
   useEffect(() => {
     if (settings.useMalAvatar && malAvatar && settings.harborAvatar !== malAvatar) {
       pushAvatar(malAvatar);
     }
-  }, [settings.useMalAvatar, malAvatar]);
+  }, [settings.useMalAvatar, malAvatar, settings.harborAvatar, pushAvatar]);
 
   const toggleMalAvatar = (on: boolean) => {
     if (on) {

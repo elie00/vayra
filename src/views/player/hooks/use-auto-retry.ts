@@ -167,7 +167,7 @@ export function useAutoRetry(params: {
           : { autoPlay: false },
       );
     },
-    [src.attempt, src.meta, src.episode, openPicker, instantPlay, isLocal, isLive, inRoom, bridgeRef],
+    [isLocal, isLive, src.attempt, src.url, src.meta, src.episode, src.headers, bridgeRef, instantPlay, inRoom, openPicker],
   );
 
   useEffect(() => {
@@ -290,7 +290,7 @@ export function useAutoRetry(params: {
       return;
     }
     triggerAutoRetry(`playback error "${snap.errorCode}"`);
-  }, [snap.errorCode, snap.status, triggerAutoRetry, stremioServerTranscode, transcodedUrl, src.url, src.subtitles, src.notWebReady, bridgeRef, isP2pEngine, engineFailure, isLive, src.streamRef?.infoHash, src.streamRef?.cachedSlugs, src.streamRef?.fileIdx, src.headers, debrids]);
+  }, [snap.errorCode, snap.status, triggerAutoRetry, stremioServerTranscode, transcodedUrl, src.url, src.subtitles, src.notWebReady, bridgeRef, isP2pEngine, engineFailure, isLive, src.streamRef?.infoHash, src.streamRef?.cachedSlugs, src.streamRef?.fileIdx, src.headers, debrids, src.episode, isLocal]);
 
   const lastPosRef = useRef({ pos: 0, at: 0, started: false, urlAt: 0 });
   useEffect(() => {

@@ -230,7 +230,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
       .finally(() => {
         heroBuildingRef.current = false;
       });
-  }, [rowsByKey, heroSeed, hero.metas.length, anilistTrending, settings.tmdbKey, filterSig, hostedHero]);
+  }, [rowsByKey, heroSeed, hero.metas.length, anilistTrending, settings.tmdbKey, filterSig, hostedHero, settings.animeExcludeOrigins, settings.animeHideWatchedPicks]);
   const heroMetas = hero.metas;
   const heroTrending = hero.trending;
 
@@ -291,6 +291,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
   const [cwRootVersion, setCwRootVersion] = useState(0);
   const continueWatching = useMemo(() => {
     void cwVersion;
+    void cwRootVersion;
     void animeDetectVer;
     const seen = new Set<string>();
     const seenRoot = new Set<string>();
@@ -316,7 +317,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
         return true;
       })
       .slice(0, 20);
-  }, [libItems, simklCw, cwVersion, animeDetectVer, cwRootVersion]);
+  }, [libItems, simklCw, cwVersion, cwRootVersion, animeDetectVer]);
 
   useEffect(() => {
     const ids = [...libItems, ...simklCw]
@@ -346,7 +347,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     if (usable.length === 0) return libItems;
     const overrideIds = new Set(usable.map((i) => i._id));
     return [...libItems.filter((i) => !overrideIds.has(i._id)), ...usable];
-  }, [libItems, manualWatchedVer]);
+  }, [libItems]);
   useEffect(() => {
     if (!simklConnected) {
       setSimklWatchedMap(new Map());
@@ -756,4 +757,3 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     </main>
   );
 }
-
