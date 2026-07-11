@@ -13,6 +13,7 @@ import {
 } from "@/lib/cast";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import type { CastErrorInfo } from "../cast-error-modal";
+import { startSerializedPoll } from "./serialized-poll";
 
 type LoadParams = {
   host: string;
@@ -197,11 +198,13 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
         setCastPositionSec(s.position_sec);
       }
     };
-    void tick();
-    const id = window.setInterval(() => void tick(), 1000);
+    // Serialized loop (next poll 1s after the previous one *finishes*), so a
+    // slow cast_status — e.g. a Chromecast that reconnects each request — can't
+    // let ticks pile up into concurrent connections.
+    const stop = startSerializedPoll(tick, 1000);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      stop();
     };
   }, [castDevice]);
 
