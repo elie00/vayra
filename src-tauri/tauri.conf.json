@@ -96,7 +96,7 @@
   },
   "plugins": {
     "deep-link": {
-      "mobile": [],
+      "mobile": [{ "scheme": ["harbor"] }],
       "desktop": {
         "schemes": ["harbor", "stremio"]
       }
