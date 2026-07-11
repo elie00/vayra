@@ -28,9 +28,55 @@ fn pick_address(addrs: &std::collections::HashSet<IpAddr>) -> Option<IpAddr> {
         .or_else(|| addrs.iter().copied().next())
 }
 
-/// AirPlay 2 / HomeKit-required devices set bit 27 (HKPairingAndAccessControl) or
-/// require pairing via /pair-setup. Probe /server-info — if it 403s or returns
-/// `requiredSenderFeatures` indicating pairing-only, return false so we drop the entry.
+/// Decide from `/server-info` whether the receiver explicitly requires sender
+/// features that the legacy `/play` flow cannot provide. Merely advertising
+/// HomeKit pairing support is not enough: many compatible televisions expose
+/// `hkPairing` while still accepting legacy playback.
+fn server_info_requires_pairing(body: &str) -> bool {
+    let lower = body.to_lowercase();
+    let Some(key_pos) = lower.find("requiressenderfeatures") else {
+        return false;
+    };
+    let raw_tail = &lower[key_pos..lower.len().min(key_pos + 320)];
+    let value_start = raw_tail.find("</key>").map_or(0, |pos| pos + "</key>".len());
+    let value_tail = &raw_tail[value_start..];
+    let tail = value_tail
+        .find("<key>")
+        .map_or(value_tail, |next_key| &value_tail[..next_key]);
+    if tail.contains("<false/>") || tail.contains("<false />") {
+        return false;
+    }
+    if tail.contains("<true/>") || tail.contains("<true />") {
+        return true;
+    }
+    if let Some(start) = tail.find("<integer>") {
+        let value = &tail[start + "<integer>".len()..];
+        if let Some(end) = value.find("</integer>") {
+            let value = value[..end].trim();
+            return value
+                .strip_prefix("0x")
+                .and_then(|hex| u64::from_str_radix(hex, 16).ok())
+                .or_else(|| value.parse::<u64>().ok())
+                .is_some_and(|number| number != 0);
+        }
+    }
+    if let Some(eq) = tail.find('=') {
+        let value = tail[eq + 1..]
+            .split([';', '\n', '\r', ','])
+            .next()
+            .unwrap_or("")
+            .trim();
+        return value
+            .strip_prefix("0x")
+            .and_then(|hex| u64::from_str_radix(hex, 16).ok())
+            .or_else(|| value.parse::<u64>().ok())
+            .is_some_and(|number| number != 0);
+    }
+    false
+}
+
+/// Probe `/server-info`; HTTP rejection or an explicit non-zero sender feature
+/// requirement means the legacy endpoint cannot be used.
 pub async fn supports_legacy_airplay(host: &str, port: u16) -> bool {
     let client = match reqwest::Client::builder()
         .timeout(Duration::from_millis(900))
@@ -52,11 +98,8 @@ pub async fn supports_legacy_airplay(host: &str, port: u16) -> bool {
     if !resp.status().is_success() {
         return false;
     }
-    let body = resp.text().await.unwrap_or_default().to_lowercase();
-    if body.contains("requiressenderfeatures") || body.contains("hkpairing") {
-        return false;
-    }
-    true
+    let body = resp.text().await.unwrap_or_default();
+    !server_info_requires_pairing(&body)
 }
 
 pub async fn discover(timeout_ms: u64) -> Vec<AirPlayDevice> {
@@ -268,4 +311,30 @@ fn parse_plist_real(xml: &str, key: &str) -> Option<f64> {
 
 fn uuid_session_id() -> String {
     uuid::Uuid::new_v4().to_string().to_uppercase()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::server_info_requires_pairing;
+
+    #[test]
+    fn zero_sender_features_keeps_legacy_airplay_available() {
+        let plist = "<key>requiresSenderFeatures</key><integer>0</integer><key>hkPairing</key><true/>";
+        assert!(!server_info_requires_pairing(plist));
+    }
+
+    #[test]
+    fn non_zero_sender_features_require_pairing() {
+        assert!(server_info_requires_pairing(
+            "<key>requiresSenderFeatures</key><integer>0x8000000</integer>",
+        ));
+        assert!(server_info_requires_pairing("requiresSenderFeatures = 8;"));
+    }
+
+    #[test]
+    fn homekit_capability_alone_does_not_block_legacy_airplay() {
+        assert!(!server_info_requires_pairing(
+            "<key>hkPairing</key><true/><key>features</key><integer>123</integer>",
+        ));
+    }
 }
