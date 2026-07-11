@@ -8,7 +8,7 @@ import { setUiLanguage } from "@/lib/i18n";
 import { isMobileTauri } from "@/lib/platform";
 import { STORAGE_KEY } from "./settings/defaults";
 import { loadStoredSettings } from "./settings/load";
-import { readSettingsFile, writeSettingsFile } from "./settings/file-store";
+import { persistSettings, readSettingsFile, readSettingsSecrets } from "./settings/file-store";
 import type { Settings, StreamingService } from "./settings/types";
 
 export type {
@@ -33,6 +33,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setUiLanguage(s.uiLanguage);
     return s;
   });
+  const [storageReady, setStorageReady] = useState(false);
 
   setTmdbLanguage(settings.tmdbLanguage);
 
@@ -48,14 +49,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
     let cancelled = false;
-    void readSettingsFile().then((raw) => {
-      if (cancelled || !raw || localStorage.getItem(STORAGE_KEY)) return;
+    void Promise.all([readSettingsFile(), readSettingsSecrets()]).then(([raw, secrets]) => {
+      if (cancelled) return;
       try {
-        localStorage.setItem(STORAGE_KEY, raw);
-        setSettings(loadStoredSettings());
-      } catch {}
+        if (raw && !localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, raw);
+        const stored = loadStoredSettings();
+        setSettings(secrets ? { ...stored, ...secrets } : stored);
+      } catch {
+        // Keep the synchronous localStorage state when native hydration fails.
+      } finally {
+        if (!cancelled) setStorageReady(true);
+      }
     });
     return () => {
       cancelled = true;
@@ -72,14 +77,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const fileTimerRef = useRef(0);
   useEffect(() => {
+    if (!storageReady) return;
     try {
-      const { backgroundImage: _drop, ...themeRest } = settings.theme;
-      void _drop;
-      const settingsToSave = { ...settings, theme: themeRest };
-      const json = JSON.stringify(settingsToSave);
-      localStorage.setItem(STORAGE_KEY, json);
       window.clearTimeout(fileTimerRef.current);
-      fileTimerRef.current = window.setTimeout(() => void writeSettingsFile(json), 600);
+      fileTimerRef.current = window.setTimeout(() => void persistSettings(settings), 600);
     } catch (e) {
       if (e instanceof DOMException && (e.name === "QuotaExceededError" || e.code === 22)) {
         console.warn("[settings] localStorage quota exceeded, dropping avatar");
@@ -88,7 +89,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-  }, [settings]);
+  }, [settings, storageReady]);
 
   const tmdbLangRef = useRef<string | null>(null);
   useEffect(() => {

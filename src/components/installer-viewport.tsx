@@ -7,6 +7,7 @@ import { pushActivityHint } from "@/lib/discord/activity-hint";
 import { clearPendingDeepLink } from "@/lib/deep-link";
 import { isLinuxDesktop, isWeb } from "@/lib/platform";
 import { openUrl } from "@/lib/window";
+import { normalizeInstallUrl, trustedInstallerMessage } from "@/lib/installer-message";
 import { HarborLoader } from "@/components/harbor-loader";
 import { InstallOverlay } from "./installer-viewport/install-overlay";
 
@@ -63,20 +64,6 @@ type Phase =
   | { kind: "success"; name: string; logo: string | null }
   | { kind: "error"; message: string };
 
-const STREMIO_PROTO = "stremio://";
-
-function normalizeInstallUrl(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  if (trimmed.startsWith(STREMIO_PROTO)) {
-    return "https://" + trimmed.slice(STREMIO_PROTO.length);
-  }
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
-  return null;
-}
-
 function InstallerViewport({
   url,
   title,
@@ -95,6 +82,7 @@ function InstallerViewport({
   const [reloadKey, setReloadKey] = useState(0);
   const successTimerRef = useRef<number | null>(null);
   const blockedTimerRef = useRef<number | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useLayoutEffect(() => {
     document.body.style.overflow = "hidden";
@@ -183,20 +171,11 @@ function InstallerViewport({
 
     const onMessage = (e: MessageEvent) => {
       if (isBusy()) return;
-      const data = e.data;
-      if (!data) return;
-      const candidate =
-        typeof data === "string"
-          ? data
-          : typeof data?.url === "string"
-            ? data.url
-            : typeof data?.manifestUrl === "string"
-              ? data.manifestUrl
-              : null;
+      const candidate = trustedInstallerMessage(e, iframeRef.current?.contentWindow ?? null, url);
       if (!candidate) return;
-      if (candidate.startsWith(STREMIO_PROTO) || candidate.includes("manifest.json")) {
-        void submitRef.current(candidate);
-      }
+      const addonHost = new URL(candidate).hostname;
+      if (!window.confirm(`Install the addon provided by ${addonHost}?`)) return;
+      void submitRef.current(candidate);
     };
     const onDeeplink = (e: Event) => {
       if (isBusy()) return;
@@ -213,7 +192,7 @@ function InstallerViewport({
       window.removeEventListener("message", onMessage);
       window.removeEventListener("harbor:deeplink-install", onDeeplink);
     };
-  }, []);
+  }, [url]);
 
   const readClipboard = async () => {
     try {
@@ -323,6 +302,7 @@ function InstallerViewport({
           </div>
         )}
         <iframe
+          ref={iframeRef}
           key={reloadKey}
           src={url}
           title={title}

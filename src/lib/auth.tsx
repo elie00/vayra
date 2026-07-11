@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { onStremioAuthKey } from "./deep-link";
 import { stremioSourceProfileId, useProfiles, type Profile } from "./profiles";
 import { getUser, login as apiLogin, type User } from "./stremio";
@@ -21,6 +22,7 @@ type AuthValue = {
 };
 
 const PROFILE_KEY_PREFIX = "harbor.auth.";
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 function profileAuthKey(id: string): string {
   return PROFILE_KEY_PREFIX + id;
@@ -45,6 +47,41 @@ function writeProfileSession(id: string, session: Session | null): void {
   } catch {
     return;
   }
+}
+
+async function readPersistedProfileSession(id: string): Promise<Session | null> {
+  const legacy = readProfileSession(id);
+  if (!isTauri) return legacy;
+  try {
+    const raw = await invoke<string | null>("auth_secret_read", { account: id });
+    if (raw) {
+      const parsed = JSON.parse(raw) as Session;
+      if (parsed?.authKey && parsed?.user) return parsed;
+    }
+    if (legacy) {
+      await invoke("auth_secret_write", { account: id, content: JSON.stringify(legacy) });
+      writeProfileSession(id, null);
+    }
+    return legacy;
+  } catch {
+    return legacy;
+  }
+}
+
+async function persistProfileSession(id: string, session: Session | null): Promise<void> {
+  if (isTauri) {
+    try {
+      await invoke("auth_secret_write", {
+        account: id,
+        content: session ? JSON.stringify(session) : null,
+      });
+      writeProfileSession(id, null);
+      return;
+    } catch {
+      // Preserve the session if the platform credential store is unavailable.
+    }
+  }
+  writeProfileSession(id, session);
 }
 
 export function readActiveStremioAuthKey(): string | null {
@@ -73,7 +110,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    setSession(sourceId ? readProfileSession(sourceId) : null);
+    let cancelled = false;
+    if (!sourceId) {
+      setSession(null);
+      return;
+    }
+    void readPersistedProfileSession(sourceId).then((stored) => {
+      if (!cancelled) setSession(stored);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [sourceId]);
 
   const commitSession = useCallback(
@@ -85,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (activeProfile.shareStremioWith) {
         updateProfile(activeProfile.id, { shareStremioWith: null });
       }
-      writeProfileSession(activeProfile.id, fresh);
+      void persistProfileSession(activeProfile.id, fresh);
       setSession(fresh);
     },
     [activeProfile, updateProfile],
@@ -123,7 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (activeProfile.shareStremioWith) {
       updateProfile(activeProfile.id, { shareStremioWith: null });
     } else {
-      writeProfileSession(activeProfile.id, null);
+      void persistProfileSession(activeProfile.id, null);
     }
     setSession(null);
   }, [activeProfile, updateProfile]);
