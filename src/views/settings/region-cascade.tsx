@@ -17,9 +17,9 @@ export function applyLocaleCascade(
   next: LocaleProfile,
   current: Pick<Settings, "preferredLanguages" | "preferredSubLangs" | "preferredAudioLangs">,
 ): void {
-  setUiLanguage(next.uiLanguage === "ar" ? "ar" : "en");
+  setUiLanguage(next.uiLanguage === "ar" || next.uiLanguage === "fr" ? next.uiLanguage : "en");
   update({
-    uiLanguage: next.uiLanguage === "ar" ? "ar" : "en",
+    uiLanguage: next.uiLanguage === "ar" || next.uiLanguage === "fr" ? next.uiLanguage : "en",
     tmdbLanguage: next.tmdbLanguage,
     preferredLanguages: prepend(next.audioLanguage, current.preferredLanguages),
     preferredSubLangs: prepend(next.subtitleLanguage, current.preferredSubLangs),
@@ -37,6 +37,7 @@ export function regionFromNavigator(): string | null {
   const lang = parts[0]?.toLowerCase();
   if (lang === "ar") return "SA";
   if (lang === "es") return "ES";
+  if (lang === "fr") return "FR";
   return null;
 }
 

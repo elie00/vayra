@@ -1,5 +1,5 @@
 export type LocaleProfile = {
-  uiLanguage: "en" | "ar" | "es";
+  uiLanguage: "en" | "ar" | "es" | "fr";
   tmdbLanguage: string;
   contentLanguage: string;
   subtitleLanguage: string;
@@ -63,6 +63,17 @@ export function localeForRegion(region: string): LocaleProfile {
       greetingKey: null,
     };
   }
+  if (r === "FR") {
+    return {
+      uiLanguage: "fr",
+      tmdbLanguage: "fr-FR",
+      contentLanguage: "fr",
+      subtitleLanguage: "French",
+      audioLanguage: "French",
+      rtl: false,
+      greetingKey: null,
+    };
+  }
   return EN;
 }
 
@@ -73,5 +84,6 @@ export function isLocalizedRegion(region: string): boolean {
 export function localeLabel(profile: LocaleProfile): string {
   if (profile.uiLanguage === "ar") return "العربية (Arabic)";
   if (profile.uiLanguage === "es") return "Español (Spanish)";
+  if (profile.uiLanguage === "fr") return "Français (French)";
   return "English";
 }
