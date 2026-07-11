@@ -1,6 +1,6 @@
 import { ArrowDownToLine, Check, Pause, Play, RotateCw } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
-import { activeDownloadFor, cancelDownload, pauseDownload, resumeDownload, useDownloads } from "@/lib/download/downloads-store";
+import { activeDownloadFor, pauseDownload, resumeDownload, useDownloads } from "@/lib/download/downloads-store";
 import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
