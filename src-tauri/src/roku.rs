@@ -40,10 +40,19 @@ pub async fn discover(timeout_ms: u64) -> Vec<RokuDevice> {
         match fetch_device_info(&location).await {
             Ok((name, model)) => {
                 let host = host_from_url(&location).unwrap_or_else(|| location.clone());
-                out.push(RokuDevice { id, name, model, host, ecp_base: location });
+                out.push(RokuDevice {
+                    id,
+                    name,
+                    model,
+                    host,
+                    ecp_base: location,
+                });
             }
             Err(e) => {
-                eprintln!("[harbor::roku] device-info probe failed for {}: {}", location, e);
+                eprintln!(
+                    "[harbor::roku] device-info probe failed for {}: {}",
+                    location, e
+                );
                 out.push(RokuDevice {
                     id: id.clone(),
                     name: "Roku".into(),
@@ -58,14 +67,20 @@ pub async fn discover(timeout_ms: u64) -> Vec<RokuDevice> {
 }
 
 fn ecp_url_uses_roku_port(url: &str) -> bool {
-    let Some(host_port) = host_from_url(url) else { return false };
-    let Some(colon) = host_port.find(':') else { return false };
+    let Some(host_port) = host_from_url(url) else {
+        return false;
+    };
+    let Some(colon) = host_port.find(':') else {
+        return false;
+    };
     &host_port[colon + 1..] == "8060"
 }
 
 fn ssdp_search(timeout_ms: u64) -> Vec<(String, String)> {
     let mut found: HashMap<String, String> = HashMap::new();
-    let Ok(socket) = UdpSocket::bind("0.0.0.0:0") else { return Vec::new() };
+    let Ok(socket) = UdpSocket::bind("0.0.0.0:0") else {
+        return Vec::new();
+    };
     let _ = socket.set_read_timeout(Some(Duration::from_millis(250)));
     let _ = socket.set_multicast_ttl_v4(4);
     let _ = socket.send_to(M_SEARCH_ROKU, SSDP_TARGET);
@@ -129,14 +144,31 @@ async fn fetch_device_info(ecp_base: &str) -> Result<(String, Option<String>), S
         .timeout(Duration::from_secs(3))
         .build()
         .map_err(|e| format!("client: {e}"))?;
-    let resp = client.get(&url).send().await.map_err(|e| format!("get info: {e}"))?;
+    let resp = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("get info: {e}"))?;
     let xml = resp.text().await.map_err(|e| format!("body: {e}"))?;
-    let name = extract_tag(&xml, "friendly-device-name")
+    Ok(parse_device_info(&xml))
+}
+
+fn parse_device_info(xml: &str) -> (String, Option<String>) {
+    let name = extract_tag(xml, "friendly-device-name")
         .or_else(|| extract_tag(&xml, "user-device-name"))
         .or_else(|| extract_tag(&xml, "model-name"))
         .unwrap_or_else(|| "Roku".into());
-    let model = extract_tag(&xml, "model-name");
-    Ok((name, model))
+    let model_name = extract_tag(xml, "model-name");
+    let model_number = extract_tag(xml, "model-number");
+    let model = match (model_name, model_number) {
+        (Some(label), Some(number)) if !label.contains(&number) => {
+            Some(format!("{label} ({number})"))
+        }
+        (Some(label), _) => Some(label),
+        (None, Some(number)) => Some(number),
+        (None, None) => None,
+    };
+    (name, model)
 }
 
 fn extract_tag(xml: &str, tag: &str) -> Option<String> {
@@ -168,13 +200,20 @@ fn guess_format(url: &str, content_type: Option<&str>) -> &'static str {
         if lower.contains("application/dash+xml") || lower.contains("dash+xml") {
             return "dash";
         }
-        if lower.contains("application/x-mpegurl") || lower.contains("application/vnd.apple.mpegurl") || lower.contains("mpegurl") {
+        if lower.contains("application/x-mpegurl")
+            || lower.contains("application/vnd.apple.mpegurl")
+            || lower.contains("mpegurl")
+        {
             return "hls";
         }
         if lower.contains("matroska") {
             return "mkv";
         }
-        if lower.contains("video/mp4") || lower.contains("video/quicktime") || lower.contains("video/x-m4v") || lower.contains("m4v") {
+        if lower.contains("video/mp4")
+            || lower.contains("video/quicktime")
+            || lower.contains("video/x-m4v")
+            || lower.contains("m4v")
+        {
             return "mp4";
         }
         if lower.contains("application/vnd.ms-sstr+xml") || lower.contains("smoothstreaming") {
@@ -229,7 +268,10 @@ pub async fn load(
     if let Some(s) = start_time_sec.filter(|s| *s > 1.0) {
         launch.push_str(&format!("&startMS={}", (s * 1000.0) as u64));
     }
-    eprintln!("[harbor::roku] launch URL (channel={}): {}", channel_id, launch);
+    eprintln!(
+        "[harbor::roku] launch URL (channel={}): {}",
+        channel_id, launch
+    );
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(6))
         .build()
@@ -243,7 +285,11 @@ pub async fn load(
         .map_err(|e| format!("launch: {e}"))?;
     let status = resp.status();
     let body = resp.text().await.unwrap_or_default();
-    eprintln!("[harbor::roku] launch response: {} body={}", status, body.chars().take(200).collect::<String>());
+    eprintln!(
+        "[harbor::roku] launch response: {} body={}",
+        status,
+        body.chars().take(200).collect::<String>()
+    );
     if !status.is_success() {
         return Err(format!("launch status {} body={}", status, body));
     }
@@ -256,7 +302,11 @@ async fn locate_media_player_channel(ecp_base: &str) -> Result<String, String> {
         .timeout(Duration::from_secs(3))
         .build()
         .map_err(|e| format!("client: {e}"))?;
-    let resp = client.get(&url).send().await.map_err(|e| format!("query/apps: {e}"))?;
+    let resp = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("query/apps: {e}"))?;
     let status = resp.status();
     if !status.is_success() {
         eprintln!("[harbor::roku] query/apps blocked: {}", status);
@@ -266,17 +316,33 @@ async fn locate_media_player_channel(ecp_base: &str) -> Result<String, String> {
             other => format!("ROKU_ECP_ERROR: Roku ECP returned HTTP {} on /query/apps.", other),
         });
     }
-    let xml = resp.text().await.map_err(|e| format!("query/apps body: {e}"))?;
+    let xml = resp
+        .text()
+        .await
+        .map_err(|e| format!("query/apps body: {e}"))?;
     let apps = iter_apps(&xml);
-    eprintln!("[harbor::roku] query/apps status={} parsed_apps={}", status, apps.len());
+    eprintln!(
+        "[harbor::roku] query/apps status={} parsed_apps={}",
+        status,
+        apps.len()
+    );
     for (id, name) in &apps {
         let lower = name.to_lowercase();
         if lower.contains("media assistant") || id == MEDIA_ASSISTANT_CHANNEL {
-            eprintln!("[harbor::roku] found Media Assistant channel id={} name={}", id, name);
+            eprintln!(
+                "[harbor::roku] found Media Assistant channel id={} name={}",
+                id, name
+            );
             return Ok(id.clone());
         }
     }
-    eprintln!("[harbor::roku] installed channels: [{}]", apps.iter().map(|(id, name)| format!("{}={:?}", id, name)).collect::<Vec<_>>().join(", "));
+    eprintln!(
+        "[harbor::roku] installed channels: [{}]",
+        apps.iter()
+            .map(|(id, name)| format!("{}={:?}", id, name))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
     let probe = format!("{}query/icon/{}", ecp_base, MEDIA_ASSISTANT_CHANNEL);
     match client.get(&probe).send().await {
         Ok(r) => {
@@ -363,7 +429,10 @@ pub async fn seek(
     content_type: Option<String>,
     sec: f64,
 ) -> Result<(), String> {
-    eprintln!("[harbor::roku] absolute-seek via re-launch with startMS={}", (sec.max(0.0) * 1000.0) as u64);
+    eprintln!(
+        "[harbor::roku] absolute-seek via re-launch with startMS={}",
+        (sec.max(0.0) * 1000.0) as u64
+    );
     load(ecp_base, url, title, content_type, Some(sec.max(0.0))).await
 }
 
@@ -422,6 +491,36 @@ fn extract_attr(xml: &str, tag: &str, attr: &str) -> Option<String> {
 }
 
 fn parse_ms(s: &str) -> Option<u64> {
-    let trimmed = s.trim().trim_end_matches(" ms").trim_end_matches("ms").trim();
+    let trimmed = s
+        .trim()
+        .trim_end_matches(" ms")
+        .trim_end_matches("ms")
+        .trim();
     trimmed.parse::<u64>().ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_device_info;
+
+    #[test]
+    fn device_info_keeps_model_number_for_capability_matching() {
+        let xml = r#"<device-info>
+            <friendly-device-name>Living Room</friendly-device-name>
+            <model-name>Roku Ultra</model-name>
+            <model-number>4802X</model-number>
+        </device-info>"#;
+
+        let (name, model) = parse_device_info(xml);
+        assert_eq!(name, "Living Room");
+        assert_eq!(model.as_deref(), Some("Roku Ultra (4802X)"));
+    }
+
+    #[test]
+    fn device_info_falls_back_to_model_number() {
+        let (name, model) =
+            parse_device_info("<device-info><model-number>3941X</model-number></device-info>");
+        assert_eq!(name, "Roku");
+        assert_eq!(model.as_deref(), Some("3941X"));
+    }
 }
