@@ -231,6 +231,30 @@ const CAPS_SONY_DLNA: DeviceCaps = {
   containerMkv: false,
 };
 
+const CAPS_SAMSUNG_DLNA_4K: DeviceCaps = {
+  ...CAPS_SAMSUNG_DLNA,
+  label: "Samsung Smart TV (4K)",
+  maxResolution: 2160,
+  hevc: true,
+  hdr10: true,
+};
+
+const CAPS_LG_DLNA_4K: DeviceCaps = {
+  ...CAPS_LG_DLNA,
+  label: "LG Smart TV (4K)",
+  maxResolution: 2160,
+  hevc: true,
+  hdr10: true,
+};
+
+const CAPS_SONY_DLNA_4K: DeviceCaps = {
+  ...CAPS_SONY_DLNA,
+  label: "Sony Bravia (4K)",
+  maxResolution: 2160,
+  hevc: true,
+  hdr10: true,
+};
+
 const CAPS_AIRPLAY_APPLE_TV: DeviceCaps = {
   label: "Apple TV",
   maxResolution: 2160,
@@ -286,13 +310,24 @@ export function getDeviceCaps(device: CastDeviceInfo): DeviceCaps {
   }
   if (device.kind === "dlna") {
     if (/fire\s*tv/.test(blob)) return CAPS_FIRE_TV_4K;
-    if (/samsung|tizen/.test(blob)) return CAPS_SAMSUNG_DLNA;
-    if (/\b(?:qn|un|gq|ue|qe|ks|ku|mu|ju|hu|eh|tu|au|bu|cu|du|ls)\d{2,3}[a-z]/.test(blob))
+    if (/samsung|tizen/.test(blob)) {
+      if (/\b(?:4k|uhd|qled|neo\s*qled)\b|\b(?:qn|qe|gq)\d{2,3}/.test(blob))
+        return CAPS_SAMSUNG_DLNA_4K;
       return CAPS_SAMSUNG_DLNA;
-    if (/\blg\b|webos|thinq/.test(blob)) return CAPS_LG_DLNA;
-    if (/\boled\d{2,3}|\bnano\d{2,3}|\bqned\d{2,3}|\b(?:ur|uq|up|um)\d{2,3}/.test(blob))
+    }
+    if (/\b(?:qn|un|gq|ue|qe|ks|ku|mu|ju|hu|eh|tu|au|bu|cu|du|ls)\d{2,3}[a-z]/.test(blob))
+      return /\b(?:qn|qe|gq)\d{2,3}/.test(blob) ? CAPS_SAMSUNG_DLNA_4K : CAPS_SAMSUNG_DLNA;
+    if (/\blg\b|webos|thinq/.test(blob)) {
+      if (/\b(?:4k|uhd|oled|qned|nanocell)\b|\b(?:oled|qned|nano|ur|uq|up|um)\d{2,3}/.test(blob))
+        return CAPS_LG_DLNA_4K;
       return CAPS_LG_DLNA;
-    if (/sony|bravia/.test(blob)) return CAPS_SONY_DLNA;
+    }
+    if (/\boled\d{2,3}|\bnano\d{2,3}|\bqned\d{2,3}|\b(?:ur|uq|up|um)\d{2,3}/.test(blob))
+      return CAPS_LG_DLNA_4K;
+    if (/sony|bravia/.test(blob)) {
+      if (/\b(?:4k|uhd)\b|bravia\s*xr|\bxr-?\d{2,3}/.test(blob)) return CAPS_SONY_DLNA_4K;
+      return CAPS_SONY_DLNA;
+    }
     if (/\b(?:kd|xbr|xr|kj)-?\d{2,3}/.test(blob)) return CAPS_SONY_DLNA;
     return CAPS_GENERIC_DLNA;
   }
