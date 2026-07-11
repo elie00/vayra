@@ -658,6 +658,15 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   });
 
   const isLocalSrc = isLocalUrl(src.url);
+  const cancelToPicker = useCallback(() => {
+    if (isLocalSrc || src.meta.id?.startsWith("iptv:")) {
+      void closePlayer();
+      return;
+    }
+    bridgeRef.current?.destroy();
+    bridgeRef.current = null;
+    openPicker(src.meta, src.episode, { autoPlay: false });
+  }, [bridgeRef, closePlayer, isLocalSrc, openPicker, src.episode, src.meta]);
   const streamPillVariant = useStreamPill({
     srcUrl: src.url,
     snap,
@@ -788,13 +797,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     swappingEp,
     swapResolvingKey,
     closePlayer,
-    cancelToPicker: () => {
-      if (isLocalSrc || src.meta.id?.startsWith("iptv:")) {
-        void closePlayer();
-        return;
-      }
-      openPicker(src.meta, src.episode, { autoPlay: false });
-    },
+    cancelToPicker,
     engineStats,
     isP2pEngine,
     setLoaderShowing,
