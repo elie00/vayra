@@ -1,6 +1,6 @@
 import { isTrustedGroup } from "../parser";
 import type { ParsedStream, ScoredStream, ScoreReason } from "../types";
-import { trustedAddonPoints } from "./scoring-addons";
+import { addonPriorityPoints, trustedAddonPoints } from "./scoring-addons";
 import { audioPoints, playabilityPenalty } from "./scoring-audio";
 import { bitrateBudgetPenalty, expectedMinSizeBytes } from "./scoring-bitrate";
 import { isCachedOnActive } from "./scoring-debrid";
@@ -196,6 +196,12 @@ export function scoreStream(
   if (trustedAddonBoost.delta > 0) {
     score += trustedAddonBoost.delta;
     reasons.push(trustedAddonBoost);
+  }
+
+  const addonPriorityBoost = addonPriorityPoints(s);
+  if (addonPriorityBoost.delta > 0) {
+    score += addonPriorityBoost.delta;
+    reasons.push(addonPriorityBoost);
   }
 
   const playabilityDelta = playabilityPenalty(s);

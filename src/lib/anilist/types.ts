@@ -37,6 +37,8 @@ export type AnilistMedia = {
   episodes: number | null;
   averageScore: number | null;
   seasonYear: number | null;
+  countryOfOrigin?: string | null;
+  description?: string | null;
 };
 
 export type AnilistMediaEntry = {

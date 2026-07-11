@@ -5,8 +5,11 @@ import type { Meta } from "@/lib/cinemeta";
 import { CastModal } from "./cast-modal";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { TransportStremio } from "./transport-stremio";
+import { TransportKids } from "./transport-kids";
+import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { resolveChromeTheme } from "@/lib/theme";
 import { SeekBar } from "./transport/seek-bar";
 import { LiveBadge, GoToLive, LiveSeekBar } from "./transport/live-controls";
@@ -16,24 +19,15 @@ import {
   controlsInSlot,
   PLAYER_CHROME_CHANGED_EVENT,
   readPlayerChromeConfig,
+  writePlayerChromeConfig,
   type PlayerChromeConfig,
+  type TimeFormat,
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
+import { SongIdToast } from "@/components/song-id-toast";
+import { useCastModalPlay } from "./use-cast-modal-play";
 
-// Wrapper fin : choisit le layout AVANT d'appeler les hooks. La variante classique
-// (TransportClassic) porte tous ses hooks ; ainsi basculer le PiP en thème Stremio
-// ne change plus l'ordre des hooks d'un même composant (évite un crash React).
-export function Transport(props: Parameters<typeof TransportClassic>[0]) {
-  const { settings } = useSettings();
-  const isStremioLayout =
-    resolveChromeTheme(settings.theme, settings.playerChromeTheme) === "stremio";
-  if (isStremioLayout && !props.pipMode) {
-    return <TransportStremio {...props} />;
-  }
-  return <TransportClassic {...props} />;
-}
-
-function TransportClassic({
+export function Transport({
   snap,
   capabilities,
   visible,
@@ -53,7 +47,6 @@ function TransportClassic({
   onSubDelay,
   onAudioDelay,
   onEnterSync,
-  onTranslate,
   onAddSubtitle,
   onRate,
   cropMode,
@@ -66,11 +59,14 @@ function TransportClassic({
   onCast,
   onToggleDraw,
   onToggleHideOthers,
+  onClearDraw,
   onScreenshot,
   onPickAnother,
   canPickAnother,
   title,
   subtitle,
+  resolution,
+  quality,
   hoverTitle,
   hoverSub,
   hasPrevEp,
@@ -114,7 +110,6 @@ function TransportClassic({
   onSubDelay: (sec: number) => void;
   onAudioDelay: (sec: number) => void;
   onEnterSync?: () => void;
-  onTranslate?: (targetLangCode: string) => Promise<{ ok: boolean; error?: string }>;
   onAddSubtitle: (url: string, lang?: string, title?: string) => void;
   onRate: (r: number) => void;
   cropMode?: string;
@@ -127,6 +122,7 @@ function TransportClassic({
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
@@ -160,6 +156,8 @@ function TransportClassic({
 }) {
   const t = useT();
   const { settings } = useSettings();
+  const kid = useActiveKid();
+  const isStremioLayout = resolveChromeTheme(settings.theme, settings.playerChromeTheme) === "stremio";
   const playing = snap.status === "playing";
   const showEpisodeNav = hasPrevEp || hasNextEp;
   const [audioMenuOpen, setAudioMenuOpen] = useState(false);
@@ -173,6 +171,8 @@ function TransportClassic({
   );
   const isLiveChannel = !!meta?.id?.startsWith("iptv:");
   const titleClickable = !!meta && !isLiveChannel;
+  const { openMeta, exitPlayer } = useView();
+  const castModalPlay = useCastModalPlay();
   const controlsRef = useRef<HTMLDivElement>(null);
   const [mid, setMid] = useState(false);
   const [compact, setCompact] = useState(false);
@@ -207,6 +207,92 @@ function TransportClassic({
     ro.observe(el);
     return () => ro.disconnect();
   }, [pipMode]);
+  if (isStremioLayout && !pipMode) {
+    return (
+      <TransportStremio
+        snap={snap}
+        capabilities={capabilities}
+        visible={visible}
+        fullscreen={fullscreen}
+        drawMode={drawMode}
+        hideOthersDrawings={hideOthersDrawings}
+        showDraw={showDraw}
+        onBack={onBack}
+        onPlayPause={onPlayPause}
+        onSeek={onSeek}
+        onMute={onMute}
+        onVolume={onVolume}
+        onAudio={onAudio}
+        onSubtitle={onSubtitle}
+        onSubDelay={onSubDelay}
+        onAudioDelay={onAudioDelay}
+        onEnterSync={onEnterSync}
+        onAddSubtitle={onAddSubtitle}
+        onRate={onRate}
+        cropMode={cropMode}
+        onCropMode={onCropMode}
+        anime4kMode={anime4kMode}
+        onAnime4kMode={onAnime4kMode}
+        anime4kAvailable={anime4kAvailable}
+        onPiP={onPiP}
+        onFullscreen={onFullscreen}
+        onCast={onCast}
+        onToggleDraw={onToggleDraw}
+        onToggleHideOthers={onToggleHideOthers}
+        onClearDraw={onClearDraw}
+        onScreenshot={onScreenshot}
+        onPickAnother={onPickAnother}
+        canPickAnother={canPickAnother}
+        title={title}
+        subtitle={subtitle}
+        resolution={resolution}
+        quality={quality}
+        hasPrevEp={hasPrevEp}
+        hasNextEp={hasNextEp}
+        onPrevEp={onPrevEp}
+        onNextEp={onNextEp}
+        metaImdbId={metaImdbId}
+        metaTitle={metaTitle}
+        metaReleaseDate={metaReleaseDate}
+        meta={meta}
+        tmdbKey={tmdbKey}
+        season={season}
+        episode={episode}
+        engine={engine}
+        useOverlayPopups={useOverlayPopups}
+        onMenuOpenChange={onMenuOpenChange}
+        download={download}
+        onDownloadStart={onDownloadStart}
+        onDownloadCancel={onDownloadCancel}
+        onDownloadReveal={onDownloadReveal}
+        onDownloadReset={onDownloadReset}
+        onOpenDvr={onOpenDvr}
+        sleep={sleep}
+      />
+    );
+  }
+  if (kid && !pipMode) {
+    return (
+      <TransportKids
+        snap={snap}
+        capabilities={capabilities}
+        visible={visible}
+        fullscreen={fullscreen}
+        title={title}
+        resolution={resolution}
+        onBack={onBack}
+        onPlayPause={onPlayPause}
+        onSeek={onSeek}
+        onSeekStep={onSeekStep}
+        onMute={onMute}
+        onVolume={onVolume}
+        onSubtitle={onSubtitle}
+        onFullscreen={onFullscreen}
+        onPickAnother={onPickAnother}
+        canPickAnother={canPickAnother}
+      />
+    );
+  }
   if (pipMode) {
     return (
       <PipChrome
@@ -228,6 +314,13 @@ function TransportClassic({
       />
     );
   }
+  const onCycleTimeFormat = () => {
+    const cur = readPlayerChromeConfig("default");
+    const nextFmt: TimeFormat = cur.options.timeFormat === "remaining" ? "start-end" : "remaining";
+    const next = { ...cur, options: { ...cur.options, timeFormat: nextFmt } };
+    writePlayerChromeConfig("default", next);
+    setChromeConfig(next);
+  };
   const ctx: ControlContext = {
     t,
     snap,
@@ -254,7 +347,10 @@ function TransportClassic({
       chromeConfig.controls.map((c) => [c.id, c.variant ?? "auto"]),
     ),
     timeFormat: chromeConfig.options.timeFormat,
+    onCycleTimeFormat,
     volumeStyle: chromeConfig.options.volumeStyle,
+    seekBackStepSec: settings.seekBackStepSec,
+    seekForwardStepSec: settings.seekForwardStepSec,
     title,
     subtitle,
     titleClickable,
@@ -279,7 +375,6 @@ function TransportClassic({
     onSubDelay,
     onAudioDelay,
     onEnterSync,
-    onTranslate,
     onAddSubtitle,
     onRate,
     onPiP,
@@ -287,6 +382,7 @@ function TransportClassic({
     onCast,
     onToggleDraw,
     onToggleHideOthers,
+    onClearDraw,
     onScreenshot,
     onPickAnother,
     onPrevEp,
@@ -309,6 +405,7 @@ function TransportClassic({
   };
   return (
     <>
+      <SongIdToast />
       <div
         data-tauri-drag-region={fullscreen ? undefined : ""}
         className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent px-7 pt-4 pb-8 transition-opacity duration-300 ${
@@ -386,6 +483,18 @@ function TransportClassic({
           onClose={() => setCastModalOpen(false)}
           meta={meta}
           tmdbKey={tmdbKey ?? null}
+          onOpenDetail={(m) => {
+            setCastModalOpen(false);
+            exitPlayer();
+            openMeta(m);
+          }}
+          onPlay={(m, ep) => {
+            setCastModalOpen(false);
+            castModalPlay(m, ep);
+          }}
+          currentEpisode={
+            season != null && episode != null ? { season, episode } : null
+          }
         />
       )}
     </>

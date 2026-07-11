@@ -1,11 +1,11 @@
-import { Check } from "lucide-react";
+import { Check, Pencil } from "lucide-react";
 
 const CARD_STYLES = [
   { id: "flat", name: "Flat", blurb: "Solid surfaces, clean edges." },
   { id: "glass", name: "Glass", blurb: "Backdrop blur, soft tint." },
   { id: "stremio", name: "Stremio", blurb: "Indigo accent rings." },
   { id: "minui", name: "Hairline", blurb: "Crisp thin borders." },
-  { id: "custom", name: "Custom", blurb: "Style cards via your CSS." },
+  { id: "custom", name: "Custom", blurb: "Click to edit your card CSS." },
 ];
 
 const BUTTON_STYLES = [
@@ -19,21 +19,27 @@ export function StylePicker({
   kind,
   value,
   onChange,
+  onEditCustom,
 }: {
   kind: "card" | "button";
   value: string;
   onChange: (v: string) => void;
+  onEditCustom?: () => void;
 }) {
   const list = kind === "card" ? CARD_STYLES : BUTTON_STYLES;
   return (
     <div className="grid grid-cols-2 gap-2.5">
       {list.map((s) => {
         const active = value === s.id;
+        const editable = kind === "card" && s.id === "custom" && !!onEditCustom;
         return (
           <button
             key={s.id}
             type="button"
-            onClick={() => onChange(s.id)}
+            onClick={() => {
+              onChange(s.id);
+              if (editable) onEditCustom?.();
+            }}
             className={`relative flex flex-col gap-2 overflow-hidden rounded-lg border p-3 text-start transition-colors ${
               active
                 ? "border-accent/80 bg-accent-soft"
@@ -48,7 +54,7 @@ export function StylePicker({
               </div>
               {active && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-canvas">
-                  <Check size={12} strokeWidth={3} />
+                  {editable ? <Pencil size={11} strokeWidth={2.6} /> : <Check size={12} strokeWidth={3} />}
                 </span>
               )}
             </div>

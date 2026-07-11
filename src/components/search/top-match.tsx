@@ -1,6 +1,7 @@
 import { Play, Star } from "lucide-react";
 import type { SearchResults } from "@/lib/search";
 import { ResultPoster } from "./result-poster";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { useView } from "@/lib/view";
 
 export function TopMatch({
@@ -13,7 +14,7 @@ export function TopMatch({
   const { openMeta } = useView();
   const yearTxt = match.meta.releaseInfo ?? "";
   const rating = match.voteAverage && match.voteAverage > 0 ? match.voteAverage.toFixed(1) : null;
-  const synopsis = (match.overview ?? "").trim();
+  const synopsis = (useLocalizedOverview(match.meta) ?? "").trim();
 
   const handleOpen = () => {
     openMeta(match.meta);

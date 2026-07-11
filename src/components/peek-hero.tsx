@@ -205,7 +205,7 @@ function PeekSlide({
     let cancelled = false;
     const isTmdb = meta.id.startsWith("tmdb:");
     const lookup = isTmdb
-      ? tmdbLogo(settings.tmdbKey, meta.id)
+      ? tmdbLogo(settings.tmdbKey, meta.id, meta.originalLanguage)
       : fetchMeta(narrowMediaType(meta.type), meta.id).then((full) => full?.logo);
     lookup
       .then((url) => {

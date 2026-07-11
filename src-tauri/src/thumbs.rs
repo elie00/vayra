@@ -28,7 +28,7 @@ const BUCKET_SECONDS: f64 = 2.0;
 const THUMB_WIDTH: u32 = 240;
 const SCREENSHOT_QUALITY: u32 = 72;
 const REQUEST_TIMEOUT_MS: u64 = 12000;
-const SEEK_WAIT_MS: u64 = 2500;
+const SEEK_WAIT_MS: u64 = 4000;
 
 type Pending = Arc<Mutex<HashMap<u64, oneshot::Sender<Result<(), String>>>>>;
 
@@ -43,6 +43,8 @@ struct Inner {
     cache: HashMap<u32, String>,
     pending: Pending,
     next_request_id: u64,
+    wanted: Option<u32>,
+    busy: bool,
 }
 
 struct Shadow {
@@ -63,6 +65,8 @@ impl ThumbsState {
                 cache: HashMap::new(),
                 pending: Arc::new(Mutex::new(HashMap::new())),
                 next_request_id: 1000,
+                wanted: None,
+                busy: false,
             })),
         }
     }
@@ -150,6 +154,7 @@ pub async fn thumbs_set_url(state: State<'_, ThumbsState>, url: String) -> Resul
     inner.url = Some(url);
     inner.session = Some(Uuid::new_v4().simple().to_string());
     inner.cache.clear();
+    inner.wanted = None;
     Ok(())
 }
 
@@ -172,41 +177,99 @@ pub async fn thumbs_get(
     state: State<'_, ThumbsState>,
     time_sec: f64,
 ) -> Result<Option<String>, String> {
-    use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
     if !time_sec.is_finite() || time_sec < 0.0 {
         return Ok(None);
     }
     let bucket = (time_sec / BUCKET_SECONDS).round() as u32;
+    let inner_arc = state.inner.clone();
+    let mut inner = inner_arc.lock().await;
+    if let Some(p) = inner.cache.get(&bucket) {
+        return Ok(Some(p.clone()));
+    }
+    if inner.url.is_none() || inner.session.is_none() {
+        return Err("no url".to_string());
+    }
+    inner.wanted = Some(bucket);
+    if !inner.busy {
+        inner.busy = true;
+        let arc = inner_arc.clone();
+        tokio::spawn(worker(arc));
+    }
+    Ok(None)
+}
 
-    {
-        let inner = state.inner.lock().await;
-        if let Some(p) = inner.cache.get(&bucket) {
-            return Ok(Some(p.clone()));
+async fn worker(inner_arc: Arc<Mutex<Inner>>) {
+    loop {
+        let (bucket, writer_tx, dir, request_id, pending, seek_notify, session) = {
+            let mut inner = inner_arc.lock().await;
+            let bucket = match inner.wanted.take() {
+                Some(b) => b,
+                None => {
+                    inner.busy = false;
+                    return;
+                }
+            };
+            if inner.cache.contains_key(&bucket) {
+                continue;
+            }
+            let url = match inner.url.clone() {
+                Some(u) => u,
+                None => {
+                    inner.busy = false;
+                    return;
+                }
+            };
+            let session = match inner.session.clone() {
+                Some(s) => s,
+                None => {
+                    inner.busy = false;
+                    return;
+                }
+            };
+            if inner.shadow.is_none() {
+                let pending = inner.pending.clone();
+                match spawn_shadow(&url, &session, pending).await {
+                    Ok(s) => inner.shadow = Some(s),
+                    Err(_) => {
+                        inner.busy = false;
+                        return;
+                    }
+                }
+            }
+            let id = inner.next_request_id;
+            inner.next_request_id += 1;
+            let shadow = inner.shadow.as_ref().unwrap();
+            (
+                bucket,
+                shadow.writer_tx.clone(),
+                shadow.cache_dir.clone(),
+                id,
+                inner.pending.clone(),
+                shadow.seek_notify.clone(),
+                session,
+            )
+        };
+        let uri = generate_thumb(bucket, &writer_tx, &dir, request_id, &pending, &seek_notify).await;
+        let mut inner = inner_arc.lock().await;
+        if inner.session.as_deref() != Some(session.as_str()) {
+            inner.busy = false;
+            return;
+        }
+        if let Ok(u) = uri {
+            inner.cache.insert(bucket, u);
         }
     }
+}
 
-    let (writer_tx, cache_dir, request_id, pending, seek_notify) = {
-        let mut inner = state.inner.lock().await;
-        let url = inner.url.clone().ok_or_else(|| "no url".to_string())?;
-        let session = inner
-            .session
-            .clone()
-            .ok_or_else(|| "no session".to_string())?;
-        if inner.shadow.is_none() {
-            let pending = inner.pending.clone();
-            let s = spawn_shadow(&url, &session, pending).await?;
-            inner.shadow = Some(s);
-        }
-        let shadow = inner.shadow.as_ref().unwrap();
-        let writer_tx = shadow.writer_tx.clone();
-        let dir = shadow.cache_dir.clone();
-        let seek_notify = shadow.seek_notify.clone();
-        let id = inner.next_request_id;
-        inner.next_request_id += 1;
-        let pending = inner.pending.clone();
-        (writer_tx, dir, id, pending, seek_notify)
-    };
-
+async fn generate_thumb(
+    bucket: u32,
+    writer_tx: &mpsc::Sender<Value>,
+    cache_dir: &PathBuf,
+    request_id: u64,
+    pending: &Pending,
+    seek_notify: &Arc<Notify>,
+) -> Result<String, String> {
+    use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
     let target_time = (bucket as f64) * BUCKET_SECONDS;
     let thumb_path = cache_dir.join(format!("{}.jpg", bucket));
     let thumb_str = thumb_path.to_string_lossy().to_string();
@@ -244,10 +307,7 @@ pub async fn thumbs_get(
             if bytes.is_empty() {
                 return Err("screenshot empty".to_string());
             }
-            let uri = format!("data:image/jpeg;base64,{}", B64.encode(&bytes));
-            let mut inner = state.inner.lock().await;
-            inner.cache.insert(bucket, uri.clone());
-            Ok(Some(uri))
+            Ok(format!("data:image/jpeg;base64,{}", B64.encode(&bytes)))
         }
         Ok(Ok(Err(e))) => Err(e),
         Ok(Err(_)) => Err("request canceled".to_string()),
@@ -264,6 +324,7 @@ pub async fn thumbs_stop(state: State<'_, ThumbsState>) -> Result<(), String> {
     inner.url = None;
     inner.session = None;
     inner.cache.clear();
+    inner.wanted = None;
     Ok(())
 }
 

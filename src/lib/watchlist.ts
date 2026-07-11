@@ -198,13 +198,13 @@ async function syncWithSimkl(metaId: string, added: boolean): Promise<void> {
 }
 
 async function syncWithStremio(input: string | WatchlistInput, added: boolean): Promise<void> {
+  const authKey = readActiveStremioAuthKey();
+  if (!authKey) return;
+  const id = typeof input === "string" ? input : input.id;
+  const imdb = typeof input === "string" ? null : input.imdbId ?? null;
+  const writeId = cloudWriteId(id, imdb, !!imdb);
+  if (!writeId) return;
   try {
-    const authKey = readActiveStremioAuthKey();
-    if (!authKey) return;
-    const id = typeof input === "string" ? input : input.id;
-    const imdb = typeof input === "string" ? null : input.imdbId ?? null;
-    const writeId = cloudWriteId(id, imdb, !!imdb);
-    if (!writeId) return;
     if (added) {
       const meta =
         typeof input === "string" ? {} : { type: input.type, name: input.name, poster: input.poster };
@@ -212,8 +212,8 @@ async function syncWithStremio(input: string | WatchlistInput, added: boolean): 
     } else {
       await removeStremioBookmark(authKey, writeId);
     }
-  } catch {
-    /* swallow */
+  } catch (e) {
+    console.warn("[watchlist] stremio sync failed", e);
   }
 }
 

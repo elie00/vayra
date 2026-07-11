@@ -1,6 +1,11 @@
+import { activeProfileId, activeProfileIsPrimary } from "@/lib/active-profile-id";
 import type { AnilistSession } from "./types";
 
-const STORAGE_KEY = "harbor.anilist.session.v1";
+const BASE_KEY = "harbor.anilist.session.v1";
+
+function keyFor(): string {
+  return `${BASE_KEY}.${activeProfileId()}`;
+}
 
 const subscribers = new Set<() => void>();
 let cached: AnilistSession | null = null;
@@ -8,7 +13,16 @@ let loaded = false;
 
 function read(): AnilistSession | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = keyFor();
+    let raw = localStorage.getItem(key);
+    if (!raw) {
+      const legacy = localStorage.getItem(BASE_KEY);
+      if (legacy && activeProfileIsPrimary()) {
+        localStorage.setItem(key, legacy);
+        localStorage.removeItem(BASE_KEY);
+        raw = legacy;
+      }
+    }
     if (!raw) return null;
     const parsed = JSON.parse(raw) as AnilistSession;
     if (
@@ -28,8 +42,8 @@ function read(): AnilistSession | null {
 
 function write(session: AnilistSession | null): void {
   try {
-    if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    else localStorage.removeItem(STORAGE_KEY);
+    if (session) localStorage.setItem(keyFor(), JSON.stringify(session));
+    else localStorage.removeItem(keyFor());
   } catch {
     return;
   }
@@ -39,6 +53,12 @@ function ensureLoaded(): void {
   if (loaded) return;
   loaded = true;
   cached = read();
+}
+
+export function resetForProfile(): void {
+  loaded = false;
+  cached = null;
+  for (const fn of subscribers) fn();
 }
 
 export function getSession(): AnilistSession | null {

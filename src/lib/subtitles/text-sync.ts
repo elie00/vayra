@@ -46,6 +46,42 @@ export function applySync(
   });
 }
 
+export type SyncPoint = { t: number; at: number };
+
+export function deltaFn(points: SyncPoint[], nudge: number): (t: number) => number {
+  if (points.length === 0) return () => nudge;
+  if (points.length === 1) {
+    const d = points[0].at - points[0].t;
+    return () => d + nudge;
+  }
+  const sorted = [...points].sort((a, b) => a.t - b.t);
+  const a = sorted[0];
+  const b = sorted[sorted.length - 1];
+  const d1 = a.at - a.t;
+  const span = b.t - a.t;
+  if (Math.abs(span) < 1e-6) return () => d1 + nudge;
+  const m = (b.at - b.t - d1) / span;
+  return (t: number) => d1 + m * (t - a.t) + nudge;
+}
+
+export type SyncSegment = { startIdx: number; endIdx: number; offsetSec: number };
+
+export function applyLinear(
+  cues: SubCue[],
+  points: SyncPoint[],
+  nudge: number,
+  segments: SyncSegment[],
+): SubCue[] {
+  const f = deltaFn(points, nudge);
+  return cues.map((cue, i) => {
+    let segExtra = 0;
+    for (const seg of segments) if (i >= seg.startIdx && i <= seg.endIdx) segExtra += seg.offsetSec;
+    const start = round3(Math.max(0, cue.start + f(cue.start) + segExtra));
+    const end = Math.max(start + 0.001, round3(cue.end + f(cue.end) + segExtra));
+    return { start, end, text: cue.text };
+  });
+}
+
 function round3(v: number): number {
   return Math.round(v * 1000) / 1000;
 }

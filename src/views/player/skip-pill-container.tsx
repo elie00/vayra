@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlaybackPosition } from "@/lib/player/playback-clock";
 import { SkipPill } from "@/components/player/skip-pill";
 import { activeSegment, type SkipSegment } from "@/lib/skip-intro";
@@ -57,7 +57,6 @@ export function SkipPillContainer({
       source: "chapters" as const,
     };
   }, [realActiveSkip, hasNextEpisode, durationSec, positionSec, skipSegments, leadSec]);
-  const activeSkip = realActiveSkip ?? syntheticOutro;
   const remainingSec = Math.max(0, durationSec - positionSec);
 
   const autoSkippedRef = useRef<SkipSegment | null>(null);
@@ -68,12 +67,42 @@ export function SkipPillContainer({
     if (!allowAutoSkip || !realActiveSkip) return;
     const wantSkip =
       (realActiveSkip.kind === "intro" && settings.autoSkipIntro) ||
+      (realActiveSkip.kind === "recap" && settings.autoSkipRecap) ||
+      (realActiveSkip.kind === "outro" && settings.autoSkipOutro) ||
       (realActiveSkip.kind === "ad" && settings.autoSkipAd);
     if (!wantSkip) return;
     if (autoSkippedRef.current === realActiveSkip) return;
     autoSkippedRef.current = realActiveSkip;
     onSkip(realActiveSkip.endSec);
-  }, [settings.autoSkipIntro, settings.autoSkipAd, allowAutoSkip, realActiveSkip, onSkip]);
+  }, [
+    settings.autoSkipIntro,
+    settings.autoSkipRecap,
+    settings.autoSkipOutro,
+    settings.autoSkipAd,
+    allowAutoSkip,
+    realActiveSkip,
+    onSkip,
+  ]);
+
+  const [autoHiddenKey, setAutoHiddenKey] = useState<string | null>(null);
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    setAutoHiddenKey(null);
+    setDismissedKeys(new Set());
+  }, [skipSegments]);
+  const buttonKey =
+    realActiveSkip && settings.showSkipButton
+      ? `${realActiveSkip.kind}:${Math.round(realActiveSkip.startSec)}:${Math.round(realActiveSkip.endSec)}`
+      : null;
+  useEffect(() => {
+    if (!buttonKey || settings.skipButtonHideSec <= 0) return;
+    const id = window.setTimeout(() => setAutoHiddenKey(buttonKey), settings.skipButtonHideSec * 1000);
+    return () => window.clearTimeout(id);
+  }, [buttonKey, settings.skipButtonHideSec]);
+  const skipHidden =
+    buttonKey != null && (buttonKey === autoHiddenKey || dismissedKeys.has(buttonKey));
+  const displaySkip = settings.showSkipButton && !skipHidden ? realActiveSkip : null;
+  const activeSkip = displaySkip ?? syntheticOutro;
 
   return (
     <SkipPill
@@ -82,12 +111,18 @@ export function SkipPillContainer({
       nextEp={nextEp}
       nextEpMask={nextEpMask}
       remainingSec={remainingSec}
+      leadSec={leadSec}
       visible={visible}
       onSkip={() => {
         if (activeSkip) onSkip(activeSkip.endSec);
       }}
       onNextEpisode={onNextEpisode}
       onCancelAutoNext={onCancelAutoNext}
+      onDismiss={
+        displaySkip && buttonKey
+          ? () => setDismissedKeys((prev) => new Set(prev).add(buttonKey))
+          : undefined
+      }
     />
   );
 }

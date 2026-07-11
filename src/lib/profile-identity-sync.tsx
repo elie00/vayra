@@ -18,21 +18,21 @@ export function ProfileIdentitySync() {
   const { displayName, setDisplayName } = useTogether();
 
   useEffect(() => {
-    if (!activeProfile) return;
+    if (!activeProfile || activeProfile.kid) return;
     if (settings.harborColor !== activeProfile.color) {
       update({ harborColor: activeProfile.color });
     }
   }, [activeProfile, settings.harborColor, update]);
 
   useEffect(() => {
-    if (!activeProfile) return;
+    if (!activeProfile || activeProfile.kid) return;
     if (settings.harborAvatar !== activeProfile.avatar) {
       update({ harborAvatar: activeProfile.avatar });
     }
   }, [activeProfile, settings.harborAvatar, update]);
 
   useEffect(() => {
-    if (!activeProfile) return;
+    if (!activeProfile || activeProfile.kid) return;
     if (activeProfile.name && displayName !== activeProfile.name) {
       setDisplayName(activeProfile.name);
     }

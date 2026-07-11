@@ -16,6 +16,8 @@ export function FeaturedBanner({ items }: { items: Meta[] }) {
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const visible = usePageVisible();
   const ref = useRef<HTMLDivElement>(null);
+  const hasLoadedRef = useRef(false);
+  if (items.length > 0) hasLoadedRef.current = true;
 
   useEffect(() => {
     const el = ref.current;
@@ -33,7 +35,7 @@ export function FeaturedBanner({ items }: { items: Meta[] }) {
     if (active >= items.length && items.length > 0) setActive(items.length - 1);
   }, [items.length, active]);
 
-  if (items.length === 0) return <BannerSkeleton />;
+  if (items.length === 0) return hasLoadedRef.current ? null : <BannerSkeleton />;
 
   const safeActive = Math.min(active, items.length - 1);
   const current = items[safeActive];

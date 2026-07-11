@@ -1,10 +1,10 @@
 import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
-import { exists, remove } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, remove } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
-import { buildDefaultFilename } from "./filename";
+import { buildDefaultFilename, sanitizeName } from "./filename";
 import { startDownload, type DownloadHandle } from "./video-download";
 
 export type DownloadItem = {
@@ -32,6 +32,7 @@ type EnqueueArgs = {
   episode?: PlayEpisode;
   streamLabel?: string | null;
   url: string;
+  headers?: Record<string, string> | null;
 };
 
 const items = new Map<string, DownloadItem>();
@@ -147,8 +148,17 @@ export function activeDownloadFor(
 }
 
 export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
-  const { meta, episode, streamLabel, url } = args;
-  const dir = await resolveDir();
+  const { meta, episode, streamLabel, url, headers } = args;
+  let dir = await resolveDir();
+  try {
+    const raw = localStorage.getItem("harbor.settings");
+    const settings = raw ? (JSON.parse(raw) as { downloadCreateFolders?: boolean }) : null;
+    if (settings?.downloadCreateFolders && dir) {
+      const folderName = sanitizeName(meta.name || "download");
+      dir = `${dir}${dir.endsWith(sep()) ? "" : sep()}${folderName}`;
+      await mkdir(dir, { recursive: true }).catch(() => {});
+    }
+  } catch {}
   const filename = buildDefaultFilename(meta, episode, url, streamLabel);
   const path = await uniquePath(
     dir ? `${dir}${dir.endsWith(sep()) ? "" : sep()}${filename}` : filename,
@@ -193,7 +203,7 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
       ratio: p.ratio,
       ...(bps > 0 ? { bytesPerSec: bps } : {}),
     });
-  });
+  }, headers ?? undefined);
   handles.set(id, handle);
   handle.promise
     .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))

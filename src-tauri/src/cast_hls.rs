@@ -48,6 +48,7 @@ impl Drop for KillHandle {
             if let Some(pid) = guard.take() {
                 #[cfg(windows)]
                 {
+                    use std::os::windows::process::CommandExt;
                     let _ = std::process::Command::new("taskkill")
                         .arg("/F")
                         .arg("/T")
@@ -55,6 +56,7 @@ impl Drop for KillHandle {
                         .arg(pid.to_string())
                         .stdout(std::process::Stdio::null())
                         .stderr(std::process::Stdio::null())
+                        .creation_flags(0x0800_0000)
                         .status();
                 }
                 #[cfg(not(windows))]

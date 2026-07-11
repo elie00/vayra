@@ -29,6 +29,16 @@ export async function probeMpv(): Promise<MpvProbe> {
   }
 }
 
+export type MpvAudioDevice = { name: string; description: string };
+
+export async function listMpvAudioDevices(): Promise<MpvAudioDevice[]> {
+  try {
+    return await invoke<MpvAudioDevice[]>("mpv_audio_devices");
+  } catch {
+    return [];
+  }
+}
+
 type MpvEvent =
   | {
       event: "property-change";
@@ -56,6 +66,7 @@ export type MpvOptions = {
   embed?: boolean;
   anime4kShaders?: string[];
   d3d11Flip?: boolean;
+  macEdr?: boolean;
   extraOptions?: string;
   getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
 };
@@ -102,7 +113,18 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let geomTauriUnlisten: Array<() => void> = [];
   let mpvStarted = false;
   let suppressEndFileUntil = 0;
+  let svpFilterFailed = false;
   const urlByExternalFilename = new Map<string, string>();
+
+  const handleSvpFilterFailure = () => {
+    if (svpFilterFailed) return;
+    if (!(mpvOptions?.extraOptions ?? "").includes("vapoursynth")) return;
+    svpFilterFailed = true;
+    invoke("mpv_set_property", { name: "vf", value: "" }).catch(() => {});
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("harbor:svp-failed"));
+    }
+  };
 
   const emit = () => {
     const next: PlayerSnapshot = { ...snap };
@@ -110,6 +132,18 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   };
 
   const handleEvent = (raw: MpvEvent) => {
+    if (raw.event === "log") {
+      const prefix = String((raw as { prefix?: unknown }).prefix ?? "");
+      const level = String((raw as { level?: unknown }).level ?? "");
+      const text = String((raw as { text?: unknown }).text ?? "");
+      if (
+        text.includes("Creating filter 'vapoursynth' failed") ||
+        (prefix.includes("vapoursynth") && (level === "fatal" || level === "error"))
+      ) {
+        handleSvpFilterFailure();
+      }
+      return;
+    }
     if (raw.event === "property-change") {
       const name = raw.name;
       const data = raw.data;
@@ -180,7 +214,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "sub-start" && typeof data === "number") snap.subStartSec = data;
       if (name === "dwidth" && typeof data === "number") snap.videoWidth = data;
       if (name === "dheight" && typeof data === "number") snap.videoHeight = data;
-      if (name === "video-params/gamma") snap.hdrGamma = typeof data === "string" ? data : "";
+      if (name === "video-params/gamma" && typeof data === "string" && data) snap.hdrGamma = data;
+      if (name === "demuxer-cache-duration" && typeof data === "number") snap.bufferedSec = data;
       if (name === "af") {
         const repr = typeof data === "string" ? data : JSON.stringify(data ?? "");
         snap.audioNormalize = repr.includes("dynaudnorm");
@@ -244,6 +279,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       host = null;
     },
     async load(src: PlayerSource) {
+      svpFilterFailed = false;
       snap.status = "loading";
       snap.errorCode = null;
       snap.errorMessage = null;
@@ -271,10 +307,9 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             suppressEndFileUntil = Date.now() + 1500;
             await invoke("mpv_command", { cmd: ["stop"] });
             await applyHeaderProps(src.headers);
-            const cmd: Array<string | number> = ["loadfile", src.url];
-            if (typeof src.startAtSec === "number" && src.startAtSec > 0) {
-              cmd.push("replace", 0, `start=${src.startAtSec}`);
-            }
+            const startAt =
+              typeof src.startAtSec === "number" && src.startAtSec > 0 ? src.startAtSec : 0;
+            const cmd: Array<string | number> = ["loadfile", src.url, "replace", 0, `start=${startAt}`];
             await invoke("mpv_command", { cmd });
             for (const s of src.subtitles ?? []) {
               try {
@@ -313,6 +348,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             embed: opts.embed === true,
             anime4kShaders: opts.anime4kShaders ?? [],
             d3d11Flip: opts.d3d11Flip === true,
+            macEdr: opts.macEdr === true,
             isLive: src.isLive === true,
             headers: src.headers ?? null,
             extraOptions: opts.extraOptions || undefined,
@@ -409,6 +445,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       invoke("mpv_set_property", { name: "mute", value: m }).catch(() => {});
     },
     setRate(r) {
+      snap.rate = r;
+      emit();
       invoke("mpv_set_property", { name: "speed", value: r }).catch(() => {});
     },
     setAudioTrack(id) {
@@ -445,6 +483,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     },
     setAspectOverride(ratio) {
       invoke("mpv_set_property", { name: "video-aspect-override", value: ratio }).catch(() => {});
+    },
+    setStretch(on) {
+      invoke("mpv_set_property", { name: "keepaspect", value: !on }).catch(() => {});
+    },
+    setVideoEq(name, value) {
+      invoke("mpv_set_property", { name, value }).catch(() => {});
     },
     setAnime4kShaders(shaders) {
       const sep = typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("windows") ? ";" : ":";
@@ -489,6 +533,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     setAudioProfile(profile) {
       profileAf = AUDIO_PROFILE_AF[profile] ?? "";
       applyAudioFilters();
+    },
+    setAudioDevice(name) {
+      invoke("mpv_set_property", {
+        name: "audio-device",
+        value: name && name !== "auto" ? name : "auto",
+      }).catch(() => {});
     },
     setMediaInfo(info) {
       invoke("mpv_set_property", { name: "force-media-title", value: info.title }).catch(() => {});

@@ -4,8 +4,12 @@ import { addonLogoSrc, resolveAddonLogo } from "@/components/addon-logo";
 import type { Addon } from "@/lib/addons";
 import type { ScoredStream } from "@/lib/streams/types";
 import { StremioRow } from "./stremio-row";
-import { QualityFilterBar, qualityTier, qualityTiersOf } from "./quality-filter";
+import { FACET_DIMS, facetOptions, matchesFacets, type FacetState } from "./stream-facets";
 import { addonInstanceKey, buildAddonOptions } from "./picker-utils";
+import { useSettings } from "@/lib/settings";
+import { matchesCustomFilter, type CustomStreamFilter } from "@/lib/streams/custom-filters";
+import { FacetMenuRow } from "./facet-menu-row";
+import { FilterBuilder } from "./filter-builder";
 
 export function StremioLayout({
   streams,
@@ -16,6 +20,8 @@ export function StremioLayout({
   preserveOrder,
   matchFor,
   onPlay,
+  download = false,
+  isAnime = false,
 }: {
   streams: ScoredStream[];
   addons: Addon[] | null;
@@ -25,10 +31,18 @@ export function StremioLayout({
   preserveOrder?: boolean;
   matchFor?: (s: ScoredStream) => "same" | "close" | null;
   onPlay: (stream: ScoredStream) => void;
+  download?: boolean;
+  isAnime?: boolean;
 }) {
   const [filter, setFilter] = useState<string>("all");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [quality, setQuality] = useState<string>("all");
+  const [facet, setFacet] = useState<FacetState>({});
+  const { settings, update } = useSettings();
+  const customFilters = settings.customStreamFilters;
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [editingFilter, setEditingFilter] = useState<CustomStreamFilter | null>(null);
+  const activeFilter = customFilters.find((f) => f.id === activeFilterId) ?? null;
   const addonLogoMap = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const a of addons ?? []) {
@@ -50,13 +64,30 @@ export function StremioLayout({
     () => (filter === "all" ? streams : streams.filter((s) => addonInstanceKey(s) === filter)),
     [streams, filter],
   );
-  const qualityOptions = useMemo(() => qualityTiersOf(addonFiltered), [addonFiltered]);
+  const customFiltered = useMemo(
+    () => (activeFilter ? addonFiltered.filter((s) => matchesCustomFilter(s, activeFilter)) : addonFiltered),
+    [addonFiltered, activeFilter],
+  );
+  const facetData = useMemo(
+    () =>
+      FACET_DIMS.map((dim) => {
+        const base = customFiltered.filter((s) => matchesFacets(s, facet, dim.key));
+        return { dim, options: facetOptions(base, dim), total: base.length, value: facet[dim.key] ?? "all" };
+      }),
+    [customFiltered, facet],
+  );
   useEffect(() => {
-    if (quality !== "all" && !qualityOptions.some((o) => o.tier === quality)) setQuality("all");
-  }, [qualityOptions, quality]);
+    for (const f of facetData) {
+      if (f.value !== "all" && !f.options.some((o) => o.key === f.value)) {
+        setFacet((prev) => ({ ...prev, [f.dim.key]: "all" }));
+      }
+    }
+  }, [facetData]);
+  useEffect(() => {
+    if (activeFilterId && !customFilters.some((f) => f.id === activeFilterId)) setActiveFilterId(null);
+  }, [customFilters, activeFilterId]);
   const visibleStreams = useMemo(() => {
-    const filtered =
-      quality === "all" ? addonFiltered : addonFiltered.filter((s) => qualityTier(s) === quality);
+    const filtered = customFiltered.filter((s) => matchesFacets(s, facet));
     if (filter !== "all") return filtered;
     if (preserveOrder) return filtered;
     const downloadRx = /[⏳⌛⬇⏬🔽📥]|\bdownload(ing)?\b|\bqueued?\b|\bnot[\s_-]?cached\b/iu;
@@ -79,7 +110,7 @@ export function StremioLayout({
       if (ai !== bi) return bi - ai;
       return 0;
     });
-  }, [addonFiltered, quality, filter, addonRank, preserveOrder]);
+  }, [customFiltered, facet, filter, addonRank, preserveOrder]);
   const filterLabel = filter === "all"
     ? "All"
     : addonOptions.find((o) => o.id === filter)?.name ?? "All";
@@ -145,11 +176,20 @@ export function StremioLayout({
           </div>
         )}
       </div>
-      <QualityFilterBar
-        options={qualityOptions}
-        total={addonFiltered.length}
-        value={quality}
-        onChange={setQuality}
+      <FacetMenuRow
+        facets={facetData}
+        onFacet={(key, v) => setFacet((prev) => ({ ...prev, [key]: v }))}
+        filters={customFilters}
+        activeFilterId={activeFilterId}
+        onSelectFilter={setActiveFilterId}
+        onNewFilter={() => {
+          setEditingFilter(null);
+          setBuilderOpen(true);
+        }}
+        onEditFilter={(f) => {
+          setEditingFilter(f);
+          setBuilderOpen(true);
+        }}
       />
       <div className="flex flex-col gap-2">
         {visibleStreams.map((s, i) => (
@@ -160,6 +200,8 @@ export function StremioLayout({
             addonLogo={addonLogoMap.get(s.addonUrl ?? "") ?? addonLogoMap.get(s.addonId) ?? null}
             match={matchFor ? matchFor(s) : null}
             onPlay={() => onPlay(s)}
+            download={download}
+            isAnime={isAnime}
           />
         ))}
       </div>
@@ -170,6 +212,26 @@ export function StremioLayout({
           fallbackCount={loadingAddonCount}
         />
       )}
+      <FilterBuilder
+        open={builderOpen}
+        initial={editingFilter}
+        onClose={() => setBuilderOpen(false)}
+        onSave={(f) => {
+          const exists = customFilters.some((x) => x.id === f.id);
+          update({
+            customStreamFilters: exists
+              ? customFilters.map((x) => (x.id === f.id ? f : x))
+              : [...customFilters, f],
+          });
+          setActiveFilterId(f.id);
+          setBuilderOpen(false);
+        }}
+        onDelete={(id) => {
+          update({ customStreamFilters: customFilters.filter((x) => x.id !== id) });
+          if (activeFilterId === id) setActiveFilterId(null);
+          setBuilderOpen(false);
+        }}
+      />
     </div>
   );
 }

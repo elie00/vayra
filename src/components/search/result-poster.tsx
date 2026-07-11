@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { Poster } from "@/components/poster";
-import { rpdbPoster } from "@/lib/providers/rpdb";
+import { Poster, usePosterChain } from "@/components/poster";
 import { useSettings } from "@/lib/settings";
 
 export function ResultPoster({
@@ -13,22 +11,14 @@ export function ResultPoster({
   className?: string;
 }) {
   const { settings } = useSettings();
-  const [idx, setIdx] = useState(0);
-  const candidates = useMemo(() => {
-    const out: string[] = [];
-    for (const u of [rpdbPoster(settings.rpdbKey, id, poster), poster]) {
-      if (u && !out.includes(u)) out.push(u);
-    }
-    return out;
-  }, [settings.rpdbKey, id, poster]);
-  useEffect(() => setIdx(0), [candidates]);
+  const chain = usePosterChain(settings.rpdbKey, id, poster, "series");
   return (
     <Poster
-      src={candidates[idx]}
+      src={chain.src}
       seed={id}
       ratio="portrait"
       className={className}
-      onError={() => setIdx((i) => i + 1)}
+      onError={chain.onError}
     />
   );
 }

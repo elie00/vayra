@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useSettings } from "./settings";
+import { deleteFontData, saveFontData } from "./font-storage";
+import { randomUuid } from "./uuid";
 
 const EXT_FORMAT: Record<string, string> = {
   ttf: "truetype",
@@ -8,7 +10,7 @@ const EXT_FORMAT: Record<string, string> = {
   woff2: "woff2",
 };
 
-const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_BYTES = 32 * 1024 * 1024;
 
 export function useCustomFonts() {
   const { settings, update } = useSettings();
@@ -25,15 +27,18 @@ export function useCustomFonts() {
       return null;
     }
     if (file.size > MAX_BYTES) {
-      setError("That font is over 8 MB. Try a lighter file.");
+      setError("That font is over 32 MB. Try a lighter file.");
       return null;
     }
     setBusy(true);
     try {
       const dataUrl = await readDataUrl(file);
-      const id = crypto.randomUUID().slice(0, 8);
-      await new FontFace(`harbor-font-${id}`, `url(${dataUrl})`, { display: "swap" }).load();
-      update({ customFonts: [...fonts, { id, name: prettyName(file.name), dataUrl, format }] });
+      const id = randomUuid().slice(0, 8);
+      const ff = new FontFace(`harbor-font-${id}`, `url(${dataUrl})`, { display: "swap" });
+      await ff.load();
+      document.fonts.add(ff);
+      await saveFontData(id, dataUrl);
+      update({ customFonts: [...fonts, { id, name: prettyName(file.name), format }] });
       return id;
     } catch {
       setError("That file is not a valid font.");
@@ -44,6 +49,7 @@ export function useCustomFonts() {
   };
 
   const removeFont = (id: string) => {
+    void deleteFontData(id);
     update({ customFonts: fonts.filter((f) => f.id !== id) });
   };
 

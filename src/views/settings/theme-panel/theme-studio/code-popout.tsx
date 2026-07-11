@@ -1,4 +1,4 @@
-import { BookOpen, Check, Copy, Download, Play } from "lucide-react";
+import { BookOpen, Check, Copy, Download, Play, Redo2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { CodeEditor, type CodeLang } from "@/components/code-editor";
 import { downloadText } from "@/lib/download-text";
@@ -16,6 +16,10 @@ export function CodePopout({
   onChange,
   onRunJs,
   onClose,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: {
   css: string;
   html: string;
@@ -25,6 +29,10 @@ export function CodePopout({
   onChange: (patch: { css?: string; html?: string; js?: string }) => void;
   onRunJs: () => void;
   onClose: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }) {
   const [tab, setTab] = useState<CodeLang>(initialTab);
   const [caret, setCaret] = useState({ line: 1, col: 1 });
@@ -120,6 +128,27 @@ export function CodePopout({
             </div>
 
             <div className="ms-auto flex items-center gap-1.5 pe-3">
+              <button
+                type="button"
+                onClick={onUndo}
+                disabled={!canUndo}
+                title="Undo (Ctrl/Cmd + Z)"
+                className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/10 disabled:pointer-events-none disabled:opacity-30"
+                style={{ color: IDE.textDim }}
+              >
+                <Undo2 size={16} strokeWidth={2.2} />
+              </button>
+              <button
+                type="button"
+                onClick={onRedo}
+                disabled={!canRedo}
+                title="Redo (Ctrl/Cmd + Shift + Z)"
+                className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/10 disabled:pointer-events-none disabled:opacity-30"
+                style={{ color: IDE.textDim }}
+              >
+                <Redo2 size={16} strokeWidth={2.2} />
+              </button>
+              <span className="mx-0.5 h-5 w-px" style={{ background: IDE.border }} />
               <button
                 type="button"
                 onClick={() => setCheatOpen(true)}

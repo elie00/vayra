@@ -7,6 +7,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
+import { hasCachedMarker } from "@/lib/streams/cached";
 import type { PlayEpisode } from "@/lib/view";
 import { useAddons } from "@/views/play-picker/use-addons";
 import { useImdbId } from "@/views/play-picker/use-imdb-id";
@@ -50,7 +51,8 @@ export function StreamsView({
   const isCached = useCallback(
     (s: ScoredStream) =>
       s.url != null ||
-      debrids.some((d) => s.cached[d.slug] === true || s.inLibrary[d.slug] === true),
+      debrids.some((d) => s.cached[d.slug] === true || s.inLibrary[d.slug] === true) ||
+      hasCachedMarker(s),
     [debrids],
   );
 

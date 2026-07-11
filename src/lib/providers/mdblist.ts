@@ -7,6 +7,7 @@ export type MdblistScores = {
   trakt: number | null;
   metacritic: number | null;
   rtAudience: number | null;
+  simkl: number | null;
 };
 
 type RatingRow = { source?: string; value?: number | null };
@@ -34,12 +35,14 @@ function parse(json: ApiShape): MdblistScores {
     return typeof r?.value === "number" && r.value > 0 ? r.value : null;
   };
   const agg = positive(json.score_average, json.scoreaverage, json.score);
+  const simklVal = val("simkl");
   return {
     score: agg,
     letterboxd: val("letterboxd"),
     trakt: val("trakt"),
     metacritic: val("metacritic"),
     rtAudience: val("tomatoesaudience") ?? val("audience") ?? val("popcorn"),
+    simkl: simklVal !== null ? (simklVal > 10 ? simklVal / 10 : simklVal) : null,
   };
 }
 

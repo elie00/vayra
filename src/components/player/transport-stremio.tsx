@@ -5,10 +5,13 @@ import {
   controlsInSlot,
   PLAYER_CHROME_CHANGED_EVENT,
   readPlayerChromeConfig,
+  writePlayerChromeConfig,
   type PlayerChromeConfig,
   type PlayerSlot,
+  type TimeFormat,
 } from "@/lib/player-chrome";
 import { CastModal } from "./cast-modal";
+import { SongIdToast } from "@/components/song-id-toast";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { SeekBar } from "./transport/seek-bar";
 import { LiveBadge, GoToLive, LiveSeekBar } from "./transport/live-controls";
@@ -16,6 +19,8 @@ import {
   RenderedStremioControl,
   type StremioRenderCtx,
 } from "./transport/control-renderer-stremio";
+import { useView } from "@/lib/view";
+import { useCastModalPlay } from "./use-cast-modal-play";
 
 export type TransportStremioProps = {
   snap: PlayerSnapshot;
@@ -47,6 +52,7 @@ export type TransportStremioProps = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
@@ -108,6 +114,7 @@ export function TransportStremio(p: TransportStremioProps) {
     onCast,
     onToggleDraw,
     onToggleHideOthers,
+    onClearDraw,
     onScreenshot,
     onPickAnother,
     canPickAnother,
@@ -150,6 +157,8 @@ export function TransportStremio(p: TransportStremioProps) {
   const [config, setConfig] = useState<PlayerChromeConfig>(() => readPlayerChromeConfig("stremio"));
   const isLiveChannel = !!meta?.id?.startsWith("iptv:");
   const titleClickable = !!meta && !isLiveChannel;
+  const { openMeta, exitPlayer } = useView();
+  const castModalPlay = useCastModalPlay();
   const controlsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -169,6 +178,13 @@ export function TransportStremio(p: TransportStremioProps) {
     };
   }, []);
 
+  const onCycleTimeFormat = () => {
+    const cur = readPlayerChromeConfig("stremio");
+    const nextFmt: TimeFormat = cur.options.timeFormat === "remaining" ? "start-end" : "remaining";
+    const next = { ...cur, options: { ...cur.options, timeFormat: nextFmt } };
+    writePlayerChromeConfig("stremio", next);
+    setConfig(next);
+  };
   const ctx: StremioRenderCtx = {
     snap,
     capabilities,
@@ -188,6 +204,7 @@ export function TransportStremio(p: TransportStremioProps) {
     useOverlayPopups,
     customIcons: config.customIcons,
     timeFormat: config.options.timeFormat,
+    onCycleTimeFormat,
     volumeStyle: config.options.volumeStyle,
     fullscreen,
     title,
@@ -231,6 +248,7 @@ export function TransportStremio(p: TransportStremioProps) {
     onCast,
     onToggleDraw,
     onToggleHideOthers,
+    onClearDraw,
     onScreenshot,
     onPickAnother,
     onPrevEp,
@@ -249,6 +267,7 @@ export function TransportStremio(p: TransportStremioProps) {
 
   return (
     <>
+      <SongIdToast />
       <div
         data-tauri-drag-region={fullscreen ? undefined : ""}
         className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex h-[88px] items-center justify-between bg-gradient-to-b from-black/35 via-black/15 to-transparent px-6 transition-opacity duration-200 ${
@@ -302,6 +321,18 @@ export function TransportStremio(p: TransportStremioProps) {
           onClose={() => setCastModalOpen(false)}
           meta={meta}
           tmdbKey={tmdbKey ?? null}
+          onOpenDetail={(m) => {
+            setCastModalOpen(false);
+            exitPlayer();
+            openMeta(m);
+          }}
+          onPlay={(m, ep) => {
+            setCastModalOpen(false);
+            castModalPlay(m, ep);
+          }}
+          currentEpisode={
+            season != null && episode != null ? { season, episode } : null
+          }
         />
       )}
     </>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchMediaListCollection } from "@/lib/anilist/lists";
+import { fetchMediaListCollection, readCachedCollection } from "@/lib/anilist/lists";
 import { deleteListEntry, saveListEntry } from "@/lib/anilist/mutations";
 import { useAnilist } from "@/lib/anilist/provider";
 import type { AnilistMediaEntry, MediaListStatus } from "@/lib/anilist/types";
@@ -20,8 +20,12 @@ export function AnilistTab() {
   const t = useT();
   const { session } = useAnilist();
   const userId = session?.userId;
-  const [entries, setEntries] = useState<AnilistMediaEntry[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [entries, setEntries] = useState<AnilistMediaEntry[]>(() =>
+    userId != null ? (readCachedCollection(userId)?.flatMap((g) => g.entries) ?? []) : [],
+  );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(() =>
+    userId != null && readCachedCollection(userId) != null ? "ready" : "loading",
+  );
   const [type, setType] = useState<TypeKey>("all");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<Set<number>>(() => new Set());
@@ -29,7 +33,13 @@ export function AnilistTab() {
   useEffect(() => {
     if (userId == null) return;
     let cancelled = false;
-    setStatus("loading");
+    const cached = readCachedCollection(userId);
+    if (cached) {
+      setEntries(cached.flatMap((g) => g.entries));
+      setStatus("ready");
+    } else {
+      setStatus("loading");
+    }
     fetchMediaListCollection(userId)
       .then((groups) => {
         if (cancelled) return;
@@ -37,7 +47,7 @@ export function AnilistTab() {
         setStatus("ready");
       })
       .catch(() => {
-        if (!cancelled) setStatus("error");
+        if (!cancelled && readCachedCollection(userId) == null) setStatus("error");
       });
     return () => {
       cancelled = true;

@@ -80,6 +80,25 @@ export function parseMagnet(value: string): ParsedMagnet | null {
   };
 }
 
+export function infoHashFromUrl(url: string): { infoHash: string; fileIdx?: number } | null {
+  const m = url.match(/(?:^|[/=])([a-fA-F0-9]{40})(?:\/(\d+))?(?=[/?#]|$)/);
+  if (!m) return null;
+  const fileIdx = m[2] != null ? Number(m[2]) : undefined;
+  return {
+    infoHash: m[1].toLowerCase(),
+    fileIdx: fileIdx != null && Number.isFinite(fileIdx) ? fileIdx : undefined,
+  };
+}
+
+export function infoHashFromSources(sources?: string[]): string | null {
+  if (!sources) return null;
+  for (const s of sources) {
+    const m = s.match(/^dht:([a-fA-F0-9]{40})$/i);
+    if (m) return m[1].toLowerCase();
+  }
+  return null;
+}
+
 function base32ToHex(input: string): string | null {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const clean = input.toUpperCase().replace(/=+$/, "");

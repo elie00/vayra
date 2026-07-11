@@ -97,6 +97,28 @@ function parseNavMap(raw: unknown): Partial<Record<ChromeNavId, string>> | undef
   return Object.keys(out).length ? out : undefined;
 }
 
+function parseNavIdList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((x): x is string => typeof x === "string" && !!x && x.length <= 64).slice(0, 64);
+}
+
+function parseNavCustomization(
+  raw: unknown,
+): { order: string[]; hidden: string[]; renamed: Record<string, string> } | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as { order?: unknown; hidden?: unknown; renamed?: unknown };
+  const order = parseNavIdList(o.order);
+  const hidden = parseNavIdList(o.hidden);
+  const renamed: Record<string, string> = {};
+  if (o.renamed && typeof o.renamed === "object") {
+    for (const [k, v] of Object.entries(o.renamed as Record<string, unknown>)) {
+      if (k.length <= 64 && typeof v === "string" && v && v.length <= 300) renamed[k] = v;
+    }
+  }
+  if (!order.length && !hidden.length && !Object.keys(renamed).length) return undefined;
+  return { order, hidden, renamed };
+}
+
 function parseChrome(raw: unknown): ChromeConfig | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const o = raw as { position?: unknown; brand?: unknown; items?: unknown; labels?: unknown; icons?: unknown };
@@ -168,6 +190,7 @@ export function parseThemeJson(text: string): { ok: true; theme: CustomTheme } |
   const fontPair = asFontPair(co.fontPair);
   const bokeh = typeof co.bokeh === "boolean" ? co.bokeh : undefined;
   const chrome = parseChrome((co as { chrome?: unknown }).chrome);
+  const navCustomization = parseNavCustomization((co as { navCustomization?: unknown }).navCustomization);
   const css = typeof co.css === "string" ? co.css : undefined;
   const js = typeof co.js === "string" ? co.js : undefined;
   const html = typeof co.html === "string" ? co.html : undefined;
@@ -187,6 +210,7 @@ export function parseThemeJson(text: string): { ok: true; theme: CustomTheme } |
       ...(fontPair ? { fontPair } : {}),
       ...(bokeh !== undefined ? { bokeh } : {}),
       ...(chrome ? { chrome } : {}),
+      ...(navCustomization ? { navCustomization } : {}),
       ...(css ? { css } : {}),
       ...(js ? { js } : {}),
       ...(html ? { html } : {}),
@@ -256,6 +280,7 @@ export function exportThemeJson(theme: ThemePreset | CustomTheme): string {
   if (theme.fontPair) out.fontPair = theme.fontPair;
   if (typeof theme.bokeh === "boolean") out.bokeh = theme.bokeh;
   if (theme.chrome) out.chrome = theme.chrome;
+  if (theme.navCustomization) out.navCustomization = theme.navCustomization;
   const ext = theme as CustomTheme;
   if (ext.css) out.css = ext.css;
   if (ext.js) out.js = ext.js;

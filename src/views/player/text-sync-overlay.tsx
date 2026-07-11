@@ -1,34 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Loader2, RotateCcw, Scissors, Search, X } from "lucide-react";
 import { findActiveCue } from "@/lib/subtitles/parser";
-import { evaluateAnchors, type SyncAnchor } from "@/lib/subtitles/text-sync";
+import { deltaFn } from "@/lib/subtitles/text-sync";
 import { usePlaybackPosition } from "@/lib/player/playback-clock";
 import { useT } from "@/lib/i18n";
+import type { useTextSync } from "./hooks/use-text-sync";
 import { TextSyncList } from "./text-sync-list";
-import { SyncTransport } from "@/components/player/transport/sync-transport";
 
-export type TextSyncApi = {
-  syncMode: "idle" | "active";
-  mode: "easy" | "normal";
-  phase: "listen" | "review";
-  anchors: SyncAnchor[];
-  activeAnchorSlot: 0 | 1;
-  pendingCues: import("@/lib/subtitles/parser").SubCue[] | null;
-  previewOffset: number;
-  baseOffset: number;
-  dirty: boolean;
-  sourceFormat: "srt" | "vtt";
-  enterSync: () => Promise<{ ok: true } | { ok: false; reason: string }>;
-  pickCue: (cueIndex: number) => void;
-  selectSlot: (slot: 0 | 1) => void;
-  setMode: (mode: "easy" | "normal") => void;
-  seekTo: (cueIndex: number) => void;
-  undo: () => void;
-  nudgeOffset: (deltaSec: number) => void;
-  save: (confirmSingleAnchor?: boolean) => Promise<{ ok: true } | { ok: false; reason: string }>;
-  discard: () => void;
-  exitSync: () => void;
-};
+export type TextSyncApi = ReturnType<typeof useTextSync>;
 
 export function TextSyncOverlay({
   api,
@@ -41,9 +20,20 @@ export function TextSyncOverlay({
 }) {
   const t = useT();
   const position = usePlaybackPosition();
-  const cues = api.pendingCues;
-  const [confirmSingle, setConfirmSingle] = useState(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [sectionMode, setSectionMode] = useState(false);
+  const [query, setQuery] = useState("");
+  const cues = api.cues;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        api.discard();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [api]);
 
   const activeIndex = useMemo(() => {
     if (!cues) return null;
@@ -51,209 +41,172 @@ export function TextSyncOverlay({
     return cue ? cues.indexOf(cue) : null;
   }, [cues, position]);
 
-  const warnings = useMemo(() => evaluateAnchors(api.anchors), [api.anchors]);
-  const canSave = api.mode === "easy" ? api.previewOffset !== api.baseOffset : api.anchors.length > 0;
+  if (api.syncMode === "idle") return null;
 
-  if (api.syncMode !== "active" || !cues) return null;
+  const currentDelta = deltaFn(api.points, api.nudge)(position);
 
-  const handleSaveClick = () => {
-    if (api.mode === "normal" && api.anchors.length === 1) {
-      setConfirmSingle(true);
-    } else {
-      void api.save(true);
-    }
-  };
-
-  const handleExit = () => {
-    if (api.dirty) {
-      setConfirmDiscard(true);
-    } else {
-      api.discard();
-    }
-  };
+  const hint = sectionMode
+    ? t("Tap the first and last line of the section, then tap the line playing now and Sync from here.")
+    : api.pointCount === 0
+      ? t("Find the line you hear right now, then Sync from here. Everything shifts to match.")
+      : api.pointCount === 1
+        ? t("Set. If the subtitles drift later on, play ahead and Sync from here again at a later line to fix the drift.")
+        : t("Drift correction is on (2 points). Fine-tune with the buttons, or fix a stray section.");
 
   return (
-    <div className="absolute bottom-[90px] end-5 top-[90px] z-[70] flex w-[440px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/80 shadow-[0_32px_80px_rgba(0,0,0,0.7)] backdrop-blur-2xl animate-in slide-in-from-right duration-300">
-      <SyncTransport
-        mode={api.mode}
-        playing={playing}
-        anchorCount={api.anchors.length}
-        canUndo={api.anchors.length > 0}
-        canSave={canSave}
-        previewOffset={api.previewOffset}
-        onPlayPause={onPlayPause}
-        onNudge={api.nudgeOffset}
-        onUndo={api.undo}
-        onSave={handleSaveClick}
-        onExit={handleExit}
-      />
+    <div className="pointer-events-none absolute inset-0 z-[70]">
+      <aside
+        role="dialog"
+        aria-label={t("Sync subtitles")}
+        className="pointer-events-auto absolute end-0 top-0 flex h-full w-full max-w-[480px] flex-col overflow-hidden border-s border-edge-soft/70 bg-surface/85 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] backdrop-blur-2xl duration-300 animate-in slide-in-from-right"
+      >
+        <header className="flex items-center justify-between gap-3 px-6 pb-4 pt-7">
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
+              {t("Subtitle timing")}
+            </p>
+            <h2 className="mt-1 font-display text-[23px] font-semibold leading-tight text-ink">
+              {sectionMode ? t("Fix one section") : t("Sync to the audio")}
+            </h2>
+          </div>
+          <button
+            aria-label={t("Close")}
+            onClick={api.discard}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+          >
+            <X size={18} strokeWidth={2.2} />
+          </button>
+        </header>
 
-      <div className="flex flex-col gap-1.5 border-b border-edge-soft/50 bg-canvas/30 px-4 py-2.5">
-        <div className="flex rounded-xl bg-white/5 p-0.5">
-          {(["easy", "normal"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => api.setMode(m)}
-              className={`flex-1 rounded-[10px] px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                api.mode === m ? "bg-white/15 text-white" : "text-white/45 hover:text-white/70"
-              }`}
-            >
-              {m === "easy" ? t("Easy") : t("Normal")}
-            </button>
-          ))}
-        </div>
-        <span className="px-1 text-[11px] leading-snug text-white/45">
-          {api.mode === "easy"
-            ? t("Tap a line to jump there, then nudge until the subtitles match what you hear.")
-            : t("Play, then tap the line you hear at two spots (one early, one late) to fix drift.")}
-        </span>
-      </div>
-
-      {api.mode === "normal" && (
-      <div className="flex flex-col gap-2 border-b border-edge-soft/50 bg-canvas/30 px-4 py-3">
-        <span className="text-[12px] font-semibold text-white/80">
-          {t("Anchor Selection")}
-        </span>
-        <div className="flex gap-2">
-
-        {[0, 1].map((slot) => {
-          const anchor = api.anchors[slot];
-          const isActive = api.activeAnchorSlot === slot;
-          return (
-            <button
-              key={slot}
-              onClick={() => api.selectSlot(slot as 0 | 1)}
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold transition-colors ${
-                isActive ? "bg-accent/25 ring-1 ring-accent/50 text-white" : "bg-white/8 text-white/55 hover:bg-white/12"
-              }`}
-            >
-              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white/20 text-[9px] font-bold">
-                {slot + 1}
-              </span>
-              {anchor ? (
-                <span className="font-mono tabular-nums">
-                  Δ {anchor.delta >= 0 ? "+" : ""}{anchor.delta.toFixed(1)}s
-                </span>
-              ) : (
-                <span>—</span>
-              )}
-            </button>
-          );
-        })}
-        </div>
-      </div>
-      )}
-
-      {(warnings.gapSec != null || warnings.slopePct != null) && (
-        <div className="flex flex-col gap-0.5 border-b border-amber-300/20 bg-amber-400/10 px-4 py-1.5">
-          {warnings.gapSec != null && (
-            <span className="text-[11px] font-medium leading-snug text-amber-200">
-              {t("These two points are very close ({n}s apart). Pick one near the start and one near the end, or the timing can drift at the edges.", { n: warnings.gapSec.toFixed(1) })}
+        {api.syncMode === "loading" ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-20 text-ink-muted">
+            <Loader2 size={26} className="animate-spin" />
+            <span className="text-[13.5px]">{t("Reading subtitles...")}</span>
+          </div>
+        ) : !cues ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-20 text-center">
+            <span className="text-[14px] leading-relaxed text-ink-muted">
+              {t("Could not read this subtitle track. Pick a different subtitle, then try again.")}
             </span>
-          )}
-          {warnings.slopePct != null && (
-            <span className="text-[11px] font-medium leading-snug text-amber-200">
-              {t("That is a large correction ({n}%). One of the two points may be off, double-check them.", { n: warnings.slopePct.toFixed(1) })}
-            </span>
-          )}
-        </div>
-      )}
+            <button
+              onClick={api.discard}
+              className="rounded-full bg-elevated px-5 py-2.5 text-[13px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-raised"
+            >
+              {t("Close")}
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="px-6 pb-3 text-[13.5px] leading-relaxed text-ink-muted">{hint}</p>
 
-      <div className="min-h-0 flex-1 bg-canvas/15">
-        <TextSyncList
-          cues={cues}
-          activeIndex={activeIndex}
-          anchors={api.anchors}
-          onPick={api.mode === "easy" ? api.seekTo : api.pickCue}
-        />
-      </div>
+            <div className="px-6 pb-4">
+              <div className="flex items-center gap-2.5 rounded-2xl bg-elevated px-3.5 ring-1 ring-edge-soft">
+                <Search size={16} className="shrink-0 text-ink-subtle" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t("Search a line by its words")}
+                  className="h-11 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-subtle"
+                />
+                {query && (
+                  <button
+                    onClick={() => setQuery("")}
+                    aria-label={t("Clear search")}
+                    className="shrink-0 text-ink-subtle transition-colors hover:text-ink"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
+            </div>
 
-      {confirmSingle && (
-        <ConfirmDialog
-          title={t("Save with one anchor?")}
-          body={t("You picked only one anchor. This applies a constant shift (no FPS-drift correction). Continue?")}
-          confirmLabel={t("Save")}
-          onCancel={() => setConfirmSingle(false)}
-          onConfirm={async () => {
-            setConfirmSingle(false);
-            await api.save(true);
-          }}
-        />
-      )}
+            <div className="min-h-0 flex-1 border-t border-edge-soft/50">
+              <TextSyncList
+                cues={cues}
+                activeIndex={activeIndex}
+                points={api.points}
+                segments={api.segments}
+                rangeStart={api.rangeStart}
+                rangeEnd={api.rangeEnd}
+                sectionMode={sectionMode}
+                query={query}
+                onSyncHere={api.syncFromHere}
+                onSeek={api.seekTo}
+                onRangeStart={api.setRangeStart}
+                onRangeEnd={api.setRangeEnd}
+              />
+            </div>
 
-      {confirmDiscard && (
-        <ConfirmDialog
-          title={t("Discard sync?")}
-          body={t("You have unsaved anchors. They will be lost.")}
-          confirmLabel={t("Discard")}
-          danger
-          onCancel={() => setConfirmDiscard(false)}
-          onConfirm={() => {
-            setConfirmDiscard(false);
-            api.discard();
-          }}
-        />
-      )}
+            <div className="flex items-center justify-between gap-3 border-t border-edge-soft/60 px-5 py-3.5">
+              <div className="flex items-center gap-2">
+                <StepBtn label="−0.1" onClick={() => api.nudgeBy(-0.1)} />
+                <div className="flex h-11 min-w-[98px] items-center justify-center rounded-xl bg-elevated ring-1 ring-edge-soft">
+                  <span className="text-[17px] font-bold tabular-nums text-ink">
+                    {currentDelta >= 0 ? "+" : "−"}
+                    {Math.abs(currentDelta).toFixed(2)}
+                    <span className="ms-0.5 text-[13px] font-medium text-ink-subtle">s</span>
+                  </span>
+                </div>
+                <StepBtn label="+0.1" onClick={() => api.nudgeBy(0.1)} />
+              </div>
+              <button
+                onClick={() => {
+                  setSectionMode((v) => !v);
+                  api.clearRange();
+                }}
+                className={`flex h-11 items-center gap-2 rounded-xl px-3.5 text-[13.5px] font-semibold transition-colors ${
+                  sectionMode
+                    ? "bg-accent/20 text-ink ring-1 ring-accent/50"
+                    : "bg-elevated text-ink-muted ring-1 ring-edge-soft hover:bg-raised hover:text-ink"
+                }`}
+              >
+                <Scissors size={15} />
+                {t("Fix a section")}
+              </button>
+            </div>
+
+            {api.dirty && (
+              <button
+                onClick={api.reset}
+                className="flex items-center gap-1.5 border-t border-edge-soft/50 px-6 py-2.5 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+              >
+                <RotateCcw size={13} />
+                {api.segments.length > 0
+                  ? t("{n} section fixes. Reset all", { n: api.segments.length })
+                  : t("Reset")}
+              </button>
+            )}
+
+            <footer className="flex items-center gap-2.5 border-t border-edge-soft/60 px-5 py-4">
+              <button
+                onClick={onPlayPause}
+                className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-elevated text-[14px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-raised"
+              >
+                {playing ? t("Pause") : t("Play")}
+              </button>
+              <button
+                onClick={() => void api.save()}
+                disabled={!api.dirty}
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-[14px] font-semibold text-canvas transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
+              >
+                <Check size={16} strokeWidth={2.6} />
+                {t("Save")}
+              </button>
+            </footer>
+          </>
+        )}
+      </aside>
     </div>
   );
 }
 
-function ConfirmDialog({
-  title,
-  body,
-  confirmLabel,
-  danger,
-  onCancel,
-  onConfirm,
-}: {
-  title: string;
-  body: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const t = useT();
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        onCancel();
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [onCancel]);
-
+function StepBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <div
-      className="absolute inset-0 z-[80] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
+    <button
+      onClick={onClick}
+      className="flex h-11 w-12 items-center justify-center rounded-xl bg-elevated text-[14px] font-semibold tabular-nums text-ink-muted ring-1 ring-edge-soft transition-colors hover:bg-raised hover:text-ink active:scale-95"
     >
-      <div className="flex w-[300px] max-w-[86%] flex-col gap-3 rounded-2xl border border-edge bg-elevated/97 p-5 shadow-[0_24px_60px_-22px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 backdrop-blur-xl">
-        <h3 className="text-[15px] font-semibold text-ink">{title}</h3>
-        <p className="text-[13px] leading-relaxed text-ink-muted">{body}</p>
-        <div className="mt-1 flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="rounded-full bg-raised px-4 py-2 text-[12.5px] font-semibold text-ink transition-colors hover:bg-canvas/55"
-          >
-            {t("Cancel")}
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12.5px] font-semibold text-white transition-colors ${
-              danger ? "bg-danger hover:bg-danger/85" : "bg-accent hover:bg-accent/85"
-            }`}
-          >
-            {danger ? <X size={13} strokeWidth={2.6} /> : <Check size={13} strokeWidth={2.6} />}
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+      {label}
+    </button>
   );
 }

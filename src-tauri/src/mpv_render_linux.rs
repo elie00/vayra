@@ -16,6 +16,13 @@ use libmpv2::render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamA
 use libmpv2_sys::mpv_handle;
 
 const GL_FRAMEBUFFER_BINDING: u32 = 0x8CA6;
+const GL_FRAMEBUFFER: u32 = 0x8D40;
+const GL_COLOR_ATTACHMENT0: u32 = 0x8CE0;
+const GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: u32 = 0x8CD0;
+const GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: u32 = 0x8CD1;
+const GL_RENDERBUFFER: u32 = 0x8D41;
+const GL_RENDERBUFFER_WIDTH: u32 = 0x8D42;
+const GL_RENDERBUFFER_HEIGHT: u32 = 0x8D43;
 const RTLD_DEFAULT: *mut c_void = std::ptr::null_mut();
 
 extern "C" {
@@ -130,6 +137,48 @@ fn current_fbo() -> i32 {
         }
         None => 0,
     }
+}
+
+fn fbo_color_size() -> Option<(i32, i32)> {
+    let get_attach: unsafe extern "C" fn(u32, u32, u32, *mut c_int) =
+        resolve_gl(b"glGetFramebufferAttachmentParameteriv\0")?;
+    let bind_rb: unsafe extern "C" fn(u32, u32) = resolve_gl(b"glBindRenderbuffer\0")?;
+    let get_rb: unsafe extern "C" fn(u32, u32, *mut c_int) =
+        resolve_gl(b"glGetRenderbufferParameteriv\0")?;
+
+    let mut obj_type: c_int = 0;
+    unsafe {
+        get_attach(
+            GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
+            &mut obj_type,
+        );
+    }
+    if obj_type != GL_RENDERBUFFER as c_int {
+        return None;
+    }
+    let mut rb_id: c_int = 0;
+    unsafe {
+        get_attach(
+            GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,
+            &mut rb_id,
+        );
+    }
+    if rb_id <= 0 {
+        return None;
+    }
+    let mut w: c_int = 0;
+    let mut h: c_int = 0;
+    unsafe {
+        bind_rb(GL_RENDERBUFFER, rb_id as u32);
+        get_rb(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &mut w);
+        get_rb(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &mut h);
+        bind_rb(GL_RENDERBUFFER, 0);
+    }
+    (w > 0 && h > 0).then_some((w, h))
 }
 
 fn detect_backend() -> Backend {
@@ -299,15 +348,25 @@ fn build_render_context(
 }
 
 fn do_render(rc: &RenderContext, area: &gtk::GLArea) {
-    let scale = area.scale_factor().max(1);
-    let w = area.allocated_width().max(1) * scale;
-    let h = area.allocated_height().max(1) * scale;
-    let packed = ((w as u64) << 32) | (h as u32 as u64);
-    if LAST_SURFACE.swap(packed, Ordering::Relaxed) != packed {
-        eprintln!("[harbor::mpv_linux] render surface {}x{} px scale {}", w, h, scale);
-    }
     area.attach_buffers();
     let fbo = current_fbo();
+    let (w, h, measured) = match fbo_color_size() {
+        Some((mw, mh)) => (mw, mh, true),
+        None => (
+            area.allocated_width().max(1),
+            area.allocated_height().max(1),
+            false,
+        ),
+    };
+    let packed = ((w as u64) << 32) | (h as u32 as u64);
+    if LAST_SURFACE.swap(packed, Ordering::Relaxed) != packed {
+        eprintln!(
+            "[harbor::mpv_linux] render surface {}x{} px ({})",
+            w,
+            h,
+            if measured { "measured fbo" } else { "computed scale" }
+        );
+    }
     if fbo == 0 && !FBO_ZERO_WARNED.swap(true, Ordering::Relaxed) {
         eprintln!("[harbor::mpv_linux] WARNING: GtkGLArea FBO query returned 0; mpv will render to the default framebuffer and the video region will stay BLACK. glGetIntegerv or the GL proc loader likely failed to resolve.");
     }
@@ -326,16 +385,15 @@ pub fn resize_to(
     let Some(embed) = guard.as_ref() else {
         return Ok(());
     };
-    let widget_scale = embed.area.scale_factor().max(1) as f64;
     let sx = if css_view_w > 0.0 { embed.gtk_window.allocated_width().max(1) as f64 / css_view_w } else { 1.0 };
     let sy = if css_view_h > 0.0 { embed.gtk_window.allocated_height().max(1) as f64 / css_view_h } else { 1.0 };
-    let lw = (w * sx / widget_scale).round().max(1.0) as i32;
-    let lh = (h * sy / widget_scale).round().max(1.0) as i32;
+    let lw = (w * sx).round().max(1.0) as i32;
+    let lh = (h * sy).round().max(1.0) as i32;
     embed.area.set_size_request(lw, lh);
     if let Some(parent) = embed.area.parent() {
         if let Some(fixed) = parent.downcast_ref::<gtk::Fixed>() {
-            let lx = (x * sx / widget_scale).round() as i32;
-            let ly = (y * sy / widget_scale).round() as i32;
+            let lx = (x * sx).round() as i32;
+            let ly = (y * sy).round() as i32;
             fixed.move_(&embed.area, lx, ly);
         }
     }

@@ -1,18 +1,15 @@
-import { SIMKL_API_BASE, SIMKL_CLIENT_ID } from "./config";
+import { simklRequest } from "./client";
 import { setSession } from "./session";
 import type { SimklPin, SimklSession } from "./types";
 
 export async function requestPin(): Promise<SimklPin> {
-  const res = await fetch(
-    `${SIMKL_API_BASE}/oauth/pin?client_id=${encodeURIComponent(SIMKL_CLIENT_ID)}`,
-  );
-  if (!res.ok) throw new Error(`Simkl pin request failed: HTTP ${res.status}`);
-  const data = (await res.json()) as {
+  interface PinResponse {
     user_code: string;
     verification_url: string;
     expires_in: number;
     interval: number;
-  };
+  }
+  const data = await simklRequest<PinResponse>("/oauth/pin", { authed: false });
   return {
     userCode: data.user_code,
     verificationUrl: data.verification_url,
@@ -30,11 +27,11 @@ export type PollHandle = { cancel: () => void };
 
 async function pollOnce(userCode: string): Promise<SimklSession | null> {
   try {
-    const res = await fetch(
-      `${SIMKL_API_BASE}/oauth/pin/${userCode}?client_id=${encodeURIComponent(SIMKL_CLIENT_ID)}`,
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as { result?: string; access_token?: string };
+    interface PollResponse {
+      result?: string;
+      access_token?: string;
+    }
+    const data = await simklRequest<PollResponse>(`/oauth/pin/${userCode}`, { authed: false });
     if (data.result === "OK" && data.access_token) {
       return { accessToken: data.access_token, username: null };
     }
@@ -71,16 +68,15 @@ export function pollForToken(pin: SimklPin, onUpdate: (result: PollResult) => vo
 
 export async function fetchUsername(session: SimklSession): Promise<string | null> {
   try {
-    const res = await fetch(`${SIMKL_API_BASE}/users/settings`, {
+    interface SettingsResponse {
+      user?: {
+        name?: string;
+      };
+    }
+    const data = await simklRequest<SettingsResponse>("/users/settings", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "simkl-api-key": SIMKL_CLIENT_ID,
-        Authorization: `Bearer ${session.accessToken}`,
-      },
+      token: session.accessToken,
     });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { user?: { name?: string } };
     return data.user?.name ?? null;
   } catch {
     return null;

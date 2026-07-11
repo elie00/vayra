@@ -1,4 +1,5 @@
 import { Fragment, useMemo, type ReactNode } from "react";
+import { PersonLink } from "../person-link";
 import type { PersonRef } from "./types";
 import { escapeRx } from "./utils";
 
@@ -145,17 +146,13 @@ function renderText(
     const id = nameToId.get(part);
     if (id == null) return <Fragment key={`${keyBase}-${i}`}>{part}</Fragment>;
     return (
-      <button
+      <PersonLink
         key={`${keyBase}-${i}`}
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onPersonClick(id);
-        }}
+        id={id}
+        name={part}
+        onClick={onPersonClick}
         className="font-medium not-italic text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:decoration-accent"
-      >
-        {part}
-      </button>
+      />
     );
   });
 }

@@ -1,7 +1,9 @@
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
+import { ORIGIN_OPTIONS } from "@/lib/anime-filter";
 import { GENRE } from "@/lib/providers/jikan";
 
 const OPTIONS: Array<{ id: number; label: string }> = [
@@ -33,7 +35,10 @@ export function AnimeGenrePicker({
   onClose: () => void;
 }) {
   const t = useT();
+  const { settings, update } = useSettings();
   const [selected, setSelected] = useState<Set<number>>(() => new Set(initial));
+  const [origins, setOrigins] = useState<Set<string>>(() => new Set(settings.animeExcludeOrigins));
+  const [hideWatched, setHideWatched] = useState(settings.animeHideWatchedPicks);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -57,8 +62,18 @@ export function AnimeGenrePicker({
     });
   };
 
+  const toggleOrigin = (code: string) => {
+    setOrigins((cur) => {
+      const next = new Set(cur);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  };
+
   const save = () => {
     onSave(Array.from(selected));
+    update({ animeExcludeOrigins: Array.from(origins), animeHideWatchedPicks: hideWatched });
     onClose();
   };
 
@@ -81,35 +96,80 @@ export function AnimeGenrePicker({
 
         <div className="flex flex-col gap-1.5 px-8 pt-8">
           <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
-            {t("Tune your picks")}
+            {t("Tune anime")}
           </span>
           <h2 className="font-display text-[27px] font-medium leading-tight tracking-tight text-ink">
-            {t("More of what you love.")}
+            {t("Shape your anime feed.")}
           </h2>
           <p className="text-[13.5px] text-ink-muted">
-            {t("Tap the genres you want more of. They steer the Top Picks row at the top of this page.")}
+            {t("Steer your Top Picks and hero toward what you love, and hide what you don't.")}
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-8 py-7">
-          <div className="flex flex-wrap gap-2.5">
-            {OPTIONS.map((opt) => {
-              const on = selected.has(opt.id);
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => toggle(opt.id)}
-                  className={`h-11 rounded-full px-5 text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] ${
-                    on
-                      ? "bg-ink text-canvas shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
-                      : "bg-canvas/50 text-ink-muted ring-1 ring-edge-soft hover:text-ink hover:ring-edge"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
+        <div className="flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto px-8 py-7">
+          <div className="flex flex-col gap-3">
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-subtle">
+              {t("Genres you want more of")}
+            </span>
+            <div className="flex flex-wrap gap-2.5">
+              {OPTIONS.map((opt) => {
+                const on = selected.has(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => toggle(opt.id)}
+                    className={`h-11 rounded-full px-5 text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] ${
+                      on
+                        ? "bg-ink text-canvas shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
+                        : "bg-canvas/50 text-ink-muted ring-1 ring-edge-soft hover:text-ink hover:ring-edge"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 border-t border-edge-soft/45 pt-6">
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-subtle">
+              {t("Hide from your picks")}
+            </span>
+            <div className="flex flex-wrap gap-2.5">
+              {ORIGIN_OPTIONS.map((opt) => {
+                const on = origins.has(opt.code);
+                return (
+                  <button
+                    key={opt.code}
+                    type="button"
+                    onClick={() => toggleOrigin(opt.code)}
+                    className={`h-11 rounded-full px-5 text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] ${
+                      on
+                        ? "bg-danger text-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
+                        : "bg-canvas/50 text-ink-muted ring-1 ring-edge-soft hover:text-ink hover:ring-edge"
+                    }`}
+                  >
+                    {t(opt.label)}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setHideWatched((v) => !v)}
+              className="mt-1 flex items-center gap-3 self-start rounded-xl py-1 text-start"
+            >
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                  hideWatched ? "border-accent bg-accent text-canvas" : "border-edge text-transparent"
+                }`}
+              >
+                <Check size={13} strokeWidth={3} />
+              </span>
+              <span className="text-[14px] font-medium text-ink">
+                {t("Hide anime I've already watched")}
+              </span>
+            </button>
           </div>
         </div>
 

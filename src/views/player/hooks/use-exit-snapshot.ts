@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { captureFrame, captureMpvFrame, saveSnapshot } from "@/lib/snapshots";
+import { useSettings } from "@/lib/settings";
 import { trickplayGet } from "@/lib/trickplay";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayerStatus } from "@/lib/player/bridge";
@@ -40,19 +41,21 @@ export function useExitSnapshot(params: {
   seekPreviewEnabled: boolean;
 }) {
   const { src, engine, status, durationSec, videoMountRef, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled } = params;
-  const latest = useRef({ src, engine, durationSec, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled });
-  latest.current = { src, engine, durationSec, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled };
+  const { settings } = useSettings();
+  const fullQuality = settings.cwSnapshotFullQuality;
+  const latest = useRef({ src, engine, durationSec, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled, fullQuality });
+  latest.current = { src, engine, durationSec, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled, fullQuality };
   const lastGoodRef = useRef<Cached | null>(null);
   const capturedKeyRef = useRef<string | null>(null);
 
   const grabFrame = useCallback(
     async (allowTrick: boolean): Promise<string | null> => {
-      const { engine: eng, seekPreviewEnabled: seek } = latest.current;
+      const { engine: eng, seekPreviewEnabled: seek, fullQuality: full } = latest.current;
       if (eng === "html5") {
         const v = videoMountRef.current?.querySelector("video") as HTMLVideoElement | null;
-        return v ? captureFrame(v) : null;
+        return v ? captureFrame(v, full) : null;
       }
-      const mpvImg = await captureMpvFrame();
+      const mpvImg = await captureMpvFrame(full);
       if (mpvImg) return mpvImg;
       if (allowTrick && seek) return trickplayGet(getPlaybackPosition());
       return null;

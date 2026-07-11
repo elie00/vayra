@@ -1,4 +1,4 @@
-import { ArrowDownUp, Check, ChevronDown, EyeOff, MoreVertical } from "lucide-react";
+import { ArrowDownUp, Check, CheckCheck, ChevronDown, EyeOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 
@@ -88,52 +88,17 @@ function OptionsMenu({
   onMarkSeason: (watched: boolean) => void;
 }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
+  const label = allWatched ? t("Mark season as unwatched") : t("Mark season as watched");
   return (
-    <div ref={ref} className="relative">
-      <button
-        aria-label={t("Options")}
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-edge-soft bg-canvas/90 text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
-      >
-        <MoreVertical size={16} />
-      </button>
-      {open && (
-        <div className="animate-fade-in absolute end-0 top-full z-30 mt-2 w-60 overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl">
-          <button
-            onClick={() => {
-              onMarkSeason(!allWatched);
-              setOpen(false);
-            }}
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-elevated/60 hover:text-ink"
-          >
-            {allWatched ? (
-              <EyeOff size={15} className="text-ink-muted" />
-            ) : (
-              <Check size={15} className="text-ink-muted" />
-            )}
-            {allWatched ? t("Mark season as unwatched") : t("Mark season as watched")}
-          </button>
-        </div>
-      )}
-    </div>
+    <button
+      aria-label={label}
+      title={label}
+      onClick={() => onMarkSeason(!allWatched)}
+      className={`flex h-10 w-10 items-center justify-center rounded-full border border-edge-soft bg-canvas/90 transition-colors hover:bg-canvas ${
+        allWatched ? "text-accent" : "text-ink-muted hover:text-ink"
+      }`}
+    >
+      {allWatched ? <EyeOff size={16} /> : <CheckCheck size={16} strokeWidth={2.2} />}
+    </button>
   );
 }

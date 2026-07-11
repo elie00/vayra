@@ -40,7 +40,7 @@ pub fn anime4k_dir(app: tauri::AppHandle) -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-pub async fn anime4k_download(app: tauri::AppHandle) -> Result<String, String> {
+pub async fn anime4k_download(app: tauri::AppHandle, force: bool) -> Result<String, String> {
     let dir = shaders_dir(&app)?;
     std::fs::create_dir_all(&dir).map_err(|e| format!("create dir: {}", e))?;
     let client = reqwest::Client::builder()
@@ -49,9 +49,11 @@ pub async fn anime4k_download(app: tauri::AppHandle) -> Result<String, String> {
         .map_err(|e| e.to_string())?;
     for (remote, local) in FILES {
         let dest = dir.join(local);
-        if let Ok(meta) = std::fs::metadata(&dest) {
-            if meta.len() > 0 {
-                continue;
+        if !force {
+            if let Ok(meta) = std::fs::metadata(&dest) {
+                if meta.len() > 0 {
+                    continue;
+                }
             }
         }
         let url = format!("{}/{}", BASE, remote);

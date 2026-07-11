@@ -8,6 +8,9 @@ import { Section, ToggleRow } from "./shared";
 import { SubtitleStylePanel } from "./player-panel";
 import { LanguagesPicker } from "./streaming-panel";
 import { DisplayLanguageSection } from "./language-panel/display-language-section";
+import { ALL_LANGUAGE_NAMES } from "@/lib/subtitles/language";
+
+const IMAGE_LANG_OPTIONS = ["Original", ...ALL_LANGUAGE_NAMES];
 
 const TMDB_LANGUAGES: DropdownOption[] = [
   { value: "es-ES", label: "Español (España)" },
@@ -62,6 +65,18 @@ export function LanguagePanel() {
         value={settings.forcedSubsWhenNativeAudio}
         onChange={(v) => update({ forcedSubsWhenNativeAudio: v })}
       />
+      <ToggleRow
+        label={t("Upgrade subtitles when better ones load")}
+        sub={t("Downloaded subtitles can arrive a moment after playback starts. Leave this off to keep whatever subtitle is already showing; turn it on to switch to the best language match as soon as it loads.")}
+        value={settings.subtitleAutoUpgrade}
+        onChange={(v) => update({ subtitleAutoUpgrade: v })}
+      />
+      <ToggleRow
+        label={t("Choose subtitles before playback")}
+        sub={t("After you pick a source, show a subtitle picker so you can set the exact track and language before the video starts. Off by default, Harbor keeps picking one for you automatically.")}
+        value={settings.subtitlePreselect}
+        onChange={(v) => update({ subtitlePreselect: v })}
+      />
       <div className="flex flex-col gap-1.5 pt-1">
         <p className="text-[13.5px] font-medium text-ink">{t("Never auto-select tracks containing")}</p>
         <p className="text-[12px] leading-relaxed text-ink-subtle">
@@ -101,6 +116,32 @@ export function LanguagePanel() {
         onChange={(v) => update({ tmdbLanguage: v })}
         options={[{ value: "", label: t("English (default)") }, ...TMDB_LANGUAGES]}
         className="w-full max-w-[340px]"
+      />
+      <ToggleRow
+        label={t("Translate titles")}
+        sub={t("On shows titles in your metadata language (English by default). Off keeps each title's original language, so anime and foreign films show their native names.")}
+        value={settings.translateTitles}
+        onChange={(v) => update({ translateTitles: v })}
+      />
+      {settings.tmdbLanguage !== "" && (
+        <ToggleRow
+          label={t("Translate overviews")}
+          sub={t("Translate plot descriptions and taglines into the language above. Turn off to keep English overviews.")}
+          value={settings.translateDescriptions}
+          onChange={(v) => update({ translateDescriptions: v })}
+        />
+      )}
+    </Section>
+
+    <Section
+      title={t("Image languages")}
+      subtitle={t("Posters, logos, and title art load in the first available language from this list, falling back down the order. \"Original\" uses the title's own language. Put your main language first. Needs a TMDB key.")}
+    >
+      <LanguagesPicker
+        value={settings.tmdbImageLangs}
+        onChange={(langs) => update({ tmdbImageLangs: langs })}
+        options={IMAGE_LANG_OPTIONS}
+        placeholder={t("Search languages")}
       />
     </Section>
 

@@ -43,6 +43,7 @@ pub async fn window_fullscreen_enter(
 pub async fn window_fullscreen_exit(
     app: AppHandle,
     state: State<'_, FullscreenState>,
+    restore_position: Option<bool>,
 ) -> Result<(), String> {
     let main = app
         .get_webview_window("main")
@@ -52,10 +53,18 @@ pub async fn window_fullscreen_exit(
     if is_fs {
         main.set_fullscreen(false)
             .map_err(|e| format!("set_fullscreen(false): {}", e))?;
-        if let Some((x, y, w, h)) = state.saved.lock().unwrap().take() {
+        let saved = state.saved.lock().unwrap().take();
+        if let Some((x, y, w, h)) = saved {
             let _ = main.set_size(tauri::PhysicalSize { width: w, height: h });
-            let _ = main.set_position(tauri::PhysicalPosition { x, y });
+            if restore_position.unwrap_or(true) {
+                let _ = main.set_position(tauri::PhysicalPosition { x, y });
+            } else {
+                let _ = main.center();
+            }
+        } else {
+            let _ = main.center();
         }
+        let _ = main.set_focus();
     }
     let _ = app.emit_to("main", "fs://exited", ());
     Ok(())

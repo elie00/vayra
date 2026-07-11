@@ -63,7 +63,7 @@ async function fetchTmdb(
   params: Record<string, string> = {},
 ): Promise<TrendingItem[]> {
   try {
-    const data = await get<Page<TrendingItem>>(key, path, { language: "en-US", ...params });
+    const data = await get<Page<TrendingItem>>(key, path, { ...params });
     return data?.results ?? [];
   } catch {
     return [];

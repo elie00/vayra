@@ -162,6 +162,21 @@ export function recentlyPlayed(): WatchedSet {
   return { ids, titles };
 }
 
+export function playbackEntries(): Array<{ metaId: string; savedAt: number; title?: string; parsedTitle?: string }> {
+  const out: Array<{ metaId: string; savedAt: number; title?: string; parsedTitle?: string }> = [];
+  for (const [key, entry] of Object.entries(readAll())) {
+    const metaId = key.split("|")[0];
+    if (!metaId || typeof entry.savedAt !== "number") continue;
+    out.push({
+      metaId,
+      savedAt: entry.savedAt,
+      title: entry.title ?? undefined,
+      parsedTitle: entry.parsedTitle ?? undefined,
+    });
+  }
+  return out;
+}
+
 export function readLastSeriesPlayback(metaId: string): PlaybackEntry | null {
   const all = readAll();
   const prefix = `${metaId}|`;

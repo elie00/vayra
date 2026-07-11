@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
 import type { CalendarItem } from "@/lib/calendar";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { formatDateLong } from "./utils";
 
 export function CalendarChip({
@@ -13,6 +14,13 @@ export function CalendarChip({
   onOpen: (item: CalendarItem) => void;
 }) {
   const t = useT();
+  const { settings } = useSettings();
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    item.id,
+    item.poster ?? undefined,
+    item.type === "tv" ? "series" : "movie",
+  );
   const [hovered, setHovered] = useState(false);
   const ref = useRef<HTMLButtonElement>(null);
   const tag = item.isAnime ? t("Anime") : item.type === "movie" ? t("Movie") : t("TV");
@@ -34,7 +42,13 @@ export function CalendarChip({
     >
       <div className="h-7 w-5 shrink-0 overflow-hidden rounded-[3px] bg-elevated/50">
         {item.poster ? (
-          <Poster src={item.poster} seed={item.id} ratio="portrait" className="h-full w-full" />
+          <Poster
+            src={poster.src}
+            onError={poster.onError}
+            seed={item.id}
+            ratio="portrait"
+            className="h-full w-full"
+          />
         ) : null}
       </div>
       <span className="flex-1 truncate text-[11.5px] font-medium text-ink">{item.name}</span>
@@ -56,6 +70,13 @@ function ChipTooltip({
   anchorRef: React.RefObject<HTMLElement | null>;
 }) {
   const t = useT();
+  const { settings } = useSettings();
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    item.id,
+    item.poster ?? undefined,
+    item.type === "tv" ? "series" : "movie",
+  );
   const tipRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({
     left: 0,
@@ -92,7 +113,13 @@ function ChipTooltip({
       <div className="flex items-start gap-3">
         <div className="h-[120px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-canvas/40 ring-1 ring-edge-soft">
           {item.poster ? (
-            <Poster src={item.poster} seed={item.id} ratio="portrait" className="h-full w-full" />
+            <Poster
+              src={poster.src}
+              onError={poster.onError}
+              seed={item.id}
+              ratio="portrait"
+              className="h-full w-full"
+            />
           ) : null}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">

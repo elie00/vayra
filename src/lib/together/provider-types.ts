@@ -47,7 +47,7 @@ export type IncomingDraw = {
   from: string;
   name: string;
   strokeId: string;
-  phase: "start" | "point" | "end";
+  phase: "start" | "point" | "end" | "clear";
   x?: number;
   y?: number;
   color?: string;

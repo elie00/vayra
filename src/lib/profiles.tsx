@@ -25,6 +25,14 @@ export const PROFILE_COLORS = [
 
 export type ProfileColor = string;
 
+export type KidConfig = {
+  age: number;
+  curfewMinutes: number | null;
+  parentPinHash: string | null;
+};
+
+export const DEFAULT_KID: KidConfig = { age: 7, curfewMinutes: null, parentPinHash: null };
+
 export type Profile = {
   id: string;
   name: string;
@@ -35,6 +43,8 @@ export type Profile = {
   passwordHash: string | null;
   hideContent: ContentFilters | null;
   lockedTabs: HiddenTabs | null;
+  kid: KidConfig | null;
+  settingsLinked?: boolean;
   createdAt: number;
 };
 
@@ -58,8 +68,14 @@ type ProfilesValue = {
   openPicker: (view?: PickerView) => void;
   setPickerView: (view: PickerView) => void;
   closePicker: () => void;
-  selectProfile: (id: string) => void;
-  createProfile: (input: { name: string; avatar?: string | null; color: ProfileColor }) => Profile;
+  selectProfile: (id: string, opts?: { unlocked?: boolean }) => void;
+  sessionUnlockedIds: Set<string>;
+  createProfile: (input: {
+    name: string;
+    avatar?: string | null;
+    color: ProfileColor;
+    kid?: KidConfig | null;
+  }) => Profile;
   updateProfile: (id: string, patch: Partial<Omit<Profile, "id" | "createdAt" | "isPrimary">>) => void;
   deleteProfile: (id: string) => void;
 };
@@ -67,7 +83,16 @@ type ProfilesValue = {
 const STORAGE_KEY = "harbor.profiles.v1";
 const TOGETHER_NAME_KEY = "harbor.together.name";
 const SETTINGS_KEY = "harbor.settings";
+const SHARED_SETTINGS_KEY = "harbor.settings.shared";
 const LEGACY_PARENTAL_KEY = "harbor.parental";
+
+function readLaunchSettingsRaw(): string | null {
+  try {
+    return localStorage.getItem(SHARED_SETTINGS_KEY) ?? localStorage.getItem(SETTINGS_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function readLegacyParental(): { hiddenTabs: HiddenTabs | null; hadPin: boolean } {
   try {
@@ -128,6 +153,70 @@ function readSettingsIdentity(): { color: string | null; avatar: string | null }
   }
 }
 
+type ProfilePromptInterval = "launch" | "15m" | "30m" | "never";
+function readProfilePromptInterval(): ProfilePromptInterval {
+  try {
+    const raw = readLaunchSettingsRaw();
+    if (!raw) return "launch";
+    const parsed = JSON.parse(raw) as { profilePromptInterval?: unknown; skipProfileScreen?: unknown };
+    const v = parsed.profilePromptInterval;
+    if (v === "launch" || v === "15m" || v === "30m" || v === "never") return v;
+    return parsed.skipProfileScreen === true ? "never" : "launch";
+  } catch {
+    return "launch";
+  }
+}
+function intervalMinutes(i: ProfilePromptInterval): number {
+  return i === "15m" ? 15 : i === "30m" ? 30 : 0;
+}
+function readDefaultProfileId(): string {
+  try {
+    const raw = readLaunchSettingsRaw();
+    if (!raw) return "";
+    const v = (JSON.parse(raw) as { defaultProfileId?: unknown }).defaultProfileId;
+    return typeof v === "string" ? v : "";
+  } catch {
+    return "";
+  }
+}
+function launchDefault(profiles: Profile[]): Profile | null {
+  const id = readDefaultProfileId();
+  if (!id) return null;
+  const p = profiles.find((x) => x.id === id);
+  return p && !p.passwordHash ? p : null;
+}
+const LAST_SELECT_KEY = "harbor.profile.lastSelectAt";
+function readLastProfileSelectAt(): number {
+  try {
+    return Number(localStorage.getItem(LAST_SELECT_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+function markProfileSelectedNow(): void {
+  try {
+    localStorage.setItem(LAST_SELECT_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
+
+const PICKER_SESSION_KEY = "harbor.pickerShown";
+function launchPickerShownThisSession(): boolean {
+  try {
+    return sessionStorage.getItem(PICKER_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function markLaunchPickerShown(): void {
+  try {
+    sessionStorage.setItem(PICKER_SESSION_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 function readState(): ProfilesState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -155,10 +244,24 @@ function readState(): ProfilesState {
       if (typeof p.lockedTabs === "undefined") {
         next.lockedTabs = p.isPrimary ? legacyParental.hiddenTabs : null;
       }
+      if (typeof p.kid === "undefined" || p.kid == null) {
+        next.kid = null;
+      } else {
+        next.kid = {
+          age: p.kid.age ?? 7,
+          curfewMinutes: p.kid.curfewMinutes ?? null,
+          parentPinHash: p.kid.parentPinHash ?? null,
+        };
+      }
       if (p.isPrimary) {
         if (isPlaceholderName(p.name)) next.name = fallbackName;
         if (identity.color) next.color = identity.color;
-        if (identity.avatar != null) next.avatar = identity.avatar;
+        if (identity.avatar != null && !identity.avatar.startsWith("/kids/avatars/")) {
+          next.avatar = identity.avatar;
+        }
+      }
+      if (next.kid == null && typeof next.avatar === "string" && next.avatar.startsWith("/kids/avatars/")) {
+        next.avatar = null;
       }
       return next;
     });
@@ -204,15 +307,29 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
         passwordHash: null,
         hideContent: null,
         lockedTabs: legacyParental.hiddenTabs,
+        kid: null,
         createdAt: Date.now(),
       };
       const initial: ProfilesState = { profiles: [primary], activeId: primary.id };
       writeState(initial);
       return initial;
     }
-    return loaded;
+    const def = launchDefault(loaded.profiles);
+    return def ? { ...loaded, activeId: def.id } : loaded;
   });
-  const [pickerOpen, setPickerOpen] = useState<boolean>(() => state.activeId == null);
+  const [pickerOpen, setPickerOpen] = useState<boolean>(() => {
+    if (state.activeId == null) return true;
+    if (state.profiles.length <= 1) return false;
+    if (launchDefault(state.profiles)) return false;
+    const interval = readProfilePromptInterval();
+    if (interval === "never") return false;
+    if (interval === "launch") {
+      const shownThisSession = launchPickerShownThisSession();
+      markLaunchPickerShown();
+      return !shownThisSession;
+    }
+    return Date.now() - readLastProfileSelectAt() >= intervalMinutes(interval) * 60000;
+  });
   const [pickerView, setPickerViewState] = useState<PickerView>({ kind: "list" });
 
   useEffect(() => {
@@ -224,11 +341,37 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     [state.profiles, state.activeId],
   );
 
-  const selectProfile = useCallback((id: string) => {
+  const [sessionUnlockedIds, setSessionUnlockedIds] = useState<Set<string>>(() => new Set());
+  const selectProfile = useCallback((id: string, opts?: { unlocked?: boolean }) => {
+    if (opts?.unlocked) {
+      setSessionUnlockedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+    }
+    markProfileSelectedNow();
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as ProfilesState;
+        parsed.activeId = id;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      }
+    } catch {}
     setState((s) => ({ ...s, activeId: id }));
     setPickerOpen(false);
     setPickerViewState({ kind: "list" });
   }, []);
+
+  useEffect(() => {
+    const onFocus = () => {
+      const mins = intervalMinutes(readProfilePromptInterval());
+      if (mins <= 0 || state.activeId == null || state.profiles.length <= 1) return;
+      if (Date.now() - readLastProfileSelectAt() >= mins * 60000) {
+        setPickerViewState({ kind: "list" });
+        setPickerOpen(true);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [state.activeId, state.profiles.length]);
 
   const openPicker = useCallback((view: PickerView = { kind: "list" }) => {
     setPickerViewState(view);
@@ -240,26 +383,31 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     setPickerViewState({ kind: "list" });
   }, []);
 
-  const createProfile = useCallback<ProfilesValue["createProfile"]>(({ name, avatar, color }) => {
-    let created!: Profile;
-    setState((s) => {
-      const primary = s.profiles.find((p) => p.isPrimary) ?? s.profiles[0];
-      created = {
-        id: newId(),
-        name: name.trim().slice(0, 32) || "Profile",
-        avatar: avatar ?? null,
-        color,
-        isPrimary: false,
-        shareStremioWith: primary?.id ?? null,
-        passwordHash: null,
-        hideContent: null,
-        lockedTabs: null,
-        createdAt: Date.now(),
-      };
-      return { ...s, profiles: [...s.profiles, created] };
-    });
-    return created;
-  }, []);
+  const createProfile = useCallback<ProfilesValue["createProfile"]>(
+    ({ name, avatar, color, kid }) => {
+      let created!: Profile;
+      setState((s) => {
+        const primary = s.profiles.find((p) => p.isPrimary) ?? s.profiles[0];
+        created = {
+          id: newId(),
+          name: name.trim().slice(0, 32) || "Profile",
+          avatar: avatar ?? null,
+          color,
+          isPrimary: false,
+          shareStremioWith: primary?.id ?? null,
+          passwordHash: null,
+          hideContent: null,
+          lockedTabs: null,
+          kid: kid ?? null,
+          settingsLinked: true,
+          createdAt: Date.now(),
+        };
+        return { ...s, profiles: [...s.profiles, created] };
+      });
+      return created;
+    },
+    [],
+  );
 
   const updateProfile = useCallback<ProfilesValue["updateProfile"]>((id, patch) => {
     setState((s) => ({
@@ -288,6 +436,14 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(`harbor.auth.${id}`);
         localStorage.removeItem(`harbor.favorites.v1.${id}`);
         localStorage.removeItem(`harbor.localwatchlist.v1.${id}`);
+        localStorage.removeItem(`harbor.settings.${id}`);
+        localStorage.removeItem(`harbor.trakt.session.v1.${id}`);
+        localStorage.removeItem(`harbor.simkl.session.v1.${id}`);
+        localStorage.removeItem(`harbor.anilist.session.v1.${id}`);
+        localStorage.removeItem(`harbor.mal.session.v1.${id}`);
+        localStorage.removeItem(`harbor.simkl.cache.v2.${id}`);
+        localStorage.removeItem(`harbor.anilist.synced.v1.${id}`);
+        localStorage.removeItem(`harbor.mal.synced.v1.${id}`);
       } catch {
         /* ignore */
       }
@@ -306,6 +462,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       setPickerView,
       closePicker,
       selectProfile,
+      sessionUnlockedIds,
       createProfile,
       updateProfile,
       deleteProfile,
@@ -316,6 +473,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       activeProfile,
       pickerOpen,
       pickerView,
+      sessionUnlockedIds,
       openPicker,
       setPickerView,
       closePicker,
@@ -333,6 +491,11 @@ export function useProfiles(): ProfilesValue {
   const v = useContext(Ctx);
   if (!v) throw new Error("useProfiles outside ProfilesProvider");
   return v;
+}
+
+export function useActiveKid(): KidConfig | null {
+  const { activeProfile } = useProfiles();
+  return activeProfile?.kid ?? null;
 }
 
 export function nextProfileColor(existing: Profile[]): ProfileColor {

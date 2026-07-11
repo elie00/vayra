@@ -12,6 +12,7 @@ import type { PlayEpisode } from "@/lib/view";
 import { EditionChip } from "./edition-chip";
 import {
   addonInstanceKey,
+  anyStreamCached,
   buildAddonOptions,
   contributorLabel,
   displayTitle,
@@ -165,6 +166,7 @@ function SourceRow({
   const { settings } = useSettings();
   const cachedDebrids = debrids.filter((d) => stream.cached[d.slug]);
   const libraryDebrids = debrids.filter((d) => stream.inLibrary[d.slug]);
+  const addonCached = anyStreamCached(stream);
   const summary = streamSummaryParts(stream);
   const link = resolveStreamLink(stream);
   const title = displayTitle(stream, showName, episode);
@@ -224,6 +226,11 @@ function SourceRow({
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
               <Zap size={11} strokeWidth={2} />
               Cached on {cachedDebrids.map((d) => d.name).join(" + ")}
+            </span>
+          ) : addonCached ? (
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+              <Zap size={11} strokeWidth={2} />
+              Cached
             </span>
           ) : !stream.url && !stream.infoHash && (stream.externalUrl || stream.ytId) ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">

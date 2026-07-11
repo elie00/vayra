@@ -1,7 +1,8 @@
 import type { Meta } from "../../cinemeta";
-import { get, IMG, tmdbLanguageIso } from "./tmdb-client";
+import { get, IMG, effectiveTmdbLanguage } from "./tmdb-client";
 import { loadStoredSettings } from "@/lib/settings/load";
-import { pickLogo } from "./tmdb-images";
+import { pickLogo, fetchMovieAssets } from "./tmdb-images";
+import { imageLangParam, imageLangRank } from "./tmdb-image-lang";
 import { pickTrailers, type Video } from "./tmdb-trailers";
 import type { PersonRef } from "./tmdb-people";
 
@@ -38,6 +39,7 @@ export type Episode = {
   name: string;
   overview: string;
   stillPath: string | null;
+  stillUrl?: string;
   airDate: string | null;
   runtime: number | null;
   voteAverage: number | null;
@@ -73,6 +75,7 @@ export type TmdbDetail = {
   runtime?: string;
   status: string;
   genres: string[];
+  genresRich?: Array<{ id: number; name: string }>;
   originalLanguage: string;
   spokenLanguages: string[];
   productionCountries: string[];
@@ -188,16 +191,25 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
     return null;
   }
 
-  const iso = tmdbLanguageIso();
   const settings = loadStoredSettings();
-  const translatePosters = settings.translatePosters && !settings.posterBaseUrl;
+  const metaLang = effectiveTmdbLanguage() || "en";
   const raw = await get<any>(key, `${kind}/${id}`, {
     append_to_response: "credits,aggregate_credits,recommendations,similar,videos,external_ids,images,keywords,translations",
-    include_image_language: translatePosters && iso && iso !== "en" ? `${iso},en,null` : "en,null",
+    language: metaLang,
+    include_image_language: imageLangParam(),
   });
   if (!raw) return null;
 
-  const logo = pickLogo(raw.images?.logos ?? []);
+  const origLang = typeof raw.original_language === "string" ? raw.original_language : "";
+  let logo = pickLogo(raw.images?.logos ?? [], origLang);
+  let posterSource = raw.images?.posters;
+  if (!logo && origLang && !imageLangParam().split(",").includes(origLang)) {
+    const assets = await fetchMovieAssets(key, `tmdb:${kind}:${id}`, origLang);
+    if (assets) {
+      logo = pickLogo(assets.logos ?? [], origLang);
+      posterSource = assets.posters ?? posterSource;
+    }
+  }
   const rawKeywords = raw.keywords?.keywords ?? raw.keywords?.results ?? [];
   const keywords: number[] = rawKeywords
     .map((k: any) => k?.id)
@@ -285,29 +297,35 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
       : undefined
     : raw.episode_run_time?.[0]
       ? `${raw.episode_run_time[0]} min episodes`
-      : raw.number_of_seasons
-        ? `${raw.number_of_seasons} season${raw.number_of_seasons === 1 ? "" : "s"}`
+      : seasons.length > 0
+        ? `${seasons.length} season${seasons.length === 1 ? "" : "s"}`
         : undefined;
 
   let overview = raw.overview ?? "";
   let tagline = raw.tagline ?? "";
   if (!settings.translateDescriptions) {
-    const enTrans = raw.translations?.translations?.find((t: any) => t.iso_639_1 === "en");
-    if (enTrans?.data?.overview) overview = enTrans.data.overview;
-    if (enTrans?.data?.tagline) tagline = enTrans.data.tagline;
+    const enTrans = raw.translations?.translations?.find((t: any) => t.iso_639_1 === "en")?.data;
+    if (enTrans?.overview) overview = enTrans.overview;
+    if (enTrans?.tagline) tagline = enTrans.tagline;
   }
 
   let finalPosterPath = raw.poster_path;
-  if (!translatePosters && raw.images?.posters?.length) {
-    const enPoster = raw.images.posters.find((p: any) => p.iso_639_1 === "en") || raw.images.posters[0];
-    if (enPoster) finalPosterPath = enPoster.file_path;
+  if (!settings.posterBaseUrl && posterSource?.length) {
+    const best = [...posterSource].sort(
+      (a: any, b: any) =>
+        imageLangRank(b.iso_639_1, origLang) - imageLangRank(a.iso_639_1, origLang) ||
+        (b.vote_average ?? 0) - (a.vote_average ?? 0),
+    )[0];
+    if (best) finalPosterPath = best.file_path;
   }
 
   return {
     kind,
     id: raw.id,
     imdbId: raw.external_ids?.imdb_id ?? null,
-    title: raw.title ?? raw.name,
+    title: settings.translateTitles
+      ? (raw.title || raw.name)
+      : (raw.original_title || raw.original_name || raw.title || raw.name),
     originalTitle: raw.original_title ?? raw.original_name ?? "",
     tagline,
     overview,
@@ -320,6 +338,9 @@ export async function tmdbDetails(key: string, meta: Meta): Promise<TmdbDetail |
     runtime,
     status: raw.status ?? "",
     genres: (raw.genres ?? []).map((g: any) => g.name),
+    genresRich: (raw.genres ?? [])
+      .filter((g: any) => typeof g?.id === "number" && g?.name)
+      .map((g: any) => ({ id: g.id as number, name: g.name as string })),
     originalLanguage: (raw.original_language ?? "").toUpperCase(),
     spokenLanguages: (raw.spoken_languages ?? []).map((l: any) => l.english_name ?? l.name),
     productionCountries: (raw.production_countries ?? []).map((c: any) => c.name),
@@ -380,7 +401,9 @@ export async function tmdbSeasonEpisodes(
   seasonNumber: number,
 ): Promise<Episode[]> {
   if (!key) return [];
-  const data = await get<any>(key, `tv/${tvId}/season/${seasonNumber}`);
+  const data = await get<any>(key, `tv/${tvId}/season/${seasonNumber}`, {
+    language: effectiveTmdbLanguage() || "en",
+  });
   if (!data?.episodes) return [];
   return data.episodes.map((e: any) => ({
     id: e.id,

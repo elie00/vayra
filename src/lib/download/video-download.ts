@@ -23,6 +23,7 @@ export function startDownload(
   url: string,
   destPath: string,
   onProgress: (p: DownloadProgress) => void,
+  headers?: Record<string, string>,
 ): DownloadHandle {
   let settle = () => {};
   let fail = (_e: Error) => {};
@@ -63,7 +64,13 @@ export function startDownload(
     }
   };
 
-  invoke("download_start", { id, url, dest: destPath, onEvent: channel }).catch((e: unknown) => {
+  invoke("download_start", {
+    id,
+    url,
+    dest: destPath,
+    headers: headers && Object.keys(headers).length > 0 ? headers : null,
+    onEvent: channel,
+  }).catch((e: unknown) => {
     fail(e instanceof Error ? e : new Error(String(e)));
   });
 

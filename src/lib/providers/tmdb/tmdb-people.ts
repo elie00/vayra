@@ -1,6 +1,6 @@
 import type { Meta } from "../../cinemeta";
 import { lruSet } from "../../cache";
-import { get, IMG } from "./tmdb-client";
+import { effectiveTmdbLanguage, get, IMG } from "./tmdb-client";
 
 const PERSON_NAME_CACHE_MAX = 3000;
 const PERSON_CACHE_MAX = 10;
@@ -147,6 +147,7 @@ export async function tmdbPerson(key: string, personId: number): Promise<PersonD
 async function fetchPerson(key: string, personId: number): Promise<PersonDetail | null> {
   const raw = await get<any>(key, `person/${personId}`, {
     append_to_response: "combined_credits,external_ids",
+    language: effectiveTmdbLanguage() || "en",
   });
   if (!raw) return null;
 

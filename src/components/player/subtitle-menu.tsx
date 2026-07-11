@@ -7,6 +7,7 @@ import { useT } from "@/lib/i18n";
 import { MenuBody } from "./subtitle-menu/menu-body";
 import type { SubtitleMenuProps } from "./subtitle-menu/types";
 import { buildOverlayState } from "./subtitle-menu/utils";
+import { useMenuSide } from "./menu-side";
 import { Tooltip } from "./transport/tooltip";
 
 export type { SubtitleMenuProps } from "./subtitle-menu/types";
@@ -18,6 +19,7 @@ export function SubtitleMenu(props: Props) {
   const [open, setOpen] = useState(false);
   const [forceInline, setForceInline] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const { side, measure } = useMenuSide(wrap, 500);
   const useOverlay = props.useOverlayPopup === true;
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -74,6 +76,7 @@ export function SubtitleMenu(props: Props) {
   }, [useOverlay, open]);
 
   const handleClick = () => {
+    if (!open) measure();
     if (!useOverlay) {
       setOpen((v) => !v);
       return;
@@ -115,7 +118,7 @@ export function SubtitleMenu(props: Props) {
         </button>
       </Tooltip>
       {open && (forceInline || !useOverlay) && (
-        <div className="absolute bottom-[calc(100%+10px)] end-0 flex h-[400px] max-h-[72vh] w-[500px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} flex h-[400px] max-h-[72vh] w-[500px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
           <MenuBody {...props} onClose={() => setOpen(false)} onOpenStyleBar={openStyleBar} />
         </div>
       )}

@@ -1,12 +1,12 @@
+import { useState } from "react";
+import { LogIn } from "lucide-react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
+import { AuthModal } from "@/components/auth-modal";
 import { ContinueCard } from "@/components/continue-card";
 import { Row } from "@/components/row";
 import { useT } from "@/lib/i18n";
 import { type LibraryItem } from "@/lib/stremio";
 import { isLibraryItemWatched } from "@/lib/trakt/library-key";
-import { openUrl } from "@/lib/window";
-
-const STREMIO_REGISTER_URL = "https://www.stremio.com/register";
 
 type Props = {
   signedIn: boolean;
@@ -17,18 +17,42 @@ type Props = {
 
 export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
   const t = useT();
+  const [showAuth, setShowAuth] = useState(false);
+
+  const signInButton = signedIn ? null : (
+    <button
+      type="button"
+      onClick={() => setShowAuth(true)}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-edge-soft px-3 py-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+    >
+      <LogIn size={13} strokeWidth={2.2} />
+      {t("profile.signIn")}
+    </button>
+  );
+
+  const authModal = showAuth ? <AuthModal onClose={() => setShowAuth(false)} /> : null;
+
   if (items.length > 0) {
     return (
-      <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="home:cw">
-        {items.map((item) => (
-          <ContinueCard
-            key={item._id}
-            item={item}
-            watched={watchedSet ? isLibraryItemWatched(item, watchedSet) : false}
-            onDismiss={onDismiss}
-          />
-        ))}
-      </Row>
+      <>
+        <Row
+          title={t("Continue Watching")}
+          min={260}
+          shape="landscape"
+          scrollKey="home:cw"
+          headerRight={signInButton}
+        >
+          {items.map((item) => (
+            <ContinueCard
+              key={item._id}
+              item={item}
+              watched={watchedSet ? isLibraryItemWatched(item, watchedSet) : false}
+              onDismiss={onDismiss}
+            />
+          ))}
+        </Row>
+        {authModal}
+      </>
     );
   }
   return (
@@ -44,9 +68,9 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
             <span>{t("Sign in to")}</span>
             <button
               type="button"
-              onClick={() => openUrl(STREMIO_REGISTER_URL)}
+              onClick={() => setShowAuth(true)}
               className="rounded-md transition-opacity hover:opacity-80"
-              aria-label={t("Open Stremio registration")}
+              aria-label={t("profile.signIn")}
             >
               <img
                 src={stremioWordmark}
@@ -59,6 +83,7 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
           </p>
         )}
       </div>
+      {authModal}
     </div>
   );
 }

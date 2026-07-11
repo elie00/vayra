@@ -5,12 +5,15 @@ import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import { CustomSourcesRow } from "@/components/custom-sources-row";
 import { TopRankCard } from "@/components/top-rank-card";
+import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
+import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { useT } from "@/lib/i18n";
 import type { HomeRowCustomization } from "@/lib/home-customization";
 import { useView } from "@/lib/view";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
 import { watchTitleKey, type WatchedSet } from "@/lib/playback-history";
+import { useSettings } from "@/lib/settings";
 
 function metaTitleKey(meta: { id?: string }): string | null {
   const id = meta.id;
@@ -23,10 +26,41 @@ function metaTitleKey(meta: { id?: string }): string | null {
   return null;
 }
 
+function isUnreleased(m: { releaseDate?: string; releaseInfo?: string }): boolean {
+  if (m.releaseDate) {
+    const t = Date.parse(m.releaseDate);
+    if (!Number.isNaN(t)) return t > Date.now();
+  }
+  const yr = m.releaseInfo ? Number.parseInt(m.releaseInfo.slice(0, 4), 10) : NaN;
+  if (!Number.isNaN(yr)) return yr > new Date().getFullYear();
+  return false;
+}
+
 function RowTitle({ row }: { row: HomeRow }) {
   const t = useT();
   const { openGrid } = useView();
-  if (!row.fetcher) return <>{t(row.name)}</>;
+  const lb = useLetterboxd();
+  const isLetterboxd = row.key.startsWith("letterboxd-");
+  const catalogId = isLetterboxd ? row.key.replace("letterboxd-", "") : "";
+
+  const badge = isLetterboxd ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
+      Letterboxd
+    </span>
+  ) : null;
+
+  const menu = isLetterboxd ? (
+    <LetterboxdRowMenu
+      canMoveUp={lb.catalogOrder.indexOf(catalogId) > 0}
+      canMoveDown={lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 && lb.catalogOrder.indexOf(catalogId) !== -1}
+      hidden={lb.hiddenCatalogs.includes(catalogId)}
+      onMoveUp={() => lb.moveCatalog(catalogId, -1)}
+      onMoveDown={() => lb.moveCatalog(catalogId, 1)}
+      onToggleHidden={() => lb.toggleHidden(catalogId)}
+    />
+  ) : null;
+
+  if (!row.fetcher) return <>{t(row.name)}{badge}{menu}</>;
   return (
     <button
       onClick={() =>
@@ -35,11 +69,29 @@ function RowTitle({ row }: { row: HomeRow }) {
       className="group/see inline-flex items-center gap-1.5 text-ink transition-colors hover:text-ink-muted"
     >
       {t(row.name)}
+      {badge}
       <span className="inline-flex items-center gap-0.5 text-[12px] font-medium text-ink-subtle opacity-0 transition-opacity duration-200 group-hover/see:opacity-100">
         {t("See all")}
         <ChevronRight size={14} strokeWidth={2.4} className="dir-icon" />
       </span>
     </button>
+  );
+}
+
+function RowTitleExtra({ row }: { row: HomeRow }) {
+  const lb = useLetterboxd();
+  const isLetterboxd = row.key.startsWith("letterboxd-");
+  if (!isLetterboxd) return null;
+  const catalogId = row.key.replace("letterboxd-", "");
+  return (
+    <LetterboxdRowMenu
+      canMoveUp={lb.catalogOrder.indexOf(catalogId) > 0}
+      canMoveDown={lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 && lb.catalogOrder.indexOf(catalogId) !== -1}
+      hidden={lb.hiddenCatalogs.includes(catalogId)}
+      onMoveUp={() => lb.moveCatalog(catalogId, -1)}
+      onMoveDown={() => lb.moveCatalog(catalogId, 1)}
+      onToggleHidden={() => lb.toggleHidden(catalogId)}
+    />
   );
 }
 
@@ -59,6 +111,7 @@ export function CustomizableRows({
   hideWatched,
   watchedSet,
   localWatched,
+  stremioWatched,
   homeLanguages,
 }: {
   rows: HomeRow[];
@@ -76,10 +129,13 @@ export function CustomizableRows({
   hideWatched?: boolean;
   watchedSet?: Set<string>;
   localWatched?: WatchedSet;
+  stremioWatched?: Set<string>;
   homeLanguages?: string[];
 }) {
   const { openGrid } = useView();
   const t = useT();
+  const { settings } = useSettings();
+  const hideUnreleased = settings.hideUnreleased;
   const watchedTitleKeys = useMemo(() => {
     const out = new Set<string>();
     if (!watchedSet) return out;
@@ -90,6 +146,7 @@ export function CustomizableRows({
     return out;
   }, [watchedSet]);
   const isWatched = (m: { id: string; name?: string }) => {
+    if (stremioWatched?.has(m.id)) return true;
     const key = metaTitleKey(m);
     if (key != null && watchedTitleKeys.has(key)) return true;
     if (localWatched) {
@@ -109,8 +166,9 @@ export function CustomizableRows({
           metas = metas.filter((m) => !m.originalLanguage || homeLanguages.includes(m.originalLanguage));
         }
         if (hideWatched) metas = metas.filter((m) => !isWatched(m));
+        if (hideUnreleased) metas = metas.filter((m) => !isUnreleased(m));
         if (
-          (hideWatched || (homeLanguages && homeLanguages.length > 0)) &&
+          (hideWatched || hideUnreleased || (homeLanguages && homeLanguages.length > 0)) &&
           metas.length === 0 &&
           !editMode &&
           !row.sourceRow
@@ -130,6 +188,7 @@ export function CustomizableRows({
           rowEl = (
             <Row
               title={<RowTitle row={row} />}
+              titleExtra={<RowTitleExtra row={row} />}
               min={180}
               shape="rank"
               scrollKey={`home:${row.key}`}
@@ -144,6 +203,7 @@ export function CustomizableRows({
           rowEl = (
             <Row
               title={<RowTitle row={row} />}
+              titleExtra={<RowTitleExtra row={row} />}
               scrollKey={`home:${row.key}`}
               onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
               onViewAll={viewAll}

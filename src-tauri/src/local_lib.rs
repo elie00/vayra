@@ -14,12 +14,16 @@ const VIDEO_EXTS: &[&str] = &[
 ];
 
 #[tauri::command]
-pub async fn harbor_scan_folder(folder: String) -> Result<Vec<ScannedFile>, String> {
+pub async fn harbor_scan_folder(
+    folder: String,
+    min_size_mb: Option<u64>,
+) -> Result<Vec<ScannedFile>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let root = PathBuf::from(&folder);
         if !root.exists() {
             return Err(format!("folder does not exist: {}", folder));
         }
+        let min_bytes = min_size_mb.unwrap_or(50).saturating_mul(1024 * 1024);
         let mut out = Vec::new();
         for entry in WalkDir::new(&root)
             .max_depth(8)
@@ -42,7 +46,7 @@ pub async fn harbor_scan_folder(folder: String) -> Result<Vec<ScannedFile>, Stri
                 Ok(m) => m,
                 Err(_) => continue,
             };
-            if meta.len() < 50 * 1024 * 1024 {
+            if meta.len() < min_bytes {
                 continue;
             }
             let filename = p

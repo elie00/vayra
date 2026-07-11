@@ -6,6 +6,7 @@ import type { TrackInfo } from "@/lib/player/bridge";
 import { modalOverlayClose, modalOverlayEmitState, modalOverlayOpen } from "@/lib/modal-overlay";
 import { languageName } from "@/lib/subtitles/language";
 import { useT } from "@/lib/i18n";
+import { useMenuSide } from "./menu-side";
 import { Tooltip } from "./transport/tooltip";
 
 type Props = {
@@ -33,6 +34,7 @@ export function AudioMenu(props: Props) {
   const [open, setOpen] = useState(false);
   const [forceInline, setForceInline] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const { side, measure } = useMenuSide(wrap, 360);
   const useOverlay = props.useOverlayPopup === true;
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -80,6 +82,7 @@ export function AudioMenu(props: Props) {
   }, [useOverlay, open]);
 
   const handleClick = () => {
+    if (!open) measure();
     if (!useOverlay) {
       setOpen((v) => !v);
       return;
@@ -116,7 +119,7 @@ export function AudioMenu(props: Props) {
         </button>
       </Tooltip>
       {open && (forceInline || !useOverlay) && (
-        <div className="absolute bottom-[calc(100%+10px)] end-0 flex max-h-[400px] w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} flex max-h-[400px] w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
           <AudioMenuBody {...props} onClose={() => setOpen(false)} />
         </div>
       )}

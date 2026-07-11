@@ -1,4 +1,4 @@
-const WORKER_VERSION = 10;
+const WORKER_VERSION = 11;
 const MAX_AVATAR_LENGTH = 600_000;
 
 function sanitizeAvatar(v) {
@@ -139,6 +139,10 @@ async function handleProxy(req, url) {
 
 const ROOM_IDLE_MS = 1000 * 60 * 60 * 6;
 
+function peerAttachment(p) {
+  return { clientId: p.clientId, name: p.name, joinedAt: p.joinedAt, ready: p.ready, color: p.color };
+}
+
 export class Room {
   constructor(state) {
     this.state = state;
@@ -147,27 +151,65 @@ export class Room {
     this.hostClientId = null;
     this.started = false;
     this.lastActivity = Date.now();
+    for (const ws of state.getWebSockets()) {
+      const att = ws.deserializeAttachment();
+      if (att && att.clientId) this.peers.set(ws, { ...att, avatar: null, lastStateAt: 0 });
+    }
+    state.blockConcurrencyWhile(async () => {
+      const stored = await state.storage.get(["syncState", "hostClientId", "started"]);
+      this.syncState = stored.get("syncState") ?? null;
+      this.hostClientId = stored.get("hostClientId") ?? null;
+      this.started = stored.get("started") ?? false;
+    });
+  }
+
+  saveHost() {
+    if (this.hostClientId == null) this.state.storage.delete("hostClientId");
+    else this.state.storage.put("hostClientId", this.hostClientId);
+  }
+  saveStarted() {
+    this.state.storage.put("started", this.started);
+  }
+  saveSync() {
+    if (this.syncState == null) this.state.storage.delete("syncState");
+    else this.state.storage.put("syncState", this.syncState);
+  }
+  attach(ws, peer) {
+    try {
+      ws.serializeAttachment(peerAttachment(peer));
+    } catch {
+      /* attachment too large or unsupported */
+    }
   }
 
   async fetch(_req) {
     const pair = new WebSocketPair();
     const client = pair[0];
     const server = pair[1];
-    server.accept();
-    server.addEventListener("message", (ev) => this.onMessage(server, ev));
-    server.addEventListener("close", () => this.onClose(server));
-    server.addEventListener("error", () => this.onClose(server));
+    this.state.acceptWebSocket(server);
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  onMessage(socket, ev) {
+  webSocketMessage(ws, data) {
     let msg;
     try {
-      const data = typeof ev.data === "string" ? ev.data : new TextDecoder().decode(ev.data);
-      msg = JSON.parse(data);
+      const text = typeof data === "string" ? data : new TextDecoder().decode(data);
+      msg = JSON.parse(text);
     } catch {
       return;
     }
+    this.onMessage(ws, msg);
+  }
+
+  webSocketClose(ws) {
+    this.onClose(ws);
+  }
+
+  webSocketError(ws) {
+    this.onClose(ws);
+  }
+
+  onMessage(socket, msg) {
     this.lastActivity = Date.now();
     switch (msg.t) {
       case "hello":
@@ -209,6 +251,7 @@ export class Room {
     const peer = this.peers.get(socket);
     if (!peer) return;
     peer.ready = !!msg.ready;
+    this.attach(socket, peer);
     this.broadcast({ t: "participant-ready", clientId: peer.clientId, ready: peer.ready });
   }
 
@@ -217,12 +260,15 @@ export class Room {
     if (!peer) return;
     if (this.hostClientId === peer.clientId && !msg.fresh) return;
     this.hostClientId = peer.clientId;
+    this.saveHost();
     this.broadcast({ t: "host", hostClientId: this.hostClientId });
     if (msg.fresh) {
       this.started = false;
+      this.saveStarted();
       this.broadcast({ t: "started", started: false });
-      for (const p of this.peers.values()) {
+      for (const [s, p] of this.peers) {
         p.ready = false;
+        this.attach(s, p);
         this.broadcast({ t: "participant-ready", clientId: p.clientId, ready: false });
       }
     }
@@ -232,6 +278,7 @@ export class Room {
     const peer = this.peers.get(socket);
     if (!peer || this.hostClientId !== peer.clientId) return;
     this.started = true;
+    this.saveStarted();
     this.broadcast({ t: "started", started: true });
   }
 
@@ -277,15 +324,19 @@ export class Room {
   handleDraw(socket, msg) {
     const peer = this.peers.get(socket);
     if (!peer) return;
-    if (typeof msg.strokeId !== "string" || msg.strokeId.length === 0 || msg.strokeId.length > 64) return;
-    const phase = msg.phase === "start" || msg.phase === "point" || msg.phase === "end" ? msg.phase : null;
+    const phase =
+      msg.phase === "start" || msg.phase === "point" || msg.phase === "end" || msg.phase === "clear"
+        ? msg.phase
+        : null;
     if (!phase) return;
+    const strokeId = typeof msg.strokeId === "string" ? msg.strokeId : "";
+    if (phase !== "clear" && (strokeId.length === 0 || strokeId.length > 64)) return;
     this.broadcast(
       {
         t: "draw",
         from: peer.clientId,
         name: peer.name,
-        strokeId: msg.strokeId,
+        strokeId,
         phase,
         x: typeof msg.x === "number" ? msg.x : undefined,
         y: typeof msg.y === "number" ? msg.y : undefined,
@@ -328,6 +379,7 @@ export class Room {
       if (!next || p.joinedAt < next.joinedAt) next = p;
     }
     this.hostClientId = next ? next.clientId : null;
+    this.saveHost();
     this.broadcast({ t: "host", hostClientId: this.hostClientId });
   }
 
@@ -340,7 +392,7 @@ export class Room {
     const name = (msg.name || "Guest").toString().slice(0, 32);
     const avatar = sanitizeAvatar(msg.avatar);
     const color = sanitizeColor(msg.color);
-    const peer = { socket, clientId: msg.clientId, name, joinedAt: Date.now(), ready: false, avatar, color, lastStateAt: 0 };
+    const peer = { clientId: msg.clientId, name, joinedAt: Date.now(), ready: false, avatar, color, lastStateAt: 0 };
     for (const [s, p] of this.peers) {
       if (p.clientId === msg.clientId && s !== socket) {
         try { s.close(1000, "replaced"); } catch {}
@@ -348,8 +400,12 @@ export class Room {
       }
     }
     this.peers.set(socket, peer);
+    this.attach(socket, peer);
     const becameHost = !this.hostClientId;
-    if (becameHost) this.hostClientId = peer.clientId;
+    if (becameHost) {
+      this.hostClientId = peer.clientId;
+      this.saveHost();
+    }
     const participants = Array.from(this.peers.values()).map((p) => ({
       id: p.clientId,
       name: p.name,
@@ -391,6 +447,7 @@ export class Room {
     if (typeof msg.name === "string") peer.name = msg.name.slice(0, 32);
     peer.avatar = sanitizeAvatar(msg.avatar);
     peer.color = sanitizeColor(msg.color);
+    this.attach(socket, peer);
     this.broadcast({
       t: "participant-profile",
       participant: {
@@ -437,6 +494,7 @@ export class Room {
     peer.lastStateAt = now;
     const stamped = { ...s, hostClientId: this.hostClientId };
     this.syncState = stamped;
+    this.saveSync();
     this.broadcast({ t: "state", state: stamped, srvAt: now }, socket);
   }
 
@@ -494,6 +552,8 @@ export class Room {
     if (this.peers.size === 0 && Date.now() - this.lastActivity > ROOM_IDLE_MS) {
       this.syncState = null;
       this.hostClientId = null;
+      this.saveSync();
+      this.saveHost();
     }
   }
 

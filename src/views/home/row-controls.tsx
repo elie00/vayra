@@ -20,6 +20,7 @@ export function RowControls({
   canHero,
   onToggleHero,
   onDelete,
+  kids,
 }: {
   name: string;
   hidden: boolean;
@@ -38,6 +39,7 @@ export function RowControls({
   canHero?: boolean;
   onToggleHero?: () => void;
   onDelete?: () => void;
+  kids?: boolean;
 }) {
   const t = useT();
   const [editing, setEditing] = useState(false);
@@ -56,6 +58,47 @@ export function RowControls({
     if (next && next !== name) onRename(next);
     setEditing(false);
   };
+
+  if (kids) {
+    return (
+      <div className="mb-3 flex items-center gap-2 rounded-2xl bg-white/75 p-2.5 ring-1 ring-[#1f8f88]/15 backdrop-blur-sm">
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") setEditing(false);
+            }}
+            className="h-12 min-w-0 flex-1 rounded-xl border-2 border-[#1f8f88]/30 bg-white px-4 text-[18px] font-bold text-[#0e3a43] outline-none focus:border-[#1f8f88]"
+          />
+        ) : (
+          <span className="ms-2 min-w-0 flex-1 truncate text-[18px] font-extrabold text-[#0e3a43]">
+            {name}
+          </span>
+        )}
+        {editing ? (
+          <>
+            <KidCtrl icon={<Check size={22} strokeWidth={2.6} />} label={t("Save")} onClick={commit} primary />
+            <KidCtrl icon={<X size={22} strokeWidth={2.6} />} label={t("Cancel")} onClick={() => setEditing(false)} />
+          </>
+        ) : (
+          <>
+            <KidCtrl icon={<ArrowUp size={22} strokeWidth={2.6} />} label={t("Up")} onClick={onMoveUp} disabled={!canMoveUp} />
+            <KidCtrl icon={<ArrowDown size={22} strokeWidth={2.6} />} label={t("Down")} onClick={onMoveDown} disabled={!canMoveDown} />
+            <KidCtrl
+              icon={hidden ? <EyeOff size={22} strokeWidth={2.6} /> : <Eye size={22} strokeWidth={2.6} />}
+              label={hidden ? t("Show") : t("Hide")}
+              onClick={onToggleHidden}
+              active={hidden}
+            />
+            <KidCtrl icon={<Pencil size={20} strokeWidth={2.6} />} label={t("Rename")} onClick={() => setEditing(true)} />
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-edge-soft bg-canvas/60 px-2 py-1.5 text-[12px]">
@@ -183,5 +226,38 @@ export function RowControls({
         </>
       )}
     </div>
+  );
+}
+
+function KidCtrl({
+  icon,
+  label,
+  onClick,
+  disabled,
+  active,
+  primary,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex h-12 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[14px] font-extrabold transition active:scale-95 disabled:opacity-30 ${
+        primary
+          ? "bg-[#1f8f88] text-white"
+          : active
+            ? "bg-amber-400 text-[#0e3a43]"
+            : "bg-[#eaf6f5] text-[#0e3a43] hover:bg-[#d4eeec]"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
   );
 }

@@ -19,7 +19,13 @@ export function EpisodeGrid({
   episodes: GridEpisode[];
   progressFor: (g: GridEpisode) => Progress;
   spoilerFor?: (g: GridEpisode) => SpoilerMask;
-  onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    season: number,
+    episode: number,
+    watched: boolean,
+    sourceMetaId?: string,
+  ) => void;
 }) {
   const { settings } = useSettings();
   const sort = settings.episodeSort;

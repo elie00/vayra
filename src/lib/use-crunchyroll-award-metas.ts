@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  awardFranchiseKey,
   invalidateAnimeAwardSynonyms,
+  stripAwardSequelNumber,
   uniqueWinnerFranchisesAcrossSources,
   type AwardWin,
 } from "@/lib/anime-awards";
 import type { Meta } from "@/lib/cinemeta";
-import { jikanSearchByTitle } from "@/lib/providers/jikan";
+import { jikanSearchByTitle, stripFranchiseSuffix } from "@/lib/providers/jikan";
 
-const CACHE_KEY = "harbor.anime_awards.metas.v2";
+const CACHE_KEY = "harbor.anime_awards.metas.v6";
+
+function awardMetaYear(m: Meta): number {
+  const n = Number.parseInt(String(m.releaseInfo ?? "").slice(0, 4), 10);
+  return Number.isFinite(n) ? n : 9999;
+}
 
 type CacheValue = Meta | null;
 
@@ -64,8 +71,16 @@ async function resolveAll(onProgress: () => void): Promise<void> {
     for (const [fk, win] of winners) {
       if (fk in cache) continue;
       try {
-        const results = await jikanSearchByTitle(win.title, 1);
-        cache[fk] = results[0] ?? null;
+        const query = stripAwardSequelNumber(stripFranchiseSuffix(win.title)).trim() || win.title;
+        const results = await jikanSearchByTitle(query, 10);
+        const matches = results.filter((m) => awardFranchiseKey(m.name) === fk);
+        const exact = matches.find(
+          (m) => stripAwardSequelNumber(stripFranchiseSuffix(m.name)).trim() === m.name.trim(),
+        );
+        const earliest = [...matches].sort(
+          (a, b) => awardMetaYear(a) - awardMetaYear(b),
+        )[0];
+        cache[fk] = exact ?? earliest ?? null;
       } catch {
         cache[fk] = null;
       }

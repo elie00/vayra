@@ -1,14 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { applyTheme } from "@/lib/theme";
+import { applyTheme, isKnownPreset, nextColorTheme } from "@/lib/theme";
+import { applyAppIcon } from "@/lib/app-icon";
+import { getCustomThemes, subscribeCustomThemes } from "@/lib/custom-themes";
 import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
 import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
 import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
-import { isMobileTauri } from "@/lib/platform";
 import { STORAGE_KEY } from "./settings/defaults";
-import { loadStoredSettings } from "./settings/load";
 import { persistSettings, readSettingsFile, readSettingsSecrets } from "./settings/file-store";
+import { loadFontData, saveFontData } from "./font-storage";
+import {
+  forkToProfile,
+  loadEffective,
+  persistEffective,
+  seedSharedFromLegacy,
+  sourceKeyFor,
+} from "./settings/profile-store";
 import type { Settings, StreamingService } from "./settings/types";
 
 export type {
@@ -23,17 +31,45 @@ type SettingsValue = {
   settings: Settings;
   update: (patch: Partial<Settings>) => void;
   toggleStreaming: (s: StreamingService) => void;
+  switchProfile: (profileId: string, linked: boolean) => void;
+  setSettingsLinked: (linked: boolean) => void;
 };
+
+type SettingsSource = { profileId: string; linked: boolean };
+
+function readActiveSource(): SettingsSource {
+  try {
+    const raw = localStorage.getItem("harbor.profiles.v1");
+    if (!raw) return { profileId: "default", linked: true };
+    const s = JSON.parse(raw) as {
+      profiles?: Array<{ id: string; settingsLinked?: boolean }>;
+      activeId?: string | null;
+    };
+    const id = s.activeId || "default";
+    const p = s.profiles?.find((x) => x.id === id);
+    return { profileId: id, linked: p?.settingsLinked !== false };
+  } catch {
+    return { profileId: "default", linked: true };
+  }
+}
 
 const Ctx = createContext<SettingsValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
+  const sourceRef = useRef<SettingsSource>({ profileId: "default", linked: true });
   const [settings, setSettings] = useState<Settings>(() => {
-    const s = loadStoredSettings();
+    seedSharedFromLegacy();
+    const src = readActiveSource();
+    sourceRef.current = src;
+    const s = loadEffective(src.profileId, src.linked);
     setUiLanguage(s.uiLanguage);
     return s;
   });
+  const settingsRef = useRef(settings);
   const [storageReady, setStorageReady] = useState(false);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   setTmdbLanguage(settings.tmdbLanguage);
 
@@ -54,10 +90,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       try {
         if (raw && !localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, raw);
-        const stored = loadStoredSettings();
+        seedSharedFromLegacy();
+        const stored = loadEffective(sourceRef.current.profileId, sourceRef.current.linked);
         setSettings(secrets ? { ...stored, ...secrets } : stored);
       } catch {
-        // Keep the synchronous localStorage state when native hydration fails.
+        // Keep the synchronous state when native hydration fails.
       } finally {
         if (!cancelled) setStorageReady(true);
       }
@@ -79,6 +116,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!storageReady) return;
     try {
+      persistEffective(settings, sourceRef.current.profileId, sourceRef.current.linked);
       window.clearTimeout(fileTimerRef.current);
       fileTimerRef.current = window.setTimeout(() => void persistSettings(settings), 600);
     } catch (e) {
@@ -102,6 +140,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     tmdbLangRef.current = eff;
     window.location.reload();
   }, [settings.tmdbLanguage, settings.uiLanguage]);
+
+  const imgLangRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sig = settings.tmdbImageLangs.join(",");
+    if (imgLangRef.current === null) {
+      imgLangRef.current = sig;
+      return;
+    }
+    if (imgLangRef.current === sig) return;
+    imgLangRef.current = sig;
+    const t = window.setTimeout(() => window.location.reload(), 1200);
+    return () => window.clearTimeout(t);
+  }, [settings.tmdbImageLangs]);
 
   useEffect(() => {
     applyTheme(settings.theme);
@@ -142,37 +193,53 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof document === "undefined" || !("fonts" in document)) return;
-    const desired = new Map<string, string>();
-    for (const f of settings.customFonts ?? []) {
-      desired.set(`harbor-font-${f.id}`, f.dataUrl);
-    }
-    const added: FontFace[] = [];
-    desired.forEach((dataUrl, family) => {
-      let exists = false;
-      document.fonts.forEach((ff) => {
-        if (ff.family === family) exists = true;
-      });
-      if (exists) return;
-      try {
-        const ff = new FontFace(family, `url(${dataUrl})`, { display: "swap" });
-        ff.load()
-          .then((loaded) => document.fonts.add(loaded))
-          .catch((e) => console.warn("[fonts] failed to load", family, e));
-        added.push(ff);
-      } catch (e) {
-        console.warn("[fonts] FontFace ctor failed", e);
+    const fonts = settings.customFonts ?? [];
+    const desiredFamilies = new Set(fonts.map((f) => `harbor-font-${f.id}`));
+    let cancelled = false;
+    void (async () => {
+      for (const f of fonts) {
+        const family = `harbor-font-${f.id}`;
+        let exists = false;
+        document.fonts.forEach((ff) => {
+          if (ff.family === family) exists = true;
+        });
+        if (exists) continue;
+        const dataUrl = f.dataUrl ?? (await loadFontData(f.id));
+        if (cancelled || !dataUrl) continue;
+        try {
+          const ff = new FontFace(family, `url(${dataUrl})`, { display: "swap" });
+          const loaded = await ff.load();
+          if (!cancelled) document.fonts.add(loaded);
+        } catch (e) {
+          console.warn("[fonts] failed to load", family, e);
+        }
       }
-    });
+    })();
     return () => {
-      const stillNeeded = new Set(desired.keys());
+      cancelled = true;
       const toRemove: FontFace[] = [];
       document.fonts.forEach((ff) => {
-        if (ff.family.startsWith("harbor-font-") && !stillNeeded.has(ff.family)) {
+        if (ff.family.startsWith("harbor-font-") && !desiredFamilies.has(ff.family)) {
           toRemove.push(ff);
         }
       });
       for (const ff of toRemove) document.fonts.delete(ff);
     };
+  }, [settings.customFonts]);
+
+  const fontMigratedRef = useRef(false);
+  useEffect(() => {
+    if (fontMigratedRef.current) return;
+    const legacy = (settings.customFonts ?? []).filter((f) => f.dataUrl);
+    if (legacy.length === 0) return;
+    fontMigratedRef.current = true;
+    void (async () => {
+      for (const f of legacy) if (f.dataUrl) await saveFontData(f.id, f.dataUrl).catch(() => {});
+      setSettings((s) => ({
+        ...s,
+        customFonts: (s.customFonts ?? []).map((f) => ({ id: f.id, name: f.name, format: f.format })),
+      }));
+    })();
   }, [settings.customFonts]);
 
 
@@ -199,15 +266,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings.stremioDeeplinkInstall]);
 
   useEffect(() => {
-    // Native-titlebar decorations are a desktop window concept; the window API
-    // rejects on mobile.
-    if (!("__TAURI_INTERNALS__" in window) || isMobileTauri()) return;
+    if (!("__TAURI_INTERNALS__" in window)) return;
     void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
       getCurrentWindow()
         .setDecorations(settings.useNativeTitleBar)
         .catch((e) => console.warn("[harbor] setDecorations failed", e));
     });
   }, [settings.useNativeTitleBar]);
+
+  useEffect(() => {
+    void applyAppIcon(settings.customAppIcon);
+  }, [settings.customAppIcon]);
 
   useEffect(() => {
     if (!("__TAURI_INTERNALS__" in window)) return;
@@ -225,10 +294,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!("__TAURI_INTERNALS__" in window)) return;
-    let unlisten: (() => void) | undefined;
     let cancelled = false;
-    void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen<{ closeToTray: boolean; alwaysOnTop: boolean; pauseMinimized: boolean; pauseUnfocused: boolean }>(
+    const unlisteners: Array<() => void> = [];
+    const track = (u: () => void) => {
+      if (cancelled) u();
+      else unlisteners.push(u);
+    };
+    void import("@tauri-apps/api/event").then(({ listen }) => {
+      void listen<{ closeToTray: boolean; alwaysOnTop: boolean; pauseMinimized: boolean; pauseUnfocused: boolean }>(
         "harbor://tray-prefs",
         (e) => {
           const p = e.payload;
@@ -240,14 +313,37 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             pauseUnfocused: p.pauseUnfocused,
           }));
         },
-      ).then((u) => {
-        if (cancelled) u();
-        else unlisten = u;
-      }),
-    );
+      ).then(track);
+      void listen("harbor://cycle-theme", () => {
+        setSettings((s) => ({ ...s, theme: { ...s.theme, preset: nextColorTheme(s.theme.preset) } }));
+      }).then(track);
+      void listen<string>("harbor://set-theme", (e) => {
+        const id = e.payload;
+        if (!id || (!isKnownPreset(id) && !id.startsWith("user:"))) return;
+        setSettings((s) => ({ ...s, theme: { ...s.theme, preset: id as typeof s.theme.preset } }));
+      }).then(track);
+    });
     return () => {
       cancelled = true;
-      unlisten?.();
+      unlisteners.forEach((u) => u());
+    };
+  }, []);
+
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    let cancelled = false;
+    void import("@tauri-apps/api/core").then(({ invoke }) => {
+      if (cancelled) return;
+      const push = () => {
+        const themes = getCustomThemes().map((t) => ({ id: t.id, name: t.name }));
+        void invoke("tray_set_custom_themes", { themes }).catch(() => {});
+      };
+      push();
+      unsub = subscribeCustomThemes(push);
+    });
+    return () => {
+      cancelled = true;
+      unsub?.();
     };
   }, []);
 
@@ -262,9 +358,37 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const switchProfile = useCallback((profileId: string, linked: boolean) => {
+    const cur = sourceRef.current;
+    if (sourceKeyFor(cur.profileId, cur.linked) === sourceKeyFor(profileId, linked)) {
+      sourceRef.current = { profileId, linked };
+      return;
+    }
+    persistEffective(settingsRef.current, cur.profileId, cur.linked);
+    const next = loadEffective(profileId, linked);
+    setUiLanguage(next.uiLanguage);
+    setTmdbLanguage(next.tmdbLanguage);
+    tmdbLangRef.current = effectiveTmdbLanguage();
+    imgLangRef.current = next.tmdbImageLangs.join(",");
+    sourceRef.current = { profileId, linked };
+    persistEffective(next, profileId, linked);
+    settingsRef.current = next;
+    setSettings(next);
+  }, []);
+
+  const setSettingsLinked = useCallback(
+    (linked: boolean) => {
+      const cur = sourceRef.current;
+      if (cur.linked === linked) return;
+      if (!linked) forkToProfile(cur.profileId);
+      switchProfile(cur.profileId, linked);
+    },
+    [switchProfile],
+  );
+
   const value = useMemo(
-    () => ({ settings, update, toggleStreaming }),
-    [settings, update, toggleStreaming],
+    () => ({ settings, update, toggleStreaming, switchProfile, setSettingsLinked }),
+    [settings, update, toggleStreaming, switchProfile, setSettingsLinked],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

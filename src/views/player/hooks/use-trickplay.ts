@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { isBundledEngineUrl } from "@/lib/stremio-server";
 import { setTrickplayState, trickplaySetUrl, trickplaySpawnEager, trickplayStop } from "@/lib/trickplay";
 
-export function useTrickplay({ url, enabled }: { url: string; enabled: boolean }) {
+export function useTrickplay({ url, enabled, isLive }: { url: string; enabled: boolean; isLive?: boolean }) {
   useEffect(() => {
     if (!enabled || !url) {
       setTrickplayState({ active: false, bufferedOnly: false });
@@ -13,12 +13,12 @@ export function useTrickplay({ url, enabled }: { url: string; enabled: boolean }
     let alive = true;
     void trickplaySetUrl(url).then(() => {
       if (!alive) return;
-      void trickplaySpawnEager();
+      if (!isLive) void trickplaySpawnEager();
     });
     return () => {
       alive = false;
       setTrickplayState({ active: false, bufferedOnly: false });
       void trickplayStop();
     };
-  }, [url, enabled]);
+  }, [url, enabled, isLive]);
 }

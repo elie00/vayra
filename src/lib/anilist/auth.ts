@@ -19,8 +19,22 @@ export function buildAuthorizeUrl(): string {
   return `${ANILIST_AUTHORIZE_URL}?${params.toString()}`;
 }
 
+export function extractAnilistCode(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+  const fromUrl = /[?&#]code=([^&\s#]+)/.exec(trimmed);
+  if (fromUrl) {
+    try {
+      return decodeURIComponent(fromUrl[1]).trim();
+    } catch {
+      return fromUrl[1].trim();
+    }
+  }
+  return trimmed.replace(/^["'\s]+|["'\s]+$/g, "");
+}
+
 export async function completeAuthorization(pastedCode: string): Promise<AnilistSession> {
-  const code = pastedCode.trim();
+  const code = extractAnilistCode(pastedCode);
   if (!code) throw new Error("Paste the code from AniList to continue");
   const accessToken = await exchangeCode(code);
   const viewer = await fetchViewer(accessToken);

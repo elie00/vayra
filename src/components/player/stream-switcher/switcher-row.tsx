@@ -10,6 +10,19 @@ export function streamKey(s: ScoredStream): string {
   return s.infoHash ?? s.url ?? `${s.addonId}:${s.title ?? ""}`;
 }
 
+export function isCurrentStream(
+  s: ScoredStream,
+  currentUrl: string,
+  currentInfoHash?: string | null,
+  currentFileIdx?: number | null,
+): boolean {
+  if (currentInfoHash && s.infoHash && s.infoHash.toLowerCase() === currentInfoHash.toLowerCase()) {
+    if (s.fileIdx != null && currentFileIdx != null) return s.fileIdx === currentFileIdx;
+    return true;
+  }
+  return s.url != null && s.url === currentUrl;
+}
+
 const FLAG_EMOJI_RX = /[\u{1F1E6}-\u{1F1FF}]{2}/gu;
 function stripFlagEmoji(s: string): string {
   return s.replace(FLAG_EMOJI_RX, "").replace(/\s{2,}/g, " ").trim();

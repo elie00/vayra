@@ -1,4 +1,4 @@
-import { Check, Download, Loader2, Sparkles } from "lucide-react";
+import { Check, Download, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { anime4kDir, downloadAnime4k } from "@/lib/anime4k";
 import {
@@ -15,6 +15,7 @@ export function Anime4kShaderList() {
   const mode = (settings.playerAnime4kMode as Anime4kMode) || "A";
   const tier = (settings.playerAnime4kTier as Anime4kTier) || "hq";
   const [busy, setBusy] = useState(false);
+  const [justUpdated, setJustUpdated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,12 +33,17 @@ export function Anime4kShaderList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setup = async () => {
+  const setup = async (force = false) => {
     setBusy(true);
     setError(null);
+    setJustUpdated(false);
     try {
-      const dir = await downloadAnime4k();
+      const dir = await downloadAnime4k(force);
       update({ playerAnime4kFolder: dir, playerAnime4kShaders: anime4kChain(dir, mode, tier) });
+      if (force) {
+        setJustUpdated(true);
+        window.setTimeout(() => setJustUpdated(false), 2200);
+      }
     } catch (e) {
       setError(typeof e === "string" ? e : "Download failed. Check your connection and try again.");
     } finally {
@@ -52,17 +58,12 @@ export function Anime4kShaderList() {
 
   return (
     <div id="set-anime4k-presets" className="scroll-mt-28 flex flex-col gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-4 py-4">
-      <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
-          <Sparkles size={16} strokeWidth={2.2} />
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[14px] font-semibold text-ink">Anime4K presets</span>
+        <span className="text-[12.5px] leading-snug text-ink-subtle">
+          GPU shaders that sharpen lines and clean up gradients on anime as it plays. Pick a mode,
+          Harbor handles the shaders.
         </span>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-semibold text-ink">Anime4K presets</span>
-          <span className="text-[12.5px] leading-snug text-ink-subtle">
-            GPU shaders that sharpen lines and clean up gradients on anime as it plays. Pick a mode,
-            Harbor handles the shaders.
-          </span>
-        </div>
       </div>
 
       {!folder ? (
@@ -77,7 +78,7 @@ export function Anime4kShaderList() {
           )}
           <button
             type="button"
-            onClick={setup}
+            onClick={() => setup(false)}
             disabled={busy}
             className="flex h-11 w-fit items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-canvas transition-colors hover:bg-ink/90 disabled:cursor-wait disabled:opacity-70"
           >
@@ -127,11 +128,28 @@ export function Anime4kShaderList() {
             </span>
             <button
               type="button"
-              onClick={setup}
+              onClick={() => setup(true)}
               disabled={busy}
-              className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:text-ink disabled:opacity-50"
+              className={`flex items-center gap-1.5 text-[11.5px] font-semibold uppercase tracking-[0.14em] transition-colors disabled:opacity-70 ${
+                justUpdated ? "text-emerald-300" : "text-ink-subtle hover:text-ink"
+              }`}
             >
-              {busy ? "Updating…" : "Re-download"}
+              {busy ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" strokeWidth={2.6} />
+                  Updating…
+                </>
+              ) : justUpdated ? (
+                <>
+                  <Check size={12} strokeWidth={3} />
+                  Updated
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={12} strokeWidth={2.4} />
+                  Re-download
+                </>
+              )}
             </button>
           </div>
           {error && (

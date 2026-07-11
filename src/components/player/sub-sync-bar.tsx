@@ -3,7 +3,7 @@
  * ينزل من أعلى الـ player مثل SubStyleBar
  * يتيح التحكم بتأخير/تقديم الترجمة أثناء تشغيل الفيديو مباشرة
  */
-import { Check, RotateCcw, Timer, Type, X } from "lucide-react";
+import { Check, RotateCcw, Type, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { closeSyncBar, useSyncBarOpen } from "@/lib/player/sub-sync";
@@ -93,13 +93,8 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
         aria-label={t("Subtitle sync")}
         className="pointer-events-auto flex items-stretch gap-2.5 rounded-[16px] border border-edge bg-elevated/95 px-2.5 py-2 shadow-[0_24px_64px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
       >
-        {/* Left Side: Icon & Text Sync (Fixed width to center the middle section) */}
+        {/* Left Side: Text Sync (Fixed width to center the middle section) */}
         <div className="flex w-[240px] items-center gap-1.5">
-          <div className="flex h-10 items-center gap-2 rounded-xl bg-raised px-3.5">
-            <Timer size={16} strokeWidth={2} className="text-ink-muted" />
-            <span className="text-[13px] font-semibold text-ink-muted">{t("Sync")}</span>
-          </div>
-          
           {onEnterSync && (
             <button
               type="button"
@@ -108,7 +103,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
                 onEnterSync();
               }}
               disabled={!syncAvailable}
-              title={syncAvailable ? t("Sync subtitles via text") : t("Text sync unavailable for embedded tracks")}
+              title={syncAvailable ? t("Sync subtitles via text") : t("Select a subtitle track to sync")}
               aria-label={t("Sync via text")}
               className={`flex h-10 items-center gap-2 rounded-xl px-3.5 text-[13px] font-semibold transition-all ${
                 syncAvailable

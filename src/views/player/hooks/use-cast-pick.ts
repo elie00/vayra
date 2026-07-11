@@ -144,7 +144,9 @@ export function useCastPick(params: {
           url: resolved.url,
           title: src.title,
           poster: src.meta.poster ?? undefined,
-          contentType: forceTranscode ? "application/x-mpegURL" : guessContentType(resolved.url),
+          contentType: forceTranscode
+            ? "application/x-mpegURL"
+            : guessContentType(resolved.url, src.streamRef?.title ?? src.title),
           startTimeSec: isLiveIptv ? 0 : getPlaybackPosition(),
           headers: isLiveIptv
             ? { "user-agent": "VLC/3.0.20 LibVLC/3.0.20" }

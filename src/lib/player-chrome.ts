@@ -31,6 +31,7 @@ export type PlayerControlId =
   | "hdr-toggle"
   | "draw-toggle"
   | "screenshot"
+  | "song-id"
   | "pip"
   | "cast"
   | "fullscreen"
@@ -188,6 +189,7 @@ export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
     { id: "speed-menu", slot: "bottom-right", order: 30 },
     { id: "draw-toggle", slot: "bottom-right", order: 40 },
     { id: "screenshot", slot: "bottom-right", order: 45, hidden: true },
+    { id: "song-id", slot: "bottom-right", order: 46 },
     { id: "pip", slot: "bottom-right", order: 50 },
     { id: "cast", slot: "bottom-right", order: 60 },
     { id: "fullscreen", slot: "bottom-right", order: 70 },
@@ -221,6 +223,7 @@ export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
     { id: "hdr-toggle", slot: "bottom-right", order: 28, hidden: true },
     { id: "draw-toggle", slot: "bottom-right", order: 30 },
     { id: "screenshot", slot: "bottom-right", order: 35, hidden: true },
+    { id: "song-id", slot: "bottom-right", order: 36 },
     { id: "cast", slot: "bottom-right", order: 40 },
     { id: "pick-another", slot: "bottom-right", order: 50 },
     { id: "pip", slot: "bottom-right", order: 60 },
@@ -243,19 +246,20 @@ export const CONTROL_META: Record<
   dvr: { label: "DVR record (Live TV)", group: "actions", defaultSlot: "bottom-left" },
   download: { label: "Download", group: "actions", defaultSlot: "bottom-left" },
   "prev-episode": { label: "Previous episode", group: "transport", defaultSlot: "bottom-center" },
-  "seek-back": { label: "Seek back 10s", group: "transport", defaultSlot: "bottom-center" },
+  "seek-back": { label: "Seek back", group: "transport", defaultSlot: "bottom-center" },
   "play-pause": { label: "Play / Pause", group: "transport", defaultSlot: "bottom-center" },
-  "seek-forward": { label: "Seek forward 10s", group: "transport", defaultSlot: "bottom-center" },
+  "seek-forward": { label: "Seek forward", group: "transport", defaultSlot: "bottom-center" },
   "next-episode": { label: "Next episode", group: "transport", defaultSlot: "bottom-center" },
   "pick-another": { label: "Switch stream / TV Guide", group: "actions", defaultSlot: "bottom-right" },
   "audio-menu": { label: "Audio tracks", group: "menus", defaultSlot: "bottom-right" },
   "subtitle-menu": { label: "Subtitles", group: "menus", defaultSlot: "bottom-right" },
   "speed-menu": { label: "Playback speed", group: "menus", defaultSlot: "bottom-right" },
-  "aspect-menu": { label: "Aspect ratio", group: "menus", defaultSlot: "bottom-right" },
+  "aspect-menu": { label: "Picture (adjustments & aspect)", group: "menus", defaultSlot: "bottom-right" },
   "anime4k-menu": { label: "Anime4K", group: "menus", defaultSlot: "bottom-right" },
   "hdr-toggle": { label: "HDR to SDR toggle", group: "menus", defaultSlot: "bottom-right" },
   "draw-toggle": { label: "Draw on video", group: "actions", defaultSlot: "bottom-right" },
   screenshot: { label: "Screenshot", group: "actions", defaultSlot: "bottom-right" },
+  "song-id": { label: "Identify song", group: "actions", defaultSlot: "bottom-right" },
   pip: { label: "Picture-in-picture", group: "actions", defaultSlot: "bottom-right" },
   cast: { label: "Cast", group: "actions", defaultSlot: "bottom-right" },
   fullscreen: { label: "Fullscreen", group: "transport", defaultSlot: "bottom-right" },

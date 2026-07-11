@@ -8,6 +8,7 @@ export type HomeRowCustomization = {
   numerals: string[];
   heroSource: string | null;
   customSources: SourceRow[];
+  listRows?: string[];
 };
 
 export function applyHomeRowCustomization(
@@ -108,6 +109,17 @@ export function toggleHeroSource(
   return { ...custom, heroSource: custom.heroSource === key ? null : key };
 }
 
+export function addListRow(custom: HomeRowCustomization, listId: string): HomeRowCustomization {
+  const cur = custom.listRows ?? [];
+  if (cur.includes(listId)) return custom;
+  return { ...custom, listRows: [...cur, listId] };
+}
+
+export function removeListRow(custom: HomeRowCustomization, listId: string): HomeRowCustomization {
+  const cur = custom.listRows ?? [];
+  return { ...custom, listRows: cur.filter((id) => id !== listId) };
+}
+
 export function resetHomeRows(): HomeRowCustomization {
-  return { order: [], hidden: [], renamed: {}, numerals: [], heroSource: null, customSources: [] };
+  return { order: [], hidden: [], renamed: {}, numerals: [], heroSource: null, customSources: [], listRows: [] };
 }

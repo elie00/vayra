@@ -208,31 +208,40 @@ export function getSnapshotRetentionDays(): number {
   return DEFAULT_RETENTION_DAYS;
 }
 
-export function captureFrame(video: HTMLVideoElement): string | null {
+const THUMB_WIDTH = 320;
+const THUMB_QUALITY = 0.65;
+const FULL_WIDTH = 1280;
+const FULL_QUALITY = 0.9;
+
+export function captureFrame(video: HTMLVideoElement, fullQuality = false): string | null {
   if (!video.videoWidth || !video.videoHeight) return null;
   try {
     const canvas = document.createElement("canvas");
-    const targetW = 320;
+    const targetW = fullQuality ? Math.min(FULL_WIDTH, video.videoWidth) : THUMB_WIDTH;
     const scale = targetW / video.videoWidth;
     canvas.width = targetW;
     canvas.height = Math.round(video.videoHeight * scale);
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", 0.65);
+    return canvas.toDataURL("image/jpeg", fullQuality ? FULL_QUALITY : THUMB_QUALITY);
   } catch {
     return null;
   }
 }
 
-export async function captureMpvFrame(): Promise<string | null> {
+export async function captureMpvFrame(fullQuality = false): Promise<string | null> {
   const isTauri = "__TAURI__" in window || "__TAURI_INTERNALS__" in window;
   if (!isTauri) return null;
   try {
     const { invoke } = await import("@tauri-apps/api/core");
     const fullDataUrl = await invoke<string>("mpv_screenshot_data_url");
     if (!fullDataUrl) return null;
-    return await downscaleDataUrl(fullDataUrl, 320, 0.65);
+    return await downscaleDataUrl(
+      fullDataUrl,
+      fullQuality ? FULL_WIDTH : THUMB_WIDTH,
+      fullQuality ? FULL_QUALITY : THUMB_QUALITY,
+    );
   } catch (e) {
     console.warn("[snapshots] mpv frame capture failed", e);
     return null;
@@ -249,8 +258,9 @@ async function downscaleDataUrl(dataUrl: string, targetW: number, quality: numbe
           return;
         }
         const canvas = document.createElement("canvas");
-        const scale = targetW / img.naturalWidth;
-        canvas.width = targetW;
+        const w = Math.min(targetW, img.naturalWidth);
+        const scale = w / img.naturalWidth;
+        canvas.width = w;
         canvas.height = Math.round(img.naturalHeight * scale);
         const ctx = canvas.getContext("2d");
         if (!ctx) {

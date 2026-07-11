@@ -15,10 +15,13 @@ import { P2PPanel } from "./settings/p2p-panel";
 import { AnimePanel } from "./settings/anime-panel";
 import { TraktPanel } from "./settings/trakt-panel";
 import { AnilistPanel } from "./settings/anilist-panel";
+import { MalPanel } from "./settings/mal-panel";
 import { SimklPanel } from "./settings/simkl-panel";
+import { LetterboxdPanel } from "./settings/letterboxd-panel";
 import { RelaySection, type RelayMode } from "./settings/relay-section";
 import { SettingsActiveContext, type SectionId } from "./settings/shared";
 import { StreamingSourcesPanel, type DebridKey } from "./settings/streaming-sources-panel";
+import { StreamFiltersPanel } from "./settings/stream-filters-panel";
 import { ThemePanel } from "./settings/theme-panel";
 import { WebhooksPanel } from "./settings/webhooks-panel";
 import { BackToTop } from "@/components/back-to-top";
@@ -50,9 +53,17 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
     label: "AniList",
     sub: "Connect your AniList account to show your anime lists as rails on the Anime page.",
   },
+  mal: {
+    label: "MyAnimeList",
+    sub: "Connect your MyAnimeList account to sync your watch progress and browse your list.",
+  },
   simkl: {
     label: "Simkl",
     sub: "Connect your Simkl account to mark what you finish as watched and sync your plan-to-watch list across apps.",
+  },
+  letterboxd: {
+    label: "Letterboxd",
+    sub: "Bring your Letterboxd watchlist, diary, liked films and lists into Harbor via the Stremboxd bridge.",
   },
   relay: {
     label: "Harbor Relay",
@@ -63,6 +74,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   streaming: {
     label: "Streaming sources",
     sub: "How Harbor finds and resolves playable streams. Debrid keys and addon installs live here.",
+  },
+  streamFilters: {
+    label: "Stream filters",
+    sub: "Build a named filter once, then apply it in the source picker to trim a noisy stream list down to exactly what you want.",
   },
   p2p: {
     label: "P2P & servers",
@@ -282,6 +297,8 @@ export function Settings() {
             />
           )}
 
+          {active === "streamFilters" && <StreamFiltersPanel />}
+
           {active === "p2p" && <P2PPanel />}
 
           {active === "language" && <LanguagePanel />}
@@ -300,7 +317,11 @@ export function Settings() {
 
           {active === "anilist" && <AnilistPanel />}
 
+          {active === "mal" && <MalPanel />}
+
           {active === "simkl" && <SimklPanel />}
+
+          {active === "letterboxd" && <LetterboxdPanel />}
 
           {active === "theme" && <ThemePanel />}
 

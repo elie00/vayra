@@ -1,4 +1,15 @@
-import { aniZipByImdb, aniZipByKitsu, aniZipByTmdbTv } from "@/lib/providers/anizip";
+import { aniZipByAnidb, aniZipByAnilist, aniZipByImdb, aniZipByKitsu, aniZipByTmdbTv } from "@/lib/providers/anizip";
+import { kitsuMainTvSeries } from "@/lib/providers/kitsu";
+
+const SIDE_ENTRY_TYPES = new Set(["ova", "ona", "special", "music"]);
+
+async function preferMainTv(kitsuId: number, type?: string): Promise<number> {
+  if (type && SIDE_ENTRY_TYPES.has(type.toLowerCase())) {
+    const main = await kitsuMainTvSeries(kitsuId).catch(() => null);
+    if (main != null) return main;
+  }
+  return kitsuId;
+}
 
 const ARM = "https://relations.yuna.moe/api/ids";
 const ANIME_LIST_URL =
@@ -163,12 +174,62 @@ export async function kitsuToAnidb(kitsuId: number): Promise<number | null> {
 
 export async function kitsuToAnilist(kitsuId: number): Promise<number | null> {
   const arm = await armFromKitsu(kitsuId);
-  return arm?.anilist ?? null;
+  if (arm?.anilist != null) return arm.anilist;
+  const az = await aniZipByKitsu(kitsuId).catch(() => null);
+  return az?.mappings?.anilist_id ?? null;
 }
 
 export async function kitsuToMal(kitsuId: number): Promise<number | null> {
   const arm = await armFromKitsu(kitsuId);
-  return arm?.mal ?? null;
+  if (arm?.mal != null) return arm.mal;
+  const az = await aniZipByKitsu(kitsuId).catch(() => null);
+  return az?.mappings?.mal_id ?? null;
+}
+
+const ARM_SRC_KEY = "harbor.armsrcmalcache";
+type ArmSrcCache = Record<string, { mal: number | null; t: number }>;
+const inflightArmSrc = new Map<string, Promise<number | null>>();
+
+async function armSourceToMal(source: "anilist" | "anidb", id: number): Promise<number | null> {
+  const key = `${source}:${id}`;
+  const cache = readJson<ArmSrcCache>(ARM_SRC_KEY, {});
+  const hit = cache[key];
+  if (hit && Date.now() - hit.t < ARM_TTL_MS) return hit.mal;
+  const existing = inflightArmSrc.get(key);
+  if (existing) return existing;
+  const p = (async () => {
+    try {
+      const r = await fetch(`${ARM}?source=${source}&id=${id}`);
+      if (!r.ok) return null;
+      const j = (await r.json()) as { mal?: number };
+      const mal = j?.mal ?? null;
+      if (mal != null) {
+        cache[key] = { mal, t: Date.now() };
+        writeJson(ARM_SRC_KEY, cache);
+      }
+      return mal;
+    } catch {
+      return null;
+    } finally {
+      inflightArmSrc.delete(key);
+    }
+  })();
+  inflightArmSrc.set(key, p);
+  return p;
+}
+
+export async function anilistToMal(anilistId: number): Promise<number | null> {
+  const viaArm = await armSourceToMal("anilist", anilistId);
+  if (viaArm != null) return viaArm;
+  const az = await aniZipByAnilist(anilistId).catch(() => null);
+  return az?.mappings?.mal_id ?? null;
+}
+
+export async function anidbToMal(anidbId: number): Promise<number | null> {
+  const viaArm = await armSourceToMal("anidb", anidbId);
+  if (viaArm != null) return viaArm;
+  const az = await aniZipByAnidb(anidbId).catch(() => null);
+  return az?.mappings?.mal_id ?? null;
 }
 
 let imdbAnidbIndex: Record<string, number> | null = null;
@@ -176,7 +237,9 @@ let imdbAnidbIndex: Record<string, number> | null = null;
 export async function imdbToKitsu(imdbId: string): Promise<number | null> {
   if (!imdbId.startsWith("tt")) return null;
   const az = await aniZipByImdb(imdbId).catch(() => null);
-  if (typeof az?.mappings?.kitsu_id === "number") return az.mappings.kitsu_id;
+  if (typeof az?.mappings?.kitsu_id === "number") {
+    return preferMainTv(az.mappings.kitsu_id, (az.mappings as { type?: string }).type);
+  }
   if (typeof az?.mappings?.anidb_id === "number") return externalToKitsu("anidb", az.mappings.anidb_id);
   const maps = await loadAnidbMaps();
   if (!imdbAnidbIndex) {
@@ -194,7 +257,9 @@ export async function imdbToKitsu(imdbId: string): Promise<number | null> {
 
 export async function tmdbTvToKitsu(tmdbId: number): Promise<number | null> {
   const az = await aniZipByTmdbTv(tmdbId).catch(() => null);
-  if (typeof az?.mappings?.kitsu_id === "number") return az.mappings.kitsu_id;
+  if (typeof az?.mappings?.kitsu_id === "number") {
+    return preferMainTv(az.mappings.kitsu_id, (az.mappings as { type?: string }).type);
+  }
   if (typeof az?.mappings?.anidb_id === "number") return externalToKitsu("anidb", az.mappings.anidb_id);
   return null;
 }

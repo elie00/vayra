@@ -13,7 +13,7 @@ export type PreviewData = {
   meta: Meta;
   art: PreviewArt;
   chip: "In Cinema" | "New" | null;
-  rating: { kind: "mal" | "imdb"; value: string } | null;
+  rating: { kind: "mal" | "imdb" | "tmdb"; value: string } | null;
   year: string | null;
   length: string | null;
   genre: string | null;
@@ -104,8 +104,12 @@ function deriveRating(meta: Meta, isAnime: boolean): PreviewData["rating"] {
     return meta.imdbRating ? { kind: "mal", value: meta.imdbRating } : null;
   }
   const imdbId = meta.id.startsWith("tt") ? meta.id : tmdbImdbCached(meta.id) ?? undefined;
-  const value = (imdbId ? omdbScoresCached(imdbId)?.imdbRating : undefined) ?? meta.imdbRating;
-  return value ? { kind: "imdb", value } : null;
+  const real = imdbId ? omdbScoresCached(imdbId)?.imdbRating : undefined;
+  if (real) return { kind: "imdb", value: real };
+  if (meta.imdbRating) {
+    return { kind: meta.id.startsWith("tt") ? "imdb" : "tmdb", value: meta.imdbRating };
+  }
+  return null;
 }
 
 export function assemblePreviewData(meta: Meta): PreviewAssembly {

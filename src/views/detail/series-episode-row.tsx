@@ -9,7 +9,9 @@ import type { Episode } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { useView } from "@/lib/view";
+import { useLocalAwareSeriesPlay } from "@/lib/local-library/use-series-play";
 import { useT } from "@/lib/i18n";
+import { prefetchSegments } from "@/lib/skip-intro";
 import { NewBadge, UpcomingBadge } from "./badges";
 import { EpisodeDownloadButton } from "./episode-download-button";
 import { isNewEpisode, isUpcomingEpisode } from "./helpers";
@@ -19,6 +21,8 @@ export function EpisodeRow({
   ep,
   progress,
   cinemetaThumbnail,
+  cinemetaVideos,
+  seriesImdbId,
   spoiler,
   onContextMenu,
 }: {
@@ -26,15 +30,20 @@ export function EpisodeRow({
   ep: Episode;
   progress: { ratio: number; watched: boolean; startedAt: number };
   cinemetaThumbnail?: string;
+  cinemetaVideos?: Meta["videos"];
+  seriesImdbId?: string | null;
   spoiler?: SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
 }) {
   const t = useT();
-  const { openPicker, openEpisodeDetail } = useView();
+  const { openEpisodeDetail } = useView();
+  const playEpisodeLocalAware = useLocalAwareSeriesPlay();
   const { settings } = useSettings();
   const ratingValue = ep.imdbRating ?? ep.voteAverage;
   const ratingIsImdb = ep.imdbRating != null;
-  const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}` : undefined;
+  const tmdbStill = ep.stillPath
+    ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
+    : ep.stillUrl;
   const candidates = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -51,12 +60,18 @@ export function EpisodeRow({
   }, [ep.id]);
   const still = candidates[imgIdx];
   const watchedAgo = progress.startedAt > 0 ? formatRelativeWatched(progress.startedAt) : "";
+  const resolvedImdbId = useMemo(() => {
+    const v = cinemetaVideos?.find((x) => x.season === ep.seasonNumber && x.episode === ep.episodeNumber);
+    return v?.id ?? undefined;
+  }, [cinemetaVideos, ep.seasonNumber, ep.episodeNumber]);
   const playEpisode = {
     season: ep.seasonNumber,
     episode: ep.episodeNumber,
+    runtime: ep.runtime ?? undefined,
     name: ep.name || undefined,
     still,
     overview: ep.overview || undefined,
+    imdbId: resolvedImdbId,
   };
 
   return (
@@ -64,10 +79,20 @@ export function EpisodeRow({
       data-ep={ep.episodeNumber}
       data-no-card-ring
       onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber, ep.episodeNumber, progress.watched)}
+      onMouseEnter={() => prefetchSegments(meta, playEpisode)}
       className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
-        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay })}
+        onClick={() =>
+          playEpisodeLocalAware({
+            meta,
+            episode: playEpisode,
+            opts: { autoPlay: settings.instantPlay || settings.seasonSourceLock },
+            imdbId: seriesImdbId,
+            videos: cinemetaVideos,
+          })
+        }
+        onFocus={() => prefetchSegments(meta, playEpisode)}
         className="flex min-w-0 flex-1 gap-6 text-start"
       >
         <div className="relative w-[200px] shrink-0 overflow-hidden rounded-lg">

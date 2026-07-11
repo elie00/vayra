@@ -74,12 +74,13 @@ export function renderCustomIconControl(
     }
     case "seek-back": {
       if (ctx.tight || ctx.isLiveChannel) return null;
+      const seconds = ctx.seekBackStepSec;
       return (
-        <Tooltip label={t("Seek back")}>
+        <Tooltip label={t("Back {n}s", { n: seconds })}>
           <button
             type="button"
-            onClick={() => ctx.onSeekStep(-10)}
-            aria-label={t("Seek back")}
+            onClick={() => ctx.onSeekStep(-seconds)}
+            aria-label={t("Back {n} seconds", { n: seconds })}
             className="flex h-14 w-14 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
           >
             <CustomIcon url={iconUrl} size={28} />
@@ -89,12 +90,13 @@ export function renderCustomIconControl(
     }
     case "seek-forward": {
       if (ctx.tight || ctx.isLiveChannel) return null;
+      const seconds = ctx.seekForwardStepSec;
       return (
-        <Tooltip label={t("Seek forward")}>
+        <Tooltip label={t("Forward {n}s", { n: seconds })}>
           <button
             type="button"
-            onClick={() => ctx.onSeekStep(10)}
-            aria-label={t("Seek forward")}
+            onClick={() => ctx.onSeekStep(seconds)}
+            aria-label={t("Forward {n} seconds", { n: seconds })}
             className="flex h-14 w-14 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
           >
             <CustomIcon url={iconUrl} size={28} />

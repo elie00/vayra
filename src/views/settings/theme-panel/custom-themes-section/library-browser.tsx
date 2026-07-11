@@ -2,7 +2,8 @@ import { ArrowLeft, Check, Copy, Download, ImagePlus, Loader2, Trash2, X } from 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { setCustomThemePreview } from "@/lib/custom-themes";
-import type { ThemePreset } from "@/lib/theme";
+import { BETA_THEMES, type ThemePreset } from "@/lib/theme";
+import { BetaThemesCard, BetaThemesModal } from "./beta-themes-modal";
 import { clearUnseenDownloads, getUnseenDownloads, subscribeUnseen } from "@/lib/theme-store";
 import { CommunityPane } from "./community-browser";
 import type { LibraryEntry } from "./library-grid";
@@ -41,6 +42,7 @@ export function LibraryBrowser({
   }, [onClose]);
 
   const [tab, setTab] = useState<"library" | "community">("library");
+  const [betaOpen, setBetaOpen] = useState(false);
   const [unseen, setUnseen] = useState(() => getUnseenDownloads().length);
 
   useEffect(() => subscribeUnseen(() => setUnseen(getUnseenDownloads().length)), []);
@@ -119,6 +121,14 @@ export function LibraryBrowser({
             </BrowserSection>
           )}
 
+          {BETA_THEMES.length > 0 && (
+            <BrowserSection title="Beta" subtitle="Experimental 1:1 ports of other apps.">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <BetaThemesCard count={BETA_THEMES.length} onClick={() => setBetaOpen(true)} />
+              </div>
+            </BrowserSection>
+          )}
+
           {builtIn.length > 0 && (
             <BrowserSection title="Built-in" subtitle="Ships with Harbor. Always available.">
               <BrowserGrid
@@ -161,6 +171,12 @@ export function LibraryBrowser({
           )}
         </div>
       </div>
+      <BetaThemesModal
+        open={betaOpen}
+        activeId={activeId}
+        onActivate={onActivate}
+        onClose={() => setBetaOpen(false)}
+      />
     </div>,
     document.body,
   );

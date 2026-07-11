@@ -4,6 +4,8 @@ export type PlayerActions = {
   download: () => void;
   toggleFullscreen: () => void;
   canDownload: boolean;
+  downloadSubtitle: () => void;
+  canDownloadSubtitle: boolean;
 };
 
 let current: PlayerActions | null = null;
@@ -16,7 +18,9 @@ export function setPlayerActions(actions: PlayerActions | null) {
     actions &&
     current.download === actions.download &&
     current.toggleFullscreen === actions.toggleFullscreen &&
-    current.canDownload === actions.canDownload
+    current.canDownload === actions.canDownload &&
+    current.downloadSubtitle === actions.downloadSubtitle &&
+    current.canDownloadSubtitle === actions.canDownloadSubtitle
   ) {
     return;
   }

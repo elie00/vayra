@@ -5,7 +5,8 @@ import type {
   CrewMember,
   StillImage,
 } from "./tmdb-episode-types";
-import { get } from "./tmdb-client";
+import { effectiveTmdbLanguage, get } from "./tmdb-client";
+import { imageLangParam } from "./tmdb-image-lang";
 
 /**
  * Fetch comprehensive episode details from TMDB API
@@ -26,7 +27,8 @@ export async function tmdbEpisodeDetail(
     const path = `tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}`;
     const params = {
       append_to_response: "credits,images,external_ids",
-      include_image_language: "en,null",
+      language: effectiveTmdbLanguage() || "en",
+      include_image_language: imageLangParam(),
     };
 
     const data = await get<TmdbEpisodeResponse>(apiKey, path, params);

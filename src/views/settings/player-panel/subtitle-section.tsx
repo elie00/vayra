@@ -186,7 +186,7 @@ export function SubtitleStylePanel() {
         <input
           type="range"
           min={0}
-          max={40}
+          max={100}
           step={1}
           value={settings.subMarginY}
           onChange={(e) => update({ subMarginY: parseInt(e.target.value, 10) })}

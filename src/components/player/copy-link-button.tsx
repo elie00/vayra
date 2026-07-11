@@ -6,6 +6,30 @@ export function resolveStreamLink(stream: { url?: string; externalUrl?: string }
   return stream.url ?? stream.externalUrl ?? null;
 }
 
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to legacy path */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function CopyLinkButton({
   url,
   size = 13,
@@ -30,14 +54,11 @@ export function CopyLinkButton({
   );
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      if (timer.current !== null) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => setCopied(false), 1200);
-    } catch {
-      /* noop */
-    }
+    const ok = await copyText(url);
+    if (!ok) return;
+    setCopied(true);
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setCopied(false), 1400);
   };
 
   return (
@@ -57,15 +78,24 @@ export function CopyLinkButton({
           void copy();
         }
       }}
-      className={`inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors ${
-        copied ? "text-accent" : "text-ink-subtle hover:bg-canvas/60 hover:text-ink"
+      className={`relative inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors duration-200 ${
+        copied ? "bg-success/12 text-success" : "text-ink-subtle hover:bg-canvas/60 hover:text-ink"
       } ${className}`}
     >
-      {copied ? (
-        <Check size={size} strokeWidth={2.4} />
-      ) : (
-        <Copy size={size} strokeWidth={2} />
-      )}
+      <Copy
+        size={size}
+        strokeWidth={2}
+        className={`absolute transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          copied ? "scale-50 opacity-0" : "scale-100 opacity-100"
+        }`}
+      />
+      <Check
+        size={size + 1}
+        strokeWidth={2.6}
+        className={`absolute transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          copied ? "scale-100 opacity-100" : "scale-50 opacity-0"
+        }`}
+      />
     </span>
   );
 }

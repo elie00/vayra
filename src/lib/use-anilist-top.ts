@@ -25,7 +25,8 @@ function useBrowse(key: "top" | "trending"): Meta[] {
       ?.then((list) => {
         if (!cancelled) setMetas(list);
       })
-      .catch(() => {
+      .catch((e) => {
+        console.error(`[useBrowse] Anilist ${key} fetch failed:`, e);
         inflight[key] = undefined;
       });
     return () => {

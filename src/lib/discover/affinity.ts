@@ -8,7 +8,7 @@ const KIND_WEIGHT: Record<DiscoverEvent["kind"], number> = {
   watchlist: 4.0,
   watched: 6.0,
   vote_up: 5.0,
-  vote_down: -3.0,
+  vote_down: -5.0,
 };
 
 const CATEGORY_WEIGHT = {

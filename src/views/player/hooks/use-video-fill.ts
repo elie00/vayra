@@ -9,6 +9,7 @@ type CropMode = {
   panscan: number;
   aspect: string;
   zoom: number;
+  stretch?: boolean;
 };
 
 const ZOOM_MIN = 0;
@@ -17,6 +18,7 @@ const ZOOM_MAX = 1;
 const MODES: CropMode[] = [
   { id: "fit", label: "Fit", panscan: 0, aspect: "-1", zoom: 0 },
   { id: "fill", label: "Fill", panscan: 1, aspect: "-1", zoom: 0 },
+  { id: "stretch", label: "Stretch", panscan: 0, aspect: "-1", zoom: 0, stretch: true },
   { id: "zoom", label: "Zoom", panscan: 0, aspect: "-1", zoom: 0 },
   { id: "16:9", label: "16:9", panscan: 0, aspect: "16:9", zoom: 0 },
   { id: "4:3", label: "4:3", panscan: 0, aspect: "4:3", zoom: 0 },
@@ -34,12 +36,13 @@ const modeIndex = (id: string) => {
   return i < 0 ? 0 : i;
 };
 
-export function useVideoFill(bridgeRef: RefObject<PlayerBridge | null>, srcKey: string) {
+export function useVideoFill(bridgeRef: RefObject<PlayerBridge | null>, srcKey: string, loaded: boolean) {
   const { settings, update } = useSettings();
   const [pill, setPill] = useState<string | null>(null);
   const index = useRef(modeIndex(settings.cropMode));
   const zoom = useRef(0);
   const timer = useRef<number | null>(null);
+  const appliedSrc = useRef<string | null>(null);
 
   const flash = (text: string) => {
     setPill(text);
@@ -54,6 +57,7 @@ export function useVideoFill(bridgeRef: RefObject<PlayerBridge | null>, srcKey: 
       bridge.setPanscan(mode.panscan);
       bridge.setAspectOverride(mode.aspect);
       bridge.setVideoZoom(mode.id === "zoom" ? zoomLevel : 0);
+      bridge.setStretch(mode.stretch === true);
     }
     if (!showPill) return;
     if (mode.id === "zoom" && zoomLevel > 0) {
@@ -66,9 +70,17 @@ export function useVideoFill(bridgeRef: RefObject<PlayerBridge | null>, srcKey: 
   useEffect(() => {
     index.current = modeIndex(settings.cropMode);
     zoom.current = 0;
+    appliedSrc.current = null;
     apply(index.current, 0, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [srcKey]);
+
+  useEffect(() => {
+    if (!loaded || appliedSrc.current === srcKey) return;
+    appliedSrc.current = srcKey;
+    apply(index.current, zoom.current, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, srcKey]);
 
   useEffect(
     () => () => {

@@ -40,6 +40,12 @@ const LAYOUTS: LayoutDef[] = [
     diagram: (a) => <Diagram active={a} kind="minui" />,
   },
   {
+    id: "cinematic",
+    name: "Cinematic",
+    blurb: "Immersive floating overlay nav.",
+    diagram: (a) => <Diagram active={a} kind="cinematic" />,
+  },
+  {
     id: "custom",
     name: "Custom",
     blurb: "Write your own chrome with HTML + CSS.",
@@ -160,6 +166,21 @@ function Diagram({
         <circle cx="41" cy="53" r="1.8" fill={dim} />
         <circle cx="48" cy="53" r="1.8" fill={dim} />
         <circle cx="55" cy="53" r="1.8" fill={dim} />
+      </svg>
+    );
+  }
+  if (kind === "cinematic") {
+    return (
+      <svg viewBox="0 0 80 60" className="h-full w-full">
+        <rect x="3" y="3" width="74" height="54" rx="2" fill={accent} opacity="0.16" />
+        <rect x="3" y="3" width="74" height="22" rx="2" fill={accent} opacity="0.10" />
+        <rect x="22" y="7" width="36" height="7" rx="3.5" fill={accent} opacity="0.5" />
+        <circle cx="29" cy="10.5" r="1.4" fill={accent} />
+        <circle cx="36" cy="10.5" r="1.4" fill={dim} />
+        <circle cx="43" cy="10.5" r="1.4" fill={dim} />
+        <circle cx="50" cy="10.5" r="1.4" fill={dim} />
+        <rect x="10" y="40" width="30" height="4" rx="2" fill={dim} opacity="0.6" />
+        <rect x="10" y="47" width="20" height="3" rx="1.5" fill={dim} opacity="0.4" />
       </svg>
     );
   }

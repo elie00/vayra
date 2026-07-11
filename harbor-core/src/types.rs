@@ -204,6 +204,8 @@ pub struct Stream {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub addon_priority: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub addon_return_idx: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub contributors: Option<Vec<Contributor>>,
     #[serde(flatten)]
     pub extra: std::collections::BTreeMap<String, serde_json::Value>,

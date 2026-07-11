@@ -155,6 +155,7 @@ function HdrOverlayChrome() {
         openCastMenu={() => act("hdr-stage://cast")}
         onToggleDraw={() => {}}
         onToggleHideOthers={() => {}}
+        onClearDraw={() => {}}
         onScreenshot={() => act("hdr-stage://screenshot")}
         onPickAnother={() => act("hdr-stage://pick-another")}
         canPickAnother={false}

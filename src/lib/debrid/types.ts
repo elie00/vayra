@@ -1,4 +1,5 @@
 import type { DebridSlug } from "@/lib/streams/types";
+import type { EpisodeHint } from "@/lib/streams/episode-file";
 
 export type { DebridSlug };
 
@@ -67,6 +68,7 @@ export type DebridStore = {
     magnet: string,
     fileIdx: number | undefined,
     signal: AbortSignal,
+    hint?: EpisodeHint,
   ): Promise<DebridResult<DirectLink>>;
   queueCache?(magnet: string, signal: AbortSignal): Promise<DebridResult<{ id: string }>>;
   listLibrary(signal: AbortSignal): Promise<DebridResult<LibraryEntry[]>>;

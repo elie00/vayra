@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "@/lib/settings";
+import { randomUuid } from "@/lib/uuid";
 import { TogetherClient, type RoomEvent, type RoomSnapshot } from "./client";
 import { useSelfIdentity } from "./use-self-identity";
 import { relayOutdated } from "./relay-version";
@@ -66,7 +67,7 @@ type TogetherValue = {
   dismissSummon: () => void;
   sendCursor: (x: number, y: number, visible: boolean, path: string) => void;
   remoteCursors: RemoteCursor[];
-  sendDraw: (strokeId: string, phase: "start" | "point" | "end", path: string, x?: number, y?: number, color?: string) => void;
+  sendDraw: (strokeId: string, phase: "start" | "point" | "end" | "clear", path: string, x?: number, y?: number, color?: string) => void;
   onIncomingDraw: (cb: (e: IncomingDraw) => void) => () => void;
   sendPresence: (location?: ParticipantLocation) => void;
   presenceMap: Map<string, number>;
@@ -97,7 +98,7 @@ const Ctx = createContext<TogetherValue | null>(null);
 function loadOrInitClientId(): string {
   let id = localStorage.getItem(CLIENT_ID_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = randomUuid();
     localStorage.setItem(CLIENT_ID_KEY, id);
   }
   return id;
@@ -105,6 +106,27 @@ function loadOrInitClientId(): string {
 
 function loadOrInitName(): string {
   return localStorage.getItem(NAME_KEY) ?? `Guest ${Math.floor(Math.random() * 9000 + 1000)}`;
+}
+
+function avatarIsShareable(a: string | null): boolean {
+  return !a || a.startsWith("data:") || /^https?:\/\//i.test(a);
+}
+
+async function resolveShareableAvatar(a: string | null): Promise<string | null> {
+  if (avatarIsShareable(a)) return a;
+  try {
+    const res = await fetch(a as string);
+    if (!res.ok) return a;
+    const blob = await res.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : a);
+      reader.onerror = () => resolve(a);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return a;
+  }
 }
 
 export function TogetherProvider({ children }: { children: ReactNode }) {
@@ -116,8 +138,9 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
   const [displayName, setDisplayNameState] = useState<string>(loadOrInitName());
   const displayNameRef = useRef(displayName);
   displayNameRef.current = displayName;
-  const avatarRef = useRef(effectiveAvatar);
-  avatarRef.current = effectiveAvatar;
+  const [shareAvatar, setShareAvatar] = useState<string | null>(effectiveAvatar);
+  const avatarRef = useRef(shareAvatar);
+  avatarRef.current = shareAvatar;
   const colorRef = useRef(effectiveColor);
   colorRef.current = effectiveColor;
   const clientRef = useRef<TogetherClient | null>(null);
@@ -210,8 +233,18 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
   }, [relayUrl]);
 
   useEffect(() => {
-    clientRef.current?.setProfile(effectiveAvatar, effectiveColor);
-  }, [effectiveAvatar, effectiveColor]);
+    let cancelled = false;
+    resolveShareableAvatar(effectiveAvatar).then((v) => {
+      if (!cancelled) setShareAvatar(v);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveAvatar]);
+
+  useEffect(() => {
+    clientRef.current?.setProfile(shareAvatar, effectiveColor);
+  }, [shareAvatar, effectiveColor]);
 
   const setDisplayName = useCallback((n: string) => {
     const trimmed = n.trim().slice(0, 32) || `Guest ${Math.floor(Math.random() * 9000 + 1000)}`;
@@ -332,7 +365,7 @@ export function TogetherProvider({ children }: { children: ReactNode }) {
   const sendDraw = useCallback(
     (
       strokeId: string,
-      phase: "start" | "point" | "end",
+      phase: "start" | "point" | "end" | "clear",
       path: string,
       x?: number,
       y?: number,

@@ -38,3 +38,24 @@ export async function processBackgroundImage(file: File): Promise<string | null>
   if (raw.length < MAX_IMAGE_BYTES) return raw;
   return downscaleImage(raw);
 }
+
+export async function processLogoImage(file: File, maxDim: number): Promise<string | null> {
+  const raw = await readFileAsDataURL(file).catch(() => null);
+  if (!raw) return null;
+  if (raw.startsWith("data:image/svg")) return raw.length < 256_000 ? raw : null;
+  const img = new Image();
+  img.src = raw;
+  await img.decode().catch(() => null);
+  if (!img.width || !img.height) return null;
+  const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * ratio));
+  const h = Math.max(1, Math.round(img.height * ratio));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, w, h);
+  const out = canvas.toDataURL("image/png");
+  return out.length < 900_000 ? out : null;
+}

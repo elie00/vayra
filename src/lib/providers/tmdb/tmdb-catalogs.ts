@@ -86,3 +86,24 @@ export async function tmdbSearchMovie(
   const hit = (data?.results ?? [])[0];
   return hit ? movieMeta(hit) : null;
 }
+
+export async function tmdbSearchTitle(
+  key: string,
+  type: "movie" | "series",
+  query: string,
+  year?: number,
+): Promise<Meta | null> {
+  if (!key || !query.trim()) return null;
+  if (type === "movie") {
+    const params: Record<string, string> = { query, include_adult: "false" };
+    if (year) params.year = String(year);
+    const data = await get<Page<RawMovie>>(key, "search/movie", params);
+    const hit = (data?.results ?? [])[0];
+    return hit ? movieMeta(hit) : null;
+  }
+  const params: Record<string, string> = { query, include_adult: "false" };
+  if (year) params.first_air_date_year = String(year);
+  const data = await get<Page<RawSeries>>(key, "search/tv", params);
+  const hit = (data?.results ?? [])[0];
+  return hit ? seriesMeta(hit) : null;
+}

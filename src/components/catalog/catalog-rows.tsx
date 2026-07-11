@@ -24,14 +24,16 @@ export type CatalogRow = {
   hasMore?: boolean;
 };
 
-function RowTitle({ row }: { row: CatalogRow }) {
+function RowTitle({ row, kids = false }: { row: CatalogRow; kids?: boolean }) {
   const t = useT();
   const { openGrid } = useView();
   if (!row.fetcher) return <>{t(row.title)}</>;
   return (
     <button
       onClick={() => openGrid({ title: t(row.title), fetcher: row.fetcher!, initial: row.metas })}
-      className="group/see inline-flex items-center gap-1.5 text-ink transition-colors hover:text-ink-muted"
+      className={`group/see inline-flex items-center gap-1.5 transition-colors ${
+        kids ? "text-[#0e3a43] hover:text-[#1f8f88]" : "text-ink hover:text-ink-muted"
+      }`}
     >
       {t(row.title)}
       <span className="inline-flex items-center gap-0.5 text-[12px] font-medium text-ink-subtle opacity-0 transition-opacity duration-200 group-hover/see:opacity-100">
@@ -50,6 +52,9 @@ export function CatalogRows({
   scrollPrefix,
   onLoadMore,
   flagRerunKeys,
+  kids = false,
+  injectAfter = -1,
+  injectNode,
 }: {
   rows: CatalogRow[];
   editMode: boolean;
@@ -58,6 +63,9 @@ export function CatalogRows({
   scrollPrefix: string;
   onLoadMore: (key: string) => void;
   flagRerunKeys?: string[];
+  kids?: boolean;
+  injectAfter?: number;
+  injectNode?: React.ReactNode;
 }) {
   const allKeys = useMemo(() => rows.map((r) => r.key), [rows]);
   const display = useMemo(() => applyPageRows(rows, custom, editMode), [rows, custom, editMode]);
@@ -71,18 +79,20 @@ export function CatalogRows({
         const eager = i < 2;
         const rowEl = (
           <Row
-            title={<RowTitle row={row} />}
+            title={<RowTitle row={row} kids={kids} />}
+            titleClassName={kids ? "text-[#0e3a43]" : "text-ink"}
+            titleScale={kids ? 1.28 : 1}
             min={148}
             shape="portrait"
             scrollKey={`${scrollPrefix}:${row.key}`}
             onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
           >
             {row.metas.map((m) => (
-              <PickCard key={m.id} meta={m} flagRerun={flagRerunKeys?.includes(row.key)} />
+              <PickCard key={m.id} meta={m} flagRerun={flagRerunKeys?.includes(row.key)} kids={kids} />
             ))}
           </Row>
         );
-        return (
+        const node = (
           <div key={row.key} data-scroll-anchor={`row:${row.key}`}>
             {editMode && (
               <RowControls
@@ -96,11 +106,16 @@ export function CatalogRows({
                 onRename={(label) => onPersist(renamePageRow(custom, row.key, label))}
                 onResetName={() => onPersist(renamePageRow(custom, row.key, ""))}
                 isRenamed={row.key in custom.renamed}
+                kids={kids}
               />
             )}
             {!hidden && (eager ? rowEl : <LazyMount minHeight={340}>{rowEl}</LazyMount>)}
           </div>
         );
+        if (i === injectAfter && injectNode) {
+          return [node, <div key={`${row.key}::inject`}>{injectNode}</div>];
+        }
+        return node;
       })}
     </>
   );

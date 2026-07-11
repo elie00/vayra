@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 
 let positionSec = 0;
 let bufferedSec = 0;
+let downloadedFraction = 0;
 const listeners = new Set<() => void>();
 
 export function setPlaybackClock(pos: number, buf: number) {
@@ -11,12 +12,23 @@ export function setPlaybackClock(pos: number, buf: number) {
   for (const l of listeners) l();
 }
 
+export function setPlaybackDownloaded(fraction: number) {
+  const clamped = fraction > 1 ? 1 : fraction < 0 ? 0 : fraction;
+  if (clamped === downloadedFraction) return;
+  downloadedFraction = clamped;
+  for (const l of listeners) l();
+}
+
 export function getPlaybackPosition(): number {
   return positionSec;
 }
 
 export function getPlaybackBuffered(): number {
   return bufferedSec;
+}
+
+export function getPlaybackDownloaded(): number {
+  return downloadedFraction;
 }
 
 export function subscribePlaybackClock(cb: () => void): () => void {
@@ -81,5 +93,13 @@ export function usePlaybackBufferedGated(active: boolean): number {
     active ? subscribePlaybackClock : NEVER,
     () => bufferedSec,
     () => bufferedSec,
+  );
+}
+
+export function usePlaybackDownloadedGated(active: boolean): number {
+  return useSyncExternalStore(
+    active ? subscribePlaybackClock : NEVER,
+    () => downloadedFraction,
+    () => downloadedFraction,
   );
 }

@@ -11,11 +11,21 @@ import { preflightCheck } from "@/lib/streams/preflight";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
 import { useView, type PlayEpisode } from "@/lib/view";
+import { playLocalAware } from "@/lib/local-library/playback";
+import { localPlayerSrc } from "@/lib/local-library/player-src";
 import { useT } from "@/lib/i18n";
 import { EpisodeRow } from "./episode-row";
 import { SeasonPicker } from "./season-picker";
 import { StreamsView } from "./streams-view";
 import { useSeasonBrowser } from "./use-season-browser";
+
+function sameEpisode(a: PlayEpisode, b: PlayEpisode): boolean {
+  if (a.kitsuStreamId && b.kitsuStreamId) return a.kitsuStreamId === b.kitsuStreamId;
+  return (
+    (a.imdbSeason ?? a.season) === (b.imdbSeason ?? b.season) &&
+    (a.imdbEpisode ?? a.episode) === (b.imdbEpisode ?? b.episode)
+  );
+}
 
 export function EpisodePanel({
   open,
@@ -41,7 +51,7 @@ export function EpisodePanel({
   onRestart?: () => void;
 }) {
   const t = useT();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { openPicker, replacePlayerSrc } = useView();
   const debrids = useDebridClients();
   const { seasons, season, setSeason, episodes, loading } = useSeasonBrowser(
@@ -67,12 +77,26 @@ export function EpisodePanel({
   const manualMode = !settings.instantPlay;
   const handlePlay = (ep: PlayEpisode) => {
     if (roomGuest) return;
-    if (manualMode) {
-      setPickingFor(ep);
-    } else {
-      onClose();
-      openPicker(meta, ep, { autoPlay: true });
-    }
+    const streamFlow = () => {
+      if (manualMode) {
+        setPickingFor(ep);
+      } else {
+        onClose();
+        openPicker(meta, ep, { autoPlay: true });
+      }
+    };
+    playLocalAware({
+      meta,
+      episode: ep,
+      mode: settings.localPlaybackMode,
+      source: "manual",
+      playLocal: (e, o) => {
+        onClose();
+        replacePlayerSrc({ ...localPlayerSrc(e), startFromZero: o?.fromStart });
+      },
+      playStream: streamFlow,
+      setMode: (m) => update({ localPlaybackMode: m }),
+    });
   };
   const handlePickStream = async (stream: ScoredStream) => {
     if (!pickingFor || roomGuest) return;
@@ -80,7 +104,8 @@ export function EpisodePanel({
     const ep = pickingFor;
     setResolvingFor(ep);
     try {
-      const r = await resolveStream(stream, debrids, new AbortController().signal, true);
+      const hint = { season: ep.season ?? null, episode: ep.episode ?? null };
+      const r = await resolveStream(stream, debrids, new AbortController().signal, true, false, hint);
       if (!r.ok) {
         setResolvingFor(null);
         return;
@@ -223,12 +248,8 @@ export function EpisodePanel({
                 <div className="flex flex-col gap-3">
                   {episodes.map((ep) => {
                     const key = `${ep.season}:${ep.episode}`;
-                    const isCurrent =
-                      !!currentEpisode &&
-                      ep.season === currentEpisode.season &&
-                      ep.episode === currentEpisode.episode;
-                    const isNextUp =
-                      !!nextEp && ep.season === nextEp.season && ep.episode === nextEp.episode;
+                    const isCurrent = !!currentEpisode && sameEpisode(ep, currentEpisode);
+                    const isNextUp = !!nextEp && sameEpisode(ep, nextEp);
                     return (
                       <EpisodeRow
                         key={key}

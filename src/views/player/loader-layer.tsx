@@ -2,6 +2,7 @@ import type { ComponentProps } from "react";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
 import { CinematicPlayerLoader } from "./cinematic-player-loader";
+import { LiveChannelError } from "./live-channel-error";
 import { LocalFileError } from "./local-file-error";
 
 export function LoaderLayer({
@@ -13,6 +14,7 @@ export function LoaderLayer({
   engineStats,
   onShowingChange,
   onRetry,
+  onBrowseChannels,
 }: {
   src: PlayerSrc;
   snap: PlayerSnapshot;
@@ -22,10 +24,12 @@ export function LoaderLayer({
   engineStats: ComponentProps<typeof CinematicPlayerLoader>["engineStats"];
   onShowingChange: (showing: boolean) => void;
   onRetry: () => void;
+  onBrowseChannels?: () => void;
 }) {
+  const isLiveSrc = src.meta.id.startsWith("iptv:");
   return (
     <>
-      {isLocalSrc && snap.errorCode != null ? null : (
+      {(isLocalSrc || isLiveSrc) && snap.errorCode != null ? null : (
         <CinematicPlayerLoader
           src={src}
           snap={snap}
@@ -42,6 +46,15 @@ export function LoaderLayer({
           errorMessage={snap.errorMessage}
           onBack={onCancel}
           onRetry={onRetry}
+        />
+      )}
+
+      {!isLocalSrc && isLiveSrc && snap.errorCode != null && (
+        <LiveChannelError
+          channelName={src.title ?? src.meta.name}
+          onBack={onCancel}
+          onRetry={onRetry}
+          onBrowse={onBrowseChannels}
         />
       )}
     </>

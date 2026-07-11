@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayEpisode, PlayerSrc } from "@/lib/view";
+
+const STUB_MAX_SEC = 150;
 
 export function useAutoNextEpisode(params: {
   src: PlayerSrc;
@@ -9,9 +11,10 @@ export function useAutoNextEpisode(params: {
   nextEp: PlayEpisode | null;
   canChangeEpisode: boolean;
   cancelled: boolean;
+  startedNearEndRef: RefObject<boolean>;
   goToEpisode: (ep: PlayEpisode | null) => void;
 }) {
-  const { src, snap, nextEp, canChangeEpisode, cancelled, goToEpisode } = params;
+  const { src, snap, nextEp, canChangeEpisode, cancelled, startedNearEndRef, goToEpisode } = params;
   const firedForRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -19,6 +22,8 @@ export function useAutoNextEpisode(params: {
     if (!nextEp) return;
     if (!canChangeEpisode) return;
     if (snap.durationSec <= 0) return;
+    if (snap.durationSec < STUB_MAX_SEC) return;
+    if (startedNearEndRef.current) return;
     const pos = getPlaybackPosition();
     const naturalEnd = snap.status === "ended";
     const errorAtEnd =

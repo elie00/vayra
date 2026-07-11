@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 
 type Props = {
@@ -8,14 +10,28 @@ type Props = {
 
 export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
   const { settings } = useSettings();
+  const kid = useActiveKid();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [boxH, setBoxH] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const host = wrapRef.current?.offsetParent as HTMLElement | null;
+      if (host && host.clientHeight > 0) setBoxH(host.clientHeight);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [text]);
   if (!text) return null;
 
-  const fontSize = Math.round(clamp(settings.subFontSize, 16, 120) * scale);
-  const marginY = clamp(settings.subMarginY, 0, 50);
+  const responsive = boxH > 0 ? Math.max(0.3, Math.min(2.5, boxH / 1080)) : scale;
+  const baseFont = kid ? Math.max(54, clamp(settings.subFontSize, 16, 120)) : clamp(settings.subFontSize, 16, 120);
+  const fontSize = Math.round(baseFont * responsive);
+  const marginY = clamp(settings.subMarginY, 0, 100);
   const fontColor = settings.subFontColor || "#FFFFFF";
   const align = settings.subAlignX || "center";
   const family = fontFamilyFor(settings.subFontFamily);
-  const style = settings.subStyle ?? "shadow";
+  const style = kid ? "shadow" : settings.subStyle ?? "shadow";
   const lines = text.split("\n");
 
   const justify = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
@@ -23,7 +39,7 @@ export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
   const baseTextStyle: React.CSSProperties = {
     color: fontColor,
     fontFamily: family,
-    fontWeight: settings.subBold ? 700 : 400,
+    fontWeight: kid || settings.subBold ? 700 : 400,
     fontSize: `${fontSize}px`,
     lineHeight: 1.2,
     letterSpacing: `${(-0.005 + (settings.subLineSpacing ?? 0) * 0.06).toFixed(3)}em`,
@@ -32,7 +48,7 @@ export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
   };
 
   if (style === "outline") {
-    const borderSize = clamp(settings.subBorderSize, 1, 6) || 2;
+    const borderSize = Math.max(1, Math.round((clamp(settings.subBorderSize, 1, 6) || 2) * responsive));
     const borderColor = settings.subBorderColor || "#000000";
     baseTextStyle.textShadow = buildOutline(borderColor, borderSize);
   } else if (style === "shadow") {
@@ -57,6 +73,7 @@ export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
   return (
     <div
       key={startSec}
+      ref={wrapRef}
       className={`pointer-events-none absolute inset-x-0 z-10 flex ${justify} px-[6%]`}
       style={{ bottom: `${marginY}%`, opacity }}
     >

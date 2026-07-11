@@ -172,8 +172,8 @@ export function QueueView() {
 
   return (
     <main className="min-w-0 flex-1 overflow-hidden pb-12 pt-20">
-      <div className="mx-auto flex h-full min-w-0 max-w-[1180px] flex-col gap-6 px-6 sm:px-12">
-        <header className="flex items-baseline gap-3">
+      <div className="mx-auto flex h-full min-w-0 max-w-[1180px] flex-col gap-5 px-6 sm:px-12">
+        <header className="flex shrink-0 items-baseline gap-3">
           <h1 className="font-display text-[20px] font-medium tracking-tight text-ink">
             {t("Discovery Queue")}
           </h1>
@@ -185,8 +185,8 @@ export function QueueView() {
         </header>
 
         {item ? (
-          <div className="relative">
-            <div className={leaveClass}>
+          <div className="relative flex-1 min-h-[280px] max-h-[600px]">
+            <div className={`${leaveClass} h-full`}>
               <FeedHero
                 item={item}
                 position={activeIndex}
@@ -207,11 +207,15 @@ export function QueueView() {
             />
           </div>
         ) : (
-          <QueueSkeleton loading={loading} hasKey={!!settings.tmdbKey} />
+          <div className="flex-1 min-h-[280px] max-h-[600px]">
+            <QueueSkeleton loading={loading} hasKey={!!settings.tmdbKey} />
+          </div>
         )}
 
         {pool.length > 0 && (
-          <Strip pool={pool} active={activeIndex} onJump={(i) => jump(i)} />
+          <div className="shrink-0">
+            <Strip pool={pool} active={activeIndex} onJump={(i) => jump(i)} />
+          </div>
         )}
       </div>
     </main>
@@ -335,7 +339,7 @@ function Strip({
 function QueueSkeleton({ loading, hasKey }: { loading: boolean; hasKey: boolean }) {
   const t = useT();
   return (
-    <div className="flex min-h-[480px] items-center justify-center rounded-[28px] border border-edge-soft bg-elevated/30 px-12 py-16 text-center">
+    <div className="flex h-full min-h-[300px] items-center justify-center rounded-[28px] border border-edge-soft bg-elevated/30 px-12 py-16 text-center">
       {loading ? (
         <p className="text-[15px] text-ink-muted">{t("Building tonight's queue…")}</p>
       ) : !hasKey ? (

@@ -1,6 +1,7 @@
-import { Play } from "lucide-react";
+import { ArrowDownToLine, Play } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
+import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import { useSettings } from "@/lib/settings";
@@ -13,12 +14,16 @@ export function StremioRow({
   addonLogo,
   match = null,
   onPlay,
+  download = false,
+  isAnime = false,
 }: {
   stream: ScoredStream;
   failed: boolean;
   addonLogo: string | null;
   match?: "same" | "close" | null;
   onPlay: () => void;
+  download?: boolean;
+  isAnime?: boolean;
 }) {
   const { settings } = useSettings();
   const full = settings.fullStreamDescription;
@@ -27,6 +32,7 @@ export function StremioRow({
   const rawDescription = stream.title?.trim() || stream.description?.trim() || "";
   const description = full ? rawDescription : condenseDescription(rawDescription);
   const badges = settings.showQualityBadge ? streamBadges(stream) : [];
+  const dubSub = settings.showDubBadge ? streamDubSub(stream.audioLanguages, isAnime) : null;
   const link = resolveStreamLink(stream);
   return (
     <div
@@ -51,9 +57,10 @@ export function StremioRow({
             {description}
           </p>
         )}
-        {(badges.length > 0 || match || stream.edition) && (
+        {(badges.length > 0 || match || stream.edition || dubSub) && (
           <div className="flex flex-wrap items-center gap-1.5">
             <HostMatchChip match={match} />
+            {dubSub && <DubSubPill kind={dubSub} size="sm" />}
             {badges.map((k) => (
               <FormatBadge key={k} kind={k} size="sm" />
             ))}
@@ -68,10 +75,14 @@ export function StremioRow({
         {link && <CopyLinkButton url={link} size={16} className="h-9 w-9" />}
         <button
           onClick={onPlay}
-          aria-label="Play"
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-canvas transition-transform active:scale-95 hover:opacity-90"
+          aria-label={download ? "Download" : "Play"}
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent text-canvas shadow-[0_2px_6px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[transform,box-shadow] duration-150 ease-out hover:shadow-[0_5px_14px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.18)] active:scale-[0.96] active:duration-100"
         >
-          <Play size={26} fill="currentColor" className="ml-0.5" />
+          {download ? (
+            <ArrowDownToLine size={25} strokeWidth={2.4} />
+          ) : (
+            <Play size={26} fill="currentColor" className="ml-0.5" />
+          )}
         </button>
       </div>
     </div>

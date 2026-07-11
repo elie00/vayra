@@ -1,7 +1,8 @@
 import { Play } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
-import { Poster } from "@/components/poster";
+import { Poster, usePosterChain } from "@/components/poster";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import type { IptvChannel } from "@/lib/iptv/types";
 import { hydrationKey, type NowItem } from "./use-live-home";
 
@@ -43,7 +44,14 @@ function Pick({
   onPlay: (ch: IptvChannel) => void;
 }) {
   const t = useT();
+  const { settings } = useSettings();
   const { channel, current } = item;
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    hydrated?.id ?? "",
+    hydrated?.poster ?? undefined,
+    hydrated?.type === "series" ? "series" : "movie",
+  );
   return (
     <button
       data-art={hydrated?.background || hydrated?.poster || channel.logo || ""}
@@ -53,7 +61,8 @@ function Pick({
     >
       <div className="relative overflow-hidden rounded-lg ring-1 ring-edge-soft/40 transition-shadow duration-200 group-hover/p:ring-edge group-hover/p:shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)]">
         <Poster
-          src={hydrated?.poster ?? undefined}
+          src={poster.src}
+          onError={poster.onError}
           seed={channel.id}
           ratio="portrait"
           className="harbor-card-ring rounded-lg shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)]"

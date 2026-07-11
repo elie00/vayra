@@ -1,4 +1,4 @@
-import { get, IMG } from "./tmdb-client";
+import { effectiveTmdbLanguage, get, IMG } from "./tmdb-client";
 
 export type TmdbLiteMeta = {
   name: string | null;
@@ -15,6 +15,25 @@ type RawLite = {
   poster_path?: string | null;
   backdrop_path?: string | null;
 };
+
+const overviewCache = new Map<string, string>();
+export async function tmdbMetadataOverview(key: string, metaId: string): Promise<string | undefined> {
+  if (!key) return undefined;
+  const m = metaId.match(/^tmdb:(movie|tv):(\d+)$/);
+  if (!m) return undefined;
+  const metaLang = effectiveTmdbLanguage() || "en";
+  const cacheKey = `${metaId}|${metaLang}`;
+  const hit = overviewCache.get(cacheKey);
+  if (hit !== undefined) return hit || undefined;
+  try {
+    const raw = await get<{ overview?: string }>(key, `${m[1]}/${m[2]}`, { language: metaLang });
+    const ov = raw?.overview?.trim() || "";
+    overviewCache.set(cacheKey, ov);
+    return ov || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export async function tmdbLiteMeta(key: string, metaId: string): Promise<TmdbLiteMeta | null> {
   if (!key) return null;

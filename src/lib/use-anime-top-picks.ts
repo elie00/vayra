@@ -31,7 +31,7 @@ import {
 const CAP = 24;
 const SEQUEL_ROLES = new Set(["sequel", "side_story", "parent_story", "spinoff", "spin_off"]);
 const VISIT_KEY = "harbor.anime.toppicks.visit.v1";
-const CACHE_KEY = "harbor.anime.toppicks.cache.v1";
+const CACHE_KEY = "harbor.anime.toppicks.cache.v2";
 
 function nextVisit(): number {
   try {

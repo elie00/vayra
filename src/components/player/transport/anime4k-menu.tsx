@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ANIME4K_MODES } from "@/lib/player/anime4k-modes";
 import type { Anime4kChoice } from "@/views/player/hooks/use-anime4k";
 import { useT } from "@/lib/i18n";
+import { useMenuSide } from "../menu-side";
 import { Tooltip } from "./tooltip";
 
 const OPTIONS: Array<{ id: Anime4kChoice; label: string }> = [
@@ -23,6 +24,7 @@ export function Anime4kMenu({
   const t = useT();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const { side, measure } = useMenuSide(wrap, 320);
   useEffect(() => {
     onOpenChange?.(open);
   }, [open, onOpenChange]);
@@ -42,7 +44,10 @@ export function Anime4kMenu({
     <div ref={wrap} className="relative">
       <Tooltip label={t("Anime4K upscaling")}>
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => {
+            if (!open) measure();
+            setOpen((o) => !o);
+          }}
           aria-label={t("Anime4K upscaling")}
           className={`flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color] ${
             accent ? "bg-white/22 text-white hover:bg-white/30" : "text-white/85 hover:bg-white/10 hover:text-white"
@@ -55,7 +60,7 @@ export function Anime4kMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="absolute bottom-[calc(100%+10px)] end-0 w-[320px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} w-[320px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
           <div className="p-2">
             <div className="px-3 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
               {t("Anime4K")}

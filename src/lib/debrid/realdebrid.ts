@@ -1,4 +1,5 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
+import { matchEpisodeFileIndex, type EpisodeHint } from "@/lib/streams/episode-file";
 import {
   hashFromMagnet,
   magnetFromHash,
@@ -82,6 +83,7 @@ export function createRealDebrid(apiKey: string): DebridStore {
     magnet: string,
     fileIdx: number | undefined,
     signal: AbortSignal,
+    hint?: EpisodeHint,
   ): Promise<DebridResult<DirectLink>> {
     const hash = hashFromMagnet(magnet);
     const fullMagnet = magnetFromHash(magnet);
@@ -92,6 +94,14 @@ export function createRealDebrid(apiKey: string): DebridStore {
 
     let info: DebridResult<RdTorrentInfo> | null = null;
     let selected = false;
+    let effIdx = fileIdx;
+    const ensureIdx = (files: RdFile[]): number | undefined => {
+      if (effIdx == null && hint) {
+        const mi = matchEpisodeFileIndex(files.map((f) => f.path), hint);
+        if (mi >= 0) effIdx = mi;
+      }
+      return effIdx;
+    };
 
     for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
       if (signal.aborted) {
@@ -106,7 +116,7 @@ export function createRealDebrid(apiKey: string): DebridStore {
         return { ok: false, code: "magnet-error", status: 0 };
       }
       if ((status === "magnet_conversion" || status === "waiting_files_selection") && !selected) {
-        const fileIds = pickRdFiles(info.data.files, fileIdx);
+        const fileIds = pickRdFiles(info.data.files, ensureIdx(info.data.files));
         if (fileIds.length === 0) {
           await delEmpty(`/torrents/delete/${id}`, signal);
           return { ok: false, code: "no-video-file", status: 0 };
@@ -136,7 +146,7 @@ export function createRealDebrid(apiKey: string): DebridStore {
 
     const links = info.data.links ?? [];
     if (links.length === 0) return { ok: false, code: "no-link", status: 0 };
-    const linkIdx = pickLinkIndex(info.data.files, fileIdx, links.length);
+    const linkIdx = pickLinkIndex(info.data.files, ensureIdx(info.data.files ?? []), links.length);
     const link = links[linkIdx];
 
     const u = await postForm<RdUnrestrict>("/unrestrict/link", { link }, signal);

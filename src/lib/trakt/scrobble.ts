@@ -21,14 +21,22 @@ async function send(
   target: TraktTarget,
   progress: number,
 ): Promise<ScrobbleResponse | null> {
-  try {
-    return await traktRequest<ScrobbleResponse>(`/scrobble/${action}`, {
-      method: "POST",
-      body: scrobbleBody(target, progress),
-    });
-  } catch {
-    return null;
+  if (target.kind === "show") return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await traktRequest<ScrobbleResponse>(`/scrobble/${action}`, {
+        method: "POST",
+        body: scrobbleBody(target, progress),
+      });
+    } catch {
+      if (attempt === 0 && action === "stop") {
+        await new Promise((r) => setTimeout(r, 800));
+        continue;
+      }
+      return null;
+    }
   }
+  return null;
 }
 
 export function scrobbleStart(target: TraktTarget, progress: number) {

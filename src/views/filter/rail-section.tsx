@@ -100,7 +100,8 @@ export function RailSection({ filter, rail }: { filter: MetaFilter; rail: Standa
       });
   };
 
-  if (items && items.length === 0) return null;
+  const visible = items ? uniqueById(items) : null;
+  if (visible && visible.length === 0) return null;
 
   const title = (
     <span className="flex flex-col">
@@ -113,8 +114,8 @@ export function RailSection({ filter, rail }: { filter: MetaFilter; rail: Standa
 
   return (
     <Row title={title} onEndReached={onEndReached}>
-      {items
-        ? items.map((m) => (
+      {visible
+        ? visible.map((m) => (
             <div key={m.id} className="w-36 shrink-0">
               <PickCard meta={m} />
             </div>
@@ -124,4 +125,15 @@ export function RailSection({ filter, rail }: { filter: MetaFilter; rail: Standa
           ))}
     </Row>
   );
+}
+
+function uniqueById(metas: Meta[]): Meta[] {
+  const seen = new Set<string>();
+  const out: Meta[] = [];
+  for (const m of metas) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    out.push(m);
+  }
+  return out;
 }

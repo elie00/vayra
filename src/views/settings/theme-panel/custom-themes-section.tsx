@@ -49,6 +49,12 @@ export function CustomThemesSection() {
 
   const entries = useMemo(() => buildEntries(themes), [themes]);
 
+  const activateTheme = (id: string, nav?: ThemePreset["navCustomization"]) =>
+    update({
+      theme: { ...settings.theme, preset: id as ActiveThemeId },
+      ...(nav ? { navCustomization: nav } : {}),
+    });
+
   const importFile = async (file: File) => {
     setError(null);
     try {
@@ -72,7 +78,7 @@ export function CustomThemesSection() {
               ? `${first.name} +${foreign.themes.length - 1} more (${foreign.format})`
               : `${first.name} (${foreign.format})`,
           );
-          update({ theme: { ...settings.theme, preset: first.id as ActiveThemeId } });
+          activateTheme(first.id, first.navCustomization);
           return;
         }
         setError(result.error);
@@ -80,7 +86,7 @@ export function CustomThemesSection() {
       }
       saveCustomTheme(result.theme);
       setImportedNotice(result.theme.name);
-      update({ theme: { ...settings.theme, preset: result.theme.id as ActiveThemeId } });
+      activateTheme(result.theme.id, result.theme.navCustomization);
     } catch {
       setError("Could not read file");
     }
@@ -99,7 +105,7 @@ export function CustomThemesSection() {
   };
 
   const activate = (id: string) =>
-    update({ theme: { ...settings.theme, preset: id as ActiveThemeId } });
+    activateTheme(id, getThemeById(id)?.navCustomization);
 
   const remove = (id: string) => {
     removeCustomTheme(id);
