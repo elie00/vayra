@@ -18,6 +18,14 @@ fn to_js_err<E: std::fmt::Display>(e: E) -> JsValue {
     JsValue::from_str(&format!("{e}"))
 }
 
+fn to_js_value<T: serde::Serialize>(value: &T) -> Result<JsValue, JsValue> {
+    serde::Serialize::serialize(
+        value,
+        &serde_wasm_bindgen::Serializer::json_compatible(),
+    )
+    .map_err(to_js_err)
+}
+
 #[wasm_bindgen]
 pub fn harbor_core_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
@@ -33,7 +41,7 @@ pub fn _start() {}
 pub fn parse_stream_js(stream: JsValue) -> Result<JsValue, JsValue> {
     let s: Stream = serde_wasm_bindgen::from_value(stream).map_err(to_js_err)?;
     let parsed = parser::parse_stream(s);
-    serde_wasm_bindgen::to_value(&parsed).map_err(to_js_err)
+    to_js_value(&parsed)
 }
 
 /// Parse many streams in one call. Cheaper than N individual calls (one FFI hop instead of N).
@@ -41,7 +49,7 @@ pub fn parse_stream_js(stream: JsValue) -> Result<JsValue, JsValue> {
 pub fn parse_streams_js(streams: JsValue) -> Result<JsValue, JsValue> {
     let v: Vec<Stream> = serde_wasm_bindgen::from_value(streams).map_err(to_js_err)?;
     let parsed: Vec<ParsedStream> = v.into_iter().map(parser::parse_stream).collect();
-    serde_wasm_bindgen::to_value(&parsed).map_err(to_js_err)
+    to_js_value(&parsed)
 }
 
 /// Filter a slice of `ParsedStream`s through the trust gate.
@@ -59,7 +67,7 @@ pub fn apply_trust_js(streams: JsValue, opts: JsValue) -> Result<JsValue, JsValu
         keep: result.keep,
         rejected: result.rejected,
     };
-    serde_wasm_bindgen::to_value(&out).map_err(to_js_err)
+    to_js_value(&out)
 }
 
 /// Compute corpus-wide stats (median size, p90 size, etc.) needed to score individual streams.
@@ -72,7 +80,7 @@ pub fn compute_corpus_stats_js(streams: JsValue, opts: JsValue) -> Result<JsValu
         serde_wasm_bindgen::from_value(opts).map_err(to_js_err)?
     };
     let stats = scoring::compute_corpus_stats(&v, &opts);
-    serde_wasm_bindgen::to_value(&CorpusStatsJs::from(stats)).map_err(to_js_err)
+    to_js_value(&CorpusStatsJs::from(stats))
 }
 
 /// Score one parsed stream given options + corpus stats. Returns `ScoredStream`.
@@ -95,7 +103,7 @@ pub fn score_stream_js(
         stats_js.into()
     };
     let scored = scoring::score_stream(parsed, &opts, &stats);
-    serde_wasm_bindgen::to_value(&scored).map_err(to_js_err)
+    to_js_value(&scored)
 }
 
 /// One-shot pipeline: parse + trust + score + rank + pick. The expected workflow for most callers.
@@ -133,7 +141,50 @@ pub fn run_pipeline_pure_js(
         picker,
         rejected: trust_result.rejected,
     };
-    serde_wasm_bindgen::to_value(&out).map_err(to_js_err)
+    to_js_value(&out)
+}
+
+/// Run trust, scoring and ranking for streams already parsed/enriched by the UI.
+///
+/// The frontend uses this entry point after anime metadata and debrid cache flags
+/// have been applied. Re-parsing those values as raw streams would discard that
+/// enrichment, so the native Tauri command and the browser WASM path deliberately
+/// share this parsed-stream boundary.
+#[wasm_bindgen(js_name = runPipelineParsed)]
+pub fn run_pipeline_parsed_js(
+    streams: JsValue,
+    trust_opts: JsValue,
+    score_opts: JsValue,
+) -> Result<JsValue, JsValue> {
+    let parsed: Vec<ParsedStream> = serde_wasm_bindgen::from_value(streams).map_err(to_js_err)?;
+    let trust_opts: TrustOptions = if trust_opts.is_undefined() || trust_opts.is_null() {
+        TrustOptions::default()
+    } else {
+        serde_wasm_bindgen::from_value(trust_opts).map_err(to_js_err)?
+    };
+    let score_opts: ScoreOptions = if score_opts.is_undefined() || score_opts.is_null() {
+        ScoreOptions::default()
+    } else {
+        serde_wasm_bindgen::from_value(score_opts).map_err(to_js_err)?
+    };
+
+    let trust_result = trust::apply_trust(parsed, &trust_opts);
+    let corpus = scoring::compute_corpus_stats(&trust_result.keep, &score_opts);
+    let scored: Vec<ScoredStream> = trust_result
+        .keep
+        .into_iter()
+        .map(|p| scoring::score_stream(p, &score_opts, &corpus))
+        .collect();
+    let picker = scoring::rank_and_pick(
+        scored,
+        &score_opts.active_debrids,
+        score_opts.respect_addon_order,
+    );
+
+    to_js_value(&PipelineResultJs {
+        picker,
+        rejected: trust_result.rejected,
+    })
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
