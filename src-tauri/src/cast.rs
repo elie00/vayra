@@ -106,6 +106,33 @@ enum ActiveSession {
 
 static ACTIVE: Mutex<Option<ActiveSession>> = Mutex::new(None);
 
+// The proxy/HLS session backing the current cast, so `cast_stop` can free it
+// (killing any ffmpeg transcode + wiping temp segments). Without this the
+// session only expired after 5 min idle via `proxy_gc_idle`, which nothing
+// calls — ffmpeg kept running after "Stop Cast". Holds a cheap Arc-backed
+// `ProxyState` clone plus the session id handed to the device.
+static ACTIVE_PROXY: Mutex<Option<(ProxyState, String)>> = Mutex::new(None);
+
+// Record the freshly-registered proxy session as the active one and return any
+// previous session that must now be released (e.g. when switching streams
+// without an explicit stop). Kept sync so no lock is held across an await.
+fn swap_active_proxy(proxy: &ProxyState, session_id: &str) -> Option<(ProxyState, String)> {
+    let mut guard = match ACTIVE_PROXY.lock() {
+        Ok(g) => g,
+        Err(_) => return None,
+    };
+    let previous = guard.take();
+    *guard = Some((proxy.clone(), session_id.to_string()));
+    match previous {
+        Some((_, ref prev_id)) if prev_id == session_id => None,
+        other => other,
+    }
+}
+
+fn take_active_proxy() -> Option<(ProxyState, String)> {
+    ACTIVE_PROXY.lock().ok().and_then(|mut g| g.take())
+}
+
 fn parse_friendly_name(properties: &HashMap<String, String>) -> Option<String> {
     properties.get("fn").or_else(|| properties.get("n")).map(|s| s.to_string())
 }
@@ -485,6 +512,11 @@ pub async fn cast_load(
         })
         .await;
     eprintln!("[harbor::cast] proxied URL for device: {}", proxied.url);
+    // Track this session so cast_stop can free it; release the previous one if
+    // we're switching streams without an explicit stop.
+    if let Some((prev_proxy, prev_id)) = swap_active_proxy(&proxy_state, &proxied.session_id) {
+        prev_proxy.release(&prev_id).await;
+    }
     let cast_url = proxied.url;
     if kind_str == "dlna" {
         let cu = control_url.ok_or_else(|| "DLNA device missing control_url".to_string())?;
@@ -870,6 +902,11 @@ pub async fn cast_stop() -> Result<(), String> {
         let mut active = ACTIVE.lock().map_err(|e| format!("lock: {e}"))?;
         active.take()
     };
+    // Free the proxy/HLS session backing this cast: kills any ffmpeg transcode
+    // and deletes its temp segments instead of leaking them until idle GC.
+    if let Some((proxy, id)) = take_active_proxy() {
+        proxy.release(&id).await;
+    }
     cast_subs::cleanup();
     match session {
         Some(ActiveSession::Dlna { control_url }) => dlna::stop(control_url).await,

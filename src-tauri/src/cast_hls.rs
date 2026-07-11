@@ -127,6 +127,18 @@ impl HlsState {
         Ok(id)
     }
 
+    /// Drop a session immediately. Removing the `Arc<HlsSession>` releases the
+    /// last strong ref (barring an in-flight request), which runs `KillHandle`'s
+    /// `Drop` — killing ffmpeg and deleting the temp segment dir. Returns whether
+    /// a session was present.
+    pub async fn remove(&self, id: &str) -> bool {
+        let removed = self.sessions.write().await.remove(id).is_some();
+        if removed {
+            eprintln!("[cast-hls] released session {}", id);
+        }
+        removed
+    }
+
     pub async fn evict_idle(&self, idle: Duration) -> usize {
         let now = Instant::now();
         let mut map = self.sessions.write().await;
