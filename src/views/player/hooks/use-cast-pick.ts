@@ -10,18 +10,10 @@ import type { PlayerBridge, PlayerSnapshot, TrackInfo } from "@/lib/player/bridg
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { Settings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
-import { resolveCompatibleCastUrl } from "../cast-resolve";
+import { pickCastTranscodeProfile, resolveCompatibleCastUrl } from "../cast-resolve";
 import type { useCastSession } from "./use-cast-session";
 
 type CastSession = ReturnType<typeof useCastSession>;
-
-const UNIVERSAL_SAFE_PROFILE = {
-  max_height: 1080 as const,
-  force_h264: true,
-  force_aac: true,
-  force_stereo: true,
-  max_video_kbps: 5000,
-};
 
 function subFormatFromTrack(track: TrackInfo): CastSubInfo["format"] {
   const codec = (track.codec ?? "").toLowerCase();
@@ -136,7 +128,10 @@ export function useCastPick(params: {
       const isLiveIptv = src.meta.id?.startsWith("iptv:") ?? false;
       const burnSub = burnSubsOnTv ? buildCastSub(snap.subtitleTracks) : null;
       const forceTranscode = resolved.kind === "transcode" || isLiveIptv || burnSub != null;
-      const profile = forceTranscode ? UNIVERSAL_SAFE_PROFILE : undefined;
+      // Keep the device-tuned profile for transcodes (4K/HEVC/bitrate) instead
+      // of flattening to a universal 1080p H.264 profile; fall back only for
+      // forced transcodes that carry no device profile (IPTV, burn-in subs).
+      const profile = pickCastTranscodeProfile(resolved, { forceTranscode });
       setCastTranscoding(forceTranscode);
       await pickCastDevice(
         device,
