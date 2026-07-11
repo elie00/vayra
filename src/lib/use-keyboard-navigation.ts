@@ -36,6 +36,15 @@ const CENTER_KEYCODES = new Set([13, 23, 32]);
 const BACK_KEYCODES = new Set([27, 4, 461, 10009, 166]);
 const BACK_KEYS = new Set(['Escape', 'Esc', 'BrowserBack', 'GoBack', 'Back']);
 
+const MODAL_SELECTOR = '[role="dialog"], [aria-modal="true"]';
+const LOCAL_KEYBOARD_SELECTOR = [
+  '[role="listbox"]',
+  '[role="menu"]',
+  '[role="grid"]',
+  '[role="tree"]',
+  '[role="tablist"]',
+].join(', ');
+
 // FIX #3: was 5px — way too tight for TV-scale layouts where cards/rows
 // are large and have padding/margins that create small axis offsets.
 // A small tolerance rejected valid neighbors or accepted wrong ones,
@@ -80,13 +89,59 @@ function zoneOf(el: HTMLElement): 'nav' | 'hero' | 'content' {
 // exactly what causes "it moves between elements but doesn't understand
 // left/right" — it's often hopping between a card and its own child.
 // Rule: only the OUTERMOST matching element per DOM branch is kept.
-function getFocusable(): HTMLElement[] {
-  const all = Array.from(document.querySelectorAll<HTMLElement>(SELECTOR)).filter(isVisible);
+function getFocusable(root: ParentNode = document): HTMLElement[] {
+  const all = Array.from(root.querySelectorAll<HTMLElement>(SELECTOR)).filter(isVisible);
   return all.filter((el) => !all.some((other) => other !== el && other.contains(el)));
 }
 
-function getFocusableInZone(zone: 'nav' | 'hero' | 'content'): HTMLElement[] {
-  return getFocusable().filter((el) => zoneOf(el) === zone);
+function getFocusableInZone(zone: 'nav' | 'hero' | 'content', root: ParentNode = document): HTMLElement[] {
+  return getFocusable(root).filter((el) => zoneOf(el) === zone);
+}
+
+function getNavCandidates(root: ParentNode = document): HTMLElement[] {
+  return getFocusable(root).filter(isInNav);
+}
+
+function findClosestByY(from: HTMLElement, candidates: HTMLElement[]): HTMLElement | null {
+  const src = getRect(from);
+  let best: HTMLElement | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (const el of candidates) {
+    if (el === from) continue;
+    const dst = getRect(el);
+    const dy = Math.abs(dst.cy - src.cy);
+    const dx = Math.abs(dst.cx - src.cx);
+    const score = dy * 10 + dx;
+    if (score < bestScore) {
+      bestScore = score;
+      best = el;
+    }
+  }
+
+  return best;
+}
+
+function hasLeftNeighborInRow(active: HTMLElement, root: ParentNode = document): boolean {
+  const src = getRect(active);
+  const all = getFocusable(root).filter((el) => el !== active && !isInNav(el));
+
+  return all.some((el) => {
+    const dst = getRect(el);
+    const sameRow = Math.abs(dst.cy - src.cy) < Math.max(24, src.height * 0.6);
+    return sameRow && dst.cx < src.cx - 8;
+  });
+}
+
+function getActiveModal(target: HTMLElement | null): HTMLElement | null {
+  const owned = target?.closest<HTMLElement>(MODAL_SELECTOR);
+  if (owned && isVisible(owned)) return owned;
+  const visible = Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTOR)).filter(isVisible);
+  return visible[visible.length - 1] ?? null;
+}
+
+function isLocallyManaged(target: HTMLElement | null): boolean {
+  return !!target?.closest(LOCAL_KEYBOARD_SELECTOR);
 }
 
 function getRect(el: HTMLElement) {
@@ -216,22 +271,51 @@ function getSpatialOrder(list: HTMLElement[]) {
 }
 
 type TVNavigationOptions = {
+  enabled?: boolean;
   wrap?: boolean;
   onBack?: () => boolean;
   onBackToNav?: () => void;
 };
 
 export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
-  const { wrap = true, onBack, onBackToNav } = options;
+  const { enabled = true, wrap = true, onBack, onBackToNav } = options;
 
   useEffect(() => {
+    if (!enabled) return;
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (e.altKey || e.ctrlKey || e.metaKey) return;
 
       const target = e.target instanceof HTMLElement ? e.target : null;
 
+      function isSearchLikeField(el: HTMLElement | null) {
+        if (!el) return false;
+        if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return false;
+      
+        const type = (el.getAttribute('type') || '').toLowerCase();
+        const role = (el.getAttribute('role') || '').toLowerCase();
+        const inputMode = (el.getAttribute('inputmode') || '').toLowerCase();
+        const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+        const placeholder = (el.getAttribute('placeholder') || '').toLowerCase();
+        const name = (el.getAttribute('name') || '').toLowerCase();
+      
+        return (
+          type === 'search' ||
+          role === 'searchbox' ||
+          inputMode === 'search' ||
+          ariaLabel.includes('search') ||
+          placeholder.includes('search') ||
+          placeholder.includes('بحث') ||
+          name.includes('search') ||
+          name.includes('query')
+        );
+      }
+
+      const activeModal = getActiveModal(target);
+
       if (isBackKey(e)) {
+        if (activeModal) return;
         e.preventDefault();
         e.stopPropagation();
         const handled = onBack ? onBack() : false;
@@ -248,19 +332,40 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
         return;
       }
 
-      if (isEditable(target)) return;
-
       const dir = getDirection(e);
 
       if (dir) {
+        if (isLocallyManaged(target)) return;
         e.preventDefault();
         e.stopPropagation();
 
         const active =
           document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
+        const root = activeModal ?? document;
+
+        if (active && dir === 'left' && !isInNav(active)) {
+          if (!hasLeftNeighborInRow(active, root)) {
+            const navItems = getNavCandidates(root);
+            const targetNav = findClosestByY(active, navItems);
+            if (targetNav) {
+              focusElement(targetNav);
+              return;
+            }
+          }
+        }
+
+        if (active && dir === 'right' && isInNav(active)) {
+          const contentItems = getFocusable(root).filter((el) => !isInNav(el));
+          const targetContent = findClosestByY(active, contentItems);
+          if (targetContent) {
+            focusElement(targetContent);
+            return;
+          }
+        }
+
         const zone = active ? zoneOf(active) : 'content';
-        const all = getFocusableInZone(zone);
+        const all = getFocusableInZone(zone, root);
         if (!all.length) return;
 
         if (!active || !all.includes(active)) {
@@ -271,7 +376,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
 
         if (zone === 'hero' && (dir === 'up' || dir === 'down')) {
           if (dir === 'down') {
-            const contentItems = getFocusableInZone('content');
+            const contentItems = getFocusableInZone('content', root);
             const first = getInitialFocus(contentItems);
             if (first) focusElement(first);
           }
@@ -301,6 +406,8 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
       const isCenter = CENTER_KEYCODES.has(e.keyCode) || e.key === 'Enter' || e.code === 'Enter';
       if (!isCenter) return;
 
+      if (isLocallyManaged(target)) return;
+
       const active =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
@@ -320,5 +427,5 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [wrap, onBack, onBackToNav]);
+  }, [enabled, wrap, onBack, onBackToNav]);
 }
