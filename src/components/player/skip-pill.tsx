@@ -6,28 +6,30 @@ import type { SpoilerMask } from "@/lib/spoilers";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 
-const UP_NEXT_WINDOW_SEC = 15;
-
 export function SkipPill({
   segment,
   hasNextEp,
   nextEp,
   nextEpMask,
   remainingSec,
+  leadSec,
   visible,
   onSkip,
   onNextEpisode,
   onCancelAutoNext,
+  onDismiss,
 }: {
   segment: SkipSegment | null;
   hasNextEp: boolean;
   nextEp: PlayEpisode | null;
   nextEpMask?: SpoilerMask;
   remainingSec: number;
+  leadSec?: number;
   visible: boolean;
   onSkip: () => void;
   onNextEpisode: () => void;
   onCancelAutoNext?: () => void;
+  onDismiss?: () => void;
 }) {
   const t = useT();
   const [mounted, setMounted] = useState<SkipSegment | null>(segment);
@@ -47,8 +49,9 @@ export function SkipPill({
   if (!mounted) return null;
 
   const isOutroNext = mounted.kind === "outro" && hasNextEp && !!nextEp;
+  const finalLeadSec = typeof leadSec === "number" && leadSec > 0 ? leadSec : 15;
   const inCountdownWindow =
-    isOutroNext && remainingSec > 0 && remainingSec <= UP_NEXT_WINDOW_SEC;
+    isOutroNext && remainingSec > 0 && remainingSec <= finalLeadSec;
 
   if (isOutroNext && inCountdownWindow && nextEp) {
     return (
@@ -56,6 +59,7 @@ export function SkipPill({
         ep={nextEp}
         mask={nextEpMask}
         remainingSec={remainingSec}
+        leadSec={finalLeadSec}
         visible={visible && show}
         onPlay={onNextEpisode}
         onCancel={onCancelAutoNext}
@@ -78,7 +82,7 @@ export function SkipPill({
 
   return (
     <div
-      className={`pointer-events-none absolute end-7 z-30 transition-all duration-200 ease-out ${
+      className={`pointer-events-none absolute end-7 z-30 flex items-center gap-2 transition-all duration-200 ease-out ${
         visible && show
           ? "bottom-44 opacity-100 translate-y-0"
           : "bottom-40 opacity-0 translate-y-2"
@@ -94,6 +98,17 @@ export function SkipPill({
         {isAd ? <AdSkipIcon className="h-[18px] w-[18px]" /> : <Icon size={18} strokeWidth={2.2} />}
         {label}
       </button>
+      {onDismiss && !isOutroNext && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={t("Hide this Skip button")}
+          title={t("Hide this Skip button")}
+          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/75 text-white/70 shadow-[0_18px_50px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-colors hover:bg-black/90 hover:text-white active:scale-[0.97]"
+        >
+          <X size={16} strokeWidth={2.4} />
+        </button>
+      )}
     </div>
   );
 }
@@ -102,6 +117,7 @@ function UpNextCard({
   ep,
   mask,
   remainingSec,
+  leadSec,
   visible,
   onPlay,
   onCancel,
@@ -109,13 +125,14 @@ function UpNextCard({
   ep: PlayEpisode;
   mask?: SpoilerMask;
   remainingSec: number;
+  leadSec: number;
   visible: boolean;
   onPlay: () => void;
   onCancel?: () => void;
 }) {
   const t = useT();
   const seconds = Math.max(0, Math.ceil(remainingSec));
-  const progress = Math.min(1, Math.max(0, 1 - seconds / UP_NEXT_WINDOW_SEC));
+  const progress = Math.min(1, Math.max(0, 1 - seconds / leadSec));
   const epLabel =
     typeof ep.season === "number" && typeof ep.episode === "number"
       ? `S${ep.imdbSeason ?? ep.season} · E${ep.imdbEpisode ?? ep.episode}`

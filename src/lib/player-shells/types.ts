@@ -35,6 +35,7 @@ export type PlayerShellProps = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;

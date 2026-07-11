@@ -1,5 +1,6 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dlog, dwarn } from "@/lib/debug";
+import { matchEpisodeFileIndex, type EpisodeHint } from "@/lib/streams/episode-file";
 import {
   hashFromMagnet,
   magnetFromHash,
@@ -138,6 +139,7 @@ export function createTorbox(apiKey: string): DebridStore {
     magnet: string,
     fileIdx: number | undefined,
     signal: AbortSignal,
+    hint?: EpisodeHint,
   ): Promise<DebridResult<DirectLink>> {
     const fullMagnet = magnetFromHash(magnet);
     const hash = hashFromMagnet(magnet);
@@ -172,7 +174,7 @@ export function createTorbox(apiKey: string): DebridStore {
       return { ok: false, code: "still-downloading", status: 0, raw: { hash, progress: info?.progress } };
     }
 
-    const file = pickTbFile(info.files ?? [], fileIdx);
+    const file = pickTbFile(info.files ?? [], fileIdx, hint);
     if (!file) return { ok: false, code: "no-video-file", status: 0 };
 
     const dl = await get<TbEnvelope<string>>(
@@ -280,13 +282,15 @@ async function wrap<T>(call: () => Promise<Response>): Promise<DebridResult<T>> 
   }
 }
 
-function pickTbFile(files: TbFile[], fileIdx: number | undefined): TbFile | null {
+function pickTbFile(files: TbFile[], fileIdx: number | undefined, hint?: EpisodeHint): TbFile | null {
   if (files.length === 0) return null;
   if (fileIdx != null && files[fileIdx]) return files[fileIdx];
   const videos = files.filter((f) =>
     VIDEO_EXTS.some((ext) => (f.short_name ?? f.name ?? "").toLowerCase().endsWith(ext)),
   );
   const pool = videos.length > 0 ? videos : files;
+  const mi = matchEpisodeFileIndex(pool.map((f) => f.short_name ?? f.name ?? ""), hint);
+  if (mi >= 0) return pool[mi];
   return pool.slice().sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0] ?? null;
 }
 

@@ -1,4 +1,5 @@
 import { simklRequest } from "./client";
+import { simklTargetIds } from "./ids";
 import type { SimklIds, SimklTarget } from "./types";
 
 export type SimklHistoryItem = {
@@ -98,7 +99,7 @@ export async function addToHistory(target: SimklTarget): Promise<boolean> {
     }
     const r = await simklRequest<{ added?: { shows?: number } }>("/sync/history", {
       method: "POST",
-      body: { shows: [{ ids: target.ids, watched_at: watchedAt }] },
+      body: { shows: [{ ids: simklTargetIds(target), watched_at: watchedAt }] },
     });
     return (r?.added?.shows ?? 0) > 0;
   } catch {

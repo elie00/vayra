@@ -112,7 +112,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
 
         <div className="flex items-center gap-1">
           {/* ── Sync button → opens the floating player-level bar ── */}
-          <Tooltip label={tr("Subtitle sync")} align="end">
+          <Tooltip label={tr("Subtitle sync")} side="bottom" align="end">
             <button
               type="button"
               onClick={() => {

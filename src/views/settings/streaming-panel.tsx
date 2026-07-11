@@ -1,7 +1,8 @@
-import { Check, Download, ExternalLink, Key, Loader2, Trash2, X, Zap } from "lucide-react";
+import { Check, Download, ExternalLink, Key, Loader2, Search, Trash2, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AddonLogo } from "@/components/addon-logo";
 import { Flag } from "@/components/flag";
+import { ALL_LANGUAGE_NAMES } from "@/lib/subtitles/language";
 import { ServiceLogo } from "@/components/service-logo";
 import {
   cometKeyFromUrl,
@@ -236,43 +237,20 @@ export function ManualAddonCard({
   );
 }
 
-const LANGUAGE_OPTIONS = [
-  "English",
-  "Spanish",
-  "Spanish (Latin America)",
-  "French",
-  "German",
-  "Italian",
-  "Portuguese",
-  "Russian",
-  "Japanese",
-  "Korean",
-  "Chinese",
-  "Hindi",
-  "Arabic",
-  "Turkish",
-  "Dutch",
-  "Polish",
-  "Ukrainian",
-  "Czech",
-  "Hungarian",
-  "Romanian",
-  "Swedish",
-  "Norwegian",
-  "Danish",
-  "Finnish",
-  "Hebrew",
-  "Thai",
-  "Vietnamese",
-];
+const LANGUAGE_OPTIONS = ALL_LANGUAGE_NAMES;
 
 export function LanguagesPicker({
   value,
   onChange,
+  options = LANGUAGE_OPTIONS,
+  placeholder = "Search languages (Tamil, Telugu, ...)",
 }: {
   value: string[];
   onChange: (next: string[]) => void;
+  options?: string[];
+  placeholder?: string;
 }) {
+  const [query, setQuery] = useState("");
   const selected = new Set(value);
   const toggle = (lang: string) => {
     const next = new Set(selected);
@@ -280,6 +258,12 @@ export function LanguagesPicker({
     else next.add(lang);
     onChange([...next]);
   };
+  const q = query.trim().toLowerCase();
+  const available = options.filter((l) => !selected.has(l));
+  const matches = q ? available.filter((l) => l.toLowerCase().includes(q)) : available;
+  const COMMON = 24;
+  const shown = q ? matches : matches.slice(0, COMMON);
+  const moreCount = q ? 0 : matches.length - shown.length;
 
   return (
     <div className="flex flex-col gap-3">
@@ -298,21 +282,41 @@ export function LanguagesPicker({
           ))}
         </div>
       )}
+      <div className="relative">
+        <Search
+          size={15}
+          strokeWidth={2.2}
+          className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-subtle"
+        />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={placeholder}
+          spellCheck={false}
+          className="h-10 w-full rounded-xl border border-edge bg-canvas ps-9 pe-3 text-[13.5px] text-ink outline-none transition-colors focus:border-ink placeholder:text-ink-subtle/60"
+        />
+      </div>
       <div className="flex flex-wrap gap-1.5">
-        {LANGUAGE_OPTIONS.map((lang) => {
-          const active = selected.has(lang);
-          if (active) return null;
-          return (
-            <button
-              key={lang}
-              onClick={() => toggle(lang)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/30 px-2.5 py-1.5 text-[12px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-            >
-              <Flag language={lang} size="sm" showLabel={false} />
-              <span>{lang}</span>
-            </button>
-          );
-        })}
+        {shown.map((lang) => (
+          <button
+            key={lang}
+            onClick={() => toggle(lang)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/30 px-2.5 py-1.5 text-[12px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+          >
+            <Flag language={lang} size="sm" showLabel={false} />
+            <span>{lang}</span>
+          </button>
+        ))}
+        {moreCount > 0 && (
+          <span className="inline-flex items-center px-2 py-1.5 text-[12px] text-ink-subtle">
+            +{moreCount} more, search to find yours
+          </span>
+        )}
+        {q.length > 0 && matches.length === 0 && (
+          <span className="inline-flex items-center px-2 py-1.5 text-[12px] text-ink-subtle">
+            No language matches that search.
+          </span>
+        )}
       </div>
     </div>
   );

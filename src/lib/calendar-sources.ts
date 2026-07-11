@@ -7,44 +7,73 @@ import {
 } from "./trakt/calendar";
 import type { CalendarItem } from "./calendar";
 import { resolveSavedCalendar, type SavedCandidate } from "./calendar-library";
-import { fetchWatchlist as fetchSimklWatchlist } from "./simkl/watchlist";
-import { fetchSimklPremieres, resolveSimklIds } from "./simkl/premieres";
+import { fetchWatchlist as fetchSimklWatchlist, fetchWatchingItems } from "./simkl/watchlist";
+import { fetchSimklCdnCalendar } from "./simkl/calendar";
 import { isAuthenticated as simklConnected } from "./simkl/session";
 
 export { fetchLibraryCalendar } from "./calendar-library";
+
+interface CacheEntry {
+  items: CalendarItem[];
+  timestamp: number;
+}
+
+const calendarCache = new Map<string, CacheEntry>();
+const calendarInFlight = new Map<string, Promise<CalendarItem[]>>();
+const CACHE_STALE_MS = 30 * 60 * 1000;
+
+function withCalendarCache(
+  cacheKey: string,
+  fetcher: () => Promise<CalendarItem[]>,
+): Promise<CalendarItem[]> {
+  const cached = calendarCache.get(cacheKey);
+  const now = Date.now();
+
+  if (cached) {
+    if (now - cached.timestamp >= CACHE_STALE_MS) {
+      if (!calendarInFlight.has(cacheKey)) {
+        const promise = fetcher()
+          .then((items) => {
+            calendarCache.set(cacheKey, { items, timestamp: Date.now() });
+            return items;
+          })
+          .catch(() => cached.items)
+          .finally(() => {
+            calendarInFlight.delete(cacheKey);
+          });
+        calendarInFlight.set(cacheKey, promise);
+      }
+    }
+    return Promise.resolve(cached.items);
+  }
+
+  if (calendarInFlight.has(cacheKey)) {
+    return calendarInFlight.get(cacheKey)!;
+  }
+
+  const promise = fetcher()
+    .then((items) => {
+      calendarCache.set(cacheKey, { items, timestamp: Date.now() });
+      return items;
+    })
+    .finally(() => {
+      calendarInFlight.delete(cacheKey);
+    });
+  calendarInFlight.set(cacheKey, promise);
+  return promise;
+}
+
+export function clearCalendarSourceCache() {
+  calendarCache.clear();
+  calendarInFlight.clear();
+}
 
 export async function fetchSimklPremieresCalendar(
   year: number,
   month: number,
 ): Promise<CalendarItem[]> {
-  const premieres = await fetchSimklPremieres(year).catch(() => []);
-  const thisMonth = premieres.filter((p) => inMonth(p.date, year, month));
-  const resolved = await Promise.all(
-    thisMonth.map(async (p) => ({ p, ids: await resolveSimklIds(p.simklId, p.isAnime).catch(() => null) })),
-  );
-  const out: CalendarItem[] = [];
-  for (const { p, ids } of resolved) {
-    const id =
-      ids?.imdb ??
-      (ids?.tmdb ? `tmdb:tv:${ids.tmdb}` : null) ??
-      (ids?.kitsu ? `kitsu:${ids.kitsu}` : null) ??
-      (ids?.mal ? `mal:${ids.mal}` : null) ??
-      `simkl:${p.simklId}`;
-    out.push({
-      id,
-      imdbId: ids?.imdb ?? null,
-      type: "tv",
-      name: `${p.title} (premiere)`,
-      poster: p.poster,
-      background: null,
-      releaseDate: p.date,
-      isAnime: p.isAnime,
-      overview: "",
-      voteAverage: 0,
-    });
-  }
-  out.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
-  return out;
+  const cacheKey = `simkl-premieres:${year}-${month}`;
+  return withCalendarCache(cacheKey, () => fetchSimklCdnCalendar(year, month).catch(() => []));
 }
 
 export async function fetchSimklCalendar(
@@ -53,29 +82,39 @@ export async function fetchSimklCalendar(
   opts: { tmdbKey: string },
 ): Promise<CalendarItem[]> {
   if (!simklConnected()) return [];
-  const items = await fetchSimklWatchlist().catch(() => []);
-  const candidates: SavedCandidate[] = [];
-  for (const it of items) {
-    const id =
-      it.ids.imdb ??
-      (it.ids.tmdb
-        ? it.type === "movie"
-          ? `tmdb:movie:${it.ids.tmdb}`
-          : `tmdb:tv:${it.ids.tmdb}`
-        : it.ids.mal
-          ? `mal:${it.ids.mal}`
-          : null);
-    if (!id) continue;
-    candidates.push({
-      id,
-      type: it.type === "show" ? "series" : "movie",
-      name: it.title,
-      mtime: 0,
-      temp: false,
-    });
-  }
-  if (candidates.length === 0) return [];
-  return resolveSavedCalendar(candidates, year, month, opts);
+  const cacheKey = `simkl-calendar:${year}-${month}`;
+  return withCalendarCache(cacheKey, async () => {
+    const [watchlist, watching] = await Promise.all([
+      fetchSimklWatchlist().catch(() => []),
+      fetchWatchingItems().catch(() => []),
+    ]);
+    const items = [...watchlist, ...watching];
+    const candidates: SavedCandidate[] = [];
+    const seenIds = new Set<string>();
+    for (const it of items) {
+      const id =
+        it.ids.imdb ??
+        (it.ids.tmdb
+          ? it.type === "movie"
+            ? `tmdb:movie:${it.ids.tmdb}`
+            : `tmdb:tv:${it.ids.tmdb}`
+          : it.ids.mal
+            ? `mal:${it.ids.mal}`
+            : null);
+      if (!id) continue;
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+      candidates.push({
+        id,
+        type: it.type === "show" ? "series" : "movie",
+        name: it.title,
+        mtime: 0,
+        temp: false,
+      });
+    }
+    if (candidates.length === 0) return [];
+    return resolveSavedCalendar(candidates, year, month, opts);
+  });
 }
 
 const TRAKT_MAX_FORWARD_MONTHS = 6;

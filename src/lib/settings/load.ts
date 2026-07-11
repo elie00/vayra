@@ -6,10 +6,23 @@ import {
   type ThemeSettings,
 } from "@/lib/theme";
 import { languageName } from "@/lib/subtitles/language";
+import { sanitizeSeekStep } from "@/lib/seek-step";
+import { migrateModelId } from "@/lib/ai-models";
 import { DEFAULT, STORAGE_KEY } from "./defaults";
 import type { Settings } from "./types";
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
+
+function legacySeekStep(direction: "back" | "forward"): number | undefined {
+  try {
+    const raw = localStorage.getItem(`harbor.seek-step.${direction}`);
+    if (!raw) return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function sanitizeCustomColors(c: unknown): CustomColors | null {
   if (!c || typeof c !== "object") return null;
@@ -60,9 +73,15 @@ export function sanitizeTheme(t: Partial<ThemeSettings> | undefined): ThemeSetti
   };
 }
 
-export function loadStoredSettings(): Settings {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return DEFAULT;
+export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
+  const raw = localStorage.getItem(rawKey);
+  if (!raw) {
+    return {
+      ...DEFAULT,
+      seekBackStepSec: sanitizeSeekStep(legacySeekStep("back"), DEFAULT.seekBackStepSec),
+      seekForwardStepSec: sanitizeSeekStep(legacySeekStep("forward"), DEFAULT.seekForwardStepSec),
+    };
+  }
   try {
     const parsed = JSON.parse(raw) as Partial<Settings> & {
       _subStyleV2?: boolean;
@@ -73,16 +92,19 @@ export function loadStoredSettings(): Settings {
       _mpvEmbedV4?: boolean;
       _anime4kIndicatorOffV1?: boolean;
       _pickerLayoutStremio?: boolean;
+      _pickerLayoutStremioV2?: boolean;
       _stremioDeeplinkOnByDefault?: boolean;
       _anilistSyncOnV1?: boolean;
+      _rememberLastStreamOnV1?: boolean;
       _streamSortAddonV1?: boolean;
       scrapers?: unknown;
       scrapersAcknowledged?: boolean;
       _scrapersV2?: boolean;
     };
-    if (!parsed._pickerLayoutStremio) {
+    if (!parsed._pickerLayoutStremioV2) {
       if (parsed.pickerLayout === "condensed") parsed.pickerLayout = "stremio";
       parsed._pickerLayoutStremio = true;
+      parsed._pickerLayoutStremioV2 = true;
     }
     if (!parsed._stremioDeeplinkOnByDefault) {
       parsed.stremioDeeplinkInstall = true;
@@ -92,10 +114,15 @@ export function loadStoredSettings(): Settings {
       parsed.anilistAutoSync = true;
       parsed._anilistSyncOnV1 = true;
     }
+    if (!parsed._rememberLastStreamOnV1) {
+      parsed.rememberLastStream = true;
+      parsed._rememberLastStreamOnV1 = true;
+    }
     if (!parsed._streamSortAddonV1) {
       if (parsed.streamSort === "harbor") parsed.streamSort = "addon";
       parsed._streamSortAddonV1 = true;
     }
+    if (parsed.aiSearchModel) parsed.aiSearchModel = migrateModelId(parsed.aiSearchModel);
     if (!parsed._mpvEmbedV3) {
       parsed.playerMpvEmbed = true;
       parsed._mpvEmbedV3 = true;
@@ -135,6 +162,14 @@ export function loadStoredSettings(): Settings {
         ...DEFAULT.homeRows,
         ...(parsed.homeRows ?? {}),
       },
+      navCustomization: {
+        ...DEFAULT.navCustomization,
+        ...(parsed.navCustomization ?? {}),
+      },
+      letterboxd: {
+        ...DEFAULT.letterboxd,
+        ...(parsed.letterboxd ?? {}),
+      },
       preferredSubLangs: (parsed.preferredSubLangs ?? DEFAULT.preferredSubLangs).map(languageName),
       preferredAudioLangs: (parsed.preferredAudioLangs ?? DEFAULT.preferredAudioLangs).map(
         languageName,
@@ -155,6 +190,14 @@ export function loadStoredSettings(): Settings {
       traktRefreshToken: parsed.traktRefreshToken ?? DEFAULT.traktRefreshToken,
       traktExpiresAt: parsed.traktExpiresAt ?? DEFAULT.traktExpiresAt,
       traktUsername: parsed.traktUsername ?? DEFAULT.traktUsername,
+      seekBackStepSec: sanitizeSeekStep(
+        parsed.seekBackStepSec ?? legacySeekStep("back"),
+        DEFAULT.seekBackStepSec,
+      ),
+      seekForwardStepSec: sanitizeSeekStep(
+        parsed.seekForwardStepSec ?? legacySeekStep("forward"),
+        DEFAULT.seekForwardStepSec,
+      ),
       theme: sanitizeTheme(parsed.theme),
       webhooks: {
         ...DEFAULT.webhooks,
@@ -184,6 +227,7 @@ export function loadStoredSettings(): Settings {
         },
       },
       webhookRules: Array.isArray(parsed.webhookRules) ? parsed.webhookRules : [],
+      customStreamFilters: Array.isArray(parsed.customStreamFilters) ? parsed.customStreamFilters : DEFAULT.customStreamFilters,
       animeFavoriteGenres: Array.isArray(parsed.animeFavoriteGenres)
         ? parsed.animeFavoriteGenres.filter((g): g is number => typeof g === "number")
         : DEFAULT.animeFavoriteGenres,
@@ -194,6 +238,9 @@ export function loadStoredSettings(): Settings {
       animeAnilistRowsHidden: Array.isArray(parsed.animeAnilistRowsHidden)
         ? parsed.animeAnilistRowsHidden.filter((k): k is string => typeof k === "string")
         : DEFAULT.animeAnilistRowsHidden,
+      tmdbImageLangs: Array.isArray(parsed.tmdbImageLangs)
+        ? parsed.tmdbImageLangs.filter((l): l is string => typeof l === "string")
+        : DEFAULT.tmdbImageLangs,
     };
   } catch {
     return DEFAULT;

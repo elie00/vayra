@@ -1,24 +1,42 @@
-import { Check, ChevronDown, Play } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { EpisodeJumper } from "@/components/episode-jumper";
+﻿import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
-import { getEpisodeProgress } from "@/lib/episode-progress";
-import { franchiseTags, type FranchiseEntry } from "@/lib/providers/anime-detail";
+import { scrollToDataEp } from "@/lib/episode-scroll";
+import { type FranchiseEntry } from "@/lib/providers/anime-detail";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
-import { spoilerMaskFor } from "@/lib/spoilers";
+import { useView } from "@/lib/view";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
-import { useView } from "@/lib/view";
 import { useAnilistWatched } from "@/lib/anilist/use-anilist-watched";
+import { useMalWatched } from "@/lib/mal/use-mal-watched";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
-import { manualWatchedVersion, setManualWatchedMany, subscribeManualWatched } from "@/lib/manual-watched";
+import { manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { useT } from "@/lib/i18n";
 import { AnimeEpisodeRow } from "./anime-episodes/episode-row";
+import { AnimeSeasonPicker } from "./anime-episodes/anime-season-picker";
+import { MovieEntryCard } from "./anime-episodes/movie-entry-card";
+import { useAnimeOrder } from "./anime-episodes/use-anime-order";
+import { SeasonArcPicker } from "./series-episodes/season-arc-picker";
 import { AnimeEpisodeStrip } from "./anime-episode-strip";
-import { UpcomingBadge } from "./badges";
 import { EpisodeGridControls } from "./episode-grid-controls";
 import { EpisodeLayoutToggle } from "./episode-layout-toggle";
+import { EpisodeSearch } from "./episode-search";
+import { AnimeRandomButton } from "./anime-random-button";
+import { EpisodeSearchToggle } from "./series-episodes/episode-search-controls";
+import { AnimeAiBar } from "./anime-episodes/anime-ai-bar";
+import { useAnimeAiSearch } from "./anime-episodes/use-anime-ai-search";
+import { useAnimeProgressMap } from "./anime-episodes/use-anime-progress-map";
+import { useAnimePreferredSeason } from "./anime-episodes/use-anime-preferred-season";
+import { useAnimeTvdbPanel } from "./anime-episodes/use-anime-tvdb-panel";
+import { useAnimePanelExtras } from "./anime-episodes/use-anime-panel-extras";
+import { useFranchiseEpisodes } from "./anime-episodes/use-franchise-episodes";
+import { useAnimeWatchedRouting } from "./anime-episodes/use-anime-watched-routing";
+import { useAnimeFranchiseNav } from "./anime-episodes/use-anime-franchise-nav";
+import { useTvdbProxyImages } from "./anime-episodes/use-tvdb-proxy-images";
+import { pickTvdbImage } from "@/lib/providers/tvdb-proxy";
+import { TvdbOrderPanel } from "./series-episodes/tvdb-order-panel";
+import { parseKitsuId } from "@/lib/providers/kitsu";
+import { providerForModel } from "@/lib/ai-models";
 
 const WINDOW_STEP = 60;
 
@@ -29,6 +47,7 @@ export function AnimeEpisodes({
   currentId,
   scrollRef,
   trackId,
+  imdbId,
 }: {
   meta: Meta;
   episodes: KitsuEpisode[];
@@ -36,6 +55,7 @@ export function AnimeEpisodes({
   currentId: string;
   scrollRef: React.RefObject<HTMLElement | null>;
   trackId?: string;
+  imdbId?: string | null;
 }) {
   const t = useT();
   const { isConnected: traktConnected } = useTrakt();
@@ -61,82 +81,176 @@ export function AnimeEpisodes({
     trackId ?? meta.id,
     episodes,
   );
-  const { settings, update } = useSettings();
+  const { watchedKeys: malWatched, completed: malCompleted } = useMalWatched(
+    trackId ?? meta.id,
+    episodes,
+  );
+  const franchiseEpisodes = useFranchiseEpisodes(
+    franchise,
+    currentId,
+    episodes,
+    franchise.length > 1,
+  );
+  const panelPool = franchiseEpisodes !== episodes ? franchiseEpisodes : undefined;
   const mwVersion = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
+  const preferredSeasonKey = useAnimePreferredSeason({
+    episodes: panelPool ?? episodes,
+    metaId: meta.id,
+    traktWatched,
+    anilistWatched,
+    malWatched,
+    mwVersion,
+  });
+  const { settings, update } = useSettings();
+  const order = useAnimeOrder(
+    imdbId ?? null,
+    meta.id,
+    episodes,
+    settings.episodeOrderProvider,
+    settings.tvdbSeasonType,
+    settings.tvdbKey,
+    preferredSeasonKey ?? undefined,
+  );
+  const routing = useAnimeWatchedRouting(meta, franchise);
+  const { openMeta } = useView();
+  const [activeEntryId, setActiveEntryId] = useState(currentId);
+  useEffect(() => {
+    setActiveEntryId(currentId);
+  }, [currentId, meta.id]);
+  const activeIsAnchor = activeEntryId === currentId;
+  const onSelectEntry = useCallback(
+    (entryId: string) => {
+      if (entryId === currentId) {
+        setActiveEntryId(currentId);
+        return;
+      }
+      const entry = franchise.find((f) => f.meta.id === entryId);
+      if (!entry) return;
+      const inPool =
+        parseKitsuId(entry.meta.id) != null &&
+        franchiseEpisodes.some((ep) => ep.sourceMetaId === entryId);
+      if (inPool) setActiveEntryId(entryId);
+      else openMeta(entry.meta, { exact: true });
+    },
+    [currentId, franchise, franchiseEpisodes, openMeta],
+  );
+  const entryEpisodes = useMemo(
+    () => (activeIsAnchor ? episodes : franchiseEpisodes.filter((ep) => ep.sourceMetaId === activeEntryId)),
+    [activeIsAnchor, franchiseEpisodes, activeEntryId, episodes],
+  );
+  const tvdbPanel = useAnimeTvdbPanel(
+    parseKitsuId(meta.id),
+    imdbId ?? null,
+    episodes,
+    settings.tvdbSeasonType,
+    settings.tvdbKey,
+    settings.tvdbOrderPanel,
+    panelPool,
+    preferredSeasonKey ?? undefined,
+  );
+  const panelExtras = useAnimePanelExtras(tvdbPanel.panel, franchise, currentId, openMeta);
+  const proxyImages = useTvdbProxyImages(
+    parseKitsuId(meta.id),
+    imdbId ?? null,
+    episodes.length,
+    settings.tvdbSeasonType,
+  );
+  const baseDisplay = tvdbPanel.panel
+    ? tvdbPanel.panel.visibleEpisodes
+    : !activeIsAnchor
+      ? entryEpisodes
+      : order
+        ? order.visibleEpisodes
+        : episodes;
+  const displayEpisodes = useMemo(() => {
+    if (Object.keys(proxyImages).length === 0) return baseDisplay;
+    return baseDisplay.map((ep) => {
+      const img = pickTvdbImage(proxyImages, ep);
+      return img ? { ...ep, thumbnail: img } : ep;
+    });
+  }, [baseDisplay, proxyImages]);
+  const showSeason = useMemo(
+    () => new Set(displayEpisodes.map((e) => e.imdbSeason ?? e.seasonNumber ?? 1)).size > 1,
+    [displayEpisodes],
+  );
+  const { pickerItems, selectPickerItem, franchiseActiveKey } = useAnimeFranchiseNav(
+    order,
+    franchise,
+    currentId,
+    activeEntryId,
+    onSelectEntry,
+  );
   const [watchedMenu, setWatchedMenu] = useState<WatchedMenuTarget | null>(null);
   const openWatchedMenu = (
     e: React.MouseEvent,
     season: number,
     episode: number,
     watched: boolean,
+    sourceMetaId?: string,
   ) => {
     e.preventDefault();
-    setWatchedMenu({ x: e.clientX, y: e.clientY, season, episode, watched });
+    setWatchedMenu({ x: e.clientX, y: e.clientY, season, episode, watched, metaId: sourceMetaId });
   };
 
-  const progressByNum = useMemo(() => {
-    void mwVersion;
-    const m = new Map<number, { ratio: number; watched: boolean; startedAt: number }>();
-    for (const ep of episodes) {
-      m.set(
-        ep.number,
-        getEpisodeProgress(
-          meta.id,
-          ep.seasonNumber || 1,
-          ep.number,
-          ep.length ?? null,
-          ep.imdbId ?? null,
-          traktWatched,
-          undefined,
-          anilistWatched,
-          undefined,
-          ep.imdbSeason,
-          ep.imdbEpisode,
-        ),
-      );
-    }
-    return m;
-  }, [episodes, meta.id, traktWatched, anilistWatched, mwVersion]);
-  const progressFor = (ep: KitsuEpisode) =>
-    progressByNum.get(ep.number) ?? { ratio: 0, watched: false, startedAt: 0 };
-  const nextUpNum = useMemo(() => {
-    for (const ep of episodes) {
-      if (!progressByNum.get(ep.number)?.watched) return ep.number;
-    }
-    return null;
-  }, [episodes, progressByNum]);
-  const spoilerFor = (ep: KitsuEpisode) =>
-    spoilerMaskFor(settings, {
-      watched: progressByNum.get(ep.number)?.watched ?? false,
-      isNextUp: ep.number === nextUpNum,
-    });
-  const allWatched =
-    episodes.length > 0 && episodes.every((ep) => progressByNum.get(ep.number)?.watched);
-  const markSeason = (watched: boolean) => {
-    if (episodes.length === 0) return;
-    setManualWatchedMany(
-      meta.id,
-      episodes.map((ep) => ({ season: ep.seasonNumber || 1, episode: ep.number })),
-      watched,
-    );
-  };
+  const { progressFor, nextUpNum, spoilerFor, allWatched } = useAnimeProgressMap({
+    episodes,
+    displayEpisodes,
+    metaId: meta.id,
+    traktWatched,
+    anilistWatched,
+    malWatched,
+    mwVersion,
+    settings,
+  });
+  const markSeason = (watched: boolean) => routing.markMany(displayEpisodes, watched);
 
+  const orderedEpisodes = useMemo(
+    () => (settings.episodeSort === "newest" ? displayEpisodes.slice().reverse() : displayEpisodes),
+    [displayEpisodes, settings.episodeSort],
+  );
   const windowed = settings.episodeLayout === "list" || settings.episodeLayout === "strip";
   const [renderCount, setRenderCount] = useState(WINDOW_STEP);
   useEffect(() => {
     setRenderCount(WINDOW_STEP);
-  }, [meta.id, settings.episodeLayout]);
+  }, [meta.id, settings.episodeLayout, settings.episodeSort, order?.activeKey, activeEntryId]);
   const grow = useCallback(
-    () => setRenderCount((c) => (c >= episodes.length ? c : Math.min(episodes.length, c + WINDOW_STEP))),
-    [episodes.length],
+    () =>
+      setRenderCount((c) =>
+        c >= orderedEpisodes.length ? c : Math.min(orderedEpisodes.length, c + WINDOW_STEP),
+      ),
+    [orderedEpisodes.length],
   );
   const reveal = useCallback(
-    (n: number) => setRenderCount((c) => Math.max(c, Math.min(episodes.length, n + 20))),
-    [episodes.length],
+    (n: number) => {
+      const idx = orderedEpisodes.findIndex((e) => e.number === n);
+      const target = idx >= 0 ? idx : n;
+      setRenderCount((c) => Math.max(c, Math.min(orderedEpisodes.length, target + 20)));
+    },
+    [orderedEpisodes],
   );
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const listEpisodes = windowed ? episodes.slice(0, renderCount) : episodes;
-  const hasMore = windowed && renderCount < episodes.length;
+  const listEpisodes = windowed ? orderedEpisodes.slice(0, renderCount) : orderedEpisodes;
+
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [aiMode, setAiMode] = useState(false);
+  const aiProvider = providerForModel(settings.aiSearchModel);
+  const ai = useAnimeAiSearch(meta.name, displayEpisodes, settings.aiSearchKey, settings.aiSearchModel);
+  const filteredEpisodes = useMemo(() => {
+    if (aiMode && ai.matched) return displayEpisodes.filter((e) => ai.matched!.has(e.number));
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    return displayEpisodes.filter(
+      (e) => String(e.number).includes(q) || (e.title ?? "").toLowerCase().includes(q),
+    );
+  }, [query, displayEpisodes, aiMode, ai.matched]);
+  const gridEpisodes = filteredEpisodes ?? displayEpisodes;
+  const windowEpisodes = filteredEpisodes
+    ? settings.episodeSort === "newest"
+      ? filteredEpisodes.slice().reverse()
+      : filteredEpisodes
+    : listEpisodes;
+  const hasMore = windowed && renderCount < orderedEpisodes.length;
   useEffect(() => {
     if (settings.episodeLayout !== "list" || !hasMore) return;
     const el = sentinelRef.current;
@@ -151,9 +265,22 @@ export function AnimeEpisodes({
     return () => io.disconnect();
   }, [settings.episodeLayout, hasMore, grow, scrollRef]);
 
+  const didJumpRef = useRef("");
+  useEffect(() => {
+    if (order || tvdbPanel.panel) return;
+    if (nextUpNum == null || didJumpRef.current === meta.id) return;
+    const idx = episodes.findIndex((ep) => ep.number === nextUpNum);
+    if (idx < 12) return;
+    didJumpRef.current = meta.id;
+    if ((scrollRef.current?.scrollTop ?? 0) > 240) return;
+    reveal(nextUpNum);
+    scrollToDataEp(scrollRef.current, nextUpNum, { behavior: "auto", center: true });
+  }, [nextUpNum, episodes, meta.id, reveal, scrollRef]);
+
   const isOneOff = meta.type === "movie" || episodes.length <= 1;
   return (
     <div data-anime-episodes className="flex flex-col gap-6 scroll-mt-24">
+      <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-6">
         <h3 className="text-[22px] font-medium tracking-tight text-ink">
           {isOneOff ? t("Movie") : t("Episodes")}
@@ -161,18 +288,19 @@ export function AnimeEpisodes({
         <div className="flex items-center gap-4">
           {!isOneOff && (
             <p className="text-[13px] text-ink-subtle">
-              {episodes.length === 1
-                ? t("{n} episode", { n: episodes.length })
-                : t("{n} episodes", { n: episodes.length })}
+              {displayEpisodes.length === 1
+                ? t("{n} episode", { n: displayEpisodes.length })
+                : t("{n} episodes", { n: displayEpisodes.length })}
             </p>
           )}
+          {!isOneOff && <AnimeRandomButton episodes={displayEpisodes} metaForEp={routing.metaForEp} />}
           {!isOneOff && (
             <EpisodeLayoutToggle
               value={settings.episodeLayout}
               onChange={(v) => update({ episodeLayout: v })}
             />
           )}
-          {!isOneOff && settings.episodeLayout === "grid" && (
+          {!isOneOff && (
             <EpisodeGridControls
               sort={settings.episodeSort}
               onSort={(s) => update({ episodeSort: s })}
@@ -180,18 +308,85 @@ export function AnimeEpisodes({
               onMarkSeason={markSeason}
             />
           )}
-          {franchise.length > 1 && (
-            <AnimeSeasonPicker franchise={franchise} currentId={currentId} />
+          {!isOneOff && (
+            <EpisodeSearchToggle
+              searchActive={searchOpen || query.trim().length > 0}
+              aiMode={aiMode}
+              aiEnabled={!!settings.aiSearchKey.trim()}
+              aiProvider={aiProvider}
+              onSearch={() => {
+                setSearchOpen((v) => !v);
+                setAiMode(false);
+                ai.reset();
+              }}
+              onAskAi={() => {
+                setAiMode(true);
+                setSearchOpen(false);
+                setQuery("");
+              }}
+            />
           )}
+          {isOneOff ? null : panelExtras ? (
+            <TvdbOrderPanel
+              items={panelExtras.items}
+              activeKey={panelExtras.activeKey}
+              onSelect={panelExtras.onSelect}
+              orderTypes={panelExtras.orderTypes}
+              activeType={panelExtras.activeType}
+              onSelectType={(v) => update({ tvdbSeasonType: v })}
+            />
+          ) : tvdbPanel.active ? (
+            <div
+              aria-hidden
+              className="h-10 w-44 animate-pulse rounded-full border border-edge-soft/50 bg-elevated/40"
+            />
+          ) : order ? (
+            <SeasonArcPicker
+              items={pickerItems}
+              activeKey={franchiseActiveKey ?? order.activeKey}
+              onSelect={selectPickerItem}
+            />
+          ) : franchise.length > 1 ? (
+            <AnimeSeasonPicker
+              franchise={franchise}
+              activeEntryId={activeEntryId}
+              onSelectEntry={onSelectEntry}
+            />
+          ) : null}
         </div>
       </div>
+      {!isOneOff && aiMode && (
+        <AnimeAiBar
+          provider={aiProvider}
+          loading={ai.status === "loading"}
+          onSubmit={ai.run}
+          onExit={() => {
+            setAiMode(false);
+            ai.reset();
+          }}
+        />
+      )}
+      {!isOneOff && !aiMode && searchOpen && (
+        <EpisodeSearch query={query} onQuery={setQuery} matched={filteredEpisodes?.length ?? null} />
+      )}
+      </div>
       {isOneOff ? (
-        <MovieEntryCard meta={meta} ep={episodes[0]} watched={anilistCompleted} />
+        <MovieEntryCard meta={meta} ep={episodes[0]} watched={anilistCompleted || malCompleted} />
       ) : (
         <div key={settings.episodeLayout} className="animate-fade-in">
-          {settings.episodeLayout === "list" ? (
+          {filteredEpisodes && filteredEpisodes.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-20 text-center">
+              <p className="text-[14px] text-ink-muted">{t("No episodes match your search")}</p>
+              <button
+                onClick={() => setQuery("")}
+                className="text-[13px] font-medium text-accent transition-opacity hover:opacity-80"
+              >
+                {t("Clear search")}
+              </button>
+            </div>
+          ) : settings.episodeLayout === "list" ? (
             <div className="flex flex-col gap-1">
-              {listEpisodes.map((ep) => (
+              {windowEpisodes.map((ep) => (
                 <AnimeEpisodeRow
                   key={ep.id}
                   meta={meta}
@@ -199,181 +394,40 @@ export function AnimeEpisodes({
                   progress={progressFor(ep)}
                   spoiler={spoilerFor(ep)}
                   onContextMenu={openWatchedMenu}
+                  metaForEp={routing.metaForEp}
+                  showSeason={showSeason}
                 />
               ))}
-              {hasMore && <div ref={sentinelRef} aria-hidden className="h-px w-full" />}
+              {hasMore && !filteredEpisodes && (
+                <div ref={sentinelRef} aria-hidden className="h-px w-full" />
+              )}
             </div>
           ) : (
             <AnimeEpisodeStrip
               layout={settings.episodeLayout === "grid" ? "grid" : "strip"}
               meta={meta}
-              episodes={settings.episodeLayout === "grid" ? episodes : listEpisodes}
+              episodes={settings.episodeLayout === "grid" ? gridEpisodes : windowEpisodes}
               progressFor={progressFor}
               spoilerFor={spoilerFor}
               onContextMenu={openWatchedMenu}
               onReachEnd={settings.episodeLayout === "grid" ? undefined : grow}
+              metaForEp={routing.metaForEp}
+              showSeason={showSeason}
             />
           )}
-          <EpisodeJumper scrollRef={scrollRef} totalEpisodes={episodes.length} onReveal={reveal} />
         </div>
       )}
       {watchedMenu && (
         <EpisodeWatchedMenu
-          metaId={meta.id}
+          metaId={watchedMenu.metaId ?? meta.id}
+          meta={
+            watchedMenu.metaId
+              ? routing.manualMetaFor(watchedMenu.metaId)
+              : { type: "series", name: meta.name, poster: meta.poster, background: meta.background }
+          }
           target={watchedMenu}
           onClose={() => setWatchedMenu(null)}
         />
-      )}
-    </div>
-  );
-}
-
-function MovieEntryCard({
-  meta,
-  ep,
-  watched = false,
-}: {
-  meta: Meta;
-  ep: KitsuEpisode | undefined;
-  watched?: boolean;
-}) {
-  const t = useT();
-  const { openPicker } = useView();
-  const { settings } = useSettings();
-  const banner = meta.background || meta.poster;
-  return (
-    <button
-      onClick={() =>
-        openPicker(
-          meta,
-          ep
-            ? {
-                season: ep.seasonNumber || 1,
-                episode: ep.number,
-                name: ep.title,
-                still: ep.thumbnail ?? undefined,
-                overview: ep.synopsis || undefined,
-                kitsuStreamId: ep.streamId,
-                imdbId: ep.imdbId,
-                imdbSeason: ep.imdbSeason,
-                imdbEpisode: ep.imdbEpisode,
-              }
-            : { season: 1, episode: 1 },
-          { autoPlay: settings.instantPlay },
-        )
-      }
-      className="group relative block h-[300px] w-full overflow-hidden rounded-2xl border border-edge-soft/50 text-start"
-    >
-      {banner ? (
-        <img src={banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      ) : (
-        <div className="absolute inset-0 bg-elevated" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-canvas/90 via-canvas/35 to-transparent" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-canvas shadow-[0_8px_28px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:scale-105">
-          <Play size={24} fill="currentColor" />
-        </div>
-      </div>
-      <span className="absolute bottom-5 start-6 text-[15px] font-semibold text-ink drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-        {t("Play movie")}
-      </span>
-      {watched && (
-        <span className="absolute end-4 top-4 flex items-center gap-1.5 rounded-full bg-emerald-400/22 px-2.5 py-1 text-[12px] font-semibold text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm">
-          <Check size={13} strokeWidth={3} />
-          {t("Watched")}
-        </span>
-      )}
-    </button>
-  );
-}
-
-function AnimeSeasonPicker({
-  franchise,
-  currentId,
-}: {
-  franchise: FranchiseEntry[];
-  currentId: string;
-}) {
-  const t = useT();
-  const { openMeta } = useView();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const matchIdx = franchise.findIndex((f) => f.meta.id === currentId);
-  const currentIdx = matchIdx >= 0 ? matchIdx : franchise.findIndex((f) => f.isCurrent);
-  const current = franchise[currentIdx];
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  if (!current) return null;
-  const tags = franchiseTags(franchise);
-  const positionLabel = tags[currentIdx]?.short ?? `S${currentIdx + 1}`;
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-10 items-center gap-2 rounded-full border border-edge-soft bg-elevated/70 ps-4 pe-3 text-[13.5px] font-medium text-ink transition-colors hover:bg-elevated"
-      >
-        <span className="font-mono text-[11.5px] text-ink-subtle">{positionLabel}</span>
-        <span className="max-w-[280px] truncate">{current.meta.name}</span>
-        {current.isUpcoming && <UpcomingBadge />}
-        <ChevronDown
-          size={15}
-          className={`text-ink-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div className="animate-fade-in absolute end-0 top-full z-30 mt-2 w-[360px] max-w-[min(360px,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-edge-soft bg-canvas py-1.5 shadow-2xl">
-          <div className="max-h-[60vh] overflow-y-auto">
-            {franchise.map((f, i) => {
-              const isActive = i === currentIdx;
-              return (
-                <button
-                  key={f.meta.id}
-                  onClick={() => {
-                    if (!isActive) openMeta(f.meta);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-start gap-3 px-4 py-3 text-start transition-colors ${
-                    isActive ? "bg-ink/10 text-ink" : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
-                  }`}
-                >
-                  <span className="mt-0.5 font-mono text-[11px] text-ink-subtle">{tags[i]?.short ?? `S${i + 1}`}</span>
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="flex items-center gap-2 text-[13.5px] font-medium">
-                      <span className="truncate">{f.meta.name}</span>
-                      {f.isUpcoming && <UpcomingBadge />}
-                    </span>
-                    <span className="text-[11.5px] text-ink-subtle">
-                      {f.episodeCount
-                        ? f.episodeCount === 1
-                          ? t("{n} ep", { n: f.episodeCount })
-                          : t("{n} eps", { n: f.episodeCount })
-                        : ""}
-                      {f.episodeCount && f.startDate ? "  ·  " : ""}
-                      {f.startDate ? f.startDate.slice(0, 4) : f.isUpcoming ? "TBA" : ""}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import {
   TRAKT_API_BASE,
   TRAKT_API_VERSION,
   TRAKT_CLIENT_ID,
-  TRAKT_CLIENT_SECRET,
+  TRAKT_TOKEN_PROXY,
 } from "./config";
 import { getSession, setSession } from "./session";
 import type { TraktSession } from "./types";
@@ -33,14 +33,11 @@ function baseHeaders(): HeadersInit {
 async function refreshAccessToken(): Promise<TraktSession | null> {
   const current = getSession();
   if (!current) return null;
-  const res = await fetch(`${TRAKT_API_BASE}/oauth/token`, {
+  const res = await fetch(TRAKT_TOKEN_PROXY, {
     method: "POST",
     headers: baseHeaders(),
     body: JSON.stringify({
       refresh_token: current.refreshToken,
-      client_id: TRAKT_CLIENT_ID,
-      client_secret: TRAKT_CLIENT_SECRET,
-      redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
       grant_type: "refresh_token",
     }),
   });

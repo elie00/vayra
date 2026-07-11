@@ -71,6 +71,8 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     controlVariants: opts.controlVariants,
     timeFormat: opts.timeFormat,
     volumeStyle: opts.volumeStyle,
+    seekBackStepSec: 10,
+    seekForwardStepSec: 10,
     title: isLive ? "Sample Channel" : "Sample Movie Title",
     subtitle: isLive ? "Live now" : "Season 1 · Episode 3",
     titleClickable: !isLive,
@@ -94,6 +96,7 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     onCast: NOOP,
     onToggleDraw: NOOP,
     onToggleHideOthers: NOOP,
+    onClearDraw: NOOP,
     onScreenshot: NOOP,
     onPickAnother: NOOP,
     onPrevEp: NOOP,
@@ -113,6 +116,7 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     anime4kMode: "auto",
     onAnime4kMode: NOOP_STR,
     anime4kAvailable: true,
+    editing: true,
   };
 }
 

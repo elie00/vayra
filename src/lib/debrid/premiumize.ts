@@ -1,5 +1,6 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dlog, dwarn } from "@/lib/debug";
+import { matchEpisodeFileIndex, type EpisodeHint } from "@/lib/streams/episode-file";
 import {
   hashFromMagnet,
   magnetFromHash,
@@ -105,6 +106,7 @@ export function createPremiumize(apiKey: string): DebridStore {
     magnet: string,
     fileIdx: number | undefined,
     signal: AbortSignal,
+    hint?: EpisodeHint,
   ): Promise<DebridResult<DirectLink>> {
     const fullMagnet = magnetFromHash(magnet);
     const direct = await postForm<PmDirectDl>("/transfer/directdl", { src: fullMagnet }, signal);
@@ -113,7 +115,7 @@ export function createPremiumize(apiKey: string): DebridStore {
     if (content.length === 0) {
       return { ok: false, code: "not-cached", status: 0, raw: { hash: hashFromMagnet(magnet) } };
     }
-    const file = pickPmFile(content, fileIdx);
+    const file = pickPmFile(content, fileIdx, hint);
     if (!file) return { ok: false, code: "no-video-file", status: 0 };
     const url =
       file.transcode_status === "finished" && file.stream_link ? file.stream_link : file.link;
@@ -189,13 +191,15 @@ async function wrap<T>(call: () => Promise<Response>): Promise<DebridResult<T>> 
   return { ok: true, data: body as T };
 }
 
-function pickPmFile(content: PmFile[], fileIdx: number | undefined): PmFile | null {
+function pickPmFile(content: PmFile[], fileIdx: number | undefined, hint?: EpisodeHint): PmFile | null {
   if (content.length === 0) return null;
   if (fileIdx != null && content[fileIdx]) return content[fileIdx];
   const videos = content.filter((f) =>
     VIDEO_EXTS.some((ext) => (f.path ?? "").toLowerCase().endsWith(ext)),
   );
   const pool = videos.length > 0 ? videos : content;
+  const mi = matchEpisodeFileIndex(pool.map((f) => f.path ?? ""), hint);
+  if (mi >= 0) return pool[mi];
   return pool
     .slice()
     .sort((a, b) => Number(b.size ?? 0) - Number(a.size ?? 0))[0];

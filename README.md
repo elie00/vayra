@@ -433,6 +433,9 @@ Harbor is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with th
 - The [Tauri 2 system prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) (web core generation runs automatically before `dev` and `build`)
 
+> [!IMPORTANT]
+> Before your first build, run `pnpm run setup`. It fetches the native sidecars (libmpv, yt-dlp, ffmpeg, ffprobe) and the bundled fonts into `src-tauri/`. These are platform specific and not committed, so a fresh clone will not build without this step. On Linux, extracting the ffmpeg static build needs `tar` and `xz`.
+
 <details>
 <summary><b>Run in development</b></summary>
 
@@ -440,6 +443,7 @@ Harbor is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with th
 
 ```bash
 pnpm install
+pnpm run setup
 pnpm tauri dev
 ```
 
@@ -458,6 +462,7 @@ pnpm dev
 
 ```bash
 pnpm install
+pnpm run setup
 pnpm tauri build
 ```
 
@@ -668,7 +673,7 @@ Thank you to everyone, named and unnamed, whose open work Harbor builds upon.
 [rust]: https://www.rust-lang.org/
 
 <!-- badges -->
-[badge-version]: https://img.shields.io/badge/version-0.9.18-D9A441?style=for-the-badge&labelColor=1a1a1a
+[badge-version]: https://img.shields.io/badge/version-0.9.21-D9A441?style=for-the-badge&labelColor=1a1a1a
 [badge-license]: https://img.shields.io/badge/license-MIT-D9A441?style=for-the-badge&labelColor=1a1a1a
 [badge-tauri]: https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white&labelColor=1a1a1a
 [badge-react]: https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white&labelColor=1a1a1a

@@ -55,7 +55,8 @@ function genresFromIds(ids: number[] | undefined, kind: "movie" | "tv"): string[
 }
 
 export const movieMeta = (m: RawMovie): Meta => {
-  const translate = loadStoredSettings().translateTitles;
+  const st = loadStoredSettings();
+  const translate = st.translateTitles;
   return {
     id: `tmdb:movie:${m.id}`,
     type: "movie",
@@ -72,7 +73,8 @@ export const movieMeta = (m: RawMovie): Meta => {
 };
 
 export const seriesMeta = (s: RawSeries): Meta => {
-  const translate = loadStoredSettings().translateTitles;
+  const st = loadStoredSettings();
+  const translate = st.translateTitles;
   return {
     id: `tmdb:tv:${s.id}`,
     type: "series",

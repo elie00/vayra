@@ -66,10 +66,13 @@ export function SeekBarVisual({
         className="w-full rounded-full bg-white/15 transition-[height] duration-150"
         style={{ height: trackHeight }}
       >
-        {bufferedPct != null && (
+        {bufferedPct != null && bufferedPct > 0 && (
           <div
-            className="h-full rounded-full bg-white/28"
-            style={{ width: `${bufferedPct}%` }}
+            className="h-full rounded-full bg-white"
+            style={{
+              width: `${bufferedPct}%`,
+              opacity: clamp(settings.seekBarFillOpacity ?? 0.35, 0.05, 1),
+            }}
           />
         )}
       </div>

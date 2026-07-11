@@ -10,6 +10,7 @@ import { useScrollMemory, useView, type PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 import { useOmdbScores, omdbScores as fetchOmdbScores } from "@/lib/providers/omdb";
+import { harborImdbEpisodes } from "@/lib/providers/harbor-imdb";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { HeroRatings } from "@/views/detail/hero-ratings";
 import { CastCard } from "@/views/detail/cast-card";
@@ -50,6 +51,20 @@ export function EpisodeDetailView({
   const omdbScores = useOmdbScores(imdbId ?? undefined);
   const episodeImdbId = episodeData?.imdbId ?? undefined;
   const episodeOmdbScores = useOmdbScores(episodeImdbId);
+  const [harborEpisodeRating, setHarborEpisodeRating] = useState<string | undefined>();
+  useEffect(() => {
+    setHarborEpisodeRating(undefined);
+    if (!imdbId || !imdbId.startsWith("tt")) return;
+    let cancelled = false;
+    void harborImdbEpisodes(imdbId).then((map) => {
+      if (cancelled) return;
+      const r = map.get(`${season}:${episode}`);
+      if (r != null) setHarborEpisodeRating(r.toFixed(1));
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [imdbId, season, episode]);
   useScrollMemory(`episode:${seriesId}:${season}:${episode}`, scrollRef);
 
   // Trigger OMDB fetch for episode IMDb ID (useOmdbScores only watches cache, doesn't fetch)
@@ -111,8 +126,9 @@ export function EpisodeDetailView({
 
   const background = getImageUrl(episodeData?.stillPath, "original") ?? seriesMeta?.background ?? undefined;
 
-  // Episode rating: OMDB (via episode IMDb ID) → TMDB vote_average → none
-  const episodeRating = episodeOmdbScores?.imdbRating ??
+  // Episode rating: hosted IMDb → OMDB (via episode IMDb ID) → TMDB vote_average → none
+  const episodeRating = harborEpisodeRating ??
+    episodeOmdbScores?.imdbRating ??
     (episodeData?.voteAverage && episodeData.voteAverage > 0
       ? episodeData.voteAverage.toFixed(1) : undefined);
 
@@ -137,6 +153,7 @@ export function EpisodeDetailView({
     const playEpisode: PlayEpisode = {
       season: episodeData.seasonNumber,
       episode: episodeData.episodeNumber,
+      runtime: episodeData.runtime ?? undefined,
       name: episodeData.name,
       still: getImageUrl(episodeData.stillPath, "w300") || undefined,
       overview: episodeData.overview || undefined,
@@ -244,7 +261,6 @@ export function EpisodeDetailView({
                   isAnime={false}
                   scores={episodeOmdbScores ?? omdbScores}
                   mdblist={null}
-                  showRtBadge={settings.showRtBadge}
                   imdbId={episodeImdbId ?? imdbId}
                   mediaType="show"
                   onOpenUrl={openUrl}

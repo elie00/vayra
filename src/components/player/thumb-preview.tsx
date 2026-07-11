@@ -8,8 +8,8 @@ const SEG_LABEL = { intro: "OP", outro: "ED", recap: "Recap", ad: "Ad" } as cons
 const BUCKET_SECONDS = 2;
 const CARD_WIDTH = 192;
 const CARD_HEIGHT = 108;
-const MAX_ATTEMPTS = 8;
-const RETRY_MS = 300;
+const MAX_ATTEMPTS = 24;
+const RETRY_MS = 400;
 const SETTLE_MS = 130;
 const NEAREST_WINDOW = 30;
 

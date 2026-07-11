@@ -1,5 +1,6 @@
 import { Check, Download, ExternalLink, Loader2, Play, Zap } from "lucide-react";
 import { Flag } from "@/components/flag";
+import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
@@ -10,7 +11,7 @@ import type { ScoredStream } from "@/lib/streams/types";
 import { directStreamAvailable } from "@/lib/torrent/stremio-stream";
 import type { PlayEpisode } from "@/lib/view";
 import { EditionChip } from "./edition-chip";
-import { confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts, torrentFilename } from "./picker-utils";
+import { anyStreamCached, confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts, torrentFilename } from "./picker-utils";
 import { PlayProvenance } from "./play-provenance";
 
 export function PrimaryCard({
@@ -46,9 +47,11 @@ export function PrimaryCard({
   const cachedDebrid = cachedDebrids[0] ?? null;
   const externalOnly = !stream.url && !stream.infoHash && !!(stream.externalUrl || stream.ytId);
   const link = resolveStreamLink(stream);
+  const addonCached = anyStreamCached(stream);
   const isCached =
     (stream.url != null && !stream.infoHash && !hasUncachedMarker(stream)) ||
     cachedDebrid != null ||
+    addonCached ||
     isPreviouslyPlayed;
   const queueTarget = debrids.find((d) => d.queueCache);
   const canStream = !isCached && directStreamAvailable(stream);
@@ -63,7 +66,7 @@ export function PrimaryCard({
   const isLandscape = Boolean(landscapeImage);
 
   return (
-    <section className="relative overflow-hidden rounded-[24px] border border-edge-soft/70 bg-canvas/85 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
+    <section className="relative overflow-hidden rounded-[24px] bg-canvas/70">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/12 to-transparent" />
 
       <div className={`grid gap-7 p-7 ${isLandscape ? "grid-cols-[320px_1fr] items-center" : "grid-cols-[224px_1fr]"}`}>
@@ -118,6 +121,14 @@ export function PrimaryCard({
                 {knownLanguages.slice(0, 6).map((lang) => (
                   <Flag key={lang} language={lang} size="lg" />
                 ))}
+                {settings.showDubBadge &&
+                  (() => {
+                    const d = streamDubSub(
+                      stream.audioLanguages,
+                      /^(kitsu|mal|anilist|anidb|simkl):/.test(meta.id),
+                    );
+                    return d ? <DubSubPill kind={d} size="md" /> : null;
+                  })()}
                 {knownLanguages.length > 6 && (
                   <span className="text-[13px] font-semibold tracking-[0.04em] text-ink-subtle">
                     +{knownLanguages.length - 6} more
@@ -155,7 +166,7 @@ export function PrimaryCard({
               </div>
             )}
 
-            {(cachedDebrid || queued || (debrids.length > 0 && !stream.url) || stream.remux || stream.releaseGroupNormalized || stream.edition) && (
+            {(cachedDebrid || addonCached || queued || (debrids.length > 0 && !stream.url) || stream.remux || stream.releaseGroupNormalized || stream.edition) && (
               <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
                 {libraryDebrids.length > 0 ? (
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-accent">
@@ -166,6 +177,11 @@ export function PrimaryCard({
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-ink-muted">
                     <Zap size={13} fill="currentColor" strokeWidth={0} />
                     Cached on {cachedDebrids.map((d) => d.name).join(" + ")}
+                  </span>
+                ) : addonCached ? (
+                  <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-ink-muted">
+                    <Zap size={13} fill="currentColor" strokeWidth={0} />
+                    Cached
                   </span>
                 ) : queued ? (
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold tracking-[0.04em] text-emerald-300">

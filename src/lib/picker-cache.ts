@@ -15,17 +15,16 @@ type Entry = {
   result: StoredResult;
   fetchedAt: number;
   configHash: string;
+  complete: boolean;
 };
 
-const LEGACY_KEYS = [
-  "harbor.picker-cache.v4",
-  "harbor.picker-cache.v5",
-];
-
 try {
-  for (const k of LEGACY_KEYS) {
-    localStorage.removeItem(k);
+  const stale: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith("harbor.picker-cache.")) stale.push(k);
   }
+  for (const k of stale) localStorage.removeItem(k);
 } catch {}
 
 const cache = new Map<string, Entry>();
@@ -45,6 +44,7 @@ export function setPickerCache(
   episode: PlayEpisode | undefined,
   result: PipelineResult,
   configHash: string,
+  complete = true,
 ): void {
   if (result.picker.all.length === 0) return;
   const stripped: StoredResult = { picker: result.picker, rejected: result.rejected.slice(0, 60) };
@@ -54,6 +54,7 @@ export function setPickerCache(
     result: stripped,
     fetchedAt: Date.now(),
     configHash,
+    complete,
   }, MAX_ENTRIES);
   notify();
 }

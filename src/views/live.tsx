@@ -66,7 +66,7 @@ function writeMode(m: ViewMode) {
 export function LiveView({ active }: { active: boolean }) {
   const t = useT();
   const { settings } = useSettings();
-  const { openMeta } = useView();
+  const { openMeta, setView } = useView();
   const sources = settings.iptvPlaylists;
 
   const [activeId, setActiveId] = useState<string | null>(() => readActiveId());
@@ -121,6 +121,26 @@ export function LiveView({ active }: { active: boolean }) {
     setModeState(m);
     writeMode(m);
   }, []);
+  const goLiveHome = useCallback(() => {
+    setMode("home");
+    setQuery("");
+    setGroup(favoritesCountRef.current > 0 ? FAVORITES_GROUP_KEY : null);
+  }, [setMode]);
+  useEffect(() => {
+    if (!active) return;
+    const onLocalBack = (e: Event) => {
+      if (sources.length === 0) {
+        e.preventDefault();
+        setView("home");
+        return;
+      }
+      if (mode === "home" && !query && group === (favoritesCountRef.current > 0 ? FAVORITES_GROUP_KEY : null)) return;
+      e.preventDefault();
+      goLiveHome();
+    };
+    window.addEventListener("harbor:local-back", onLocalBack);
+    return () => window.removeEventListener("harbor:local-back", onLocalBack);
+  }, [active, goLiveHome, group, mode, query, setView, sources.length]);
   const [immersive, setImmersive] = useState(false);
   useEffect(() => {
     const onImm = (e: Event) => setImmersive((e as CustomEvent<boolean>).detail === true);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { BackToTop } from "@/components/back-to-top";
 import { CatalogRows } from "@/components/catalog/catalog-rows";
 import { CatalogCustomizeBar } from "@/components/catalog/customize-bar";
@@ -15,7 +15,15 @@ import { publishResumeStates } from "@/lib/hover-preview/store";
 import { listPager } from "@/lib/list-pager";
 import { hasPageRowChanges, resetPageRows, usePageRows } from "@/lib/page-rows";
 import { useSettings } from "@/lib/settings";
-import { cwSortKey, isCwMember, library, type LibraryItem } from "@/lib/stremio";
+import { cwSortKey, isAnimeCwItem, isCwMember, library, type LibraryItem } from "@/lib/stremio";
+import { clearLocalCw } from "@/lib/local-cw";
+import {
+  dismissManualWatched,
+  manualWatchedLibraryItems,
+  manualWatchedVersion,
+  subscribeManualWatched,
+} from "@/lib/manual-watched";
+import { useCwAdvance } from "./home/hooks/use-cw-advance";
 import { useScrollMemory, useView } from "@/lib/view";
 import { buildShowHero, bucketCopy } from "./shows/hero-curation";
 import { showSpecs } from "./shows/show-specs";
@@ -71,8 +79,6 @@ export function Shows({ active = true }: { active?: boolean }) {
     (async () => {
       if (settings.tmdbKey) {
         const heroPool = await buildShowHero(settings.tmdbKey).catch(() => [] as Meta[]);
-        if (cancelled) return;
-        setHero(heroPool);
         const specs = showSpecs(settings.tmdbKey);
         const firstPages = await Promise.all(
           specs.map((s) => s.fetcher(1).catch(() => [] as Meta[])),
@@ -88,8 +94,13 @@ export function Shows({ active = true }: { active?: boolean }) {
             fetcher: spec.noPaginate ? undefined : spec.fetcher,
           }))
           .filter((r) => r.metas.length > 0);
-        setRows(built);
-      } else {
+        if (built.length > 0) {
+          setHero(heroPool);
+          setRows(built);
+          return;
+        }
+      }
+      {
         const genreList = [
           "Drama",
           "Comedy",
@@ -154,9 +165,28 @@ export function Shows({ active = true }: { active?: boolean }) {
     [items, cwVersion],
   );
 
+  const manualWatchedVer = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
+  const resurfaceLibrary = useMemo(() => {
+    const manual = manualWatchedLibraryItems().filter((i) => !isAnimeCwItem(i));
+    if (manual.length === 0) return items;
+    const cwMemberIds = new Set(items.filter(isCwMember).map((i) => i._id));
+    const usable = manual.filter((i) => !cwMemberIds.has(i._id));
+    if (usable.length === 0) return items;
+    const overrideIds = new Set(usable.map((i) => i._id));
+    return [...items.filter((i) => !overrideIds.has(i._id)), ...usable];
+  }, [items, manualWatchedVer]);
+  const cwItems = useCwAdvance(
+    continueWatching,
+    settings.tmdbKey,
+    settings.cwAdvanceNext,
+    resurfaceLibrary,
+    "exclude",
+    manualWatchedVer,
+  );
+
   useEffect(() => {
-    publishResumeStates(continueWatching);
-  }, [continueWatching]);
+    publishResumeStates(cwItems);
+  }, [cwItems]);
 
   const loadMore = useCallback((rowKey: string) => {
     if (loadingRef.current.has(rowKey)) return;
@@ -224,10 +254,20 @@ export function Shows({ active = true }: { active?: boolean }) {
             </div>
           </div>
           {!settings.tmdbKey && <TmdbNudge />}
-          {continueWatching.length > 0 && (
+          {cwItems.length > 0 && (
             <Row title={t("Pick up where you left off")} min={260} shape="landscape" scrollKey="shows:cw">
-              {continueWatching.map((it) => (
-                <ContinueCard key={it._id} item={it} onDismiss={(item) => dismissCw(item, authKey)} />
+              {cwItems.map((it) => (
+                <ContinueCard
+                  key={it._id}
+                  item={it}
+                  onDismiss={(item) =>
+                    item.manualWatched
+                      ? dismissManualWatched(item._id)
+                      : item.local
+                        ? clearLocalCw(item._id)
+                        : dismissCw(item, authKey)
+                  }
+                />
               ))}
             </Row>
           )}

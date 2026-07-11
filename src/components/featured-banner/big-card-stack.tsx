@@ -4,10 +4,8 @@ import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
-import { useImdbRating } from "@/lib/imdb-rating";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
-import { ImdbIcon } from "../icons/imdb-icon";
 import { MetaAwardsCorner } from "../meta-awards-corner";
 import { ThumbsDock } from "./thumbs-dock";
 import { FADE_MS, upsizeTmdb } from "./types";
@@ -39,7 +37,6 @@ export function BigCardStack({
   const t = useT();
   const current = items[active] ?? items[0];
   const resolvedImdb = useTmdbImdbId(current.id);
-  const imdbRating = useImdbRating(current, resolvedImdb);
   const [logos, setLogos] = useState<LogoMap>(() => seedLogos(settings.tmdbKey, items));
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; pointerId: number; moved: boolean } | null>(null);
@@ -180,7 +177,24 @@ export function BigCardStack({
         }}
       />
       <div className="absolute start-7 top-6 flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-accent">
-        <span className="rounded-full bg-canvas/55 px-2.5 py-1">{t("Featured")}</span>
+        {current.providerBadge ? (
+          <span
+            className="flex items-center gap-2 rounded-full bg-canvas/65 py-1 pe-1 ps-2.5 normal-case tracking-normal text-ink/90"
+            style={{ boxShadow: `inset 0 0 0 1px ${current.providerBadge.tint}66` }}
+          >
+            <span className="text-[10px] font-semibold text-ink/80">{t("Popular on")}</span>
+            <span className="flex h-[18px] items-center rounded-full bg-white px-1.5">
+              <img
+                src={current.providerBadge.logo}
+                alt={current.providerBadge.name}
+                draggable={false}
+                className="h-2.5 w-auto max-w-[56px] object-contain"
+              />
+            </span>
+          </span>
+        ) : (
+          <span className="rounded-full bg-canvas/55 px-2.5 py-1">{t("Featured")}</span>
+        )}
       </div>
       <div
         className="absolute inset-x-7 bottom-7 flex flex-col gap-3"
@@ -189,15 +203,6 @@ export function BigCardStack({
         <TitlePlate title={current.name} logo={logo} />
         <div className="flex items-center gap-2.5 text-[13px] text-ink/80">
           {current.releaseInfo && <span>{current.releaseInfo}</span>}
-          {imdbRating && (
-            <>
-              <Dot />
-              <span className="inline-flex items-center gap-1.5">
-                <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
-                {imdbRating}
-              </span>
-            </>
-          )}
         </div>
       </div>
       <div className="pointer-events-none absolute end-7 top-6 z-10">
@@ -272,6 +277,3 @@ function TitlePlate({ title, logo }: { title: string; logo?: string }) {
   );
 }
 
-function Dot() {
-  return <span aria-hidden className="text-ink/40">·</span>;
-}

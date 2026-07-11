@@ -22,6 +22,14 @@ const RETENTIONS: Array<{ h: number; label: string }> = [
   { h: 876000, label: "Forever" },
 ];
 
+const CACHE_LIMITS: Array<{ gb: number; label: string }> = [
+  { gb: 0, label: "Unlimited" },
+  { gb: 10, label: "10 GB" },
+  { gb: 25, label: "25 GB" },
+  { gb: 50, label: "50 GB" },
+  { gb: 100, label: "100 GB" },
+];
+
 export function P2PAdvancedSection() {
   const { settings, update } = useSettings();
   const t = useT();
@@ -44,23 +52,28 @@ export function P2PAdvancedSection() {
   }, []);
 
   const retention = settings.streamCacheRetentionHours;
+  const maxGb = settings.streamCacheMaxGb;
   const customDir = settings.streamCacheDir;
   const cachePath = customDir ? `${customDir}/harbor-stream-cache` : defaultPath;
 
   const setRetention = (h: number) => {
     update({ streamCacheRetentionHours: h });
-    void torrentEngineSetOptions(customDir || null, h, false);
+    void torrentEngineSetOptions(customDir || null, h, maxGb, false);
+  };
+  const setMaxGb = (g: number) => {
+    update({ streamCacheMaxGb: g });
+    void torrentEngineSetOptions(customDir || null, retention, g, false);
   };
   const pickDir = async () => {
     const picked = await open({ directory: true, defaultPath: customDir || undefined });
     if (typeof picked === "string") {
       update({ streamCacheDir: picked });
-      void torrentEngineSetOptions(picked, retention, true);
+      void torrentEngineSetOptions(picked, retention, maxGb, true);
     }
   };
   const resetDir = () => {
     update({ streamCacheDir: "" });
-    void torrentEngineSetOptions(null, retention, true);
+    void torrentEngineSetOptions(null, retention, maxGb, true);
   };
   const clearCache = async () => {
     if (!confirmClear) {
@@ -135,6 +148,36 @@ export function P2PAdvancedSection() {
             ))}
           </div>
         </div>
+
+        <div className="flex flex-col gap-2 pt-1">
+          <span className="text-[13.5px] font-semibold text-ink">{t("Keep at most")}</span>
+          <p className="text-[12px] leading-relaxed text-ink-subtle">
+            {t("Cap how much disk the cache can use. When it goes over, Harbor deletes the oldest files first. Enforced on launch and as streams close.")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {CACHE_LIMITS.map((c) => (
+              <button
+                key={c.gb}
+                type="button"
+                onClick={() => setMaxGb(c.gb)}
+                className={`h-9 rounded-lg px-3.5 text-[12.5px] font-semibold transition-colors ${
+                  maxGb === c.gb
+                    ? "bg-ink text-canvas"
+                    : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
+                }`}
+              >
+                {t(c.label)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <ToggleRow
+          label={t("Delete after I finish watching")}
+          sub={t("When you finish an episode or movie, remove its downloaded file right away. Something you stop partway through is kept so you can resume.")}
+          value={settings.deleteWatchedDownloads}
+          onChange={(v) => update({ deleteWatchedDownloads: v })}
+        />
 
         {isTauri && (
           <div className="flex flex-col gap-2 pt-1">

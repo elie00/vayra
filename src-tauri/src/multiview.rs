@@ -442,6 +442,7 @@ fn spawn_mpv(
         .ok_or_else(|| "mpv not found. Multiview needs mpv installed (same as DVR).".to_string())?;
     let ua = user_agent.unwrap_or("VLC/3.0.20 LibVLC/3.0.20");
     let mut cmd = Command::new(&mpv);
+    cmd.kill_on_drop(true);
     cmd.arg(format!("--input-ipc-server={pipe}"))
         .arg(format!("--wid={main_hwnd}"))
         .arg(format!("--title={}", slot_title(slot)))
@@ -452,6 +453,7 @@ fn spawn_mpv(
         .arg("--no-osd-bar")
         .arg("--osd-level=0")
         .arg("--input-default-bindings=no")
+        .arg("--input-media-keys=no")
         .arg("--no-input-cursor")
         .arg("--cursor-autohide=no")
         .arg("--no-terminal")

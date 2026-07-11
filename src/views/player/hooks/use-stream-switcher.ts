@@ -3,6 +3,7 @@ import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, usePlaybackFlag } from "@/lib/player/playback-clock";
 import { pinPickerCache, unpinPickerCache } from "@/lib/picker-cache";
 import { readResumeMs } from "@/lib/resume";
+import { SHORT_PLAYBACK_SEC } from "@/lib/dead-streams";
 import { savePlayback } from "@/lib/playback-history";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
@@ -19,6 +20,8 @@ export function useStreamSwitcher(params: {
   debrids: DebridStore[];
 }) {
   const { bridgeRef, src, snap, debrids } = params;
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
 
   const checkShownRef = useRef(false);
   const [streamCheckOpen, setStreamCheckOpen] = useState(false);
@@ -77,7 +80,10 @@ export function useStreamSwitcher(params: {
       swapAcRef.current?.abort();
       const ac = new AbortController();
       swapAcRef.current = ac;
-      const r = await resolveStream(stream, debrids, ac.signal, true);
+      const hint = src.episode
+        ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
+        : undefined;
+      const r = await resolveStream(stream, debrids, ac.signal, true, false, hint);
       if (ac.signal.aborted) return;
       if (!r.ok) {
         console.warn(`[player] stream swap failed: ${r.code}`);
@@ -103,7 +109,9 @@ export function useStreamSwitcher(params: {
         const current = getPlaybackPosition();
         const savedSec =
           readResumeMs(src.meta.id, src.episode?.season, src.episode?.episode) / 1000;
-        const resumeAt = current > 5 ? current : savedSec;
+        const curDur = snapRef.current.durationSec;
+        const currentIsStub = curDur > 0 && curDur < SHORT_PLAYBACK_SEC;
+        const resumeAt = !currentIsStub && current > 5 ? current : savedSec;
         await b.load({
           url: playUrl,
           subtitles: r.data.subtitles,

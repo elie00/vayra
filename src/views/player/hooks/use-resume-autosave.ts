@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
 import { markAnimeWatching, syncAnimeProgress } from "@/lib/anilist/sync";
+import { markMalWatching, syncMalProgress } from "@/lib/mal/sync";
 import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
 import { isExternalPlaylistId } from "@/lib/iptv/vod";
 import { saveLocalCw } from "@/lib/local-cw";
-import { isManuallyWatched, setManualWatched } from "@/lib/manual-watched";
+import { isLocalUrl } from "@/lib/player/local-url";
+import { isManuallyWatched, recordManualWatchedMeta, setManualWatched } from "@/lib/manual-watched";
 import { savePlayback } from "@/lib/playback-history";
 import { saveResumeMs } from "@/lib/resume";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
@@ -17,6 +19,7 @@ const TICK_MS = 4000;
 const MIN_POSITION_SEC = 5;
 const TASTE_MIN_SEC = 90;
 const WATCHED_RATIO = 0.85;
+const STUB_MAX_SEC = 150;
 
 const isAnimeId = (id: string) =>
   id.startsWith("kitsu:") || id.startsWith("mal:") || id.startsWith("anilist:");
@@ -38,8 +41,10 @@ export function useResumeAutosave(params: {
   const { settings } = useSettings();
   const lastSavedRef = useRef(0);
   const taughtRef = useRef<Set<string>>(new Set());
-  const autoSyncRef = useRef(settings.anilistAutoSync);
-  autoSyncRef.current = settings.anilistAutoSync;
+  const anilistAutoSyncRef = useRef(settings.anilistAutoSync);
+  anilistAutoSyncRef.current = settings.anilistAutoSync;
+  const malAutoSyncRef = useRef(settings.malAutoSync);
+  malAutoSyncRef.current = settings.malAutoSync;
   const latestRef = useRef({ src, snap, season, episode });
   latestRef.current = { src, snap, season, episode };
   const lastGoodPosRef = useRef(0);
@@ -60,8 +65,11 @@ export function useResumeAutosave(params: {
   const record = (s: PlayerSrc, sn: PlayerSnapshot, se?: number, ep?: number): void => {
     const id = s.meta.id;
     if (!id || id.startsWith("iptv:")) return;
+    if (sn.durationSec > 0 && sn.durationSec < STUB_MAX_SEC) return;
     const pos = getPlaybackPosition() || lastGoodPosRef.current;
     if (pos < MIN_POSITION_SEC) return;
+    const finished =
+      (sn.durationSec > 0 && pos / sn.durationSec >= WATCHED_RATIO) || sn.status === "ended";
     lastSavedRef.current = pos * 1000;
     saveResumeMs(id, pos * 1000, se, ep);
     if (isExternalPlaylistId(id)) return;
@@ -71,16 +79,24 @@ export function useResumeAutosave(params: {
       savePlayback(id, { title: s.meta.name, parsedTitle: s.meta.name }, se, ep);
     }
     if (
-      s.meta.type === "series" &&
+      (s.meta.type === "series" || s.meta.type === "anime" || isAnimeId(id)) &&
       typeof se === "number" &&
       typeof ep === "number" &&
-      sn.durationSec > 0 &&
-      pos / sn.durationSec >= WATCHED_RATIO &&
+      finished &&
       !isManuallyWatched(id, se, ep)
     ) {
+      recordManualWatchedMeta(id, {
+        type: "series",
+        name: s.meta.name,
+        poster: s.meta.poster,
+        background: s.meta.background,
+      });
       setManualWatched(id, se, ep, true);
     }
-    if ((s.meta.type === "series" || s.meta.type === "movie") && !CLOUD_OK.test(id)) {
+    if (
+      (s.meta.type === "series" || s.meta.type === "movie") &&
+      (!CLOUD_OK.test(id) || isLocalUrl(s.url))
+    ) {
       saveLocalCw({
         id,
         type: s.meta.type,
@@ -97,14 +113,19 @@ export function useResumeAutosave(params: {
     }
     if (pos < TASTE_MIN_SEC) return;
     const trackId = animeTrackId(s);
-    if (autoSyncRef.current && trackId) {
+    if (anilistAutoSyncRef.current && trackId) {
       void markAnimeWatching(trackId, s.meta.name);
     }
-    const ratio = sn.durationSec > 0 ? pos / sn.durationSec : 0;
-    if (ratio >= WATCHED_RATIO && autoSyncRef.current && trackId) {
+    if (malAutoSyncRef.current && trackId) {
+      void markMalWatching(trackId, s.meta.name);
+    }
+    if (finished && anilistAutoSyncRef.current && trackId) {
       void syncAnimeProgress(trackId, ep, s.meta.name);
     }
-    const kind = ratio >= WATCHED_RATIO ? "watched" : "play";
+    if (finished && malAutoSyncRef.current && trackId) {
+      void syncMalProgress(trackId, ep, s.meta.name);
+    }
+    const kind = finished ? "watched" : "play";
     const key = `${id}|${kind}`;
     if (taughtRef.current.has(key)) return;
     taughtRef.current.add(key);

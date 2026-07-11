@@ -11,7 +11,7 @@ type StreamLike = {
 const STORAGE_KEY = "harbor.dead-streams.v1";
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const STUB_TTL_MS = 4 * 60 * 60 * 1000;
-const SHORT_PLAYBACK_SEC = 60;
+export const SHORT_PLAYBACK_SEC = 180;
 const SHORT_RUNTIME_FLOOR_SEC = 90;
 
 type Entry = { ts: number; reason: string; ttl?: number };

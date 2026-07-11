@@ -8,6 +8,7 @@ import { useTrakt } from "@/lib/trakt/provider";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow } from "./shared";
+import { WatchlistSync } from "./trakt-panel/watchlist-sync";
 
 export function TraktPanel() {
   const t = useT();
@@ -175,6 +176,15 @@ export function TraktPanel() {
               </div>
             </div>
           )}
+        </Section>
+      )}
+
+      {isConnected && (
+        <Section
+          title={t("Move your watchlist")}
+          subtitle={t("Copy your Harbor watchlist over to Trakt, or pull your Trakt watchlist into Harbor. Safe to run again, Trakt skips anything it already has.")}
+        >
+          <WatchlistSync />
         </Section>
       )}
 

@@ -18,6 +18,23 @@ type OpenPicker = (
   opts?: { autoPlay?: boolean; attempt?: number },
 ) => void;
 
+export type SourceError = { status: number; host: string };
+
+async function probeSourceStatus(url: string, headers?: Record<string, string>): Promise<SourceError> {
+  let host = "";
+  try {
+    host = new URL(url).host;
+  } catch {
+    host = "";
+  }
+  try {
+    const res = await fetch(url, { method: "GET", headers: { ...(headers ?? {}), Range: "bytes=0-1" } });
+    return { status: res.status, host };
+  } catch {
+    return { status: 0, host };
+  }
+}
+
 export function useAutoRetry(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
   src: PlayerSrc;
@@ -65,29 +82,42 @@ export function useAutoRetry(params: {
   const autoRetriedRef = useRef(false);
   const transcodedTriedRef = useRef(false);
   const sameUrlRetriedRef = useRef(false);
+  const proxyRetriedRef = useRef(false);
+  const transcodeRescueRef = useRef(false);
   const debridFailoverTriedRef = useRef(false);
   const liveRetryCountRef = useRef(0);
+  const livePlayedRef = useRef(false);
   const [transcodedUrl, setTranscodedUrl] = useState<string | null>(null);
+  const [sourceError, setSourceError] = useState<SourceError | null>(null);
   useEffect(() => {
+    setSourceError(null);
     autoRetriedRef.current = false;
     transcodedTriedRef.current = false;
     sameUrlRetriedRef.current = false;
+    proxyRetriedRef.current = false;
+    transcodeRescueRef.current = false;
     debridFailoverTriedRef.current = false;
     liveRetryCountRef.current = 0;
+    livePlayedRef.current = false;
     dlRef.current = { bytes: 0, at: Date.now() };
     setTranscodedUrl(null);
   }, [src.url]);
 
   useEffect(() => {
+    if (isLive && hasProgress) livePlayedRef.current = true;
+  }, [isLive, hasProgress]);
+
+  useEffect(() => {
     if (!isLive) return;
     if (snap.errorCode == null) return;
-    if (liveRetryCountRef.current >= 2) return;
+    const maxAttempts = livePlayedRef.current ? 2 : 1;
+    if (liveRetryCountRef.current >= maxAttempts) return;
     const b = bridgeRef.current;
     if (!b) return;
     const attempt = liveRetryCountRef.current + 1;
     const timer = window.setTimeout(() => {
       liveRetryCountRef.current = attempt;
-      console.warn(`[player] live auto-reconnect attempt ${attempt}/2`);
+      console.warn(`[player] live auto-reconnect attempt ${attempt}/${maxAttempts}`);
       void b.load({
         url: src.url,
         subtitles: src.subtitles,
@@ -95,7 +125,7 @@ export function useAutoRetry(params: {
         isLive: true,
         headers: src.headers,
       });
-    }, 4000);
+    }, livePlayedRef.current ? 4000 : 1500);
     return () => window.clearTimeout(timer);
   }, [isLive, snap.errorCode, src.url, src.subtitles, src.notWebReady, bridgeRef, src.headers]);
 
@@ -125,6 +155,10 @@ export function useAutoRetry(params: {
       if (nextAttempt >= 2) {
         clearOnePickerCache(src.meta, src.episode);
       }
+      if (!instantPlay && !inRoom && /^https?:\/\//i.test(src.url)) {
+        void probeSourceStatus(src.url, src.headers).then(setSourceError);
+        return;
+      }
       openPicker(
         src.meta,
         src.episode,
@@ -150,7 +184,10 @@ export function useAutoRetry(params: {
       debridFailoverTriedRef.current = true;
       const cached = Object.fromEntries((src.streamRef?.cachedSlugs ?? []).map((s) => [s, true]));
       const ac = new AbortController();
-      void resolveViaDebrids(failoverHash, src.streamRef?.fileIdx ?? undefined, cached, debrids, ac.signal, false).then(
+      const hint = src.episode
+        ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
+        : undefined;
+      void resolveViaDebrids(failoverHash, src.streamRef?.fileIdx ?? undefined, cached, debrids, ac.signal, false, {}, hint).then(
         async (r) => {
           const b = bridgeRef.current;
           if (r.ok && b) {
@@ -187,6 +224,46 @@ export function useAutoRetry(params: {
           isLive,
           headers: src.headers,
         });
+        return;
+      }
+    }
+    if (
+      !proxyRetriedRef.current &&
+      !isLocal &&
+      !isP2pEngine &&
+      /^https?:\/\//i.test(src.url) &&
+      !src.url.includes("127.0.0.1")
+    ) {
+      proxyRetriedRef.current = true;
+      const b = bridgeRef.current;
+      if (b) {
+        console.warn(`[player] error "${snap.errorCode}" — retrying via local stream proxy`);
+        void registerStreamProxy(src.url, src.headers)
+          .then((p) => {
+            const bb = bridgeRef.current;
+            if (bb) void bb.load({ url: p.url, subtitles: src.subtitles, notWebReady: src.notWebReady });
+          })
+          .catch(() => triggerAutoRetry(`playback error "${snap.errorCode}"`));
+        return;
+      }
+    }
+    if (
+      !transcodeRescueRef.current &&
+      !isLocal &&
+      !isP2pEngine &&
+      /^https?:\/\//i.test(src.url) &&
+      !src.url.includes("127.0.0.1")
+    ) {
+      transcodeRescueRef.current = true;
+      const b = bridgeRef.current;
+      if (b) {
+        console.warn(`[player] error "${snap.errorCode}" — remuxing via ffmpeg`);
+        void registerStreamProxy(src.url, src.headers, { transcode: true })
+          .then((p) => {
+            const bb = bridgeRef.current;
+            if (bb) void bb.load({ url: p.url, subtitles: src.subtitles, notWebReady: true });
+          })
+          .catch(() => triggerAutoRetry(`playback error "${snap.errorCode}"`));
         return;
       }
     }
@@ -341,5 +418,5 @@ export function useAutoRetry(params: {
     return () => window.clearInterval(id);
   }, [isP2pEngine, snap.status, engineFailure, triggerAutoRetry, src.attempt]);
 
-  return { slowLoad, transcodedUrl };
+  return { slowLoad, transcodedUrl, sourceError, clearSourceError: () => setSourceError(null) };
 }

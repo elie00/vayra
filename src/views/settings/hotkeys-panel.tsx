@@ -11,6 +11,7 @@ import {
   type HotkeyId,
   type HotkeyScope,
 } from "@/lib/hotkeys";
+import { SEEK_STEP_OPTIONS } from "@/lib/seek-step";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow } from "./shared";
@@ -86,6 +87,18 @@ export function HotkeysPanel() {
           value={settings.playerEscExitsFullscreen}
           onChange={(v) => update({ playerEscExitsFullscreen: v })}
         />
+        <ToggleRow
+          label={t("Ask before leaving")}
+          sub={t("When Esc would close the player, show a quick confirm first. You can tick \"Don't ask me again\" in that prompt to always leave on Esc.")}
+          value={settings.playerConfirmLeave}
+          onChange={(v) => update({ playerConfirmLeave: v })}
+        />
+        <SeekStepRow
+          back={settings.seekBackStepSec}
+          forward={settings.seekForwardStepSec}
+          onBack={(seekBackStepSec) => update({ seekBackStepSec })}
+          onForward={(seekForwardStepSec) => update({ seekForwardStepSec })}
+        />
       </Section>
 
       {(Object.keys(grouped) as HotkeyScope[]).map((scope) => {
@@ -127,6 +140,13 @@ export function HotkeysPanel() {
                       />
                     );
                   })}
+                  {scope === "Global" && groupName === "Interface" && (
+                    <ReadOnlyHotkeyRow
+                      label={t("Adjust interface scale with wheel")}
+                      description={t("Hold Ctrl or Cmd and scroll to resize Harbor's interface smoothly.")}
+                      binding="Ctrl / ⌘ + Scroll"
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -134,6 +154,96 @@ export function HotkeysPanel() {
         );
       })}
     </>
+  );
+}
+
+function SeekStepRow({
+  back,
+  forward,
+  onBack,
+  onForward,
+}: {
+  back: number;
+  forward: number;
+  onBack: (seconds: number) => void;
+  onForward: (seconds: number) => void;
+}) {
+  const t = useT();
+  return (
+    <div className="grid gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3 xl:grid-cols-[minmax(220px,1fr)_minmax(0,640px)] xl:items-center">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-[14px] font-medium text-ink">{t("Seek step")}</span>
+        <span className="text-[12.5px] text-ink-subtle">
+          {t("Choose how far the keyboard arrows and player seek buttons jump.")}
+        </span>
+      </div>
+      <div className="grid min-w-0 gap-2">
+        <SeekStepPicker label={t("Back")} value={back} onChange={onBack} />
+        <SeekStepPicker label={t("Forward")} value={forward} onChange={onForward} />
+      </div>
+    </div>
+  );
+}
+
+function SeekStepPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (seconds: number) => void;
+}) {
+  return (
+    <div className="grid min-w-0 grid-cols-[76px_minmax(0,1fr)] items-center gap-2 rounded-lg border border-edge-soft bg-elevated/55 p-1.5">
+      <span className="ps-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+        {label}
+      </span>
+      <div className="grid min-w-0 grid-cols-6 gap-1 rounded-md bg-canvas/45 p-0.5">
+        {SEEK_STEP_OPTIONS.map((seconds) => {
+          const selected = seconds === value;
+          return (
+            <button
+              key={seconds}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(seconds)}
+              className={`h-7 min-w-0 rounded-[6px] px-1 font-mono text-[11.5px] font-bold tabular-nums transition-colors ${
+                selected
+                  ? "bg-ink text-canvas shadow-sm"
+                  : "text-ink-muted hover:bg-raised hover:text-ink"
+              }`}
+            >
+              {seconds}s
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReadOnlyHotkeyRow({
+  label,
+  description,
+  binding,
+}: {
+  label: string;
+  description: string;
+  binding: string;
+}) {
+  const t = useT();
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[14px] font-medium text-ink">{label}</span>
+        <span className="text-[12.5px] text-ink-subtle">{description}</span>
+      </div>
+      <div className="flex h-8 min-w-[128px] items-center justify-center rounded-lg border border-edge bg-elevated px-3 text-[12.5px] font-semibold text-ink">
+        {binding}
+      </div>
+      <span className="sr-only">{t("Fixed shortcut")}</span>
+    </div>
   );
 }
 

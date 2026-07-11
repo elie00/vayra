@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { stopFullDownload } from "./full-download";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -65,11 +66,16 @@ export function lastEngineAddError(): string | null {
 export async function torrentEngineAdd(
   magnet: string,
   trackers: string[],
+  fileIdx?: number,
 ): Promise<AddResult | null> {
   if (!isTauri) return null;
   try {
     lastAddError = null;
-    return await invoke<AddResult>("torrent_engine_add", { magnet, trackers });
+    return await invoke<AddResult>("torrent_engine_add", {
+      magnet,
+      trackers,
+      fileIdx: typeof fileIdx === "number" && fileIdx >= 0 ? fileIdx : null,
+    });
   } catch (e) {
     lastAddError = String(e);
     console.warn("[engine] add failed", e);
@@ -98,6 +104,7 @@ export async function torrentEngineStats(
 
 export async function torrentEngineRemove(infoHash: string, deleteFiles: boolean): Promise<void> {
   if (!isTauri) return;
+  stopFullDownload(infoHash);
   await invoke("torrent_engine_remove", { infoHash, deleteFiles }).catch((e) =>
     console.warn("[engine] remove failed", e),
   );
@@ -156,10 +163,11 @@ export async function torrentEngineHardReset(): Promise<EngineStatus | null> {
 export async function torrentEngineSetOptions(
   dir: string | null,
   retentionHours: number,
+  maxGb: number,
   restart: boolean,
 ): Promise<void> {
   if (!isTauri) return;
-  await invoke("torrent_engine_set_options", { dir, retentionHours, restart }).catch((e) =>
+  await invoke("torrent_engine_set_options", { dir, retentionHours, maxGb, restart }).catch((e) =>
     console.warn("[engine] set options failed", e),
   );
 }

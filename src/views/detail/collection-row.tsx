@@ -4,8 +4,10 @@ import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import type { Meta } from "@/lib/cinemeta";
 import { tmdbCollection } from "@/lib/providers/tmdb";
+import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
+import { dropUnreleased } from "@/views/kids/kids-filter";
 
 export function CollectionRow({
   collection,
@@ -16,6 +18,7 @@ export function CollectionRow({
 }) {
   const { settings } = useSettings();
   const { openCollection } = useView();
+  const kid = useActiveKid();
   const [parts, setParts] = useState<Meta[]>([]);
 
   useEffect(() => {
@@ -25,13 +28,14 @@ export function CollectionRow({
     tmdbCollection(settings.tmdbKey, collection.id)
       .then((c) => {
         if (cancelled || !c) return;
-        setParts(c.parts.filter((p) => p.id !== currentId));
+        const rest = c.parts.filter((p) => p.id !== currentId);
+        setParts(kid ? dropUnreleased(rest) : rest);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [settings.tmdbKey, collection.id, currentId]);
+  }, [settings.tmdbKey, collection.id, currentId, kid]);
 
   if (parts.length === 0) return null;
 
@@ -53,7 +57,7 @@ export function CollectionRow({
       }
     >
       {parts.map((m) => (
-        <PickCard key={m.id} meta={m} />
+        <PickCard key={m.id} meta={m} kids={!!kid} />
       ))}
     </Row>
   );

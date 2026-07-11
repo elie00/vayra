@@ -1,4 +1,4 @@
-import { fetchAddonCatalogPage, normalizeName, type AddonRow } from "@/lib/addons";
+import { createAddonCatalogFetcher, normalizeName, type AddonRow } from "@/lib/addons";
 import { topMovies, topSeries, type Meta } from "@/lib/cinemeta";
 import {
   jikanNewReleases,
@@ -261,10 +261,10 @@ export function mergeRows(
       hasMore: canPage,
       fetcher:
         canPage && more
-          ? async (page) => {
-              const ms = await fetchAddonCatalogPage(more.base, more.type, more.id, (page - 1) * step);
-              return origin ? ms.map((m) => ({ ...m, addonOrigin: origin })) : ms;
-            }
+          ? createAddonCatalogFetcher(more, {
+              initialPageSize: step,
+              mapMeta: origin ? (m) => ({ ...m, addonOrigin: origin }) : undefined,
+            })
           : undefined,
     });
   }

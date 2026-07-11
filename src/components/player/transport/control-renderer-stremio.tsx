@@ -12,6 +12,7 @@ import {
   SkipForward,
   Tv,
 } from "lucide-react";
+import { realQualityLabel } from "@/lib/player/resolution-label";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
 import { getCustomIcon, type CustomIconMap, type PlayerControlId, type TimeFormat, type VolumeStyle } from "@/lib/player-chrome";
@@ -34,6 +35,7 @@ import { StremioBtn } from "./stremio-btn";
 import { StremioVolume } from "./stremio-volume";
 import { renderCustomIconControlStremio } from "./custom-icon-renderer";
 import { WindowControlButtons } from "./window-control-buttons";
+import { IdentifySongButton } from "@/components/identify-song-button";
 
 function qualityInfoOn(): boolean {
   try {
@@ -61,9 +63,11 @@ export type StremioRenderCtx = {
   hasNextEp: boolean;
   engine: "html5" | "mpv" | "exo";
   useOverlayPopups?: boolean;
+  editing?: boolean;
   customIcons?: CustomIconMap;
   previewStates?: Partial<Record<PlayerControlId, string>>;
   timeFormat?: TimeFormat;
+  onCycleTimeFormat?: () => void;
   volumeStyle?: VolumeStyle;
   fullscreen?: boolean;
   title?: string;
@@ -107,6 +111,7 @@ export type StremioRenderCtx = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   onPrevEp: () => void;
@@ -167,6 +172,7 @@ export function RenderedStremioControl({
     case "title-info": {
       if (!ctx.title) return null;
       const showQuality = qualityInfoOn() && !!ctx.quality;
+      const res = realQualityLabel(ctx.snap.videoWidth, ctx.snap.videoHeight) ?? ctx.resolution;
       if (ctx.titleClickable && ctx.onTitleClick) {
         return (
           <button
@@ -180,9 +186,9 @@ export function RenderedStremioControl({
                 {ctx.subtitle && (
                   <span className="shrink-0 text-[13px] font-normal text-white/55">{ctx.subtitle}</span>
                 )}
-                {!showQuality && ctx.resolution && (
+                {!showQuality && res && (
                   <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white/80">
-                    {ctx.resolution}
+                    {res}
                   </span>
                 )}
               </span>
@@ -203,12 +209,12 @@ export function RenderedStremioControl({
               <p className="truncate text-[12px] tabular-nums text-white/50">{ctx.quality}</p>
             </>
           ) : (
-            (ctx.subtitle || ctx.resolution) && (
+            (ctx.subtitle || res) && (
               <p className="flex items-center gap-1.5 text-[13px] text-white/55">
                 {ctx.subtitle && <span className="truncate">{ctx.subtitle}</span>}
-                {ctx.resolution && (
+                {res && (
                   <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white/80">
-                    {ctx.resolution}
+                    {res}
                   </span>
                 )}
               </p>
@@ -268,6 +274,7 @@ export function RenderedStremioControl({
           timeFormat={ctx.timeFormat}
           isLiveChannel={ctx.isLiveChannel}
           active={ctx.active}
+          onCycle={ctx.editing ? undefined : ctx.onCycleTimeFormat}
         />
       );
     }
@@ -355,7 +362,6 @@ export function RenderedStremioControl({
       );
     case "audio-menu":
       if (ctx.engine === "html5") return null;
-      if (ctx.isLiveChannel && ctx.snap.audioTracks.length < 2) return null;
       return (
         <AudioMenu
           tracks={ctx.snap.audioTracks}
@@ -376,6 +382,7 @@ export function RenderedStremioControl({
           hideOthers={ctx.hideOthersDrawings}
           onToggle={ctx.onToggleDraw}
           onToggleHideOthers={ctx.onToggleHideOthers}
+          onClear={ctx.onClearDraw}
         />
       );
     case "screenshot":
@@ -386,6 +393,8 @@ export function RenderedStremioControl({
           </StremioBtn>
         </Tooltip>
       );
+    case "song-id":
+      return <IdentifySongButton editing={ctx.editing} />;
     case "pip":
       if (!ctx.capabilities.pictureInPicture) return null;
       return (

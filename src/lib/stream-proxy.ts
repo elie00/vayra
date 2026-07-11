@@ -8,10 +8,14 @@ export type ProxyResult = {
 export async function registerStreamProxy(
   url: string,
   headers?: Record<string, string>,
+  opts?: { transcode?: boolean },
 ): Promise<ProxyResult> {
-  const r = await invoke<{ session_id: string; url: string }>("proxy_register", {
-    args: { url, headers: headers ?? {} },
-  });
+  const args: Record<string, unknown> = { url, headers: headers ?? {} };
+  if (opts?.transcode) {
+    args.transcode = true;
+    args.profile = { force_h264: false, force_aac: false };
+  }
+  const r = await invoke<{ session_id: string; url: string }>("proxy_register", { args });
   return { sessionId: r.session_id, url: r.url };
 }
 

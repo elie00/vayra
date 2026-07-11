@@ -31,6 +31,7 @@ export {
   tmdbTrending,
   tmdbDiscover,
   tmdbSearchMovie,
+  tmdbSearchTitle,
 } from "./tmdb/tmdb-catalogs";
 
 export {
@@ -79,3 +80,9 @@ export {
   tmdbWatchProviders,
   type WatchProvider,
 } from "./tmdb/tmdb-watch";
+
+export {
+  tmdbEpisodeGroups,
+  tmdbEpisodeGroup,
+  type StoryArc,
+} from "./tmdb/tmdb-episode-groups";

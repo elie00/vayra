@@ -456,6 +456,8 @@ export function createExoBridge(): PlayerBridge {
       panscan = value;
       applyResize();
     },
+    setStretch() {},
+    setVideoEq() {},
     setVideoZoom(log2) {
       zoom = log2;
       applyResize();

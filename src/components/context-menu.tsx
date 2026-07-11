@@ -1,12 +1,15 @@
-import { Bookmark, BookmarkCheck, ClipboardPaste, Copy, Download, Info, ListChecks, ListPlus, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, EyeOff, Info, ListChecks, ListPlus, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
+import { useT } from "@/lib/i18n";
 import { usePlayerActions } from "@/lib/player-actions";
 import { useTogether } from "@/lib/together/provider";
 import type { ParticipantLocation } from "@/lib/together/protocol";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import { markMetaWatched, unmarkMetaWatched } from "@/lib/mark-watched";
+import { useMetaWatched } from "@/lib/watched-flag";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { useInLocalWatchlist, useLocalWatchlist } from "@/lib/local-watchlist";
@@ -44,10 +47,12 @@ export function ContextMenu() {
     openSettings,
     meta: currentMeta,
     topKind,
-    chromeHidden,
+    player,
   } = useView();
   const { snapshot, sendSummon, hostLocation, clientId } = useTogether();
   const playerActions = usePlayerActions();
+  const menuMeta = currentMeta ?? player?.meta ?? null;
+  const t = useT();
   const activeAddon = useActiveAddon();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -55,7 +60,9 @@ export function ContextMenu() {
   const isHost = inSession && snapshot.hostClientId === clientId;
   const canGoToHost = inSession && !isHost && hostLocation != null;
   const targetMetaId = state?.target.kind === "meta" ? state.target.meta.id : undefined;
+  const targetType = state?.target.kind === "meta" ? state.target.meta.type : undefined;
   const targetImdb = useTmdbImdbId(targetMetaId);
+  const isWatched = useMetaWatched(targetMetaId, targetType);
   const isWatchlisted = useInWatchlist(targetMetaId, [targetImdb]);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(targetMetaId);
@@ -78,7 +85,6 @@ export function ContextMenu() {
   };
 
   useEffect(() => {
-    if (chromeHidden) return;
     const handler = (e: MouseEvent) => {
       if (e.defaultPrevented) return;
       if (topKind === "settings") {
@@ -101,9 +107,9 @@ export function ContextMenu() {
           return;
         }
       }
-      if (currentMeta) {
+      if (menuMeta) {
         e.preventDefault();
-        open(e, { kind: "meta", meta: currentMeta });
+        open(e, { kind: "meta", meta: menuMeta });
         return;
       }
       if (topKind === "addon-detail") {
@@ -121,7 +127,7 @@ export function ContextMenu() {
     };
     document.addEventListener("contextmenu", handler);
     return () => document.removeEventListener("contextmenu", handler);
-  }, [open, currentMeta, topKind, chromeHidden, activeAddon]);
+  }, [open, currentMeta, menuMeta, topKind, activeAddon]);
 
   useEffect(() => {
     if (!state) return;
@@ -219,6 +225,27 @@ export function ContextMenu() {
         accent={isLocal}
       />,
     );
+    if (!playerActions) {
+      items.push(
+        <Item
+          key="watched"
+          icon={isWatched ? <EyeOff size={14} strokeWidth={2} /> : <CheckCheck size={14} strokeWidth={2} />}
+          label={
+            isWatched
+              ? "Mark as unwatched"
+              : meta.type === "series"
+                ? "Mark all watched"
+                : "Mark as watched"
+          }
+          onClick={() => {
+            if (isWatched) void unmarkMetaWatched(meta);
+            else void markMetaWatched(meta, targetImdb);
+            close();
+          }}
+          accent={isWatched}
+        />,
+      );
+    }
     if (inSession && !playerActions) {
       items.push(
         <Item
@@ -250,6 +277,19 @@ export function ContextMenu() {
             label="Download Video"
             onClick={() => {
               playerActions.download();
+              close();
+            }}
+          />,
+        );
+      }
+      if (playerActions.canDownloadSubtitle) {
+        items.push(
+          <Item
+            key="download-subtitle"
+            icon={<Download size={14} strokeWidth={2} />}
+            label={t("Download Subtitle")}
+            onClick={() => {
+              playerActions.downloadSubtitle();
               close();
             }}
           />,
@@ -318,6 +358,20 @@ export function ContextMenu() {
         />,
       );
     }
+  } else if (state.target.kind === "subtitle") {
+    const { download } = state.target;
+    items.push(
+      <Item
+        key="download-subtitle"
+        icon={<Download size={14} strokeWidth={2} />}
+        label={t("Download this subtitle")}
+        onClick={() => {
+          if (download) void download();
+          close();
+        }}
+        disabled={!download}
+      />,
+    );
   } else {
     const { element, selection } = state.target;
     const canCopy = selection.length > 0;

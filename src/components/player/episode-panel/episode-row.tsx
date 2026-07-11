@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Check, ChevronDown, Hourglass, Play, RotateCcw, Star } from "lucide-react";
+import { Check, ChevronDown, Hourglass, Play, RotateCcw } from "lucide-react";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import type { PlayEpisode } from "@/lib/view";
+import { useSettings } from "@/lib/settings";
+import { EpisodeRatingBadge } from "@/views/detail/episode-rating-badge";
 import { useT } from "@/lib/i18n";
 
 function formatAirDate(d: string): string {
-  const date = new Date(`${d}T00:00:00`);
+  const date = new Date(d.length <= 10 ? `${d}T00:00:00` : d);
   if (Number.isNaN(date.getTime())) return d;
   return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
@@ -28,6 +30,7 @@ export function EpisodeRow({
   spoiler?: SpoilerMask;
 }) {
   const t = useT();
+  const { settings } = useSettings();
   const hasMeta = episode.rating != null || !!episode.airDate || episode.runtime != null;
   const epLabel = `S${episode.imdbSeason ?? episode.season} · E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`;
   const hasStill = !!episode.still;
@@ -107,11 +110,8 @@ export function EpisodeRow({
         <div className="mx-3 mb-3 flex flex-col gap-2 rounded-xl bg-canvas/40 p-3">
           {hasMeta && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-ink-subtle">
-              {episode.rating != null && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-accent/15 px-1.5 py-0.5 text-[11.5px] font-bold text-accent ring-1 ring-accent/25">
-                  <Star size={11} fill="currentColor" strokeWidth={0} />
-                  {episode.rating.toFixed(1)}
-                </span>
+              {settings.showEpisodeRating && episode.rating != null && episode.rating > 0 && (
+                <EpisodeRatingBadge value={episode.rating} isImdb={false} />
               )}
               {episode.airDate && <span>{formatAirDate(episode.airDate)}</span>}
               {episode.runtime != null && <span>{t("{n} min", { n: episode.runtime })}</span>}

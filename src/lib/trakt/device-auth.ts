@@ -1,7 +1,7 @@
 import {
   TRAKT_API_BASE,
   TRAKT_CLIENT_ID,
-  TRAKT_CLIENT_SECRET,
+  TRAKT_DEVICE_TOKEN_PROXY,
 } from "./config";
 import { setSession } from "./session";
 import type { DeviceCode, TraktSession, TraktUserMe } from "./types";
@@ -44,13 +44,11 @@ export type PollResult =
   | { kind: "error"; message: string };
 
 async function pollOnce(deviceCode: string): Promise<PollResult> {
-  const res = await fetch(`${TRAKT_API_BASE}/oauth/device/token`, {
+  const res = await fetch(TRAKT_DEVICE_TOKEN_PROXY, {
     method: "POST",
     headers: baseHeaders(),
     body: JSON.stringify({
       code: deviceCode,
-      client_id: TRAKT_CLIENT_ID,
-      client_secret: TRAKT_CLIENT_SECRET,
     }),
   });
   if (res.status === 200) {

@@ -5,6 +5,7 @@ import { CatalogCustomizeBar } from "@/components/catalog/customize-bar";
 import { CinemaHero } from "@/components/cinema-hero";
 import { Row, ScrollRootContext } from "@/components/row";
 import { TopRankCard } from "@/components/top-rank-card";
+import { PickCard } from "@/components/pick-card";
 import { TmdbNudge } from "@/components/nudge";
 import { topMovies, type Meta } from "@/lib/cinemeta";
 import { recentlyPlayed } from "@/lib/playback-history";
@@ -13,6 +14,10 @@ import { listPager } from "@/lib/list-pager";
 import { hasPageRowChanges, resetPageRows, usePageRows } from "@/lib/page-rows";
 import { useSettings } from "@/lib/settings";
 import { useScrollMemory, useView } from "@/lib/view";
+import { useLetterboxd } from "@/lib/stremboxd/provider";
+import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
+import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
+import type { HomeRow } from "./home/home-types";
 import { buildMovieHero, HERO_POOL_TARGET, movieSpecs, rotateDaily } from "./movies/movie-specs";
 
 const MAX_PER_ROW = 30;
@@ -30,9 +35,11 @@ export function Movies({ active = true }: { active?: boolean }) {
   const { settings } = useSettings();
   const { openGrid } = useView();
   const t = useT();
+  const letterboxd = useLetterboxd();
   const pageRows = usePageRows("movies");
   const [hero, setHero] = useState<Meta[]>([]);
   const [rows, setRows] = useState<MovieRow[]>([]);
+  const [letterboxdRows, setLetterboxdRows] = useState<HomeRow[]>([]);
   const rowsRef = useRef<MovieRow[]>([]);
   const loadingRef = useRef<Set<string>>(new Set());
   const scrollRef = useRef<HTMLElement>(null);
@@ -43,6 +50,46 @@ export function Movies({ active = true }: { active?: boolean }) {
   }, [rows]);
 
   useScrollMemory("movies", scrollRef, active);
+
+  useEffect(() => {
+    if (!letterboxd.isActive) {
+      setLetterboxdRows([]);
+      return;
+    }
+    if (letterboxd.mode === "full" && !letterboxd.session) {
+      setLetterboxdRows([]);
+      return;
+    }
+    if (letterboxd.mode === "public" && !letterboxd.configSegment) {
+      setLetterboxdRows([]);
+      return;
+    }
+    let cancelled = false;
+    buildLetterboxdHomeRows({
+      configSegment: letterboxd.configSegment,
+      selectedCatalogs: letterboxd.selectedCatalogs,
+      hiddenCatalogs: letterboxd.hiddenCatalogs,
+      catalogOrder: letterboxd.catalogOrder,
+      session: letterboxd.session,
+      listRefs: letterboxd.listRefs,
+    })
+      .then((rs) => {
+        if (!cancelled) setLetterboxdRows(rs);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    letterboxd.isActive,
+    letterboxd.mode,
+    letterboxd.configSegment,
+    letterboxd.selectedCatalogs,
+    letterboxd.hiddenCatalogs,
+    letterboxd.catalogOrder,
+    letterboxd.session,
+    letterboxd.listRefs,
+  ]);
 
   const scrollCb = useCallback((el: HTMLElement | null) => {
     (scrollRef as { current: HTMLElement | null }).current = el;
@@ -55,8 +102,6 @@ export function Movies({ active = true }: { active?: boolean }) {
       const seen = recentlyPlayed();
       if (settings.tmdbKey) {
         const heroPool = await buildMovieHero(settings.tmdbKey, seen).catch(() => [] as Meta[]);
-        if (cancelled) return;
-        setHero(heroPool);
         const specs = movieSpecs(settings.tmdbKey, settings.region);
         const firstPages = await Promise.all(
           specs.map((s) => s.fetcher(1).catch(() => [] as Meta[])),
@@ -72,53 +117,56 @@ export function Movies({ active = true }: { active?: boolean }) {
             fetcher: spec.noPaginate ? undefined : spec.fetcher,
           }))
           .filter((r) => r.metas.length > 0);
-        setRows(built);
-      } else {
-        const genreList = [
-          "Action",
-          "Drama",
-          "Comedy",
-          "Sci-Fi",
-          "Thriller",
-          "Horror",
-          "Romance",
-          "Animation",
-          "Adventure",
-          "Crime",
-          "Mystery",
-          "Fantasy",
-          "Documentary",
-        ];
-        const [top, ...byGenre] = await Promise.all([
-          topMovies().catch(() => [] as Meta[]),
-          ...genreList.map((g) => topMovies(g).catch(() => [] as Meta[])),
-        ]);
-        if (cancelled) return;
-        setHero(rotateDaily(top.filter((m) => m.background), HERO_POOL_TARGET, seen));
-        const built: MovieRow[] = [
-          {
-            key: "cinemeta-top",
-            title: "Top Movies",
-            metas: top.slice(0, 30),
-            page: 1,
-            hasMore: false,
-            fetcher: listPager(top),
-          },
-        ];
-        for (let i = 0; i < genreList.length; i++) {
-          const list = byGenre[i] ?? [];
-          if (list.length === 0) continue;
-          built.push({
-            key: `cinemeta-genre-${genreList[i].toLowerCase().replace(/[^a-z]/g, "")}`,
-            title: `Top ${genreList[i]}`,
-            metas: list.slice(0, 30),
-            page: 1,
-            hasMore: false,
-            fetcher: listPager(list),
-          });
+        if (built.length > 0) {
+          setHero(heroPool);
+          setRows(built);
+          return;
         }
-        setRows(built);
       }
+      const genreList = [
+        "Action",
+        "Drama",
+        "Comedy",
+        "Sci-Fi",
+        "Thriller",
+        "Horror",
+        "Romance",
+        "Animation",
+        "Adventure",
+        "Crime",
+        "Mystery",
+        "Fantasy",
+        "Documentary",
+      ];
+      const [top, ...byGenre] = await Promise.all([
+        topMovies().catch(() => [] as Meta[]),
+        ...genreList.map((g) => topMovies(g).catch(() => [] as Meta[])),
+      ]);
+      if (cancelled) return;
+      setHero(rotateDaily(top.filter((m) => m.background), HERO_POOL_TARGET, seen));
+      const built: MovieRow[] = [
+        {
+          key: "cinemeta-top",
+          title: "Top Movies",
+          metas: top.slice(0, 30),
+          page: 1,
+          hasMore: false,
+          fetcher: listPager(top),
+        },
+      ];
+      for (let i = 0; i < genreList.length; i++) {
+        const list = byGenre[i] ?? [];
+        if (list.length === 0) continue;
+        built.push({
+          key: `cinemeta-genre-${genreList[i].toLowerCase().replace(/[^a-z]/g, "")}`,
+          title: `Top ${genreList[i]}`,
+          metas: list.slice(0, 30),
+          page: 1,
+          hasMore: false,
+          fetcher: listPager(list),
+        });
+      }
+      setRows(built);
     })().catch(console.error);
     return () => {
       cancelled = true;
@@ -193,6 +241,44 @@ export function Movies({ active = true }: { active?: boolean }) {
             onReset={() => pageRows.persist(resetPageRows())}
           />
           {!settings.tmdbKey && <TmdbNudge />}
+          {letterboxdRows.map((row, i) => {
+            const catalogId = row.key.replace("letterboxd-", "");
+            return (
+            <Row
+              key={row.key}
+              title={
+                <>
+                  {t(row.name)}
+                  <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
+                    Letterboxd
+                  </span>
+                </>
+              }
+              titleExtra={
+                <LetterboxdRowMenu
+                  canMoveUp={i > 0}
+                  canMoveDown={i < letterboxdRows.length - 1}
+                  hidden={letterboxd.hiddenCatalogs.includes(catalogId)}
+                  onMoveUp={() => letterboxd.moveCatalog(catalogId, -1)}
+                  onMoveDown={() => letterboxd.moveCatalog(catalogId, 1)}
+                  onToggleHidden={() => letterboxd.toggleHidden(catalogId)}
+                />
+              }
+              min={148}
+              shape="portrait"
+              scrollKey={`movies:${row.key}`}
+              onViewAll={
+                row.fetcher
+                  ? () => openGrid({ title: t(row.name), fetcher: row.fetcher!, initial: row.metas })
+                  : undefined
+              }
+            >
+              {row.metas.map((m) => (
+                <PickCard key={m.id} meta={m} />
+              ))}
+            </Row>
+            );
+          })}
           {top10.length >= 10 && (
             <Row
               title={t("Top 10 Movies Today")}

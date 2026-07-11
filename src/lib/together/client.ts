@@ -242,7 +242,7 @@ export class TogetherClient {
     this.sendNow({ t: "cursor", room: this.room, clientId: this.clientId, x, y, visible, path });
   }
 
-  sendDraw(strokeId: string, phase: "start" | "point" | "end", path: string, x?: number, y?: number, color?: string): void {
+  sendDraw(strokeId: string, phase: "start" | "point" | "end" | "clear", path: string, x?: number, y?: number, color?: string): void {
     if (!this.room) return;
     if (this.ws?.readyState !== WebSocket.OPEN) return;
     this.sendNow({ t: "draw", room: this.room, clientId: this.clientId, strokeId, phase, x, y, color, path });

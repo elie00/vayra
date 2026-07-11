@@ -26,7 +26,7 @@
         "maximizable": true,
         "minimizable": true,
         "center": true,
-        "additionalBrowserArgs": "--disk-cache-size=104857600 --media-cache-size=52428800 --autoplay-policy=no-user-gesture-required"
+        "additionalBrowserArgs": "--disk-cache-size=104857600 --media-cache-size=52428800 --autoplay-policy=no-user-gesture-required --disable-features=HardwareMediaKeyHandling"
       }
     ],
     "security": {
@@ -39,6 +39,14 @@
   },
   "bundle": {
     "active": true,
+    "fileAssociations": [
+      {
+        "ext": ["mkv", "mp4", "avi", "mov", "webm", "m4v"],
+        "name": "HarborVideo",
+        "description": "Video file",
+        "role": "Viewer"
+      }
+    ],
     "createUpdaterArtifacts": false,
     "targets": ["app", "dmg", "deb", "rpm", "appimage", "nsis"],
     "externalBin": ["binaries/yt-dlp", "binaries/ffmpeg", "binaries/ffprobe"],

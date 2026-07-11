@@ -38,6 +38,7 @@ export type LibraryItem = {
   isAnime?: boolean;
   upNext?: boolean;
   local?: boolean;
+  manualWatched?: boolean;
 };
 
 export function libraryMetaType(t: string): import("@/lib/cinemeta").MetaType {
@@ -47,7 +48,7 @@ export function libraryMetaType(t: string): import("@/lib/cinemeta").MetaType {
 }
 
 export function isAnimeCwItem(i: LibraryItem): boolean {
-  return i._id.startsWith("kitsu:") || i._id.startsWith("mal:") || i.isAnime === true || isDetectedAnime(i._id);
+  return /^(kitsu|mal|anilist|anidb):/.test(i._id) || i.isAnime === true || isDetectedAnime(i._id);
 }
 
 export function episodeFromVideoId(

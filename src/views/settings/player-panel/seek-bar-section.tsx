@@ -146,6 +146,29 @@ export function SeekBarPanel() {
         />
       </SubField>
 
+      <ToggleRow
+        label={t("Buffer fill")}
+        sub={t("The lighter fill showing how much is buffered or downloaded ahead. It hides automatically once a stream is fully cached (green dot).")}
+        value={settings.seekBarFill !== false}
+        onChange={(v) => update({ seekBarFill: v })}
+      />
+
+      <SubField
+        label={t("Buffer fill brightness")}
+        value={`${Math.round((settings.seekBarFillOpacity ?? 0.35) * 100)}%`}
+      >
+        <input
+          type="range"
+          min={5}
+          max={100}
+          step={5}
+          value={Math.round((settings.seekBarFillOpacity ?? 0.35) * 100)}
+          onChange={(e) => update({ seekBarFillOpacity: Number(e.target.value) / 100 })}
+          disabled={settings.seekBarFill === false}
+          className="w-full accent-ink disabled:opacity-40"
+        />
+      </SubField>
+
       <SubField label={t("Seek dot shape")}>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {SHAPES.map((s) => (
@@ -266,7 +289,7 @@ function Preview({ settings }: { settings: Settings }) {
             <SeekBarVisual
               settings={settings}
               pct={pct}
-              bufferedPct={Math.min(100, pct + 13)}
+              bufferedPct={settings.seekBarFill === false ? 0 : Math.min(100, pct + 13)}
               hovered={hover}
               scrubbing={scrub}
             />

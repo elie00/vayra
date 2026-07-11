@@ -349,6 +349,25 @@ fn trusted_addon_points(s: &ParsedStream) -> ScoreReason {
     }
 }
 
+const ADDON_PRIORITY_MAX: f64 = 12.0;
+const ADDON_PRIORITY_STEP: f64 = 4.0;
+
+fn addon_priority_points(s: &ParsedStream) -> ScoreReason {
+    match s.stream.addon_priority {
+        Some(p) => {
+            let delta = (ADDON_PRIORITY_MAX - p as f64 * ADDON_PRIORITY_STEP).max(0.0);
+            ScoreReason {
+                signal: format!("addon-priority-{}", p),
+                delta,
+            }
+        }
+        None => ScoreReason {
+            signal: "addon-priority-none".to_string(),
+            delta: 0.0,
+        },
+    }
+}
+
 fn playability_penalty(s: &ParsedStream) -> f64 {
     let mut penalty = 0.0_f64;
     if matches!(s.audio.codec, AudioCodec::Dts | AudioCodec::DtsHdMa) {
@@ -1139,6 +1158,12 @@ pub fn score_stream(
         reasons.push(trusted_addon_boost);
     }
 
+    let addon_priority_boost = addon_priority_points(&parsed);
+    if addon_priority_boost.delta > 0.0 {
+        score += addon_priority_boost.delta;
+        reasons.push(addon_priority_boost);
+    }
+
     let playability_delta = playability_penalty(&parsed);
     if playability_delta < 0.0 {
         score += playability_delta;
@@ -1237,7 +1262,11 @@ pub fn rank_and_pick(
         cached_first.sort_by(|a, b| {
             let pa = a.parsed.stream.addon_priority.unwrap_or(u32::MAX);
             let pb = b.parsed.stream.addon_priority.unwrap_or(u32::MAX);
-            pa.cmp(&pb).then(b.score.total_cmp(&a.score))
+            let ra = a.parsed.stream.addon_return_idx.unwrap_or(u32::MAX);
+            let rb = b.parsed.stream.addon_return_idx.unwrap_or(u32::MAX);
+            pa.cmp(&pb)
+                .then(ra.cmp(&rb))
+                .then(b.score.total_cmp(&a.score))
         });
     }
     cached_first.sort_by(|a, b| {
@@ -1252,9 +1281,17 @@ pub fn rank_and_pick(
         by_tier_map.entry(key).or_insert_with(|| s.clone());
     }
 
-    let primary = cached_first
-        .iter()
-        .find(|s| is_cached_scored(s, active_debrids) && !is_theater_source(s.parsed.source))
+    let cached_non_theater = || {
+        cached_first
+            .iter()
+            .filter(|s| is_cached_scored(s, active_debrids) && !is_theater_source(s.parsed.source))
+    };
+    let picked = if respect_addon_order {
+        cached_non_theater().next()
+    } else {
+        cached_non_theater().max_by(|a, b| a.score.total_cmp(&b.score))
+    };
+    let primary = picked
         .or_else(|| cached_first.iter().find(|s| !is_theater_source(s.parsed.source)))
         .or_else(|| cached_first.first())
         .cloned();
@@ -1632,6 +1669,40 @@ mod tests {
     }
 
     #[test]
+    fn rank_and_pick_addon_order_preserves_return_index_over_score() {
+        let mut p1 = base_parsed();
+        p1.resolution = Resolution::P1080;
+        p1.stream.addon_priority = Some(0);
+        p1.stream.addon_return_idx = Some(0);
+        p1.stream.url = Some("http://a/1080".to_string());
+        let s1 = ScoredStream {
+            parsed: p1,
+            score: 30.0,
+            reasons: vec![],
+            tier: Tier::P1080,
+        };
+        let mut p2 = base_parsed();
+        p2.resolution = Resolution::UHD;
+        p2.stream.addon_priority = Some(0);
+        p2.stream.addon_return_idx = Some(1);
+        p2.stream.url = Some("http://a/4k".to_string());
+        let s2 = ScoredStream {
+            parsed: p2,
+            score: 40.0,
+            reasons: vec![],
+            tier: Tier::Uhd,
+        };
+        let active = vec!["rd".to_string()];
+        let picker = rank_and_pick(vec![s2, s1], &active, true);
+        assert_eq!(
+            picker.all[0].tier,
+            Tier::P1080,
+            "same-addon return index 0 must rank first over the higher-scored UHD"
+        );
+        assert_eq!(picker.primary.as_ref().unwrap().tier, Tier::P1080);
+    }
+
+    #[test]
     fn rank_and_pick_skips_theater_sources_for_primary() {
         let mut p1 = base_parsed();
         p1.source = Source::CAM;
@@ -1748,5 +1819,52 @@ mod tests {
         assert_eq!(scored.score, -80.0);
         let signals: Vec<&str> = scored.reasons.iter().map(|r| r.signal.as_str()).collect();
         assert!(signals.contains(&"title-says-hires-filename-says-cam"));
+    }
+
+    #[test]
+    fn scoring_addon_priority_bonus_decays_with_position() {
+        let mut p0 = base_parsed();
+        p0.stream.addon_priority = Some(0);
+        assert_eq!(score_stream(p0, &empty_opts(), &empty_corpus()).score, 32.0);
+
+        let mut p2 = base_parsed();
+        p2.stream.addon_priority = Some(2);
+        assert_eq!(score_stream(p2, &empty_opts(), &empty_corpus()).score, 24.0);
+
+        let mut p5 = base_parsed();
+        p5.stream.addon_priority = Some(5);
+        assert_eq!(score_stream(p5, &empty_opts(), &empty_corpus()).score, 20.0);
+
+        let none = base_parsed();
+        assert_eq!(score_stream(none, &empty_opts(), &empty_corpus()).score, 20.0);
+    }
+
+    #[test]
+    fn rank_and_pick_prefers_higher_scored_cached_regardless_of_input_order() {
+        let mut backup = base_parsed();
+        backup.cached.insert("rd".to_string(), true);
+        backup.stream.addon_priority = Some(4);
+        let s_backup = ScoredStream {
+            parsed: backup,
+            score: 80.0,
+            reasons: vec![],
+            tier: Tier::P1080,
+        };
+
+        let mut top = base_parsed();
+        top.cached.insert("rd".to_string(), true);
+        top.stream.addon_priority = Some(0);
+        let s_top = ScoredStream {
+            parsed: top,
+            score: 92.0,
+            reasons: vec![],
+            tier: Tier::P1080,
+        };
+
+        let active = vec!["rd".to_string()];
+        let picker = rank_and_pick(vec![s_backup, s_top], &active, false);
+        let primary = picker.primary.as_ref().unwrap();
+        assert_eq!(primary.score, 92.0);
+        assert_eq!(primary.parsed.stream.addon_priority, Some(0));
     }
 }

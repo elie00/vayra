@@ -24,6 +24,8 @@ type AuthValue = {
 const PROFILE_KEY_PREFIX = "harbor.auth.";
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+let liveStremioAuthKey: string | null = null;
+
 function profileAuthKey(id: string): string {
   return PROFILE_KEY_PREFIX + id;
 }
@@ -85,6 +87,7 @@ async function persistProfileSession(id: string, session: Session | null): Promi
 }
 
 export function readActiveStremioAuthKey(): string | null {
+  if (liveStremioAuthKey) return liveStremioAuthKey;
   try {
     const raw = localStorage.getItem("harbor.profiles.v1");
     if (!raw) return null;
@@ -122,6 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [sourceId]);
+
+  useEffect(() => {
+    liveStremioAuthKey = session?.authKey ?? null;
+  }, [session]);
 
   const commitSession = useCallback(
     (fresh: Session) => {

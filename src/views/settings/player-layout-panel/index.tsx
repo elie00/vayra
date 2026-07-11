@@ -353,6 +353,13 @@ export function PlayerLayoutPanel() {
         }}
       />
 
+      <ToggleRow
+        label="True black menus"
+        sub="Force player menus and panels to pure black, ignoring your theme tint."
+        value={settings.playerMenuBlack}
+        onChange={(v) => update({ playerMenuBlack: v })}
+      />
+
       <EditLayoutCard
         theme={theme}
         visibleCount={visibleCount}
@@ -376,6 +383,13 @@ export function PlayerLayoutPanel() {
         sub={t("Peers, speed and progress while a torrent streams. Sits clear of the exit button, top left.")}
         value={settings.playerP2pChip}
         onChange={(v) => update({ playerP2pChip: v })}
+      />
+
+      <ToggleRow
+        label={t("Content advisory on start")}
+        sub={t("When a movie or episode starts, briefly show its IMDb parental guide (violence, profanity, substances, frightening scenes and more) with severity. Fades on its own.")}
+        value={settings.contentAdvisoryToast}
+        onChange={(v) => update({ contentAdvisoryToast: v })}
       />
 
       <FooterBar

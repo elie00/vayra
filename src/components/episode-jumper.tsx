@@ -1,5 +1,7 @@
 import { Hash } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { scrollToDataEp } from "@/lib/episode-scroll";
 
 const CHUNK_SIZE = 50;
 
@@ -50,21 +52,7 @@ export function EpisodeJumper({
     onReveal?.(n);
     setOpen(false);
     setDraft("");
-    let tries = 0;
-    const tryScroll = () => {
-      const root = scrollRef.current;
-      if (!root) return;
-      const target = root.querySelector<HTMLElement>(`[data-ep="${n}"]`);
-      if (!target) {
-        if (tries++ < 30) requestAnimationFrame(tryScroll);
-        return;
-      }
-      const rootRect = root.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const offset = targetRect.top - rootRect.top + root.scrollTop - 90;
-      root.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
-    };
-    requestAnimationFrame(tryScroll);
+    scrollToDataEp(scrollRef.current, n);
   };
 
   const submit = () => {
@@ -72,7 +60,7 @@ export function EpisodeJumper({
     if (Number.isFinite(n) && n >= 1 && n <= totalEpisodes) jumpToEpisode(n);
   };
 
-  return (
+  return createPortal(
     <div ref={popoverRef} className="fixed bottom-16 end-5 z-40">
       {open && (
         <div className="absolute bottom-full end-0 mb-2 flex w-[280px] flex-col gap-2.5 rounded-xl border border-edge-soft/60 bg-canvas/95 p-3 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md animate-popover-in">
@@ -125,6 +113,7 @@ export function EpisodeJumper({
         <Hash size={12} strokeWidth={2.2} />
         <span>Jump</span>
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -6,6 +6,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { getCustomIcon, type ControlVariant, type CustomIconMap, type PlayerControlId, type TimeFormat, type VolumeStyle } from "@/lib/player-chrome";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { renderCustomIconControl } from "./custom-icon-renderer";
+import { realQualityLabel } from "@/lib/player/resolution-label";
 
 function getControlState(id: PlayerControlId, ctx: ControlContext): string | undefined {
   const preview = ctx.previewStates?.[id];
@@ -46,6 +47,7 @@ import { SeekStepBtn } from "./seek-step-btn";
 import { EpisodeNavBtn } from "./episode-nav-btn";
 import { TimeStart, TimeEnd } from "./time-display";
 import { WindowControlButtons } from "./window-control-buttons";
+import { IdentifySongButton } from "@/components/identify-song-button";
 
 export type ControlContext = {
   t?: (key: string, vars?: Record<string, string | number>) => string;
@@ -68,11 +70,15 @@ export type ControlContext = {
   canPickAnother: boolean;
   engine: "html5" | "mpv" | "exo";
   useOverlayPopups?: boolean;
+  editing?: boolean;
   customIcons?: CustomIconMap;
   previewStates?: Partial<Record<PlayerControlId, string>>;
   controlVariants?: Partial<Record<PlayerControlId, ControlVariant>>;
   timeFormat?: TimeFormat;
+  onCycleTimeFormat?: () => void;
   volumeStyle?: VolumeStyle;
+  seekBackStepSec: number;
+  seekForwardStepSec: number;
   title?: string;
   subtitle?: string;
   titleClickable?: boolean;
@@ -105,6 +111,7 @@ export type ControlContext = {
   onCast: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   onPrevEp: () => void;
@@ -155,14 +162,22 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       const swap = !!ctx.titleSeriesFirst && !!ctx.subtitle;
       const primary = swap ? ctx.subtitle : ctx.title;
       const secondary = swap ? ctx.title : ctx.subtitle;
+      const qual = realQualityLabel(ctx.snap.videoWidth, ctx.snap.videoHeight);
       const lines = (
         <>
-          <h1
-            style={{ fontSize: `${Math.round(19 * scale)}px` }}
-            className="font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
-          >
-            {primary}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1
+              style={{ fontSize: `${Math.round(19 * scale)}px` }}
+              className="font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+            >
+              {primary}
+            </h1>
+            {qual && (
+              <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white/85">
+                {qual}
+              </span>
+            )}
+          </div>
           {secondary && (
             <p
               style={{ fontSize: `${Math.round(13 * scale)}px` }}
@@ -212,6 +227,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           isLiveChannel={ctx.isLiveChannel}
           tight={ctx.tight}
           active={ctx.active}
+          onCycle={ctx.editing ? undefined : ctx.onCycleTimeFormat}
         />
       );
     }
@@ -319,7 +335,6 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     }
     case "audio-menu": {
       if (ctx.tight || ctx.engine === "html5") return null;
-      if (ctx.isLiveChannel && ctx.snap.audioTracks.length < 2) return null;
       return (
         <AudioMenu
           tracks={ctx.snap.audioTracks}
@@ -398,6 +413,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           hideOthers={ctx.hideOthersDrawings}
           onToggle={ctx.onToggleDraw}
           onToggleHideOthers={ctx.onToggleHideOthers}
+          onClear={ctx.onClearDraw}
         />
       );
     }
@@ -407,6 +423,10 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           <Camera size={24} strokeWidth={1.9} />
         </BigButton>
       );
+    }
+    case "song-id": {
+      if (ctx.tight) return null;
+      return <IdentifySongButton editing={ctx.editing} />;
     }
     case "pip": {
       if (!ctx.capabilities.pictureInPicture) return null;

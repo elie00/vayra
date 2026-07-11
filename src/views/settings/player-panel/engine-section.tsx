@@ -5,6 +5,7 @@ import { ToggleRow } from "../shared";
 import { BandwidthInput } from "./bandwidth-section";
 import { DesktopOnlyBlock } from "./internals";
 import { HdrModePicker } from "./hdr-mode";
+import { DisplayPanelSelector } from "./display-panel-selector";
 
 export function PlayerEnginePanel() {
   const { settings, update } = useSettings();
@@ -86,12 +87,15 @@ export function PlayerEnginePanel() {
           {isWindowsDesktop() ? (
             <HdrModePicker />
           ) : (
-            <ToggleRow
-              label={t("HDR-to-SDR tonemapping")}
-              sub={t("Maps HDR sources to SDR using bt.2446a. Recommended on SDR displays.")}
-              value={settings.playerHdrToSdr}
-              onChange={(v) => update({ playerHdrToSdr: v })}
-            />
+            <>
+              <ToggleRow
+                label={t("HDR-to-SDR tonemapping")}
+                sub={t("Maps HDR sources to SDR using bt.2446a. Recommended on SDR displays.")}
+                value={settings.playerHdrToSdr}
+                onChange={(v) => update({ playerHdrToSdr: v })}
+              />
+              <DisplayPanelSelector />
+            </>
           )}
           {isWindowsDesktop() && (
             <ToggleRow

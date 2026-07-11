@@ -22,6 +22,7 @@ import {
 import {
   nextProfileColor,
   useProfiles,
+  type KidConfig,
   type Profile,
   type ProfileColor,
 } from "@/lib/profiles";
@@ -40,6 +41,8 @@ import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
 import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
 import { avatarUrl } from "@/lib/avatars/catalog";
 import { ColorPicker } from "@/views/settings/color-picker";
+import { KidToggle } from "./kid-toggle";
+import { KidsSetupPanel } from "./kids-setup-panel";
 import { PinEntry } from "./pin-entry";
 
 type SubView =
@@ -93,6 +96,8 @@ export function EditorView({
   const [draftLockedTabs, setDraftLockedTabs] = useState<HiddenTabs | null>(
     editing?.lockedTabs ?? null,
   );
+  const [draftKid, setDraftKid] = useState<KidConfig | null>(editing?.kid ?? null);
+  const [draftParentPin, setDraftParentPin] = useState<string | null>(null);
   const [subView, setSubView] = useState<SubView>({ kind: "main" });
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -178,15 +183,28 @@ export function EditorView({
 
   const submit = async () => {
     if (!canSave) return;
+    let kidToSave = draftKid;
+    if (draftKid) {
+      let parentPinHash = editing?.kid?.parentPinHash ?? null;
+      if (draftParentPin && draftParentPin.length === 4) {
+        parentPinHash = await hashProfilePassword(draftParentPin);
+      }
+      kidToSave = {
+        age: draftKid.age,
+        curfewMinutes: draftKid.curfewMinutes ?? null,
+        parentPinHash,
+      };
+    }
     if (editing) {
       updateProfile(editing.id, {
         name: trimmed,
         avatar,
         color,
+        kid: kidToSave,
         ...(canShare ? { shareStremioWith: shareWith } : {}),
       });
     } else {
-      const p = createProfile({ name: trimmed, avatar, color });
+      const p = createProfile({ name: trimmed, avatar, color, kid: kidToSave });
       const patch: Parameters<typeof updateProfile>[1] = {};
       if (canShare && shareWith !== p.shareStremioWith) patch.shareStremioWith = shareWith;
       if (draftPin) patch.passwordHash = await hashProfilePassword(draftPin);
@@ -302,19 +320,19 @@ export function EditorView({
   const showAdvanced = canEditAdvanced || mode.kind === "create";
 
   return (
-    <div className="flex w-full max-w-[640px] flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[10.5px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
+    <div className="flex w-full max-w-[680px] flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
           {t("Harbor identity")}
         </span>
-        <h1 className="font-display text-[26px] font-medium leading-tight tracking-tight text-ink">
+        <h1 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
           {editing ? t("Edit {name}", { name: editing.name }) : t("profile.new")}
         </h1>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
-        <div className="flex items-center gap-4">
-          <AvatarRing src={avatar} size={80} onClick={() => fileRef.current?.click()} />
+      <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+        <div className="flex items-center gap-5">
+          <AvatarRing src={avatar} size={96} onClick={() => fileRef.current?.click()} />
           <input
             ref={fileRef}
             type="file"
@@ -322,7 +340,7 @@ export function EditorView({
             onChange={onPickFile}
             className="hidden"
           />
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2.5">
             <input
               type="text"
               value={name}
@@ -331,7 +349,7 @@ export function EditorView({
               autoFocus
               placeholder={t("Display name")}
               maxLength={32}
-              className="h-11 rounded-xl border border-edge bg-canvas px-3.5 text-[15px] font-medium text-ink outline-none transition-colors focus:border-ink-subtle"
+              className="h-12 rounded-xl border border-edge bg-canvas px-4 text-[15.5px] font-medium text-ink outline-none transition-colors focus:border-ink-subtle"
             />
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -419,10 +437,29 @@ export function EditorView({
             )}
           </div>
         </div>
-        <ColorPicker value={color} onChange={setColor} />
+        <div className="border-t border-edge-soft/60 pt-4">
+          <ColorPicker value={color} onChange={setColor} />
+        </div>
       </div>
 
-      {showAdvanced && (
+      {showAdvanced && !isPrimary && <KidToggle value={draftKid} onChange={setDraftKid} />}
+
+      {draftKid && (
+        <KidsSetupPanel
+          avatar={avatar}
+          setAvatar={(v) => {
+            setAvatar(v);
+            setAvatarSource("builtin");
+          }}
+          kid={draftKid}
+          setKid={setDraftKid}
+          parentPin={draftParentPin}
+          setParentPin={setDraftParentPin}
+          hasExistingPin={!!editing?.kid?.parentPinHash}
+        />
+      )}
+
+      {showAdvanced && !draftKid && (
         <SecurityRow
           locked={locked}
           lockedTabs={editing?.lockedTabs ?? draftLockedTabs}
@@ -430,7 +467,7 @@ export function EditorView({
         />
       )}
 
-      {showAdvanced && canShare && primary && (
+      {showAdvanced && !draftKid && canShare && primary && (
         <div className="flex flex-col gap-1.5">
           <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
             {t("Stremio account")}

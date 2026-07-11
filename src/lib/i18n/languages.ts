@@ -1,4 +1,4 @@
-export type UiLanguage = "en" | "ar" | "fr";
+export type UiLanguage = "en" | "ar" | "pt" | "fr";
 
 export type LanguageOption = {
   code: UiLanguage;
@@ -10,6 +10,7 @@ export type LanguageOption = {
 export const LANGUAGES: LanguageOption[] = [
   { code: "en", label: "English", nativeLabel: "English", rtl: false },
   { code: "ar", label: "Arabic", nativeLabel: "العربية", rtl: true },
+  { code: "pt", label: "Portuguese", nativeLabel: "Português", rtl: false },
   { code: "fr", label: "French", nativeLabel: "Français", rtl: false },
 ];
 

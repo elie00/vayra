@@ -4,6 +4,8 @@ import { writePlayerPrefs } from "@/lib/player-prefs";
 import { writePlayerVolume } from "@/lib/player-volume";
 import { effectiveBinding, eventToBinding, isTypingTarget, type HotkeyId } from "@/lib/hotkeys";
 import { useSettings } from "@/lib/settings";
+import { isAnyFullscreen, exitAnyFullscreen } from "@/lib/fullscreen-state";
+import { getLeaveConfirm, openLeaveConfirm } from "@/lib/player/leave-confirm";
 import { round2 } from "../player-utils";
 
 export function useKeyboardShortcuts(params: {
@@ -41,6 +43,7 @@ export function useKeyboardShortcuts(params: {
   onToggleAnime4k?: () => void;
   onAnime4kOn?: () => void;
   onAnime4kOff?: () => void;
+  onVolumeFeedback?: (volume: number, muted: boolean) => void;
 }) {
   const {
     bridgeRef,
@@ -54,7 +57,6 @@ export function useKeyboardShortcuts(params: {
     onFrameStep,
     toggleFullscreen,
     togglePip,
-    fullscreen,
     cycleSubtitles,
     setShowStats,
     metaId,
@@ -77,9 +79,12 @@ export function useKeyboardShortcuts(params: {
     onToggleAnime4k,
     onAnime4kOn,
     onAnime4kOff,
+    onVolumeFeedback,
   } = params;
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const overrides = settings.hotkeys ?? {};
+  const seekBackStepSec = settings.seekBackStepSec;
+  const seekForwardStepSec = settings.seekForwardStepSec;
   const holdRef = useRef<{
     key: string | null;
     timer: number | null;
@@ -87,12 +92,6 @@ export function useKeyboardShortcuts(params: {
     baseRate: number;
   }>({ key: null, timer: null, engaged: false, baseRate: 1 });
   const [holdSpeedActive, setHoldSpeedActive] = useState(false);
-
-  // Valeurs lues dans le handler keydown mais absentes des deps de l'effet (pour ne pas
-  // re-binder le listener a chaque toggle). On les miroir dans une ref pour eviter une
-  // stale closure : sinon Echap en plein ecran lit un `fullscreen` perime et ferme le player.
-  const liveRef = useRef({ fullscreen, escExits: settings.playerEscExitsFullscreen, toggleFullscreen });
-  liveRef.current = { fullscreen, escExits: settings.playerEscExitsFullscreen, toggleFullscreen };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -118,10 +117,25 @@ export function useKeyboardShortcuts(params: {
       }
 
       if (match("playerClose")) {
-        if (drawMode) setDrawMode(false);
-        else if (liveRef.current.fullscreen && liveRef.current.escExits)
-          liveRef.current.toggleFullscreen();
-        else closePlayer();
+        if (getLeaveConfirm().open) return;
+        if (drawMode) {
+          setDrawMode(false);
+          return;
+        }
+        void (async () => {
+          if (settings.playerEscExitsFullscreen && (await isAnyFullscreen())) {
+            await exitAnyFullscreen();
+            return;
+          }
+          if (settings.playerConfirmLeave) {
+            openLeaveConfirm((remember) => {
+              if (remember) update({ playerConfirmLeave: false });
+              closePlayer();
+            });
+            return;
+          }
+          closePlayer();
+        })();
         return;
       }
       if (match("playerPip")) {
@@ -145,12 +159,12 @@ export function useKeyboardShortcuts(params: {
       }
       if (match("playerSeekBack10")) {
         e.preventDefault();
-        seekStep(-10);
+        seekStep(-seekBackStepSec);
         return;
       }
       if (match("playerSeekForward10")) {
         e.preventDefault();
-        seekStep(10);
+        seekStep(seekForwardStepSec);
         return;
       }
       if (match("playerSeekBack30")) {
@@ -176,22 +190,31 @@ export function useKeyboardShortcuts(params: {
       if (match("playerVolumeUp")) {
         e.preventDefault();
         const step = e.shiftKey ? 0.5 : 0.05;
-        const next = Math.min(6, Math.max(0, snap.volume + step));
+        const max = bridgeRef.current?.capabilities().engine === "mpv" ? 6 : 1;
+        const next = Math.min(max, Math.max(0, snap.volume + step));
         bridgeRef.current?.setVolume(next);
-        writePlayerVolume({ volume: next });
+        bridgeRef.current?.setMuted(false);
+        writePlayerVolume({ volume: next, muted: false });
+        onVolumeFeedback?.(next, false);
         return;
       }
       if (match("playerVolumeDown")) {
         e.preventDefault();
         const step = e.shiftKey ? 0.5 : 0.05;
-        const next = Math.max(0, snap.volume - step);
+        const max = bridgeRef.current?.capabilities().engine === "mpv" ? 6 : 1;
+        const next = Math.min(max, Math.max(0, snap.volume - step));
         bridgeRef.current?.setVolume(next);
-        writePlayerVolume({ volume: next });
+        bridgeRef.current?.setMuted(false);
+        writePlayerVolume({ volume: next, muted: false });
+        onVolumeFeedback?.(next, false);
         return;
       }
       if (match("playerMute")) {
         e.preventDefault();
-        bridgeRef.current?.setMuted(!snap.muted);
+        const next = !snap.muted;
+        bridgeRef.current?.setMuted(next);
+        writePlayerVolume({ muted: next });
+        onVolumeFeedback?.(snap.volume, next);
         return;
       }
       if (match("playerFullscreen")) {
@@ -385,7 +408,7 @@ export function useKeyboardShortcuts(params: {
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep]);
+  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep, onVolumeFeedback, settings.playerEscExitsFullscreen, settings.playerConfirmLeave, update]);
 
   return { holdSpeedActive };
 }

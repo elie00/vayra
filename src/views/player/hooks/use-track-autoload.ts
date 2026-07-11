@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
-import { applySubStyle } from "@/lib/player/sub-style";
 import { langScore, pickBestTrack } from "@/lib/subtitles/language";
 import { searchSubtitles } from "@/lib/subtitles/search";
 import { readPlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
@@ -101,6 +101,10 @@ export function useTrackAutoload(params: {
         episode: src.episode?.episode,
         langs,
       });
+      const { videoHash, videoSize } = settings.subtitleAutoSync
+        ? await resolveVideoHash(src)
+        : {};
+      if (videoHash) console.info(`[subs/autoload] moviehash ${videoHash} (${videoSize})`);
       const results = await searchSubtitles(
         {
           imdbId: resolvedImdbId,
@@ -109,6 +113,9 @@ export function useTrackAutoload(params: {
           season: src.episode?.season,
           episode: src.episode?.episode,
           langs,
+          videoHash,
+          videoSize,
+          filename: src.streamRef?.parsedTitle ?? src.streamRef?.title ?? undefined,
         },
         {
           providers: {
@@ -158,6 +165,26 @@ export function useTrackAutoload(params: {
   useEffect(() => {
     autoSubIdRef.current = null;
   }, [src.url]);
+
+  const preselectAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const choice = src.subtitlePreselect;
+    if (!choice) return;
+    if (snap.audioTracks.length === 0 && snap.subtitleTracks.length === 0 && snap.durationSec === 0) return;
+    if (preselectAppliedRef.current === src.url) return;
+    preselectAppliedRef.current = src.url;
+    if (choice.off) {
+      if (snap.subtitleTracks.some((t) => t.selected)) bridgeRef.current?.setSubtitleTrack(null);
+      return;
+    }
+    if (choice.url) {
+      void bridgeRef.current?.addSubtitle(choice.url, choice.lang, choice.title, true);
+    }
+  }, [src.url, src.subtitlePreselect, snap.audioTracks.length, snap.subtitleTracks, snap.durationSec, bridgeRef]);
+  useEffect(() => {
+    if (engine !== "mpv") return;
+    bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
+  }, [engine, settings.audioDevice, bridgeRef]);
   useEffect(() => {
     const subIdSig = snap.subtitleTracks.map((t) => t.id).join(",");
     const audioIdSig = snap.audioTracks.map((t) => t.id).join(",");
@@ -165,9 +192,9 @@ export function useTrackAutoload(params: {
     if (autoTrackKeyRef.current === key) return;
     if (snap.audioTracks.length === 0 && snap.subtitleTracks.length === 0) return;
     autoTrackKeyRef.current = key;
-    if (engine === "mpv") void applySubStyle(settings);
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
+    bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
 
     const prefs = readPlayerPrefs(src.meta.id);
     const isAnime =
@@ -206,24 +233,26 @@ export function useTrackAutoload(params: {
     const subsOff = subsOffFor(prefs, settings);
     if (subsOff) {
       if (snap.subtitleTracks.some((t) => t.selected)) bridgeRef.current?.setSubtitleTrack(null);
-    } else if (snap.subtitleTracks.length > 0 && subLangs.length > 0) {
+    } else if (!src.subtitlePreselect && snap.subtitleTracks.length > 0 && subLangs.length > 0) {
       const current = snap.subtitleTracks.find((t) => t.selected) ?? null;
       const userPicked =
         current != null && autoSubIdRef.current != null && current.id !== autoSubIdRef.current;
-      if (!userPicked) {
+      const lockedToAuto =
+        current != null && autoSubIdRef.current != null && !settings.subtitleAutoUpgrade;
+      if (!userPicked && !lockedToAuto) {
         const nativeAudio =
           settings.forcedSubsWhenNativeAudio &&
           effAudio != null &&
           langScore(effAudio.lang ?? "", subLangs) >= 0;
         const want = nativeAudio
           ? (snap.subtitleTracks
-              .filter(isForcedTrack)
-              .sort(
-                (a, b) => langScore(b.lang ?? "", subLangs) - langScore(a.lang ?? "", subLangs),
-              )[0] ?? null)
+            .filter(isForcedTrack)
+            .sort(
+              (a, b) => langScore(b.lang ?? "", subLangs) - langScore(a.lang ?? "", subLangs),
+            )[0] ?? null)
           : pickDesiredSub(allow(snap.subtitleTracks), subLangs, settings.preferEmbeddedSubs);
-        if (want && want.id !== current?.id) {
-          bridgeRef.current?.setSubtitleTrack(want.id);
+        if (want) {
+          if (want.id !== current?.id) bridgeRef.current?.setSubtitleTrack(want.id);
           autoSubIdRef.current = want.id;
         }
       }
@@ -293,10 +322,18 @@ function pickDesiredSub<
     return matching[0];
   }
   if (preferEmbedded) {
-    const embedded = tracks.filter((t) => !t.external && !isForcedTrack(t));
+    const embedded = tracks.filter(
+      (t) => !t.external && !isForcedTrack(t) && !isNonPreferredLang(t.lang, subLangs),
+    );
     return embedded.find((t) => t.default) ?? embedded[0] ?? null;
   }
   return null;
+}
+
+function isNonPreferredLang(lang: string | undefined, subLangs: string[]): boolean {
+  const l = (lang ?? "").trim().toLowerCase();
+  if (l === "" || l === "und" || l === "unknown" || l === "undetermined") return false;
+  return langScore(lang ?? "", subLangs) < 0;
 }
 
 function resolveLangPreference(
@@ -311,6 +348,38 @@ function resolveLangPreference(
 function isJapanese(lang: string): boolean {
   const l = lang.trim().toLowerCase();
   return l === "ja" || l === "jpn" || l === "jp" || l === "japanese";
+}
+
+function isLoopback(url: string): boolean {
+  return /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])[:/]/i.test(url);
+}
+
+function raceTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    p,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+async function resolveVideoHash(
+  src: PlayerSrc,
+): Promise<{ videoHash?: string; videoSize?: number }> {
+  if (isLoopback(src.url)) return {};
+  if (!src.url || src.url.startsWith("blob:")) return {};
+  try {
+    const mh = await raceTimeout(
+      invoke<{ hash: string; size: number }>("compute_moviehash", {
+        url: src.url,
+        headers: src.headers,
+        size: src.streamRef?.size ?? undefined,
+      }),
+      1800,
+    );
+    if (mh?.hash) return { videoHash: mh.hash, videoSize: mh.size };
+  } catch {
+    return {};
+  }
+  return {};
 }
 
 function labelForTrack(r: { title?: string; source: string; release?: string | null }): string {

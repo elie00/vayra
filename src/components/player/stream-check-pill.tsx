@@ -1,5 +1,6 @@
 import { Check, AlertCircle, Replace } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useActiveKid } from "@/lib/profiles";
 
 type Variant = "check" | "stalled" | "failed";
 
@@ -19,7 +20,8 @@ export function StreamCheckPill({
   live?: boolean;
 }) {
   const t = useT();
-  if (!visible) return null;
+  const kid = useActiveKid();
+  if (!visible || kid) return null;
 
   const copy = live
     ? variant === "check"

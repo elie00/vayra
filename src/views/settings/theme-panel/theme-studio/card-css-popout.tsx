@@ -1,5 +1,6 @@
 import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CodeEditor } from "@/components/code-editor";
 import { topMovies, type Meta } from "@/lib/cinemeta";
 
@@ -58,7 +59,7 @@ export function CardCssPopout({
     };
   }, []);
 
-  return (
+  return createPortal(
     <div
       className="animate-in fade-in pointer-events-auto fixed inset-0 z-[235] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm duration-150"
       onClick={onClose}
@@ -132,23 +133,25 @@ export function CardCssPopout({
                 </span>
               ))}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-5">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-3 gap-5">
                 {picks.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     tabIndex={-1}
-                    className="group flex w-full min-w-0 cursor-default flex-col gap-2 text-start"
+                    className="group relative flex w-full min-w-0 cursor-default flex-col gap-2 text-start transition-[z-index] hover:z-10"
                   >
-                    <div className="harbor-poster your-card relative aspect-[2/3] overflow-hidden rounded-xl bg-elevated">
-                      <img
-                        src={p.poster}
-                        alt=""
-                        loading="lazy"
-                        draggable={false}
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
+                    <div className="your-card relative aspect-[2/3] rounded-xl bg-elevated">
+                      <div className="harbor-poster absolute inset-0 overflow-hidden rounded-[inherit]">
+                        <img
+                          src={p.poster}
+                          alt=""
+                          loading="lazy"
+                          draggable={false}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
                     </div>
                     <p className="line-clamp-2 text-[12px] font-medium leading-snug text-ink">{p.name}</p>
                   </button>
@@ -158,6 +161,7 @@ export function CardCssPopout({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

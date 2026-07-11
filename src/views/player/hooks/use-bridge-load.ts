@@ -71,8 +71,8 @@ export function useBridgeLoad(params: {
         src,
         cloudWriteId(src.meta.id, src.imdbId ?? null, src.imdbIdVerified === true),
       );
-      const resolved = isLive
-        ? { ms: 0, fromRemote: false }
+      const resolved = isLive || src.startFromZero
+        ? { ms: 0, fromRemote: false, finished: false }
         : await resolveStartMs(
             src.meta.id,
             season,
@@ -85,7 +85,8 @@ export function useBridgeLoad(params: {
       const startMs = resolved.ms;
       const runtimeMin = src.episode?.runtime ?? null;
       const durationMs = runtimeMin && runtimeMin > 0 ? runtimeMin * 60_000 : 0;
-      const finishedNearEnd = durationMs > 0 && startMs / durationMs >= RESTART_THRESHOLD;
+      const finishedNearEnd =
+        resolved.finished || (durationMs > 0 && startMs / durationMs >= RESTART_THRESHOLD);
       const startSec = (!resumePlaybackRef.current || finishedNearEnd ? 0 : startMs) / 1000;
       const guestInRoom = inRoomRef.current && !isHostRef.current;
       const eligibleForPrompt =
@@ -108,7 +109,9 @@ export function useBridgeLoad(params: {
               ? undefined
               : startSec > 5
                 ? startSec
-                : undefined,
+                : isFirstLoad
+                  ? undefined
+                  : 0,
         });
       } catch (e) {
         if (cancelled) return;
@@ -116,6 +119,24 @@ export function useBridgeLoad(params: {
         return;
       }
       if (cancelled) return;
+      if (!eligibleForPrompt && !guestInRoom && startSec > 5) {
+        let unsub: (() => void) | null = null;
+        let synced = false;
+        const stop = () => {
+          synced = true;
+          unsub?.();
+        };
+        unsub = bridge.subscribe((s) => {
+          if (cancelled) {
+            stop();
+            return;
+          }
+          if (s.durationSec <= 0) return;
+          stop();
+          if (startSec >= s.durationSec - 20) bridge.seek(0);
+        });
+        if (synced) unsub?.();
+      }
       if (eligibleForPrompt) {
         bridge.pause();
         setPendingResumeSec(startSec);
@@ -161,9 +182,10 @@ async function resolveStartMs(
   imdbId: string | null,
   imdbVerified: boolean,
   openingVid: string | null,
-): Promise<{ ms: number; fromRemote: boolean }> {
+): Promise<{ ms: number; fromRemote: boolean; finished: boolean }> {
   const local = readResumeMs(metaId, season, episode);
-  if (!authKey) return { ms: local, fromRemote: false };
+  const isEpisode = typeof season === "number" && typeof episode === "number";
+  if (!authKey) return { ms: local, fromRemote: false, finished: false };
   const matchesEpisode = (
     item: { state?: { season?: number; episode?: number; video_id?: string } } | null,
   ) => {
@@ -185,11 +207,16 @@ async function resolveStartMs(
     if (!remote || !matchesEpisode(remote)) continue;
     const remoteMs = remote.state?.timeOffset ?? 0;
     if (remoteMs <= 0) continue;
+    const remoteDuration = remote.state?.duration ?? 0;
+    const flaggedWatched = (remote.state as { flaggedWatched?: number })?.flaggedWatched === 1;
+    const finished =
+      isEpisode &&
+      (flaggedWatched || (remoteDuration > 0 && remoteMs / remoteDuration >= RESTART_THRESHOLD));
     if (remoteMs >= local) {
       if (remoteMs > local) saveResumeMs(metaId, remoteMs, season, episode);
-      return { ms: remoteMs, fromRemote: true };
+      return { ms: remoteMs, fromRemote: true, finished };
     }
-    break;
+    return { ms: local, fromRemote: false, finished };
   }
-  return { ms: local, fromRemote: false };
+  return { ms: local, fromRemote: false, finished: false };
 }

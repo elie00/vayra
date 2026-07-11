@@ -40,6 +40,7 @@ export function ShellLayer({
   openCastMenu,
   onToggleDraw,
   onToggleHideOthers,
+  onClearDraw,
   onScreenshot,
   onPickAnother,
   canPickAnother,
@@ -63,6 +64,7 @@ export function ShellLayer({
   download,
   onOpenDvr,
   sleep,
+  onVolumeFeedback,
 }: {
   shellId: string;
   shellSnap: PlayerSnapshot;
@@ -93,6 +95,7 @@ export function ShellLayer({
   openCastMenu: (anchor: { right: number; bottom: number } | null) => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
+  onClearDraw: () => void;
   onScreenshot: () => void;
   onPickAnother: () => void;
   canPickAnother: boolean;
@@ -113,9 +116,10 @@ export function ShellLayer({
   tmdbKey: string | null;
   season: number | null;
   episode: number | null;
-  download: ReturnType<typeof useVideoDownload>;
+  download?: ReturnType<typeof useVideoDownload>;
   onOpenDvr?: () => void;
   sleep: PlayerShellProps["sleep"];
+  onVolumeFeedback?: (volume: number, muted: boolean) => void;
 }) {
   const ActiveShell = getPlayerShell(shellId).Component;
   const { settings } = useSettings();
@@ -140,10 +144,13 @@ export function ShellLayer({
         const next = !snapRef.current.muted;
         bridgeRef.current?.setMuted(next);
         writePlayerVolume({ muted: next });
+        onVolumeFeedback?.(snapRef.current.volume, next);
       }}
       onVolume={(v) => {
         bridgeRef.current?.setVolume(v);
-        writePlayerVolume({ volume: v });
+        bridgeRef.current?.setMuted(false);
+        writePlayerVolume({ volume: v, muted: false });
+        onVolumeFeedback?.(v, false);
       }}
       onAudio={(id) => {
         bridgeRef.current?.setAudioTrack(id);
@@ -263,6 +270,7 @@ export function ShellLayer({
       }}
       onToggleDraw={onToggleDraw}
       onToggleHideOthers={onToggleHideOthers}
+      onClearDraw={onClearDraw}
       onScreenshot={onScreenshot}
       onPickAnother={onPickAnother}
       canPickAnother={canPickAnother}
@@ -283,11 +291,11 @@ export function ShellLayer({
       tmdbKey={tmdbKey}
       season={season}
       episode={episode}
-      download={download.status}
-      onDownloadStart={download.start}
-      onDownloadCancel={download.cancel}
-      onDownloadReveal={download.reveal}
-      onDownloadReset={download.reset}
+      download={download?.status}
+      onDownloadStart={download?.start}
+      onDownloadCancel={download?.cancel}
+      onDownloadReveal={download?.reveal}
+      onDownloadReset={download?.reset}
       onOpenDvr={onOpenDvr}
       sleep={sleep}
     />

@@ -1,4 +1,4 @@
-import { Check, Play, Eye } from "lucide-react";
+import { Check, Eye } from "lucide-react";
 import { EpisodeRatingBadge } from "./episode-rating-badge";
 import { useEffect, useMemo, useState } from "react";
 import { DragStrip } from "@/components/drag-strip";
@@ -8,9 +8,11 @@ import type { Episode } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { useView } from "@/lib/view";
+import { useLocalAwareSeriesPlay } from "@/lib/local-library/use-series-play";
 import { useT } from "@/lib/i18n";
 import { EpisodeGrid } from "./episode-grid";
 import type { GridEpisode } from "./episode-grid-types";
+import { EpisodeDownloadButton } from "./episode-download-button";
 import { isUpcomingDate } from "./helpers";
 
 type Progress = { ratio: number; watched: boolean; startedAt: number };
@@ -23,6 +25,8 @@ export function EpisodeStrip({
   spoilerFor,
   onContextMenu,
   layout = "strip",
+  seriesImdbId,
+  cinemetaVideos,
 }: {
   meta: Meta;
   episodes: Episode[];
@@ -31,15 +35,19 @@ export function EpisodeStrip({
   spoilerFor?: (ep: Episode) => SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
   layout?: "strip" | "grid";
+  seriesImdbId?: string | null;
+  cinemetaVideos?: Meta["videos"];
 }) {
-  const { openPicker } = useView();
   const { settings } = useSettings();
+  const playLocalAware = useLocalAwareSeriesPlay();
   const t = useT();
 
   const gridEpisodes = useMemo<GridEpisode[]>(
     () =>
       episodes.map((ep) => {
-        const tmdbStill = ep.stillPath ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}` : undefined;
+        const tmdbStill = ep.stillPath
+          ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
+          : ep.stillUrl;
         const stills = [tmdbStill, thumbnailFor(ep)].filter((u): u is string => !!u);
         return {
           key: String(ep.id),
@@ -54,20 +62,23 @@ export function EpisodeStrip({
           ratingIsImdb: ep.imdbRating != null,
           upcoming: isUpcomingDate(ep.airDate),
           play: () =>
-            openPicker(
+            playLocalAware({
               meta,
-              {
+              episode: {
                 season: ep.seasonNumber,
                 episode: ep.episodeNumber,
+                runtime: ep.runtime ?? undefined,
                 name: ep.name || undefined,
                 still: stills[0],
                 overview: ep.overview || undefined,
               },
-              { autoPlay: settings.instantPlay },
-            ),
+              opts: { autoPlay: settings.instantPlay || settings.seasonSourceLock },
+              imdbId: seriesImdbId,
+              videos: cinemetaVideos,
+            }),
         };
       }),
-    [episodes, thumbnailFor, meta, openPicker, settings.instantPlay, settings.hdEpisodeImages, t],
+    [episodes, thumbnailFor, meta, playLocalAware, settings.instantPlay, settings.seasonSourceLock, settings.hdEpisodeImages, t, seriesImdbId, cinemetaVideos],
   );
   const epByNumber = useMemo(() => {
     const m = new Map<number, Episode>();
@@ -97,6 +108,8 @@ export function EpisodeStrip({
             thumbnail={thumbnailFor(ep)}
             spoiler={spoilerFor?.(ep)}
             onContextMenu={onContextMenu}
+            seriesImdbId={seriesImdbId}
+            cinemetaVideos={cinemetaVideos}
           />
         </div>
       ))}
@@ -111,6 +124,8 @@ function EpisodeStripCard({
   thumbnail,
   spoiler,
   onContextMenu,
+  seriesImdbId,
+  cinemetaVideos,
 }: {
   meta: Meta;
   ep: Episode;
@@ -118,9 +133,12 @@ function EpisodeStripCard({
   thumbnail?: string;
   spoiler?: SpoilerMask;
   onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
+  seriesImdbId?: string | null;
+  cinemetaVideos?: Meta["videos"];
 }) {
   const t = useT();
-  const { openPicker, openEpisodeDetail } = useView();
+  const { openEpisodeDetail } = useView();
+  const playLocalAware = useLocalAwareSeriesPlay();
   const { settings } = useSettings();
   const ratingValue = ep.imdbRating ?? ep.voteAverage;
   const ratingIsImdb = ep.imdbRating != null;
@@ -133,22 +151,26 @@ function EpisodeStripCard({
   const still = useMemo(() => {
     const tmdbSize = settings.hdEpisodeImages ? "original" : "w300";
     if (imgIdx === 0 && ep.stillPath) return `https://image.tmdb.org/t/p/${tmdbSize}${ep.stillPath}`;
+    if (imgIdx === 0 && !ep.stillPath && ep.stillUrl) return ep.stillUrl;
     if (imgIdx <= 1 && thumbnail) return thumbnail;
     return undefined;
-  }, [ep.stillPath, imgIdx, thumbnail, settings.hdEpisodeImages]);
+  }, [ep.stillPath, ep.stillUrl, imgIdx, thumbnail, settings.hdEpisodeImages]);
 
   const handlePlayClick = () => {
-    openPicker(
+    playLocalAware({
       meta,
-      {
+      episode: {
         season: ep.seasonNumber,
         episode: ep.episodeNumber,
+        runtime: ep.runtime ?? undefined,
         name: ep.name || undefined,
         still,
         overview: ep.overview || undefined,
       },
-      { autoPlay: settings.instantPlay },
-    );
+      opts: { autoPlay: settings.instantPlay || settings.seasonSourceLock },
+      imdbId: seriesImdbId,
+      videos: cinemetaVideos,
+    });
   };
 
   return (
@@ -173,29 +195,18 @@ function EpisodeStripCard({
           />
         </div>
         
-        {settings.showEpisodeDescription && ep.overview ? (
-          <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 text-start pointer-events-none">
-            {settings.showEpisodeRating && ratingValue != null && ratingValue > 0 ? (
-              <div className="mb-1 flex items-center gap-1.5 drop-shadow-md">
-                <EpisodeRatingBadge value={ratingValue} isImdb={ratingIsImdb} />
-              </div>
-            ) : null}
-            <p className="line-clamp-4 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
+        {settings.showEpisodeRating && ratingValue != null && ratingValue > 0 && (
+          <div className="pointer-events-none absolute start-2 top-2 z-[6] flex items-center gap-1.5 rounded-md bg-black/55 px-1.5 py-0.5 opacity-0 drop-shadow-md backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+            <EpisodeRatingBadge value={ratingValue} isImdb={ratingIsImdb} />
+          </div>
+        )}
+        {settings.showEpisodeDescription && ep.overview && (
+          <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/92 via-black/55 to-transparent p-2 pt-10 text-start pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <p className="line-clamp-5 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
               {ep.overview}
             </p>
           </div>
-        ) : settings.showEpisodeRating && ratingValue != null && ratingValue > 0 ? (
-          <div className="pointer-events-none absolute bottom-2 start-2 z-[5] flex items-center gap-1.5 rounded-md bg-black/55 px-1.5 py-0.5 drop-shadow-md backdrop-blur-sm">
-            <EpisodeRatingBadge value={ratingValue} isImdb={ratingIsImdb} />
-          </div>
-        ) : null}
-
-        {/* Hover Play Button */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-ink/90 text-canvas backdrop-blur-md">
-            <Play size={16} fill="currentColor" />
-          </div>
-        </div>
+        )}
 
         <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink transition-opacity group-hover:opacity-0">
           {ep.episodeNumber}
@@ -225,15 +236,29 @@ function EpisodeStripCard({
             {ep.runtime ? ` · ${t("{n} min", { n: ep.runtime })}` : ""}
           </span>
         </button>
-        <button
-          type="button"
-          onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
-          aria-label={t("Episode details")}
-          title={t("Episode details")}
-          className="flex shrink-0 items-center justify-center rounded-full p-1.5 text-ink-subtle transition-colors hover:bg-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-        >
-          <Eye size={16} strokeWidth={2} />
-        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <EpisodeDownloadButton
+            meta={meta}
+            episode={{
+              season: ep.seasonNumber,
+              episode: ep.episodeNumber,
+              runtime: ep.runtime ?? undefined,
+              name: ep.name || undefined,
+              still,
+              overview: ep.overview || undefined,
+            }}
+            size={30}
+          />
+          <button
+            type="button"
+            onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
+            aria-label={t("Episode details")}
+            title={t("Episode details")}
+            className="flex items-center justify-center rounded-full p-1.5 text-ink-subtle transition-colors hover:bg-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+          >
+            <Eye size={16} strokeWidth={2} />
+          </button>
+        </div>
       </div>
     </div>
   );

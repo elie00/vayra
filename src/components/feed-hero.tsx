@@ -1,12 +1,13 @@
-import { Bookmark, BookmarkCheck, Info, Play, SkipForward, ThumbsDown } from "lucide-react";
+import { Bookmark, BookmarkCheck, Info, Play, SkipForward, Star, ThumbsDown } from "lucide-react";
 import type { FeedItem } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
-import { rpdbPoster } from "@/lib/providers/rpdb";
 import { useSettings } from "@/lib/settings";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { smartPlayEpisode } from "@/lib/smart-play";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import { useLiveImdbRating } from "@/lib/live-imdb";
 import { ImdbIcon } from "./icons/imdb-icon";
 import { MetaAwardsCorner } from "./meta-awards-corner";
 import { Poster } from "./poster";
@@ -28,16 +29,21 @@ export function FeedHero({
   const { openMeta, openPicker } = useView();
   const t = useT();
   const meta = item.meta;
+  const description = useLocalizedOverview(meta);
   const resolvedImdb = useTmdbImdbId(meta.id);
+  const live = useLiveImdbRating(meta);
   const saved = useInWatchlist(meta.id, [resolvedImdb]);
-  const backdrop = meta.background ?? meta.poster;
+  const backdrop = meta.background
+    ? meta.background.replace(/\/t\/p\/w\d+\//, "/t/p/w1280/")
+    : meta.poster;
   const positionLabel = `${String(position + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
 
   return (
-    <article className="relative h-[clamp(480px,46vh,560px)] overflow-hidden rounded-[28px] border border-edge-soft bg-canvas">
+    <article className="relative h-full overflow-hidden rounded-[28px] border border-edge-soft bg-canvas">
       <div className="absolute inset-0">
         <Poster
-          src={rpdbPoster(settings.rpdbKey, meta.id, backdrop)}
+          src={backdrop}
+          fallbacks={[meta.poster]}
           seed={meta.id}
           ratio="wide"
           className="h-full w-full rounded-none"
@@ -58,7 +64,7 @@ export function FeedHero({
 
         <MetaAwardsCorner meta={meta} imdbId={resolvedImdb} />
 
-        <div className="absolute inset-0 flex flex-col justify-between px-6 pt-7 pb-12 sm:px-10 sm:pb-16">
+        <div className="absolute inset-0 flex flex-col justify-between px-6 pt-5 pb-7 sm:px-10 sm:pb-9">
           <div className="flex shrink-0 items-center justify-between gap-4">
             <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-ink/85">
               {positionLabel}
@@ -73,7 +79,7 @@ export function FeedHero({
             </button>
           </div>
 
-          <div className="flex max-w-[760px] shrink-0 flex-col gap-5">
+          <div className="flex max-w-[760px] shrink-0 flex-col gap-3.5">
             <div className="flex items-center gap-2 text-[11.5px] font-semibold uppercase tracking-[0.22em]">
               <span className="rounded-full bg-accent/90 px-3 py-1 text-canvas">
                 {item.tag}
@@ -95,12 +101,16 @@ export function FeedHero({
                 <span>{meta.runtime}</span>
               </>
             )}
-            {meta.imdbRating && (
+            {live.value && (
               <>
                 <Dot />
                 <span className="inline-flex items-center gap-1.5">
-                  <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
-                  {meta.imdbRating}
+                  {live.isImdb ? (
+                    <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
+                  ) : (
+                    <Star className="h-[12px] w-[12px] text-amber-400" fill="currentColor" strokeWidth={0} />
+                  )}
+                  {live.value}
                 </span>
               </>
             )}
@@ -111,9 +121,9 @@ export function FeedHero({
               </>
             )}
           </div>
-          {meta.description && (
-            <p className="max-w-[68ch] text-[15.5px] leading-[1.55] text-ink/80 line-clamp-3">
-              {meta.description}
+          {description && (
+            <p className="max-w-[68ch] text-[15.5px] leading-[1.55] text-ink/80 line-clamp-2">
+              {description}
             </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">

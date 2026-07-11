@@ -148,5 +148,11 @@ export function useCalendarData({
     month,
   ]);
 
+  useEffect(() => {
+    if (simklConnected) {
+      void fetchSimklPremieresCalendar(year, month).catch(() => {});
+    }
+  }, [simklConnected, year, month]);
+
   return { items, loading, error };
 }

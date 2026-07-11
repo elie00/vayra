@@ -1,4 +1,5 @@
 import { simklRequest } from "./client";
+import { simklTargetIds } from "./ids";
 import { subscribeSession } from "./session";
 import type { SimklTarget } from "./types";
 
@@ -27,6 +28,8 @@ type RawIds = {
   tmdb?: number | string;
   mal?: number | string;
   kitsu?: number | string;
+  anilist?: number | string;
+  anidb?: number | string;
 };
 type RawEpisode = { number?: number; watched_at?: string | null };
 type RawSeason = { number?: number; episodes?: RawEpisode[] };
@@ -56,11 +59,13 @@ function idKeys(ids: RawIds | undefined, kind: "movie" | "show"): string[] {
   if (ids.tmdb != null) keys.push(kind === "movie" ? `tmdb:movie:${ids.tmdb}` : `tmdb:tv:${ids.tmdb}`);
   if (ids.mal != null) keys.push(`mal:${ids.mal}`);
   if (ids.kitsu != null) keys.push(`kitsu:${ids.kitsu}`);
+  if (ids.anilist != null) keys.push(`anilist:${ids.anilist}`);
+  if (ids.anidb != null) keys.push(`anidb:${ids.anidb}`);
   return keys;
 }
 
 function targetKeys(target: SimklTarget): string[] {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const ids = simklTargetIds(target);
   return idKeys(ids as RawIds, target.kind === "movie" ? "movie" : "show");
 }
 
@@ -137,7 +142,7 @@ export async function setSimklStatus(
   target: SimklTarget,
   status: WatchlistStatus,
 ): Promise<WatchlistStatus> {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const ids = simklTargetIds(target);
   const bucket = target.kind === "movie" ? "movies" : "shows";
   const r = await simklRequest<{ added?: Record<string, Array<{ to?: string }>> }>(
     "/sync/add-to-list",
@@ -151,7 +156,7 @@ export async function setSimklStatus(
 }
 
 export async function clearSimklStatus(target: SimklTarget): Promise<void> {
-  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const ids = simklTargetIds(target);
   const bucket = target.kind === "movie" ? "movies" : "shows";
   await simklRequest("/sync/history/remove", { method: "POST", body: { [bucket]: [{ ids }] } });
   const statuses = (await loadData()).statuses;

@@ -1,7 +1,8 @@
-import { hasDesktopFeatures } from "@/lib/platform";
+import { loadStoredSettings } from "@/lib/settings/load";
 
 let windowFullscreen = false;
 let suppressNextExit = false;
+let marathonReenter = false;
 let syncStarted = false;
 const subs = new Set<() => void>();
 
@@ -12,10 +13,25 @@ export function suppressFullscreenExitOnce(): void {
   }, 1000);
 }
 
-// Native window fullscreen (window_fullscreen_enter/exit + fs:// events) is
-// desktop-only. On mobile Tauri and web we fall back to the DOM Fullscreen API.
+export function beginMarathonAdvance(): void {
+  suppressFullscreenExitOnce();
+  marathonReenter = windowFullscreen;
+  void isAnyFullscreen().then((fs) => {
+    if (fs) marathonReenter = true;
+  });
+  setTimeout(() => {
+    marathonReenter = false;
+  }, 10000);
+}
+
+export function consumeMarathonReenter(): boolean {
+  const v = marathonReenter;
+  marathonReenter = false;
+  return v;
+}
+
 function isTauri(): boolean {
-  return hasDesktopFeatures();
+  return typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
 }
 
 function emit(): void {
@@ -51,7 +67,7 @@ export function startWindowFullscreenSync(): void {
       await listen("fs://entered", () => setWindowFullscreen(true));
       await listen("fs://exited", () => setWindowFullscreen(false));
     } catch {
-      /* not tauri or event API unavailable */
+      /* not Tauri or event API unavailable */
     }
   })();
 }
@@ -89,7 +105,9 @@ export async function exitWindowFullscreen(): Promise<void> {
   if (isTauri()) {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("window_fullscreen_exit");
+      await invoke("window_fullscreen_exit", {
+        restorePosition: loadStoredSettings().fullscreenRestorePosition !== false,
+      });
     } catch {
       /* ignore */
     }
@@ -98,7 +116,51 @@ export async function exitWindowFullscreen(): Promise<void> {
   }
 }
 
+export async function exitWindowFullscreenOnPlayerClose(): Promise<void> {
+  if (loadStoredSettings().keepFullscreenOnExit) return;
+  await exitWindowFullscreen();
+}
+
 export async function toggleWindowFullscreen(): Promise<void> {
   if (windowFullscreen) await exitWindowFullscreen();
   else await enterWindowFullscreen();
+}
+
+async function osWindowFullscreen(): Promise<boolean> {
+  if (!isTauri()) return false;
+  try {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    return await getCurrentWindow().isFullscreen().catch(() => false);
+  } catch {
+    return false;
+  }
+}
+
+export async function isAnyFullscreen(): Promise<boolean> {
+  if (windowFullscreen) return true;
+  if (typeof document !== "undefined" && document.fullscreenElement) return true;
+  return osWindowFullscreen();
+}
+
+export async function exitAnyFullscreen(): Promise<void> {
+  if (typeof document !== "undefined" && document.fullscreenElement) {
+    await document.exitFullscreen().catch(() => {});
+  }
+  if (isTauri()) {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const w = getCurrentWindow();
+      if (await w.isFullscreen().catch(() => false)) await w.setFullscreen(false).catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }
+  if (windowFullscreen) await exitWindowFullscreen();
+}
+
+if (isTauri()) {
+  const before = windowFullscreen;
+  void osWindowFullscreen().then((os) => {
+    if (windowFullscreen === before && os !== windowFullscreen) setWindowFullscreen(os);
+  });
 }

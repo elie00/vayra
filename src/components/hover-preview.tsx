@@ -62,13 +62,13 @@ export function HoverPreview() {
 
   useEffect(() => {
     setHoverPreviewGates({
-      enabled: settings.hoverPreview,
+      enabled: settings.hoverPreviewEnabled && settings.cardHoverStyle === "default",
       finePointer,
       viewClear: view.player === null && view.picker === null && !view.chromeHidden,
       searchClosed: !search.open,
       menuClosed: menu.state === null,
     });
-  }, [settings.hoverPreview, finePointer, view.player, view.picker, view.chromeHidden, search.open, menu.state]);
+  }, [settings.hoverPreviewEnabled, settings.cardHoverStyle, finePointer, view.player, view.picker, view.chromeHidden, search.open, menu.state]);
 
   const snap = useSyncExternalStore(subscribeHoverPreview, getHoverPreviewSnapshot);
 

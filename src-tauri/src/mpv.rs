@@ -49,6 +49,7 @@ pub struct MpvStartArgs {
     pub embed: Option<bool>,
     pub anime4k_shaders: Option<Vec<String>>,
     pub d3d11_flip: Option<bool>,
+    pub mac_edr: Option<bool>,
     pub is_live: Option<bool>,
     pub headers: Option<HashMap<String, String>>,
     pub extra_options: Option<String>,
@@ -106,6 +107,7 @@ const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     ("dwidth", 14, PropertyKind::Int64),
     ("dheight", 15, PropertyKind::Int64),
     ("video-params/gamma", 16, PropertyKind::String),
+    ("demuxer-cache-duration", 17, PropertyKind::Double),
 ];
 
 #[derive(Clone, Copy)]
@@ -164,6 +166,53 @@ pub async fn mpv_probe(_app: AppHandle) -> MpvProbe {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AudioDevice {
+    pub name: String,
+    pub description: String,
+}
+
+fn read_audio_devices(mpv: &Mpv) -> Vec<AudioDevice> {
+    let node = match mpv.get_property::<MpvNode>("audio-device-list") {
+        Ok(n) => n,
+        Err(_) => return Vec::new(),
+    };
+    let mut out = Vec::new();
+    if let Some(arr) = node.array() {
+        for item in arr {
+            let mut name = String::new();
+            let mut description = String::new();
+            if let Some(map) = item.map() {
+                for (k, v) in map {
+                    match k.as_str() {
+                        "name" => name = v.str().unwrap_or_default().to_string(),
+                        "description" => description = v.str().unwrap_or_default().to_string(),
+                        _ => {}
+                    }
+                }
+            }
+            if !name.is_empty() && name != "auto" {
+                out.push(AudioDevice { name, description });
+            }
+        }
+    }
+    out
+}
+
+#[tauri::command]
+pub async fn mpv_audio_devices(state: State<'_, MpvState>) -> Result<Vec<AudioDevice>, String> {
+    let existing = {
+        let g = state.inner.lock().await;
+        g.as_ref().map(|s| s.mpv.clone())
+    };
+    if let Some(mpv) = existing {
+        return Ok(read_audio_devices(&mpv));
+    }
+    force_c_numeric_locale();
+    let mpv = Mpv::new().map_err(|e| format!("mpv init: {}", e))?;
+    Ok(read_audio_devices(&mpv))
+}
+
 fn apply_pre_init(
     init: &MpvInitializer,
     args: &MpvStartArgs,
@@ -202,11 +251,15 @@ fn apply_pre_init(
         } else {
             set("force-window", "yes")?;
         }
+    } else if cfg!(windows) {
+        set("hwdec", "auto-copy")?;
+        set("force-window", "immediate")?;
     } else {
         set("hwdec", "auto")?;
         set("force-window", "immediate")?;
     }
     set("input-default-bindings", "no")?;
+    set("input-media-keys", "no")?;
     set("input-cursor", "no")?;
     set("osc", "no")?;
     set("osd-level", "0")?;
@@ -231,21 +284,30 @@ fn apply_pre_init(
         }
     } else if !args.embed.unwrap_or(false) {
         set("ontop", "yes")?;
+        set("border", "no")?;
     }
 
+    let opt = |k: &str, v: &str| {
+        let _ = init.set_property(k, v);
+    };
     if args.hdr_to_sdr.unwrap_or(false) {
-        set("tone-mapping", "bt.2446a")?;
+        opt("tone-mapping", "spline");
+        opt("gamut-mapping-mode", "perceptual");
+        opt("hdr-compute-peak", "yes");
+        opt("hdr-contrast-recovery", "0.30");
+        opt("hdr-peak-percentile", "99.995");
+        opt("dither-depth", "auto");
     } else {
         #[cfg(windows)]
         {
-            set("target-colorspace-hint", "yes")?;
+            opt("target-colorspace-hint", "yes");
             if embed_hwnd.is_some() {
-                set("gpu-api", "d3d11")?;
+                opt("gpu-api", "d3d11");
             }
         }
         #[cfg(target_os = "macos")]
         {
-            set("target-colorspace-hint", "yes")?;
+            opt("target-colorspace-hint", "yes");
         }
     }
 
@@ -254,7 +316,7 @@ fn apply_pre_init(
         if !cleaned.is_empty() {
             let sep = if cfg!(windows) { ";" } else { ":" };
             let joined = cleaned.join(sep);
-            set("glsl-shaders", &joined)?;
+            opt("glsl-shaders", &joined);
         }
     }
 
@@ -393,10 +455,11 @@ pub async fn mpv_start(
             .ns_window()
             .map_err(|e| format!("ns_window: {:?}", e))? as i64;
         let mpv_ctx_addr: usize = mpv.ctx.as_ptr() as usize;
+        let mac_edr = args.mac_edr.unwrap_or(false);
         let (tx, rx) = std::sync::mpsc::sync_channel::<Result<(), String>>(1);
         let _ = app.run_on_main_thread(move || {
             let res = match std::ptr::NonNull::new(mpv_ctx_addr as *mut libmpv2_sys::mpv_handle) {
-                Some(p) => crate::mpv_render_mac::install(p, ns_window_ptr),
+                Some(p) => crate::mpv_render_mac::install(p, ns_window_ptr, mac_edr),
                 None => Err("null mpv ctx".into()),
             };
             let _ = tx.send(res);
@@ -458,11 +521,11 @@ pub async fn mpv_start(
         let _ = mpv.set_property("stream-buffer-size", "16MiB");
     } else {
         let _ = mpv.set_property("cache", "yes");
-        let _ = mpv.set_property("cache-secs", "60");
+        let _ = mpv.set_property("cache-secs", "300");
         let _ = mpv.set_property("cache-pause", "yes");
-        let _ = mpv.set_property("demuxer-max-bytes", "128MiB");
-        let _ = mpv.set_property("demuxer-max-back-bytes", "32MiB");
-        let _ = mpv.set_property("demuxer-readahead-secs", "60");
+        let _ = mpv.set_property("demuxer-max-bytes", "512MiB");
+        let _ = mpv.set_property("demuxer-max-back-bytes", "64MiB");
+        let _ = mpv.set_property("demuxer-readahead-secs", "300");
         if let Ok(base) = app.path().app_cache_dir() {
             let dvr = base.join("mpv-cache");
             let _ = std::fs::create_dir_all(&dvr);
@@ -499,6 +562,23 @@ pub async fn mpv_start(
         apply_extra_mpv_options(&mpv, extra);
     }
 
+    if is_live {
+        for (k, v) in [
+            ("scale", "bilinear"),
+            ("dscale", "bilinear"),
+            ("cscale", "bilinear"),
+            ("dither", "no"),
+            ("deband", "no"),
+            ("correct-downscaling", "no"),
+            ("linear-downscaling", "no"),
+            ("sigmoid-upscaling", "no"),
+            ("hdr-compute-peak", "no"),
+            ("interpolation", "no"),
+        ] {
+            let _ = mpv.set_property(k, v);
+        }
+    }
+
     let mpv_arc = Arc::new(mpv);
 
     let event_ctx = EventContext::new(mpv_arc.ctx);
@@ -507,7 +587,7 @@ pub async fn mpv_start(
             eprintln!("[mpv] observe {} failed: {}", name, e);
         }
     }
-    spawn_event_loop(app.clone(), mpv_arc.clone(), event_ctx);
+    spawn_event_loop(app.clone(), mpv_arc.clone(), event_ctx, want_embed, args.mac_edr.unwrap_or(false));
 
     eprintln!("[harbor::mpv] loadfile {}", args.url);
     mpv_argv_command(&mpv_arc, &["loadfile", &args.url, "replace"]).map_err(|e| {
@@ -530,9 +610,49 @@ pub async fn mpv_start(
     Ok(())
 }
 
-fn spawn_event_loop(app: AppHandle, mpv_keepalive: Arc<Mpv>, mut ctx: EventContext) {
+#[cfg(windows)]
+fn reassert_hdr_colorspace(mpv: &Arc<Mpv>) {
+    let _ = mpv.set_property("target-peak", "10000");
+    std::thread::sleep(Duration::from_millis(60));
+    let _ = mpv.set_property("target-peak", "auto");
+}
+
+#[cfg(target_os = "macos")]
+fn apply_mac_edr(app: &AppHandle, mpv: &Arc<Mpv>, active: bool) {
+    let primaries = mpv
+        .get_property::<String>("video-params/primaries")
+        .unwrap_or_default();
+    let bt2020 = primaries == "bt.2020";
+    if active {
+        let _ = mpv.set_property("icc-profile-auto", "no");
+        let _ = mpv.set_property("target-prim", if bt2020 { "bt.2020" } else { "display-p3" });
+        let _ = mpv.set_property("target-trc", "pq");
+        let _ = mpv.set_property("target-peak", "auto");
+    } else {
+        let _ = mpv.set_property("target-trc", "auto");
+        let _ = mpv.set_property("target-prim", "auto");
+        let _ = mpv.set_property("target-peak", "auto");
+    }
+    let _ = app.run_on_main_thread(move || {
+        crate::mpv_render_mac::set_hdr_active(active, bt2020);
+    });
+}
+
+fn spawn_event_loop(
+    app: AppHandle,
+    mpv_keepalive: Arc<Mpv>,
+    mut ctx: EventContext,
+    embedded: bool,
+    mac_edr: bool,
+) {
     std::thread::spawn(move || {
         let mut last_timepos: Option<std::time::Instant> = None;
+        #[cfg(windows)]
+        let reassert_gen = Arc::new(std::sync::atomic::AtomicU64::new(0));
+        #[cfg(not(windows))]
+        let _ = embedded;
+        #[cfg(not(target_os = "macos"))]
+        let _ = mac_edr;
         loop {
             let res = ctx.wait_event(0.5);
             match res {
@@ -555,6 +675,51 @@ fn spawn_event_loop(app: AppHandle, mpv_keepalive: Arc<Mpv>, mut ctx: EventConte
                             last_timepos = Some(now);
                         }
                     }
+                    #[cfg(windows)]
+                    if embedded {
+                        if let Event::PropertyChange { name, .. } = &event {
+                            if *name == "video-params/gamma" {
+                                let gen = reassert_gen
+                                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                                    + 1;
+                                let gen_arc = reassert_gen.clone();
+                                let mpv2 = mpv_keepalive.clone();
+                                let app3 = app.clone();
+                                std::thread::spawn(move || {
+                                    std::thread::sleep(Duration::from_millis(250));
+                                    if gen_arc.load(std::sync::atomic::Ordering::Relaxed) != gen {
+                                        return;
+                                    }
+                                    let gamma = mpv2
+                                        .get_property::<String>("video-params/gamma")
+                                        .unwrap_or_default();
+                                    if gamma != "pq" && gamma != "hlg" {
+                                        return;
+                                    }
+                                    let hdr = app3
+                                        .get_webview_window("main")
+                                        .and_then(|w| w.hwnd().ok())
+                                        .map(|h| monitor_hdr_active(h.0 as isize))
+                                        .unwrap_or(false);
+                                    if hdr {
+                                        reassert_hdr_colorspace(&mpv2);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    #[cfg(target_os = "macos")]
+                    if mac_edr {
+                        if let Event::PropertyChange { name, .. } = &event {
+                            if *name == "video-params/gamma" {
+                                let gamma = mpv_keepalive
+                                    .get_property::<String>("video-params/gamma")
+                                    .unwrap_or_default();
+                                let active = gamma == "pq" || gamma == "hlg";
+                                apply_mac_edr(&app, &mpv_keepalive, active);
+                            }
+                        }
+                    }
                     let payload = event_to_payload(event);
                     if let Some(p) = payload {
                         let _ = app.emit("mpv://event", p);
@@ -565,6 +730,9 @@ fn spawn_event_loop(app: AppHandle, mpv_keepalive: Arc<Mpv>, mut ctx: EventConte
                 }
                 Some(Err(e)) => {
                     eprintln!("[mpv] event err: {}", e);
+                    if matches!(e, libmpv2::Error::Raw(-13 | -16)) {
+                        let _ = app.emit("mpv://event", json!({ "event": "end-file", "reason": "error" }));
+                    }
                 }
                 None => {}
             }
@@ -639,6 +807,9 @@ pub async fn mpv_command(
         return Err("empty command".into());
     }
     let head = cmd[0].as_str().ok_or_else(|| "first arg must be string".to_string())?;
+    if !MPV_ALLOWED_COMMANDS.contains(&head) {
+        return Err(format!("mpv command not allowed: {}", head));
+    }
     let tail: Vec<String> = cmd[1..].iter().map(value_to_arg).collect();
     let mut argv: Vec<&str> = Vec::with_capacity(tail.len() + 1);
     argv.push(head);
@@ -646,6 +817,19 @@ pub async fn mpv_command(
         argv.push(s.as_str());
     }
     mpv_argv_command(&mpv, &argv)
+}
+
+const MPV_ALLOWED_COMMANDS: &[&str] = &[
+    "af", "seek", "stop", "frame-step", "frame-back-step", "loadfile",
+];
+
+fn mpv_property_blocked(name: &str) -> bool {
+    let n = name.to_ascii_lowercase();
+    const BLOCKED: &[&str] = &[
+        "script", "input-", "load-scripts", "ytdl-raw", "screenshot-directory",
+        "screenshot-template", "sub-add",
+    ];
+    BLOCKED.iter().any(|b| n.starts_with(b))
 }
 
 fn value_to_arg(v: &Value) -> String {
@@ -668,6 +852,9 @@ pub async fn mpv_set_property(
         let g = state.inner.lock().await;
         g.as_ref().map(|s| s.mpv.clone()).ok_or_else(|| "mpv not started".to_string())?
     };
+    if mpv_property_blocked(&name) {
+        return Err(format!("mpv property not allowed: {}", name));
+    }
     let str_val = value_to_arg(&value);
     mpv.set_property(&name, str_val.as_str()).map_err(|e| format!("set {}: {}", name, e))
 }
@@ -1513,9 +1700,12 @@ unsafe extern "system" fn mpv_subclass_proc(
 ) -> windows::Win32::Foundation::LRESULT {
     use windows::Win32::Foundation::LRESULT;
     use windows::Win32::UI::Shell::DefSubclassProc;
-    use windows::Win32::UI::WindowsAndMessaging::{HTTRANSPARENT, WM_NCHITTEST};
+    use windows::Win32::UI::WindowsAndMessaging::{HTTRANSPARENT, WM_APPCOMMAND, WM_NCHITTEST};
     if msg == WM_NCHITTEST {
         return LRESULT(HTTRANSPARENT as isize);
+    }
+    if msg == WM_APPCOMMAND {
+        return LRESULT(1);
     }
     DefSubclassProc(hwnd, msg, wparam, lparam)
 }
