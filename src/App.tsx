@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
@@ -447,22 +447,27 @@ function Shell() {
     layout === "stremio";
   useViewPreloader();
 
+  const handleTvBack = useCallback(() => {
+    if (stackKinds.length > 1 || topKind !== "home") {
+      goBack();
+      return true;
+    }
+    return false;
+  }, [goBack, stackKinds.length, topKind]);
+
+  const handleTvBackToNav = useCallback(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    const nav = document.querySelector<HTMLElement>(
+      '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]',
+    );
+    nav?.focus({ preventScroll: true });
+  }, []);
+
   useKeyboardNavigation({
     enabled: !player && !picker,
     wrap: false,
-    onBack: () => {
-      if (stackKinds.length > 1 || topKind !== "home") {
-        goBack();
-        return true;
-      }
-      return false;
-    },
-    onBackToNav: () => {
-      const nav = document.querySelector<HTMLElement>(
-        '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]',
-      );
-      nav?.focus({ preventScroll: true });
-    },
+    onBack: handleTvBack,
+    onBackToNav: handleTvBackToNav,
   });
 useEffect(() => {
     if (settings.soundTheme) {

@@ -326,6 +326,10 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
         return;
       }
 
+      if (isEditable(target)) return;
+
+      const activeModal = getActiveModal(target);
+
       if (isBackKey(e)) {
         if (activeModal) return;
         e.preventDefault();
@@ -351,6 +355,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
       const dir = getDirection(e);
 
       if (dir) {
+        if (isLocallyManaged(target)) return;
         e.preventDefault();
         e.stopPropagation();
 
