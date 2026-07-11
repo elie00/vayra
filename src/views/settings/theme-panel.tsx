@@ -1,4 +1,5 @@
 import { PanelTop } from "lucide-react";
+import { ThemeGallery } from "@/components/theme-gallery";
 import { useSettings } from "@/lib/settings";
 import { type ThemeSettings } from "@/lib/theme";
 import { useT } from "@/lib/i18n";
@@ -71,6 +72,13 @@ export function ThemePanel() {
         subtitle={t("Make your own in the Theme Studio, or import one a friend shared.")}
       >
         <CustomThemesSection />
+      </Section>
+
+      <Section
+        title={t("Theme gallery")}
+        subtitle={t("A growing collection of ready-made looks. Hover a card to try it on, install to keep it in your library.")}
+      >
+        <ThemeGallery />
       </Section>
 
       <DisplaySection />
