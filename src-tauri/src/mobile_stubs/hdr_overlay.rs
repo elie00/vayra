@@ -9,6 +9,10 @@ pub fn hdr_overlay_close() -> Result<(), String> {
     Err("not supported on Android".into())
 }
 #[tauri::command]
+pub fn hdr_overlay_hide() -> Result<(), String> {
+    Err("not supported on Android".into())
+}
+#[tauri::command]
 pub fn hdr_overlay_sync() -> Result<(), String> {
     Err("not supported on Android".into())
 }

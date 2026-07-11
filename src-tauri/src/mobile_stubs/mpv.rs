@@ -18,6 +18,10 @@ pub fn mpv_start() -> Result<(), String> {
     Err("not supported on Android".into())
 }
 #[tauri::command]
+pub fn mpv_audio_devices() -> Result<Vec<String>, String> {
+    Err("not supported on Android".into())
+}
+#[tauri::command]
 pub fn mpv_command() -> Result<(), String> {
     Err("not supported on Android".into())
 }
