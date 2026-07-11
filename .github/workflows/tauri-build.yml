@@ -54,7 +54,10 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform.target }}
+          targets: ${{ matrix.platform.target }},wasm32-unknown-unknown
+
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -80,45 +83,77 @@ jobs:
 
       - name: Fetch external binaries
         shell: bash
+        env:
+          YTDLP_VERSION: "2026.07.04"
         run: |
+          set -euo pipefail
           mkdir -p src-tauri/binaries
           cd src-tauri/binaries
           TARGET="${{ matrix.platform.target }}"
           EXT=""
           if [[ "$TARGET" == *"windows"* ]]; then EXT=".exe"; fi
           
-          echo "Downloading yt-dlp..."
+          echo "Downloading and verifying yt-dlp ${YTDLP_VERSION}..."
+          curl --fail --location --retry 3 \
+            "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/SHA2-256SUMS" \
+            -o yt-dlp.SHA2-256SUMS
           if [[ "$TARGET" == *"windows"* ]]; then
-            curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -o "yt-dlp-${TARGET}${EXT}"
+            YTDLP_ASSET="yt-dlp.exe"
           elif [[ "$TARGET" == *"apple"* ]]; then
-            curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos" -o "yt-dlp-${TARGET}${EXT}"
+            YTDLP_ASSET="yt-dlp_macos"
           else
-            curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -o "yt-dlp-${TARGET}${EXT}"
+            YTDLP_ASSET="yt-dlp"
           fi
+          curl --fail --location --retry 3 \
+            "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/${YTDLP_ASSET}" \
+            -o "${YTDLP_ASSET}"
+          grep "  ${YTDLP_ASSET}$" yt-dlp.SHA2-256SUMS | shasum -a 256 --check
+          mv "${YTDLP_ASSET}" "yt-dlp-${TARGET}${EXT}"
           chmod +x "yt-dlp-${TARGET}${EXT}" || true
 
           echo "Fetching ffmpeg and ffprobe..."
           if [[ "$TARGET" == *"windows"* ]]; then
-            curl -L "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -o ffmpeg.zip
+            FFMPEG_ASSET="ffmpeg-n8.1-latest-win64-gpl-8.1.zip"
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/checksums.sha256" \
+              -o checksums.sha256
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/${FFMPEG_ASSET}" \
+              -o "${FFMPEG_ASSET}"
+            grep "  ${FFMPEG_ASSET}$" checksums.sha256 | shasum -a 256 --check
+            mv "${FFMPEG_ASSET}" ffmpeg.zip
             unzip -j ffmpeg.zip "*/bin/ffmpeg.exe" "*/bin/ffprobe.exe"
             mv ffmpeg.exe "ffmpeg-${TARGET}${EXT}"
             mv ffprobe.exe "ffprobe-${TARGET}${EXT}"
           elif [[ "$TARGET" == *"apple"* ]]; then
             if [[ "$TARGET" == *"aarch64"* ]]; then
-              curl -L "https://www.osxexperts.net/ffmpeg6arm.zip" -o ffmpeg.zip
-              curl -L "https://www.osxexperts.net/ffprobe6arm.zip" -o ffprobe.zip
+              FFMPEG_SHA256="15e67ff413d3d2436ddb3efd282344e50b8f1c6f834979b984371b90ebaf0449"
+              FFPROBE_SHA256="582842ca7e76197ae8f4299b7f5f2d257b42168f314fc37a675708b9d5f847e0"
+              curl --fail --location --retry 3 "https://www.osxexperts.net/ffmpeg6arm.zip" -o ffmpeg.zip
+              curl --fail --location --retry 3 "https://www.osxexperts.net/ffprobe6arm.zip" -o ffprobe.zip
             else
-              curl -L "https://www.osxexperts.net/ffmpeg6intel.zip" -o ffmpeg.zip
-              curl -L "https://www.osxexperts.net/ffprobe6intel.zip" -o ffprobe.zip
+              FFMPEG_SHA256="034a8d6eafb2736711d98e897dc22cc5769c7c31bde9a40ac20f58cbd57f68d8"
+              FFPROBE_SHA256="5ed6e3a619edd06d81c506e085aeef85e3f5b5bcc34d032b01bb1b125413cd03"
+              curl --fail --location --retry 3 "https://www.osxexperts.net/ffmpeg6intel.zip" -o ffmpeg.zip
+              curl --fail --location --retry 3 "https://www.osxexperts.net/ffprobe6intel.zip" -o ffprobe.zip
             fi
+            echo "${FFMPEG_SHA256}  ffmpeg.zip" | shasum -a 256 --check
+            echo "${FFPROBE_SHA256}  ffprobe.zip" | shasum -a 256 --check
             unzip ffmpeg.zip
             unzip ffprobe.zip
             mv ffmpeg "ffmpeg-${TARGET}${EXT}"
             mv ffprobe "ffprobe-${TARGET}${EXT}"
             chmod +x "ffmpeg-${TARGET}${EXT}" "ffprobe-${TARGET}${EXT}" || true
           else
-            curl -L "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" -o ffmpeg.tar.xz
-            tar -xf ffmpeg.tar.xz --strip-components=1 --wildcards '*/ffmpeg' '*/ffprobe'
+            FFMPEG_ASSET="ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz"
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/checksums.sha256" \
+              -o checksums.sha256
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/${FFMPEG_ASSET}" \
+              -o "${FFMPEG_ASSET}"
+            grep "  ${FFMPEG_ASSET}$" checksums.sha256 | shasum -a 256 --check
+            tar -xf "${FFMPEG_ASSET}" --strip-components=2 --wildcards '*/bin/ffmpeg' '*/bin/ffprobe'
             mv ffmpeg "ffmpeg-${TARGET}${EXT}"
             mv ffprobe "ffprobe-${TARGET}${EXT}"
           fi

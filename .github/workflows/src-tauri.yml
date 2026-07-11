@@ -20,6 +20,7 @@ jobs:
         os:
           - ubuntu-22.04
           - macos-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -45,6 +46,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -62,6 +67,13 @@ jobs:
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
 
+      - name: Fetch libmpv (Windows)
+        if: contains(matrix.os, 'windows')
+        shell: pwsh
+        run: |
+          pnpm run setup:libmpv
+          Add-Content $env:GITHUB_PATH "$env:GITHUB_WORKSPACE\src-tauri\libmpv"
+
       # tauri's generate_context! embeds ../dist at compile time, so the frontend
       # must be built before cargo can check/clippy/test the src-tauri crate.
       - name: Build frontend (creates ../dist)
@@ -73,3 +85,51 @@ jobs:
           # Strict : toute nouvelle warning clippy casse la CI (0 warning à ce jour).
           cargo clippy --all-targets -- -D warnings
           cargo test --all-targets
+
+  android-check:
+    name: Android debug build (arm64)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK and NDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,wasm32-unknown-unknown
+
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: android-arm64
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      # A debug APK exercises the Gradle/Kotlin project and the Rust Android
+      # target without requiring a release keystore or publishing secrets.
+      - name: Build Android debug APK
+        run: |
+          export NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
+          export ANDROID_NDK_HOME="$NDK_HOME"
+          pnpm tauri android build --debug --target aarch64 --apk --ci

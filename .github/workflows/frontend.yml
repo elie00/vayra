@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "src/**"
+      - "harbor-core/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "tsconfig*.json"
@@ -14,6 +15,7 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "harbor-core/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "tsconfig*.json"
@@ -27,6 +29,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -38,6 +45,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: pnpm exec tsc -b
+      - name: Production build (includes harbor-core WASM)
+        run: pnpm build
+      - name: WASM runtime smoke test
+        run: pnpm core:wasm:smoke
       - name: Lint (react-hooks)
         run: pnpm lint
       - name: Unit tests
