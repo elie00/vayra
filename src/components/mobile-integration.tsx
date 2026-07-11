@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { isMobileTauri } from "@/lib/platform";
 import { useView } from "@/lib/view";
 import { useSearch } from "@/lib/search-context";
+import { useTogether } from "@/lib/together/provider";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 import { getPlusOpen, setPlusOpen } from "@/mobile/shell";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
@@ -20,6 +21,7 @@ declare global {
 export function MobileIntegration() {
   const { player, canGoBack, goBack, topKind, setView } = useView();
   const { open: searchOpen, setOpen: setSearchOpen } = useSearch();
+  const { modalOpen: togetherOpen, closeModal: closeTogether } = useTogether();
   const drawerOpen = useNavDrawer();
 
   // Mirror the latest state/actions into refs so the global handler can read
@@ -29,11 +31,12 @@ export function MobileIntegration() {
     canGoBack: false,
     searchOpen: false,
     drawerOpen: false,
+    togetherOpen: false,
     topKind: "home" as string,
   });
-  stateRef.current = { player: !!player, canGoBack, searchOpen, drawerOpen, topKind };
-  const actionsRef = useRef({ goBack, setSearchOpen, setView });
-  actionsRef.current = { goBack, setSearchOpen, setView };
+  stateRef.current = { player: !!player, canGoBack, searchOpen, drawerOpen, togetherOpen, topKind };
+  const actionsRef = useRef({ goBack, setSearchOpen, setView, closeTogether });
+  actionsRef.current = { goBack, setSearchOpen, setView, closeTogether };
 
   useEffect(() => {
     if (!isMobileTauri()) return;
@@ -44,6 +47,10 @@ export function MobileIntegration() {
       // Harbor's own view history (which also closes the player). Top-level
       // views reached via the drawer have no history, so — per Android/Material
       // convention — Back goes to Home first; only Home itself exits the app.
+      if (s.togetherOpen) {
+        a.closeTogether();
+        return "handled";
+      }
       if (getPlusOpen()) {
         setPlusOpen(false);
         return "handled";
