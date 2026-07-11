@@ -48,6 +48,21 @@ export function onDeepLinkOpen(handler: (open: DeepLinkOpen) => void): () => voi
   return () => window.removeEventListener(OPEN_EVENT, listener);
 }
 
+const OPEN_FILE_EVENT = "harbor:open-local-file";
+
+export function emitOpenLocalFile(path: string): void {
+  window.dispatchEvent(new CustomEvent<{ path: string }>(OPEN_FILE_EVENT, { detail: { path } }));
+}
+
+export function onOpenLocalFile(handler: (path: string) => void): () => void {
+  const listener = (e: Event) => {
+    const ev = e as CustomEvent<{ path: string }>;
+    if (ev.detail?.path) handler(ev.detail.path);
+  };
+  window.addEventListener(OPEN_FILE_EVENT, listener);
+  return () => window.removeEventListener(OPEN_FILE_EVENT, listener);
+}
+
 // Jumelage : harbor://stremio-auth?key=<authKey> (QR affiché par le desktop,
 // scanné par l'appareil photo du téléphone). Le lien peut arriver avant que
 // l'AuthProvider soit monté (démarrage à froid) → clé mise en attente.

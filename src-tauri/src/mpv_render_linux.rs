@@ -6,7 +6,6 @@ use std::os::raw::{c_char, c_int};
 use std::ptr::NonNull;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Mutex, OnceLock};
 
 use gtk::gdk;
 use gtk::glib;
@@ -55,23 +54,17 @@ struct Embed {
     web_view: gtk::Widget,
 }
 
-unsafe impl Send for Embed {}
-unsafe impl Sync for Embed {}
+thread_local! {
+    // GTK objects are main-thread-only. Keeping them thread-local makes that
+    // invariant explicit and avoids unsound Send/Sync implementations.
+    static EMBED: RefCell<Option<Embed>> = const { RefCell::new(None) };
+    static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) };
+}
 
-static EMBED: OnceLock<Mutex<Option<Embed>>> = OnceLock::new();
-static PENDING: OnceLock<Mutex<Option<Pending>>> = OnceLock::new();
 static REDRAW_PENDING: AtomicBool = AtomicBool::new(false);
 static LAST_SURFACE: AtomicU64 = AtomicU64::new(0);
 static PROC_WAYLAND: AtomicBool = AtomicBool::new(false);
 static FBO_ZERO_WARNED: AtomicBool = AtomicBool::new(false);
-
-fn embed_slot() -> &'static Mutex<Option<Embed>> {
-    EMBED.get_or_init(|| Mutex::new(None))
-}
-
-fn pending_slot() -> &'static Mutex<Option<Pending>> {
-    PENDING.get_or_init(|| Mutex::new(None))
-}
 
 type GlProcLoader = unsafe extern "C" fn(*const c_char) -> *mut c_void;
 
@@ -236,25 +229,22 @@ pub fn prepare(mpv_ctx: NonNull<mpv_handle>) -> Result<(), String> {
     let backend = detect_backend();
     PROC_WAYLAND.store(backend == Backend::Wayland, Ordering::Relaxed);
     let display_native = native_display(backend);
-    *pending_slot().lock().map_err(|e| format!("pending lock: {}", e))? = Some(Pending {
-        mpv: MpvHandlePtr(mpv_ctx),
-        backend,
-        display_native,
+    PENDING.with(|slot| {
+        *slot.borrow_mut() = Some(Pending {
+            mpv: MpvHandlePtr(mpv_ctx),
+            backend,
+            display_native,
+        })
     });
     Ok(())
 }
 
 pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(), String> {
-    {
-        let mut existing = embed_slot().lock().map_err(|e| format!("embed lock: {}", e))?;
-        if let Some(stale) = existing.take() {
-            restore_webview(stale);
-        }
+    if let Some(stale) = EMBED.with(|slot| slot.borrow_mut().take()) {
+        restore_webview(stale);
     }
-    let pending = pending_slot()
-        .lock()
-        .map_err(|e| format!("pending lock: {}", e))?
-        .take()
+    let pending = PENDING
+        .with(|slot| slot.borrow_mut().take())
         .ok_or_else(|| "no pending mpv ctx for linux install".to_string())?;
 
     apply_rgba_visual(gtk_window);
@@ -267,6 +257,9 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
     let overlay = gtk::Overlay::new();
     let fixed = gtk::Fixed::new();
     let area = gtk::GLArea::new();
+    // libmpv's update callback is the frame clock. Rendering on every GTK draw
+    // as well would duplicate work whenever the transparent WebView repaints.
+    area.set_auto_render(false);
     area.set_use_es(false);
     area.set_has_depth_buffer(false);
     area.set_has_stencil_buffer(false);
@@ -288,9 +281,7 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
     let mpv = pending.mpv;
     let backend = pending.backend;
     let display_native = pending.display_native;
-    let area_for_cb = area.clone();
-
-    area.connect_render(move |_widget, _ctx| {
+    area.connect_render(move |area, _ctx| {
         let mut slot = render_cell.borrow_mut();
         if slot.is_none() {
             match build_render_context(mpv, backend, display_native) {
@@ -305,17 +296,19 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
             }
         }
         if let Some(rc) = slot.as_ref() {
-            do_render(rc, &area_for_cb);
+            do_render(rc, area);
         }
         glib::Propagation::Stop
     });
 
-    *embed_slot().lock().map_err(|e| format!("embed lock: {}", e))? = Some(Embed {
-        area: area.clone(),
-        overlay,
-        gtk_window: gtk_window.clone(),
-        vbox: vbox.clone(),
-        web_view,
+    EMBED.with(|slot| {
+        *slot.borrow_mut() = Some(Embed {
+            area: area.clone(),
+            overlay,
+            gtk_window: gtk_window.clone(),
+            vbox: vbox.clone(),
+            web_view,
+        })
     });
 
     area.queue_render();
@@ -381,29 +374,38 @@ pub fn resize_to(
     css_view_w: f64,
     css_view_h: f64,
 ) -> Result<(), String> {
-    let guard = embed_slot().lock().map_err(|e| format!("embed lock: {}", e))?;
-    let Some(embed) = guard.as_ref() else {
-        return Ok(());
-    };
-    let sx = if css_view_w > 0.0 { embed.gtk_window.allocated_width().max(1) as f64 / css_view_w } else { 1.0 };
-    let sy = if css_view_h > 0.0 { embed.gtk_window.allocated_height().max(1) as f64 / css_view_h } else { 1.0 };
-    let lw = (w * sx).round().max(1.0) as i32;
-    let lh = (h * sy).round().max(1.0) as i32;
-    embed.area.set_size_request(lw, lh);
-    if let Some(parent) = embed.area.parent() {
-        if let Some(fixed) = parent.downcast_ref::<gtk::Fixed>() {
-            let lx = (x * sx).round() as i32;
-            let ly = (y * sy).round() as i32;
-            fixed.move_(&embed.area, lx, ly);
+    EMBED.with(|slot| {
+        let guard = slot.borrow();
+        let Some(embed) = guard.as_ref() else {
+            return;
+        };
+        let sx = if css_view_w > 0.0 {
+            embed.gtk_window.allocated_width().max(1) as f64 / css_view_w
+        } else {
+            1.0
+        };
+        let sy = if css_view_h > 0.0 {
+            embed.gtk_window.allocated_height().max(1) as f64 / css_view_h
+        } else {
+            1.0
+        };
+        let lw = (w * sx).round().max(1.0) as i32;
+        let lh = (h * sy).round().max(1.0) as i32;
+        embed.area.set_size_request(lw, lh);
+        if let Some(parent) = embed.area.parent() {
+            if let Some(fixed) = parent.downcast_ref::<gtk::Fixed>() {
+                let lx = (x * sx).round() as i32;
+                let ly = (y * sy).round() as i32;
+                fixed.move_(&embed.area, lx, ly);
+            }
         }
-    }
-    embed.area.queue_render();
+        embed.area.queue_render();
+    });
     Ok(())
 }
 
 pub fn uninstall() -> Result<(), String> {
-    let mut guard = embed_slot().lock().map_err(|e| format!("embed lock: {}", e))?;
-    let Some(embed) = guard.take() else {
+    let Some(embed) = EMBED.with(|slot| slot.borrow_mut().take()) else {
         return Ok(());
     };
     restore_webview(embed);
@@ -441,11 +443,11 @@ fn schedule_redraw() {
     }
     glib::idle_add(|| {
         REDRAW_PENDING.store(false, Ordering::Release);
-        if let Ok(guard) = embed_slot().lock() {
-            if let Some(embed) = guard.as_ref() {
+        EMBED.with(|slot| {
+            if let Some(embed) = slot.borrow().as_ref() {
                 embed.area.queue_render();
             }
-        }
+        });
         glib::ControlFlow::Break
     });
 }

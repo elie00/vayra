@@ -57,6 +57,7 @@ export interface SimklGranularFilters {
 }
 
 export type Settings = {
+  soundTheme: 'none' | 'glass' | 'modern' | 'retro' | 'cinematic';
   blurComments: boolean;
   blurEpisodes: boolean;
   tmdbKey: string;
