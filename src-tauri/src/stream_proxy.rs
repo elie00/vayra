@@ -207,8 +207,13 @@ impl ProxyState {
         RegisterResult { session_id: id, url }
     }
 
-    pub async fn unregister(&self, session_id: &str) {
+    /// Release a cast session by id, whichever kind it is: a direct proxy entry
+    /// and/or an HLS transcode session (which kills its ffmpeg process and wipes
+    /// its temp dir). The two id spaces are distinct UUIDs, so clearing both maps
+    /// is safe — at most one matches.
+    pub async fn release(&self, session_id: &str) {
         self.sessions.write().await.remove(session_id);
+        self.hls.remove(session_id).await;
     }
 
     pub async fn gc_idle(&self) -> usize {
@@ -561,11 +566,53 @@ pub async fn proxy_unregister(
     session_id: String,
     state: tauri::State<'_, ProxyState>,
 ) -> Result<(), String> {
-    state.unregister(&session_id).await;
+    state.release(&session_id).await;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn proxy_gc_idle(state: tauri::State<'_, ProxyState>) -> Result<usize, String> {
     Ok(state.gc_idle().await)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn register_args(url: &str, transcode: bool) -> RegisterArgs {
+        RegisterArgs {
+            url: url.to_string(),
+            headers: HashMap::new(),
+            transcode,
+            profile: None,
+            target_host: None,
+            start_time_sec: None,
+            burn_sub_path: None,
+            burn_sub_style: None,
+        }
+    }
+
+    // A cast session registered for a direct (non-transcoding) stream must be
+    // fully released on `release`, so "Stop Cast" doesn't leak proxy sessions.
+    #[tokio::test]
+    async fn release_clears_registered_direct_session() {
+        let state = ProxyState::placeholder();
+        let res = state.register_cast(register_args("http://example.com/video.mp4", false)).await;
+        assert_eq!(state.sessions.read().await.len(), 1);
+        state.release(&res.session_id).await;
+        assert_eq!(state.sessions.read().await.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn release_unknown_session_is_noop() {
+        let state = ProxyState::placeholder();
+        state.release("does-not-exist").await;
+        assert_eq!(state.sessions.read().await.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn hls_remove_unknown_returns_false() {
+        let hls = HlsState::new();
+        assert!(!hls.remove("nope").await);
+    }
 }
