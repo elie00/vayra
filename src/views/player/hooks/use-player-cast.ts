@@ -1,4 +1,8 @@
 import { useEffect, useMemo, type RefObject } from "react";
+import {
+  getCastPositionPrecise,
+  subscribeCastPosition,
+} from "@/lib/player/cast-interp";
 import { useDebridClients } from "@/lib/debrid/registry";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import {
@@ -32,11 +36,23 @@ export function usePlayerCast(params: {
     setCastErrorInfo: session.setCastErrorInfo,
   });
 
+  // While casting, mirror the (ref-based) cast position into the playback clock
+  // so out-of-scope consumers — scrobbling, resume autosave, room sync — keep
+  // reading the live position via getPlaybackPosition(). This subscription lives
+  // outside React state, so it does not re-render the player subtree.
+  const castActive = session.castDevice != null;
   useEffect(() => {
-    if (session.castDevice) {
-      setPlaybackClock(session.castPositionSec || getPlaybackPosition(), getPlaybackBuffered());
-    }
-  }, [session.castDevice, session.castPositionSec]);
+    if (!castActive) return;
+    const push = () => {
+      // Use the precise float (not the floored display snapshot) so out-of-scope
+      // consumers — scrobbling, resume autosave, room sync — keep sub-second
+      // position accuracy instead of a value truncated to the whole second.
+      const pos = getCastPositionPrecise();
+      setPlaybackClock(pos > 0 ? pos : getPlaybackPosition(), getPlaybackBuffered());
+    };
+    push();
+    return subscribeCastPosition(push);
+  }, [castActive]);
 
   const sync = useMemo(
     () => ({

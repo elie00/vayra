@@ -13,6 +13,12 @@ _backups/
 target
 /harbor-core/pkg/
 
+# Global excludesfile ignores `lib/`; re-include the player module tree so
+# tracked/new files under src/lib/player (e.g. cast-interp.ts) are not dropped.
+!/src/lib/
+/src/lib/*
+!/src/lib/player/
+
 *.tsbuildinfo
 /vite.config.js
 /vite.config.d.ts
