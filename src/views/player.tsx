@@ -516,7 +516,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   }, []);
   const handleEnterSync = useCallback(() => {
     void textSync.enter(src.url, src.headers);
-  }, [textSync.enter, src.url, src.headers]);
+  }, [textSync, src.url, src.headers]);
 
   const volumeIndicatorTimerRef = useRef<number | null>(null);
   const [volumeIndicator, setVolumeIndicator] = useState<VolumeIndicatorState>({

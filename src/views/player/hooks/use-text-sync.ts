@@ -78,7 +78,7 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
     return () => {
       if (regenTimer.current) window.clearTimeout(regenTimer.current);
     };
-  }, [state.syncMode, state.points, state.nudge, state.segments, state.cues, constant]);
+  }, [state.syncMode, state.points, state.nudge, state.segments, state.cues, constant, state]);
 
   const enter = useCallback(async (sourceUrl: string | null, headers?: Record<string, string>) => {
     const b = bridgeRef.current;

@@ -174,7 +174,7 @@ export function Shows({ active = true }: { active?: boolean }) {
     if (usable.length === 0) return items;
     const overrideIds = new Set(usable.map((i) => i._id));
     return [...items.filter((i) => !overrideIds.has(i._id)), ...usable];
-  }, [items, manualWatchedVer]);
+  }, [items]);
   const cwItems = useCwAdvance(
     continueWatching,
     settings.tmdbKey,

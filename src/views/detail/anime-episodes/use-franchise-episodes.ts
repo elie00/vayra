@@ -38,7 +38,7 @@ export function useFranchiseEpisodes(
     return () => {
       cancelled = true;
     };
-  }, [sig]);
+  }, [otherIds, sig]);
 
   return useMemo(() => {
     if (!enabled || otherIds.length === 0 || extra.length === 0) return currentEpisodes;

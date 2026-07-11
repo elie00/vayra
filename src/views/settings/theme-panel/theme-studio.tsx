@@ -1,5 +1,5 @@
 import { SlidersHorizontal } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Inspector } from "./theme-studio/inspector";
 import { StudioHeader } from "./theme-studio/studio-header";
@@ -115,10 +115,10 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
   const [initialJson] = useState(() => JSON.stringify(emptyDraft(seed)));
   const [confirmClose, setConfirmClose] = useState(false);
   const dirty = useMemo(() => JSON.stringify(draft) !== initialJson, [draft, initialJson]);
-  const requestClose = () => {
+  const requestClose = useCallback(() => {
     if (dirty) setConfirmClose(true);
     else onClose();
-  };
+  }, [dirty, onClose]);
 
   useEffect(() => pushOverlayPin(), []);
 
@@ -228,7 +228,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, inspectorHidden, setInspectorHidden, popoutTab, confirmClose, dirty, undo, redo]);
+  }, [onClose, inspectorHidden, setInspectorHidden, popoutTab, confirmClose, dirty, undo, redo, requestClose]);
 
   const runJs = () => {
     const code = draft.js.trim();

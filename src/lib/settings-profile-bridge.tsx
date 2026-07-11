@@ -7,6 +7,6 @@ export function SettingsProfileBridge() {
   const { switchProfile } = useSettings();
   useEffect(() => {
     if (activeProfile) switchProfile(activeProfile.id, activeProfile.settingsLinked !== false);
-  }, [activeProfile?.id, activeProfile?.settingsLinked, switchProfile]);
+  }, [activeProfile, switchProfile]);
   return null;
 }

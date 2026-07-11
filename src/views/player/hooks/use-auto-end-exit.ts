@@ -59,5 +59,5 @@ export function useAutoEndExit(params: {
       void closePlayer();
     }, POST_END_DELAY_MS);
     return () => window.clearTimeout(t);
-  }, [snap.status, snap.errorCode, snap.durationSec, nextEp, canChangeEpisode, roomGuest, isLive, suspend, reloadLive, src.url, closePlayer]);
+  }, [snap.status, snap.errorCode, snap.durationSec, nextEp, canChangeEpisode, roomGuest, isLive, suspend, reloadLive, src.url, closePlayer, startedNearEndRef]);
 }

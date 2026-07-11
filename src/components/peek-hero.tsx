@@ -216,7 +216,7 @@ function PeekSlide({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, logo, settings.tmdbKey]);
+  }, [meta.id, meta.type, logo, settings.tmdbKey, meta.originalLanguage]);
 
   const visible = Math.abs(offset) <= 1;
   if (!visible) return null;

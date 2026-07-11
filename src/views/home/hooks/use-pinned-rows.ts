@@ -29,7 +29,7 @@ export function usePinnedRows(): HomeRow[] {
     return () => {
       cancelled = true;
     };
-  }, [catalogKey]);
+  }, [catalogKey, pinned]);
 
   const extraMap = useMemo(() => {
     const m = new Map<string, HomeRow>();

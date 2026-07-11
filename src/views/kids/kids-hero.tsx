@@ -83,7 +83,7 @@ function KidsHeroCard({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, logo, settings.tmdbKey]);
+  }, [meta.id, meta.type, logo, settings.tmdbKey, meta.originalLanguage]);
 
   return (
     <button

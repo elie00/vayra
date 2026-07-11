@@ -257,14 +257,7 @@ export function Home({ active = true }: { active?: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [
-    simklConnected,
-    settings.tmdbKey,
-    settings.simklHomeRailsEnabled,
-    settings.simklUpNextRailEnabled,
-    settings.simklTrendingRailEnabled,
-    settings.simklGranularFilters,
-  ]);
+  }, [simklConnected, settings.tmdbKey, settings.simklHomeRailsEnabled, settings.simklUpNextRailEnabled, settings.simklTrendingRailEnabled, settings.simklGranularFilters, settings]);
 
   useEffect(() => {
     if (!simklConnected) {
@@ -496,7 +489,7 @@ export function Home({ active = true }: { active?: boolean }) {
     if (usable.length === 0) return items;
     const overrideIds = new Set(usable.map((i) => i._id));
     return [...items.filter((i) => !overrideIds.has(i._id)), ...usable];
-  }, [items, manualWatchedVer]);
+  }, [items]);
   useEffect(() => {
     if (!anilistConnected) {
       setAnilistWatchedMap((prev) => (prev.size ? new Map() : prev));

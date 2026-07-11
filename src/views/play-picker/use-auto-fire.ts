@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
@@ -39,9 +39,9 @@ export function useAutoFire(args: {
     expectHostSource, hostSource, season, episode,
     autoFiredRef, setAutoSettleReady, setAutoCancelled, onPlay,
   } = args;
-  const exactEpisode = (s: ScoredStream) =>
+  const exactEpisode = useCallback((s: ScoredStream) =>
     episode == null ||
-    (s.episode === episode && (season == null || s.season == null || s.season === season));
+    (s.episode === episode && (season == null || s.season == null || s.season === season)), [episode, season]);
   const highConfidenceSinceRef = useRef<number | null>(null);
   const [highConfidenceTick, setHighConfidenceTick] = useState(0);
 
@@ -64,7 +64,7 @@ export function useAutoFire(args: {
     }
     const t = window.setTimeout(() => setHighConfidenceTick((n) => n + 1), HIGH_CONFIDENCE_GRACE_MS + 20);
     return () => window.clearTimeout(t);
-  }, [autoActive, pipelineDone, autoSettleReady, autoCandidates, isCached, preferredLangs, hasStrongAddon, isTorrentioStream, autoFiredRef, waitingForHostSource]);
+  }, [autoActive, pipelineDone, autoSettleReady, autoCandidates, isCached, preferredLangs, hasStrongAddon, isTorrentioStream, autoFiredRef, waitingForHostSource, exactEpisode]);
 
   useEffect(() => {
     if (!autoActive || autoSettleReady || pipelineDone) return;
@@ -75,7 +75,7 @@ export function useAutoFire(args: {
     const remaining = Math.max(0, settleMs - elapsed);
     const t = window.setTimeout(() => setAutoSettleReady(true), remaining);
     return () => window.clearTimeout(t);
-  }, [autoActive, autoSettleReady, pipelineDone, firstResultAt, setAutoSettleReady, autoCandidates, isCached, episode]);
+  }, [autoActive, autoSettleReady, pipelineDone, firstResultAt, setAutoSettleReady, autoCandidates, isCached, episode, exactEpisode]);
 
   useEffect(() => {
     if (!autoActive || autoFiredRef.current) return;
@@ -110,5 +110,5 @@ export function useAutoFire(args: {
     autoFiredRef.current = true;
     const p2pConsentPick = !isCached(pick) && !pick.url && p2pAutoConsent && engineP2pEligible(pick);
     onPlay(pick, p2pConsentPick, p2pConsentPick, true);
-  }, [autoActive, rememberedHandledFirst, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady, pipelineDone, isCached, preferredLangs, hasStrongAddon, isTorrentioStream, autoFiredRef, setAutoCancelled, onPlay, highConfidenceTick, waitingForHostSource]);
+  }, [autoActive, rememberedHandledFirst, attempt, autoCandidates, resolving, autoAttemptIdx, autoSettleReady, pipelineDone, isCached, preferredLangs, hasStrongAddon, isTorrentioStream, autoFiredRef, setAutoCancelled, onPlay, highConfidenceTick, waitingForHostSource, exactEpisode, p2pAutoConsent]);
 }

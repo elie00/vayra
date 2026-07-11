@@ -242,7 +242,7 @@ function CinemaSlide({
     return () => {
       cancelled = true;
     };
-  }, [active, logoResolved, meta.id, meta.type, settings.tmdbKey]);
+  }, [active, logoResolved, meta.id, meta.originalLanguage, meta.type, settings.tmdbKey]);
 
   useEffect(() => {
     if (!active) return;

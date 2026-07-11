@@ -30,6 +30,7 @@ export function useSeasonArcPicker({
   setOrderSeason: (n: number) => void;
   userPickedRef: React.MutableRefObject<boolean>;
 }): { items: PickerItem[]; activeKey: string; onSelect: (key: string) => void } {
+  void metaId;
   return useMemo(() => {
     if (source === "arcs") {
       return {
@@ -70,17 +71,5 @@ export function useSeasonArcPicker({
         setActive(Number(k));
       },
     };
-  }, [
-    source,
-    arc,
-    ordering,
-    orderSeasonEff,
-    seasons,
-    active,
-    lastEpisodeAir,
-    metaId,
-    setActive,
-    setOrderSeason,
-    userPickedRef,
-  ]);
+  }, [source, arc, ordering, orderSeasonEff, seasons, active, lastEpisodeAir, setActive, setOrderSeason, userPickedRef]);
 }

@@ -22,6 +22,7 @@ export function useEpisodeProgressMap({
   mwVersion: number;
   settings: Parameters<typeof spoilerMaskFor>[0];
 }) {
+  void mwVersion;
   const progressByEp = useMemo(() => {
     const m = new Map<number, ReturnType<typeof getEpisodeProgress>>();
     for (const ep of episodes) {
@@ -41,7 +42,7 @@ export function useEpisodeProgressMap({
       );
     }
     return m;
-  }, [episodes, metaId, traktKey, traktWatched, stremioWatched, simklWatched, mwVersion]);
+  }, [episodes, metaId, traktKey, traktWatched, stremioWatched, simklWatched]);
 
   const nextUpEp = useMemo(() => {
     for (const ep of episodes) {

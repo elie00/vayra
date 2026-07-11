@@ -42,7 +42,7 @@ export function CatalogShelf({ catalog }: { catalog: BrowseCatalog }) {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [catalog.key]);
+  }, [catalog, catalog.key]);
 
   const loadMore = () => {
     const next = pageRef.current + 1;

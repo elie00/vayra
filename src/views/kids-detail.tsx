@@ -41,7 +41,7 @@ export function KidsDetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, settings.tmdbKey]);
+  }, [meta, meta.id, meta.type, settings.tmdbKey]);
 
   const backdrop = detail?.backdrop || base?.background || meta.background || meta.poster;
   const logo = detail?.logo || base?.logo || meta.logo;

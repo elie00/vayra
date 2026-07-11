@@ -22,28 +22,7 @@ export function useSubStyleApply(params: {
     if (!bridgeReady) return;
     if (!mediaReady) return;
     void applySubStyle(settings, { assNativeActive, imageNativeActive });
-  }, [
-    engine,
-    bridgeReady,
-    mediaReady,
-    bridgeKey,
-    assNativeActive,
-    imageNativeActive,
-    settings.subFontSize,
-    settings.subFontColor,
-    settings.subBorderColor,
-    settings.subBorderSize,
-    settings.subMarginY,
-    settings.subAlignX,
-    settings.subAssOverride,
-    settings.subStyle,
-    settings.subFontFamily,
-    settings.subLineSpacing,
-    settings.subOpacity,
-    settings.subBoxOpacity,
-    settings.subBoxColor,
-    settings.subBold,
-  ]);
+  }, [engine, bridgeReady, mediaReady, bridgeKey, assNativeActive, imageNativeActive, settings.subFontSize, settings.subFontColor, settings.subBorderColor, settings.subBorderSize, settings.subMarginY, settings.subAlignX, settings.subAssOverride, settings.subStyle, settings.subFontFamily, settings.subLineSpacing, settings.subOpacity, settings.subBoxOpacity, settings.subBoxColor, settings.subBold, settings]);
 
   useEffect(() => {
     if (engine !== "mpv") return;

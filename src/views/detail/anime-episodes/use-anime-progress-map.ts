@@ -25,6 +25,7 @@ export function useAnimeProgressMap({
   mwVersion: number;
   settings: Parameters<typeof spoilerMaskFor>[0];
 }) {
+  void mwVersion;
   const progressById = useMemo(() => {
     const m = new Map<number, EpisodeProgress>();
     const add = (ep: KitsuEpisode) => {
@@ -51,7 +52,7 @@ export function useAnimeProgressMap({
     for (const ep of episodes) add(ep);
     for (const ep of displayEpisodes) add(ep);
     return m;
-  }, [episodes, displayEpisodes, metaId, traktWatched, anilistWatched, malWatched, mwVersion]);
+  }, [episodes, displayEpisodes, metaId, traktWatched, anilistWatched, malWatched]);
 
   const progressFor = (ep: KitsuEpisode) => progressById.get(ep.id) ?? NO_PROGRESS;
 

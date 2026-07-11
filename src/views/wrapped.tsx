@@ -57,7 +57,7 @@ export function WrappedView({ active }: { active: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [active, traktConnected]);
+  }, [active, settings.tmdbKey, traktConnected]);
 
   return (
     <main className="h-full w-full overflow-y-auto bg-canvas px-5 pb-28 pt-24 sm:px-8 lg:px-12 lg:pt-28">

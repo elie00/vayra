@@ -34,5 +34,5 @@ export function useAutoNextEpisode(params: {
     if (firedForRef.current === src.url) return;
     firedForRef.current = src.url;
     goToEpisode(nextEp);
-  }, [snap.status, snap.errorCode, snap.durationSec, src.url, nextEp, canChangeEpisode, cancelled, goToEpisode]);
+  }, [snap.status, snap.errorCode, snap.durationSec, src.url, nextEp, canChangeEpisode, cancelled, goToEpisode, startedNearEndRef]);
 }
