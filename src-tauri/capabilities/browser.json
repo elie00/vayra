@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "browser",
+  "description": "Addon browser window (harbor-browser): only ever loads remote URLs (WebviewUrl::External), and remote content gets no IPC access without a `remote` context, so no permissions are granted. Its lifecycle (open/close/resize) is driven from Rust and from the main window.",
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["harbor-browser"],
+  "permissions": []
+}

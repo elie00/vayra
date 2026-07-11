@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "hdr-overlay",
+  "description": "HDR overlay window: app commands, events, and SettingsProvider zoom only. No filesystem, HTTP, dialog, process, or opener access.",
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["harbor-hdr-overlay"],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-set-webview-zoom"
+  ]
+}
