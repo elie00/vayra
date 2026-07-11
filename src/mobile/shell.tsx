@@ -14,6 +14,7 @@ import { AddonsIcon } from "@/components/icons/addons-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
+import { MobileTogetherSheet } from "@/mobile/together-sheet";
 import { useT } from "@/lib/i18n";
 import { useView, type View } from "@/lib/view";
 
@@ -59,6 +60,7 @@ export function MobileShell() {
   return (
     <>
       {open && <PlusScreen />}
+      <MobileTogetherSheet />
       {!hidden && (
         <nav
           data-harbor-tabbar

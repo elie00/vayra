@@ -18,9 +18,13 @@ import { TogetherRelayBanner } from "./together-relay-banner";
 export function TogetherPopover({
   placement = "below-right",
   connectStyle = "popover",
+  variant = "popover",
 }: {
   placement?: "below-right" | "above-left";
   connectStyle?: "tab" | "popover";
+  /** "sheet" strips the anchored-popover chrome (width, border, shadow) so the
+   * content can live inside the mobile bottom sheet (src/mobile/together-sheet.tsx). */
+  variant?: "popover" | "sheet";
 } = {}) {
   const { enabled, snapshot, chat, displayName, setDisplayName, startSession, joinSession, leaveSession, retrySession, sendChat, closeModal, clientId } = useTogether();
   const { openSettings, openPicker, topKind } = useView();
@@ -105,18 +109,22 @@ export function TogetherPopover({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      role={variant === "sheet" ? undefined : "dialog"}
+      aria-modal={variant === "sheet" ? undefined : "true"}
       aria-label={t("Watch together")}
-      className={`harbor-together-surface flex max-h-[80vh] w-[400px] max-sm:w-[calc(100vw-1.5rem)] flex-col gap-4 overflow-y-auto border border-edge p-5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)] animate-popover-in ${
-        connectStyle === "tab"
-          ? placement === "above-left"
-            ? "rounded-t-2xl rounded-b-none"
-            : "rounded-b-2xl rounded-t-none"
-          : placement === "above-left"
-            ? "rounded-2xl rounded-es-none"
-            : "rounded-2xl rounded-se-none"
-      }`}
+      className={
+        variant === "sheet"
+          ? "flex min-h-0 w-full flex-col gap-4 overflow-y-auto p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+          : `harbor-together-surface flex max-h-[80vh] w-[400px] max-sm:w-[calc(100vw-1.5rem)] flex-col gap-4 overflow-y-auto border border-edge p-5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)] animate-popover-in ${
+              connectStyle === "tab"
+                ? placement === "above-left"
+                  ? "rounded-t-2xl rounded-b-none"
+                  : "rounded-b-2xl rounded-t-none"
+                : placement === "above-left"
+                  ? "rounded-2xl rounded-es-none"
+                  : "rounded-2xl rounded-se-none"
+            }`
+      }
     >
       <header className="flex items-center justify-between gap-3">
         <h2 className="text-[14px] font-semibold tracking-tight text-ink">

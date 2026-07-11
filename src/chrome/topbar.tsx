@@ -23,6 +23,7 @@ import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { close, minimize } from "@/lib/window";
 import { isMobileTauri } from "@/lib/platform";
+import { MobileTogetherButton } from "@/mobile/together-sheet";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -55,9 +56,10 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
     : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
   const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
 
-  // Mobile: the topbar is ONE clean full-width search pill on tab-level views,
-  // or the contextual Back chrome on stacked views — never both, and none of the
-  // desktop right-cluster (recording/downloads/together) or window controls.
+  // Mobile: the topbar is ONE clean full-width search pill on tab-level views
+  // (plus the compact Watch Together entry when a relay is configured), or the
+  // contextual Back chrome on stacked views — never both, and none of the
+  // desktop right-cluster (recording/downloads) or window controls.
   if (mobile) {
     return (
       <header
@@ -76,9 +78,12 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
             <BackChrome />
           ) : (
             !hideSearch && (
-              <div className="min-w-0 flex-1">
-                <SearchPill />
-              </div>
+              <>
+                <div className="min-w-0 flex-1">
+                  <SearchPill />
+                </div>
+                <MobileTogetherButton />
+              </>
             )
           )}
         </div>
