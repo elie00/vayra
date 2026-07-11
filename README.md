@@ -567,9 +567,9 @@ Directional, not a set of promises. Priorities shift with feedback.
 - [x] First class anime room with Kitsu and AniZip
 - [x] Theme studio with custom layouts
 - [x] macOS, Windows, and web launch builds
-- [ ] Native Linux build (in testing, a couple weeks of native player polish to go)
-- [ ] Expanded casting device matrix (AirPlay 2, more Roku and Chromecast targets)
-- [ ] More translations
+- [ ] Native Linux build — deb and AppImage build in CI; remaining work is native mpv player polish and on-device validation (needs a Linux machine to test playback)
+- [ ] Expanded casting device matrix — shipped: Roku (per-model capabilities), Chromecast/Google TV, and 4K DLNA TVs (Samsung/LG/Sony); AirPlay 2 devices are detected and shown as pairing-required, but full AirPlay 2 casting still needs the proprietary pairing/streaming protocol and an Apple TV to validate
+- [ ] More translations — shipped: Arabic, Portuguese, French, Spanish, German, Italian; more languages welcome
 - [x] A bundled, growing theme gallery with installable themes and no hosted-service dependency
 - [x] Release readiness baseline: narrower desktop capabilities and OS credential storage for desktop secrets
 - [x] Release readiness baseline: integration coverage for stream selection, resume, IPTV, Together, and persistence paths
