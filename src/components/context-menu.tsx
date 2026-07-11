@@ -47,10 +47,11 @@ export function ContextMenu() {
     openSettings,
     meta: currentMeta,
     topKind,
-    chromeHidden,
+    player,
   } = useView();
   const { snapshot, sendSummon, hostLocation, clientId } = useTogether();
   const playerActions = usePlayerActions();
+  const menuMeta = currentMeta ?? player?.meta ?? null;
   const t = useT();
   const activeAddon = useActiveAddon();
   const ref = useRef<HTMLDivElement>(null);
@@ -84,7 +85,6 @@ export function ContextMenu() {
   };
 
   useEffect(() => {
-    if (chromeHidden) return;
     const handler = (e: MouseEvent) => {
       if (e.defaultPrevented) return;
       if (topKind === "settings") {
@@ -107,9 +107,9 @@ export function ContextMenu() {
           return;
         }
       }
-      if (currentMeta) {
+      if (menuMeta) {
         e.preventDefault();
-        open(e, { kind: "meta", meta: currentMeta });
+        open(e, { kind: "meta", meta: menuMeta });
         return;
       }
       if (topKind === "addon-detail") {
@@ -127,7 +127,7 @@ export function ContextMenu() {
     };
     document.addEventListener("contextmenu", handler);
     return () => document.removeEventListener("contextmenu", handler);
-  }, [open, currentMeta, topKind, chromeHidden, activeAddon]);
+  }, [open, currentMeta, menuMeta, topKind, activeAddon]);
 
   useEffect(() => {
     if (!state) return;
@@ -358,6 +358,20 @@ export function ContextMenu() {
         />,
       );
     }
+  } else if (state.target.kind === "subtitle") {
+    const { download } = state.target;
+    items.push(
+      <Item
+        key="download-subtitle"
+        icon={<Download size={14} strokeWidth={2} />}
+        label={t("Download this subtitle")}
+        onClick={() => {
+          if (download) void download();
+          close();
+        }}
+        disabled={!download}
+      />,
+    );
   } else {
     const { element, selection } = state.target;
     const canCopy = selection.length > 0;

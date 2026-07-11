@@ -151,7 +151,7 @@ export function usePickHandler({
       }
       debridFailStreakRef.current = 0;
       let playUrl = r.data.url;
-      if (r.data.headers && Object.keys(r.data.headers).length > 0) {
+      if (intent !== "download" && r.data.headers && Object.keys(r.data.headers).length > 0) {
         try {
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;
@@ -164,7 +164,7 @@ export function usePickHandler({
         }
       }
       const preflight =
-        r.via === "p2p" || r.via === "direct"
+        intent === "download" || r.via === "p2p" || r.via === "direct"
           ? ({ ok: true } as const)
           : await preflightCheck(playUrl, ac.signal);
       if (ac.signal.aborted) return;
@@ -197,7 +197,7 @@ export function usePickHandler({
           stream.name ||
           stream.addonName ||
           null;
-        void enqueueDownload({ meta, episode, streamLabel: label, url: playUrl });
+        void enqueueDownload({ meta, episode, streamLabel: label, url: r.data.url, headers: r.data.headers });
         opened = true;
         setResolving(null);
         onDownloadStarted?.(label);
@@ -293,6 +293,7 @@ export function usePickHandler({
       return;
     }
     if (
+      intent !== "download" &&
       committed &&
       !skipP2pConfirm &&
       !p2pAutoConsent &&

@@ -177,7 +177,24 @@ export function BigCardStack({
         }}
       />
       <div className="absolute start-7 top-6 flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-accent">
-        <span className="rounded-full bg-canvas/55 px-2.5 py-1">{t("Featured")}</span>
+        {current.providerBadge ? (
+          <span
+            className="flex items-center gap-2 rounded-full bg-canvas/65 py-1 pe-1 ps-2.5 normal-case tracking-normal text-ink/90"
+            style={{ boxShadow: `inset 0 0 0 1px ${current.providerBadge.tint}66` }}
+          >
+            <span className="text-[10px] font-semibold text-ink/80">{t("Popular on")}</span>
+            <span className="flex h-[18px] items-center rounded-full bg-white px-1.5">
+              <img
+                src={current.providerBadge.logo}
+                alt={current.providerBadge.name}
+                draggable={false}
+                className="h-2.5 w-auto max-w-[56px] object-contain"
+              />
+            </span>
+          </span>
+        ) : (
+          <span className="rounded-full bg-canvas/55 px-2.5 py-1">{t("Featured")}</span>
+        )}
       </div>
       <div
         className="absolute inset-x-7 bottom-7 flex flex-col gap-3"

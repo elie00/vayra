@@ -33,9 +33,9 @@ export function AddByUrlBar({
     ? t("Paste manifest URL or stremio:// link")
     : t("Install from URL: paste any manifest or stremio:// link");
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <div
-        className={`flex ${heightClass} flex-1 items-center gap-3 ${radius} border bg-elevated/40 px-4 transition-colors ${
+        className={`flex ${heightClass} min-w-0 flex-1 items-center gap-3 ${radius} border bg-elevated/40 px-4 transition-colors ${
           focused ? "border-ink-subtle" : "border-edge-soft/70"
         }`}
       >
@@ -57,7 +57,7 @@ export function AddByUrlBar({
           placeholder={placeholder}
           spellCheck={false}
           autoComplete="off"
-          className={`h-full flex-1 bg-transparent ${fontSizeClass} text-ink placeholder:text-ink-subtle outline-none`}
+          className={`h-full min-w-0 flex-1 bg-transparent ${fontSizeClass} text-ink placeholder:text-ink-subtle outline-none`}
         />
       </div>
       {value.trim().length > 0 && (

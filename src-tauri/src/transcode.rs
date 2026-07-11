@@ -165,12 +165,16 @@ pub fn locate_ffprobe() -> Option<std::path::PathBuf> {
             }
         }
     }
-    let probe = std::process::Command::new(name)
-        .arg("-version")
+    let mut cmd = std::process::Command::new(name);
+    cmd.arg("-version")
         .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status();
-    if matches!(probe, Ok(s) if s.success()) {
+        .stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000);
+    }
+    if matches!(cmd.status(), Ok(s) if s.success()) {
         return Some(std::path::PathBuf::from(name));
     }
     None

@@ -1,5 +1,6 @@
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { ToggleRow } from "./shared";
 
 function Seg<T extends string>({
   options,
@@ -11,13 +12,13 @@ function Seg<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-full border border-edge-soft bg-canvas/60 p-1">
+    <div className="flex shrink-0 items-center gap-1 rounded-full border border-edge-soft bg-canvas/60 p-1">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
-          className={`h-8 rounded-full px-3 text-[12.5px] font-medium transition-colors ${
+          className={`h-8 whitespace-nowrap rounded-full px-3 text-[12.5px] font-medium transition-colors ${
             value === o.value ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"
           }`}
         >
@@ -31,7 +32,6 @@ function Seg<T extends string>({
 export function EpisodeOrderSetting() {
   const { settings, update } = useSettings();
   const t = useT();
-  if (!settings.tvdbKey) return null;
   return (
     <div className="mt-2 flex flex-col gap-3 border-t border-edge-soft/60 pt-4">
       <div className="flex items-center justify-between gap-4">
@@ -52,11 +52,12 @@ export function EpisodeOrderSetting() {
           onChange={(v) => update({ episodeOrderProvider: v })}
         />
       </div>
-      {settings.episodeOrderProvider === "tvdb" && (
+      {settings.episodeOrderProvider === "tvdb" && !settings.tvdbOrderPanel && (
         <div className="flex items-center justify-between gap-4 ps-1">
           <span className="text-[13px] text-ink-muted">{t("TVDB order")}</span>
           <Seg
             options={[
+              { value: "aired", label: t("Aired") },
               { value: "official", label: t("Official") },
               { value: "dvd", label: t("DVD") },
               { value: "absolute", label: t("Absolute") },
@@ -67,6 +68,14 @@ export function EpisodeOrderSetting() {
           />
         </div>
       )}
+      <ToggleRow
+        label={t("TVDB season and order panel")}
+        sub={t(
+          "Turn the season button into a TVDB-style panel: order tabs (Aired, DVD, Absolute, and any the show has) plus a season table with air-date ranges and episode counts. On by default for anime through Harbor's TVDB service, no key needed. Add your own TVDB key to use it for regular shows too.",
+        )}
+        value={settings.tvdbOrderPanel}
+        onChange={(v) => update({ tvdbOrderPanel: v })}
+      />
     </div>
   );
 }

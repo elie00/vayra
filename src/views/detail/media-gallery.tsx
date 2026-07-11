@@ -5,6 +5,7 @@ import { saveImageToDisk, saveTrailerToDisk } from "@/lib/download/save-binary";
 import { t } from "@/lib/i18n";
 import type { TmdbDetail } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { setTitleLogo } from "@/lib/title-logo";
 import { resolveTrailerQuality } from "@/lib/trailer";
 import { TrailerOverlay } from "./trailer-overlay";
 import { MediaLightbox } from "./media-lightbox";
@@ -15,7 +16,17 @@ type Tab = "videos" | "backdrops" | "posters" | "logos";
 
 const BACKDROP_DIM = 0.5;
 
-export function MediaGallery({ detail, title, logo }: { detail: TmdbDetail; title: string; logo?: string }) {
+export function MediaGallery({
+  detail,
+  title,
+  logo,
+  metaId,
+}: {
+  detail: TmdbDetail;
+  title: string;
+  logo?: string;
+  metaId: string;
+}) {
   const { settings, update } = useSettings();
   const videos = useMemo(() => collectVideos(detail), [detail]);
   const backdrops = detail.gallery.backdrops;
@@ -71,6 +82,14 @@ export function MediaGallery({ detail, title, logo }: { detail: TmdbDetail; titl
       flash(t("Set as theme backdrop"));
     },
     [settings.theme, update, flash],
+  );
+
+  const setLogo = useCallback(
+    (url: string) => {
+      setTitleLogo(metaId, url);
+      flash(t("Set as show logo"));
+    },
+    [metaId, flash],
   );
 
   if (tabs.length === 0) return null;
@@ -141,6 +160,7 @@ export function MediaGallery({ detail, title, logo }: { detail: TmdbDetail; titl
               src={src}
               onOpen={() => setLightbox({ images: logos, index: i, kind: "logos" })}
               onDownload={() => downloadImage(src, "logo", i)}
+              onSetLogo={() => setLogo(src)}
             />
           ))}
         </MediaRail>

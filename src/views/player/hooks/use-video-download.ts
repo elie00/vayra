@@ -3,6 +3,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { randomUuid } from "@/lib/uuid";
 import {
   buildDefaultFilename,
   extensionFromUrl,
@@ -68,7 +69,7 @@ export function useVideoDownload({ url, meta, episode }: Args) {
     }
 
     setStatus({ kind: "downloading", ratio: 0, receivedBytes: 0, totalBytes: null });
-    const id = crypto.randomUUID();
+    const id = randomUuid();
     const handle = startDownload(id, url, path, (p: DownloadProgress) => {
       setStatus({
         kind: "downloading",

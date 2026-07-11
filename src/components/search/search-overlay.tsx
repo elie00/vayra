@@ -17,6 +17,9 @@ import { AddonResults } from "./addon-results";
 import { MagnetCard } from "./magnet-card";
 import { UrlCard } from "./url-card";
 import { AiSearchSection } from "./ai-search-section";
+import { AiModeButton } from "./ai-mode-button";
+import { AiExampleHint, SEARCH_EXAMPLES } from "@/components/ai-example-hint";
+import { useSettings } from "@/lib/settings";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 
 export function SearchOverlay() {
@@ -25,6 +28,10 @@ export function SearchOverlay() {
   const { openFilter, openMeta } = useView();
   const t = useT();
   const [guideOpen, setGuideOpen] = useState(false);
+  const [aiActive, setAiActive] = useState(false);
+  const [aiMode, setAiMode] = useState(false);
+  const [aiRunSignal, setAiRunSignal] = useState(0);
+  const { settings, update } = useSettings();
 
   useEffect(() => {
     if (!open) return;
@@ -66,7 +73,7 @@ export function SearchOverlay() {
   const magnetInput = !!trimmed && isMagnetInput(trimmed);
   const urlInput = !!trimmed && !magnetInput && isDirectVideoUrl(trimmed);
   const directInput = magnetInput || urlInput;
-  const hasResults =
+  const hasResults = !!(
     results &&
     trimmed &&
     (results.topMatch ||
@@ -76,8 +83,9 @@ export function SearchOverlay() {
       results.liveTv.length ||
       results.anime.length ||
       results.addons.length ||
-      results.addonGroups.length);
-  const noResults =
+      results.addonGroups.length)
+  );
+  const noResults = !!(
     results &&
     trimmed &&
     status === "done" &&
@@ -88,39 +96,94 @@ export function SearchOverlay() {
     results.liveTv.length === 0 &&
     results.anime.length === 0 &&
     results.addons.length === 0 &&
-    results.addonGroups.length === 0;
+    results.addonGroups.length === 0
+  );
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col">
+    <div
+      className="fixed inset-0 z-[200] flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("Search")}
+    >
       <button
         aria-label={t("Close search")}
         onClick={close}
+        data-tauri-drag-region
         className="harbor-search-backdrop absolute inset-0 cursor-default"
       />
 
-      <div className="relative mx-auto flex h-full w-full max-w-[1080px] flex-col px-6 py-6 sm:px-10 sm:py-10">
-        <div className="modal-panel flex shrink-0 items-center gap-3 rounded-2xl border border-edge-soft/80 bg-elevated/70 px-5 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.7)]">
-          <Search size={22} className="shrink-0 text-ink-muted" strokeWidth={1.9} />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && results?.topMatch) {
-                e.preventDefault();
-                recordRecent(query);
-                const meta = results.topMatch.meta;
-                setOpen(false);
-                openMeta(meta);
-              }
-            }}
-            placeholder={t("Search movies, shows, people, genres, years...")}
-            className="h-16 flex-1 bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
-            spellCheck={false}
-            autoComplete="off"
+      <div
+        data-tauri-drag-region
+        className="relative mx-auto flex h-full w-full max-w-[1080px] flex-col px-6 py-6 sm:px-10 sm:py-10"
+      >
+        <div
+          className={`modal-panel relative flex shrink-0 items-center gap-3 rounded-2xl border bg-elevated/70 px-5 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.7)] transition-colors ${
+            aiMode ? "border-accent/55" : "border-edge-soft/80"
+          }`}
+        >
+          <Search
+            size={22}
+            className={`shrink-0 transition-colors ${aiMode ? "text-accent" : "text-ink-muted"}`}
+            strokeWidth={1.9}
           />
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && e.shiftKey) {
+                  if (!query.trim()) return;
+                  e.preventDefault();
+                  if (!aiMode) setAiMode(true);
+                  setAiRunSignal((n) => n + 1);
+                  return;
+                }
+                if (e.key !== "Enter") return;
+                if (aiMode) {
+                  if (query.trim()) {
+                    e.preventDefault();
+                    setAiRunSignal((n) => n + 1);
+                  }
+                  return;
+                }
+                if (results?.topMatch) {
+                  e.preventDefault();
+                  recordRecent(query);
+                  const meta = results.topMatch.meta;
+                  setOpen(false);
+                  openMeta(meta);
+                }
+              }}
+              placeholder={aiMode ? "" : t("Search movies, shows, people, genres, years...")}
+              className="h-16 w-full bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
+              spellCheck={false}
+              autoComplete="off"
+            />
+            {aiMode && (
+              <AiExampleHint
+                hidden={query.trim().length > 0}
+                examples={SEARCH_EXAMPLES}
+                prefix=""
+                sizeClass="text-[20px] sm:text-[22px]"
+              />
+            )}
+          </div>
           {status === "loading" && <Loader2 size={18} className="shrink-0 animate-spin text-ink-subtle" />}
+          <Hint />
+          {(settings.aiSearchKey.trim() || settings.aiGroqKey.trim()) && (
+            <AiModeButton
+              active={aiMode}
+              currentModel={settings.aiSearchModel}
+              onToggle={() => setAiMode((v) => !v)}
+              onSelectModel={(id) => {
+                update({ aiSearchModel: id });
+                setAiMode(true);
+              }}
+            />
+          )}
           {query && (
             <button
               type="button"
@@ -131,7 +194,6 @@ export function SearchOverlay() {
               <X size={18} strokeWidth={2.2} />
             </button>
           )}
-          <Hint />
         </div>
 
         <div className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -171,9 +233,11 @@ export function SearchOverlay() {
             </button>
           )}
 
-          {trimmed && !directInput && <AiSearchSection query={trimmed} onClose={close} />}
+          {trimmed && !directInput && (
+            <AiSearchSection query={trimmed} onClose={close} onActive={setAiActive} runSignal={aiRunSignal} />
+          )}
 
-          {trimmed && !directInput && hasResults && results && (
+          {trimmed && !directInput && hasResults && !aiActive && results && (
             <div className="flex flex-col gap-8 pb-12">
               {results.topMatch && <TopMatch match={results.topMatch} onClose={close} />}
               <LiveTvRow items={results.liveTv} onClose={close} />
@@ -188,7 +252,7 @@ export function SearchOverlay() {
             </div>
           )}
 
-          {noResults && !directInput && (
+          {noResults && !directInput && !aiActive && (
             <div className="flex flex-col items-center gap-3 pt-16 text-center">
               <span className="text-[17px] font-semibold text-ink">{t("No matches for \"{query}\"", { query: trimmed })}</span>
               <span className="max-w-[44ch] text-[14px] text-ink-muted">

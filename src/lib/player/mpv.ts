@@ -307,10 +307,9 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             suppressEndFileUntil = Date.now() + 1500;
             await invoke("mpv_command", { cmd: ["stop"] });
             await applyHeaderProps(src.headers);
-            const cmd: Array<string | number> = ["loadfile", src.url];
-            if (typeof src.startAtSec === "number" && src.startAtSec > 0) {
-              cmd.push("replace", 0, `start=${src.startAtSec}`);
-            }
+            const startAt =
+              typeof src.startAtSec === "number" && src.startAtSec > 0 ? src.startAtSec : 0;
+            const cmd: Array<string | number> = ["loadfile", src.url, "replace", 0, `start=${startAt}`];
             await invoke("mpv_command", { cmd });
             for (const s of src.subtitles ?? []) {
               try {

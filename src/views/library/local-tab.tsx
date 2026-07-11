@@ -68,7 +68,10 @@ export function LocalTab() {
         return;
       }
       const { invoke } = await import("@tauri-apps/api/core");
-      const scanned = (await invoke("harbor_scan_folder", { folder })) as ScannedFile[];
+      const scanned = (await invoke("harbor_scan_folder", {
+        folder,
+        minSizeMb: Math.max(0, Math.round(settings.localMinFileSizeMb ?? 50)),
+      })) as ScannedFile[];
       if (scanned.length === 0) {
         setError(t("No video files found in that folder."));
         setBusy(false);
@@ -83,7 +86,7 @@ export function LocalTab() {
       setError(e instanceof Error ? e.message : t("Couldn't scan that folder."));
       setBusy(false);
     }
-  }, [t]);
+  }, [t, settings.localMinFileSizeMb]);
 
   const runScan = useCallback(
     async (files: ScannedFile[], mode: ScanMode) => {

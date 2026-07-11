@@ -1,4 +1,5 @@
 import type { ParsedStream } from "@/lib/streams/types";
+import { randomUuid } from "@/lib/uuid";
 
 export type CustomFilterResolution = "4K" | "1080p" | "720p" | "480p" | "SD";
 
@@ -81,7 +82,7 @@ export const AUDIO_OPTIONS: CustomFilterAudio[] = [
 
 export function newCustomFilter(name: string): CustomStreamFilter {
   return {
-    id: crypto.randomUUID(),
+    id: randomUuid(),
     name,
     resolution: [],
     source: [],

@@ -4,7 +4,7 @@ import { HarborMark } from "@/components/icons/harbor-mark";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
-import { getThemeById } from "@/lib/theme";
+import { useHarborLogo } from "@/lib/harbor-logo";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useParental, type LockableTab } from "@/lib/parental";
 import { useActiveKid } from "@/lib/profiles";
@@ -13,7 +13,7 @@ import { KidsSidebarDoodles } from "./kids-sidebar-doodles";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "anime", "live", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "catalogs", "movies", "shows", "kids", "anime", "live", "vod"]);
 
 export function Sidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -23,10 +23,7 @@ export function Sidebar() {
   const t = useT();
   const [pendingPinView, setPendingPinView] = useState<View | null>(null);
 
-  const themePreset =
-    settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
-  const customMark = themePreset?.logo?.mark ?? null;
-  const customWordmark = themePreset?.logo?.wordmark ?? null;
+  const { mark: customMark, wordmark: customWordmark } = useHarborLogo();
   const collapsed = settings.sidebarCollapsed;
 
   return (

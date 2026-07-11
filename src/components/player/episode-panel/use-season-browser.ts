@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
-import { fetchSeasonEpisodes, fetchSeasonList, isAnimeId } from "@/lib/series-episodes";
+import {
+  animeSeriesFromStreamId,
+  fetchSeasonEpisodes,
+  fetchSeasonList,
+  isAnimeId,
+} from "@/lib/series-episodes";
 import { useSettings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
 
@@ -16,19 +21,24 @@ export function useSeasonBrowser(
   loading: boolean;
 } {
   const { settings } = useSettings();
+  const effMeta = useMemo<Meta>(() => {
+    if (!isAnimeId(meta.id)) return meta;
+    const base = animeSeriesFromStreamId(current?.kitsuStreamId);
+    return base && base !== meta.id ? { ...meta, id: base } : meta;
+  }, [meta, current?.kitsuStreamId]);
   const [seasons, setSeasons] = useState<number[]>([]);
-  const [season, setSeason] = useState<number>(current?.season ?? 1);
+  const [season, setSeason] = useState<number>(current?.imdbSeason ?? current?.season ?? 1);
   const [episodes, setEpisodes] = useState<PlayEpisode[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open) setSeason(current?.season ?? 1);
-  }, [open, meta.id, current?.season]);
+    if (open) setSeason(current?.imdbSeason ?? current?.season ?? 1);
+  }, [open, meta.id, current?.imdbSeason, current?.season]);
 
   useEffect(() => {
-    if (!open || (meta.type !== "series" && !isAnimeId(meta.id))) return;
+    if (!open || (effMeta.type !== "series" && !isAnimeId(effMeta.id))) return;
     let cancelled = false;
-    fetchSeasonList(meta, { tmdbKey: settings.tmdbKey })
+    fetchSeasonList(effMeta, { tmdbKey: settings.tmdbKey })
       .then((s) => {
         if (!cancelled) setSeasons(s);
       })
@@ -38,16 +48,16 @@ export function useSeasonBrowser(
     return () => {
       cancelled = true;
     };
-  }, [open, meta.id, meta.type, settings.tmdbKey]);
+  }, [open, effMeta, settings.tmdbKey]);
 
   useEffect(() => {
-    if (!open || (meta.type !== "series" && !isAnimeId(meta.id))) {
+    if (!open || (effMeta.type !== "series" && !isAnimeId(effMeta.id))) {
       setEpisodes([]);
       return;
     }
     let cancelled = false;
     setLoading(true);
-    fetchSeasonEpisodes(meta, season, { tmdbKey: settings.tmdbKey })
+    fetchSeasonEpisodes(effMeta, season, { tmdbKey: settings.tmdbKey })
       .then((eps) => {
         if (!cancelled) setEpisodes(eps);
       })
@@ -60,7 +70,7 @@ export function useSeasonBrowser(
     return () => {
       cancelled = true;
     };
-  }, [open, meta.id, meta.type, season, settings.tmdbKey]);
+  }, [open, effMeta, season, settings.tmdbKey]);
 
   return { seasons, season, setSeason, episodes, loading };
 }

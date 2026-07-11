@@ -17,10 +17,16 @@ export type Meta = {
   logo?: string;
   description?: string;
   originalLanguage?: string;
+  country?: string;
+  malId?: number;
+  animeFormat?: string;
   releaseInfo?: string;
   releaseDate?: string;
   inTheaters?: boolean;
   imdbRating?: string;
+  providerBadge?: { name: string; logo: string; tint: string };
+  sourceRank?: number;
+  tmdbScore?: number;
   runtime?: string;
   genres?: string[];
   trailers?: Array<{ source: string; type?: string }>;
@@ -37,6 +43,8 @@ export type Meta = {
     firstAired?: string;
     name?: string;
     title?: string;
+    overview?: string;
+    description?: string;
     thumbnail?: string;
     streams?: Array<Record<string, unknown>>;
   }>;

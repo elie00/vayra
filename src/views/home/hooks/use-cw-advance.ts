@@ -35,6 +35,21 @@ function currentEpisode(i: LibraryItem): { season: number; episode: number } | n
   return episodeFromVideoId(vid);
 }
 
+function nextEpAired(list: PlayEpisode[], nextEp: PlayEpisode, isAnime: boolean): boolean {
+  if (isNextAired(isAnime, nextEp.airDate)) return true;
+  if (!isAnime || nextEp.airDate) return false;
+  const now = Date.now();
+  let boundary = -1;
+  for (let k = 0; k < list.length; k++) {
+    const raw = list[k].airDate;
+    const t = raw ? Date.parse(raw) : NaN;
+    if (Number.isFinite(t) && t <= now) boundary = k;
+  }
+  if (boundary < 0) return false;
+  const idx = list.findIndex((e) => e.season === nextEp.season && e.episode === nextEp.episode);
+  return idx >= 0 && idx <= boundary;
+}
+
 function watchedPredicate(
   i: LibraryItem,
   cur: { season: number; episode: number },
@@ -155,7 +170,7 @@ export function useCwAdvance(
           cur,
           watchedPredicate(i, cur, traktWatched, simklWatched, anilistWatched, simklStatus),
         );
-        if (nextEp && isNextAired(isAnimeCwItem(i) || ANIME_ID.test(i._id), nextEp.airDate)) {
+        if (nextEp && nextEpAired(list, nextEp, isAnimeCwItem(i) || ANIME_ID.test(i._id))) {
           next.set(i._id, {
             ...i,
             state: {
@@ -170,9 +185,12 @@ export function useCwAdvance(
           });
         } else if (fetchOk && list.length > 0) {
           const finaleEp = list[list.length - 1];
+          const dur = i.state?.duration ?? 0;
+          const off = i.state?.timeOffset ?? 0;
+          const midEpisode = off > 0 && dur > 0 && off / dur < FINISHED_RATIO;
           const freshMidResume =
             animeMode === "only" &&
-            (i.state?.timeOffset ?? 0) > 0 &&
+            midEpisode &&
             finaleEp != null &&
             cur.episode < finaleEp.episode;
           if (!freshMidResume) remove.add(i._id);
@@ -180,7 +198,9 @@ export function useCwAdvance(
       }
       const lib = library ?? items;
       const inCw = new Set(items.map((i) => i._id));
-      const resurfaced = await resurfaceCandidates(lib, inCw, { tmdbKey, animeMode }).catch(
+      const watchedFor = (item: LibraryItem, c: { season: number; episode: number }) =>
+        watchedPredicate(item, c, traktWatched, simklWatched, anilistWatched, simklStatus);
+      const resurfaced = await resurfaceCandidates(lib, inCw, { tmdbKey, animeMode }, watchedFor).catch(
         () => new Map<string, { season: number; episode: number }>(),
       );
       if (cancelled) return;

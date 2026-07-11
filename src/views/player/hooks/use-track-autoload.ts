@@ -175,6 +175,22 @@ export function useTrackAutoload(params: {
   useEffect(() => {
     autoSubIdRef.current = null;
   }, [src.url]);
+
+  const preselectAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const choice = src.subtitlePreselect;
+    if (!choice) return;
+    if (snap.audioTracks.length === 0 && snap.subtitleTracks.length === 0 && snap.durationSec === 0) return;
+    if (preselectAppliedRef.current === src.url) return;
+    preselectAppliedRef.current = src.url;
+    if (choice.off) {
+      if (snap.subtitleTracks.some((t) => t.selected)) bridgeRef.current?.setSubtitleTrack(null);
+      return;
+    }
+    if (choice.url) {
+      void bridgeRef.current?.addSubtitle(choice.url, choice.lang, choice.title, true);
+    }
+  }, [src.url, src.subtitlePreselect, snap.audioTracks.length, snap.subtitleTracks, snap.durationSec, bridgeRef]);
   useEffect(() => {
     if (engine !== "mpv") return;
     bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
@@ -227,7 +243,7 @@ export function useTrackAutoload(params: {
     const subsOff = subsOffFor(prefs, settings);
     if (subsOff) {
       if (snap.subtitleTracks.some((t) => t.selected)) bridgeRef.current?.setSubtitleTrack(null);
-    } else if (snap.subtitleTracks.length > 0 && subLangs.length > 0) {
+    } else if (!src.subtitlePreselect && snap.subtitleTracks.length > 0 && subLangs.length > 0) {
       const current = snap.subtitleTracks.find((t) => t.selected) ?? null;
       const userPicked =
         current != null && autoSubIdRef.current != null && current.id !== autoSubIdRef.current;
@@ -316,10 +332,18 @@ function pickDesiredSub<
     return matching[0];
   }
   if (preferEmbedded) {
-    const embedded = tracks.filter((t) => !t.external && !isForcedTrack(t));
+    const embedded = tracks.filter(
+      (t) => !t.external && !isForcedTrack(t) && !isNonPreferredLang(t.lang, subLangs),
+    );
     return embedded.find((t) => t.default) ?? embedded[0] ?? null;
   }
   return null;
+}
+
+function isNonPreferredLang(lang: string | undefined, subLangs: string[]): boolean {
+  const l = (lang ?? "").trim().toLowerCase();
+  if (l === "" || l === "und" || l === "unknown" || l === "undetermined") return false;
+  return langScore(lang ?? "", subLangs) < 0;
 }
 
 function resolveLangPreference(

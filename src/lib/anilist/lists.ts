@@ -40,6 +40,11 @@ const CACHE_PREFIX = "harbor.anilist.collection.v1.";
 const memCache = new Map<number, AnilistListGroup[]>();
 const inflight = new Map<number, Promise<AnilistListGroup[]>>();
 
+export function resetForProfile() {
+  memCache.clear();
+  inflight.clear();
+}
+
 function cacheKey(userId: number): string {
   return CACHE_PREFIX + userId;
 }

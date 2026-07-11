@@ -83,7 +83,7 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
     return hydrateSimklItemsFranchise(slice);
   };
 
-  if (watchingShowsMetas.length >= 4 && settings.simklGranularFilters.shows.watching) {
+  if (watchingShowsMetas.length >= 1 && settings.simklGranularFilters.shows.watching) {
     rows.push({
       key: "simkl-watching-shows",
       type: "series",
@@ -96,7 +96,7 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
     });
   }
 
-  if (watchingAnimeMetas.length >= 4 && settings.simklGranularFilters.anime.watching) {
+  if (watchingAnimeMetas.length >= 1 && settings.simklGranularFilters.anime.watching) {
     rows.push({
       key: "simkl-watching-anime",
       type: "series",

@@ -37,6 +37,7 @@ import { RegionField } from "./region-cascade";
 import { Dropdown, type DropdownOption } from "@/components/dropdown";
 import { ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
 import { TmdbGuideModal } from "./tmdb-tutorial-modal";
+import { TvdbGuideModal } from "./tvdb-tutorial-modal";
 import { EpisodeOrderSetting } from "./episode-order-setting";
 
 export type LibraryKey = "tmdb" | "omdb" | "rpdb" | "fanart" | "tvdb";
@@ -108,6 +109,7 @@ export function LibraryPanel({
   const [auddDraft, setAuddDraft] = useState(settings.auddKey);
   const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | "audd" | null>(null);
   const [tmdbGuide, setTmdbGuide] = useState(false);
+  const [tvdbGuide, setTvdbGuide] = useState(false);
   const extraTimerRef = useRef<number | null>(null);
   const flashExtra = (k: "mdblist" | "postersrv" | "ai" | "audd") => {
     setExtraSaved(k);
@@ -122,6 +124,7 @@ export function LibraryPanel({
   return (
     <>
       <TmdbGuideModal open={tmdbGuide} onClose={() => setTmdbGuide(false)} />
+      <TvdbGuideModal open={tvdbGuide} onClose={() => setTvdbGuide(false)} />
       <Section
         title={t("Home layout")}
         subtitle={t("How the Home page assembles its rails.")}
@@ -527,14 +530,30 @@ export function LibraryPanel({
           onSave={() => saveKey("tvdb", tvdbDraft)}
           saved={savedKey === "tvdb"}
           iconSrc={tvdbLogo}
+          headerExtra={
+            <HoverTooltip
+              side="top"
+              align="center"
+              label={t("The free tier is $0 for personal use. Just pick the first option, no payment needed.")}
+            >
+              <button
+                type="button"
+                onClick={() => setTvdbGuide(true)}
+                className="flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-semibold text-accent transition-colors hover:bg-accent/10"
+              >
+                <HelpCircle size={13} strokeWidth={2.4} />
+                {t("How to get this")}
+              </button>
+            </HoverTooltip>
+          }
           help={
             <>
-              Episode titles, alternate names, and network info. Layered on TMDB so the better
-              source wins per field. Free at{" "}
+              Episode titles, alternate names, network info, and the arc/DVD/absolute orderings.
+              Layered on TMDB so the better source wins per field. Free for personal use at{" "}
               <ExtLink href="https://thetvdb.com/api-information">
                 thetvdb.com/api-information
               </ExtLink>
-              . Pick the "Negotiated API key" path.
+              {'. Choose the "Less than $50k per year" tier.'}
             </>
           }
         />
@@ -556,6 +575,67 @@ export function LibraryPanel({
               value={settings.showDetailRatings}
               onChange={(v) => update({ showDetailRatings: v })}
             />
+            {settings.showDetailRatings && (
+              <div className="ms-3 flex flex-col gap-1 border-s border-edge-soft/50 ps-4">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+                  {t("Which sources show on detail pages")}
+                </p>
+                <ToggleRow
+                  label={t("IMDb on details page")}
+                  leading={<ImdbBadge compact />}
+                  value={settings.showImdbDetail}
+                  onChange={(v) => update({ showImdbDetail: v })}
+                />
+                <ToggleRow
+                  label={t("TMDB on details page")}
+                  leading={<TmdbBadge />}
+                  value={settings.showTmdbDetail}
+                  onChange={(v) => update({ showTmdbDetail: v })}
+                />
+                <ToggleRow
+                  label={t("MAL on details page")}
+                  leading={<MalBadge compact />}
+                  value={settings.showMalDetail}
+                  onChange={(v) => update({ showMalDetail: v })}
+                />
+                <ToggleRow
+                  label={t("Rotten Tomatoes on details page")}
+                  leading={<RtPairBadge />}
+                  value={settings.showRtDetail}
+                  onChange={(v) => update({ showRtDetail: v })}
+                />
+                <ToggleRow
+                  label={t("Audience score on details page")}
+                  leading={<PopcornBadge />}
+                  value={settings.showRtAudienceDetail}
+                  onChange={(v) => update({ showRtAudienceDetail: v })}
+                />
+                <ToggleRow
+                  label={t("Letterboxd on details page")}
+                  leading={<LetterboxdBadge />}
+                  value={settings.showLetterboxdDetail}
+                  onChange={(v) => update({ showLetterboxdDetail: v })}
+                />
+                <ToggleRow
+                  label={t("Metacritic on details page")}
+                  leading={<MetacriticBadge />}
+                  value={settings.showMetacriticDetail}
+                  onChange={(v) => update({ showMetacriticDetail: v })}
+                />
+                <ToggleRow
+                  label={t("Trakt on details page")}
+                  leading={<TraktBadge />}
+                  value={settings.showTraktDetail}
+                  onChange={(v) => update({ showTraktDetail: v })}
+                />
+                <ToggleRow
+                  label={t("MDBList on details page")}
+                  leading={<MdblistBadge />}
+                  value={settings.showMdblistDetail}
+                  onChange={(v) => update({ showMdblistDetail: v })}
+                />
+              </div>
+            )}
             <ToggleRow
               label={t("Show IMDb score on cards")}
               sub={t("The yellow chip in the poster corner.")}
@@ -641,6 +721,12 @@ export function LibraryPanel({
                 </div>
               </div>
             )}
+            <ToggleRow
+              label={t("Show DUB badge on anime cards")}
+              sub={t("Flags anime with an English dub. Also tags dub / sub / dual on stream sources.")}
+              value={settings.showDubBadge}
+              onChange={(v) => update({ showDubBadge: v })}
+            />
             <ToggleRow
               label={t("Show Metacritic score on cards")}
               sub={t("Metascore (0-100), colored green / yellow / red.")}
@@ -792,6 +878,26 @@ export function LibraryPanel({
           value={settings.showLocalLibraryBadge}
           onChange={(v) => update({ showLocalLibraryBadge: v })}
         />
+        <div className="flex items-center justify-between gap-4 rounded-xl bg-canvas/40 px-4 py-3.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[13.5px] font-medium text-ink">{t("Minimum file size")}</span>
+            <span className="text-[12px] leading-snug text-ink-muted">
+              {t("Files smaller than this are skipped when scanning a folder, so clips and samples stay out. Set to 0 to include everything.")}
+            </span>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              value={settings.localMinFileSizeMb}
+              onChange={(e) =>
+                update({ localMinFileSizeMb: Math.max(0, Math.round(Number(e.target.value) || 0)) })
+              }
+              className="h-10 w-20 rounded-lg border border-edge-soft bg-canvas/60 px-3 text-[13.5px] text-ink outline-none focus:border-edge"
+            />
+            <span className="text-[13px] text-ink-muted">{t("MB")}</span>
+          </div>
+        </div>
         <div className="flex flex-col gap-2 rounded-xl bg-canvas/40 px-4 py-3.5">
           <div className="flex flex-col gap-0.5">
             <span className="text-[13.5px] font-medium text-ink">{t("When a title is in your local library")}</span>

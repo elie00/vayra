@@ -9,6 +9,7 @@ import { nameColor } from "@/lib/together/colors";
 import { useTogether } from "@/lib/together/provider";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
+import { queueShift, useQueue, useSleepAtEnd } from "@/lib/queue";
 import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
@@ -50,6 +51,7 @@ import { useClipRecorder } from "./player/hooks/use-clip-recorder";
 import { useGifRecorder } from "./player/hooks/use-gif-recorder";
 import { useSleepTimer } from "./player/hooks/use-sleep-timer";
 import { useAutoEndExit } from "./player/hooks/use-auto-end-exit";
+import { useQueueAdvance } from "./player/hooks/use-queue-advance";
 import { usePipMode } from "./player/hooks/use-pip-mode";
 import { usePlaybackControls } from "./player/hooks/use-playback-controls";
 import { usePlaybackPresence } from "./player/hooks/use-playback-presence";
@@ -67,6 +69,7 @@ import { useAnime4k } from "./player/hooks/use-anime4k";
 import { useHdrStage } from "./player/hooks/use-hdr-stage";
 import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
+import { SourceErrorCard } from "./player/source-error-card";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
@@ -74,8 +77,10 @@ import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
 
+let hdrFallbackNoticeShown = false;
+
 export function PlayerView({ src }: { src: PlayerSrc }) {
-  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
+  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc, exitPlayer } = useView();
   const { settings, update } = useSettings();
   const isKid = useActiveKid() != null;
   const t = useT();
@@ -165,7 +170,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const cast = usePlayerCast({ src, debrids, snapRef, bridgeRef, settings });
   const [now, setNow] = useState(() => Date.now());
   const { pipMode, togglePipMode, exitPip } = usePipMode({ bridgeRef, setChromeHidden });
-  const { slowLoad, transcodedUrl } = useAutoRetry({
+  const { slowLoad, transcodedUrl, sourceError, clearSourceError } = useAutoRetry({
     bridgeRef,
     src,
     snap,
@@ -230,6 +235,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     drawMode,
     pipMode,
     setChromeHidden,
+    keyboardPauseShowsControls: settings.keyboardPauseShowsControls,
   });
 
   const { adjacent, swappingEp, goToEpisode } = useEpisodeNavigation({
@@ -263,10 +269,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   const startedNearEndRef = useStartedNearEnd(src.url, snap.status, snap.durationSec);
 
+  const queue = useQueue();
+  const sleepAtEndArmed = useSleepAtEnd();
+  const queueOrSleepArmed = queue.length > 0 || sleepAtEndArmed;
+
   useAutoNextEpisode({
     src,
     snap,
-    nextEp: settings.autoPlayNextEpisode ? adjacent.next : null,
+    nextEp: settings.autoPlayNextEpisode && !queueOrSleepArmed ? adjacent.next : null,
     canChangeEpisode,
     cancelled: autoNextCancelled,
     startedNearEndRef,
@@ -504,19 +514,9 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     setSyncToast({ kind, text });
     syncToastTimerRef.current = window.setTimeout(() => setSyncToast(null), kind === "error" ? 5000 : 3000);
   }, []);
-  const handleEnterSync = useCallback(async () => {
-    const res = await textSync.enterSync();
-    if (!res.ok) {
-      const reason = res.reason === "no-cues"
-        ? t("No subtitle cues available")
-        : res.reason === "local-path-unreadable"
-          ? t("Could not read the subtitle file")
-          : res.reason === "no-bridge"
-            ? t("Player not ready")
-            : t("Sync unavailable");
-      showSyncToast("error", reason);
-    }
-  }, [textSync.enterSync, showSyncToast, t]);
+  const handleEnterSync = useCallback(() => {
+    void textSync.enter(src.url, src.headers);
+  }, [textSync.enter, src.url, src.headers]);
 
   const volumeIndicatorTimerRef = useRef<number | null>(null);
   const [volumeIndicator, setVolumeIndicator] = useState<VolumeIndicatorState>({
@@ -641,9 +641,20 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     canChangeEpisode,
     roomGuest,
     isLive: isLiveLike,
+    suspend: queueOrSleepArmed && !isLiveLike,
     startedNearEndRef,
     reloadLive,
     closePlayer,
+  });
+
+  useQueueAdvance({
+    src,
+    snap,
+    queue,
+    isLive: isLiveLike,
+    startedNearEndRef,
+    openPicker,
+    exitPlayer,
   });
 
   const isLocalSrc = isLocalUrl(src.url);
@@ -708,13 +719,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     hdrGamma: snap.hdrGamma,
     playerHdrStage: settings.playerHdrStage,
     playerHdrToSdr: settings.playerHdrToSdr,
-    onFallback: () =>
+    onFallback: () => {
+      if (hdrFallbackNoticeShown) return;
+      hdrFallbackNoticeShown = true;
       showSyncToast(
         "error",
-        t(
-          "HDR controls could not load. Showing the video with controls. For reliable HDR, switch to True HDR, separate window in Settings.",
-        ),
-      ),
+        t("For reliable HDR on this display, switch to True HDR, separate window in Settings."),
+      );
+    },
   });
 
   const { mpvEmbedWindowsActive, stageBg } = embedFlags(
@@ -842,7 +854,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     resolvedImdbId,
     contentAdvisory,
     tmdbKey: settings.tmdbKey ?? null,
-    download,
+    download: isLocalSrc ? undefined : download,
     liveOverlay,
     setDvrOpen,
     openDvr: liveOverlay.isLive ? () => setDvrOpen(true) : undefined,
@@ -929,6 +941,19 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
         }}
       />
       {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
+      {sourceError && (
+        <SourceErrorCard
+          error={sourceError}
+          onChoose={() => {
+            clearSourceError();
+            openPicker(src.meta, src.episode, { autoPlay: false });
+          }}
+          onRetry={() => {
+            clearSourceError();
+            openPicker(src.meta, src.episode, { autoPlay: true });
+          }}
+        />
+      )}
       <LeaveConfirmModal />
       <HdrStageBridge
         active={hdrStageRequested}
@@ -956,7 +981,16 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           cast: () => cast.openCastMenu(null),
           back: closePlayer,
           prevEp: () => goToEpisode(adjacent.prev),
-          nextEp: () => goToEpisode(adjacent.next),
+          nextEp: () => {
+            if (queue.length > 0) {
+              const item = queueShift();
+              if (item) {
+                openPicker(item.meta, item.episode, { autoPlay: true, resume: true });
+                return;
+              }
+            }
+            goToEpisode(adjacent.next);
+          },
           pickAnother: pickAnotherOrGuide,
           screenshot: () => frameGrab.trigger(),
           menuOpen: setAnyMenuOpen,

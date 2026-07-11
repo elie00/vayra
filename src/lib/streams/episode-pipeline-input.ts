@@ -62,8 +62,10 @@ export function buildEpisodePipelineInput(params: {
         ? "series"
         : "movie";
   const animeReq = streamIds.some((id) => id.startsWith("kitsu:") || id.startsWith("mal:"));
-  const effSeason = episode?.imdbSeason ?? episode?.season;
-  const effEpisode = episode?.imdbEpisode ?? episode?.episode;
+  const imdbEpAligned =
+    !animeReq || episode?.imdbEpisode == null || episode.episode === episode.imdbEpisode;
+  const effSeason = imdbEpAligned ? (episode?.imdbSeason ?? episode?.season) : episode?.season;
+  const effEpisode = imdbEpAligned ? (episode?.imdbEpisode ?? episode?.episode) : episode?.episode;
   const prevGroup =
     episode && typeof effSeason === "number" && typeof effEpisode === "number" && effEpisode > 1
       ? readPlayback(meta.id, effSeason, effEpisode - 1)?.releaseGroup ?? undefined

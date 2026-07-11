@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "@/lib/settings";
+import { randomUuid } from "@/lib/uuid";
 import { TogetherClient, type RoomEvent, type RoomSnapshot } from "./client";
 import { useSelfIdentity } from "./use-self-identity";
 import { relayOutdated } from "./relay-version";
@@ -97,7 +98,7 @@ const Ctx = createContext<TogetherValue | null>(null);
 function loadOrInitClientId(): string {
   let id = localStorage.getItem(CLIENT_ID_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = randomUuid();
     localStorage.setItem(CLIENT_ID_KEY, id);
   }
   return id;

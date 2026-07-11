@@ -20,7 +20,8 @@ export function buildStreamIds(
   const animeMeta = /^(kitsu|mal|anilist|anidb):/.test(metaId) || episode?.kitsuStreamId != null;
   const mappedImdb =
     episode?.imdbSeason != null && episode?.imdbEpisode != null ? (episode.imdbId ?? imdbId) : null;
-  if (mappedImdb && mappedImdb.startsWith("tt")) {
+  const imdbEpAligned = !animeMeta || episode!.episode === episode!.imdbEpisode;
+  if (mappedImdb && mappedImdb.startsWith("tt") && imdbEpAligned) {
     push(`${mappedImdb}:${episode!.imdbSeason}:${episode!.imdbEpisode}`);
   }
 

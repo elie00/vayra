@@ -19,6 +19,8 @@ import {
   RenderedStremioControl,
   type StremioRenderCtx,
 } from "./transport/control-renderer-stremio";
+import { useView } from "@/lib/view";
+import { useCastModalPlay } from "./use-cast-modal-play";
 
 export type TransportStremioProps = {
   snap: PlayerSnapshot;
@@ -155,6 +157,8 @@ export function TransportStremio(p: TransportStremioProps) {
   const [config, setConfig] = useState<PlayerChromeConfig>(() => readPlayerChromeConfig("stremio"));
   const isLiveChannel = !!meta?.id?.startsWith("iptv:");
   const titleClickable = !!meta && !isLiveChannel;
+  const { openMeta, exitPlayer } = useView();
+  const castModalPlay = useCastModalPlay();
   const controlsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -317,6 +321,18 @@ export function TransportStremio(p: TransportStremioProps) {
           onClose={() => setCastModalOpen(false)}
           meta={meta}
           tmdbKey={tmdbKey ?? null}
+          onOpenDetail={(m) => {
+            setCastModalOpen(false);
+            exitPlayer();
+            openMeta(m);
+          }}
+          onPlay={(m, ep) => {
+            setCastModalOpen(false);
+            castModalPlay(m, ep);
+          }}
+          currentEpisode={
+            season != null && episode != null ? { season, episode } : null
+          }
         />
       )}
     </>

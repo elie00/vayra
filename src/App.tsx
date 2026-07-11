@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
@@ -39,6 +39,7 @@ import { MemoryHud } from "@/components/memory-hud";
 import { OfflineBanner } from "@/chrome/offline-banner";
 import { MobileNotice } from "@/components/mobile-notice";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
+import { ListToastHost } from "@/components/lists/list-toast";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { TogetherCursors } from "@/components/together-cursors";
 import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
@@ -55,6 +56,8 @@ import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider } from "@/lib/auth";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
+import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
+import { TrackerProfileBridge } from "@/lib/tracker-profile-bridge";
 import { ProfilePickerModal } from "@/components/profile-picker/picker-modal";
 import { WatchlistSync } from "@/lib/watchlist-sync";
 import { ContextMenuProvider } from "@/lib/context-menu";
@@ -82,12 +85,16 @@ import { AnilistProvider } from "@/lib/anilist/provider";
 import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
+import { useKeyboardNavigation } from "@/lib/keyboard-navigation";
+import { SFX } from "@/lib/sfx";
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
+const importWrapped = () => import("@/views/wrapped");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
+const importCatalogs = () => import("@/views/catalogs");
 const importAward = () => import("@/views/award");
 const importAnimeAward = () => import("@/views/anime-award");
 const importFilter = () => import("@/views/filter");
@@ -112,9 +119,11 @@ const importOnboarding = () => import("@/components/onboarding");
 
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
+const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
 const Discover = lazy(() => importDiscover().then((m) => ({ default: m.Discover })));
+const Catalogs = lazy(() => importCatalogs().then((m) => ({ default: m.Catalogs })));
 const AwardView = lazy(() => importAward().then((m) => ({ default: m.AwardView })));
 const AnimeAwardView = lazy(() => importAnimeAward().then((m) => ({ default: m.AnimeAwardView })));
 const FilterView = lazy(() => importFilter().then((m) => ({ default: m.FilterView })));
@@ -252,6 +261,8 @@ export function App() {
                   <TopRankModalProvider>
                     <HarborErrorBoundary>
                       <ProfileIdentitySync />
+                      <SettingsProfileBridge />
+                      <TrackerProfileBridge />
                       <AnilistAvatarSync />
                       <MalAvatarSync />
                       <MiddleClickScroll />
@@ -268,6 +279,7 @@ export function App() {
                       <TogetherParticipantLeftToast />
                       <AnilistSyncToast />
                       <MalSyncToast />
+                      <ListToastHost />
                       <TogetherLeaveForLiveModal />
                       <TogetherLocationPublisher />
                       <DiscordPresence />
@@ -435,8 +447,74 @@ function Shell() {
     layout === "stremio";
   useViewPreloader();
 
+  const handleTvBack = useCallback(() => {
+    if (stackKinds.length > 1 || topKind !== "home") {
+      goBack();
+      return true;
+    }
+    return false;
+  }, [goBack, stackKinds.length, topKind]);
+
+  const handleTvBackToNav = useCallback(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    const nav = document.querySelector<HTMLElement>(
+      '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]',
+    );
+    nav?.focus({ preventScroll: true });
+  }, []);
+
+  useKeyboardNavigation({
+    enabled: !player && !picker,
+    wrap: false,
+    onBack: handleTvBack,
+    onBackToNav: handleTvBackToNav,
+  });
+useEffect(() => {
+    if (settings.soundTheme) {
+      SFX.setTheme(settings.soundTheme);
+    }
+  }, [settings.soundTheme]);
   useEffect(() => startMaintenance(), []);
 
+  useEffect(() => {
+    const initAudio = () => SFX.init();
+    window.addEventListener("pointerdown", initAudio, { once: true });
+    window.addEventListener("keydown", initAudio, { once: true });
+
+    const onMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const isInteractive = target.closest('a[href], button, [data-focusable="true"], [role="button"]');
+      if (isInteractive && !isInteractive.contains(e.relatedTarget as Node)) {
+        SFX.hover();
+      }
+    };
+
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const btn = target.closest('button, a[href], [data-focusable="true"]');
+      if (btn) {
+        const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+        const isBack = ariaLabel.includes('back') || btn.closest('[data-harbor-nav]');
+        
+        const isMovieCard = btn.querySelector('img') || btn.hasAttribute('data-media-card') || btn.classList.contains('media-card') || btn.closest('[data-tv-hero-zone]');
+
+        if (isBack) SFX.close();
+        else if (isMovieCard) SFX.open();
+        else SFX.click();
+      }
+    };
+
+    window.addEventListener("mouseover", onMouseOver);
+    window.addEventListener("click", onClick, { capture: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", initAudio);
+      window.removeEventListener("keydown", initAudio);
+      window.removeEventListener("mouseover", onMouseOver);
+      window.removeEventListener("click", onClick, { capture: true });
+    };
+  }, []);
+  
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 3) {
@@ -648,8 +726,10 @@ function Shell() {
   const settingsTop = topKind === "settings";
   const animeTop = topKind === "anime";
   const discoverTop = topKind === "discover";
+  const catalogsTop = topKind === "catalogs";
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
+  const wrappedTop = topKind === "wrapped";
   const queueTop = topKind === "queue";
   const serviceTop = topKind === "service";
   const homeTop = topKind === "home";
@@ -690,8 +770,10 @@ function Shell() {
   const settingsAlive = useIdleEvict(settingsTop, overlayPinned);
   const animeAlive = useIdleEvict(animeTop);
   const discoverAlive = useIdleEvict(discoverTop);
+  const catalogsAlive = useIdleEvict(catalogsTop);
   const addonsAlive = useIdleEvict(addonsTop);
   const calendarAlive = useIdleEvict(calendarTop);
+  const wrappedAlive = useIdleEvict(wrappedTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
   const serviceAlive = useKeepAlive(serviceTop, serviceTop && !!service);
   const detailAlive = useKeepAlive(detailTop, !!meta);
@@ -769,6 +851,13 @@ function Shell() {
             </Suspense>
           </div>
         )}
+        {catalogsAlive && (
+          <div className={layer(catalogsTop)}>
+            <Suspense fallback={null}>
+              <Catalogs active={catalogsTop} />
+            </Suspense>
+          </div>
+        )}
         {addonsAlive && (
           <div className={layer(addonsTop)}>
             <Suspense fallback={null}>
@@ -780,6 +869,13 @@ function Shell() {
           <div className={layer(calendarTop)}>
             <Suspense fallback={null}>
               <CalendarView />
+            </Suspense>
+          </div>
+        )}
+        {wrappedAlive && (
+          <div className={layer(wrappedTop)}>
+            <Suspense fallback={null}>
+              <WrappedView active={wrappedTop} />
             </Suspense>
           </div>
         )}

@@ -6,9 +6,11 @@ import { formatRelativeWatched } from "@/lib/episode-progress";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
+import { animeSeasonKey } from "./anime-season-key";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { FillerBadge, UpcomingBadge } from "../badges";
+import { EpisodeRatingBadge } from "../episode-rating-badge";
 import { EpisodeDownloadButton } from "../episode-download-button";
 import { isUpcomingDate } from "../helpers";
 
@@ -18,19 +20,30 @@ export function AnimeEpisodeRow({
   progress,
   spoiler,
   onContextMenu,
+  metaForEp,
+  showSeason,
 }: {
   meta: Meta;
   ep: KitsuEpisode;
   progress: { ratio: number; watched: boolean; startedAt: number };
   spoiler?: SpoilerMask;
-  onContextMenu?: (e: React.MouseEvent, season: number, episode: number, watched: boolean) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    season: number,
+    episode: number,
+    watched: boolean,
+    sourceMetaId?: string,
+  ) => void;
+  metaForEp?: (ep: KitsuEpisode) => Meta;
+  showSeason?: boolean;
 }) {
   const t = useT();
   const { openPicker } = useView();
   const { settings } = useSettings();
+  const epMeta = metaForEp ? metaForEp(ep) : meta;
   const watchedAgo = progress.startedAt > 0 ? formatRelativeWatched(progress.startedAt) : "";
   const playEpisode = {
-    season: ep.seasonNumber || 1,
+    season: animeSeasonKey(ep),
     episode: ep.number,
     name: ep.title,
     still: ep.thumbnail ?? undefined,
@@ -44,11 +57,13 @@ export function AnimeEpisodeRow({
     <div
       data-ep={ep.number}
       data-no-card-ring
-      onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber || 1, ep.number, progress.watched)}
+      onContextMenu={(e) =>
+        onContextMenu?.(e, animeSeasonKey(ep), ep.number, progress.watched, ep.sourceMetaId)
+      }
       className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
-        onClick={() => openPicker(meta, playEpisode, { autoPlay: settings.instantPlay })}
+        onClick={() => openPicker(epMeta, playEpisode, { autoPlay: settings.instantPlay })}
         className="flex min-w-0 flex-1 gap-6 text-start"
       >
         <div className="relative w-[200px] shrink-0">
@@ -63,6 +78,11 @@ export function AnimeEpisodeRow({
           <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink">
             {ep.number}
           </span>
+          {settings.showEpisodeRating && ep.rating != null && ep.rating > 0 && (
+            <span className="absolute bottom-2 start-2 z-[6] drop-shadow-md">
+              <EpisodeRatingBadge value={ep.rating} isImdb={!!ep.ratingIsImdb} />
+            </span>
+          )}
           {progress.watched && (
             <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/22 text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm">
               <Check size={12} strokeWidth={3} />
@@ -85,13 +105,12 @@ export function AnimeEpisodeRow({
           <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-ink-subtle">
             <span>
               {[
-                `E${ep.number}`,
+                showSeason
+                  ? `S${ep.imdbSeason ?? ep.seasonNumber ?? 1} · E${ep.number}`
+                  : `E${ep.number}`,
                 ep.absoluteNumber && ep.absoluteNumber !== ep.number ? `Abs E${ep.absoluteNumber}` : null,
                 ep.length ? t("{n} min", { n: ep.length }) : null,
                 formatAirDate(ep.airdate) || null,
-                settings.showEpisodeRating && ep.rating != null && ep.rating > 0
-                  ? `★ ${ep.rating.toFixed(1)}`
-                  : null,
               ]
                 .filter(Boolean)
                 .join("  ·  ")}
@@ -116,7 +135,7 @@ export function AnimeEpisodeRow({
           )}
         </div>
       </button>
-      <EpisodeDownloadButton meta={meta} episode={playEpisode} />
+      <EpisodeDownloadButton meta={epMeta} episode={playEpisode} />
     </div>
   );
 }

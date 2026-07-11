@@ -112,7 +112,7 @@ export function ShellLayer({
   tmdbKey: string | null;
   season: number | null;
   episode: number | null;
-  download: ReturnType<typeof useVideoDownload>;
+  download?: ReturnType<typeof useVideoDownload>;
   onOpenDvr?: () => void;
   sleep: PlayerShellProps["sleep"];
   onVolumeFeedback?: (volume: number, muted: boolean) => void;
@@ -214,11 +214,11 @@ export function ShellLayer({
       tmdbKey={tmdbKey}
       season={season}
       episode={episode}
-      download={download.status}
-      onDownloadStart={download.start}
-      onDownloadCancel={download.cancel}
-      onDownloadReveal={download.reveal}
-      onDownloadReset={download.reset}
+      download={download?.status}
+      onDownloadStart={download?.start}
+      onDownloadCancel={download?.cancel}
+      onDownloadReveal={download?.reveal}
+      onDownloadReset={download?.reset}
       onOpenDvr={onOpenDvr}
       sleep={sleep}
     />

@@ -14,6 +14,11 @@ import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { getWatchedBy } from "@/lib/watched-by";
+import { playLocalAware } from "@/lib/local-library/playback";
+import { localPlayerSrc } from "@/lib/local-library/player-src";
+import { fetchSeasonEpisodes } from "@/lib/series-episodes";
+import { peekCachedLogo, resolveLogo } from "@/lib/logo";
+import { resolvePreferredAnimeTitle } from "@/lib/anime-title";
 
 type Props = {
   item: LibraryItem;
@@ -22,9 +27,9 @@ type Props = {
 };
 
 export const ContinueCard = memo(function ContinueCard({ item, watched = false, onDismiss }: Props) {
-  const { openMeta, openPicker } = useView();
+  const { openMeta, openPicker, openPlayer } = useView();
   const t = useT();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { profiles, activeProfile } = useProfiles();
   const watcherId = getWatchedBy(item._id);
   const watcher = watcherId ? profiles.find((p) => p.id === watcherId) : null;
@@ -65,6 +70,8 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
   const [metaBg, setMetaBg] = useState<string | undefined>();
   const [hydratedMeta, setHydratedMeta] = useState<Meta | null>(null);
   const [kitsuVideo, setKitsuVideo] = useState<AnimeKitsuVideo | null>(null);
+  const [epTitle, setEpTitle] = useState<string | null>(null);
+  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
   const [imgIdx, setImgIdx] = useState(0);
   const cardRef = useRef<HTMLButtonElement>(null);
 
@@ -89,6 +96,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
     setMetaBg(undefined);
     setHydratedMeta(null);
     setKitsuVideo(null);
+    setTranslatedTitle(null);
     setImgIdx(0);
     const el = cardRef.current;
     if (!el) return;
@@ -98,6 +106,11 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       if (started) return;
       started = true;
       if (/^(kitsu|mal|anilist|anidb):/.test(item._id)) {
+        resolvePreferredAnimeTitle(item._id, settingsRef.current.simklAnimeTitleLanguage)
+          .then((tt) => {
+            if (!cancelled && tt) setTranslatedTitle(tt);
+          })
+          .catch(() => {});
         animeKitsuMeta(item._id)
           .then((m) => {
             if (cancelled || !m) return;
@@ -110,6 +123,16 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
               logo: m.logo,
             });
             if (m.logo) setLogo(m.logo);
+            else
+              resolveLogo(settingsRef.current.tmdbKey, {
+                id: item._id,
+                type: libraryMetaType(item.type),
+                name: m.name || item.name,
+              })
+                .then((l) => {
+                  if (!cancelled && l) setLogo(l);
+                })
+                .catch(() => {});
             const bg = m.background || (item.background ? undefined : m.poster);
             if (bg) setMetaBg(bg);
             if (kitsuThreeSeg) {
@@ -144,7 +167,15 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
         .then((full) => {
           if (cancelled || !full) return;
           setHydratedMeta(full);
-          if (full.logo) setLogo(full.logo);
+          const key = settingsRef.current.tmdbKey;
+          const cachedLogo = peekCachedLogo(key, full);
+          if (cachedLogo) setLogo(cachedLogo);
+          else
+            void resolveLogo(key, full)
+              .then((l) => {
+                if (!cancelled && l) setLogo(l);
+              })
+              .catch(() => {});
           const bg = full.background || (item.background ? undefined : full.poster);
           if (bg) setMetaBg(bg);
         })
@@ -165,6 +196,27 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       io.disconnect();
     };
   }, [item._id, item.type, item.state?.video_id]);
+
+  useEffect(() => {
+    setEpTitle(null);
+    if (!ep || kitsuThreeSeg) return;
+    if (/^(kitsu|mal|anilist|anidb):/.test(item._id)) return;
+    let cancelled = false;
+    const epMeta: Meta = { id: item._id, type: "series", name: item.name };
+    fetchSeasonEpisodes(epMeta, ep.season, { tmdbKey: settingsRef.current.tmdbKey })
+      .then((eps) => {
+        if (cancelled) return;
+        const found = eps.find((e) => e.episode === ep.episode);
+        if (found?.name) setEpTitle(found.name);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item._id, ep?.season, ep?.episode, kitsuThreeSeg]);
+
+  const episodeTitle = epTitle ?? kitsuVideo?.title ?? null;
 
   const meta: Meta = hydratedMeta
     ? { ...hydratedMeta, id: item._id, type: libraryMetaType(item.type) }
@@ -201,7 +253,28 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
         if (Number.isFinite(epNum) && epNum > 0) episode = { season: 1, episode: epNum };
       }
     }
-    openPicker(meta, episode, { autoPlay: settings.instantPlay, resume: true });
+    playLocalAware({
+      meta,
+      episode: episode ?? null,
+      mode: settings.localPlaybackMode,
+      source: "manual",
+      resumeId: meta.id,
+      playStream: () => openPicker(meta, episode, { autoPlay: settings.instantPlay, resume: true }),
+      playLocal: (entry, o) => {
+        const s = localPlayerSrc(entry);
+        openPlayer({
+          ...s,
+          meta: {
+            ...s.meta,
+            id: meta.id,
+            poster: meta.poster ?? s.meta.poster,
+            background: meta.background,
+          },
+          startFromZero: o?.fromStart,
+        });
+      },
+      setMode: (m) => update({ localPlaybackMode: m }),
+    });
   };
 
   return (
@@ -261,19 +334,31 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-canvas/80 to-transparent" />
-        {(sub || remaining || isExternal || upNext) && (
-          <div className="absolute bottom-2 start-2 flex items-center gap-1.5 rounded-md bg-canvas/95 px-2 py-1 text-[11px]">
+        {(sub || remaining || isExternal || upNext || episodeTitle) && (
+          <div className="absolute bottom-2 start-2 flex max-w-[calc(100%-16px)] items-center gap-1.5 rounded-md bg-canvas/95 px-2 py-1 text-[11px]">
             {isExternal ? (
-              <img src={simklLogo} alt="" className="h-3.5 w-3.5 rounded-sm" title={t("Paused on Simkl")} />
+              <img src={simklLogo} alt="" className="h-3.5 w-3.5 shrink-0 rounded-sm" title={t("Paused on Simkl")} />
             ) : (
-              <Play size={11} fill="currentColor" className="text-ink" />
+              <Play size={11} fill="currentColor" className="shrink-0 text-ink" />
             )}
-            {sub && <span className="font-medium text-ink">{sub}</span>}
-            {sub && (upNext || remaining) && <span className="text-ink-subtle">·</span>}
+            {sub && <span className="shrink-0 font-medium text-ink">{sub}</span>}
             {upNext ? (
-              <span className="font-medium text-accent">{t("Up Next")}</span>
+              <>
+                {sub && <span className="shrink-0 text-ink-subtle">·</span>}
+                <span className="shrink-0 font-medium text-accent">{t("Up Next")}</span>
+              </>
+            ) : episodeTitle ? (
+              <>
+                {sub && <span className="shrink-0 text-ink-subtle">·</span>}
+                <span className="min-w-0 truncate text-ink-muted">{episodeTitle}</span>
+              </>
             ) : (
-              remaining && <span className="text-ink-muted">{remaining}</span>
+              remaining && (
+                <>
+                  {sub && <span className="shrink-0 text-ink-subtle">·</span>}
+                  <span className="shrink-0 text-ink-muted">{remaining}</span>
+                </>
+              )
             )}
           </div>
         )}
@@ -299,7 +384,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
         </div>
       </div>
       <p className="truncate text-[13px] font-medium text-ink">
-        {hydratedMeta?.name?.trim() || item.name}
+        {translatedTitle || hydratedMeta?.name?.trim() || item.name}
       </p>
       </button>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex aspect-[16/9] items-center justify-center opacity-0 transition-opacity duration-[220ms] group-hover:opacity-100 group-focus-within:opacity-100">

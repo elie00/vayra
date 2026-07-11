@@ -34,7 +34,7 @@ export function useRpdbAltId(
   rpdbKey: string,
   metaId: string,
   type?: "movie" | "series",
-): string | undefined {
+): { altId: string | undefined; pending: boolean } {
   const { settings } = useSettings();
   const wantImdb = needsImdbForPoster(rpdbKey, metaId);
   const wantTmdb = needsTmdbForPoster(rpdbKey, metaId);
@@ -44,9 +44,12 @@ export function useRpdbAltId(
     if (wantImdb && settings.tmdbKey) void tmdbImdbId(settings.tmdbKey, metaId);
     if (wantTmdb && settings.tmdbKey) void tmdbIdFromImdb(settings.tmdbKey, metaId, type);
   }, [wantImdb, wantTmdb, settings.tmdbKey, metaId, type]);
-  if (wantImdb && typeof imdb === "string" && imdb.startsWith("tt")) return imdb;
-  if (wantTmdb && typeof tmdb === "string") return tmdb;
-  return undefined;
+  const pending =
+    !!settings.tmdbKey && ((wantImdb && imdb === undefined) || (wantTmdb && tmdb === undefined));
+  let altId: string | undefined;
+  if (wantImdb && typeof imdb === "string" && imdb.startsWith("tt")) altId = imdb;
+  else if (wantTmdb && typeof tmdb === "string") altId = tmdb;
+  return { altId, pending };
 }
 
 function useAnimeRpdbIds(
@@ -98,10 +101,11 @@ export function usePosterChain(
   metaPoster?: string,
   type?: "movie" | "series",
 ) {
-  const altId = useRpdbAltId(rpdbKey, metaId, type);
+  const { altId, pending } = useRpdbAltId(rpdbKey, metaId, type);
   const { animeImdb, animeTvdb, animeTmdb } = useAnimeRpdbIds(rpdbKey, metaId);
   const localized = useLocalizedPoster(metaId);
   const candidates = useMemo(() => {
+    if (pending) return [];
     const base = localized ?? metaPoster;
     const out: string[] = [];
     const seen = new Set<string>();
@@ -118,7 +122,7 @@ export function usePosterChain(
       }
     }
     return out;
-  }, [rpdbKey, metaId, altId, metaPoster, animeImdb, animeTvdb, animeTmdb, localized]);
+  }, [rpdbKey, metaId, altId, metaPoster, animeImdb, animeTvdb, animeTmdb, localized, pending]);
   const sig = candidates.join("|");
   const failedRef = useRef<Set<string>>(new Set());
   const sigRef = useRef(sig);
@@ -235,8 +239,10 @@ export function Poster({
   }, []);
   const currentRef = useRef(current);
   currentRef.current = current;
+  const imgElRef = useRef<HTMLImageElement | null>(null);
   const handleImgRef = useCallback(
     (el: HTMLImageElement | null) => {
+      imgElRef.current = el;
       if (!el || !el.complete) return;
       if (el.naturalWidth > 0) {
         setLoaded(true);
@@ -245,6 +251,14 @@ export function Poster({
     },
     [fail],
   );
+  useEffect(() => {
+    if (loaded || !current) return;
+    const el = imgElRef.current;
+    if (el && el.complete && el.naturalWidth > 0) {
+      setLoaded(true);
+      setDisplayed(current);
+    }
+  }, [loaded, current, sig]);
   const showPlate = !displayed && (!current || !loaded);
   const hue = hash(seed) % 360;
 
@@ -259,6 +273,7 @@ export function Poster({
           src={displayed}
           alt=""
           aria-hidden
+          draggable={false}
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover"
         />
@@ -269,6 +284,7 @@ export function Poster({
           ref={handleImgRef}
           src={current}
           alt=""
+          draggable={false}
           decoding="async"
           loading={lazy ? "lazy" : undefined}
           onLoad={() => {

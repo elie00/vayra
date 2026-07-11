@@ -8,7 +8,8 @@ export type ContextMenuTarget =
   | { kind: "view"; view: ViewSummonable; label: string }
   | { kind: "addon"; addonId: string; label: string }
   | { kind: "edit"; element: HTMLElement | null; selection: string }
-  | { kind: "backdrop"; metaId: string; url: string };
+  | { kind: "backdrop"; metaId: string; url: string }
+  | { kind: "subtitle"; label: string; download?: () => void | Promise<unknown> };
 
 type Pos = { x: number; y: number };
 

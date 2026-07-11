@@ -1,37 +1,38 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { EpisodeJumper } from "@/components/episode-jumper";
+import { providerForModel } from "@/lib/ai-models";
+import { CrossSeasonResults } from "./series-episodes/cross-season-results";
+import { CinemetaFallback } from "./series-episodes/cinemeta-fallback";
+import { EpisodeAiMode } from "./series-episodes/episode-ai-mode";
+import { EpisodeSearchBar, EpisodeSearchToggle } from "./series-episodes/episode-search-controls";
 import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode-watched-menu";
-import {
-  manualWatchedVersion,
-  recordManualWatchedMeta,
-  setManualWatchedMany,
-  subscribeManualWatched,
-} from "@/lib/manual-watched";
+import { manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
-import { getLastSeason, setLastSeason } from "@/lib/last-season";
+import { scrollToDataEp } from "@/lib/episode-scroll";
 import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
-import { spoilerMaskFor } from "@/lib/spoilers";
 import { useTrakt } from "@/lib/trakt/provider";
-import { markEpisodesWatched, unmarkEpisodeWatched } from "@/lib/simkl/history";
-import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useT } from "@/lib/i18n";
-import { CinemetaEpisodeRow } from "./cinemeta-episodes";
 import { EpisodeGridControls } from "./episode-grid-controls";
 import { EpisodeLayoutToggle } from "./episode-layout-toggle";
 import { EpisodeRow } from "./series-episode-row";
 import { EpisodeGridSkeleton } from "./episode-grid-skeleton";
 import { EpisodeStrip } from "./episode-strip";
 import { RandomEpisodeButton } from "./random-episode-button";
-import { SeasonPicker } from "./series-episodes/season-picker";
+import { SeasonArcPicker } from "./series-episodes/season-arc-picker";
+import { useSeasonArcPicker } from "./series-episodes/use-season-arc-picker";
+import { useMarkSeason } from "./series-episodes/use-mark-season";
 import { useArcGroups } from "./series-episodes/use-arc-groups";
-import { ArcModeToggle, ArcPicker } from "./series-episodes/arc-picker";
 import { OrderedEpisodes } from "./series-episodes/ordered-episodes";
 import { useEpisodeOrder } from "./series-episodes/use-episode-order";
 import { useEpisodeEnrich } from "./series-episodes/use-episode-enrich";
 import { useWatchedSets } from "./series-episodes/use-watched-sets";
+import { useEpisodeProgressMap } from "./series-episodes/use-episode-progress-map";
+import { useTvdbSeasonTypes } from "./series-episodes/use-tvdb-season-types";
+import { useSeriesTvdbStills } from "./series-episodes/use-series-tvdb-stills";
+import { TvdbOrderPanel } from "./series-episodes/tvdb-order-panel";
 
 export function SeriesEpisodes({
   meta,
@@ -43,6 +44,7 @@ export function SeriesEpisodes({
   cinemetaVideos,
   stremioWatched,
   resumeSeason,
+  resumeEpisode,
 }: {
   meta: Meta;
   tvId: number;
@@ -53,6 +55,7 @@ export function SeriesEpisodes({
   cinemetaVideos?: NonNullable<Meta["videos"]>;
   stremioWatched?: Set<string>;
   resumeSeason?: number;
+  resumeEpisode?: number;
 }) {
   const t = useT();
   const { settings, update } = useSettings();
@@ -60,6 +63,11 @@ export function SeriesEpisodes({
   const { isConnected: simklConnected } = useSimkl();
   const mwVersion = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
   const [watchedMenu, setWatchedMenu] = useState<WatchedMenuTarget | null>(null);
+  const [epSearch, setEpSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [aiMode, setAiMode] = useState(false);
+  const aiProvider = providerForModel(settings.aiSearchModel);
+  const searching = epSearch.trim().length > 0;
   const openWatchedMenu = (
     e: React.MouseEvent,
     season: number,
@@ -70,13 +78,10 @@ export function SeriesEpisodes({
     setWatchedMenu({ x: e.clientX, y: e.clientY, season, episode, watched });
   };
   const userPickedRef = useRef(false);
-  const autoSeasonRef = useRef(false);
-  const [active, setActive] = useState<number>(() => {
-    const saved = getLastSeason(meta.id);
-    if (saved != null && seasons.some((s) => s.seasonNumber === saved)) return saved;
-    if (resumeSeason != null && seasons.some((s) => s.seasonNumber === resumeSeason)) return resumeSeason;
-    return resumeDefaultSeason(meta.id, seasons, stremioWatched);
-  });
+  const scrolledRef = useRef(false);
+  const [active, setActive] = useState<number>(() =>
+    resumeDefaultSeason(meta.id, seasons, stremioWatched, resumeSeason),
+  );
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
   const { traktWatched, simklWatched } = useWatchedSets({
@@ -85,39 +90,40 @@ export function SeriesEpisodes({
     imdbId,
     metaId: meta.id,
   });
+  const combinedWatched = useMemo(() => {
+    const s = new Set<string>(stremioWatched ?? []);
+    for (const k of simklWatched) s.add(k);
+    for (const k of traktWatched) {
+      const e = k.lastIndexOf(":");
+      const se = e > 0 ? k.lastIndexOf(":", e - 1) : -1;
+      if (se >= 0) s.add(k.slice(se + 1));
+    }
+    return s;
+  }, [stremioWatched, simklWatched, traktWatched]);
   const cache = useRef<Map<number, Episode[]>>(new Map());
 
   const traktKey = imdbId ?? meta.id;
 
   useEffect(() => {
     userPickedRef.current = false;
-    autoSeasonRef.current = false;
+    scrolledRef.current = false;
   }, [meta.id]);
 
   useEffect(() => {
     if (userPickedRef.current) return;
-    const saved = getLastSeason(meta.id);
-    if (saved != null && seasons.some((s) => s.seasonNumber === saved)) {
-      autoSeasonRef.current = true;
-      setActive(saved);
+    const def = resumeDefaultSeason(meta.id, seasons, combinedWatched, resumeSeason);
+    if (import.meta.env.DEV) {
+      const counts = seasons
+        .filter((s) => s.seasonNumber >= 1)
+        .map((s) => {
+          let n = 0;
+          for (const k of combinedWatched) if (k.startsWith(`${s.seasonNumber}:`)) n += 1;
+          return `S${s.seasonNumber} ${n}/${s.episodeCount}`;
+        });
+      console.debug(`[season-default] ${meta.id} pick=${def} hint=${resumeSeason} [${counts.join(", ")}]`);
     }
-  }, [meta.id, seasons]);
-
-  useEffect(() => {
-    if (userPickedRef.current) return;
-    if (resumeSeason == null || !seasons.some((s) => s.seasonNumber === resumeSeason)) return;
-    const saved = getLastSeason(meta.id);
-    if (saved != null && seasons.some((s) => s.seasonNumber === saved)) return;
-    autoSeasonRef.current = true;
-    setActive(resumeSeason);
-  }, [resumeSeason, seasons, meta.id]);
-
-  useEffect(() => {
-    if (userPickedRef.current || autoSeasonRef.current) return;
-    if (!stremioWatched || stremioWatched.size === 0) return;
-    autoSeasonRef.current = true;
-    setActive(resumeDefaultSeason(meta.id, seasons, stremioWatched));
-  }, [stremioWatched, seasons, meta.id]);
+    setActive(def);
+  }, [meta.id, seasons, combinedWatched, resumeSeason]);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,97 +154,94 @@ export function SeriesEpisodes({
     };
   }, [tvId, active, settings.tmdbKey]);
 
-  const enrichedEpisodes = useEpisodeEnrich({
+  const enrichedBase = useEpisodeEnrich({
     episodes,
     active,
     imdbId,
     tvdbKey: settings.tvdbKey,
     omdbKey: settings.omdbKey,
   });
+  const tvdbStills = useSeriesTvdbStills(imdbId, enrichedBase.length, settings.tvdbSeasonType);
+  const enrichedEpisodes = useMemo(() => {
+    if (Object.keys(tvdbStills).length === 0) return enrichedBase;
+    return enrichedBase.map((ep) => {
+      if (ep.stillPath || ep.stillUrl) return ep;
+      const img = tvdbStills[`s${ep.seasonNumber}e${ep.episodeNumber}`] ?? tvdbStills[`abs${ep.episodeNumber}`];
+      return img ? { ...ep, stillUrl: img } : ep;
+    });
+  }, [enrichedBase, tvdbStills]);
 
   const [mode, setMode] = useState<"seasons" | "arcs">("seasons");
   const arc = useArcGroups({ tvId, tmdbKey: settings.tmdbKey, enabled: settings.episodeArcGroups });
   const arcActive = settings.episodeArcGroups && arc.hasArcs && mode === "arcs";
+  const orderProvider = settings.tvdbOrderPanel ? "tvdb" : settings.episodeOrderProvider;
   const ordering = useEpisodeOrder(
     imdbId,
-    settings.episodeOrderProvider,
+    meta.id,
+    orderProvider,
     settings.tvdbSeasonType,
     settings.tvdbKey,
   );
+  const orderTypes = useTvdbSeasonTypes(
+    imdbId,
+    meta.id,
+    settings.tvdbKey,
+    settings.tvdbOrderPanel && ordering != null,
+  );
   const [orderSeason, setOrderSeason] = useState<number>(-1);
+  useEffect(() => {
+    setOrderSeason(-1);
+  }, [meta.id]);
   const orderActive = !arcActive && ordering != null;
+  const panelActive = settings.tvdbOrderPanel && orderActive;
   const altActive = arcActive || orderActive;
   const orderSeasonEff =
     ordering && !ordering.seasons.some((s) => s.seasonNumber === orderSeason)
-      ? ordering.seasons[0]?.seasonNumber ?? -1
+      ? resumeDefaultSeason(meta.id, ordering.seasons, combinedWatched, resumeSeason)
       : orderSeason;
+  const source = arcActive ? "arcs" : orderActive ? "order" : "default";
+  const arcAvailable = settings.episodeArcGroups && arc.hasArcs;
+  const picker = useSeasonArcPicker({
+    source,
+    arc,
+    ordering,
+    orderSeasonEff,
+    seasons,
+    active,
+    lastEpisodeAir,
+    metaId: meta.id,
+    setActive,
+    setOrderSeason,
+    userPickedRef,
+  });
+  const orderedEps = arcActive
+    ? arc.episodes
+    : ordering
+      ? ordering.bySeason.get(orderSeasonEff) ?? []
+      : [];
+  const orderedLoading = arcActive && arc.loading;
 
   const activeSeason = seasons.find((s) => s.seasonNumber === active);
 
-  const progressByEp = useMemo(() => {
-    const m = new Map<number, { ratio: number; watched: boolean; startedAt: number }>();
-    for (const ep of enrichedEpisodes) {
-      m.set(
-        ep.episodeNumber,
-        getEpisodeProgress(
-          meta.id,
-          ep.seasonNumber,
-          ep.episodeNumber,
-          ep.runtime,
-          traktKey,
-          traktWatched,
-          stremioWatched,
-          undefined,
-          simklWatched,
-        ),
-      );
-    }
-    return m;
-  }, [enrichedEpisodes, meta.id, traktKey, traktWatched, stremioWatched, simklWatched, mwVersion]);
-  const nextUpEp = useMemo(() => {
-    for (const ep of enrichedEpisodes) {
-      if (!progressByEp.get(ep.episodeNumber)?.watched) return ep.episodeNumber;
-    }
-    return null;
-  }, [enrichedEpisodes, progressByEp]);
-  const spoilerFor = (epNumber: number) =>
-    spoilerMaskFor(settings, {
-      watched: progressByEp.get(epNumber)?.watched ?? false,
-      isNextUp: epNumber === nextUpEp,
-    });
-  const allWatched =
-    enrichedEpisodes.length > 0 &&
-    enrichedEpisodes.every((ep) => progressByEp.get(ep.episodeNumber)?.watched);
-  const markSeason = (watched: boolean) => {
-    if (enrichedEpisodes.length === 0) return;
-    if (watched)
-      recordManualWatchedMeta(meta.id, {
-        type: "series",
-        name: meta.name,
-        poster: meta.poster,
-        background: meta.background,
-      });
-    setManualWatchedMany(
-      meta.id,
-      enrichedEpisodes.map((ep) => ({ season: ep.seasonNumber, episode: ep.episodeNumber })),
-      watched,
-    );
-    if (!simklConnected) return;
-    const r = stremioIdToSimklTarget(meta.id, { season: active, episode: 1 });
-    const showIds =
-      r.ok &&
-      (r.target.kind === "episode"
-        ? r.target.show.ids
-        : r.target.kind === "anime-episode"
-          ? r.target.anime.ids
-          : null);
-    if (!showIds) return;
-    if (watched) {
-      void markEpisodesWatched(showIds, active, enrichedEpisodes.map((e) => e.episodeNumber));
-    } else {
-      for (const e of enrichedEpisodes) void unmarkEpisodeWatched(showIds, active, e.episodeNumber);
-    }
-  };
+  useEffect(() => {
+    if (scrolledRef.current) return;
+    if (resumeEpisode == null || resumeSeason == null || active !== resumeSeason) return;
+    if (loading || enrichedEpisodes.length === 0) return;
+    scrolledRef.current = true;
+    scrollToDataEp(scrollRef.current, resumeEpisode, { center: true });
+  }, [resumeEpisode, resumeSeason, active, loading, enrichedEpisodes.length, scrollRef]);
+
+  const { progressByEp, spoilerFor, allWatched } = useEpisodeProgressMap({
+    episodes: enrichedEpisodes,
+    metaId: meta.id,
+    traktKey,
+    traktWatched,
+    stremioWatched,
+    simklWatched,
+    mwVersion,
+    settings,
+  });
+  const markSeason = useMarkSeason({ meta, active, enrichedEpisodes, simklConnected });
 
   return (
     <div data-episodes className="flex scroll-mt-24 flex-col gap-6">
@@ -250,7 +253,7 @@ export function SeriesEpisodes({
             value={settings.episodeLayout}
             onChange={(v) => update({ episodeLayout: v })}
           />
-          {!altActive && settings.episodeLayout === "grid" && (
+          {!altActive && (
             <EpisodeGridControls
               sort={settings.episodeSort}
               onSort={(s) => update({ episodeSort: s })}
@@ -258,52 +261,57 @@ export function SeriesEpisodes({
               onMarkSeason={markSeason}
             />
           )}
-          {settings.episodeArcGroups && arc.hasArcs && (
-            <ArcModeToggle mode={mode} onModeChange={setMode} />
-          )}
-          {arcActive ? (
-            <ArcPicker arcs={arc.arcs} activeArcId={arc.activeArcId} onArcChange={arc.setActiveArcId} />
-          ) : orderActive && ordering ? (
-            ordering.seasons.length > 1 && (
-              <SeasonPicker seasons={ordering.seasons} active={orderSeasonEff} onChange={setOrderSeason} />
-            )
+          <EpisodeSearchToggle
+            searchActive={searchOpen || searching}
+            aiMode={aiMode}
+            aiEnabled={!!settings.aiSearchKey.trim()}
+            aiProvider={aiProvider}
+            onSearch={() => {
+              setSearchOpen((v) => !v);
+              setAiMode(false);
+            }}
+            onAskAi={() => {
+              setAiMode(true);
+              setSearchOpen(false);
+            }}
+          />
+          {panelActive ? (
+            <TvdbOrderPanel
+              items={picker.items}
+              activeKey={picker.activeKey}
+              onSelect={picker.onSelect}
+              orderTypes={orderTypes}
+              activeType={settings.tvdbSeasonType}
+              onSelectType={(v) => update({ tvdbSeasonType: v })}
+            />
           ) : (
-            seasons.length > 1 && (
-              <SeasonPicker
-                seasons={seasons}
-                active={active}
-                onChange={(n) => {
-                  userPickedRef.current = true;
-                  setLastSeason(meta.id, n);
-                  setActive(n);
-                }}
-                lastEpisodeAir={lastEpisodeAir}
+            (picker.items.length > 1 || arcAvailable) && (
+              <SeasonArcPicker
+                items={picker.items}
+                activeKey={picker.activeKey}
+                onSelect={picker.onSelect}
+                mode={arcAvailable ? mode : undefined}
+                onModeChange={arcAvailable ? setMode : undefined}
               />
             )
           )}
         </div>
       </div>
 
-      {arcActive && (
-        <OrderedEpisodes
-          meta={meta}
-          episodes={arc.episodes}
-          loading={arc.loading}
-          traktKey={traktKey}
-          traktWatched={traktWatched}
-          stremioWatched={stremioWatched}
-          simklWatched={simklWatched}
-          cinemetaVideos={cinemetaVideos}
-          seriesImdbId={imdbId}
-          onContextMenu={openWatchedMenu}
-        />
-      )}
+      {!aiMode && searchOpen && <EpisodeSearchBar value={epSearch} onChange={setEpSearch} />}
 
-      {orderActive && ordering && (
+      {aiMode ? (
+        <EpisodeAiMode meta={meta} videos={cinemetaVideos} imdbId={imdbId} onExit={() => setAiMode(false)} />
+      ) : searching ? (
+        <CrossSeasonResults meta={meta} videos={cinemetaVideos} query={epSearch} imdbId={imdbId} />
+      ) : (
+      <>
+
+      {altActive && (
         <OrderedEpisodes
           meta={meta}
-          episodes={ordering.bySeason.get(orderSeasonEff) ?? []}
-          loading={false}
+          episodes={orderedEps}
+          loading={orderedLoading}
           traktKey={traktKey}
           traktWatched={traktWatched}
           stremioWatched={stremioWatched}
@@ -385,6 +393,8 @@ export function SeriesEpisodes({
       {!altActive && settings.episodeLayout === "list" && (
         <EpisodeJumper scrollRef={scrollRef} totalEpisodes={enrichedEpisodes.length} />
       )}
+      </>
+      )}
       {watchedMenu && (
         <EpisodeWatchedMenu
           metaId={meta.id}
@@ -397,31 +407,3 @@ export function SeriesEpisodes({
   );
 }
 
-function CinemetaFallback({
-  meta,
-  videos,
-  season,
-}: {
-  meta: Meta;
-  videos: NonNullable<Meta["videos"]> | undefined;
-  season: number;
-}) {
-  const t = useT();
-  const eps = useMemo(() => {
-    if (!videos) return [];
-    return videos
-      .filter((v) => v.season === season && v.episode != null)
-      .slice()
-      .sort((a, b) => (a.episode ?? 0) - (b.episode ?? 0));
-  }, [videos, season]);
-  if (eps.length === 0) {
-    return <p className="text-[14px] text-ink-subtle">{t("No episodes available for this season.")}</p>;
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      {eps.map((ep) => (
-        <CinemetaEpisodeRow key={ep.id ?? `${ep.season}-${ep.episode}`} meta={meta} ep={ep} />
-      ))}
-    </div>
-  );
-}

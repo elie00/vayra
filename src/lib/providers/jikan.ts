@@ -164,6 +164,7 @@ function toMeta(a: JikanAnime, id: string): Meta {
     id,
     type: isSeries ? "series" : "movie",
     name: bestTitle(a),
+    malId: a.mal_id,
     poster,
     background: poster,
     description: a.synopsis,
@@ -230,7 +231,7 @@ const inflight = new Map<string, Promise<Meta[]>>();
 const cache = new Map<string, { metas: Meta[]; t: number }>();
 const CACHE_TTL = 6 * 60 * 60 * 1000;
 
-const CATALOG_KEY = "harbor.jikancatalog";
+const CATALOG_KEY = "harbor.jikancatalog2";
 const CATALOG_MAX = 40;
 const PERSIST_DESC_MAX = 500;
 
@@ -403,8 +404,6 @@ export const jikanSearchByTitle = (title: string, limit = 1) =>
   jikanQuery("/anime", {
     q: title,
     limit,
-    order_by: "popularity",
-    sort: "desc",
     sfw: "true",
   });
 
@@ -479,7 +478,7 @@ async function fetchRawAnimePage(params: Record<string, string | number>): Promi
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), 8000);
     try {
-      const r = await fetch(url, { signal: ac.signal });
+      const r = await throttledJikanFetch(url, ac.signal);
       if (r.status === 429) {
         await new Promise((resolve) => setTimeout(resolve, 1200 * (attempt + 1)));
         continue;

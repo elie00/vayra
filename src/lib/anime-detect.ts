@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { meta as fetchMeta } from "@/lib/cinemeta";
+import { imdbToKitsu } from "@/lib/providers/anime-mapping";
 
 const STORAGE_KEY = "harbor.anime.detected.v1";
 
@@ -45,12 +46,17 @@ export function useDetectedAnimeVersion(): number {
   );
 }
 
-function isJapaneseAnime(m: { genres?: string[]; country?: string }): boolean {
-  if (!(m.country ?? "").toLowerCase().includes("japan")) return false;
+function hasAnimationGenre(m: { genres?: string[] }): boolean {
   return (m.genres ?? []).some((g) => {
     const l = g.toLowerCase();
     return l === "animation" || l === "anime";
   });
+}
+
+function isJapaneseAnime(m: { genres?: string[]; country?: string }): boolean {
+  const c = (m.country ?? "").toLowerCase();
+  if (!(c.includes("japan") || c === "jp" || c === "jpn")) return false;
+  return hasAnimationGenre(m);
 }
 
 export async function detectAnimeForCw(items: Array<{ _id: string; type: string }>): Promise<void> {
@@ -60,9 +66,15 @@ export async function detectAnimeForCw(items: Array<{ _id: string; type: string 
     if (detected.has(id) || checked.has(id) || pending.has(id)) continue;
     pending.add(id);
     try {
-      const m = await fetchMeta(it.type === "movie" ? "movie" : "series", id);
+      const m = (await fetchMeta(it.type === "movie" ? "movie" : "series", id)) as
+        | { genres?: string[]; country?: string }
+        | null;
       checked.add(id);
-      if (m && isJapaneseAnime(m as { genres?: string[]; country?: string })) {
+      let anime = !!m && isJapaneseAnime(m);
+      if (!anime && (!m || hasAnimationGenre(m) || (m.genres ?? []).length === 0)) {
+        anime = (await imdbToKitsu(id).catch(() => null)) != null;
+      }
+      if (anime) {
         detected.add(id);
         persist();
         bump();

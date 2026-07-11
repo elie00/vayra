@@ -1,4 +1,4 @@
-export type WelcomeLang = "en" | "ar";
+export type WelcomeLang = "en" | "ar" | "pt";
 
 export const HEADLINE_AR = "السلام عليكم";
 export const TRANSLITERATION = "Assalamu alaikum";

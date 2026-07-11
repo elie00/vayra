@@ -12,12 +12,14 @@ export function AutoPlayTransition({
   resolving,
   attemptIdx,
   onCancel,
+  download = false,
 }: {
   meta: Meta;
   episode?: PlayEpisode;
   resolving: boolean;
   attemptIdx?: number;
   onCancel: () => void;
+  download?: boolean;
 }) {
   void resolving;
   const kid = useActiveKid();
@@ -101,7 +103,16 @@ export function AutoPlayTransition({
             {episode.name ? ` · ${episode.name}` : ""}
           </p>
         )}
-        <HarborLoader size="md" caption={attemptIdx && attemptIdx > 0 ? `Trying source ${attemptIdx + 1}` : "Connecting"} />
+        <HarborLoader
+          size="md"
+          caption={
+            download
+              ? "Preparing download"
+              : attemptIdx && attemptIdx > 0
+                ? `Trying source ${attemptIdx + 1}`
+                : "Connecting"
+          }
+        />
         {stubNotice && (
           <p className="max-w-md text-[13px] leading-relaxed text-amber-200/80">
             {stubNotice}

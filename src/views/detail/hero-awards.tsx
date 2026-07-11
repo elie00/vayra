@@ -8,24 +8,23 @@ type HeroTier = "full" | "compact" | "hidden";
 export function HeroAwardsCorner({
   summary,
   inline,
+  interactive = true,
+  onDark,
+  className,
 }: {
   summary: { type: string; wins: number; nominations: number }[];
   inline?: boolean;
+  interactive?: boolean;
+  onDark?: boolean;
+  className?: string;
 }) {
   const t = useT();
-  const ref = useRef<HTMLButtonElement | null>(null);
+  const ref = useRef<HTMLElement | null>(null);
   const [tier, setTier] = useState<HeroTier>("full");
   useLayoutEffect(() => {
-    if (inline) {
-      setTier("full");
-      return;
-    }
     const host = ref.current?.offsetParent as HTMLElement | null;
     if (!host) return;
-    const check = () => {
-      const w = host.clientWidth;
-      setTier(w >= 720 ? "full" : w >= 460 ? "compact" : "hidden");
-    };
+    const check = () => setTier(host.clientWidth >= 900 ? "full" : "compact");
     check();
     const ro = new ResizeObserver(check);
     ro.observe(host);
@@ -60,19 +59,9 @@ export function HeroAwardsCorner({
       : t("Award Nominee")
     : `${headlineFor(top.type)} ${won ? t("Winner") : t("Nominee")}`;
   const laurelTint = laurelColorFor(top.type);
-  return (
-    <button
-      ref={ref}
-      type="button"
-      data-hero-awards
-      onClick={(e) => {
-        e.stopPropagation();
-        document.getElementById("awards-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }}
-      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${
-        inline ? "max-w-md" : "absolute bottom-14 end-12 max-w-[44%]"
-      }`}
-    >
+  const positionCls = className ?? (inline ? "max-w-md" : "absolute bottom-14 end-12 max-w-[44%]");
+  const content = (
+    <>
       <span
         className="shrink-0 text-accent transition-transform duration-200 group-hover:scale-105"
         style={laurelTint ? { color: laurelTint } : undefined}
@@ -89,12 +78,14 @@ export function HeroAwardsCorner({
       </span>
       <div className="flex min-w-0 flex-col gap-1">
         <span
-          className={`truncate font-semibold uppercase tracking-[0.18em] text-ink/55 ${compact ? "text-[9.5px]" : "text-[10.5px]"}`}
+          className={`truncate font-semibold uppercase tracking-[0.18em] ${onDark ? "text-white/55" : "text-ink/55"} ${compact ? "text-[9.5px]" : "text-[10.5px]"}`}
         >
           {headline}
         </span>
         {!compact && (
-          <div className="flex flex-col gap-0.5 text-[13px] font-medium leading-snug text-ink/70">
+          <div
+            className={`flex flex-col gap-0.5 text-[13px] font-medium leading-snug ${onDark ? "text-white/75" : "text-ink/70"}`}
+          >
             {lines.map((l) => (
               <span key={l} className="truncate">
                 {l}
@@ -103,11 +94,41 @@ export function HeroAwardsCorner({
           </div>
         )}
       </div>
+    </>
+  );
+
+  if (!interactive) {
+    return (
+      <div
+        ref={(el) => {
+          ref.current = el;
+        }}
+        className={`flex items-center gap-3 rounded-2xl px-3 py-2 text-end ${positionCls}`}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      ref={(el) => {
+        ref.current = el;
+      }}
+      type="button"
+      data-hero-awards
+      onClick={(e) => {
+        e.stopPropagation();
+        document.getElementById("awards-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }}
+      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${positionCls}`}
+    >
+      {content}
     </button>
   );
 }
 
-function awardNoun(type: string, n: number): string {
+export function awardNoun(type: string, n: number): string {
   const plural = n === 1 ? "" : "s";
   switch (type) {
     case "oscar":

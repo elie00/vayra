@@ -1,7 +1,7 @@
-import { Sparkles } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AnimeGenrePicker } from "@/components/anime-genre-picker";
-import { AnimeHero } from "@/components/anime-hero";
+import { AnimeHero, AnimeHeroSkeleton } from "@/components/anime-hero";
 import { BackToTop } from "@/components/back-to-top";
 import { ContinueCard } from "@/components/continue-card";
 import { dismissCw, isCwDismissed, useCwDismissVersion } from "@/lib/cw-dismiss";
@@ -11,7 +11,7 @@ import { AnimeRankCard } from "@/components/top-rank-card";
 import { useAuth } from "@/lib/auth";
 import { createAddonCatalogFetcher, loadAddonRows, normalizeName, type AddonRow } from "@/lib/addons";
 import type { Meta } from "@/lib/cinemeta";
-import { findTopAward, parseAwardYear, uniqueWinnerFranchisesAcrossSources } from "@/lib/anime-awards";
+import { awardFranchiseKey, uniqueWinnerFranchisesAcrossSources } from "@/lib/anime-awards";
 import { publishResumeStates } from "@/lib/hover-preview/store";
 import { useT } from "@/lib/i18n";
 import { useAnimeTopPicks } from "@/lib/use-anime-top-picks";
@@ -26,7 +26,6 @@ import { MalRowControls } from "./anime/mal-row-controls";
 import { AnilistTopRow, AnilistTrendingRow } from "./anime/anilist-top-row";
 import {
   EMPTY_ROW,
-  HERO_KEYS,
   ROW_MAX_PAGES,
   ROW_MIN_VISIBLE,
   RowSkeleton,
@@ -37,6 +36,19 @@ import {
   type RowState,
 } from "./anime/anime-rows";
 import { animeFranchiseKey, stripFranchiseSuffix } from "@/lib/providers/jikan";
+import { franchiseRoot, franchiseRootSync } from "@/lib/providers/anime-franchise-root";
+import { animeFiltered, enrichAnimeCountry, type AnimeFilterOpts } from "@/lib/anime-filter";
+import {
+  buildHeroSelection,
+  buildHostedHero,
+  cacheHero,
+  isHeroCacheFresh,
+  readCachedHero,
+  resolveHeroSlides,
+  type HeroBuilt,
+} from "./anime/hero-build";
+import { fetchHostedHero, peekHostedHero, type HostedHeroItem } from "@/lib/anime-hosted-hero";
+import { fetchAnilistTrendingAnime } from "@/lib/anilist/browse";
 import { useSettings } from "@/lib/settings";
 import { isAdultAnime } from "@/lib/addons-store/adult-filter";
 import { isAnimeCwItem, isCwMember, library, type LibraryItem } from "@/lib/stremio";
@@ -57,6 +69,7 @@ function cleanMeta(m: Meta): Meta {
 
 export function AnimeView({ active = true }: { active?: boolean }) {
   const t = useT();
+  const { settings, update } = useSettings();
   const [rowsByKey, setRowsByKey] = useState<Record<string, RowState>>(() => {
     const init: Record<string, RowState> = {};
     for (const s of SPECS) init[s.key] = EMPTY_ROW;
@@ -137,44 +150,90 @@ export function AnimeView({ active = true }: { active?: boolean }) {
       });
   }, []);
 
-  const heroMetas = useMemo<Meta[]>(() => {
-    const allWithBg = new Map<string, Meta>();
-    for (const spec of SPECS) {
-      const r = rowsByKey[spec.key];
-      if (!r || !r.ready) continue;
-      for (const m of r.metas) {
-        if (m.background && !allWithBg.has(m.id)) allWithBg.set(m.id, m);
+  const filterSig = `${settings.animeExcludeOrigins.join(",")}|${settings.animeHideWatchedPicks}`;
+  const [heroSeed, setHeroSeed] = useState(() => Math.floor(Math.random() * 0x7fffffff));
+  const [hero, setHero] = useState<HeroBuilt>(() => readCachedHero(filterSig) ?? { metas: [], trending: {} });
+  const heroBuildRef = useRef(0);
+  const heroResolvedRef = useRef(false);
+  const heroBuildingRef = useRef(false);
+  const filtersInitRef = useRef(true);
+  const [anilistTrending, setAnilistTrending] = useState<Meta[]>([]);
+  const [hostedHero, setHostedHero] = useState<HostedHeroItem[] | null>(() => peekHostedHero());
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+    fetchHostedHero()
+      .then((h) => {
+        if (!cancelled && h) setHostedHero(h);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [active]);
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+    fetchAnilistTrendingAnime(30)
+      .then((m) => {
+        if (!cancelled) setAnilistTrending(m);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [active]);
+  useEffect(() => {
+    if (filtersInitRef.current) {
+      filtersInitRef.current = false;
+      return;
+    }
+    heroResolvedRef.current = false;
+    setHeroSeed(Math.floor(Math.random() * 0x7fffffff));
+    setHero({ metas: [], trending: {} });
+  }, [filterSig]);
+  useEffect(() => {
+    const filterOpts: AnimeFilterOpts = {
+      excludeOrigins: settings.animeExcludeOrigins,
+      hideWatched: settings.animeHideWatchedPicks,
+    };
+    if (hero.metas.length === 0 && hostedHero && hostedHero.length >= 3) {
+      const hosted = buildHostedHero(hostedHero, heroSeed, filterOpts);
+      if (hosted.metas.length >= 3) {
+        heroResolvedRef.current = true;
+        heroBuildRef.current += 1;
+        setHero(hosted);
+        cacheHero(hosted, filterSig);
+        return;
       }
     }
-    const winners: { meta: Meta; year: number }[] = [];
-    for (const m of allWithBg.values()) {
-      const win = findTopAward(m.name, parseAwardYear(m.releaseInfo));
-      if (win) winners.push({ meta: m, year: win.year });
+    if (heroResolvedRef.current) return;
+    if (hero.metas.length > 0 && isHeroCacheFresh(filterSig)) {
+      heroResolvedRef.current = true;
+      return;
     }
-    winners.sort((a, b) => b.year - a.year);
+    const readyCount = SPECS.filter((s) => rowsByKey[s.key]?.ready).length;
+    if (readyCount < 2 && anilistTrending.length === 0) return;
+    if (heroBuildingRef.current) return;
+    const built = buildHeroSelection(rowsByKey, heroSeed, filterOpts, anilistTrending);
+    if (built.metas.length < 3) return;
+    heroBuildingRef.current = true;
+    const buildId = ++heroBuildRef.current;
+    void resolveHeroSlides(settings.tmdbKey, built, filterOpts, (resolved) => {
+      if (heroBuildRef.current === buildId && resolved.metas.length >= 1) {
+        heroResolvedRef.current = true;
+        setHero(resolved);
+        cacheHero(resolved, filterSig);
+      }
+    })
+      .catch(() => {})
+      .finally(() => {
+        heroBuildingRef.current = false;
+      });
+  }, [rowsByKey, heroSeed, hero.metas.length, anilistTrending, settings.tmdbKey, filterSig, hostedHero]);
+  const heroMetas = hero.metas;
+  const heroTrending = hero.trending;
 
-    const seen = new Set<string>();
-    const out: Meta[] = [];
-    for (const w of winners) {
-      if (out.length >= 3) break;
-      if (seen.has(w.meta.id)) continue;
-      seen.add(w.meta.id);
-      out.push(cleanMeta(w.meta));
-    }
-    for (const spec of SPECS) {
-      if (out.length >= 4) break;
-      if (!HERO_KEYS.has(spec.key)) continue;
-      const r = rowsByKey[spec.key];
-      if (!r || !r.ready) continue;
-      const pick = r.metas.find((m) => m.background && !seen.has(m.id));
-      if (!pick) continue;
-      seen.add(pick.id);
-      out.push(cleanMeta(pick));
-    }
-    return out;
-  }, [rowsByKey]);
-
-  const { settings, update } = useSettings();
   const { openGrid } = useView();
   const favoriteGenres = settings.animeFavoriteGenres;
   const anilistHidden = settings.animeAnilistRowsHidden;
@@ -229,8 +288,10 @@ export function AnimeView({ active = true }: { active?: boolean }) {
   }, [simklConnected]);
 
   const animeDetectVer = useDetectedAnimeVersion();
+  const [cwRootVersion, setCwRootVersion] = useState(0);
   const continueWatching = useMemo(() => {
     const seen = new Set<string>();
+    const seenRoot = new Set<string>();
     return [...libItems, ...simklCw]
       .filter((i) => {
         if (!isCwMember(i)) return false;
@@ -245,8 +306,30 @@ export function AnimeView({ active = true }: { active?: boolean }) {
           Date.parse(b.state?.lastWatched ?? b._mtime) -
           Date.parse(a.state?.lastWatched ?? a._mtime),
       )
+      .filter((i) => {
+        const root = franchiseRootSync(i._id);
+        if (!root) return true;
+        if (seenRoot.has(root)) return false;
+        seenRoot.add(root);
+        return true;
+      })
       .slice(0, 20);
-  }, [libItems, simklCw, cwVersion, animeDetectVer]);
+  }, [libItems, simklCw, cwVersion, animeDetectVer, cwRootVersion]);
+
+  useEffect(() => {
+    const ids = [...libItems, ...simklCw]
+      .filter((i) => isCwMember(i) && isAnimeCwItem(i))
+      .map((i) => i._id);
+    if (ids.length === 0) return;
+    if (ids.every((id) => franchiseRootSync(id))) return;
+    let cancelled = false;
+    void Promise.all(ids.map((id) => franchiseRoot(id).catch(() => id))).then(() => {
+      if (!cancelled) setCwRootVersion((v) => v + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [libItems, simklCw]);
 
   useEffect(() => {
     publishResumeStates(continueWatching);
@@ -316,17 +399,50 @@ export function AnimeView({ active = true }: { active?: boolean }) {
 
   const watchHistoryRecs = useWatchHistoryRecommendations(continueWatching);
 
-  const topPicks = useAnimeTopPicks({
+  const topPicksRaw = useAnimeTopPicks({
     libItems,
     continueWatching,
     heroMetas,
     watchHistoryRecs,
     favoriteGenres,
   });
+  const [picksEnriched, setPicksEnriched] = useState<Meta[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void enrichAnimeCountry(topPicksRaw).then((e) => {
+      if (!cancelled) setPicksEnriched(e);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [topPicksRaw]);
+  const topPicks = useMemo(() => {
+    const opts: AnimeFilterOpts = {
+      excludeOrigins: settings.animeExcludeOrigins,
+      hideWatched: settings.animeHideWatchedPicks,
+    };
+    const base = picksEnriched.length > 0 ? picksEnriched : topPicksRaw;
+    const filtered = base.filter((m) => !animeFiltered(m, opts));
+    if (filtered.length > 0) return filtered;
+    if (hostedHero && hostedHero.length > 0) {
+      const heroIds = new Set(heroMetas.map((m) => m.id));
+      return hostedHero.filter((m) => !heroIds.has(m.id) && !animeFiltered(m, opts)).slice(0, 20);
+    }
+    return filtered;
+  }, [
+    picksEnriched,
+    topPicksRaw,
+    settings.animeExcludeOrigins,
+    settings.animeHideWatchedPicks,
+    hostedHero,
+    heroMetas,
+  ]);
 
   const awardWinnerEntries = useCrunchyrollAwardMetas();
   const awardWinnersRaw = useMemo(() => {
     const winByKey = uniqueWinnerFranchisesAcrossSources();
+    const resolvedByFk = new Map<string, Meta>();
+    for (const e of awardWinnerEntries) resolvedByFk.set(awardFranchiseKey(e.meta.name), e.meta);
     const seen = new Set<string>();
     const out: Array<{ meta: Meta; year: number; lookupName: string }> = [];
 
@@ -334,17 +450,18 @@ export function AnimeView({ active = true }: { active?: boolean }) {
       const r = rowsByKey[spec.key];
       if (!r?.ready) continue;
       for (const m of r.metas) {
-        const fk = animeFranchiseKey(m.name);
+        const fk = awardFranchiseKey(m.name);
         if (seen.has(fk)) continue;
         const win = winByKey.get(fk);
         if (!win) continue;
         seen.add(fk);
-        out.push({ meta: cleanMeta(m), year: win.year, lookupName: win.title });
+        const rootMeta = resolvedByFk.get(fk) ?? m;
+        out.push({ meta: cleanMeta(rootMeta), year: win.year, lookupName: win.title });
       }
     }
 
     for (const e of awardWinnerEntries) {
-      const fk = animeFranchiseKey(e.meta.name);
+      const fk = awardFranchiseKey(e.meta.name);
       if (seen.has(fk)) continue;
       seen.add(fk);
       out.push({ meta: cleanMeta(e.meta), year: e.win.year, lookupName: e.win.title });
@@ -479,27 +596,38 @@ export function AnimeView({ active = true }: { active?: boolean }) {
   return (
     <main
       ref={scrollCb}
-      className="flex-1 overflow-y-auto px-12 pt-28 pb-14"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-12 pt-28 pb-14"
     >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-12">
-          {heroMetas.length > 0 && (
+          {heroMetas.length > 0 ? (
             <div data-scroll-anchor="hero" className="relative harbor-anime-hero">
-              <AnimeHero slides={heroMetas} topPicks={topPicks} />
+              <AnimeHero slides={heroMetas} topPicks={topPicks} trendingByMetaId={heroTrending} />
               <button
                 type="button"
                 onClick={() => setShowPicker(true)}
-                title={t("Tune your Top Picks")}
-                className="absolute end-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-full border border-edge-soft/60 bg-canvas/80 px-3 text-[12px] font-semibold text-ink-muted shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-colors hover:border-accent/50 hover:text-accent"
+                title={t("Tune anime")}
+                aria-label={t("Tune anime")}
+                className="group absolute end-[-3rem] top-[34%] z-10 flex flex-col items-center gap-2.5 rounded-s-xl border border-e-0 border-edge-soft/40 bg-canvas/55 py-4 pe-2 ps-2 text-ink-subtle opacity-45 backdrop-blur-md transition-all duration-300 hover:bg-canvas/85 hover:text-ink hover:opacity-100 hover:ps-3"
               >
-                <Sparkles size={13} strokeWidth={2.1} />
-                {t("Tune picks")}
+                <SlidersHorizontal
+                  size={15}
+                  strokeWidth={2}
+                  className="text-ink-muted transition-colors group-hover:text-accent"
+                />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.22em] [writing-mode:vertical-rl]">
+                  {t("Tune")}
+                </span>
                 {favoriteGenres.length > 0 && (
-                  <span className="rounded-full bg-accent/15 px-1.5 text-[10px] font-bold text-accent">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent/20 text-[9px] font-bold leading-none text-accent">
                     {favoriteGenres.length}
                   </span>
                 )}
               </button>
+            </div>
+          ) : (
+            <div className="harbor-anime-hero">
+              <AnimeHeroSkeleton />
             </div>
           )}
           {cwItems.length > 0 && (
@@ -520,9 +648,11 @@ export function AnimeView({ active = true }: { active?: boolean }) {
             </Row>
           )}
           {!malRowsHidden.includes("yourMalLists") && <MalRows />}
-          <MalRowControls />
           {!anilistHidden.includes("yourLists") && <AnilistRows />}
-          <AnilistRowControls />
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5">
+            <AnilistRowControls />
+            <MalRowControls />
+          </div>
           {!anilistHidden.includes("trending") && <AnilistTrendingRow />}
           {!anilistHidden.includes("top100") && <AnilistTopRow />}
           {awardWinnerMetas.length > 0 && (

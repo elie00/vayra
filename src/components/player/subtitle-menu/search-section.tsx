@@ -1,11 +1,12 @@
-import { Check, Loader2, Plus, Save, Search as SearchIcon } from "lucide-react";
+import { Check, ChevronDown, Loader2, Plus, Save, Search as SearchIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Flag } from "@/components/flag";
 import { useAuth } from "@/lib/auth";
 import type { Addon } from "@/lib/addons";
-import { downloadText } from "@/lib/download-text";
+import { useContextMenu } from "@/lib/context-menu";
 import { gatherSubtitleAddons } from "@/lib/subtitles/addon-source";
 import { languageName } from "@/lib/subtitles/language";
+import { saveSubtitleToDisk } from "@/lib/subtitles/save-to-disk";
 import { searchSubtitles } from "@/lib/subtitles/search";
 import type { SubResult } from "@/lib/subtitles/types";
 import { useSettings } from "@/lib/settings";
@@ -188,26 +189,54 @@ export function SearchSection(props: SubtitleMenuProps) {
         </p>
       )}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {grouped.map(({ lang, items }) => (
-          <div key={lang} className="border-t border-edge-soft/60">
-            <div className="flex items-center gap-2 bg-canvas/40 px-4 py-1.5">
-              <Flag language={lang} size="sm" showLabel={false} />
-              <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-muted">
-                {lang}
-              </span>
-              <span className="text-[11px] tabular-nums text-ink-subtle">{items.length}</span>
-            </div>
-            {items.slice(0, 30).map((r) => (
-              <ResultRow
-                key={r.id}
-                result={r}
-                lang={lang}
-                onAdd={() => onAddSubtitle(r.url, r.lang, r.title)}
-              />
-            ))}
-          </div>
+        {grouped.map(({ lang, items }, i) => (
+          <LangGroup
+            key={lang}
+            lang={lang}
+            items={items}
+            defaultOpen={i === 0}
+            onAdd={(r) => onAddSubtitle(r.url, r.lang, r.title)}
+          />
         ))}
       </div>
+    </div>
+  );
+}
+
+function LangGroup({
+  lang,
+  items,
+  defaultOpen,
+  onAdd,
+}: {
+  lang: string;
+  items: SubResult[];
+  defaultOpen: boolean;
+  onAdd: (r: SubResult) => void | Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-t border-edge-soft/60">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 bg-canvas/40 px-4 py-2 text-start transition-colors hover:bg-canvas/60"
+      >
+        <Flag language={lang} size="sm" showLabel={false} />
+        <span className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ink-muted">
+          {lang}
+        </span>
+        <span className="text-[11px] tabular-nums text-ink-subtle">{items.length}</span>
+        <ChevronDown
+          size={14}
+          strokeWidth={2.4}
+          className={`ms-auto shrink-0 text-ink-subtle transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
+        />
+      </button>
+      {open &&
+        items.slice(0, 30).map((r) => (
+          <ResultRow key={r.id} result={r} lang={lang} onAdd={() => onAdd(r)} />
+        ))}
     </div>
   );
 }
@@ -219,29 +248,50 @@ function ResultRow({
 }: {
   result: SubResult;
   lang: string;
-  onAdd: () => void;
+  onAdd: () => void | Promise<boolean>;
 }) {
   const t = useT();
+  const { open } = useContextMenu();
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState(false);
   const timer = useRef<number | null>(null);
+  const addTimer = useRef<number | null>(null);
 
   useEffect(
     () => () => {
       if (timer.current !== null) window.clearTimeout(timer.current);
+      if (addTimer.current !== null) window.clearTimeout(addTimer.current);
     },
     [],
   );
+
+  const handleAdd = async () => {
+    if (adding) return;
+    setAdding(true);
+    try {
+      const ok = await Promise.resolve(onAdd());
+      if (ok !== false) {
+        setAdded(true);
+        if (addTimer.current !== null) window.clearTimeout(addTimer.current);
+        addTimer.current = window.setTimeout(() => setAdded(false), 2600);
+      }
+    } finally {
+      setAdding(false);
+    }
+  };
 
   const download = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const res = await fetch(result.url);
-      const text = await res.text();
-      const ext = (result.format || "srt").toLowerCase();
-      const base = (result.title || result.lang || "subtitle").replace(/[\\/:*?"<>|]/g, "_");
-      const ok = await downloadText(`${base}.${ext}`, text, [ext], t("Subtitle"));
+      const ok = await saveSubtitleToDisk(result.url, {
+        title: result.title,
+        lang: result.lang,
+        format: result.format,
+        label: t("Subtitle"),
+      });
       if (ok) {
         setSaved(true);
         if (timer.current !== null) window.clearTimeout(timer.current);
@@ -263,18 +313,41 @@ function ResultRow({
   }[result.source] || "text-ink-subtle";
 
   return (
-    <div className="group flex w-full items-start gap-3 px-4 py-2.5 transition-colors hover:bg-canvas/60">
-      <button
-        onClick={onAdd}
-        className="flex min-w-0 flex-1 items-start gap-3 text-start"
-      >
-        <Plus
-          size={13}
-          strokeWidth={2.4}
-          className="mt-1 shrink-0 text-ink-subtle transition-colors group-hover:text-ink"
-        />
+    <div
+      onContextMenu={(e) =>
+        open(e, { kind: "subtitle", label: result.title || lang, download })
+      }
+      className={`group flex w-full items-start gap-3 px-4 py-2.5 transition-colors duration-300 ${
+        added ? "bg-emerald-400/12" : "hover:bg-canvas/60"
+      }`}
+    >
+      <button onClick={handleAdd} className="flex min-w-0 flex-1 items-start gap-3 text-start">
+        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
+          {adding ? (
+            <Loader2 size={14} className="animate-spin text-ink-subtle" />
+          ) : added ? (
+            <Check
+              size={15}
+              strokeWidth={2.6}
+              className="text-emerald-400 animate-in zoom-in-50 duration-200"
+            />
+          ) : (
+            <Plus
+              size={14}
+              strokeWidth={2.4}
+              className="text-ink-subtle transition-colors group-hover:text-ink"
+            />
+          )}
+        </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[13.5px] text-ink">{result.title || lang}</span>
+          <span className="flex items-center gap-2">
+            <span className="truncate text-[13.5px] text-ink">{result.title || lang}</span>
+            {added && (
+              <span className="shrink-0 rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300 animate-in fade-in slide-in-from-left-1 duration-200">
+                {t("Added")}
+              </span>
+            )}
+          </span>
           <span className="flex items-center gap-2 text-[11.5px] text-ink-subtle">
             <span className={`font-semibold capitalize ${sourceColor}`}>{result.source}</span>
             {result.format && (
