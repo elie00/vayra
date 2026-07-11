@@ -153,7 +153,13 @@ impl ProxyState {
             let seek = args.start_time_sec.unwrap_or(0.0).max(0.0);
             match self
                 .hls
-                .register_with_seek(args.url.clone(), args.headers.clone(), seek, burn_sub.clone())
+                .register_with_seek(
+                    args.url.clone(),
+                    args.headers.clone(),
+                    seek,
+                    burn_sub.clone(),
+                    args.profile.clone().unwrap_or_default(),
+                )
                 .await
             {
                 Ok(hid) => {
