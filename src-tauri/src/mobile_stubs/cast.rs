@@ -17,7 +17,15 @@ pub fn cast_pause() -> Result<(), String> {
     Err("not supported on Android".into())
 }
 #[tauri::command]
-pub fn cast_seek() -> Result<(), String> {
+pub fn cast_seek(_sec: f64) -> Result<(), String> {
+    Err("not supported on Android".into())
+}
+#[tauri::command]
+pub fn cast_set_volume(_level: f64) -> Result<(), String> {
+    Err("not supported on Android".into())
+}
+#[tauri::command]
+pub fn cast_volume_step(_up: bool) -> Result<(), String> {
     Err("not supported on Android".into())
 }
 #[tauri::command]

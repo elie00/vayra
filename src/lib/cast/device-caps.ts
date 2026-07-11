@@ -90,6 +90,49 @@ const CAPS_CHROMECAST_GOOGLE_TV_HD: DeviceCaps = {
   containerMkv: false,
 };
 
+const CAPS_GOOGLE_TV_STREAMER: DeviceCaps = {
+  label: "Google TV Streamer",
+  maxResolution: 2160,
+  hevc: true,
+  av1: true,
+  dolbyVision: true,
+  hdr10: true,
+  passthroughAc3: true,
+  passthroughEac3: true,
+  passthroughTruehd: true,
+  passthroughDts: false,
+  containerMkv: true,
+};
+
+const CAPS_NVIDIA_SHIELD: DeviceCaps = {
+  label: "Nvidia Shield TV",
+  maxResolution: 2160,
+  hevc: true,
+  av1: false,
+  dolbyVision: true,
+  hdr10: true,
+  passthroughAc3: true,
+  passthroughEac3: true,
+  passthroughTruehd: true,
+  passthroughDts: true,
+  containerMkv: true,
+};
+
+const CAPS_CAST_BUILTIN_TV_4K: DeviceCaps = {
+  // Chromecast-built-in 4K TVs (Vizio SmartCast, Sony Bravia, Philips…)
+  label: "Cast-enabled TV",
+  maxResolution: 2160,
+  hevc: true,
+  av1: false,
+  dolbyVision: false,
+  hdr10: true,
+  passthroughAc3: true,
+  passthroughEac3: true,
+  passthroughTruehd: false,
+  passthroughDts: false,
+  containerMkv: false,
+};
+
 const CAPS_FIRE_TV_4K: DeviceCaps = {
   label: "Fire TV",
   maxResolution: 2160,
@@ -229,6 +272,11 @@ export function getDeviceCaps(device: CastDeviceInfo): DeviceCaps {
   if (/nest hub max/.test(blob)) return CAPS_NEST_HUB_MAX;
   if (/nest hub|home hub|google home hub/.test(blob)) return CAPS_NEST_HUB;
   if (/chromecast.*ultra/.test(blob)) return CAPS_CHROMECAST_ULTRA;
+  if (/google tv streamer|\bstreamer\b/.test(blob)) return CAPS_GOOGLE_TV_STREAMER;
+  if (/\bshield\b/.test(blob)) return CAPS_NVIDIA_SHIELD;
+  if (/vizio|smartcast/.test(blob)) return CAPS_CAST_BUILTIN_TV_4K;
+  if (/bravia|philips|tcl|hisense/.test(blob) && !/chromecast/.test(blob))
+    return CAPS_CAST_BUILTIN_TV_4K;
   if (/google tv/.test(blob)) {
     if (/4k|2160/.test(blob)) return CAPS_CHROMECAST_GOOGLE_TV_4K;
     if (/hd|1080/.test(blob)) return CAPS_CHROMECAST_GOOGLE_TV_HD;

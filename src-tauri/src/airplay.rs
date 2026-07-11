@@ -14,6 +14,10 @@ pub struct AirPlayDevice {
     pub host: String,
     pub port: u16,
     pub model: Option<String>,
+    /// AirPlay 2 / HomeKit devices that reject the legacy /play endpoint and
+    /// require SRP/FairPlay pairing (out of scope). Surfaced to the UI so the
+    /// entry can be shown greyed-out with a reason instead of hidden.
+    pub requires_pairing: bool,
 }
 
 fn pick_address(addrs: &std::collections::HashSet<IpAddr>) -> Option<IpAddr> {
@@ -58,15 +62,17 @@ pub async fn supports_legacy_airplay(host: &str, port: u16) -> bool {
 pub async fn discover(timeout_ms: u64) -> Vec<AirPlayDevice> {
     let raw = discover_mdns(timeout_ms).await;
     let mut out = Vec::new();
-    for d in raw {
+    for mut d in raw {
         if supports_legacy_airplay(&d.host, d.port).await {
-            out.push(d);
+            d.requires_pairing = false;
         } else {
             eprintln!(
-                "[harbor::airplay] dropping {} ({}:{}) — needs AirPlay 2 pairing or doesn't accept legacy /play",
+                "[harbor::airplay] {} ({}:{}) needs AirPlay 2 pairing or doesn't accept legacy /play — kept but marked unavailable",
                 d.name, d.host, d.port
             );
+            d.requires_pairing = true;
         }
+        out.push(d);
     }
     out
 }
@@ -109,6 +115,7 @@ async fn discover_mdns(timeout_ms: u64) -> Vec<AirPlayDevice> {
                             host,
                             port,
                             model,
+                            requires_pairing: false,
                         },
                     );
                 }

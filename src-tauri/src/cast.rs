@@ -34,6 +34,9 @@ pub struct CastDeviceInfo {
     pub kind: String,
     pub control_url: Option<String>,
     pub audio_only: bool,
+    /// Machine-readable reason the device can be listed but not cast to
+    /// (e.g. "airplay2_pairing"). None = usable.
+    pub unavailable_reason: Option<String>,
 }
 
 fn needs_auto_remux(kind: &str, url: &str) -> bool {
@@ -89,6 +92,11 @@ enum ActiveSession {
     },
     Roku {
         ecp_base: String,
+        // Last launch context, kept so absolute seek can re-launch Media
+        // Assistant with startMS (ECP has no seek primitive).
+        url: String,
+        title: Option<String>,
+        content_type: Option<String>,
     },
     AirPlay {
         host: String,
@@ -154,6 +162,7 @@ async fn discover_chromecasts() -> Vec<CastDeviceInfo> {
                             kind: "chromecast".into(),
                             control_url: None,
                             audio_only,
+                            unavailable_reason: None,
                         },
                     );
                 }
@@ -183,6 +192,7 @@ async fn discover_dlna() -> Vec<CastDeviceInfo> {
                 kind: "dlna".into(),
                 control_url: Some(d.control_url),
                 audio_only,
+                unavailable_reason: None,
             }
         })
         .collect()
@@ -204,6 +214,7 @@ async fn discover_roku() -> Vec<CastDeviceInfo> {
                 kind: "roku".into(),
                 control_url: Some(d.ecp_base),
                 audio_only,
+                unavailable_reason: None,
             }
         })
         .collect()
@@ -230,6 +241,7 @@ async fn discover_airplay() -> Vec<CastDeviceInfo> {
                 kind: "airplay".into(),
                 control_url: None,
                 audio_only,
+                unavailable_reason: d.requires_pairing.then(|| "airplay2_pairing".to_string()),
             }
         })
         .collect()
@@ -262,6 +274,16 @@ fn dedupe_by_host(devices: Vec<CastDeviceInfo>) -> Vec<CastDeviceInfo> {
             }
             Entry::Occupied(mut slot) => {
                 let existing = slot.get();
+                // A usable entry always beats one that can't be cast to
+                // (e.g. AirPlay 2 pairing-required), whatever the kind priority.
+                let d_usable = d.unavailable_reason.is_none();
+                let existing_usable = existing.unavailable_reason.is_none();
+                if d_usable != existing_usable {
+                    if d_usable {
+                        slot.insert(d);
+                    }
+                    continue;
+                }
                 let pair = (existing.kind.as_str(), d.kind.as_str());
                 let apple = looks_like_apple(&d.name, &d.model)
                     || looks_like_apple(&existing.name, &existing.model);
@@ -459,9 +481,14 @@ pub async fn cast_load(
         } else {
             content_type.clone()
         };
-        roku::load(ecp.clone(), cast_url, title, ct, start_time_sec).await?;
+        roku::load(ecp.clone(), cast_url.clone(), title.clone(), ct.clone(), start_time_sec).await?;
         let mut active = ACTIVE.lock().map_err(|e| format!("lock: {e}"))?;
-        *active = Some(ActiveSession::Roku { ecp_base: ecp });
+        *active = Some(ActiveSession::Roku {
+            ecp_base: ecp,
+            url: cast_url,
+            title,
+            content_type: ct,
+        });
         return Ok(());
     }
     if kind_str == "airplay" {
@@ -663,8 +690,17 @@ fn snapshot_dlna() -> Option<String> {
 
 fn snapshot_roku() -> Option<String> {
     let active = ACTIVE.lock().ok()?;
-    if let Some(ActiveSession::Roku { ecp_base }) = active.as_ref() {
+    if let Some(ActiveSession::Roku { ecp_base, .. }) = active.as_ref() {
         Some(ecp_base.clone())
+    } else {
+        None
+    }
+}
+
+fn snapshot_roku_ctx() -> Option<(String, String, Option<String>, Option<String>)> {
+    let active = ACTIVE.lock().ok()?;
+    if let Some(ActiveSession::Roku { ecp_base, url, title, content_type }) = active.as_ref() {
+        Some((ecp_base.clone(), url.clone(), title.clone(), content_type.clone()))
     } else {
         None
     }
@@ -730,8 +766,8 @@ pub async fn cast_seek(sec: f64) -> Result<(), String> {
     if let Some(cu) = snapshot_dlna() {
         return dlna::seek(cu, sec).await;
     }
-    if let Some(ecp) = snapshot_roku() {
-        return roku::seek(ecp, sec).await;
+    if let Some((ecp, url, title, ct)) = snapshot_roku_ctx() {
+        return roku::seek(ecp, url, title, ct, sec).await;
     }
     if let Some((h, p)) = snapshot_airplay() {
         return airplay::seek(h, p, sec).await;
@@ -753,6 +789,58 @@ pub async fn cast_seek(sec: f64) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn cast_set_volume(level: f64) -> Result<(), String> {
+    let level = level.clamp(0.0, 1.0);
+    if let Some(cu) = snapshot_dlna() {
+        return dlna::set_volume(cu, level).await;
+    }
+    if snapshot_roku().is_some() {
+        return Err("Roku ECP only supports volume steps, not absolute volume".into());
+    }
+    if snapshot_airplay().is_some() {
+        return Err("Legacy AirPlay video has no volume control".into());
+    }
+    let (host, port, _transport_id, _msid, _seek_start) = snapshot_chromecast()?;
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let device = connect_device(&host, port)?;
+        device
+            .receiver
+            .set_volume(level as f32)
+            .map_err(|e| format!("set volume: {e}"))?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("join: {e}"))?
+}
+
+#[tauri::command]
+pub async fn cast_volume_step(up: bool) -> Result<(), String> {
+    if let Some(cu) = snapshot_dlna() {
+        return dlna::volume_step(cu, up).await;
+    }
+    if let Some(ecp) = snapshot_roku() {
+        return roku::volume_step(ecp, up).await;
+    }
+    if snapshot_airplay().is_some() {
+        return Err("Legacy AirPlay video has no volume control".into());
+    }
+    let (host, port, _transport_id, _msid, _seek_start) = snapshot_chromecast()?;
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let device = connect_device(&host, port)?;
+        let status = device.receiver.get_status().map_err(|e| format!("get status: {e}"))?;
+        let current = status.volume.level.unwrap_or(0.5);
+        let next = (current + if up { 0.05 } else { -0.05 }).clamp(0.0, 1.0);
+        device
+            .receiver
+            .set_volume(next)
+            .map_err(|e| format!("set volume: {e}"))?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("join: {e}"))?
+}
+
+#[tauri::command]
 pub async fn cast_stop() -> Result<(), String> {
     let session = {
         let mut active = ACTIVE.lock().map_err(|e| format!("lock: {e}"))?;
@@ -761,7 +849,7 @@ pub async fn cast_stop() -> Result<(), String> {
     cast_subs::cleanup();
     match session {
         Some(ActiveSession::Dlna { control_url }) => dlna::stop(control_url).await,
-        Some(ActiveSession::Roku { ecp_base }) => roku::stop(ecp_base).await,
+        Some(ActiveSession::Roku { ecp_base, .. }) => roku::stop(ecp_base).await,
         Some(ActiveSession::AirPlay { host, port }) => airplay::stop(host, port).await,
         Some(ActiveSession::Chromecast { host, port, session_id, .. }) => {
             tokio::task::spawn_blocking(move || -> Result<(), String> {
@@ -864,5 +952,42 @@ fn drain_briefly(device: &CastDevice<'_>, ms: u64) {
             Ok(_) => {}
             Err(_) => break,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn device(kind: &str, unavailable_reason: Option<&str>) -> CastDeviceInfo {
+        CastDeviceInfo {
+            id: kind.into(),
+            name: "Living room".into(),
+            host: "192.0.2.10".into(),
+            port: 8009,
+            model: None,
+            kind: kind.into(),
+            control_url: None,
+            audio_only: false,
+            unavailable_reason: unavailable_reason.map(str::to_owned),
+        }
+    }
+
+    #[test]
+    fn dedupe_prefers_usable_protocol_over_pairing_required_airplay() {
+        let devices = dedupe_by_host(vec![
+            device("airplay", Some("airplay2_pairing")),
+            device("dlna", None),
+        ]);
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].kind, "dlna");
+        assert!(devices[0].unavailable_reason.is_none());
+    }
+
+    #[test]
+    fn unavailable_entry_is_kept_when_it_is_the_only_protocol() {
+        let devices = dedupe_by_host(vec![device("airplay", Some("airplay2_pairing"))]);
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].unavailable_reason.as_deref(), Some("airplay2_pairing"));
     }
 }

@@ -148,7 +148,12 @@ export function CastMenu({
             <button
               key={d.id}
               onClick={() => onPick(d)}
-              className="flex items-center gap-3 rounded-lg px-2.5 py-2 text-start transition-colors hover:bg-canvas/65"
+              disabled={d.unavailable_reason != null}
+              className={`flex items-center gap-3 rounded-lg px-2.5 py-2 text-start transition-colors ${
+                d.unavailable_reason != null
+                  ? "cursor-not-allowed opacity-45"
+                  : "hover:bg-canvas/65"
+              }`}
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-canvas/55 p-1">
                 <CastIcon device={d} size={28} />
@@ -163,7 +168,13 @@ export function CastMenu({
                   )}
                 </span>
                 <span className="truncate text-[11px] text-ink-subtle">
-                  {d.kind === "dlna" ? d.model ?? t("DLNA TV") : d.model || `${d.host}:${d.port}`}
+                  {d.unavailable_reason === "airplay2_pairing"
+                    ? t("Requires AirPlay 2 pairing — not supported. Use the DLNA entry for this TV.")
+                    : d.unavailable_reason != null
+                      ? t("Unavailable")
+                      : d.kind === "dlna"
+                        ? d.model ?? t("DLNA TV")
+                        : d.model || `${d.host}:${d.port}`}
                 </span>
               </div>
             </button>

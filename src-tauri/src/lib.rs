@@ -724,6 +724,8 @@ pub fn run() {
             cast::cast_play,
             cast::cast_pause,
             cast::cast_seek,
+            cast::cast_set_volume,
+            cast::cast_volume_step,
             cast::cast_stop,
             cast::cast_status,
             cast_server::cast_server_status,
