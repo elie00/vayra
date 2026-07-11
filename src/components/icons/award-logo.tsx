@@ -36,8 +36,8 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
             width: size * 0.85,
             height: size * 1.0,
             backgroundColor: BAFTA_GOLD,
-            WebkitMaskImage: "url(/awards/bafta.png)",
-            maskImage: "url(/awards/bafta.png)",
+            WebkitMaskImage: "url(/awards/bafta.webp)",
+            maskImage: "url(/awards/bafta.webp)",
             WebkitMaskRepeat: "no-repeat",
             maskRepeat: "no-repeat",
             WebkitMaskPosition: "center",
@@ -50,7 +50,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     case "emmy":
       return (
         <img
-          src="/awards/emmy.png"
+          src="/awards/emmy.webp"
           alt=""
           aria-hidden
           loading="lazy"
@@ -62,7 +62,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     case "oscar":
       return (
         <img
-          src="/awards/oscar.png"
+          src="/awards/oscar.webp"
           alt=""
           aria-hidden
           loading="lazy"
@@ -74,7 +74,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     case "golden_globe":
       return (
         <img
-          src="/awards/golden-globe.png"
+          src="/awards/golden-globe.webp"
           alt=""
           aria-hidden
           loading="lazy"
@@ -86,7 +86,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     case "sag":
       return (
         <img
-          src="/awards/sag.png"
+          src="/awards/sag.webp"
           alt=""
           aria-hidden
           loading="lazy"
@@ -98,7 +98,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     case "berlin":
       return (
         <img
-          src="/awards/berlin.png"
+          src="/awards/berlin.webp"
           alt=""
           aria-hidden
           loading="lazy"
@@ -110,7 +110,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     case "cannes":
       return (
         <img
-          src="/awards/cannestrophy.png"
+          src="/awards/cannestrophy.webp"
           alt=""
           aria-hidden
           loading="lazy"
@@ -134,7 +134,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     case "critics_choice":
       return (
         <img
-          src="/awards/critics-choice.png"
+          src="/awards/critics-choice.webp"
           alt=""
           aria-hidden
           loading="lazy"
@@ -150,7 +150,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
     default:
       return (
         <img
-          src="/awards/oscar.png"
+          src="/awards/oscar.webp"
           alt=""
           aria-hidden
           loading="lazy"
