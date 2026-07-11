@@ -353,7 +353,15 @@ export function usePickHandler({
     setDebridDown(false);
   };
 
-  const abortResolve = () => resolveAcRef.current?.abort();
+  const abortResolve = () => {
+    resolveAcRef.current?.abort();
+    resolveAcRef.current = null;
+    if (retryTimerRef.current != null) {
+      window.clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    sameSourceRetryRef.current = 0;
+  };
 
   return { onPlay, onCache, queuedHash, debridDown, resetDebridDown, abortResolve, p2pConfirm, confirmP2p, cancelP2p };
 }
