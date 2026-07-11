@@ -1,10 +1,54 @@
 import { CastMenu } from "@/components/player/cast-menu";
+import { getCastPositionPrecise, useCastPosition } from "@/lib/player/cast-interp";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
+import type { CastDeviceInfo } from "@/lib/cast";
 import type { PlayerSrc } from "@/lib/view";
 import { CastErrorModal } from "./cast-error-modal";
 import { CastSessionBar } from "./cast-session-bar";
 import { CastingOverlay } from "./casting-overlay";
 import type { PlayerCastController } from "./hooks/use-player-cast";
+
+/**
+ * Isolates the 1 Hz cast-position subscription to this tiny wrapper so only the
+ * progress bar re-renders each tick — not CastLayer or the player subtree.
+ */
+function LiveCastSessionBar({
+  device,
+  playing,
+  durationSec,
+  onTogglePlay,
+  onStop,
+  onSeek,
+  transcoding,
+}: {
+  device: CastDeviceInfo;
+  playing: boolean;
+  durationSec: number;
+  onTogglePlay: () => void | Promise<void>;
+  onStop: () => void | Promise<void>;
+  onSeek: (sec: number) => void | Promise<void>;
+  transcoding?: boolean;
+}) {
+  // Subscribe to the floored second only to drive a ~1 Hz re-render (cheap), but
+  // pass the *precise* float position downstream so the ±15 s seek buttons don't
+  // lose up to a second to flooring. The `> 0` guard (not the falsy floored
+  // value) keeps the local-playback fallback confined to the pre-cast window.
+  const flooredSec = useCastPosition();
+  const precise = getCastPositionPrecise();
+  const positionSec = precise > 0 ? precise : flooredSec || getPlaybackPosition();
+  return (
+    <CastSessionBar
+      device={device}
+      playing={playing}
+      positionSec={positionSec}
+      durationSec={durationSec}
+      onTogglePlay={onTogglePlay}
+      onStop={onStop}
+      onSeek={onSeek}
+      transcoding={transcoding}
+    />
+  );
+}
 
 export function CastLayer({
   cast,
@@ -47,10 +91,9 @@ export function CastLayer({
             poster={src.meta.poster}
             playing={cast.castPlaying}
           />
-          <CastSessionBar
+          <LiveCastSessionBar
             device={cast.castDevice}
             playing={cast.castPlaying}
-            positionSec={cast.castPositionSec || getPlaybackPosition()}
             durationSec={durationSec}
             onTogglePlay={cast.togglePlayCast}
             onStop={() => {

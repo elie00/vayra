@@ -11,6 +11,7 @@ import {
   type CastSubStyle,
   type TranscodeProfile,
 } from "@/lib/cast";
+import { resetCastCorrection, setCastCorrection } from "@/lib/player/cast-interp";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import type { CastErrorInfo } from "../cast-error-modal";
 import { startSerializedPoll } from "./serialized-poll";
@@ -106,7 +107,6 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
   const [castError, setCastError] = useState<string | null>(null);
   const [castErrorInfo, setCastErrorInfo] = useState<CastErrorInfo | null>(null);
   const [castPlaying, setCastPlaying] = useState<boolean>(true);
-  const [castPositionSec, setCastPositionSec] = useState<number>(0);
   const [burnSubsOnTv, setBurnSubsOnTv] = useState<boolean>(true);
   const lastCastPositionRef = useRef<number>(0);
   const castStartTargetRef = useRef<number>(0);
@@ -169,7 +169,7 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
   useEffect(() => {
     if (!castDevice) {
       setCastPlaying(true);
-      setCastPositionSec(0);
+      resetCastCorrection();
       return;
     }
     let cancelled = false;
@@ -195,7 +195,10 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
       }
       if (s.position_sec > 0) {
         lastCastPositionRef.current = s.position_sec;
-        setCastPositionSec(s.position_sec);
+        // Route the confirmed position through the ref-based cast store instead
+        // of React state: only the cast session bar re-renders, not the whole
+        // player subtree. The store advances smoothly between these ticks.
+        setCastCorrection(s.position_sec, castPlayingRef.current);
       }
     };
     // Serialized loop (next poll 1s after the previous one *finishes*), so a
@@ -217,21 +220,25 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
     if (castPlayingRef.current) {
       castPlayingRef.current = false;
       setCastPlaying(false);
+      setCastCorrection(lastCastPositionRef.current, false);
       await castPause();
     } else {
       castPlayingRef.current = true;
       setCastPlaying(true);
+      setCastCorrection(lastCastPositionRef.current, true);
       await castPlay();
     }
   }, []);
 
   const playCast = useCallback(async () => {
     castPlayingRef.current = true;
+    setCastCorrection(lastCastPositionRef.current, true);
     await castPlay();
   }, []);
 
   const pauseCast = useCallback(async () => {
     castPlayingRef.current = false;
+    setCastCorrection(lastCastPositionRef.current, false);
     await castPause();
   }, []);
 
@@ -252,6 +259,8 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
     lastCastPositionRef.current = sec;
     castStartTargetRef.current = sec;
     castSeekConfirmedRef.current = true;
+    // Explicit user seek: allow the displayed second to move backwards.
+    setCastCorrection(sec, castPlayingRef.current, true);
     await castSeek(sec);
   }, []);
 
@@ -270,7 +279,6 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
     setCastErrorInfo,
     dismissCastErrorInfo,
     castPlaying,
-    castPositionSec,
     burnSubsOnTv,
     setBurnSubsOnTv,
     openCastMenu,
