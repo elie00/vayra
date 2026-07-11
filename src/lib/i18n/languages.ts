@@ -1,4 +1,4 @@
-export type UiLanguage = "en" | "ar" | "pt" | "fr" | "es" | "de";
+export type UiLanguage = "en" | "ar" | "pt" | "fr" | "es" | "de" | "it";
 
 export type LanguageOption = {
   code: UiLanguage;
@@ -14,6 +14,7 @@ export const LANGUAGES: LanguageOption[] = [
   { code: "fr", label: "French", nativeLabel: "Français", rtl: false },
   { code: "es", label: "Spanish", nativeLabel: "Español", rtl: false },
   { code: "de", label: "German", nativeLabel: "Deutsch", rtl: false },
+  { code: "it", label: "Italian", nativeLabel: "Italiano", rtl: false },
 ];
 
 export function isRtl(lang: UiLanguage): boolean {
