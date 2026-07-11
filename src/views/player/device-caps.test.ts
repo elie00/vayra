@@ -39,6 +39,21 @@ describe("getDeviceCaps cast matrix", () => {
     expect(caps.hevc).toBe(false);
   });
 
+  it("recognizes official Chromecast with Google TV hardware references", () => {
+    expect(getDeviceCaps(device("Living Room", "GZRNL")).label).toBe(
+      "Chromecast with Google TV (4K)",
+    );
+    expect(getDeviceCaps(device("Bedroom", "G454V")).label).toBe(
+      "Chromecast with Google TV (HD)",
+    );
+  });
+
+  it("does not assume an unidentified Google TV target supports 4K", () => {
+    const caps = getDeviceCaps(device("Family Google TV", "Google TV"));
+    expect(caps.maxResolution).toBe(1080);
+    expect(caps.dolbyVision).toBe(false);
+  });
+
   it("keeps unknown and older Roku devices on the conservative HD profile", () => {
     expect(getDeviceCaps(roku("Bedroom Roku", "Roku Express (3900X)")).maxResolution).toBe(1080);
     expect(getDeviceCaps(roku("Unknown Roku", null)).hevc).toBe(false);

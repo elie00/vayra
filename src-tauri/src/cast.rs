@@ -111,7 +111,11 @@ fn parse_friendly_name(properties: &HashMap<String, String>) -> Option<String> {
 }
 
 fn parse_model(properties: &HashMap<String, String>) -> Option<String> {
-    properties.get("md").map(|s| s.to_string())
+    ["md", "model", "am"]
+        .iter()
+        .filter_map(|key| properties.get(*key))
+        .find(|value| !value.trim().is_empty())
+        .map(|value| value.trim().to_string())
 }
 
 fn pick_address(addrs: &std::collections::HashSet<IpAddr>) -> Option<IpAddr> {
@@ -144,7 +148,7 @@ async fn discover_chromecasts() -> Vec<CastDeviceInfo> {
                     let props_map: HashMap<String, String> = info
                         .get_properties()
                         .iter()
-                        .map(|p| (p.key().to_string(), p.val_str().to_string()))
+                        .map(|p| (p.key().to_lowercase(), p.val_str().to_string()))
                         .collect();
                     let name = parse_friendly_name(&props_map)
                         .unwrap_or_else(|| info.get_fullname().to_string());
@@ -989,5 +993,21 @@ mod tests {
         let devices = dedupe_by_host(vec![device("airplay", Some("airplay2_pairing"))]);
         assert_eq!(devices.len(), 1);
         assert_eq!(devices[0].unavailable_reason.as_deref(), Some("airplay2_pairing"));
+    }
+
+    #[test]
+    fn cast_model_prefers_md_and_ignores_empty_values() {
+        let properties = HashMap::from([
+            ("md".to_string(), "  ".to_string()),
+            ("model".to_string(), "G454V".to_string()),
+            ("am".to_string(), "fallback".to_string()),
+        ]);
+        assert_eq!(parse_model(&properties).as_deref(), Some("G454V"));
+    }
+
+    #[test]
+    fn cast_model_accepts_airplay_style_am_fallback() {
+        let properties = HashMap::from([("am".to_string(), "Google TV Streamer".to_string())]);
+        assert_eq!(parse_model(&properties).as_deref(), Some("Google TV Streamer"));
     }
 }
