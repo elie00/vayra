@@ -28,7 +28,7 @@ export async function fetchTvdbOrder(
   seasonType: string,
   lang?: string,
 ): Promise<TvdbOrder | null> {
-  if (!apiKey || !remoteId) return null;
+  if (!remoteId) return null;
   const seriesId = await tvdbSeriesByRemote(apiKey, remoteId);
   if (!seriesId) return null;
   return fetchTvdbOrderBySeriesId(apiKey, seriesId, seasonType, lang);
@@ -40,7 +40,7 @@ export async function fetchTvdbOrderBySeriesId(
   seasonType: string,
   lang?: string,
 ): Promise<TvdbOrder | null> {
-  if (!apiKey || !seriesId) return null;
+  if (!seriesId) return null;
   const typeKey = lang ? `${seasonType}:${lang}` : seasonType;
   const cacheKey = `${seriesId}:${typeKey}`;
   if (orderCache.has(cacheKey)) return orderCache.get(cacheKey) ?? null;
@@ -63,8 +63,11 @@ async function build(
   seasonType: string,
   lang?: string,
 ): Promise<TvdbOrder | null> {
-  const slug = seasonType === "aired" ? "default" : seasonType;
-  const nameTypeSlug = seasonType === "aired" ? "official" : seasonType;
+  const joinedClean = seasonType === "absolute";
+  const rawAbsolute = seasonType === "tvdbabsolute";
+  const slug = seasonType === "aired" || joinedClean ? "default" : rawAbsolute ? "absolute" : seasonType;
+  const nameTypeSlug =
+    seasonType === "aired" || joinedClean || rawAbsolute ? "official" : seasonType;
   const [defaultEps, names] = await Promise.all([
     tvdbEpisodesByType(apiKey, seriesId, "default"),
     tvdbSeasonNames(apiKey, seriesId, nameTypeSlug),
@@ -82,9 +85,13 @@ async function build(
   }
 
   const bySeason = new Map<number, Episode[]>();
+  const seenEpisodeId = new Set<number>();
   for (const e of altEps) {
+    if (seenEpisodeId.has(e.id)) continue;
+    seenEpisodeId.add(e.id);
     const c = canonical.get(e.id) ?? { season: e.seasonNumber, episode: e.number };
-    const bucketKey = seasonType === "absolute" ? 1 : e.seasonNumber;
+    if (joinedClean && c.season < 1) continue;
+    const bucketKey = joinedClean || rawAbsolute ? 1 : e.seasonNumber;
     const bucket = bySeason.get(bucketKey) ?? [];
     const tr = transById.get(e.id);
     bucket.push({
@@ -93,7 +100,7 @@ async function build(
       episodeNumber: c.episode,
       name: (tr?.name || e.name) ?? "",
       overview: (tr?.overview || e.overview) ?? "",
-      stillPath: null,
+      stillPath: e.image ?? null,
       airDate: e.aired ?? null,
       runtime: e.runtime ?? null,
       voteAverage: null,
@@ -101,6 +108,9 @@ async function build(
     bySeason.set(bucketKey, bucket);
   }
   if (bySeason.size === 0) return null;
+  if (joinedClean) {
+    bySeason.get(1)?.sort((x, y) => x.seasonNumber - y.seasonNumber || x.episodeNumber - y.episodeNumber);
+  }
 
   const absByEpId = new Map<number, number>();
   const imageByAbs = new Map<number, string>();
@@ -117,7 +127,7 @@ async function build(
       id: n,
       seasonNumber: n,
       name:
-        seasonType === "absolute"
+        joinedClean || rawAbsolute
           ? "All Episodes"
           : names.get(n) || (n === 0 ? "Specials" : `Season ${n}`),
       overview: "",

@@ -79,6 +79,18 @@ export function StreamingSourcesPanel({
       </Section>
 
       <Section
+        title={t("Refresh button")}
+        subtitle={t("Where the Refresh button sits in the picker header. Default keeps it on the right, across from Back.")}
+      >
+        <ToggleRow
+          label={t("Move Refresh next to Back")}
+          sub={t("Group Refresh on the left beside Back instead of the far right of the header.")}
+          value={settings.pickerRefreshNextToBack}
+          onChange={(v) => update({ pickerRefreshNextToBack: v })}
+        />
+      </Section>
+
+      <Section
         title={t("Torrent name")}
         subtitle={t("Show each source's full release filename on the condensed layout. The Stremio layout already shows it.")}
       >

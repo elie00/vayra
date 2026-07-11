@@ -3,23 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { franchiseTags, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { useT } from "@/lib/i18n";
-import { useView } from "@/lib/view";
 import { UpcomingBadge } from "../badges";
 
 export function AnimeSeasonPicker({
   franchise,
-  currentId,
+  activeEntryId,
+  onSelectEntry,
 }: {
   franchise: FranchiseEntry[];
-  currentId: string;
+  activeEntryId: string;
+  onSelectEntry: (entryId: string) => void;
 }) {
   const t = useT();
-  const { openMeta } = useView();
   const [menu, setMenu] = useState<{ right: number; top?: number; bottom?: number; maxH: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const open = menu != null;
-  const matchIdx = franchise.findIndex((f) => f.meta.id === currentId);
+  const matchIdx = franchise.findIndex((f) => f.meta.id === activeEntryId);
   const currentIdx = matchIdx >= 0 ? matchIdx : franchise.findIndex((f) => f.isCurrent);
   const current = franchise[currentIdx];
 
@@ -73,7 +73,7 @@ export function AnimeSeasonPicker({
       <button
         key={f.meta.id}
         onClick={() => {
-          if (!isActive) openMeta(f.meta);
+          if (!isActive) onSelectEntry(f.meta.id);
           setMenu(null);
         }}
         className={`flex w-full items-start gap-3 px-4 py-3 text-start transition-colors ${

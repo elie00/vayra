@@ -12,9 +12,11 @@ export function buildAnimeOrder(
   if (!ordering) return null;
   const byPair = new Map<string, KitsuEpisode>();
   const byAbs = new Map<number, KitsuEpisode>();
+  const byTvdbId = new Map<number, KitsuEpisode>();
   for (const ep of episodes) {
     const abs = ep.absoluteNumber ?? ep.number;
     if (abs != null && !byAbs.has(abs)) byAbs.set(abs, ep);
+    if (ep.tvdbEpisodeId != null && !byTvdbId.has(ep.tvdbEpisodeId)) byTvdbId.set(ep.tvdbEpisodeId, ep);
     if (ep.imdbSeason == null || ep.imdbSeason < 1 || ep.imdbEpisode == null) continue;
     const key = `${ep.imdbSeason}:${ep.imdbEpisode}`;
     if (!byPair.has(key)) byPair.set(key, ep);
@@ -30,7 +32,7 @@ export function buildAnimeOrder(
     if (bucket.length === 0) continue;
     const ordered: KitsuEpisode[] = bucket.map((e) => {
       const abs = ordering.absByEpId.get(e.id);
-      let match = byPair.get(`${e.seasonNumber}:${e.episodeNumber}`);
+      let match = byPair.get(`${e.seasonNumber}:${e.episodeNumber}`) ?? byTvdbId.get(e.id);
       if (!match && abs != null) match = byAbs.get(abs);
       if (match) {
         matched.add(match.id);

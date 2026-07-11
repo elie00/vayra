@@ -44,6 +44,7 @@ export function mergeAniZipEpisodes(episodes: KitsuEpisode[], aniZip: AniZipMapp
     if (az.runtime && !ep.length) ep.length = az.runtime;
     if (az.filler) ep.filler = true;
     if (az.absoluteEpisodeNumber) ep.absoluteNumber = az.absoluteEpisodeNumber;
+    if (az.tvdbId) ep.tvdbEpisodeId = az.tvdbId;
     if (ep.rating == null && az.rating != null) {
       const r = Number(az.rating);
       if (Number.isFinite(r) && r > 0) ep.rating = r;

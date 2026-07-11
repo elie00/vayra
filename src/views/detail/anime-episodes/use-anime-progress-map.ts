@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { getEpisodeProgress, type EpisodeProgress } from "@/lib/episode-progress";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { spoilerMaskFor, type SpoilerMask } from "@/lib/spoilers";
+import { animeSeasonKey } from "./anime-season-key";
 
 const NO_PROGRESS: EpisodeProgress = { ratio: 0, watched: false, startedAt: 0 };
 
@@ -33,7 +34,7 @@ export function useAnimeProgressMap({
         ep.id,
         getEpisodeProgress(
           ep.sourceMetaId ?? metaId,
-          ep.seasonNumber || 1,
+          animeSeasonKey(ep),
           ep.number,
           ep.length ?? null,
           ep.imdbId ?? null,

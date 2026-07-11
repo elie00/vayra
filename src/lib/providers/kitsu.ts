@@ -91,6 +91,7 @@ export type KitsuEpisode = {
   imdbEpisode?: number;
   filler?: boolean;
   absoluteNumber?: number;
+  tvdbEpisodeId?: number;
   rating?: number;
   ratingIsImdb?: boolean;
   sourceMetaId?: string;
@@ -320,23 +321,30 @@ export async function kitsuStreamingLinks(id: number): Promise<KitsuStreamer[]> 
 }
 
 export async function kitsuEpisodes(id: number, limit = 60): Promise<KitsuEpisode[]> {
-  const j = await get<Doc<Resource<KitsuEpisodeAttrs>[]>>(
-    `/anime/${id}/episodes?page[limit]=${limit}&sort=number`,
-  );
-  if (!j?.data) return [];
-  return j.data.map((ep) => {
-    const a = ep.attributes;
-    return {
-      id: Number(ep.id),
-      number: a.number ?? 0,
-      seasonNumber: a.seasonNumber ?? 1,
-      title: a.canonicalTitle || `Episode ${a.number ?? "?"}`,
-      synopsis: a.synopsis || a.description || "",
-      thumbnail: pickImg(a.thumbnail) ?? null,
-      airdate: a.airdate ?? null,
-      length: a.length ?? null,
-    };
-  });
+  const PAGE = 20;
+  const out: KitsuEpisode[] = [];
+  for (let offset = 0; offset < limit; offset += PAGE) {
+    const size = Math.min(PAGE, limit - offset);
+    const j = await get<Doc<Resource<KitsuEpisodeAttrs>[]>>(
+      `/anime/${id}/episodes?page[limit]=${size}&page[offset]=${offset}&sort=number`,
+    );
+    if (!j?.data?.length) break;
+    for (const ep of j.data) {
+      const a = ep.attributes;
+      out.push({
+        id: Number(ep.id),
+        number: a.number ?? 0,
+        seasonNumber: a.seasonNumber ?? 1,
+        title: a.canonicalTitle || `Episode ${a.number ?? "?"}`,
+        synopsis: a.synopsis || a.description || "",
+        thumbnail: pickImg(a.thumbnail) ?? null,
+        airdate: a.airdate ?? null,
+        length: a.length ?? null,
+      });
+    }
+    if (j.data.length < size) break;
+  }
+  return out;
 }
 
 type AnimeCharAttrs = { role?: string };
@@ -347,7 +355,7 @@ export async function kitsuCharacters(id: number, limit = 30): Promise<KitsuChar
   const j = await get<
     Doc<Resource<AnimeCharAttrs>[], KitsuCharacterAttrs | CastingAttrs | PersonAttrs>
   >(
-    `/anime/${id}/anime-characters?include=character,castings.person&page[limit]=${limit}&sort=role`,
+    `/anime/${id}/anime-characters?include=character,castings.person&page[limit]=${Math.min(limit, 20)}&sort=role`,
   );
   if (!j?.data) return [];
   const charById = new Map<string, Resource<KitsuCharacterAttrs>>();

@@ -6,6 +6,13 @@ import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import type { Meta } from "@/lib/cinemeta";
 
+function animeHitMetaId(hit: AnimeHit): string {
+  if (hit.kitsuId) return `kitsu:${hit.kitsuId}`;
+  if (hit.malId) return `mal:${hit.malId}`;
+  if (hit.anilistId) return `anilist:${hit.anilistId}`;
+  return `mal:${hit.malId}`;
+}
+
 export function AnimeRow({ items, onClose }: { items: AnimeHit[]; onClose: () => void }) {
   const { openMeta } = useView();
   const t = useT();
@@ -13,7 +20,7 @@ export function AnimeRow({ items, onClose }: { items: AnimeHit[]; onClose: () =>
 
   const open = (hit: AnimeHit) => {
     const meta: Meta = {
-      id: `mal:${hit.malId}`,
+      id: animeHitMetaId(hit),
       type: "anime",
       name: hit.name,
       poster: hit.poster ?? undefined,
@@ -34,7 +41,7 @@ export function AnimeRow({ items, onClose }: { items: AnimeHit[]; onClose: () =>
       </h3>
       <div className="flex flex-col gap-2">
         {items.map((hit) => (
-          <AnimeRowItem key={hit.malId} hit={hit} onOpen={open} />
+          <AnimeRowItem key={animeHitMetaId(hit)} hit={hit} onOpen={open} />
         ))}
       </div>
     </section>
@@ -44,7 +51,7 @@ export function AnimeRow({ items, onClose }: { items: AnimeHit[]; onClose: () =>
 function AnimeRowItem({ hit, onOpen }: { hit: AnimeHit; onOpen: (hit: AnimeHit) => void }) {
   const t = useT();
   const { settings } = useSettings();
-  const poster = usePosterChain(settings.rpdbKey, `mal:${hit.malId}`, hit.poster ?? undefined, "series");
+  const poster = usePosterChain(settings.rpdbKey, animeHitMetaId(hit), hit.poster ?? undefined, "series");
   return (
     <button
       onClick={() => onOpen(hit)}

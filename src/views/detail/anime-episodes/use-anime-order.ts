@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useEpisodeOrder } from "../series-episodes/use-episode-order";
@@ -19,6 +19,7 @@ export function useAnimeOrder(
   provider: "default" | "tmdb" | "tvdb",
   seasonType: string,
   tvdbKey: string,
+  preferredSeasonKey?: string,
 ): AnimeOrder | null {
   const t = useT();
   const ordering = useEpisodeOrder(imdbId, metaId, provider, seasonType, tvdbKey);
@@ -27,12 +28,26 @@ export function useAnimeOrder(
     [ordering, episodes, t],
   );
   const [sel, setSel] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
+  useEffect(() => {
+    setSel(null);
+    setTouched(false);
+  }, [metaId]);
+  const onSelect = useCallback((key: string) => {
+    setSel(key);
+    setTouched(true);
+  }, []);
   if (!built) return null;
-  const activeKey = built.items.some((i) => i.key === sel) ? (sel as string) : built.items[0].key;
+  const activeKey =
+    touched && built.items.some((i) => i.key === sel)
+      ? (sel as string)
+      : preferredSeasonKey && built.items.some((i) => i.key === preferredSeasonKey)
+        ? preferredSeasonKey
+        : built.items[0].key;
   return {
     items: built.items,
     activeKey,
-    onSelect: setSel,
+    onSelect,
     visibleEpisodes: built.subsetByKey.get(activeKey) ?? [],
   };
 }

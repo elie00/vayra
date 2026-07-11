@@ -1,4 +1,4 @@
-import { Download, ImagePlus, Play } from "lucide-react";
+import { Check, Download, ImagePlus, Play } from "lucide-react";
 import { t } from "@/lib/i18n";
 
 export type GalleryVideo = { ytId: string; name: string; type: string };
@@ -110,7 +110,17 @@ export function ImageTile({
   );
 }
 
-export function LogoTile({ src, onOpen, onDownload }: { src: string; onOpen: () => void; onDownload: () => void }) {
+export function LogoTile({
+  src,
+  onOpen,
+  onDownload,
+  onSetLogo,
+}: {
+  src: string;
+  onOpen: () => void;
+  onDownload: () => void;
+  onSetLogo?: () => void;
+}) {
   return (
     <div className="group relative flex h-[120px] w-[220px] shrink-0">
       <button
@@ -125,7 +135,14 @@ export function LogoTile({ src, onOpen, onDownload }: { src: string; onOpen: () 
           className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
       </button>
-      <span className="absolute end-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="absolute end-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+        {onSetLogo && (
+          <TileButton
+            icon={<Check size={15} strokeWidth={2.4} />}
+            label={t("Set as show logo")}
+            onClick={onSetLogo}
+          />
+        )}
         <TileButton icon={<Download size={15} strokeWidth={2.2} />} label={t("Download")} onClick={onDownload} />
       </span>
     </div>

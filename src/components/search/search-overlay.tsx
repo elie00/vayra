@@ -18,7 +18,6 @@ import { MagnetCard } from "./magnet-card";
 import { UrlCard } from "./url-card";
 import { AiSearchSection } from "./ai-search-section";
 import { AiModeButton } from "./ai-mode-button";
-import { WebSearchButton } from "./web-search-button";
 import { AiExampleHint, SEARCH_EXAMPLES } from "@/components/ai-example-hint";
 import { useSettings } from "@/lib/settings";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
@@ -101,7 +100,12 @@ export function SearchOverlay() {
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label={t("Search")}>
+    <div
+      className="fixed inset-0 z-[200] flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("Search")}
+    >
       <button
         aria-label={t("Close search")}
         onClick={close}
@@ -169,7 +173,6 @@ export function SearchOverlay() {
           </div>
           {status === "loading" && <Loader2 size={18} className="shrink-0 animate-spin text-ink-subtle" />}
           <Hint />
-          <WebSearchButton />
           {(settings.aiSearchKey.trim() || settings.aiGroqKey.trim()) && (
             <AiModeButton
               active={aiMode}

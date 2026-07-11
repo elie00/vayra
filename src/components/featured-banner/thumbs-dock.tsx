@@ -32,7 +32,7 @@ export function ThumbsDock({ meta }: { meta: Meta }) {
   }, [metaId]);
   const cast = (v: FeedVote) => {
     const next = vote === v ? null : v;
-    setVote(metaId, next);
+    setVote(metaId, next, next ? { name: meta.name, type: meta.type } : undefined);
     if (next === "up") trackEvent(metaId, "vote_up", profileFromMeta(meta));
     else if (next === "down") trackEvent(metaId, "vote_down", profileFromMeta(meta));
     if (showHint) dismiss("featured-thumbs");

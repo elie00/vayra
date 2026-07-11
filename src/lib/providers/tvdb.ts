@@ -3,6 +3,7 @@ import { registerCache } from "@/lib/memory-profiler";
 import { safeFetch as tauriFetch } from "@/lib/safe-fetch";
 
 const BASE = "https://api4.thetvdb.com/v4";
+const PROXY_V4 = "https://harbor.site/api/tvdb/v4";
 const TOKEN_KEY = "harbor.tvdb.token.v1";
 const TOKEN_TTL_MS = 23 * 60 * 60 * 1000;
 
@@ -129,20 +130,28 @@ const responseInflight = new Map<string, Promise<unknown>>();
 registerCache("tvdb:response", () => responseCache.size);
 
 async function getJson<T>(apiKey: string, path: string): Promise<T | null> {
-  const key = `${apiKey.slice(0, 6)}::${path}`;
+  const useProxy = !apiKey;
+  const key = `${useProxy ? "proxy" : apiKey.slice(0, 6)}::${path}`;
   if (responseCache.has(key)) return responseCache.get(key) as T;
   const existing = responseInflight.get(key);
   if (existing) return existing as Promise<T | null>;
   const p = (async (): Promise<T | null> => {
     try {
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        const token = await getToken(apiKey);
-        if (!token) return null;
+        let url: string;
+        let headers: Record<string, string>;
+        if (useProxy) {
+          url = `${PROXY_V4}${path}`;
+          headers = { accept: "application/json" };
+        } else {
+          const token = await getToken(apiKey);
+          if (!token) return null;
+          url = `${BASE}${path}`;
+          headers = { authorization: `Bearer ${token}`, accept: "application/json" };
+        }
         try {
-          const res = await tauriFetch(`${BASE}${path}`, {
-            headers: { authorization: `Bearer ${token}`, accept: "application/json" },
-          });
-          if (res.status === 401) {
+          const res = await tauriFetch(url, { headers });
+          if (!useProxy && res.status === 401) {
             cachedToken = null;
             try {
               localStorage.removeItem(TOKEN_KEY);
@@ -179,21 +188,21 @@ async function getJson<T>(apiKey: string, path: string): Promise<T | null> {
 }
 
 export async function tvdbSeriesByImdb(apiKey: string, imdbId: string): Promise<number | null> {
-  if (!apiKey || !imdbId.startsWith("tt")) return null;
+  if (!imdbId.startsWith("tt")) return null;
   const data = await getJson<SearchHit[]>(apiKey, `/search/remoteid/${imdbId}`);
   if (!data) return null;
   return seriesIdFromRemote(data);
 }
 
 export async function tvdbSeriesByRemote(apiKey: string, remoteId: string): Promise<number | null> {
-  if (!apiKey || !remoteId) return null;
+  if (!remoteId) return null;
   const data = await getJson<SearchHit[]>(apiKey, `/search/remoteid/${remoteId}`);
   if (!data) return null;
   return seriesIdFromRemote(data);
 }
 
 export async function tvdbSeries(apiKey: string, seriesId: number): Promise<TvdbSeries | null> {
-  if (!apiKey || !seriesId) return null;
+  if (!seriesId) return null;
   const data = await getJson<any>(apiKey, `/series/${seriesId}/extended?meta=translations&short=false`);
   if (!data) return null;
   const aliases: string[] = Array.from(
@@ -215,16 +224,17 @@ export async function tvdbSeries(apiKey: string, seriesId: number): Promise<Tvdb
   };
 }
 
-export type TvdbOrderType = "aired" | "dvd" | "absolute" | "alternate" | "regional";
+export type TvdbOrderType = "aired" | "dvd" | "absolute" | "tvdbabsolute" | "alternate" | "regional";
 export type TvdbSeasonTypeOption = { value: TvdbOrderType; label: string };
 
-const ORDER_PRIORITY: TvdbOrderType[] = ["aired", "dvd", "absolute", "alternate", "regional"];
+const ORDER_PRIORITY: TvdbOrderType[] = ["aired", "dvd", "absolute", "tvdbabsolute", "alternate", "regional"];
 
 function defaultOrderLabel(value: TvdbOrderType): string {
   const map: Record<TvdbOrderType, string> = {
     aired: "Aired Order",
     dvd: "DVD Order",
     absolute: "Absolute Order",
+    tvdbabsolute: "TVDB Absolute Order",
     alternate: "Alternate Order",
     regional: "Regional Order",
   };
@@ -235,7 +245,7 @@ export async function tvdbSeasonTypes(
   apiKey: string,
   seriesId: number,
 ): Promise<TvdbSeasonTypeOption[]> {
-  if (!apiKey || !seriesId) return [];
+  if (!seriesId) return [];
   const data = await getJson<any>(apiKey, `/series/${seriesId}/extended?short=true`);
   const seasons = (data?.seasons ?? []) as any[];
   const labels = new Map<TvdbOrderType, string>();
@@ -246,6 +256,7 @@ export async function tvdbSeasonTypes(
     if (!ORDER_PRIORITY.includes(value)) continue;
     if (!labels.has(value)) labels.set(value, (s?.type?.name as string) || defaultOrderLabel(value));
   }
+  if (labels.has("absolute")) labels.set("tvdbabsolute", defaultOrderLabel("tvdbabsolute"));
   return ORDER_PRIORITY.filter((v) => labels.has(v)).map((v) => ({ value: v, label: labels.get(v)! }));
 }
 
@@ -255,7 +266,7 @@ export async function tvdbSeasonNames(
   typeSlug: string,
 ): Promise<Map<number, string>> {
   const map = new Map<number, string>();
-  if (!apiKey || !seriesId) return map;
+  if (!seriesId) return map;
   const data = await getJson<any>(apiKey, `/series/${seriesId}/extended?short=true`);
   const seasons = (data?.seasons ?? []) as any[];
   for (const s of seasons) {
@@ -272,7 +283,7 @@ export async function tvdbEpisodes(
   seriesId: number,
   season: number,
 ): Promise<TvdbEpisode[]> {
-  if (!apiKey || !seriesId) return [];
+  if (!seriesId) return [];
   const data = await getJson<any>(apiKey, `/series/${seriesId}/episodes/default?season=${season}`);
   const arr = data?.episodes ?? [];
   return (arr as any[])
@@ -307,7 +318,7 @@ export async function tvdbEpisodesByType(
   seasonType: string,
   lang?: string,
 ): Promise<TvdbEpisode[]> {
-  if (!apiKey || !seriesId) return [];
+  if (!seriesId) return [];
   const out: TvdbEpisode[] = [];
   const langSeg = lang ? `/${lang}` : "";
   for (let page = 0; page < 20; page++) {
@@ -341,8 +352,13 @@ export async function tvdbOrderTypeHasEpisodes(
   seriesId: number,
   seasonType: string,
 ): Promise<boolean> {
-  if (!apiKey || !seriesId) return false;
-  const slug = seasonType === "aired" ? "default" : seasonType;
+  if (!seriesId) return false;
+  const slug =
+    seasonType === "aired" || seasonType === "absolute"
+      ? "default"
+      : seasonType === "tvdbabsolute"
+        ? "absolute"
+        : seasonType;
   const data = await getJson<any>(apiKey, `/series/${seriesId}/episodes/${slug}?page=0`);
   const arr = (data?.episodes ?? []) as any[];
   return arr.length > 0;
@@ -352,7 +368,7 @@ export async function tvdbEpisodesAbsolute(
   apiKey: string,
   seriesId: number,
 ): Promise<TvdbEpisode[]> {
-  if (!apiKey || !seriesId) return [];
+  if (!seriesId) return [];
   const out: TvdbEpisode[] = [];
   for (let page = 0; page < 12; page++) {
     const data = await getJson<any>(

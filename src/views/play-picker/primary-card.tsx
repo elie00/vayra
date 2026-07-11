@@ -1,5 +1,6 @@
 import { Check, Download, ExternalLink, Loader2, Play, Zap } from "lucide-react";
 import { Flag } from "@/components/flag";
+import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
@@ -65,7 +66,7 @@ export function PrimaryCard({
   const isLandscape = Boolean(landscapeImage);
 
   return (
-    <section className="relative overflow-hidden rounded-[24px] border border-edge-soft/70 bg-canvas/85 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
+    <section className="relative overflow-hidden rounded-[24px] bg-canvas/70">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/12 to-transparent" />
 
       <div className={`grid gap-7 p-7 ${isLandscape ? "grid-cols-[320px_1fr] items-center" : "grid-cols-[224px_1fr]"}`}>
@@ -120,6 +121,14 @@ export function PrimaryCard({
                 {knownLanguages.slice(0, 6).map((lang) => (
                   <Flag key={lang} language={lang} size="lg" />
                 ))}
+                {settings.showDubBadge &&
+                  (() => {
+                    const d = streamDubSub(
+                      stream.audioLanguages,
+                      /^(kitsu|mal|anilist|anidb|simkl):/.test(meta.id),
+                    );
+                    return d ? <DubSubPill kind={d} size="md" /> : null;
+                  })()}
                 {knownLanguages.length > 6 && (
                   <span className="text-[13px] font-semibold tracking-[0.04em] text-ink-subtle">
                     +{knownLanguages.length - 6} more

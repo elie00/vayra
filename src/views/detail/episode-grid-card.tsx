@@ -112,7 +112,7 @@ export function EpisodeGridCard({
             {g.filler && <FillerBadge />}
           </span>
           <span className="text-[11.5px] text-ink-subtle">
-            E{g.number}
+            {g.seasonLabel ? `${g.seasonLabel} · E${g.number}` : `E${g.number}`}
             {g.runtime ? ` · ${t("{n} min", { n: g.runtime })}` : ""}
           </span>
           {settings.showEpisodeDescription && g.overview && (
@@ -220,7 +220,9 @@ function EpisodePreview({
         </span>
         <h4 className="line-clamp-1 text-[14px] font-semibold leading-snug text-ink">{g.title}</h4>
         <span className="flex items-center gap-1.5 text-[11.5px] text-ink-subtle">
-          <span className="font-semibold text-ink-muted">E{g.number}</span>
+          <span className="font-semibold text-ink-muted">
+            {g.seasonLabel ? `${g.seasonLabel} · E${g.number}` : `E${g.number}`}
+          </span>
           {g.airDate && (
             <>
               <span>·</span>

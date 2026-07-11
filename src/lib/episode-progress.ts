@@ -71,7 +71,12 @@ export function getEpisodeProgress(
   }
   const startedAt = entry?.t ?? 0;
 
-  const manual = manualWatchedState(resumeId, season, episode);
+  const canonS = traktSeason ?? season;
+  const canonE = traktEpisode ?? episode;
+  const canonDiffers = canonS !== season || canonE !== episode;
+  const manualSelf = manualWatchedState(resumeId, season, episode);
+  const manualCanon = canonDiffers ? manualWatchedState(resumeId, canonS, canonE) : undefined;
+  const manual = manualSelf !== undefined ? manualSelf : manualCanon;
   if (manual === false) return { ratio: 0, watched: false, startedAt };
 
   const ms = entry?.ms ?? 0;
@@ -84,7 +89,11 @@ export function getEpisodeProgress(
   const anilistDone = anilistWatched ? anilistWatched.has(`${season}:${episode}`) : false;
   const simklDone = simklWatched ? simklWatched.has(`${season}:${episode}`) : false;
   const malDone = malWatched ? malWatched.has(`${season}:${episode}`) : false;
-  const manualDone = resumeIds.some((id) => manualWatchedState(id, season, episode) === true);
+  const manualDone = resumeIds.some(
+    (id) =>
+      manualWatchedState(id, season, episode) === true ||
+      (canonDiffers && manualWatchedState(id, canonS, canonE) === true),
+  );
   const done = manualDone || traktDone || stremioDone || anilistDone || simklDone || malDone;
 
   return {

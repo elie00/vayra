@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { applyTheme, isKnownPreset, nextColorTheme } from "@/lib/theme";
+import { applyAppIcon } from "@/lib/app-icon";
 import { getCustomThemes, subscribeCustomThemes } from "@/lib/custom-themes";
 import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
 import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
@@ -8,6 +9,7 @@ import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
 import { STORAGE_KEY } from "./settings/defaults";
 import { readSettingsFile, writeSettingsFile } from "./settings/file-store";
+import { loadFontData, saveFontData } from "./font-storage";
 import {
   forkToProfile,
   loadEffective,
@@ -185,37 +187,53 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof document === "undefined" || !("fonts" in document)) return;
-    const desired = new Map<string, string>();
-    for (const f of settings.customFonts ?? []) {
-      desired.set(`harbor-font-${f.id}`, f.dataUrl);
-    }
-    const added: FontFace[] = [];
-    desired.forEach((dataUrl, family) => {
-      let exists = false;
-      document.fonts.forEach((ff) => {
-        if (ff.family === family) exists = true;
-      });
-      if (exists) return;
-      try {
-        const ff = new FontFace(family, `url(${dataUrl})`, { display: "swap" });
-        ff.load()
-          .then((loaded) => document.fonts.add(loaded))
-          .catch((e) => console.warn("[fonts] failed to load", family, e));
-        added.push(ff);
-      } catch (e) {
-        console.warn("[fonts] FontFace ctor failed", e);
+    const fonts = settings.customFonts ?? [];
+    const desiredFamilies = new Set(fonts.map((f) => `harbor-font-${f.id}`));
+    let cancelled = false;
+    void (async () => {
+      for (const f of fonts) {
+        const family = `harbor-font-${f.id}`;
+        let exists = false;
+        document.fonts.forEach((ff) => {
+          if (ff.family === family) exists = true;
+        });
+        if (exists) continue;
+        const dataUrl = f.dataUrl ?? (await loadFontData(f.id));
+        if (cancelled || !dataUrl) continue;
+        try {
+          const ff = new FontFace(family, `url(${dataUrl})`, { display: "swap" });
+          const loaded = await ff.load();
+          if (!cancelled) document.fonts.add(loaded);
+        } catch (e) {
+          console.warn("[fonts] failed to load", family, e);
+        }
       }
-    });
+    })();
     return () => {
-      const stillNeeded = new Set(desired.keys());
+      cancelled = true;
       const toRemove: FontFace[] = [];
       document.fonts.forEach((ff) => {
-        if (ff.family.startsWith("harbor-font-") && !stillNeeded.has(ff.family)) {
+        if (ff.family.startsWith("harbor-font-") && !desiredFamilies.has(ff.family)) {
           toRemove.push(ff);
         }
       });
       for (const ff of toRemove) document.fonts.delete(ff);
     };
+  }, [settings.customFonts]);
+
+  const fontMigratedRef = useRef(false);
+  useEffect(() => {
+    if (fontMigratedRef.current) return;
+    const legacy = (settings.customFonts ?? []).filter((f) => f.dataUrl);
+    if (legacy.length === 0) return;
+    fontMigratedRef.current = true;
+    void (async () => {
+      for (const f of legacy) if (f.dataUrl) await saveFontData(f.id, f.dataUrl).catch(() => {});
+      setSettings((s) => ({
+        ...s,
+        customFonts: (s.customFonts ?? []).map((f) => ({ id: f.id, name: f.name, format: f.format })),
+      }));
+    })();
   }, [settings.customFonts]);
 
 
@@ -249,6 +267,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         .catch((e) => console.warn("[harbor] setDecorations failed", e));
     });
   }, [settings.useNativeTitleBar]);
+
+  useEffect(() => {
+    void applyAppIcon(settings.customAppIcon);
+  }, [settings.customAppIcon]);
 
   useEffect(() => {
     if (!("__TAURI_INTERNALS__" in window)) return;

@@ -36,6 +36,13 @@ export function TitlePlate({ title, logo, loading }: { title: string; logo?: str
   const active = logo && !failed.has(logo) ? logo : undefined;
   const [layers, setLayers] = useState<{ id: number; url: string }[]>([]);
   const nextId = useRef(0);
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    setSettled(false);
+    const timer = setTimeout(() => setSettled(true), 700);
+    return () => clearTimeout(timer);
+  }, [title]);
 
   useEffect(() => {
     if (!active) {
@@ -60,7 +67,7 @@ export function TitlePlate({ title, logo, loading }: { title: string; logo?: str
   return (
     <div className="relative flex min-h-[120px] flex-col justify-end">
       <h1
-        className={`font-display text-[80px] font-medium leading-[0.95] tracking-tight text-ink transition-opacity duration-500 ${hasLogo ? "opacity-0" : "opacity-100"}`}
+        className={`font-display text-[80px] font-medium leading-[0.95] tracking-tight text-ink transition-opacity duration-500 ${!hasLogo && settled ? "opacity-100" : "opacity-0"}`}
       >
         {title}
       </h1>

@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n";
 import { AI_MODELS, DEFAULT_AI_MODEL, GROQ_MODELS, providerForModel } from "@/lib/ai-models";
 import openrouterLogo from "@/assets/ai-logos/openrouter.png";
 import groqLogo from "@/assets/ai-logos/groq.png";
+import jinaLogo from "@/assets/ai-logos/jina.png";
 import { AiModelSelect } from "./ai-model-select";
 import { ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
 
@@ -143,6 +144,7 @@ export function AiSearchSection() {
         <KeyField
           label={t("Jina API key (optional)")}
           placeholder={t("jina_...")}
+          iconSrc={jinaLogo}
           value={jinaDraft}
           onChange={setJinaDraft}
           onSave={() => update({ jinaKey: jinaDraft.trim() })}

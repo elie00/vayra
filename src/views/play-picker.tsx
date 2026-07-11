@@ -10,6 +10,7 @@ import { useTogether } from "@/lib/together/provider";
 import { buildMatchScores, matchBadge, MATCH_CLOSE } from "@/lib/together/source-match";
 import { HostSourceBanner } from "@/components/host-source-banner";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
+import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { readPlayback, readLastSeriesPlayback, streamMatchesEntry, streamMatchesSource } from "@/lib/playback-history";
 import { readSeasonLock } from "@/lib/season-lock";
 import { useSettings } from "@/lib/settings";
@@ -71,10 +72,10 @@ export function PlayPicker({
   episode?: PlayEpisode;
   autoPlay?: boolean;
   attempt?: number;
-  intent?: "play" | "download" | "download-season";
+  intent?: "play" | "download";
   resume?: boolean;
 }) {
-  const isDownload = intent === "download" || intent === "download-season";
+  const isDownload = intent === "download";
   const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
   const backToDetail = () => {
     void exitWindowFullscreen();
@@ -91,7 +92,7 @@ export function PlayPicker({
     prefetchSegments(meta, episode);
   }, [meta, episode]);
   const imdbId = resolvedImdb.id;
-const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-season");
+  const streamIds = useStreamIds(meta, episode, imdbId);
   const localMatch = useMemo(() => {
     const m = meta.id.match(/^tmdb:(?:movie|tv):(\d+)$/);
     const tmdbId = m ? parseInt(m[1], 10) : null;
@@ -101,6 +102,27 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
       : findLocalMovie(tmdbId, imdbId);
   }, [meta.id, imdbId, episode]);
   const { addons } = useAddons(authKey, settings);
+  const [seasonLogo, setSeasonLogo] = useState<string | undefined>(() =>
+    peekCachedLogo(settings.tmdbKey, meta, { preferOwn: true }),
+  );
+  useEffect(() => {
+    if (!/^(kitsu|mal|anilist|anidb):/.test(meta.id)) return;
+    const seed = peekCachedLogo(settings.tmdbKey, meta, { preferOwn: true });
+    if (seed) setSeasonLogo(seed);
+    let cancelled = false;
+    resolveLogo(settings.tmdbKey, meta, { preferOwn: true })
+      .then((u) => {
+        if (!cancelled && u) setSeasonLogo(u);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [meta, settings.tmdbKey]);
+  const metaForDisplay = useMemo(
+    () => (seasonLogo ? { ...meta, logo: seasonLogo } : meta),
+    [meta, seasonLogo],
+  );
   const [resolving, setResolving] = useState<{ stream: ScoredStream } | null>(null);
   const [failedStreams, setFailedStreams] = useState<Set<ScoredStream>>(new Set());
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
@@ -208,28 +230,6 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
       const cached = all.filter(isCached);
       if (cached.length > 0) all = cached;
     }
-    if (intent === "download-season") {
-      const byHash = new Map<string, ScoredStream[]>();
-      for (const s of all) {
-        if (s.infoHash) {
-          const arr = byHash.get(s.infoHash);
-          if (arr) arr.push(s);
-          else byHash.set(s.infoHash, [s]);
-        }
-      }
-      const grouped: ScoredStream[] = [];
-      const seen = new Set<string>();
-      for (const s of all) {
-        if (s.infoHash && byHash.get(s.infoHash)!.length >= 2) {
-          if (seen.has(s.infoHash)) continue;
-          seen.add(s.infoHash);
-          grouped.push({ ...s, name: `${s.name} (${byHash.get(s.infoHash)!.length} episodes)` });
-        } else if (s.size != null && s.size > (isAnimeRequest ? 3 : 15) * 1024 * 1024 * 1024) {
-          grouped.push(s);
-        }
-      }
-      all = grouped;
-    }
     const cachedFirst = all.slice().sort((a, b) => (isCached(b) ? 1 : 0) - (isCached(a) ? 1 : 0));
     const ranked = hostMatch
       ? cachedFirst.slice().sort((a, b) => (hostMatch.get(b) ?? 0) - (hostMatch.get(a) ?? 0))
@@ -245,7 +245,7 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
     );
     const primary = primaryCandidates[0] ?? null;
     return { primary, byTier, all };
-  }, [result, langFilter, preferredLangs, cachedOnly, debrids.length, isCached, hostMatch, isAnimeRequest]);
+  }, [result, langFilter, preferredLangs, cachedOnly, debrids.length, isCached, hostMatch]);
 
   const anyAddonRanked = useMemo(
     () => (addons ?? []).some((a) => isAddonRanked(a)),
@@ -385,7 +385,7 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
   );
 
   const { onPlay, onCache, queuedHash, debridDown, resetDebridDown, abortResolve, p2pConfirm, confirmP2p, cancelP2p } = usePickHandler({
-    meta,
+    meta: metaForDisplay,
     imdbId,
     imdbIdVerified: resolvedImdb.verified,
     episode,
@@ -591,7 +591,7 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
   if (showAutoTransition) {
     return (
       <AutoPlayTransition
-        meta={meta}
+        meta={metaForDisplay}
         episode={episode}
         resolving={resolving != null}
         attemptIdx={autoAttemptIdx}
@@ -636,7 +636,7 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
       <div aria-hidden data-tauri-drag-region={fs ? "false" : "true"} className="absolute inset-x-0 top-0 z-10 h-20" />
 
       <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-12 px-12 pb-32 pt-32">
-        <PickerHeader meta={meta} episode={episode} onBack={backToDetail} onRefresh={refresh} refreshing={loading} />
+        <PickerHeader meta={metaForDisplay} episode={episode} onBack={backToDetail} onRefresh={refresh} refreshing={loading} />
 
         {!isDownload && localMatch && (
           <LocalStreamCard entry={localMatch} onPlay={() => openPlayerGated(localPlayerSrc(localMatch))} />
@@ -657,7 +657,7 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
         )}
 
         {!addonsSettled && (!filteredPicker || filteredPicker.all.length === 0) && (
-          <CinematicLoader meta={meta} />
+          <CinematicLoader meta={metaForDisplay} />
         )}
 
         <PickerEmptyLadder
@@ -694,6 +694,7 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
             matchFor={hostMatch ? matchFor : undefined}
             onPlay={playManually}
             download={isDownload}
+            isAnime={isAnimeMetaId}
           />
         ) : (
           <>
@@ -703,7 +704,7 @@ const streamIds = useStreamIds(meta, episode, imdbId, intent === "download-seaso
 
             {!loading && currentPick && (
               <PrimaryCard
-                meta={meta}
+                meta={metaForDisplay}
                 episode={episode}
                 stream={currentPick}
                 debrids={debrids}

@@ -5,6 +5,7 @@ import { CollectionsRow } from "@/components/collections-row";
 import { TmdbNudge } from "@/components/nudge";
 import { Row, ScrollRootContext } from "@/components/row";
 import {
+  addListRow,
   applyHomeRowCustomization,
   effectiveOrder,
   moveRow,
@@ -15,6 +16,7 @@ import {
   toggleRowNumerals,
   type HomeRowCustomization,
 } from "@/lib/home-customization";
+import { useCustomLists } from "@/lib/custom-lists";
 import { StreamingRail } from "@/components/streaming-rail";
 import { TopRankCard } from "@/components/top-rank-card";
 import { hasTmdbProviderAddon, loadAddonRows, userAddons, type AddonRow } from "@/lib/addons";
@@ -642,10 +644,39 @@ export function Home({ active = true }: { active?: boolean }) {
     }));
   }, [homeRowsCustom.customSources]);
 
+  const customLists = useCustomLists();
+  const listHomeRows = useMemo<HomeRow[]>(() => {
+    const ids = homeRowsCustom.listRows ?? [];
+    if (ids.length === 0) return [];
+    const byId = new Map(customLists.map((l) => [l.id, l]));
+    const out: HomeRow[] = [];
+    for (const id of ids) {
+      const l = byId.get(id);
+      if (!l || l.items.length === 0) continue;
+      out.push({
+        key: `list-${l.id}`,
+        type: "movie",
+        name: l.name,
+        metas: l.items.map((it) => ({ id: it.id, type: it.type, name: it.name, poster: it.poster })),
+        page: 1,
+        hasMore: false,
+        noDedup: true,
+      });
+    }
+    return out;
+  }, [customLists, homeRowsCustom.listRows]);
+  const availableListRows = useMemo(
+    () =>
+      customLists
+        .filter((l) => l.items.length > 0 && !(homeRowsCustom.listRows ?? []).includes(l.id))
+        .map((l) => ({ id: l.id, name: l.name })),
+    [customLists, homeRowsCustom.listRows],
+  );
+
   const pinnedRows = usePinnedRows();
   const allCustomizableRows = useMemo(
-    () => [...sourceRows, ...pinnedRows, ...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...letterboxdRows, ...restRows, ...animeRows],
-    [sourceRows, pinnedRows, arabicRows, personalRows, traktRows, simklRows, letterboxdRows, restRows, animeRows],
+    () => [...sourceRows, ...listHomeRows, ...pinnedRows, ...arabicRows, ...personalRows, ...traktRows, ...simklRows, ...letterboxdRows, ...restRows, ...animeRows],
+    [sourceRows, listHomeRows, pinnedRows, arabicRows, personalRows, traktRows, simklRows, letterboxdRows, restRows, animeRows],
   );
   const visibleRows = useMemo(
     () => applyHomeRowCustomization(allCustomizableRows, homeRowsCustom, false),
@@ -683,6 +714,10 @@ export function Home({ active = true }: { active?: boolean }) {
   );
   const handleToggleHero = useCallback(
     (key: string) => mutateHomeRows(toggleHeroSource(homeRowsCustom, key)),
+    [homeRowsCustom, mutateHomeRows],
+  );
+  const handleAddListRow = useCallback(
+    (listId: string) => mutateHomeRows(addListRow(homeRowsCustom, listId)),
     [homeRowsCustom, mutateHomeRows],
   );
 
@@ -755,6 +790,8 @@ export function Home({ active = true }: { active?: boolean }) {
                   onToggleEdit={() => setEditMode((v) => !v)}
                   onReset={() => mutateHomeRows(resetHomeRows())}
                   onAddSource={() => setAddSourceModalOpen(true)}
+                  availableListRows={availableListRows}
+                  onAddListRow={handleAddListRow}
                 />
               </div>
             </div>
