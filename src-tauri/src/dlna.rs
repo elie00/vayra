@@ -387,7 +387,9 @@ async fn fetch_device(
     let name = extract_xml_tag(&xml, "friendlyName")
         .or_else(|| extract_xml_tag(&xml, "roomName"))
         .unwrap_or_else(|| "Media Renderer".into());
-    let model = extract_xml_tag(&xml, "modelName");
+    let model_name = extract_xml_tag(&xml, "modelName");
+    let model_number = extract_xml_tag(&xml, "modelNumber");
+    let model = combine_model(model_name, model_number);
     let manufacturer = extract_xml_tag(&xml, "manufacturer");
     let control = extract_avtransport_control(&xml).ok_or_else(|| "no AVTransport service".to_string())?;
     let control_abs = resolve_url(location, &control);
@@ -395,6 +397,15 @@ async fn fetch_device(
         remember_rendering_url(&control_abs, resolve_url(location, &rc));
     }
     Ok((name, model, manufacturer, control_abs))
+}
+
+fn combine_model(model_name: Option<String>, model_number: Option<String>) -> Option<String> {
+    match (model_name, model_number) {
+        (Some(name), Some(number)) if !name.contains(&number) => Some(format!("{name} ({number})")),
+        (Some(name), _) => Some(name),
+        (None, Some(number)) => Some(number),
+        (None, None) => None,
+    }
 }
 
 fn extract_xml_tag(xml: &str, tag: &str) -> Option<String> {
@@ -734,5 +745,22 @@ mod tests {
         assert!(xml.contains(&format!("xmlns:u=\"{RENDERING_URN}\"")));
         assert!(xml.contains("<u:SetVolume"));
         assert!(xml.contains("<DesiredVolume>42</DesiredVolume>"));
+    }
+
+    #[test]
+    fn combines_model_name_and_number_for_capability_matching() {
+        assert_eq!(
+            combine_model(Some("Samsung QLED".into()), Some("QN55Q80".into())).as_deref(),
+            Some("Samsung QLED (QN55Q80)"),
+        );
+        assert_eq!(combine_model(None, Some("OLED55C3".into())).as_deref(), Some("OLED55C3"));
+    }
+
+    #[test]
+    fn avoids_duplicate_model_numbers() {
+        assert_eq!(
+            combine_model(Some("BRAVIA XR-65X90L".into()), Some("XR-65X90L".into())).as_deref(),
+            Some("BRAVIA XR-65X90L"),
+        );
     }
 }

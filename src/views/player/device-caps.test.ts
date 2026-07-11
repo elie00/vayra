@@ -20,6 +20,10 @@ function roku(name: string, model: string | null): CastDeviceInfo {
   return { ...device(name, model), kind: "roku", port: 8060 };
 }
 
+function dlna(name: string, model: string | null): CastDeviceInfo {
+  return { ...device(name, model), kind: "dlna", port: 0 };
+}
+
 describe("getDeviceCaps cast matrix", () => {
   it("recognizes Google TV Streamer before generic Google TV", () => {
     const caps = getDeviceCaps(device("Living Room", "Google TV Streamer"));
@@ -63,5 +67,20 @@ describe("getDeviceCaps cast matrix", () => {
     expect(getDeviceCaps(roku("Roku", "Roku Express 4K+ (3941X)")).maxResolution).toBe(2160);
     expect(getDeviceCaps(roku("Roku", "Streaming Stick 4K (3820X)")).hdr10).toBe(true);
     expect(getDeviceCaps(roku("Living Room", "Roku Ultra (4802X)")).label).toBe("Roku Ultra");
+  });
+
+  it("enables HEVC and HDR10 only for explicitly identified 4K DLNA televisions", () => {
+    expect(getDeviceCaps(dlna("Samsung TV", "Samsung QN55Q80")).hdr10).toBe(true);
+    expect(getDeviceCaps(dlna("[LG] webOS TV", "OLED55C3")).hevc).toBe(true);
+    expect(getDeviceCaps(dlna("Sony Bravia", "BRAVIA XR-65X90L")).maxResolution).toBe(2160);
+
+    const unknownSamsung = getDeviceCaps(dlna("Samsung TV", "Samsung Smart TV"));
+    expect(unknownSamsung.maxResolution).toBe(1080);
+    expect(unknownSamsung.hevc).toBe(false);
+  });
+
+  it("keeps Dolby Vision disabled on conservative DLNA profiles", () => {
+    expect(getDeviceCaps(dlna("[LG] webOS TV", "OLED55C3")).dolbyVision).toBe(false);
+    expect(getDeviceCaps(dlna("Sony Bravia", "BRAVIA XR-65X90L")).dolbyVision).toBe(false);
   });
 });
