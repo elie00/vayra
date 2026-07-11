@@ -14,6 +14,9 @@ export type CastDeviceInfo = {
   kind: "chromecast" | "dlna" | "roku" | "airplay";
   control_url: string | null;
   audio_only: boolean;
+  /** Machine-readable reason the device is listed but can't be cast to
+   *  (e.g. "airplay2_pairing"). Null = usable. */
+  unavailable_reason: string | null;
 };
 
 export type TranscodeProfile = {
@@ -110,6 +113,18 @@ export async function castPause(): Promise<void> {
 export async function castSeek(sec: number): Promise<void> {
   if (!isTauri) return;
   await invoke("cast_seek", { sec }).catch((e) => console.warn("[cast] seek", e));
+}
+
+/** Absolute volume (0–1). Supported on Chromecast and DLNA; Roku only does steps. */
+export async function castSetVolume(level: number): Promise<void> {
+  if (!isTauri) return;
+  await invoke("cast_set_volume", { level }).catch((e) => console.warn("[cast] set volume", e));
+}
+
+/** Relative volume step (±5%, or one remote key press on Roku). */
+export async function castVolumeStep(up: boolean): Promise<void> {
+  if (!isTauri) return;
+  await invoke("cast_volume_step", { up }).catch((e) => console.warn("[cast] volume step", e));
 }
 
 export async function castStop(): Promise<void> {

@@ -72,6 +72,26 @@ fn recall_vendor(control_url: &str) -> DlnaVendor {
         .unwrap_or(DlnaVendor::Other)
 }
 
+// RenderingControl control URL (volume), keyed by the AVTransport control URL
+// that the rest of the pipeline carries around.
+fn rendering_cache() -> &'static Mutex<HashMap<String, String>> {
+    static CACHE: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn remember_rendering_url(avtransport_url: &str, rendering_url: String) {
+    if let Ok(mut map) = rendering_cache().lock() {
+        map.insert(avtransport_url.to_string(), rendering_url);
+    }
+}
+
+fn recall_rendering_url(avtransport_url: &str) -> Option<String> {
+    rendering_cache()
+        .lock()
+        .ok()
+        .and_then(|m| m.get(avtransport_url).cloned())
+}
+
 fn build_m_search(st: &str) -> Vec<u8> {
     format!(
         "M-SEARCH * HTTP/1.1\r\n\
@@ -370,7 +390,11 @@ async fn fetch_device(
     let model = extract_xml_tag(&xml, "modelName");
     let manufacturer = extract_xml_tag(&xml, "manufacturer");
     let control = extract_avtransport_control(&xml).ok_or_else(|| "no AVTransport service".to_string())?;
-    Ok((name, model, manufacturer, resolve_url(location, &control)))
+    let control_abs = resolve_url(location, &control);
+    if let Some(rc) = extract_service_control(&xml, "RenderingControl") {
+        remember_rendering_url(&control_abs, resolve_url(location, &rc));
+    }
+    Ok((name, model, manufacturer, control_abs))
 }
 
 fn extract_xml_tag(xml: &str, tag: &str) -> Option<String> {
@@ -382,11 +406,15 @@ fn extract_xml_tag(xml: &str, tag: &str) -> Option<String> {
 }
 
 fn extract_avtransport_control(xml: &str) -> Option<String> {
+    extract_service_control(xml, "AVTransport")
+}
+
+fn extract_service_control(xml: &str, service: &str) -> Option<String> {
     let mut idx = 0;
     while let Some(start) = find_from(xml, "<service>", idx) {
         let end = find_from(xml, "</service>", start + 9)?;
         let block = &xml[start..end];
-        if block.contains("AVTransport") {
+        if block.contains(service) {
             if let Some(url) = extract_xml_tag(block, "controlURL") {
                 return Some(url);
             }
@@ -525,11 +553,52 @@ pub async fn status(control_url: String) -> Result<DlnaStatus, String> {
     Ok(DlnaStatus { position_sec: pos, player_state: state })
 }
 
+const AVTRANSPORT_URN: &str = "urn:schemas-upnp-org:service:AVTransport:1";
+const RENDERING_URN: &str = "urn:schemas-upnp-org:service:RenderingControl:1";
+
+/// Volume over RenderingControl. `level` is 0.0–1.0, mapped to the UPnP 0–100 scale.
+pub async fn set_volume(control_url: String, level: f64) -> Result<(), String> {
+    let rc_url = recall_rendering_url(&control_url)
+        .ok_or_else(|| "DLNA device has no RenderingControl service".to_string())?;
+    let vol = (level.clamp(0.0, 1.0) * 100.0).round() as u32;
+    let body = soap_envelope_svc(
+        RENDERING_URN,
+        "SetVolume",
+        format!("<InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>{vol}</DesiredVolume>"),
+    );
+    soap_post_svc(&rc_url, RENDERING_URN, "SetVolume", &body).await.map(|_| ())
+}
+
+pub async fn get_volume(control_url: String) -> Result<f64, String> {
+    let rc_url = recall_rendering_url(&control_url)
+        .ok_or_else(|| "DLNA device has no RenderingControl service".to_string())?;
+    let body = soap_envelope_svc(
+        RENDERING_URN,
+        "GetVolume",
+        "<InstanceID>0</InstanceID><Channel>Master</Channel>".into(),
+    );
+    let resp = soap_post_svc(&rc_url, RENDERING_URN, "GetVolume", &body).await?;
+    let vol: f64 = extract_xml_tag(&resp, "CurrentVolume")
+        .and_then(|v| v.parse().ok())
+        .ok_or_else(|| "no CurrentVolume in response".to_string())?;
+    Ok((vol / 100.0).clamp(0.0, 1.0))
+}
+
+pub async fn volume_step(control_url: String, up: bool) -> Result<(), String> {
+    let current = get_volume(control_url.clone()).await?;
+    let next = if up { current + 0.05 } else { current - 0.05 };
+    set_volume(control_url, next).await
+}
+
 fn soap_envelope(action: &str, body: String) -> String {
+    soap_envelope_svc(AVTRANSPORT_URN, action, body)
+}
+
+fn soap_envelope_svc(service_urn: &str, action: &str, body: String) -> String {
     format!(
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\
 <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\
-<s:Body><u:{action} xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\">{body}</u:{action}></s:Body>\
+<s:Body><u:{action} xmlns:u=\"{service_urn}\">{body}</u:{action}></s:Body>\
 </s:Envelope>"
     )
 }
@@ -539,11 +608,20 @@ async fn soap_action(control_url: &str, action: &str, body: &str) -> Result<(), 
 }
 
 async fn soap_post(control_url: &str, action: &str, body: &str) -> Result<String, String> {
+    soap_post_svc(control_url, AVTRANSPORT_URN, action, body).await
+}
+
+async fn soap_post_svc(
+    control_url: &str,
+    service_urn: &str,
+    action: &str,
+    body: &str,
+) -> Result<String, String> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(6))
         .build()
         .map_err(|e| format!("client: {e}"))?;
-    let action_header = format!("\"urn:schemas-upnp-org:service:AVTransport:1#{action}\"");
+    let action_header = format!("\"{service_urn}#{action}\"");
     let resp = client
         .post(control_url)
         .header("Content-Type", "text/xml; charset=\"utf-8\"")
@@ -630,4 +708,31 @@ fn parse_hms(s: &str) -> f64 {
         return h * 3600.0 + m * 60.0 + sec;
     }
     0.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_each_service_control_url() {
+        let xml = r#"<root><serviceList>
+          <service><serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType><controlURL>/av/control</controlURL></service>
+          <service><serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType><controlURL>/render/control</controlURL></service>
+        </serviceList></root>"#;
+        assert_eq!(extract_service_control(xml, "AVTransport").as_deref(), Some("/av/control"));
+        assert_eq!(extract_service_control(xml, "RenderingControl").as_deref(), Some("/render/control"));
+    }
+
+    #[test]
+    fn rendering_envelope_uses_rendering_namespace() {
+        let xml = soap_envelope_svc(
+            RENDERING_URN,
+            "SetVolume",
+            "<DesiredVolume>42</DesiredVolume>".into(),
+        );
+        assert!(xml.contains(&format!("xmlns:u=\"{RENDERING_URN}\"")));
+        assert!(xml.contains("<u:SetVolume"));
+        assert!(xml.contains("<DesiredVolume>42</DesiredVolume>"));
+    }
 }

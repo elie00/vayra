@@ -353,9 +353,22 @@ pub async fn stop(ecp_base: String) -> Result<(), String> {
     keypress(&ecp_base, "Home").await
 }
 
-pub async fn seek(_ecp_base: String, _sec: f64) -> Result<(), String> {
-    eprintln!("[harbor::roku] absolute-seek not implemented (ECP has no primitive on Media Assistant; re-launch with startMS is the documented path).");
-    Ok(())
+/// ECP has no absolute-seek primitive on Media Assistant; the documented path
+/// is to re-launch the channel with `startMS`. The caller keeps the last
+/// launch context (url/title/content-type) so we can replay it here.
+pub async fn seek(
+    ecp_base: String,
+    url: String,
+    title: Option<String>,
+    content_type: Option<String>,
+    sec: f64,
+) -> Result<(), String> {
+    eprintln!("[harbor::roku] absolute-seek via re-launch with startMS={}", (sec.max(0.0) * 1000.0) as u64);
+    load(ecp_base, url, title, content_type, Some(sec.max(0.0))).await
+}
+
+pub async fn volume_step(ecp_base: String, up: bool) -> Result<(), String> {
+    keypress(&ecp_base, if up { "VolumeUp" } else { "VolumeDown" }).await
 }
 
 #[derive(Debug, Clone, Serialize)]
