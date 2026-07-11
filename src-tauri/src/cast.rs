@@ -267,11 +267,31 @@ fn looks_like_apple(name: &str, model: &Option<String>) -> bool {
     n.contains("apple tv") || m.contains("appletv") || m.contains("apple")
 }
 
+fn canonical_host_key(host: &str) -> String {
+    let trimmed = host.trim();
+    if let Ok(ip) = trimmed.parse::<IpAddr>() {
+        return ip.to_string();
+    }
+    if let Some(bracketed) = trimmed.strip_prefix('[') {
+        if let Some(end) = bracketed.find(']') {
+            if let Ok(ip) = bracketed[..end].parse::<IpAddr>() {
+                return ip.to_string();
+            }
+        }
+    }
+    if let Some((hostname, port)) = trimmed.rsplit_once(':') {
+        if port.parse::<u16>().is_ok() && !hostname.is_empty() {
+            return hostname.trim_matches(['[', ']']).to_lowercase();
+        }
+    }
+    trimmed.to_lowercase()
+}
+
 fn dedupe_by_host(devices: Vec<CastDeviceInfo>) -> Vec<CastDeviceInfo> {
     use std::collections::hash_map::Entry;
     let mut by_host: HashMap<String, CastDeviceInfo> = HashMap::new();
     for d in devices {
-        let host_key = d.host.split(':').next().unwrap_or(&d.host).to_string();
+        let host_key = canonical_host_key(&d.host);
         match by_host.entry(host_key) {
             Entry::Vacant(slot) => {
                 slot.insert(d);
@@ -1009,5 +1029,25 @@ mod tests {
     fn cast_model_accepts_airplay_style_am_fallback() {
         let properties = HashMap::from([("am".to_string(), "Google TV Streamer".to_string())]);
         assert_eq!(parse_model(&properties).as_deref(), Some("Google TV Streamer"));
+    }
+
+    #[test]
+    fn dedupe_keeps_distinct_ipv6_devices() {
+        let mut first = device("chromecast", None);
+        first.host = "2001:db8::10".into();
+        let mut second = device("dlna", None);
+        second.host = "2001:db8::20".into();
+        assert_eq!(dedupe_by_host(vec![first, second]).len(), 2);
+    }
+
+    #[test]
+    fn dedupe_normalizes_bracketed_and_port_qualified_hosts() {
+        let mut first = device("chromecast", None);
+        first.host = "[2001:db8::10]:8009".into();
+        let mut second = device("dlna", None);
+        second.host = "2001:db8::10".into();
+        let devices = dedupe_by_host(vec![first, second]);
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].kind, "chromecast");
     }
 }
