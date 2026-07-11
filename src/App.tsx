@@ -60,13 +60,13 @@ import { useSettings } from "@/lib/settings";
 import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@/lib/view";
 import type { MetaType } from "@/lib/cinemeta";
 import { useDiscordPresence } from "@/lib/discord/use-discord-presence";
-import { Home } from "@/views/home";
 import { ParentalProvider } from "@/lib/parental";
 import { TraktProvider } from "@/lib/trakt/provider";
 import { AnilistProvider } from "@/lib/anilist/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 
 const importAnime = () => import("@/views/anime");
+const importHome = () => import("@/views/home");
 const importCalendar = () => import("@/views/calendar");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
@@ -93,6 +93,7 @@ const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importOnboarding = () => import("@/components/onboarding");
 
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
+const Home = lazy(() => importHome().then((m) => ({ default: m.Home })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
@@ -354,22 +355,7 @@ function TogetherLocationPublisher() {
       if (topKind === "settings") return { kind: "settings" };
       return null;
     }
-  }, [
-    inSession,
-    sendPresence,
-    topKind,
-    meta?.id,
-    personId,
-    picker?.meta.id,
-    picker?.episode?.season,
-    picker?.episode?.episode,
-    player?.meta.id,
-    player?.episode?.season,
-    player?.episode?.episode,
-    service,
-    addonDetailId,
-    participantsCount,
-  ]);
+  }, [inSession, sendPresence, topKind, meta, personId, picker, player, service, addonDetailId, participantsCount]);
   return null;
 }
 
@@ -618,7 +604,15 @@ function Shell() {
       {!playerActive && <WindowResizeEdges />}
       <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}>
         <div className={layer(homeTop)}>
-          <Home active={homeTop} />
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-sm text-ink-muted">
+                Loading Harbor…
+              </div>
+            }
+          >
+            <Home active={homeTop} />
+          </Suspense>
         </div>
         {settingsAlive && (
           <div className={layer(settingsTop)}>
