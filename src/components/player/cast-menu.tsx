@@ -26,22 +26,33 @@ export function CastMenu({
   const [loading, setLoading] = useState(false);
   const [scanCount, setScanCount] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
+  // Monotonic id of the scan whose results we still care about. Any scan whose
+  // id no longer matches has been superseded (menu reopened, rescan pressed, or
+  // menu closed) and its late results/state updates are dropped. The native
+  // discovery can't be truly aborted mid-flight, so this keeps things
+  // idempotent and prevents updates after unmount/close.
+  const scanIdRef = useRef(0);
 
   useEffect(() => {
     if (!open) return;
-    let cancelled = false;
+    // Supersede any scan already in flight so its late resolve is ignored, then
+    // claim this generation as the current one.
+    const myScan = ++scanIdRef.current;
     setLoading(true);
     setDevices([]);
     void discoverCastDevices()
       .then((rows) => {
-        if (cancelled) return;
+        if (scanIdRef.current !== myScan) return;
         setDevices(rows);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (scanIdRef.current === myScan) setLoading(false);
       });
+    const ref = scanIdRef;
     return () => {
-      cancelled = true;
+      // Invalidate this scan on close/unmount/rescan so no state update lands
+      // afterwards and no concurrent scan stays "current".
+      if (ref.current === myScan) ref.current++;
     };
   }, [open, scanCount]);
 
