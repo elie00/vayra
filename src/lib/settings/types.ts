@@ -308,7 +308,7 @@ export type Settings = {
   iptvEpgOffsetHours: number;
   sidebarCollapsed: boolean;
   feedLocaleBias: boolean;
-  uiLanguage: "en" | "ar";
+  uiLanguage: "en" | "ar" | "fr";
   arabicWelcomeSeen: boolean;
   cropMode: string;
   customLists: CustomList[];

@@ -122,7 +122,7 @@ export default function ArabicWelcome({ onFeedback }: { onFeedback?: () => void 
           style={riseStyle(600)}
           className={`mt-9 py-2 text-[14px] font-medium text-ink-muted underline-offset-4 transition-colors hover:text-ink hover:underline hover:decoration-edge ${riseClass}`}
         >
-          {feedbackLabel(settings.uiLanguage)}
+          {feedbackLabel(settings.uiLanguage === "ar" ? "ar" : "en")}
         </button>
 
         <button
