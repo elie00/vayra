@@ -24,3 +24,12 @@
     @android.webkit.JavascriptInterface <methods>;
 }
 -keep class app.harbor.HarborExoBridge { *; }
+
+# Plugins Tauri Android : classes instanciées par réflexion depuis Rust et
+# configs/args désérialisés par Jackson (noms de champs requis). R8 les
+# strippait → le plugin deep-link voyait une config mobile vide et ignorait
+# les liens harbor:// en release.
+-keep class app.tauri.** { *; }
+-keepclassmembers class app.tauri.** { *; }
+-keep @app.tauri.annotation.TauriPlugin class * { *; }
+-keep @app.tauri.annotation.InvokeArg class * { *; }
