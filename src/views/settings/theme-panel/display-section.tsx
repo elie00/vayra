@@ -96,7 +96,24 @@ export function DisplaySection() {
           </div>
         </div>
       </Section>
-
+      <Section
+        title={t("Sound Effects (SFX)")}
+        subtitle={t("Choose your preferred audio feedback for navigation and actions.")}
+      >
+        <div className="flex max-w-sm flex-col gap-3">
+          <select
+            value={settings.soundTheme || 'glass'}
+            onChange={(e) => update({ soundTheme: e.target.value as any })}
+            className="flex h-10 w-full items-center justify-between rounded-xl border border-edge-soft bg-surface px-4 text-sm font-medium text-text outline-none transition-colors hover:border-edge hover:bg-surface-hover focus:border-primary focus:ring-1 focus:ring-primary"
+          >
+            <option value="none">{t("None")}</option>
+            <option value="glass">{t("Glassy (Soft & Glassy)")}</option>
+            <option value="modern">{t("Modern (Apple TV Style)")}</option>
+            <option value="retro">{t("Retro (8-Bit Gaming)")}</option>
+            <option value="cinematic">{t("Cinematic (Deep Bass)")}</option>
+          </select>
+        </div>
+      </Section>
       <Section
         title={t("Title text")}
         subtitle={t("Resize the row titles on Home and the title shown in the player, without scaling the rest of the interface. You can also lead the player title with the series name instead of the episode.")}
