@@ -16,6 +16,10 @@ function device(name: string, model: string | null = null): CastDeviceInfo {
   };
 }
 
+function roku(name: string, model: string | null): CastDeviceInfo {
+  return { ...device(name, model), kind: "roku", port: 8060 };
+}
+
 describe("getDeviceCaps cast matrix", () => {
   it("recognizes Google TV Streamer before generic Google TV", () => {
     const caps = getDeviceCaps(device("Living Room", "Google TV Streamer"));
@@ -33,5 +37,16 @@ describe("getDeviceCaps cast matrix", () => {
     const caps = getDeviceCaps(device("Bedroom Chromecast", "Chromecast Gen 2"));
     expect(caps.maxResolution).toBe(1080);
     expect(caps.hevc).toBe(false);
+  });
+
+  it("keeps unknown and older Roku devices on the conservative HD profile", () => {
+    expect(getDeviceCaps(roku("Bedroom Roku", "Roku Express (3900X)")).maxResolution).toBe(1080);
+    expect(getDeviceCaps(roku("Unknown Roku", null)).hevc).toBe(false);
+  });
+
+  it("recognizes Roku 4K families from names and model numbers", () => {
+    expect(getDeviceCaps(roku("Roku", "Roku Express 4K+ (3941X)")).maxResolution).toBe(2160);
+    expect(getDeviceCaps(roku("Roku", "Streaming Stick 4K (3820X)")).hdr10).toBe(true);
+    expect(getDeviceCaps(roku("Living Room", "Roku Ultra (4802X)")).label).toBe("Roku Ultra");
   });
 });

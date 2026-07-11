@@ -147,8 +147,22 @@ const CAPS_FIRE_TV_4K: DeviceCaps = {
   containerMkv: true,
 };
 
+const CAPS_ROKU_HD: DeviceCaps = {
+  label: "Roku (HD)",
+  maxResolution: 1080,
+  hevc: false,
+  av1: false,
+  dolbyVision: false,
+  hdr10: false,
+  passthroughAc3: true,
+  passthroughEac3: false,
+  passthroughTruehd: false,
+  passthroughDts: false,
+  containerMkv: false,
+};
+
 const CAPS_ROKU_4K: DeviceCaps = {
-  label: "Roku",
+  label: "Roku (4K)",
   maxResolution: 2160,
   hevc: true,
   av1: false,
@@ -250,7 +264,21 @@ export function getDeviceCaps(device: CastDeviceInfo): DeviceCaps {
   const name = device.name.toLowerCase();
   const blob = `${model} ${name}`;
 
-  if (device.kind === "roku") return CAPS_ROKU_4K;
+  if (device.kind === "roku") {
+    // ECP exposes model-name plus model-number. Unknown models stay on the
+    // conservative HD profile instead of being incorrectly assumed 4K/DV.
+    if (/ultra|\b(?:46|47|48)\d{2}[a-z]?\b/.test(blob)) {
+      return { ...CAPS_ROKU_4K, label: "Roku Ultra" };
+    }
+    if (
+      /express\s*4k|streaming\s*stick\s*4k|roku\s*4k|\b(?:3820|3821|3940|3941)[a-z]?\b/.test(
+        blob,
+      )
+    ) {
+      return CAPS_ROKU_4K;
+    }
+    return CAPS_ROKU_HD;
+  }
   if (device.kind === "airplay") {
     if (/apple\s*tv|appletv/.test(blob)) return CAPS_AIRPLAY_APPLE_TV;
     if (/homepod/.test(blob)) return { ...CAPS_AIRPLAY_GENERIC, label: "HomePod", maxResolution: 1080 };
