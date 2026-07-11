@@ -52,5 +52,5 @@ jobs:
           workspaces: harbor-core
       - run: cargo check --target wasm32-unknown-unknown
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - run: wasm-pack build --target bundler --out-dir pkg
+        run: cargo install wasm-pack --version 0.13.1 --locked
+      - run: wasm-pack build --target web --out-dir pkg
