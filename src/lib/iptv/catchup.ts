@@ -115,7 +115,7 @@ export function buildCatchupUrl(
       return fillTemplate(src, start, end, now, duration);
     }
     const sep = ch.url.includes("?") ? "&" : "?";
-    return ch.url + (src.startsWith("?") || src.startsWith("&") ? "" : sep) +
+    return ch.url + sep +
       fillTemplate(src.replace(/^[?&]/, ""), start, end, now, duration);
   }
 
