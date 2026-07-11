@@ -1,4 +1,4 @@
-#![cfg(target_os = "macos")]
+// Module gated by `#[cfg(target_os = "macos")]` in lib.rs; no inner cfg needed.
 
 use objc2::msg_send;
 use objc2::runtime::AnyObject;

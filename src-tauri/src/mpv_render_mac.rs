@@ -1,5 +1,5 @@
-#![cfg(target_os = "macos")]
 #![allow(deprecated)]
+// Module gated by `#[cfg(target_os = "macos")]` in lib.rs; no inner cfg needed.
 // Embed FFI mpv/AppKit : les handles (NSView/contexte mpv) ne sont pas Send+Sync,
 // ils sont confinés au main thread ; l'Arc<Mutex> sert au partage intra-thread.
 #![allow(clippy::arc_with_non_send_sync)]
