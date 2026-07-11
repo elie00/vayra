@@ -1,5 +1,6 @@
 import { Bookmark, Check, Popcorn, RefreshCcw } from "lucide-react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { animeHasDub, dubSetReady, ensureDubSet, subscribeDubSet } from "@/lib/providers/anime-dub-sub";
 import { awardSourceMeta, findTopAward, parseAwardYear, type AwardWin } from "@/lib/anime-awards";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { useContextMenu } from "@/lib/context-menu";
@@ -30,6 +31,7 @@ import { getLocalCache } from "@/lib/simkl/activities";
 import { aniZipByKitsu, aniZipByMal } from "@/lib/providers/anizip";
 import { useView } from "@/lib/view";
 import { observe } from "@/lib/visibility";
+import { prefetchFranchiseRoot } from "@/lib/providers/anime-franchise-root";
 import { useInWatchlist } from "@/lib/watchlist";
 import { useMetaWatched } from "@/lib/watched-flag";
 import { useInLocalLibrary } from "@/lib/local-library";
@@ -89,6 +91,11 @@ export const PickCard = memo(function PickCard({
   const badgeFade = inCardHover !== "none" || activeCustom ? "transition-opacity duration-150 group-hover:opacity-0 group-focus-within:opacity-0" : "";
   const t = useT();
   const isAnimeCardId = /^(kitsu|mal|anilist|anidb|simkl):/.test(meta.id);
+  const dubReady = useSyncExternalStore(subscribeDubSet, dubSetReady);
+  useEffect(() => {
+    if (settings.showDubBadge && isAnimeCardId) ensureDubSet();
+  }, [isAnimeCardId, settings.showDubBadge]);
+  const hasDub = settings.showDubBadge && isAnimeCardId && dubReady && animeHasDub(meta.id);
   const inCinema = isInCinema(meta);
   const rerun = (inCinema || flagRerun) && isRerun(meta);
   const showCinema = inCinema && !rerun;
@@ -296,6 +303,8 @@ export const PickCard = memo(function PickCard({
   useEffect(() => {
     setTranslatedTitle(null);
     if (!isAnimeCardId) return;
+    const el = ref.current;
+    if (!el) return;
 
     let cancelled = false;
     const cache = getLocalCache();
@@ -384,10 +393,17 @@ export const PickCard = memo(function PickCard({
       }
     };
 
-    fetchTitles().catch(() => {});
+    let started = false;
+    const off = observe(el, (visible) => {
+      if (visible && !started && !cancelled) {
+        started = true;
+        fetchTitles().catch(() => {});
+      }
+    });
 
     return () => {
       cancelled = true;
+      off?.();
     };
   }, [meta.id, isAnimeCardId, settings.simklAnimeTitleLanguage]);
 
@@ -424,6 +440,20 @@ export const PickCard = memo(function PickCard({
     });
     return () => off?.();
   }, [meta.id, meta.type, settings.tmdbKey, settings.omdbKey, settings.mdblistKey, wantMdblist, settings.rpdbKey, wantCinemetaRating]);
+
+  useEffect(() => {
+    if (!isAnimeCardId) return;
+    const el = ref.current;
+    if (!el) return;
+    let off: (() => void) | null = null;
+    off = observe(el, (visible) => {
+      if (!visible) return;
+      off?.();
+      off = null;
+      prefetchFranchiseRoot(meta.id);
+    });
+    return () => off?.();
+  }, [meta.id, isAnimeCardId]);
 
   return (
     <button
@@ -472,16 +502,22 @@ export const PickCard = memo(function PickCard({
           />
         ) : null}
         <div className={badgeFade}>
+        {hasDub && (
+          <span className="pointer-events-none absolute start-2 top-2 z-10 rounded-md bg-accent/90 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-canvas ring-1 ring-black/10">
+            DUB
+          </span>
+        )}
         {settings.showCardBadges && (
           <>
-            {rerun && <RerunBadge year={meta.releaseInfo} />}
-            {showCinema && <CinemaBadge />}
-            {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} kids={kids} />}
+            {rerun && <RerunBadge year={meta.releaseInfo} dubShift={hasDub} />}
+            {showCinema && <CinemaBadge dubShift={hasDub} />}
+            {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} kids={kids} dubShift={hasDub} />}
             <AnimeAwardBadge
               name={awardLookupName ?? meta.name}
               fallbackName={meta.name}
               year={parseAwardYear(meta.releaseInfo)}
               stacked={rerun || showCinema || !!newBadge}
+              dubShift={hasDub}
             />
           </>
         )}
@@ -650,7 +686,7 @@ function ScoreStack({
 
 type BadgeTone = "default" | "accent";
 
-function Badge({ label, tone = "default", kids = false }: { label: string; tone?: BadgeTone; kids?: boolean }) {
+function Badge({ label, tone = "default", kids = false, dubShift = false }: { label: string; tone?: BadgeTone; kids?: boolean; dubShift?: boolean }) {
   const styles = kids
     ? "bg-black text-white"
     : tone === "accent"
@@ -658,7 +694,7 @@ function Badge({ label, tone = "default", kids = false }: { label: string; tone?
       : "border border-edge-soft bg-canvas/95 text-ink";
   return (
     <span
-      className={`absolute start-2 top-2 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${styles}`}
+      className={`absolute start-2 ${dubShift ? "top-[28px]" : "top-2"} rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${styles}`}
     >
       {label}
     </span>
@@ -772,23 +808,25 @@ function AnimeAwardBadge({
   fallbackName,
   year,
   stacked,
+  dubShift = false,
 }: {
   name: string;
   fallbackName?: string;
   year?: number;
   stacked: boolean;
+  dubShift?: boolean;
 }) {
   const t = useT();
   const win = findTopAward(name, year) ?? (fallbackName ? findTopAward(fallbackName, year) : null);
   if (!win) return null;
   const src = awardSourceMeta(win.source);
   const short = shortCategory(win);
-  const label = stacked ? `${win.year}` : `${win.year} ${t(short)}`;
+  const above = (dubShift ? 1 : 0) + (stacked ? 1 : 0);
+  const label = above > 0 ? `${win.year}` : `${win.year} ${t(short)}`;
+  const topClass = above >= 2 ? "top-[48px]" : above === 1 ? "top-[28px]" : "top-2";
   return (
     <span
-      className={`pointer-events-none absolute start-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-md bg-canvas/85 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-ink backdrop-blur-md ring-1 ring-edge-soft/60 ${
-        stacked ? "top-[28px]" : "top-2"
-      }`}
+      className={`pointer-events-none absolute start-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-md bg-canvas/85 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-ink backdrop-blur-md ring-1 ring-edge-soft/60 ${topClass}`}
       title={`${src.name} · ${win.categoryName} (${win.year})`}
     >
       <img
@@ -810,20 +848,20 @@ function shortCategory(win: AwardWin): string {
   return win.categoryName.replace(/^Best\s+/i, "").replace(/Award$/i, "").trim();
 }
 
-function CinemaBadge() {
+function CinemaBadge({ dubShift = false }: { dubShift?: boolean }) {
   const t = useT();
   return (
-    <span className="harbor-cinema-badge absolute start-2 top-2 flex items-center gap-1 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em]">
+    <span className={`harbor-cinema-badge absolute start-2 ${dubShift ? "top-[28px]" : "top-2"} flex items-center gap-1 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em]`}>
       <ClapperMini size={10} />
       <span>{t("In Cinema")}</span>
     </span>
   );
 }
 
-function RerunBadge({ year }: { year?: string }) {
+function RerunBadge({ year, dubShift = false }: { year?: string; dubShift?: boolean }) {
   const t = useT();
   return (
-    <span className="absolute start-2 top-2 flex items-center gap-1 rounded-md border border-edge-soft bg-canvas/95 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-ink-muted">
+    <span className={`absolute start-2 ${dubShift ? "top-[28px]" : "top-2"} flex items-center gap-1 rounded-md border border-edge-soft bg-canvas/95 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-ink-muted`}>
       <RefreshCcw size={9} strokeWidth={2.4} />
       <span>{t("Rerun")}{year ? ` · ${year}` : ""}</span>
     </span>

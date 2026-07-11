@@ -7,11 +7,10 @@ export function useStreamIds(
   meta: Meta,
   episode: PlayEpisode | undefined,
   imdbId: string | null,
-  omitEpisode?: boolean,
 ): string[] | null {
   const [streamIds, setStreamIds] = useState<string[] | null>(null);
   useEffect(() => {
-    const out = buildStreamIds(meta.id, episode, imdbId, meta.behaviorHints?.defaultVideoId, omitEpisode);
+    const out = buildStreamIds(meta.id, episode, imdbId, meta.behaviorHints?.defaultVideoId);
     setStreamIds(out.length > 0 ? out : null);
   }, [
     meta.id,
@@ -24,7 +23,6 @@ export function useStreamIds(
     episode?.imdbEpisode,
     episode?.season,
     episode?.episode,
-    omitEpisode,
   ]);
   return streamIds;
 }

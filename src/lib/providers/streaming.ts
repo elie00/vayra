@@ -1,7 +1,7 @@
 import type { Meta } from "../cinemeta";
 import type { Settings, StreamingService } from "../settings";
+import { get } from "./tmdb/tmdb-client";
 
-const TMDB = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p";
 
 type Service = {
@@ -46,6 +46,11 @@ export function providerIdsFor(svc: Service): string {
   return ids.join("|");
 }
 
+export function serviceBadge(svc: StreamingService): { name: string; logo: string; tint: string } {
+  const s = SERVICES[svc];
+  return { name: s.name, logo: s.logo, tint: s.tint };
+}
+
 type RawMovie = {
   id: number;
   title: string;
@@ -71,20 +76,20 @@ const back = (p?: string | null) => (p ? `${IMG}/w780${p}` : undefined);
 const year = (s?: string) => (s ? s.slice(0, 4) : undefined);
 const rating = (v?: number) => (v && v > 0 ? v.toFixed(1) : undefined);
 
-async function discover<T>(key: string, kind: "movie" | "tv", providerId: number, region: string) {
-  const url = new URL(`${TMDB}/discover/${kind}`);
-  url.searchParams.set("api_key", key);
-  url.searchParams.set("with_watch_providers", String(providerId));
-  url.searchParams.set("watch_region", region);
-  url.searchParams.set("sort_by", "popularity.desc");
-  try {
-    const res = await fetch(url.toString());
-    if (!res.ok) return [] as T[];
-    const json = (await res.json()) as { results?: T[] };
-    return json.results ?? [];
-  } catch {
-    return [] as T[];
-  }
+async function discover<T>(
+  key: string,
+  kind: "movie" | "tv",
+  providerIds: string,
+  region: string,
+): Promise<T[]> {
+  const data = await get<{ results?: T[] }>(key, `discover/${kind}`, {
+    with_watch_providers: providerIds,
+    watch_region: region || "US",
+    with_watch_monetization_types: "flatrate",
+    "vote_count.gte": "300",
+    sort_by: "popularity.desc",
+  });
+  return data?.results ?? [];
 }
 
 export type ServiceRow = { service: StreamingService; name: string; metas: Meta[] };
@@ -93,10 +98,11 @@ export async function streamingRows(settings: Settings): Promise<ServiceRow[]> {
   if (!settings.tmdbKey) return [];
   const enabled = (Object.keys(SERVICES) as StreamingService[]).filter((s) => settings.streaming[s]);
   const tasks = enabled.map(async (svc): Promise<ServiceRow> => {
-    const { id, name } = SERVICES[svc];
+    const { name } = SERVICES[svc];
+    const providers = providerIdsFor(SERVICES[svc]);
     const [movies, series] = await Promise.all([
-      discover<RawMovie>(settings.tmdbKey, "movie", id, settings.region),
-      discover<RawSeries>(settings.tmdbKey, "tv", id, settings.region),
+      discover<RawMovie>(settings.tmdbKey, "movie", providers, settings.region),
+      discover<RawSeries>(settings.tmdbKey, "tv", providers, settings.region),
     ]);
     const movieMetas: Meta[] = movies.slice(0, 12).map((m) => ({
       id: `tmdb:movie:${m.id}`,

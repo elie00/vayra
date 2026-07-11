@@ -5,7 +5,9 @@ import type { TvdbSeasonTypeOption } from "@/lib/providers/tvdb";
 import { useT } from "@/lib/i18n";
 import type { PickerItem } from "./season-arc-picker";
 
-type MenuPos = { right: number; top?: number; bottom?: number; maxH: number };
+type MenuPos = { left?: number; right?: number; top?: number; bottom?: number; maxH: number };
+
+const MENU_WIDTH = 340;
 
 function fmtMonth(d?: string): string {
   if (!d) return "";
@@ -58,6 +60,11 @@ export function TvdbOrderPanel({
   const menuRef = useRef<HTMLDivElement>(null);
   const open = menu != null;
   const current = items.find((i) => i.key === activeKey) ?? items[0];
+  const activeIsExtra = current?.extra ?? false;
+  const [showExtras, setShowExtras] = useState(false);
+  useEffect(() => {
+    if (activeIsExtra) setShowExtras(true);
+  }, [activeIsExtra]);
 
   useEffect(() => {
     if (!menu) return;
@@ -90,10 +97,12 @@ export function TvdbOrderPanel({
     const up = below < 300 && above > below;
     const maxH = Math.min(0.6 * window.innerHeight, up ? above : below);
     const right = Math.max(margin, window.innerWidth - r.right);
+    const clipsLeft = r.right - MENU_WIDTH < margin;
+    const horiz = clipsLeft ? { left: Math.max(margin, r.left) } : { right };
     setMenu(
       up
-        ? { right, bottom: window.innerHeight - r.top + 8, maxH }
-        : { right, top: r.bottom + 8, maxH },
+        ? { ...horiz, bottom: window.innerHeight - r.top + 8, maxH }
+        : { ...horiz, top: r.bottom + 8, maxH },
     );
   };
 
@@ -121,11 +130,11 @@ export function TvdbOrderPanel({
           <div
             ref={menuRef}
             onMouseDown={(e) => e.stopPropagation()}
-            style={{ right: menu.right, top: menu.top, bottom: menu.bottom }}
-            className="animate-fade-in fixed z-[200] w-[340px] overflow-hidden rounded-2xl border border-edge-soft bg-canvas shadow-2xl"
+            style={{ left: menu.left, right: menu.right, top: menu.top, bottom: menu.bottom, maxHeight: menu.maxH }}
+            className="animate-fade-in fixed z-[200] flex w-[340px] flex-col overflow-hidden rounded-2xl border border-edge-soft bg-canvas shadow-2xl"
           >
             {orderTypes.length > 1 && (
-              <div className="flex flex-wrap items-center gap-1 border-b border-edge-soft/60 p-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-edge-soft/60 p-2">
                 {orderTypes.map((o) => {
                   const on =
                     o.value === activeType || (activeType === "official" && o.value === "aired");
@@ -143,12 +152,12 @@ export function TvdbOrderPanel({
                 })}
               </div>
             )}
-            <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 px-4 pb-1 pt-2.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+            <div className="grid shrink-0 grid-cols-[1fr_auto] items-center gap-x-3 px-4 pb-1 pt-2.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
               <span>{t("Season")}</span>
               <span>{t("Episodes")}</span>
             </div>
-            <div className="overflow-y-auto pb-1.5" style={{ maxHeight: menu.maxH }}>
-              {items.map((item) => {
+            <div className="min-h-0 flex-1 overflow-y-auto pb-1.5">
+              {items.filter((i) => !i.extra).map((item) => {
                 const ongoing = isOngoing(item.to);
                 return (
                   <OrderRow
@@ -163,6 +172,35 @@ export function TvdbOrderPanel({
                   />
                 );
               })}
+              {items.some((i) => i.extra) && (
+                <button
+                  onClick={() => setShowExtras((v) => !v)}
+                  className="flex w-full items-center justify-between px-4 pb-1 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:text-ink"
+                >
+                  <span>{t("Movies & Specials")}</span>
+                  <ChevronDown
+                    size={13}
+                    className={`transition-transform duration-200 ${showExtras ? "rotate-180" : ""}`}
+                  />
+                </button>
+              )}
+              {showExtras &&
+                items.filter((i) => i.extra).map((item) => {
+                  const ongoing = isOngoing(item.to);
+                  return (
+                    <OrderRow
+                      key={item.key}
+                      name={item.name}
+                      sub={dateSub(item, ongoing, t("Current"))}
+                      count={item.count}
+                      active={item.key === activeKey}
+                      ongoing={ongoing}
+                      ongoingLabel={t("Ongoing")}
+                      badge={item.badge}
+                      onClick={() => pick(item.key)}
+                    />
+                  );
+                })}
             </div>
           </div>,
           document.body,
@@ -178,6 +216,7 @@ function OrderRow({
   active,
   ongoing,
   ongoingLabel,
+  badge,
   onClick,
 }: {
   name: string;
@@ -186,6 +225,7 @@ function OrderRow({
   active: boolean;
   ongoing?: boolean;
   ongoingLabel: string;
+  badge?: string;
   onClick: () => void;
 }) {
   return (
@@ -198,6 +238,11 @@ function OrderRow({
       <span className="flex min-w-0 flex-col">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[13.5px] font-medium">{name}</span>
+          {badge && (
+            <span className="shrink-0 rounded bg-ink/10 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-ink-muted">
+              {badge}
+            </span>
+          )}
           {ongoing && (
             <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-accent">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />

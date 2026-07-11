@@ -20,7 +20,7 @@ export function useEpisodeOrder(
         ? metaId.slice(8)
         : null;
   const kitsuId = /^(kitsu|mal|anilist|anidb):/.test(metaId) ? parseKitsuId(metaId) : null;
-  const active = provider === "tvdb" && !!tvdbKey && (!!remoteId || kitsuId != null);
+  const active = provider === "tvdb" && (!!remoteId || kitsuId != null);
 
   useEffect(() => {
     if (!active) {

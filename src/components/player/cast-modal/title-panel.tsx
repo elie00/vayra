@@ -109,11 +109,6 @@ export function TitlePanel({
   return (
     <div className="flex flex-col gap-7 px-6 pb-8 pt-1 sm:px-8">
       <div className="relative flex gap-5">
-        {awardSummaryItems.length > 0 && (
-          <div className="pointer-events-none absolute bottom-1 right-0 z-10 hidden max-w-[42%] justify-end md:flex">
-            <HeroAwardsCorner summary={awardSummaryItems} inline interactive={false} />
-          </div>
-        )}
         {poster && (
           <div className="relative h-52 w-36 shrink-0">
             <img
@@ -134,18 +129,28 @@ export function TitlePanel({
             {year && <span>{year}</span>}
             {runtime && <span>{runtime}</span>}
           </div>
-          <HeroRatings
-            bare
-            rating={primaryRating}
-            tmdbRating={tmdbRating}
-            isAnime={anime}
-            scores={scores}
-            mdblist={mdblist}
-            imdbId={imdbId}
-            mediaType={mediaType}
-            ratingSource={ratingSource}
-            onOpenUrl={(url) => openInAppBrowser(url, title)}
-          />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <HeroRatings
+              bare
+              rating={primaryRating}
+              tmdbRating={tmdbRating}
+              isAnime={anime}
+              scores={scores}
+              mdblist={mdblist}
+              imdbId={imdbId}
+              mediaType={mediaType}
+              ratingSource={ratingSource}
+              onOpenUrl={(url) => openInAppBrowser(url, title)}
+            />
+            {awardSummaryItems.length > 0 && (
+              <HeroAwardsCorner
+                summary={awardSummaryItems}
+                onDark
+                interactive={false}
+                className="ms-auto self-start max-w-[52%] text-end"
+              />
+            )}
+          </div>
           {genrePills.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {genrePills.slice(0, 5).map((g) => (

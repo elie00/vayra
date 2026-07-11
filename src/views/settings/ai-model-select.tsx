@@ -39,10 +39,10 @@ export function AiModelSelect({
         >
           {current ? (
             <>
-              <ProviderLogo provider={current.provider} />
+              <ProviderLogo provider={current.family ?? current.provider} />
               <span className="flex min-w-0 flex-1 items-baseline gap-2">
                 <span className="truncate text-[13px] font-medium text-ink">{current.label}</span>
-                <span className="shrink-0 text-[11px] text-ink-subtle">{PROVIDER_NAME[current.provider]}</span>
+                <span className="shrink-0 text-[11px] text-ink-subtle">{PROVIDER_NAME[current.family ?? current.provider]}</span>
               </span>
             </>
           ) : (
@@ -70,7 +70,7 @@ export function AiModelSelect({
                     sel ? "bg-elevated" : "hover:bg-elevated/60"
                   }`}
                 >
-                  <ProviderLogo provider={m.provider} />
+                  <ProviderLogo provider={m.family ?? m.provider} />
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className={`truncate text-[13px] text-ink ${sel ? "font-semibold" : ""}`}>
                       {m.label}
@@ -87,7 +87,7 @@ export function AiModelSelect({
                         </span>
                       )}
                       <span className="text-[10px] uppercase tracking-wider text-ink-subtle">
-                        {PROVIDER_NAME[m.provider]}
+                        {PROVIDER_NAME[m.family ?? m.provider]}
                       </span>
                     </span>
                   </span>

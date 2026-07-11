@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { kitsuToTvdb } from "@/lib/providers/anime-mapping";
+import { parseKitsuId } from "@/lib/providers/kitsu";
 import {
   tvdbSeasonTypes,
   tvdbSeriesByRemote,
@@ -18,23 +20,27 @@ export function useTvdbSeasonTypes(
       : metaId.startsWith("tmdb:tv:")
         ? metaId.slice(8)
         : null;
+  const kitsuId = /^(kitsu|mal|anilist|anidb):/.test(metaId) ? parseKitsuId(metaId) : null;
 
   useEffect(() => {
-    if (!enabled || !tvdbKey || !remoteId) {
+    if (!enabled || (!remoteId && kitsuId == null)) {
       setTypes([]);
       return;
     }
     let cancelled = false;
-    void tvdbSeriesByRemote(tvdbKey, remoteId).then((seriesId) => {
+    void (async () => {
+      let seriesId = kitsuId != null ? await kitsuToTvdb(kitsuId).catch(() => null) : null;
+      if (seriesId == null && remoteId) {
+        seriesId = await tvdbSeriesByRemote(tvdbKey, remoteId).catch(() => null);
+      }
       if (cancelled || !seriesId) return;
-      void tvdbSeasonTypes(tvdbKey, seriesId).then((t) => {
-        if (!cancelled) setTypes(t);
-      });
-    });
+      const t = await tvdbSeasonTypes(tvdbKey, seriesId).catch(() => []);
+      if (!cancelled) setTypes(t);
+    })();
     return () => {
       cancelled = true;
     };
-  }, [enabled, tvdbKey, remoteId]);
+  }, [enabled, tvdbKey, remoteId, kitsuId]);
 
   return types;
 }

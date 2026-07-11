@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { FranchiseEntry } from "@/lib/providers/anime-detail";
+import { isFranchiseExtra, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { fetchEntryEpisodes } from "@/lib/providers/anime-franchise-episodes";
 import { parseKitsuId, type KitsuEpisode } from "@/lib/providers/kitsu";
 
@@ -11,9 +11,11 @@ export function useFranchiseEpisodes(
 ): KitsuEpisode[] {
   const otherIds = useMemo(() => {
     if (!enabled || franchise.length <= 1) return [] as number[];
+    const current = franchise.find((f) => f.meta.id === currentId);
+    if (current && isFranchiseExtra(current)) return [] as number[];
     const ids: number[] = [];
     for (const f of franchise) {
-      if (f.meta.id === currentId) continue;
+      if (f.meta.id === currentId || isFranchiseExtra(f)) continue;
       const id = parseKitsuId(f.meta.id);
       if (id != null && !ids.includes(id)) ids.push(id);
     }
@@ -54,7 +56,7 @@ export function useFranchiseEpisodes(
     }
     combined.sort(
       (a, b) =>
-        (a.imdbSeason ?? 0) - (b.imdbSeason ?? 0) ||
+        (a.imdbSeason ?? 99) - (b.imdbSeason ?? 99) ||
         (a.imdbEpisode ?? a.number) - (b.imdbEpisode ?? b.number) ||
         (a.absoluteNumber ?? a.number) - (b.absoluteNumber ?? b.number),
     );

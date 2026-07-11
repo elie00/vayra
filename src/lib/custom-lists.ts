@@ -20,6 +20,7 @@ export type CustomList = {
   name: string;
   createdAt: number;
   updatedAt: number;
+  order?: number;
   items: ListItem[];
 };
 
@@ -80,6 +81,7 @@ function read(): CustomList[] {
         name: e.name,
         createdAt: typeof e.createdAt === "number" ? e.createdAt : 0,
         updatedAt: typeof e.updatedAt === "number" ? e.updatedAt : 0,
+        order: typeof e.order === "number" ? e.order : undefined,
         items,
       });
     }
@@ -108,7 +110,22 @@ function write(lists: CustomList[]): void {
 }
 
 export function readLists(): CustomList[] {
-  return read().sort((a, b) => b.updatedAt - a.updatedAt);
+  return read().sort((a, b) => {
+    const ao = a.order ?? Number.MAX_SAFE_INTEGER;
+    const bo = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (ao !== bo) return ao - bo;
+    return b.updatedAt - a.updatedAt;
+  });
+}
+
+export function reorderLists(orderedIds: string[]): void {
+  const lists = read();
+  const pos = new Map(orderedIds.map((id, i) => [id, i] as const));
+  for (const l of lists) {
+    const p = pos.get(l.id);
+    if (p != null) l.order = p;
+  }
+  write(lists);
 }
 
 export function subscribeLists(fn: () => void): () => void {

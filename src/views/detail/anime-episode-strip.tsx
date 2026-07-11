@@ -7,6 +7,7 @@ import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { useView } from "@/lib/view";
+import { animeSeasonKey } from "./anime-episodes/anime-season-key";
 import { formatAirDate } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
 import { EpisodeGrid } from "./episode-grid";
@@ -26,6 +27,7 @@ export function AnimeEpisodeStrip({
   layout = "strip",
   onReachEnd,
   metaForEp,
+  showSeason,
 }: {
   meta: Meta;
   episodes: KitsuEpisode[];
@@ -41,6 +43,7 @@ export function AnimeEpisodeStrip({
   layout?: "strip" | "grid";
   onReachEnd?: () => void;
   metaForEp?: (ep: KitsuEpisode) => Meta;
+  showSeason?: boolean;
 }) {
   const { openPicker } = useView();
   const { settings } = useSettings();
@@ -53,7 +56,8 @@ export function AnimeEpisodeStrip({
         return {
           key: String(ep.id),
           number: ep.number,
-          season: ep.seasonNumber || 1,
+          season: animeSeasonKey(ep),
+          seasonLabel: showSeason ? `S${ep.imdbSeason ?? ep.seasonNumber ?? 1}` : undefined,
           title: ep.title || t("Episode {n}", { n: ep.number }),
           stills: [ep.thumbnail, ep.thumbnailFallback, meta.background].filter((u): u is string => !!u),
           runtime: ep.length,
@@ -69,7 +73,7 @@ export function AnimeEpisodeStrip({
             openPicker(
               epMeta,
               {
-                season: ep.seasonNumber || 1,
+                season: animeSeasonKey(ep),
                 episode: ep.number,
                 name: ep.title,
                 still: ep.thumbnail ?? undefined,
@@ -83,7 +87,7 @@ export function AnimeEpisodeStrip({
             ),
         };
       }),
-    [episodes, meta, metaForEp, openPicker, settings.instantPlay, t],
+    [episodes, meta, metaForEp, openPicker, settings.instantPlay, t, showSeason],
   );
   const epByKey = useMemo(() => {
     const m = new Map<string, KitsuEpisode>();
@@ -112,6 +116,7 @@ export function AnimeEpisodeStrip({
             progress={progressFor(ep)}
             spoiler={spoilerFor?.(ep)}
             onContextMenu={onContextMenu}
+            showSeason={showSeason}
           />
         </div>
       ))}
@@ -125,6 +130,7 @@ function AnimeEpisodeStripCard({
   progress,
   spoiler,
   onContextMenu,
+  showSeason,
 }: {
   meta: Meta;
   ep: KitsuEpisode;
@@ -137,6 +143,7 @@ function AnimeEpisodeStripCard({
     watched: boolean,
     sourceMetaId?: string,
   ) => void;
+  showSeason?: boolean;
 }) {
   const t = useT();
   const { openPicker, openEpisodeDetail } = useView();
@@ -147,7 +154,7 @@ function AnimeEpisodeStripCard({
     openPicker(
       meta,
       {
-        season: ep.seasonNumber || 1,
+        season: animeSeasonKey(ep),
         episode: ep.number,
         name: ep.title,
         still: ep.thumbnail ?? undefined,
@@ -166,7 +173,7 @@ function AnimeEpisodeStripCard({
       data-ep={ep.number}
       data-no-card-ring
       onContextMenu={(e) =>
-        onContextMenu?.(e, ep.seasonNumber || 1, ep.number, progress.watched, ep.sourceMetaId)
+        onContextMenu?.(e, animeSeasonKey(ep), ep.number, progress.watched, ep.sourceMetaId)
       }
       className="group flex w-full flex-col gap-2.5 text-start"
     >
@@ -224,14 +231,14 @@ function AnimeEpisodeStripCard({
             {ep.filler && <FillerBadge />}
           </span>
           <span className="text-[11.5px] text-ink-subtle">
-            E{ep.number}
+            {showSeason ? `S${ep.imdbSeason ?? ep.seasonNumber ?? 1} · E${ep.number}` : `E${ep.number}`}
             {ep.length ? ` · ${t("{n} min", { n: ep.length })}` : ""}
             {upcoming && ep.airdate ? ` · ${formatAirDate(ep.airdate)}` : ""}
           </span>
         </button>
         <button
           type="button"
-          onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber || 1, ep.number, meta)}
+          onClick={() => openEpisodeDetail(meta.id, animeSeasonKey(ep), ep.number, meta)}
           aria-label={t("Episode details")}
           title={t("Episode details")}
           className="flex shrink-0 items-center justify-center rounded-full p-1.5 text-ink-subtle transition-colors hover:bg-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"

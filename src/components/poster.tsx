@@ -273,6 +273,7 @@ export function Poster({
           src={displayed}
           alt=""
           aria-hidden
+          draggable={false}
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover"
         />
@@ -283,6 +284,7 @@ export function Poster({
           ref={handleImgRef}
           src={current}
           alt=""
+          draggable={false}
           decoding="async"
           loading={lazy ? "lazy" : undefined}
           onLoad={() => {

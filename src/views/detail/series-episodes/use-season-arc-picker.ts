@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { setLastSeason } from "@/lib/last-season";
 import type { Season } from "@/lib/providers/tmdb";
 import { seasonDateRange, type TvdbOrder } from "@/lib/providers/tvdb-order";
 import { isNewSeason } from "../helpers";
@@ -68,7 +67,6 @@ export function useSeasonArcPicker({
       activeKey: String(active),
       onSelect: (k: string) => {
         userPickedRef.current = true;
-        setLastSeason(metaId, Number(k));
         setActive(Number(k));
       },
     };

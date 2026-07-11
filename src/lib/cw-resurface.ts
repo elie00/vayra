@@ -29,7 +29,10 @@ function currentEpisode(i: LibraryItem): { season: number; episode: number } | n
   const episode = i.state?.episode;
   if (season && episode) return { season, episode };
   const vid = i.state?.video_id ?? "";
-  if (ANIME_ID.test(i._id) && vid.split(":").length === 3) return null;
+  if (ANIME_ID.test(i._id) && vid.split(":").length === 3) {
+    const ep = Number(vid.split(":")[2]);
+    return Number.isFinite(ep) && ep > 0 ? { season: 1, episode: ep } : null;
+  }
   return episodeFromVideoId(vid);
 }
 
@@ -43,10 +46,16 @@ export function clearResurfaceCache(): void {
   cache.clear();
 }
 
+type WatchedFor = (
+  i: LibraryItem,
+  cur: { season: number; episode: number },
+) => (season: number, episode: number) => boolean;
+
 export async function resurfaceCandidates(
   library: LibraryItem[],
   inCw: Set<string>,
   opts: { tmdbKey: string; animeMode: AnimeMode },
+  watchedFor?: WatchedFor,
 ): Promise<Map<string, { season: number; episode: number }>> {
   const now = Date.now();
   const out = new Map<string, { season: number; episode: number }>();
@@ -57,10 +66,12 @@ export async function resurfaceCandidates(
     const anime = isAnimeCwItem(i);
     if (opts.animeMode === "exclude" && anime) return false;
     if (opts.animeMode === "only" && !anime) return false;
-    if ((i.state.flaggedWatched ?? 0) <= 0) return false;
     const lw = Date.parse(i.state.lastWatched ?? "");
     if (!Number.isFinite(lw) || now - lw > RECENT_MS) return false;
-    return currentEpisode(i) != null;
+    const cur = currentEpisode(i);
+    if (cur == null) return false;
+    if ((i.state.flaggedWatched ?? 0) > 0) return true;
+    return anime && !!watchedFor && watchedFor(i, cur)(cur.season, cur.episode);
   });
   for (const i of candidates) {
     const cur = currentEpisode(i)!;
@@ -86,6 +97,7 @@ export async function resurfaceCandidates(
         .catch(() => null);
       cache.set(key, { next: nx, t: now });
     }
+    if (nx && watchedFor && watchedFor(i, cur)(nx.season, nx.episode)) nx = null;
     if (nx) out.set(i._id, nx);
   }
   return out;

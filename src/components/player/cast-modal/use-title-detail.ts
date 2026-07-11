@@ -27,11 +27,29 @@ export function useTitleDetail(meta: Meta, tmdbKey: string | null, active: boole
     let cancelled = false;
     setLoading(true);
     setDetail(null);
-    const req: Promise<TmdbDetail | null> = anime
-      ? animeDetails(settings, meta).then((r) => r?.detail ?? null)
-      : tmdbKey
-        ? tmdbDetails(tmdbKey, meta)
-        : imdbapiDetails(meta.id);
+    if (anime) {
+      animeDetails(settings, meta)
+        .then((res) => {
+          if (cancelled) return;
+          setDetail(res?.detail ?? null);
+          setLoading(false);
+          if (!res) return;
+          void res.extrasPromise
+            .then((patch) => {
+              if (!cancelled) setDetail((prev) => (prev ? { ...prev, ...patch } : prev));
+            })
+            .catch(() => {});
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setDetail(null);
+          setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+    const req: Promise<TmdbDetail | null> = tmdbKey ? tmdbDetails(tmdbKey, meta) : imdbapiDetails(meta.id);
     req
       .then((d) => {
         if (!cancelled) setDetail(d);

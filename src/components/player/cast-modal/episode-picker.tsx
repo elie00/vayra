@@ -13,6 +13,10 @@ import { useArcGroups } from "@/views/detail/series-episodes/use-arc-groups";
 import { useEpisodeOrder } from "@/views/detail/series-episodes/use-episode-order";
 import { useSeriesTvdbStills } from "@/views/detail/series-episodes/use-series-tvdb-stills";
 import { useWatchedSets } from "@/views/detail/series-episodes/use-watched-sets";
+import { useTvdbSeasonTypes } from "@/views/detail/series-episodes/use-tvdb-season-types";
+import { TvdbOrderPanel } from "@/views/detail/series-episodes/tvdb-order-panel";
+import type { PickerItem } from "@/views/detail/series-episodes/season-arc-picker";
+import { seasonDateRange } from "@/lib/providers/tvdb-order";
 
 type DropOption = { key: string; label: string };
 
@@ -78,7 +82,7 @@ export function EpisodePicker({
   onPlayEpisode: (ep: PlayEpisode) => void;
 }) {
   const t = useT();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
   const { traktWatched, simklWatched } = useWatchedSets({
@@ -127,6 +131,7 @@ export function EpisodePicker({
   const arc = useArcGroups({ tvId, tmdbKey: settings.tmdbKey, enabled: settings.episodeArcGroups });
   const orderProvider = settings.tvdbOrderPanel ? "tvdb" : settings.episodeOrderProvider;
   const ordering = useEpisodeOrder(imdbId, meta.id, orderProvider, settings.tvdbSeasonType, settings.tvdbKey);
+  const orderTypes = useTvdbSeasonTypes(imdbId, meta.id, settings.tvdbKey, orderProvider === "tvdb");
 
   const arcActive = settings.episodeArcGroups && arc.hasArcs;
   const orderActive = !arcActive && ordering != null;
@@ -147,6 +152,24 @@ export function EpisodePicker({
     ordering && !ordering.seasons.some((s) => s.seasonNumber === orderSeason)
       ? resumeDefaultSeason(meta.id, ordering.seasons, combinedWatched)
       : orderSeason;
+
+  const orderItems = useMemo<PickerItem[]>(() => {
+    if (!ordering) return [];
+    return ordering.seasons
+      .filter((s) => s.seasonNumber >= 1)
+      .map((s) => {
+        const bucket = ordering.bySeason.get(s.seasonNumber) ?? [];
+        const { from, to } = seasonDateRange(bucket);
+        return {
+          key: String(s.seasonNumber),
+          name: s.name,
+          count: bucket.length,
+          year: s.airDate?.slice(0, 4) ?? undefined,
+          from,
+          to,
+        };
+      });
+  }, [ordering]);
 
   const flatByKey = useMemo(() => {
     const m = new Map<string, PlayEpisode>();
@@ -209,9 +232,20 @@ export function EpisodePicker({
 
   return (
     <div className="flex flex-col gap-5 px-6 pb-8 pt-1 sm:px-8">
-      {options.length > 1 && (
+      {mode === "order" && ordering && orderItems.length > 0 ? (
+        <div className="w-fit">
+          <TvdbOrderPanel
+            items={orderItems}
+            activeKey={String(orderSeasonEff)}
+            onSelect={(k) => setOrderSeason(Number(k))}
+            orderTypes={orderTypes}
+            activeType={settings.tvdbSeasonType}
+            onSelectType={(v) => update({ tvdbSeasonType: v })}
+          />
+        </div>
+      ) : options.length > 1 ? (
         <SeasonDropdown options={options} activeKey={activeKey} onSelect={onSelectKey} />
-      )}
+      ) : null}
 
       {loadingNow ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

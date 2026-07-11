@@ -6,6 +6,7 @@ export type GridEpisode = {
   key: string;
   number: number;
   season: number;
+  seasonLabel?: string;
   title: string;
   stills: string[];
   runtime: number | null;

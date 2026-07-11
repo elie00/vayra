@@ -5,7 +5,13 @@ import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 
-export function AnimeRandomButton({ meta, episodes }: { meta: Meta; episodes: KitsuEpisode[] }) {
+export function AnimeRandomButton({
+  episodes,
+  metaForEp,
+}: {
+  episodes: KitsuEpisode[];
+  metaForEp: (ep: KitsuEpisode) => Meta;
+}) {
   const t = useT();
   const { openPicker } = useView();
   const { settings } = useSettings();
@@ -16,7 +22,7 @@ export function AnimeRandomButton({ meta, episodes }: { meta: Meta; episodes: Ki
     if (pool.length === 0) return;
     const ep = pool[Math.floor(Math.random() * pool.length)];
     openPicker(
-      meta,
+      metaForEp(ep),
       {
         season: ep.seasonNumber || 1,
         episode: ep.number,

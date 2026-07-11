@@ -79,7 +79,7 @@ export function useResumeAutosave(params: {
       savePlayback(id, { title: s.meta.name, parsedTitle: s.meta.name }, se, ep);
     }
     if (
-      s.meta.type === "series" &&
+      (s.meta.type === "series" || s.meta.type === "anime" || isAnimeId(id)) &&
       typeof se === "number" &&
       typeof ep === "number" &&
       finished &&

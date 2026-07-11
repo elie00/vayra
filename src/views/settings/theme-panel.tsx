@@ -9,6 +9,7 @@ import { ColorThemeBody } from "./theme-panel/color-theme-body";
 import { CustomThemesSection } from "./theme-panel/custom-themes-section";
 import { DisplaySection } from "./theme-panel/display-section";
 import { FontGrid } from "./theme-panel/font-grid";
+import { LogoPicker } from "./theme-panel/logo-picker";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -52,6 +53,13 @@ export function ThemePanel() {
           onImageChange={(d) => setTheme({ backgroundImage: d })}
           onDimChange={(d) => setTheme({ backgroundDim: d })}
         />
+      </Section>
+
+      <Section
+        title={t("Logo & app icon")}
+        subtitle={t("Make Harbor yours: swap the sidebar logo and the window/taskbar icon.")}
+      >
+        <LogoPicker />
       </Section>
 
       <Section

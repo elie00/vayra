@@ -15,11 +15,112 @@ const BROWSE_QUERY = `query ($page: Int, $perPage: Int, $sort: [MediaSort], $isA
       episodes
       averageScore
       seasonYear
+      countryOfOrigin
+      description
     }
   }
 }`;
 
 type BrowseResponse = { Page: { media: AnilistMedia[] } | null };
+
+const COUNTRY_BY_MAL_QUERY = `query ($ids: [Int]) {
+  Page(perPage: 50) {
+    media(idMal_in: $ids, type: ANIME) { idMal countryOfOrigin }
+  }
+}`;
+
+const malCountryCache = new Map<number, string>();
+
+export async function anilistCountriesByMalIds(malIds: number[]): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  const need: number[] = [];
+  for (const n of new Set(malIds)) {
+    if (!Number.isFinite(n)) continue;
+    const cached = malCountryCache.get(n);
+    if (cached) out.set(n, cached);
+    else need.push(n);
+  }
+  for (let i = 0; i < need.length; i += 50) {
+    const batch = need.slice(i, i + 50);
+    try {
+      const data = await anilistRequest<{
+        Page: { media: { idMal: number | null; countryOfOrigin: string | null }[] } | null;
+      }>(COUNTRY_BY_MAL_QUERY, { ids: batch }, undefined, true);
+      for (const m of data?.Page?.media ?? []) {
+        if (m.idMal != null && m.countryOfOrigin) {
+          malCountryCache.set(m.idMal, m.countryOfOrigin);
+          out.set(m.idMal, m.countryOfOrigin);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return out;
+}
+
+const SEARCH_QUERY = `query ($q: String, $perPage: Int) {
+  Page(perPage: $perPage) {
+    media(search: $q, type: ANIME, sort: SEARCH_MATCH) {
+      id
+      idMal
+      title { romaji english }
+      coverImage { extraLarge large }
+      bannerImage
+      seasonYear
+      averageScore
+      description
+      countryOfOrigin
+    }
+  }
+}`;
+
+export type AnilistSearchHit = {
+  anilistId: number;
+  malId: number | null;
+  name: string;
+  year: string | null;
+  poster: string | null;
+  background: string | null;
+  overview: string;
+  score: number;
+};
+
+type SearchMedia = {
+  id: number;
+  idMal: number | null;
+  title: { romaji: string | null; english: string | null };
+  coverImage: { extraLarge: string | null; large: string | null } | null;
+  bannerImage: string | null;
+  seasonYear: number | null;
+  averageScore: number | null;
+  description: string | null;
+};
+
+export async function anilistAnimeSearch(query: string, perPage = 8): Promise<AnilistSearchHit[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  try {
+    const data = await anilistRequest<{ Page: { media: SearchMedia[] } | null }>(
+      SEARCH_QUERY,
+      { q, perPage },
+      undefined,
+      true,
+    );
+    return (data?.Page?.media ?? []).map((m) => ({
+      anilistId: m.id,
+      malId: m.idMal ?? null,
+      name: m.title.english?.trim() || m.title.romaji?.trim() || "Untitled",
+      year: m.seasonYear ? String(m.seasonYear) : null,
+      poster: m.coverImage?.extraLarge ?? m.coverImage?.large ?? null,
+      background: m.bannerImage ?? null,
+      overview: (m.description ?? "").replace(/<[^>]+>/g, "").trim(),
+      score: m.averageScore ? m.averageScore / 10 : 0,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 async function fetchAnilistBrowse(sort: string, count: number): Promise<Meta[]> {
   const perPage = Math.min(50, count);
@@ -110,6 +211,54 @@ export async function anilistArtByMalId(
     const empty = {};
     artByMalCache.set(malId, empty);
     return empty;
+  }
+}
+
+const RECS_QUERY = `query ($id: Int) {
+  Media(id: $id, type: ANIME) {
+    recommendations(sort: RATING_DESC, perPage: 24) {
+      nodes {
+        mediaRecommendation {
+          id
+          idMal
+          title { romaji english native userPreferred }
+          coverImage { extraLarge large medium }
+          bannerImage
+          format
+          episodes
+          averageScore
+          seasonYear
+          countryOfOrigin
+          description
+        }
+      }
+    }
+  }
+}`;
+
+const recsCache = new Map<number, Meta[]>();
+
+export async function anilistRecommendations(anilistId: number): Promise<Meta[]> {
+  if (!anilistId) return [];
+  const cached = recsCache.get(anilistId);
+  if (cached) return cached;
+  try {
+    const data = await anilistRequest<{
+      Media: { recommendations: { nodes: Array<{ mediaRecommendation: AnilistMedia | null }> } | null } | null;
+    }>(RECS_QUERY, { id: anilistId }, undefined, true);
+    const out: Meta[] = [];
+    const seen = new Set<string>();
+    for (const n of data?.Media?.recommendations?.nodes ?? []) {
+      if (!n.mediaRecommendation) continue;
+      const meta = anilistMediaToMeta(n.mediaRecommendation);
+      if (!meta || seen.has(meta.id)) continue;
+      seen.add(meta.id);
+      out.push(meta);
+    }
+    recsCache.set(anilistId, out);
+    return out;
+  } catch {
+    return [];
   }
 }
 

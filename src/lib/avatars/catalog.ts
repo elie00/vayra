@@ -370,6 +370,10 @@ export const AVATAR_CATALOG: AvatarGroup[] = [
     ],
   },
   {
+    group: "Chainsmoker Cat",
+    items: [{ id: "chainsmokercat", name: "Yani" }],
+  },
+  {
     group: "Dandadan",
     items: [
       { id: "momo", name: "Momo Ayase" },
@@ -466,6 +470,20 @@ export const AVATAR_CATALOG: AvatarGroup[] = [
       { id: "cult_ramona_flowers", name: "Ramona Flowers" },
       { id: "cult_scott_pilgrim", name: "Scott Pilgrim" },
       { id: "cult_wallace_wells_v3", name: "Wallace Wells" },
+    ],
+  },
+  {
+    group: "Solo Leveling",
+    items: [
+      { id: "sungjinwoo", name: "Sung Jinwoo" },
+      { id: "chahaein", name: "Cha Hae-In" },
+    ],
+  },
+  {
+    group: "You and I Are Polar Opposites",
+    items: [
+      { id: "polaroppositesboy", name: "Suzuki" },
+      { id: "polaroppositesgirl", name: "Tsubaki" },
     ],
   },
   {

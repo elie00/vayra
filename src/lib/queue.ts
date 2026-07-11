@@ -68,6 +68,12 @@ export function queueClear(): void {
   persist();
 }
 
+export function queueReorder(orderedIds: string[]): void {
+  const pos = new Map(orderedIds.map((id, i) => [id, i] as const));
+  items = [...items].sort((a, b) => (pos.get(a.id) ?? 999) - (pos.get(b.id) ?? 999));
+  persist();
+}
+
 export function queueShift(): QueueItem | null {
   const first = items[0] ?? null;
   if (first) {

@@ -1,6 +1,22 @@
+import { safeFetch } from "@/lib/safe-fetch";
+
 const ENDPOINT = "https://api.ani.zip/mappings";
+const GAP_MS = 90;
 const cache = new Map<string, AniZipMapping | null>();
 const inflight = new Map<string, Promise<AniZipMapping | null>>();
+
+let queue: Promise<unknown> = Promise.resolve();
+function throttled(url: string, signal: AbortSignal): Promise<Response> {
+  const run = queue.then(() => safeFetch(url, { signal }));
+  const settled = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  queue = Promise.race([settled, new Promise((r) => setTimeout(r, 5000))]).then(
+    () => new Promise((r) => setTimeout(r, GAP_MS)),
+  );
+  return run;
+}
 
 export type AniZipEpisode = {
   seasonNumber?: number;
@@ -68,7 +84,7 @@ async function get(query: string): Promise<AniZipMapping | null> {
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(`${ENDPOINT}?${query}`, { signal: ac.signal });
+      const res = await throttled(`${ENDPOINT}?${query}`, ac.signal);
       if (!res.ok) {
         cache.set(query, null);
         return null;

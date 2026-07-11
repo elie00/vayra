@@ -8,6 +8,7 @@ import { useContinueWatching, type CwCard } from "@/lib/continue-watching";
 import {
   queueClear,
   queueRemove,
+  queueReorder,
   queueToggle,
   setSleepAtEnd,
   useIsQueued,
@@ -115,6 +116,20 @@ export function QueuePanel({
   const queue = useQueue();
   const sleepAtEnd = useSleepAtEnd();
   const [upcoming, setUpcoming] = useState<PlayEpisode[]>([]);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  const dropQueue = (targetId: string) => {
+    if (dragId && dragId !== targetId) {
+      const ids = queue.map((q) => q.id);
+      const to = ids.indexOf(targetId);
+      ids.splice(ids.indexOf(dragId), 1);
+      ids.splice(to, 0, dragId);
+      queueReorder(ids);
+    }
+    setDragId(null);
+    setOverId(null);
+  };
 
   const isSeriesCurrent =
     !!currentMeta &&
@@ -161,11 +176,20 @@ export function QueuePanel({
                   key={`${ep.season}-${ep.episode}`}
                   type="button"
                   onClick={() => onPlay(currentMeta, ep)}
-                  className="group flex items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-2.5 text-start transition-colors hover:bg-white/[0.09]"
+                  className="group flex items-center gap-3 rounded-xl bg-white/[0.04] p-2 text-start transition-colors hover:bg-white/[0.09]"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-bold text-white">
-                    {ep.episode}
-                  </span>
+                  <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-white/[0.06]">
+                    {(ep.still || currentMeta.background || currentMeta.poster) && (
+                      <img
+                        src={ep.still || currentMeta.background || currentMeta.poster}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                    <span className="absolute bottom-1 start-1 flex h-5 min-w-5 items-center justify-center rounded bg-black/70 px-1 text-[11px] font-bold text-white">
+                      {ep.episode}
+                    </span>
+                  </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="line-clamp-1 text-[14px] font-medium text-white/90">
                       {ep.name || t("Episode {n}", { n: ep.episode })}
@@ -235,7 +259,27 @@ export function QueuePanel({
           return (
             <div
               key={item.id}
-              className="group flex items-center gap-3 rounded-xl bg-white/[0.04] p-2 transition-colors hover:bg-white/[0.07]"
+              draggable
+              onDragStart={(e) => {
+                setDragId(item.id);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragId && overId !== item.id) setOverId(item.id);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                dropQueue(item.id);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setOverId(null);
+              }}
+              className={`group flex cursor-grab items-center gap-3 rounded-xl bg-white/[0.04] p-2 transition-colors hover:bg-white/[0.07] active:cursor-grabbing ${
+                dragId === item.id ? "opacity-40" : ""
+              } ${overId === item.id && dragId !== item.id ? "ring-2 ring-white/40" : ""}`}
             >
               <span className="w-6 shrink-0 text-center text-[13px] font-bold text-white/35">{i + 1}</span>
               <div className="h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-white/[0.06]">
@@ -243,6 +287,7 @@ export function QueuePanel({
                   <img
                     src={item.meta.background || item.meta.poster}
                     alt=""
+                    draggable={false}
                     className="h-full w-full object-cover"
                   />
                 )}
@@ -255,7 +300,10 @@ export function QueuePanel({
               </div>
               <button
                 type="button"
-                onClick={() => onPlay(item.meta, item.episode)}
+                onClick={() => {
+                  queueRemove(item.id);
+                  onPlay(item.meta, item.episode);
+                }}
                 aria-label={t("Play")}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-105"
               >

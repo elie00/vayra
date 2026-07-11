@@ -11,7 +11,10 @@ import { LanguageTiles } from "@/components/language-tiles";
 import { Row, ScrollRootContext } from "@/components/row";
 import { PickCard } from "@/components/pick-card";
 import type { Meta } from "@/lib/cinemeta";
-import { fetchCriticsPickList, fetchFeatured, getPool, selectDailyRows, type FeedItem } from "@/lib/feed";
+import { fetchCriticsPickList, getPool, selectDailyRows, type FeedItem } from "@/lib/feed";
+import { buildFeatured, buildFeaturedFast, rescoreFeatured, type FeaturedResult } from "@/lib/feed/featured";
+import type { FeaturedItem } from "@/lib/feed/featured/types";
+import { prewarmExternalWatched, subscribeExternalWatched } from "@/lib/feed/external-watched";
 import { getStore, subscribe as subscribeTaste } from "@/lib/discover/store";
 import { getDownvotedIds, getUpvotedIds, subscribePrefs } from "@/lib/feed/preferences";
 import { recentlyPlayed, subscribePlayback, watchTitleKey } from "@/lib/playback-history";
@@ -59,7 +62,10 @@ export function Discover({ active = true }: { active?: boolean }) {
   const letterboxd = useLetterboxd();
   const t = useT();
   const pageRows = usePageRows("discover");
-  const [featured, setFeatured] = useState<Meta[]>([]);
+  const [feat, setFeat] = useState<FeaturedResult>({ featured: [], reserve: [], pool: [] });
+  const featured = feat.featured;
+  const poolRef = useRef<FeaturedItem[]>([]);
+  poolRef.current = feat.pool;
   const [queue, setQueue] = useState<FeedItem[]>([]);
   const [criticsPickList, setCriticsPickList] = useState<Meta[]>([]);
   const [tasteVersion, setTasteVersion] = useState(0);
@@ -120,7 +126,18 @@ export function Discover({ active = true }: { active?: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchFeatured(settings.tmdbKey, settings).then((m) => !cancelled && setFeatured(m));
+    let full = false;
+    buildFeaturedFast(settings.tmdbKey, settings)
+      .then((r) => !cancelled && !full && setFeat((prev) => (prev.pool.length ? prev : r)))
+      .catch(() => {});
+    buildFeatured(settings.tmdbKey, settings).then((r) => {
+      if (cancelled) return;
+      full = true;
+      setFeat(r);
+    });
+    prewarmExternalWatched()
+      .then(() => !cancelled && setFeat((prev) => rescoreFeatured(prev.pool)))
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -130,7 +147,6 @@ export function Discover({ active = true }: { active?: boolean }) {
     settings.region,
     settings.feedLocaleBias,
     settings.preferredLanguages,
-    tasteVersion,
   ]);
 
   useEffect(() => {
@@ -153,6 +169,7 @@ export function Discover({ active = true }: { active?: boolean }) {
     settings.feedLocaleBias,
     settings.preferredLanguages,
     settings.tmdbLanguage,
+    tasteVersion,
   ]);
 
   useEffect(() => {
@@ -161,15 +178,12 @@ export function Discover({ active = true }: { active?: boolean }) {
       clearTimeout(timer);
       timer = window.setTimeout(() => setTasteVersion((v) => v + 1), 600);
     };
-    const dropWatched = () => {
+    const rescore = () => setFeat(rescoreFeatured(poolRef.current));
+    const dropWatchedRails = () => {
       const watched = recentlyPlayed();
       if (watched.ids.size === 0 && watched.titles.size === 0) return;
       const isWatched = (m: Meta) =>
         watched.ids.has(m.id) || watched.titles.has(watchTitleKey(m.name));
-      setFeatured((prev) => {
-        const next = prev.filter((m) => !isWatched(m));
-        return next.length === prev.length ? prev : next;
-      });
       setQueue((prev) => {
         const next = prev.filter((it) => !isWatched(it.meta));
         return next.length === prev.length ? prev : next;
@@ -179,33 +193,39 @@ export function Discover({ active = true }: { active?: boolean }) {
         return next.length === prev.length ? prev : next;
       });
     };
-    const offTaste = subscribeTaste(bump);
+    const offTaste = subscribeTaste(() => {
+      rescore();
+      bump();
+    });
     const offPrefs = subscribePrefs(() => {
+      rescore();
       const blocked = new Set<string>([...getDownvotedIds(), ...getUpvotedIds()]);
-      setFeatured((prev) => prev.filter((m) => !blocked.has(m.id)));
       setQueue((prev) => prev.filter((it) => !blocked.has(it.meta.id)));
       setCriticsPickList((prev) => prev.filter((m) => !blocked.has(m.id)));
       bump();
     });
     const offPlayback = subscribePlayback(() => {
-      dropWatched();
+      rescore();
+      dropWatchedRails();
       bump();
     });
+    const offExternal = subscribeExternalWatched(rescore);
     return () => {
       clearTimeout(timer);
       offTaste();
       offPrefs();
       offPlayback();
+      offExternal();
     };
   }, []);
 
   useEffect(() => {
     if (!active) return;
+    setFeat((prev) => rescoreFeatured(prev.pool));
     const watched = recentlyPlayed();
     if (watched.ids.size === 0 && watched.titles.size === 0) return;
     const isWatched = (m: Meta) =>
       watched.ids.has(m.id) || watched.titles.has(watchTitleKey(m.name));
-    setFeatured((prev) => prev.filter((m) => !isWatched(m)));
     setQueue((prev) => prev.filter((it) => !isWatched(it.meta)));
     setCriticsPickList((prev) => prev.filter((m) => !isWatched(m)));
   }, [active]);
