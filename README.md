@@ -89,7 +89,7 @@ HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR 
 - **A native player.** libmpv decodes virtually any codec and container, with HDR passthrough, skip intro/outro, Anime4K upscaling shaders, and more. Delivering the same quality you are used to, but on a native custom player.
 - **Customize it your way.** Harbor is built in rust and tauri, allowing full on demand customization of the entire application. Harbor does not inject into stremio web, it is its own from scratch shell, layered over the stremio ecosystem, allowing you to go beyond the traditional themeing. Customize the player's UI, your fonts, seek bar, colors or the entire thing! 
 - **Theme Studio & Editor** Noob friendly theme studio lets anyone create their own custom theme with no code. Those that want control over every file can use a built in code editor for your themes.
-- **Intelligent stream ranking.** A pure Rust engine (compiled to WASM, with a TypeScript fallback) that parses every stream, filters out scams and fakes, and ranks high quality sources first.
+- **Intelligent stream ranking.** One pure Rust engine runs as a native library on desktop and as WebAssembly in the browser, with a TypeScript fallback if either compiled path is unavailable. It parses every stream, filters out scams and fakes, and ranks high quality sources first.
 - **Corpus Engine.** During the initial release of In-cinema movies, Harbor gates the results based on heuristic factors like file size, average quality consensus, year and metadata ranking and other factors to deliver you a cleaner experience during the period of a fresh release. Harbor will surface the most likely CAMS, TeleSyncs/Telecines and other reasonable options without you needing to do anything.
 - **Go Deep.** Dive deep into your favorite shows, actors, genres and more. View lists of award recipients for the Oscars, BAFTA, Cannes, SAG, and more. Anime cast and award metadata, along with Episode/Season Deduplication and Merge. Your rows learn from your watch history and likes, to always suggest you your next best watch.
 - **Robust Appstore.** Harbor allows you to configure and install addons without leaving the desktop client by allowing you to natively install third party addons via a built in viewport. Easily manage your installed Addons and Browse for new ones in a bespoke experience that merges the Stremio Community addons API with the [Stremio-addons.net](https://stremio-addons.net) API, giving you wide coverage and custom reccomendations.
@@ -97,7 +97,7 @@ HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR 
 - **Watch together, on your own relay.** A synced watch party with live on screen cursors and drawing, on a relay that deploys to your own Cloudflare account in one click. No central server.
 - **Live TV and Multiview.** Bring M3U or Xtream playlists and get a real EPG grid guide, favorites, catchup, and up to four channels at once in a grid. Missed the show? play a rerun or record the next episode using built in DVR. Switch channels while in the live player at any time with the TV Guide
 - **Stream switcher** In player switcher allows you to hop streams if you get served a bad one without leaving the player and going through results again. Play next episodes with ease on the player UI controls or in a full "Next Up" sidebar. 
-- **Casts across the room.** DLNA/UPnP, Chromecast, AirPlay, and Roku via a bundled Rust cast server and a web cast receiver.
+- **Casts across the room.** DLNA/UPnP, Chromecast, AirPlay, and Roku via the native Rust casting layer. Chromecast launches Harbor's separately deployed CAF receiver; its source is not part of this repository.
 - **Integrations.** Feature rich discord rich presence integration, webhooks for Discord and Telegram, Trakt Sync, and native integrations to TMDB, OMDB, Fanart.Tv, RPDB and more! Customize the  location and what badges are shown.
 - **And much more! (seriously this would be very long)** 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
@@ -200,7 +200,7 @@ Per title flows add **Detail**, **Person**, **Award**, **Service**, and **Filter
 
 ### The stream engine
 
-When you press play, Harbor collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. Inside the desktop app this runs in **harbor-core**, a pure Rust crate compiled to WASM and invoked from the UI, with a TypeScript fallback if it is ever unavailable.
+When you press play, Harbor collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. On desktop, **harbor-core** is linked into the Tauri Rust shell and called through a native command. On the web, the same crate is compiled to WebAssembly and loaded by the frontend. Both paths fall back to the TypeScript implementation if the compiled core is unavailable.
 
 ```
 parse  ->  trust  ->  score  ->  rank
@@ -213,7 +213,7 @@ parse  ->  trust  ->  score  ->  rank
 | **Score** | Rewards debrid cached sources, resolution, HDR and lossless audio, seeders, trusted release groups, REMUX, and preferred language matches; penalizes cams, mismatches, and implausible sizes. Every signal is recorded so the reason is inspectable |
 | **Rank** | Sorts into quality tiers (4K DV, 4K HDR, 4K, 1080p HDR, 1080p, 720p, SD) and surfaces the best cached pick first, with partial results streamed to the UI as addons respond |
 
-Debrid services are checked live and uniformly: **Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox**. Cache hints embedded by popular addons are read directly, and every torrent hash is cross checked against your debrid library to catch what the cache API misses. No debrid is required: Harbor can stream torrents directly through the bundled Stremio Server engine. All keys stay on your device.
+Debrid services are checked live and uniformly: **Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox**. Cache hints embedded by popular addons are read directly, and every torrent hash is cross checked against your debrid library to catch what the cache API misses. On desktop, no debrid is required: Harbor can stream torrents through its native Rust torrent engine. The former bundled `stremio-server` sidecar has been retired; an optional remote Stremio-compatible server can still be configured for transcoding workflows.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -224,7 +224,7 @@ A native libmpv player, with HLS and MPEG-TS engines for live and broadcast sour
 | Capability | Detail |
 |---|---|
 | **Engines** | Native libmpv (bundled) or HTML5/WebView2, with an Auto mode; hls.js and mpegts.js for live; embedded or separate window mpv |
-| **Resilience** | Auto retry and auto advance that detect black screens, frozen positions, and hard stalls; fallback to the Stremio Server HLS transcoder on a decode error; automatic live IPTV reconnect |
+| **Resilience** | Auto retry and auto advance that detect black screens, frozen positions, and hard stalls; optional fallback to a configured remote Stremio-compatible HLS transcoder on a decode error; automatic live IPTV reconnect |
 | **Picture** | HDR passthrough, HDR to SDR tonemapping (bt.2446a), Anime4K GLSL upscaling shaders, a stats overlay |
 | **Skip segments** | Intro, outro, and recap detection from AniSkip, TheIntroDB, and embedded chapter markers |
 | **Subtitles** | OpenSubtitles v3 and Wyzie plus your subtitle addons, deduped and language ranked; SRT/VTT/ASS/SUB with encoding detection; **dual tracks**; full styling (font, size, color, outline, box, margin, alignment, custom font upload); SDH and forced flags; ASS override; per item delay; and a show/hide toggle in picture in picture |
@@ -237,9 +237,9 @@ A native libmpv player, with HLS and MPEG-TS engines for live and broadcast sour
 
 ### Casting
 
-Send any playback across the room through a bundled Rust cast server and a web cast receiver.
+Send playback across the room through Harbor's native Rust casting and local proxy/transcoding layer.
 
-- **Chromecast** via Harbor's own CAF receiver (HLS, MP4, and unknown formats). (Visit harborstremio/cast-receiver-chrome)
+- **Chromecast** via Harbor's separately deployed CAF receiver (HLS, MP4, and unknown formats). The receiver is referenced by its Cast application ID and is not built from this repository.
 - **DLNA / UPnP** with vendor aware handling for Samsung, Sony, LG, Panasonic, and Hisense.
 - **AirPlay** discovery and playback.
 - **Roku** via the ECP protocol, with guidance for network access and Media Assistant. (Pre and post roku update) Does require Roku tv addons
@@ -364,11 +364,12 @@ Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden 
 
 ## Privacy
 
-Harbor is built to keep your data on your machine.
+Harbor is designed to minimize data collection and keep persisted settings on your machine.
 
 - **No telemetry.** Harbor collects no analytics and sends nothing home.
-- **Your keys stay local.** TMDB, RPDB, OMDB, Trakt, and debrid credentials live on your device.
-- **No central server.** Watch party relays deploy to your own Cloudflare account, and casting runs on your own network. Nothing is routed through a Harbor operated backend.
+- **Local persistence.** TMDB, RPDB, OMDB, Trakt, and debrid credentials are stored on your device. Native desktop requests go directly to the configured services.
+- **Web proxy disclosure.** The hosted web build routes CORS-restricted addon, subtitle, and debrid API requests through its same-origin `/api-proxy`; authorization headers for those requests transit that deployment. Torrentio and TorBox addon requests are sent directly. Self-hosters control the proxy endpoint.
+- **No Harbor relay for Together or casting.** Watch party relays deploy to your own Cloudflare account, and casting runs on your local network. This statement does not apply to the web build's CORS proxy described above.
 - **A built in privacy blocker** at the WebView level, with a live counter.
 - **You choose your sources.** What metadata and streams Harbor sees is entirely determined by the addons and services you configure.
 
@@ -404,7 +405,7 @@ Linux is up and running natively, and it is in active testing right now. We deci
 
 ## Configuration
 
-All keys and preferences live in **Settings** and persist locally. Nothing is sent to a Harbor server.
+All keys and preferences live in **Settings** and persist locally. The native app contacts configured providers directly; the hosted web build uses the `/api-proxy` described in [Privacy](#privacy) for services that do not permit browser CORS requests.
 
 | Setting | Default | What it does |
 |---|---|---|
@@ -430,7 +431,7 @@ Harbor is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with th
 - [Node.js](https://nodejs.org/) 20+ and [pnpm](https://pnpm.io/)
 - The [Rust toolchain](https://rustup.rs/) (stable)
 - The [Tauri 2 system prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
-- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) (only needed to rebuild the WASM stream core)
+- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) (web core generation runs automatically before `dev` and `build`)
 
 <details>
 <summary><b>Run in development</b></summary>
@@ -471,7 +472,7 @@ Bundles are emitted for your platform (dmg on macOS, NSIS on Windows; Linux deb,
 
 ```bash
 cargo test --manifest-path harbor-core/Cargo.toml
-wasm-pack build harbor-core --target web
+pnpm core:wasm
 ```
 
 </details>
@@ -482,17 +483,21 @@ wasm-pack build harbor-core --target web
 
 ```mermaid
 flowchart TD
-  subgraph Window["Harbor window (WebView2)"]
+  subgraph UIHost["React UI (browser or system WebView)"]
     UI["React 19 + TypeScript + Tailwind v4"]
-    Core["harbor-core (Rust to WASM)<br/>parse to trust to score to rank"]
-    UI --> Core
+    Fallback["TypeScript core fallback"]
   end
 
   subgraph Shell["Tauri 2 Rust shell"]
+    NativeCore["harbor-core native rlib<br/>parse to trust to score to rank"]
     Player["libmpv player"]
-    Cast["Cast server (DLNA / Chromecast / AirPlay / Roku)"]
-    Sidecars["Sidecars: stremio-server, yt-dlp"]
+    Torrent["Native Rust torrent engine"]
+    Cast["Casting + local stream proxy<br/>DLNA / Chromecast / AirPlay / Roku"]
+    Tools["Bundled tools: yt-dlp / ffmpeg"]
   end
+
+  Wasm["harbor-core WebAssembly<br/>web builds"]
+  WebProxy["Deployment /api-proxy<br/>CORS-restricted web requests"]
 
   subgraph Net["Open ecosystem and services"]
     Stremio["Stremio addons + Cinemeta"]
@@ -503,12 +508,17 @@ flowchart TD
     Relay["Your Cloudflare relay (Together)"]
   end
 
-  UI --> Shell
+  UI -->|desktop| NativeCore
+  UI -->|web| Wasm
+  UI -. fallback .-> Fallback
+  UI -->|desktop commands| Shell
+  UI -->|hosted web only| WebProxy
   UI --> Stremio
   UI --> Meta
   UI --> Anime
   UI --> Trakt
-  Core --> Debrid
+  NativeCore --> Debrid
+  Wasm --> Debrid
   UI --> Relay
 ```
 
@@ -519,12 +529,13 @@ flowchart TD
 
 **Stack**
 
-- **Shell:** Tauri 2 (Rust + WebView2), frameless Mica window
+- **Shell:** Tauri 2 (Rust + the operating system WebView), with native window effects where supported
 - **Frontend:** React 19, TypeScript 5.8, Tailwind v4 (`@theme` tokens), Vite 7, Lucide icons
-- **Stream core:** `harbor-core`, a pure Rust crate compiled to WASM and rlib
+- **Stream core:** `harbor-core`, linked as a native rlib by Tauri and generated as WASM for the web; TypeScript remains the runtime fallback
 - **Player:** native libmpv, with hls.js and mpegts.js for live
-- **Casting:** a bundled Rust cast server plus a web cast receiver
-- **Sidecars:** `stremio-server`, `yt-dlp`
+- **Casting:** native Rust discovery/control plus local proxy/transcoding; Chromecast uses a separately deployed CAF receiver not contained in this repository
+- **Torrenting:** native Rust torrent engine; the former `stremio-server` sidecar is no longer bundled
+- **Bundled tools:** `yt-dlp` and ffmpeg/ffprobe where required by the target
 
 **Repo layout**
 
@@ -532,8 +543,7 @@ flowchart TD
 src/                 React frontend (views, chrome, components, lib)
 src-tauri/           Rust shell, player, casting, sidecars
   src/               cast.rs, dlna.rs, roku.rs, airplay.rs, transcode.rs, discord_rp.rs, ...
-harbor-core/         pure Rust stream engine (parse, trust, score) -> WASM
-cast-receiver/       web cast receiver app
+harbor-core/         shared Rust stream engine (native rlib + generated web WASM)
 docs/media/          logos and screenshots
 ```
 
@@ -556,6 +566,13 @@ Directional, not a set of promises. Priorities shift with feedback.
 - [ ] Expanded casting device matrix (AirPlay 2, more Roku and Chromecast targets)
 - [ ] More translations
 - [ ] A growing theme gallery
+- [x] Release readiness baseline: narrower desktop capabilities and OS credential storage for desktop secrets
+- [x] Release readiness baseline: integration coverage for stream selection, resume, IPTV, Together, and persistence paths
+- [x] Zero-warning frontend hooks lint and native CI covering Linux, macOS, Windows, and an Android debug build
+- [x] Checksum-verified external downloads and optimized format-badge assets
+- [x] Shared native/WASM stream core wired into builds, with a runtime smoke test and TypeScript fallback
+- [x] Architecture, privacy, sidecar, casting, and platform documentation reconciled with the repository
+- [ ] Finish platform hardening: Android secure credential storage and tighter per-window filesystem scopes
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -571,10 +588,13 @@ No. Harbor works out of the box on Cinemeta. A free TMDB key is recommended beca
 No. Harbor is an independent open source client built on the open Stremio addon protocol, by someone who loves the ecosystem.
 
 **Why Tauri instead of Electron?**
-Tauri uses the system WebView and a Rust backend, which keeps the app small and lets the stream ranking core run as compiled WebAssembly.
+Tauri uses the system WebView and a Rust backend, which keeps the shell small and lets desktop builds call the stream ranking crate natively. Browser builds use the same crate as WebAssembly.
 
 **Do I need a debrid account?**
-No. You can stream torrents directly through the bundled Stremio Server engine. A debrid service is optional and adds cached, instant playback.
+Not on desktop: Harbor's native Rust torrent engine can stream raw torrents directly. A debrid service is optional and adds cached, instant playback. Browser builds cannot use the native torrent engine and need a directly playable source or a configured service.
+
+**Does Harbor operate a backend?**
+The desktop app does not need a Harbor API backend for normal provider requests. The hosted web build does use a same-origin `/api-proxy` for CORS-restricted services; see [Privacy](#privacy). Together rooms use the Cloudflare relay you deploy yourself.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 

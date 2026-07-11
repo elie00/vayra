@@ -11,6 +11,7 @@ _backups/
 !.env.example
 
 target
+/harbor-core/pkg/
 
 *.tsbuildinfo
 /vite.config.js

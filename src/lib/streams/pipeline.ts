@@ -219,17 +219,21 @@ async function runCorePipeline(
   scoreOpts: ScoreOptions,
 ): Promise<{ picker: RankedPicker; rejected: Rejection[] } | null> {
   const isTauri = typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
-  if (!isTauri) return null;
   try {
-    const { invoke } = await import("@tauri-apps/api/core");
-    const result = (await invoke("streams_run_pipeline", {
-      streams: parsed,
-      trustOpts,
-      scoreOpts,
-    })) as { picker: RankedPicker; rejected: Rejection[] };
-    return result;
+    if (isTauri) {
+      const { invoke } = await import("@tauri-apps/api/core");
+      return (await invoke("streams_run_pipeline", {
+        streams: parsed,
+        trustOpts,
+        scoreOpts,
+      })) as { picker: RankedPicker; rejected: Rejection[] };
+    }
+
+    const core = await import("../../../harbor-core/pkg/harbor_core.js");
+    await core.default();
+    return core.runPipelineParsed(parsed, trustOpts, scoreOpts);
   } catch (e) {
-    dlog(`[pipeline] core pipeline failed, falling back to JS: ${e}`);
+    dlog(`[pipeline] ${isTauri ? "native" : "WASM"} core failed, falling back to TypeScript: ${e}`);
     return null;
   }
 }
