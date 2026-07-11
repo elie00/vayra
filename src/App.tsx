@@ -86,6 +86,7 @@ import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
 import { useKeyboardNavigation } from "@/lib/keyboard-navigation";
+import { SFX } from "@/lib/sfx";
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
@@ -463,9 +464,52 @@ function Shell() {
       nav?.focus({ preventScroll: true });
     },
   });
-
+useEffect(() => {
+    if (settings.soundTheme) {
+      SFX.setTheme(settings.soundTheme);
+    }
+  }, [settings.soundTheme]);
   useEffect(() => startMaintenance(), []);
 
+  useEffect(() => {
+    const initAudio = () => SFX.init();
+    window.addEventListener("pointerdown", initAudio, { once: true });
+    window.addEventListener("keydown", initAudio, { once: true });
+
+    const onMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const isInteractive = target.closest('a[href], button, [data-focusable="true"], [role="button"]');
+      if (isInteractive && !isInteractive.contains(e.relatedTarget as Node)) {
+        SFX.hover();
+      }
+    };
+
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const btn = target.closest('button, a[href], [data-focusable="true"]');
+      if (btn) {
+        const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+        const isBack = ariaLabel.includes('back') || btn.closest('[data-harbor-nav]');
+        
+        const isMovieCard = btn.querySelector('img') || btn.hasAttribute('data-media-card') || btn.classList.contains('media-card') || btn.closest('[data-tv-hero-zone]');
+
+        if (isBack) SFX.close();
+        else if (isMovieCard) SFX.open();
+        else SFX.click();
+      }
+    };
+
+    window.addEventListener("mouseover", onMouseOver);
+    window.addEventListener("click", onClick, { capture: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", initAudio);
+      window.removeEventListener("keydown", initAudio);
+      window.removeEventListener("mouseover", onMouseOver);
+      window.removeEventListener("click", onClick, { capture: true });
+    };
+  }, []);
+  
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 3) {
