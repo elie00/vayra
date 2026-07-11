@@ -85,7 +85,7 @@ export function PinEntry({
     return () => {
       cancelled = true;
     };
-  }, [pin]);
+  }, [busy, first, mode, onComplete, pin, stage, t, verify]);
 
   const tap = (digit: string) => {
     if (busy) return;

@@ -1,5 +1,5 @@
 import { ArrowRight, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AddonLogo, AddonLogoStack, resolveAddonLogo } from "@/components/addon-logo";
 import type { Addon } from "@/lib/addons";
 import { useAuth } from "@/lib/auth";
@@ -15,7 +15,7 @@ export function SyncedAddonsCard() {
   const [lastSynced, setLastSynced] = useState<number | null>(null);
   const { setView } = useView();
 
-  const sync = async () => {
+  const sync = useCallback(async () => {
     if (!authKey) return;
     setBusy(true);
     try {
@@ -28,11 +28,11 @@ export function SyncedAddonsCard() {
     } finally {
       setBusy(false);
     }
-  };
+  }, [authKey]);
 
   useEffect(() => {
     if (authKey && addons == null) void sync();
-  }, [authKey]);
+  }, [addons, authKey, sync]);
 
   if (!authKey) {
     return (

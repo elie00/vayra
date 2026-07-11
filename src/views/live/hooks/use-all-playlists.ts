@@ -8,7 +8,7 @@ export function useAllPlaylists(
 ): Map<string, IptvPlaylist> {
   const sourceKey = sources.map((s) => s.id).join("|");
 
-  const initial = useMemo(() => snapshot(sources), [sourceKey]);
+  const initial = useMemo(() => snapshot(sources), [sources]);
   const [playlists, setPlaylists] = useState<Map<string, IptvPlaylist>>(initial);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export function useAllPlaylists(
       cancelled = true;
       unsub();
     };
-  }, [enabled, sourceKey]);
+  }, [enabled, sourceKey, sources]);
 
   return playlists;
 }

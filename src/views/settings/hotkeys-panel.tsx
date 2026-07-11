@@ -1,5 +1,5 @@
 import { Keyboard, RotateCcw, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HOTKEYS,
   HOTKEY_MAP,
@@ -18,7 +18,7 @@ import { Section, ToggleRow } from "./shared";
 export function HotkeysPanel() {
   const t = useT();
   const { settings, update } = useSettings();
-  const overrides = settings.hotkeys ?? {};
+  const overrides = useMemo(() => settings.hotkeys ?? {}, [settings.hotkeys]);
   const [capturing, setCapturing] = useState<HotkeyId | null>(null);
   const [conflict, setConflict] = useState<HotkeyId | null>(null);
 
@@ -28,12 +28,12 @@ export function HotkeysPanel() {
     return scopes;
   }, []);
 
-  const setBinding = (id: HotkeyId, binding: string | null) => {
+  const setBinding = useCallback((id: HotkeyId, binding: string | null) => {
     const next = { ...overrides };
     if (binding === null || binding === HOTKEY_MAP[id].defaultBinding) delete next[id];
     else next[id] = binding;
     update({ hotkeys: next });
-  };
+  }, [overrides, update]);
 
   const resetAll = () => update({ hotkeys: {} });
 
@@ -58,7 +58,7 @@ export function HotkeysPanel() {
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [capturing, overrides]);
+  }, [capturing, overrides, setBinding]);
 
   const overrideCount = Object.keys(overrides).length;
 

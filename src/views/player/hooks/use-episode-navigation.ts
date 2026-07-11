@@ -44,7 +44,7 @@ export function useEpisodeNavigation(params: {
     return () => {
       cancelled = true;
     };
-  }, [src.meta.id, src.meta.type, src.episode, settings.tmdbKey]);
+  }, [src.meta.id, src.meta.type, src.episode, settings.tmdbKey, src.meta]);
 
   const goToEpisode = useCallback(
     (ep: PlayEpisode | null) => {

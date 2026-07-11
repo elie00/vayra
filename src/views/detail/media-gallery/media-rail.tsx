@@ -8,7 +8,10 @@ export function MediaRail({ children }: { children: React.ReactNode }) {
   const [canNext, setCanNext] = useState(false);
 
   const isRtl = (el: HTMLDivElement) => getComputedStyle(el).direction === "rtl";
-  const readPos = (el: HTMLDivElement) => (isRtl(el) ? -el.scrollLeft : el.scrollLeft);
+  const readPos = useCallback(
+    (el: HTMLDivElement) => (isRtl(el) ? -el.scrollLeft : el.scrollLeft),
+    [],
+  );
 
   const measure = useCallback(() => {
     const el = trackRef.current;
@@ -16,7 +19,7 @@ export function MediaRail({ children }: { children: React.ReactNode }) {
     const pos = readPos(el);
     setCanPrev(pos > 1);
     setCanNext(el.scrollWidth - el.clientWidth - pos > 1);
-  }, []);
+  }, [readPos]);
 
   useEffect(() => {
     const el = trackRef.current;

@@ -101,7 +101,7 @@ export function EpisodeDetailView({
     })();
 
     return () => { cancelled = true; };
-  }, [episodeKey, initialSeriesMeta, tmdbKey]);
+  }, [episode, episodeKey, initialSeriesMeta, season, seriesId, t, tmdbKey]);
 
   const getImageUrl = (path: string | null | undefined, size = "original"): string | undefined => {
     if (!path) return undefined;

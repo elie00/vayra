@@ -87,7 +87,7 @@ export function CinemetaEpisodes({
   useEffect(() => {
     if (userPickedRef.current) return;
     setActive(pickDefaultSeason(meta.id, grouped.map((g) => g.seasonNumber)));
-  }, [meta.id, grouped.length]);
+  }, [meta.id, grouped.length, grouped]);
 
   if (grouped.length === 0) return null;
   const activeEps = grouped.find((g) => g.seasonNumber === active)?.episodes ?? [];

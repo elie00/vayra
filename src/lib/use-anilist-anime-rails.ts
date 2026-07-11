@@ -58,7 +58,7 @@ export function useAnilistAnimeRails(): AnilistRail[] {
     return () => {
       cancelled = true;
     };
-  }, [isConnected, session?.userId]);
+  }, [isConnected, session]);
 
   return rails;
 }

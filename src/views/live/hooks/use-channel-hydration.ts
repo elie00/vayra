@@ -37,7 +37,7 @@ export function useChannelHydration(channelNames: string[]): Map<string, Meta | 
     if (pending.length === 0) return;
     queueRef.current.push(...pending);
     if (!runningRef.current) runQueue();
-  }, [channelNames.join("|")]);
+  }, [channelNames]);
 
   const runQueue = async () => {
     if (runningRef.current) return;

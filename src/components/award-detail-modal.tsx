@@ -340,6 +340,6 @@ function useWorkMeta(entry: WorkLike, preferSeries: boolean): Meta | null {
     return () => {
       cancelled = true;
     };
-  }, [key]);
+  }, [key, preferSeries]);
   return v;
 }

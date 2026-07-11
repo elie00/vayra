@@ -75,7 +75,7 @@ export function LocalTab() {
     } finally {
       setBusy(false);
     }
-  }, [settings.tmdbKey]);
+  }, [settings.tmdbKey, t]);
 
   const [type, setType] = useState<TypeKey>("all");
   const [query, setQuery] = useState("");

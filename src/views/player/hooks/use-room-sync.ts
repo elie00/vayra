@@ -122,7 +122,7 @@ export function useRoomSync(params: {
     tick();
     const id = window.setInterval(tick, HOST_HEARTBEAT_MS);
     return () => window.clearInterval(id);
-  }, [inRoom, isHost, hasStarted, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode, cast]);
+  }, [inRoom, isHost, hasStarted, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode, cast, hostSourceRef, guestPickRef]);
 
   const seekSeqRef = useRef<Map<string, number>>(new Map());
   const pendingSeekRef = useRef<number | null>(null);
@@ -239,7 +239,7 @@ export function useRoomSync(params: {
       if (state.playing && snap.status !== "playing") b.play().catch(() => {});
       if (!state.playing && snap.status === "playing") b.pause();
     });
-  }, [inRoom, onIncomingState, clientId, src.meta.id, suppressOutgoingFor, snap.status, snap.durationSec, cast]);
+  }, [inRoom, onIncomingState, clientId, src.meta.id, suppressOutgoingFor, snap.status, snap.durationSec, cast, bridgeRef, src, setForeignNotice]);
 
   useEffect(() => {
     if (!inRoom || !cast) return;
@@ -268,7 +268,7 @@ export function useRoomSync(params: {
       if (state.playing && !playing) void cast.play();
       if (!state.playing && playing) void cast.pause();
     });
-  }, [inRoom, cast, onIncomingState, clientId, src.meta.id, suppressOutgoingFor, setForeignNotice]);
+  }, [inRoom, cast, onIncomingState, clientId, src.meta.id, suppressOutgoingFor, setForeignNotice, src]);
 
   useEffect(() => {
     if (!inRoom || !isHost || !cast) return;
@@ -295,7 +295,7 @@ export function useRoomSync(params: {
     publishCast();
     const id = window.setInterval(publishCast, 3000);
     return () => window.clearInterval(id);
-  }, [inRoom, isHost, cast, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode]);
+  }, [inRoom, isHost, cast, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode, hostSourceRef, guestPickRef]);
 
   const mediaKey = `${src.meta.id}|${src.episode?.season ?? ""}|${src.episode?.episode ?? ""}`;
 
@@ -334,7 +334,7 @@ export function useRoomSync(params: {
       bridgeRef.current?.seek(seed.positionSeconds);
     }
     if (snap.status === "playing") bridgeRef.current?.pause();
-  }, [inRoom, hasStarted, snap.status, isHost, roomSnapshot.started, roomSnapshot.syncState, roomSnapshot.hostClientId]);
+  }, [inRoom, hasStarted, snap.status, isHost, roomSnapshot.started, roomSnapshot.syncState, roomSnapshot.hostClientId, src, bridgeRef]);
 
   const lobbySeededRef = useRef(false);
   useEffect(() => {
@@ -357,12 +357,12 @@ export function useRoomSync(params: {
       source: hostSourceRef.current ?? undefined,
       guestPick: guestPickRef.current || undefined,
     });
-  }, [inRoom, isHost, hasStarted, snap.durationSec, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode]);
+  }, [inRoom, isHost, hasStarted, snap.durationSec, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode, hostSourceRef, guestPickRef]);
 
   useEffect(() => {
     if (!inRoom || isHost || hasStarted) return;
     if (roomSnapshot.started) setHasStarted(true);
-  }, [inRoom, isHost, hasStarted, roomSnapshot.started]);
+  }, [inRoom, isHost, hasStarted, roomSnapshot.started, setHasStarted]);
 
   useEffect(() => {
     initialSyncDoneRef.current = false;
@@ -385,7 +385,7 @@ export function useRoomSync(params: {
     if (state.speed != null) b.setRate(state.speed);
     b.seek(target);
     b.play().catch(() => {});
-  }, [inRoom, isHost, hasStarted, roomSnapshot.syncState, src.meta.id, suppressOutgoingFor]);
+  }, [inRoom, isHost, hasStarted, roomSnapshot.syncState, src.meta.id, suppressOutgoingFor, src, bridgeRef]);
 
   return { inRoomRef, isHostRef, initialSyncDoneRef };
 }

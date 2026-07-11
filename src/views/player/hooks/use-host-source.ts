@@ -72,7 +72,7 @@ export function useHostSource(params: {
       source: descriptor,
       guestPick: guestPickRef.current || undefined,
     });
-  }, [inRoom, isHost, hasStarted, descriptor, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode]);
+  }, [inRoom, isHost, hasStarted, descriptor, publishState, src.meta.id, src.meta.name, src.meta.poster, src.episode, snap.status, snap.rate, guestPickRef]);
 
   return { hostSourceRef };
 }

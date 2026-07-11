@@ -44,5 +44,5 @@ export function useStubDetection(params: {
         onStub();
       },
     );
-  }, [snap.durationSec, snap.status, src.url, src.meta, src.streamRef, src.title]);
+  }, [snap.durationSec, snap.status, src.url, src.meta, src.streamRef, src.title, onStub]);
 }

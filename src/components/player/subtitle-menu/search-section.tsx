@@ -1,5 +1,5 @@
 import { Check, Loader2, Plus, Save, Search as SearchIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Flag } from "@/components/flag";
 import { useAuth } from "@/lib/auth";
 import type { Addon } from "@/lib/addons";
@@ -52,14 +52,7 @@ export function SearchSection(props: SubtitleMenuProps) {
     };
   }, [authKey]);
 
-  useEffect(() => {
-    // Only run initial auto-search once, after addons are loaded
-    if (!metaImdbId || addons === null || addonsLoading || initialSearchDone.current) return;
-    initialSearchDone.current = true;
-    void run();
-  }, [metaImdbId, addons, addonsLoading]);
-
-  const run = async () => {
+  const run = useCallback(async () => {
     setLoading(true);
     setResults(null);
     try {
@@ -107,7 +100,14 @@ export function SearchSection(props: SubtitleMenuProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addons, episode, metaImdbId, query, season, settings.preferredSubLangs, settings.subProvidersEnabled]);
+
+  useEffect(() => {
+    // Only run initial auto-search once, after addons are loaded
+    if (!metaImdbId || addons === null || addonsLoading || initialSearchDone.current) return;
+    initialSearchDone.current = true;
+    void run();
+  }, [metaImdbId, addons, addonsLoading, run]);
 
   const filtered = useMemo(() => {
     if (!results) return null;

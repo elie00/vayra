@@ -220,6 +220,8 @@ export function AnimeView({ active = true }: { active?: boolean }) {
 
   const animeDetectVer = useDetectedAnimeVersion();
   const continueWatching = useMemo(() => {
+    void cwVersion;
+    void animeDetectVer;
     const seen = new Set<string>();
     return [...libItems, ...simklCw]
       .filter((i) => {
@@ -551,5 +553,4 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     </main>
   );
 }
-
 

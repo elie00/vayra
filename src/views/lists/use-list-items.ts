@@ -39,7 +39,7 @@ export function useListItems(list: CustomList | null, active: boolean) {
       .finally(() => {
         if (epoch.current === current) setLoading(false);
       });
-  }, [active, list?.id, list?.ref, list?.source, mdblistKey, tmdbKey, nonce]);
+  }, [active, list, mdblistKey, tmdbKey, nonce]);
 
   return { items, loading, error, refresh };
 }

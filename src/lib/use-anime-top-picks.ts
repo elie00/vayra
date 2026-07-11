@@ -230,7 +230,7 @@ export function useAnimeTopPicks(input: {
     return () => {
       cancelled = true;
     };
-  }, [version, finishedKey, cwKey, recsKey, genreKey]);
+  }, [version, finishedKey, cwKey, recsKey, genreKey, favoriteGenres, libItems, watchHistoryRecs, heroMetas, continueWatching]);
 
   return picks;
 }

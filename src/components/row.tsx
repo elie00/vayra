@@ -150,22 +150,22 @@ export function Row({
     onEndRef.current = onEndReached;
   });
 
-  const measure = () => {
+  const measure = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
     const available = container.clientWidth;
     if (available <= 0) return;
     const fits = Math.max(1, Math.floor((available + GAP) / (effMin + GAP)));
     setCellWidth((available - (fits - 1) * GAP) / fits);
-  };
+  }, [effMin]);
 
   const isRtlTrack = (el: HTMLDivElement) => getComputedStyle(el).direction === "rtl";
-  const readPos = (el: HTMLDivElement) => (isRtlTrack(el) ? -el.scrollLeft : el.scrollLeft);
-  const writePos = (el: HTMLDivElement, pos: number) => {
+  const readPos = useCallback((el: HTMLDivElement) => (isRtlTrack(el) ? -el.scrollLeft : el.scrollLeft), []);
+  const writePos = useCallback((el: HTMLDivElement, pos: number) => {
     el.scrollLeft = isRtlTrack(el) ? -pos : pos;
-  };
+  }, []);
 
-  const measureScroll = () => {
+  const measureScroll = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
     const pos = readPos(el);
@@ -173,7 +173,7 @@ export function Row({
     const remaining = el.scrollWidth - el.clientWidth - pos;
     setCanNext(remaining > 1);
     if (el.clientWidth > 0 && remaining < 800) onEndRef.current?.();
-  };
+  }, [readPos]);
 
   const childCount = Children.count(children);
   const restoredRef = useRef(false);
@@ -194,7 +194,7 @@ export function Row({
     if (!userInteractedRef.current && readPos(trackEl) !== 0) {
       writePos(trackEl, 0);
     }
-  }, [children, childCount, cellWidth, trackEl, scrollKey, recallRowScroll, effMin]);
+  }, [children, childCount, cellWidth, trackEl, scrollKey, recallRowScroll, effMin, measure, measureScroll, readPos, writePos]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -252,7 +252,7 @@ export function Row({
         const pos = readPos(track);
         const aligned = Math.max(0, Math.min(Math.round(pos / stride) * stride, max));
         const target = max - pos < stride * 0.5 ? max : aligned;
-        glideTo(track, target, true);
+        glideToRef.current(track, target, true);
       }, 200);
     };
     track.addEventListener("wheel", onWheel, { passive: true });
@@ -288,7 +288,7 @@ export function Row({
         rememberRowScroll(scrollKey, readPos(track));
       }
     };
-  }, [scrollKey, rememberRowScroll]);
+  }, [scrollKey, rememberRowScroll, measure, measureScroll, readPos, writePos]);
 
   const scroll = (dir: -1 | 1) => {
     const el = trackRef.current;
@@ -319,7 +319,7 @@ export function Row({
     }
   };
 
-  const glideTo = (el: HTMLDivElement, target: number, snappy = false) => {
+  const glideTo = useCallback((el: HTMLDivElement, target: number, snappy = false) => {
     const rtl = isRtlTrack(el);
     const start = rtl ? -el.scrollLeft : el.scrollLeft;
     const distance = target - start;
@@ -346,7 +346,9 @@ export function Row({
       }
     };
     rafId.current = requestAnimationFrame(tick);
-  };
+  }, []);
+  const glideToRef = useRef(glideTo);
+  glideToRef.current = glideTo;
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 || e.pointerType === "touch") return;

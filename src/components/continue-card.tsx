@@ -158,7 +158,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
       cancelled = true;
       io.disconnect();
     };
-  }, [item._id, item.type, item.state?.video_id]);
+  }, [item._id, item.type, item.state?.video_id, item.name, item.poster, item.background, kitsuThreeSeg, animeEp]);
 
   const meta: Meta = hydratedMeta
     ? { ...hydratedMeta, id: item._id, type: libraryMetaType(item.type) }

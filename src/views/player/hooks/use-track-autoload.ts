@@ -150,17 +150,7 @@ export function useTrackAutoload(params: {
         `[subs/autoload] ${added}/${attempted} subs added (selection handled by priority effect)`,
       );
     })();
-  }, [
-    engine,
-    resolvedImdbId,
-    src.episode?.season,
-    src.episode?.episode,
-    src.url,
-    snap.audioTracks.length,
-    snap.durationSec,
-    snap.subtitleTracks,
-    settings,
-  ]);
+  }, [engine, resolvedImdbId, src.episode?.season, src.episode?.episode, src.url, snap.audioTracks.length, snap.durationSec, snap.subtitleTracks, settings, src.meta.id, src.meta.genres, src.meta.type, src.streamRef?.title, src.streamRef?.parsedTitle, src.streamRef?.source, src.streamRef?.resolution, bridgeRef]);
 
   const autoTrackKeyRef = useRef<string | null>(null);
   const prefsAppliedRef = useRef<string | null>(null);
@@ -248,13 +238,13 @@ export function useTrackAutoload(params: {
         bridgeRef.current?.setSubDelay(prefs.subDelaySec);
       }
     }
-  }, [engine, src.url, src.meta.id, snap.audioTracks, snap.subtitleTracks, snap.rate, snap.subDelaySec, settings]);
+  }, [engine, src.url, src.meta.id, snap.audioTracks, snap.subtitleTracks, snap.rate, snap.subDelaySec, settings, snap, src.meta.genres, bridgeRef]);
 
   useEffect(() => {
     if (!subsOffFor(readPlayerPrefs(src.meta.id), settings)) return;
     const selected = snap.subtitleTracks.find((t) => t.selected);
     if (selected) bridgeRef.current?.setSubtitleTrack(null);
-  }, [src.meta.id, snap.subtitleTracks, settings]);
+  }, [src.meta.id, snap.subtitleTracks, settings, bridgeRef]);
 
   return { resolvedImdbId, resolvedImdbVerified, resolutionSettled };
 }

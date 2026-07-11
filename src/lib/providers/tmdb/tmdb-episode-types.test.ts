@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Type verification test for episode types
  * This file ensures all types are properly defined and can be used

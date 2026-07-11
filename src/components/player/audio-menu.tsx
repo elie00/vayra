@@ -71,7 +71,7 @@ export function AudioMenu(props: Props) {
   useEffect(() => {
     if (!useOverlay || !open) return;
     void modalOverlayEmitState("audio", buildAudioOverlayState(props));
-  }, [useOverlay, open, props.tracks, props.selectedId, props.delaySec, props.engine]);
+  }, [useOverlay, open, props.tracks, props.selectedId, props.delaySec, props.engine, props]);
 
   useEffect(() => {
     return () => {

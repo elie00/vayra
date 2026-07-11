@@ -32,12 +32,11 @@ export default [
     // typescript-eslint enregistré (sans règles actives) pour que les directives
     // `/* eslint-disable @typescript-eslint/... */` déjà présentes se résolvent.
     plugins: { "@typescript-eslint": tseslint.plugin, "react-hooks": reactHooks },
-    // rules-of-hooks STRICT (0 violation après le fix de transport.tsx) : toute
-    // nouvelle violation casse la CI. exhaustive-deps reste en "warn" le temps de
-    // résorber les ~159 cas legacy (à durcir en "error" plus tard).
+    // Les deux familles de défauts de hooks sont bloquantes : une dépendance
+    // oubliée produit une closure périmée et doit être corrigée avant intégration.
     rules: {
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "error",
     },
   },
 ];

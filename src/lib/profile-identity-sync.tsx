@@ -22,28 +22,28 @@ export function ProfileIdentitySync() {
     if (settings.harborColor !== activeProfile.color) {
       update({ harborColor: activeProfile.color });
     }
-  }, [activeProfile?.id, activeProfile?.color]);
+  }, [activeProfile, settings.harborColor, update]);
 
   useEffect(() => {
     if (!activeProfile) return;
     if (settings.harborAvatar !== activeProfile.avatar) {
       update({ harborAvatar: activeProfile.avatar });
     }
-  }, [activeProfile?.id, activeProfile?.avatar]);
+  }, [activeProfile, settings.harborAvatar, update]);
 
   useEffect(() => {
     if (!activeProfile) return;
     if (activeProfile.name && displayName !== activeProfile.name) {
       setDisplayName(activeProfile.name);
     }
-  }, [activeProfile?.id, activeProfile?.name]);
+  }, [activeProfile, displayName, setDisplayName]);
 
   useEffect(() => {
     if (!activeProfile?.hideContent) return;
     if (!sameHideContent(settings.hideContent, activeProfile.hideContent)) {
       update({ hideContent: activeProfile.hideContent });
     }
-  }, [activeProfile?.id, activeProfile?.hideContent]);
+  }, [activeProfile, settings.hideContent, update]);
 
   return null;
 }

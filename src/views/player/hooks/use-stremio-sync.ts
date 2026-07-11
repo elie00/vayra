@@ -40,6 +40,7 @@ export function useStremioSync(params: {
   const ourVideoId = videoIdFor(src, canonicalId);
 
   useEffect(() => {
+    const writtenMtimes = lastWrittenMtimesRef.current;
     const vid = ourVideoId;
     if (vid && baseItemRef.current) {
       const { src: s, snap: sn, authKey: ak } = latestRef.current;
@@ -62,10 +63,10 @@ export function useStremioSync(params: {
       if (pos < MIN_POSITION_SEC) return;
       const base = baseItemRef.current?._id === cid ? baseItemRef.current : null;
       void writeLibraryItem(ak, s, sn, base, cid, pos, false, vid).then((mt) => {
-        if (mt) lastWrittenMtimesRef.current.add(mt);
+        if (mt) writtenMtimes.add(mt);
       });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [ourVideoId, src.url]);
 
   useEffect(() => {
@@ -193,14 +194,14 @@ export function useStremioSync(params: {
   useEffect(() => {
     if (snap.status === "paused") void writeWithFreshBase(false, true);
     if (snap.status === "ended" || snap.status === "error") void writeWithFreshBase(true, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [snap.status]);
 
   useEffect(() => {
     return () => {
       void writeWithFreshBase(true, true);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   useEffect(() => {

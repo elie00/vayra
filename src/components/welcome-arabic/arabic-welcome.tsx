@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useMedia } from "@/components/hover-preview/scene";
 import { useSettings } from "@/lib/settings";
@@ -18,7 +18,7 @@ export default function ArabicWelcome({ onFeedback }: { onFeedback?: () => void 
   const reduced = useMedia("(prefers-reduced-motion: reduce)");
   const show = settings.uiLanguage === "ar" && !settings.arabicWelcomeSeen;
 
-  const dismiss = () => update({ arabicWelcomeSeen: true });
+  const dismiss = useCallback(() => update({ arabicWelcomeSeen: true }), [update]);
 
   useEffect(() => {
     if (!show) return;
@@ -27,7 +27,7 @@ export default function ArabicWelcome({ onFeedback }: { onFeedback?: () => void 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [show]);
+  }, [dismiss, show]);
 
   if (!show) return null;
 

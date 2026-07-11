@@ -31,7 +31,10 @@ export function BackupsPanel({
   onRestore: (backup: AddonOrderBackup) => void;
 }) {
   const t = useT();
-  const backups = useMemo(() => loadBackups(), [refreshKey]);
+  const backups = useMemo(() => {
+    void refreshKey;
+    return loadBackups();
+  }, [refreshKey]);
   return (
     <div className="flex flex-col gap-4 p-5">
       <p className="text-[12.5px] leading-relaxed text-ink-muted">

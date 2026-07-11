@@ -38,20 +38,7 @@ export function useSubStyleApply(params: {
   useEffect(() => {
     if (engine !== "mpv") return;
     void applySubStyle(settings, subAssNative);
-  }, [
-    engine,
-    subAssNative,
-    settings.subFontSize,
-    settings.subFontColor,
-    settings.subBorderColor,
-    settings.subBorderSize,
-    settings.subMarginY,
-    settings.subAlignX,
-    settings.subAssOverride,
-    settings.subStyle,
-    settings.subFontFamily,
-    settings.subLineSpacing,
-  ]);
+  }, [engine, subAssNative, settings.subFontSize, settings.subFontColor, settings.subBorderColor, settings.subBorderSize, settings.subMarginY, settings.subAlignX, settings.subAssOverride, settings.subStyle, settings.subFontFamily, settings.subLineSpacing, settings]);
 
   useEffect(() => {
     if (engine !== "mpv") return;

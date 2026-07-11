@@ -36,7 +36,7 @@ export function ParentalProvider({ children }: { children: ReactNode }) {
 
   const hiddenTabs: HiddenTabs = useMemo(
     () => ({ ...DEFAULT_HIDDEN, ...(activeProfile?.lockedTabs ?? {}) }),
-    [activeProfile?.id, activeProfile?.lockedTabs],
+    [activeProfile?.lockedTabs],
   );
   const hasPin = !!activeProfile?.passwordHash;
   const hasAnyLocked = anyTabLocked(activeProfile?.lockedTabs);

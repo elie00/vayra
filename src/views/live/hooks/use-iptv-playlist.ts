@@ -41,7 +41,7 @@ export function useIptvPlaylist(source: IptvPlaylistSource | null): {
       cancelled = true;
       unsub();
     };
-  }, [source?.id, source?.url, tick]);
+  }, [source, tick]);
 
   return {
     state,

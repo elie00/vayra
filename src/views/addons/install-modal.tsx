@@ -1,5 +1,5 @@
 import { Check, Loader2, Settings2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchManifestAt,
   findHostnameMatch,
@@ -60,7 +60,7 @@ export function AddonInstallModal({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [onClose]);
 
-  const tryResolve = async (rawUrl: string) => {
+  const tryResolve = useCallback(async (rawUrl: string) => {
     setLoading(true);
     setError(null);
     setResolved(null);
@@ -95,13 +95,13 @@ export function AddonInstallModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [mode, t]);
 
   useEffect(() => {
     if (mode.kind === "install" && mode.url && !resolved && !loading && !error) {
       void tryResolve(mode.url);
     }
-  }, [mode]);
+  }, [error, loading, mode, resolved, tryResolve]);
 
   const onSubmit = async () => {
     if (!resolved) {

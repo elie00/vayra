@@ -37,7 +37,7 @@ export function NativeTrailerPlayer({
       const v = ref.current;
       if (v && !v.paused && !scrubbing) setChromeVisible(false);
     }, CHROME_HIDE_MS);
-  }, [scrubbing]);
+  }, [ref, scrubbing]);
 
   useEffect(
     () => () => {
@@ -73,19 +73,19 @@ export function NativeTrailerPlayer({
     if (!v) return;
     if (v.paused) v.play().catch(() => {});
     else v.pause();
-  }, []);
+  }, [ref]);
 
   const seekTo = useCallback((ratio: number) => {
     const v = ref.current;
     if (!v || !isFinite(v.duration)) return;
     v.currentTime = Math.max(0, Math.min(v.duration, ratio * v.duration));
-  }, []);
+  }, [ref]);
 
   const seekBy = useCallback((delta: number) => {
     const v = ref.current;
     if (!v || !isFinite(v.duration)) return;
     v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + delta));
-  }, []);
+  }, [ref]);
 
   const applyVolume = useCallback((val: number) => {
     const clamped = Math.max(0, Math.min(1, val));
@@ -94,13 +94,13 @@ export function NativeTrailerPlayer({
     if (!v) return;
     v.volume = clamped;
     if (clamped > 0 && v.muted) v.muted = false;
-  }, []);
+  }, [ref]);
 
   const toggleMute = useCallback(() => {
     const v = ref.current;
     if (!v) return;
     v.muted = !v.muted;
-  }, []);
+  }, [ref]);
 
   const cycleSpeed = useCallback(() => {
     setSpeed((cur) => {
@@ -110,7 +110,7 @@ export function NativeTrailerPlayer({
       if (v) v.playbackRate = next;
       return next;
     });
-  }, []);
+  }, [ref]);
 
   const togglePiP = useCallback(async () => {
     const v = ref.current;
@@ -124,7 +124,7 @@ export function NativeTrailerPlayer({
     } catch {
       void 0;
     }
-  }, []);
+  }, [ref]);
 
   useEffect(() => {
     const v = ref.current;

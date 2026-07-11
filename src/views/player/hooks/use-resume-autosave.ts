@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { markAnimeWatching, syncAnimeProgress } from "@/lib/anilist/sync";
 import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
@@ -111,7 +111,7 @@ export function useResumeAutosave(params: {
     trackEvent(id, kind, profileFromMeta(s.meta));
   };
 
-  const persistNow = (force: boolean): void => {
+  const persistNow = useCallback((force: boolean): void => {
     const { src: s, snap: sn, season: se, episode: ep } = latestRef.current;
     if (s.meta.id?.startsWith("iptv:")) return;
     const pos = getPlaybackPosition() || lastGoodPosRef.current;
@@ -119,13 +119,13 @@ export function useResumeAutosave(params: {
     const ms = pos * 1000;
     if (!force && Math.abs(ms - lastSavedRef.current) < 1500) return;
     record(s, sn, se, ep);
-  };
+  }, []);
 
   useEffect(() => {
     if (snap.status !== "playing") return;
     const id = window.setInterval(() => persistNow(false), TICK_MS);
     return () => window.clearInterval(id);
-  }, [snap.status]);
+  }, [persistNow, snap.status]);
 
   useEffect(() => {
     if (
@@ -136,7 +136,7 @@ export function useResumeAutosave(params: {
     )
       return;
     persistNow(true);
-  }, [snap.status]);
+  }, [persistNow, snap.status]);
 
   useEffect(() => {
     const mySeason = season;
@@ -154,5 +154,5 @@ export function useResumeAutosave(params: {
       window.removeEventListener("pagehide", onUnload);
       window.removeEventListener("beforeunload", onUnload);
     };
-  }, []);
+  }, [persistNow]);
 }

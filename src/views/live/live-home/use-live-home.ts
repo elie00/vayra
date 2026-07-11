@@ -143,6 +143,7 @@ export function useLiveHome(params: {
   const { channelsByCountry, countries } = useMemo(() => indexChannelsByCountry(channels), [channels]);
 
   const out = useMemo(() => {
+    void statsVersion;
     const { byId, byGroup, themeCh, topGroups } = index;
     const item = (ch: IptvChannel) => buildNowItem(ch, epg, tvgCounts, nowMs);
 

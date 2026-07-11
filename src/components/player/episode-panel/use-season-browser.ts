@@ -38,7 +38,7 @@ export function useSeasonBrowser(
     return () => {
       cancelled = true;
     };
-  }, [open, meta.id, meta.type, settings.tmdbKey]);
+  }, [open, meta.id, meta.type, settings.tmdbKey, meta]);
 
   useEffect(() => {
     if (!open || (meta.type !== "series" && !isAnimeId(meta.id))) {
@@ -60,7 +60,7 @@ export function useSeasonBrowser(
     return () => {
       cancelled = true;
     };
-  }, [open, meta.id, meta.type, season, settings.tmdbKey]);
+  }, [open, meta.id, meta.type, season, settings.tmdbKey, meta]);
 
   return { seasons, season, setSeason, episodes, loading };
 }

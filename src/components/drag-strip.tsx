@@ -50,7 +50,7 @@ export function DragStrip({
     const ro = new ResizeObserver(sync);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [itemCount, sync]);
+  }, [itemCount, ref, sync]);
 
   const page = (dir: -1 | 1) => {
     const el = ref.current;

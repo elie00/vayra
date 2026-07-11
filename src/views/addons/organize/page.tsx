@@ -47,7 +47,7 @@ export function OrganizeAddonsPage({
   const [backupsOpen, setBackupsOpen] = useState(false);
   const backupsWrapRef = useRef<HTMLDivElement>(null);
   const backedUpRef = useRef(false);
-  const backupCount = useMemo(() => loadBackups().length, [backupsKey]);
+  const backupCount = useMemo(() => loadBackups().length, []);
 
   const load = useCallback(async () => {
     setPhase({ kind: "loading" });
