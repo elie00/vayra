@@ -66,6 +66,18 @@ run. The supported carry-over path is the app's own **backup / restore**:
 The same export/restore is the recommended path for Android upgraders (export on
 the old app before uninstalling, restore on the reinstalled VAYRA app).
 
+**In-place upgrade / auto-updater:** because the bundle identifier changes, the
+first VAYRA build is a *new application* to the OS installer, not an in-place
+upgrade of an `app.harbor` install. On Windows the MSI/NSIS upgrade code is
+derived from the identifier, so an existing Harbor install is not replaced — the
+VAYRA build installs alongside it (users should uninstall the old one). macOS
+replaces the `.app` at its existing path, but the OS still treats `app.vayra` as
+a distinct bundle for permissions/keychain (hence the keyring migration). The
+auto-updater endpoint stays on `harbor.site` and is unchanged; the identifier
+transition itself is a one-time manual step (install the VAYRA build once), after
+which auto-updates continue normally under `app.vayra`. This crossover cannot be
+validated in CI (no live prior install); it needs a manual old→new upgrade check.
+
 ## Retained Harbor references (intentional)
 
 ### External servers (outside this repo)
