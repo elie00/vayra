@@ -131,7 +131,7 @@ export function CinematicPlayerLoader({
             className="absolute bottom-[12%] right-[12%] h-20 w-auto opacity-75"
           />
           <img
-            src="/kids/doodles/lilorangestar2.png"
+            src="/kids/doodles/lilwhitestar2.png"
             alt=""
             draggable={false}
             className="absolute right-[18%] top-[18%] h-10 w-auto opacity-90"
@@ -169,7 +169,7 @@ export function CinematicPlayerLoader({
           </p>
         )}
         {!kid && heavyForP2p && (
-          <p className="max-w-md text-[12.5px] leading-relaxed text-amber-300/85">
+          <p className="max-w-md text-[12.5px] leading-relaxed text-info/85">
             {t("Heads up: this is a large file for peer-to-peer streaming, so it can take a while to start. A 1080p source or a debrid service will load faster.")}
           </p>
         )}

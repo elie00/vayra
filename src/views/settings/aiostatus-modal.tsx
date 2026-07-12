@@ -6,7 +6,7 @@ import type { AioService, AioStatusSnapshot } from "@/lib/streams/aiostatus";
 
 const PALETTE: Record<AioService["status"], { dot: string; text: string }> = {
   expired: { dot: "bg-rose-300", text: "text-rose-200" },
-  expiring: { dot: "bg-amber-300", text: "text-amber-200" },
+  expiring: { dot: "bg-info", text: "text-info" },
   active: { dot: "bg-emerald-300", text: "text-emerald-200" },
   unknown: { dot: "bg-ink-subtle", text: "text-ink-subtle" },
 };

@@ -13,7 +13,7 @@ const CATEGORY_TILES: Array<{
   accent: string;
   icon: string;
 }> = [
-  { cat: "http+streams", title: "Streaming", blurb: "Where your video comes from", accent: "from-amber-500/40 to-orange-600/30", icon: streamsIcon },
+  { cat: "http+streams", title: "Streaming", blurb: "Where your video comes from", accent: "from-info/40 to-violet-500/30", icon: streamsIcon },
   { cat: "metadata", title: "Catalogs", blurb: "Posters, ratings, lists", accent: "from-blue-500/40 to-indigo-600/30", icon: catalogsIcon },
   { cat: "subtitles", title: "Subtitles", blurb: "Captions in your language", accent: "from-violet-500/40 to-fuchsia-600/30", icon: subtitlesIcon },
   { cat: "anime", title: "Anime", blurb: "Kitsu, MAL, season-aware", accent: "from-rose-500/40 to-pink-600/30", icon: animeIcon },

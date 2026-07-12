@@ -35,7 +35,7 @@ export function MalSyncToast() {
               ? "bg-emerald-400/15 text-emerald-300"
               : syncing
                 ? "text-ink-muted"
-                : "bg-amber-400/15 text-amber-300"
+                : "bg-info/15 text-info"
           }`}
         >
           {syncing ? (

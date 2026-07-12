@@ -94,7 +94,7 @@ export function CommunityDetail({
               <div className="ms-auto flex items-center gap-0.5" role="group" aria-label="Rate this theme">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} onClick={() => rate(n)} aria-label={`Rate ${n} stars`} className="p-0.5">
-                    <Star size={20} className={n <= shownRating ? "fill-amber-300 text-amber-300" : "text-ink-subtle"} />
+                    <Star size={20} className={n <= shownRating ? "fill-info text-info" : "text-ink-subtle"} />
                   </button>
                 ))}
               </div>

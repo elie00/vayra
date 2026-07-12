@@ -100,7 +100,7 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
     return (
       <section>
         <div className="mb-5 flex items-center gap-2">
-          <MessageCircle size={18} className="text-amber-300" />
+          <MessageCircle size={18} className="text-info" />
           <h2 className="text-[20px] font-bold text-ink">{t("Letterboxd Reviews")}</h2>
         </div>
         <div className="flex flex-col gap-3">
@@ -125,7 +125,7 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
     return (
       <section>
         <div className="mb-5 flex items-center gap-2">
-          <MessageCircle size={18} className="text-amber-300" />
+          <MessageCircle size={18} className="text-info" />
           <h2 className="text-[20px] font-bold text-ink">{t("Letterboxd Reviews")}</h2>
         </div>
         <div className="rounded-xl border border-edge-soft bg-elevated/40 p-5 text-center">
@@ -158,7 +158,7 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
     <section>
       <div className="mb-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <MessageCircle size={18} className="text-amber-300" />
+          <MessageCircle size={18} className="text-info" />
           <h2 className="text-[20px] font-bold text-ink">{t("Letterboxd Reviews")}</h2>
           {reviews.length > 0 && (
             <span className="text-[12px] text-ink-subtle">({reviews.length})</span>
@@ -257,12 +257,12 @@ function LetterboxdReviewsInner({ meta, imdbId }: { meta: Meta; imdbId: string |
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => review.authorUrl && openUrl(review.authorUrl)}
-                    className="text-[13px] font-semibold text-ink transition-colors hover:text-amber-300"
+                    className="text-[13px] font-semibold text-ink transition-colors hover:text-info"
                   >
                     {review.author || t("Anonymous")}
                   </button>
                   {review.rating && (
-                    <span className="text-[14px] leading-none text-amber-300">{review.rating}</span>
+                    <span className="text-[14px] leading-none text-info">{review.rating}</span>
                   )}
                   {review.lang && review.lang !== "en" && (
                     <span className="rounded-full bg-edge-soft/40 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-ink-subtle">

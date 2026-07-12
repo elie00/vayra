@@ -4,7 +4,7 @@ import { DEFAULT_KID, type KidConfig } from "@/lib/profiles";
 
 const TOGGLE_DOODLES: { src: string; pos: string; flip?: boolean; hover?: boolean }[] = [
   { src: "lilwhale1", pos: "bottom-1 right-4 h-16", flip: true },
-  { src: "lilorangestar2", pos: "right-24 top-3 h-7" },
+  { src: "lilwhitestar2", pos: "right-24 top-3 h-7" },
 ];
 
 export function KidToggle({

@@ -1508,8 +1508,8 @@ export const TEMPLATE_THEMES: ThemePreset[] = [
   {
     id: "velvet" as ThemePresetId,
     name: "Velvet",
-    blurb: "Eggplant + champagne gold + serif. Old theatre, late night.",
-    swatch: ["#1a0f1f", "#3a1f44", "#d4b562"],
+    blurb: "Eggplant + Orbit Blue + serif. Old theatre, late night.",
+    swatch: ["#1a0f1f", "#3a1f44", "#4b9dff"],
     tokens: {
       "--color-canvas": "#160c1b",
       "--color-surface": "#1f1226",
@@ -1518,10 +1518,10 @@ export const TEMPLATE_THEMES: ThemePreset[] = [
       "--color-ink": "#f6efe3",
       "--color-ink-muted": "#c4b6a2",
       "--color-ink-subtle": "#7a6c64",
-      "--color-edge": "rgba(212,181,98,0.18)",
-      "--color-edge-soft": "rgba(212,181,98,0.08)",
-      "--color-accent": "#d4b562",
-      "--color-accent-soft": "rgba(212,181,98,0.16)",
+      "--color-edge": "rgba(75,157,255,0.18)",
+      "--color-edge-soft": "rgba(75,157,255,0.08)",
+      "--color-accent": "#4b9dff",
+      "--color-accent-soft": "rgba(75,157,255,0.16)",
       "--color-danger": "#e87474",
     },
     background: {

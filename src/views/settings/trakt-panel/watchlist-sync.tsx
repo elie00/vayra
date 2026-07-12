@@ -172,7 +172,7 @@ export function WatchlistSync() {
           className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-[13px] ${
             phase.tone === "ok"
               ? "border-emerald-400/30 bg-emerald-400/8 text-emerald-200"
-              : "border-amber-400/30 bg-amber-400/8 text-amber-200"
+              : "border-info/30 bg-info/8 text-info"
           }`}
         >
           {phase.tone === "ok" && <Check size={15} strokeWidth={2.4} />}

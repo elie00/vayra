@@ -17,7 +17,7 @@ function BarButtons({ editMode, hasChanges, onToggleEdit, onReset, kids }: Props
         kids ? (
           <button
             onClick={onReset}
-            className="flex h-12 items-center gap-2 rounded-full bg-amber-400 px-5 text-[15px] font-extrabold text-[#0e3a43] shadow-[0_8px_20px_-8px_rgba(180,120,0,0.5)] transition-transform hover:scale-105 active:scale-95"
+            className="flex h-12 items-center gap-2 rounded-full bg-info px-5 text-[15px] font-extrabold text-[#0e3a43] shadow-[0_8px_20px_-8px_rgba(75,157,255,0.45)] transition-transform hover:scale-105 active:scale-95"
           >
             <RotateCcw size={20} strokeWidth={2.6} />
             {t("Undo All")}

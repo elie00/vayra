@@ -103,9 +103,9 @@ export function PickerEmptyLadder({
       )}
 
       {pipelineDone && allCount > 0 && allCount <= 2 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/30 bg-amber-300/[0.06] px-5 py-3.5 text-[13px] text-ink">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-info/30 bg-info/[0.06] px-5 py-3.5 text-[13px] text-ink">
           <div className="flex min-w-0 flex-1 flex-col">
-            <p className="font-semibold text-amber-200">
+            <p className="font-semibold text-info">
               {allCount === 1 ? "Only 1 source after filtering" : "Only 2 sources after filtering"}
             </p>
             <p className="text-[12.5px] leading-snug text-ink-muted">
@@ -120,7 +120,7 @@ export function PickerEmptyLadder({
           {rawCount - allCount > 0 && !forceShowAll && (
             <button
               onClick={onShowAll}
-              className="shrink-0 rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-[12.5px] font-semibold text-amber-100 transition-[transform,background-color] hover:scale-[1.02] hover:bg-amber-300/20 active:scale-[0.98]"
+              className="shrink-0 rounded-full border border-info/40 bg-info/10 px-4 py-2 text-[12.5px] font-semibold text-info transition-[transform,background-color] hover:scale-[1.02] hover:bg-info/20 active:scale-[0.98]"
             >
               Show everything anyway
             </button>

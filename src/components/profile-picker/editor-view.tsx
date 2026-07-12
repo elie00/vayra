@@ -427,13 +427,13 @@ export function EditorView({
               }}
             />
             {traktAvatarError && (
-              <p className="text-[11.5px] text-amber-200/85">{traktAvatarError}</p>
+              <p className="text-[11.5px] text-info/85">{traktAvatarError}</p>
             )}
             {anilistAvatarError && (
-              <p className="text-[11.5px] text-amber-200/85">{anilistAvatarError}</p>
+              <p className="text-[11.5px] text-info/85">{anilistAvatarError}</p>
             )}
             {simklAvatarError && (
-              <p className="text-[11.5px] text-amber-200/85">{simklAvatarError}</p>
+              <p className="text-[11.5px] text-info/85">{simklAvatarError}</p>
             )}
           </div>
         </div>
@@ -731,7 +731,7 @@ function SecurityView({
             <span
               className={`flex h-9 w-9 items-center justify-center rounded-full ring-1 ${
                 lockedCount > 0
-                  ? "bg-amber-300/15 text-amber-200 ring-amber-300/30"
+                  ? "bg-info/15 text-info ring-info/30"
                   : "bg-canvas/60 text-ink-muted ring-edge-soft"
               }`}
             >

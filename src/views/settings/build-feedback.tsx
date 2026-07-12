@@ -12,12 +12,12 @@ const REPO_ISSUE = "https://github.com/harborstremio/harbor/issues/new";
 type Stop = { label: string; Icon: ComponentType<{ size?: number; strokeWidth?: number }>; color: string };
 const STOPS: Stop[] = [
   { label: "Much worse", Icon: Angry, color: "#f04444" },
-  { label: "Worse", Icon: Frown, color: "#f59e0b" },
+  { label: "Worse", Icon: Frown, color: "#4b9dff" },
   { label: "About the same", Icon: Meh, color: "#9aa3af" },
   { label: "Better", Icon: Smile, color: "#34d399" },
   { label: "Much better", Icon: Laugh, color: "#22c55e" },
 ];
-const TRACK = "linear-gradient(to right, #f04444 0%, #f59e0b 27%, #9aa3af 50%, #34d399 73%, #22c55e 100%)";
+const TRACK = "linear-gradient(to right, #f04444 0%, #4b9dff 27%, #9aa3af 50%, #34d399 73%, #22c55e 100%)";
 
 function readSaved(): number | null {
   try {

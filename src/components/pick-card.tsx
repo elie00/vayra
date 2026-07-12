@@ -583,7 +583,7 @@ type CardBadge =
 
 function metacriticTone(v: number): string {
   if (v >= 61) return "bg-emerald-500";
-  if (v >= 40) return "bg-amber-500";
+  if (v >= 40) return "bg-info";
   return "bg-red-500";
 }
 

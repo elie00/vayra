@@ -103,7 +103,7 @@ export function VariantRow({
               key={t.label}
               className={`rounded px-1 py-px text-[9.5px] font-bold uppercase tracking-[0.1em] ${
                 t.tone === "warn"
-                  ? "bg-amber-400/15 text-amber-200 ring-1 ring-amber-400/30"
+                  ? "bg-info/15 text-info ring-1 ring-info/30"
                   : t.tone === "info"
                     ? "bg-sky-400/15 text-sky-200 ring-1 ring-sky-400/30"
                     : "bg-raised text-ink-muted ring-1 ring-edge-soft"
