@@ -96,7 +96,7 @@ export function CustomThemesSection() {
     const input = document.createElement("input");
     input.type = "file";
     input.accept =
-      ".harborstyle,.json,.txt,.harbortheme.json,.yaml,.yml,.ini,.xml,application/json,text/plain";
+      ".harborstyle,.vayrastyle,.json,.txt,.harbortheme.json,.yaml,.yml,.ini,.xml,application/json,text/plain";
     input.onchange = () => {
       const f = input.files?.[0];
       if (f) importFile(f);
@@ -125,7 +125,7 @@ export function CustomThemesSection() {
     if (!preset) return;
     const text = serializeHarborStyle(preset);
     const safeName = preset.name.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase() || "theme";
-    await downloadText(`${safeName}.harborstyle`, text, ["harborstyle"]);
+    await downloadText(`${safeName}.vayrastyle`, text, ["vayrastyle"]);
   };
 
   if (studioOpen) {

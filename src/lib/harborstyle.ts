@@ -7,7 +7,12 @@ type ParseResult = { ok: true; theme: CustomTheme } | { ok: false; error: string
 
 export function isHarborStyleName(name: string): boolean {
   const lower = name.toLowerCase();
-  return lower.endsWith(".harborstyle") || lower.endsWith(".harborstyle.txt");
+  return (
+    lower.endsWith(".harborstyle") ||
+    lower.endsWith(".harborstyle.txt") ||
+    lower.endsWith(".vayrastyle") ||
+    lower.endsWith(".vayrastyle.txt")
+  );
 }
 
 export function parseHarborStyle(text: string): ParseResult {
