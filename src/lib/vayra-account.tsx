@@ -14,9 +14,12 @@ import { onVayraAuthCallback } from "./deep-link";
 const SESSION_ACCOUNT = "vayra-email-session-v1";
 const WEB_SESSION_KEY = "vayra.email.session.v1";
 const REDIRECT_URL = "vayra://auth/callback";
+const DEFAULT_SUPABASE_URL = "https://kbuwutnzqapwnvzgyjtw.supabase.co";
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_kLf8ZEhewgc7j5qDAVjCrA_FTdPB2uh";
 
-const supabaseUrl = import.meta.env.VITE_VAYRA_SUPABASE_URL?.trim() ?? "";
-const supabaseAnonKey = import.meta.env.VITE_VAYRA_SUPABASE_ANON_KEY?.trim() ?? "";
+const supabaseUrl = import.meta.env.VITE_VAYRA_SUPABASE_URL?.trim() || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey =
+  import.meta.env.VITE_VAYRA_SUPABASE_ANON_KEY?.trim() || DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
