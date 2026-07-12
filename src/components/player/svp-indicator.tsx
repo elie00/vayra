@@ -34,11 +34,11 @@ export function SvpIndicator({
     void tick();
     const id = window.setInterval(() => void tick(), 2000);
     const onFailed = () => setActive(false);
-    window.addEventListener("harbor:svp-failed", onFailed);
+    window.addEventListener("vayra:svp-failed", onFailed);
     return () => {
       cancelled = true;
       window.clearInterval(id);
-      window.removeEventListener("harbor:svp-failed", onFailed);
+      window.removeEventListener("vayra:svp-failed", onFailed);
     };
   }, [enabled]);
 

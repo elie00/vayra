@@ -37,12 +37,12 @@ export const RECIPES: Recipe[] = [
               padding:26px 16px; background:var(--color-surface);
               border-right:1px solid var(--color-edge); z-index:60;">
   <div style="font:600 26px var(--font-display); color:var(--color-ink);">VAYRA</div>
-  <button onclick="window.harbor.navigate('home')">Home</button>
-  <button onclick="window.harbor.navigate('movies')">Movies</button>
-  <button onclick="window.harbor.navigate('shows')">Shows</button>
-  <button onclick="window.harbor.navigate('settings')">Settings</button>
+  <button onclick="window.vayra.navigate('home')">Home</button>
+  <button onclick="window.vayra.navigate('movies')">Movies</button>
+  <button onclick="window.vayra.navigate('shows')">Shows</button>
+  <button onclick="window.vayra.navigate('settings')">Settings</button>
 </aside>`,
-    why: "Set layout to Custom. Your HTML becomes the chrome, wired with window.harbor.navigate().",
+    why: "Set layout to Custom. Your HTML becomes the chrome, wired with window.vayra.navigate().",
   },
   {
     title: "Shift content over for your sidebar",
@@ -55,7 +55,7 @@ export const RECIPES: Recipe[] = [
   {
     title: "Highlight the active nav item",
     lang: "css",
-    code: `[data-harbor-nav][data-active] {
+    code: `[data-vayra-nav][data-active] {
   background: var(--color-raised);
   color: var(--color-ink);
 }`,
@@ -74,7 +74,7 @@ export const RECIPES: Recipe[] = [
   {
     title: "React to view changes in JS",
     lang: "js",
-    code: `window.addEventListener('harbor:scroll-top', (e) => {
+    code: `window.addEventListener('vayra:scroll-top', (e) => {
   console.info('now viewing', e.detail.view);
 });`,
     why: "VAYRA dispatches lifecycle events on window. Listen from your theme JS.",
@@ -149,11 +149,11 @@ html[data-theme-layout="custom"]:not([data-chrome-hidden]) main { padding-left: 
 @html
 <aside class="rail">
   <div style="font:600 26px var(--font-display); color:var(--color-ink); padding:2px 10px;">VAYRA</div>
-  <button onclick="window.harbor.navigate('home')">Home</button>
-  <button onclick="window.harbor.navigate('movies')">Movies</button>
-  <button onclick="window.harbor.navigate('shows')">Shows</button>
-  <button onclick="window.harbor.navigate('live')">Live TV</button>
-  <button onclick="window.harbor.navigate('settings')">Settings</button>
+  <button onclick="window.vayra.navigate('home')">Home</button>
+  <button onclick="window.vayra.navigate('movies')">Movies</button>
+  <button onclick="window.vayra.navigate('shows')">Shows</button>
+  <button onclick="window.vayra.navigate('live')">Live TV</button>
+  <button onclick="window.vayra.navigate('settings')">Settings</button>
 </aside>`,
   },
 ];

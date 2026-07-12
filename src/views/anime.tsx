@@ -556,7 +556,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     if (active && !prevActiveRef.current) {
       const fire = () =>
         window.dispatchEvent(
-          new CustomEvent("harbor:reset-row-scrolls", { detail: { prefix: "anime:" } }),
+          new CustomEvent("vayra:reset-row-scrolls", { detail: { prefix: "anime:" } }),
         );
       fire();
       const r1 = requestAnimationFrame(fire);
@@ -592,8 +592,8 @@ export function AnimeView({ active = true }: { active?: boolean }) {
         if (tryScroll() || attempts > 20) window.clearInterval(id);
       }, 150);
     };
-    window.addEventListener("harbor:anime-focus-row", handler as EventListener);
-    return () => window.removeEventListener("harbor:anime-focus-row", handler as EventListener);
+    window.addEventListener("vayra:anime-focus-row", handler as EventListener);
+    return () => window.removeEventListener("vayra:anime-focus-row", handler as EventListener);
   }, []);
 
   return (

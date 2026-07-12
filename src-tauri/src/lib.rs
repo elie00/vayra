@@ -144,7 +144,7 @@ fn emit_window_fullscreen_state(window: &tauri::Window) {
 }
 
 #[tauri::command]
-fn harbor_flush_done() {
+fn vayra_flush_done() {
     CLOSE_FLUSH_DONE.store(true, std::sync::atomic::Ordering::SeqCst);
 }
 
@@ -298,7 +298,7 @@ pub(crate) fn force_show_foreground(window: &tauri::WebviewWindow) {
 }
 
 #[tauri::command]
-fn harbor_set_webview_memory_low(app: tauri::AppHandle, low: bool) {
+fn vayra_set_webview_memory_low(app: tauri::AppHandle, low: bool) {
     #[cfg(windows)]
     {
         use tauri::Manager;
@@ -331,7 +331,7 @@ fn harbor_set_webview_memory_low(app: tauri::AppHandle, low: bool) {
 }
 
 #[tauri::command]
-fn harbor_set_webview_visible(app: tauri::AppHandle, visible: bool) {
+fn vayra_set_webview_visible(app: tauri::AppHandle, visible: bool) {
     #[cfg(windows)]
     {
         use tauri::Manager;
@@ -349,7 +349,7 @@ fn harbor_set_webview_visible(app: tauri::AppHandle, visible: bool) {
 }
 
 #[tauri::command]
-fn harbor_try_suspend_webview(app: tauri::AppHandle) {
+fn vayra_try_suspend_webview(app: tauri::AppHandle) {
     #[cfg(windows)]
     {
         use tauri::Manager;
@@ -377,7 +377,7 @@ fn harbor_try_suspend_webview(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-fn harbor_resume_webview(app: tauri::AppHandle) {
+fn vayra_resume_webview(app: tauri::AppHandle) {
     #[cfg(windows)]
     {
         use tauri::Manager;
@@ -472,8 +472,11 @@ pub fn run() {
             let _ = w.unminimize();
             let _ = w.set_focus();
         }
-        if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
-            let _ = app.emit("harbor:stremio-deeplink", url.clone());
+        if let Some(url) = args
+            .iter()
+            .find(|a| a.starts_with("harbor://") || a.starts_with("vayra://"))
+        {
+            let _ = app.emit("vayra:stremio-deeplink", url.clone());
         }
     }));
 
@@ -519,7 +522,7 @@ pub fn run() {
     let app_builder = app_builder.register_uri_scheme_protocol("stremio", |ctx, request| {
         use tauri::Emitter;
         let url = request.uri().to_string();
-        let _ = ctx.app_handle().emit("harbor:stremio-deeplink", url);
+        let _ = ctx.app_handle().emit("vayra:stremio-deeplink", url);
         tauri::http::Response::builder()
             .status(200)
             .header("content-type", "text/html; charset=utf-8")
@@ -605,7 +608,7 @@ pub fn run() {
                         use tauri::Emitter;
                         api.prevent_close();
                         CLOSE_FLUSH_DONE.store(false, std::sync::atomic::Ordering::SeqCst);
-                        let _ = window.emit("harbor://app-closing", ());
+                        let _ = window.emit("vayra://app-closing", ());
                         let w = window.clone();
                         std::thread::spawn(move || {
                             for _ in 0..24 {
@@ -627,7 +630,7 @@ pub fn run() {
                             || !window.is_visible().unwrap_or(true)
                     };
                     let _ = window.emit(
-                        "harbor://window-activity",
+                        "vayra://window-activity",
                         serde_json::json!({ "focused": *focused, "minimized": minimized }),
                     );
                 }
@@ -640,13 +643,13 @@ pub fn run() {
 
     app_builder
         .invoke_handler(tauri::generate_handler![
-            harbor_flush_done,
+            vayra_flush_done,
             close_aux_windows,
             power::power_inhibit,
-            harbor_set_webview_memory_low,
-            harbor_set_webview_visible,
-            harbor_try_suspend_webview,
-            harbor_resume_webview,
+            vayra_set_webview_memory_low,
+            vayra_set_webview_visible,
+            vayra_try_suspend_webview,
+            vayra_resume_webview,
             save_text_file,
             cast_server::stop_stremio_sidecar,
             cast_server::cast_server_stop,
@@ -665,7 +668,7 @@ pub fn run() {
             settings_store::settings_secrets_write,
             settings_store::auth_secret_read,
             settings_store::auth_secret_write,
-            proc_mem::harbor_process_memory,
+            proc_mem::vayra_process_memory,
             trailer::fetch_trailer,
             download::download_start,
             download::download_cancel,
@@ -736,7 +739,7 @@ pub fn run() {
             multiview::multiview_close,
             multiview::multiview_visibility,
             multiview::multiview_stop_all,
-            http_fetch::harbor_fetch,
+            http_fetch::vayra_fetch,
             discord_rp::discord_set_presence,
             discord_rp::discord_clear,
             discord_rp::discord_set_enabled,
@@ -768,7 +771,7 @@ pub fn run() {
             streams::streams_run_pipeline,
             streams::streams_parse,
             streams::streams_core_version,
-            local_lib::harbor_scan_folder,
+            local_lib::vayra_scan_folder,
             tray::tray_set_prefs,
             tray::tray_set_custom_themes,
             stremio_auth::stremio_auth_start,

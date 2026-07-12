@@ -87,21 +87,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "harbor-core"
-version = "0.1.0"
-dependencies = [
- "js-sys",
- "once_cell",
- "regex",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "unicode-normalization",
- "wasm-bindgen",
- "wasm-bindgen-test",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -345,6 +330,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
 dependencies = [
  "tinyvec",
+]
+
+[[package]]
+name = "vayra-core"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "unicode-normalization",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
 ]
 
 [[package]]

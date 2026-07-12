@@ -5,8 +5,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "core:wasm": "wasm-pack build harbor-core --target web --out-dir pkg",
-    "core:wasm:smoke": "node scripts/smoke-harbor-core.mjs",
+    "core:wasm": "wasm-pack build vayra-core --target web --out-dir pkg",
+    "core:wasm:smoke": "node scripts/smoke-vayra-core.mjs",
     "predev": "pnpm core:wasm",
     "dev": "vite",
     "prebuild": "pnpm core:wasm",

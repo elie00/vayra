@@ -28,7 +28,7 @@ export function useFullscreen() {
     const mpvKick = async () => {
       if (cancelled) return;
       window.dispatchEvent(new Event("resize"));
-      window.dispatchEvent(new Event("harbor:mpv-refresh-geom"));
+      window.dispatchEvent(new Event("vayra:mpv-refresh-geom"));
       try {
         const { invoke } = await import("@tauri-apps/api/core");
         await invoke("webview_reapply_transparency").catch(() => {});

@@ -400,8 +400,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       e.preventDefault();
       void closePlayer();
     };
-    window.addEventListener("harbor:local-back", onLocalBack);
-    return () => window.removeEventListener("harbor:local-back", onLocalBack);
+    window.addEventListener("vayra:local-back", onLocalBack);
+    return () => window.removeEventListener("vayra:local-back", onLocalBack);
   }, [closePlayer]);
 
   const autoAdvancedRef = useRef(false);
@@ -922,7 +922,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   return (
     <main
       ref={stageRef}
-      data-harbor-player
+      data-vayra-player
       dir="ltr"
       className={`fixed inset-0 z-[100] overflow-hidden ${stageBg}`}
       style={cursorStyle}

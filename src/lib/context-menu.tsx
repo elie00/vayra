@@ -35,7 +35,7 @@ export function ContextMenuProvider({ children }: { children: ReactNode }) {
     if (!state) return;
     const onScroll = (e: Event) => {
       const t = e.target;
-      if (t instanceof Element && t.closest("[data-harbor-player]")) return;
+      if (t instanceof Element && t.closest("[data-vayra-player]")) return;
       close();
     };
     const onResize = () => close();

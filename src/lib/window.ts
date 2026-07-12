@@ -129,7 +129,7 @@ export function openInAppBrowser(url: string, title?: string) {
   }
   if (typeof window !== "undefined") {
     window.dispatchEvent(
-      new CustomEvent("harbor:open-embed-viewport", { detail: { url, title } }),
+      new CustomEvent("vayra:open-embed-viewport", { detail: { url, title } }),
     );
   }
 }

@@ -35,7 +35,7 @@ libc = "0.2"
 base64 = "0.22"
 png = "0.17"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
-harbor-core = { path = "../harbor-core" }
+vayra-core = { path = "../vayra-core" }
 librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
 url = "2"
 
@@ -54,7 +54,7 @@ mdns-sd = "0.13"
 reqwest = { version = "0.12", default-features = false, features = ["native-tls"] }
 
 # Sur Android : pas d'OpenSSL natif, on passe reqwest en rustls.
-# jni + ndk-context : appels au Keystore Android (app.harbor.HarborCredentials)
+# jni + ndk-context : appels au Keystore Android (app.vayra.HarborCredentials)
 # depuis settings_store.rs, le contexte Android étant initialisé par wry.
 [target.'cfg(target_os = "android")'.dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }

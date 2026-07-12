@@ -482,10 +482,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     if (v === "home") setHomeResetTick((n) => n + 1);
     if (typeof window !== "undefined" && v !== "settings") {
       window.dispatchEvent(
-        new CustomEvent("harbor:reset-row-scrolls", { detail: { prefix: `${v}:` } }),
+        new CustomEvent("vayra:reset-row-scrolls", { detail: { prefix: `${v}:` } }),
       );
       const fireScrollTop = () =>
-        window.dispatchEvent(new CustomEvent("harbor:scroll-top", { detail: { view: v } }));
+        window.dispatchEvent(new CustomEvent("vayra:scroll-top", { detail: { view: v } }));
       fireScrollTop();
       window.requestAnimationFrame(fireScrollTop);
       window.setTimeout(fireScrollTop, 60);
@@ -963,8 +963,8 @@ export function useScrollMemory(
       if (!el) return;
       el.scrollTo({ top: 0, left: 0, behavior: "auto" });
     };
-    window.addEventListener("harbor:scroll-top", onReset);
-    return () => window.removeEventListener("harbor:scroll-top", onReset);
+    window.addEventListener("vayra:scroll-top", onReset);
+    return () => window.removeEventListener("vayra:scroll-top", onReset);
   }, [key, ref]);
 
   useLayoutEffect(() => {

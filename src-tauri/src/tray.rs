@@ -96,7 +96,7 @@ fn toggle(app: &AppHandle, pref: Pref) {
     if matches!(pref, Pref::AlwaysOnTop) {
         apply_always_on_top(app, next);
     }
-    let _ = app.emit("harbor://tray-prefs", current_prefs());
+    let _ = app.emit("vayra://tray-prefs", current_prefs());
 }
 
 #[tauri::command]
@@ -253,12 +253,12 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
             "tray_ctt" => toggle(app, Pref::CloseToTray),
             _ if id.starts_with("tray_theme_") => {
                 let theme = id.strip_prefix("tray_theme_").unwrap_or_default().to_string();
-                let _ = app.emit("harbor://set-theme", theme);
+                let _ = app.emit("vayra://set-theme", theme);
             }
             "tray_quit" => {
                 if let Some(w) = app.get_webview_window("main") {
                     crate::CLOSE_FLUSH_DONE.store(false, Ordering::SeqCst);
-                    let _ = w.emit("harbor://app-closing", ());
+                    let _ = w.emit("vayra://app-closing", ());
                     for _ in 0..16 {
                         if crate::CLOSE_FLUSH_DONE.load(Ordering::SeqCst) {
                             break;

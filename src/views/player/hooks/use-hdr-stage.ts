@@ -22,12 +22,12 @@ export type HdrStageState = { requested: boolean; confirmed: boolean };
 
 function raiseStage() {
   void invoke("mpv_set_hdr_stage", { active: true }).catch(() => {});
-  window.dispatchEvent(new Event("harbor:mpv-force-geom"));
+  window.dispatchEvent(new Event("vayra:mpv-force-geom"));
 }
 
 function dropStage() {
   void invoke("mpv_set_hdr_stage", { active: false }).catch(() => {});
-  window.dispatchEvent(new Event("harbor:mpv-force-geom"));
+  window.dispatchEvent(new Event("vayra:mpv-force-geom"));
 }
 
 async function displayHdrActive(): Promise<boolean> {

@@ -2,10 +2,10 @@
 Name=Harbor
 Comment=A Stremio client built for adventure
 Exec=harbor %U
-Icon=site.harbor.Harbor
+Icon=site.vayra.Vayra
 Terminal=false
 Type=Application
 Categories=AudioVideo;Video;Player;
-MimeType=x-scheme-handler/harbor;x-scheme-handler/stremio;
+MimeType=x-scheme-handler/harbor;x-scheme-handler/vayra;x-scheme-handler/stremio;
 StartupNotify=true
-StartupWMClass=site.harbor.Harbor
+StartupWMClass=site.vayra.Vayra

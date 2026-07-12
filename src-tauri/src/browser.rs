@@ -117,7 +117,7 @@ pub async fn browser_open(app: AppHandle, url: String) -> Result<(), String> {
                 let s = url.as_str();
                 if url.scheme() == "stremio" || s.contains("/manifest.json") {
                     eprintln!("[browser] captured install link: {}", s);
-                    let _ = nav_app.emit("harbor://browser-stremio-capture", s.to_string());
+                    let _ = nav_app.emit("vayra://browser-stremio-capture", s.to_string());
                     return false;
                 }
                 true

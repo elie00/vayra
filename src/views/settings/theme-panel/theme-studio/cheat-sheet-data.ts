@@ -37,7 +37,7 @@ export const QUICKSTART: QuickStep[] = [
   { step: "Start from a theme", detail: "Open the Theme Studio. Begin from a built-in look or from scratch." },
   { step: "Set colors and fonts", detail: "The Look tab drives the 12 color tokens and the type pairing. The live sample updates instantly." },
   { step: "Choose a layout", detail: "The Layout tab picks where navigation lives. Custom hides built-in chrome and your own HTML takes over." },
-  { step: "Build custom chrome visually", detail: "On Custom, the builder makes a sidebar or top bar with no code. Wire items to window.harbor.navigate()." },
+  { step: "Build custom chrome visually", detail: "On Custom, the builder makes a sidebar or top bar with no code. Wire items to window.vayra.navigate()." },
   { step: "Go deeper with code", detail: "Open the code editor for raw CSS, HTML and JS layered over the whole app. Everything below is fair to target." },
   { step: "Save or export", detail: "Save adds it to Your themes. Export writes a .harborstyle file you can share with anyone." },
 ];
@@ -45,8 +45,8 @@ export const QUICKSTART: QuickStep[] = [
 export type HarborApi = { call: string; desc: string };
 
 export const WINDOW_HARBOR: HarborApi[] = [
-  { call: "window.harbor.navigate(view)", desc: "Switch the app to a view. Pass a view id below, e.g. window.harbor.navigate('movies')." },
-  { call: "window.harbor.back()", desc: "Go back one step, same as the back button." },
+  { call: "window.vayra.navigate(view)", desc: "Switch the app to a view. Pass a view id below, e.g. window.vayra.navigate('movies')." },
+  { call: "window.vayra.back()", desc: "Go back one step, same as the back button." },
 ];
 
 export type DataAttr = {
@@ -124,8 +124,8 @@ export const STABLE_SELECTORS: HookSelector[] = [
   { selector: ".harbor-minui-shell", where: "The floating dock container (Floating dock layout)." },
   { selector: ".glass-card", where: "Cards that opt into the glass treatment.", tip: "Active only when data-theme-card is glass." },
   { selector: ".modal-panel", where: "Modal bodies (auth, profile picker, together, etc.)." },
-  { selector: "[data-harbor-player]", where: "The video player root. Player surfaces scope to this." },
-  { selector: "[data-harbor-nav]", where: "Nav buttons in builder-generated custom chrome.", tip: "Gets [data-active] on the current view. Style the active item." },
+  { selector: "[data-vayra-player]", where: "The video player root. Player surfaces scope to this." },
+  { selector: "[data-vayra-nav]", where: "Nav buttons in builder-generated custom chrome.", tip: "Gets [data-active] on the current view. Style the active item." },
   { selector: "[data-tauri-drag-region]", where: "Window-drag areas. Keep one if you replace the title bar." },
   { selector: "main", where: "The scrolling content area. Add padding for custom chrome." },
 ];
@@ -149,11 +149,11 @@ export const Z_INDEX_MAP: Layer[] = [
 export type WindowEvent = { name: string; payload?: string; when: string };
 
 export const WINDOW_EVENTS: WindowEvent[] = [
-  { name: "harbor:immersive", payload: "CustomEvent<boolean>", when: "Live TV enters or exits immersive mode." },
-  { name: "harbor:reset-row-scrolls", payload: "CustomEvent<{ prefix }>", when: "View change. Reset rail scrollers." },
-  { name: "harbor:scroll-top", payload: "CustomEvent<{ view }>", when: "View change. Scroll main to the top." },
-  { name: "harbor:open-theme-editor", when: "The active-theme banner asks to open the color editor." },
-  { name: "harbor:error", payload: "CustomEvent<{ message }>", when: "An application-level error surfaced." },
+  { name: "vayra:immersive", payload: "CustomEvent<boolean>", when: "Live TV enters or exits immersive mode." },
+  { name: "vayra:reset-row-scrolls", payload: "CustomEvent<{ prefix }>", when: "View change. Reset rail scrollers." },
+  { name: "vayra:scroll-top", payload: "CustomEvent<{ view }>", when: "View change. Scroll main to the top." },
+  { name: "vayra:open-theme-editor", when: "The active-theme banner asks to open the color editor." },
+  { name: "vayra:error", payload: "CustomEvent<{ message }>", when: "An application-level error surfaced." },
 ];
 
 export type ViewName = { id: string; label: string };

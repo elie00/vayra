@@ -138,14 +138,14 @@ export function LiveView({ active }: { active: boolean }) {
       e.preventDefault();
       goLiveHome();
     };
-    window.addEventListener("harbor:local-back", onLocalBack);
-    return () => window.removeEventListener("harbor:local-back", onLocalBack);
+    window.addEventListener("vayra:local-back", onLocalBack);
+    return () => window.removeEventListener("vayra:local-back", onLocalBack);
   }, [active, goLiveHome, group, mode, query, setView, sources.length]);
   const [immersive, setImmersive] = useState(false);
   useEffect(() => {
     const onImm = (e: Event) => setImmersive((e as CustomEvent<boolean>).detail === true);
-    window.addEventListener("harbor:immersive", onImm);
-    return () => window.removeEventListener("harbor:immersive", onImm);
+    window.addEventListener("vayra:immersive", onImm);
+    return () => window.removeEventListener("vayra:immersive", onImm);
   }, []);
   useEffect(() => {
     if (mode !== "multiview" && immersive) setImmersive(false);

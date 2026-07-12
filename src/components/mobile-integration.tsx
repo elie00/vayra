@@ -80,14 +80,14 @@ export function MobileIntegration() {
 
   useEffect(() => {
     if (!isMobileTauri()) return;
-    // Same persistence the desktop runs on "harbor://app-closing": the exo
-    // bridge re-emits the native background lifecycle as harbor:flush-persist,
+    // Same persistence the desktop runs on "vayra://app-closing": the exo
+    // bridge re-emits the native background lifecycle as vayra:flush-persist,
     // and pagehide is a backup for the WebView being torn down.
     const flush = () => void flushCloudSync();
-    window.addEventListener("harbor:flush-persist", flush);
+    window.addEventListener("vayra:flush-persist", flush);
     window.addEventListener("pagehide", flush);
     return () => {
-      window.removeEventListener("harbor:flush-persist", flush);
+      window.removeEventListener("vayra:flush-persist", flush);
       window.removeEventListener("pagehide", flush);
     };
   }, []);

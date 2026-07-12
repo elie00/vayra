@@ -102,8 +102,8 @@ export function AddonDetail({
       if (detail.id !== m?.id) return;
       if (typeof detail.installed === "boolean") setOptimisticInstalled(detail.installed);
     };
-    window.addEventListener("harbor:addons-changed", onChange);
-    return () => window.removeEventListener("harbor:addons-changed", onChange);
+    window.addEventListener("vayra:addons-changed", onChange);
+    return () => window.removeEventListener("vayra:addons-changed", onChange);
   }, [m?.id]);
 
   const installed =

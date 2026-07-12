@@ -2,7 +2,7 @@ use tauri::{
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder,
 };
 
-pub const HDR_OVERLAY_LABEL: &str = "harbor-hdr-overlay";
+pub const HDR_OVERLAY_LABEL: &str = "vayra-hdr-overlay";
 
 #[cfg(windows)]
 fn set_no_activate(app: &AppHandle) {
@@ -53,7 +53,7 @@ pub async fn hdr_overlay_open(app: AppHandle) -> Result<(), String> {
     let app_clone = app.clone();
     let (tx, rx) = std::sync::mpsc::channel::<Result<(), String>>();
     app.run_on_main_thread(move || {
-        let url = WebviewUrl::App("index.html?harbor-overlay=1".into());
+        let url = WebviewUrl::App("index.html?vayra-overlay=1".into());
         let builder = WebviewWindowBuilder::new(&app_clone, HDR_OVERLAY_LABEL, url)
             .title("VAYRA HDR")
             .inner_size(sw, sh)

@@ -229,7 +229,7 @@ async function runCorePipeline(
       })) as { picker: RankedPicker; rejected: Rejection[] };
     }
 
-    const core = await import("../../../harbor-core/pkg/harbor_core.js");
+    const core = await import("../../../vayra-core/pkg/vayra_core.js");
     await core.default();
     return core.runPipelineParsed(parsed, trustOpts, scoreOpts);
   } catch (e) {

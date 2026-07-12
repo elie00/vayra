@@ -208,7 +208,7 @@ Per title flows add **Detail**, **Person**, **Award**, **Service**, and **Filter
 
 ### The stream engine
 
-When you press play, VAYRA collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. On desktop, **harbor-core** is linked into the Tauri Rust shell and called through a native command. On the web, the same crate is compiled to WebAssembly and loaded by the frontend. Both paths fall back to the TypeScript implementation if the compiled core is unavailable.
+When you press play, VAYRA collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. On desktop, **vayra-core** is linked into the Tauri Rust shell and called through a native command. On the web, the same crate is compiled to WebAssembly and loaded by the frontend. Both paths fall back to the TypeScript implementation if the compiled core is unavailable.
 
 ```
 parse  ->  trust  ->  score  ->  rank
@@ -432,7 +432,7 @@ All keys and preferences live in **Settings** and persist locally. The native ap
 
 ## Build from source
 
-VAYRA is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the stream engine living in the `harbor-core` Rust crate.
+VAYRA is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the stream engine living in the `vayra-core` Rust crate.
 
 **Prerequisites**
 
@@ -479,12 +479,12 @@ Bundles are emitted for your platform (dmg on macOS, NSIS on Windows; Linux deb,
 </details>
 
 <details>
-<summary><b>Rebuild the Rust stream core (harbor-core)</b></summary>
+<summary><b>Rebuild the Rust stream core (vayra-core)</b></summary>
 
 <br/>
 
 ```bash
-cargo test --manifest-path harbor-core/Cargo.toml
+cargo test --manifest-path vayra-core/Cargo.toml
 pnpm core:wasm
 ```
 
@@ -502,14 +502,14 @@ flowchart TD
   end
 
   subgraph Shell["Tauri 2 Rust shell"]
-    NativeCore["harbor-core native rlib<br/>parse to trust to score to rank"]
+    NativeCore["vayra-core native rlib<br/>parse to trust to score to rank"]
     Player["libmpv player"]
     Torrent["Native Rust torrent engine"]
     Cast["Casting + local stream proxy<br/>DLNA / Chromecast / AirPlay / Roku"]
     Tools["Bundled tools: yt-dlp / ffmpeg"]
   end
 
-  Wasm["harbor-core WebAssembly<br/>web builds"]
+  Wasm["vayra-core WebAssembly<br/>web builds"]
   WebProxy["Deployment /api-proxy<br/>CORS-restricted web requests"]
 
   subgraph Net["Open ecosystem and services"]
@@ -544,7 +544,7 @@ flowchart TD
 
 - **Shell:** Tauri 2 (Rust + the operating system WebView), with native window effects where supported
 - **Frontend:** React 19, TypeScript 5.8, Tailwind v4 (`@theme` tokens), Vite 7, Lucide icons
-- **Stream core:** `harbor-core`, linked as a native rlib by Tauri and generated as WASM for the web; TypeScript remains the runtime fallback
+- **Stream core:** `vayra-core`, linked as a native rlib by Tauri and generated as WASM for the web; TypeScript remains the runtime fallback
 - **Player:** native libmpv, with hls.js and mpegts.js for live
 - **Casting:** native Rust discovery/control plus local proxy/transcoding; Chromecast uses a separately deployed CAF receiver not contained in this repository
 - **Torrenting:** native Rust torrent engine; the former `stremio-server` sidecar is no longer bundled
@@ -556,7 +556,7 @@ flowchart TD
 src/                 React frontend (views, chrome, components, lib)
 src-tauri/           Rust shell, player, casting, sidecars
   src/               cast.rs, dlna.rs, roku.rs, airplay.rs, transcode.rs, discord_rp.rs, ...
-harbor-core/         shared Rust stream engine (native rlib + generated web WASM)
+vayra-core/          shared Rust stream engine (native rlib + generated web WASM)
 docs/media/          logos and screenshots
 ```
 
@@ -569,7 +569,7 @@ docs/media/          logos and screenshots
 Directional, not a set of promises. Priorities shift with feedback.
 
 - [x] Native libmpv player with trickplay and skip segments
-- [x] Rust stream ranking core (`harbor-core`) compiled to WASM
+- [x] Rust stream ranking core (`vayra-core`) compiled to WASM
 - [x] Watch parties with cursors and drawing on a self hosted relay
 - [x] Live TV EPG guide and Multiview
 - [x] First class anime room with Kitsu and AniZip

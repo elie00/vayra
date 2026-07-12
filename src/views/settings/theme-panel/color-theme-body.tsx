@@ -35,8 +35,8 @@ export function ColorThemeBody({
       const el = document.getElementById("harbor-theme-editor-anchor");
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
-    window.addEventListener("harbor:open-theme-editor", handler);
-    return () => window.removeEventListener("harbor:open-theme-editor", handler);
+    window.addEventListener("vayra:open-theme-editor", handler);
+    return () => window.removeEventListener("vayra:open-theme-editor", handler);
   }, []);
 
   if (editing) {

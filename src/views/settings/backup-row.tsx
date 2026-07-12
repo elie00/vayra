@@ -56,7 +56,7 @@ export function BackupRow() {
       <input
         ref={fileRef}
         type="file"
-        accept=".harbx,application/json,.json"
+        accept=".harbx,.vayrx,application/json,.json"
         onChange={onFile}
         className="hidden"
       />

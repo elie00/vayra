@@ -3,7 +3,8 @@ import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
 
 declare const __APP_VERSION__: string;
 
-const FORMAT = "harbor-backup";
+const FORMAT = "vayra-backup";
+const LEGACY_FORMAT = "harbor-backup";
 const VERSION = 1;
 
 export type Backup = {
@@ -45,7 +46,7 @@ export async function downloadBackup(): Promise<boolean> {
   const backup = await buildBackup();
   const text = JSON.stringify(backup, null, 2);
   const stamp = new Date().toISOString().slice(0, 10);
-  return downloadText(`harbor-backup-${stamp}.harbx`, text, ["harbx"], "VAYRA backup");
+  return downloadText(`vayra-backup-${stamp}.vayrx`, text, ["vayrx"], "VAYRA backup");
 }
 
 export type ParsedBackup = { ok: true; backup: Backup } | { ok: false; error: string };
@@ -61,7 +62,7 @@ export function parseBackup(text: string): ParsedBackup {
     return { ok: false, error: "Unrecognized file." };
   }
   const b = json as Partial<Backup>;
-  if (b.format !== FORMAT) {
+  if (b.format !== FORMAT && b.format !== LEGACY_FORMAT) {
     return { ok: false, error: "This is not a VAYRA backup file." };
   }
   if (!b.data || typeof b.data !== "object") {
