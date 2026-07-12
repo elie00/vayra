@@ -54,6 +54,7 @@ import { TogetherLeaveForLiveModal } from "@/components/together-leave-for-live-
 import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider } from "@/lib/auth";
+import { VayraAccountProvider } from "@/lib/vayra-account";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
 import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
@@ -248,6 +249,7 @@ export function App() {
       <SimklProvider>
       <LetterboxdProvider>
       <RankingsProvider>
+        <VayraAccountProvider>
         <AuthProvider>
           <OnboardingProvider>
             <TogetherProvider>
@@ -310,6 +312,7 @@ export function App() {
             </TogetherProvider>
           </OnboardingProvider>
         </AuthProvider>
+        </VayraAccountProvider>
       </RankingsProvider>
       </LetterboxdProvider>
       </SimklProvider>
