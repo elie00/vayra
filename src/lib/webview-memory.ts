@@ -1,12 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { hasDesktopFeatures } from "@/lib/platform";
 
-// The harbor_*_webview memory helpers are desktop-only; no-op on mobile Tauri.
+// The vayra_*_webview memory helpers are desktop-only; no-op on mobile Tauri.
 const isTauri = hasDesktopFeatures();
 
 export function setWebviewMemoryLow(low: boolean): void {
   if (!isTauri) return;
-  void invoke("harbor_set_webview_memory_low", { low }).catch(() => {});
+  void invoke("vayra_set_webview_memory_low", { low }).catch(() => {});
 }
 
 export function pulseWebviewMemoryLow(settleMs = 1500): void {
@@ -17,15 +17,15 @@ export function pulseWebviewMemoryLow(settleMs = 1500): void {
 
 export function setWebviewVisible(visible: boolean): void {
   if (!isTauri) return;
-  void invoke("harbor_set_webview_visible", { visible }).catch(() => {});
+  void invoke("vayra_set_webview_visible", { visible }).catch(() => {});
 }
 
 export function trySuspendWebview(): void {
   if (!isTauri) return;
-  void invoke("harbor_try_suspend_webview").catch(() => {});
+  void invoke("vayra_try_suspend_webview").catch(() => {});
 }
 
 export function resumeWebview(): void {
   if (!isTauri) return;
-  void invoke("harbor_resume_webview").catch(() => {});
+  void invoke("vayra_resume_webview").catch(() => {});
 }
