@@ -63,7 +63,7 @@ export function TraktDeviceModal({ onClose }: { onClose: () => void }) {
             <h2 id="trakt-device-title" className="text-[20px] font-medium tracking-tight text-ink">
               {connectState.kind === "success"
                 ? t("Connected")
-                : t("Authorize Harbor on Trakt")}
+                : t("Authorize VAYRA on Trakt")}
             </h2>
           </div>
           <button

@@ -44,7 +44,7 @@ export function MobileIntegration() {
       const s = stateRef.current;
       const a = actionsRef.current;
       // Priority: close the drawer, then any open overlay, then walk back in
-      // Harbor's own view history (which also closes the player). Top-level
+      // VAYRA's own view history (which also closes the player). Top-level
       // views reached via the drawer have no history, so — per Android/Material
       // convention — Back goes to Home first; only Home itself exits the app.
       if (s.togetherOpen) {

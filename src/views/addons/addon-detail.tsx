@@ -409,7 +409,7 @@ export function AddonDetail({
           </div>
           <div className="mt-10 flex flex-col items-center gap-2 border-t border-edge-soft pt-6 text-center">
             <p className="text-[12px] text-ink-subtle">
-              {t("Stremio addon, packaged into Harbor's catalog.")}
+              {t("Stremio addon, packaged into VAYRA's catalog.")}
             </p>
             <p className="text-[11.5px] leading-relaxed text-ink-subtle">
               {t("Version and capabilities come straight from the addon's manifest. Ratings and categories come from the")}{" "}
