@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createClient, type Session, type SupabaseClient, type User } from "@supabase/supabase-js";
+import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 import {
   createContext,
   useCallback,
@@ -20,6 +20,7 @@ const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_kLf8ZEhewgc7j5qDAVjCrA_
 const supabaseUrl = import.meta.env.VITE_VAYRA_SUPABASE_URL?.trim() || DEFAULT_SUPABASE_URL;
 const supabaseAnonKey =
   import.meta.env.VITE_VAYRA_SUPABASE_ANON_KEY?.trim() || DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+const supabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -63,23 +64,25 @@ const secureStorage = {
   },
 };
 
-let singleton: SupabaseClient | null | undefined;
+let singleton: Promise<SupabaseClient | null> | undefined;
 
-function accountClient(): SupabaseClient | null {
+function accountClient(): Promise<SupabaseClient | null> {
   if (singleton !== undefined) return singleton;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    singleton = null;
+  if (!supabaseConfigured) {
+    singleton = Promise.resolve(null);
     return singleton;
   }
-  singleton = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      flowType: "pkce",
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: false,
-      storage: secureStorage,
-    },
-  });
+  singleton = import("@supabase/supabase-js").then(({ createClient }) =>
+    createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        flowType: "pkce",
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        storage: secureStorage,
+      },
+    }),
+  );
   return singleton;
 }
 
@@ -97,16 +100,25 @@ type VayraAccountValue = {
 const VayraAccountContext = createContext<VayraAccountValue | null>(null);
 
 export function VayraAccountProvider({ children }: { children: ReactNode }) {
-  const client = accountClient();
+  const [client, setClient] = useState<SupabaseClient | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(client !== null);
+  const [loading, setLoading] = useState(supabaseConfigured);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!client) {
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
+    void accountClient().then((loadedClient) => {
+      if (cancelled) return;
+      setClient(loadedClient);
+      if (!loadedClient) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!client) return;
     let cancelled = false;
     void client.auth.getSession().then(({ data, error: sessionError }) => {
       if (cancelled) return;
@@ -174,7 +186,7 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<VayraAccountValue>(
     () => ({
-      configured: client !== null,
+      configured: supabaseConfigured,
       loading,
       user: session?.user ?? null,
       session,
@@ -183,7 +195,7 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       sendMagicLink,
       signOut,
     }),
-    [client, error, loading, sendMagicLink, session, signOut],
+    [error, loading, sendMagicLink, session, signOut],
   );
 
   return <VayraAccountContext.Provider value={value}>{children}</VayraAccountContext.Provider>;
