@@ -85,7 +85,7 @@ pub async fn pip_open(
         eprintln!("[pip] >>> building window on main thread");
         let url = WebviewUrl::App("index.html".into());
         let result = WebviewWindowBuilder::new(&app_for_main, PIP_LABEL, url)
-            .title("Harbor PiP")
+            .title("VAYRA PiP")
             .inner_size(560.0, 360.0)
             .position(200.0, 200.0)
             .resizable(true)

@@ -73,7 +73,7 @@ fn unauthorized() -> Response<Body> {
         .status(StatusCode::UNAUTHORIZED)
         .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
         .body(Body::from(
-            "Harbor: access token required. Open the link shown in Harbor \u{2192} \
+            "VAYRA: access token required. Open the link shown in VAYRA \u{2192} \
              Settings \u{2192} \"Your streaming server address\".",
         ))
         .unwrap()
@@ -107,7 +107,7 @@ fn serve_asset(app: &AppHandle, raw_path: &str) -> Response<Body> {
             .status(StatusCode::NOT_FOUND)
             .header(header::CONTENT_TYPE, "text/plain")
             .body(Body::from(
-                "Harbor web assets are not available in this build.",
+                "VAYRA web assets are not available in this build.",
             ))
             .unwrap(),
     }
