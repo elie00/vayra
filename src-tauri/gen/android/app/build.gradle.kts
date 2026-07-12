@@ -20,7 +20,7 @@ val keyProperties = Properties().apply {
 
 android {
     compileSdk = 36
-    namespace = "app.harbor"
+    namespace = "app.vayra"
     signingConfigs {
         if (keyProperties.containsKey("storeFile")) {
             create("release") {
@@ -34,7 +34,7 @@ android {
     defaultConfig {
         // Harbor streame depuis http://127.0.0.1 (proxy/torrents) et des addons Stremio en HTTP simple
         manifestPlaceholders["usesCleartextTraffic"] = "true"
-        applicationId = "app.harbor"
+        applicationId = "app.vayra"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

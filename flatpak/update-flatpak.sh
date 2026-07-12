@@ -8,8 +8,8 @@ version="$(node -p "require('./package.json').version")"
 tauri_version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
 package_manager="$(node -p "require('./package.json').packageManager")"
 pnpm_version="${package_manager#pnpm@}"
-metadata="flatpak/site.harbor.Harbor.metainfo.xml"
-manifest="flatpak/site.harbor.Harbor.yml"
+metadata="flatpak/site.vayra.Vayra.metainfo.xml"
+manifest="flatpak/site.vayra.Vayra.yml"
 
 if [[ "$version" != "$tauri_version" ]]; then
   echo "package.json ($version) and tauri.conf.json ($tauri_version) disagree" >&2
@@ -146,7 +146,7 @@ with open(temporary, "w", encoding="utf-8") as output:
 os.replace(temporary, manifest)
 PY
 
-desktop-file-validate flatpak/site.harbor.Harbor.desktop
+desktop-file-validate flatpak/site.vayra.Vayra.desktop
 appstreamcli validate --no-net "$metadata"
 flatpak-builder --show-manifest "$manifest" >/dev/null
 
