@@ -1,4 +1,4 @@
-use harbor_core::{
+use vayra_core::{
     parser, scoring, trust,
     ParsedStream, RankedPicker, Rejection, ScoreOptions, ScoredStream, Stream, TrustOptions,
 };

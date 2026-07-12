@@ -1,4 +1,4 @@
-declare module "*harbor-core/pkg/harbor_core.js" {
+declare module "*vayra-core/pkg/vayra_core.js" {
   import type { Rejection } from "@/lib/streams/trust";
   import type { RankedPicker } from "@/lib/streams/types";
 
