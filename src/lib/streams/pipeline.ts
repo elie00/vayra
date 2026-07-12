@@ -11,6 +11,16 @@ import type { ParsedStream, RankedPicker, Stream } from "./types";
 
 const PREFER_AAC = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
 
+type VayraCore = typeof import("../../../vayra-core/pkg/vayra_core.js");
+let corePromise: Promise<VayraCore> | undefined;
+function getCore(): Promise<VayraCore> {
+  corePromise ??= import("../../../vayra-core/pkg/vayra_core.js").then(async (m) => {
+    await m.default();
+    return m;
+  });
+  return corePromise;
+}
+
 const GIB = 1024 ** 3;
 const RESCUABLE_REASON_RX = /^(fresh-cinema-fake|new-release-stub)/;
 
@@ -85,6 +95,7 @@ export async function runPipeline(
 ): Promise<PipelineResult> {
   let library: Stream[] = [];
   let lastPartialAt = 0;
+  let lastPartialCount = 0;
 
   const buildPartial = (addonStreams: Stream[]): PipelineResult => {
     const merged = mergeAndDedupe(library, addonStreams);
@@ -101,7 +112,13 @@ export async function runPipeline(
     if (!onProgress || signal.aborted) return;
     const now = performance.now();
     if (now - lastPartialAt < 250) return;
+    // Skip re-ranking when the new-stream delta since the last partial is tiny:
+    // a handful of extra streams won't meaningfully change the displayed ranking,
+    // and the final rank (post-allSettled) is always computed in full below.
+    const delta = addonStreams.length - lastPartialCount;
+    if (lastPartialCount > 0 && delta < 5) return;
     lastPartialAt = now;
+    lastPartialCount = addonStreams.length;
     try {
       onProgress(buildPartial(addonStreams));
     } catch {
@@ -229,8 +246,7 @@ async function runCorePipeline(
       })) as { picker: RankedPicker; rejected: Rejection[] };
     }
 
-    const core = await import("../../../vayra-core/pkg/vayra_core.js");
-    await core.default();
+    const core = await getCore();
     return core.runPipelineParsed(parsed, trustOpts, scoreOpts);
   } catch (e) {
     dlog(`[pipeline] ${isTauri ? "native" : "WASM"} core failed, falling back to TypeScript: ${e}`);
