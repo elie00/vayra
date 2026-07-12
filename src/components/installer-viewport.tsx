@@ -18,7 +18,7 @@ type InstallerDetail = { url: string; title?: string; logo?: string | null };
 export function openInstallerViewport(url: string, title?: string, logo?: string | null): void {
   if (typeof window === "undefined") return;
   // Linux: the in-page iframe can't capture the addon's stremio:// install link
-  // (WebKitGTK refuses the scheme). Route through the Harbor Browser window, where
+  // (WebKitGTK refuses the scheme). Route through the VAYRA Browser window, where
   // browser.rs intercepts the link and feeds it into the deep-link install bridge.
   if (isLinuxDesktop()) {
     void import("@tauri-apps/api/core").then(({ invoke }) => {
@@ -285,7 +285,7 @@ function InstallerViewport({
         {blocked && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
             <p className="text-[14px] font-semibold text-ink">
-              {title} won&apos;t load inside Harbor.
+              {title} won&apos;t load inside VAYRA.
             </p>
             <p className="max-w-[44ch] text-[12.5px] text-ink-muted">
               Open it in a regular browser, set it up there, then come back and paste the install

@@ -61,7 +61,7 @@ const together: Record<string, string> = {
   "Advance Continue Watching to the next episode": "Faire avancer Reprendre la lecture à l'épisode suivant",
 
   "Invite via link": "Inviter par lien",
-  "Watch together": "Regarder ensemble",
+  "VARA": "VARA",
   "Back": "Retour",
   "Invite": "Inviter",
   "Paste invite link": "Colle le lien d'invitation",
@@ -77,9 +77,11 @@ const together: Record<string, string> = {
   "{n} watching": "{n} spectateurs",
   "Show cursors": "Afficher les curseurs",
   "Leave room": "Quitter la salle",
-  "Watch Together needs a relay.": "Regarder ensemble nécessite un relais.",
+  "VARA needs a relay.": "VARA nécessite un relais.",
+  "VEYA synchronizes playback between participants in the same VARA room.":
+    "VEYA synchronise la lecture entre les participants d’une même room VARA.",
+  "Play without VEYA": "Lire sans VEYA",
   "A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.": "Un relais est un minuscule Cloudflare Worker qui transmet les messages lecture/pause/avance entre toi et tes amis. Aucune donnée vidéo n'y transite. Déploie le tien en un clic (l'offre gratuite suffit largement), ou colle le lien d'invitation d'un ami pour utiliser le sien.",
-  "Watch Together": "Regarder ensemble",
 };
 
 export default together;

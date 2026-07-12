@@ -15,7 +15,7 @@ export function MpvPanel() {
     return (
       <Section
         title={t("Desktop only")}
-        subtitle={t("These tune the bundled mpv engine, which runs in the Harbor desktop app. They have no effect in the browser.")}
+        subtitle={t("These tune the bundled mpv engine, which runs in the VAYRA desktop app. They have no effect in the browser.")}
       >
         <span className="text-[13px] text-ink-subtle">{t("Download the desktop app to use video tuning.")}</span>
       </Section>
@@ -49,7 +49,7 @@ export function MpvPanel() {
             ? t("The CPU decodes everything. Most compatible, but it runs hot and can stutter on 4K. Use this only if the picture glitches with hardware decoding on.")
             : settings.mpvHwdec === "on"
               ? t("Forces the graphics card on. Smoothest and coolest, but a few old or unusual files may refuse to play. Switch back to Auto if something won't start.")
-              : t("Harbor uses the graphics card when it's safe and falls back to the CPU when it isn't. The right call for almost everyone.")}
+              : t("VAYRA uses the graphics card when it's safe and falls back to the CPU when it isn't. The right call for almost everyone.")}
         </p>
       </Section>
 
@@ -59,7 +59,7 @@ export function MpvPanel() {
 
       <Section
         title={t("Slow or unstable connection")}
-        subtitle={t("If video keeps pausing to buffer, or you're on spotty Wi-Fi or a far-away server, this gives Harbor a bigger head start so playback rides through the rough patches.")}
+        subtitle={t("If video keeps pausing to buffer, or you're on spotty Wi-Fi or a far-away server, this gives VAYRA a bigger head start so playback rides through the rough patches.")}
       >
         <ToggleRow
           label={t("Build a bigger buffer")}

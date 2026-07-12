@@ -25,8 +25,8 @@ const library: Record<string, string> = {
   "Press play on something. It'll show up here once you start watching.":
     "Lance la lecture de quelque chose. Ça apparaîtra ici dès que tu commenceras à regarder.",
   "Your watchlist is empty": "Ta watchlist est vide",
-  "Right-click any title in Harbor or hit \"Add to Watchlist\" on its detail page to save it here.":
-    "Fais un clic droit sur n'importe quel titre dans Harbor ou clique sur « Ajouter à la watchlist » sur sa page de détails pour l'enregistrer ici.",
+  "Right-click any title in VAYRA or hit \"Add to Watchlist\" on its detail page to save it here.":
+    "Fais un clic droit sur n'importe quel titre dans VAYRA ou clique sur « Ajouter à la watchlist » sur sa page de détails pour l'enregistrer ici.",
   "Loading favorites…": "Chargement des favoris…",
   "Loading favorites from other providers…": "Chargement des favoris d'autres fournisseurs…",
 

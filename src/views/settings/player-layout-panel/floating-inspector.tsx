@@ -306,7 +306,7 @@ function PanelInspector({
 }) {
   const meta = PANEL_META[panelId];
   const cfg = panelConfig(config, panelId);
-  const eyebrow = panelId === "episodes" ? "Series tab" : "Watch Together panel";
+  const eyebrow = panelId === "episodes" ? "Series tab" : "VARA panel";
   return (
     <div className="pointer-events-none absolute inset-x-0 top-6 z-40 flex flex-col items-center gap-2 px-6">
       <div className="pointer-events-auto flex max-w-full items-stretch gap-1 overflow-x-auto rounded-2xl border border-white/12 bg-black/85 p-2 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl">

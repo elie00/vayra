@@ -523,7 +523,7 @@ pub fn run() {
         tauri::http::Response::builder()
             .status(200)
             .header("content-type", "text/html; charset=utf-8")
-            .body(b"<!doctype html><meta charset=\"utf-8\"><title>Harbor</title>".to_vec())
+            .body(b"<!doctype html><meta charset=\"utf-8\"><title>VAYRA</title>".to_vec())
             .unwrap()
     });
 

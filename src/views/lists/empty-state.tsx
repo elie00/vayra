@@ -18,7 +18,7 @@ export function ListsEmptyState({ onAdd }: { onAdd: (ref: string, name?: string)
           {t("Bring your lists with you")}
         </h2>
         <p className="max-w-[420px] text-[14px] leading-relaxed text-ink-muted">
-          {t("Paste a public list from Trakt, MDBList, TMDB, Letterboxd, IMDb, or MyAnimeList. Harbor pulls the titles in and keeps the artwork sharp.")}
+          {t("Paste a public list from Trakt, MDBList, TMDB, Letterboxd, IMDb, or MyAnimeList. VAYRA pulls the titles in and keeps the artwork sharp.")}
         </p>
         <div className="w-full rounded-xl border border-edge-soft/60 bg-canvas/40 p-1">
           <AddListForm submitLabel={t("Add list")} hideCancel onSubmit={({ ref, name }) => onAdd(ref, name)} />

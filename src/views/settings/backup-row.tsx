@@ -65,7 +65,7 @@ export function BackupRow() {
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="text-[14px] font-medium text-ink">{t("Export everything")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
-            {t("Saves your whole Harbor setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Stremio sign-in is left out on purpose.")}
+            {t("Saves your whole VAYRA setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Stremio sign-in is left out on purpose.")}
           </span>
         </div>
         <button
@@ -140,10 +140,10 @@ function RestoreConfirm({
       >
         <h2 className="text-[17px] font-semibold tracking-tight text-ink">{t("Restore this backup?")}</h2>
         <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-muted">
-          {t("This replaces your current Harbor setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. Harbor reloads when it finishes.", { n: String(backupKeyCount(backup)) })}
+          {t("This replaces your current VAYRA setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. VAYRA reloads when it finishes.", { n: String(backupKeyCount(backup)) })}
         </p>
         <p className="mt-2 text-[12px] text-ink-subtle">
-          {t("Saved {when} from Harbor {app}.", { when, app: backup.app })}
+          {t("Saved {when} from VAYRA {app}.", { when, app: backup.app })}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button

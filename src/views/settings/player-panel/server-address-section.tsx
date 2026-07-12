@@ -200,7 +200,7 @@ export function ServerAddressSection() {
         <div className="flex flex-col gap-1">
           <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Your streaming server address")}</h2>
           <p className="text-[13.5px] leading-relaxed text-ink-muted">
-            {t("Harbor runs a small streaming server right on this computer. This is where it lives. To stream from this machine on another device, copy the Wi-Fi address and paste it into Remote streaming server in Harbor over there.")}
+            {t("VAYRA runs a small streaming server right on this computer. This is where it lives. To stream from this machine on another device, copy the Wi-Fi address and paste it into Remote streaming server in VAYRA over there.")}
           </p>
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${pill.chip}`}>
@@ -216,7 +216,7 @@ export function ServerAddressSection() {
           <span className="font-semibold">{t("Server couldn't start:")}</span> {lastError}
           {/not bundled/i.test(lastError) && (
             <span className="mt-1.5 block text-ink-muted">
-              {t("This usually means antivirus removed the server file (stremio-server.exe). Add Harbor's install folder to your antivirus exclusions, then reinstall.")}
+              {t("This usually means antivirus removed the server file (stremio-server.exe). Add VAYRA's install folder to your antivirus exclusions, then reinstall.")}
             </span>
           )}
         </div>
@@ -251,8 +251,8 @@ export function ServerAddressSection() {
       <div className="h-px bg-edge-soft" />
 
       <ToggleRow
-        label={t("Harbor in your browser")}
-        sub={t("Serves this exact install of Harbor as a web app on your network. Open it on a phone, laptop, or TV browser, sign in there, and it streams through this computer.")}
+        label={t("VAYRA in your browser")}
+        sub={t("Serves this exact install of VAYRA as a web app on your network. Open it on a phone, laptop, or TV browser, sign in there, and it streams through this computer.")}
         value={settings.serveWebUi}
         onChange={(v) => update({ serveWebUi: v })}
       />
@@ -267,7 +267,7 @@ export function ServerAddressSection() {
           )}
           {lanIp && (
             <p className="-mt-1 text-[12px] leading-relaxed text-ink-subtle">
-              {t("This link includes a private access token so only devices you share it with can open Harbor. Opening it on this computer doesn't need the token.")}
+              {t("This link includes a private access token so only devices you share it with can open VAYRA. Opening it on this computer doesn't need the token.")}
             </p>
           )}
           {webError && (

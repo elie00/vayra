@@ -112,7 +112,7 @@ export function CinematicOverlay() {
             )}
             {themePreset?.id === "crunch" && (
               <span className="font-display text-[22px] font-bold leading-none text-ink">
-                Harbor
+                VAYRA
               </span>
             )}
           </button>

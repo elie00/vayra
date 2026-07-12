@@ -53,8 +53,8 @@ const downloads: Record<string, string> = {
   "{shown} of {total} file from your computer": "{shown} sur {total} fichier de ton ordinateur",
   "{shown} of {total} files from your computer": "{shown} sur {total} fichiers de ton ordinateur",
 
-  "Point Harbor at a folder. We scan it for movies and shows, parse titles from filenames, and enrich them with TMDB so they look the same as everything else here. We just remember the path; nothing is copied or moved.":
-    "Indique un dossier à Harbor. On y cherche films et séries, on extrait les titres des noms de fichiers et on les enrichit via TMDB pour qu'ils ressemblent à tout le reste ici. On mémorise juste le chemin ; rien n'est copié ni déplacé.",
+  "Point VAYRA at a folder. We scan it for movies and shows, parse titles from filenames, and enrich them with TMDB so they look the same as everything else here. We just remember the path; nothing is copied or moved.":
+    "Indique un dossier à VAYRA. On y cherche films et séries, on extrait les titres des noms de fichiers et on les enrichit via TMDB pour qu'ils ressemblent à tout le reste ici. On mémorise juste le chemin ; rien n'est copié ni déplacé.",
   "No video files found in that folder.": "Aucun fichier vidéo trouvé dans ce dossier.",
   "Couldn't scan that folder.": "Impossible d'analyser ce dossier.",
   "Couldn't open this file": "Impossible d'ouvrir ce fichier",

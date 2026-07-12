@@ -39,13 +39,13 @@ const it: Record<string, string> = {
   "chrome.minimize": "Riduci a icona",
   "chrome.maximize": "Ingrandisci",
   "chrome.restore": "Ripristina",
-  "chrome.watchTogether": "Guarda insieme",
+  "chrome.watchTogether": "VARA",
   "chrome.scrollForMore": "Scorri per vedere altro",
   "chrome.locked": "Bloccato",
   "chrome.parentalOn": "Controllo genitori attivo",
   "chrome.lockedRequiresPin": "{label} (bloccato, richiede il PIN)",
   "chrome.lockedShort": "{label} · bloccato",
-  "chrome.harborHome": "Home di Harbor",
+  "chrome.harborHome": "Home di VAYRA",
   "chrome.sectionLibrary": "Libreria",
 
   "profile.whoWatching": "Chi sta guardando?",
@@ -58,7 +58,7 @@ const it: Record<string, string> = {
   "profile.signedIn": "Connesso a Stremio",
   "profile.fallback": "Profilo",
 
-  "welcome.title": "Benvenuto in Harbor",
+  "welcome.title": "Benvenuto in VAYRA",
   "welcome.subtitle": "L'interfaccia ora è in arabo. Puoi tornare indietro in qualsiasi momento dalle Impostazioni.",
   "welcome.dismiss": "Inizia",
 
@@ -168,7 +168,7 @@ const it: Record<string, string> = {
   "Focus GIF URL": "URL della GIF in evidenza",
   "Addon not installed": "Componente aggiuntivo non installato",
   "This section depends on the addon": "Questa sezione dipende dal componente aggiuntivo",
-  "You must install this addon in your Stremio account first so Harbor can fetch its works.": "Devi prima installare questo componente aggiuntivo nel tuo account Stremio affinché Harbor possa recuperarne i contenuti.",
+  "You must install this addon in your Stremio account first so VAYRA can fetch its works.": "Devi prima installare questo componente aggiuntivo nel tuo account Stremio affinché VAYRA possa recuperarne i contenuti.",
   "Missing TMDB Key": "Chiave TMDB mancante",
   "This section relies on TMDB discovery features.": "Questa sezione si basa sulle funzionalità di scoperta di TMDB.",
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Aggiungi la tua chiave API di TMDB nelle impostazioni Libreria e metadati per visualizzare questa cartella.",

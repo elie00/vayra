@@ -33,29 +33,29 @@ const misc: Record<string, string> = {
   "Custom HTML overlay": "Superposition HTML personnalisée",
   "Injected into a fixed-position layer above the app (pointer-events disabled by default). Wrap in a div with pointer-events:auto to make it interactive.": "Injecté dans une couche en position fixe au-dessus de l'application (pointer-events désactivés par défaut). Enveloppe-le dans un div avec pointer-events:auto pour le rendre interactif.",
   "Custom code": "Code personnalisé",
-  "Power-user knob. Inject your own CSS, JS, and HTML into Harbor. Lives in your local settings; nothing leaves your machine.": "Un réglage pour utilisateurs avancés. Injecte tes propres CSS, JS et HTML dans Harbor. Stocké dans tes paramètres locaux ; rien ne quitte ta machine.",
-  "You're modding your own client. Custom JS has full access to your Harbor session. Only paste code you wrote or fully trust.": "Tu moddes ton propre client. Le JS personnalisé a un accès complet à ta session Harbor. Ne colle que du code que tu as écrit ou en qui tu as pleinement confiance.",
+  "Power-user knob. Inject your own CSS, JS, and HTML into VAYRA. Lives in your local settings; nothing leaves your machine.": "Un réglage pour utilisateurs avancés. Injecte tes propres CSS, JS et HTML dans VAYRA. Stocké dans tes paramètres locaux ; rien ne quitte ta machine.",
+  "You're modding your own client. Custom JS has full access to your VAYRA session. Only paste code you wrote or fully trust.": "Tu moddes ton propre client. Le JS personnalisé a un accès complet à ta session VAYRA. Ne colle que du code que tu as écrit ou en qui tu as pleinement confiance.",
 
   "Close to the system tray": "Fermer vers la zone de notification",
-  "Closing the window tucks Harbor into the tray instead of quitting, so it reopens instantly. Right-click the tray icon for quick controls, or pick Quit to exit fully.": "Fermer la fenêtre range Harbor dans la zone de notification au lieu de quitter, pour une réouverture instantanée. Clic droit sur l'icône pour les contrôles rapides, ou choisis Quitter pour fermer complètement.",
+  "Closing the window tucks VAYRA into the tray instead of quitting, so it reopens instantly. Right-click the tray icon for quick controls, or pick Quit to exit fully.": "Fermer la fenêtre range VAYRA dans la zone de notification au lieu de quitter, pour une réouverture instantanée. Clic droit sur l'icône pour les contrôles rapides, ou choisis Quitter pour fermer complètement.",
   "Always on top": "Toujours au premier plan",
-  "Keep the Harbor window above other windows.": "Garde la fenêtre Harbor au-dessus des autres fenêtres.",
+  "Keep the VAYRA window above other windows.": "Garde la fenêtre VAYRA au-dessus des autres fenêtres.",
   "Pause when minimized": "Pause à la réduction",
-  "Stop playback when you minimize Harbor or send it to the tray.": "Met la lecture en pause quand tu réduis Harbor ou l'envoies dans la zone de notification.",
+  "Stop playback when you minimize VAYRA or send it to the tray.": "Met la lecture en pause quand tu réduis VAYRA ou l'envoies dans la zone de notification.",
   "Pause when unfocused": "Pause à la perte de focus",
   "Stop playback whenever another window takes focus.": "Met la lecture en pause dès qu'une autre fenêtre prend le focus.",
   "Block ads & trackers": "Bloquer pubs et traqueurs",
-  "Watching for ad, analytics, and tracking requests. Harbor itself sends zero telemetry.": "Surveille les requêtes de pub, d'analytique et de pistage. Harbor lui-même n'envoie aucune télémétrie.",
+  "Watching for ad, analytics, and tracking requests. VAYRA itself sends zero telemetry.": "Surveille les requêtes de pub, d'analytique et de pistage. VAYRA lui-même n'envoie aucune télémétrie.",
   "Export everything": "Tout exporter",
-  "Saves your whole Harbor setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Stremio sign-in is left out on purpose.": "Enregistre toute ta configuration Harbor dans un fichier : thème, disposition de l'accueil, paramètres, addons, profils, watchlist, dispositions du lecteur, progression, et plus. Ta connexion Stremio est volontairement exclue.",
+  "Saves your whole VAYRA setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Stremio sign-in is left out on purpose.": "Enregistre toute ta configuration VAYRA dans un fichier : thème, disposition de l'accueil, paramètres, addons, profils, watchlist, dispositions du lecteur, progression, et plus. Ta connexion Stremio est volontairement exclue.",
   "Export": "Exporter",
   "Restore from a backup": "Restaurer depuis une sauvegarde",
   "Loads a backup file and replaces your current setup with it. Perfect for a new computer. Your Stremio sign-in on this device stays as is.": "Charge un fichier de sauvegarde et remplace ta configuration actuelle. Parfait pour un nouvel ordinateur. Ta connexion Stremio sur cet appareil reste inchangée.",
   Restore: "Restaurer",
   "Restore this backup?": "Restaurer cette sauvegarde ?",
-  "This replaces your current Harbor setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. Harbor reloads when it finishes.": "Cela remplace ta configuration Harbor actuelle (thème, accueil, paramètres, addons, profils…) par les {n} entrées enregistrées dans ce fichier. Ta connexion Stremio reste inchangée. Harbor se recharge à la fin.",
+  "This replaces your current VAYRA setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. VAYRA reloads when it finishes.": "Cela remplace ta configuration VAYRA actuelle (thème, accueil, paramètres, addons, profils…) par les {n} entrées enregistrées dans ce fichier. Ta connexion Stremio reste inchangée. VAYRA se recharge à la fin.",
   "an unknown date": "une date inconnue",
-  "Saved {when} from Harbor {app}.": "Enregistré {when} depuis Harbor {app}.",
+  "Saved {when} from VAYRA {app}.": "Enregistré {when} depuis VAYRA {app}.",
   "Restoring...": "Restauration...",
   "Restore and reload": "Restaurer et recharger",
 
@@ -67,8 +67,8 @@ const misc: Record<string, string> = {
   "List view": "Vue en liste",
   Beta: "Bêta",
   "How is this build treating you?": "Comment se passe cette version pour toi ?",
-  "Does Harbor {version} feel better or worse than the version you had before?":
-    "Harbor {version} te semble-t-il meilleur ou moins bon que ta version précédente ?",
+  "Does VAYRA {version} feel better or worse than the version you had before?":
+    "VAYRA {version} te semble-t-il meilleur ou moins bon que ta version précédente ?",
   "Much worse": "Bien pire",
   Worse: "Pire",
   "About the same": "À peu près pareil",
@@ -207,7 +207,7 @@ const misc: Record<string, string> = {
   "Top Rated": "Les mieux notés",
   "Nothing here yet": "Rien ici pour l'instant",
   "Invite via link": "Inviter par lien",
-  "Watch Together needs a relay.": "Regarder ensemble nécessite un relais.",
+  "VARA needs a relay.": "Regarder ensemble nécessite un relais.",
   "Join": "Rejoindre",
   "Play tonight": "À regarder ce soir",
   "Skip": "Passer",
@@ -311,7 +311,7 @@ const misc: Record<string, string> = {
   "Browse by Genre": "Parcourir par genre",
   "Choose a source to save offline. You can track progress on the Downloads page.": "Choisis une source à enregistrer hors ligne. Tu peux suivre la progression sur la page Téléchargements.",
   "Last source wasn't actually cached on your debrid yet. Pick another from the list.": "La dernière source n'était en fait pas encore en cache sur ton debrid. Choisis-en une autre dans la liste.",
-  "Harbor couldn't resolve a usable ID for this title. Add a TMDB key in Library settings or sign in to Stremio to broaden coverage.": "Harbor n'a pas pu résoudre un ID utilisable pour ce titre. Ajoute une clé TMDB dans les paramètres Bibliothèque ou connecte-toi à Stremio pour élargir la couverture.",
+  "VAYRA couldn't resolve a usable ID for this title. Add a TMDB key in Library settings or sign in to Stremio to broaden coverage.": "VAYRA n'a pas pu résoudre un ID utilisable pour ce titre. Ajoute une clé TMDB dans les paramètres Bibliothèque ou connecte-toi à Stremio pour élargir la couverture.",
   "No playable streams turned up, and no debrid is configured. Real-Debrid, TorBox, AllDebrid, Premiumize, or Debrid-Link will unlock raw torrent results. Some addons bake debrid in (Sootio, Comet/ElfHosted, MediaFusion/ElfHosted) and play without your own keys.": "Aucun stream lisible n'est apparu, et aucun debrid n'est configuré. Real-Debrid, TorBox, AllDebrid, Premiumize ou Debrid-Link débloqueront les résultats torrent bruts. Certains addons intègrent le debrid (Sootio, Comet/ElfHosted, MediaFusion/ElfHosted) et se lisent sans tes propres clés.",
   "Set up a debrid": "Configurer un debrid",
   "Only 1 source after filtering": "Une seule source après filtrage",
@@ -321,8 +321,8 @@ const misc: Record<string, string> = {
   "Show everything anyway": "Tout afficher quand même",
   "No source returned a stream": "Aucune source n'a renvoyé de stream",
   "Anime sources are usually richer through Torrentio's anime config or AIOStreams. Make sure one is installed in Stremio.": "Les sources d'animés sont généralement plus riches via la config animé de Torrentio ou AIOStreams. Vérifie que l'un des deux est installé dans Stremio.",
-  "On the web, Harbor can only reach addons that allow browser access (Torrentio, TorBox, Cinemeta). For unreleased titles, no source typically exists yet.": "Sur le web, Harbor ne peut joindre que les addons qui autorisent l'accès navigateur (Torrentio, TorBox, Cinemeta). Pour les titres pas encore sortis, aucune source n'existe généralement.",
-  "Try signing in to Stremio so Harbor can use your addon collection. Older or foreign titles often need Torrentio + a debrid addon to find anything.": "Essaie de te connecter à Stremio pour que Harbor utilise ta collection d'addons. Les titres anciens ou étrangers ont souvent besoin de Torrentio + un addon debrid pour trouver quoi que ce soit.",
+  "On the web, VAYRA can only reach addons that allow browser access (Torrentio, TorBox, Cinemeta). For unreleased titles, no source typically exists yet.": "Sur le web, VAYRA ne peut joindre que les addons qui autorisent l'accès navigateur (Torrentio, TorBox, Cinemeta). Pour les titres pas encore sortis, aucune source n'existe généralement.",
+  "Try signing in to Stremio so VAYRA can use your addon collection. Older or foreign titles often need Torrentio + a debrid addon to find anything.": "Essaie de te connecter à Stremio pour que VAYRA utilise ta collection d'addons. Les titres anciens ou étrangers ont souvent besoin de Torrentio + un addon debrid pour trouver quoi que ce soit.",
   "Tried IDs: ": "IDs essayés : ",
   "Strict filters dropped everything": "Les filtres stricts ont tout éliminé",
   "Search wider": "Recherche élargie",
@@ -378,13 +378,13 @@ const misc: Record<string, string> = {
   "Back to relay": "Retour au relais",
   "Documentation": "Documentation",
   "Self-host": "Auto-hébergement",
-  "Run your own Harbor Relay": "Fais tourner ton propre relais Harbor",
-  "Two paths: Harbor handles the deploy for you, or you do it yourself with wrangler.": "Deux voies : Harbor gère le déploiement pour toi, ou tu le fais toi-même avec wrangler.",
+  "Run your own VAYRA Relay": "Fais tourner ton propre relais VAYRA",
+  "Two paths: VAYRA handles the deploy for you, or you do it yourself with wrangler.": "Deux voies : VAYRA gère le déploiement pour toi, ou tu le fais toi-même avec wrangler.",
   "Requirements": "Prérequis",
   "A free Cloudflare account.": "Un compte Cloudflare gratuit.",
   "About two minutes for the auto-deploy path.": "Environ deux minutes pour la voie du déploiement automatique.",
-  "Auto-deploy from Harbor": "Déploiement automatique depuis Harbor",
-  "Open Settings, then Harbor Relay.": "Ouvre les Paramètres, puis Harbor Relay.",
+  "Auto-deploy from VAYRA": "Déploiement automatique depuis VAYRA",
+  "Open Settings, then VAYRA Relay.": "Ouvre les Paramètres, puis VAYRA Relay.",
   "Pick the Cloudflare account to deploy under.": "Choisis le compte Cloudflare sous lequel déployer.",
   "Manual deploy with wrangler": "Déploiement manuel avec wrangler",
   "For users who want to deploy themselves or already have a wrangler workflow.": "Pour ceux qui veulent déployer eux-mêmes ou ont déjà un workflow wrangler.",
@@ -407,7 +407,7 @@ const misc: Record<string, string> = {
   "Connection refused / DNS does not resolve": "Connexion refusée / le DNS ne résout pas",
   "Worker deleted or URL wrong": "Worker supprimé ou URL erronée",
   "Re-run deploy or paste the correct URL": "Relance le déploiement ou colle la bonne URL",
-  "Watch Together rooms drop after 6 hours": "Les salles Regarder ensemble tombent après 6 heures",
+  "VARA rooms drop after 6 hours": "Les salles Regarder ensemble tombent après 6 heures",
   "Durable Object idle eviction": "Éviction d'inactivité du Durable Object",
   "Expected. Rooms recreate on next join.": "Normal. Les salles se recréent à la prochaine connexion.",
   "What the worker does": "Ce que fait le worker",
@@ -501,16 +501,16 @@ const misc: Record<string, string> = {
   "update.downloading": "Téléchargement de la mise à jour",
   "update.failed": "Échec de la mise à jour",
   "update.available": "Mise à jour disponible",
-  "update.harborVersion": "Harbor {version}",
+  "update.harborVersion": "VAYRA {version}",
   "update.downloadComplete": "Téléchargement terminé",
   "update.fetching": "Récupération de la dernière version",
   "update.errorServer": "Une erreur s'est produite lors de la connexion au serveur de mise à jour.",
   "update.later": "Plus tard",
   "update.download": "Télécharger",
   "update.installRestart": "Installer et redémarrer",
-  "update.restartAuto": "Harbor redémarrera automatiquement.",
+  "update.restartAuto": "VAYRA redémarrera automatiquement.",
   "update.tryAgain": "Réessayer",
-  "update.keepUsing": "Continue d'utiliser Harbor pendant le téléchargement",
+  "update.keepUsing": "Continue d'utiliser VAYRA pendant le téléchargement",
   "update.of": "{downloaded} sur {total}",
   "Hide password": "Masquer le mot de passe",
   "Show password": "Afficher le mot de passe",
@@ -656,7 +656,7 @@ const misc: Record<string, string> = {
   "Addon order saved on this device": "Ordre des addons enregistré sur cet appareil",
   "Curated for popularity and reliability. No paid placements. Install anything else by URL on the Browse tab.": "Sélectionnés pour leur popularité et leur fiabilité. Aucun placement payant. Installe tout le reste par URL depuis l'onglet Parcourir.",
   "Sign in to sync your addons across devices": "Connecte-toi pour synchroniser tes addons entre appareils",
-  "Anything you install in Harbor pushes back to your Stremio account so it shows up on mobile too. Sign in via the avatar in the bottom-left of the sidebar.": "Tout ce que tu installes dans Harbor est renvoyé vers ton compte Stremio pour apparaître aussi sur mobile. Connecte-toi via l'avatar en bas à gauche de la barre latérale.",
+  "Anything you install in VAYRA pushes back to your Stremio account so it shows up on mobile too. Sign in via the avatar in the bottom-left of the sidebar.": "Tout ce que tu installes dans VAYRA est renvoyé vers ton compte Stremio pour apparaître aussi sur mobile. Connecte-toi via l'avatar en bas à gauche de la barre latérale.",
   "Starters": "Pour bien démarrer",
   "Common picks for a fresh setup.": "Les choix courants pour une installation toute neuve.",
   "Streaming": "Streaming",
@@ -672,7 +672,7 @@ const misc: Record<string, string> = {
   "OTA channels + IPTV": "Chaînes hertziennes + IPTV",
   "New": "Nouveau",
   "You've reached the end · {n} addons": "Tu as atteint la fin · {n} addons",
-  "Trending tracks star growth across your Harbor visits. Open the addons page again tomorrow and the top risers will appear here.": "Les tendances suivent la croissance des étoiles au fil de tes visites de Harbor. Rouvre la page des addons demain et les plus fortes progressions apparaîtront ici.",
+  "Trending tracks star growth across your VAYRA visits. Open the addons page again tomorrow and the top risers will appear here.": "Les tendances suivent la croissance des étoiles au fil de tes visites de VAYRA. Rouvre la page des addons demain et les plus fortes progressions apparaîtront ici.",
   "Head to Discover. Cinemeta and OpenSubtitles cover the basics; Torrentio + a debrid key cover almost everything else.": "Va dans Découvrir. Cinemeta et OpenSubtitles couvrent l'essentiel ; Torrentio + une clé debrid couvrent presque tout le reste.",
   "No installed addon matches that.": "Aucun addon installé ne correspond.",
   "Clear the search to see all {n} installed.": "Efface la recherche pour voir les {n} addons installés.",
@@ -713,7 +713,7 @@ const misc: Record<string, string> = {
   "Cancel": "Annuler",
   "Click below to open": "Clique ci-dessous pour ouvrir",
   "'s setup page. Pick your options, then copy the install link it gives you and paste it below to update the addon.": " la page de configuration. Choisis tes options, puis copie le lien d'installation qu'elle te donne et colle-le ci-dessous pour mettre à jour l'addon.",
-  "'s setup page in Harbor's built-in browser. Pick your options. When you click Install on their page, Harbor catches the link automatically and updates the addon.": " la page de configuration dans le navigateur intégré de Harbor. Choisis tes options. Quand tu cliques sur Installer sur leur page, Harbor capture le lien automatiquement et met à jour l'addon.",
+  "'s setup page in VAYRA's built-in browser. Pick your options. When you click Install on their page, VAYRA catches the link automatically and updates the addon.": " la page de configuration dans le navigateur intégré de VAYRA. Choisis tes options. Quand tu cliques sur Installer sur leur page, VAYRA capture le lien automatiquement et met à jour l'addon.",
   "Heads-up: a few addons don't pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their \"Import from URL\" field to restore your settings.": "Attention : quelques addons ne se pré-remplissent pas depuis l'URL. Si le formulaire s'ouvre vide, colle l'URL du manifest existant dans leur champ « Import from URL » pour restaurer tes réglages.",
   "Saving to library": "Enregistrement dans la bibliothèque",
   "Syncing to Stremio": "Synchronisation avec Stremio",
@@ -723,15 +723,15 @@ const misc: Record<string, string> = {
   "Add a TMDB key in Settings to load Arabic content.":
     "Ajoute une clé TMDB dans les Paramètres pour charger le contenu arabe.",
 
-  "Add a TMDB key for the full Harbor": "Ajoute une clé TMDB pour le Harbor complet",
+  "Add a TMDB key for the full VAYRA": "Ajoute une clé TMDB pour le VAYRA complet",
   "Free key unlocks Trending, In Theaters, and per-service catalogs. 60 seconds.":
     "La clé gratuite débloque les tendances, le cinéma et les catalogues par service. 60 secondes.",
 
   "Built for desktop resolutions": "Conçu pour les résolutions de bureau",
-  "This instance of Harbor is made for desktop. Our standalone iOS and Android apps are coming soon, each with a bespoke, mobile-first experience built for its native platform.":
-    "Cette instance de Harbor est faite pour le bureau. Nos applications iOS et Android autonomes arrivent bientôt, chacune avec une expérience sur mesure pensée mobile d'abord, construite pour sa plateforme native.",
-  "For now, please open this site on a desktop, or build Harbor from source.":
-    "Pour l'instant, ouvre ce site sur un ordinateur, ou compile Harbor depuis les sources.",
+  "This instance of VAYRA is made for desktop. Our standalone iOS and Android apps are coming soon, each with a bespoke, mobile-first experience built for its native platform.":
+    "Cette instance de VAYRA est faite pour le bureau. Nos applications iOS et Android autonomes arrivent bientôt, chacune avec une expérience sur mesure pensée mobile d'abord, construite pour sa plateforme native.",
+  "For now, please open this site on a desktop, or build VAYRA from source.":
+    "Pour l'instant, ouvre ce site sur un ordinateur, ou compile VAYRA depuis les sources.",
   "Build from source": "Compiler depuis les sources",
 
   "Wrong PIN": "PIN incorrect",
@@ -771,7 +771,7 @@ const misc: Record<string, string> = {
   "Skip setup": "Passer la configuration",
   "Skip for now": "Passer pour l'instant",
   "Get Started": "Commencer",
-  "Enter Harbor": "Entrer dans Harbor",
+  "Enter VAYRA": "Entrer dans VAYRA",
 
   "A client for the Stremio protocol. Two minutes to set up; most of it optional. You stay in control of every key.":
     "Un client pour le protocole Stremio. Deux minutes de configuration, presque tout facultatif. Tu gardes le contrôle de chaque clé.",
@@ -787,12 +787,12 @@ const misc: Record<string, string> = {
 
   "For watching things": "Pour regarder des choses",
 
-  "Harbor curated": "Sélection Harbor",
+  "VAYRA curated": "Sélection VAYRA",
   "Hero, Top 10, Trending, In Theaters, per-service rails. Your addons append underneath.":
     "Une, Top 10, tendances, cinéma, rangées par service. Tes addons s'ajoutent en dessous.",
   "Classic Stremio": "Stremio classique",
-  "Continue Watching, then your addon catalogs in install order. No hero, no Harbor rails.":
-    "Reprendre la lecture, puis les catalogues de tes addons dans l'ordre d'installation. Pas de une, pas de rangées Harbor.",
+  "Continue Watching, then your addon catalogs in install order. No hero, no VAYRA rails.":
+    "Reprendre la lecture, puis les catalogues de tes addons dans l'ordre d'installation. Pas de une, pas de rangées VAYRA.",
   "Pick a home layout": "Choisis une disposition d'accueil",
   "You can switch later in Settings under Library & metadata.":
     "Tu peux changer plus tard dans Paramètres, sous Bibliothèque et métadonnées.",
@@ -803,8 +803,8 @@ const misc: Record<string, string> = {
   "Get a free key at themoviedb.org": "Obtiens une clé gratuite sur themoviedb.org",
   "v3 API key": "Clé API v3",
   Verify: "Vérifier",
-  "Skip if you'd rather just use Cinemeta. Harbor still works, you'll just see fewer rails.":
-    "Passe si tu préfères te contenter de Cinemeta. Harbor fonctionne quand même, tu verras juste moins de rangées.",
+  "Skip if you'd rather just use Cinemeta. VAYRA still works, you'll just see fewer rails.":
+    "Passe si tu préfères te contenter de Cinemeta. VAYRA fonctionne quand même, tu verras juste moins de rangées.",
 
   "Sign-in failed": "Échec de la connexion",
   "Step 2 · Stremio": "Étape 2 · Stremio",
@@ -816,22 +816,22 @@ const misc: Record<string, string> = {
   "Don't have an account?": "Pas de compte ?",
   "Create one": "Crées-en un",
   "Bring in your library": "Importe ta bibliothèque",
-  "Sign in to mirror your Continue Watching, watchlist, and any addons you've already curated. Optional; Harbor works fully signed-out.":
-    "Connecte-toi pour refléter ta reprise de lecture, ta watchlist et les addons que tu as déjà choisis. Facultatif ; Harbor fonctionne entièrement sans connexion.",
+  "Sign in to mirror your Continue Watching, watchlist, and any addons you've already curated. Optional; VAYRA works fully signed-out.":
+    "Connecte-toi pour refléter ta reprise de lecture, ta watchlist et les addons que tu as déjà choisis. Facultatif ; VAYRA fonctionne entièrement sans connexion.",
   "Sign in with": "Se connecter avec",
   "Don't have an account? Create one →": "Pas de compte ? Crées-en un →",
 
   "Step 3 · Streaming": "Étape 3 · Streaming",
   "Pick what you actually use": "Choisis ce que tu utilises vraiment",
-  "Harbor pulls the most popular titles each service has right now. Toggle off anything you don't subscribe to.":
-    "Harbor récupère les titres les plus populaires de chaque service en ce moment. Désactive tout ce à quoi tu n'es pas abonné.",
+  "VAYRA pulls the most popular titles each service has right now. Toggle off anything you don't subscribe to.":
+    "VAYRA récupère les titres les plus populaires de chaque service en ce moment. Désactive tout ce à quoi tu n'es pas abonné.",
   "These rails activate once a TMDB key is set. You can come back to this anytime in Settings.":
     "Ces rangées s'activent une fois une clé TMDB définie. Tu peux y revenir à tout moment dans les Paramètres.",
 
   "Step 4 · Subtitles": "Étape 4 · Sous-titres",
   "Pick your subtitle languages": "Choisis tes langues de sous-titres",
-  "When playback starts, Harbor finds and loads a subtitle in one of these languages automatically. The first available match wins, so put your main language first.":
-    "Au lancement de la lecture, Harbor trouve et charge automatiquement des sous-titres dans l'une de ces langues. La première correspondance disponible l'emporte, alors mets ta langue principale en premier.",
+  "When playback starts, VAYRA finds and loads a subtitle in one of these languages automatically. The first available match wins, so put your main language first.":
+    "Au lancement de la lecture, VAYRA trouve et charge automatiquement des sous-titres dans l'une de ces langues. La première correspondance disponible l'emporte, alors mets ta langue principale en premier.",
 
   "You're set.": "Tout est prêt.",
   "TMDB connected. {n} streaming {services} on. Welcome aboard.":
@@ -900,8 +900,8 @@ const misc: Record<string, string> = {
   "Focus GIF URL": "URL du GIF au survol",
   "Addon not installed": "Addon non installé",
   "This section depends on the addon": "Cette section dépend de l'addon",
-  "You must install this addon in your Stremio account first so Harbor can fetch its works.":
-    "Tu dois d'abord installer cet addon sur ton compte Stremio pour que Harbor puisse récupérer son catalogue.",
+  "You must install this addon in your Stremio account first so VAYRA can fetch its works.":
+    "Tu dois d'abord installer cet addon sur ton compte Stremio pour que VAYRA puisse récupérer son catalogue.",
   "Missing TMDB Key": "Clé TMDB manquante",
   "This section relies on TMDB discovery features.": "Cette section utilise les fonctions de découverte de TMDB.",
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.":

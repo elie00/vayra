@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
 // Jumelage d'un téléphone : QR encodant harbor://stremio-auth?key=<authKey>,
-// scanné par l'appareil photo → Harbor mobile se connecte directement.
+// scanné par l'appareil photo → VAYRA mobile se connecte directement.
 export function ConnectPhoneModal({ onClose }: { onClose: () => void }) {
   const { authKey } = useAuth();
   const t = useT();
@@ -60,7 +60,7 @@ export function ConnectPhoneModal({ onClose }: { onClose: () => void }) {
             {t("Connect your phone")}
           </h2>
           <p className="text-center text-[13px] leading-snug text-ink-muted">
-            {t("Scan this code with your phone's camera. Harbor opens already signed in.")}
+            {t("Scan this code with your phone's camera. VAYRA opens already signed in.")}
           </p>
         </div>
 

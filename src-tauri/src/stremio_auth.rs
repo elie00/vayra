@@ -21,9 +21,9 @@ pub fn stremio_auth_take_key(state: tauri::State<'_, PendingAuthKey>) -> Option<
     state.0.lock().ok().and_then(|mut k| k.take())
 }
 
-const PAGE_OK: &str = r#"<!doctype html><html><head><meta charset="utf-8"><title>Harbor</title><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;background:#0d0f14;color:#e9ebf2}.c{text-align:center;max-width:380px;padding:32px}h1{font-size:21px;margin:0 0 10px;font-weight:600}p{color:#9aa1ad;font-size:14px;line-height:1.55;margin:0}</style></head><body><div class="c"><h1>You're signed in</h1><p>You can close this tab and head back to Harbor.</p></div></body></html>"#;
+const PAGE_OK: &str = r#"<!doctype html><html><head><meta charset="utf-8"><title>VAYRA</title><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;background:#0d0f14;color:#e9ebf2}.c{text-align:center;max-width:380px;padding:32px}h1{font-size:21px;margin:0 0 10px;font-weight:600}p{color:#9aa1ad;font-size:14px;line-height:1.55;margin:0}</style></head><body><div class="c"><h1>You're signed in</h1><p>You can close this tab and head back to VAYRA.</p></div></body></html>"#;
 
-const PAGE_FAIL: &str = r#"<!doctype html><html><head><meta charset="utf-8"><title>Harbor</title><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;background:#0d0f14;color:#e9ebf2}.c{text-align:center;max-width:380px;padding:32px}p{color:#9aa1ad;font-size:14px;line-height:1.55}</style></head><body><div class="c"><p>No sign-in key came through. Return to Harbor and try again.</p></div></body></html>"#;
+const PAGE_FAIL: &str = r#"<!doctype html><html><head><meta charset="utf-8"><title>VAYRA</title><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;background:#0d0f14;color:#e9ebf2}.c{text-align:center;max-width:380px;padding:32px}p{color:#9aa1ad;font-size:14px;line-height:1.55}</style></head><body><div class="c"><p>No sign-in key came through. Return to VAYRA and try again.</p></div></body></html>"#;
 
 #[tauri::command]
 pub async fn stremio_auth_start(app: AppHandle) -> Result<u16, String> {
