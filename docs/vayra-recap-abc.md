@@ -39,20 +39,22 @@ Validé : `pnpm exec tsc -b` ✅, ESLint strict ✅.
 Hors périmètre de cette passe (déjà décidé côté Codex, conservé pour compat données) :
 le dossier de captures `Pictures/Harbor` et le fallback de nom de fichier restent inchangés.
 
-## B — Validation CI multiplateforme ⏳
+## B — Validation CI multiplateforme ✅
 
-Run : https://github.com/elie00/harbor/actions/runs/29196190859 (workflow `tauri-build.yml` sur `brand/completion`)
+Run : https://github.com/elie00/harbor/actions/runs/29196190859 (workflow `tauri-build.yml` sur `brand/completion`) — **succès sur les 3 plateformes.**
 
-But : confirmer que le rebrand (copy Rust de Codex + icônes + copy réseau) compile et
-s'empaquette sur les 3 plateformes.
+Le rebrand (copy Rust de Codex + icônes VAYRA + copy réseau) compile et s'empaquette
+partout ; les installeurs de marque VAYRA sont produits comme artefacts téléchargeables.
 
-| Plateforme | Artefact attendu | Résultat |
+| Plateforme | Artefact | Résultat |
 |---|---|---|
-| macOS Apple Silicon | `.dmg` | ✅ réussi |
-| Windows | `.msi` | ⏳ en cours |
-| Linux x86_64 | `.deb` + `.AppImage` | ⏳ en cours |
+| macOS Apple Silicon | `.dmg` — `harbor-macOS-AppleSilicon` (134 Mo) | ✅ réussi |
+| Windows | `.msi` — `harbor-Windows` (183 Mo) | ✅ réussi |
+| Linux x86_64 | `.deb` + `.AppImage` — `harbor-Linux-x86_64` (466 Mo) | ✅ réussi |
 
-*(Ce tableau sera mis à jour avec le résultat final dès la fin du run.)*
+Artefacts téléchargeables depuis la page du run (section « Artifacts »). *(Note : les
+noms d'artefacts restent `harbor-*` — c'est un identifiant de packaging CI interne, non
+visible par l'utilisateur ; à renommer plus tard si souhaité.)*
 
 ## État git
 
