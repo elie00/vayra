@@ -222,8 +222,8 @@ export type LetterboxdReview = {
 // English-only limit. Returns up to 12 reviews with full text, author, avatar,
 // rating stars, language, and date. Supports pagination via page parameter.
 // Cloudflare-protected fetch helper — sends browser-like headers that
-// harbor_fetch (Rust reqwest) uses to bypass Letterboxd's Cloudflare challenge.
-// safeFetch already sends a good User-Agent via harbor_fetch, but we add
+// vayra_fetch (Rust reqwest) uses to bypass Letterboxd's Cloudflare challenge.
+// safeFetch already sends a good User-Agent via vayra_fetch, but we add
 // Accept-Language and a Referer hint to improve pass-through.
 async function fetchWithCloudflareBypass(url: string): Promise<Response> {
   const headers: Record<string, string> = {
@@ -515,7 +515,7 @@ export async function loginLetterboxd(
     res = await fetch(url, { method: "POST", headers, body });
   } catch {
     // safeFetch in Tauri has no fallback for POST — retry with the plugin
-    // directly if the Rust harbor_fetch command failed.
+    // directly if the Rust vayra_fetch command failed.
     try {
       const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
       res = await tauriFetch(url, { method: "POST", headers, body });

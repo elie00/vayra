@@ -319,7 +319,7 @@ fn read() -> ProcMem {
 }
 
 #[tauri::command]
-pub async fn harbor_process_memory() -> ProcMem {
+pub async fn vayra_process_memory() -> ProcMem {
     #[cfg(windows)]
     {
         read()

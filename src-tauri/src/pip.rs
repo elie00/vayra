@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tokio::sync::Mutex;
 
-const PIP_LABEL: &str = "harbor-pip";
+const PIP_LABEL: &str = "vayra-pip";
 
 #[derive(Debug, Clone)]
 struct WindowSnapshot {

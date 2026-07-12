@@ -21,7 +21,7 @@ const ANIME_ROW_BY_GENRE: Record<string, string> = {
 
 function focusAnimeRow(key: string) {
   window.dispatchEvent(
-    new CustomEvent("harbor:anime-focus-row", { detail: { anchor: `row:${key}` } }),
+    new CustomEvent("vayra:anime-focus-row", { detail: { anchor: `row:${key}` } }),
   );
 }
 

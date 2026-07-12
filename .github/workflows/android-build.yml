@@ -1,0 +1,74 @@
+name: android-build
+
+# Validates the Android package/JNI identity (app.vayra) that the desktop
+# tauri-build matrix does not cover. Debug assemble only (no signing secrets).
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "brand/**"
+    paths:
+      - "src-tauri/**"
+      - "vayra-core/**"
+      - "src/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/android-build.yml"
+
+jobs:
+  android:
+    name: Android aarch64 (debug)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r27c
+          local-cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,wasm32-unknown-unknown
+
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            vayra-core
+            src-tauri
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Android (debug)
+        env:
+          NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: pnpm tauri android build --target aarch64 --debug
+
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vayra-Android-aarch64-debug
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error

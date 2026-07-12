@@ -32,7 +32,7 @@ export function LocalTab() {
         return;
       }
       const { invoke } = await import("@tauri-apps/api/core");
-      const scanned = (await invoke("harbor_scan_folder", { folder })) as Array<{
+      const scanned = (await invoke("vayra_scan_folder", { folder })) as Array<{
         path: string;
         filename: string;
         size: number;

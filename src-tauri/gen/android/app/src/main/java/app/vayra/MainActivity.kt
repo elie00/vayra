@@ -1,4 +1,4 @@
-package app.harbor
+package app.vayra
 
 import android.content.res.Configuration
 import android.os.Bundle

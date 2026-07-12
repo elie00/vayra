@@ -2,7 +2,7 @@ import { ArrowUpRight, ExternalLink, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-const EVENT = "harbor:open-embed-viewport";
+const EVENT = "vayra:open-embed-viewport";
 
 type EmbedDetail = { url: string; title?: string };
 

@@ -279,7 +279,7 @@ export function Row({
       userInteractedRef.current = false;
       measureScroll();
     };
-    window.addEventListener("harbor:reset-row-scrolls", onReset);
+    window.addEventListener("vayra:reset-row-scrolls", onReset);
     return () => {
       ro.disconnect();
       if (roRaf != null) cancelAnimationFrame(roRaf);
@@ -288,7 +288,7 @@ export function Row({
       track.removeEventListener("wheel", onWheel);
       track.removeEventListener("pointerdown", markInteracted);
       track.removeEventListener("keydown", markInteracted);
-      window.removeEventListener("harbor:reset-row-scrolls", onReset);
+      window.removeEventListener("vayra:reset-row-scrolls", onReset);
       if (saveTimer != null) window.clearTimeout(saveTimer);
       if (wheelSettle != null) window.clearTimeout(wheelSettle);
       if (rafId.current != null) cancelAnimationFrame(rafId.current);

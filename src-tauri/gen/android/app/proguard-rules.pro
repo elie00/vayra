@@ -20,10 +20,10 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 # Pont JS ExoPlayer : la WebView appelle window.HarborExo par réflexion
--keepclassmembers class app.harbor.HarborExoBridge {
+-keepclassmembers class app.vayra.HarborExoBridge {
     @android.webkit.JavascriptInterface <methods>;
 }
--keep class app.harbor.HarborExoBridge { *; }
+-keep class app.vayra.HarborExoBridge { *; }
 
 # Plugins Tauri Android : classes instanciées par réflexion depuis Rust et
 # configs/args désérialisés par Jackson (noms de champs requis). R8 les
@@ -36,4 +36,4 @@
 
 # Stockage credentials Android Keystore : objet Kotlin appelé uniquement par
 # réflexion JNI depuis Rust (settings_store.rs) — sans -keep, R8 le strippe.
--keep class app.harbor.HarborCredentials { *; }
+-keep class app.vayra.HarborCredentials { *; }

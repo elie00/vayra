@@ -122,7 +122,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     svpFilterFailed = true;
     invoke("mpv_set_property", { name: "vf", value: "" }).catch(() => {});
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("harbor:svp-failed"));
+      window.dispatchEvent(new CustomEvent("vayra:svp-failed"));
     }
   };
 
@@ -331,7 +331,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
                 /* noop */
               }
             }
-            window.dispatchEvent(new Event("harbor:mpv-refresh-geom"));
+            window.dispatchEvent(new Event("vayra:mpv-refresh-geom"));
             return;
           } catch (err) {
             console.warn("[mpv] loadfile reload failed, falling back to recreate", err);
@@ -396,8 +396,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             geomKickHandler?.();
           };
           window.addEventListener("resize", geomKickHandler);
-          window.addEventListener("harbor:mpv-refresh-geom", geomKickHandler);
-          window.addEventListener("harbor:mpv-force-geom", geomForceHandler);
+          window.addEventListener("vayra:mpv-refresh-geom", geomKickHandler);
+          window.addEventListener("vayra:mpv-force-geom", geomForceHandler);
           if (host && typeof ResizeObserver !== "undefined") {
             try {
               geomResizeObserver = new ResizeObserver(() => void tick());
@@ -587,11 +587,11 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       }
       if (geomKickHandler) {
         window.removeEventListener("resize", geomKickHandler);
-        window.removeEventListener("harbor:mpv-refresh-geom", geomKickHandler);
+        window.removeEventListener("vayra:mpv-refresh-geom", geomKickHandler);
         geomKickHandler = null;
       }
       if (geomForceHandler) {
-        window.removeEventListener("harbor:mpv-force-geom", geomForceHandler);
+        window.removeEventListener("vayra:mpv-force-geom", geomForceHandler);
         geomForceHandler = null;
       }
       if (geomResizeObserver) {

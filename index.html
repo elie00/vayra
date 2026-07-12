@@ -71,7 +71,7 @@
       (function () {
         try {
           var p = new URLSearchParams(window.location.search);
-          if (p.get('harbor-modal') === '1') {
+          if (p.get('vayra-modal') === '1') {
             var s = document.createElement('style');
             s.textContent = '#harbor-boot{display:none !important}';
             document.head.appendChild(s);

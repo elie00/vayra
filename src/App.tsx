@@ -195,7 +195,7 @@ const PRESSURE_EVICT_MS = 1500;
 const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 1.6;
 const UI_SCALE_STEP = 0.05;
-const UI_SCALE_ACTIVITY_EVENT = "harbor:ui-scale-activity";
+const UI_SCALE_ACTIVITY_EVENT = "vayra:ui-scale-activity";
 
 function clampUiScale(scale: number): number {
   return Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, Math.round(scale * 100) / 100));
@@ -461,7 +461,7 @@ function Shell() {
   const handleTvBackToNav = useCallback(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     const nav = document.querySelector<HTMLElement>(
-      '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]',
+      '[data-vayra-nav] a[href], [data-vayra-nav] button, [data-vayra-nav] [data-focusable="true"]',
     );
     nav?.focus({ preventScroll: true });
   }, []);
@@ -498,7 +498,7 @@ function Shell() {
       const btn = target.closest('button, a[href], [data-focusable="true"]');
       if (btn) {
         const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
-        const isBack = ariaLabel.includes('back') || btn.closest('[data-harbor-nav]');
+        const isBack = ariaLabel.includes('back') || btn.closest('[data-vayra-nav]');
         
         const isMovieCard = btn.querySelector('img') || btn.hasAttribute('data-media-card') || btn.classList.contains('media-card') || btn.closest('[data-tv-hero-zone]');
 
@@ -522,7 +522,7 @@ function Shell() {
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 3) {
-        const localBack = new Event("harbor:local-back", { cancelable: true });
+        const localBack = new Event("vayra:local-back", { cancelable: true });
         if (!window.dispatchEvent(localBack)) {
           e.preventDefault();
           return;
@@ -619,10 +619,10 @@ function Shell() {
     let unlisten: (() => void) | undefined;
     let cancelled = false;
     void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen("harbor://app-closing", async () => {
+      listen("vayra://app-closing", async () => {
         await flushCloudSync().catch(() => {});
         const { invoke } = await import("@tauri-apps/api/core");
-        await invoke("harbor_flush_done").catch(() => {});
+        await invoke("vayra_flush_done").catch(() => {});
       }).then((u) => {
         if (cancelled) u();
         else unlisten = u;
@@ -635,13 +635,20 @@ function Shell() {
   }, []);
 
   useEffect(() => {
-    const w = window as unknown as { harbor?: Record<string, unknown> };
-    w.harbor = {
-      ...(w.harbor ?? {}),
+    const w = window as unknown as {
+      vayra?: Record<string, unknown>;
+      harbor?: Record<string, unknown>;
+    };
+    const api = {
+      ...(w.vayra ?? w.harbor ?? {}),
       navigate: (v: string) => setView(v as View),
       back: () => goBack(),
       search: () => setSearchOpen(true),
     };
+    w.vayra = api;
+    // window.harbor is a permanent backward-compat alias of window.vayra
+    // (same object reference) so existing user themes keep working.
+    w.harbor = w.vayra;
   }, [setView, goBack, setSearchOpen]);
 
   useEffect(() => {
@@ -749,8 +756,8 @@ function Shell() {
   const [immersive, setImmersive] = useState(false);
   useEffect(() => {
     const onImm = (e: Event) => setImmersive((e as CustomEvent<boolean>).detail === true);
-    window.addEventListener("harbor:immersive", onImm);
-    return () => window.removeEventListener("harbor:immersive", onImm);
+    window.addEventListener("vayra:immersive", onImm);
+    return () => window.removeEventListener("vayra:immersive", onImm);
   }, []);
   useEffect(() => {
     if (!liveTop && immersive) setImmersive(false);
@@ -763,8 +770,8 @@ function Shell() {
   }, [playerActive, pickerTop, immersive, settingsTop, chromeHidden]);
 
   useEffect(() => {
-    document.querySelectorAll("[data-harbor-nav]").forEach((el) => {
-      el.toggleAttribute("data-active", el.getAttribute("data-harbor-nav") === topKind);
+    document.querySelectorAll("[data-vayra-nav]").forEach((el) => {
+      el.toggleAttribute("data-active", el.getAttribute("data-vayra-nav") === topKind);
     });
   }, [topKind]);
 

@@ -1,5 +1,5 @@
-const EVENT = "harbor:deeplink-install";
-const OPEN_EVENT = "harbor:deeplink-open";
+const EVENT = "vayra:deeplink-install";
+const OPEN_EVENT = "vayra:deeplink-open";
 
 type DeepLinkDetail = { rawUrl: string };
 type DeepLinkOpen = { type: string; id: string; videoId?: string };
@@ -48,7 +48,7 @@ export function onDeepLinkOpen(handler: (open: DeepLinkOpen) => void): () => voi
   return () => window.removeEventListener(OPEN_EVENT, listener);
 }
 
-const OPEN_FILE_EVENT = "harbor:open-local-file";
+const OPEN_FILE_EVENT = "vayra:open-local-file";
 
 export function emitOpenLocalFile(path: string): void {
   window.dispatchEvent(new CustomEvent<{ path: string }>(OPEN_FILE_EVENT, { detail: { path } }));
@@ -66,11 +66,15 @@ export function onOpenLocalFile(handler: (path: string) => void): () => void {
 // Jumelage : harbor://stremio-auth?key=<authKey> (QR affiché par le desktop,
 // scanné par l'appareil photo du téléphone). Le lien peut arriver avant que
 // l'AuthProvider soit monté (démarrage à froid) → clé mise en attente.
-const AUTH_KEY_EVENT = "harbor:deeplink-stremio-auth";
+const AUTH_KEY_EVENT = "vayra:deeplink-stremio-auth";
 let pendingAuthKey: string | null = null;
 
+export function isAppScheme(u: string): boolean {
+  return u.startsWith("harbor://") || u.startsWith("vayra://");
+}
+
 export function parseStremioAuthKey(url: string): string | null {
-  const m = /^harbor:\/\/stremio-auth\/?\?key=([^&]+)/.exec(url);
+  const m = /^(?:harbor|vayra):\/\/stremio-auth\/?\?key=([^&]+)/.exec(url);
   if (!m) return null;
   try {
     const key = decodeURIComponent(m[1]).trim();
@@ -124,7 +128,7 @@ export function parseStremioOpen(url: string): DeepLinkOpen | null {
 }
 
 function shouldForward(url: string): boolean {
-  if (url.startsWith("harbor://")) return true;
+  if (isAppScheme(url)) return true;
   if (url.startsWith("stremio://")) {
     if (window.__harborInstallerOpen) return true;
     return !!window.__harborStremioDeeplink;
@@ -157,7 +161,7 @@ export async function startDeepLinkBridge(): Promise<() => void> {
     };
     const unlisten = await mod.onOpenUrl(handle);
     const { listen } = await import("@tauri-apps/api/event");
-    const unlistenNative = await listen<string>("harbor:stremio-deeplink", (e) => {
+    const unlistenNative = await listen<string>("vayra:stremio-deeplink", (e) => {
       const u = e.payload;
       if (typeof u !== "string" || !u) return;
       const open = parseStremioOpen(u);
@@ -186,7 +190,7 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       invoke("browser_close").catch(() => {});
     };
     const unlistenBrowserCap = await listen<string>(
-      "harbor://browser-stremio-capture",
+      "vayra://browser-stremio-capture",
       forwardLinuxBrowserInstall,
     );
     try {

@@ -14,7 +14,7 @@ const VIDEO_EXTS: &[&str] = &[
 ];
 
 #[tauri::command]
-pub async fn harbor_scan_folder(
+pub async fn vayra_scan_folder(
     folder: String,
     min_size_mb: Option<u64>,
 ) -> Result<Vec<ScannedFile>, String> {

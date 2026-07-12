@@ -1,9 +1,9 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "pip",
-  "description": "PiP window (harbor-pip): app commands + event listen (core:default) and the drag region. No fs/http/dialog access.",
+  "description": "PiP window (vayra-pip): app commands + event listen (core:default) and the drag region. No fs/http/dialog access.",
   "platforms": ["macOS", "windows", "linux"],
-  "windows": ["harbor-pip"],
+  "windows": ["vayra-pip"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging"

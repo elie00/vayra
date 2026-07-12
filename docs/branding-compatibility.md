@@ -1,91 +1,134 @@
-# VAYRA branding compatibility
+# VAYRA branding & identity
 
 VAYRA is an independent product by EYBO, built from an autonomous fork of Harbor.
-The Harbor references listed here are retained intentionally. They are either attribution,
-technical compatibility contracts, or temporary visual assets for which no VAYRA replacement
-exists in the repository yet.
 
-This branding pass changes user-facing product copy only. It does not migrate platform identity,
-data, playback, casting, the Stremio integration, or collaborative-room protocols.
+The visible product is fully VAYRA. Beyond the user-facing copy pass, a deep
+technical-identity reconstruction (branch `brand/vayra-identity`) renamed the
+internal Harbor identifiers to VAYRA as well, with data-preserving migrations.
+The Harbor references that remain are listed here and are intentional: they are
+attribution, external servers outside this repo, or backward-compatibility
+surfaces kept so existing installs, links, themes and files keep working.
 
-## Retained compatibility contracts
+## Reconstructed to VAYRA
 
-The following references are internal and must remain stable until a dedicated, tested platform
-migration is approved:
+These identifiers were migrated from Harbor to VAYRA, each moving both ends of
+every cross-boundary contract in lockstep:
 
-- Tauri bundle identifier `app.harbor` and the application data directory derived from it.
-- Android namespace and application ID `app.harbor`.
-- Flatpak application ID `site.harbor.Harbor`.
-- Keyring services `app.harbor` and `app.harbor.auth`.
-- Existing `harbor.*` local-storage keys, cache keys, database names, and preference keys.
-- Incoming `harbor://` deep links and the existing `stremio://` compatibility path.
-- Internal `harbor:*` and `harbor://*` application events, including `harbor:immersive`.
-- The public custom-theme bridge `window.harbor` and documented theme APIs built on it.
-- CSS classes, CSS variables, animation names, element IDs, and `data-harbor-*` attributes.
-- Rust crates and libraries including `harbor-core`, `harbor_lib`, and generated WASM bindings.
-- Android JNI classes, native library names, ProGuard rules, and mobile command stubs.
-- Internal filenames and exported component names such as `HarborMark` and `HarborLoader`.
-- Network homepage, updater endpoint, update signing key, relay endpoints, and deep-link schemes.
+- Desktop bundle identifier `app.harbor` → `app.vayra` (`tauri.conf.json`).
+- Android namespace + applicationId `app.harbor` → `app.vayra`; the hand-written
+  Kotlin sources moved to `app/vayra/`; the JNI symbols regenerate from the new
+  package; `Theme.harbor` → `Theme.vayra`.
+- Flatpak application ID `site.harbor.Harbor` → `site.vayra.Vayra` (manifest,
+  metainfo, desktop entry, scripts, CI).
+- Keyring services `app.harbor` / `app.harbor.auth` → `app.vayra` / `app.vayra.auth`.
+- Rust WASM crate `harbor-core` → `vayra-core` (+ `vayra_core_version`, imports,
+  WASM package, build scripts).
+- Tauri IPC command names `harbor_*` → `vayra_*` (fn + `generate_handler!` + JS
+  `invoke`).
+- Window labels `harbor-pip` / `harbor-modal-overlay` / `harbor-hdr-overlay` →
+  `vayra-*` and their `?vayra-modal` / `?vayra-overlay` URL params.
+- Internal DOM/Tauri event names `harbor:*` / `harbor://*` → `vayra:*` / `vayra://*`.
+- Internal DOM attributes `data-harbor-*` → `data-vayra-*`.
+- Global theming API `window.harbor` → `window.vayra` (see alias below).
+- Deep-link scheme: `vayra://` is now registered and accepted (see `harbor://` below).
+- User file formats: exports now write `.vayrastyle` and `vayra-backup*.vayrx`.
 
-These names are not evidence of a second public product identity. They are compatibility surfaces
-that existing installations, extensions, themes, links, builds, or stored data may depend on.
+## Data-preserving migrations
+
+The identity change is non-destructive on desktop:
+
+- **Keyring** — reads the new `app.vayra` service first and, when absent, reads
+  the legacy `app.harbor` / `app.harbor.auth` entry and copies it forward. Legacy
+  entries are never modified or deleted (rollback safety net).
+- **settings.json** — on first launch under the new identifier, copied forward
+  from the legacy `app.harbor` application-data directory when the new one is empty.
+- **File formats** — `.harborstyle` and legacy `harbor-backup` `.harbx` files are
+  still read; only the write side emits the VAYRA-branded extensions.
+
+**Known non-migration:** WebView-managed `localStorage` (themes, watch progress,
+and the many `harbor.*` keys) lives in bundle-id-keyed storage and does **not**
+carry over when the desktop identifier changes. On **Android**, an `applicationId`
+change is a fresh install: app-private credentials and storage do not migrate.
+
+A reliable automatic copy of the WebView store is not attempted: its on-disk
+location is platform-specific and it is opened before any migration hook could
+run. The supported carry-over path is the app's own **backup / restore**:
+
+1. On the current (Harbor-identity) install, export a backup — it writes a
+   `.harbx` file capturing the portable `harbor.*` `localStorage` state (themes,
+   progress, preferences).
+2. Update to / install the VAYRA-identity build.
+3. Restore that file. Restore still accepts the legacy `harbor-backup` `.harbx`
+   format (dual-read, see Phase 10), so the state is reapplied under the new
+   identity. Keyring credentials and `settings.json` are migrated automatically;
+   this step covers the `localStorage` half.
+
+The same export/restore is the recommended path for Android upgraders (export on
+the old app before uninstalling, restore on the reinstalled VAYRA app).
+
+**In-place upgrade / auto-updater:** because the bundle identifier changes, the
+first VAYRA build is a *new application* to the OS installer, not an in-place
+upgrade of an `app.harbor` install. On Windows the MSI/NSIS upgrade code is
+derived from the identifier, so an existing Harbor install is not replaced — the
+VAYRA build installs alongside it (users should uninstall the old one). macOS
+replaces the `.app` at its existing path, but the OS still treats `app.vayra` as
+a distinct bundle for permissions/keychain (hence the keyring migration). The
+auto-updater endpoint stays on `harbor.site` and is unchanged; the identifier
+transition itself is a one-time manual step (install the VAYRA build once), after
+which auto-updates continue normally under `app.vayra`. This crossover cannot be
+validated in CI (no live prior install); it needs a manual old→new upgrade check.
+
+## Retained Harbor references (intentional)
+
+### External servers (outside this repo)
+
+`harbor.site` and its subdomains (`app.harbor.site`, `pub.harbor.site`,
+`bugs.harbor.site`), the updater endpoint, update signing, and the support email
+`bugs@harbor.site` are real running infrastructure. They are left unchanged and
+will be migrated separately.
+
+### Backward-compatibility surfaces
+
+- `harbor://` deep links stay registered and accepted alongside `vayra://`, and
+  QR/invite links are still generated as `harbor://` so links shared with older
+  installs keep resolving.
+- The `harbor.` `localStorage` prefix and all `harbor.*` / `harbor:*` storage keys
+  are kept so existing user state and legacy `.harbx` restores keep working.
+- `.harborstyle` and `harbor-backup` `.harbx` files remain readable (dual-read).
+- `window.harbor` is kept permanently as an alias of `window.vayra`, and the
+  public `.harbor-*` CSS theming classes and the `[data-harbor-nav]` selector are
+  preserved (aliased) so user-authored themes keep matching.
+- Legacy keyring services `app.harbor` / `app.harbor.auth` are read for the
+  one-time credential migration described above.
+
+### Internal names with no user-facing value in renaming
+
+- The native library name `harbor_lib` (`[lib]` name; `System.loadLibrary`
+  regenerates to match) and the `src-tauri` crate name `harbor`.
+- Kotlin class names `HarborCredentials`, `HarborExoBridge`, `MainActivity`
+  (only their package moved to `app.vayra`).
+- Component/file names such as `HarborMark`, `HarborLoader`, `harbor-loader.tsx`,
+  `ask-harbor.tsx`.
+- The orphan `harbor://cycle-theme` listener (no emitter exists).
+
+### Network / data-location contracts
+
+Network transport strings — the anime-fillers `User-Agent` and the AllDebrid
+`AGENT` value — and the physical `Pictures/Harbor` and `Harbor DVR` directories
+are protocol/data contracts kept as-is. The `stremio://` scheme is a foreign
+ecosystem contract and is unchanged.
 
 ## Preserved attribution and legal material
 
-The Harbor fork attribution remains visible and factual. `LICENSE`, third-party notices,
-copyright statements, vendored licenses, Git authorship, and repository history must not be
-rewritten as product copy. VAYRA attribution supplements those records; it does not replace them.
+The Harbor fork attribution remains visible and factual. `LICENSE`, third-party
+notices, copyright statements, vendored licenses, Git authorship, and repository
+history are records, not product copy, and are not rewritten. VAYRA attribution
+supplements them; it does not replace them.
 
-## Temporary brand debt
+## Validation
 
-### Assets
-
-The approved VAYRA concept-three mark, wordmarks, accent treatment, source icon, and review board
-live under `src/assets/brand/vayra/`. The frontend startup mark, loader, README, and Windows
-installer artwork now consume this geometry.
-
-Legacy Harbor artwork remains in the repository for attribution, rollback, and compatibility but
-is no longer used by the standard VAYRA startup path. Native platform icons under
-`src-tauri/icons/` remain temporary Harbor-derived assets until a separately approved icon
-generation phase; their replacement must use `vayra-icon-source-1024.png` and validate every
-platform package.
-
-### Component and file names
-
-Names such as `HarborMark`, `HarborLoader`, `harbor-loader.tsx`, `ask-harbor.tsx`, and
-`harbor-core-wasm.d.ts` remain internal. Renaming them provides no user-facing benefit in this
-pass and would create unnecessary import and integration churn.
-
-### CSS, DOM, and theme APIs
-
-Selectors and APIs containing `harbor` remain unchanged. Custom themes may depend on them, so a
-future rename requires aliases, deprecation notices, compatibility tests, and a multi-release
-transition rather than a global search-and-replace.
-
-### Platform identifiers
-
-Bundle IDs, Android and Flatpak IDs, keyring services, deep links, local-storage keys, native
-library names, and updater configuration remain Harbor-derived. They may only change as part of
-a platform migration that covers signing, upgrades, rollback, and data recovery.
-
-### Runtime metadata and protocol labels
-
-Some retained Harbor strings are deliberately not user-interface copy: network User-Agent values,
-DLNA and Roku protocol metadata, the mpv title used by native window detection, the physical
-`Pictures/Harbor` and `Harbor DVR` directories, the Stremio callback app name, and diagnostic log
-prefixes. Changing them belongs to protocol or data migration work and is outside this branding
-pass. User-facing descriptions refer to VAYRA without changing those contracts.
-
-## Requirements for a future platform migration
-
-Every future migration must be validated in both of these scenarios:
-
-1. A clean VAYRA installation with no Harbor data on the device.
-2. An existing Harbor installation containing settings, authentication, addons, profiles,
-   history, themes, sessions, caches, and registered deep links.
-
-Migration must be non-destructive. It must read legacy data before writing new data, preserve
-old keyring entries and local files until verification succeeds, keep compatibility aliases where
-external callers may still use them, and document rollback. Player, cast, HDR, shaders, Stremio,
-and collaborative playback require their existing manual playback checks before any related
-technical identifier is changed.
+Desktop (Windows / macOS / Linux) is validated in `tauri-build.yml`. Android is
+covered by `android-build.yml` (debug assemble, `applicationId app.vayra`, JNI +
+`loadLibrary` link), and the `app.vayra` package rename was also validated with a
+local `aarch64` debug build producing a working APK. Player, cast, HDR, shaders,
+Stremio, and collaborative playback keep their existing manual playback checks.

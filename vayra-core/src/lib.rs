@@ -27,7 +27,7 @@ fn to_js_value<T: serde::Serialize>(value: &T) -> Result<JsValue, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn harbor_core_version() -> String {
+pub fn vayra_core_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 

@@ -146,8 +146,8 @@ export function Home({ active = true }: { active?: boolean }) {
 
   useEffect(() => {
     const onAddonsChanged = () => setAddonsTick((t) => t + 1);
-    window.addEventListener("harbor:addons-changed", onAddonsChanged);
-    return () => window.removeEventListener("harbor:addons-changed", onAddonsChanged);
+    window.addEventListener("vayra:addons-changed", onAddonsChanged);
+    return () => window.removeEventListener("vayra:addons-changed", onAddonsChanged);
   }, []);
 
   useEffect(() => {

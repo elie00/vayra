@@ -8,7 +8,7 @@ const BROWSER_UA: &str =
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct HarborFetchArgs {
+pub struct VayraFetchArgs {
     pub url: String,
     pub method: Option<String>,
     pub headers: Option<HashMap<String, String>>,
@@ -18,7 +18,7 @@ pub struct HarborFetchArgs {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct HarborFetchResponse {
+pub struct VayraFetchResponse {
     pub status: u16,
     pub ok: bool,
     pub body: String,
@@ -39,7 +39,7 @@ fn parse_method(raw: Option<&str>) -> Result<reqwest::Method, String> {
 }
 
 #[tauri::command]
-pub async fn harbor_fetch(args: HarborFetchArgs) -> Result<HarborFetchResponse, String> {
+pub async fn vayra_fetch(args: VayraFetchArgs) -> Result<VayraFetchResponse, String> {
     // N'autoriser que http/https : empêche cette primitive de fetch natif (qui
     // contourne CORS) d'atteindre des schémas locaux/dangereux (file://, etc.).
     // On ne bloque PAS les IP privées/loopback : des addons Stremio légitimes
@@ -86,7 +86,7 @@ pub async fn harbor_fetch(args: HarborFetchArgs) -> Result<HarborFetchResponse, 
         .map(|s| s.to_string());
     let body = res.text().await.unwrap_or_default();
 
-    Ok(HarborFetchResponse {
+    Ok(VayraFetchResponse {
         status,
         ok,
         body,

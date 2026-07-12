@@ -90,7 +90,7 @@ async function tauriHarborFetch(input: string, init?: RequestInit): Promise<Resp
         : init?.body
           ? JSON.stringify(init.body)
           : undefined;
-  const resp = await invoke<HarborFetchResponse>("harbor_fetch", {
+  const resp = await invoke<HarborFetchResponse>("vayra_fetch", {
     args: {
       url: input,
       method: init?.method ?? "GET",

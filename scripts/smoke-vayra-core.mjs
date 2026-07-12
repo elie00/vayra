@@ -4,10 +4,10 @@ import {
   initSync,
   parseStream,
   runPipelineParsed,
-} from "../harbor-core/pkg/harbor_core.js";
+} from "../vayra-core/pkg/vayra_core.js";
 
 initSync({
-  module: fs.readFileSync(new URL("../harbor-core/pkg/harbor_core_bg.wasm", import.meta.url)),
+  module: fs.readFileSync(new URL("../vayra-core/pkg/vayra_core_bg.wasm", import.meta.url)),
 });
 
 const parsed = parseStream({
@@ -19,7 +19,7 @@ const parsed = parseStream({
 const result = runPipelineParsed([parsed], { disabled: true }, {});
 
 if (result?.picker?.all?.[0]?.resolution !== "1080p") {
-  throw new Error("harbor-core WASM returned an incompatible JavaScript object shape");
+  throw new Error("vayra-core WASM returned an incompatible JavaScript object shape");
 }
 
-console.log("harbor-core WASM smoke test passed");
+console.log("vayra-core WASM smoke test passed");

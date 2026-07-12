@@ -12,9 +12,9 @@ export function useSvpGuard(enabled: boolean): string | null {
       if (timer.current) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => setToast(null), 4500);
     };
-    window.addEventListener("harbor:svp-failed", onFailed);
+    window.addEventListener("vayra:svp-failed", onFailed);
     return () => {
-      window.removeEventListener("harbor:svp-failed", onFailed);
+      window.removeEventListener("vayra:svp-failed", onFailed);
       if (timer.current) window.clearTimeout(timer.current);
     };
   }, [enabled]);

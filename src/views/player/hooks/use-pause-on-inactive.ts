@@ -21,8 +21,8 @@ export function usePauseOnInactive({
     let unlisten: (() => void) | undefined;
     let cancelled = false;
     void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen("harbor://window-activity", () => {
-        window.dispatchEvent(new Event("harbor:mpv-force-geom"));
+      listen("vayra://window-activity", () => {
+        window.dispatchEvent(new Event("vayra:mpv-force-geom"));
       }).then((u) => {
         if (cancelled) u();
         else unlisten = u;
@@ -40,7 +40,7 @@ export function usePauseOnInactive({
     let unlisten: (() => void) | undefined;
     let cancelled = false;
     void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen<{ focused: boolean; minimized: boolean }>("harbor://window-activity", (e) => {
+      listen<{ focused: boolean; minimized: boolean }>("vayra://window-activity", (e) => {
         const bridge = bridgeRef.current;
         if (!bridge) return;
         const { focused, minimized } = e.payload;

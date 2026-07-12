@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { getSeekHovering, subscribeSeekHovering } from "@/lib/player/playback-clock";
 import { CHROME_HIDE_MS_PAUSED, CHROME_HIDE_MS_PLAYING, CHROME_HIDE_MS_RESUME } from "../player-utils";
 
-const UI_SCALE_ACTIVITY_EVENT = "harbor:ui-scale-activity";
+const UI_SCALE_ACTIVITY_EVENT = "vayra:ui-scale-activity";
 const UI_SCALE_RESIZE_HOLD_MS = 700;
 
 export function useChromeVisibility(params: {
