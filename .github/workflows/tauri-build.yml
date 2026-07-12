@@ -186,7 +186,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: harbor-${{ matrix.platform.name }}
+          name: vayra-${{ matrix.platform.name }}
           path: |
             src-tauri/target/${{ matrix.platform.target }}/release/bundle/**/*.dmg
             src-tauri/target/${{ matrix.platform.target }}/release/bundle/**/*.deb
