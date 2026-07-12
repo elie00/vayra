@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
-// Jumelage d'un téléphone : QR encodant harbor://stremio-auth?key=<authKey>,
+// Jumelage d'un téléphone : QR encodant vayra://stremio-auth?key=<authKey>,
 // scanné par l'appareil photo → VAYRA mobile se connecte directement.
 export function ConnectPhoneModal({ onClose }: { onClose: () => void }) {
   const { authKey } = useAuth();
@@ -24,7 +24,7 @@ export function ConnectPhoneModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (!authKey) return;
-    const url = `harbor://stremio-auth?key=${encodeURIComponent(authKey)}`;
+    const url = `vayra://stremio-auth?key=${encodeURIComponent(authKey)}`;
     QRCode.toDataURL(url, { width: 480, margin: 1 })
       .then(setQr)
       .catch(() => setQr(null));
