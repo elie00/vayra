@@ -2,9 +2,9 @@
 <a name="readme-top"></a>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://harbor.site/readme-media/harbor-wordmark-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://harbor.site/readme-media/harbor-wordmark-light.svg">
-  <img src="https://harbor.site/readme-media/harbor-wordmark-light.svg" width="320">
+  <source media="(prefers-color-scheme: dark)" srcset="src/assets/brand/vayra/vayra-wordmark-light.svg">
+  <source media="(prefers-color-scheme: light)" srcset="src/assets/brand/vayra/vayra-wordmark-dark.svg">
+  <img src="src/assets/brand/vayra/vayra-wordmark-dark.svg" width="320">
 </picture>
 
 ### A Stremio Client Built for Adventure!
@@ -664,8 +664,8 @@ Thank you to everyone, named and unnamed, whose open work VAYRA builds upon.
 
 <div align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://harbor.site/readme-media/harbor-mark.svg">
-  <img src="https://harbor.site/readme-media/harbor-mark.svg" width="48">
+  <source media="(prefers-color-scheme: dark)" srcset="src/assets/brand/vayra/vayra-mark.svg">
+  <img src="src/assets/brand/vayra/vayra-mark-dark.svg" width="48">
 </picture>
 <br/><br/>
 <sub>Built with care for the people who love good cinema and an open web. <a href="#readme-top">&#9650; back to top</a></sub>
