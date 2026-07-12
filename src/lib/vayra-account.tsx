@@ -142,7 +142,10 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
         email: email.trim(),
         options: { emailRedirectTo: REDIRECT_URL, shouldCreateUser: true },
       });
-      if (signInError) throw signInError;
+      if (signInError) {
+        setError(signInError.message);
+        throw signInError;
+      }
     },
     [client],
   );
@@ -150,7 +153,10 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     if (!client) return;
     const { error: signOutError } = await client.auth.signOut();
-    if (signOutError) throw signOutError;
+    if (signOutError) {
+      setError(signOutError.message);
+      throw signOutError;
+    }
     setSession(null);
   }, [client]);
 
