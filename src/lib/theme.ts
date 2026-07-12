@@ -1,13 +1,11 @@
 import { isMobileTauri } from "@/lib/platform";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
-import crunchPreview from "@/assets/theme-previews/crunchy.png";
 import draculaPreview from "@/assets/theme-previews/dracula.png";
 import forestPreview from "@/assets/theme-previews/forest.png";
 import harborPreview from "@/assets/theme-previews/harbor.png";
 import minuiPreview from "@/assets/theme-previews/minui.png";
 import noirPreview from "@/assets/theme-previews/noir.png";
 import nordPreview from "@/assets/theme-previews/nord.png";
-import royalPreview from "@/assets/theme-previews/royal.png";
 import stremioPreview from "@/assets/theme-previews/stremio.png";
 import velvetPreview from "@/assets/theme-previews/velvet.png";
 import { getCustomThemes } from "./custom-themes";
@@ -116,8 +114,8 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
       "--color-ink-subtle": "oklch(0.50 0.003 260)",
       "--color-edge": "oklch(0.36 0.004 260 / 0.55)",
       "--color-edge-soft": "oklch(0.36 0.004 260 / 0.25)",
-      "--color-accent": "oklch(0.78 0.13 60)",
-      "--color-accent-soft": "oklch(0.78 0.13 60 / 0.18)",
+      "--color-accent": "#8267ff",
+      "--color-accent-soft": "rgb(130 103 255 / 0.18)",
       "--color-danger": "oklch(0.55 0.18 25)",
     },
   },
@@ -174,9 +172,9 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
   crunch: {
     id: "crunch",
     name: "Crunchy",
-    blurb: "Charcoal chrome with a spice-orange accent. Bold and clean.",
-    previewImage: crunchPreview,
-    swatch: ["#000000", "#272727", "#ff640a"],
+    blurb: "Charcoal chrome with a precise violet accent. Bold and clean.",
+    previewImage: draculaPreview,
+    swatch: ["#000000", "#272727", "#8267ff"],
     tokens: {
       "--color-canvas": "#000000",
       "--color-surface": "#151515",
@@ -187,8 +185,8 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
       "--color-ink-subtle": "#8c8c8c",
       "--color-edge": "rgba(255,255,255,0.10)",
       "--color-edge-soft": "rgba(255,255,255,0.05)",
-      "--color-accent": "#ff640a",
-      "--color-accent-soft": "rgba(255,100,10,0.18)",
+      "--color-accent": "#8267ff",
+      "--color-accent-soft": "rgba(130,103,255,0.18)",
       "--color-danger": "#c13937",
     },
     background: {
@@ -203,9 +201,9 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
   "tokyo-night": {
     id: "tokyo-night",
     name: "Royal",
-    blurb: "Deep navy with a warm orange accent.",
-    previewImage: royalPreview,
-    swatch: ["#0c1118", "#1c2230", "#f08032"],
+    blurb: "Deep navy with a restrained electric-blue accent.",
+    previewImage: nordPreview,
+    swatch: ["#0c1118", "#1c2230", "#4b9dff"],
     tokens: {
       "--color-canvas": "#0c1118",
       "--color-surface": "#141a24",
@@ -216,8 +214,8 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
       "--color-ink-subtle": "#6d7384",
       "--color-edge": "#2e3647a0",
       "--color-edge-soft": "#2e36474d",
-      "--color-accent": "#f08032",
-      "--color-accent-soft": "#f080322e",
+      "--color-accent": "#4b9dff",
+      "--color-accent-soft": "#4b9dff2e",
       "--color-danger": "#ef5a5a",
     },
     layout: "royal",
