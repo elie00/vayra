@@ -35,13 +35,13 @@ jobs:
       - name: Validate metadata
         run: |
           flatpak/update-flatpak.sh --check
-          desktop-file-validate flatpak/site.harbor.Harbor.desktop
-          appstreamcli validate --no-net flatpak/site.harbor.Harbor.metainfo.xml
-          flatpak-builder --show-manifest flatpak/site.harbor.Harbor.yml >/dev/null
+          desktop-file-validate flatpak/site.vayra.Vayra.desktop
+          appstreamcli validate --no-net flatpak/site.vayra.Vayra.metainfo.xml
+          flatpak-builder --show-manifest flatpak/site.vayra.Vayra.yml >/dev/null
       - name: Build repository
-        run: flatpak-builder --user --force-clean --state-dir=.flatpak-work/state --repo=.flatpak-work/repo .flatpak-work/build flatpak/site.harbor.Harbor.yml
+        run: flatpak-builder --user --force-clean --state-dir=.flatpak-work/state --repo=.flatpak-work/repo .flatpak-work/build flatpak/site.vayra.Vayra.yml
       - name: Build single-file bundle
-        run: flatpak build-bundle .flatpak-work/repo Harbor.flatpak site.harbor.Harbor
+        run: flatpak build-bundle .flatpak-work/repo Harbor.flatpak site.vayra.Vayra
       - name: Validate bundle
         run: |
           ostree init --repo=.flatpak-work/validation-repo --mode=archive-z2

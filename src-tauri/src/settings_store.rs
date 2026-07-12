@@ -1,10 +1,18 @@
 use tauri::Manager;
 
 #[cfg(desktop)]
-const KEYRING_SERVICE: &str = "app.harbor";
+const KEYRING_SERVICE: &str = "app.vayra";
 const KEYRING_USER: &str = "settings-secrets-v1";
 #[cfg(desktop)]
-const AUTH_KEYRING_SERVICE: &str = "app.harbor.auth";
+const AUTH_KEYRING_SERVICE: &str = "app.vayra.auth";
+// Legacy Harbor keyring services. Kept for a one-time, read-only migration:
+// when the new app.vayra entry is absent we read the old app.harbor value and
+// copy it forward so users keep their credentials across the bundle-id change.
+// The legacy entries are never written to or deleted (rollback safety net).
+#[cfg(desktop)]
+const LEGACY_KEYRING_SERVICE: &str = "app.harbor";
+#[cfg(desktop)]
+const LEGACY_AUTH_KEYRING_SERVICE: &str = "app.harbor.auth";
 
 fn credential_account(account: &str) -> Result<&str, String> {
     if !account.is_empty()
@@ -25,9 +33,70 @@ fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     Ok(dir.join("settings.json"))
 }
 
+/// One-time carry-over of settings.json from the legacy `app.harbor` data dir
+/// to the new `app.vayra` one. The app-data dir is `<base>/<bundle-id>`, so the
+/// legacy file sits next to it under the old identifier. Best-effort and
+/// idempotent: only runs when the new settings.json does not yet exist.
+/// NOTE: this migrates settings.json only. WebView-managed localStorage
+/// (themes, watch progress, harbor.* keys) lives in bundle-id-keyed storage and
+/// does not carry over — users should export a backup before updating.
+#[cfg(desktop)]
+fn migrate_legacy_settings(app: &tauri::AppHandle, new_path: &std::path::Path) {
+    let Ok(new_dir) = app.path().app_data_dir() else {
+        return;
+    };
+    let Some(parent) = new_dir.parent() else {
+        return;
+    };
+    let legacy = parent.join("app.harbor").join("settings.json");
+    if legacy.exists() {
+        let _ = std::fs::copy(&legacy, new_path);
+    }
+}
+
+/// Read a secret from the legacy Harbor keyring service and copy it forward into
+/// the new app.vayra entry. Called only when the new entry is absent, so the
+/// copy-forward is idempotent. Returns the migrated value, or None when the
+/// legacy entry is also absent. Writing the new entry is best-effort.
+#[cfg(desktop)]
+fn migrate_secret(user: &str, new_entry: &keyring::Entry) -> Result<Option<String>, String> {
+    let legacy = keyring::Entry::new(LEGACY_KEYRING_SERVICE, user)
+        .map_err(|e| format!("credential entry: {e}"))?;
+    match legacy.get_password() {
+        Ok(value) => {
+            let _ = new_entry.set_password(&value);
+            Ok(Some(value))
+        }
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(format!("credential read: {e}")),
+    }
+}
+
+/// Same as [`migrate_secret`] for the per-account auth keyring service.
+#[cfg(desktop)]
+fn migrate_auth_secret(
+    account: &str,
+    new_entry: &keyring::Entry,
+) -> Result<Option<String>, String> {
+    let legacy = keyring::Entry::new(LEGACY_AUTH_KEYRING_SERVICE, account)
+        .map_err(|e| format!("credential entry: {e}"))?;
+    match legacy.get_password() {
+        Ok(value) => {
+            let _ = new_entry.set_password(&value);
+            Ok(Some(value))
+        }
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(format!("credential read: {e}")),
+    }
+}
+
 #[tauri::command]
 pub fn settings_read(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let path = settings_path(&app)?;
+    #[cfg(desktop)]
+    if !path.exists() {
+        migrate_legacy_settings(&app, &path);
+    }
     match std::fs::read_to_string(&path) {
         Ok(s) => Ok(Some(s)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -54,7 +123,7 @@ pub fn settings_secrets_read() -> Result<Option<String>, String> {
             .map_err(|e| format!("credential entry: {e}"))?;
         match entry.get_password() {
             Ok(value) => Ok(Some(value)),
-            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(keyring::Error::NoEntry) => migrate_secret(KEYRING_USER, &entry),
             Err(e) => Err(format!("credential read: {e}")),
         }
     }
@@ -98,7 +167,7 @@ pub fn auth_secret_read(account: String) -> Result<Option<String>, String> {
             .map_err(|e| format!("credential entry: {e}"))?;
         match entry.get_password() {
             Ok(value) => Ok(Some(value)),
-            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(keyring::Error::NoEntry) => migrate_auth_secret(account, &entry),
             Err(e) => Err(format!("credential read: {e}")),
         }
     }
@@ -142,7 +211,7 @@ pub fn auth_secret_write(account: String, content: Option<String>) -> Result<(),
 }
 
 /// Stockage chiffré des credentials côté Android : les commandes appellent
-/// l'objet Kotlin `app.harbor.HarborCredentials` par réflexion JNI (clé
+/// l'objet Kotlin `app.vayra.HarborCredentials` par réflexion JNI (clé
 /// AES-256-GCM non exportable dans l'Android Keystore, blobs chiffrés dans
 /// `filesDir/harbor-credentials/<account>`). Le contexte Android (JavaVM +
 /// application) est publié par wry via `ndk-context`.
@@ -151,7 +220,7 @@ mod android_keystore {
     use jni::objects::{JClass, JObject, JString, JValue};
     use jni::JNIEnv;
 
-    const HELPER_CLASS: &str = "app.harbor.HarborCredentials";
+    const HELPER_CLASS: &str = "app.vayra.HarborCredentials";
 
     pub fn read(account: &str) -> Result<Option<String>, String> {
         let (vm, context) = vm_and_context()?;
