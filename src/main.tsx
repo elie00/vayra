@@ -12,25 +12,25 @@ function detectPipMode(): boolean {
   if (new URLSearchParams(window.location.search).get("pip") === "1") return true;
   try {
     const w = getCurrentWindow();
-    if (w.label === "harbor-pip") return true;
+    if (w.label === "vayra-pip") return true;
   } catch {}
   return false;
 }
 
 function detectModalOverlay(): boolean {
-  if (new URLSearchParams(window.location.search).get("harbor-modal") === "1") return true;
+  if (new URLSearchParams(window.location.search).get("vayra-modal") === "1") return true;
   try {
     const w = getCurrentWindow();
-    if (w.label === "harbor-modal-overlay") return true;
+    if (w.label === "vayra-modal-overlay") return true;
   } catch {}
   return false;
 }
 
 function detectHdrOverlay(): boolean {
-  if (new URLSearchParams(window.location.search).get("harbor-overlay") === "1") return true;
+  if (new URLSearchParams(window.location.search).get("vayra-overlay") === "1") return true;
   try {
     const w = getCurrentWindow();
-    if (w.label === "harbor-hdr-overlay") return true;
+    if (w.label === "vayra-hdr-overlay") return true;
   } catch {}
   return false;
 }

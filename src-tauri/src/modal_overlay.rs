@@ -5,7 +5,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
 use tokio::sync::Mutex;
 
-const OVERLAY_LABEL: &str = "harbor-modal-overlay";
+const OVERLAY_LABEL: &str = "vayra-modal-overlay";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -70,7 +70,7 @@ pub async fn modal_overlay_open(
     let (tx, rx) = std::sync::mpsc::channel::<Result<(), String>>();
     let popup_size = (size.width, size.height);
     app.run_on_main_thread(move || {
-        let url = WebviewUrl::App("index.html?harbor-modal=1".into());
+        let url = WebviewUrl::App("index.html?vayra-modal=1".into());
         let result = WebviewWindowBuilder::new(&app_clone, OVERLAY_LABEL, url)
             .title("VAYRA Modal")
             .inner_size(popup_size.0, popup_size.1)

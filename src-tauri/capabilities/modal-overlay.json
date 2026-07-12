@@ -1,9 +1,9 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "modal-overlay",
-  "description": "Modal overlay window (harbor-modal-overlay): app commands + event listen (core:default), UI zoom from SettingsProvider, and the file-open dialog used by the subtitle menu (load local subtitle). No fs/http access.",
+  "description": "Modal overlay window (vayra-modal-overlay): app commands + event listen (core:default), UI zoom from SettingsProvider, and the file-open dialog used by the subtitle menu (load local subtitle). No fs/http access.",
   "platforms": ["macOS", "windows", "linux"],
-  "windows": ["harbor-modal-overlay"],
+  "windows": ["vayra-modal-overlay"],
   "permissions": [
     "core:default",
     "core:webview:allow-set-webview-zoom",
