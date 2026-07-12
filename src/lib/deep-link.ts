@@ -1,11 +1,48 @@
 const EVENT = "vayra:deeplink-install";
 const OPEN_EVENT = "vayra:deeplink-open";
+const VAYRA_AUTH_EVENT = "vayra:deeplink-auth-callback";
 
 type DeepLinkDetail = { rawUrl: string };
 type DeepLinkOpen = { type: string; id: string; videoId?: string };
 type DeepLinkOpenDetail = { open: DeepLinkOpen };
 
 let pendingUrl: string | null = null;
+let pendingVayraAuthUrl: string | null = null;
+
+export function parseVayraAuthCallback(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "vayra:" || url.hostname !== "auth" || url.pathname !== "/callback") {
+      return null;
+    }
+    return url.searchParams.has("code") || url.searchParams.has("error") ? rawUrl : null;
+  } catch {
+    return null;
+  }
+}
+
+export function emitVayraAuthCallback(rawUrl: string): void {
+  pendingVayraAuthUrl = rawUrl;
+  window.dispatchEvent(
+    new CustomEvent<{ rawUrl: string }>(VAYRA_AUTH_EVENT, { detail: { rawUrl } }),
+  );
+}
+
+export function onVayraAuthCallback(handler: (rawUrl: string) => void): () => void {
+  if (pendingVayraAuthUrl) {
+    const rawUrl = pendingVayraAuthUrl;
+    pendingVayraAuthUrl = null;
+    handler(rawUrl);
+  }
+  const listener = (event: Event) => {
+    const detail = (event as CustomEvent<{ rawUrl: string }>).detail;
+    if (!detail?.rawUrl) return;
+    pendingVayraAuthUrl = null;
+    handler(detail.rawUrl);
+  };
+  window.addEventListener(VAYRA_AUTH_EVENT, listener);
+  return () => window.removeEventListener(VAYRA_AUTH_EVENT, listener);
+}
 
 export function emitDeepLinkInstall(rawUrl: string): void {
   pendingUrl = rawUrl;
@@ -146,6 +183,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
     const handle = (urls: string[]) => {
       for (const u of urls) {
         if (typeof u !== "string" || u.length === 0) continue;
+        const vayraAuthUrl = parseVayraAuthCallback(u);
+        if (vayraAuthUrl) {
+          emitVayraAuthCallback(vayraAuthUrl);
+          continue;
+        }
         const authKey = parseStremioAuthKey(u);
         if (authKey) {
           emitStremioAuthKey(authKey);
@@ -164,6 +206,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
     const unlistenNative = await listen<string>("vayra:stremio-deeplink", (e) => {
       const u = e.payload;
       if (typeof u !== "string" || !u) return;
+      const vayraAuthUrl = parseVayraAuthCallback(u);
+      if (vayraAuthUrl) {
+        emitVayraAuthCallback(vayraAuthUrl);
+        return;
+      }
       const open = parseStremioOpen(u);
       if (open) {
         emitDeepLinkOpen(open);
