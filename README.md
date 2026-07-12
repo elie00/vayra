@@ -10,7 +10,11 @@
 ### A Stremio Client Built for Adventure!
 
 
-Offering things like a native player, a stream ranking engine, Wikidata, watch parties, PiP, DVR, Live TV, anime, a theme engine, and much more. Check out our website at www.harbor.site for an immersive experience. 
+VAYRA is a personal and collaborative viewing experience with a native player, stream ranking, Wikidata, private viewing rooms, PiP, DVR, Live TV, anime, a theme engine, and more.
+
+**A product by EYBO**
+
+> VAYRA is an independent product by EYBO, built from an autonomous fork of Harbor.
 
 <br/>
 
@@ -23,7 +27,7 @@ Offering things like a native player, a stream ranking engine, Wikidata, watch p
 
 <br/>
 
-[Why Harbor](#why-harbor) &middot; [Features](#feature-tour) &middot; [Install](#install) &middot; [Configuration](#configuration) &middot; [Architecture](#architecture) &middot; [FAQ](#faq) &middot; [Contributing](#contributing)
+[Why VAYRA](#why-vayra) &middot; [Features](#feature-tour) &middot; [Install](#install) &middot; [Configuration](#configuration) &middot; [Architecture](#architecture) &middot; [FAQ](#faq) &middot; [Contributing](#contributing)
 
 </div>
 
@@ -32,20 +36,20 @@ Offering things like a native player, a stream ranking engine, Wikidata, watch p
 <p align="center">
   <img src="https://harbor.site/readme-media/hero.png" width="900">
   <br/>
-  <sub>Harbor on launch: a rotating hero, Continue Watching, and full width rails. Works on Cinemeta out of the box; richer with a free TMDB key.</sub>
+  <sub>VAYRA on launch: a rotating hero, Continue Watching, and full width rails. Works on Cinemeta out of the box; richer with a free TMDB key.</sub>
 </p>
 
 
 
 > [!IMPORTANT]
-> Harbor is a media player and a client for the open Stremio addon protocol. It hosts, indexes, and ships no media, and it bundles no content addons. You bring your own addons and sources. See the [Disclaimer](#disclaimer).
->Harbor is not for-profit and is a passion project, you are free to sell, re-use or profit off of it. All of your bugs, issues and feedbacks will be addressed promptly as long as scope permits. Please leave a Issue if you have feedback or a bug, so we can better address you. It is HIGHLY reccomended that you build your OWN Harbor from the latest source when available, as our bundled releases will not include windows/os certification/sig (it is a free project) so to avoid any popups we suggest building it yourself. We will try to push updates frequently but we are sometimes segmented by our timezones so it may take some time for your bugs to be rolled into the update endpoint and for us to test it! Thank you for trying it out and helping us make it a better project!
->Stremio has released their **[Supporter tier](https://blog.stremio.com/stremio-supporters-a-way-to-sustain-our-development/)** PLEASE CONSIDER SUPPORTING THEM AND BUYING THIS. We heavily encourage you to use Stremio's Official Apps on Mobile, and Tvs. Harbor is NOT a stremio competitor, it is a different flavor of player for the ecosystem. To get the most out of Harbor, please sign up with a [stremio account](https://stremio.com) (it's free) To Support Stremio visit : https://www.stremio.com/donate (P.S.A Harbor is not endorsed by or created by Stremio ltd or it's contributors it is a independent open sourced project)
+> VAYRA is a media player and a client for the open Stremio addon protocol. It hosts, indexes, and ships no media, and it bundles no content addons. You bring your own addons and sources. See the [Disclaimer](#disclaimer).
+>VAYRA is not for-profit and is a passion project, you are free to sell, re-use or profit off of it. All of your bugs, issues and feedbacks will be addressed promptly as long as scope permits. Please leave a Issue if you have feedback or a bug, so we can better address you. It is HIGHLY reccomended that you build your OWN VAYRA from the latest source when available, as our bundled releases will not include windows/os certification/sig (it is a free project) so to avoid any popups we suggest building it yourself. We will try to push updates frequently but we are sometimes segmented by our timezones so it may take some time for your bugs to be rolled into the update endpoint and for us to test it! Thank you for trying it out and helping us make it a better project!
+>Stremio has released their **[Supporter tier](https://blog.stremio.com/stremio-supporters-a-way-to-sustain-our-development/)** PLEASE CONSIDER SUPPORTING THEM AND BUYING THIS. We heavily encourage you to use Stremio's Official Apps on Mobile, and Tvs. VAYRA is NOT a stremio competitor, it is a different flavor of player for the ecosystem. To get the most out of VAYRA, please sign up with a [stremio account](https://stremio.com) (it's free) To Support Stremio visit : https://www.stremio.com/donate (P.S.A VAYRA is not endorsed by or created by Stremio ltd or it's contributors it is a independent open sourced project)
 <br/>
-ATTENTION: HARBOR DOES NOT AND WILL NOT HAVE A DISCORD OR ASK YOU FOR DONATIONS! If someone claims to be us and asks you for donations or to join their discord, IT IS NOT US. Have an issue? Open it on github so you and everyone else can know and see exactly how we messed up, and how we will fix it! Yes we do see your emails to bugs@harbor.site and Bug reports to the bug endpoint FYI the fastest way to get our attention is through github, we will still handle unique reports that have not been already sorted. Want to donate to a good cause visit: National Pediatric Cancer Foundation (https://nationalpcf.org/), Electronic Frontier Foundation (https://www.eff.org/) or St.Jude's (https://www.stjude.org/) email us with a receipt of your donation and we will implement your features in a priority manner. Include NPCF , EFF or SaintJude in title so we can track you! If you have a preferred cause visit https://www.charitynavigator.org/ and donate to a top rated charity of your choice and include CHARITY in email title
+ATTENTION: VAYRA DOES NOT AND WILL NOT HAVE A DISCORD OR ASK YOU FOR DONATIONS! If someone claims to be us and asks you for donations or to join their discord, IT IS NOT US. Have an issue? Open it on github so you and everyone else can know and see exactly how we messed up, and how we will fix it! Yes we do see your emails to bugs@harbor.site and Bug reports to the bug endpoint FYI the fastest way to get our attention is through github, we will still handle unique reports that have not been already sorted. Want to donate to a good cause visit: National Pediatric Cancer Foundation (https://nationalpcf.org/), Electronic Frontier Foundation (https://www.eff.org/) or St.Jude's (https://www.stjude.org/) email us with a receipt of your donation and we will implement your features in a priority manner. Include NPCF , EFF or SaintJude in title so we can track you! If you have a preferred cause visit https://www.charitynavigator.org/ and donate to a top rated charity of your choice and include CHARITY in email title
 <br/>
 <br/>
-HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR IT. WE DO NOT PROVIDE ANY CONTENT OR TELL YOU HOW TO DO IT. IT IS JUST CODE ON A REPO. IT'S CONTRIBUTORS ARE NOT RESPONSIBLE FOR WHAT YOU DO WITH IT OR WHAT STREMIO ADDONS AND SOURCES YOU ALREADY HAVE. FOLLOW ALL LAWS OF YOUR JURIDSTICTION. 
+VAYRA IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR IT. WE DO NOT PROVIDE ANY CONTENT OR TELL YOU HOW TO DO IT. IT IS JUST CODE ON A REPO. IT'S CONTRIBUTORS ARE NOT RESPONSIBLE FOR WHAT YOU DO WITH IT OR WHAT STREMIO ADDONS AND SOURCES YOU ALREADY HAVE. FOLLOW ALL LAWS OF YOUR JURIDSTICTION.
 <br/>
 <br/>
 <details>
@@ -53,7 +57,7 @@ HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR 
 
 <br/>
 
-- [Why Harbor](#why-harbor)
+- [Why VAYRA](#why-vayra)
 - [Feature Tour](#feature-tour)
   - [Rooms and views](#rooms-and-views)
   - [The stream engine](#the-stream-engine)
@@ -82,24 +86,24 @@ HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR 
 
 <br/>
 
-## Why Harbor
+## Why VAYRA
 
-**Harbor** is a self contained desktop client for the Stremio ecosystem. Out of the box it runs on Cinemeta. Add a free TMDB key and it blossoms into your ultimate companion for discovering and watching content. Harbor was built around the Stremio addon ecosystem with deep native integration of popular services and features into the UI. 
+**VAYRA** is a self contained desktop client for the Stremio ecosystem. Out of the box it runs on Cinemeta. Add a free TMDB key and it blossoms into your ultimate companion for discovering and watching content. VAYRA was built around the Stremio addon ecosystem with deep native integration of popular services and features into the UI.
 
 - **A native player.** libmpv decodes virtually any codec and container, with HDR passthrough, skip intro/outro, Anime4K upscaling shaders, and more. Delivering the same quality you are used to, but on a native custom player.
-- **Customize it your way.** Harbor is built in rust and tauri, allowing full on demand customization of the entire application. Harbor does not inject into stremio web, it is its own from scratch shell, layered over the stremio ecosystem, allowing you to go beyond the traditional themeing. Customize the player's UI, your fonts, seek bar, colors or the entire thing! 
+- **Customize it your way.** VAYRA is built in rust and tauri, allowing full on demand customization of the entire application. VAYRA does not inject into stremio web, it is its own from scratch shell, layered over the stremio ecosystem, allowing you to go beyond the traditional themeing. Customize the player's UI, your fonts, seek bar, colors or the entire thing!
 - **Theme Studio & Editor** Noob friendly theme studio lets anyone create their own custom theme with no code. Those that want control over every file can use a built in code editor for your themes.
 - **Intelligent stream ranking.** One pure Rust engine runs as a native library on desktop and as WebAssembly in the browser, with a TypeScript fallback if either compiled path is unavailable. It parses every stream, filters out scams and fakes, and ranks high quality sources first.
-- **Corpus Engine.** During the initial release of In-cinema movies, Harbor gates the results based on heuristic factors like file size, average quality consensus, year and metadata ranking and other factors to deliver you a cleaner experience during the period of a fresh release. Harbor will surface the most likely CAMS, TeleSyncs/Telecines and other reasonable options without you needing to do anything.
+- **Corpus Engine.** During the initial release of In-cinema movies, VAYRA gates the results based on heuristic factors like file size, average quality consensus, year and metadata ranking and other factors to deliver you a cleaner experience during the period of a fresh release. VAYRA will surface the most likely CAMS, TeleSyncs/Telecines and other reasonable options without you needing to do anything.
 - **Go Deep.** Dive deep into your favorite shows, actors, genres and more. View lists of award recipients for the Oscars, BAFTA, Cannes, SAG, and more. Anime cast and award metadata, along with Episode/Season Deduplication and Merge. Your rows learn from your watch history and likes, to always suggest you your next best watch.
-- **Robust Appstore.** Harbor allows you to configure and install addons without leaving the desktop client by allowing you to natively install third party addons via a built in viewport. Easily manage your installed Addons and Browse for new ones in a bespoke experience that merges the Stremio Community addons API with the [Stremio-addons.net](https://stremio-addons.net) API, giving you wide coverage and custom reccomendations.
+- **Robust Appstore.** VAYRA allows you to configure and install addons without leaving the desktop client by allowing you to natively install third party addons via a built in viewport. Easily manage your installed Addons and Browse for new ones in a bespoke experience that merges the Stremio Community addons API with the [Stremio-addons.net](https://stremio-addons.net) API, giving you wide coverage and custom reccomendations.
 - **Stremio-addons.net Integration.** The first platform with direct community ratings, top trending, and manifest feed to the [Stremio-addons.net](https://stremio-addons.net) API
 - **Watch together, on your own relay.** A synced watch party with live on screen cursors and drawing, on a relay that deploys to your own Cloudflare account in one click. No central server.
 - **Live TV and Multiview.** Bring M3U or Xtream playlists and get a real EPG grid guide, favorites, catchup, and up to four channels at once in a grid. Missed the show? play a rerun or record the next episode using built in DVR. Switch channels while in the live player at any time with the TV Guide
-- **Stream switcher** In player switcher allows you to hop streams if you get served a bad one without leaving the player and going through results again. Play next episodes with ease on the player UI controls or in a full "Next Up" sidebar. 
-- **Casts across the room.** DLNA/UPnP, Chromecast, AirPlay, and Roku via the native Rust casting layer. Chromecast launches Harbor's separately deployed CAF receiver; its source is not part of this repository.
+- **Stream switcher** In player switcher allows you to hop streams if you get served a bad one without leaving the player and going through results again. Play next episodes with ease on the player UI controls or in a full "Next Up" sidebar.
+- **Casts across the room.** DLNA/UPnP, Chromecast, AirPlay, and Roku via the native Rust casting layer. Chromecast launches VAYRA's separately deployed CAF receiver; its source is not part of this repository.
 - **Integrations.** Feature rich discord rich presence integration, webhooks for Discord and Telegram, Trakt Sync, and native integrations to TMDB, OMDB, Fanart.Tv, RPDB and more! Customize the  location and what badges are shown.
-- **And much more! (seriously this would be very long)** 
+- **And much more! (seriously this would be very long)**
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## Feature Tour
@@ -173,7 +177,7 @@ Eleven themes and seven font pairings, a live theme studio for every token, cust
 
 ### Rooms and views
 
-Harbor is organized into ten primary rooms, each with its own cinematic hero and curated rails, plus per title flows layered on top.
+VAYRA is organized into ten primary rooms, each with its own cinematic hero and curated rails, plus per title flows layered on top.
 
 | Room | What you get |
 |---|---|
@@ -200,7 +204,7 @@ Per title flows add **Detail**, **Person**, **Award**, **Service**, and **Filter
 
 ### The stream engine
 
-When you press play, Harbor collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. On desktop, **harbor-core** is linked into the Tauri Rust shell and called through a native command. On the web, the same crate is compiled to WebAssembly and loaded by the frontend. Both paths fall back to the TypeScript implementation if the compiled core is unavailable.
+When you press play, VAYRA collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. On desktop, **harbor-core** is linked into the Tauri Rust shell and called through a native command. On the web, the same crate is compiled to WebAssembly and loaded by the frontend. Both paths fall back to the TypeScript implementation if the compiled core is unavailable.
 
 ```
 parse  ->  trust  ->  score  ->  rank
@@ -213,7 +217,7 @@ parse  ->  trust  ->  score  ->  rank
 | **Score** | Rewards debrid cached sources, resolution, HDR and lossless audio, seeders, trusted release groups, REMUX, and preferred language matches; penalizes cams, mismatches, and implausible sizes. Every signal is recorded so the reason is inspectable |
 | **Rank** | Sorts into quality tiers (4K DV, 4K HDR, 4K, 1080p HDR, 1080p, 720p, SD) and surfaces the best cached pick first, with partial results streamed to the UI as addons respond |
 
-Debrid services are checked live and uniformly: **Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox**. Cache hints embedded by popular addons are read directly, and every torrent hash is cross checked against your debrid library to catch what the cache API misses. On desktop, no debrid is required: Harbor can stream torrents through its native Rust torrent engine. The former bundled `stremio-server` sidecar has been retired; an optional remote Stremio-compatible server can still be configured for transcoding workflows.
+Debrid services are checked live and uniformly: **Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox**. Cache hints embedded by popular addons are read directly, and every torrent hash is cross checked against your debrid library to catch what the cache API misses. On desktop, no debrid is required: VAYRA can stream torrents through its native Rust torrent engine. The former bundled `stremio-server` sidecar has been retired; an optional remote Stremio-compatible server can still be configured for transcoding workflows.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -237,9 +241,9 @@ A native libmpv player, with HLS and MPEG-TS engines for live and broadcast sour
 
 ### Casting
 
-Send playback across the room through Harbor's native Rust casting and local proxy/transcoding layer.
+Send playback across the room through VAYRA's native Rust casting and local proxy/transcoding layer.
 
-- **Chromecast** via Harbor's separately deployed CAF receiver (HLS, MP4, and unknown formats). The receiver is referenced by its Cast application ID and is not built from this repository.
+- **Chromecast** via VAYRA's separately deployed CAF receiver (HLS, MP4, and unknown formats). The receiver is referenced by its Cast application ID and is not built from this repository.
 - **DLNA / UPnP** with vendor aware handling for Samsung, Sony, LG, Panasonic, and Hisense.
 - **AirPlay** discovery and playback.
 - **Roku** via the ECP protocol, with guidance for network access and Media Assistant. (Pre and post roku update) Does require Roku tv addons
@@ -256,7 +260,7 @@ Send playback across the room through Harbor's native Rust casting and local pro
 - Synced play, pause, and seek with RTT adjusted clock alignment so everyone stays together.
 - Live chat, **on screen cursors** with named colors, and **collaborative drawing** over the video.
 - A host can summon everyone to a view or a title and send play invites that late joiners receive on connect.
-- The relay deploys to **your own Cloudflare account in one click** (deploy, check, and delete from inside Harbor). There is no central Harbor server in the loop.
+- The relay deploys to **your own Cloudflare account in one click** (deploy, check, and delete from inside VAYRA). There is no central VAYRA server in the loop.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -287,7 +291,7 @@ The Addons room is a full browser and installer for the Stremio ecosystem.
 - **Discover** trending and top community addons via the [stremio-addons.net](https://stremio-addons.net) index.
 - **Browse** by category and open an addon's detail page with related and recommended addons.
 - **Install** from the catalog, add by URL, or follow a `harbor://` / `stremio://` deep link.
-- **Configure** addons that require setup: Harbor opens the addon's own configuration view rather than installing without it.
+- **Configure** addons that require setup: VAYRA opens the addon's own configuration view rather than installing without it.
 - **Manage** installed addons, which also sync to your Stremio account collection.
 - An age gate keeps adult addons behind an explicit opt in.
 
@@ -295,11 +299,11 @@ The Addons room is a full browser and installer for the Stremio ecosystem.
 
 ### Themes and customization
 
-Harbor's theme engine changes more than colors. A theme can reshape the entire navigation layout.
+VAYRA's theme engine changes more than colors. A theme can reshape the entire navigation layout.
 
 | | |
 |---|---|
-| **11 presets** | Harbor (default), Nord, Stremio, Crunchy, Royal, Dracula, Forest, Noir, Aurora, MinUI, Velvet |
+| **11 presets** | VAYRA (default), Nord, Stremio, Crunchy, Royal, Dracula, Forest, Noir, Aurora, MinUI, Velvet |
 | **Layouts** | Left sidebar, top dock, icon rail, Stremio rail, floating dock, or fully custom HTML/CSS chrome |
 | **Fonts** | Seven pairings plus custom TTF/OTF/WOFF/WOFF2 upload |
 | **Surfaces** | Five card styles, four button styles, an optional animated bokeh layer, and a full bleed background image with a dim slider |
@@ -364,20 +368,20 @@ Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden 
 
 ## Privacy
 
-Harbor is designed to minimize data collection and keep persisted settings on your machine.
+VAYRA is designed to minimize data collection and keep persisted settings on your machine.
 
-- **No telemetry.** Harbor collects no analytics and sends nothing home.
+- **No telemetry.** VAYRA collects no analytics and sends nothing home.
 - **Local persistence.** TMDB, RPDB, OMDB, Trakt, and debrid credentials are stored on your device. Native desktop requests go directly to the configured services.
 - **Web proxy disclosure.** The hosted web build routes CORS-restricted addon, subtitle, and debrid API requests through its same-origin `/api-proxy`; authorization headers for those requests transit that deployment. Torrentio and TorBox addon requests are sent directly. Self-hosters control the proxy endpoint.
-- **No Harbor relay for Together or casting.** Watch party relays deploy to your own Cloudflare account, and casting runs on your local network. This statement does not apply to the web build's CORS proxy described above.
+- **No VAYRA relay for Together or casting.** Watch party relays deploy to your own Cloudflare account, and casting runs on your local network. This statement does not apply to the web build's CORS proxy described above.
 - **A built in privacy blocker** at the WebView level, with a live counter.
-- **You choose your sources.** What metadata and streams Harbor sees is entirely determined by the addons and services you configure.
+- **You choose your sources.** What metadata and streams VAYRA sees is entirely determined by the addons and services you configure.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## Install
 
-Download the latest build for macOS or Windows from the [Releases page][releases], or open Harbor in your browser.
+Download the latest build for macOS or Windows from the [Releases page][releases], or open VAYRA in your browser.
 
 | Platform | Format |
 |---|---|
@@ -394,12 +398,12 @@ Download the latest build for macOS or Windows from the [Releases page][releases
 <p align="center">
   <img src="https://harbor.site/readme-media/linux.png" width="900">
   <br/>
-  <sub>Harbor running natively on Linux, in a Together watch party.</sub>
+  <sub>VAYRA running natively on Linux, in a Together watch party.</sub>
 </p>
 
 Linux is up and running natively, and it is in active testing right now. We decided to take a couple extra weeks so the native player feels great for full time Linux users before we call it ready. Coming soon.
 
-**Out of the box, Harbor works on Cinemeta.** You can browse, play, and cast immediately. Adding a free **TMDB key** in Settings is optional and unlocks the richer trending, theaters, per service, and Watch on experiences described above. Your installed Stremio addons merge in automatically when you sign in, deduplicated against the built in rails.
+**Out of the box, VAYRA works on Cinemeta.** You can browse, play, and cast immediately. Adding a free **TMDB key** in Settings is optional and unlocks the richer trending, theaters, per service, and Watch on experiences described above. Your installed Stremio addons merge in automatically when you sign in, deduplicated against the built in rails.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -424,7 +428,7 @@ All keys and preferences live in **Settings** and persist locally. The native ap
 
 ## Build from source
 
-Harbor is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the stream engine living in the `harbor-core` Rust crate.
+VAYRA is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the stream engine living in the `harbor-core` Rust crate.
 
 **Prerequisites**
 
@@ -583,23 +587,23 @@ Directional, not a set of promises. Priorities shift with feedback.
 
 ## FAQ
 
-**Does Harbor provide content?**
-No. Harbor hosts and indexes nothing. It is a client for the Stremio addon protocol, and what you can browse or play depends entirely on the addons and services you configure.
+**Does VAYRA provide content?**
+No. VAYRA hosts and indexes nothing. It is a client for the Stremio addon protocol, and what you can browse or play depends entirely on the addons and services you configure.
 
 **Do I need a TMDB key?**
-No. Harbor works out of the box on Cinemeta. A free TMDB key is recommended because it unlocks trending rails, in theaters, top rated, per service rows, and Watch on chips.
+No. VAYRA works out of the box on Cinemeta. A free TMDB key is recommended because it unlocks trending rails, in theaters, top rated, per service rows, and Watch on chips.
 
-**Is Harbor affiliated with Stremio?**
-No. Harbor is an independent open source client built on the open Stremio addon protocol, by someone who loves the ecosystem.
+**Is VAYRA affiliated with Stremio?**
+No. VAYRA is an independent open source client built on the open Stremio addon protocol, by someone who loves the ecosystem.
 
 **Why Tauri instead of Electron?**
 Tauri uses the system WebView and a Rust backend, which keeps the shell small and lets desktop builds call the stream ranking crate natively. Browser builds use the same crate as WebAssembly.
 
 **Do I need a debrid account?**
-Not on desktop: Harbor's native Rust torrent engine can stream raw torrents directly. A debrid service is optional and adds cached, instant playback. Browser builds cannot use the native torrent engine and need a directly playable source or a configured service.
+Not on desktop: VAYRA's native Rust torrent engine can stream raw torrents directly. A debrid service is optional and adds cached, instant playback. Browser builds cannot use the native torrent engine and need a directly playable source or a configured service.
 
-**Does Harbor operate a backend?**
-The desktop app does not need a Harbor API backend for normal provider requests. The hosted web build does use a same-origin `/api-proxy` for CORS-restricted services; see [Privacy](#privacy). Together rooms use the Cloudflare relay you deploy yourself.
+**Does VAYRA operate a backend?**
+The desktop app does not need a VAYRA API backend for normal provider requests. The hosted web build does use a same-origin `/api-proxy` for CORS-restricted services; see [Privacy](#privacy). Together rooms use the Cloudflare relay you deploy yourself.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -616,7 +620,7 @@ Contributions are very welcome, whether that is code, a bug report, a theme, or 
 
 **Filing issues**
 
-- Found a bug? Open an [issue][issues] with steps to reproduce. Harbor also has a built in **Report a Bug** form in Settings that attaches safe diagnostics for you.
+- Found a bug? Open an [issue][issues] with steps to reproduce. VAYRA also has a built in **Report a Bug** form in Settings that attaches safe diagnostics for you.
 - Have an idea? Start a [discussion][discussions] or open a feature request issue.
 
 We aim to respond to issues and pull requests promptly. Be kind, be specific, and assume good faith. We are glad you are here.
@@ -626,13 +630,13 @@ We aim to respond to issues and pull requests promptly. Be kind, be specific, an
 ## Disclaimer
 
 > [!IMPORTANT]
-> Harbor is an independent, open source media player and a client for the open Stremio addon protocol. It is not affiliated with, endorsed by, or associated with Stremio Ltd. Harbor hosts no media, indexes no media, and ships no content addons. It provides no streams of its own. You choose which addons and sources to configure, and you are responsible for ensuring that your use complies with the laws of your jurisdiction and with the terms of any service you connect.
+> VAYRA is an independent, open source media player and a client for the open Stremio addon protocol. It is not affiliated with, endorsed by, or associated with Stremio Ltd. VAYRA hosts no media, indexes no media, and ships no content addons. It provides no streams of its own. You choose which addons and sources to configure, and you are responsible for ensuring that your use complies with the laws of your jurisdiction and with the terms of any service you connect.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## Acknowledgements
 
-Harbor stands on the shoulders of a generous open ecosystem and the people who build it.
+VAYRA stands on the shoulders of a generous open ecosystem and the people who build it.
 
 - The **Stremio addon protocol** and the **Stremio** team, for an open, well designed standard worth building on.
 - The **[Stremio-addons.net](https://stremio-addons.net) Team** for providing an excellent service (please consider supporting them).
@@ -644,7 +648,7 @@ Harbor stands on the shoulders of a generous open ecosystem and the people who b
 - **OpenSubtitles**, **Wyzie**, **AniSkip**, and **TheIntroDB** for subtitles and skip data.
 
 
-Thank you to everyone, named and unnamed, whose open work Harbor builds upon.
+Thank you to everyone, named and unnamed, whose open work VAYRA builds upon.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
