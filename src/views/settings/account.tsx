@@ -6,6 +6,7 @@ import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
 import { useT } from "@/lib/i18n";
+import { useVayraAccount } from "@/lib/vayra-account";
 import { ColorPicker } from "./color-picker";
 import { Section } from "./shared";
 import { AvatarRing } from "./account/avatar-ring";
@@ -21,6 +22,12 @@ import { avatarUrl } from "@/lib/avatars/catalog";
 export function AccountStub() {
   const t = useT();
   const { user, signOut } = useAuth();
+  const {
+    configured: vayraAccountConfigured,
+    loading: vayraAccountLoading,
+    user: vayraUser,
+    signOut: signOutVayra,
+  } = useVayraAccount();
   const { settings, update } = useSettings();
   const { displayName, setDisplayName } = useTogether();
   const { activeProfile, updateProfile } = useProfiles();
@@ -78,7 +85,7 @@ export function AccountStub() {
     <div className="flex flex-col gap-5">
       <Section
         title={t("VAYRA identity")}
-        subtitle={t("How you appear in VARA, sessions, and chat. Sits on top of your Stremio account.")}
+        subtitle={t("How you appear in VARA, sessions, and chat across VAYRA and connected services.")}
       >
         <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
           <div className="flex items-center gap-5">
@@ -176,6 +183,44 @@ export function AccountStub() {
               />
             </div>
           </div>
+        </div>
+      </Section>
+
+      <Section
+        title={t("VAYRA account")}
+        subtitle={t("Your private VAYRA identity, connected with a passwordless email link.")}
+      >
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="text-[14px] font-medium text-ink">
+              {vayraAccountLoading
+                ? t("Checking account…")
+                : vayraUser?.email ?? t("No VAYRA account connected")}
+            </span>
+            <span className="text-[12.5px] text-ink-subtle">
+              {vayraUser
+                ? t("Connected by email. Stremio remains a separate service.")
+                : vayraAccountConfigured
+                  ? t("Sign in or create an account with your email address.")
+                  : t("Email sign-in is not configured in this build yet.")}
+            </span>
+          </div>
+          {vayraUser ? (
+            <button
+              onClick={() => void signOutVayra()}
+              className="flex h-10 shrink-0 items-center rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
+            >
+              {t("Sign out")}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAuth(true)}
+              disabled={!vayraAccountConfigured || vayraAccountLoading}
+              className="flex h-10 shrink-0 items-center rounded-xl bg-accent px-4 text-[13px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {t("Continue with email")}
+            </button>
+          )}
         </div>
       </Section>
 
