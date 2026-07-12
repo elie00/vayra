@@ -38,8 +38,8 @@ export function DiscoverPane({
   return (
     <div className="flex flex-col gap-12">
       {!authKey && (
-        <div className="rounded-2xl border border-amber-300/30 bg-amber-300/[0.06] px-5 py-4 text-[13.5px] text-ink">
-          <p className="font-semibold text-amber-200">{t("Sign in to sync your addons across devices")}</p>
+        <div className="rounded-2xl border border-info/30 bg-info/[0.06] px-5 py-4 text-[13.5px] text-ink">
+          <p className="font-semibold text-info">{t("Sign in to sync your addons across devices")}</p>
           <p className="mt-1 text-ink-muted">
             {t("Anything you install in VAYRA pushes back to your Stremio account so it shows up on mobile too. Sign in via the avatar in the bottom-left of the sidebar.")}
           </p>

@@ -182,7 +182,7 @@ function Thumb({
     <div
       title={warning ?? (label ? `${label} icon` : undefined)}
       className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-white/8 transition-colors ${
-        dragOver ? "border-accent ring-2 ring-accent/40" : warning ? "border-amber-300/40" : "border-white/12"
+        dragOver ? "border-accent ring-2 ring-accent/40" : warning ? "border-info/40" : "border-white/12"
       }`}
     >
       {busy ? (
@@ -193,7 +193,7 @@ function Thumb({
         <ImageIcon size={14} className="text-white/40" strokeWidth={2.1} />
       )}
       {warning && !busy && (
-        <span className="absolute -end-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-300 ring-1 ring-black/40" />
+        <span className="absolute -end-0.5 -top-0.5 h-2 w-2 rounded-full bg-info ring-1 ring-black/40" />
       )}
     </div>
   );

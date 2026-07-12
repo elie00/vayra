@@ -218,7 +218,7 @@ function SourceToggle({
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[13.5px] font-semibold text-ink">{t(source.label)}</span>
-          <span className={`text-[12px] ${blocker ? "text-amber-200/85" : "text-ink-subtle"}`}>
+          <span className={`text-[12px] ${blocker ? "text-info/85" : "text-ink-subtle"}`}>
             {blocker ? t(blocker) : t(source.description)}
           </span>
         </div>

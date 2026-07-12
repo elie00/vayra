@@ -252,7 +252,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
             {d.status === "error" && <span className="text-danger">Failed: {d.error ?? "download error"}</span>}
             {d.status === "canceled" && <span className="text-ink-subtle">Canceled</span>}
             {d.status === "interrupted" && (
-              <span className="text-amber-300/85">Interrupted: re-download to finish</span>
+              <span className="text-info/85">Interrupted: re-download to finish</span>
             )}
           </span>
         )}

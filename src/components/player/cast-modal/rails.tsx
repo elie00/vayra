@@ -186,7 +186,7 @@ function PosterCard({
             {imdb}
           </span>
         ) : meta.imdbRating ? (
-          <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10.5px] font-bold text-amber-300 backdrop-blur-sm">
+          <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10.5px] font-bold text-info backdrop-blur-sm">
             {meta.imdbRating}
           </span>
         ) : null}

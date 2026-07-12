@@ -53,7 +53,7 @@ function Divider() {
 
 function metacriticBand(value: number): string {
   if (value >= 61) return "bg-emerald-500";
-  if (value >= 40) return "bg-amber-500";
+  if (value >= 40) return "bg-info";
   return "bg-red-500";
 }
 

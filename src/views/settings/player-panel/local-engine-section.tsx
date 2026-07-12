@@ -227,7 +227,7 @@ export function LocalEngineSection() {
               <li key={step.label} className="flex items-center gap-2.5 text-[12.5px]">
                 <span
                   className={`flex h-4 w-4 shrink-0 items-center justify-center ${
-                    step.ok ? "text-emerald-400" : step.warn ? "text-amber-400" : "text-danger"
+                    step.ok ? "text-emerald-400" : step.warn ? "text-info" : "text-danger"
                   }`}
                 >
                   {step.ok ? (
@@ -248,7 +248,7 @@ export function LocalEngineSection() {
             ))}
           </ul>
           {udpBlocked && (
-            <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[12px] leading-relaxed text-amber-300/90">
+            <p className="rounded-lg border border-info/30 bg-info/10 px-3 py-2 text-[12px] leading-relaxed text-info/90">
               {t("Your network blocks UDP, so DHT is offline, but HTTPS trackers are reachable over TCP. Streams can still find peers, they may just take a little longer to start.")}
             </p>
           )}

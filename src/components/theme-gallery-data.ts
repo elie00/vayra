@@ -62,7 +62,7 @@ const STARTERS: NativeTheme[] = [
   },
   {
     name: "Gruvbox Dark",
-    blurb: "Retro groove: warm earthy browns with a punchy orange.",
+    blurb: "Retro groove: deep mineral tones with an electric violet accent.",
     swatch: ["#1d2021", "#3c3836", "#fe8019"],
     tokens: {
       "--color-canvas": "#1d2021",

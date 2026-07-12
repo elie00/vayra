@@ -209,7 +209,7 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
     <section className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-elevated/40 p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Star size={16} className="text-amber-300" fill="currentColor" />
+          <Star size={16} className="text-info" fill="currentColor" />
           <h3 className="text-[15px] font-semibold tracking-tight text-ink">{t("Letterboxd")}</h3>
         </div>
         {filmUrl && (
@@ -233,7 +233,7 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
           {/* Rating badges */}
           <div className="flex flex-wrap items-center gap-2.5">
             {community != null && (
-              <Badge icon={<Star size={13} className="text-amber-300" fill="currentColor" />}>
+              <Badge icon={<Star size={13} className="text-info" fill="currentColor" />}>
                 {t("Avg ★ {rating}", { rating: community.toFixed(1) })}
               </Badge>
             )}
@@ -321,18 +321,18 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
                         const next = isFirstHalf ? starIndex - 0.5 : starIndex;
                         setPendingRating((prev) => (prev === next ? prev : next));
                       }}
-                      className="group/star relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-150 hover:scale-110 hover:bg-amber-400/10 active:scale-95"
+                      className="group/star relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-150 hover:scale-110 hover:bg-info/10 active:scale-95"
                       aria-label={`${(starIndex - 0.5).toFixed(1)} to ${starIndex}.0 stars`}
                     >
                       {isFull ? (
                         <Star
                           size={28}
-                          className="text-amber-300 transition-transform duration-150 group-hover/star:scale-110"
+                          className="text-info transition-transform duration-150 group-hover/star:scale-110"
                           fill="currentColor"
                           strokeWidth={1.5}
                         />
                       ) : isHalf ? (
-                        <HalfStar size={28} className="text-amber-300" dim="text-edge" />
+                        <HalfStar size={28} className="text-info" dim="text-edge" />
                       ) : (
                         <Star
                           size={28}
@@ -350,7 +350,7 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
               {/* Live rating display */}
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[20px] font-bold text-amber-300 tabular-nums">
+                  <span className="text-[20px] font-bold text-info tabular-nums">
                     {pendingRating != null ? pendingRating.toFixed(1) : yourRating != null ? yourRating.toFixed(1) : "—"}
                   </span>
                   <span className="text-[12px] text-ink-subtle">{t("out of 5")}</span>
@@ -368,7 +368,7 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
                   <button
                     onClick={() => pendingRating != null && performRate(pendingRating)}
                     disabled={!!actionBusy || pendingRating == null}
-                    className="flex items-center gap-1.5 rounded-lg bg-amber-400/90 px-4 py-2 text-[12.5px] font-semibold text-canvas transition-all hover:bg-amber-400 active:scale-95 disabled:opacity-40"
+                    className="flex items-center gap-1.5 rounded-lg bg-info/90 px-4 py-2 text-[12.5px] font-semibold text-canvas transition-all hover:bg-info active:scale-95 disabled:opacity-40"
                   >
                     {actionBusy === "rate" ? <Loader2 size={13} className="animate-spin" /> : <Star size={13} fill="currentColor" />}
                     {t("Submit")}
@@ -398,7 +398,7 @@ function Badge({
       : tone === "liked"
         ? "border-rose-400/30 bg-rose-400/10 text-rose-200"
         : tone === "rated"
-          ? "border-amber-400/30 bg-amber-400/10 text-amber-200"
+          ? "border-info/30 bg-info/10 text-info"
           : "border-edge-soft bg-canvas/40 text-ink-muted";
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium ${toneClass}`}>
@@ -427,7 +427,7 @@ function ActionButton({
       : tone === "liked"
         ? "border-rose-400/30 bg-rose-400/10 text-rose-200 hover:bg-rose-400/20"
         : tone === "rated"
-          ? "border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
+          ? "border-info/30 bg-info/10 text-info hover:bg-info/20"
           : "border-edge-soft bg-canvas/40 text-ink-muted hover:border-edge hover:text-ink";
   return (
     <button

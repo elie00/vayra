@@ -155,7 +155,7 @@ export function NewRecordingView({
       <Footer>
         <div className="flex min-w-0 flex-1 flex-col text-[12px]">
           {error ? (
-            <span className="truncate text-amber-300" title={error}>{error}</span>
+            <span className="truncate text-info" title={error}>{error}</span>
           ) : (
             <span className="text-ink-subtle">{t("Saved as .ts (works in mpv, VLC, ffmpeg)")}</span>
           )}

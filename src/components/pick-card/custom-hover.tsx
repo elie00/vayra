@@ -41,7 +41,7 @@ export function CustomHoverOverlay({
         <span className="flex items-center gap-2 text-[11px] text-white/85">
           {meta.imdbRating && (
             <span className="flex items-center gap-0.5">
-              <Star size={9} className="fill-amber-400 text-amber-400" />
+              <Star size={9} className="fill-info text-info" />
               {meta.imdbRating}
             </span>
           )}

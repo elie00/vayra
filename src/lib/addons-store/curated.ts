@@ -71,7 +71,7 @@ export const CURATED_ADDONS: CuratedEntry[] = [
       eyebrow: "FEATURED",
       title: "Torrentio",
       subtitle: "Twelve indexers, one addon, instant via debrid.",
-      accent: "from-amber-400/40 to-orange-500/30",
+      accent: "from-info/40 to-violet-500/30",
     },
   },
   {

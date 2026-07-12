@@ -79,7 +79,7 @@ export function SettingsUnsavedChanges({ active }: { active: boolean }) {
       {dirty && !pendingLeave && (
         <div className="pointer-events-none fixed bottom-[88px] left-[calc(50%+144px)] z-[190] flex w-full max-w-2xl -translate-x-1/2 justify-center px-4 rtl:left-[calc(50%-144px)]">
           <div className="animate-modal-in pointer-events-auto flex w-full items-center gap-3 rounded-xl border border-edge-soft bg-elevated/95 px-4 py-3 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-sm">
-            <AlertTriangle size={17} className="shrink-0 text-amber-300" strokeWidth={2.2} />
+            <AlertTriangle size={17} className="shrink-0 text-info" strokeWidth={2.2} />
             <span className="flex-1 truncate text-[13.5px] text-ink">
               {changed.length === 1
                 ? t("Careful — you have 1 unsaved change.")

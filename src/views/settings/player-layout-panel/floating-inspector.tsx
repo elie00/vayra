@@ -207,7 +207,7 @@ export function FloatingInspector({
       </div>
 
       {crowded && (
-        <div className="pointer-events-auto rounded-full border border-amber-300/30 bg-amber-300/10 px-3.5 py-1.5 text-[11px] font-medium text-amber-200/90 backdrop-blur-xl">
+        <div className="pointer-events-auto rounded-full border border-info/30 bg-info/10 px-3.5 py-1.5 text-[11px] font-medium text-info/90 backdrop-blur-xl">
           Slot is getting crowded ({peers.length}/{limit}). May overflow on narrow screens.
         </div>
       )}

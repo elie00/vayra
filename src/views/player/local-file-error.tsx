@@ -28,7 +28,7 @@ export function LocalFileError({
           </p>
         </div>
         {looksLikeOneDrive && (
-          <p className="rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-3 text-[12.5px] leading-relaxed text-amber-100/85">
+          <p className="rounded-xl border border-info/30 bg-info/10 px-4 py-3 text-[12.5px] leading-relaxed text-info/85">
             {t("This file is in OneDrive. If \"Files On-Demand\" is on, the file is a cloud placeholder until it's downloaded. Right-click it in Explorer and pick")}{" "}
             <span className="font-semibold">{t("Always keep on this device")}</span>
             {t(", then try again.")}
