@@ -372,7 +372,7 @@ export const DEFAULT: Settings = {
   sidebarCollapsed: false,
   wrappedButton: true,
   feedLocaleBias: true,
-  uiLanguage: "en",
+  uiLanguage: "fr",
   arabicWelcomeSeen: false,
   cropMode: "fit",
   customLists: [],
