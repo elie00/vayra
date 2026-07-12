@@ -46,8 +46,8 @@ const live: Record<string, string> = {
     "Enregistrement · {pct}% · {remaining} · clique pour gérer",
   "Saved as .ts (works in mpv, VLC, ffmpeg)":
     "Enregistré en .ts (compatible mpv, VLC, ffmpeg)",
-  "mpv is required for recording. Install mpv and restart Harbor.":
-    "mpv est requis pour l'enregistrement. Installe mpv et redémarre Harbor.",
+  "mpv is required for recording. Install mpv and restart VAYRA.":
+    "mpv est requis pour l'enregistrement. Installe mpv et redémarre VAYRA.",
 
   // New Additions:
   "Loading more channels ({n1} of {n2})": "Chargement d'autres chaînes ({n1} sur {n2})",
@@ -92,7 +92,7 @@ const live: Record<string, string> = {
   "Playlist contained no channels": "La playlist ne contenait aucune chaîne",
   "The URL is valid but the playlist is empty. The provider may be in maintenance, or the URL is misconfigured.": "L'URL est valide mais la playlist est vide. Le fournisseur est peut-être en maintenance, ou l'URL est mal configurée.",
   "Playlist is too large": "La playlist est trop volumineuse",
-  "Harbor caps playlists at 80 MB to stay responsive. Most providers offer a filtered URL with fewer channels.": "Harbor limite les playlists à 80 Mo pour rester réactif. La plupart des fournisseurs proposent une URL filtrée avec moins de chaînes.",
+  "VAYRA caps playlists at 80 MB to stay responsive. Most providers offer a filtered URL with fewer channels.": "VAYRA limite les playlists à 80 Mo pour rester réactif. La plupart des fournisseurs proposent une URL filtrée avec moins de chaînes.",
   "Could not load this playlist": "Impossible de charger cette playlist",
 
   "No channels match": "Aucune chaîne ne correspond",

@@ -113,7 +113,7 @@ export function OnboardingModal() {
                     onClick={finish}
                     className="flex h-11 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.03] active:scale-[0.97]"
                   >
-                    {t("Enter Harbor")}
+                    {t("Enter VAYRA")}
                     <ArrowRight size={15} strokeWidth={2.4} className="dir-icon" />
                   </button>
                 )}

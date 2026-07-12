@@ -358,7 +358,7 @@ const player: Record<string, string> = {
   "default": "par défaut",
   "loading more…": "chargement…",
   "min": "min",
-  "mpv is required for recording. Install mpv and restart Harbor.": "mpv est requis pour l'enregistrement. Installe mpv et redémarre Harbor.",
+  "mpv is required for recording. Install mpv and restart VAYRA.": "mpv est requis pour l'enregistrement. Installe mpv et redémarre VAYRA.",
   "to close": "pour fermer",
   "unsaved changes": "modifications non enregistrées",
   "{count} dl": "{count} tél.",

@@ -120,7 +120,7 @@ export function BuildFeedback() {
             <BetaTag />
           </span>
           <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-            {t("Does Harbor {version} feel better or worse than the version you had before?", {
+            {t("Does VAYRA {version} feel better or worse than the version you had before?", {
               version: APP_VERSION,
             })}
           </p>

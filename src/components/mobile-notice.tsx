@@ -8,7 +8,7 @@ export function MobileNotice() {
       <div className="flex items-center gap-3 text-ink">
         <HarborMark className="h-9 w-9" />
         <span className="font-display text-[36px] font-semibold leading-none tracking-tight">
-          Harbor
+          VAYRA
         </span>
       </div>
       <div className="flex max-w-md flex-col gap-3.5">
@@ -17,11 +17,11 @@ export function MobileNotice() {
         </h1>
         <p className="text-[14.5px] leading-relaxed text-ink-muted">
           {t(
-            "This instance of Harbor is made for desktop. Our standalone iOS and Android apps are coming soon, each with a bespoke, mobile-first experience built for its native platform.",
+            "This instance of VAYRA is made for desktop. Our standalone iOS and Android apps are coming soon, each with a bespoke, mobile-first experience built for its native platform.",
           )}
         </p>
         <p className="text-[14.5px] leading-relaxed text-ink-muted">
-          {t("For now, please open this site on a desktop, or build Harbor from source.")}
+          {t("For now, please open this site on a desktop, or build VAYRA from source.")}
         </p>
       </div>
       <a

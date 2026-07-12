@@ -46,8 +46,8 @@ const addons: Record<string, string> = {
   "Re-configure this addon and apply the updated link": "Reconfigure cet addon et applique le lien mis à jour",
 
   "Sign in to sync your addons across devices": "Connecte-toi pour synchroniser tes addons entre appareils",
-  "Anything you install in Harbor pushes back to your Stremio account so it shows up on mobile too. Sign in via the avatar in the bottom-left of the sidebar.":
-    "Tout ce que tu installes dans Harbor est renvoyé vers ton compte Stremio pour apparaître aussi sur mobile. Connecte-toi via l'avatar en bas à gauche de la barre latérale.",
+  "Anything you install in VAYRA pushes back to your Stremio account so it shows up on mobile too. Sign in via the avatar in the bottom-left of the sidebar.":
+    "Tout ce que tu installes dans VAYRA est renvoyé vers ton compte Stremio pour apparaître aussi sur mobile. Connecte-toi via l'avatar en bas à gauche de la barre latérale.",
   Starters: "Pour bien démarrer",
   "Common picks for a fresh setup.": "Les choix courants pour une installation toute neuve.",
 
@@ -83,8 +83,8 @@ const addons: Record<string, string> = {
   "Configure on the addon's setup page": "Configurer sur la page de configuration de l'addon",
   "Click to open {name}'s setup page. Pick your options, then copy the install link it gives you and paste it below to update the addon.":
     "Clique pour ouvrir la page de configuration de {name}. Choisis tes options, puis copie le lien d'installation qu'elle te donne et colle-le ci-dessous pour mettre à jour l'addon.",
-  "Click to open {name}'s setup page in Harbor's built-in browser. Pick your options. When you click Install on their page, Harbor catches the link automatically and updates the addon.":
-    "Clique pour ouvrir la page de configuration de {name} dans le navigateur intégré de Harbor. Choisis tes options. Quand tu cliques sur Installer sur leur page, Harbor capture le lien automatiquement et met à jour l'addon.",
+  "Click to open {name}'s setup page in VAYRA's built-in browser. Pick your options. When you click Install on their page, VAYRA catches the link automatically and updates the addon.":
+    "Clique pour ouvrir la page de configuration de {name} dans le navigateur intégré de VAYRA. Choisis tes options. Quand tu cliques sur Installer sur leur page, VAYRA capture le lien automatiquement et met à jour l'addon.",
   "Open setup page": "Ouvrir la page de configuration",
   "Heads-up: a few addons (like AIOStatus) don't pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their \"Import from URL\" field to restore your settings.":
     "Attention : quelques addons (comme AIOStatus) ne se pré-remplissent pas depuis l'URL. Si le formulaire s'ouvre vide, colle l'URL du manifest existant dans leur champ « Import from URL » pour restaurer tes réglages.",
@@ -143,7 +143,7 @@ const addons: Record<string, string> = {
     "Les URL peuvent contenir des clés debrid ou des jetons ; révèle-les quand tu dois copier",
   "Hidden by default. Manifest paths often carry API keys (debrid tokens, OMDB keys, etc.) you don't want over a shoulder.":
     "Masqué par défaut. Les chemins de manifest contiennent souvent des clés API (jetons debrid, clés OMDB, etc.) que tu ne veux pas exposer aux regards.",
-  "Stremio addon, packaged into Harbor's catalog.": "Addon Stremio, intégré au catalogue de Harbor.",
+  "Stremio addon, packaged into VAYRA's catalog.": "Addon Stremio, intégré au catalogue de VAYRA.",
   "Version and capabilities come straight from the addon's manifest. Ratings and categories come from the":
     "La version et les capacités viennent directement du manifest de l'addon. Les notes et catégories viennent de",
   "community API. Star, browse, and contribute on their site.":
@@ -163,8 +163,8 @@ const addons: Record<string, string> = {
 
   "You've reached the end · {n} addons": "Tu as atteint la fin · {n} addons",
   "No velocity data yet": "Aucune donnée de progression pour l'instant",
-  "Trending tracks star growth across your Harbor visits. Open the addons page again tomorrow and the top risers will appear here.":
-    "Les tendances suivent la croissance des étoiles au fil de tes visites de Harbor. Rouvre la page des addons demain et les plus fortes progressions apparaîtront ici.",
+  "Trending tracks star growth across your VAYRA visits. Open the addons page again tomorrow and the top risers will appear here.":
+    "Les tendances suivent la croissance des étoiles au fil de tes visites de VAYRA. Rouvre la page des addons demain et les plus fortes progressions apparaîtront ici.",
   New: "Nouveau",
 
   "Organize addons": "Organiser les addons",
@@ -188,8 +188,8 @@ const addons: Record<string, string> = {
     "Cet ordre se synchronise avec chaque application Stremio connectée à ce compte.",
   "No addons are synced to this account yet.": "Aucun addon n'est encore synchronisé avec ce compte.",
   "On this device only": "Sur cet appareil uniquement",
-  "These live in Harbor on this computer and never touch your account.":
-    "Ceux-ci vivent dans Harbor sur cet ordinateur et ne touchent jamais ton compte.",
+  "These live in VAYRA on this computer and never touch your account.":
+    "Ceux-ci vivent dans VAYRA sur cet ordinateur et ne touchent jamais ton compte.",
   "On this device": "Sur cet appareil",
   "Sign in to Stremio to organize the addons synced to your account.":
     "Connecte-toi à Stremio pour organiser les addons synchronisés avec ton compte.",
@@ -202,8 +202,8 @@ const addons: Record<string, string> = {
     "Rien ne change tant que tu n'appuies pas sur Enregistrer. Quitter cette page abandonne les modifications.",
   "The Backups button at the top keeps your last five orders. One click restores any of them.":
     "Le bouton Sauvegardes en haut conserve tes cinq derniers ordres. Un clic restaure n'importe lequel.",
-  "Harbor double-checks with Stremio after saving, so a half-written order can't slip through.":
-    "Harbor revérifie auprès de Stremio après l'enregistrement, pour qu'un ordre écrit à moitié ne passe pas.",
+  "VAYRA double-checks with Stremio after saving, so a half-written order can't slip through.":
+    "VAYRA revérifie auprès de Stremio après l'enregistrement, pour qu'un ordre écrit à moitié ne passe pas.",
 
   "{n} addon": "{n} addon",
   "{n} addons": "{n} addons",
@@ -221,12 +221,12 @@ const addons: Record<string, string> = {
     "Ta collection d'addons a changé sur un autre appareil. Rien n'a été écrit.",
   "Stremio didn't confirm the save. Your collection may be unchanged. Retry will re-check before writing again.":
     "Stremio n'a pas confirmé l'enregistrement. Ta collection est peut-être inchangée. Réessayer revérifiera avant d'écrire à nouveau.",
-  "Saved, but Harbor couldn't confirm the new order. Retry to re-check.":
-    "Enregistré, mais Harbor n'a pas pu confirmer le nouvel ordre. Réessaie pour revérifier.",
+  "Saved, but VAYRA couldn't confirm the new order. Retry to re-check.":
+    "Enregistré, mais VAYRA n'a pas pu confirmer le nouvel ordre. Réessaie pour revérifier.",
   "Stremio reports a different order than was saved.": "Stremio signale un ordre différent de celui enregistré.",
 
-  "A safety copy of your addon order. One is saved automatically before Harbor writes any change, and you can save one yourself any time. The five most recent are kept.":
-    "Une copie de sécurité de l'ordre de tes addons. Une est enregistrée automatiquement avant que Harbor n'écrive un changement, et tu peux en enregistrer une toi-même à tout moment. Les cinq plus récentes sont conservées.",
+  "A safety copy of your addon order. One is saved automatically before VAYRA writes any change, and you can save one yourself any time. The five most recent are kept.":
+    "Une copie de sécurité de l'ordre de tes addons. Une est enregistrée automatiquement avant que VAYRA n'écrive un changement, et tu peux en enregistrer une toi-même à tout moment. Les cinq plus récentes sont conservées.",
   "Back up current order": "Sauvegarder l'ordre actuel",
   "No backups yet. Press the button above to save your first one.":
     "Aucune sauvegarde pour l'instant. Appuie sur le bouton ci-dessus pour enregistrer la première.",
@@ -255,8 +255,8 @@ const addons: Record<string, string> = {
     "Installation par URL : colle n'importe quel manifest ou lien stremio://",
   "Click below to open {name}'s setup page. Pick your options, then copy the install link it gives you and paste it below to update the addon.":
     "Clique ci-dessous pour ouvrir la page de configuration de {name}. Choisis tes options, puis copie le lien d'installation qu'elle te donne et colle-le ci-dessous pour mettre à jour l'addon.",
-  "Click below to open {name}'s setup page in Harbor's built-in browser. Pick your options. When you click Install on their page, Harbor catches the link automatically and updates the addon.":
-    "Clique ci-dessous pour ouvrir la page de configuration de {name} dans le navigateur intégré de Harbor. Choisis tes options. Quand tu cliques sur Installer sur leur page, Harbor capture le lien automatiquement et met à jour l'addon.",
+  "Click below to open {name}'s setup page in VAYRA's built-in browser. Pick your options. When you click Install on their page, VAYRA catches the link automatically and updates the addon.":
+    "Clique ci-dessous pour ouvrir la page de configuration de {name} dans le navigateur intégré de VAYRA. Choisis tes options. Quand tu cliques sur Installer sur leur page, VAYRA capture le lien automatiquement et met à jour l'addon.",
 
   "Essential addons": "Addons essentiels",
   "Start here. The ones almost everyone has.": "Commence ici. Ceux que presque tout le monde a.",

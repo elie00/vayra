@@ -61,8 +61,8 @@ export function TogetherRelayPanel({
         apiToken: settings.togetherCfToken,
       },
       notes: [
-        "Keep this file safe and offline. Cloudflare shows API tokens only once at creation. Without this token, Harbor cannot stop, redeploy, or update this relay through its UI.",
-        "To restore: open Settings -> Harbor Relay, paste the relayUrl, and re-enter the API token if you plan to manage from Harbor.",
+        "Keep this file safe and offline. Cloudflare shows API tokens only once at creation. Without this token, VAYRA cannot stop, redeploy, or update this relay through its UI.",
+        "To restore: open Settings -> VAYRA Relay, paste the relayUrl, and re-enter the API token if you plan to manage from VAYRA.",
         "You can always delete the underlying Worker manually at dash.cloudflare.com -> Workers & Pages, even without this file.",
       ],
     };
@@ -70,7 +70,7 @@ export function TogetherRelayPanel({
       `harbor-relay-backup-${new Date().toISOString().slice(0, 10)}.json`,
       JSON.stringify(payload, null, 2),
       ["json"],
-      "Harbor relay backup",
+      "VAYRA relay backup",
     );
   };
 
@@ -99,7 +99,7 @@ export function TogetherRelayPanel({
             {isPubRelay ? (
               <img
                 src={pubRelaySvg}
-                alt="Harbor public relay"
+                alt="VAYRA public relay"
                 className="h-14 w-14 shrink-0 object-contain"
                 draggable={false}
               />
@@ -181,7 +181,7 @@ export function TogetherRelayPanel({
                       <span className="text-[11.5px] text-ink-subtle">
                         {passive.needsUpdate
                           ? isPubRelay
-                            ? t("Harbor's public relay updates automatically; nothing to do.")
+                            ? t("VAYRA's public relay updates automatically; nothing to do.")
                             : t("Redeploy to pick up the latest Watch Together fixes. The in-app banner clears once the new version is live.")
                           : t("Running the latest Watch Together protocol.")}
                       </span>
@@ -206,7 +206,7 @@ export function TogetherRelayPanel({
                   <div className="flex min-w-0 flex-col">
                     <span className="text-[13px] font-medium text-ink">{t("Backup credentials")}</span>
                     <span className="text-[11.5px] text-ink-subtle">
-                      {t("Cloudflare shows API tokens only once. Save a copy now or you'll lose the ability to stop or redeploy this relay from Harbor.")}
+                      {t("Cloudflare shows API tokens only once. Save a copy now or you'll lose the ability to stop or redeploy this relay from VAYRA.")}
                     </span>
                   </div>
                   <button
@@ -343,14 +343,14 @@ export function TogetherRelayPanel({
           </p>
           <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 px-3.5 py-3">
             <span className="text-[12px] text-ink-muted">
-              {t("Hit your daily quota? Use Harbor's public relay, or host your own.")}
+              {t("Hit your daily quota? Use VAYRA's public relay, or host your own.")}
             </span>
             <button
               onClick={() => update({ togetherRelayUrl: HARBOR_PUBLIC_RELAY })}
               className="flex h-9 w-fit items-center gap-1.5 rounded-lg border border-edge px-3 text-[12.5px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
             >
               <Radio size={13} strokeWidth={1.9} />
-              {t("Use Harbor's public relay")}
+              {t("Use VAYRA's public relay")}
             </button>
           </div>
         </div>

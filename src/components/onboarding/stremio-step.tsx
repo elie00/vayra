@@ -159,7 +159,7 @@ export function StremioStep() {
         </h1>
         <p className="text-[15px] leading-relaxed text-ink-muted">
           {t(
-            "Sign in to mirror your Continue Watching, watchlist, and any addons you've already curated. Optional; Harbor works fully signed-out.",
+            "Sign in to mirror your Continue Watching, watchlist, and any addons you've already curated. Optional; VAYRA works fully signed-out.",
           )}
         </p>
       </div>

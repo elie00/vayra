@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Harbor",
+  "productName": "VAYRA",
   "version": "0.9.36",
   "identifier": "app.harbor",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Harbor",
+        "title": "VAYRA",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -41,9 +41,9 @@
     "active": true,
     "category": "Video",
     "shortDescription": "A client for the Stremio protocol",
-    "longDescription": "Harbor is an independent, open source media player and a client for the open Stremio addon protocol. It hosts and indexes no content: what you can browse or play depends entirely on the addons and services you configure. Native libmpv playback, a Rust stream ranking core, watch parties, Live TV, and per-service catalogs.",
+    "longDescription": "VAYRA is an independent personal and collaborative media player by EYBO and a client for the open Stremio addon protocol. It hosts and indexes no content: what you can browse or play depends entirely on the addons and services you configure. Native libmpv playback, a Rust stream ranking core, private viewing rooms, Live TV, and per-service catalogs.",
     "homepage": "https://harbor.site",
-    "publisher": "Harbor",
+    "publisher": "EYBO",
     "fileAssociations": [
       {
         "ext": ["mkv", "mp4", "avi", "mov", "webm", "m4v"],

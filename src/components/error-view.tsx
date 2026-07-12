@@ -233,7 +233,7 @@ export function ErrorView() {
           ) : report.kind === "error" ? (
             <span className="text-danger/80">Could not send: {report.message}</span>
           ) : (
-            <>Sends the context above straight to the Harbor team. No keys or library data.</>
+            <>Sends the context above straight to the VAYRA team. No keys or library data.</>
           )}
         </p>
       </div>

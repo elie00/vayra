@@ -56,7 +56,7 @@ export function TrayRow() {
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-[14px] font-medium text-ink">{t("Close to the system tray")}</span>
           <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-            {t("Closing the window tucks Harbor into the tray instead of quitting, so it reopens instantly. Right-click the tray icon for quick controls, or pick Quit to exit fully.")}
+            {t("Closing the window tucks VAYRA into the tray instead of quitting, so it reopens instantly. Right-click the tray icon for quick controls, or pick Quit to exit fully.")}
           </p>
         </div>
         <button
@@ -78,13 +78,13 @@ export function TrayRow() {
       <div className="flex flex-col gap-1.5 ps-4">
         <SubToggle
           label={t("Always on top")}
-          hint={t("Keep the Harbor window above other windows.")}
+          hint={t("Keep the VAYRA window above other windows.")}
           on={settings.trayAlwaysOnTop}
           onToggle={() => update({ trayAlwaysOnTop: !settings.trayAlwaysOnTop })}
         />
         <SubToggle
           label={t("Pause when minimized")}
-          hint={t("Stop playback when you minimize Harbor or send it to the tray.")}
+          hint={t("Stop playback when you minimize VAYRA or send it to the tray.")}
           on={settings.pauseMinimized}
           onToggle={() => update({ pauseMinimized: !settings.pauseMinimized })}
         />

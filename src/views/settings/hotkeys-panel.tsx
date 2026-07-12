@@ -112,7 +112,7 @@ export function HotkeysPanel() {
           subgroups.set(g, arr);
         }
         return (
-          <Section key={scope} title={t(scope)} subtitle={scope === "Player" ? t("Inside the playback view.") : t("Anywhere in Harbor.")}>
+          <Section key={scope} title={t(scope)} subtitle={scope === "Player" ? t("Inside the playback view.") : t("Anywhere in VAYRA.")}>
             <div className="flex flex-col gap-6">
               {Array.from(subgroups.entries()).map(([groupName, items]) => (
                 <div key={groupName} className="flex flex-col gap-1.5">
@@ -143,7 +143,7 @@ export function HotkeysPanel() {
                   {scope === "Global" && groupName === "Interface" && (
                     <ReadOnlyHotkeyRow
                       label={t("Adjust interface scale with wheel")}
-                      description={t("Hold Ctrl or Cmd and scroll to resize Harbor's interface smoothly.")}
+                      description={t("Hold Ctrl or Cmd and scroll to resize VAYRA's interface smoothly.")}
                       binding="Ctrl / ⌘ + Scroll"
                     />
                   )}

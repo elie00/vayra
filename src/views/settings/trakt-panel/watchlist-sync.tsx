@@ -43,7 +43,7 @@ export function WatchlistSync() {
   if (!authKey) {
     return (
       <p className="text-[13px] leading-relaxed text-ink-subtle">
-        {t("Sign in to Stremio first so Harbor knows which watchlist to sync.")}
+        {t("Sign in to Stremio first so VAYRA knows which watchlist to sync.")}
       </p>
     );
   }
@@ -110,7 +110,7 @@ export function WatchlistSync() {
       const r = await runImport(authKey, items, (done, total) =>
         setPhase({ kind: "running", label: t("Importing {done} / {total}", { done, total }) }),
       );
-      setPhase({ kind: "result", tone: "ok", message: t("Added {n} to your Harbor watchlist", { n: r.added }) });
+      setPhase({ kind: "result", tone: "ok", message: t("Added {n} to your VAYRA watchlist", { n: r.added }) });
     } catch (err) {
       console.error("[trakt] import failed", err);
       setPhase({ kind: "result", tone: "warn", message: traktErrorMessage(t, err) });
@@ -127,8 +127,8 @@ export function WatchlistSync() {
       <div className="flex flex-col gap-3 rounded-xl border border-edge bg-canvas/50 p-4">
         <p className="text-[13.5px] leading-relaxed text-ink">
           {isExport
-            ? t("Add {n} titles from your Harbor watchlist to Trakt? Trakt skips any it already has.", { n: count })
-            : t("Add {n} titles from your Trakt watchlist to Harbor?", { n: count })}
+            ? t("Add {n} titles from your VAYRA watchlist to Trakt? Trakt skips any it already has.", { n: count })
+            : t("Add {n} titles from your Trakt watchlist to VAYRA?", { n: count })}
         </p>
         {phase.kind === "confirm-export" && phase.plan.skippedAnime > 0 && (
           <p className="text-[12px] text-ink-subtle">
