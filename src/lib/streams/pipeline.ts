@@ -1,6 +1,6 @@
 import type { Addon } from "@/lib/addons";
 import { dlog } from "@/lib/debug";
-import type { DebridStore } from "@/lib/debrid/types";
+import type { DebridResult, DebridStore } from "@/lib/debrid/types";
 import { fetchAddonStreams, type StreamRequest } from "./addons";
 import { enhanceAnimeStreams } from "./anitomy";
 import { fetchLibraryStreams, type LibraryQuery } from "./library";
@@ -23,6 +23,21 @@ function getCore(): Promise<VayraCore> {
 
 const GIB = 1024 ** 3;
 const RESCUABLE_REASON_RX = /^(fresh-cinema-fake|new-release-stub)/;
+
+// Per-debrid cap for cache/library lookups so one slow/hung debrid can't stall
+// the whole batch. Resolves to a rejected sentinel so marking is simply skipped.
+const DEBRID_LOOKUP_TIMEOUT_MS = 8000;
+
+function withDebridTimeout<T>(call: Promise<DebridResult<T>>): Promise<DebridResult<T>> {
+  let timer: ReturnType<typeof setTimeout>;
+  const guard = new Promise<DebridResult<T>>((resolve) => {
+    timer = setTimeout(
+      () => resolve({ ok: false, code: "timeout", status: 0 }),
+      DEBRID_LOOKUP_TIMEOUT_MS,
+    );
+  });
+  return Promise.race([call.catch(() => guard), guard]).finally(() => clearTimeout(timer));
+}
 
 function rescueCorroboratedLeaks(rejected: Rejection[], trust: TrustOptions): Set<ParsedStream> {
   const rd = trust.releaseDate ? new Date(trust.releaseDate) : null;
@@ -147,41 +162,41 @@ export async function runPipeline(
     ];
     if (hashes.length > 0 && input.debrids.length > 0 && !signal.aborted) {
       dlog(`[pipeline] ${parsed.length} parsed streams · ${hashes.length} unique hashes · debrids: ${input.debrids.map((d) => d.name).join(", ")}`);
-      const [cacheResults, libraryResults] = await Promise.all([
-        Promise.allSettled(input.debrids.map((d) => d.cacheCheck(hashes, signal))),
-        Promise.allSettled(input.debrids.map((d) => d.listLibrary(signal))),
-      ]);
-      for (let i = 0; i < input.debrids.length; i++) {
-        const r = cacheResults[i];
-        if (r.status !== "fulfilled" || !r.value.ok) continue;
-        const slug = input.debrids[i].slug;
-        let hits = 0;
-        for (const p of parsed) {
-          if (!p.infoHash) continue;
-          if (r.value.data[p.infoHash.toLowerCase()]) {
-            p.cached[slug] = true;
-            hits++;
-          }
-        }
-        dlog(`[pipeline] cacheCheck on ${input.debrids[i].name}: ${hits} streams flagged cached`);
-      }
-
-      for (let i = 0; i < input.debrids.length; i++) {
-        const r = libraryResults[i];
-        if (r.status !== "fulfilled" || !r.value.ok) continue;
-        const slug = input.debrids[i].slug;
-        const libHashes = new Set(r.value.data.map((e) => e.hash.toLowerCase()).filter(Boolean));
-        let hits = 0;
-        for (const p of parsed) {
-          if (!p.infoHash) continue;
-          if (libHashes.has(p.infoHash.toLowerCase())) {
-            if (!p.cached[slug]) hits++;
-            p.cached[slug] = true;
-            p.inLibrary[slug] = true;
-          }
-        }
-        dlog(`[pipeline] listLibrary cross-check on ${input.debrids[i].name}: ${hits} extra streams flagged cached (lib has ${libHashes.size} hashes)`);
-      }
+      // Mark streams progressively as each debrid returns (per-debrid .then),
+      // bounding each lookup with a timeout so one slow debrid can't stall the
+      // batch. Awaiting all before the core rank keeps the final result identical.
+      await Promise.all(
+        input.debrids.map((d) => {
+          const slug = d.slug;
+          const cachePromise = withDebridTimeout(d.cacheCheck(hashes, signal)).then((r) => {
+            if (!r.ok) return;
+            let hits = 0;
+            for (const p of parsed) {
+              if (!p.infoHash) continue;
+              if (r.data[p.infoHash.toLowerCase()]) {
+                p.cached[slug] = true;
+                hits++;
+              }
+            }
+            dlog(`[pipeline] cacheCheck on ${d.name}: ${hits} streams flagged cached`);
+          });
+          const libraryPromise = withDebridTimeout(d.listLibrary(signal)).then((r) => {
+            if (!r.ok) return;
+            const libHashes = new Set(r.data.map((e) => e.hash.toLowerCase()).filter(Boolean));
+            let hits = 0;
+            for (const p of parsed) {
+              if (!p.infoHash) continue;
+              if (libHashes.has(p.infoHash.toLowerCase())) {
+                if (!p.cached[slug]) hits++;
+                p.cached[slug] = true;
+                p.inLibrary[slug] = true;
+              }
+            }
+            dlog(`[pipeline] listLibrary cross-check on ${d.name}: ${hits} extra streams flagged cached (lib has ${libHashes.size} hashes)`);
+          });
+          return Promise.allSettled([cachePromise, libraryPromise]);
+        }),
+      );
 
       const totalCached = parsed.filter((p) => Object.values(p.cached).some(Boolean)).length;
       dlog(`[pipeline] final: ${totalCached}/${parsed.length} streams marked cached`);
