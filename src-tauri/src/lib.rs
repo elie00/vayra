@@ -277,6 +277,26 @@ fn install_maximize_guard(app: &tauri::AppHandle) {
     eprintln!("[harbor::maxguard] WM_GETMINMAXINFO work-area guard installed");
 }
 
+// Bring the main window to the foreground on Windows (e.g. restoring from the
+// tray). `set_focus()` alone doesn't reliably raise a window the OS considers
+// background, so restore-if-minimized then explicitly foreground the HWND.
+#[cfg(windows)]
+pub(crate) fn force_show_foreground(window: &tauri::WebviewWindow) {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        BringWindowToTop, IsIconic, SetForegroundWindow, ShowWindow, SW_RESTORE,
+    };
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    unsafe {
+        if IsIconic(hwnd).as_bool() {
+            let _ = ShowWindow(hwnd, SW_RESTORE);
+        }
+        let _ = BringWindowToTop(hwnd);
+        let _ = SetForegroundWindow(hwnd);
+    }
+}
+
 #[tauri::command]
 fn harbor_set_webview_memory_low(app: tauri::AppHandle, low: bool) {
     #[cfg(windows)]
