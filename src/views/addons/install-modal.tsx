@@ -295,7 +295,7 @@ function ManageStep1({
       <p className="ps-7 text-[12.5px] leading-relaxed text-ink-muted">
         {isWeb()
           ? t("Click below to open {name}'s setup page. Pick your options, then copy the install link it gives you and paste it below to update the addon.", { name })
-          : t("Click below to open {name}'s setup page in Harbor's built-in browser. Pick your options. When you click Install on their page, Harbor catches the link automatically and updates the addon.", { name })}
+          : t("Click below to open {name}'s setup page in VAYRA's built-in browser. Pick your options. When you click Install on their page, VAYRA catches the link automatically and updates the addon.", { name })}
       </p>
       <button
         type="button"

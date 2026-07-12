@@ -30,7 +30,7 @@ export function TrendingAddonsRail({
             </h3>
             <p className="text-[12.5px] text-ink-muted">
               Most stars gained in the last {windowDays} {windowDays === 1 ? "day" : "days"}.
-              Tracked locally. Your Harbor visits power this.
+              Tracked locally. Your VAYRA visits power this.
             </p>
           </div>
         </div>

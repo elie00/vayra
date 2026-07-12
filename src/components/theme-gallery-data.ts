@@ -1,7 +1,7 @@
 // Versioned, bundled data source for the theme gallery. Every theme is expressed in the
 // native import format understood by parseThemeJson (@/lib/custom-themes), so
 // installing goes through the exact same pipeline as importing a theme file. New
-// entries can be shipped with regular Harbor releases without requiring a service.
+// entries can be shipped with regular VAYRA releases without requiring a service.
 
 export type GalleryTheme = {
   name: string;
@@ -121,7 +121,7 @@ const STARTERS: NativeTheme[] = [
 
 export const STARTER_GALLERY_THEMES: GalleryTheme[] = STARTERS.map((theme) => ({
   name: theme.name,
-  author: "Harbor",
+  author: "VAYRA",
   blurb: theme.blurb,
   swatch: theme.swatch,
   tokens: theme.tokens,

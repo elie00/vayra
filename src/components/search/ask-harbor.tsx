@@ -29,7 +29,7 @@ export function AskHarbor() {
       <div className="mb-3 flex items-center gap-2 text-accent">
         <Sparkles size={16} strokeWidth={2.1} />
         <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
-          {t("Ask Harbor")}
+          {t("Ask VAYRA")}
         </span>
       </div>
       <div className="flex items-center gap-3">

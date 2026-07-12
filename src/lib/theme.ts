@@ -102,7 +102,7 @@ export type FontPair = {
 export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
   "cool-grey": {
     id: "cool-grey",
-    name: "Harbor default",
+    name: "VAYRA default",
     blurb: "What ships out of the box.",
     previewImage: harborPreview,
     swatch: ["#2c2e36", "#3a3d47", "#dcdde4"],
@@ -300,7 +300,7 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
 const elegantFinCss = `@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 
 /* ==========================================================================
-   ElegantFin for Harbor  (after lscambo13's ElegantFin Jellyfin theme)
+   ElegantFin for VAYRA  (after lscambo13's ElegantFin Jellyfin theme)
    Dark navy glass, one purple accent, 1em rounded cards, white shine-sweep,
    Inter 425 body / 600 headings, calm 125ms motion, hairline + blur structure.
    Injected raw into <style id="harbor-theme-css"> so !important + any selector wins.
@@ -1073,8 +1073,8 @@ const elegantFinJs = `(function () {
   w.__harborThemeCleanup = cleanup;
 })();`;
 
-const feishinCss = `/* ===== FEISHIN THEME FOR HARBOR ===== */
-/* Retoken Harbor's @theme palette to Feishin's near-black ladder + electric blue */
+const feishinCss = `/* ===== FEISHIN THEME FOR VAYRA ===== */
+/* Retoken VAYRA's @theme palette to Feishin's near-black ladder + electric blue */
 :root {
   --color-canvas: #0C0C0C;
   --color-surface: #141414;
@@ -1234,7 +1234,7 @@ html[data-theme-layout="custom"]:not([data-chrome-hidden]) main {
 html:not([data-theme-layout="custom"]) .fsh-rail,
 html[data-chrome-hidden] .fsh-rail { display: none !important; }
 
-/* Hide Harbor's floating-back + retint window controls (rail carries nav) */
+/* Hide VAYRA's floating-back + retint window controls (rail carries nav) */
 html[data-theme-layout="custom"]:not([data-chrome-hidden]) .harbor-win-control,
 html[data-theme-layout="custom"]:not([data-chrome-hidden]) .harbor-win-close {
   background: #141414 !important;
@@ -1549,7 +1549,7 @@ export const FONT_PAIRS: Record<FontPairId, FontPair> = {
   "fraunces-inter": {
     id: "fraunces-inter",
     name: "Fraunces + Inter",
-    blurb: "Classic. Was Harbor's original pair.",
+    blurb: "Classic. Was VAYRA's original pair.",
     display: '"Fraunces", "Iowan Old Style", "Georgia", serif',
     sans: '"Inter", system-ui, sans-serif',
   },
