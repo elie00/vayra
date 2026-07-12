@@ -752,7 +752,7 @@ html[data-theme-card="stremio"] .modal-panel {
   border-color: color-mix(in srgb, var(--color-ink) 12%, transparent) !important;
 }
 
-html[data-theme-layout="stremio"] [data-harbor-player] {
+html[data-theme-layout="stremio"] [data-vayra-player] {
   --color-canvas: var(--color-canvas);
   --color-surface: #181434;
   --color-elevated: #1f1b3f;
@@ -854,7 +854,7 @@ html[data-theme-layout="minui"] .harbor-service-tile:hover {
   background: var(--color-elevated);
 }
 
-html[data-theme-layout="minui"] [data-harbor-player] {
+html[data-theme-layout="minui"] [data-vayra-player] {
   --color-canvas: #0a0a0c;
   --color-surface: #15151a;
   --color-elevated: #1d1d24;
@@ -988,8 +988,8 @@ html[data-theme-card="crunch"] .harbor-cinema-badge {
   border-color: var(--color-accent-soft);
 }
 
-html[data-theme-card="crunch"] [data-harbor-player] [role="slider"],
-html[data-theme-card="crunch"] [data-harbor-player] .player-progress-fill {
+html[data-theme-card="crunch"] [data-vayra-player] [role="slider"],
+html[data-theme-card="crunch"] [data-vayra-player] .player-progress-fill {
   background-color: var(--color-accent);
 }
 
@@ -1167,7 +1167,7 @@ html[data-theme-card="noir"] .harbor-cinema-badge {
   border-color: color-mix(in srgb, var(--color-ink) 18%, transparent);
 }
 
-html[data-theme-card="noir"] [data-harbor-player] {
+html[data-theme-card="noir"] [data-vayra-player] {
   --color-canvas: #000000;
   --color-surface: var(--color-surface);
   --color-elevated: var(--color-elevated);
@@ -1288,7 +1288,7 @@ html[data-theme-card="glass"] {
   --color-raised: color-mix(in srgb, var(--color-canvas) 79%, white);
 }
 
-html[data-theme-card="glass"] [data-harbor-player] {
+html[data-theme-card="glass"] [data-vayra-player] {
   --color-surface: color-mix(in srgb, var(--color-canvas) 92%, white);
   --color-elevated: color-mix(in srgb, var(--color-canvas) 86%, white);
   --color-raised: color-mix(in srgb, var(--color-canvas) 80%, white);
@@ -1376,7 +1376,7 @@ html[data-os="android"] #root {
 /* The top bar is position:fixed, so #root padding can't move it; give it its
    own status-bar inset and grow its height so the 80px control row is preserved
    and simply pushed below the status bar. */
-html[data-os="android"] [data-harbor-topbar] {
+html[data-os="android"] [data-vayra-topbar] {
   box-sizing: border-box;
   height: calc(5rem + var(--harbor-status-bar));
   padding-top: var(--harbor-status-bar);

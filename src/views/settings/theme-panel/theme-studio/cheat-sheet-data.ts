@@ -124,8 +124,8 @@ export const STABLE_SELECTORS: HookSelector[] = [
   { selector: ".harbor-minui-shell", where: "The floating dock container (Floating dock layout)." },
   { selector: ".glass-card", where: "Cards that opt into the glass treatment.", tip: "Active only when data-theme-card is glass." },
   { selector: ".modal-panel", where: "Modal bodies (auth, profile picker, together, etc.)." },
-  { selector: "[data-harbor-player]", where: "The video player root. Player surfaces scope to this." },
-  { selector: "[data-harbor-nav]", where: "Nav buttons in builder-generated custom chrome.", tip: "Gets [data-active] on the current view. Style the active item." },
+  { selector: "[data-vayra-player]", where: "The video player root. Player surfaces scope to this." },
+  { selector: "[data-vayra-nav]", where: "Nav buttons in builder-generated custom chrome.", tip: "Gets [data-active] on the current view. Style the active item." },
   { selector: "[data-tauri-drag-region]", where: "Window-drag areas. Keep one if you replace the title bar." },
   { selector: "main", where: "The scrolling content area. Add padding for custom chrome." },
 ];

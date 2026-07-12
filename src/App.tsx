@@ -461,7 +461,7 @@ function Shell() {
   const handleTvBackToNav = useCallback(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     const nav = document.querySelector<HTMLElement>(
-      '[data-harbor-nav] a[href], [data-harbor-nav] button, [data-harbor-nav] [data-focusable="true"]',
+      '[data-vayra-nav] a[href], [data-vayra-nav] button, [data-vayra-nav] [data-focusable="true"]',
     );
     nav?.focus({ preventScroll: true });
   }, []);
@@ -498,7 +498,7 @@ function Shell() {
       const btn = target.closest('button, a[href], [data-focusable="true"]');
       if (btn) {
         const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
-        const isBack = ariaLabel.includes('back') || btn.closest('[data-harbor-nav]');
+        const isBack = ariaLabel.includes('back') || btn.closest('[data-vayra-nav]');
         
         const isMovieCard = btn.querySelector('img') || btn.hasAttribute('data-media-card') || btn.classList.contains('media-card') || btn.closest('[data-tv-hero-zone]');
 
@@ -763,8 +763,8 @@ function Shell() {
   }, [playerActive, pickerTop, immersive, settingsTop, chromeHidden]);
 
   useEffect(() => {
-    document.querySelectorAll("[data-harbor-nav]").forEach((el) => {
-      el.toggleAttribute("data-active", el.getAttribute("data-harbor-nav") === topKind);
+    document.querySelectorAll("[data-vayra-nav]").forEach((el) => {
+      el.toggleAttribute("data-active", el.getAttribute("data-vayra-nav") === topKind);
     });
   }, [topKind]);
 

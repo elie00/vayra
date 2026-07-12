@@ -55,7 +55,7 @@ export const RECIPES: Recipe[] = [
   {
     title: "Highlight the active nav item",
     lang: "css",
-    code: `[data-harbor-nav][data-active] {
+    code: `[data-vayra-nav][data-active] {
   background: var(--color-raised);
   color: var(--color-ink);
 }`,

@@ -347,7 +347,7 @@ function NavItem({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      data-harbor-nav={view}
+      data-vayra-nav={view}
       data-active={active ? "" : undefined}
       aria-current={active ? "page" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label }) : label}
