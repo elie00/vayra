@@ -39,13 +39,13 @@ const de: Record<string, string> = {
   "chrome.minimize": "Minimieren",
   "chrome.maximize": "Maximieren",
   "chrome.restore": "Wiederherstellen",
-  "chrome.watchTogether": "Gemeinsam ansehen",
+  "chrome.watchTogether": "VARA",
   "chrome.scrollForMore": "Scrollen für mehr",
   "chrome.locked": "Gesperrt",
   "chrome.parentalOn": "Kindersicherung aktiviert",
   "chrome.lockedRequiresPin": "{label} (gesperrt, PIN erforderlich)",
   "chrome.lockedShort": "{label} · gesperrt",
-  "chrome.harborHome": "Harbor-Startseite",
+  "chrome.harborHome": "VAYRA-Startseite",
   "chrome.sectionLibrary": "Bibliothek",
 
   "profile.whoWatching": "Wer schaut zu?",
@@ -58,7 +58,7 @@ const de: Record<string, string> = {
   "profile.signedIn": "Bei Stremio angemeldet",
   "profile.fallback": "Profil",
 
-  "welcome.title": "Willkommen bei Harbor",
+  "welcome.title": "Willkommen bei VAYRA",
   "welcome.subtitle": "Die Oberfläche ist jetzt auf Arabisch. Du kannst jederzeit in den Einstellungen zurückwechseln.",
   "welcome.dismiss": "Loslegen",
 
@@ -168,7 +168,7 @@ const de: Record<string, string> = {
   "Focus GIF URL": "URL des Fokus-GIFs",
   "Addon not installed": "Add-on nicht installiert",
   "This section depends on the addon": "Dieser Bereich hängt vom Add-on ab",
-  "You must install this addon in your Stremio account first so Harbor can fetch its works.": "Du musst dieses Add-on zuerst in deinem Stremio-Konto installieren, damit Harbor dessen Inhalte abrufen kann.",
+  "You must install this addon in your Stremio account first so VAYRA can fetch its works.": "Du musst dieses Add-on zuerst in deinem Stremio-Konto installieren, damit VAYRA dessen Inhalte abrufen kann.",
   "Missing TMDB Key": "TMDB-Schlüssel fehlt",
   "This section relies on TMDB discovery features.": "Dieser Bereich nutzt die Entdeckungsfunktionen von TMDB.",
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Bitte füge deinen TMDB-API-Schlüssel in den Einstellungen für Bibliothek & Metadaten hinzu, um diesen Ordner anzuzeigen.",

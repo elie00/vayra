@@ -15,14 +15,14 @@ export function LayoutStep() {
   }> = [
     {
       id: "harbor",
-      label: t("Harbor curated"),
+      label: t("VAYRA curated"),
       sub: t("Hero, Top 10, Trending, In Theaters, per-service rails. Your addons append underneath."),
       img: harborStyleImg,
     },
     {
       id: "classic",
       label: t("Classic Stremio"),
-      sub: t("Continue Watching, then your addon catalogs in install order. No hero, no Harbor rails."),
+      sub: t("Continue Watching, then your addon catalogs in install order. No hero, no VAYRA rails."),
       img: traditionalStyleImg,
     },
   ];

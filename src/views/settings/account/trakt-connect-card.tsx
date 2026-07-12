@@ -148,7 +148,7 @@ export function TraktConnectCard() {
         <div className="flex items-start gap-4">
           <TraktBadge />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-[14.5px] font-medium text-ink">{t("Authorize Harbor on Trakt")}</span>
+            <span className="text-[14.5px] font-medium text-ink">{t("Authorize VAYRA on Trakt")}</span>
             <span className="text-[12.5px] leading-snug text-ink-muted">
               {t("We opened {url} in your browser. Enter the code below.", { url: code?.verification_url ?? "" })}
             </span>
@@ -202,7 +202,7 @@ export function TraktConnectCard() {
           </span>
           <span className="text-[12.5px] leading-snug text-ink-muted">
             {connected
-              ? t("Plays + ratings sync from Harbor to Trakt.tv.")
+              ? t("Plays + ratings sync from VAYRA to Trakt.tv.")
               : t("Mirror plays + ratings to Trakt.tv. Uses Trakt's device flow: enter a short code in your browser.")}
           </span>
         </div>

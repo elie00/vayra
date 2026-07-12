@@ -128,7 +128,7 @@ function buildDumpText(): string {
 
   const lines: string[] = [];
   lines.push("==========================================================");
-  lines.push("  HARBOR MEMORY PROFILE DUMP");
+  lines.push("  VAYRA MEMORY PROFILE DUMP");
   lines.push(`  Dumped at: ${new Date(now).toLocaleString()}`);
   lines.push(`  Window: last ${elapsedSec.toFixed(1)}s since reset`);
   lines.push("==========================================================");
@@ -146,7 +146,7 @@ function buildDumpText(): string {
   const nm = getNativeMem();
   if (nm.total > 0) {
     lines.push(
-      `  RSS total:     ${nm.total.toFixed(0)} MB (Harbor.exe ${nm.harborRss.toFixed(0)} + webview ${nm.webviewRss.toFixed(0)}) tier ${getRamTier()}`,
+      `  RSS total:     ${nm.total.toFixed(0)} MB (VAYRA.exe ${nm.harborRss.toFixed(0)} + webview ${nm.webviewRss.toFixed(0)}) tier ${getRamTier()}`,
     );
   }
   lines.push("");

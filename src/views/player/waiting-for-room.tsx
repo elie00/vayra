@@ -94,7 +94,7 @@ export function WaitingForRoom(props: {
               onClick={onPlayWithoutSync}
               className="inline-flex h-10 items-center rounded-full bg-white/15 px-5 text-[13px] font-semibold text-white transition-colors hover:bg-white/25"
             >
-              {t("Play without sync")}
+              {t("Play without VEYA")}
             </button>
           )}
           <button

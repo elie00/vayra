@@ -105,7 +105,7 @@ async function callOpenRouter(
         Authorization: `Bearer ${provider.apiKey.trim()}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://harbor.site",
-        "X-Title": "Harbor",
+        "X-Title": "VAYRA",
       },
       body: JSON.stringify({
         model: provider.model.trim() || DEFAULT_OR_MODEL,

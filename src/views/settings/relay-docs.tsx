@@ -43,17 +43,17 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
           {t("Self-host")}
         </p>
         <h2 className="font-display text-[32px] font-medium leading-tight tracking-tight text-ink">
-          {t("Run your own Harbor Relay")}
+          {t("Run your own VAYRA Relay")}
         </h2>
         <p className="text-[14px] leading-relaxed text-ink-muted">
-          {t("Two paths: Harbor handles the deploy for you, or you do it yourself with wrangler.")}
+          {t("Two paths: VAYRA handles the deploy for you, or you do it yourself with wrangler.")}
         </p>
       </header>
 
       <DocsBlock>
         <DocsH2>{t("Overview")}</DocsH2>
         <DocsP>
-          {t("The Harbor relay is a Cloudflare Worker that hosts WebSocket rooms for Watch Together. Each user runs their own. There is no central Harbor server.")}
+          {t("The VAYRA relay is a Cloudflare Worker that hosts WebSocket rooms for VARA. Each user runs their own. There is no central VAYRA server.")}
         </DocsP>
         <DocsP>
           {t("Source:")} <DocsCode>src-tauri/relay/worker.js</DocsCode>. {t("About 200 lines of JavaScript, no dependencies. Read it before deploying if you want to know what runs.")}
@@ -72,21 +72,21 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
       </DocsBlock>
 
       <DocsBlock>
-        <DocsH2>{t("Auto-deploy from Harbor")}</DocsH2>
+        <DocsH2>{t("Auto-deploy from VAYRA")}</DocsH2>
         <DocsP>
-          {t("Easiest path. Harbor uploads the worker, creates the Durable Object namespace, and stores the resulting URL.")}
+          {t("Easiest path. VAYRA uploads the worker, creates the Durable Object namespace, and stores the resulting URL.")}
         </DocsP>
         <DocsOl>
-          <li>{t("Open Settings, then Harbor Relay.")}</li>
+          <li>{t("Open Settings, then VAYRA Relay.")}</li>
           <li>
             {t("Click")} <DocsKbd>{t("Deploy a relay")}</DocsKbd>.
           </li>
           <li>
-            {t("Generate a Cloudflare API token with")} <DocsCode>Workers Scripts: Edit</DocsCode> {t("and")} <DocsCode>Account: Read</DocsCode> {t("permissions at")} <DocsCode>dash.cloudflare.com/profile/api-tokens</DocsCode>. {t("Paste it into Harbor.")}
+            {t("Generate a Cloudflare API token with")} <DocsCode>Workers Scripts: Edit</DocsCode> {t("and")} <DocsCode>Account: Read</DocsCode> {t("permissions at")} <DocsCode>dash.cloudflare.com/profile/api-tokens</DocsCode>. {t("Paste it into VAYRA.")}
           </li>
           <li>{t("Pick the Cloudflare account to deploy under.")}</li>
           <li>
-            {t("Wait for the upload to finish. The relay URL gets written to")} <DocsCode>togetherRelayUrl</DocsCode> {t("in Harbor settings.")}
+            {t("Wait for the upload to finish. The relay URL gets written to")} <DocsCode>togetherRelayUrl</DocsCode> {t("in VAYRA settings.")}
           </li>
         </DocsOl>
       </DocsBlock>
@@ -102,7 +102,7 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
             <DocsPre>{`npm install -g wrangler\nwrangler login`}</DocsPre>
           </li>
           <li>
-            {t("Save the worker source. Copy")} <DocsCode>src-tauri/relay/worker.js</DocsCode> {t("from the Harbor repo into a new directory as")} <DocsCode>worker.js</DocsCode>.
+            {t("Save the worker source. Copy")} <DocsCode>src-tauri/relay/worker.js</DocsCode> {t("from the VAYRA repo into a new directory as")} <DocsCode>worker.js</DocsCode>.
           </li>
           <li>
             {t("Save this")} <DocsCode>wrangler.toml</DocsCode> {t("next to it:")}
@@ -116,7 +116,7 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
             {t("Note the URL Cloudflare returns. It looks like")} <DocsCode>https://harbor-together-relay.&lt;subdomain&gt;.workers.dev</DocsCode>.
           </li>
           <li>
-            {t("In Harbor: Settings, Harbor Relay, then")} <DocsKbd>{t("Use a different URL")}</DocsKbd>. {t("Paste the URL with")} <DocsCode>wss://</DocsCode> {t("as the scheme instead of")} <DocsCode>https://</DocsCode>.
+            {t("In VAYRA: Settings, VAYRA Relay, then")} <DocsKbd>{t("Use a different URL")}</DocsKbd>. {t("Paste the URL with")} <DocsCode>wss://</DocsCode> {t("as the scheme instead of")} <DocsCode>https://</DocsCode>.
           </li>
         </DocsOl>
       </DocsBlock>
@@ -124,23 +124,23 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
       <DocsBlock>
         <DocsH2>{t("Verify it works")}</DocsH2>
         <DocsP>
-          {t("Settings, Harbor Relay, then")} <DocsKbd>{t("Run test")}</DocsKbd>.
+          {t("Settings, VAYRA Relay, then")} <DocsKbd>{t("Run test")}</DocsKbd>.
         </DocsP>
         <DocsP>
-          {t("The test calls")} <DocsCode>/health</DocsCode> {t("and confirms the worker is reachable and running a current version. A passing test means Watch Together rooms will connect.")}
+          {t("The test calls")} <DocsCode>/health</DocsCode> {t("and confirms the worker is reachable and running a current version. A passing test means VARA rooms will connect.")}
         </DocsP>
         <DocsP>
-          {t("If the Watch Together popover shows an outdated-relay banner, redeploying with the steps above is the fix. The banner clears automatically the next time you connect once the relay reports the current version.")}
+          {t("If the VARA popover shows an outdated-relay banner, redeploying with the steps above is the fix. The banner clears automatically the next time you connect once the relay reports the current version.")}
         </DocsP>
       </DocsBlock>
 
       <DocsBlock>
         <DocsH2>{t("Sharing your relay")}</DocsH2>
         <DocsP>
-          {t("A relay URL is shareable. Anyone with the URL can join Watch Together rooms hosted on your relay. The unique")} <DocsCode>workers.dev</DocsCode> {t("subdomain acts as the access token. There is no login.")}
+          {t("A relay URL is shareable. Anyone with the URL can join VARA rooms hosted on your relay. The unique")} <DocsCode>workers.dev</DocsCode> {t("subdomain acts as the access token. There is no login.")}
         </DocsP>
         <DocsP>
-          {t("To run a public relay, post the")} <DocsCode>wss://</DocsCode> {t("URL on r/Stremio or wherever your community lives. Other Harbor users paste it into Settings, Harbor Relay,")} <DocsKbd>{t("Use a different URL")}</DocsKbd>.
+          {t("To run a public relay, post the")} <DocsCode>wss://</DocsCode> {t("URL on r/Stremio or wherever your community lives. Other VAYRA users paste it into Settings, VAYRA Relay,")} <DocsKbd>{t("Use a different URL")}</DocsKbd>.
         </DocsP>
       </DocsBlock>
 
@@ -153,7 +153,7 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
           <li>{t("Unlimited Durable Object storage at $0.20 per million reads.")}</li>
         </DocsList>
         <DocsP>
-          {t("A typical Watch Together session uses a few hundred messages per hour. Solo and small-group use stays well under free tier limits.")}
+          {t("A typical VARA session uses a few hundred messages per hour. Solo and small-group use stays well under free tier limits.")}
         </DocsP>
         <DocsP>
           {t("If you exceed free tier, the Workers Paid plan is $5 per month and bumps the request allowance to 10 million per day.")}
@@ -175,7 +175,7 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
               fix: t("Re-run deploy or paste the correct URL"),
             },
             {
-              symptom: t("Watch Together rooms drop after 6 hours"),
+              symptom: t("VARA rooms drop after 6 hours"),
               cause: t("Durable Object idle eviction"),
               fix: t("Expected. Rooms recreate on next join."),
             },
@@ -190,7 +190,7 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
             <DocsCode>GET /health</DocsCode>: {t("returns JSON with the worker version. Used by the test button.")}
           </li>
           <li>
-            <DocsCode>GET /r/&lt;code&gt;</DocsCode> {t("with a WebSocket upgrade: opens a Watch Together room. State is held in a Durable Object, no persistence beyond the active session.")}
+            <DocsCode>GET /r/&lt;code&gt;</DocsCode> {t("with a WebSocket upgrade: opens a VARA room. State is held in a Durable Object, no persistence beyond the active session.")}
           </li>
         </DocsList>
       </DocsBlock>

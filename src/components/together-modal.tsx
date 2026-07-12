@@ -111,7 +111,7 @@ export function TogetherPopover({
     <div
       role={variant === "sheet" ? undefined : "dialog"}
       aria-modal={variant === "sheet" ? undefined : "true"}
-      aria-label={t("Watch together")}
+      aria-label={t("VARA")}
       className={
         variant === "sheet"
           ? "flex min-h-0 w-full flex-col gap-4 overflow-y-auto p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
@@ -128,7 +128,7 @@ export function TogetherPopover({
     >
       <header className="flex items-center justify-between gap-3">
         <h2 className="text-[14px] font-semibold tracking-tight text-ink">
-          {view === "link" ? t("Invite via link") : t("Watch together")}
+          {view === "link" ? t("Invite via link") : t("VARA")}
         </h2>
         <Tooltip label={view === "link" ? t("Back") : t("Invite via link")} side="bottom">
           <button
@@ -164,7 +164,7 @@ export function TogetherPopover({
       {view === "default" && !enabled && (
         <div className="flex flex-col gap-3 rounded-xl border border-edge bg-canvas/60 p-3.5">
           <div>
-            <p className="text-[13px] text-ink">{t("Watch Together needs a relay.")}</p>
+            <p className="text-[13px] text-ink">{t("VARA needs a relay.")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-ink-muted">
               {t(
                 "A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.",

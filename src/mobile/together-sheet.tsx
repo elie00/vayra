@@ -4,7 +4,7 @@ import { TogetherPopover } from "@/components/together-modal";
 import { useT } from "@/lib/i18n";
 import { useTogether } from "@/lib/together/provider";
 
-// Mobile entry point for Watch Together. The desktop TogetherButton anchors a
+// Mobile entry point for VARA. The desktop TogetherButton anchors a
 // popover to the topbar; on mobile that popover content is reused inside a
 // bottom sheet (same pattern as src/mobile/play-picker.tsx). Both pieces read
 // the shared modalOpen state from the Together provider, so the Android Back
@@ -119,7 +119,7 @@ export function MobileTogetherSheet() {
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
-        aria-label={t("Watch together")}
+        aria-label={t("VARA")}
         style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
         className="harbor-together-surface absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-3rem)] min-h-[55dvh] flex-col rounded-t-3xl ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >

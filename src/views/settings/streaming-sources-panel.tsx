@@ -58,7 +58,7 @@ export function StreamingSourcesPanel({
     <>
       <Section
         title={t("Stream safety filter")}
-        subtitle={t("How aggressively Harbor rejects shady or mismatched streams before showing them in the picker.")}
+        subtitle={t("How aggressively VAYRA rejects shady or mismatched streams before showing them in the picker.")}
       >
         <StreamFilterPicker
           value={settings.streamFilterLevel}
@@ -147,14 +147,14 @@ export function StreamingSourcesPanel({
 
       <Section
         title={t("Result order")}
-        subtitle={t("Harbor ranking puts the best-scoring sources first. Addon order follows your addon priority (organize it in Addons, Installed tab, Reorder) and keeps each addon's results in the order it returned them, like the Stremio and Vidi apps.")}
+        subtitle={t("VAYRA ranking puts the best-scoring sources first. Addon order follows your addon priority (organize it in Addons, Installed tab, Reorder) and keeps each addon's results in the order it returned them, like the Stremio and Vidi apps.")}
       >
         <StreamSortPicker
           value={settings.streamSort}
           onChange={(v) => update({ streamSort: v })}
         />
         <p className="mt-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
-          {t("Using AIOStreams or another aggregator addon? Its own sorting and filtering happen inside the addon before Harbor ever sees the results, then Harbor applies the stream filter and result order above on top. If results look thinner than expected, keep one side permissive: either relax the addon's internal filters or set Harbor's stream filter to Balanced or Off.")}
+          {t("Using AIOStreams or another aggregator addon? Its own sorting and filtering happen inside the addon before VAYRA ever sees the results, then VAYRA applies the stream filter and result order above on top. If results look thinner than expected, keep one side permissive: either relax the addon's internal filters or set VAYRA's stream filter to Balanced or Off.")}
         </p>
       </Section>
 
@@ -175,7 +175,7 @@ export function StreamingSourcesPanel({
             <>
               Get yours at{" "}
               <ExtLink href="https://real-debrid.com/apitoken">real-debrid.com/apitoken</ExtLink>.
-              Used to check cache and unrestrict links. Harbor never adds or removes torrents on
+              Used to check cache and unrestrict links. VAYRA never adds or removes torrents on
               its own.
             </>
           }
@@ -380,7 +380,7 @@ function PickerLayoutPicker({
     {
       id: "condensed",
       label: t("Condensed"),
-      sub: t("Default. Top pick at the top, quality tiles, and an All-Sources drawer. Harbor scores and ranks results."),
+      sub: t("Default. Top pick at the top, quality tiles, and an All-Sources drawer. VAYRA scores and ranks results."),
     },
     {
       id: "stremio",
@@ -432,8 +432,8 @@ function StreamSortPicker({
   const options: Array<{ id: "harbor" | "addon"; label: string; sub: string }> = [
     {
       id: "harbor",
-      label: t("Harbor ranking"),
-      sub: t("Default. Harbor parses and scores every source and surfaces the best quality first."),
+      label: t("VAYRA ranking"),
+      sub: t("Default. VAYRA parses and scores every source and surfaces the best quality first."),
     },
     {
       id: "addon",

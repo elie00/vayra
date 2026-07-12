@@ -101,7 +101,7 @@ pub async fn browser_open(app: AppHandle, url: String) -> Result<(), String> {
         #[allow(unused_mut)]
         let mut builder =
             WebviewWindowBuilder::new(&app_for_main, BROWSER_LABEL, WebviewUrl::External(parsed))
-                .title("Harbor Browser")
+                .title("VAYRA Browser")
                 .inner_size(target_w, target_h)
                 .position(target_x, target_y)
                 .resizable(true)

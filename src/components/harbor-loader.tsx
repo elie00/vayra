@@ -2,7 +2,7 @@ import lottie, { type AnimationItem } from "lottie-web";
 import { useCallback, useEffect, useRef, useState } from "react";
 import whiteBoat from "@/assets/lottie/addons-boat-white.json";
 import darkBoat from "@/assets/lottie/addons-boat-dark.json";
-import harborBoat from "@/assets/lottie/harbor-loader.json";
+import { HarborMark } from "@/components/icons/harbor-mark";
 import { prefetchTopAddonLogos, prefetchedTopAddonLogos } from "@/lib/providers/addon-logo-prefetch";
 
 type Size = "sm" | "md" | "lg" | "xl";
@@ -87,13 +87,14 @@ export function HarborLoader({
   }, []);
 
   useEffect(() => {
+    if (!cargo) return;
     if (!ref.current) return;
     const anim: AnimationItem = lottie.loadAnimation({
       container: ref.current,
       renderer: "svg",
       loop: true,
       autoplay: true,
-      animationData: cargo ? (dark ? whiteBoat : darkBoat) : harborBoat,
+      animationData: dark ? whiteBoat : darkBoat,
     });
     const onLoaded = () => {
       cycleRef.current = 0;
@@ -118,7 +119,13 @@ export function HarborLoader({
 
   return (
     <div className={`flex flex-col items-center justify-center gap-2 ${className}`}>
-      <div ref={ref} className={SIZE_CLASS[size]} aria-hidden />
+      {cargo ? (
+        <div ref={ref} className={SIZE_CLASS[size]} aria-hidden />
+      ) : (
+        <div className={`${SIZE_CLASS[size]} flex items-center justify-center`} aria-hidden>
+          <HarborMark className="h-[62%] w-[62%] animate-pulse text-accent" />
+        </div>
+      )}
       {caption && (
         <p className="mt-1 text-[12.5px] font-medium uppercase tracking-[0.18em] text-white/70">
           {caption}

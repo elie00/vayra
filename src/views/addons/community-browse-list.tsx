@@ -217,7 +217,7 @@ function RisingList({
         </span>
         <p className="font-display text-[18px] font-medium text-ink">{t("No velocity data yet")}</p>
         <p className="mt-1.5 text-[12.5px] text-ink-muted">
-          {t("Trending tracks star growth across your Harbor visits. Open the addons page again tomorrow and the top risers will appear here.")}
+          {t("Trending tracks star growth across your VAYRA visits. Open the addons page again tomorrow and the top risers will appear here.")}
         </p>
       </div>
     );

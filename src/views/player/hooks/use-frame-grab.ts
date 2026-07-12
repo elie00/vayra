@@ -57,8 +57,8 @@ export function useFrameGrab(params: {
           id: Date.now(),
           kind: "ok",
           text: copied
-            ? `Screenshot copied to clipboard · saved to ${dir ? "Pictures/Harbor" : "downloads"}`
-            : `Screenshot saved to ${dir ? "Pictures/Harbor" : "downloads"}`,
+            ? `Screenshot copied to clipboard · saved to ${dir ? "the app Pictures folder" : "downloads"}`
+            : `Screenshot saved to ${dir ? "the app Pictures folder" : "downloads"}`,
           path: result.path,
         });
       } else {
