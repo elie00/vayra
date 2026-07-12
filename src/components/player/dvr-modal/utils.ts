@@ -109,7 +109,7 @@ export function formatBytes(b: number): string {
 export function prettifyError(raw: string, t: Translate): string {
   const s = raw.replace(/^Error:\s*/i, "");
   if (s.includes("mpv binary not found")) {
-    return t("mpv is required for recording. Install mpv and restart Harbor.");
+    return t("mpv is required for recording. Install mpv and restart VAYRA.");
   }
   return s;
 }
