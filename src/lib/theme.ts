@@ -1287,18 +1287,18 @@ html[data-theme-layout="custom"] ::selection { background: rgba(53,116,252,0.35)
 
 const feishinHtml = `<aside class="fsh-rail" data-tauri-drag-region>
   <div class="fsh-actionbar">
-    <button class="fsh-search" type="button" onclick="window.harbor.search()" aria-label="Search" title="Search">
+    <button class="fsh-search" type="button" onclick="window.vayra.search()" aria-label="Search" title="Search">
       <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
       <span class="fsh-search-ph">Search</span>
     </button>
     <div class="fsh-actionbtns">
-      <button class="fsh-iconbtn" type="button" onclick="window.harbor.navigate('settings')" aria-label="Menu" title="Menu">
+      <button class="fsh-iconbtn" type="button" onclick="window.vayra.navigate('settings')" aria-label="Menu" title="Menu">
         <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
-      <button class="fsh-iconbtn" type="button" onclick="window.harbor.back()" aria-label="Back" title="Back">
+      <button class="fsh-iconbtn" type="button" onclick="window.vayra.back()" aria-label="Back" title="Back">
         <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
       </button>
-      <button class="fsh-iconbtn" type="button" onclick="window.harbor.navigate('home')" aria-label="Forward" title="Home">
+      <button class="fsh-iconbtn" type="button" onclick="window.vayra.navigate('home')" aria-label="Forward" title="Home">
         <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
       </button>
     </div>
@@ -1308,31 +1308,31 @@ const feishinHtml = `<aside class="fsh-rail" data-tauri-drag-region>
     <div class="fsh-section">
       <div class="fsh-section-head">My Library</div>
       <nav class="fsh-nav">
-        <button data-vayra-nav="home" onclick="window.harbor.navigate('home')">
+        <button data-vayra-nav="home" onclick="window.vayra.navigate('home')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
           <span>Home</span>
         </button>
-        <button data-vayra-nav="discover" onclick="window.harbor.navigate('discover')">
+        <button data-vayra-nav="discover" onclick="window.vayra.navigate('discover')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m15.5 8.5-2.2 5.3-5.3 2.2 2.2-5.3z"></path></svg>
           <span>Discover</span>
         </button>
-        <button data-vayra-nav="movies" onclick="window.harbor.navigate('movies')">
+        <button data-vayra-nav="movies" onclick="window.vayra.navigate('movies')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 4v16M17 4v16M3 9h4M17 9h4M3 15h4M17 15h4"></path></svg>
           <span>Movies</span>
         </button>
-        <button data-vayra-nav="shows" onclick="window.harbor.navigate('shows')">
+        <button data-vayra-nav="shows" onclick="window.vayra.navigate('shows')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="13" rx="2"></rect><path d="m8 3 4 4 4-4"></path></svg>
           <span>Shows</span>
         </button>
-        <button data-vayra-nav="anime" onclick="window.harbor.navigate('anime')">
+        <button data-vayra-nav="anime" onclick="window.vayra.navigate('anime')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c4.5 0 8 3 8 7 0 3-2 5-5 6l1 4-4-2.5L8 20l1-4c-3-1-5-3-5-6 0-4 3.5-7 8-7z"></path></svg>
           <span>Anime</span>
         </button>
-        <button data-vayra-nav="live" onclick="window.harbor.navigate('live')">
+        <button data-vayra-nav="live" onclick="window.vayra.navigate('live')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="m8 7 4-4 4 4"></path></svg>
           <span>Live TV</span>
         </button>
-        <button data-vayra-nav="vod" onclick="window.harbor.navigate('vod')">
+        <button data-vayra-nav="vod" onclick="window.vayra.navigate('vod')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h7"></path><path d="m17 9 4 3-4 3z"></path></svg>
           <span>Playlists</span>
         </button>
@@ -1342,23 +1342,23 @@ const feishinHtml = `<aside class="fsh-rail" data-tauri-drag-region>
     <div class="fsh-section">
       <div class="fsh-section-head">Collections</div>
       <nav class="fsh-nav">
-        <button data-vayra-nav="library" onclick="window.harbor.navigate('library')">
+        <button data-vayra-nav="library" onclick="window.vayra.navigate('library')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4z"></path><path d="m17 5 3.5 1-3 14-3.4-1z"></path></svg>
           <span>Library</span>
         </button>
-        <button data-vayra-nav="calendar" onclick="window.harbor.navigate('calendar')">
+        <button data-vayra-nav="calendar" onclick="window.vayra.navigate('calendar')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
           <span>Calendar</span>
         </button>
-        <button data-vayra-nav="downloads" onclick="window.harbor.navigate('downloads')">
+        <button data-vayra-nav="downloads" onclick="window.vayra.navigate('downloads')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 11 5 5 5-5"></path><path d="M4 20h16"></path></svg>
           <span>Downloads</span>
         </button>
-        <button data-vayra-nav="addons" onclick="window.harbor.navigate('addons')">
+        <button data-vayra-nav="addons" onclick="window.vayra.navigate('addons')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="13" y="3" width="8" height="8" rx="1.5"></rect><rect x="3" y="13" width="8" height="8" rx="1.5"></rect><path d="M17 13v8M13 17h8"></path></svg>
           <span>Addons</span>
         </button>
-        <button data-vayra-nav="settings" onclick="window.harbor.navigate('settings')">
+        <button data-vayra-nav="settings" onclick="window.vayra.navigate('settings')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
           <span>Settings</span>
         </button>

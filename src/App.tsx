@@ -635,13 +635,20 @@ function Shell() {
   }, []);
 
   useEffect(() => {
-    const w = window as unknown as { harbor?: Record<string, unknown> };
-    w.harbor = {
-      ...(w.harbor ?? {}),
+    const w = window as unknown as {
+      vayra?: Record<string, unknown>;
+      harbor?: Record<string, unknown>;
+    };
+    const api = {
+      ...(w.vayra ?? w.harbor ?? {}),
       navigate: (v: string) => setView(v as View),
       back: () => goBack(),
       search: () => setSearchOpen(true),
     };
+    w.vayra = api;
+    // window.harbor is a permanent backward-compat alias of window.vayra
+    // (same object reference) so existing user themes keep working.
+    w.harbor = w.vayra;
   }, [setView, goBack, setSearchOpen]);
 
   useEffect(() => {
