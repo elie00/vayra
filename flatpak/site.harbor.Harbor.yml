@@ -100,7 +100,7 @@ modules:
           - .flatpak-work
           - node_modules
           - dist
-          - harbor-core/target
+          - vayra-core/target
           - src-tauri/target
       - type: archive
         url: https://registry.npmjs.org/pnpm/-/pnpm-11.9.0.tgz

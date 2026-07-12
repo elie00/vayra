@@ -35,7 +35,7 @@ libc = "0.2"
 base64 = "0.22"
 png = "0.17"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
-harbor-core = { path = "../harbor-core" }
+vayra-core = { path = "../vayra-core" }
 librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
 url = "2"
 

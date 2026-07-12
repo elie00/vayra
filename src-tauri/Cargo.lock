@@ -2117,7 +2117,6 @@ dependencies = [
  "flate2",
  "futures-util",
  "gtk",
- "harbor-core",
  "jni 0.21.1",
  "keyring",
  "libc",
@@ -2153,24 +2152,11 @@ dependencies = [
  "tokio-util",
  "url",
  "uuid 1.23.1",
+ "vayra-core",
  "walkdir",
  "webview2-com 0.37.0",
  "window-vibrancy",
  "windows",
-]
-
-[[package]]
-name = "harbor-core"
-version = "0.1.0"
-dependencies = [
- "js-sys",
- "once_cell",
- "regex",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "unicode-normalization",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -6989,6 +6975,20 @@ dependencies = [
  "getrandom 0.4.2",
  "js-sys",
  "serde_core",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "vayra-core"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "unicode-normalization",
  "wasm-bindgen",
 ]
 
