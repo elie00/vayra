@@ -6,7 +6,7 @@ on:
     paths:
       - flatpak/**
       - src-tauri/**
-      - harbor-core/**
+      - vayra-core/**
       - src/**
       - public/**
       - index.html

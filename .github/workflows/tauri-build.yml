@@ -58,7 +58,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
-            harbor-core
+            vayra-core
             src-tauri
 
       - uses: pnpm/action-setup@v4
@@ -168,8 +168,8 @@ jobs:
             mv ffprobe "ffprobe-${TARGET}${EXT}"
           fi
 
-      - name: harbor-core check
-        working-directory: harbor-core
+      - name: vayra-core check
+        working-directory: vayra-core
         run: |
           cargo check
           cargo test --all-targets

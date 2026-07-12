@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "src/**"
-      - "harbor-core/**"
+      - "vayra-core/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "tsconfig*.json"
@@ -15,7 +15,7 @@ on:
   pull_request:
     paths:
       - "src/**"
-      - "harbor-core/**"
+      - "vayra-core/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "tsconfig*.json"
@@ -43,7 +43,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: pnpm exec tsc -b
-      - name: Production build (includes harbor-core WASM)
+      - name: Production build (includes vayra-core WASM)
         run: pnpm build
       - name: WASM runtime smoke test
         run: pnpm core:wasm:smoke
