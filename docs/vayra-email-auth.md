@@ -8,10 +8,21 @@ VAYRA supports two distinct account paths:
 The two sessions are intentionally independent. Connecting or disconnecting one
 does not change the other.
 
-## Runtime configuration
+## Production project
 
-Copy `.env.example` to `.env.local` and provide the public settings for the
-Supabase project:
+The production client is connected to the EYBO-owned Supabase project `VAYRA`
+in `eu-west-3` (Paris). The project URL and default publishable key are embedded
+in the frontend because publishable keys are explicitly designed for public
+clients. No secret or `service_role` key is present in the application.
+
+Email sign-up is enabled with mandatory email confirmation. Anonymous sign-in,
+phone sign-in, manual identity linking, and every social provider are disabled.
+Both the Site URL and redirect allow-list use `vayra://auth/callback`.
+
+## Optional runtime override
+
+For local or staging tests, copy `.env.example` to `.env.local` and override the
+public settings:
 
 ```dotenv
 VITE_VAYRA_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
@@ -22,7 +33,7 @@ Only the public anonymous/publishable key belongs in the client. A service-role
 key, SMTP password, or provider secret must never be stored in this repository
 or exposed through a `VITE_*` variable.
 
-In the Supabase dashboard:
+For an override project, configure the Supabase dashboard as follows:
 
 1. enable the Email provider and passwordless email sign-in;
 2. add `vayra://auth/callback` to the allowed redirect URLs;
