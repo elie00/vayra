@@ -61,7 +61,7 @@ const together: Record<string, string> = {
   "Advance Continue Watching to the next episode": "تقديم متابعة المشاهدة إلى الحلقة التالية",
 
   "Invite via link": "دعوة عبر رابط",
-  "Watch together": "المشاهدة معاً",
+  "VARA": "VARA",
   "Back": "رجوع",
   "Invite": "دعوة",
   "Paste invite link": "لصق رابط الدعوة",
@@ -77,9 +77,9 @@ const together: Record<string, string> = {
   "{n} watching": "{n} يشاهدون",
   "Show cursors": "إظهار المؤشرات",
   "Leave room": "مغادرة الغرفة",
-  "Watch Together needs a relay.": "المشاهدة معاً تتطلب اتصالاً وسيطاً (Relay).",
+  "VARA needs a relay.": "تحتاج VARA إلى مُرحِّل.",
+  "Play without VEYA": "التشغيل دون VEYA",
   "A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.": "الوسيط هو عبارة عن أداة Cloudflare Worker صغيرة تقوم بتمرير رسائل التشغيل/الإيقاف/التقديم بينك وبين أصدقائك. لا تمر أي بيانات فيديو من خلاله أبداً. قم بنشر الوسيط الخاص بك بنقرة واحدة (الخطة المجانية كافية)، أو الصق رابط دعوة من صديق لاستخدام الوسيط الخاص به.",
-  "Watch Together": "المشاهدة معاً",
 };
 
 export default together;

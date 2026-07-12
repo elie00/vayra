@@ -39,7 +39,7 @@ const en: Record<string, string> = {
   "chrome.minimize": "Minimize",
   "chrome.maximize": "Maximize",
   "chrome.restore": "Restore",
-  "chrome.watchTogether": "Watch together",
+  "chrome.watchTogether": "VARA",
   "chrome.scrollForMore": "Scroll for more",
   "chrome.locked": "Locked",
   "chrome.parentalOn": "Parental controls on",

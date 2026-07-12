@@ -121,8 +121,8 @@ export function MultiviewView({
         )}
         <button
           onClick={() => setCollapsed((c) => !c)}
-          title={collapsed ? "Show controls" : "Hide controls, full grid"}
-          aria-label={collapsed ? "Show controls" : "Hide controls"}
+          title={collapsed ? "Exit LUMA" : "Enter LUMA · immersive grid"}
+          aria-label={collapsed ? "Exit LUMA" : "Enter LUMA"}
           className="ms-auto flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
         >
           {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}

@@ -37,7 +37,7 @@ const chrome: Record<string, string> = {
   "chrome.minimize": "Réduire",
   "chrome.maximize": "Agrandir",
   "chrome.restore": "Restaurer",
-  "chrome.watchTogether": "Regarder ensemble",
+  "chrome.watchTogether": "VARA",
   "chrome.scrollForMore": "Fais défiler pour voir plus",
   "chrome.locked": "Verrouillé",
   "chrome.parentalOn": "Contrôle parental activé",

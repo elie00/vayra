@@ -1,11 +1,11 @@
 const sync: Record<string, string> = {
-  "Watch together": "المشاهدة معًا",
+  "VARA": "VARA",
   "Invite via link": "الدعوة عبر رابط",
   "Back": "رجوع",
   "Open invite link panel": "فتح لوحة رابط الدعوة",
   "Close invite link panel": "إغلاق لوحة رابط الدعوة",
   "Invite": "دعوة",
-  "Watch Together needs a relay.": "تحتاج المشاهدة معًا إلى مُرحِّل.",
+  "VARA needs a relay.": "VARA needs a relay.",
   "A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.":
     "المُرحِّل عبارة عن Cloudflare Worker صغير يمرّر رسائل التشغيل/الإيقاف/التقديم بينك وبين أصدقائك. لا تمرّ به أي بيانات فيديو إطلاقًا. انشر مُرحِّلك الخاص بنقرة واحدة (الباقة المجانية تكفي)، أو ألصق رابط دعوة صديق لاستخدام مُرحِّله.",
   "Paste invite link": "ألصق رابط الدعوة",
@@ -29,7 +29,7 @@ const sync: Record<string, string> = {
   "VAYRA's public relay has not rolled out the latest protocol yet.": "لم يطرح مُرحِّل VAYRA العام أحدث بروتوكول بعد.",
   "It updates automatically; nothing to do.": "يتحدّث تلقائيًا؛ لا حاجة لفعل شيء.",
   "Relay outdated. Your self-hosted relay is running an older version.": "المُرحِّل قديم. يعمل مُرحِّلك المستضاف ذاتيًا بإصدار أقدم.",
-  "Redeploy it to get the latest Watch Together fixes. VAYRA's public relay updates on its own.":
+  "Redeploy it to get the latest VARA fixes. VAYRA's public relay updates on its own.":
     "أعد نشره للحصول على أحدث إصلاحات المشاهدة معًا. يتحدّث مُرحِّل VAYRA العام من تلقاء نفسه.",
   "Open relay settings": "فتح إعدادات المُرحِّل",
   "Dismiss": "تجاهل",

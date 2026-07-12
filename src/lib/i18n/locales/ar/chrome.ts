@@ -37,7 +37,7 @@ const chrome: Record<string, string> = {
   "chrome.minimize": "تصغير",
   "chrome.maximize": "تكبير",
   "chrome.restore": "استعادة",
-  "chrome.watchTogether": "المشاهدة معًا",
+  "chrome.watchTogether": "VARA",
   "chrome.scrollForMore": "مرّر لرؤية المزيد",
   "chrome.locked": "مقفل",
   "chrome.parentalOn": "الرقابة الأبوية مفعّلة",

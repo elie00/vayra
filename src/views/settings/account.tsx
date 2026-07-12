@@ -78,7 +78,7 @@ export function AccountStub() {
     <div className="flex flex-col gap-5">
       <Section
         title={t("VAYRA identity")}
-        subtitle={t("How you appear in Watch Together, sessions, and chat. Sits on top of your Stremio account.")}
+        subtitle={t("How you appear in VARA, sessions, and chat. Sits on top of your Stremio account.")}
       >
         <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
           <div className="flex items-center gap-5">

@@ -591,7 +591,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Usenet (Easynews+)", section: "streaming", anchorTitle: "Usenet", keywords: ["usenet", "easynews", "nzb", "addon"] },
   { label: "Streaming catalogs (Netflix, Disney+, etc.)", section: "streaming", anchorTitle: "Streaming catalogs", keywords: ["streaming catalogs", "netflix", "disney", "hulu", "prime", "apple tv", "max", "paramount", "peacock", "providers", "services"] },
 
-  { label: "Watch Together relay", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["watch together", "relay", "party", "p2p", "host", "cloudflare", "deploy", "share"] },
+  { label: "VARA relay", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["VARA", "relay", "party", "p2p", "host", "cloudflare", "deploy", "share"] },
 
   { label: "Theme preset", section: "theme", anchorTitle: "Theme", keywords: ["theme", "color", "preset", "cool grey", "warm gold", "deep purple", "sunset orange", "rose pink", "custom theme", "palette", "dark", "appearance"] },
   { label: "Background image / wallpaper", section: "theme", anchorTitle: "Background image", keywords: ["background", "wallpaper", "image", "choose image", "replace", "remove", "dim overlay"] },
@@ -629,7 +629,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "How Play works", section: "basics", anchorTitle: "How Play works", keywords: ["instant", "manual picker", "play mode", "source picker", "autoplay", "best stream", "play button", "recommended"] },
   { label: "Languages", section: "basics", keywords: ["language", "audio language", "subtitle language", "preferred languages"] },
   { label: "Theme & appearance", section: "basics", keywords: ["theme", "appearance", "recolor", "fonts", "poster size", "wallpaper", "customize"] },
-  { label: "VAYRA identity", section: "account", anchorTitle: "VAYRA identity", keywords: ["display name", "nickname", "rename", "edit name", "watch together name", "identity", "profile"] },
+  { label: "VAYRA identity", section: "account", anchorTitle: "VAYRA identity", keywords: ["display name", "nickname", "rename", "edit name", "VARA name", "identity", "profile"] },
   { label: "Upload photo", section: "account", anchorTitle: "VAYRA identity", keywords: ["avatar", "upload", "profile picture", "custom photo", "image", "change avatar"] },
   { label: "or use one of our avatars", section: "account", anchorTitle: "VAYRA identity", keywords: ["avatar catalog", "built-in avatars", "browse avatars", "picker", "characters", "netflix style"] },
   { label: "Random avatar", section: "account", anchorTitle: "VAYRA identity", keywords: ["random", "shuffle", "surprise avatar", "dice"] },
@@ -745,7 +745,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Blur reviews by default", section: "letterboxd", keywords: ["blur reviews", "spoilers", "film pages", "reveal"] },
   { label: "Hidden catalogs", section: "letterboxd", keywords: ["unhide", "show hidden", "restore catalog", "hidden rows"] },
   { label: "Disconnect", section: "letterboxd", keywords: ["logout", "disconnect", "sign out letterboxd", "unlink", "full mode"] },
-  { label: "VAYRA Relay", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["relay", "watch together", "cloudflare worker", "rooms", "sync server", "copy url", "hosted relay"] },
+  { label: "VAYRA Relay", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["relay", "VARA", "cloudflare worker", "rooms", "sync server", "copy url", "hosted relay"] },
   { label: "Deploy a relay", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["deploy", "cloudflare", "worker", "self host", "setup relay", "desktop only"] },
   { label: "Use VAYRA's public relay", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["public relay", "hosted relay", "default relay", "quota", "pub relay"] },
   { label: "Enter an existing relay URL:", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["relay url", "wss", "workers.dev", "custom relay", "paste url", "save"] },

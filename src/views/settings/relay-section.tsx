@@ -24,8 +24,8 @@ export function RelaySection({
           title="VAYRA Relay"
           subtitle={
             IS_WEB
-              ? "Watch Together rooms are routed through VAYRA's hosted relay."
-              : "A Cloudflare Worker on your own account that hosts your Watch Together rooms."
+              ? "VARA rooms are routed through VAYRA's hosted relay."
+              : "A Cloudflare Worker on your own account that hosts your VARA rooms."
           }
         >
           <TogetherRelayPanel
