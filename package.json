@@ -23,6 +23,7 @@
     "tauri:build:macos": "tauri build --bundles app && node scripts/bundle-libmpv-macos.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.2",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
     "@tauri-apps/plugin-deep-link": "^2.4.9",
