@@ -248,6 +248,14 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       snap.errorCode = null;
       snap.errorMessage = null;
       emit();
+    } else if (raw.event === "playback-restart") {
+      // Fires once mpv has decoded and displayed the first frame (also after
+      // seeks). This is the real "pixels on screen" signal — distinct from the
+      // early file-loaded status flip above.
+      if (!snap.rendered) {
+        snap.rendered = true;
+        emit();
+      }
     }
   };
 
@@ -291,6 +299,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       snap.durationSec = 0;
       snap.bufferedSec = 0;
       snap.hdrGamma = "";
+      snap.rendered = false;
       pendingTracks = {};
       urlByExternalFilename.clear();
       emit();

@@ -92,6 +92,12 @@ export function createHtml5Bridge(): PlayerBridge {
     } else {
       snap.status = "loading";
     }
+    // First-frame / render-ready: latch once the element is actually playing
+    // and the clock has advanced past 0. This lands after the real first frame,
+    // whereas status flips to "playing" as soon as the element is unpaused.
+    if (!snap.rendered && !video.paused && !video.error && video.currentTime > 0) {
+      snap.rendered = true;
+    }
     emit();
   };
 
@@ -419,6 +425,7 @@ export function createHtml5Bridge(): PlayerBridge {
       snap.positionSec = 0;
       snap.durationSec = 0;
       snap.bufferedSec = 0;
+      snap.rendered = false;
       startCueTicker();
       emit();
     },

@@ -48,7 +48,17 @@ export function CinematicPlayerLoader({
   const heavyForP2p = isInfoHash && streamBytes != null && streamBytes > 20 * 1024 ** 3;
   const everPlayedRef = useRef(false);
   const hasProgress = usePlaybackFlag(() => getPlaybackPosition() > 0.3);
-  if (hasProgress && (snap.durationSec > 0 || snap.status === "playing")) {
+  // Prefer the real first-frame signal when the engine reports it (mpv / html5):
+  // this keeps the loader up until pixels actually render, instead of dropping
+  // it on the early "playing" status flip. Engines that never emit `rendered`
+  // (undefined) fall back to the position/status heuristic.
+  if (snap.rendered === true) {
+    everPlayedRef.current = true;
+  } else if (
+    snap.rendered === undefined &&
+    hasProgress &&
+    (snap.durationSec > 0 || snap.status === "playing")
+  ) {
     everPlayedRef.current = true;
   }
   const sessionKey = `${src.meta.id}::${src.episode?.season ?? ""}:${src.episode?.episode ?? ""}`;
