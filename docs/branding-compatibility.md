@@ -47,9 +47,24 @@ The identity change is non-destructive on desktop:
 
 **Known non-migration:** WebView-managed `localStorage` (themes, watch progress,
 and the many `harbor.*` keys) lives in bundle-id-keyed storage and does **not**
-carry over when the desktop identifier changes. Users should export a backup
-before updating. On **Android**, an `applicationId` change is a fresh install:
-app-private credentials and storage do not migrate (re-login / re-add API keys).
+carry over when the desktop identifier changes. On **Android**, an `applicationId`
+change is a fresh install: app-private credentials and storage do not migrate.
+
+A reliable automatic copy of the WebView store is not attempted: its on-disk
+location is platform-specific and it is opened before any migration hook could
+run. The supported carry-over path is the app's own **backup / restore**:
+
+1. On the current (Harbor-identity) install, export a backup — it writes a
+   `.harbx` file capturing the portable `harbor.*` `localStorage` state (themes,
+   progress, preferences).
+2. Update to / install the VAYRA-identity build.
+3. Restore that file. Restore still accepts the legacy `harbor-backup` `.harbx`
+   format (dual-read, see Phase 10), so the state is reapplied under the new
+   identity. Keyring credentials and `settings.json` are migrated automatically;
+   this step covers the `localStorage` half.
+
+The same export/restore is the recommended path for Android upgraders (export on
+the old app before uninstalling, restore on the reinstalled VAYRA app).
 
 ## Retained Harbor references (intentional)
 
@@ -100,7 +115,8 @@ supplements them; it does not replace them.
 
 ## Validation
 
-Desktop (Windows / macOS / Linux) is validated in CI. Android is not in the
-`tauri-build.yml` matrix and requires a separate device or CI build to validate
-the package/JNI rename. Player, cast, HDR, shaders, Stremio, and collaborative
-playback keep their existing manual playback checks.
+Desktop (Windows / macOS / Linux) is validated in `tauri-build.yml`. Android is
+covered by `android-build.yml` (debug assemble, `applicationId app.vayra`, JNI +
+`loadLibrary` link), and the `app.vayra` package rename was also validated with a
+local `aarch64` debug build producing a working APK. Player, cast, HDR, shaders,
+Stremio, and collaborative playback keep their existing manual playback checks.
