@@ -45,7 +45,7 @@ const es: Record<string, string> = {
   "chrome.parentalOn": "Control parental activado",
   "chrome.lockedRequiresPin": "{label} (bloqueado, requiere PIN)",
   "chrome.lockedShort": "{label} · bloqueado",
-  "chrome.harborHome": "Inicio de Harbor",
+  "chrome.harborHome": "Inicio de VAYRA",
   "chrome.sectionLibrary": "Biblioteca",
 
   "profile.whoWatching": "¿Quién está viendo?",
@@ -58,7 +58,7 @@ const es: Record<string, string> = {
   "profile.signedIn": "Sesión iniciada en Stremio",
   "profile.fallback": "Perfil",
 
-  "welcome.title": "Te damos la bienvenida a Harbor",
+  "welcome.title": "Te damos la bienvenida a VAYRA",
   "welcome.subtitle": "La interfaz ahora está en árabe. Puedes volver a cambiarla en cualquier momento desde los Ajustes.",
   "welcome.dismiss": "Comenzar",
 
@@ -168,7 +168,7 @@ const es: Record<string, string> = {
   "Focus GIF URL": "URL del GIF de enfoque",
   "Addon not installed": "Complemento no instalado",
   "This section depends on the addon": "Esta sección depende del complemento",
-  "You must install this addon in your Stremio account first so Harbor can fetch its works.": "Primero debes instalar este complemento en tu cuenta de Stremio para que Harbor pueda obtener su contenido.",
+  "You must install this addon in your Stremio account first so VAYRA can fetch its works.": "Primero debes instalar este complemento en tu cuenta de Stremio para que VAYRA pueda obtener su contenido.",
   "Missing TMDB Key": "Falta la clave de TMDB",
   "This section relies on TMDB discovery features.": "Esta sección depende de las funciones de descubrimiento de TMDB.",
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Añade tu clave de API de TMDB en los ajustes de Biblioteca y metadatos para ver esta carpeta.",

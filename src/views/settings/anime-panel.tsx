@@ -14,7 +14,7 @@ export function AnimePanel() {
     return (
       <Section
         title={t("Desktop only")}
-        subtitle={t("Anime4K and smooth-motion run on the bundled mpv engine in the Harbor desktop app. They have no effect in the browser.")}
+        subtitle={t("Anime4K and smooth-motion run on the bundled mpv engine in the VAYRA desktop app. They have no effect in the browser.")}
       >
         <span className="text-[13px] text-ink-subtle">{t("Download the desktop app to use anime enhancements.")}</span>
       </Section>
@@ -25,7 +25,7 @@ export function AnimePanel() {
     <>
       <Section
         title={t("Anime4K upscaling")}
-        subtitle={t("Real-time GPU upscaling that sharpens lines and cleans up gradients on anime, built right into Harbor's player. The one-tap setup below grabs the shaders; nothing else to install.")}
+        subtitle={t("Real-time GPU upscaling that sharpens lines and cleans up gradients on anime, built right into VAYRA's player. The one-tap setup below grabs the shaders; nothing else to install.")}
       >
         <ToggleRow
           label={t("Enable Anime4K")}
@@ -51,7 +51,7 @@ export function AnimePanel() {
       >
         <ToggleRow
           label={t("Motion smoothing")}
-          sub={t("Harbor's built-in frame interpolation. Smooths panning, best on anime. Needs a display refresh rate above the video's frame rate, and can stutter on weak GPUs. Lighter than SVP.")}
+          sub={t("VAYRA's built-in frame interpolation. Smooths panning, best on anime. Needs a display refresh rate above the video's frame rate, and can stutter on weak GPUs. Lighter than SVP.")}
           value={settings.playerMotionInterp}
           onChange={(v) => update({ playerMotionInterp: v })}
           lockReason={

@@ -19,7 +19,7 @@ export function StreamingStep() {
         </h1>
         <p className="text-[15px] leading-relaxed text-ink-muted">
           {t(
-            "Harbor pulls the most popular titles each service has right now. Toggle off anything you don't subscribe to.",
+            "VAYRA pulls the most popular titles each service has right now. Toggle off anything you don't subscribe to.",
           )}
         </p>
       </div>

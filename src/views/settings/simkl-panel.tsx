@@ -66,7 +66,7 @@ export function SimklPanel() {
               {t("Connect your Simkl account")}
             </h2>
             <p className="text-[13.5px] leading-relaxed text-ink-muted">
-              {t("Sync and track movies, shows, and anime across everything you use. Harbor marks what you finish as watched on Simkl and keeps your plan-to-watch list in step. Free at simkl.com.")}
+              {t("Sync and track movies, shows, and anime across everything you use. VAYRA marks what you finish as watched on Simkl and keeps your plan-to-watch list in step. Free at simkl.com.")}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -90,7 +90,7 @@ export function SimklPanel() {
         <>
           <Section
             title={t("Connected")}
-            subtitle={t("Harbor will mark what you finish as watched on Simkl and sync your plan-to-watch list.")}
+            subtitle={t("VAYRA will mark what you finish as watched on Simkl and sync your plan-to-watch list.")}
           >
             <div className="flex items-center justify-between gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
               <div className="flex items-center gap-3">
@@ -123,8 +123,8 @@ export function SimklPanel() {
             </div>
             {simklAvatar && (
               <ToggleRow
-                label={t("Use my Simkl avatar as my Harbor avatar")}
-                sub={t("Wear your Simkl profile picture across Harbor instead of the default.")}
+                label={t("Use my Simkl avatar as my VAYRA avatar")}
+                sub={t("Wear your Simkl profile picture across VAYRA instead of the default.")}
                 value={settings.useSimklAvatar}
                 onChange={toggleSimklAvatar}
                 leading={

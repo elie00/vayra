@@ -40,7 +40,7 @@ export function DownloadMenu({
         isTxt ? "harbor-relay-docs.txt" : "harbor-relay-docs.json",
         content,
         [isTxt ? "txt" : "json"],
-        "Harbor Relay docs",
+        "VAYRA Relay docs",
       );
       if (path) onSaved(path);
     } finally {
@@ -186,7 +186,7 @@ function printDocs(root: HTMLElement) {
   }
   doc.open();
   doc.write(
-    `<!doctype html><html><head><meta charset="utf-8"><title>Harbor Relay Documentation</title><style>${PRINT_CSS}</style></head><body><main>${root.innerHTML}</main></body></html>`,
+    `<!doctype html><html><head><meta charset="utf-8"><title>VAYRA Relay Documentation</title><style>${PRINT_CSS}</style></head><body><main>${root.innerHTML}</main></body></html>`,
   );
   doc.close();
   const win = iframe.contentWindow;
@@ -224,7 +224,7 @@ function buildTxt(root: HTMLElement): string {
       lines.push(text);
     }
   });
-  return `Harbor Relay Documentation\n${"=".repeat(28)}\n${lines.join("\n").trim()}\n`;
+  return `VAYRA Relay Documentation\n${"=".repeat(28)}\n${lines.join("\n").trim()}\n`;
 }
 
 function buildJson(root: HTMLElement) {
@@ -255,7 +255,7 @@ function buildJson(root: HTMLElement) {
     });
   });
   return {
-    title: "Harbor Relay Documentation",
+    title: "VAYRA Relay Documentation",
     generatedAt: new Date().toISOString(),
     sections,
   };

@@ -86,7 +86,7 @@ export function MalPanel() {
       ) : (
         <Section
           title={t("Connected")}
-          subtitle={t("Harbor keeps your MyAnimeList watch progress in sync.")}
+          subtitle={t("VAYRA keeps your MyAnimeList watch progress in sync.")}
         >
           <ToggleRow
             label={t("Sync watch progress")}
@@ -97,7 +97,7 @@ export function MalPanel() {
           {malAvatar && (
             <ToggleRow
               label={t("Use MyAnimeList avatar")}
-              sub={t("Set your MyAnimeList profile picture as your Harbor avatar.")}
+              sub={t("Set your MyAnimeList profile picture as your VAYRA avatar.")}
               value={settings.useMalAvatar}
               onChange={toggleMalAvatar}
               leading={

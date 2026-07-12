@@ -43,7 +43,7 @@ const chrome: Record<string, string> = {
   "chrome.parentalOn": "Contrôle parental activé",
   "chrome.lockedRequiresPin": "{label} (verrouillé, PIN requis)",
   "chrome.lockedShort": "{label} · verrouillé",
-  "chrome.harborHome": "Accueil Harbor",
+  "chrome.harborHome": "Accueil VAYRA",
   "chrome.sectionLibrary": "Bibliothèque",
 
   "profile.whoWatching": "Qui regarde",
@@ -56,7 +56,7 @@ const chrome: Record<string, string> = {
   "profile.signedIn": "Connecté à Stremio",
   "profile.fallback": "Profil",
 
-  "welcome.title": "Bienvenue dans Harbor",
+  "welcome.title": "Bienvenue dans VAYRA",
   "welcome.subtitle": "L'interface est maintenant en français. Tu peux revenir en arrière à tout moment depuis les Paramètres.",
   "welcome.dismiss": "Commencer",
 

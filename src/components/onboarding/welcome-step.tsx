@@ -12,20 +12,16 @@ export function WelcomeStep() {
             className="font-display text-[44px] font-medium leading-none tracking-tight"
             style={{ transform: "translateY(2px)" }}
           >
-            Harb
-            <span
-              className="inline-block"
-              style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-            >
-              o
-            </span>
-            r
+            VAYRA
           </span>
         </div>
         <p className="text-[15.5px] leading-relaxed text-ink-muted">
           {t(
             "A client for the Stremio protocol. Two minutes to set up; most of it optional. You stay in control of every key.",
           )}
+        </p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+          A product by EYBO
         </p>
       </div>
       <div className="grid grid-cols-3 gap-3 pt-2">
