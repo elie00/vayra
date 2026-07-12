@@ -94,7 +94,7 @@ export function SidePanel({
           {live.isImdb ? (
             <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
           ) : (
-            <Star className="h-[12px] w-[12px] text-amber-400" fill="currentColor" strokeWidth={0} />
+            <Star className="h-[12px] w-[12px] text-info" fill="currentColor" strokeWidth={0} />
           )}
           <span>{live.value}</span>
           <span className="text-ink-subtle">· Top Rated</span>

@@ -36,7 +36,7 @@ export function CastSessionBar({
         <span className="text-[12.5px] font-semibold text-ink">{device.name}</span>
       </div>
       {transcoding && (
-        <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-amber-200">
+        <span className="rounded-full bg-info/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-info">
           Transcoding
         </span>
       )}

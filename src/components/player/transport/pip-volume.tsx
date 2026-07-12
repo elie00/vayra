@@ -72,7 +72,7 @@ export function PipVolume({
             className="h-1 w-32 appearance-none rounded-full bg-white/22"
             aria-label={t("Volume")}
             style={{
-              accentColor: snap.volume > 1 ? `hsl(${Math.max(0, 30 - (snap.volume - 1) * 6)}, 95%, 60%)` : "#ffffff",
+              accentColor: snap.volume > 1 ? "#4b9dff" : "#ffffff",
             }}
           />
           <span

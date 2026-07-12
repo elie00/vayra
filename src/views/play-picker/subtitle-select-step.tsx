@@ -270,7 +270,7 @@ function TrackRow({
             </>
           )}
           {result.hearingImpaired && (
-            <span className="rounded bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-200">
+            <span className="rounded bg-info/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-info">
               {t("HI/SDH")}
             </span>
           )}

@@ -24,7 +24,7 @@ export const KIDS_FRANCHISES: Franchise[] = [
   {
     key: "toy-story",
     name: "Toy Story",
-    grad: "from-sky-400 via-sky-300 to-amber-300",
+    grad: "from-sky-400 via-sky-300 to-info",
     source: { kind: "collection", queries: ["Toy Story Collection"] },
   },
   {
@@ -36,7 +36,7 @@ export const KIDS_FRANCHISES: Franchise[] = [
   {
     key: "minions",
     name: "Minions",
-    grad: "from-yellow-300 via-amber-300 to-blue-500",
+    grad: "from-yellow-300 via-info to-blue-500",
     source: { kind: "collection", queries: ["Despicable Me Collection", "Minions Collection"] },
   },
   {
@@ -48,7 +48,7 @@ export const KIDS_FRANCHISES: Franchise[] = [
   {
     key: "cars",
     name: "Cars",
-    grad: "from-red-500 via-orange-500 to-amber-400",
+    grad: "from-red-500 via-violet-500 to-info",
     source: { kind: "collection", queries: ["Cars Collection"] },
   },
   {
@@ -60,19 +60,19 @@ export const KIDS_FRANCHISES: Franchise[] = [
   {
     key: "kung-fu-panda",
     name: "Kung Fu Panda",
-    grad: "from-emerald-500 via-green-600 to-amber-400",
+    grad: "from-emerald-500 via-green-600 to-info",
     source: { kind: "collection", queries: ["Kung Fu Panda Collection"] },
   },
   {
     key: "incredibles",
     name: "The Incredibles",
-    grad: "from-red-600 via-rose-500 to-orange-500",
+    grad: "from-red-600 via-rose-500 to-violet-500",
     source: { kind: "collection", queries: ["The Incredibles Collection"] },
   },
   {
     key: "madagascar",
     name: "Madagascar",
-    grad: "from-green-500 via-lime-500 to-amber-300",
+    grad: "from-green-500 via-lime-500 to-info",
     source: { kind: "collection", queries: ["Madagascar Collection", "Penguins of Madagascar Collection"] },
   },
   {
@@ -131,7 +131,7 @@ export const KIDS_FRANCHISES: Franchise[] = [
   {
     key: "lego",
     name: "LEGO",
-    grad: "from-red-500 via-amber-400 to-yellow-400",
+    grad: "from-red-500 via-info to-yellow-400",
     source: { kind: "keyword", keyword: "lego" },
   },
 ];

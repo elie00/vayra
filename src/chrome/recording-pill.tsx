@@ -124,7 +124,7 @@ function SessionRow({
       <div className="flex items-center gap-2">
         <span
           className={`h-2 w-2 shrink-0 rounded-full ${
-            isError ? "bg-amber-400" : isActive ? "bg-danger animate-pulse" : "bg-emerald-400"
+            isError ? "bg-info" : isActive ? "bg-danger animate-pulse" : "bg-emerald-400"
           }`}
         />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -144,7 +144,7 @@ function SessionRow({
         </div>
       )}
       {session.error && (
-        <p className="text-[11.5px] text-amber-300">{session.error}</p>
+        <p className="text-[11.5px] text-info">{session.error}</p>
       )}
       <div className="flex items-center gap-2">
         <button

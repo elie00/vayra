@@ -150,13 +150,13 @@ function CommunityCard({ theme, onOpen }: { theme: StoreTheme; onOpen: () => voi
           </div>
         )}
         <div className="absolute bottom-2 end-2 flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-[10.5px] font-semibold text-white backdrop-blur-sm transition-opacity group-hover:opacity-0">
-          <Star size={10} className="fill-amber-300 text-amber-300" /> {t.ratingAvg || "-"}
+          <Star size={10} className="fill-info text-info" /> {t.ratingAvg || "-"}
         </div>
         <div className="absolute inset-0 flex flex-col justify-end gap-2 bg-gradient-to-t from-black/85 via-black/35 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <div className="flex items-center justify-center gap-0.5" role="group" aria-label="Rate this theme">
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} onClick={(e) => rate(e, n)} aria-label={`Rate ${n} stars`} className="p-0.5">
-                <Star size={15} className={n <= shownRating ? "fill-amber-300 text-amber-300" : "text-white/60"} />
+                <Star size={15} className={n <= shownRating ? "fill-info text-info" : "text-white/60"} />
               </button>
             ))}
           </div>

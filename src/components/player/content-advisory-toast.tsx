@@ -8,7 +8,7 @@ const SEV_RANK: Record<string, number> = { Mild: 1, Moderate: 2, Severe: 3 };
 
 const SEV_STYLE: Record<string, { text: string; bar: string }> = {
   Severe: { text: "text-red-300", bar: "bg-red-400" },
-  Moderate: { text: "text-amber-300", bar: "bg-amber-400" },
+  Moderate: { text: "text-info", bar: "bg-info" },
   Mild: { text: "text-ink-subtle", bar: "bg-ink-subtle/70" },
 };
 
