@@ -15,6 +15,7 @@
   <provides>
     <binary>harbor</binary>
     <mediatype>x-scheme-handler/harbor</mediatype>
+    <mediatype>x-scheme-handler/vayra</mediatype>
     <mediatype>x-scheme-handler/stremio</mediatype>
   </provides>
   <url type="homepage">https://harbor.site/</url>
