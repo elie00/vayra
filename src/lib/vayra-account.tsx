@@ -22,32 +22,41 @@ function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+function credentialAccount(storageKey: string): string {
+  const safeKey = storageKey.replace(/[^a-zA-Z0-9_.:-]/g, "_").slice(0, 100);
+  return `${SESSION_ACCOUNT}:${safeKey}`;
+}
+
+function webStorageKey(storageKey: string): string {
+  return `${WEB_SESSION_KEY}:${storageKey}`;
+}
+
 const secureStorage = {
-  async getItem(): Promise<string | null> {
+  async getItem(key: string): Promise<string | null> {
     if (isTauri()) {
-      return invoke<string | null>("auth_secret_read", { account: SESSION_ACCOUNT }).catch(
+      return invoke<string | null>("auth_secret_read", { account: credentialAccount(key) }).catch(
         () => null,
       );
     }
     try {
-      return localStorage.getItem(WEB_SESSION_KEY);
+      return localStorage.getItem(webStorageKey(key));
     } catch {
       return null;
     }
   },
-  async setItem(_key: string, value: string): Promise<void> {
+  async setItem(key: string, value: string): Promise<void> {
     if (isTauri()) {
-      await invoke("auth_secret_write", { account: SESSION_ACCOUNT, content: value });
+      await invoke("auth_secret_write", { account: credentialAccount(key), content: value });
       return;
     }
-    localStorage.setItem(WEB_SESSION_KEY, value);
+    localStorage.setItem(webStorageKey(key), value);
   },
-  async removeItem(): Promise<void> {
+  async removeItem(key: string): Promise<void> {
     if (isTauri()) {
-      await invoke("auth_secret_write", { account: SESSION_ACCOUNT, content: null });
+      await invoke("auth_secret_write", { account: credentialAccount(key), content: null });
       return;
     }
-    localStorage.removeItem(WEB_SESSION_KEY);
+    localStorage.removeItem(webStorageKey(key));
   },
 };
 

@@ -36,10 +36,11 @@ the verifier required to exchange the callback code.
 ## Session storage
 
 Desktop and Android builds store the Supabase session through the existing
-`auth_secret_read` / `auth_secret_write` commands under the dedicated account
-name `vayra-email-session-v1`. Desktop uses the operating-system keyring and
+`auth_secret_read` / `auth_secret_write` commands under dedicated account names
+prefixed by `vayra-email-session-v1:`. The Supabase session and the temporary
+PKCE verifier remain separate entries. Desktop uses the operating-system keyring and
 Android uses the existing Keystore-backed credential bridge. Browser builds use
-the separate `vayra.email.session.v1` local-storage key.
+separate local-storage keys prefixed by `vayra.email.session.v1:`.
 
 The existing Stremio session remains profile-scoped and is not migrated,
 overwritten, or used as the VAYRA identity.
