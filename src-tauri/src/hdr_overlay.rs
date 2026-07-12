@@ -55,7 +55,7 @@ pub async fn hdr_overlay_open(app: AppHandle) -> Result<(), String> {
     app.run_on_main_thread(move || {
         let url = WebviewUrl::App("index.html?harbor-overlay=1".into());
         let builder = WebviewWindowBuilder::new(&app_clone, HDR_OVERLAY_LABEL, url)
-            .title("Harbor HDR")
+            .title("VAYRA HDR")
             .inner_size(sw, sh)
             .position(px, py)
             .resizable(false)

@@ -40,20 +40,15 @@ rewritten as product copy. VAYRA attribution supplements those records; it does 
 
 ### Assets
 
-No approved VAYRA mark, wordmark, loader, installer artwork, or native icon set is currently
-present. The following Harbor assets remain temporarily and must not be replaced with invented
-or placeholder artwork:
+The approved VAYRA concept-three mark, wordmarks, accent treatment, source icon, and review board
+live under `src/assets/brand/vayra/`. The frontend startup mark, loader, README, and Windows
+installer artwork now consume this geometry.
 
-- `docs/media/harbor-mark.svg`
-- `docs/media/harbor-wordmark-dark.svg`
-- `docs/media/harbor-wordmark-light.svg`
-- `src/assets/harbor-logo-test.svg`
-- `src/assets/harbor-logo-test.png`
-- `src/assets/harbor-wordmark.svg`
-- `src/assets/lottie/harbor-loader.json`
-- `src/assets/theme-previews/harbor.png`
-- the existing files under `src-tauri/icons/`
-- existing installer header and sidebar artwork
+Legacy Harbor artwork remains in the repository for attribution, rollback, and compatibility but
+is no longer used by the standard VAYRA startup path. Native platform icons under
+`src-tauri/icons/` remain temporary Harbor-derived assets until a separately approved icon
+generation phase; their replacement must use `vayra-icon-source-1024.png` and validate every
+platform package.
 
 ### Component and file names
 
@@ -72,6 +67,14 @@ transition rather than a global search-and-replace.
 Bundle IDs, Android and Flatpak IDs, keyring services, deep links, local-storage keys, native
 library names, and updater configuration remain Harbor-derived. They may only change as part of
 a platform migration that covers signing, upgrades, rollback, and data recovery.
+
+### Runtime metadata and protocol labels
+
+Some retained Harbor strings are deliberately not user-interface copy: network User-Agent values,
+DLNA and Roku protocol metadata, the mpv title used by native window detection, the physical
+`Pictures/Harbor` and `Harbor DVR` directories, the Stremio callback app name, and diagnostic log
+prefixes. Changing them belongs to protocol or data migration work and is outside this branding
+pass. User-facing descriptions refer to VAYRA without changing those contracts.
 
 ## Requirements for a future platform migration
 
