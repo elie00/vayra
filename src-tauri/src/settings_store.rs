@@ -27,7 +27,25 @@ fn credential_account(account: &str) -> Result<&str, String> {
     }
 }
 
+/// Dev-only per-instance data dir override. When the env var `VAYRA_DATA_DIR`
+/// is set (desktop only), settings storage is routed there so two VAYRA dev
+/// instances don't collide. When unset, returns None and behavior is exactly
+/// as today (bundle-id-keyed `app_data_dir`). This never affects release
+/// builds unless the operator explicitly sets the variable.
+#[cfg(desktop)]
+fn dev_data_dir_override() -> Option<std::path::PathBuf> {
+    std::env::var_os("VAYRA_DATA_DIR")
+        .filter(|v| !v.is_empty())
+        .map(std::path::PathBuf::from)
+}
+
 fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    #[cfg(desktop)]
+    let dir = match dev_data_dir_override() {
+        Some(dir) => dir,
+        None => app.path().app_data_dir().map_err(|e| e.to_string())?,
+    };
+    #[cfg(not(desktop))]
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.join("settings.json"))
@@ -42,6 +60,10 @@ fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
 /// does not carry over — users should export a backup before updating.
 #[cfg(desktop)]
 fn migrate_legacy_settings(app: &tauri::AppHandle, new_path: &std::path::Path) {
+    // A dev-isolated data dir must stay pristine: skip the legacy carry-over.
+    if dev_data_dir_override().is_some() {
+        return;
+    }
     let Ok(new_dir) = app.path().app_data_dir() else {
         return;
     };

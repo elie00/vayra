@@ -465,20 +465,31 @@ pub fn run() {
     let modal_overlay_state = modal_overlay::ModalOverlayState::new();
     let app_builder = tauri::Builder::default();
 
+    // Dev-only per-instance override. When `VAYRA_DATA_DIR` is set we skip the
+    // single-instance guard so a SECOND desktop process can run side by side
+    // (for VARA/VEYA two-instance testing). When the env var is UNSET this
+    // branch always registers `single_instance`, so release behavior is byte
+    // -for-byte identical to before.
     #[cfg(desktop)]
-    let app_builder = app_builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-        use tauri::{Emitter, Manager};
-        if let Some(w) = app.get_webview_window("main") {
-            let _ = w.unminimize();
-            let _ = w.set_focus();
-        }
-        if let Some(url) = args
-            .iter()
-            .find(|a| a.starts_with("harbor://") || a.starts_with("vayra://"))
-        {
-            let _ = app.emit("vayra:stremio-deeplink", url.clone());
-        }
-    }));
+    let vayra_dev_data_dir = std::env::var_os("VAYRA_DATA_DIR").filter(|v| !v.is_empty());
+    #[cfg(desktop)]
+    let app_builder = if vayra_dev_data_dir.is_none() {
+        app_builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            use tauri::{Emitter, Manager};
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+            if let Some(url) = args
+                .iter()
+                .find(|a| a.starts_with("harbor://") || a.starts_with("vayra://"))
+            {
+                let _ = app.emit("vayra:stremio-deeplink", url.clone());
+            }
+        }))
+    } else {
+        app_builder
+    };
 
     let app_builder = app_builder
         .plugin(tauri_plugin_opener::init())
@@ -494,16 +505,26 @@ pub fn run() {
     let app_builder = app_builder.plugin(tauri_plugin_updater::Builder::new().build());
 
     #[cfg(desktop)]
-    let app_builder = app_builder.plugin(
-        tauri_plugin_window_state::Builder::default()
-            .with_state_flags(
-                tauri_plugin_window_state::StateFlags::SIZE
-                    | tauri_plugin_window_state::StateFlags::POSITION
-                    | tauri_plugin_window_state::StateFlags::MAXIMIZED
-                    | tauri_plugin_window_state::StateFlags::FULLSCREEN,
-            )
-            .build(),
-    );
+    let app_builder = {
+        let mut ws_builder = tauri_plugin_window_state::Builder::default().with_state_flags(
+            tauri_plugin_window_state::StateFlags::SIZE
+                | tauri_plugin_window_state::StateFlags::POSITION
+                | tauri_plugin_window_state::StateFlags::MAXIMIZED
+                | tauri_plugin_window_state::StateFlags::FULLSCREEN,
+        );
+        // The window-state plugin resolves its file under the bundle-id-keyed
+        // `app_config_dir`, which Tauri v2 does not let us override at runtime.
+        // Two dev instances would otherwise clobber the same state file, so we
+        // give each `VAYRA_DATA_DIR` a distinct, deterministic filename. When
+        // the env var is unset the default filename is used (unchanged).
+        if let Some(dir) = &vayra_dev_data_dir {
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            std::hash::Hash::hash(dir, &mut hasher);
+            let tag = std::hash::Hasher::finish(&hasher);
+            ws_builder = ws_builder.with_filename(format!(".window-state-dev-{tag:016x}.json"));
+        }
+        app_builder.plugin(ws_builder.build())
+    };
 
     let app_builder = app_builder
         .manage(proxy_state)
