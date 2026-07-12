@@ -4,14 +4,14 @@ export const GLASS_BG =
   "linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.18) 100%)";
 
 export const RAINBOW_BG =
-  "linear-gradient(to bottom, #ff595e 0 16.67%, #ff924c 16.67% 33.33%, #ffca3a 33.33% 50%, #8ac926 50% 66.67%, #1982c4 66.67% 83.33%, #6a4c93 83.33%)";
+  "linear-gradient(to bottom, #8267ff 0 20%, #4b9dff 20% 40%, #6d7cff 40% 60%, #42b8d9 60% 80%, #5b4cc4 80%)";
 
 export function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
 export function resolveAccent(settings: Settings): string {
-  return (settings.seekBarColor || "").trim() || "oklch(0.78 0.13 60)";
+  return (settings.seekBarColor || "").trim() || "#8267ff";
 }
 
 export type SeekSegmentSpan = { startPct: number; endPct: number; color?: string };
