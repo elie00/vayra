@@ -87,7 +87,7 @@ function isVisible(el: HTMLElement) {
 }
 
 function isInNav(el: HTMLElement): boolean {
-  return !!el.closest('[data-harbor-nav]');
+  return !!el.closest('[data-vayra-nav]');
 }
 
 function isInHero(el: HTMLElement): boolean {
@@ -339,7 +339,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
           if (onBackToNav) {
             onBackToNav();
           } else {
-            const nav = document.querySelector<HTMLElement>('[data-harbor-nav] [data-focusable="true"], [data-harbor-nav] a[href], [data-harbor-nav] button');
+            const nav = document.querySelector<HTMLElement>('[data-vayra-nav] [data-focusable="true"], [data-vayra-nav] a[href], [data-vayra-nav] button');
             if (nav) focusElement(nav);
           }
         }

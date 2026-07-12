@@ -63,7 +63,7 @@ export function MobileShell() {
       <MobileTogetherSheet />
       {!hidden && (
         <nav
-          data-harbor-tabbar
+          data-vayra-tabbar
           aria-label="Primary"
           className="fixed inset-x-0 bottom-0 z-[90] flex items-stretch justify-around border-t border-edge-soft/60 bg-canvas/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
         >
@@ -144,7 +144,7 @@ function PlusScreen() {
   // (transform-gpu + isolate) and the scroll lives on a normal in-flow child.
   return (
     <div
-      data-harbor-plus
+      data-vayra-plus
       className="fixed inset-0 z-[80] isolate transform-gpu bg-canvas"
     >
       <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+env(safe-area-inset-bottom))]">

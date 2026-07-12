@@ -922,7 +922,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   return (
     <main
       ref={stageRef}
-      data-harbor-player
+      data-vayra-player
       dir="ltr"
       className={`fixed inset-0 z-[100] overflow-hidden ${stageBg}`}
       style={cursorStyle}
