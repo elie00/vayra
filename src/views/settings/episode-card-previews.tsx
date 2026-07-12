@@ -62,11 +62,11 @@ function EpiCard({
           {showRating && (
             <span
               className={`absolute bottom-1.5 end-1.5 flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-1 backdrop-blur-sm ${
-                glowRating ? "ring-1 ring-amber-300/70" : ""
+                glowRating ? "ring-1 ring-info/70" : ""
               }`}
             >
               <ImdbIcon className="h-2.5 w-5" />
-              <span className="text-[10.5px] font-bold tabular-nums text-amber-300">8.7</span>
+              <span className="text-[10.5px] font-bold tabular-nums text-info">8.7</span>
             </span>
           )}
         </div>

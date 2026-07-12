@@ -82,7 +82,7 @@ export function AutoPlayTransition({
             className="absolute bottom-[12%] right-[12%] h-20 w-auto opacity-75"
           />
           <img
-            src="/kids/doodles/lilorangestar2.png"
+            src="/kids/doodles/lilwhitestar2.png"
             alt=""
             draggable={false}
             className="absolute right-[18%] top-[18%] h-10 w-auto opacity-90"
@@ -114,7 +114,7 @@ export function AutoPlayTransition({
           }
         />
         {stubNotice && (
-          <p className="max-w-md text-[13px] leading-relaxed text-amber-200/80">
+          <p className="max-w-md text-[13px] leading-relaxed text-info/80">
             {stubNotice}
           </p>
         )}

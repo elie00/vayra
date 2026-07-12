@@ -18,7 +18,7 @@ export function TrendingAddonsRail({
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-500/30 to-amber-500/20 ring-1 ring-rose-500/30">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-500/30 to-info/20 ring-1 ring-rose-500/30">
             <TrendingUp size={18} strokeWidth={2.4} className="text-rose-300" />
           </span>
           <div className="flex flex-col">

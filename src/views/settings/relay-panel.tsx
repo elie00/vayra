@@ -16,6 +16,7 @@ function isCloudflareRelay(url: string): boolean {
 }
 
 
+
 export function TogetherRelayPanel({
   onOpenDocs,
   onOpenDeploy,
@@ -106,7 +107,7 @@ export function TogetherRelayPanel({
             ) : (
               <span
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-1 ${
-                  isCfRelay ? "bg-[#f6821f]/15 ring-[#f6821f]/30" : "bg-accent/15 ring-accent/30"
+                  isCfRelay ? "bg-info/15 ring-info/30" : "bg-accent/15 ring-accent/30"
                 }`}
               >
                 {isCfRelay ? (
@@ -167,7 +168,7 @@ export function TogetherRelayPanel({
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                        passive.needsUpdate ? "bg-amber-400/15 text-amber-300" : "bg-accent/15 text-accent"
+                        passive.needsUpdate ? "bg-info/15 text-info" : "bg-accent/15 text-accent"
                       }`}
                     >
                       <ShieldCheck size={13} strokeWidth={2} />
@@ -381,4 +382,3 @@ export function TogetherRelayPanel({
     </>
   );
 }
-

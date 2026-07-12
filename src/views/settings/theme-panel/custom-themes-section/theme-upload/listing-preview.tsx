@@ -28,7 +28,7 @@ export function ListingPreview({
             </div>
           )}
           <div className="absolute bottom-2 end-2 flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-[10.5px] font-semibold text-white backdrop-blur-sm">
-            <Star size={10} className="fill-amber-300 text-amber-300" /> new
+            <Star size={10} className="fill-info text-info" /> new
           </div>
           <div className="absolute bottom-0 left-0 right-0 flex h-1.5">
             {swatch.map((c, i) => (

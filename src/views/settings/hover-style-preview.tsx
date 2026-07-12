@@ -206,7 +206,7 @@ function DefaultModalPreview({ meta }: { meta: Meta }) {
         <span className="flex items-center gap-1 text-[8.5px] text-ink-muted">
           {meta.imdbRating && (
             <span className="flex items-center gap-0.5">
-              <Star size={7} className="fill-amber-400 text-amber-400" />
+              <Star size={7} className="fill-info text-info" />
               {meta.imdbRating}
             </span>
           )}

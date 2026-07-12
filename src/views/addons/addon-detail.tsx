@@ -321,8 +321,8 @@ export function AddonDetail({
       </header>
 
       {c?.warnings && c.warnings.length > 0 && (
-        <section className="mt-8 rounded-2xl border border-amber-300/30 bg-amber-300/[0.06] p-5">
-          <h3 className="text-[13.5px] font-semibold text-amber-200">{t("Worth knowing")}</h3>
+        <section className="mt-8 rounded-2xl border border-info/30 bg-info/[0.06] p-5">
+          <h3 className="text-[13.5px] font-semibold text-info">{t("Worth knowing")}</h3>
           <ul className="mt-2 ms-1 list-disc ps-4 text-[13px] text-ink-muted">
             {c.warnings.map((w) => (
               <li key={w}>{w}</li>

@@ -593,7 +593,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
 
   { label: "VARA relay", section: "relay", anchorTitle: "VAYRA Relay", keywords: ["VARA", "relay", "party", "p2p", "host", "cloudflare", "deploy", "share"] },
 
-  { label: "Theme preset", section: "theme", anchorTitle: "Theme", keywords: ["theme", "color", "preset", "cool grey", "warm gold", "deep purple", "sunset orange", "rose pink", "custom theme", "palette", "dark", "appearance"] },
+  { label: "Theme preset", section: "theme", anchorTitle: "Theme", keywords: ["theme", "color", "preset", "cool grey", "orbit blue", "deep purple", "veyra violet", "rose pink", "custom theme", "palette", "dark", "appearance"] },
   { label: "Background image / wallpaper", section: "theme", anchorTitle: "Background image", keywords: ["background", "wallpaper", "image", "choose image", "replace", "remove", "dim overlay"] },
   { label: "Typography & custom fonts", section: "theme", anchorTitle: "Typography", keywords: ["typography", "font", "display font", "body font", "serif", "sans", "font pair", "custom font", "fraunces", "inter", "upload font"] },
   { label: "Theme Studio / your themes", section: "theme", anchorTitle: "Your themes", keywords: ["theme studio", "custom theme", "editor", "browse theme library", "import theme", "your themes", "card css"] },
@@ -990,7 +990,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Show thumbnail preview on hover", section: "theme", anchorTitle: "Seek bar", keywords: ["trickplay", "scrub thumbnails", "hover preview", "seek preview", "filmstrip", "frame preview"] },
   { label: "Bar style", section: "theme", anchorTitle: "Seek bar", keywords: ["flat", "glass", "pinstripe", "rainbow", "seek bar texture", "timeline look"] },
   { label: "Bar height", section: "theme", anchorTitle: "Seek bar", keywords: ["thicker bar", "thin bar", "timeline height", "bar size"] },
-  { label: "Bar color", section: "theme", anchorTitle: "Seek bar", keywords: ["seek bar color", "accent color", "recolor progress", "custom color", "gold accent"] },
+  { label: "Bar color", section: "theme", anchorTitle: "Seek bar", keywords: ["seek bar color", "accent color", "recolor progress", "custom color", "VAYRA violet"] },
   { label: "Bar image", section: "theme", anchorTitle: "Seek bar", keywords: ["tiled pattern", "custom bar image", "gif bar", "texture upload", "pattern bar"] },
   { label: "Seek dot shape", section: "theme", anchorTitle: "Seek bar", keywords: ["circle", "square", "custom image dot", "hidden dot", "handle shape", "no dot"] },
   { label: "Dot size", section: "theme", anchorTitle: "Seek bar", keywords: ["handle size", "knob size", "image size", "bigger dot", "scrubber size"] },
