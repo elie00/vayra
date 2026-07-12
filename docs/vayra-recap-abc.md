@@ -60,5 +60,8 @@ visible par l'utilisateur ; à renommer plus tard si souhaité.)*
 
 - Branche `brand/completion` poussée sur `origin`, au commit `e8b9bb1`.
 - `main` et `mobile-android` intactes à `c1c2906` (non modifiées).
-- Identifiants techniques toujours préservés : `app.harbor`, `harbor://`, keyring,
-  `harbor-core`, `window.harbor`, classes CSS, formats `.harborstyle`/`.harbx`.
+- À l'époque de cette passe A/B/C, les identifiants techniques (`app.harbor`,
+  `harbor://`, keyring, `harbor-core`, `window.harbor`, classes CSS, formats
+  `.harborstyle`/`.harbx`) étaient conservés. Ils ont depuis été reconstruits en
+  VAYRA sur la branche `brand/vayra-identity` (voir `docs/branding-compatibility.md`
+  pour l'état à jour : ce qui est migré vs ce qui reste intentionnellement Harbor).
