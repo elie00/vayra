@@ -135,6 +135,16 @@ export function createTorbox(apiKey: string): DebridStore {
     return { ok: true, data: merged };
   }
 
+  // Best-effort removal of a torrent we added; used to clean up when the caller
+  // aborts a losing concurrent resolution so we don't orphan transfers.
+  async function removeTorrent(id: string | number): Promise<void> {
+    await postForm(
+      "/torrents/controltorrent",
+      { torrent_id: String(id), operation: "delete" },
+      AbortSignal.timeout(4000),
+    ).catch(() => {});
+  }
+
   async function playableUrl(
     magnet: string,
     fileIdx: number | undefined,
@@ -155,9 +165,15 @@ export function createTorbox(apiKey: string): DebridStore {
 
     let info: TbTorrent | null = null;
     for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
-      if (signal.aborted) return { ok: false, code: "aborted", status: 0 };
+      if (signal.aborted) {
+        await removeTorrent(id);
+        return { ok: false, code: "aborted", status: 0 };
+      }
       const r = await get<TbEnvelope<TbTorrent>>(`/torrents/mylist?id=${id}&bypass_cache=true`, signal);
-      if (!r.ok) return r;
+      if (!r.ok) {
+        if (signal.aborted) await removeTorrent(id);
+        return r;
+      }
       info = r.data.data ?? null;
       if (!info) {
         await sleep(POLL_DELAY_MS, signal);
