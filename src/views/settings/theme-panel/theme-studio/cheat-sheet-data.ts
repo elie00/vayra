@@ -37,7 +37,7 @@ export const QUICKSTART: QuickStep[] = [
   { step: "Start from a theme", detail: "Open the Theme Studio. Begin from a built-in look or from scratch." },
   { step: "Set colors and fonts", detail: "The Look tab drives the 12 color tokens and the type pairing. The live sample updates instantly." },
   { step: "Choose a layout", detail: "The Layout tab picks where navigation lives. Custom hides built-in chrome and your own HTML takes over." },
-  { step: "Build custom chrome visually", detail: "On Custom, the builder makes a sidebar or top bar with no code. Wire items to window.harbor.navigate()." },
+  { step: "Build custom chrome visually", detail: "On Custom, the builder makes a sidebar or top bar with no code. Wire items to window.vayra.navigate()." },
   { step: "Go deeper with code", detail: "Open the code editor for raw CSS, HTML and JS layered over the whole app. Everything below is fair to target." },
   { step: "Save or export", detail: "Save adds it to Your themes. Export writes a .harborstyle file you can share with anyone." },
 ];
@@ -45,8 +45,8 @@ export const QUICKSTART: QuickStep[] = [
 export type HarborApi = { call: string; desc: string };
 
 export const WINDOW_HARBOR: HarborApi[] = [
-  { call: "window.harbor.navigate(view)", desc: "Switch the app to a view. Pass a view id below, e.g. window.harbor.navigate('movies')." },
-  { call: "window.harbor.back()", desc: "Go back one step, same as the back button." },
+  { call: "window.vayra.navigate(view)", desc: "Switch the app to a view. Pass a view id below, e.g. window.vayra.navigate('movies')." },
+  { call: "window.vayra.back()", desc: "Go back one step, same as the back button." },
 ];
 
 export type DataAttr = {

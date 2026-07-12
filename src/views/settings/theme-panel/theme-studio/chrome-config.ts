@@ -54,7 +54,7 @@ function buttons(config: ChromeConfig): string {
       const iconVal = config.icons?.[id];
       const iconMarkup = iconVal ? resolveIconMarkup(iconVal) : undefined;
       const inner = iconMarkup ? `${iconMarkup}<span>${esc(label)}</span>` : esc(label);
-      return `    <button data-vayra-nav="${id}" onclick="window.harbor.navigate('${id}')">${inner}</button>`;
+      return `    <button data-vayra-nav="${id}" onclick="window.vayra.navigate('${id}')">${inner}</button>`;
     })
     .join("\n");
 }
