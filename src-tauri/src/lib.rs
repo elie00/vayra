@@ -109,6 +109,14 @@ mod webview_helpers;
 #[path = "mobile_stubs/webview_helpers.rs"]
 mod webview_helpers;
 
+// VARA/VEYA sync-CLIENT: stateless bridge between the standalone broker process
+// and THIS app's frontend (desktop). Stubbed on Android for handler parity.
+#[cfg(desktop)]
+mod vara_client;
+#[cfg(mobile)]
+#[path = "mobile_stubs/vara_client.rs"]
+mod vara_client;
+
 // Découverte cast bas niveau : uniquement consommée par `cast`, donc desktop-only sans stub.
 #[cfg(desktop)]
 mod roku;
@@ -462,6 +470,7 @@ pub fn run() {
     let thumbs_state = thumbs::ThumbsState::new();
     let dvr_state = dvr::DvrState::new();
     let multiview_state = multiview::MultiviewState::new();
+    let vara_client_state = vara_client::VaraClientState::new();
     let modal_overlay_state = modal_overlay::ModalOverlayState::new();
     let app_builder = tauri::Builder::default();
 
@@ -534,6 +543,7 @@ pub fn run() {
         .manage(thumbs_state)
         .manage(dvr_state)
         .manage(multiview_state)
+        .manage(vara_client_state)
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
         .manage(download::DownloadState::new())
@@ -760,6 +770,10 @@ pub fn run() {
             multiview::multiview_close,
             multiview::multiview_visibility,
             multiview::multiview_stop_all,
+            vara_client::vayra_sync_join,
+            vara_client::vayra_sync_leave,
+            vara_client::vayra_sync_send,
+            vara_client::vayra_sync_publish,
             http_fetch::vayra_fetch,
             discord_rp::discord_set_presence,
             discord_rp::discord_clear,
