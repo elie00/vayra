@@ -51,7 +51,7 @@ export function ColorPicker({
         />
       </div>
       <span className="text-[11.5px] text-ink-subtle">
-        Used for your cursor in Watch Together, your draw color, and your name pill in chat.
+        Used for your cursor in VARA, your draw color, and your name pill in chat.
       </span>
     </div>
   );

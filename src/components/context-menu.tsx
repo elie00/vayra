@@ -251,7 +251,7 @@ export function ContextMenu() {
         <Item
           key="bring"
           icon={<UserPlus size={14} strokeWidth={2} />}
-          label="Bring friends here"
+          label="Invite your CIRA here"
           onClick={handleBring}
         />,
       );
@@ -309,7 +309,7 @@ export function ContextMenu() {
         <Item
           key="bring-page"
           icon={<UserPlus size={14} strokeWidth={2} />}
-          label={`Bring friends to ${label}`}
+          label={`Invite your CIRA to ${label}`}
           onClick={handleBringPage}
         />,
       );
@@ -325,7 +325,7 @@ export function ContextMenu() {
         <Item
           key="bring-addon"
           icon={<UserPlus size={14} strokeWidth={2} />}
-          label={`Bring friends to ${label}`}
+          label={`Invite your CIRA to ${label}`}
           onClick={handleBringAddon}
         />,
       );

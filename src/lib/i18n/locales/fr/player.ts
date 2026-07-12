@@ -5,7 +5,7 @@ const player: Record<string, string> = {
   "Pause · Space": "Pause · Espace",
   "Play now": "Lire maintenant",
   "Play movie": "Lire le film",
-  "Play without sync": "Lire sans synchronisation",
+  "Play without VEYA": "Play without VEYA",
   "Start Over": "Recommencer",
   "Start watching": "Commencer à regarder",
   Mute: "Couper le son",

@@ -37,7 +37,7 @@ const pt: Record<string, string> = {
   "chrome.minimize": "Minimizar",
   "chrome.maximize": "Maximizar",
   "chrome.restore": "Restaurar",
-  "chrome.watchTogether": "Assistir junto",
+  "chrome.watchTogether": "VARA",
   "chrome.scrollForMore": "Role para ver mais",
   "chrome.locked": "Bloqueado",
   "chrome.parentalOn": "Controle parental ativado",

@@ -134,9 +134,9 @@ export function TogetherRelayPanel({
           <div className="flex flex-col gap-1 rounded-xl border border-edge-soft bg-canvas/40 p-1">
             <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5">
               <div className="flex flex-col">
-                <span className="text-[13px] font-medium text-ink">{t("Watch Together")}</span>
+                <span className="text-[13px] font-medium text-ink">{t("VARA")}</span>
                 <span className="text-[11.5px] text-ink-subtle">
-                  {t("Synchronizes playback state between participants in the same room.")}
+                  {t("VEYA synchronizes playback between participants in the same VARA room.")}
                 </span>
               </div>
               <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-[10.5px] font-medium uppercase tracking-wider text-accent">
@@ -182,8 +182,8 @@ export function TogetherRelayPanel({
                         {passive.needsUpdate
                           ? isPubRelay
                             ? t("VAYRA's public relay updates automatically; nothing to do.")
-                            : t("Redeploy to pick up the latest Watch Together fixes. The in-app banner clears once the new version is live.")
-                          : t("Running the latest Watch Together protocol.")}
+                            : t("Redeploy to pick up the latest VARA fixes. The in-app banner clears once the new version is live.")
+                          : t("Running the latest VARA protocol.")}
                       </span>
                     </div>
                   </div>
@@ -339,7 +339,7 @@ export function TogetherRelayPanel({
             </button>
           </div>
           <p className="text-[11.5px] leading-relaxed text-ink-subtle">
-            {t("Only enter URLs for relays you operate or trust. A relay only carries Watch Together sync messages (play, pause, seek). Nothing else passes through it.")}
+            {t("Only enter URLs for relays you operate or trust. A relay only carries VEYA messages (play, pause, seek) for VARA. Nothing else passes through it.")}
           </p>
           <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 px-3.5 py-3">
             <span className="text-[12px] text-ink-muted">
@@ -381,5 +381,4 @@ export function TogetherRelayPanel({
     </>
   );
 }
-
 

@@ -16,6 +16,10 @@ VAYRA is a personal and collaborative viewing experience with a native player, s
 
 > VAYRA is an independent product by EYBO, built from an autonomous fork of Harbor.
 
+VAYRA brings collaborative viewing together through **VARA** private rooms, **VEYA** playback
+synchronization, **CIRA** circles for in-product friends and groups, and **LUMA** immersive
+living-room mode.
+
 <br/>
 
 [![Version][badge-version]][releases] &nbsp;
@@ -98,7 +102,7 @@ VAYRA IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR I
 - **Go Deep.** Dive deep into your favorite shows, actors, genres and more. View lists of award recipients for the Oscars, BAFTA, Cannes, SAG, and more. Anime cast and award metadata, along with Episode/Season Deduplication and Merge. Your rows learn from your watch history and likes, to always suggest you your next best watch.
 - **Robust Appstore.** VAYRA allows you to configure and install addons without leaving the desktop client by allowing you to natively install third party addons via a built in viewport. Easily manage your installed Addons and Browse for new ones in a bespoke experience that merges the Stremio Community addons API with the [Stremio-addons.net](https://stremio-addons.net) API, giving you wide coverage and custom reccomendations.
 - **Stremio-addons.net Integration.** The first platform with direct community ratings, top trending, and manifest feed to the [Stremio-addons.net](https://stremio-addons.net) API
-- **Watch together, on your own relay.** A synced watch party with live on screen cursors and drawing, on a relay that deploys to your own Cloudflare account in one click. No central server.
+- **VARA, on your own relay.** A synced watch party with live on screen cursors and drawing, on a relay that deploys to your own Cloudflare account in one click. No central server.
 - **Live TV and Multiview.** Bring M3U or Xtream playlists and get a real EPG grid guide, favorites, catchup, and up to four channels at once in a grid. Missed the show? play a rerun or record the next episode using built in DVR. Switch channels while in the live player at any time with the TV Guide
 - **Stream switcher** In player switcher allows you to hop streams if you get served a bad one without leaving the player and going through results again. Play next episodes with ease on the player UI controls or in a full "Next Up" sidebar.
 - **Casts across the room.** DLNA/UPnP, Chromecast, AirPlay, and Roku via the native Rust casting layer. Chromecast launches VAYRA's separately deployed CAF receiver; its source is not part of this repository.
