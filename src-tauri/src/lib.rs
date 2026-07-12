@@ -472,7 +472,10 @@ pub fn run() {
             let _ = w.unminimize();
             let _ = w.set_focus();
         }
-        if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
+        if let Some(url) = args
+            .iter()
+            .find(|a| a.starts_with("harbor://") || a.starts_with("vayra://"))
+        {
             let _ = app.emit("vayra:stremio-deeplink", url.clone());
         }
     }));

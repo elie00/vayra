@@ -69,8 +69,12 @@ export function onOpenLocalFile(handler: (path: string) => void): () => void {
 const AUTH_KEY_EVENT = "vayra:deeplink-stremio-auth";
 let pendingAuthKey: string | null = null;
 
+export function isAppScheme(u: string): boolean {
+  return u.startsWith("harbor://") || u.startsWith("vayra://");
+}
+
 export function parseStremioAuthKey(url: string): string | null {
-  const m = /^harbor:\/\/stremio-auth\/?\?key=([^&]+)/.exec(url);
+  const m = /^(?:harbor|vayra):\/\/stremio-auth\/?\?key=([^&]+)/.exec(url);
   if (!m) return null;
   try {
     const key = decodeURIComponent(m[1]).trim();
@@ -124,7 +128,7 @@ export function parseStremioOpen(url: string): DeepLinkOpen | null {
 }
 
 function shouldForward(url: string): boolean {
-  if (url.startsWith("harbor://")) return true;
+  if (isAppScheme(url)) return true;
   if (url.startsWith("stremio://")) {
     if (window.__harborInstallerOpen) return true;
     return !!window.__harborStremioDeeplink;

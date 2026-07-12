@@ -109,9 +109,9 @@
   },
   "plugins": {
     "deep-link": {
-      "mobile": [{ "scheme": ["harbor"] }],
+      "mobile": [{ "scheme": ["harbor", "vayra"] }],
       "desktop": {
-        "schemes": ["harbor", "stremio"]
+        "schemes": ["harbor", "vayra", "stremio"]
       }
     },
     "updater": {
