@@ -48,7 +48,7 @@ export function MultiviewView({
   };
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("harbor:immersive", { detail: collapsed }));
+    window.dispatchEvent(new CustomEvent("vayra:immersive", { detail: collapsed }));
   }, [collapsed]);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function MultiviewView({
 
   useEffect(
     () => () => {
-      window.dispatchEvent(new CustomEvent("harbor:immersive", { detail: false }));
+      window.dispatchEvent(new CustomEvent("vayra:immersive", { detail: false }));
     },
     [],
   );

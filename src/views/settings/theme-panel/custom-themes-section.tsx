@@ -160,7 +160,7 @@ export function CustomThemesSection() {
         theme={activeTheme}
         onExport={() => activeTheme && showExport(activeTheme.id)}
         onCustomize={() =>
-          window.dispatchEvent(new CustomEvent("harbor:open-theme-editor"))
+          window.dispatchEvent(new CustomEvent("vayra:open-theme-editor"))
         }
       />
 

@@ -290,7 +290,7 @@ export function createExoBridge(): PlayerBridge {
     } else if (payload.type === "lifecycle") {
       // Persist watch progress before Android may kill the backgrounded process.
       if ((payload as { state?: string }).state === "background") {
-        window.dispatchEvent(new Event("harbor:flush-persist"));
+        window.dispatchEvent(new Event("vayra:flush-persist"));
       }
     }
   };

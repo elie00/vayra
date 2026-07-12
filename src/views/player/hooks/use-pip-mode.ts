@@ -21,7 +21,7 @@ export function usePipMode(params: {
       const fire = () => {
         try {
           window.dispatchEvent(new Event("resize"));
-          window.dispatchEvent(new Event("harbor:mpv-refresh-geom"));
+          window.dispatchEvent(new Event("vayra:mpv-refresh-geom"));
           void import("@tauri-apps/api/core").then(({ invoke }) =>
             invoke("hdr_overlay_sync").catch(() => {}),
           );

@@ -255,8 +255,8 @@ export function useAddonsCatalog(adultsAllowed: boolean): {
       });
       setTick((t) => t + 1);
     };
-    window.addEventListener("harbor:addons-changed", onChange);
-    return () => window.removeEventListener("harbor:addons-changed", onChange);
+    window.addEventListener("vayra:addons-changed", onChange);
+    return () => window.removeEventListener("vayra:addons-changed", onChange);
   }, []);
 
   return { loading, byId, installedIds, refetch: () => setTick((t) => t + 1) };

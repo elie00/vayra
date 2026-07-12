@@ -149,11 +149,11 @@ export const Z_INDEX_MAP: Layer[] = [
 export type WindowEvent = { name: string; payload?: string; when: string };
 
 export const WINDOW_EVENTS: WindowEvent[] = [
-  { name: "harbor:immersive", payload: "CustomEvent<boolean>", when: "Live TV enters or exits immersive mode." },
-  { name: "harbor:reset-row-scrolls", payload: "CustomEvent<{ prefix }>", when: "View change. Reset rail scrollers." },
-  { name: "harbor:scroll-top", payload: "CustomEvent<{ view }>", when: "View change. Scroll main to the top." },
-  { name: "harbor:open-theme-editor", when: "The active-theme banner asks to open the color editor." },
-  { name: "harbor:error", payload: "CustomEvent<{ message }>", when: "An application-level error surfaced." },
+  { name: "vayra:immersive", payload: "CustomEvent<boolean>", when: "Live TV enters or exits immersive mode." },
+  { name: "vayra:reset-row-scrolls", payload: "CustomEvent<{ prefix }>", when: "View change. Reset rail scrollers." },
+  { name: "vayra:scroll-top", payload: "CustomEvent<{ view }>", when: "View change. Scroll main to the top." },
+  { name: "vayra:open-theme-editor", when: "The active-theme banner asks to open the color editor." },
+  { name: "vayra:error", payload: "CustomEvent<{ message }>", when: "An application-level error surfaced." },
 ];
 
 export type ViewName = { id: string; label: string };
