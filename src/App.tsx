@@ -622,7 +622,7 @@ function Shell() {
       listen("vayra://app-closing", async () => {
         await flushCloudSync().catch(() => {});
         const { invoke } = await import("@tauri-apps/api/core");
-        await invoke("harbor_flush_done").catch(() => {});
+        await invoke("vayra_flush_done").catch(() => {});
       }).then((u) => {
         if (cancelled) u();
         else unlisten = u;

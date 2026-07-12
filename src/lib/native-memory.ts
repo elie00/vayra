@@ -10,7 +10,7 @@ export type NativeMem = {
 
 export type RamTier = "tiny" | "low" | "mid" | "high";
 
-// harbor_process_memory is a desktop-only webview memory helper.
+// vayra_process_memory is a desktop-only webview memory helper.
 const isTauri = hasDesktopFeatures();
 const MB = 1024 * 1024;
 
@@ -41,7 +41,7 @@ function classifyTier(totalPhysBytes: number): RamTier {
 async function sample(): Promise<void> {
   if (!isTauri) return;
   try {
-    const m = await invoke<NativeMem>("harbor_process_memory");
+    const m = await invoke<NativeMem>("vayra_process_memory");
     latest = {
       harborRss: m.harborRss / MB,
       webviewRss: m.webviewRss / MB,
