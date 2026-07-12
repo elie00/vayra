@@ -69,7 +69,7 @@ export function PickerEmptyLadder({
     <>
       {addonsSettled && (!streamIds || streamIds.length === 0) && (
         <EmptyState
-          message="Harbor couldn't resolve a usable ID for this title. Add a TMDB key in Library settings or sign in to Stremio to broaden coverage."
+          message="VAYRA couldn't resolve a usable ID for this title. Add a TMDB key in Library settings or sign in to Stremio to broaden coverage."
           action={{ label: "Open Library settings", onClick: onOpenLibrarySettings }}
         />
       )}
@@ -113,7 +113,7 @@ export function PickerEmptyLadder({
                 ? "Clean releases for this title haven't surfaced yet. The result below may not match the title you're looking for, so confirm the filename and size before playing."
                 : "Clean releases for this title are still scarce. Confirm the filename and size before playing."}
               {rawCount - allCount > 0 && !forceShowAll
-                ? ` Harbor dropped ${rawCount - allCount} suspicious or mismatched result${rawCount - allCount === 1 ? "" : "s"}.`
+                ? ` VAYRA dropped ${rawCount - allCount} suspicious or mismatched result${rawCount - allCount === 1 ? "" : "s"}.`
                 : ""}
             </p>
           </div>
