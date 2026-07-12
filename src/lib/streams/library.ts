@@ -11,26 +11,44 @@ export type LibraryQuery = {
   episode?: number;
 };
 
+// Per-debrid cap so one slow/hung debrid can't stall library collection.
+const LIBRARY_TIMEOUT_MS = 8000;
+
 export async function fetchLibraryStreams(
   clients: DebridStore[],
   query: LibraryQuery,
   signal: AbortSignal,
 ): Promise<Stream[]> {
   if (clients.length === 0) return [];
-  const settled = await Promise.allSettled(clients.map((c) => c.listLibrary(signal)));
-  const out: Stream[] = [];
-  for (let i = 0; i < clients.length; i++) {
-    const r = settled[i];
-    if (r.status !== "fulfilled" || !r.value.ok) continue;
-    const slug = clients[i].slug;
-    for (const entry of r.value.data) {
-      if (!entry.hash) continue;
-      const matched = matchEntry(entry, query);
-      if (!matched) continue;
-      out.push(buildLibraryStream(slug, entry, matched));
-    }
-  }
-  return out;
+  // Collect per-debrid as each returns; bound each lookup with a timeout so a
+  // slow debrid can't stall the batch. Final result is order-independent.
+  const perClient = await Promise.all(
+    clients.map(async (c) => {
+      const slug = c.slug;
+      let timer: ReturnType<typeof setTimeout>;
+      const guard = new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), LIBRARY_TIMEOUT_MS);
+      });
+      let r: Awaited<ReturnType<DebridStore["listLibrary"]>> | null;
+      try {
+        r = await Promise.race([c.listLibrary(signal), guard]);
+      } catch {
+        r = null;
+      } finally {
+        clearTimeout(timer!);
+      }
+      if (!r || !r.ok) return [];
+      const streams: Stream[] = [];
+      for (const entry of r.data) {
+        if (!entry.hash) continue;
+        const matched = matchEntry(entry, query);
+        if (!matched) continue;
+        streams.push(buildLibraryStream(slug, entry, matched));
+      }
+      return streams;
+    }),
+  );
+  return perClient.flat();
 }
 
 function matchEntry(entry: LibraryEntry, query: LibraryQuery): MatchInfo | null {
