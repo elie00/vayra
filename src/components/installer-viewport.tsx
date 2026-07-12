@@ -11,7 +11,7 @@ import { normalizeInstallUrl, trustedInstallerMessage } from "@/lib/installer-me
 import { HarborLoader } from "@/components/harbor-loader";
 import { InstallOverlay } from "./installer-viewport/install-overlay";
 
-const EVENT = "harbor:open-installer";
+const EVENT = "vayra:open-installer";
 
 type InstallerDetail = { url: string; title?: string; logo?: string | null };
 
@@ -141,7 +141,7 @@ function InstallerViewport({
         const id = result.addon.manifest.id;
         setPhase({ kind: "success", name, logo });
         window.dispatchEvent(
-          new CustomEvent("harbor:addons-changed", { detail: { id, installed: true } }),
+          new CustomEvent("vayra:addons-changed", { detail: { id, installed: true } }),
         );
         successTimerRef.current = window.setTimeout(() => {
           onClose();
@@ -187,10 +187,10 @@ function InstallerViewport({
       void submitRef.current(raw);
     };
     window.addEventListener("message", onMessage);
-    window.addEventListener("harbor:deeplink-install", onDeeplink);
+    window.addEventListener("vayra:deeplink-install", onDeeplink);
     return () => {
       window.removeEventListener("message", onMessage);
-      window.removeEventListener("harbor:deeplink-install", onDeeplink);
+      window.removeEventListener("vayra:deeplink-install", onDeeplink);
     };
   }, [url]);
 

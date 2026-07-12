@@ -400,8 +400,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       e.preventDefault();
       void closePlayer();
     };
-    window.addEventListener("harbor:local-back", onLocalBack);
-    return () => window.removeEventListener("harbor:local-back", onLocalBack);
+    window.addEventListener("vayra:local-back", onLocalBack);
+    return () => window.removeEventListener("vayra:local-back", onLocalBack);
   }, [closePlayer]);
 
   const autoAdvancedRef = useRef(false);

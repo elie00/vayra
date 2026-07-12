@@ -302,7 +302,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
     void import("@tauri-apps/api/event").then(({ listen }) => {
       void listen<{ closeToTray: boolean; alwaysOnTop: boolean; pauseMinimized: boolean; pauseUnfocused: boolean }>(
-        "harbor://tray-prefs",
+        "vayra://tray-prefs",
         (e) => {
           const p = e.payload;
           setSettings((s) => ({
@@ -317,7 +317,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       void listen("harbor://cycle-theme", () => {
         setSettings((s) => ({ ...s, theme: { ...s.theme, preset: nextColorTheme(s.theme.preset) } }));
       }).then(track);
-      void listen<string>("harbor://set-theme", (e) => {
+      void listen<string>("vayra://set-theme", (e) => {
         const id = e.payload;
         if (!id || (!isKnownPreset(id) && !id.startsWith("user:"))) return;
         setSettings((s) => ({ ...s, theme: { ...s.theme, preset: id as typeof s.theme.preset } }));

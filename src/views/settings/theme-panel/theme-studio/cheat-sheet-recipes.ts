@@ -74,7 +74,7 @@ export const RECIPES: Recipe[] = [
   {
     title: "React to view changes in JS",
     lang: "js",
-    code: `window.addEventListener('harbor:scroll-top', (e) => {
+    code: `window.addEventListener('vayra:scroll-top', (e) => {
   console.info('now viewing', e.detail.view);
 });`,
     why: "VAYRA dispatches lifecycle events on window. Listen from your theme JS.",

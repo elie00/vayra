@@ -195,7 +195,7 @@ const PRESSURE_EVICT_MS = 1500;
 const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 1.6;
 const UI_SCALE_STEP = 0.05;
-const UI_SCALE_ACTIVITY_EVENT = "harbor:ui-scale-activity";
+const UI_SCALE_ACTIVITY_EVENT = "vayra:ui-scale-activity";
 
 function clampUiScale(scale: number): number {
   return Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, Math.round(scale * 100) / 100));
@@ -522,7 +522,7 @@ function Shell() {
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 3) {
-        const localBack = new Event("harbor:local-back", { cancelable: true });
+        const localBack = new Event("vayra:local-back", { cancelable: true });
         if (!window.dispatchEvent(localBack)) {
           e.preventDefault();
           return;
@@ -619,7 +619,7 @@ function Shell() {
     let unlisten: (() => void) | undefined;
     let cancelled = false;
     void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen("harbor://app-closing", async () => {
+      listen("vayra://app-closing", async () => {
         await flushCloudSync().catch(() => {});
         const { invoke } = await import("@tauri-apps/api/core");
         await invoke("harbor_flush_done").catch(() => {});
@@ -749,8 +749,8 @@ function Shell() {
   const [immersive, setImmersive] = useState(false);
   useEffect(() => {
     const onImm = (e: Event) => setImmersive((e as CustomEvent<boolean>).detail === true);
-    window.addEventListener("harbor:immersive", onImm);
-    return () => window.removeEventListener("harbor:immersive", onImm);
+    window.addEventListener("vayra:immersive", onImm);
+    return () => window.removeEventListener("vayra:immersive", onImm);
   }, []);
   useEffect(() => {
     if (!liveTop && immersive) setImmersive(false);

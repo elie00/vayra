@@ -473,7 +473,7 @@ pub fn run() {
             let _ = w.set_focus();
         }
         if let Some(url) = args.iter().find(|a| a.starts_with("harbor://")) {
-            let _ = app.emit("harbor:stremio-deeplink", url.clone());
+            let _ = app.emit("vayra:stremio-deeplink", url.clone());
         }
     }));
 
@@ -519,7 +519,7 @@ pub fn run() {
     let app_builder = app_builder.register_uri_scheme_protocol("stremio", |ctx, request| {
         use tauri::Emitter;
         let url = request.uri().to_string();
-        let _ = ctx.app_handle().emit("harbor:stremio-deeplink", url);
+        let _ = ctx.app_handle().emit("vayra:stremio-deeplink", url);
         tauri::http::Response::builder()
             .status(200)
             .header("content-type", "text/html; charset=utf-8")
@@ -605,7 +605,7 @@ pub fn run() {
                         use tauri::Emitter;
                         api.prevent_close();
                         CLOSE_FLUSH_DONE.store(false, std::sync::atomic::Ordering::SeqCst);
-                        let _ = window.emit("harbor://app-closing", ());
+                        let _ = window.emit("vayra://app-closing", ());
                         let w = window.clone();
                         std::thread::spawn(move || {
                             for _ in 0..24 {
@@ -627,7 +627,7 @@ pub fn run() {
                             || !window.is_visible().unwrap_or(true)
                     };
                     let _ = window.emit(
-                        "harbor://window-activity",
+                        "vayra://window-activity",
                         serde_json::json!({ "focused": *focused, "minimized": minimized }),
                     );
                 }

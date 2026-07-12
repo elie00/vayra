@@ -71,8 +71,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     const onAddonsChanged = () => {
       addonsRef.current = null;
     };
-    window.addEventListener("harbor:addons-changed", onAddonsChanged);
-    return () => window.removeEventListener("harbor:addons-changed", onAddonsChanged);
+    window.addEventListener("vayra:addons-changed", onAddonsChanged);
+    return () => window.removeEventListener("vayra:addons-changed", onAddonsChanged);
   }, []);
 
   const excludeGenres = useMemo(() => {

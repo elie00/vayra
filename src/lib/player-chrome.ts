@@ -298,7 +298,7 @@ export function controlsInSlot(
     .sort((a, b) => a.order - b.order);
 }
 
-export const PLAYER_CHROME_CHANGED_EVENT = "harbor:player-chrome-changed";
+export const PLAYER_CHROME_CHANGED_EVENT = "vayra:player-chrome-changed";
 
 export function notifyPlayerChromeChanged(theme: ThemeId): void {
   if (typeof window === "undefined") return;

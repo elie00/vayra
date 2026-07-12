@@ -123,8 +123,8 @@ export function AddonsView() {
 
   useEffect(() => {
     const onChange = () => refetch();
-    window.addEventListener("harbor:addons-changed", onChange);
-    return () => window.removeEventListener("harbor:addons-changed", onChange);
+    window.addEventListener("vayra:addons-changed", onChange);
+    return () => window.removeEventListener("vayra:addons-changed", onChange);
   }, [refetch]);
 
   const showToast = (
@@ -190,7 +190,7 @@ export function AddonsView() {
       }
       const addon = await installAddon(manifest?.id ?? r.manifest?.id ?? r.curated?.id ?? "", r.transportUrl);
       window.dispatchEvent(
-        new CustomEvent("harbor:addons-changed", {
+        new CustomEvent("vayra:addons-changed", {
           detail: { id: addon.manifest.id, installed: true },
         }),
       );
@@ -210,7 +210,7 @@ export function AddonsView() {
     try {
       const result = await installFromUrl(rawUrl);
       window.dispatchEvent(
-        new CustomEvent("harbor:addons-changed", {
+        new CustomEvent("vayra:addons-changed", {
           detail: { id: result.addon.manifest.id, installed: true },
         }),
       );
@@ -242,7 +242,7 @@ export function AddonsView() {
     try {
       await uninstallAddon(id, r.transportUrl);
       window.dispatchEvent(
-        new CustomEvent("harbor:addons-changed", {
+        new CustomEvent("vayra:addons-changed", {
           detail: { id, installed: false },
         }),
       );
@@ -535,7 +535,7 @@ export function AddonsView() {
           onSaved={(scope) => {
             setReorderOpen(false);
             window.dispatchEvent(
-              new CustomEvent("harbor:addons-changed", { detail: { reordered: true } }),
+              new CustomEvent("vayra:addons-changed", { detail: { reordered: true } }),
             );
             showToast(
               "ok",

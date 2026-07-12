@@ -12,7 +12,7 @@ export type HarborError = {
 };
 
 export function showHarborError(error: HarborError): void {
-  window.dispatchEvent(new CustomEvent("harbor:error", { detail: error }));
+  window.dispatchEvent(new CustomEvent("vayra:error", { detail: error }));
 }
 
 const APP_VERSION = __APP_VERSION__;
@@ -80,11 +80,11 @@ export function ErrorView() {
         ].join(""),
       });
     };
-    window.addEventListener("harbor:error", onError);
+    window.addEventListener("vayra:error", onError);
     window.addEventListener("error", onWindowError);
     window.addEventListener("unhandledrejection", onUnhandledRejection);
     return () => {
-      window.removeEventListener("harbor:error", onError);
+      window.removeEventListener("vayra:error", onError);
       window.removeEventListener("error", onWindowError);
       window.removeEventListener("unhandledrejection", onUnhandledRejection);
     };

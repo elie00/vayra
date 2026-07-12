@@ -101,7 +101,7 @@ export function useGeomSync(
     };
 
     window.addEventListener("resize", kick);
-    window.addEventListener("harbor:mpv-refresh-geom", kick);
+    window.addEventListener("vayra:mpv-refresh-geom", kick);
     window.addEventListener("pointerdown", kick);
     window.addEventListener("pointerup", restoreAfterDrag);
     document.addEventListener("mousedown", onMouseDownNative, true);
@@ -132,7 +132,7 @@ export function useGeomSync(
       window.clearTimeout(restoreTimer);
       if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener("resize", kick);
-      window.removeEventListener("harbor:mpv-refresh-geom", kick);
+      window.removeEventListener("vayra:mpv-refresh-geom", kick);
       window.removeEventListener("pointerdown", kick);
       window.removeEventListener("pointerup", restoreAfterDrag);
       document.removeEventListener("mousedown", onMouseDownNative, true);

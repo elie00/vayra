@@ -16,7 +16,7 @@ export type SongIdToastMsg = {
   href?: string;
 };
 
-const TOAST_EVENT = "harbor:song-id-toast";
+const TOAST_EVENT = "vayra:song-id-toast";
 
 function toast(msg: SongIdToastMsg): void {
   window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: msg }));
