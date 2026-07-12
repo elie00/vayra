@@ -7,7 +7,7 @@ import { infoHashFromSources, infoHashFromUrl } from "@/lib/torrent/magnet";
 import type { Stream } from "./types";
 
 const TIMEOUT_MS_FAST = 8000;
-const TIMEOUT_MS_SLOW = 22000;
+const TIMEOUT_MS_SLOW = 12000;
 const SLOW_ADDON_PATTERNS = [
   /mediafusion/i,
   /comet/i,
@@ -18,12 +18,15 @@ const SLOW_ADDON_PATTERNS = [
   /torbox/i,
 ];
 
-function timeoutFor(addon: Addon): number {
+function isSlowAddon(addon: Addon): boolean {
   const name = addon.manifest.name ?? "";
   const id = addon.manifest.id ?? "";
   const url = addon.transportUrl ?? "";
-  const slow = SLOW_ADDON_PATTERNS.some((re) => re.test(name) || re.test(id) || re.test(url));
-  return slow ? TIMEOUT_MS_SLOW : TIMEOUT_MS_FAST;
+  return SLOW_ADDON_PATTERNS.some((re) => re.test(name) || re.test(id) || re.test(url));
+}
+
+function timeoutFor(addon: Addon): number {
+  return isSlowAddon(addon) ? TIMEOUT_MS_SLOW : TIMEOUT_MS_FAST;
 }
 
 export type StreamRequest = {
@@ -36,8 +39,9 @@ export async function fetchAddonStreams(
   req: StreamRequest,
   signal: AbortSignal,
   onPartial?: (current: Stream[]) => void,
+  onFastDone?: (current: Stream[]) => void,
 ): Promise<Stream[]> {
-  const namedTasks: Array<{ name: string; p: Promise<Stream[]> }> = [];
+  const namedTasks: Array<{ name: string; slow: boolean; p: Promise<Stream[]> }> = [];
   const skipped: string[] = [];
   for (let i = 0; i < addons.length; i++) {
     const addon = addons[i];
@@ -51,10 +55,12 @@ export async function fetchAddonStreams(
       skipped.push(`${addon.manifest.name}(no-matching-id)`);
       continue;
     }
+    const slow = isSlowAddon(addon);
     for (const id of ids) {
       const name = ids.length > 1 ? `${addon.manifest.name}[${idScheme(id)}]` : addon.manifest.name;
       namedTasks.push({
         name,
+        slow,
         p: fetchOne(addon, req.type, id, signal).then((ss) =>
           ss.map((s, idx) => ({ ...s, addonPriority: priority, addonReturnIdx: idx })),
         ),
@@ -65,8 +71,8 @@ export async function fetchAddonStreams(
   console.info(`[addons] querying ${namedTasks.length}: ${namedTasks.map((t) => t.name).join(", ")}`);
 
   const accumulated: Stream[] = [];
-  const wrapped = namedTasks.map(({ name, p }) =>
-    p
+  const wrapped = namedTasks.map(({ name, slow, p }) => {
+    const settled = p
       .then((streams) => {
         console.info(`[addons] ${name}: ${streams.length} streams`);
         accumulated.push(...streams);
@@ -74,10 +80,22 @@ export async function fetchAddonStreams(
       })
       .catch((e) => {
         if (!signal.aborted) dwarn(`[addons] ${name} failed`, e);
-      }),
-  );
+      });
+    return { slow, settled };
+  });
 
-  await Promise.allSettled(wrapped);
+  // Resolve the visible list as soon as the fast addons settle, so the slowest
+  // addon can't hold back rendering. Slow addons keep running in the background
+  // and re-emit through onPartial as they arrive.
+  const fastSettled = wrapped.filter((w) => !w.slow).map((w) => w.settled);
+  const slowSettled = wrapped.filter((w) => w.slow).map((w) => w.settled);
+  if (onFastDone && slowSettled.length > 0) {
+    Promise.allSettled(fastSettled).then(() => {
+      if (!signal.aborted) onFastDone(dedupeStreams(accumulated));
+    });
+  }
+
+  await Promise.allSettled(wrapped.map((w) => w.settled));
   return dedupeStreams(accumulated);
 }
 

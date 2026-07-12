@@ -126,108 +126,176 @@ export async function runPipeline(
     }
   };
 
-  const presets = input.presetStreams ?? [];
-  const [librarySettled, addonSettled] = await Promise.allSettled([
-    fetchLibraryStreams(input.debrids, input.query, signal).then((s) => {
-      library = s;
-      return s;
-    }),
-    presets.length > 0
-      ? Promise.resolve(presets)
-      : fetchAddonStreams(input.addons, input.request, signal, emitPartial),
-  ]);
-  if (librarySettled.status === "fulfilled") library = librarySettled.value;
-  const addonStreams = addonSettled.status === "fulfilled" ? addonSettled.value : [];
-  const merged = mergeAndDedupe(library, addonStreams);
+  // Full finalize (parse → trust → debrid cache-check → core rank). Run once when
+  // the fast phase settles (resolves the returned promise, flipping pipelineDone),
+  // then again in the background if slow addons contribute more streams.
+  const finalize = async (addonStreams: Stream[]): Promise<PipelineResult> => {
+    const merged = mergeAndDedupe(library, addonStreams);
+    const parsed = merged.map(parseStream);
 
-  const parsed = merged.map(parseStream);
-
-  if (input.isAnime) {
-    await enhanceAnimeStreams(parsed);
-  }
-
-  const hashes = [
-    ...new Set(
-      parsed
-        .map((p) => p.infoHash)
-        .filter((h): h is string => Boolean(h))
-        .map((h) => h.toLowerCase()),
-    ),
-  ];
-  if (hashes.length > 0 && input.debrids.length > 0 && !signal.aborted) {
-    dlog(`[pipeline] ${parsed.length} parsed streams · ${hashes.length} unique hashes · debrids: ${input.debrids.map((d) => d.name).join(", ")}`);
-    const [cacheResults, libraryResults] = await Promise.all([
-      Promise.allSettled(input.debrids.map((d) => d.cacheCheck(hashes, signal))),
-      Promise.allSettled(input.debrids.map((d) => d.listLibrary(signal))),
-    ]);
-    for (let i = 0; i < input.debrids.length; i++) {
-      const r = cacheResults[i];
-      if (r.status !== "fulfilled" || !r.value.ok) continue;
-      const slug = input.debrids[i].slug;
-      let hits = 0;
-      for (const p of parsed) {
-        if (!p.infoHash) continue;
-        if (r.value.data[p.infoHash.toLowerCase()]) {
-          p.cached[slug] = true;
-          hits++;
-        }
-      }
-      dlog(`[pipeline] cacheCheck on ${input.debrids[i].name}: ${hits} streams flagged cached`);
+    if (input.isAnime) {
+      await enhanceAnimeStreams(parsed);
     }
 
-    for (let i = 0; i < input.debrids.length; i++) {
-      const r = libraryResults[i];
-      if (r.status !== "fulfilled" || !r.value.ok) continue;
-      const slug = input.debrids[i].slug;
-      const libHashes = new Set(r.value.data.map((e) => e.hash.toLowerCase()).filter(Boolean));
-      let hits = 0;
-      for (const p of parsed) {
-        if (!p.infoHash) continue;
-        if (libHashes.has(p.infoHash.toLowerCase())) {
-          if (!p.cached[slug]) hits++;
-          p.cached[slug] = true;
-          p.inLibrary[slug] = true;
+    const hashes = [
+      ...new Set(
+        parsed
+          .map((p) => p.infoHash)
+          .filter((h): h is string => Boolean(h))
+          .map((h) => h.toLowerCase()),
+      ),
+    ];
+    if (hashes.length > 0 && input.debrids.length > 0 && !signal.aborted) {
+      dlog(`[pipeline] ${parsed.length} parsed streams · ${hashes.length} unique hashes · debrids: ${input.debrids.map((d) => d.name).join(", ")}`);
+      const [cacheResults, libraryResults] = await Promise.all([
+        Promise.allSettled(input.debrids.map((d) => d.cacheCheck(hashes, signal))),
+        Promise.allSettled(input.debrids.map((d) => d.listLibrary(signal))),
+      ]);
+      for (let i = 0; i < input.debrids.length; i++) {
+        const r = cacheResults[i];
+        if (r.status !== "fulfilled" || !r.value.ok) continue;
+        const slug = input.debrids[i].slug;
+        let hits = 0;
+        for (const p of parsed) {
+          if (!p.infoHash) continue;
+          if (r.value.data[p.infoHash.toLowerCase()]) {
+            p.cached[slug] = true;
+            hits++;
+          }
         }
+        dlog(`[pipeline] cacheCheck on ${input.debrids[i].name}: ${hits} streams flagged cached`);
       }
-      dlog(`[pipeline] listLibrary cross-check on ${input.debrids[i].name}: ${hits} extra streams flagged cached (lib has ${libHashes.size} hashes)`);
+
+      for (let i = 0; i < input.debrids.length; i++) {
+        const r = libraryResults[i];
+        if (r.status !== "fulfilled" || !r.value.ok) continue;
+        const slug = input.debrids[i].slug;
+        const libHashes = new Set(r.value.data.map((e) => e.hash.toLowerCase()).filter(Boolean));
+        let hits = 0;
+        for (const p of parsed) {
+          if (!p.infoHash) continue;
+          if (libHashes.has(p.infoHash.toLowerCase())) {
+            if (!p.cached[slug]) hits++;
+            p.cached[slug] = true;
+            p.inLibrary[slug] = true;
+          }
+        }
+        dlog(`[pipeline] listLibrary cross-check on ${input.debrids[i].name}: ${hits} extra streams flagged cached (lib has ${libHashes.size} hashes)`);
+      }
+
+      const totalCached = parsed.filter((p) => Object.values(p.cached).some(Boolean)).length;
+      dlog(`[pipeline] final: ${totalCached}/${parsed.length} streams marked cached`);
     }
 
-    const totalCached = parsed.filter((p) => Object.values(p.cached).some(Boolean)).length;
-    dlog(`[pipeline] final: ${totalCached}/${parsed.length} streams marked cached`);
-  }
-
-  const core = await runCorePipeline(parsed, input.trust ?? {}, input.score);
-  if (core) {
-    if (core.rejected.length > 0) {
+    const core = await runCorePipeline(parsed, input.trust ?? {}, input.score);
+    if (core) {
+      if (core.rejected.length > 0) {
+        const byReason = new Map<string, number>();
+        for (const r of core.rejected) {
+          const k = r.reason.split(":")[0];
+          byReason.set(k, (byReason.get(k) ?? 0) + 1);
+        }
+        const summary = [...byReason.entries()].map(([k, n]) => `${k}=${n}`).join(", ");
+        dlog(`[pipeline] (core) trust kept ${core.picker.all.length}/${parsed.length} · rejected: ${summary}`);
+      }
+      const fin = finalizeWithRescue(core.picker, core.rejected, input.trust ?? {}, input.score);
+      return { picker: fin.picker, rejected: fin.rejected, raw: { addon: addonStreams, library } };
+    }
+    const { keep, rejected } = applyTrust(parsed, input.trust ?? {});
+    if (rejected.length > 0) {
       const byReason = new Map<string, number>();
-      for (const r of core.rejected) {
+      for (const r of rejected) {
         const k = r.reason.split(":")[0];
         byReason.set(k, (byReason.get(k) ?? 0) + 1);
       }
       const summary = [...byReason.entries()].map(([k, n]) => `${k}=${n}`).join(", ");
-      dlog(`[pipeline] (core) trust kept ${core.picker.all.length}/${parsed.length} · rejected: ${summary}`);
+      dlog(`[pipeline] trust kept ${keep.length}/${parsed.length} · rejected: ${summary}`);
+      for (const r of rejected.slice(0, 6)) {
+        dlog(`[pipeline]   reject ${r.reason} :: ${r.stream.parsedTitle ?? r.stream.title ?? r.stream.name ?? "?"}`);
+      }
     }
-    const fin = finalizeWithRescue(core.picker, core.rejected, input.trust ?? {}, input.score);
+    const corpus = computeCorpusStats(keep, input.score);
+    const scored = keep.map((s) => scoreStream(s, input.score, corpus));
+    const picker = rankAndPick(scored, input.score.activeDebrids, PREFER_AAC, input.score.respectAddonOrder === true);
+    const fin = finalizeWithRescue(picker, rejected, input.trust ?? {}, input.score);
     return { picker: fin.picker, rejected: fin.rejected, raw: { addon: addonStreams, library } };
+  };
+
+  const presets = input.presetStreams ?? [];
+
+  // Presets bypass the fast/slow split entirely.
+  if (presets.length > 0) {
+    const librarySettled = await Promise.allSettled([
+      fetchLibraryStreams(input.debrids, input.query, signal).then((s) => {
+        library = s;
+        return s;
+      }),
+    ]);
+    if (librarySettled[0].status === "fulfilled") library = librarySettled[0].value;
+    return finalize(presets);
   }
-  const { keep, rejected } = applyTrust(parsed, input.trust ?? {});
-  if (rejected.length > 0) {
-    const byReason = new Map<string, number>();
-    for (const r of rejected) {
-      const k = r.reason.split(":")[0];
-      byReason.set(k, (byReason.get(k) ?? 0) + 1);
-    }
-    const summary = [...byReason.entries()].map(([k, n]) => `${k}=${n}`).join(", ");
-    dlog(`[pipeline] trust kept ${keep.length}/${parsed.length} · rejected: ${summary}`);
-    for (const r of rejected.slice(0, 6)) {
-      dlog(`[pipeline]   reject ${r.reason} :: ${r.stream.parsedTitle ?? r.stream.title ?? r.stream.name ?? "?"}`);
-    }
-  }
-  const corpus = computeCorpusStats(keep, input.score);
-  const scored = keep.map((s) => scoreStream(s, input.score, corpus));
-  const picker = rankAndPick(scored, input.score.activeDebrids, PREFER_AAC, input.score.respectAddonOrder === true);
-  const fin = finalizeWithRescue(picker, rejected, input.trust ?? {}, input.score);
-  return { picker: fin.picker, rejected: fin.rejected, raw: { addon: addonStreams, library } };
+
+  // Fire slow-addon re-finalizes onto a background queue so the returned promise
+  // (and pipelineDone) resolves on the fast phase, not the slowest addon.
+  let backgroundChain: Promise<void> = Promise.resolve();
+  const runBackgroundFinalize = (addonStreams: Stream[]) => {
+    if (!onProgress || signal.aborted) return;
+    backgroundChain = backgroundChain.then(async () => {
+      if (signal.aborted) return;
+      try {
+        const full = await finalize(addonStreams);
+        if (!signal.aborted) onProgress(full);
+      } catch {
+        /* swallow */
+      }
+    });
+  };
+
+  const librarySettled = await Promise.allSettled([
+    fetchLibraryStreams(input.debrids, input.query, signal).then((s) => {
+      library = s;
+      return s;
+    }),
+  ]);
+  if (librarySettled[0].status === "fulfilled") library = librarySettled[0].value;
+
+  // Resolve the returned result on the fast phase; keep collecting slow addons.
+  let fastResolved = false;
+  let fastResult: PipelineResult | null = null;
+  const fastResultPromise = new Promise<PipelineResult>((resolve, reject) => {
+    fetchAddonStreams(
+      input.addons,
+      input.request,
+      signal,
+      emitPartial,
+      (fastStreams) => {
+        finalize(fastStreams)
+          .then((r) => {
+            fastResolved = true;
+            fastResult = r;
+            resolve(r);
+          })
+          .catch(reject);
+      },
+    )
+      .then((allStreams) => {
+        // No slow addons ran (onFastDone never fired): finalize the full set now.
+        if (!fastResolved) {
+          finalize(allStreams).then(resolve, reject);
+          return;
+        }
+        // Slow addons contributed: re-finalize in the background with the full set,
+        // but only if it actually added streams beyond the fast phase.
+        if (fastResult && allStreams.length > fastResult.raw.addon.length) {
+          runBackgroundFinalize(allStreams);
+        }
+      })
+      .catch((e) => {
+        if (!fastResolved) reject(e);
+      });
+  });
+
+  return fastResultPromise;
 }
 
 async function runCorePipeline(
