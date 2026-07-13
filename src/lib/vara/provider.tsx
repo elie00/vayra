@@ -159,11 +159,12 @@ export function VaraProvider({ children }: { children: ReactNode }) {
 
   const leaveActiveRoom = useCallback(async () => {
     const room = activeRoom;
-    if (!room || !transport) return;
+    if (!room || !transport || !repo) return;
     setActiveRoom(null);
     transport.leave(room.id);
+    await repo.leaveRoom(room.id);
     await refresh();
-  }, [activeRoom, transport, refresh]);
+  }, [activeRoom, transport, repo, refresh]);
 
   const presentLink = useCallback((code: string) => setPendingLinkCode(code), []);
   const clearPendingLink = useCallback(() => setPendingLinkCode(null), []);

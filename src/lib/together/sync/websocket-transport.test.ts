@@ -292,14 +292,15 @@ describe("WebSocketTransport", () => {
     h.transport.close();
   });
 
-  it("leaves server membership and tears down channels", async () => {
+  it("tears down channels without mutating persistent room membership", async () => {
     const h = makeHarness();
     h.transport.join(ROOM_ID);
     await flush();
     h.transport.leave(ROOM_ID);
     await flush();
-    expect(h.repository.leaveRoom).toHaveBeenCalledWith(ROOM_ID);
+    expect(h.repository.leaveRoom).not.toHaveBeenCalled();
     expect(h.client.removeChannel).toHaveBeenCalled();
     h.transport.close();
+    expect(h.repository.leaveRoom).not.toHaveBeenCalled();
   });
 });
