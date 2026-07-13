@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseCiraGroupInviteCode, parseCiraInviteCode, parseVayraAuthCallback } from "./deep-link";
+import {
+  parseCiraGroupInviteCode,
+  parseCiraInviteCode,
+  parseVaraInviteCode,
+  parseVayraAuthCallback,
+} from "./deep-link";
 
 describe("VAYRA auth callback deep links", () => {
   it("accepts an authorization-code callback", () => {
@@ -45,5 +50,16 @@ describe("CIRA invite deep links", () => {
     expect(parseCiraInviteCode("vayra://auth/callback?code=x")).toBeNull();
     expect(parseCiraInviteCode("harbor://cira/invite#t=AB12")).toBeNull();
     expect(parseCiraInviteCode("https://vayra.eybo.tech/cira/invite#t=AB12")).toBeNull();
+  });
+});
+
+describe("VARA room invite deep links", () => {
+  it("accepts only a fragment secret on the dedicated route", () => {
+    const code = "VARA0123456789ABCDEFGHJK";
+    expect(parseVaraInviteCode(`vayra://vara/invite#t=${code}`)).toBe(code);
+    expect(parseVaraInviteCode(`vayra://vara/invite?t=${code}`)).toBeNull();
+    expect(parseVaraInviteCode(`vayra://cira/invite#t=${code}`)).toBeNull();
+    expect(parseVaraInviteCode(`harbor://vara/invite#t=${code}`)).toBeNull();
+    expect(parseVaraInviteCode("vayra://vara/invite#t=VARA-AB12")).toBeNull();
   });
 });

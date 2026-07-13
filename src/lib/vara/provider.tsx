@@ -34,10 +34,13 @@ type VaraValue = {
   rooms: VaraRemoteRoom[];
   invitations: VaraRoomInvitation[];
   activeRoom: VaraRemoteRoom | null;
+  pendingLinkCode: string | null;
   transport: SyncTransport | null;
   refresh: () => Promise<void>;
   activateRoom: (room: VaraRemoteRoom) => void;
   leaveActiveRoom: () => Promise<void>;
+  presentLink: (code: string) => void;
+  clearPendingLink: () => void;
 };
 
 const VaraContext = createContext<VaraValue | null>(null);
@@ -57,6 +60,7 @@ export function VaraProvider({ children }: { children: ReactNode }) {
   const [rooms, setRooms] = useState<VaraRemoteRoom[]>([]);
   const [invitations, setInvitations] = useState<VaraRoomInvitation[]>([]);
   const [activeRoom, setActiveRoom] = useState<VaraRemoteRoom | null>(null);
+  const [pendingLinkCode, setPendingLinkCode] = useState<string | null>(null);
   const userId = user?.id ?? null;
   const betaAccess = user?.app_metadata?.cira_beta === true;
 
@@ -67,6 +71,7 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     setRooms([]);
     setInvitations([]);
     setActiveRoom(null);
+    setPendingLinkCode(null);
     if (!userId) {
       setStatus("signedOut");
       return;
@@ -160,26 +165,35 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [activeRoom, transport, refresh]);
 
+  const presentLink = useCallback((code: string) => setPendingLinkCode(code), []);
+  const clearPendingLink = useCallback(() => setPendingLinkCode(null), []);
+
   const value = useMemo<VaraValue>(() => ({
     status,
     repo,
     rooms,
     invitations,
     activeRoom,
+    pendingLinkCode,
     transport,
     refresh,
     activateRoom,
     leaveActiveRoom,
+    presentLink,
+    clearPendingLink,
   }), [
     status,
     repo,
     rooms,
     invitations,
     activeRoom,
+    pendingLinkCode,
     transport,
     refresh,
     activateRoom,
     leaveActiveRoom,
+    presentLink,
+    clearPendingLink,
   ]);
 
   return <VaraContext.Provider value={value}>{children}</VaraContext.Provider>;

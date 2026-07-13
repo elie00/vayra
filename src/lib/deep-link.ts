@@ -48,6 +48,8 @@ const CIRA_INVITE_EVENT = "vayra:deeplink-cira-invite";
 let pendingCiraInviteCode: string | null = null;
 const CIRA_GROUP_INVITE_EVENT = "vayra:deeplink-cira-group-invite";
 let pendingCiraGroupInviteCode: string | null = null;
+const VARA_INVITE_EVENT = "vayra:deeplink-vara-invite";
+let pendingVaraInviteCode: string | null = null;
 
 // vayra://cira/invite#t=<code> - même convention que la page web : le code
 // reste dans le fragment, jamais dans une query string.
@@ -127,6 +129,46 @@ export function onCiraGroupInvite(handler: (code: string) => void): () => void {
   };
   window.addEventListener(CIRA_GROUP_INVITE_EVENT, listener);
   return () => window.removeEventListener(CIRA_GROUP_INVITE_EVENT, listener);
+}
+
+// vayra://vara/invite#t=<code> carries only the opaque VARA link secret in
+// the fragment. It is never accepted from a query string or a legacy scheme.
+export function parseVaraInviteCode(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "vayra:" || url.hostname !== "vara" || url.pathname !== "/invite") {
+      return null;
+    }
+    const match = /(?:^|[#&])t=([^&]+)/.exec(url.hash);
+    if (!match) return null;
+    const code = decodeURIComponent(match[1]).toUpperCase().replace(/[^0-9A-Z]/g, "");
+    return /^VARA[0-9A-HJKMNP-TV-Z]{20}$/.test(code) ? code : null;
+  } catch {
+    return null;
+  }
+}
+
+export function emitVaraInvite(code: string): void {
+  pendingVaraInviteCode = code;
+  window.dispatchEvent(
+    new CustomEvent<{ code: string }>(VARA_INVITE_EVENT, { detail: { code } }),
+  );
+}
+
+export function onVaraInvite(handler: (code: string) => void): () => void {
+  if (pendingVaraInviteCode) {
+    const code = pendingVaraInviteCode;
+    pendingVaraInviteCode = null;
+    handler(code);
+  }
+  const listener = (event: Event) => {
+    const detail = (event as CustomEvent<{ code: string }>).detail;
+    if (!detail?.code) return;
+    pendingVaraInviteCode = null;
+    handler(detail.code);
+  };
+  window.addEventListener(VARA_INVITE_EVENT, listener);
+  return () => window.removeEventListener(VARA_INVITE_EVENT, listener);
 }
 
 export function emitDeepLinkInstall(rawUrl: string): void {
@@ -283,6 +325,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
           emitCiraGroupInvite(ciraGroupInvite);
           continue;
         }
+        const varaInvite = parseVaraInviteCode(u);
+        if (varaInvite) {
+          emitVaraInvite(varaInvite);
+          continue;
+        }
         const authKey = parseStremioAuthKey(u);
         if (authKey) {
           emitStremioAuthKey(authKey);
@@ -314,6 +361,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       const ciraGroupInvite = parseCiraGroupInviteCode(u);
       if (ciraGroupInvite) {
         emitCiraGroupInvite(ciraGroupInvite);
+        return;
+      }
+      const varaInvite = parseVaraInviteCode(u);
+      if (varaInvite) {
+        emitVaraInvite(varaInvite);
         return;
       }
       const open = parseStremioOpen(u);
