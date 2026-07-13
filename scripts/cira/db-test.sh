@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # CIRA PR1 - local test harness.
 #
-# Spins up a DISPOSABLE PostgreSQL 15 instance (initdb in a mktemp dir, port
+# Spins up a DISPOSABLE PostgreSQL 15+ instance (initdb in a mktemp dir, port
 # 54329, unix socket only), creates the minimal Supabase shims (schema auth,
 # auth.users, auth.uid(), roles anon/authenticated/service_role - shims live
 # in the HARNESS ONLY, never in the migrations), applies the CIRA migrations
@@ -11,7 +11,7 @@
 # Exit code: non-zero if setup fails or if any test file fails.
 # Teardown (pg_ctl stop + rm -rf) always runs, even on failure (trap).
 #
-# Requirements: PostgreSQL 15 binaries (no Supabase CLI, no pgTAP):
+# Requirements: PostgreSQL 15+ binaries (no Supabase CLI, no pgTAP):
 #   brew install postgresql@15   ->  /opt/homebrew/opt/postgresql@15/bin
 #
 # Usage: bash scripts/cira/db-test.sh
@@ -22,7 +22,14 @@ set -euo pipefail
 # ("postmaster became multithreaded during startup"). Force a safe locale.
 export LC_ALL=C
 
-PGBIN="${PGBIN:-/opt/homebrew/opt/postgresql@15/bin}"
+if [ -z "${PGBIN:-}" ]; then
+  pg_config_bindir="$(pg_config --bindir 2>/dev/null || true)"
+  if [ -n "$pg_config_bindir" ] && [ -x "$pg_config_bindir/initdb" ]; then
+    PGBIN="$pg_config_bindir"
+  else
+    PGBIN="/opt/homebrew/opt/postgresql@15/bin"
+  fi
+fi
 PORT="${CIRA_TEST_PORT:-54329}"
 DB=cira_test
 PGUSER=postgres
@@ -32,7 +39,13 @@ MIGRATIONS_DIR="$REPO_ROOT/supabase/migrations"
 TESTS_DIR="$REPO_ROOT/supabase/tests"
 
 if [ ! -x "$PGBIN/initdb" ]; then
-  echo "ERROR: PostgreSQL 15 binaries not found in $PGBIN (set PGBIN to override)" >&2
+  echo "ERROR: PostgreSQL 15+ binaries not found in $PGBIN (set PGBIN to override)" >&2
+  exit 2
+fi
+
+PG_MAJOR="$("$PGBIN/postgres" --version | sed -E 's/.* ([0-9]+)(\..*)?$/\1/')"
+if ! [[ "$PG_MAJOR" =~ ^[0-9]+$ ]] || [ "$PG_MAJOR" -lt 15 ]; then
+  echo "ERROR: PostgreSQL 15+ is required (found: $("$PGBIN/postgres" --version))" >&2
   exit 2
 fi
 
@@ -55,7 +68,7 @@ trap cleanup EXIT INT TERM
 echo "==> initdb (disposable cluster in $WORKDIR)"
 "$PGBIN/initdb" -D "$DATADIR" -U "$PGUSER" -A trust >"$LOGDIR/initdb.log" 2>&1
 
-echo "==> starting postgres 15 on port $PORT (unix socket only)"
+echo "==> starting postgres $PG_MAJOR on port $PORT (unix socket only)"
 "$PGBIN/pg_ctl" -D "$DATADIR" -w -t 30 -l "$LOGDIR/postgres.log" \
   -o "-p $PORT -k $SOCKDIR -c listen_addresses=''" start >"$LOGDIR/pg_ctl.log" 2>&1
 STARTED=1
