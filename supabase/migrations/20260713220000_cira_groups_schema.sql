@@ -60,4 +60,3 @@ revoke all on table public.cira_group_members from public, anon, authenticated;
 
 alter table public.cira_groups enable row level security;
 alter table public.cira_group_members enable row level security;
-

@@ -1,0 +1,13 @@
+# Supabase CLI project configuration. Remote project linkage is stored under
+# supabase/.temp/ and must remain local.
+project_id = "vayra"
+
+[db]
+major_version = 15
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false

@@ -1,7 +1,7 @@
 # CIRA — rapport d'implémentation complète
 
-**Date** : 2026-07-13  
-**Branche** : `feat/cira-complete`  
+**Date** : 2026-07-13
+**Branche** : `feat/cira-complete`
 **Produit** : VAYRA, A product by EYBO
 
 ## Résultat
@@ -113,10 +113,8 @@ groupes, invitations, blocage transversal, boîte sociale et pagination.
 
 ## Limites opérationnelles
 
-- Les rate limits SQL sont transactionnels : une exception ultérieure annule
-  aussi leur incrément. Les tokens 100 bits et réponses anti-oracle restent les
-  défenses principales ; un compteur externe ne doit être ajouté qu'après
-  mesure en production.
+- Les parcours par token retournent leurs erreurs métier dans le résultat SQL,
+  afin que les tentatives invalides soient comptées sans fuite d'existence.
 - Windows et Linux doivent rester validés par GitHub Actions.
 - Aucun test manuel multi-appareils ni migration Supabase de production n'est
   affirmé tant qu'ils n'ont pas été exécutés séparément.

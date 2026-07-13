@@ -47,6 +47,7 @@ pnpm-debug.log*
 local_docs/
 .vercel
 .claude/
+/supabase/.temp/
 
 # Le gitignore global de la machine ignore *.sql — ré-inclure les fichiers SQL Supabase (migrations + tests)
 !/supabase/**/*.sql

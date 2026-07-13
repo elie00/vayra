@@ -1,8 +1,8 @@
 # Compte rendu — implémentation complète de CIRA
 
-**Projet** : VAYRA — A product by EYBO  
-**Date** : 13 juillet 2026  
-**Branche** : `feat/cira-complete`  
+**Projet** : VAYRA — A product by EYBO
+**Date** : 13 juillet 2026
+**Branche** : `feat/cira-complete`
 **État** : implémentation terminée, validée localement et poussée sur GitHub
 
 ## Objectif

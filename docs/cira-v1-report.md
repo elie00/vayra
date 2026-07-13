@@ -3,8 +3,8 @@
 > Rapport historique du premier socle. Il est remplacé pour l'état courant
 > par [`cira-complete-report.md`](./cira-complete-report.md).
 
-**Date** : 2026-07-13  
-**Branche** : `fix/cira-presence-expiry`  
+**Date** : 2026-07-13
+**Branche** : `fix/cira-presence-expiry`
 **Base** : `main` à `6dfcf15`
 
 ## Périmètre livré
@@ -106,11 +106,8 @@ serveur HTTP local. Vérifications manuelles recommandées :
 5. vérifier dans l'onglet réseau que le fragment/token n'apparaît dans aucune
    requête.
 
-## Limite connue v1
+## Durcissement ultérieur
 
-Le rate limit est transactionnel : lorsqu'une RPC lève ensuite une exception,
-PostgreSQL annule aussi l'incrément du compteur. La résistance aux attaques sur
-les invitations repose donc principalement sur les tokens à 100 bits ; les
-demandes directes par handle utilisent une réponse générique non erronée et
-sont bien comptées. Une Edge Function ou un compteur hors transaction pourra
-être envisagé si les métriques de production le justifient.
+La branche complète retourne désormais les erreurs métier des parcours par
+token dans le résultat SQL. Les tentatives invalides sont donc comptées et
+committées sans révéler si le token a existé.

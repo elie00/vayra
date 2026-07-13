@@ -64,4 +64,3 @@ revoke all on function public.cira_list_relationships_page(integer, integer) fro
 revoke all on function public.cira_list_group_members_page(uuid, integer, integer) from public, anon;
 grant execute on function public.cira_list_relationships_page(integer, integer) to authenticated;
 grant execute on function public.cira_list_group_members_page(uuid, integer, integer) to authenticated;
-
