@@ -1,10 +1,12 @@
-# CIRA — base de données (PR 1)
+# CIRA — base de données
 
 CIRA est le domaine social privacy-first de VAYRA, entièrement autonome et lié
-exclusivement à `auth.users.id`. Cette PR contient :
+exclusivement à `auth.users.id`. Ce dossier contient :
 
-- `migrations/` — 3 migrations ordonnées : schéma + contraintes + index, RLS +
-  helpers privés, puis les 19 RPC (`security definer`, `search_path = ''`).
+- `migrations/` — 4 migrations ordonnées : schéma + contraintes + index, RLS +
+  helpers privés, les RPC (`security definer`, `search_path = ''`), puis les
+  triggers Realtime (pings `changed` vides sur le canal privé `cira:<userId>`
+  + policy de réception sur `realtime.messages`).
 - `tests/` — tests SQL multi-utilisateurs couvrant la matrice de menaces
   (RLS, acceptation forcée, énumération de handles, réutilisation de token,
   blocage croisé, fuite de présence, avatar traçant, suppression de compte,
@@ -27,9 +29,10 @@ Le harnais :
    `54329`, aucune écoute TCP) ;
 2. crée les **shims Supabase** (schéma `auth`, table `auth.users` minimale,
    `auth.uid()` lisant `request.jwt.claims`, rôles
-   `anon`/`authenticated`/`service_role`, helpers `test.login()/logout()`).
-   Ces shims vivent uniquement dans le harnais, **jamais** dans les
-   migrations ;
+   `anon`/`authenticated`/`service_role`, helpers `test.login()/logout()`,
+   et un shim `realtime` minimal — `realtime.send()` insère dans
+   `realtime.messages`, `realtime.topic()` lit un GUC de test). Ces shims
+   vivent uniquement dans le harnais, **jamais** dans les migrations ;
 3. applique les migrations dans l'ordre (chacune dans une transaction) ;
 4. exécute chaque `supabase/tests/*.sql` via `psql -v ON_ERROR_STOP=1` et
    affiche `PASS`/`FAIL` par fichier (code retour non nul si échec) ;
@@ -73,7 +76,7 @@ collision échoue bruyamment au lieu d'écraser quoi que ce soit**.
 
    Le résultat doit être **vide**. Sinon, ne rien appliquer et investiguer.
 
-2. Appliquer les 3 migrations **dans l'ordre des timestamps**, une par une,
+2. Appliquer les 4 migrations **dans l'ordre des timestamps**, une par une,
    chacune collée intégralement dans le SQL Editor (chaque exécution du SQL
    Editor est transactionnelle : une erreur annule le fichier en cours).
 
@@ -85,6 +88,10 @@ collision échoue bruyamment au lieu d'écraser quoi que ce soit**.
    where c.relname like 'cira\_%' and c.relkind = 'r' and c.relrowsecurity; -- = 6
    select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public' and p.proname like 'cira\_%' and p.prosecdef;  -- = 19
+   -- 7 triggers de notification realtime, 1 policy de réception
+   select count(*) from pg_trigger where tgname like 'cira\_%';              -- = 7
+   select count(*) from pg_policies
+   where schemaname = 'realtime' and policyname = 'cira_receive_own_channel'; -- = 1
    ```
 
 Notes :
