@@ -312,3 +312,119 @@ Object.assign(ciraAr, {
   "This group has reached its member limit.": "بلغت هذه المجموعة حد الأعضاء.", "Transfer ownership before leaving the group.": "انقل الملكية قبل مغادرة المجموعة.",
   "This group invitation is no longer available.": "دعوة المجموعة هذه لم تعد متاحة.", "A blocked person is already in this group.": "يوجد شخص محظور بالفعل في هذه المجموعة."
 });
+
+const varaEn: Record<string, string> = {
+  "Private VARA rooms": "Private VARA rooms",
+  "Watch together with your CIRA through private, synchronized rooms.": "Watch together with your CIRA through private, synchronized rooms.",
+  "VARA active": "VARA active", "No active VARA": "No active VARA",
+  "{n} active participant(s)": "{n} active participant(s)",
+  "Create a private room or accept an invitation.": "Create a private room or accept an invitation.",
+  "Leave VARA": "Leave VARA", "Create VARA": "Create VARA", "Your private VARA": "Your private VARA", "Private VARA": "Private VARA",
+  "{n} member(s) · expires {date}": "{n} member(s) · expires {date}", "Active": "Active", "Enter": "Enter",
+  "VARA invitations": "VARA invitations", "members": "members",
+  "Only accepted CIRA relationships can join.": "Only accepted CIRA relationships can join.",
+  "Create private link": "Create private link", "VARA invitation sent.": "VARA invitation sent.",
+  "Short-lived invitation created.": "Short-lived invitation created.", "Copy": "Copy",
+  "Private VARA invitation": "Private VARA invitation",
+  "{name} invited you to a private VARA with {n} member(s).": "{name} invited you to a private VARA with {n} member(s).",
+  "Join VARA": "Join VARA", "Private VARA created.": "Private VARA created.",
+  "You joined the private VARA.": "You joined the private VARA.", "This VARA is full.": "This VARA is full.",
+  "This VARA invitation is no longer available.": "This VARA invitation is no longer available.",
+  "This VARA is no longer available.": "This VARA is no longer available.",
+  "Leave the current local watch session before entering a remote VARA.": "Leave the current local watch session before entering a remote VARA.",
+  "VEYA": "VEYA", "VEYA paused": "VEYA paused", "host": "host", "guest": "guest",
+};
+
+Object.assign(ciraEn, varaEn);
+
+Object.assign(ciraFr, varaEn, {
+  "Private VARA rooms": "Rooms VARA privées",
+  "Watch together with your CIRA through private, synchronized rooms.": "Regardez avec votre CIRA dans des rooms privées et synchronisées.",
+  "VARA active": "VARA active", "No active VARA": "Aucune VARA active",
+  "{n} active participant(s)": "{n} participant(s) actif(s)",
+  "Create a private room or accept an invitation.": "Créez une room privée ou acceptez une invitation.",
+  "Leave VARA": "Quitter VARA", "Create VARA": "Créer VARA", "Your private VARA": "Votre VARA privée", "Private VARA": "VARA privée",
+  "{n} member(s) · expires {date}": "{n} membre(s) · expire à {date}", "Active": "Active", "Enter": "Entrer",
+  "VARA invitations": "Invitations VARA", "members": "membres",
+  "Only accepted CIRA relationships can join.": "Seules les relations CIRA acceptées peuvent rejoindre la room.",
+  "Create private link": "Créer un lien privé", "VARA invitation sent.": "Invitation VARA envoyée.",
+  "Short-lived invitation created.": "Invitation temporaire créée.", "Copy": "Copier",
+  "Private VARA invitation": "Invitation VARA privée",
+  "{name} invited you to a private VARA with {n} member(s).": "{name} vous invite dans une VARA privée avec {n} membre(s).",
+  "Join VARA": "Rejoindre VARA", "Private VARA created.": "VARA privée créée.",
+  "You joined the private VARA.": "Vous avez rejoint la VARA privée.", "This VARA is full.": "Cette VARA est complète.",
+  "This VARA invitation is no longer available.": "Cette invitation VARA n’est plus disponible.",
+  "This VARA is no longer available.": "Cette VARA n’est plus disponible.",
+  "Leave the current local watch session before entering a remote VARA.": "Quittez la session locale en cours avant d’entrer dans une VARA distante.",
+  "VEYA paused": "VEYA en pause", "host": "hôte", "guest": "invité",
+});
+
+Object.assign(ciraDe, varaEn, {
+  "Private VARA rooms": "Private VARA-Räume", "Watch together with your CIRA through private, synchronized rooms.": "Schaut mit eurer CIRA in privaten, synchronisierten Räumen.",
+  "VARA active": "VARA aktiv", "No active VARA": "Keine aktive VARA", "{n} active participant(s)": "{n} aktive Teilnehmer",
+  "Create a private room or accept an invitation.": "Erstelle einen privaten Raum oder nimm eine Einladung an.",
+  "Leave VARA": "VARA verlassen", "Create VARA": "VARA erstellen", "Your private VARA": "Deine private VARA", "Private VARA": "Private VARA",
+  "{n} member(s) · expires {date}": "{n} Mitglieder · läuft um {date} ab", "Active": "Aktiv", "Enter": "Betreten", "VARA invitations": "VARA-Einladungen", "members": "Mitglieder",
+  "Only accepted CIRA relationships can join.": "Nur akzeptierte CIRA-Kontakte können beitreten.", "Create private link": "Privaten Link erstellen", "VARA invitation sent.": "VARA-Einladung gesendet.",
+  "Short-lived invitation created.": "Kurzlebige Einladung erstellt.", "Copy": "Kopieren", "Private VARA invitation": "Private VARA-Einladung",
+  "{name} invited you to a private VARA with {n} member(s).": "{name} hat dich zu einer privaten VARA mit {n} Mitgliedern eingeladen.",
+  "Join VARA": "VARA beitreten", "Private VARA created.": "Private VARA erstellt.", "You joined the private VARA.": "Du bist der privaten VARA beigetreten.",
+  "This VARA is full.": "Diese VARA ist voll.", "This VARA invitation is no longer available.": "Diese VARA-Einladung ist nicht mehr verfügbar.", "This VARA is no longer available.": "Diese VARA ist nicht mehr verfügbar.",
+  "Leave the current local watch session before entering a remote VARA.": "Verlasse die aktuelle lokale Sitzung, bevor du eine entfernte VARA betrittst.", "VEYA paused": "VEYA pausiert", "host": "Host", "guest": "Gast",
+});
+
+Object.assign(ciraEs, varaEn, {
+  "Private VARA rooms": "Salas VARA privadas", "Watch together with your CIRA through private, synchronized rooms.": "Mira contenido con tu CIRA en salas privadas y sincronizadas.",
+  "VARA active": "VARA activa", "No active VARA": "No hay una VARA activa", "{n} active participant(s)": "{n} participante(s) activo(s)",
+  "Create a private room or accept an invitation.": "Crea una sala privada o acepta una invitación.", "Leave VARA": "Salir de VARA", "Create VARA": "Crear VARA",
+  "Your private VARA": "Tu VARA privada", "Private VARA": "VARA privada", "{n} member(s) · expires {date}": "{n} miembro(s) · caduca a las {date}",
+  "Active": "Activa", "Enter": "Entrar", "VARA invitations": "Invitaciones VARA", "members": "miembros",
+  "Only accepted CIRA relationships can join.": "Solo pueden entrar relaciones CIRA aceptadas.", "Create private link": "Crear enlace privado", "VARA invitation sent.": "Invitación VARA enviada.",
+  "Short-lived invitation created.": "Invitación temporal creada.", "Copy": "Copiar", "Private VARA invitation": "Invitación VARA privada",
+  "{name} invited you to a private VARA with {n} member(s).": "{name} te invitó a una VARA privada con {n} miembro(s).",
+  "Join VARA": "Unirse a VARA", "Private VARA created.": "VARA privada creada.", "You joined the private VARA.": "Te uniste a la VARA privada.",
+  "This VARA is full.": "Esta VARA está llena.", "This VARA invitation is no longer available.": "Esta invitación VARA ya no está disponible.", "This VARA is no longer available.": "Esta VARA ya no está disponible.",
+  "Leave the current local watch session before entering a remote VARA.": "Sal de la sesión local actual antes de entrar en una VARA remota.", "VEYA paused": "VEYA en pausa", "host": "anfitrión", "guest": "invitado",
+});
+
+Object.assign(ciraIt, varaEn, {
+  "Private VARA rooms": "Room VARA private", "Watch together with your CIRA through private, synchronized rooms.": "Guarda insieme alla tua CIRA in room private e sincronizzate.",
+  "VARA active": "VARA attiva", "No active VARA": "Nessuna VARA attiva", "{n} active participant(s)": "{n} partecipante/i attivo/i",
+  "Create a private room or accept an invitation.": "Crea una room privata o accetta un invito.", "Leave VARA": "Esci da VARA", "Create VARA": "Crea VARA",
+  "Your private VARA": "La tua VARA privata", "Private VARA": "VARA privata", "{n} member(s) · expires {date}": "{n} membro/i · scade alle {date}",
+  "Active": "Attiva", "Enter": "Entra", "VARA invitations": "Inviti VARA", "members": "membri",
+  "Only accepted CIRA relationships can join.": "Possono entrare solo relazioni CIRA accettate.", "Create private link": "Crea link privato", "VARA invitation sent.": "Invito VARA inviato.",
+  "Short-lived invitation created.": "Invito temporaneo creato.", "Copy": "Copia", "Private VARA invitation": "Invito VARA privato",
+  "{name} invited you to a private VARA with {n} member(s).": "{name} ti ha invitato a una VARA privata con {n} membro/i.",
+  "Join VARA": "Entra in VARA", "Private VARA created.": "VARA privata creata.", "You joined the private VARA.": "Sei entrato nella VARA privata.",
+  "This VARA is full.": "Questa VARA è piena.", "This VARA invitation is no longer available.": "Questo invito VARA non è più disponibile.", "This VARA is no longer available.": "Questa VARA non è più disponibile.",
+  "Leave the current local watch session before entering a remote VARA.": "Esci dalla sessione locale corrente prima di entrare in una VARA remota.", "VEYA paused": "VEYA in pausa", "host": "host", "guest": "ospite",
+});
+
+Object.assign(ciraPt, varaEn, {
+  "Private VARA rooms": "Salas VARA privadas", "Watch together with your CIRA through private, synchronized rooms.": "Assista com sua CIRA em salas privadas e sincronizadas.",
+  "VARA active": "VARA ativa", "No active VARA": "Nenhuma VARA ativa", "{n} active participant(s)": "{n} participante(s) ativo(s)",
+  "Create a private room or accept an invitation.": "Crie uma sala privada ou aceite um convite.", "Leave VARA": "Sair da VARA", "Create VARA": "Criar VARA",
+  "Your private VARA": "Sua VARA privada", "Private VARA": "VARA privada", "{n} member(s) · expires {date}": "{n} membro(s) · expira às {date}",
+  "Active": "Ativa", "Enter": "Entrar", "VARA invitations": "Convites VARA", "members": "membros",
+  "Only accepted CIRA relationships can join.": "Somente relações CIRA aceitas podem entrar.", "Create private link": "Criar link privado", "VARA invitation sent.": "Convite VARA enviado.",
+  "Short-lived invitation created.": "Convite temporário criado.", "Copy": "Copiar", "Private VARA invitation": "Convite VARA privado",
+  "{name} invited you to a private VARA with {n} member(s).": "{name} convidou você para uma VARA privada com {n} membro(s).",
+  "Join VARA": "Entrar na VARA", "Private VARA created.": "VARA privada criada.", "You joined the private VARA.": "Você entrou na VARA privada.",
+  "This VARA is full.": "Esta VARA está cheia.", "This VARA invitation is no longer available.": "Este convite VARA não está mais disponível.", "This VARA is no longer available.": "Esta VARA não está mais disponível.",
+  "Leave the current local watch session before entering a remote VARA.": "Saia da sessão local atual antes de entrar em uma VARA remota.", "VEYA paused": "VEYA pausada", "host": "anfitrião", "guest": "convidado",
+});
+
+Object.assign(ciraAr, varaEn, {
+  "Private VARA rooms": "غرف VARA الخاصة", "Watch together with your CIRA through private, synchronized rooms.": "شاهد مع CIRA في غرف خاصة ومتزامنة.",
+  "VARA active": "VARA نشطة", "No active VARA": "لا توجد VARA نشطة", "{n} active participant(s)": "{n} مشارك نشط",
+  "Create a private room or accept an invitation.": "أنشئ غرفة خاصة أو اقبل دعوة.", "Leave VARA": "مغادرة VARA", "Create VARA": "إنشاء VARA",
+  "Your private VARA": "VARA الخاصة بك", "Private VARA": "VARA خاصة", "{n} member(s) · expires {date}": "{n} عضو · تنتهي في {date}",
+  "Active": "نشطة", "Enter": "دخول", "VARA invitations": "دعوات VARA", "members": "أعضاء",
+  "Only accepted CIRA relationships can join.": "يمكن فقط لعلاقات CIRA المقبولة الانضمام.", "Create private link": "إنشاء رابط خاص", "VARA invitation sent.": "تم إرسال دعوة VARA.",
+  "Short-lived invitation created.": "تم إنشاء دعوة قصيرة الصلاحية.", "Copy": "نسخ", "Private VARA invitation": "دعوة VARA خاصة",
+  "{name} invited you to a private VARA with {n} member(s).": "دعاك {name} إلى VARA خاصة تضم {n} عضو.",
+  "Join VARA": "الانضمام إلى VARA", "Private VARA created.": "تم إنشاء VARA خاصة.", "You joined the private VARA.": "انضممت إلى VARA الخاصة.",
+  "This VARA is full.": "VARA هذه ممتلئة.", "This VARA invitation is no longer available.": "دعوة VARA هذه لم تعد متاحة.", "This VARA is no longer available.": "VARA هذه لم تعد متاحة.",
+  "Leave the current local watch session before entering a remote VARA.": "غادر جلسة المشاهدة المحلية الحالية قبل دخول VARA بعيدة.", "VEYA paused": "VEYA متوقفة مؤقتًا", "host": "المضيف", "guest": "ضيف",
+});
