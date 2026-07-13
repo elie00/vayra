@@ -3,6 +3,11 @@ import { Check, Copy, Link2, ShieldOff, UserMinus, UserPlus, X } from "lucide-re
 import { useCira } from "@/lib/cira/provider";
 import { CiraError } from "@/lib/cira";
 import type { CiraInviteSecret, CiraProfile, CiraRelationship } from "@/lib/cira";
+import {
+  CIRA_INVITATION_CLOCK_MS,
+  ciraInvitationMinutesRemaining,
+  isActiveCiraInvitation,
+} from "@/lib/cira/invitation-lifecycle";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow, useSettingsActiveContext } from "./shared";
@@ -231,8 +236,8 @@ function PresenceCard() {
   );
 }
 
-function expiresInLabel(t: ReturnType<typeof useT>, expiresAt: string): string {
-  const minutes = Math.max(0, Math.round((Date.parse(expiresAt) - Date.now()) / 60000));
+function expiresInLabel(t: ReturnType<typeof useT>, expiresAt: string, now: number): string {
+  const minutes = ciraInvitationMinutesRemaining(expiresAt, now);
   return t("Expires in {minutes} min", { minutes });
 }
 
@@ -245,10 +250,16 @@ function InviteCard() {
   const [codeDraft, setCodeDraft] = useState("");
   const [busy, setBusy] = useState<"link" | "request" | "code" | null>(null);
   const [notice, setNotice] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), CIRA_INVITATION_CLOCK_MS);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const active = useMemo(
-    () => invitations.filter((i) => i.state === "active" && Date.parse(i.expiresAt) > Date.now()),
-    [invitations],
+    () => invitations.filter((invitation) => isActiveCiraInvitation(invitation, now)),
+    [invitations, now],
   );
 
   if (!repo) return null;
@@ -329,7 +340,7 @@ function InviteCard() {
           )}
           {secret && (
             <span className="text-[11.5px] text-ink-subtle">
-              {expiresInLabel(t, secret.expiresAt)} — {t("the link is shown only once.")}
+              {expiresInLabel(t, secret.expiresAt, now)} — {t("the link is shown only once.")}
             </span>
           )}
           {active.length > 0 && (
@@ -340,7 +351,7 @@ function InviteCard() {
               {active.map((inv) => (
                 <div key={inv.id} className="flex items-center justify-between gap-2">
                   <span className="text-[12.5px] text-ink-muted">
-                    {expiresInLabel(t, inv.expiresAt)}
+                    {expiresInLabel(t, inv.expiresAt, now)}
                   </span>
                   <SmallButton
                     label={t("Revoke")}
