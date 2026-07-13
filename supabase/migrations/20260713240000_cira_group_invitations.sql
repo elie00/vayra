@@ -303,17 +303,28 @@ begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
   perform private.cira_enforce_rate_limit(v_uid, 'group_link_redeem', 10, interval '5 minutes');
+  if p_code is null or char_length(p_code) > 64
+     or private.cira_normalize_invite_code(p_code) !~ '^CIRAG[0-9A-HJKMNP-TV-Z]{20}$' then
+    return jsonb_build_object('error', 'GROUP_INVITE_UNAVAILABLE');
+  end if;
   select * into v_link from public.cira_group_links
   where token_hash = private.cira_hash_invite_code(p_code);
   if not found or v_link.expires_at <= now()
      or private.cira_group_role(v_link.group_id, v_uid) is not null
      or private.cira_any_block(v_uid, v_link.creator_id) then
-    raise exception 'GROUP_INVITE_UNAVAILABLE';
+    return jsonb_build_object('error', 'GROUP_INVITE_UNAVAILABLE');
   end if;
   select * into v_group from public.cira_groups where id = v_link.group_id;
   select * into v_creator from public.cira_profiles where user_id = v_link.creator_id;
   select count(*) into v_count from public.cira_group_members where group_id = v_link.group_id;
-  if v_count >= v_group.max_members then raise exception 'GROUP_INVITE_UNAVAILABLE'; end if;
+  if v_count >= v_group.max_members or exists (
+    select 1
+    from public.cira_group_members m
+    where m.group_id = v_link.group_id
+      and private.cira_any_block(v_uid, m.user_id)
+  ) then
+    return jsonb_build_object('error', 'GROUP_INVITE_UNAVAILABLE');
+  end if;
   return jsonb_build_object(
     'group_id', v_group.id, 'group_name', v_group.name,
     'group_description', v_group.description, 'group_avatar_key', v_group.avatar_key,
@@ -338,16 +349,27 @@ begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
   perform private.cira_enforce_rate_limit(v_uid, 'group_link_redeem', 10, interval '5 minutes');
+  if p_code is null or char_length(p_code) > 64
+     or private.cira_normalize_invite_code(p_code) !~ '^CIRAG[0-9A-HJKMNP-TV-Z]{20}$' then
+    return jsonb_build_object('error', 'GROUP_INVITE_UNAVAILABLE');
+  end if;
   select * into v_link from public.cira_group_links
   where token_hash = private.cira_hash_invite_code(p_code) for update;
   if not found or v_link.expires_at <= now()
      or private.cira_group_role(v_link.group_id, v_uid) is not null
      or private.cira_any_block(v_uid, v_link.creator_id) then
-    raise exception 'GROUP_INVITE_UNAVAILABLE';
+    return jsonb_build_object('error', 'GROUP_INVITE_UNAVAILABLE');
   end if;
   select * into v_group from public.cira_groups where id = v_link.group_id for update;
   select count(*) into v_count from public.cira_group_members where group_id = v_group.id;
-  if v_count >= v_group.max_members then raise exception 'GROUP_FULL'; end if;
+  if v_count >= v_group.max_members or exists (
+    select 1
+    from public.cira_group_members m
+    where m.group_id = v_group.id
+      and private.cira_any_block(v_uid, m.user_id)
+  ) then
+    return jsonb_build_object('error', 'GROUP_INVITE_UNAVAILABLE');
+  end if;
   insert into public.cira_group_members (group_id, user_id, role, invited_by)
   values (v_group.id, v_uid, 'member', v_link.creator_id);
   delete from public.cira_group_links where id = v_link.id;

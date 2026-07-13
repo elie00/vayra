@@ -149,6 +149,10 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
     await requireUserId();
     const { data, error } = await client.rpc(fn, args);
     if (error) throw toCiraError(error);
+    if (typeof data === "object" && data !== null && "error" in data) {
+      const code = (data as JsonRecord).error;
+      if (typeof code === "string") throw toCiraError({ message: code });
+    }
     return data;
   }
 
