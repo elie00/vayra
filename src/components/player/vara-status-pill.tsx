@@ -1,109 +1,37 @@
-// VaraStatusPill — display-only sync-status indicator for the VARA demo room
-// (PR6). Renders the §3.6 machine state as a small pill with a join/leave
-// affordance. It NEVER touches player control callbacks or playback — it only
-// reflects state and calls openRoom/leaveRoom on the room hook.
-//
-// Styling mirrors the existing player-chrome pill patterns
-// (waiting-for-room.tsx readyPillClass).
-
-import { RadioTower, Users, Wifi, WifiOff } from "lucide-react";
-import type { RoomRole, RoomState } from "@/lib/together/sync/room-machine";
-
-// A short, human label per machine state (host/guest role folded in).
-function stateLabel(state: RoomState, role: RoomRole): string {
-  switch (state) {
-    case "solo":
-      return "Solo";
-    case "lobby":
-      return "Lobby";
-    case "error":
-      return "Broker hors ligne";
-    case "host":
-      return "Hôte";
-    case "guest":
-      return "Invité";
-    case "connected":
-      return role === "host" ? "Hôte · connecté" : "Invité · connecté";
-    case "synced":
-      return "Synchronisé";
-    case "syncing":
-      return "Synchronisation…";
-    case "desynced":
-      return "Désynchronisé";
-  }
-}
-
-function pillClass(state: RoomState): string {
-  switch (state) {
-    case "synced":
-    case "connected":
-      return "bg-emerald-500/15 text-emerald-300";
-    case "syncing":
-    case "lobby":
-      return "bg-white/10 text-white/70";
-    case "host":
-    case "guest":
-      return "bg-sky-500/15 text-sky-300";
-    case "desynced":
-      return "bg-info/15 text-info";
-    case "error":
-      return "bg-red-500/15 text-red-300";
-    case "solo":
-      return "bg-white/5 text-white/50";
-  }
-}
-
-function StateIcon({ state }: { state: RoomState }) {
-  const cls = "h-3.5 w-3.5";
-  if (state === "error") return <WifiOff className={cls} aria-hidden />;
-  if (state === "solo" || state === "lobby") return <Wifi className={cls} aria-hidden />;
-  if (state === "connected" || state === "synced" || state === "syncing" || state === "desynced")
-    return <Users className={cls} aria-hidden />;
-  return <RadioTower className={cls} aria-hidden />;
-}
+// Display-only status for the authenticated remote VARA. It deliberately uses
+// the monochrome player chrome and never receives media/source information.
+import { LogOut, RadioTower } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 export function VaraStatusPill(props: {
-  state: RoomState;
-  role: RoomRole;
+  syncActive: boolean;
+  isHost: boolean;
   memberCount: number;
-  onOpenRoom: () => void;
   onLeaveRoom: () => void;
 }) {
-  const { state, role, memberCount, onOpenRoom, onLeaveRoom } = props;
-  const isSolo = state === "solo";
-  const label = stateLabel(state, role);
-  const showCount = memberCount > 1 && state !== "solo" && state !== "error";
+  const t = useT();
+  const { syncActive, isHost, memberCount, onLeaveRoom } = props;
+  const role = isHost ? t("host") : t("guest");
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/15 bg-black/65 p-1 pl-2.5 text-white shadow-sm backdrop-blur-md">
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${pillClass(
-          state,
-        )}`}
+        className="inline-flex items-center gap-1.5 text-[11.5px] font-medium"
         data-testid="vara-status-pill"
-        data-state={state}
+        data-state={syncActive ? "active" : "paused"}
       >
-        <StateIcon state={state} />
-        <span>{label}</span>
-        {showCount ? <span className="opacity-70">· {memberCount}</span> : null}
+        <RadioTower className="h-3.5 w-3.5" aria-hidden />
+        <span>{syncActive ? t("VEYA") : t("VEYA paused")}</span>
+        <span className="text-white/55">· {role} · {memberCount}</span>
       </span>
-      {isSolo ? (
-        <button
-          type="button"
-          onClick={onOpenRoom}
-          className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/80 hover:bg-white/20"
-        >
-          VARA
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onLeaveRoom}
-          className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/80 hover:bg-white/20"
-        >
-          Quitter
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={onLeaveRoom}
+        className="grid h-7 w-7 place-items-center rounded-full text-white/65 transition hover:bg-white/10 hover:text-white"
+        aria-label={t("Leave VARA")}
+      >
+        <LogOut className="h-3.5 w-3.5" aria-hidden />
+      </button>
     </div>
   );
 }

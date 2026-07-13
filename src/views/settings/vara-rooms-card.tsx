@@ -23,6 +23,8 @@ function varaErrorText(t: ReturnType<typeof useT>, error: unknown): string {
       return t("This VARA invitation is no longer available.");
     case "VARA_ROOM_UNAVAILABLE":
       return t("This VARA is no longer available.");
+    case "VARA_SYNC_CONFLICT":
+      return t("Leave the current local watch session before entering a remote VARA.");
     case "RATE_LIMITED":
       return t("Too many attempts. Wait a moment and try again.");
     case "NETWORK":
@@ -72,6 +74,7 @@ export function VaraRoomsCard() {
     invitations,
     activeRoom,
     pendingLinkCode,
+    syncConflict,
     refresh,
     activateRoom,
     leaveActiveRoom,
@@ -120,6 +123,7 @@ export function VaraRoomsCard() {
 
   const createRoom = () => run(async () => {
     if (!repo) return;
+    if (syncConflict) throw new VaraError("VARA_SYNC_CONFLICT");
     const room = await repo.createRoom(4 * 60 * 60, 8);
     activateRoom(room);
     await refresh();
@@ -133,6 +137,7 @@ export function VaraRoomsCard() {
 
   const acceptLink = () => run(async () => {
     if (!repo || !pendingLinkCode) return;
+    if (syncConflict) throw new VaraError("VARA_SYNC_CONFLICT");
     const room = await repo.acceptLink(pendingLinkCode);
     clearPendingLink();
     setPreview(null);
@@ -205,7 +210,9 @@ export function VaraRoomsCard() {
                 {activeRoom?.id === room.id ? (
                   <span className="text-[11.5px] font-medium text-accent">{t("Active")}</span>
                 ) : (
-                  <ActionButton label={t("Enter")} icon={LogIn} disabled={busy} onClick={() => activateRoom(room)} />
+                  <ActionButton label={t("Enter")} icon={LogIn} disabled={busy} onClick={() => void run(async () => {
+                    activateRoom(room);
+                  })} />
                 )}
               </div>
             ))}
@@ -227,6 +234,7 @@ export function VaraRoomsCard() {
                     await refresh();
                   })} />
                   <ActionButton label={t("Accept")} icon={Check} primary disabled={busy} onClick={() => void run(async () => {
+                    if (syncConflict) throw new VaraError("VARA_SYNC_CONFLICT");
                     const room = await repo.acceptInvitation(invite.id);
                     activateRoom(room);
                     await refresh();

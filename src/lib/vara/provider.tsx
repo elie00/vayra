@@ -35,6 +35,7 @@ type VaraValue = {
   invitations: VaraRoomInvitation[];
   activeRoom: VaraRemoteRoom | null;
   pendingLinkCode: string | null;
+  syncConflict: boolean;
   transport: SyncTransport | null;
   refresh: () => Promise<void>;
   activateRoom: (room: VaraRemoteRoom) => void;
@@ -53,7 +54,7 @@ export function useVara(): VaraValue {
 
 export function VaraProvider({ children }: { children: ReactNode }) {
   const { user } = useVayraAccount();
-  const { clientId } = useTogether();
+  const { clientId, snapshot: togetherSnapshot } = useTogether();
   const [status, setStatus] = useState<VaraStatus>("loading");
   const [client, setClient] = useState<SupabaseClient | null>(null);
   const [repo, setRepo] = useState<VaraRepository | null>(null);
@@ -63,6 +64,7 @@ export function VaraProvider({ children }: { children: ReactNode }) {
   const [pendingLinkCode, setPendingLinkCode] = useState<string | null>(null);
   const userId = user?.id ?? null;
   const betaAccess = user?.app_metadata?.cira_beta === true;
+  const syncConflict = togetherSnapshot.state === "joined";
 
   useEffect(() => {
     let cancelled = false;
@@ -150,12 +152,19 @@ export function VaraProvider({ children }: { children: ReactNode }) {
 
   const activateRoom = useCallback((room: VaraRemoteRoom) => {
     if (!transport) return;
+    if (syncConflict) throw new VaraError("VARA_SYNC_CONFLICT");
     setActiveRoom((current) => {
       if (current && current.id !== room.id) transport.leave(current.id);
       return room;
     });
     transport.join(room.id);
-  }, [transport]);
+  }, [transport, syncConflict]);
+
+  useEffect(() => {
+    if (!activeRoom || !transport) return;
+    if (syncConflict) transport.leave(activeRoom.id);
+    else transport.join(activeRoom.id);
+  }, [activeRoom, transport, syncConflict]);
 
   const leaveActiveRoom = useCallback(async () => {
     const room = activeRoom;
@@ -176,6 +185,7 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     invitations,
     activeRoom,
     pendingLinkCode,
+    syncConflict,
     transport,
     refresh,
     activateRoom,
@@ -189,6 +199,7 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     invitations,
     activeRoom,
     pendingLinkCode,
+    syncConflict,
     transport,
     refresh,
     activateRoom,
