@@ -38,6 +38,7 @@ Branche : `feat/vara-remote` — base `main` au commit `0d51fcd`.
 - `pnpm lint` : succès.
 - `pnpm build` : succès ; avertissements Vite préexistants sur chunks et imports.
 - `git diff --check` : succès.
+- CI GitHub `frontend` sur `04a7f0a` : succès.
 
 ## Confidentialité et sécurité
 
@@ -50,9 +51,27 @@ Branche : `feat/vara-remote` — base `main` au commit `0d51fcd`.
 - Transport local déconnecté sans supprimer la membership persistante ; seule
   l’action explicite Quitter/Fermer modifie la base.
 
-## Déploiement restant
+## Déploiement Supabase
 
-Avant fusion dans `main` : sauvegarde distante, dry-run Supabase, application des
-deux migrations, recette SQL transactionnelle à deux comptes, confirmation du
-mode Realtime privé, puis recette manuelle de lecture sur deux appareils. Aucun
-test automatique ne remplace cette dernière validation.
+- Sauvegarde structurelle pré-VARA :
+  `/Users/eybo/.codex/backups/vayra/2026-07-13-pre-vara/manifest.md`, permissions
+  `600`, SHA-256 `4708bf5a73e9173a79a3561077196f8642f988329f96f56fddb0a415ad072557`.
+- Migrations `20260713290000` et `20260713300000` appliquées chacune dans une
+  transaction et inscrites dans `supabase_migrations.schema_migrations`.
+- Recette `scripts/vara/remote-smoke.sql` : succès à deux comptes, rollback
+  confirmé, aucun compte synthétique résiduel.
+- Audit distant : 4/4 tables RLS, 18 RPC publiques, 0 droit d’exécution
+  `anon`/`PUBLIC`, 2 policies Realtime VARA et trigger de frontière blocage actif.
+- Realtime : `private_only=true`, `presence_enabled=true`, service non suspendu ;
+  les quotas existants n’ont pas été modifiés.
+
+Les ports PostgreSQL 5432/6543 étaient inaccessibles depuis le poste ; le
+déploiement a donc utilisé l’endpoint SQL HTTPS officiel de la Management API.
+
+## Validation manuelle restante
+
+Une recette de lecture sur deux appareils reste nécessaire avant d’élargir la
+bêta : ouverture locale du même contenu, play/pause/seek dans les deux sens,
+join tardif, transfert d’hôte, reconnexion et absence de boucle. Aucun test
+automatique ne remplace cette validation visuelle, mais elle ne bloque pas la
+fusion d’une fonctionnalité limitée aux comptes bêta invités.
