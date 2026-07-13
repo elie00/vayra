@@ -187,6 +187,11 @@ for f in "${migrations[@]}"; do
   fi
 done
 
+echo "==> running concurrency tests"
+PGBIN="$PGBIN" PORT="$PORT" DB="$DB" PGUSER="$PGUSER" \
+  SOCKDIR="$SOCKDIR" LOGDIR="$LOGDIR" \
+  bash "$REPO_ROOT/scripts/cira/db-concurrency-test.sh"
+
 echo "==> running tests"
 tests=("$TESTS_DIR"/*.sql)
 if [ ${#tests[@]} -eq 0 ]; then

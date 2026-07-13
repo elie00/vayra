@@ -8,7 +8,21 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_existing_user_id uuid;
 begin
+  -- Group row first, then profile pairs: this is the canonical lock order for
+  -- every group admission, role mutation and cross-group block cleanup.
+  perform 1 from public.cira_groups where id = new.group_id for update;
+  for v_existing_user_id in
+    select m.user_id
+    from public.cira_group_members m
+    where m.group_id = new.group_id
+    order by m.user_id
+  loop
+    perform private.cira_lock_pair(new.user_id, v_existing_user_id);
+  end loop;
+
   if exists (
     select 1
     from public.cira_group_members existing
@@ -46,6 +60,24 @@ begin
   if p_user_id is null or p_user_id = v_uid then
     raise exception 'INVALID_TRANSITION';
   end if;
+
+  -- Lock every currently shared group before the canonical profile pair.
+  -- A concurrent join either owns the group lock first (and is then removed)
+  -- or waits here, observes the committed block in its admission trigger and
+  -- fails. Ownership transfers and role changes use the same group-first
+  -- ordering, so block cleanup cannot orphan an owner membership.
+  perform 1
+  from public.cira_groups g
+  where exists (
+      select 1 from public.cira_group_members mine
+      where mine.group_id = g.id and mine.user_id = v_uid
+    )
+    and exists (
+      select 1 from public.cira_group_members theirs
+      where theirs.group_id = g.id and theirs.user_id = p_user_id
+    )
+  order by g.id
+  for update;
 
   perform private.cira_lock_pair(v_uid, p_user_id);
   if not exists (select 1 from public.cira_profiles p where p.user_id = p_user_id) then
@@ -95,4 +127,3 @@ $$;
 
 revoke all on function public.cira_block_user(uuid) from public, anon;
 grant execute on function public.cira_block_user(uuid) to authenticated;
-

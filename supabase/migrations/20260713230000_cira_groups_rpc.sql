@@ -112,8 +112,9 @@ declare
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  perform 1 from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_NOT_FOUND'; end if;
   v_role := private.cira_group_role(p_group_id, v_uid);
-  if v_role is null then raise exception 'GROUP_NOT_FOUND'; end if;
   if v_role not in ('owner', 'admin') then raise exception 'GROUP_FORBIDDEN'; end if;
 
   v_description := nullif(p_description, '');
@@ -166,6 +167,8 @@ declare
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  perform 1 from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_NOT_FOUND'; end if;
   if private.cira_group_role(p_group_id, v_uid) <> 'owner' then
     raise exception 'GROUP_NOT_FOUND';
   end if;
@@ -252,6 +255,8 @@ declare
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  perform 1 from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_MEMBER_NOT_FOUND'; end if;
   v_actor_role := private.cira_group_role(p_group_id, v_uid);
   v_target_role := private.cira_group_role(p_group_id, p_user_id);
   if v_actor_role is null or v_target_role is null then raise exception 'GROUP_MEMBER_NOT_FOUND'; end if;
@@ -280,6 +285,8 @@ declare
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  perform 1 from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_FORBIDDEN'; end if;
   if private.cira_group_role(p_group_id, v_uid) <> 'owner' then
     raise exception 'GROUP_FORBIDDEN';
   end if;
@@ -343,6 +350,8 @@ declare
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  perform 1 from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_NOT_FOUND'; end if;
   v_role := private.cira_group_role(p_group_id, v_uid);
   if v_role is null then raise exception 'GROUP_NOT_FOUND'; end if;
   if v_role = 'owner' then raise exception 'GROUP_OWNER_MUST_TRANSFER'; end if;
@@ -418,4 +427,3 @@ grant execute on function public.cira_remove_group_member(uuid, uuid) to authent
 grant execute on function public.cira_set_group_role(uuid, uuid, text) to authenticated;
 grant execute on function public.cira_transfer_group_ownership(uuid, uuid) to authenticated;
 grant execute on function public.cira_leave_group(uuid) to authenticated;
-
