@@ -5,7 +5,9 @@
 **Monorepo :** [`elie00/vayra`](https://github.com/elie00/vayra)<br>
 **Site :** dossier `site/` du monorepo, déployé sur [`vayra.eybo.tech`](https://vayra.eybo.tech/)<br>
 **Preview Vercel :** [`vayra-site.vercel.app`](https://vayra-site.vercel.app/)<br>
-**Branche de référence :** `main`
+**Branche de référence :** `main`<br>
+**Dernière consolidation :** 13 juillet 2026, après intégration de
+`ops/release-readiness` sur `main`
 
 ## 1. Objet du document
 
@@ -13,6 +15,11 @@ Ce document rassemble les travaux réalisés sur VAYRA : stabilisation
 multiplateforme, cast, i18n, rebranding, identité technique, VARA/VEYA,
 authentification par email, performances, direction Mineral Monochrome, site
 public et opérations GitHub/Vercel.
+
+Le relevé consolide les travaux produits au cours des sessions Claude Code et
+Codex. Il décrit les changements livrés et vérifiables dans Git, sans tenter de
+répartir artificiellement leur attribution lorsque l'historique ne permet pas
+de la démontrer de façon fiable.
 
 Il complète les rapports spécialisés déjà présents :
 
@@ -38,8 +45,8 @@ Le fork Harbor a été transformé en produit autonome VAYRA avec :
 - un prototype local VARA/VEYA avec broker autonome et logique de
   synchronisation testée ;
 - un cast plus robuste, plus précis et moins coûteux ;
-- une couverture i18n étendue et 277 chaînes auparavant codées en dur rendues
-  traduisibles ;
+- une couverture i18n étendue et deux passes totalisant 1 130 occurrences UI
+  auparavant codées en dur rendues traduisibles ;
 - des optimisations du pipeline de recherche et de résolution des streams ;
 - un site vitrine monochrome, responsive et déployé sur Vercel ;
 - un dépôt GitHub renommé de `elie00/harbor` vers `elie00/vayra`.
@@ -59,6 +66,19 @@ Le fork Harbor a été transformé en produit autonome VAYRA avec :
 **Point important :** les travaux d’authentification et de design Mineral
 Monochrome sont contenus dans `main`. Les branches historiques restent des
 références de travail et ne doivent pas être fusionnées à nouveau sans audit.
+
+### 3.1 Chronologie consolidée
+
+| Étape | Résultat principal |
+| --- | --- |
+| Stabilisation initiale | sécurité, tests, CI native/WASM, chargement de la home et core Web |
+| Roadmap en six chantiers | français, thèmes, cast matrix, Android Keystore, scopes filesystem et Together mobile |
+| Rebranding visible | VAYRA, VARA/VEYA/CIRA/LUMA, assets et documentation de compatibilité |
+| Identité technique | événements, IPC, bundle, deep links, formats et migrations VAYRA |
+| Collaboration | prototype local VARA/VEYA en sept micro-commits |
+| Compte et performances | auth email Supabase, session Stremio indépendante et optimisations streams B1–B8 |
+| Direction finale | système Mineral Monochrome, suppression des accents orange et site public aligné |
+| Consolidation | site réuni au monorepo, deuxième passe i18n, correctifs CI Rust et fusion sur `main` |
 
 ## 4. Travaux réalisés par domaine
 
@@ -117,10 +137,13 @@ en CI.
   `f7d6b7e`, `cd17c5f`, `2325dd1`.
 - Correction du sélecteur de langue auparavant limité à certaines locales.
 - Couverture française complétée sur toutes les chaînes UI (`aa03e49`).
-- Sweep de 277 chaînes codées en dur, intégrées au système `t()` et traduites en
-  français (`ed0ecbc`).
+- Première passe de 277 occurrences codées en dur, intégrées au système `t()`
+  et traduites en français (`ed0ecbc`).
+- Deuxième passe de 853 occurrences supplémentaires (`8bf2ab4`), fusionnée sur
+  `main` par `faf24aa`.
 - Intégration du worktree i18n dans la branche monochrome (`a186428`).
-- Correction de la dépendance React Hook introduite par le sweep (`3e25d8f`).
+- Corrections des dépendances React Hook introduites par les deux passes
+  (`3e25d8f`, `0e59332`).
 
 ### 4.5 Android, Windows, Linux, macOS et packaging
 
@@ -310,6 +333,9 @@ déploiement.
   et les tokens Mineral Monochrome ont été retenus.
 - Intégration de `fix/i18n-hardcoded` (`a186428`) et correction lint associée
   (`3e25d8f`).
+- Intégration de la seconde passe i18n (`faf24aa`), puis de la branche
+  `ops/release-readiness` (`6014fed`) avec correction finale des dépendances de
+  hooks (`0e59332`).
 - Aucun marqueur `<<<<<<<`, `=======` ou `>>>>>>>` n’est présent dans les
   fichiers suivis de la branche active.
 
