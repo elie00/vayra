@@ -38,8 +38,9 @@ reviewed and restored without storing infrastructure secrets:
 - `supabase/templates/magic-link.html` for an existing account.
 
 Both templates intentionally avoid remote images and tracking links. They use
-the VAYRA obsidian, violet, blue, and ivory palette with the signature
-“A product by EYBO”.
+the VAYRA Mineral Monochrome system — mineral black `#0A0B0D`, ivory `#F4F2ED`,
+titanium `#A8AAAD`, and graphite `#4B4D50` — with the signature “A product by
+EYBO”.
 
 ## Optional runtime override
 

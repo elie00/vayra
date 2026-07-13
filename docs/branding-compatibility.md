@@ -2,6 +2,11 @@
 
 VAYRA is an independent product by EYBO, built from an autonomous fork of Harbor.
 
+The current production design system is documented in
+[`vayra-visual-identity.md`](./vayra-visual-identity.md). Brand assets and the
+default interface follow the Mineral Monochrome palette; optional user themes
+and external-service artwork remain independent customisation surfaces.
+
 The visible product is fully VAYRA. Beyond the user-facing copy pass, a deep
 technical-identity reconstruction (branch `brand/vayra-identity`) renamed the
 internal Harbor identifiers to VAYRA as well, with data-preserving migrations.
