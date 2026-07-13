@@ -47,6 +47,20 @@ export const ciraEn: Record<string, string> = {
   "Too many attempts. Wait a moment and try again.": "Too many attempts. Wait a moment and try again.",
   "Network error. Check your connection and try again.": "Network error. Check your connection and try again.",
   "Something went wrong. Try again.": "Something went wrong. Try again.",
+  "CIRA groups": "CIRA groups", "Private circles with explicit membership and roles. Nothing is public or searchable.": "Private circles with explicit membership and roles. Nothing is public or searchable.",
+  "New group": "New group", "Create group": "Create group", "Create a private group for a part of your CIRA.": "Create a private group for a part of your CIRA.",
+  "Group name": "Group name", "Private description": "Private description", "Member limit": "Member limit",
+  "Members": "Members", "owner": "Owner", "admin": "Admin", "member": "Member", "{count} of {limit} members": "{count} of {limit} members",
+  "Edit": "Edit", "Delete": "Delete", "Leave": "Leave", "Remove": "Remove", "Transfer": "Transfer", "Make admin": "Make admin", "Make member": "Make member",
+  "Invite": "Invite", "Invite an accepted CIRA relation": "Invite an accepted CIRA relation", "Choose a person": "Choose a person",
+  "Group invitations": "Group invitations", "Invited by {name}": "Invited by {name}", "Invited {name}": "Invited {name}",
+  "Single-use group link": "Single-use group link", "Valid for 15 minutes and one new member.": "Valid for 15 minutes and one new member.", "Create link": "Create link", "Active until {time}": "Active until {time}",
+  "Delete {name}? This removes the private group for everyone.": "Delete {name}? This removes the private group for everyone.", "Transfer ownership to {name}?": "Transfer ownership to {name}?",
+  "Check the group name, description and member limit.": "Check the group name, description and member limit.", "This private group is no longer available.": "This private group is no longer available.",
+  "You don't have permission to do that in this group.": "You don't have permission to do that in this group.", "The member limit can't be lower than the current member count.": "The member limit can't be lower than the current member count.",
+  "This group has reached its member limit.": "This group has reached its member limit.", "This member is no longer in the group.": "This member is no longer in the group.", "That role isn't available.": "That role isn't available.",
+  "Transfer ownership before leaving the group.": "Transfer ownership before leaving the group.", "This group invitation is no longer available.": "This group invitation is no longer available.",
+  "This person is already in the group.": "This person is already in the group.", "Choose a link duration between 5 minutes and 24 hours.": "Choose a link duration between 5 minutes and 24 hours.",
 };
 
 export const ciraFr: Record<string, string> = {
@@ -88,6 +102,20 @@ export const ciraFr: Record<string, string> = {
   "You're already connected with this person.": "Vous êtes déjà en relation avec cette personne.", "That action isn't available anymore.": "Cette action n'est plus disponible.",
   "This invitation is no longer valid. Ask for a fresh link.": "Cette invitation n'est plus valide. Demandez un nouveau lien.", "Too many attempts. Wait a moment and try again.": "Trop de tentatives. Patientez puis réessayez.",
   "Network error. Check your connection and try again.": "Erreur réseau. Vérifiez votre connexion et réessayez.", "Something went wrong. Try again.": "Une erreur est survenue. Réessayez.",
+  "CIRA groups": "Groupes CIRA", "Private circles with explicit membership and roles. Nothing is public or searchable.": "Cercles privés avec membres et rôles explicites. Rien n'est public ni recherchable.",
+  "New group": "Nouveau groupe", "Create group": "Créer le groupe", "Create a private group for a part of your CIRA.": "Créez un groupe privé pour une partie de votre CIRA.",
+  "Group name": "Nom du groupe", "Private description": "Description privée", "Member limit": "Limite de membres",
+  "Members": "Membres", "owner": "Propriétaire", "admin": "Admin", "member": "Membre", "{count} of {limit} members": "{count} membres sur {limit}",
+  "Edit": "Modifier", "Delete": "Supprimer", "Leave": "Quitter", "Remove": "Retirer", "Transfer": "Transférer", "Make admin": "Nommer admin", "Make member": "Rétrograder membre",
+  "Invite": "Inviter", "Invite an accepted CIRA relation": "Inviter une relation CIRA acceptée", "Choose a person": "Choisir une personne",
+  "Group invitations": "Invitations de groupe", "Invited by {name}": "Invitation de {name}", "Invited {name}": "Invitation envoyée à {name}",
+  "Single-use group link": "Lien de groupe à usage unique", "Valid for 15 minutes and one new member.": "Valable 15 minutes pour un nouveau membre.", "Create link": "Créer un lien", "Active until {time}": "Actif jusqu'à {time}",
+  "Delete {name}? This removes the private group for everyone.": "Supprimer {name} ? Le groupe privé sera retiré pour tout le monde.", "Transfer ownership to {name}?": "Transférer la propriété à {name} ?",
+  "Check the group name, description and member limit.": "Vérifiez le nom, la description et la limite de membres.", "This private group is no longer available.": "Ce groupe privé n'est plus disponible.",
+  "You don't have permission to do that in this group.": "Vous n'avez pas l'autorisation d'effectuer cette action dans ce groupe.", "The member limit can't be lower than the current member count.": "La limite ne peut pas être inférieure au nombre actuel de membres.",
+  "This group has reached its member limit.": "Ce groupe a atteint sa limite de membres.", "This member is no longer in the group.": "Cette personne ne fait plus partie du groupe.", "That role isn't available.": "Ce rôle n'est pas disponible.",
+  "Transfer ownership before leaving the group.": "Transférez la propriété avant de quitter le groupe.", "This group invitation is no longer available.": "Cette invitation de groupe n'est plus disponible.",
+  "This person is already in the group.": "Cette personne fait déjà partie du groupe.", "Choose a link duration between 5 minutes and 24 hours.": "Choisissez une durée de lien entre 5 minutes et 24 heures.",
 };
 
 export const ciraDe: Record<string, string> = {
