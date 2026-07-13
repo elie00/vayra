@@ -1,4 +1,7 @@
+import { ciraPt } from "./cira";
+
 const pt: Record<string, string> = {
+  ...ciraPt,
   "nav.home": "Início",
   "nav.discover": "Descobrir",
   "nav.movies": "Filmes",

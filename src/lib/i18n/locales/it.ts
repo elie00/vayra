@@ -1,4 +1,7 @@
+import { ciraIt } from "./cira";
+
 const it: Record<string, string> = {
+  ...ciraIt,
   "nav.home": "Home",
   "nav.discover": "Scopri",
   "nav.catalogs": "Cataloghi",

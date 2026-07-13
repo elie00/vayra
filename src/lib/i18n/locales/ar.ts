@@ -17,8 +17,10 @@ import settings from "./ar/settings";
 import spotlights from "./ar/spotlights";
 import sync from "./ar/sync";
 import together from "./ar/together";
+import { ciraAr } from "./cira";
 
 const ar: Record<string, string> = {
+  ...ciraAr,
   ...chrome,
   ...common,
   ...catalog,
