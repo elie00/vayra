@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createCiraRepository,
   normalizeInviteCode,
+  requireValidGroupInviteCode,
   requireValidInviteCode,
 } from "./repository";
 import type { CiraErrorCode } from "./types";
@@ -83,6 +84,18 @@ const INVITE_ROW = {
   invitation_id: "11111111-1111-4111-8111-111111111111",
   code: "CIRA-AB12-CD34-EF56-GH78-JK90",
   expires_at: "2026-07-13T12:15:00Z",
+};
+
+const GROUP_ROW = {
+  group_id: "22222222-2222-4222-8222-222222222222",
+  name: "Night crew",
+  description: "Private circle",
+  avatar_key: null,
+  max_members: 100,
+  member_count: 3,
+  role: "owner",
+  created_at: "2026-07-13T12:00:00Z",
+  updated_at: "2026-07-13T12:00:00Z",
 };
 
 afterEach(() => vi.restoreAllMocks());
@@ -210,6 +223,55 @@ describe("createCiraRepository RPC wiring", () => {
       rpcArgs: { p_invitation_id: "inv-1" },
     },
     {
+      name: "listGroups -> cira_list_groups",
+      call: (repo) => repo.listGroups(),
+      rpcName: "cira_list_groups",
+      rpcArgs: undefined,
+      rpcData: [],
+    },
+    {
+      name: "createGroup -> cira_create_group",
+      call: (repo) => repo.createGroup({ name: "Night crew", description: "Private circle", avatarKey: null, maxMembers: 100 }),
+      rpcName: "cira_create_group",
+      rpcArgs: { p_name: "Night crew", p_description: "Private circle", p_avatar_key: null, p_max_members: 100 },
+      rpcData: GROUP_ROW,
+    },
+    {
+      name: "updateGroup -> cira_update_group",
+      call: (repo) => repo.updateGroup("g1", { name: "Night crew", description: null, avatarKey: "moon", maxMembers: 50 }),
+      rpcName: "cira_update_group",
+      rpcArgs: { p_group_id: "g1", p_name: "Night crew", p_description: null, p_avatar_key: "moon", p_max_members: 50 },
+      rpcData: { ...GROUP_ROW, avatar_key: "moon", max_members: 50, description: null },
+    },
+    { name: "deleteGroup -> cira_delete_group", call: (repo) => repo.deleteGroup("g1"), rpcName: "cira_delete_group", rpcArgs: { p_group_id: "g1" } },
+    { name: "listGroupMembers -> cira_list_group_members", call: (repo) => repo.listGroupMembers("g1"), rpcName: "cira_list_group_members", rpcArgs: { p_group_id: "g1" }, rpcData: [] },
+    { name: "removeGroupMember -> cira_remove_group_member", call: (repo) => repo.removeGroupMember("g1", "u2"), rpcName: "cira_remove_group_member", rpcArgs: { p_group_id: "g1", p_user_id: "u2" } },
+    { name: "setGroupRole -> cira_set_group_role", call: (repo) => repo.setGroupRole("g1", "u2", "admin"), rpcName: "cira_set_group_role", rpcArgs: { p_group_id: "g1", p_user_id: "u2", p_role: "admin" } },
+    { name: "transferGroupOwnership -> cira_transfer_group_ownership", call: (repo) => repo.transferGroupOwnership("g1", "u2"), rpcName: "cira_transfer_group_ownership", rpcArgs: { p_group_id: "g1", p_user_id: "u2" } },
+    { name: "leaveGroup -> cira_leave_group", call: (repo) => repo.leaveGroup("g1"), rpcName: "cira_leave_group", rpcArgs: { p_group_id: "g1" } },
+    { name: "inviteGroupMember -> cira_invite_group_member", call: (repo) => repo.inviteGroupMember("g1", "u2"), rpcName: "cira_invite_group_member", rpcArgs: { p_group_id: "g1", p_user_id: "u2" } },
+    { name: "listGroupInvitations -> cira_list_group_invites", call: (repo) => repo.listGroupInvitations(), rpcName: "cira_list_group_invites", rpcArgs: undefined, rpcData: [] },
+    { name: "acceptGroupInvitation -> cira_accept_group_invite", call: (repo) => repo.acceptGroupInvitation("i1"), rpcName: "cira_accept_group_invite", rpcArgs: { p_invitation_id: "i1" } },
+    { name: "declineGroupInvitation -> cira_decline_group_invite", call: (repo) => repo.declineGroupInvitation("i1"), rpcName: "cira_decline_group_invite", rpcArgs: { p_invitation_id: "i1" } },
+    { name: "cancelGroupInvitation -> cira_cancel_group_invite", call: (repo) => repo.cancelGroupInvitation("i1"), rpcName: "cira_cancel_group_invite", rpcArgs: { p_invitation_id: "i1" } },
+    {
+      name: "createGroupLink -> cira_create_group_link",
+      call: (repo) => repo.createGroupLink("g1", 900),
+      rpcName: "cira_create_group_link",
+      rpcArgs: { p_group_id: "g1", p_ttl_seconds: 900 },
+      rpcData: { link_id: "l1", code: "CIRAGAB12CD34EF56GH78JK90", expires_at: "2026-07-13T12:15:00Z" },
+    },
+    { name: "listGroupLinks -> cira_list_group_links", call: (repo) => repo.listGroupLinks("g1"), rpcName: "cira_list_group_links", rpcArgs: { p_group_id: "g1" }, rpcData: [] },
+    {
+      name: "previewGroupLink -> cira_preview_group_link",
+      call: (repo) => repo.previewGroupLink("CIRAG-AB12-CD34-EF56-GH78-JK90"),
+      rpcName: "cira_preview_group_link",
+      rpcArgs: { p_code: "CIRAGAB12CD34EF56GH78JK90" },
+      rpcData: { group_id: "g1", group_name: "Night crew", group_description: null, group_avatar_key: null, member_count: 2, creator_handle: "marie", creator_display_name: "Marie", expires_at: "2026-07-13T12:15:00Z" },
+    },
+    { name: "acceptGroupLink -> cira_accept_group_link", call: (repo) => repo.acceptGroupLink("CIRAG-AB12-CD34-EF56-GH78-JK90"), rpcName: "cira_accept_group_link", rpcArgs: { p_code: "CIRAGAB12CD34EF56GH78JK90" }, rpcData: { group_id: "g1", status: "ok" } },
+    { name: "revokeGroupLink -> cira_revoke_group_link", call: (repo) => repo.revokeGroupLink("l1"), rpcName: "cira_revoke_group_link", rpcArgs: { p_link_id: "l1" } },
+    {
       name: "setPresenceConsent -> cira_set_presence_consent",
       call: (repo) => repo.setPresenceConsent(true),
       rpcName: "cira_set_presence_consent",
@@ -261,6 +323,17 @@ describe("error mapping through the repository", () => {
     "INVALID_TRANSITION",
     "INVITATION_UNAVAILABLE",
     "RATE_LIMITED",
+    "INVALID_GROUP",
+    "GROUP_NOT_FOUND",
+    "GROUP_FORBIDDEN",
+    "GROUP_CAP_TOO_SMALL",
+    "GROUP_FULL",
+    "GROUP_MEMBER_NOT_FOUND",
+    "INVALID_GROUP_ROLE",
+    "GROUP_OWNER_MUST_TRANSFER",
+    "GROUP_INVITE_UNAVAILABLE",
+    "ALREADY_GROUP_MEMBER",
+    "INVALID_GROUP_INVITE",
   ];
 
   it.each(sqlCodes)("surfaces the stable SQL code %s as CiraError", async (code) => {
@@ -342,6 +415,25 @@ describe("invitation code normalisation (symmetric to private.cira_normalize_inv
     expect(mock.rpc).toHaveBeenCalledWith("cira_accept_invitation", {
       p_code: "CIRAAB12CD34EF56GH78JK90",
     });
+  });
+});
+
+describe("group invitation code validation", () => {
+  it("accepts only the CIRAG prefix and generated alphabet", () => {
+    expect(requireValidGroupInviteCode("CIRAG-AB12-CD34-EF56-GH78-JK90")).toBe(
+      "CIRAGAB12CD34EF56GH78JK90",
+    );
+    expect(() => requireValidGroupInviteCode("CIRA-AB12-CD34-EF56-GH78-JK90")).toThrowError(
+      expect.objectContaining({ code: "GROUP_INVITE_UNAVAILABLE" }),
+    );
+  });
+
+  it("rejects malformed group codes before Supabase", async () => {
+    const mock = makeClient();
+    await expect(createCiraRepository(mock.client).acceptGroupLink("not-a-code")).rejects.toMatchObject({
+      code: "GROUP_INVITE_UNAVAILABLE",
+    });
+    expect(mock.rpc).not.toHaveBeenCalled();
   });
 });
 

@@ -3,6 +3,13 @@ import { CiraError, toCiraError } from "./errors";
 import type {
   CiraInvitation,
   CiraInviteSecret,
+  CiraGroup,
+  CiraGroupInvitation,
+  CiraGroupLink,
+  CiraGroupLinkPreview,
+  CiraGroupLinkSecret,
+  CiraGroupMember,
+  CiraGroupRole,
   CiraProfile,
   CiraRelationship,
   CiraRepository,
@@ -12,6 +19,7 @@ import type {
 // La page statique transmet le code à l'app sans appel réseau. Le code voyage
 // dans le fragment (#t=), jamais en query string.
 const INVITE_URL_PREFIX = "https://vayra.eybo.tech/cira/invite#t=";
+const GROUP_INVITE_URL_PREFIX = "https://vayra.eybo.tech/cira/group#t=";
 
 // Symétrique de private.cira_normalize_invite_code :
 // upper() puis suppression de tout caractère hors [0-9A-Z].
@@ -24,6 +32,15 @@ export function requireValidInviteCode(code: string): string {
   const normalized = normalizeInviteCode(code);
   if (!/^CIRA[0-9A-HJKMNP-TV-Z]{20}$/.test(normalized)) {
     throw new CiraError("INVITATION_UNAVAILABLE");
+  }
+  return normalized;
+}
+
+export function requireValidGroupInviteCode(code: string): string {
+  if (code.length > 64) throw new CiraError("GROUP_INVITE_UNAVAILABLE");
+  const normalized = normalizeInviteCode(code);
+  if (!/^CIRAG[0-9A-HJKMNP-TV-Z]{20}$/.test(normalized)) {
+    throw new CiraError("GROUP_INVITE_UNAVAILABLE");
   }
   return normalized;
 }
@@ -43,6 +60,20 @@ function asString(value: unknown): string {
 function asNullableString(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   return asString(value);
+}
+
+function asNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+    return Number(value);
+  }
+  throw new CiraError("UNKNOWN");
+}
+
+function asGroupRole(value: unknown): CiraGroupRole {
+  const role = asString(value);
+  if (role === "owner" || role === "admin" || role === "member") return role;
+  throw new CiraError("UNKNOWN");
 }
 
 function toProfile(row: JsonRecord): CiraProfile {
@@ -75,6 +106,31 @@ function toRelationship(row: JsonRecord): CiraRelationship {
     },
     presence,
     createdAt: asString(row.created_at),
+  };
+}
+
+function toGroup(row: JsonRecord): CiraGroup {
+  return {
+    id: asString(row.group_id),
+    name: asString(row.name),
+    description: asNullableString(row.description),
+    avatarKey: asNullableString(row.avatar_key),
+    maxMembers: asNumber(row.max_members),
+    memberCount: asNumber(row.member_count),
+    role: asGroupRole(row.role),
+    createdAt: asString(row.created_at),
+    updatedAt: asString(row.updated_at),
+  };
+}
+
+function toGroupMember(row: JsonRecord): CiraGroupMember {
+  return {
+    userId: asString(row.user_id),
+    handle: asString(row.handle),
+    displayName: asString(row.display_name),
+    avatarKey: asNullableString(row.avatar_key),
+    role: asGroupRole(row.role),
+    joinedAt: asString(row.joined_at),
   };
 }
 
@@ -230,6 +286,165 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
 
     async revokeInvitation(id) {
       await rpc("cira_revoke_invitation", { p_invitation_id: id });
+    },
+
+    async listGroups() {
+      const data = await rpc("cira_list_groups");
+      if (!Array.isArray(data)) throw new CiraError("UNKNOWN");
+      return data.map((row) => toGroup(asRecord(row)));
+    },
+
+    async createGroup(input) {
+      const data = await rpc("cira_create_group", {
+        p_name: input.name,
+        p_description: input.description,
+        p_avatar_key: input.avatarKey,
+        p_max_members: input.maxMembers,
+      });
+      return toGroup(asRecord(data));
+    },
+
+    async updateGroup(id, input) {
+      const data = await rpc("cira_update_group", {
+        p_group_id: id,
+        p_name: input.name,
+        p_description: input.description,
+        p_avatar_key: input.avatarKey,
+        p_max_members: input.maxMembers,
+      });
+      return toGroup(asRecord(data));
+    },
+
+    async deleteGroup(id) {
+      await rpc("cira_delete_group", { p_group_id: id });
+    },
+
+    async listGroupMembers(id) {
+      const data = await rpc("cira_list_group_members", { p_group_id: id });
+      if (!Array.isArray(data)) throw new CiraError("UNKNOWN");
+      return data.map((row) => toGroupMember(asRecord(row)));
+    },
+
+    async removeGroupMember(groupId, userId) {
+      await rpc("cira_remove_group_member", { p_group_id: groupId, p_user_id: userId });
+    },
+
+    async setGroupRole(groupId, userId, role) {
+      await rpc("cira_set_group_role", {
+        p_group_id: groupId,
+        p_user_id: userId,
+        p_role: role,
+      });
+    },
+
+    async transferGroupOwnership(groupId, userId) {
+      await rpc("cira_transfer_group_ownership", { p_group_id: groupId, p_user_id: userId });
+    },
+
+    async leaveGroup(groupId) {
+      await rpc("cira_leave_group", { p_group_id: groupId });
+    },
+
+    async inviteGroupMember(groupId, userId) {
+      await rpc("cira_invite_group_member", { p_group_id: groupId, p_user_id: userId });
+    },
+
+    async listGroupInvitations() {
+      const data = await rpc("cira_list_group_invites");
+      if (!Array.isArray(data)) throw new CiraError("UNKNOWN");
+      return data.map((row): CiraGroupInvitation => {
+        const record = asRecord(row);
+        return {
+          id: asString(record.invitation_id),
+          groupId: asString(record.group_id),
+          groupName: asString(record.group_name),
+          groupAvatarKey: asNullableString(record.group_avatar_key),
+          direction: asString(record.direction) === "incoming" ? "incoming" : "outgoing",
+          inviter: {
+            userId: asString(record.inviter_id),
+            handle: asString(record.inviter_handle),
+            displayName: asString(record.inviter_display_name),
+          },
+          invitee: {
+            userId: asString(record.invitee_id),
+            handle: asString(record.invitee_handle),
+            displayName: asString(record.invitee_display_name),
+          },
+          createdAt: asString(record.created_at),
+          expiresAt: asString(record.expires_at),
+        };
+      });
+    },
+
+    async acceptGroupInvitation(id) {
+      await rpc("cira_accept_group_invite", { p_invitation_id: id });
+    },
+
+    async declineGroupInvitation(id) {
+      await rpc("cira_decline_group_invite", { p_invitation_id: id });
+    },
+
+    async cancelGroupInvitation(id) {
+      await rpc("cira_cancel_group_invite", { p_invitation_id: id });
+    },
+
+    async createGroupLink(groupId, ttlSeconds) {
+      const data = await rpc("cira_create_group_link", {
+        p_group_id: groupId,
+        ...(ttlSeconds === undefined ? {} : { p_ttl_seconds: ttlSeconds }),
+      });
+      const record = asRecord(data);
+      const code = asString(record.code);
+      return {
+        id: asString(record.link_id),
+        creatorId: await requireUserId(),
+        code,
+        url: `${GROUP_INVITE_URL_PREFIX}${code}`,
+        createdAt: new Date().toISOString(),
+        expiresAt: asString(record.expires_at),
+      } satisfies CiraGroupLinkSecret;
+    },
+
+    async listGroupLinks(groupId) {
+      const data = await rpc("cira_list_group_links", { p_group_id: groupId });
+      if (!Array.isArray(data)) throw new CiraError("UNKNOWN");
+      return data.map((row): CiraGroupLink => {
+        const record = asRecord(row);
+        return {
+          id: asString(record.link_id),
+          creatorId: asString(record.creator_id),
+          createdAt: asString(record.created_at),
+          expiresAt: asString(record.expires_at),
+        };
+      });
+    },
+
+    async previewGroupLink(code) {
+      const data = await rpc("cira_preview_group_link", {
+        p_code: requireValidGroupInviteCode(code),
+      });
+      const record = asRecord(data);
+      return {
+        groupId: asString(record.group_id),
+        groupName: asString(record.group_name),
+        groupDescription: asNullableString(record.group_description),
+        groupAvatarKey: asNullableString(record.group_avatar_key),
+        memberCount: asNumber(record.member_count),
+        creatorHandle: asString(record.creator_handle),
+        creatorDisplayName: asString(record.creator_display_name),
+        expiresAt: asString(record.expires_at),
+      } satisfies CiraGroupLinkPreview;
+    },
+
+    async acceptGroupLink(code) {
+      const data = await rpc("cira_accept_group_link", {
+        p_code: requireValidGroupInviteCode(code),
+      });
+      return asString(asRecord(data).group_id);
+    },
+
+    async revokeGroupLink(id) {
+      await rpc("cira_revoke_group_link", { p_link_id: id });
     },
 
     async setPresenceConsent(enabled) {
