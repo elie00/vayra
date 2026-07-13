@@ -62,8 +62,11 @@ declare
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  select * into v_group from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_FORBIDDEN'; end if;
   v_role := private.cira_group_role(p_group_id, v_uid);
   if v_role not in ('owner', 'admin') then raise exception 'GROUP_FORBIDDEN'; end if;
+  perform private.cira_lock_pair(v_uid, p_user_id);
   if p_user_id = v_uid or private.cira_any_block(v_uid, p_user_id) then
     raise exception 'GROUP_INVITE_UNAVAILABLE';
   end if;
@@ -79,7 +82,6 @@ begin
     raise exception 'ALREADY_GROUP_MEMBER';
   end if;
 
-  select * into v_group from public.cira_groups where id = p_group_id for update;
   select count(*) into v_member_count from public.cira_group_members where group_id = p_group_id;
   delete from public.cira_group_invites
   where group_id = p_group_id and expires_at <= now();
@@ -210,6 +212,9 @@ begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
   select * into v_invite from public.cira_group_invites where id = p_invitation_id for update;
+  if found then
+    perform 1 from public.cira_groups where id = v_invite.group_id for update;
+  end if;
   if not found or (v_invite.inviter_id <> v_uid
       and private.cira_group_role(v_invite.group_id, v_uid) not in ('owner', 'admin')) then
     raise exception 'GROUP_INVITE_UNAVAILABLE';
@@ -236,6 +241,8 @@ declare
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  perform 1 from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_FORBIDDEN'; end if;
   if private.cira_group_role(p_group_id, v_uid) not in ('owner', 'admin') then
     raise exception 'GROUP_FORBIDDEN';
   end if;
@@ -263,6 +270,8 @@ declare v_uid uuid;
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
+  perform 1 from public.cira_groups where id = p_group_id for update;
+  if not found then raise exception 'GROUP_FORBIDDEN'; end if;
   if private.cira_group_role(p_group_id, v_uid) not in ('owner', 'admin') then
     raise exception 'GROUP_FORBIDDEN';
   end if;
@@ -361,6 +370,9 @@ begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
   select * into v_link from public.cira_group_links where id = p_link_id for update;
+  if found then
+    perform 1 from public.cira_groups where id = v_link.group_id for update;
+  end if;
   if not found or (v_link.creator_id <> v_uid
       and private.cira_group_role(v_link.group_id, v_uid) not in ('owner', 'admin')) then
     raise exception 'GROUP_INVITE_UNAVAILABLE';
@@ -420,4 +432,3 @@ grant execute on function public.cira_list_group_links(uuid) to authenticated;
 grant execute on function public.cira_preview_group_link(text) to authenticated;
 grant execute on function public.cira_accept_group_link(text) to authenticated;
 grant execute on function public.cira_revoke_group_link(uuid) to authenticated;
-
