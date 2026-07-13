@@ -90,6 +90,17 @@ VAYRA IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR I
 
 <br/>
 
+## Repository layout
+
+- `src/` and `src-tauri/` — VAYRA desktop and mobile application.
+- `vayra-core/` — shared stream ranking engine.
+- `vara-broker/` — self-hosted VARA synchronization broker.
+- `site/` — public VAYRA website and its Vercel serverless functions.
+
+The application and public website are maintained together in this single
+`elie00/vayra` repository. Site-specific deployment notes live in
+[`site/README.md`](site/README.md).
+
 ## Why VAYRA
 
 **VAYRA** is a self contained desktop client for the Stremio ecosystem. Out of the box it runs on Cinemeta. Add a free TMDB key and it blossoms into your ultimate companion for discovering and watching content. VAYRA was built around the Stremio addon ecosystem with deep native integration of popular services and features into the UI.
