@@ -2,10 +2,10 @@
 
 **Produit :** VAYRA — *A product by EYBO*<br>
 **Période couverte :** 11–13 juillet 2026<br>
-**Dépôt application :** [`elie00/vayra`](https://github.com/elie00/vayra)<br>
-**Dépôt site :** [`elie00/vayra-site`](https://github.com/elie00/vayra-site)<br>
-**Site en production :** [`vayra-site.vercel.app`](https://vayra-site.vercel.app/)<br>
-**Branche applicative courante :** `feat/vayra-mineral-monochrome`
+**Monorepo :** [`elie00/vayra`](https://github.com/elie00/vayra)<br>
+**Site :** dossier `site/` du monorepo, déployé sur [`vayra.eybo.tech`](https://vayra.eybo.tech/)<br>
+**Preview Vercel :** [`vayra-site.vercel.app`](https://vayra-site.vercel.app/)<br>
+**Branche de référence :** `main`
 
 ## 1. Objet du document
 
@@ -50,16 +50,15 @@ Le fork Harbor a été transformé en produit autonome VAYRA avec :
 | --- | --- |
 | Dépôt principal | `https://github.com/elie00/vayra.git` |
 | Ancienne URL | `elie00/harbor` redirige en HTTP 301 vers `elie00/vayra` |
-| `main` / `origin/main` | `d39b204` — `chore(brand): point invite/join base at vayra.eybo.tech` |
-| Branche active | `feat/vayra-mineral-monochrome`, poussée sur `origin` |
-| Écart branche active / `main` | `0` commit propre à `main`, `24` commits propres à la branche active après ce rapport |
-| Site | branche `codex/mineral-monochrome-site` à `2724d22` |
-| Production Vercel | `https://vayra-site.vercel.app/`, réponse HTTP 200 |
+| Branche de référence | `main`, avec identité, auth email, Mineral Monochrome et site consolidés |
+| Site | dossier `site/` du même dépôt, Root Directory Vercel `site` |
+| Production Vercel | `https://vayra.eybo.tech/`, réponse HTTP 200 au dernier contrôle |
+| Preview Vercel | `https://vayra-site.vercel.app/`, conservée pour les validations techniques |
 | Tags VAYRA | `vayra-brand-v1`, `vayra-identity-v1`, `vara-veya-proto-v1` |
 
-**Point important :** les derniers travaux d’authentification, de traduction et
-de design Mineral Monochrome sont poussés sur
-`feat/vayra-mineral-monochrome`, mais ne sont pas encore contenus dans `main`.
+**Point important :** les travaux d’authentification et de design Mineral
+Monochrome sont contenus dans `main`. Les branches historiques restent des
+références de travail et ne doivent pas être fusionnées à nouveau sans audit.
 
 ## 4. Travaux réalisés par domaine
 
@@ -352,14 +351,13 @@ faite au moment de la rédaction de ce document.
 | VARA/VEYA | `vara-broker/`, `src/lib/together/sync/`, `src-tauri/src/vara_client.rs` |
 | Cast | `src-tauri/src/cast.rs`, `src/lib/player/cast-interp.ts`, UI cast/player |
 | Traductions | `src/lib/i18n/locales/` |
-| Site | dépôt `vayra-site`, dossier `public/`, fonctions `api/` |
+| Site | `site/public/`, fonctions `site/api/`, configuration `site/vercel.json` |
 | CI | `.github/workflows/` |
 
 ## 8. Limites et travaux encore nécessaires
 
-1. **Fusion de la branche courante :** les 22 commits propres à
-   `feat/vayra-mineral-monochrome` doivent encore être intégrés à `main` après
-   revue et CI.
+1. **CI Rust :** le job `src-tauri` doit préparer le sidecar yt-dlp attendu par
+   la configuration Tauri avant d'exécuter Clippy et les tests.
 2. **Cast réel :** Chromecast, Roku, Google TV et Samsung doivent être testés sur
    matériel.
 3. **VARA/VEYA :** le scénario manuel deux processus reste obligatoire avant de
@@ -386,7 +384,7 @@ VAYRA autonome, cohérent visuellement et techniquement, doté d’une base
 collaborative, d’une authentification propre, d’un pipeline de lecture plus
 réactif et d’une présence publique déployée.
 
-La priorité suivante est de faire relire et fusionner
-`feat/vayra-mineral-monochrome` dans `main`, puis d’exécuter les validations
+La priorité suivante est de rétablir une CI Rust verte sur `main`, puis
+d’exécuter les validations
 manuelles impossibles en CI : matériel de cast, lecture multiplateforme,
 VARA/VEYA à deux instances et callback email dans les builds packagés.
