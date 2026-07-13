@@ -112,7 +112,7 @@ export function AwardView({ awardType }: { awardType: AwardType }) {
     loadMore();
   }, [loadMore]);
 
-  const tint = laurelColorFor(awardType) ?? "#8267FF";
+  const tint = laurelColorFor(awardType) ?? "#A8AAAD";
   const hasKey = !!settings.tmdbKey;
   const isEmpty =
     !loadingFilms &&

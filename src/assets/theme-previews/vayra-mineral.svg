@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" role="img" aria-labelledby="title desc">
+  <title id="title">VAYRA Mineral Monochrome interface preview</title>
+  <desc id="desc">A dark VAYRA interface with titanium controls and graphite surfaces.</desc>
+  <rect width="1280" height="800" fill="#0A0B0D"/>
+  <rect x="18" y="18" width="226" height="764" rx="24" fill="#111214" stroke="#4B4D50" stroke-opacity=".45"/>
+  <g transform="translate(34 30) scale(.09)" fill="#A8AAAD">
+    <path d="M342 74c71 17 108 80 94 151-14 73-85 142-211 207 61-49 105-94 129-137 42-74 37-161-12-221Z"/>
+    <path d="M170 74C99 91 62 154 76 225c14 73 85 142 211 207-61-49-105-94-129-137-42-74-37-161 12-221Z"/>
+  </g>
+  <text x="88" y="68" fill="#F4F2ED" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="7">VAYRA</text>
+  <g font-family="Arial, sans-serif" font-size="16">
+    <rect x="34" y="112" width="194" height="48" rx="12" fill="#242529"/>
+    <circle cx="57" cy="136" r="6" fill="#A8AAAD"/>
+    <text x="78" y="142" fill="#F4F2ED">Home</text>
+    <circle cx="57" cy="196" r="6" fill="#4B4D50"/>
+    <text x="78" y="202" fill="#A8AAAD">Discover</text>
+    <circle cx="57" cy="256" r="6" fill="#4B4D50"/>
+    <text x="78" y="262" fill="#A8AAAD">Library</text>
+    <circle cx="57" cy="316" r="6" fill="#4B4D50"/>
+    <text x="78" y="322" fill="#A8AAAD">VARA</text>
+  </g>
+  <line x1="34" y1="692" x2="228" y2="692" stroke="#4B4D50" stroke-opacity=".45"/>
+  <circle cx="58" cy="736" r="18" fill="#242529" stroke="#A8AAAD" stroke-opacity=".6"/>
+  <rect x="88" y="722" width="86" height="9" rx="4.5" fill="#F4F2ED"/>
+  <rect x="88" y="739" width="112" height="7" rx="3.5" fill="#737579"/>
+  <rect x="270" y="18" width="992" height="764" rx="24" fill="#0D0E10" stroke="#4B4D50" stroke-opacity=".36"/>
+  <rect x="302" y="44" width="420" height="46" rx="23" fill="#18191C" stroke="#4B4D50" stroke-opacity=".5"/>
+  <circle cx="330" cy="67" r="7" fill="none" stroke="#737579" stroke-width="2"/>
+  <line x1="335" y1="72" x2="341" y2="78" stroke="#737579" stroke-width="2"/>
+  <rect x="1086" y="45" width="44" height="44" rx="22" fill="#18191C"/>
+  <rect x="1142" y="45" width="44" height="44" rx="22" fill="#18191C"/>
+  <rect x="1198" y="45" width="44" height="44" rx="22" fill="#18191C"/>
+  <rect x="302" y="118" width="928" height="390" rx="24" fill="#111214"/>
+  <path d="M780 118h450v390H670c102-76 173-184 110-390Z" fill="#18191C"/>
+  <circle cx="1042" cy="300" r="145" fill="#242529" opacity=".72"/>
+  <g transform="translate(930 178) scale(.44)" fill="#4B4D50">
+    <path d="M342 74c71 17 108 80 94 151-14 73-85 142-211 207 61-49 105-94 129-137 42-74 37-161-12-221Z"/>
+    <path d="M170 74C99 91 62 154 76 225c14 73 85 142 211 207-61-49-105-94-129-137-42-74-37-161 12-221Z"/>
+  </g>
+  <text x="346" y="205" fill="#A8AAAD" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="4">FEATURED TONIGHT</text>
+  <text x="344" y="270" fill="#F4F2ED" font-family="Georgia, serif" font-size="56">Stories, together.</text>
+  <rect x="346" y="304" width="410" height="11" rx="5.5" fill="#737579"/>
+  <rect x="346" y="328" width="350" height="9" rx="4.5" fill="#4B4D50"/>
+  <rect x="346" y="376" width="132" height="48" rx="24" fill="#A8AAAD"/>
+  <text x="386" y="406" fill="#0A0B0D" font-family="Arial, sans-serif" font-size="15" font-weight="700">Watch</text>
+  <rect x="494" y="376" width="166" height="48" rx="24" fill="none" stroke="#4B4D50"/>
+  <text x="529" y="406" fill="#F4F2ED" font-family="Arial, sans-serif" font-size="15">Add to library</text>
+  <text x="304" y="562" fill="#F4F2ED" font-family="Arial, sans-serif" font-size="22" font-weight="700">Continue watching</text>
+  <g>
+    <rect x="302" y="590" width="196" height="150" rx="16" fill="#18191C"/>
+    <rect x="514" y="590" width="196" height="150" rx="16" fill="#202125"/>
+    <rect x="726" y="590" width="196" height="150" rx="16" fill="#18191C"/>
+    <rect x="938" y="590" width="196" height="150" rx="16" fill="#202125"/>
+    <rect x="302" y="732" width="116" height="8" rx="4" fill="#A8AAAD"/>
+    <rect x="514" y="732" width="154" height="8" rx="4" fill="#737579"/>
+    <rect x="726" y="732" width="82" height="8" rx="4" fill="#A8AAAD"/>
+    <rect x="938" y="732" width="136" height="8" rx="4" fill="#737579"/>
+  </g>
+</svg>

@@ -43,7 +43,7 @@ function Badge({ label }: { label: string }) {
     label === "CAM" || label === "EXE"
       ? "bg-info/15 text-info ring-info/30"
       : label === "HDR" || label === "DV"
-        ? "bg-violet-500/15 text-violet-300 ring-violet-500/30"
+        ? "bg-accent/15 text-accent ring-accent/30"
         : label === "Atmos"
           ? "bg-sky-500/15 text-sky-300 ring-sky-500/30"
           : label === "REMUX"

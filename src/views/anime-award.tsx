@@ -31,7 +31,7 @@ export function AnimeAwardView({ sourceId }: { sourceId: AwardSourceId }) {
     setQuery("");
   }, [sourceId]);
 
-  const tint = SOURCE_TINTS[sourceId] ?? "#8267FF";
+  const tint = SOURCE_TINTS[sourceId] ?? "#A8AAAD";
   const totalWins = data.categories.reduce((n, c) => n + c.winners.length, 0);
 
   const filteredCategories = useMemo(() => {

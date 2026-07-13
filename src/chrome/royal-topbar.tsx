@@ -314,7 +314,7 @@ function RoyalProfileMenu({
 
   const name =
     activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
-  const color = activeProfile?.color ?? "#8267ff";
+  const color = activeProfile?.color ?? "#a8aaad";
   const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
   const dismiss = (run: () => void) => {
