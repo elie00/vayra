@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createCiraRepository, normalizeInviteCode } from "./repository";
+import {
+  createCiraRepository,
+  normalizeInviteCode,
+  requireValidInviteCode,
+} from "./repository";
 import type { CiraErrorCode } from "./types";
 
 const USER_ID = "00000000-0000-4000-8000-000000000001";
@@ -310,6 +314,26 @@ describe("invitation code normalisation (symmetric to private.cira_normalize_inv
     expect(normalizeInviteCode("  CIRA AB12 cd34_EF56-gh78.JK90  ")).toBe(
       "CIRAAB12CD34EF56GH78JK90",
     );
+  });
+
+  it("accepts only the generated CIRA prefix and Crockford alphabet", () => {
+    expect(requireValidInviteCode("CIRA-AB12-CD34-EF56-GH78-JK90")).toBe(
+      "CIRAAB12CD34EF56GH78JK90",
+    );
+    expect(() => requireValidInviteCode("CIRA-AB12-CD34-EF56-GH78-JK9U")).toThrowError(
+      expect.objectContaining({ code: "INVITATION_UNAVAILABLE" }),
+    );
+    expect(() => requireValidInviteCode("x".repeat(65))).toThrowError(
+      expect.objectContaining({ code: "INVITATION_UNAVAILABLE" }),
+    );
+  });
+
+  it("rejects malformed codes before calling Supabase", async () => {
+    const mock = makeClient();
+    await expect(createCiraRepository(mock.client).acceptInvitation("not-a-cira-code")).rejects.toMatchObject({
+      code: "INVITATION_UNAVAILABLE",
+    });
+    expect(mock.rpc).not.toHaveBeenCalled();
   });
 
   it("sends the normalised form to the RPC", async () => {
