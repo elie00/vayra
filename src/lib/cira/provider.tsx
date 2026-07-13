@@ -40,6 +40,8 @@ type CiraValue = {
   /** Profil CIRA du compte connecté ; null tant qu'aucun handle n'est choisi. */
   me: CiraProfile | null;
   relationships: CiraRelationship[];
+  relationshipsHasMore: boolean;
+  loadMoreRelationships: () => Promise<void>;
   blocks: CiraProfile[];
   invitations: CiraInvitation[];
   groups: CiraGroup[];
@@ -72,6 +74,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<CiraStatus>("loading");
   const [me, setMe] = useState<CiraProfile | null>(null);
   const [relationships, setRelationships] = useState<CiraRelationship[]>([]);
+  const [relationshipsHasMore, setRelationshipsHasMore] = useState(false);
   const [blocks, setBlocks] = useState<CiraProfile[]>([]);
   const [invitations, setInvitations] = useState<CiraInvitation[]>([]);
   const [groups, setGroups] = useState<CiraGroup[]>([]);
@@ -93,6 +96,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     setRepo(null);
     setMe(null);
     setRelationships([]);
+    setRelationshipsHasMore(false);
     setBlocks([]);
     setInvitations([]);
     setGroups([]);
@@ -123,14 +127,15 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       setMe(profile);
       if (profile) {
         const [rels, blocked, invites, nextGroups, nextGroupInvitations, nextInbox] = await Promise.all([
-          repo.listRelationships(),
+          repo.listRelationshipsPage(),
           repo.listBlocks(),
           repo.listInvitations(),
           repo.listGroups(),
           repo.listGroupInvitations(),
           repo.getInbox(),
         ]);
-        setRelationships(rels);
+        setRelationships(rels.items);
+        setRelationshipsHasMore(rels.hasMore);
         setBlocks(blocked);
         setInvitations(invites);
         setGroups(nextGroups);
@@ -138,6 +143,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
         setInbox(nextInbox);
       } else {
         setRelationships([]);
+        setRelationshipsHasMore(false);
         setBlocks([]);
         setInvitations([]);
         setGroups([]);
@@ -154,11 +160,23 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const refreshRelationships = useCallback(async () => {
     if (!repo) return;
     try {
-      setRelationships(await repo.listRelationships());
+      const page = await repo.listRelationshipsPage();
+      setRelationships(page.items);
+      setRelationshipsHasMore(page.hasMore);
     } catch (err) {
       console.warn("[cira] presence expiry refresh failed", err);
     }
   }, [repo]);
+
+  const loadMoreRelationships = useCallback(async () => {
+    if (!repo || !relationshipsHasMore) return;
+    const page = await repo.listRelationshipsPage(relationships.length);
+    setRelationships((current) => {
+      const known = new Set(current.map((item) => item.id));
+      return [...current, ...page.items.filter((item) => !known.has(item.id))];
+    });
+    setRelationshipsHasMore(page.hasMore);
+  }, [repo, relationships.length, relationshipsHasMore]);
 
   useEffect(() => {
     if (!repo) return;
@@ -250,6 +268,8 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       repo,
       me,
       relationships,
+      relationshipsHasMore,
+      loadMoreRelationships,
       blocks,
       invitations,
       groups,
@@ -263,7 +283,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       presentGroupInvite,
       clearPendingGroupInvite,
     }),
-    [status, repo, me, relationships, blocks, invitations, groups, groupInvitations, inbox, refresh, pendingInviteCode, presentInvite, clearPendingInvite, pendingGroupInviteCode, presentGroupInvite, clearPendingGroupInvite],
+    [status, repo, me, relationships, relationshipsHasMore, loadMoreRelationships, blocks, invitations, groups, groupInvitations, inbox, refresh, pendingInviteCode, presentInvite, clearPendingInvite, pendingGroupInviteCode, presentGroupInvite, clearPendingGroupInvite],
   );
 
   return <CiraContext.Provider value={value}>{children}</CiraContext.Provider>;

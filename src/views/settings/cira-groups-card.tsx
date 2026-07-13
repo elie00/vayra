@@ -249,6 +249,7 @@ function GroupDetails({ group }: { group: CiraGroup }) {
   const t = useT();
   const { repo, me, relationships, refresh } = useCira();
   const [members, setMembers] = useState<CiraGroupMember[]>([]);
+  const [membersHasMore, setMembersHasMore] = useState(false);
   const [links, setLinks] = useState<CiraGroupLink[]>([]);
   const [editing, setEditing] = useState(false);
   const [friendId, setFriendId] = useState("");
@@ -261,10 +262,11 @@ function GroupDetails({ group }: { group: CiraGroup }) {
     if (!repo) return;
     try {
       const [nextMembers, nextLinks] = await Promise.all([
-        repo.listGroupMembers(group.id),
+        repo.listGroupMembersPage(group.id),
         canManage ? repo.listGroupLinks(group.id) : Promise.resolve([]),
       ]);
-      setMembers(nextMembers);
+      setMembers(nextMembers.items);
+      setMembersHasMore(nextMembers.hasMore);
       setLinks(nextLinks);
       setError(null);
     } catch (cause) {
@@ -394,6 +396,15 @@ function GroupDetails({ group }: { group: CiraGroup }) {
             )}
           </div>
         ))}
+        {membersHasMore && (
+          <ActionButton onClick={() => void repo.listGroupMembersPage(group.id, members.length).then((page) => {
+            setMembers((current) => {
+              const known = new Set(current.map((member) => member.userId));
+              return [...current, ...page.items.filter((member) => !known.has(member.userId))];
+            });
+            setMembersHasMore(page.hasMore);
+          }).catch((cause) => setError(groupError(t, cause)))}>{t("Load more members")}</ActionButton>
+        )}
       </div>
       {error && <p className="text-[12px] text-danger">{error}</p>}
     </div>

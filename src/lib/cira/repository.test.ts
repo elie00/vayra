@@ -123,6 +123,13 @@ describe("createCiraRepository RPC wiring", () => {
       rpcData: [],
     },
     {
+      name: "listRelationshipsPage -> cira_list_relationships_page",
+      call: (repo) => repo.listRelationshipsPage(50, 25),
+      rpcName: "cira_list_relationships_page",
+      rpcArgs: { p_limit: 25, p_offset: 50 },
+      rpcData: { items: [], has_more: false },
+    },
+    {
       name: "listInvitations -> cira_list_invitations",
       call: (repo) => repo.listInvitations(),
       rpcName: "cira_list_invitations",
@@ -245,6 +252,7 @@ describe("createCiraRepository RPC wiring", () => {
     },
     { name: "deleteGroup -> cira_delete_group", call: (repo) => repo.deleteGroup("g1"), rpcName: "cira_delete_group", rpcArgs: { p_group_id: "g1" } },
     { name: "listGroupMembers -> cira_list_group_members", call: (repo) => repo.listGroupMembers("g1"), rpcName: "cira_list_group_members", rpcArgs: { p_group_id: "g1" }, rpcData: [] },
+    { name: "listGroupMembersPage -> cira_list_group_members_page", call: (repo) => repo.listGroupMembersPage("g1", 50, 25), rpcName: "cira_list_group_members_page", rpcArgs: { p_group_id: "g1", p_limit: 25, p_offset: 50 }, rpcData: { items: [], has_more: false } },
     { name: "removeGroupMember -> cira_remove_group_member", call: (repo) => repo.removeGroupMember("g1", "u2"), rpcName: "cira_remove_group_member", rpcArgs: { p_group_id: "g1", p_user_id: "u2" } },
     { name: "setGroupRole -> cira_set_group_role", call: (repo) => repo.setGroupRole("g1", "u2", "admin"), rpcName: "cira_set_group_role", rpcArgs: { p_group_id: "g1", p_user_id: "u2", p_role: "admin" } },
     { name: "transferGroupOwnership -> cira_transfer_group_ownership", call: (repo) => repo.transferGroupOwnership("g1", "u2"), rpcName: "cira_transfer_group_ownership", rpcArgs: { p_group_id: "g1", p_user_id: "u2" } },
@@ -336,6 +344,8 @@ describe("error mapping through the repository", () => {
     "GROUP_INVITE_UNAVAILABLE",
     "ALREADY_GROUP_MEMBER",
     "INVALID_GROUP_INVITE",
+    "GROUP_BLOCK_CONFLICT",
+    "INVALID_PAGE",
   ];
 
   it.each(sqlCodes)("surfaces the stable SQL code %s as CiraError", async (code) => {

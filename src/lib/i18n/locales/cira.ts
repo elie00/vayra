@@ -66,6 +66,7 @@ export const ciraEn: Record<string, string> = {
   "A blocked person is already in this group.": "A blocked person is already in this group.",
   "CIRA inbox": "CIRA inbox", "Pending social actions, synchronized across your devices without keeping an activity history.": "Pending social actions, synchronized across your devices without keeping an activity history.",
   "{requests} requests · {groups} group invitations": "{requests} requests · {groups} group invitations", "{count} new": "{count} new", "Everything here has been seen": "Everything here has been seen", "Mark as seen": "Mark as seen",
+  "Load more CIRA": "Load more CIRA", "Load more members": "Load more members",
 };
 
 export const ciraFr: Record<string, string> = {
@@ -126,6 +127,7 @@ export const ciraFr: Record<string, string> = {
   "A blocked person is already in this group.": "Une personne bloquée fait déjà partie de ce groupe.",
   "CIRA inbox": "Boîte CIRA", "Pending social actions, synchronized across your devices without keeping an activity history.": "Actions sociales en attente, synchronisées entre vos appareils sans conserver d'historique d'activité.",
   "{requests} requests · {groups} group invitations": "{requests} demandes · {groups} invitations de groupe", "{count} new": "{count} nouvelles", "Everything here has been seen": "Tout a été consulté", "Mark as seen": "Marquer comme vu",
+  "Load more CIRA": "Charger plus de relations CIRA", "Load more members": "Charger plus de membres",
 };
 
 export const ciraDe: Record<string, string> = {

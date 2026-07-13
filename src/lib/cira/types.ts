@@ -96,6 +96,8 @@ export type CiraInboxSummary = {
   unreadCount: number;
 };
 
+export type CiraPage<T> = { items: T[]; hasMore: boolean };
+
 export type CiraErrorCode =
   | "NOT_AUTHENTICATED"
   | "PROFILE_REQUIRED"
@@ -118,6 +120,7 @@ export type CiraErrorCode =
   | "ALREADY_GROUP_MEMBER"
   | "INVALID_GROUP_INVITE"
   | "GROUP_BLOCK_CONFLICT"
+  | "INVALID_PAGE"
   | "NETWORK"
   | "UNKNOWN";
 
@@ -130,6 +133,7 @@ export interface CiraRepository {
   }): Promise<CiraProfile>;
 
   listRelationships(): Promise<CiraRelationship[]>;
+  listRelationshipsPage(offset?: number, limit?: number): Promise<CiraPage<CiraRelationship>>;
   sendRequest(handle: string): Promise<void>;
   acceptRequest(id: string): Promise<void>;
   declineRequest(id: string): Promise<void>;
@@ -162,6 +166,7 @@ export interface CiraRepository {
   }): Promise<CiraGroup>;
   deleteGroup(id: string): Promise<void>;
   listGroupMembers(id: string): Promise<CiraGroupMember[]>;
+  listGroupMembersPage(id: string, offset?: number, limit?: number): Promise<CiraPage<CiraGroupMember>>;
   removeGroupMember(groupId: string, userId: string): Promise<void>;
   setGroupRole(groupId: string, userId: string, role: "admin" | "member"): Promise<void>;
   transferGroupOwnership(groupId: string, userId: string): Promise<void>;
