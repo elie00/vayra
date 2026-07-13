@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCiraInviteCode, parseVayraAuthCallback } from "./deep-link";
+import { parseCiraGroupInviteCode, parseCiraInviteCode, parseVayraAuthCallback } from "./deep-link";
 
 describe("VAYRA auth callback deep links", () => {
   it("accepts an authorization-code callback", () => {
@@ -16,6 +16,15 @@ describe("VAYRA auth callback deep links", () => {
     expect(parseVayraAuthCallback("vayra://detail/movie/tt123")).toBeNull();
     expect(parseVayraAuthCallback("harbor://auth/callback?code=legacy")).toBeNull();
     expect(parseVayraAuthCallback("https://example.com/auth/callback?code=web")).toBeNull();
+  });
+});
+
+describe("CIRA group invite deep links", () => {
+  it("extracts only fragment codes from the dedicated group route", () => {
+    expect(parseCiraGroupInviteCode("vayra://cira/group#t=CIRAG-AB12")).toBe("CIRAG-AB12");
+    expect(parseCiraGroupInviteCode("vayra://cira/group?t=CIRAG-AB12")).toBeNull();
+    expect(parseCiraGroupInviteCode("vayra://cira/invite#t=CIRAG-AB12")).toBeNull();
+    expect(parseCiraGroupInviteCode("harbor://cira/group#t=CIRAG-AB12")).toBeNull();
   });
 });
 

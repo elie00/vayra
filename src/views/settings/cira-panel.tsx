@@ -244,7 +244,7 @@ function expiresInLabel(t: ReturnType<typeof useT>, expiresAt: string, now: numb
 
 function InviteCard() {
   const t = useT();
-  const { repo, refresh, invitations, presentInvite } = useCira();
+  const { repo, refresh, invitations, presentInvite, presentGroupInvite } = useCira();
   const [secret, setSecret] = useState<CiraInviteSecret | null>(null);
   const [copied, setCopied] = useState(false);
   const [handleDraft, setHandleDraft] = useState("");
@@ -409,7 +409,9 @@ function InviteCard() {
               onChange={(e) => setCodeDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && codeDraft.trim()) {
-                  presentInvite(codeDraft.trim());
+                  const code = codeDraft.trim();
+                  if (/^CIRAG/i.test(code.replace(/[^0-9A-Z]/gi, ""))) presentGroupInvite(code);
+                  else presentInvite(code);
                   setCodeDraft("");
                 }
               }}
@@ -422,7 +424,9 @@ function InviteCard() {
               label={t("Use code")}
               onClick={() => {
                 if (!codeDraft.trim()) return;
-                presentInvite(codeDraft.trim());
+                const code = codeDraft.trim();
+                if (/^CIRAG/i.test(code.replace(/[^0-9A-Z]/gi, ""))) presentGroupInvite(code);
+                else presentInvite(code);
                 setCodeDraft("");
               }}
               disabled={codeDraft.trim().length === 0}

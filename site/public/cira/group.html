@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VAYRA — Private CIRA group invitation</title>
+    <meta name="description" content="You have been invited to a private CIRA group on VAYRA." />
+    <meta name="theme-color" content="#0A0B0D" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" href="/favicon.svg?v=canonical-1" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .shell { min-height: 100dvh; display: grid; place-items: center; padding: 2rem 1.25rem; }
+      .card { width: min(100%, 26rem); border: 1px solid var(--edge-soft); border-radius: 1.25rem; background: var(--surface); padding: 2rem 1.75rem; text-align: center; }
+      .brand { display: inline-flex; align-items: center; gap: .5rem; color: var(--titanium); font-family: var(--font-display); font-size: .85rem; letter-spacing: .22em; text-transform: uppercase; text-decoration: none; }
+      .brand img { width: 1.15rem; height: 1.15rem; }
+      h1 { margin: 1.25rem 0 .5rem; font-family: var(--font-display); font-size: 1.45rem; color: var(--ivory); }
+      p { margin: .35rem 0 0; color: var(--muted); font-size: .95rem; line-height: 1.55; }
+      .actions { display: grid; gap: .6rem; margin-top: 1.5rem; }
+      .button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.9rem; border-radius: .9rem; font-family: var(--font-display); font-size: .92rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+      .primary { background: var(--ivory); color: var(--mineral); border: 1px solid var(--ivory); }
+      .secondary { background: transparent; color: var(--titanium); border: 1px solid var(--edge); }
+      .code { margin-top: 1.25rem; padding: .65rem .75rem; border: 1px dashed var(--edge); border-radius: .75rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .86rem; letter-spacing: .08em; color: var(--ivory); overflow-wrap: anywhere; user-select: all; }
+      .note { margin-top: 1.35rem; font-size: .8rem; color: var(--subtle); }
+      .note a { color: var(--titanium); }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <main class="shell">
+      <div class="card">
+        <a class="brand" href="/"><img src="/favicon.svg?v=canonical-1" alt="" /><span>VAYRA</span></a>
+        <section id="valid" hidden>
+          <h1 id="title">Private CIRA group</h1>
+          <p id="copy">Someone invited you to a private group in their CIRA. VAYRA will show the group details before you decide.</p>
+          <div class="actions">
+            <a id="open" class="button primary" href="#">Open in VAYRA</a>
+            <button id="copy-code" class="button secondary" type="button">Copy code</button>
+          </div>
+          <div id="code" class="code" aria-label="Private group invitation code"></div>
+          <p class="note"><span id="note">This single-use link expires in at most 24 hours. Don't have the app?</span> <a id="download" href="/#download">Download VAYRA</a>.</p>
+        </section>
+        <section id="missing" hidden>
+          <h1 id="missing-title">Invalid group invitation</h1>
+          <p id="missing-copy">This link has no valid private group code. Ask for a new link.</p>
+          <div class="actions"><a id="missing-download" class="button secondary" href="/#download">Download VAYRA</a></div>
+        </section>
+      </div>
+    </main>
+    <script>
+      (function () {
+        var messages = {
+          en: { page: "VAYRA — Private CIRA group invitation", title: "Private CIRA group", copy: "Someone invited you to a private group in their CIRA. VAYRA will show the group details before you decide.", open: "Open in VAYRA", copyCode: "Copy code", copied: "Code copied", note: "This single-use link expires in at most 24 hours. Don't have the app?", download: "Download VAYRA", invalid: "Invalid group invitation", invalidCopy: "This link has no valid private group code. Ask for a new link." },
+          fr: { page: "VAYRA — Invitation à un groupe CIRA privé", title: "Groupe CIRA privé", copy: "Une personne vous invite dans un groupe privé de sa CIRA. VAYRA affichera les détails du groupe avant votre décision.", open: "Ouvrir dans VAYRA", copyCode: "Copier le code", copied: "Code copié", note: "Ce lien à usage unique expire dans un délai maximal de 24 heures. Vous n'avez pas l'application ?", download: "Télécharger VAYRA", invalid: "Invitation de groupe invalide", invalidCopy: "Ce lien ne contient aucun code de groupe privé valide. Demandez un nouveau lien." },
+          de: { page: "VAYRA — Private CIRA-Gruppeneinladung", title: "Private CIRA-Gruppe", copy: "Du wurdest in eine private CIRA-Gruppe eingeladen. VAYRA zeigt dir vor deiner Entscheidung die Gruppendetails.", open: "In VAYRA öffnen", copyCode: "Code kopieren", copied: "Code kopiert", note: "Dieser einmalige Link läuft spätestens nach 24 Stunden ab. Du hast die App noch nicht?", download: "VAYRA herunterladen", invalid: "Ungültige Gruppeneinladung", invalidCopy: "Dieser Link enthält keinen gültigen privaten Gruppencode. Bitte um einen neuen Link." },
+          es: { page: "VAYRA — Invitación a grupo CIRA privado", title: "Grupo CIRA privado", copy: "Te han invitado a un grupo privado de CIRA. VAYRA mostrará los detalles antes de que decidas.", open: "Abrir en VAYRA", copyCode: "Copiar código", copied: "Código copiado", note: "Este enlace de un solo uso caduca en un máximo de 24 horas. ¿No tienes la aplicación?", download: "Descargar VAYRA", invalid: "Invitación de grupo no válida", invalidCopy: "Este enlace no contiene un código de grupo privado válido. Pide uno nuevo." },
+          it: { page: "VAYRA — Invito a un gruppo CIRA privato", title: "Gruppo CIRA privato", copy: "Sei stato invitato a un gruppo CIRA privato. VAYRA mostrerà i dettagli prima della tua decisione.", open: "Apri in VAYRA", copyCode: "Copia codice", copied: "Codice copiato", note: "Questo link monouso scade entro 24 ore. Non hai l'app?", download: "Scarica VAYRA", invalid: "Invito di gruppo non valido", invalidCopy: "Questo link non contiene un codice di gruppo privato valido. Richiedine uno nuovo." },
+          pt: { page: "VAYRA — Convite para grupo CIRA privado", title: "Grupo CIRA privado", copy: "Você recebeu um convite para um grupo privado da CIRA. O VAYRA mostrará os detalhes antes da sua decisão.", open: "Abrir no VAYRA", copyCode: "Copiar código", copied: "Código copiado", note: "Este link de uso único expira em até 24 horas. Ainda não tem o aplicativo?", download: "Baixar VAYRA", invalid: "Convite de grupo inválido", invalidCopy: "Este link não contém um código de grupo privado válido. Peça um novo link." },
+          ar: { page: "VAYRA — دعوة إلى مجموعة CIRA خاصة", title: "مجموعة CIRA خاصة", copy: "تلقيت دعوة إلى مجموعة خاصة في CIRA. سيعرض VAYRA تفاصيل المجموعة قبل أن تقرر.", open: "فتح في VAYRA", copyCode: "نسخ الرمز", copied: "تم نسخ الرمز", note: "تنتهي صلاحية هذا الرابط ذي الاستخدام الواحد خلال 24 ساعة. ليس لديك التطبيق؟", download: "تنزيل VAYRA", invalid: "دعوة مجموعة غير صالحة", invalidCopy: "لا يحتوي هذا الرابط على رمز مجموعة خاصة صالح. اطلب رابطًا جديدًا." }
+        };
+        var language = (navigator.language || "en").slice(0, 2).toLowerCase();
+        var text = messages[language] || messages.en;
+        document.documentElement.lang = messages[language] ? language : "en";
+        document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+        document.title = text.page;
+        document.getElementById("title").textContent = text.title;
+        document.getElementById("copy").textContent = text.copy;
+        document.getElementById("open").textContent = text.open;
+        document.getElementById("copy-code").textContent = text.copyCode;
+        document.getElementById("note").textContent = text.note;
+        document.getElementById("download").textContent = text.download;
+        document.getElementById("missing-title").textContent = text.invalid;
+        document.getElementById("missing-copy").textContent = text.invalidCopy;
+        document.getElementById("missing-download").textContent = text.download;
+        var match = /(?:^|[#&])t=([^&]+)/.exec(location.hash || "");
+        var raw = "";
+        try { raw = match ? decodeURIComponent(match[1]) : ""; } catch (_) { raw = ""; }
+        var code = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
+        if (!/^CIRAG[0-9A-HJKMNP-TV-Z]{20}$/.test(code)) {
+          document.getElementById("missing").hidden = false;
+          return;
+        }
+        document.getElementById("valid").hidden = false;
+        document.getElementById("code").textContent = code;
+        document.getElementById("open").href = "vayra://cira/group#t=" + code;
+        document.getElementById("copy-code").addEventListener("click", function () {
+          if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+          navigator.clipboard.writeText(code).then(function () {
+            var button = document.getElementById("copy-code");
+            button.textContent = text.copied;
+            setTimeout(function () { button.textContent = text.copyCode; }, 2000);
+          }, function () {});
+        });
+      })();
+    </script>
+  </body>
+</html>
