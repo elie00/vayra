@@ -59,12 +59,12 @@ function renderInstallerAsset(svg, basename) {
 }
 
 function sidebar() {
-  const wordmark = dataUri(wordmarkTextSvg("#F5F3EE"));
+  const wordmark = dataUri(wordmarkTextSvg("#F4F2ED"));
   renderInstallerAsset(
     `<svg xmlns="http://www.w3.org/2000/svg" width="164" height="314">
       <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c1f26"/><stop offset=".55" stop-color="#15171c"/><stop offset="1" stop-color="#0d0f13"/></linearGradient></defs>
       <rect width="164" height="314" fill="url(#g)"/>
-      <g transform="translate(39 81) scale(.16796875)" fill="#F5F3EE">
+      <g transform="translate(39 81) scale(.16796875)" fill="#F4F2ED">
         <path d="M170 74C99 91 62 154 76 225c14 73 85 142 211 207-61-49-105-94-129-137-42-74-37-161 12-221Z"/>
         <path d="M342 74c71 17 108 80 94 151-14 73-85 142-211 207 61-49 105-94 129-137 42-74 37-161-12-221Z"/>
       </g>
@@ -75,7 +75,7 @@ function sidebar() {
 }
 
 function header() {
-  const mark = dataUri(brandedSvg("vayra-mark-dark.svg", "#0B0C10", "#11141a"));
+  const mark = dataUri(brandedSvg("vayra-mark-dark.svg", "#0A0B0D", "#111214"));
   renderInstallerAsset(
     `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="57">
       <rect width="150" height="57" fill="#ffffff"/>
