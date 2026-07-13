@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 260" role="img" aria-labelledby="title">
   <title id="title">VAYRA wordmark for dark backgrounds</title>
   <g transform="translate(330 8) scale(.34)">
-    <path fill="#F5F3EE" d="M170 74C99 91 62 154 76 225c14 73 85 142 211 207-61-49-105-94-129-137-42-74-37-161 12-221Z"/>
-    <path fill="#F5F3EE" d="M342 74c71 17 108 80 94 151-14 73-85 142-211 207 61-49 105-94 129-137 42-74 37-161-12-221Z"/>
+    <path fill="#F4F2ED" d="M170 74C99 91 62 154 76 225c14 73 85 142 211 207-61-49-105-94-129-137-42-74-37-161 12-221Z"/>
+    <path fill="#F4F2ED" d="M342 74c71 17 108 80 94 151-14 73-85 142-211 207 61-49 105-94 129-137 42-74 37-161-12-221Z"/>
   </g>
-  <g fill="#F5F3EE" transform="translate(126 184)">
+  <g fill="#F4F2ED" transform="translate(126 184)">
     <path d="M0 0h12l20 47L52 0h12L38 62H26Z"/>
     <path fill-rule="evenodd" d="M103 62h-12l25-62h13l25 62h-12l-6-15h-27Zm10-25h19l-9-24Z"/>
     <path d="M180 0h13l17 25 17-25h13l-24 36v26h-12V36Z"/>
