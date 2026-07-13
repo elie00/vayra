@@ -49,6 +49,14 @@ export type PlayerSnapshot = {
   errorCode: "decode" | "codec" | "network" | "source" | "unknown" | null;
   noAudio?: boolean;
   pip?: boolean;
+  /**
+   * True once the engine has actually rendered its first frame (mpv
+   * `playback-restart`, or html5 `playing`/first `timeupdate` with a positive
+   * currentTime). Distinct from `status: "playing"`, which flips on file-loaded
+   * / readyState>=3 — i.e. before pixels reach the screen. UI that gates a
+   * "ready" state on real render should watch this rather than status alone.
+   */
+  rendered?: boolean;
 };
 
 export type SubtitleStyle = {

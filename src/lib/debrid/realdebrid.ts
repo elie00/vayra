@@ -65,17 +65,14 @@ export function createRealDebrid(apiKey: string): DebridStore {
     };
   }
 
-  async function cacheCheckBatch(
-    _batch: string[],
-    _signal: AbortSignal,
-  ): Promise<DebridResult<CacheMap>> {
-    return { ok: true, data: {} };
-  }
-
+  // Real-Debrid removed its batch availability endpoint (/torrents/instantAvailability)
+  // in 2024 — it now always returns empty. There is no supported bulk cache-check API,
+  // so this remains a no-op stub. The shared TTL cache in cache-check-cache.ts still
+  // wraps it (harmlessly coalescing the empty result); the real gain is for providers
+  // that do expose a batch endpoint (tb/ad/pm/dl).
   async function cacheCheck(hashes: string[], signal: AbortSignal): Promise<DebridResult<CacheMap>> {
     void hashes;
     void signal;
-    void cacheCheckBatch;
     return { ok: true, data: {} };
   }
 

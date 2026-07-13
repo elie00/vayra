@@ -500,7 +500,22 @@ export function PlayPicker({
     const t = window.setTimeout(() => setMaxWaitElapsed(true), 30_000);
     return () => window.clearTimeout(t);
   }, [streamIds]);
-  const addonsSettled = pipelineDone || maxWaitElapsed;
+  // Stream-capable addons that haven't returned yet: discovery is genuinely ongoing.
+  const stillDiscovering = useMemo(() => {
+    if (pipelineDone || !addons || addons.length === 0) return false;
+    const returned = new Set(filteredPicker?.all.map((s) => s.addonId) ?? []);
+    return addons.some((a) => {
+      const id = a.manifest?.id;
+      if (!id || returned.has(id)) return false;
+      return (a.manifest?.resources ?? []).some((r) =>
+        typeof r === "string" ? r === "stream" : r.name === "stream",
+      );
+    });
+  }, [pipelineDone, addons, filteredPicker]);
+  // The 30s cutoff stops the blocking spinner, but must NOT freeze out late addons:
+  // while discovery is still ongoing, keep accepting/appending late results instead of
+  // declaring a terminal state. Late streams re-derive into filteredPicker and rank in.
+  const addonsSettled = pipelineDone || (maxWaitElapsed && !stillDiscovering);
 
   const noStreamIds = addonsSettled && (!streamIds || streamIds.length === 0);
   const noDebrids = addonsSettled && !!streamIds && streamIds.length > 0 && debrids.length === 0;
@@ -667,8 +682,20 @@ export function PlayPicker({
           </div>
         )}
 
-        {!addonsSettled && (!filteredPicker || filteredPicker.all.length === 0) && (
+        {!pipelineDone && !maxWaitElapsed && (!filteredPicker || filteredPicker.all.length === 0) && (
           <CinematicLoader meta={metaForDisplay} />
+        )}
+
+        {/* 30s cutoff reached with nothing yet, but slow addons are still incoming:
+            drop the blocking loader for a subtle "still searching" tail. */}
+        {maxWaitElapsed && stillDiscovering && (!filteredPicker || filteredPicker.all.length === 0) && (
+          <div className="flex items-center justify-center gap-2.5 rounded-2xl bg-elevated/40 px-5 py-4 text-[13px] text-ink-muted ring-1 ring-edge-soft">
+            <span className="relative inline-block h-3 w-3">
+              <span className="absolute inset-0 rounded-full border-[1.5px] border-edge" />
+              <span className="absolute inset-0 animate-spin rounded-full border-[1.5px] border-transparent border-t-ink" />
+            </span>
+            Still searching slower sources…
+          </div>
         )}
 
         <PickerEmptyLadder

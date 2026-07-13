@@ -1,7 +1,7 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dwarn } from "@/lib/debug";
 import { hasUncachedMarker } from "./cached";
-import { magnetFromHash, type DebridResult, type DebridStore, type DirectLink } from "@/lib/debrid/types";
+import { magnetFromHash, type DebridStore, type DirectLink } from "@/lib/debrid/types";
 import { lastEngineAddError, torrentEngineAdd, torrentEngineSelect } from "@/lib/torrent/local-engine";
 import { fullDownloadEnabled, startFullDownload } from "@/lib/torrent/full-download";
 import {
@@ -21,6 +21,96 @@ export type ResolveResult =
 
 const ERROR_VIDEO_MAX_BYTES = 80 * 1024 * 1024;
 const VIDEO_EXT_RE = /\.(mkv|mp4|avi|mov|m4v|webm|ts|m3u8|mpd|flv|wmv|m2ts|mpg|mpeg|ogv|3gp)(\?|#|$)/i;
+
+// How many uncached debrids to resolve concurrently. Uncached resolution blocks
+// on add-magnet → poll → unrestrict, so racing the top candidates cuts worst-case
+// latency from the sum of per-debrid times down to the fastest one.
+const MAX_PARALLEL_DEBRIDS = 4;
+
+type DebridWin = { data: DirectLink; slug: string };
+
+// Resolve debrids concurrently and return the FIRST that yields a validated
+// playable URL. `debrids` order is preserved as the candidate ordering: they are
+// raced in waves of MAX_PARALLEL_DEBRIDS, so every debrid still gets a chance (no
+// regression vs. the old sequential loop) while the common case races the top
+// candidates. Losers within the winning wave are aborted via their own child
+// AbortController the moment a winner is found — each provider's playableUrl
+// observes the abort, stops polling, and best-effort removes any magnet/transfer
+// it added, so we never orphan transfers.
+async function raceDebrids(
+  debrids: DebridStore[],
+  magnet: string,
+  fileIdx: number | undefined,
+  parentSignal: AbortSignal,
+  hint: EpisodeHint | undefined,
+  expectedSize: number | null,
+  tried: Array<{ slug: string; code: string }>,
+): Promise<DebridWin | null> {
+  for (let i = 0; i < debrids.length; i += MAX_PARALLEL_DEBRIDS) {
+    if (parentSignal.aborted) return null;
+    const wave = debrids.slice(i, i + MAX_PARALLEL_DEBRIDS);
+    const won = await raceDebridWave(wave, magnet, fileIdx, parentSignal, hint, expectedSize, tried);
+    if (won) return won;
+  }
+  return null;
+}
+
+async function raceDebridWave(
+  debrids: DebridStore[],
+  magnet: string,
+  fileIdx: number | undefined,
+  parentSignal: AbortSignal,
+  hint: EpisodeHint | undefined,
+  expectedSize: number | null,
+  tried: Array<{ slug: string; code: string }>,
+): Promise<DebridWin | null> {
+  const controllers: AbortController[] = [];
+  const abortLosers = (winnerIdx: number) => {
+    for (let i = 0; i < controllers.length; i++) {
+      if (i !== winnerIdx) controllers[i].abort();
+    }
+  };
+  // Forward a parent abort to every child so their playableUrl calls clean up.
+  const onParentAbort = () => {
+    for (const c of controllers) c.abort();
+  };
+  parentSignal.addEventListener("abort", onParentAbort);
+
+  try {
+    return await new Promise<DebridWin | null>((resolve) => {
+      let pending = debrids.length;
+      const attempts = debrids.map((d, idx) => {
+        const child = new AbortController();
+        controllers[idx] = child;
+        if (parentSignal.aborted) child.abort();
+        return (async () => {
+          const r = await d.playableUrl(magnet, fileIdx, child.signal, hint);
+          if (!r.ok) {
+            tried.push({ slug: d.slug, code: r.code });
+            return;
+          }
+          const ok = await validateLink(r.data, expectedSize, r.data.headers, child.signal);
+          if (!ok) {
+            dwarn(`[resolve] ${d.slug} returned suspicious link (likely error/downloading video)`);
+            tried.push({ slug: d.slug, code: "stub-or-error-video" });
+            return;
+          }
+          // First validated winner: keep it, abort the rest (cleans up their adds).
+          abortLosers(idx);
+          resolve({ data: r.data, slug: d.slug });
+        })().finally(() => {
+          pending -= 1;
+          if (pending === 0) resolve(null);
+        });
+      });
+      void attempts;
+    });
+  } finally {
+    parentSignal.removeEventListener("abort", onParentAbort);
+    // Ensure no child is left running once we've settled.
+    for (const c of controllers) c.abort();
+  }
+}
 
 async function probeIsWebPage(
   url: string,
@@ -122,24 +212,23 @@ export async function resolveStream(
     if (direct) return { ok: true, data: direct, via: "p2p" };
   }
   const magnet = magnetFromHash(stream.infoHash);
-  for (const d of sorted) {
-    if (signal.aborted) {
-      return { ok: false, code: "aborted", tried };
-    }
-    const r: DebridResult<DirectLink> = await d.playableUrl(magnet, stream.fileIdx, signal, hint);
-    if (!r.ok) {
-      tried.push({ slug: d.slug, code: r.code });
-      if (r.code === "aborted") return { ok: false, code: "aborted", tried };
-      continue;
-    }
-    const ok = await validateLink(r.data, expectedSize, r.data.headers, signal);
-    if (ok) {
-      if (fullDownloadEnabled()) startFullDownload(stream.infoHash.toLowerCase(), r.data.url);
-      return { ok: true, data: r.data, via: d.slug };
-    }
-    dwarn(`[resolve] ${d.slug} returned suspicious link (likely error/downloading video), trying next debrid`);
-    tried.push({ slug: d.slug, code: "stub-or-error-video" });
+  if (signal.aborted) {
+    return { ok: false, code: "aborted", tried };
   }
+  const won = await raceDebrids(
+    sorted,
+    magnet,
+    stream.fileIdx,
+    signal,
+    hint,
+    expectedSize,
+    tried,
+  );
+  if (won) {
+    if (fullDownloadEnabled()) startFullDownload(stream.infoHash.toLowerCase(), won.data.url);
+    return { ok: true, data: won.data, via: won.slug };
+  }
+  if (signal.aborted) return { ok: false, code: "aborted", tried };
   const direct = await tryTorrentEngine(stream, hint);
   if (direct) return { ok: true, data: direct, via: "p2p" };
   if (directTorrentEnabled()) return { ok: false, code: engineFailureCode(), tried };
@@ -221,21 +310,13 @@ export async function resolveViaDebrids(
   }
   const magnet = magnetFromHash(hash);
   const tried: Array<{ slug: string; code: string }> = [];
-  for (const d of sorted) {
-    if (signal.aborted) return { ok: false, code: "aborted", tried };
-    const r: DebridResult<DirectLink> = await d.playableUrl(magnet, fileIdx, signal, hint);
-    if (!r.ok) {
-      tried.push({ slug: d.slug, code: r.code });
-      if (r.code === "aborted") return { ok: false, code: "aborted", tried };
-      continue;
-    }
-    const ok = await validateLink(r.data, null, r.data.headers, signal);
-    if (ok) {
-      if (fullDownloadEnabled()) startFullDownload(hash.toLowerCase(), r.data.url);
-      return { ok: true, data: r.data, via: d.slug };
-    }
-    tried.push({ slug: d.slug, code: "stub-or-error-video" });
+  if (signal.aborted) return { ok: false, code: "aborted", tried };
+  const won = await raceDebrids(sorted, magnet, fileIdx, signal, hint, null, tried);
+  if (won) {
+    if (fullDownloadEnabled()) startFullDownload(hash.toLowerCase(), won.data.url);
+    return { ok: true, data: won.data, via: won.slug };
   }
+  if (signal.aborted) return { ok: false, code: "aborted", tried };
   return { ok: false, code: tried[tried.length - 1]?.code ?? "all-debrids-failed", tried };
 }
 
