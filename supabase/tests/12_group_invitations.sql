@@ -75,12 +75,10 @@ begin
     raise exception 'TEST_FAILED: group preview incomplete';
   end if;
   perform public.cira_accept_group_link(code);
-  begin
-    perform public.cira_accept_group_link(code);
-    raise exception 'TEST_FAILED: group link reused';
-  exception when others then
-    if sqlerrm <> 'GROUP_INVITE_UNAVAILABLE' then raise; end if;
-  end;
+  link := public.cira_accept_group_link(code);
+  if link ->> 'error' is distinct from 'GROUP_INVITE_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: group link reuse response %', link;
+  end if;
 
   -- Last seat can be reserved by an accepted direct invitation; a link
   -- cannot overfill because acceptance locks and rechecks the group.

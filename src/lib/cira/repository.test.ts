@@ -392,6 +392,17 @@ describe("error mapping through the repository", () => {
     expect(mock.rpc).not.toHaveBeenCalled();
     expect(mock.from).not.toHaveBeenCalled();
   });
+
+  it("maps a committed RPC error payload without exposing invitation data", async () => {
+    const mock = makeClient();
+    mock.rpc.mockResolvedValue({
+      data: { error: "INVITATION_UNAVAILABLE" },
+      error: null,
+    });
+    await expect(
+      createCiraRepository(mock.client).previewInvitation("CIRA-AB12-CD34-EF56-GH78-JK90"),
+    ).rejects.toMatchObject({ code: "INVITATION_UNAVAILABLE", message: "INVITATION_UNAVAILABLE" });
+  });
 });
 
 describe("invitation code normalisation (symmetric to private.cira_normalize_invite_code)", () => {

@@ -19,6 +19,11 @@ begin
   perform private.cira_require_profile(v_uid);
   perform private.cira_enforce_rate_limit(v_uid, 'invitation_redeem', 10, interval '5 minutes');
 
+  if p_code is null or char_length(p_code) > 64
+     or private.cira_normalize_invite_code(p_code) !~ '^CIRA[0-9A-HJKMNP-TV-Z]{20}$' then
+    return jsonb_build_object('error', 'INVITATION_UNAVAILABLE');
+  end if;
+
   select * into v_inv
   from public.cira_invitations
   where token_hash = private.cira_hash_invite_code(p_code);
@@ -29,12 +34,12 @@ begin
      or v_inv.expires_at <= now()
      or v_inv.creator_id = v_uid
      or private.cira_any_block(v_uid, v_inv.creator_id) then
-    raise exception 'INVITATION_UNAVAILABLE';
+    return jsonb_build_object('error', 'INVITATION_UNAVAILABLE');
   end if;
 
   select * into v_creator from public.cira_profiles where user_id = v_inv.creator_id;
   if not found then
-    raise exception 'INVITATION_UNAVAILABLE';
+    return jsonb_build_object('error', 'INVITATION_UNAVAILABLE');
   end if;
 
   return jsonb_build_object(
@@ -61,6 +66,11 @@ begin
   perform private.cira_require_profile(v_uid);
   perform private.cira_enforce_rate_limit(v_uid, 'invitation_redeem', 10, interval '5 minutes');
 
+  if p_code is null or char_length(p_code) > 64
+     or private.cira_normalize_invite_code(p_code) !~ '^CIRA[0-9A-HJKMNP-TV-Z]{20}$' then
+    return jsonb_build_object('error', 'INVITATION_UNAVAILABLE');
+  end if;
+
   select * into v_inv
   from public.cira_invitations
   where token_hash = private.cira_hash_invite_code(p_code)
@@ -72,7 +82,7 @@ begin
      or v_inv.expires_at <= now()
      or v_inv.creator_id = v_uid
      or private.cira_any_block(v_uid, v_inv.creator_id) then
-    raise exception 'INVITATION_UNAVAILABLE';
+    return jsonb_build_object('error', 'INVITATION_UNAVAILABLE');
   end if;
 
   update public.cira_invitations

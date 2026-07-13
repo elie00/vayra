@@ -98,25 +98,24 @@ begin
 end;
 $do$;
 
--- Documented v1 caveat, asserted: an ERRORING call rolls its counter back.
--- R2 has never redeemed anything; a failed preview leaves no counter row.
+-- Unusable token responses are returned as generic data so the surrounding
+-- transaction commits its rate-limit increment instead of rolling it back.
 do $do$
 declare
   n integer;
+  v jsonb;
 begin
   perform test.login('00000000-0000-4000-8000-0000000007b2');
-  begin
-    perform public.cira_preview_invitation('CIRA-0000-0000-0000-0000-0000');
-    raise exception 'TEST_FAILED: junk code previewable';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_preview_invitation('CIRA-0000-0000-0000-0000-0000');
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: junk preview response %', v;
+  end if;
   perform test.logout();
   select coalesce(sum(count), 0) into n from private.cira_rate_limits
   where user_id = '00000000-0000-4000-8000-0000000007b2'
     and action = 'invitation_redeem';
-  if n <> 0 then
-    raise exception 'TEST_FAILED: erroring call left a counter (%): rollback semantics changed', n;
+  if n <> 1 then
+    raise exception 'TEST_FAILED: unusable token did not persist one attempt (%)', n;
   end if;
 end;
 $do$;

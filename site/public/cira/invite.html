@@ -226,6 +226,9 @@
         }
         // Mirrors normalizeInviteCode in the app (uppercase, [0-9A-Z] only).
         var code = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
+        // Remove the bearer secret from the visible URL and browser history as
+        // soon as it has been copied into this page's short-lived memory.
+        if (location.hash) history.replaceState(null, "", location.pathname + location.search);
 
         var valid = document.getElementById("invite-valid");
         var missing = document.getElementById("invite-missing");

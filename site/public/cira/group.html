@@ -78,6 +78,7 @@
         var raw = "";
         try { raw = match ? decodeURIComponent(match[1]) : ""; } catch (_) { raw = ""; }
         var code = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
+        if (location.hash) history.replaceState(null, "", location.pathname + location.search);
         if (!/^CIRAG[0-9A-HJKMNP-TV-Z]{20}$/.test(code)) {
           document.getElementById("missing").hidden = false;
           return;

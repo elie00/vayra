@@ -106,12 +106,10 @@ begin
     raise exception 'TEST_FAILED: normalisation broken in preview: %', v;
   end if;
 
-  begin
-    perform public.cira_preview_invitation('CIRA-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ');
-    raise exception 'TEST_FAILED: unknown code previewable';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_preview_invitation('CIRA-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ');
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: unknown code preview response %', v;
+  end if;
 end;
 $do$;
 
@@ -142,12 +140,10 @@ begin
 
   -- double acceptance: C reuses the same code -> refused, no relation
   perform test.login('00000000-0000-4000-8000-0000000006c3');
-  begin
-    perform public.cira_accept_invitation(v_code);
-    raise exception 'TEST_FAILED: consumed token accepted twice';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_accept_invitation(v_code);
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: consumed token reuse response %', v;
+  end if;
   perform test.logout();
   select count(*) into n from public.cira_friendships
   where user_low = least('00000000-0000-4000-8000-0000000006a1'::uuid, '00000000-0000-4000-8000-0000000006c3'::uuid)
@@ -205,12 +201,10 @@ begin
 
   -- a revoked token can no longer be redeemed
   perform test.login('00000000-0000-4000-8000-0000000006c3');
-  begin
-    perform public.cira_accept_invitation((select t.v from tvars t where t.k = 'code2'));
-    raise exception 'TEST_FAILED: revoked token accepted';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_accept_invitation((select t.v from tvars t where t.k = 'code2'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: revoked token response %', v;
+  end if;
 end;
 $do$;
 
@@ -238,6 +232,7 @@ $do$;
 do $do$
 declare
   v_status text;
+  v jsonb;
 begin
   update public.cira_invitations
   set created_at = now() - interval '20 minutes',
@@ -245,18 +240,14 @@ begin
   where id = (select t.v from tvars t where t.k = 'id3')::uuid;
 
   perform test.login('00000000-0000-4000-8000-0000000006c3');
-  begin
-    perform public.cira_preview_invitation((select t.v from tvars t where t.k = 'code3'));
-    raise exception 'TEST_FAILED: expired token previewable';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
-  begin
-    perform public.cira_accept_invitation((select t.v from tvars t where t.k = 'code3'));
-    raise exception 'TEST_FAILED: expired token accepted';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_preview_invitation((select t.v from tvars t where t.k = 'code3'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: expired preview response %', v;
+  end if;
+  v := public.cira_accept_invitation((select t.v from tvars t where t.k = 'code3'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: expired accept response %', v;
+  end if;
 
   perform test.login('00000000-0000-4000-8000-0000000006a1');
   select status into v_status from public.cira_list_invitations()
@@ -291,12 +282,10 @@ begin
 
   -- declined = consumed: no further redemption
   perform test.login('00000000-0000-4000-8000-0000000006c3');
-  begin
-    perform public.cira_accept_invitation(v ->> 'code');
-    raise exception 'TEST_FAILED: declined token accepted afterwards';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_accept_invitation(v ->> 'code');
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: declined token reuse response %', v;
+  end if;
 end;
 $do$;
 
@@ -311,46 +300,34 @@ begin
   insert into tvars values ('code5', v ->> 'code');
 
   perform test.login('00000000-0000-4000-8000-0000000006a1');
-  begin
-    perform public.cira_preview_invitation(v ->> 'code');
-    raise exception 'TEST_FAILED: creator previewed own invitation';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
-  begin
-    perform public.cira_accept_invitation(v ->> 'code');
-    raise exception 'TEST_FAILED: creator accepted own invitation';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
-  begin
-    perform public.cira_decline_invitation(v ->> 'code');
-    raise exception 'TEST_FAILED: creator declined own invitation';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_preview_invitation(v ->> 'code');
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: self preview response %', v;
+  end if;
+  v := public.cira_accept_invitation((select t.v from tvars t where t.k = 'code5'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: self accept response %', v;
+  end if;
+  v := public.cira_decline_invitation((select t.v from tvars t where t.k = 'code5'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: self decline response %', v;
+  end if;
 
   -- C blocks A: the token becomes unusable for C, same generic error
   perform test.login('00000000-0000-4000-8000-0000000006c3');
   perform public.cira_block_user('00000000-0000-4000-8000-0000000006a1');
-  begin
-    perform public.cira_preview_invitation(v ->> 'code');
-    raise exception 'TEST_FAILED: blocked user previewed the invitation';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
-  begin
-    perform public.cira_accept_invitation(v ->> 'code');
-    raise exception 'TEST_FAILED: blocked user accepted the invitation';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
-  begin
-    perform public.cira_decline_invitation(v ->> 'code');
-    raise exception 'TEST_FAILED: blocked user declined the invitation';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_preview_invitation((select t.v from tvars t where t.k = 'code5'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: blocked preview response %', v;
+  end if;
+  v := public.cira_accept_invitation((select t.v from tvars t where t.k = 'code5'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: blocked accept response %', v;
+  end if;
+  v := public.cira_decline_invitation((select t.v from tvars t where t.k = 'code5'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: blocked decline response %', v;
+  end if;
   perform public.cira_unblock_user('00000000-0000-4000-8000-0000000006a1');
 end;
 $do$;

@@ -104,17 +104,16 @@ $do$;
 do $do$
 declare
   n integer;
+  v jsonb;
 begin
   perform test.login('00000000-0000-4000-8000-0000000008b2');
   select count(*) into n from public.cira_list_relationships();
   if n <> 0 then raise exception 'TEST_FAILED: B still lists the deleted account'; end if;
 
-  begin
-    perform public.cira_accept_invitation((select t.v from tvars t where t.k = 'code'));
-    raise exception 'TEST_FAILED: invitation of a deleted account redeemable';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_accept_invitation((select t.v from tvars t where t.k = 'code'));
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: deleted-account invite response %', v;
+  end if;
 end;
 $do$;
 
