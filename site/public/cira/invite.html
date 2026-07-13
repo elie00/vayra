@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VAYRA — Invitation CIRA</title>
+    <meta
+      name="description"
+      content="Quelqu'un vous invite à devenir son CIRA sur VAYRA."
+    />
+    <meta name="theme-color" content="#0A0B0D" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg?v=canonical-1" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .invite-shell {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 2rem 1.25rem;
+      }
+      .invite-card {
+        width: min(100%, 26rem);
+        border: 1px solid var(--edge-soft);
+        border-radius: 1.25rem;
+        background: var(--surface);
+        padding: 2rem 1.75rem;
+        text-align: center;
+      }
+      .invite-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--titanium);
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        text-decoration: none;
+      }
+      .invite-brand img {
+        width: 1.15rem;
+        height: 1.15rem;
+      }
+      .invite-card h1 {
+        margin: 1.25rem 0 0.5rem;
+        font-family: var(--font-display);
+        font-size: 1.45rem;
+        color: var(--ivory);
+      }
+      .invite-card p {
+        margin: 0.35rem 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.55;
+      }
+      .invite-actions {
+        display: grid;
+        gap: 0.6rem;
+        margin-top: 1.5rem;
+      }
+      .invite-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 2.9rem;
+        border-radius: 0.9rem;
+        font-family: var(--font-display);
+        font-size: 0.92rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .invite-btn-primary {
+        background: var(--ivory);
+        color: var(--mineral);
+        border: 1px solid var(--ivory);
+      }
+      .invite-btn-secondary {
+        background: transparent;
+        color: var(--titanium);
+        border: 1px solid var(--edge);
+      }
+      .invite-code {
+        margin-top: 1.25rem;
+        padding: 0.65rem 0.75rem;
+        border: 1px dashed var(--edge);
+        border-radius: 0.75rem;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.95rem;
+        letter-spacing: 0.12em;
+        color: var(--ivory);
+        overflow-wrap: anywhere;
+        user-select: all;
+      }
+      .invite-note {
+        margin-top: 1.35rem;
+        font-size: 0.8rem;
+        color: var(--subtle);
+      }
+      .invite-note a {
+        color: var(--titanium);
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <main class="invite-shell">
+      <div class="invite-card">
+        <a class="invite-brand" href="/">
+          <img src="/favicon.svg?v=canonical-1" alt="" />
+          <span>VAYRA</span>
+        </a>
+
+        <section id="invite-valid" hidden>
+          <h1>Invitation CIRA</h1>
+          <p>
+            Quelqu'un vous invite à devenir son CIRA — son cercle proche sur
+            VAYRA. Ouvrez l'application pour voir qui vous invite et accepter.
+          </p>
+          <div class="invite-actions">
+            <a id="open-app" class="invite-btn invite-btn-primary" href="#">
+              Ouvrir dans VAYRA
+            </a>
+            <button id="copy-code" class="invite-btn invite-btn-secondary" type="button">
+              Copier le code
+            </button>
+          </div>
+          <div id="code-box" class="invite-code" aria-label="Code d'invitation"></div>
+          <p class="invite-note">
+            L'invitation expire au bout de 30 minutes maximum. Pas encore
+            l'application ?
+            <a href="/#download">Télécharger VAYRA</a>, puis collez le code
+            dans Réglages&nbsp;→&nbsp;CIRA.
+          </p>
+        </section>
+
+        <section id="invite-missing" hidden>
+          <h1>Lien incomplet</h1>
+          <p>
+            Ce lien ne contient pas de code d'invitation. Demandez à la
+            personne qui vous invite de renvoyer le lien complet, ou collez le
+            code directement dans VAYRA (Réglages&nbsp;→&nbsp;CIRA).
+          </p>
+          <div class="invite-actions">
+            <a class="invite-btn invite-btn-secondary" href="/#download">
+              Télécharger VAYRA
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        // The code lives in the URL FRAGMENT (#t=...) on purpose: it is never
+        // sent to the server, never logged, never indexed. This page does no
+        // network call at all - it only hands the code to the desktop app.
+        var match = /(?:^|[#&])t=([^&]+)/.exec(location.hash || "");
+        var raw = match ? decodeURIComponent(match[1]) : "";
+        // Mirrors normalizeInviteCode in the app (uppercase, [0-9A-Z] only).
+        var code = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
+
+        var valid = document.getElementById("invite-valid");
+        var missing = document.getElementById("invite-missing");
+        if (!code) {
+          missing.hidden = false;
+          return;
+        }
+        valid.hidden = false;
+
+        document.getElementById("code-box").textContent = code;
+        // Same fragment convention on the custom scheme: the code stays out
+        // of anything that looks like a query string.
+        document.getElementById("open-app").href = "vayra://cira/invite#t=" + code;
+
+        var copyBtn = document.getElementById("copy-code");
+        copyBtn.addEventListener("click", function () {
+          var done = function () {
+            copyBtn.textContent = "Code copié";
+            setTimeout(function () {
+              copyBtn.textContent = "Copier le code";
+            }, 2000);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(done, function () {});
+          } else {
+            var range = document.createRange();
+            range.selectNodeContents(document.getElementById("code-box"));
+            var sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            document.execCommand("copy");
+            sel.removeAllRanges();
+            done();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
