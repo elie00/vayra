@@ -11,9 +11,9 @@
 // bearer token (obtained via TVDB login with TVDB_API_KEY) and forward the TVDB
 // response body verbatim so `j.data` matches exactly.
 
-const { TVDB_BASE, getTvdbToken } = require("../../_lib/tvdb.js");
+import { TVDB_BASE, getTvdbToken } from "../../_lib/tvdb.js";
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   if (!process.env.TVDB_API_KEY) {
     res.status(501).json({ error: "not configured", needs: "TVDB_API_KEY" });
     return;

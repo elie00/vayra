@@ -13,7 +13,7 @@
 // We build the map from TVDB v4 episodes for the requested order, attaching the
 // absolute-number key when present and the season/episode key always.
 
-const { getTvdbToken, tvdbGet, tvdbImg, seriesIdFromImdb } = require("../_lib/tvdb.js");
+import { getTvdbToken, tvdbGet, tvdbImg, seriesIdFromImdb } from "../_lib/tvdb.js";
 
 const ORDER_SLUG = {
   aired: "default",
@@ -25,7 +25,7 @@ const ORDER_SLUG = {
   regional: "regional",
 };
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   if (!process.env.TVDB_API_KEY) {
     res.status(501).json({ error: "not configured", needs: "TVDB_API_KEY" });
     return;
