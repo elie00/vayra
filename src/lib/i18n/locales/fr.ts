@@ -16,8 +16,10 @@ import rails from "./fr/rails";
 import spotlights from "./fr/spotlights";
 import sync from "./fr/sync";
 import together from "./fr/together";
+import coverage from "./fr/coverage";
 
 const fr: Record<string, string> = {
+  ...coverage,
   ...chrome,
   ...common,
   ...catalog,
