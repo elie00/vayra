@@ -22,6 +22,7 @@ import type {
   CiraInvitation,
   CiraGroup,
   CiraGroupInvitation,
+  CiraInboxSummary,
   CiraProfile,
   CiraRelationship,
   CiraRepository,
@@ -43,6 +44,7 @@ type CiraValue = {
   invitations: CiraInvitation[];
   groups: CiraGroup[];
   groupInvitations: CiraGroupInvitation[];
+  inbox: CiraInboxSummary | null;
   refresh: () => Promise<void>;
   /** Code d'invitation reçu par deep link, en attente de décision. */
   pendingInviteCode: string | null;
@@ -74,6 +76,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const [invitations, setInvitations] = useState<CiraInvitation[]>([]);
   const [groups, setGroups] = useState<CiraGroup[]>([]);
   const [groupInvitations, setGroupInvitations] = useState<CiraGroupInvitation[]>([]);
+  const [inbox, setInbox] = useState<CiraInboxSummary | null>(null);
   const [pendingInvite, setPendingInvite] = useState<PendingCiraInvite | null>(null);
   const [pendingGroupInvite, setPendingGroupInvite] = useState<PendingCiraInvite | null>(null);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
@@ -94,6 +97,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     setInvitations([]);
     setGroups([]);
     setGroupInvitations([]);
+    setInbox(null);
     if (!userId) {
       setStatus("signedOut");
       return;
@@ -118,24 +122,27 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       const profile = await repo.getMe();
       setMe(profile);
       if (profile) {
-        const [rels, blocked, invites, nextGroups, nextGroupInvitations] = await Promise.all([
+        const [rels, blocked, invites, nextGroups, nextGroupInvitations, nextInbox] = await Promise.all([
           repo.listRelationships(),
           repo.listBlocks(),
           repo.listInvitations(),
           repo.listGroups(),
           repo.listGroupInvitations(),
+          repo.getInbox(),
         ]);
         setRelationships(rels);
         setBlocks(blocked);
         setInvitations(invites);
         setGroups(nextGroups);
         setGroupInvitations(nextGroupInvitations);
+        setInbox(nextInbox);
       } else {
         setRelationships([]);
         setBlocks([]);
         setInvitations([]);
         setGroups([]);
         setGroupInvitations([]);
+        setInbox(null);
       }
       setStatus("ready");
     } catch (err) {
@@ -247,6 +254,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       invitations,
       groups,
       groupInvitations,
+      inbox,
       refresh,
       pendingInviteCode,
       presentInvite,
@@ -255,7 +263,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       presentGroupInvite,
       clearPendingGroupInvite,
     }),
-    [status, repo, me, relationships, blocks, invitations, groups, groupInvitations, refresh, pendingInviteCode, presentInvite, clearPendingInvite, pendingGroupInviteCode, presentGroupInvite, clearPendingGroupInvite],
+    [status, repo, me, relationships, blocks, invitations, groups, groupInvitations, inbox, refresh, pendingInviteCode, presentInvite, clearPendingInvite, pendingGroupInviteCode, presentGroupInvite, clearPendingGroupInvite],
   );
 
   return <CiraContext.Provider value={value}>{children}</CiraContext.Provider>;

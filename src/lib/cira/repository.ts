@@ -10,6 +10,7 @@ import type {
   CiraGroupLinkSecret,
   CiraGroupMember,
   CiraGroupRole,
+  CiraInboxSummary,
   CiraProfile,
   CiraRelationship,
   CiraRepository,
@@ -445,6 +446,20 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
 
     async revokeGroupLink(id) {
       await rpc("cira_revoke_group_link", { p_link_id: id });
+    },
+
+    async getInbox() {
+      const record = asRecord(await rpc("cira_get_inbox"));
+      return {
+        seenAt: asNullableString(record.seen_at),
+        friendRequestCount: asNumber(record.friend_request_count),
+        groupInvitationCount: asNumber(record.group_invitation_count),
+        unreadCount: asNumber(record.unread_count),
+      } satisfies CiraInboxSummary;
+    },
+
+    async markInboxSeen() {
+      await rpc("cira_mark_inbox_seen");
     },
 
     async setPresenceConsent(enabled) {

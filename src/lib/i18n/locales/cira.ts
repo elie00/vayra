@@ -64,6 +64,8 @@ export const ciraEn: Record<string, string> = {
   "Private group invitation": "Private group invitation", "Join group": "Join group", "{count} members": "{count} members",
   "Visible only to your CIRA relations and private groups.": "Visible only to your CIRA relations and private groups.",
   "A blocked person is already in this group.": "A blocked person is already in this group.",
+  "CIRA inbox": "CIRA inbox", "Pending social actions, synchronized across your devices without keeping an activity history.": "Pending social actions, synchronized across your devices without keeping an activity history.",
+  "{requests} requests · {groups} group invitations": "{requests} requests · {groups} group invitations", "{count} new": "{count} new", "Everything here has been seen": "Everything here has been seen", "Mark as seen": "Mark as seen",
 };
 
 export const ciraFr: Record<string, string> = {
@@ -122,6 +124,8 @@ export const ciraFr: Record<string, string> = {
   "Private group invitation": "Invitation à un groupe privé", "Join group": "Rejoindre le groupe", "{count} members": "{count} membres",
   "Visible only to your CIRA relations and private groups.": "Visible uniquement par vos relations CIRA et vos groupes privés.",
   "A blocked person is already in this group.": "Une personne bloquée fait déjà partie de ce groupe.",
+  "CIRA inbox": "Boîte CIRA", "Pending social actions, synchronized across your devices without keeping an activity history.": "Actions sociales en attente, synchronisées entre vos appareils sans conserver d'historique d'activité.",
+  "{requests} requests · {groups} group invitations": "{requests} demandes · {groups} invitations de groupe", "{count} new": "{count} nouvelles", "Everything here has been seen": "Tout a été consulté", "Mark as seen": "Marquer comme vu",
 };
 
 export const ciraDe: Record<string, string> = {

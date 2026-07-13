@@ -271,6 +271,8 @@ describe("createCiraRepository RPC wiring", () => {
     },
     { name: "acceptGroupLink -> cira_accept_group_link", call: (repo) => repo.acceptGroupLink("CIRAG-AB12-CD34-EF56-GH78-JK90"), rpcName: "cira_accept_group_link", rpcArgs: { p_code: "CIRAGAB12CD34EF56GH78JK90" }, rpcData: { group_id: "g1", status: "ok" } },
     { name: "revokeGroupLink -> cira_revoke_group_link", call: (repo) => repo.revokeGroupLink("l1"), rpcName: "cira_revoke_group_link", rpcArgs: { p_link_id: "l1" } },
+    { name: "getInbox -> cira_get_inbox", call: (repo) => repo.getInbox(), rpcName: "cira_get_inbox", rpcArgs: undefined, rpcData: { seen_at: null, friend_request_count: 0, group_invitation_count: 0, unread_count: 0 } },
+    { name: "markInboxSeen -> cira_mark_inbox_seen", call: (repo) => repo.markInboxSeen(), rpcName: "cira_mark_inbox_seen", rpcArgs: undefined },
     {
       name: "setPresenceConsent -> cira_set_presence_consent",
       call: (repo) => repo.setPresenceConsent(true),

@@ -5,7 +5,7 @@
 -- leaks / decliner tracking structurally impossible.
 \echo '=== 00_audit ==='
 
--- RLS enabled on all CIRA tables (9 public + private.cira_rate_limits).
+-- RLS enabled on all CIRA tables (10 public + private.cira_rate_limits).
 do $do$
 declare
   n integer;
@@ -15,8 +15,8 @@ begin
   join pg_namespace ns on ns.oid = c.relnamespace
   where c.relname like 'cira\_%' and c.relkind = 'r'
     and ns.nspname in ('public', 'private');
-  if n <> 10 then
-    raise exception 'TEST_FAILED: expected 10 cira_ tables, found %', n;
+  if n <> 11 then
+    raise exception 'TEST_FAILED: expected 11 cira_ tables, found %', n;
   end if;
 
   select count(*) into n
@@ -25,8 +25,8 @@ begin
   where c.relname like 'cira\_%' and c.relkind = 'r'
     and ns.nspname in ('public', 'private')
     and c.relrowsecurity;
-  if n <> 10 then
-    raise exception 'TEST_FAILED: RLS is not enabled on all 10 cira_ tables (only %)', n;
+  if n <> 11 then
+    raise exception 'TEST_FAILED: RLS is not enabled on all 11 cira_ tables (only %)', n;
   end if;
 end;
 $do$;
@@ -59,8 +59,8 @@ begin
       raise exception 'TEST_FAILED: authenticated cannot execute public.%', r.proname;
     end if;
   end loop;
-  if n <> 38 then
-    raise exception 'TEST_FAILED: expected 38 public cira_ RPCs, found %', n;
+  if n <> 40 then
+    raise exception 'TEST_FAILED: expected 40 public cira_ RPCs, found %', n;
   end if;
 end;
 $do$;
