@@ -62,6 +62,7 @@ export const ciraEn: Record<string, string> = {
   "Transfer ownership before leaving the group.": "Transfer ownership before leaving the group.", "This group invitation is no longer available.": "This group invitation is no longer available.",
   "This person is already in the group.": "This person is already in the group.", "Choose a link duration between 5 minutes and 24 hours.": "Choose a link duration between 5 minutes and 24 hours.",
   "Private group invitation": "Private group invitation", "Join group": "Join group", "{count} members": "{count} members",
+  "Visible only to your CIRA relations and private groups.": "Visible only to your CIRA relations and private groups.",
 };
 
 export const ciraFr: Record<string, string> = {
@@ -118,6 +119,7 @@ export const ciraFr: Record<string, string> = {
   "Transfer ownership before leaving the group.": "Transférez la propriété avant de quitter le groupe.", "This group invitation is no longer available.": "Cette invitation de groupe n'est plus disponible.",
   "This person is already in the group.": "Cette personne fait déjà partie du groupe.", "Choose a link duration between 5 minutes and 24 hours.": "Choisissez une durée de lien entre 5 minutes et 24 heures.",
   "Private group invitation": "Invitation à un groupe privé", "Join group": "Rejoindre le groupe", "{count} members": "{count} membres",
+  "Visible only to your CIRA relations and private groups.": "Visible uniquement par vos relations CIRA et vos groupes privés.",
 };
 
 export const ciraDe: Record<string, string> = {
