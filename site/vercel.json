@@ -40,7 +40,7 @@
       ]
     }
   ],
-  "buildCommand": "echo no build (static + serverless functions)",
+  "buildCommand": "echo skip",
   "outputDirectory": "public",
   "framework": null
 }
