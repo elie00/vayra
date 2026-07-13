@@ -1,10 +1,18 @@
-# Passation — Harbor (session Claude)
+# Passation — VAYRA
 
 ## État actuel (top-line)
 - **Repo** : `elie00/vayra` (autonome, détaché de `harborstremio` ; remote `origin`).
-- **Branches** : `main` **==** `mobile-android` **==** `41149b4`, les deux poussées sur `origin`. Tout est sur `main`.
-- **CI `tauri-build.yml`** : **verte sur les 3 plateformes** (run `29185539882`) → installeurs téléchargeables en artefacts : `harbor-Windows` (.msi), `harbor-Linux-x86_64` (.deb + .AppImage), `harbor-macOS-AppleSilicon` (.dmg). macOS Intel retiré de la matrice.
-- **Arbre propre** ; seuls non-suivis volontaires : `.claude/`, `src-tauri/gen/android/app/src/main/assets/`, `tauri.properties`.
+- **Branche de référence** : `main`, poussée sur `origin`. Les anciennes branches de livraison ne doivent pas être assimilées à `main` sans comparaison Git.
+- **CI** : la branche `ops/release-readiness` est entièrement verte sur le run
+  [`29248392883`](https://github.com/elie00/vayra/actions/runs/29248392883) :
+  APK Android debug, Clippy et tests Rust sur macOS, Windows et Linux. La passe
+  prépare des placeholders de sidecars uniquement pour les contrôles statiques ;
+  les builds de release continuent de télécharger les binaires réels vérifiés.
+  Cette branche reste à relire puis à intégrer à `main`.
+- **Monorepo** : application à la racine, site public et fonctions Vercel sous `site/`. Vercel suit `elie00/vayra`, branche `main`, Root Directory `site`.
+- **Artefacts locaux** : `.claude/`, les assets Android générés et
+  `tauri.properties` sont ignorés. L'architecture VARA/VEYA est versionnée dans
+  `docs/vara-veya-architecture.md`.
 - **Binaires locaux livrés** : `/Applications/Harbor.app` (macOS, reconstruite à jour), `~/Desktop/harbor-android-v4.apk`.
 
 ## Travaux réalisés (par thème)
@@ -33,6 +41,16 @@
 - `77653dc` checksums portables `sha256check` (sha256sum/shasum/certutil) — runners Windows sans `shasum`.
 - `c5c7881` **fix Windows** : ressource sidecar `mpv.exe` déclarée mais jamais fournie → retirée (runtime la gère déjà comme optionnelle via `if mpv.exists()`).
 - `41149b4` **fix Windows** : `force_show_foreground` appelée sous `#[cfg(windows)]` dans tray.rs mais **jamais définie** (code Windows jamais compilé) → implémentée dans lib.rs (Win32 SetForegroundWindow, features déjà présentes).
+- `a137695` prépare les trois sidecars externes attendus par Tauri pendant les
+  contrôles statiques, sans remplacer les téléchargements vérifiés du workflow
+  de release.
+- `d430afc` / `0b87cd0` gardent Clippy strict et isolent uniquement les lints de
+  style déjà identifiés dans les chemins player natifs Linux/Windows ; leur
+  correction source attend un test de lecture manuel sur la plateforme.
+- `d8b5fdf` exécute le script multiplateforme de Clippy/tests sous Bash, y
+  compris sur Windows.
+- `04914f4` corrige deux emprunts superflus lors de l'initialisation de la
+  fenêtre Windows, sans toucher au player.
 
 ### 5. Packaging & docs
 - `d15f49f` `bundle.category/shortDescription/longDescription/homepage/publisher` (alimentent .desktop/AppStream Linux, deb/rpm, NSIS Windows, catégorie macOS).

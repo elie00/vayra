@@ -571,9 +571,9 @@ pub fn run() {
                 }
             }
             #[cfg(windows)]
-            make_main_transparent(&app.handle());
+            make_main_transparent(app.handle());
             #[cfg(windows)]
-            install_maximize_guard(&app.handle());
+            install_maximize_guard(app.handle());
             #[cfg(windows)]
             {
                 use tauri::Manager;
