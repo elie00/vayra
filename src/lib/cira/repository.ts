@@ -19,6 +19,15 @@ export function normalizeInviteCode(code: string): string {
   return code.toUpperCase().replace(/[^0-9A-Z]/g, "");
 }
 
+export function requireValidInviteCode(code: string): string {
+  if (code.length > 64) throw new CiraError("INVITATION_UNAVAILABLE");
+  const normalized = normalizeInviteCode(code);
+  if (!/^CIRA[0-9A-HJKMNP-TV-Z]{20}$/.test(normalized)) {
+    throw new CiraError("INVITATION_UNAVAILABLE");
+  }
+  return normalized;
+}
+
 type JsonRecord = Record<string, unknown>;
 
 function asRecord(value: unknown): JsonRecord {
@@ -202,7 +211,7 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
     },
 
     async previewInvitation(token) {
-      const data = await rpc("cira_preview_invitation", { p_code: normalizeInviteCode(token) });
+      const data = await rpc("cira_preview_invitation", { p_code: requireValidInviteCode(token) });
       const record = asRecord(data);
       return {
         handle: asString(record.creator_handle),
@@ -212,11 +221,11 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
     },
 
     async acceptInvitation(token) {
-      await rpc("cira_accept_invitation", { p_code: normalizeInviteCode(token) });
+      await rpc("cira_accept_invitation", { p_code: requireValidInviteCode(token) });
     },
 
     async declineInvitation(token) {
-      await rpc("cira_decline_invitation", { p_code: normalizeInviteCode(token) });
+      await rpc("cira_decline_invitation", { p_code: requireValidInviteCode(token) });
     },
 
     async revokeInvitation(id) {
