@@ -1,4 +1,4 @@
-# VAYRA — compte rendu consolidé Claude Code + Codex
+# VAYRA — compte rendu consolidé des travaux
 
 **Produit :** VAYRA — *A product by EYBO*<br>
 **Période couverte :** 11–13 juillet 2026<br>
@@ -9,10 +9,10 @@
 
 ## 1. Objet du document
 
-Ce document rassemble les travaux réalisés pendant les sessions Claude Code et
-Codex : stabilisation multiplateforme, cast, i18n, rebranding VAYRA, identité
-technique, VARA/VEYA, authentification par email, performances, direction
-Mineral Monochrome, site public et opérations GitHub/Vercel.
+Ce document rassemble les travaux réalisés sur VAYRA : stabilisation
+multiplateforme, cast, i18n, rebranding, identité technique, VARA/VEYA,
+authentification par email, performances, direction Mineral Monochrome, site
+public et opérations GitHub/Vercel.
 
 Il complète les rapports spécialisés déjà présents :
 
@@ -22,27 +22,7 @@ Il complète les rapports spécialisés déjà présents :
 - [`vayra-email-auth.md`](./vayra-email-auth.md) ;
 - [`vara-veya-implementation-report.md`](./vara-veya-implementation-report.md).
 
-## 2. Limite d’attribution Claude Code / Codex
-
-Claude Code et Codex ont utilisé la même identité Git : `elie00
-<elieyvon.b.o@gmail.com>`. Le champ `author` ne permet donc pas d’attribuer de
-façon certaine chaque commit à un agent.
-
-La provenance retenue ici repose sur les journaux de session :
-
-- **Claude Code / workflow parallèle** : lots explicitement lancés avant la
-  limite de session, worktrees parallèles et travaux présents sur `main` ou dans
-  le site initial ;
-- **Codex** : reprises explicitement demandées après interruption, résolution de
-  conflits, validations, micro-commits, branche Mineral Monochrome, refonte et
-  déploiement du site, renommage du dépôt ;
-- **intégration commune** : travail commencé dans un environnement puis relu,
-  corrigé, validé ou fusionné dans l’autre.
-
-Cette distinction est volontairement prudente : aucune attribution non
-démontrable n’est présentée comme certaine.
-
-## 3. Synthèse exécutive
+## 2. Synthèse exécutive
 
 Le fork Harbor a été transformé en produit autonome VAYRA avec :
 
@@ -64,15 +44,15 @@ Le fork Harbor a été transformé en produit autonome VAYRA avec :
 - un site vitrine monochrome, responsive et déployé sur Vercel ;
 - un dépôt GitHub renommé de `elie00/harbor` vers `elie00/vayra`.
 
-## 4. État Git et déploiement au 13 juillet 2026
+## 3. État Git et déploiement au 13 juillet 2026
 
 | Élément | État constaté |
 | --- | --- |
 | Dépôt principal | `https://github.com/elie00/vayra.git` |
 | Ancienne URL | `elie00/harbor` redirige en HTTP 301 vers `elie00/vayra` |
 | `main` / `origin/main` | `d39b204` — `chore(brand): point invite/join base at vayra.eybo.tech` |
-| Branche active | `feat/vayra-mineral-monochrome` à `a405d81` |
-| Écart branche active / `main` | `0` commit propre à `main`, `22` commits propres à la branche active |
+| Branche active | `feat/vayra-mineral-monochrome`, poussée sur `origin` |
+| Écart branche active / `main` | `0` commit propre à `main`, `24` commits propres à la branche active après ce rapport |
 | Site | branche `codex/mineral-monochrome-site` à `2724d22` |
 | Production Vercel | `https://vayra-site.vercel.app/`, réponse HTTP 200 |
 | Tags VAYRA | `vayra-brand-v1`, `vayra-identity-v1`, `vara-veya-proto-v1` |
@@ -81,9 +61,9 @@ Le fork Harbor a été transformé en produit autonome VAYRA avec :
 de design Mineral Monochrome sont poussés sur
 `feat/vayra-mineral-monochrome`, mais ne sont pas encore contenus dans `main`.
 
-## 5. Travaux réalisés par domaine
+## 4. Travaux réalisés par domaine
 
-### 5.1 Autonomie du fork et sécurité de base
+### 4.1 Autonomie du fork et sécurité de base
 
 - Suppression de la dépendance opérationnelle au dépôt Harbor d’origine ; seul
   le remote `origin` du fork autonome est utilisé.
@@ -95,11 +75,10 @@ de design Mineral Monochrome sont poussés sur
 - Lazy loading de la home et réduction du poids des artworks (`f6f4b21`).
 - Exécution du core via WASM sur le Web (`89496e9`).
 
-### 5.2 Six chantiers roadmap amorcés sous Claude Code puis repris
+### 4.2 Six chantiers roadmap
 
-Le workflow parallèle interrompu par la limite Claude Code couvrait six sujets.
-Les résultats ont ensuite été inspectés, corrigés, commités séparément et
-validés :
+Six chantiers roadmap ont été réalisés, inspectés, corrigés, commités séparément
+et validés :
 
 | Chantier | Résultat | Commits représentatifs |
 | --- | --- | --- |
@@ -110,7 +89,7 @@ validés :
 | Scopes filesystem | Capabilities des fenêtres auxiliaires limitées | `9b19d2c` |
 | Together mobile | Sheet mobile de session collaborative | `1821965` |
 
-### 5.3 Cast : robustesse, matériel et performances
+### 4.3 Cast : robustesse, matériel et performances
 
 Le cast a fait l’objet d’une passe approfondie sans modification du décodage
 vidéo, du HDR, des shaders ou du moteur P2P.
@@ -132,7 +111,7 @@ vidéo, du HDR, des shaders ou du moteur P2P.
 téléviseur Samsung réel reste nécessaire ; aucun matériel de cast n’est présent
 en CI.
 
-### 5.4 Internationalisation
+### 4.4 Internationalisation
 
 - Français complet puis français défini comme langue par défaut.
 - Ajout de l’espagnol, de l’allemand et de l’italien avec tests de parité :
@@ -144,7 +123,7 @@ en CI.
 - Intégration du worktree i18n dans la branche monochrome (`a186428`).
 - Correction de la dépendance React Hook introduite par le sweep (`3e25d8f`).
 
-### 5.5 Android, Windows, Linux, macOS et packaging
+### 4.5 Android, Windows, Linux, macOS et packaging
 
 - Ajout des stubs Android manquants pour les commandes Tauri desktop
   (`7276544`).
@@ -161,7 +140,7 @@ en CI.
 Les notes historiques indiquent une CI verte Windows, Linux et macOS Apple
 Silicon. Windows et Linux restent à valider uniquement via GitHub Actions.
 
-### 5.6 Rebranding visible Harbor → VAYRA
+### 4.6 Rebranding visible Harbor → VAYRA
 
 La première passe a été livrée en quatre commits atomiques :
 
@@ -183,7 +162,7 @@ La passe de complétion a ensuite couvert :
 
 Le tag `vayra-brand-v1` pointe la fusion de cette passe visible (`137b013`).
 
-### 5.7 Reconstruction de l’identité technique
+### 4.7 Reconstruction de l’identité technique
 
 Une seconde vague a migré l’identité interne avec compatibilité :
 
@@ -203,7 +182,7 @@ Le tag `vayra-identity-v1` pointe la fusion (`ad3f0aa`). Les licences,
 attributions, anciens formats lisibles et alias nécessaires sont documentés
 dans [`branding-compatibility.md`](./branding-compatibility.md).
 
-### 5.8 VARA et VEYA
+### 4.8 VARA et VEYA
 
 Le prototype local a été livré en sept micro-commits :
 
@@ -222,7 +201,7 @@ HDR et Stremio n’ont pas été modifiés par ce prototype.
 **Validation restante :** test manuel à deux processus pour play, pause, seek,
 arrivée tardive et absence de boucle.
 
-### 5.9 Authentification VAYRA par email et Stremio
+### 4.9 Authentification VAYRA par email et Stremio
 
 La décision produit finale conserve deux connexions indépendantes :
 
@@ -244,7 +223,7 @@ Configuration documentée : Email actif, confirmation obligatoire, providers
 sociaux désactivés, callback `vayra://auth/callback`, SMTP Resend sur
 `mail.eybo.tech`. Aucun secret `service_role` ou SMTP n’est stocké dans le repo.
 
-### 5.10 Performances du pipeline de streams
+### 4.10 Performances du pipeline de streams
 
 Le lot B1–B8 a été intégré à `main` :
 
@@ -260,7 +239,7 @@ Le lot B1–B8 a été intégré à `main` :
 Commits représentatifs : `d99c5a9`, `d6e1666`, `a844bd2`, `ce6c814`,
 `475ccdd`, `4666ae7`, `8acc7ad`, `4c980ab`, fusion `70d8b08`.
 
-### 5.11 Direction Mineral Monochrome
+### 4.11 Direction Mineral Monochrome
 
 La direction violette/bleue intermédiaire a été abandonnée au profit d’un
 système monochrome premium :
@@ -285,7 +264,7 @@ Les couleurs sémantiques nécessaires, les artworks externes et les thèmes
 choisis par l’utilisateur restent autorisés. La marque VAYRA elle-même n’utilise
 plus d’orange, violet ou bleu.
 
-### 5.12 Site vitrine VAYRA
+### 4.12 Site vitrine VAYRA
 
 Le site initial et ses fonctions serverless ont été repris dans un dépôt Git
 autonome, puis entièrement redessinés :
@@ -305,7 +284,7 @@ Les chemins `/`, `/styles.css`, `/motion.js`, `/favicon.svg`, les manifests
 d’updates et les endpoints serverless contrôlés ont répondu en HTTP 200 après
 déploiement.
 
-### 5.13 GitHub et nom du dépôt
+### 4.13 GitHub et nom du dépôt
 
 - Renommage GitHub : `elie00/harbor` → `elie00/vayra`.
 - Remote local mis à jour vers `https://github.com/elie00/vayra.git`.
@@ -314,7 +293,7 @@ déploiement.
 - Site, scripts d’updates et documentation d’infrastructure actualisés
   (`2724d22`).
 
-## 6. Conflits et intégrations traités
+## 5. Conflits et intégrations traités
 
 - Résolution des conflits de la PR Harbor historique #744 (`ece70bf`) puis
   synchronisation ultérieure avec `main` (`82b8fc4`).
@@ -328,9 +307,9 @@ déploiement.
 - Aucun marqueur `<<<<<<<`, `=======` ou `>>>>>>>` n’est présent dans les
   fichiers suivis de la branche active.
 
-## 7. Validations réellement observées
+## 6. Validations réellement observées
 
-### Application — dernière passe Codex
+### Application — dernière passe locale
 
 | Commande | Résultat |
 | --- | --- |
@@ -362,7 +341,7 @@ Les rapports antérieurs consignent des builds CI Windows, Linux, macOS Apple
 Silicon et Android. Ils ne doivent pas être confondus avec une nouvelle exécution
 faite au moment de la rédaction de ce document.
 
-## 8. Fichiers et zones structurantes
+## 7. Fichiers et zones structurantes
 
 | Zone | Emplacement principal |
 | --- | --- |
@@ -376,7 +355,7 @@ faite au moment de la rédaction de ce document.
 | Site | dépôt `vayra-site`, dossier `public/`, fonctions `api/` |
 | CI | `.github/workflows/` |
 
-## 9. Limites et travaux encore nécessaires
+## 8. Limites et travaux encore nécessaires
 
 1. **Fusion de la branche courante :** les 22 commits propres à
    `feat/vayra-mineral-monochrome` doivent encore être intégrés à `main` après
@@ -400,12 +379,12 @@ faite au moment de la rédaction de ce document.
    `tauri.properties` sont volontairement restés hors des commits de la branche
    courante.
 
-## 10. Conclusion
+## 9. Conclusion
 
-Le travail combiné Claude Code + Codex a fait passer le projet d’un fork Harbor
-à un produit VAYRA autonome, cohérent visuellement et techniquement, doté d’une
-base collaborative, d’une authentification propre, d’un pipeline de lecture
-plus réactif et d’une présence publique déployée.
+Les travaux réalisés ont fait passer le projet d’un fork Harbor à un produit
+VAYRA autonome, cohérent visuellement et techniquement, doté d’une base
+collaborative, d’une authentification propre, d’un pipeline de lecture plus
+réactif et d’une présence publique déployée.
 
 La priorité suivante est de faire relire et fusionner
 `feat/vayra-mineral-monochrome` dans `main`, puis d’exécuter les validations
