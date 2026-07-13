@@ -18,7 +18,7 @@ const FIELDS: Array<{
     id: "customCss",
     label: "Custom CSS",
     placeholder:
-      "/* override anything */\n.harbor-seek-fill { box-shadow: 0 0 12px #8267ff; }",
+      "/* override anything */\n.harbor-seek-fill { box-shadow: 0 0 12px #a8aaad; }",
     hint: "Live-injected into the document. Use it to retheme buttons, change spacing, recolor anything.",
     rows: 7,
   },

@@ -183,23 +183,23 @@ card: flat
 button: flat
 font: sentient-switzer
 bokeh: false
-swatch: #0a0d14, #181d28, #7b5cff
+swatch: #0a0b0d, #242529, #a8aaad
 
 @tokens
---color-canvas: #0a0d14
---color-surface: #11151e
---color-elevated: #181d28
---color-raised: #232936
---color-ink: #e8ebf2
---color-ink-muted: #98a0b3
---color-ink-subtle: #5f6779
---color-edge: #2c3344a0
---color-edge-soft: #2c33444d
---color-accent: #7b5cff
---color-accent-soft: #7b5cff2e
+--color-canvas: #0a0b0d
+--color-surface: #111214
+--color-elevated: #18191c
+--color-raised: #242529
+--color-ink: #f4f2ed
+--color-ink-muted: #a8aaad
+--color-ink-subtle: #737579
+--color-edge: #4b4d50b8
+--color-edge-soft: #4b4d5061
+--color-accent: #a8aaad
+--color-accent-soft: #a8aaad29
 --color-danger: #ef5a5a
 
 @css
-.harbor-cinema-badge { color: #7b5cff; }
+.harbor-cinema-badge { color: #a8aaad; }
 `;
 }
