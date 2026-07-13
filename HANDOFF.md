@@ -1,10 +1,11 @@
-# Passation — Harbor (session Claude)
+# Passation — VAYRA
 
 ## État actuel (top-line)
 - **Repo** : `elie00/vayra` (autonome, détaché de `harborstremio` ; remote `origin`).
-- **Branches** : `main` **==** `mobile-android` **==** `41149b4`, les deux poussées sur `origin`. Tout est sur `main`.
-- **CI `tauri-build.yml`** : **verte sur les 3 plateformes** (run `29185539882`) → installeurs téléchargeables en artefacts : `harbor-Windows` (.msi), `harbor-Linux-x86_64` (.deb + .AppImage), `harbor-macOS-AppleSilicon` (.dmg). macOS Intel retiré de la matrice.
-- **Arbre propre** ; seuls non-suivis volontaires : `.claude/`, `src-tauri/gen/android/app/src/main/assets/`, `tauri.properties`.
+- **Branche de référence** : `main`, poussée sur `origin`. Les anciennes branches de livraison ne doivent pas être assimilées à `main` sans comparaison Git.
+- **CI** : les derniers jobs frontend et Android sont verts. Le job Rust `src-tauri` du run `29243177920` échoue avant Clippy car le sidecar `binaries/yt-dlp-x86_64-unknown-linux-gnu` n'est pas préparé ; correction en cours dans la passe release-readiness.
+- **Monorepo** : application à la racine, site public et fonctions Vercel sous `site/`. Vercel suit `elie00/vayra`, branche `main`, Root Directory `site`.
+- **Non-suivis locaux préservés** : `.claude/`, `docs/vara-veya-architecture.md`, `src-tauri/gen/android/app/src/main/assets/`, `tauri.properties`.
 - **Binaires locaux livrés** : `/Applications/Harbor.app` (macOS, reconstruite à jour), `~/Desktop/harbor-android-v4.apk`.
 
 ## Travaux réalisés (par thème)

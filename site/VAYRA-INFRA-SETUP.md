@@ -4,7 +4,7 @@ Master setup guide for the VAYRA-hosted replacements of every backend service th
 desktop app used to call on `harbor.site` (and a couple of sibling hosts:
 `bugs.harbor.site`, `pub.harbor.site`).
 
-This repo (`vayra-site`) is a Vercel project. Some replacements are **static files** under
+This monorepo directory (`site/`) is the root of the Vercel project. Some replacements are **static files** under
 `public/` (live the moment they deploy, no secret). Others are **Vercel serverless
 functions** under `api/` that need a provider secret before they do anything useful; until
 the secret is set they deploy fine but return `501 {error:"not configured", needs:...}`.
@@ -230,9 +230,8 @@ and confirmed serving.** Re-pointing to an endpoint that returns 501 (unconfigur
 or an empty payload will silently break that feature in shipped apps. Verify each endpoint
 (e.g. `curl` returns the expected contract, not a 501) **before** editing the app.
 
-These constants/URLs live in the **harbor app repo** (this `vayra-site` repo does not
-contain them — no harbor files were edited by this setup). Re-point each only after its
-replacement is green:
+These constants/URLs live in the VAYRA application outside `site/`, in the same
+monorepo. Re-point each only after its replacement is green:
 
 | App-side reference | Re-point to (once live) | Gate before re-pointing |
 |---|---|---|
