@@ -1,0 +1,30 @@
+name: cira-db
+
+on:
+  push:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "scripts/cira/**"
+      - ".github/workflows/cira-db.yml"
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "scripts/cira/**"
+      - ".github/workflows/cira-db.yml"
+
+jobs:
+  security-regressions:
+    name: migrations, RLS and concurrency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-client
+
+      - name: Run disposable CIRA database suite
+        run: PGBIN="$(pg_config --bindir)" bash scripts/cira/db-test.sh
