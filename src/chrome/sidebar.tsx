@@ -105,7 +105,7 @@ export function Sidebar() {
       >
         <div
           data-tauri-drag-region
-          className={`flex h-20 shrink-0 items-center justify-center gap-0.5 px-3 text-ink ${
+          className={`flex h-20 shrink-0 items-center justify-center gap-2.5 px-3 text-ink ${
             collapsed ? "" : "lg:justify-start lg:px-7"
           }`}
         >
@@ -129,20 +129,13 @@ export function Sidebar() {
               />
             ) : (
               <span
-                className="hidden whitespace-nowrap text-[44px] font-medium leading-none tracking-tight lg:inline"
+                className="hidden whitespace-nowrap text-[19px] font-semibold leading-none tracking-[0.16em] lg:inline"
                 style={{
-                  fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif',
-                  transform: "translateY(2px)",
+                  fontFamily: 'var(--font-sans)',
+                  transform: "translateY(1px)",
                 }}
               >
-                Harb
-                <span
-                  className="inline-block"
-                  style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-                >
-                  o
-                </span>
-                r
+                VAYRA
               </span>
             ))}
         </div>
@@ -376,4 +369,3 @@ function NavItem({
     </button>
   );
 }
-
