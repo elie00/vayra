@@ -72,6 +72,22 @@ jobs:
           pnpm run setup:libmpv
           Add-Content $env:GITHUB_PATH "$env:GITHUB_WORKSPACE\src-tauri\libmpv"
 
+      # generate_context! validates every externalBin path even though Clippy and
+      # unit tests never execute these tools. Release builds fetch and verify the
+      # real binaries separately in tauri-build.yml.
+      - name: Create external binary placeholders for static checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET="$(rustc -vV | sed -n 's/^host: //p')"
+          test -n "$TARGET"
+          EXT=""
+          if [[ "$TARGET" == *"windows"* ]]; then EXT=".exe"; fi
+          mkdir -p src-tauri/binaries
+          for binary in yt-dlp ffmpeg ffprobe; do
+            : > "src-tauri/binaries/${binary}-${TARGET}${EXT}"
+          done
+
       # tauri's generate_context! embeds ../dist at compile time, so the frontend
       # must be built before cargo can check/clippy/test the src-tauri crate.
       - name: Build frontend (creates ../dist)
