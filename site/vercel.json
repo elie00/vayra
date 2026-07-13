@@ -39,5 +39,8 @@
         }
       ]
     }
-  ]
+  ],
+  "buildCommand": "echo no build (static + serverless functions)",
+  "outputDirectory": "public",
+  "framework": null
 }
