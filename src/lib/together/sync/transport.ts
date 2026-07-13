@@ -1,5 +1,5 @@
-// SyncTransport — the single seam a future WebSocket relay (or the local
-// Unix-socket broker client) must implement to bridge playback-intent sync.
+// SyncTransport — the shared seam implemented by the compatibility local broker
+// and the authenticated remote Supabase Realtime transport.
 //
 // This interface intentionally hides the transport (Unix socket / named pipe /
 // WebSocket relay) behind a narrow method surface. No imports from player/,
@@ -11,7 +11,8 @@ import type { PlaybackCommand, PlaybackState, RoomId, RoomMember } from "./types
 export type Unsubscribe = () => void;
 
 export interface SyncTransport {
-  // Join / leave a room. The first client of a room becomes host (broker rule).
+  // Connect/disconnect this transport from a room. Persistent membership is a
+  // repository concern and must not be mutated merely because a socket closes.
   join(room: RoomId): void;
   leave(room: RoomId): void;
 
