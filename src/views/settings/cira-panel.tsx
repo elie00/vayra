@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Link2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
 import { useCira } from "@/lib/cira/provider";
 import { CiraError } from "@/lib/cira";
@@ -279,12 +279,20 @@ function InviteCard() {
     }
   };
 
-  const copyLink = () => {
+  const copyLink = async () => {
     if (!secret) return;
-    void navigator.clipboard.writeText(secret.url).then(() => {
+    setNotice(null);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
+      await navigator.clipboard.writeText(secret.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      setNotice({
+        text: t("Couldn't copy the invitation link. Copy the code instead."),
+        tone: "error",
+      });
+    }
   };
 
   const sendRequest = async () => {
@@ -296,7 +304,10 @@ function InviteCard() {
       await repo.sendRequest(target);
       setHandleDraft("");
       await refresh();
-      setNotice({ text: t("Request sent."), tone: "ok" });
+      setNotice({
+        text: t("If the handle can receive requests, the request was sent."),
+        tone: "ok",
+      });
     } catch (err) {
       setNotice({ text: errorText(t, err), tone: "error" });
     } finally {
@@ -330,7 +341,7 @@ function InviteCard() {
                 {secret.url}
               </span>
               <button
-                onClick={copyLink}
+                onClick={() => void copyLink()}
                 aria-label={t("Copy invite link")}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-canvas/40 hover:text-ink"
               >
@@ -598,6 +609,17 @@ function InviteDecisionModal() {
   const [preview, setPreview] = useState<Pick<CiraProfile, "handle" | "displayName"> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pendingInviteCode) return;
+    dialogRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) clearPendingInvite();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [pendingInviteCode, busy, clearPendingInvite]);
 
   useEffect(() => {
     setPreview(null);
@@ -637,9 +659,16 @@ function InviteDecisionModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-edge bg-elevated p-6">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cira-invitation-title"
+        tabIndex={-1}
+        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-edge bg-elevated p-6 outline-none"
+      >
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-display text-[18px] font-medium text-ink">{t("CIRA invitation")}</h3>
+          <h3 id="cira-invitation-title" className="font-display text-[18px] font-medium text-ink">{t("CIRA invitation")}</h3>
           <button
             onClick={clearPendingInvite}
             aria-label={t("Close")}
