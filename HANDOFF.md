@@ -3,12 +3,15 @@
 ## État actuel (top-line)
 - **Repo** : `elie00/vayra` (autonome, détaché de `harborstremio` ; remote `origin`).
 - **Branche de référence** : `main`, poussée sur `origin`. Les anciennes branches de livraison ne doivent pas être assimilées à `main` sans comparaison Git.
-- **CI** : la branche `ops/release-readiness` est entièrement verte sur le run
-  [`29248392883`](https://github.com/elie00/vayra/actions/runs/29248392883) :
-  APK Android debug, Clippy et tests Rust sur macOS, Windows et Linux. La passe
-  prépare des placeholders de sidecars uniquement pour les contrôles statiques ;
-  les builds de release continuent de télécharger les binaires réels vérifiés.
-  Cette branche reste à relire puis à intégrer à `main`.
+- **CI** : `ops/release-readiness` a été intégrée à `main` par `6014fed`, puis
+  la correction i18n `0e59332` a été poussée. Les runs `main`
+  [`29249715349`](https://github.com/elie00/vayra/actions/runs/29249715349),
+  [`29249715392`](https://github.com/elie00/vayra/actions/runs/29249715392) et
+  [`29249715406`](https://github.com/elie00/vayra/actions/runs/29249715406)
+  sont verts : frontend, deux builds Android debug, Clippy et tests Rust sur
+  macOS, Windows et Linux. Les placeholders de sidecars servent uniquement aux
+  contrôles statiques ; les builds de release continuent de télécharger les
+  binaires réels vérifiés.
 - **Monorepo** : application à la racine, site public et fonctions Vercel sous `site/`. Vercel suit `elie00/vayra`, branche `main`, Root Directory `site`.
 - **Artefacts locaux** : `.claude/`, les assets Android générés et
   `tauri.properties` sont ignorés. L'architecture VARA/VEYA est versionnée dans
