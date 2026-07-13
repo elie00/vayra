@@ -176,7 +176,6 @@ export class WebSocketTransport implements SyncTransport {
     this.descriptor = null;
     this.lastPublishedState = null;
     this.membersEmitter.emit([]);
-    void this.repository.leaveRoom(room).catch(() => {});
   }
 
   sendCommand(command: PlaybackCommand): void {
@@ -217,7 +216,6 @@ export class WebSocketTransport implements SyncTransport {
 
   close(): void {
     if (this.closed) return;
-    const room = this.roomId;
     this.closed = true;
     this.generation += 1;
     this.clearReconnect();
@@ -230,7 +228,6 @@ export class WebSocketTransport implements SyncTransport {
     this.roomId = null;
     this.descriptor = null;
     this.lastPublishedState = null;
-    if (room) void this.repository.leaveRoom(room).catch(() => {});
     this.commandEmitter.clear();
     this.stateEmitter.clear();
     this.snapshotEmitter.clear();
