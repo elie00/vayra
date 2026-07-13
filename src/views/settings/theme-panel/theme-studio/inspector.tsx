@@ -1,5 +1,6 @@
 import { ChevronDown, Code2, Layout as LayoutIcon, Palette } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useT } from "@/lib/i18n";
 import type { CodeLang } from "@/components/code-editor";
 import type { ChromeConfig, ThemeButtonStyle, ThemeCardStyle, ThemePreset } from "@/lib/theme";
 import { CardCssPopout } from "./card-css-popout";
@@ -37,27 +38,28 @@ export function Inspector({
   onRegenerateChrome: () => void;
   onExpand: (tab: CodeLang) => void;
 }) {
+  const t = useT();
   const [tab, setTab] = useState<Tab>("look");
   const [cardCssOpen, setCardCssOpen] = useState(false);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-edge-soft px-5 py-2.5">
-        {TABS.map((t) => {
-          const active = tab === t.id;
+        {TABS.map((tabDef) => {
+          const active = tab === tabDef.id;
           return (
             <button
-              key={t.id}
+              key={tabDef.id}
               type="button"
-              onClick={() => setTab(t.id)}
+              onClick={() => setTab(tabDef.id)}
               className={`flex h-12 flex-1 items-center justify-center gap-1.5 rounded-lg text-[15px] font-semibold transition-colors ${
                 active
                   ? "bg-accent-soft text-ink ring-1 ring-inset ring-accent"
                   : "text-ink-muted hover:bg-elevated/50 hover:text-ink"
               }`}
             >
-              {t.icon}
-              {t.label}
+              {tabDef.icon}
+              {t(tabDef.label)}
             </button>
           );
         })}
@@ -67,7 +69,7 @@ export function Inspector({
         <div key={tab} className="animate-[studioTabIn_220ms_ease-out]">
         {tab === "look" && (
           <div className="flex flex-col">
-            <Group title="Identity" sub="What this theme is called.">
+            <Group title={t("Identity")} sub={t("What this theme is called.")}>
               <IdentityRow
                 name={draft.name}
                 blurb={draft.blurb}
@@ -75,11 +77,11 @@ export function Inspector({
                 onSeed={onSeed}
               />
             </Group>
-            <Group title="Colors" sub="Every surface in VAYRA maps to one of these.">
+            <Group title={t("Colors")} sub={t("Every surface in VAYRA maps to one of these.")}>
               <ColorsGrid colors={draft.colors} onChange={(colors) => onPatch({ colors })} />
               <StyleSpecimen colors={draft.colors} />
             </Group>
-            <Group title="Cards" sub="How thumbnails and panels render." defaultOpen={false}>
+            <Group title={t("Cards")} sub={t("How thumbnails and panels render.")} defaultOpen={false}>
               <StylePicker
                 kind="card"
                 value={draft.cardStyle}
@@ -87,14 +89,14 @@ export function Inspector({
                 onEditCustom={() => setCardCssOpen(true)}
               />
             </Group>
-            <Group title="Buttons" sub="Surface treatment for action buttons." defaultOpen={false}>
+            <Group title={t("Buttons")} sub={t("Surface treatment for action buttons.")} defaultOpen={false}>
               <StylePicker
                 kind="button"
                 value={draft.buttonStyle}
                 onChange={(v) => onPatch({ buttonStyle: v as ThemeButtonStyle })}
               />
             </Group>
-            <Group title="Typography" sub="Display + body type pairing, or upload your own font.">
+            <Group title={t("Typography")} sub={t("Display + body type pairing, or upload your own font.")}>
               <FontPicker
                 pairValue={draft.fontPair}
                 customValue={draft.customFontId}
@@ -102,7 +104,7 @@ export function Inspector({
                 onPickCustom={(id) => onPatch({ customFontId: id })}
               />
             </Group>
-            <Group title="Ambience" defaultOpen={false}>
+            <Group title={t("Ambience")} defaultOpen={false}>
               <BokehToggle value={draft.bokeh} onChange={(bokeh) => onPatch({ bokeh })} />
             </Group>
           </div>
@@ -110,7 +112,7 @@ export function Inspector({
 
         {tab === "layout" && (
           <div className="flex flex-col">
-            <Group title="Layout" sub="Where the navigation lives. Pick one to see it live.">
+            <Group title={t("Layout")} sub={t("Where the navigation lives. Pick one to see it live.")}>
               <LayoutPicker value={draft.layout} onChange={(layout) => onPatch({ layout })} />
             </Group>
             {draft.layout === "custom" && (
@@ -123,7 +125,7 @@ export function Inspector({
               />
             )}
             {draft.layout !== "custom" && (
-              <Group title="Navigation items" sub="Reorder, rename, or hide what appears in your nav.">
+              <Group title={t("Navigation items")} sub={t("Reorder, rename, or hide what appears in your nav.")}>
                 <NavEditor layout={draft.layout} />
               </Group>
             )}
@@ -131,7 +133,7 @@ export function Inspector({
         )}
 
         {tab === "code" && (
-          <Group title="Code" sub="CSS, HTML and JS layered over the whole app. Optional for built-in layouts, required for custom chrome.">
+          <Group title={t("Code")} sub={t("CSS, HTML and JS layered over the whole app. Optional for built-in layouts, required for custom chrome.")}>
             <CodeSection css={draft.css} js={draft.js} html={draft.html} onExpand={onExpand} />
           </Group>
         )}
@@ -186,11 +188,12 @@ function Group({
 }
 
 function BokehToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const t = useT();
   return (
     <label className="-mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-lg px-1 py-1 transition-colors hover:bg-white/[0.03]">
       <div className="flex min-w-0 flex-col">
-        <span className="text-[14px] font-semibold text-ink">Bokeh background</span>
-        <span className="text-[13px] text-ink-muted">Floating orbs over the canvas.</span>
+        <span className="text-[14px] font-semibold text-ink">{t("Bokeh background")}</span>
+        <span className="text-[13px] text-ink-muted">{t("Floating orbs over the canvas.")}</span>
       </div>
       <span
         className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"

@@ -240,12 +240,12 @@ export function TraktConnectCard() {
       {phase === "configuring" && !connected && (
         <div className="flex flex-col gap-3 border-t border-edge-soft/60 pt-3">
           <p className="text-[12.5px] text-ink-muted">
-            Register a Trakt app at{" "}
+            {t("Register a Trakt app at")}{" "}
             <ExtLink href="https://trakt.tv/oauth/applications/new">
               trakt.tv/oauth/applications/new
             </ExtLink>
-            . For the redirect URI use <DocsCode>urn:ietf:wg:oauth:2.0:oob</DocsCode>. Paste the
-            credentials it gives you below.
+            . {t("For the redirect URI use")} <DocsCode>urn:ietf:wg:oauth:2.0:oob</DocsCode>.{" "}
+            {t("Paste the credentials it gives you below.")}
           </p>
           <div className="flex flex-col gap-2">
             <input

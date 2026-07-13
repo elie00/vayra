@@ -2,6 +2,7 @@ import { ChevronDown, Play, Zap } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { FormatBadge, type BadgeKind } from "@/components/format-badge";
 import previewPoster from "@/assets/preview/poster1.webp";
+import { useT } from "@/lib/i18n";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export function PickerLayoutPreview({ value }: { value: "condensed" | "stremio" 
 }
 
 function CondensedMock() {
+  const t = useT();
   return (
     <>
       <section className="relative overflow-hidden rounded-[20px] border border-edge-soft/70 bg-canvas/85">
@@ -33,7 +35,7 @@ function CondensedMock() {
           <div className="flex min-w-0 flex-col justify-between gap-3">
             <div className="flex flex-col gap-2">
               <span className="inline-flex w-fit items-center rounded-full border border-edge-soft/70 bg-canvas/60 px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
-                Audio not labeled
+                {t("Audio not labeled")}
               </span>
               <p className="line-clamp-2 break-all font-mono text-[12px] leading-relaxed text-ink">
                 Dune.Part.Two.2024.2160p.WEB-DL.x265-NTb
@@ -51,7 +53,7 @@ function CondensedMock() {
             <div className="flex items-center gap-3">
               <span className="flex h-11 items-center gap-2 rounded-full bg-ink px-7 text-[14px] font-semibold tracking-[0.04em] text-canvas shadow-[0_12px_36px_rgba(0,0,0,0.45)]">
                 <Play size={18} fill="currentColor" strokeWidth={0} />
-                Play
+                {t("Play")}
               </span>
               <AddonLogo addonId="torrentio" addonName="Torrentio" size="lg" />
             </div>
@@ -60,7 +62,7 @@ function CondensedMock() {
       </section>
 
       <div className="flex flex-col gap-2.5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">Switch quality</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">{t("Switch quality")}</p>
         <div className="flex flex-wrap gap-2">
           {TIERS.map((tier, i) => (
             <div
@@ -87,7 +89,7 @@ function CondensedMock() {
       </div>
 
       <div className="flex items-center justify-between rounded-2xl bg-elevated/40 px-4 py-3 ring-1 ring-edge-soft/50">
-        <span className="text-[13px] font-medium text-ink-muted">All sources</span>
+        <span className="text-[13px] font-medium text-ink-muted">{t("All sources")}</span>
         <ChevronDown size={16} className="text-ink-subtle" />
       </div>
     </>

@@ -141,7 +141,7 @@ export function BugReportPanel() {
             value={steps}
             onChange={setSteps}
             rows={6}
-            placeholder={`1. Open Movies\n2. Click The Substance\n3. Press Play\n4. ...`}
+            placeholder={t("1. Open Movies\n2. Click The Substance\n3. Press Play\n4. ...")}
           />
         </Field>
 

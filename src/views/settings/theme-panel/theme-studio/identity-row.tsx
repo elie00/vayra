@@ -1,4 +1,5 @@
 import { THEME_PRESETS, type ThemePreset } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
 
 export function IdentityRow({
   name,
@@ -11,26 +12,27 @@ export function IdentityRow({
   onChange: (patch: { name?: string; blurb?: string }) => void;
   onSeed: (theme: ThemePreset) => void;
 }) {
+  const t = useT();
   return (
     <>
       <div className="flex flex-col gap-3">
         <FieldInput
-          label="Name"
+          label={t("Name")}
           value={name}
           onChange={(v) => onChange({ name: v })}
           placeholder="My VAYRA"
           required
         />
         <FieldInput
-          label="Tagline"
+          label={t("Tagline")}
           value={blurb}
           onChange={(v) => onChange({ blurb: v })}
-          placeholder="One short line shown in the picker"
+          placeholder={t("One short line shown in the picker")}
         />
       </div>
       <div className="mt-1 flex flex-col gap-2">
         <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-          Or start from
+          {t("Or start from")}
         </span>
         <div className="flex flex-wrap gap-2">
           {Object.values(THEME_PRESETS).map((p) => (

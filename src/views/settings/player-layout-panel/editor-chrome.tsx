@@ -7,6 +7,7 @@ import {
   type ThemeId,
 } from "@/lib/player-chrome";
 import { useSettings } from "@/lib/settings";
+import { useT } from "@/lib/i18n";
 
 export function TopRow({
   theme,
@@ -56,6 +57,7 @@ export function FauxBackdrop({
   sizeLabel: string;
   bg: string | null;
 }) {
+  const t = useT();
   return (
     <div className="absolute inset-0">
       <CyclingBackdrop bg={bg} />
@@ -77,7 +79,7 @@ export function FauxBackdrop({
           className="text-[180px] font-medium leading-none tracking-tight text-white"
           style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
         >
-          PREVIEW
+          {t("PREVIEW")}
         </span>
       </div>
     </div>
@@ -190,11 +192,12 @@ export function StremioLayout({ config, selectedId, onSelect, renderOne, isLive 
 
 function LiveSeekRowMock() {
   const { settings } = useSettings();
+  const t = useT();
   return (
     <>
       <span className="flex shrink-0 items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.22em] text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">
         <span className="h-2 w-2 rounded-full bg-danger shadow-[0_0_8px_var(--color-danger)]" />
-        Live
+        {t("Live")}
       </span>
       <div className="pointer-events-none relative h-12 flex-1">
         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2">
@@ -202,7 +205,7 @@ function LiveSeekRowMock() {
         </div>
       </div>
       <span className="shrink-0 text-[12px] font-semibold uppercase tracking-[0.2em] text-white/85 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">
-        Go to live{" "}
+        {t("Go to live")}{" "}
         <span className="ms-0.5 font-mono lowercase tracking-normal text-white/55">· 24s</span>
       </span>
     </>

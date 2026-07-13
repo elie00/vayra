@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, Code2, PanelLeft, PanelTop, Plus, RotateCcw, Shapes, X } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 import type { ChromeConfig, ChromeNavId } from "@/lib/theme";
 import { NAV_CATALOG, NAV_LABELS } from "./chrome-config";
 import { iconComponent } from "./chrome-icons";
@@ -18,6 +19,7 @@ export function CustomChromeBuilder({
   onRegenerate: () => void;
   onOpenCode: () => void;
 }) {
+  const t = useT();
   const enabled = config.items;
   const available = NAV_CATALOG.filter((id) => !enabled.includes(id));
 
@@ -42,34 +44,34 @@ export function CustomChromeBuilder({
   return (
     <div className="flex flex-col gap-4 px-5 pb-5 pt-4">
       <div className="flex flex-col gap-0.5">
-        <span className="text-[15px] font-semibold text-ink">Your navigation</span>
+        <span className="text-[15px] font-semibold text-ink">{t("Your navigation")}</span>
         <span className="text-[13px] leading-snug text-ink-subtle">
           {dirty
-            ? "You're editing the chrome by hand, so the visual builder stays out of your way."
-            : "Pick a position, name it, then choose your menu items."}
+            ? t("You're editing the chrome by hand, so the visual builder stays out of your way.")
+            : t("Pick a position, name it, then choose your menu items.")}
         </span>
       </div>
 
       {!dirty && (
         <>
-      <Field label="Position">
+      <Field label={t("Position")}>
         <div className="grid grid-cols-2 gap-2">
           <PosButton
             active={config.position === "sidebar"}
             icon={<PanelLeft size={16} strokeWidth={2} />}
-            label="Sidebar"
+            label={t("Sidebar")}
             onClick={() => onChange({ ...config, position: "sidebar" })}
           />
           <PosButton
             active={config.position === "topbar"}
             icon={<PanelTop size={16} strokeWidth={2} />}
-            label="Top bar"
+            label={t("Top bar")}
             onClick={() => onChange({ ...config, position: "topbar" })}
           />
         </div>
       </Field>
 
-      <Field label="Brand name">
+      <Field label={t("Brand name")}>
         <input
           type="text"
           value={config.brand}
@@ -79,7 +81,7 @@ export function CustomChromeBuilder({
         />
       </Field>
 
-      <Field label="Menu items">
+      <Field label={t("Menu items")}>
         <div className="flex flex-col gap-1.5">
           {enabled.map((id, i) => (
             <MenuItemRow
@@ -96,7 +98,7 @@ export function CustomChromeBuilder({
             />
           ))}
           {enabled.length === 0 && (
-            <p className="px-1 text-[12px] text-ink-subtle">Add at least one item below.</p>
+            <p className="px-1 text-[12px] text-ink-subtle">{t("Add at least one item below.")}</p>
           )}
         </div>
         {available.length > 0 && (
@@ -124,7 +126,7 @@ export function CustomChromeBuilder({
         className="flex h-12 items-center justify-center gap-2 rounded-lg border border-edge-soft text-[15px] font-semibold text-ink-muted transition-colors hover:border-edge hover:bg-white/[0.03] hover:text-ink"
       >
         <Code2 size={16} strokeWidth={2.2} />
-        Edit the HTML and CSS by hand
+        {t("Edit the HTML and CSS by hand")}
       </button>
 
       {dirty && (
@@ -134,7 +136,7 @@ export function CustomChromeBuilder({
           className="flex h-8 items-center justify-center gap-1.5 text-[12px] font-medium text-ink-subtle transition-colors hover:text-ink-muted"
         >
           <RotateCcw size={12} strokeWidth={2.2} />
-          Rebuild from the visual builder
+          {t("Rebuild from the visual builder")}
         </button>
       )}
     </div>
@@ -162,6 +164,7 @@ function MenuItemRow({
   onMoveDown: () => void;
   onRemove: () => void;
 }) {
+  const t = useT();
   const [picking, setPicking] = useState(false);
   const isImage = !!iconId?.startsWith("data:");
   const CurrentIcon = iconId && !isImage ? iconComponent(iconId) : undefined;
@@ -173,7 +176,7 @@ function MenuItemRow({
         <button
           type="button"
           onClick={() => setPicking((v) => !v)}
-          aria-label="Choose icon"
+          aria-label={t("Choose icon")}
           className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border transition-colors ${
             picking
               ? "border-accent/70 text-ink"
@@ -193,16 +196,16 @@ function MenuItemRow({
         <input
           value={label}
           onChange={(e) => onRename(e.target.value)}
-          aria-label="Rename item"
+          aria-label={t("Rename item")}
           className="min-w-0 flex-1 rounded-md bg-transparent px-1.5 py-1 text-[15px] font-medium text-ink outline-none transition-colors hover:bg-canvas/40 focus:bg-canvas/55"
         />
-        <IconBtn label="Move up" disabled={isFirst} onClick={onMoveUp}>
+        <IconBtn label={t("Move up")} disabled={isFirst} onClick={onMoveUp}>
           <ChevronUp size={14} strokeWidth={2.4} />
         </IconBtn>
-        <IconBtn label="Move down" disabled={isLast} onClick={onMoveDown}>
+        <IconBtn label={t("Move down")} disabled={isLast} onClick={onMoveDown}>
           <ChevronDown size={14} strokeWidth={2.4} />
         </IconBtn>
-        <IconBtn label="Remove" onClick={onRemove}>
+        <IconBtn label={t("Remove")} onClick={onRemove}>
           <X size={13} strokeWidth={2.4} />
         </IconBtn>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { HarborLoader } from "@/components/harbor-loader";
 import type { Meta } from "@/lib/cinemeta";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
+import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
 import { type PlayEpisode } from "@/lib/view";
 import { LogoOrText } from "./logo-or-text";
@@ -22,15 +23,16 @@ export function AutoPlayTransition({
   download?: boolean;
 }) {
   void resolving;
+  const t = useT();
   const kid = useActiveKid();
   const backdrop = episode?.still || meta.background || meta.poster;
   const [stubNotice, setStubNotice] = useState<string | null>(null);
   useEffect(() => {
     const ev = consumeRecentStubEvent(8000);
     if (!ev) return;
-    setStubNotice("Last source wasn't actually cached on your debrid yet. Trying another.");
-    const t = window.setTimeout(() => setStubNotice(null), 6000);
-    return () => window.clearTimeout(t);
+    setStubNotice(t("Last source wasn't actually cached on your debrid yet. Trying another."));
+    const timer = window.setTimeout(() => setStubNotice(null), 6000);
+    return () => window.clearTimeout(timer);
   }, []);
   return (
     <main className={`fixed inset-0 z-[120] overflow-hidden ${kid ? "bg-[#0c4a6e]" : "bg-black"}`}>
@@ -107,10 +109,10 @@ export function AutoPlayTransition({
           size="md"
           caption={
             download
-              ? "Preparing download"
+              ? t("Preparing download")
               : attemptIdx && attemptIdx > 0
-                ? `Trying source ${attemptIdx + 1}`
-                : "Connecting"
+                ? t("Trying source {n}", { n: attemptIdx + 1 })
+                : t("Connecting")
           }
         />
         {stubNotice && (
@@ -131,7 +133,7 @@ export function AutoPlayTransition({
             strokeLinecap="round"
           />
         </svg>
-        Cancel
+        {t("Cancel")}
       </button>
     </main>
   );

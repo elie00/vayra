@@ -173,10 +173,9 @@ export function StreamingSourcesPanel({
           iconSrc={realDebridLogo}
           help={
             <>
-              Get yours at{" "}
-              <ExtLink href="https://real-debrid.com/apitoken">real-debrid.com/apitoken</ExtLink>.
-              Used to check cache and unrestrict links. VAYRA never adds or removes torrents on
-              its own.
+              {t("Get yours at")}{" "}
+              <ExtLink href="https://real-debrid.com/apitoken">real-debrid.com/apitoken</ExtLink>.{" "}
+              {t("Used to check cache and unrestrict links. VAYRA never adds or removes torrents on its own.")}
             </>
           }
           headerExtra={
@@ -195,10 +194,9 @@ export function StreamingSourcesPanel({
           iconSrc={torboxLogo}
           help={
             <>
-              Get yours at{" "}
-              <ExtLink href="https://torbox.app/settings">torbox.app/settings</ExtLink>. Same
-              read-only usage as Real-Debrid. Also lets you queue uncached torrents from the play
-              picker.
+              {t("Get yours at")}{" "}
+              <ExtLink href="https://torbox.app/settings">torbox.app/settings</ExtLink>.{" "}
+              {t("Same read-only usage as Real-Debrid. Also lets you queue uncached torrents from the play picker.")}
             </>
           }
           headerExtra={
@@ -217,10 +215,9 @@ export function StreamingSourcesPanel({
           iconSrc={allDebridLogo}
           help={
             <>
-              Get yours at{" "}
-              <ExtLink href="https://alldebrid.com/apikeys/">alldebrid.com/apikeys</ExtLink>.
-              AllDebrid deprecated their cache-check endpoint, so streams may show as unknown
-              until you actually hit Play.
+              {t("Get yours at")}{" "}
+              <ExtLink href="https://alldebrid.com/apikeys/">alldebrid.com/apikeys</ExtLink>.{" "}
+              {t("AllDebrid deprecated their cache-check endpoint, so streams may show as unknown until you actually hit Play.")}
             </>
           }
           headerExtra={
@@ -239,9 +236,9 @@ export function StreamingSourcesPanel({
           iconSrc={premiumizeLogo}
           help={
             <>
-              Get yours at{" "}
-              <ExtLink href="https://www.premiumize.me/account">premiumize.me/account</ExtLink>.
-              Uses the directdl endpoint, which skips queueing for anything already cached.
+              {t("Get yours at")}{" "}
+              <ExtLink href="https://www.premiumize.me/account">premiumize.me/account</ExtLink>.{" "}
+              {t("Uses the directdl endpoint, which skips queueing for anything already cached.")}
             </>
           }
           headerExtra={
@@ -260,11 +257,11 @@ export function StreamingSourcesPanel({
           iconSrc={debridLinkLogo}
           help={
             <>
-              Get yours at{" "}
+              {t("Get yours at")}{" "}
               <ExtLink href="https://debrid-link.com/webapp/apikey">
                 debrid-link.com/webapp/apikey
               </ExtLink>
-              . EU-hosted, fast cache check. Same read-only usage as the others.
+              . {t("EU-hosted, fast cache check. Same read-only usage as the others.")}
             </>
           }
           headerExtra={

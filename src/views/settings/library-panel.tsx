@@ -382,12 +382,11 @@ export function LibraryPanel({
           }
           help={
             <>
-              Highly recommended. This is what gives you the full VAYRA experience: Popular,
-              Trending, In Theaters, and per-service rails. Free at{" "}
+              {t("Highly recommended. This is what gives you the full VAYRA experience: Popular, Trending, In Theaters, and per-service rails. Free at")}{" "}
               <ExtLink href="https://www.themoviedb.org/settings/api">
                 themoviedb.org/settings/api
               </ExtLink>
-              . Use the v3 key, not the read access token.
+              . {t("Use the v3 key, not the read access token.")}
             </>
           }
         />
@@ -407,11 +406,11 @@ export function LibraryPanel({
           iconSrc={omdbLogo}
           help={
             <>
-              Free at{" "}
+              {t("Free at")}{" "}
               <ExtLink href="https://www.omdbapi.com/apikey.aspx">
                 omdbapi.com/apikey.aspx
               </ExtLink>
-              . They email an activation link the first time. Click it, then come back and save.
+              . {t("They email an activation link the first time. Click it, then come back and save.")}
             </>
           }
         />
@@ -425,10 +424,9 @@ export function LibraryPanel({
           iconSrc={rpdbLogo}
           help={
             <>
-              Paid plan at{" "}
-              <ExtLink href="https://ratingposterdb.com">ratingposterdb.com</ExtLink>. Once
-              saved, every poster gets re-rendered with IMDb, Rotten Tomatoes, and Metacritic
-              stamped on it.
+              {t("Paid plan at")}{" "}
+              <ExtLink href="https://ratingposterdb.com">ratingposterdb.com</ExtLink>.{" "}
+              {t("Once saved, every poster gets re-rendered with IMDb, Rotten Tomatoes, and Metacritic stamped on it.")}
             </>
           }
         />
@@ -445,9 +443,8 @@ export function LibraryPanel({
           iconSrc={mdblistLogo}
           help={
             <>
-              Free key at <ExtLink href="https://mdblist.com/preferences/">mdblist.com</ExtLink>.
-              Adds Letterboxd and Trakt community ratings to detail pages, covering what OMDb
-              misses.
+              {t("Free key at")} <ExtLink href="https://mdblist.com/preferences/">mdblist.com</ExtLink>.{" "}
+              {t("Adds Letterboxd and Trakt community ratings to detail pages, covering what OMDb misses.")}
             </>
           }
         />
@@ -465,7 +462,7 @@ export function LibraryPanel({
           iconBg="#EE1066"
           help={
             <>
-              Powers the Identify-song button in the player. Get a token at{" "}
+              {t("Powers the Identify-song button in the player. Get a token at")}{" "}
               <ExtLink href="https://dashboard.audd.io/">dashboard.audd.io</ExtLink>.
             </>
           }
@@ -483,11 +480,11 @@ export function LibraryPanel({
           iconSrc={rpdbLogo}
           help={
             <>
-              Leave empty to use your RPDB key above. Or paste{" "}
-              <strong>Better Posters</strong> (<code>https://btttr.cc</code>), a bare
-              RPDB-compatible server (your RPDB key is still sent), or a full URL template using{" "}
-              <code>{"{imdbId}"}</code>, <code>{"{tmdbId}"}</code>, <code>{"{type}"}</code>, or{" "}
-              <code>{"{id}"}</code>. PostersPlus needs the template form, e.g.{" "}
+              {t("Leave empty to use your RPDB key above. Or paste")}{" "}
+              <strong>Better Posters</strong> (<code>https://btttr.cc</code>),{" "}
+              {t("a bare RPDB-compatible server (your RPDB key is still sent), or a full URL template using")}{" "}
+              <code>{"{imdbId}"}</code>, <code>{"{tmdbId}"}</code>, <code>{"{type}"}</code>, {t("or")}{" "}
+              <code>{"{id}"}</code>. {t("PostersPlus needs the template form, e.g.")}{" "}
               <code>{"postersplus.elfhosted.com/poster?tmdb_id={tmdbId}&imdb_id={imdbId}&type={type}"}</code>.
             </>
           }
@@ -514,11 +511,11 @@ export function LibraryPanel({
           iconSrc={fanartLogo}
           help={
             <>
-              Fills in where TMDB comes up empty (anime, older catalog). Free at{" "}
+              {t("Fills in where TMDB comes up empty (anime, older catalog). Free at")}{" "}
               <ExtLink href="https://fanart.tv/get-an-api-key/">
                 fanart.tv/get-an-api-key
               </ExtLink>
-              . Use the "personal" key, not the project one.
+              . {t('Use the "personal" key, not the project one.')}
             </>
           }
         />
@@ -548,12 +545,11 @@ export function LibraryPanel({
           }
           help={
             <>
-              Episode titles, alternate names, network info, and the arc/DVD/absolute orderings.
-              Layered on TMDB so the better source wins per field. Free for personal use at{" "}
+              {t("Episode titles, alternate names, network info, and the arc/DVD/absolute orderings. Layered on TMDB so the better source wins per field. Free for personal use at")}{" "}
               <ExtLink href="https://thetvdb.com/api-information">
                 thetvdb.com/api-information
               </ExtLink>
-              {'. Choose the "Less than $50k per year" tier.'}
+              {t('. Choose the "Less than $50k per year" tier.')}
             </>
           }
         />
@@ -1327,18 +1323,19 @@ function RetentionPicker({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const t = useT();
   const options: Array<{ days: number; label: string }> = [
-    { days: 0, label: "None" },
-    { days: 7, label: "1 week" },
-    { days: 30, label: "30 days" },
-    { days: 90, label: "3 months" },
-    { days: 180, label: "6 months" },
-    { days: 365, label: "1 year" },
+    { days: 0, label: t("None") },
+    { days: 7, label: t("1 week") },
+    { days: 30, label: t("30 days") },
+    { days: 90, label: t("3 months") },
+    { days: 180, label: t("6 months") },
+    { days: 365, label: t("1 year") },
   ];
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-        Keep frames for
+        {t("Keep frames for")}
       </p>
       <div className="flex flex-wrap gap-1.5">
         {options.map((opt) => {
@@ -1364,12 +1361,13 @@ function RetentionPicker({
 }
 
 function ClearSnapshotsButton() {
+  const t = useT();
   const [count, setCount] = useState<number>(() => snapshotCount());
   const [confirming, setConfirming] = useState(false);
   useEffect(() => {
     if (!confirming) return;
-    const t = window.setTimeout(() => setConfirming(false), 4000);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setConfirming(false), 4000);
+    return () => window.clearTimeout(timer);
   }, [confirming]);
   const onClick = () => {
     if (!confirming) {
@@ -1384,11 +1382,13 @@ function ClearSnapshotsButton() {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-3.5 py-2.5">
       <div className="flex flex-col gap-0.5">
-        <p className="text-[12.5px] font-medium text-ink">Clear all saved frames</p>
+        <p className="text-[12.5px] font-medium text-ink">{t("Clear all saved frames")}</p>
         <p className="text-[11.5px] leading-snug text-ink-subtle">
           {count > 0
-            ? `${count} frame${count === 1 ? "" : "s"} stored. Wiping rebuilds them next time you watch.`
-            : "No frames stored yet. They'll appear here as you watch things."}
+            ? count === 1
+              ? t("{count} frame stored. Wiping rebuilds them next time you watch.", { count })
+              : t("{count} frames stored. Wiping rebuilds them next time you watch.", { count })
+            : t("No frames stored yet. They'll appear here as you watch things.")}
         </p>
       </div>
       <button
@@ -1401,7 +1401,7 @@ function ClearSnapshotsButton() {
             : "bg-raised text-ink-muted hover:bg-elevated hover:text-ink disabled:opacity-40"
         }`}
       >
-        {confirming ? "Confirm clear" : "Clear all"}
+        {confirming ? t("Confirm clear") : t("Clear all")}
       </button>
     </div>
   );

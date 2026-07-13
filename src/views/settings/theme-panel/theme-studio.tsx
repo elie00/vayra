@@ -22,6 +22,7 @@ import {
   type ThemePreset,
 } from "@/lib/theme";
 import { useSettings } from "@/lib/settings";
+import { useT } from "@/lib/i18n";
 import { pushOverlayPin } from "@/lib/overlay-pin";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 
@@ -106,6 +107,7 @@ const STUDIO_AUTHORITY_ID = "harbor-studio-authority-css";
 
 export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: () => void }) {
   const { settings, update } = useSettings();
+  const t = useT();
   const { draft, setDraft, undo, redo, canUndo, canRedo } = useDraftHistory(() => emptyDraft(seed));
   const restoreRef = useState(() => settings.theme.preset)[0];
   const liveThemeRef = useRef(settings.theme);
@@ -355,7 +357,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
             disabled={!canSave}
             className="flex h-12 flex-1 items-center justify-center rounded-lg border border-edge-soft text-[15px] font-semibold text-ink-muted transition-colors hover:border-edge hover:bg-white/[0.03] hover:text-ink disabled:opacity-40"
           >
-            Export
+            {t("Export")}
           </button>
           <button
             type="button"
@@ -364,7 +366,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
             className="flex h-12 flex-[1.6] items-center justify-center rounded-lg text-[15px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: "var(--color-accent)" }}
           >
-            Save theme
+            {t("Save theme")}
           </button>
         </footer>
       </div>
@@ -377,7 +379,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           className="pointer-events-auto fixed bottom-6 end-6 z-[211] flex h-12 items-center gap-2 rounded-full border border-edge bg-elevated px-5 text-[13px] font-semibold text-ink shadow-[0_18px_40px_-16px_rgba(0,0,0,0.7)] transition-transform hover:-translate-y-0.5"
         >
           <SlidersHorizontal size={15} strokeWidth={2.2} />
-          Edit theme
+          {t("Edit theme")}
         </button>
       )}
 
@@ -386,7 +388,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           css={draft.css}
           html={draft.html}
           js={draft.js}
-          themeName={draft.name || "Untitled theme"}
+          themeName={draft.name || t("Untitled theme")}
           initialTab={popoutTab}
           onChange={onPatch}
           onRunJs={runJs}
@@ -410,10 +412,10 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
           >
             <div className="flex flex-col px-6 pb-6 pt-5">
               <h2 className="text-[17px] font-semibold tracking-tight text-ink">
-                Leave without saving?
+                {t("Leave without saving?")}
               </h2>
               <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
-                Your changes to this theme aren&apos;t saved yet. They&apos;ll be lost if you leave now.
+                {t("Your changes to this theme aren't saved yet. They'll be lost if you leave now.")}
               </p>
               <div className="mt-5 flex items-center justify-end gap-2.5">
                 <button
@@ -424,7 +426,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
                   }}
                   className="h-10 rounded-lg px-4 text-[13.5px] font-semibold text-ink-subtle transition-colors hover:bg-danger/12 hover:text-danger"
                 >
-                  Discard
+                  {t("Discard")}
                 </button>
                 <button
                   type="button"
@@ -433,7 +435,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
                   className="h-10 rounded-lg px-5 text-[13.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
                   style={{ background: "var(--color-accent)" }}
                 >
-                  Keep editing
+                  {t("Keep editing")}
                 </button>
               </div>
             </div>

@@ -77,11 +77,10 @@ export function AiSearchSection() {
             saved={savedFlags.openrouter}
             help={
               <>
-                Adds an "Ask AI" button to search, so you can type things like{" "}
-                <em>popular French TV shows last year</em>. Get a key at{" "}
-                <ExtLink href="https://openrouter.ai/keys">openrouter.ai/keys</ExtLink>. It
-                only runs when you tap that button, so it never costs anything unless you
-                ask.
+                {t('Adds an "Ask AI" button to search, so you can type things like')}{" "}
+                <em>{t("popular French TV shows last year")}</em>. {t("Get a key at")}{" "}
+                <ExtLink href="https://openrouter.ai/keys">openrouter.ai/keys</ExtLink>.{" "}
+                {t("It only runs when you tap that button, so it never costs anything unless you ask.")}
               </>
             }
           />
@@ -107,11 +106,10 @@ export function AiSearchSection() {
             saved={savedFlags.groq}
             help={
               <>
-                Adds an "Ask AI" button to search, so you can type things like{" "}
-                <em>popular French TV shows last year</em>. Get a key at{" "}
-                <ExtLink href="https://console.groq.com/keys">console.groq.com/keys</ExtLink>.
-                Groq runs open-source models on its LPU hardware with a generous free tier —
-                every model listed below runs on the free tier.
+                {t('Adds an "Ask AI" button to search, so you can type things like')}{" "}
+                <em>{t("popular French TV shows last year")}</em>. {t("Get a key at")}{" "}
+                <ExtLink href="https://console.groq.com/keys">console.groq.com/keys</ExtLink>.{" "}
+                {t("Groq runs open-source models on its LPU hardware with a generous free tier — every model listed below runs on the free tier.")}
               </>
             }
           />
@@ -151,7 +149,7 @@ export function AiSearchSection() {
           saved={false}
           help={
             <>
-              Get a key at <ExtLink href="https://jina.ai/reader">jina.ai/reader</ExtLink>{" "}
+              {t("Get a key at")} <ExtLink href="https://jina.ai/reader">jina.ai/reader</ExtLink>{" "}
               {t("for higher rate limits; leave blank for the free anonymous tier.")}
             </>
           }

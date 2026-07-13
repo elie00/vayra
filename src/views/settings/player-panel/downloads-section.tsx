@@ -4,9 +4,11 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { FolderOpen, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/lib/settings";
+import { useT } from "@/lib/i18n";
 import { ToggleRow } from "@/views/settings/shared";
 
 export function DownloadsSection() {
+  const t = useT();
   const { settings, update } = useSettings();
   const [systemDefault, setSystemDefault] = useState<string>("");
 
@@ -55,18 +57,18 @@ export function DownloadsSection() {
   return (
     <div className="flex flex-col gap-3">
       <ToggleRow
-        label="Create folders for movies and shows"
-        note="Organize downloads into folders by movie or series name"
+        label={t("Create folders for movies and shows")}
+        note={t("Organize downloads into folders by movie or series name")}
         value={settings.downloadCreateFolders}
         onChange={(v) => update({ downloadCreateFolders: v })}
       />
       <div className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-            {isCustom ? "Custom location" : "System default"}
+            {isCustom ? t("Custom location") : t("System default")}
           </span>
           <span className="truncate font-mono text-[13px] text-ink" title={current}>
-            {current || "Detecting..."}
+            {current || t("Detecting...")}
           </span>
         </div>
         {current && (
@@ -76,7 +78,7 @@ export function DownloadsSection() {
             className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <FolderOpen size={13} strokeWidth={2.2} />
-            Open
+            {t("Open")}
           </button>
         )}
       </div>
@@ -86,7 +88,7 @@ export function DownloadsSection() {
           onClick={pickFolder}
           className="flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
         >
-          Choose folder
+          {t("Choose folder")}
         </button>
         {isCustom && (
           <button
@@ -95,7 +97,7 @@ export function DownloadsSection() {
             className="flex h-10 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <RotateCcw size={13} strokeWidth={2.2} />
-            Reset to default
+            {t("Reset to default")}
           </button>
         )}
       </div>

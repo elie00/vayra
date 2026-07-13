@@ -18,6 +18,7 @@ import { downloadText } from "@/lib/download-text";
 import { importForeignTheme } from "@/lib/theme-import";
 import { isHarborStyleName, parseHarborStyle, serializeHarborStyle } from "@/lib/harborstyle";
 import { useSettings } from "@/lib/settings";
+import { useT } from "@/lib/i18n";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 import {
   FEATURED_CUSTOM_THEMES,
@@ -30,6 +31,7 @@ import {
 
 export function CustomThemesSection() {
   const { settings, update } = useSettings();
+  const t = useT();
   const [themes, setThemes] = useState<CustomTheme[]>(() => getCustomThemes());
   const [error, setError] = useState<string | null>(null);
   const [exportText, setExportText] = useState("");
@@ -60,7 +62,7 @@ export function CustomThemesSection() {
     try {
       const name = file.name.toLowerCase();
       if (name.endsWith(".zip") || file.type === "application/zip") {
-        setError("Zipped themes aren't supported yet. Drop the theme file directly.");
+        setError(t("Zipped themes aren't supported yet. Drop the theme file directly."));
         return;
       }
       const text = await file.text();
@@ -88,7 +90,7 @@ export function CustomThemesSection() {
       setImportedNotice(result.theme.name);
       activateTheme(result.theme.id, result.theme.navCustomization);
     } catch {
-      setError("Could not read file");
+      setError(t("Could not read file"));
     }
   };
 
@@ -184,7 +186,7 @@ export function CustomThemesSection() {
             onClick={() => setError(null)}
             className="ms-auto rounded px-2 text-[11px] font-semibold uppercase tracking-wider opacity-70 hover:opacity-100"
           >
-            Dismiss
+            {t("Dismiss")}
           </button>
         </div>
       )}

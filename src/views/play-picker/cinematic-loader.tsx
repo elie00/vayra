@@ -1,7 +1,9 @@
 import type { Meta } from "@/lib/cinemeta";
+import { useT } from "@/lib/i18n";
 import { LogoOrText } from "./logo-or-text";
 
 export function CinematicLoader({ meta }: { meta: Meta }) {
+  const t = useT();
   return (
     <div className="flex flex-col items-center gap-8 py-24">
       <LogoOrText
@@ -11,7 +13,7 @@ export function CinematicLoader({ meta }: { meta: Meta }) {
         textClass="animate-loader-pulse font-display text-[72px] font-medium leading-[0.96] tracking-tight text-ink drop-shadow-[0_18px_45px_rgba(0,0,0,0.55)]"
       />
       <p className="text-[11px] font-semibold uppercase tracking-[0.42em] text-ink-subtle">
-        Searching streams
+        {t("Searching streams")}
       </p>
     </div>
   );
