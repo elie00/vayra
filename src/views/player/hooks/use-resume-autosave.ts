@@ -6,6 +6,7 @@ import { trackEvent } from "@/lib/discover/store";
 import { isExternalPlaylistId } from "@/lib/iptv/vod";
 import { saveLocalCw } from "@/lib/local-cw";
 import { isLocalUrl } from "@/lib/player/local-url";
+import { lumaStore } from "@/lib/luma";
 import { isManuallyWatched, recordManualWatchedMeta, setManualWatched } from "@/lib/manual-watched";
 import { savePlayback } from "@/lib/playback-history";
 import { saveResumeMs } from "@/lib/resume";
@@ -72,6 +73,12 @@ export function useResumeAutosave(params: {
       (sn.durationSec > 0 && pos / sn.durationSec >= WATCHED_RATIO) || sn.status === "ended";
     lastSavedRef.current = pos * 1000;
     saveResumeMs(id, pos * 1000, se, ep);
+    lumaStore().recordProgress({
+      meta: s.meta,
+      episode: s.episode,
+      positionMs: Math.floor(pos * 1000),
+      durationMs: Math.max(0, Math.floor(sn.durationSec * 1000)),
+    });
     if (isExternalPlaylistId(id)) return;
     if (s.streamRef) {
       savePlayback(id, { ...s.streamRef, url: s.url, title: s.meta.name }, se, ep);

@@ -11,7 +11,8 @@ import { useVara } from "@/lib/vara/provider";
 import { useVayraAccount } from "@/lib/vayra-account";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
-import { queueShift, useQueue, useSleepAtEnd } from "@/lib/queue";
+import { queueBeginNext, queueAcknowledgeStarted, useQueue, useSleepAtEnd } from "@/lib/queue";
+import { lumaQueueKey, lumaStore, type LumaAuthority } from "@/lib/luma";
 import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
@@ -209,6 +210,17 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const isHost = inRoom && roomSnapshot.hostClientId === clientId;
   const remoteVeyaActive = !!remoteVaraRoom && !!remoteVeyaTransport && roomSnapshot.state !== "joined" && !cast.castDevice;
   const remoteVeyaHost = remoteVeyaActive && remoteVaraRoom.hostId === vayraUser?.id;
+  const lumaAuthority: LumaAuthority = cast.castDevice
+    ? "cast"
+    : inRoom
+      ? isHost
+        ? "together-host"
+        : "together-guest"
+      : remoteVeyaActive
+        ? remoteVeyaHost
+          ? "vara-host"
+          : "vara-guest"
+        : "solo";
   const canControl = !inRoom || hasStarted;
   const guestPickRef = useRef(settings.togetherGuestsPick);
   guestPickRef.current = settings.togetherGuestsPick;
@@ -283,7 +295,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   const queue = useQueue();
   const sleepAtEndArmed = useSleepAtEnd();
-  const queueOrSleepArmed = queue.length > 0 || sleepAtEndArmed;
+  const queueOrSleepArmed = (queue.length > 0 && lumaAuthority === "solo") || sleepAtEndArmed;
 
   useAutoNextEpisode({
     src,
@@ -696,9 +708,24 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     queue,
     isLive: isLiveLike,
     startedNearEndRef,
+    authority: lumaAuthority,
     openPicker,
     exitPlayer,
   });
+
+  useEffect(() => {
+    if (!snap.rendered) return;
+    const store = lumaStore();
+    const pendingId = store.getSnapshot().pendingItemId;
+    if (!pendingId) return;
+    const pending = store.getSnapshot().document.queue.find((item) => item.id === pendingId);
+    const currentKey = lumaQueueKey(src.meta, src.episode);
+    if (!pending || !currentKey) return;
+    const pendingKey = pending.ref.kind === "catalog"
+      ? `catalog:${pending.ref.metaId}${pending.ref.episode ? `:${pending.ref.episode.season}:${pending.ref.episode.episode}` : ""}`
+      : `local:${pending.ref.entryId}${pending.ref.episode ? `:${pending.ref.episode.season}:${pending.ref.episode.episode}` : ""}`;
+    if (pendingKey === currentKey) queueAcknowledgeStarted(pendingId);
+  }, [snap.rendered, src.meta, src.episode]);
 
   const isLocalSrc = isLocalUrl(src.url);
   const cancelToPicker = useCallback(() => {
@@ -1035,10 +1062,10 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           back: closePlayer,
           prevEp: () => goToEpisode(adjacent.prev),
           nextEp: () => {
-            if (queue.length > 0) {
-              const item = queueShift();
-              if (item) {
-                openPicker(item.meta, item.episode, { autoPlay: true, resume: true });
+            if (queue.length > 0 && lumaAuthority === "solo") {
+              const next = queueBeginNext(lumaAuthority);
+              if (next.ok) {
+                openPicker(next.value.meta, next.value.episode, { autoPlay: true, resume: true });
                 return;
               }
             }

@@ -3,7 +3,8 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode, PlayerSrc } from "@/lib/view";
-import { getSleepAtEnd, queueShift, setSleepAtEnd, type QueueItem } from "@/lib/queue";
+import { getSleepAtEnd, queueBeginNext, setSleepAtEnd, type QueueItem } from "@/lib/queue";
+import type { LumaAuthority } from "@/lib/luma";
 
 const STUB_MAX_SEC = 150;
 
@@ -13,6 +14,7 @@ export function useQueueAdvance(params: {
   queue: QueueItem[];
   isLive: boolean;
   startedNearEndRef: RefObject<boolean>;
+  authority: LumaAuthority;
   openPicker: (
     meta: Meta,
     episode?: PlayEpisode,
@@ -20,7 +22,7 @@ export function useQueueAdvance(params: {
   ) => void;
   exitPlayer: () => void;
 }) {
-  const { src, snap, queue, isLive, startedNearEndRef, openPicker, exitPlayer } = params;
+  const { src, snap, queue, isLive, startedNearEndRef, authority, openPicker, exitPlayer } = params;
   const firedForRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -39,10 +41,10 @@ export function useQueueAdvance(params: {
     if (!naturalEnd && !errorAtEnd && !reachedEnd) return;
     if (firedForRef.current === src.url) return;
 
-    if (queue.length > 0) {
+    if (queue.length > 0 && authority === "solo") {
       firedForRef.current = src.url;
-      const item = queueShift();
-      if (item) openPicker(item.meta, item.episode, { autoPlay: true, resume: true });
+      const next = queueBeginNext(authority);
+      if (next.ok) openPicker(next.value.meta, next.value.episode, { autoPlay: true, resume: true });
       return;
     }
     if (getSleepAtEnd()) {
@@ -50,5 +52,5 @@ export function useQueueAdvance(params: {
       setSleepAtEnd(false);
       exitPlayer();
     }
-  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, openPicker, exitPlayer]);
+  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, authority, openPicker, exitPlayer]);
 }

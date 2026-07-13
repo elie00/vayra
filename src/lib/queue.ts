@@ -1,5 +1,13 @@
 import { useSyncExternalStore } from "react";
+import { activeProfileId } from "@/lib/active-profile-id";
 import type { Meta } from "@/lib/cinemeta";
+import {
+  lumaQueueKey,
+  lumaStore,
+  type LumaAuthority,
+  type LumaQueueItem,
+  type LumaResult,
+} from "@/lib/luma";
 import type { PlayEpisode } from "@/lib/view";
 
 export type QueueItem = {
@@ -9,97 +17,85 @@ export type QueueItem = {
   addedAt: number;
 };
 
-const KEY = "harbor.queue.v1";
 const SLEEP_KEY = "harbor.queue.sleepAtEnd.v1";
+const sleepListeners = new Set<() => void>();
 
-let items: QueueItem[] = load();
-const listeners = new Set<() => void>();
-
-function load(): QueueItem[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? (arr as QueueItem[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function persist(): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(items));
-  } catch {
-    /* ignore */
-  }
-  listeners.forEach((l) => l());
-}
-
-function rid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function keyOf(meta: Meta, episode?: PlayEpisode): string {
-  return `${meta.id}${episode ? `:${episode.season}:${episode.episode}` : ""}`;
+function fromLuma(item: LumaQueueItem): QueueItem {
+  const episode = item.ref.episode
+    ? {
+        season: item.ref.episode.season,
+        episode: item.ref.episode.episode,
+        ...(item.ref.episode.canonicalVideoId ? { videoId: item.ref.episode.canonicalVideoId } : {}),
+        ...(item.presentation.episodeTitle ? { name: item.presentation.episodeTitle } : {}),
+      }
+    : undefined;
+  return {
+    id: item.id,
+    meta: {
+      id: item.ref.kind === "catalog" ? item.ref.metaId : `local:${item.ref.entryId}`,
+      type: item.ref.mediaType,
+      name: item.presentation.title,
+      ...(item.presentation.artwork ? { poster: item.presentation.artwork, background: item.presentation.artwork } : {}),
+    },
+    ...(episode ? { episode } : {}),
+    addedAt: item.addedAt,
+  };
 }
 
 export function queueAdd(meta: Meta, episode?: PlayEpisode): void {
-  const k = keyOf(meta, episode);
-  if (items.some((i) => keyOf(i.meta, i.episode) === k)) return;
-  items = [...items, { id: rid(), meta, episode, addedAt: Date.now() }];
-  persist();
+  lumaStore().add({ meta, episode });
 }
 
 export function queueRemove(id: string): void {
-  items = items.filter((i) => i.id !== id);
-  persist();
+  lumaStore().remove(id);
 }
 
 export function queueToggle(meta: Meta, episode?: PlayEpisode): void {
-  const k = keyOf(meta, episode);
-  const existing = items.find((i) => keyOf(i.meta, i.episode) === k);
-  if (existing) queueRemove(existing.id);
-  else queueAdd(meta, episode);
+  lumaStore().toggle({ meta, episode });
 }
 
 export function queueClear(): void {
-  if (items.length === 0) return;
-  items = [];
-  persist();
+  lumaStore().clearQueue();
 }
 
 export function queueReorder(orderedIds: string[]): void {
-  const pos = new Map(orderedIds.map((id, i) => [id, i] as const));
-  items = [...items].sort((a, b) => (pos.get(a.id) ?? 999) - (pos.get(b.id) ?? 999));
-  persist();
+  lumaStore().reorder(orderedIds);
+}
+
+/**
+ * Reserves, but does not remove, the first LUMA item. The player must call
+ * queueAcknowledgeStarted after a frame is rendered so source failures never
+ * destroy a user's queue entry.
+ */
+export function queueBeginNext(authority: LumaAuthority): LumaResult<QueueItem> {
+  const result = lumaStore().beginNext(authority);
+  return result.ok ? { ok: true, value: fromLuma(result.value) } : result;
 }
 
 export function queueShift(): QueueItem | null {
-  const first = items[0] ?? null;
-  if (first) {
-    items = items.slice(1);
-    persist();
-  }
-  return first;
+  const result = queueBeginNext("solo");
+  return result.ok ? result.value : null;
 }
 
-function subscribe(fn: () => void): () => void {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
+export function queueAcknowledgeStarted(id: string): void {
+  lumaStore().acknowledgeStarted(id);
+}
+
+export function queueRejectStart(message?: string): void {
+  lumaStore().rejectStart(message);
 }
 
 export function useQueue(): QueueItem[] {
-  return useSyncExternalStore(
-    subscribe,
-    () => items,
-    () => items,
-  );
+  const store = lumaStore(activeProfileId());
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  return snapshot.document.queue.map(fromLuma);
 }
 
 export function useIsQueued(meta: Meta, episode?: PlayEpisode): boolean {
-  const q = useQueue();
-  const k = keyOf(meta, episode);
-  return q.some((i) => keyOf(i.meta, i.episode) === k);
+  const queue = useQueue();
+  const key = lumaQueueKey(meta, episode);
+  if (!key) return false;
+  return queue.some((item) => lumaQueueKey(item.meta, item.episode) === key);
 }
 
 export function getSleepAtEnd(): boolean {
@@ -115,11 +111,18 @@ export function setSleepAtEnd(on: boolean): void {
     if (on) localStorage.setItem(SLEEP_KEY, "1");
     else localStorage.removeItem(SLEEP_KEY);
   } catch {
-    /* ignore */
+    /* compatibility setting remains best-effort */
   }
-  listeners.forEach((l) => l());
+  for (const listener of sleepListeners) listener();
 }
 
 export function useSleepAtEnd(): boolean {
-  return useSyncExternalStore(subscribe, getSleepAtEnd, getSleepAtEnd);
+  return useSyncExternalStore(
+    (listener) => {
+      sleepListeners.add(listener);
+      return () => sleepListeners.delete(listener);
+    },
+    getSleepAtEnd,
+    getSleepAtEnd,
+  );
 }
