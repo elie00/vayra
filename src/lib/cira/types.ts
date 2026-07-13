@@ -89,6 +89,13 @@ export type CiraGroupLinkPreview = {
   expiresAt: string;
 };
 
+export type CiraInboxSummary = {
+  seenAt: string | null;
+  friendRequestCount: number;
+  groupInvitationCount: number;
+  unreadCount: number;
+};
+
 export type CiraErrorCode =
   | "NOT_AUTHENTICATED"
   | "PROFILE_REQUIRED"
@@ -170,6 +177,9 @@ export interface CiraRepository {
   previewGroupLink(code: string): Promise<CiraGroupLinkPreview>;
   acceptGroupLink(code: string): Promise<string>;
   revokeGroupLink(id: string): Promise<void>;
+
+  getInbox(): Promise<CiraInboxSummary>;
+  markInboxSeen(): Promise<void>;
 
   setPresenceConsent(enabled: boolean): Promise<void>;
   heartbeatPresence(sessionId: string, state: "online" | "in_vara"): Promise<void>;

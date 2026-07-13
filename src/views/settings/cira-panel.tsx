@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy, Link2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
+import { Bell, Check, Copy, Link2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
 import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { avatarUrl } from "@/lib/avatars/catalog";
@@ -264,6 +264,34 @@ function PresenceCard() {
             .catch((err) => setError(errorText(t, err)));
         }}
       />
+      {error && <InlineNotice text={error} tone="error" />}
+    </Section>
+  );
+}
+
+function InboxCard() {
+  const t = useT();
+  const { inbox, repo, refresh } = useCira();
+  const [error, setError] = useState<string | null>(null);
+  if (!repo || !inbox || (inbox.friendRequestCount === 0 && inbox.groupInvitationCount === 0)) return null;
+  return (
+    <Section title={t("CIRA inbox")} subtitle={t("Pending social actions, synchronized across your devices without keeping an activity history.")}>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-elevated text-ink-muted">
+            <Bell size={16} />
+            {inbox.unreadCount > 0 && <span className="absolute -end-1 -top-1 min-w-5 rounded-full bg-ink px-1 text-center text-[10px] font-semibold leading-5 text-canvas">{inbox.unreadCount}</span>}
+          </span>
+          <div>
+            <p className="text-[13px] font-medium text-ink">{t("{requests} requests · {groups} group invitations", { requests: inbox.friendRequestCount, groups: inbox.groupInvitationCount })}</p>
+            <p className="text-[11.5px] text-ink-subtle">{inbox.unreadCount > 0 ? t("{count} new", { count: inbox.unreadCount }) : t("Everything here has been seen")}</p>
+          </div>
+        </div>
+        {inbox.unreadCount > 0 && <SmallButton label={t("Mark as seen")} onClick={() => {
+          setError(null);
+          void repo.markInboxSeen().then(refresh).catch((cause) => setError(errorText(t, cause)));
+        }} />}
+      </div>
       {error && <InlineNotice text={error} tone="error" />}
     </Section>
   );
@@ -808,6 +836,7 @@ export function CiraPanel() {
       {me && (
         <>
           <RequestsCard />
+          <InboxCard />
           <FriendsCard />
           <CiraGroupsCard />
           <InviteCard />

@@ -15,6 +15,7 @@ export type {
   CiraGroupLinkSecret,
   CiraGroupMember,
   CiraGroupRole,
+  CiraInboxSummary,
   CiraPresence,
   CiraProfile,
   CiraRelationship,
