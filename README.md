@@ -4,6 +4,13 @@ Landing publique de **VAYRA** (*A product by EYBO*) et fonctions serverless qui
 préparent le remplacement progressif des services `harbor.site`. La landing est
 statique (HTML/CSS/JS, zéro build) et l'ensemble est déployé sur Vercel.
 
+## URLs publiques
+- Domaine canonique : `https://vayra.eybo.tech`
+- Preview Vercel : `https://vayra-site.vercel.app`
+
+La preview reste accessible pour les vérifications techniques. Le domaine EYBO
+est la seule URL destinée à être indexée et partagée publiquement.
+
 ## Contenu
 - `public/index.html` — landing (hero, expérience, VARA/VEYA, téléchargements)
 - `public/styles.css` — direction Mineral Monochrome
