@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useSettings } from "@/lib/settings";
 import { createAllDebrid } from "./alldebrid";
+import { withCacheCheckCache } from "./cache-check-cache";
 import { createDebridLink } from "./debridlink";
 import { createPremiumize } from "./premiumize";
 import { createRealDebrid } from "./realdebrid";
@@ -22,7 +23,7 @@ export function buildDebridClients(keys: DebridKeys): DebridStore[] {
   if (keys.adKey) clients.push(createAllDebrid(keys.adKey));
   if (keys.pmKey) clients.push(createPremiumize(keys.pmKey));
   if (keys.dlKey) clients.push(createDebridLink(keys.dlKey));
-  return clients;
+  return clients.map(withCacheCheckCache);
 }
 
 export function useDebridClients(): DebridStore[] {
