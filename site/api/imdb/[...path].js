@@ -144,7 +144,7 @@ function routeParts(req) {
   return path.split("/").filter(Boolean);
 }
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const [kind, tt] = routeParts(req);
 
   if (!isTt(tt)) {

@@ -14,7 +14,7 @@
 // We pull /series/{id}/artworks and bucket by type, ordered by TVDB score
 // (highest first) so the app's `[0]` picks the best artwork.
 
-const { getTvdbToken, tvdbGet, tvdbImg, seriesIdFromImdb } = require("../_lib/tvdb.js");
+import { getTvdbToken, tvdbGet, tvdbImg, seriesIdFromImdb } from "../_lib/tvdb.js";
 
 const TYPE_POSTER = 2;
 const TYPE_BACKGROUND = 3;
@@ -28,7 +28,7 @@ function collect(artworks, typeId) {
     .filter(Boolean);
 }
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const empty = { backgrounds: [], clearLogos: [], posters: [] };
 
   if (!process.env.TVDB_API_KEY) {

@@ -75,7 +75,7 @@ async function seriesIdFromImdb(imdb) {
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
-module.exports = {
+export {
   TVDB_BASE,
   ARTWORKS_BASE,
   getTvdbToken,
