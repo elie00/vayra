@@ -44,6 +44,49 @@ export function onVayraAuthCallback(handler: (rawUrl: string) => void): () => vo
   return () => window.removeEventListener(VAYRA_AUTH_EVENT, listener);
 }
 
+const CIRA_INVITE_EVENT = "vayra:deeplink-cira-invite";
+let pendingCiraInviteCode: string | null = null;
+
+// vayra://cira/invite#t=<code> - même convention que la page web : le code
+// reste dans le fragment, jamais dans une query string.
+export function parseCiraInviteCode(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "vayra:" || url.hostname !== "cira" || url.pathname !== "/invite") {
+      return null;
+    }
+    const m = /(?:^|[#&])t=([^&]+)/.exec(url.hash);
+    if (!m) return null;
+    const code = decodeURIComponent(m[1]).trim();
+    return code.length > 0 ? code : null;
+  } catch {
+    return null;
+  }
+}
+
+export function emitCiraInvite(code: string): void {
+  pendingCiraInviteCode = code;
+  window.dispatchEvent(
+    new CustomEvent<{ code: string }>(CIRA_INVITE_EVENT, { detail: { code } }),
+  );
+}
+
+export function onCiraInvite(handler: (code: string) => void): () => void {
+  if (pendingCiraInviteCode) {
+    const code = pendingCiraInviteCode;
+    pendingCiraInviteCode = null;
+    handler(code);
+  }
+  const listener = (event: Event) => {
+    const detail = (event as CustomEvent<{ code: string }>).detail;
+    if (!detail?.code) return;
+    pendingCiraInviteCode = null;
+    handler(detail.code);
+  };
+  window.addEventListener(CIRA_INVITE_EVENT, listener);
+  return () => window.removeEventListener(CIRA_INVITE_EVENT, listener);
+}
+
 export function emitDeepLinkInstall(rawUrl: string): void {
   pendingUrl = rawUrl;
   window.dispatchEvent(new CustomEvent<DeepLinkDetail>(EVENT, { detail: { rawUrl } }));
@@ -188,6 +231,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
           emitVayraAuthCallback(vayraAuthUrl);
           continue;
         }
+        const ciraInvite = parseCiraInviteCode(u);
+        if (ciraInvite) {
+          emitCiraInvite(ciraInvite);
+          continue;
+        }
         const authKey = parseStremioAuthKey(u);
         if (authKey) {
           emitStremioAuthKey(authKey);
@@ -209,6 +257,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       const vayraAuthUrl = parseVayraAuthCallback(u);
       if (vayraAuthUrl) {
         emitVayraAuthCallback(vayraAuthUrl);
+        return;
+      }
+      const ciraInvite = parseCiraInviteCode(u);
+      if (ciraInvite) {
+        emitCiraInvite(ciraInvite);
         return;
       }
       const open = parseStremioOpen(u);

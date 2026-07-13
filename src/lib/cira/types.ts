@@ -20,6 +20,7 @@ export type CiraRelationship = {
 
 export type CiraInvitation = {
   id: string;
+  createdAt: string;
   expiresAt: string;
   state: "active" | "accepted" | "declined" | "revoked" | "expired";
 };
@@ -64,6 +65,7 @@ export interface CiraRepository {
   listBlocks(): Promise<CiraProfile[]>;
 
   createInvitation(ttlSeconds?: number): Promise<CiraInviteSecret>;
+  listInvitations(): Promise<CiraInvitation[]>;
   previewInvitation(token: string): Promise<Pick<CiraProfile, "handle" | "displayName" | "avatarKey">>;
   acceptInvitation(token: string): Promise<void>;
   declineInvitation(token: string): Promise<void>;
