@@ -111,3 +111,7 @@ serveur HTTP local. Vérifications manuelles recommandées :
 La branche complète retourne désormais les erreurs métier des parcours par
 token dans le résultat SQL. Les tentatives invalides sont donc comptées et
 committées sans révéler si le token a existé.
+
+Les demandes par handle utilisent également des reçus aveugles : le demandeur
+ne voit plus le profil ou l'identifiant d'une cible pending et reçoit le même
+état local et Realtime pour un handle réel ou inconnu.

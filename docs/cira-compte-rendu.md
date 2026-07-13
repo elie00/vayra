@@ -88,6 +88,8 @@ visionnage.
   `search_path` vide.
 - Le rôle `anon` ne peut ni lire ni exécuter les opérations CIRA.
 - Les invalidations Realtime utilisent un payload vide.
+- Les demandes par handle n'exposent qu'un reçu aveugle identique, sans profil
+  ni identifiant cible avant acceptation.
 - Un blocage supprime la relation, les invitations communes et les groupes
   partagés concernés.
 - Une garde serveur empêche deux personnes bloquées de rejoindre à nouveau
@@ -95,20 +97,21 @@ visionnage.
 
 ## Base de données
 
-Le domaine comprend 10 tables publiques :
+Le domaine comprend 11 tables publiques :
 
 1. `cira_profiles` ;
 2. `cira_friendships` ;
-3. `cira_blocks` ;
-4. `cira_presence` ;
-5. `cira_invitations` ;
-6. `cira_groups` ;
-7. `cira_group_members` ;
-8. `cira_group_invites` ;
-9. `cira_group_links` ;
-10. `cira_inbox_state`.
+3. `cira_request_receipts` ;
+4. `cira_blocks` ;
+5. `cira_presence` ;
+6. `cira_invitations` ;
+7. `cira_groups` ;
+8. `cira_group_members` ;
+9. `cira_group_invites` ;
+10. `cira_group_links` ;
+11. `cira_inbox_state`.
 
-Le ledger privé `private.cira_rate_limits` constitue la onzième table.
+Le ledger privé `private.cira_rate_limits` constitue la douzième table.
 
 Onze migrations sont disponibles dans `supabase/migrations/`. Elles doivent
 être appliquées strictement dans l'ordre de leurs timestamps.

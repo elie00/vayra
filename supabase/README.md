@@ -139,12 +139,13 @@ Puis exécuter le contrôle post-application :
 
 ```sql
 select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
-where c.relname like 'cira\_%' and c.relkind = 'r' and c.relrowsecurity; -- 11
+where c.relname like 'cira\_%' and c.relkind = 'r' and c.relrowsecurity; -- 12
 
 select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public' and p.proname like 'cira\_%' and p.prosecdef; -- 42
 
-select count(*) from pg_trigger where tgname like 'cira\_%'; -- 12
+select count(*) from pg_trigger
+where tgname like 'cira\_%' and not tgisinternal; -- 14
 
 select count(*) from pg_policies
 where schemaname = 'realtime' and policyname = 'cira_receive_own_channel'; -- 1
@@ -177,8 +178,8 @@ Notes :
   métier dans le résultat plutôt qu'une exception PostgreSQL : le compteur de
   tentative est ainsi committé. Les tokens restent opaques (100 bits), hashés
   au repos et retirés de la barre d'adresse dès leur lecture.
-- Il n'existe aucune recherche ou liste publique de handles. La demande par
-  handle exact reste un compromis produit : un compte bêta qui connaît déjà un
-  handle peut confirmer son existence via l'état de sa demande. La gate bêta,
-  la limite de débit et le blocage bornent ce risque; supprimer totalement cet
-  oracle nécessiterait de retirer ce parcours ou d'introduire des reçus leurres.
+- Il n'existe aucune recherche ou liste publique de handles. Une demande par
+  handle exact crée un reçu aveugle identique pour une cible réelle, inconnue,
+  personnelle ou bloquée. Le demandeur ne reçoit ni profil, ni identifiant, ni
+  ligne pending brute, ni signal Realtime distinct avant acceptation explicite.
+  La table de liaison des reçus n'est jamais lisible par les rôles API.
