@@ -10,6 +10,7 @@ import { openUrl } from "@/lib/window";
 import { normalizeInstallUrl, trustedInstallerMessage } from "@/lib/installer-message";
 import { HarborLoader } from "@/components/harbor-loader";
 import { InstallOverlay } from "./installer-viewport/install-overlay";
+import { useT } from "@/lib/i18n";
 
 const EVENT = "vayra:open-installer";
 
@@ -75,6 +76,7 @@ function InstallerViewport({
   logo: string | null;
   onClose: () => void;
 }) {
+  const t = useT();
   const [pasteValue, setPasteValue] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [loaded, setLoaded] = useState(false);
@@ -236,14 +238,14 @@ function InstallerViewport({
             </span>
           )}
           <span className="truncate text-[10.5px] font-bold uppercase tracking-[0.24em] text-accent">
-            Setup · {title}
+            {t("Setup")} · {title}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={reload}
-            aria-label="Reload"
+            aria-label={t("Reload")}
             className="flex h-9 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <RotateCw
@@ -254,7 +256,7 @@ function InstallerViewport({
                 transition: "transform 0.6s cubic-bezier(0.22,0.61,0.36,1)",
               }}
             />
-            Reload
+            {t("Reload")}
           </button>
           <button
             type="button"
@@ -262,12 +264,12 @@ function InstallerViewport({
             className="flex h-9 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <ExternalLink size={12} strokeWidth={2.4} />
-            Open in browser
+            {t("Open in browser")}
           </button>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("Close")}
             disabled={phase.kind === "installing"}
             className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-elevated/60 hover:text-ink disabled:opacity-40"
           >
@@ -279,17 +281,16 @@ function InstallerViewport({
       <div className="relative flex-1 overflow-hidden bg-white">
         {!loaded && !blocked && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-canvas">
-            <HarborLoader size="lg" caption={`Loading ${title}`} />
+            <HarborLoader size="lg" caption={t("Loading {title}", { title })} />
           </div>
         )}
         {blocked && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
             <p className="text-[14px] font-semibold text-ink">
-              {title} won&apos;t load inside VAYRA.
+              {t("{title} won't load inside VAYRA.", { title })}
             </p>
             <p className="max-w-[44ch] text-[12.5px] text-ink-muted">
-              Open it in a regular browser, set it up there, then come back and paste the install
-              link below.
+              {t("Open it in a regular browser, set it up there, then come back and paste the install link below.")}
             </p>
             <button
               type="button"
@@ -297,7 +298,7 @@ function InstallerViewport({
               className="flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
             >
               <ArrowUpRight size={13} strokeWidth={2.4} />
-              Open in browser
+              {t("Open in browser")}
             </button>
           </div>
         )}
@@ -319,8 +320,8 @@ function InstallerViewport({
       <footer className="flex shrink-0 flex-col gap-2.5 border-t border-white/10 bg-canvas/72 px-5 py-3.5 backdrop-blur-md">
         <p className="text-[12.5px] leading-snug text-ink-muted">
           {isWeb()
-            ? "Configure the addon above, then copy its manifest URL and paste it here. The web app can't catch the Install button automatically the way the desktop app does."
-            : "Paste the manifest URL, or click Install on the addon's configuration page above."}
+            ? t("Configure the addon above, then copy its manifest URL and paste it here. The web app can't catch the Install button automatically the way the desktop app does.")
+            : t("Paste the manifest URL, or click Install on the addon's configuration page above.")}
         </p>
         <form
           onSubmit={(e) => {
@@ -354,7 +355,7 @@ function InstallerViewport({
             className="flex h-10 items-center gap-1.5 rounded-full border border-edge-soft px-3.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink disabled:opacity-40"
           >
             <ClipboardCopy size={13} strokeWidth={2.2} />
-            From clipboard
+            {t("From clipboard")}
           </button>
           <button
             type="submit"
@@ -362,7 +363,7 @@ function InstallerViewport({
             className="flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Sparkles size={13} strokeWidth={2.4} />
-            Install
+            {t("Install")}
           </button>
         </form>
         {phase.kind === "error" && (
@@ -373,7 +374,7 @@ function InstallerViewport({
               onClick={dismissError}
               className="font-semibold uppercase tracking-wider opacity-70 hover:opacity-100"
             >
-              Dismiss
+              {t("Dismiss")}
             </button>
           </div>
         )}

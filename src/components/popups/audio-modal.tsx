@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { AudioMenuBody } from "@/components/player/audio-menu";
 import { useFocusTrap } from "@/lib/use-focus-trap";
+import { useT } from "@/lib/i18n";
 import type { TrackInfo } from "@/lib/player/bridge";
 
 export type AudioModalState = {
@@ -19,6 +20,7 @@ type Props = {
 
 export function AudioModal({ state, onSelect, onDelay, onClose }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const t = useT();
   useFocusTrap(dialogRef, true);
   return (
     <div
@@ -32,7 +34,7 @@ export function AudioModal({ state, onSelect, onDelay, onClose }: Props) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Audio tracks"
+        aria-label={t("Audio tracks")}
         className="m-3 mb-[110px] me-[160px] flex max-h-[480px] w-[340px] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-xl max-sm:me-3 max-sm:mb-24 max-sm:max-h-[65vh] max-sm:w-[calc(100vw-1.5rem)]"
         onClick={(e) => e.stopPropagation()}
       >

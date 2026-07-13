@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { useEffect } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { useT } from "@/lib/i18n";
 import { type PlayEpisode } from "@/lib/view";
 
 export function DownloadStarted({
@@ -14,10 +15,11 @@ export function DownloadStarted({
   label?: string | null;
   onDone: () => void;
 }) {
+  const t = useT();
   const backdrop = episode?.still || meta.background || meta.poster;
   useEffect(() => {
-    const t = window.setTimeout(onDone, 1500);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(onDone, 1500);
+    return () => window.clearTimeout(timer);
   }, [onDone]);
   const title = episode
     ? `${meta.name}  ·  S${episode.imdbSeason ?? episode.season} E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
@@ -41,14 +43,14 @@ export function DownloadStarted({
         </span>
         <div className="flex flex-col gap-2">
           <p className="font-display text-[30px] font-medium leading-tight text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
-            Saving to Downloads
+            {t("Saving to Downloads")}
           </p>
           <p className="text-[14px] text-white/75">{title}</p>
           {label && (
             <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-white/45">{label}</p>
           )}
         </div>
-        <p className="text-[13px] text-white/55">Track progress on the Downloads tab</p>
+        <p className="text-[13px] text-white/55">{t("Track progress on the Downloads tab")}</p>
       </div>
     </main>
   );
