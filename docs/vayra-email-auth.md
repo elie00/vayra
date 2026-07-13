@@ -19,6 +19,28 @@ Email sign-up is enabled with mandatory email confirmation. Anonymous sign-in,
 phone sign-in, manual identity linking, and every social provider are disabled.
 Both the Site URL and redirect allow-list use `vayra://auth/callback`.
 
+## Production email delivery
+
+Authentication email is delivered through a dedicated Resend SMTP integration.
+The verified sending domain is `mail.eybo.tech` and the visible sender is
+`VAYRA <auth@mail.eybo.tech>`. SPF, DKIM, and a monitoring-only DMARC policy are
+published in the Vercel-managed DNS zone for `eybo.tech`.
+
+The SMTP credential is restricted to sending from `mail.eybo.tech`. It is held
+by Resend and encrypted by Supabase; it must never be added to this repository.
+Supabase enforces a 60-second minimum interval per recipient and starts custom
+SMTP projects at its production email rate limit.
+
+The hosted Supabase templates are mirrored in the repository so branding can be
+reviewed and restored without storing infrastructure secrets:
+
+- `supabase/templates/confirm-signup.html` for a new passwordless account;
+- `supabase/templates/magic-link.html` for an existing account.
+
+Both templates intentionally avoid remote images and tracking links. They use
+the VAYRA obsidian, violet, blue, and ivory palette with the signature
+“A product by EYBO”.
+
 ## Optional runtime override
 
 For local or staging tests, copy `.env.example` to `.env.local` and override the
@@ -68,5 +90,6 @@ Run this test on each packaged platform after configuring a real project:
 6. connect and disconnect Stremio, confirming the VAYRA session remains active;
 7. sign out of VAYRA, confirming the Stremio session remains active.
 
-No production email delivery or end-to-end callback can be validated until the
-EYBO-owned Supabase project, sender, and redirect allow-list are configured.
+Production delivery, the sender domain, and the redirect allow-list are
+configured. The full email-to-app callback still requires a manual test with an
+explicitly authorized recipient on each packaged platform.
