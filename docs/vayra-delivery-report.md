@@ -139,6 +139,13 @@ en CI.
 Les notes historiques indiquent une CI verte Windows, Linux et macOS Apple
 Silicon. Windows et Linux restent à valider uniquement via GitHub Actions.
 
+La passe `ops/release-readiness` a ensuite réparé le contrôle Rust sans modifier
+le comportement du player : préparation de placeholders pour les sidecars lors
+des contrôles statiques (`a137695`), exécution Bash multiplateforme (`d8b5fdf`),
+correction de deux emprunts Windows hors player (`04914f4`) et quarantaine
+ciblée des seuls lints de style player nécessitant une validation manuelle
+(`d430afc`, `0b87cd0`).
+
 ### 4.6 Rebranding visible Harbor → VAYRA
 
 La première passe a été livrée en quatre commits atomiques :
@@ -314,7 +321,7 @@ déploiement.
 | --- | --- |
 | `pnpm exec tsc -b` | succès |
 | `pnpm lint` | succès |
-| `pnpm test -- --runInBand` | 26 fichiers, 153 tests réussis |
+| `pnpm test` | 26 fichiers, 153 tests réussis |
 | `cargo check --manifest-path src-tauri/Cargo.toml` | succès |
 | `PATH="$HOME/.cargo/bin:$PATH" pnpm build` | succès |
 | `git diff --check` | succès |
@@ -322,6 +329,23 @@ déploiement.
 Le premier `pnpm build` lancé avec le Rust Homebrew a échoué faute de cible WASM.
 La même commande avec la toolchain rustup dans le `PATH` a réussi. Ce point est
 un détail d’environnement local, pas une régression du code.
+
+### Application native — passe release-readiness
+
+Le workflow [`src-tauri` #29248392883](https://github.com/elie00/vayra/actions/runs/29248392883)
+de la branche `ops/release-readiness` a réellement terminé avec succès :
+
+| Job | Résultat |
+| --- | --- |
+| Android debug build (arm64) | succès |
+| Clippy + tests Rust macOS | succès |
+| Clippy + tests Rust Windows | succès |
+| Clippy + tests Rust Linux | succès |
+
+`cargo fmt --manifest-path src-tauri/Cargo.toml --check` reste en échec local
+sur un passif de formatage réparti dans de nombreux fichiers Rust préexistants.
+Aucun reformatage massif n'a été appliqué dans cette passe afin de ne pas
+mélanger cette dette avec les correctifs CI.
 
 ### Site
 
@@ -356,8 +380,8 @@ faite au moment de la rédaction de ce document.
 
 ## 8. Limites et travaux encore nécessaires
 
-1. **CI Rust :** le job `src-tauri` doit préparer le sidecar yt-dlp attendu par
-   la configuration Tauri avant d'exécuter Clippy et les tests.
+1. **Intégration release-readiness :** le correctif CI Rust est vert sur
+   `ops/release-readiness` mais doit encore être relu puis intégré à `main`.
 2. **Cast réel :** Chromecast, Roku, Google TV et Samsung doivent être testés sur
    matériel.
 3. **VARA/VEYA :** le scénario manuel deux processus reste obligatoire avant de
@@ -383,7 +407,7 @@ VAYRA autonome, cohérent visuellement et techniquement, doté d’une base
 collaborative, d’une authentification propre, d’un pipeline de lecture plus
 réactif et d’une présence publique déployée.
 
-La priorité suivante est de rétablir une CI Rust verte sur `main`, puis
-d’exécuter les validations
-manuelles impossibles en CI : matériel de cast, lecture multiplateforme,
-VARA/VEYA à deux instances et callback email dans les builds packagés.
+La priorité suivante est de relire puis intégrer `ops/release-readiness` à
+`main`, puis d’exécuter les validations manuelles impossibles en CI : matériel
+de cast, lecture multiplateforme, VARA/VEYA à deux instances et callback email
+dans les builds packagés.
