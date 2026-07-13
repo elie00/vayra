@@ -21,6 +21,7 @@ function groupError(t: ReturnType<typeof useT>, error: unknown): string {
     GROUP_INVITE_UNAVAILABLE: t("This group invitation is no longer available."),
     ALREADY_GROUP_MEMBER: t("This person is already in the group."),
     INVALID_GROUP_INVITE: t("Choose a link duration between 5 minutes and 24 hours."),
+    GROUP_BLOCK_CONFLICT: t("A blocked person is already in this group."),
     NETWORK: t("Network error. Check your connection and try again."),
   };
   return messages[code] ?? t("Something went wrong. Try again.");
