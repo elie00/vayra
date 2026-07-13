@@ -73,7 +73,7 @@ export function StremioVolume({
   const barWide = barNear || pinned;
   const breakPct = NORMAL_FRACTION * 100;
   const trackGradient = allowBoost
-    ? `linear-gradient(to top, #ffffff 0%, #a9cfff ${breakPct * 0.5}%, #4b9dff ${breakPct}%, #dc2626 100%)`
+    ? `linear-gradient(to top, #ffffff 0%, #c5c7ca ${breakPct * 0.5}%, #a8aaad ${breakPct}%, #dc2626 100%)`
     : "#ffffff";
 
   if (style === "icon-only") {

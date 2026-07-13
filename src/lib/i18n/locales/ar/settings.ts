@@ -1127,7 +1127,7 @@ const settings: Record<string, string> = {
     "شريط الصورة مفعّل. اختر نمطًا أعلاه للعودة، أو امسح الصورة أدناه.",
   "Bar height": "ارتفاع الشريط",
   "Bar color": "لون الشريط",
-  "Default (VAYRA violet)": "افتراضي (بنفسجي VAYRA)",
+  "Default (Mineral Monochrome)": "افتراضي (أحادي اللون المعدني)",
   "Bar image": "صورة الشريط",
   "Upload a pattern to tile across the bar": "ارفع نمطًا ليتكرّر عبر الشريط",
   "Tiles horizontally; the bar's height crops it vertically. Animated GIFs up to 2 MB play.":

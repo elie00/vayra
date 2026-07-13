@@ -9,19 +9,19 @@
 }
 
 @theme {
-  --color-canvas: oklch(0.18 0.004 260);
-  --color-surface: oklch(0.22 0.004 260);
-  --color-elevated: oklch(0.27 0.004 260);
-  --color-raised: oklch(0.32 0.004 260);
-  --color-ink: oklch(0.97 0.003 260);
-  --color-ink-muted: oklch(0.72 0.003 260);
-  --color-ink-subtle: oklch(0.50 0.003 260);
-  --color-edge: oklch(0.36 0.004 260 / 0.55);
-  --color-edge-soft: oklch(0.36 0.004 260 / 0.25);
-  --color-accent: #8267ff;
-  --color-accent-soft: rgb(130 103 255 / 0.18);
-  --color-info: #4b9dff;
-  --color-info-soft: rgb(75 157 255 / 0.18);
+  --color-canvas: #0a0b0d;
+  --color-surface: #111214;
+  --color-elevated: #18191c;
+  --color-raised: #242529;
+  --color-ink: #f4f2ed;
+  --color-ink-muted: #a8aaad;
+  --color-ink-subtle: #737579;
+  --color-edge: rgb(75 77 80 / 0.72);
+  --color-edge-soft: rgb(75 77 80 / 0.38);
+  --color-accent: #a8aaad;
+  --color-accent-soft: rgb(168 170 173 / 0.16);
+  --color-info: #c5c7ca;
+  --color-info-soft: rgb(197 199 202 / 0.16);
   --color-danger: oklch(0.55 0.18 25);
   --color-success: oklch(0.68 0.15 150);
 
@@ -554,9 +554,9 @@ body {
 }
 
 @keyframes verified-pulse {
-  0% { border-color: var(--color-edge); box-shadow: 0 0 0 0 rgb(130 103 255 / 0); }
-  35% { border-color: var(--color-accent); box-shadow: 0 0 0 4px rgb(130 103 255 / 0.22); }
-  100% { border-color: var(--color-edge); box-shadow: 0 0 0 0 rgb(130 103 255 / 0); }
+  0% { border-color: var(--color-edge); box-shadow: 0 0 0 0 rgb(168 170 173 / 0); }
+  35% { border-color: var(--color-accent); box-shadow: 0 0 0 4px rgb(168 170 173 / 0.2); }
+  100% { border-color: var(--color-edge); box-shadow: 0 0 0 0 rgb(168 170 173 / 0); }
 }
 
 .animate-verified-pulse {

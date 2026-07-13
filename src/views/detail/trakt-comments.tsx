@@ -89,7 +89,7 @@ function StarRow({ value, interactive, onRate, onHover }: { value: number; inter
               <path d={starPath} fill="#4b5563" opacity="0.3" />
               <path
                 d={starPath}
-                fill="#4b9dff"
+                fill="var(--color-info)"
                 clipPath={clipW > 0 && clipW < 16 ? `url(#${cid})` : undefined}
                 opacity={clipW > 0 ? 1 : 0}
               />

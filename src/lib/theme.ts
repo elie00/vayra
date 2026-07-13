@@ -2,7 +2,7 @@ import { isMobileTauri } from "@/lib/platform";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
 import draculaPreview from "@/assets/theme-previews/dracula.png";
 import forestPreview from "@/assets/theme-previews/forest.png";
-import harborPreview from "@/assets/theme-previews/harbor.png";
+import vayraMineralPreview from "@/assets/theme-previews/vayra-mineral.svg";
 import minuiPreview from "@/assets/theme-previews/minui.png";
 import noirPreview from "@/assets/theme-previews/noir.png";
 import nordPreview from "@/assets/theme-previews/nord.png";
@@ -101,21 +101,21 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
   "cool-grey": {
     id: "cool-grey",
     name: "VAYRA default",
-    blurb: "What ships out of the box.",
-    previewImage: harborPreview,
-    swatch: ["#2c2e36", "#3a3d47", "#dcdde4"],
+    blurb: "Mineral Monochrome. Quiet, precise, and cinematic.",
+    previewImage: vayraMineralPreview,
+    swatch: ["#0a0b0d", "#242529", "#a8aaad"],
     tokens: {
-      "--color-canvas": "oklch(0.18 0.004 260)",
-      "--color-surface": "oklch(0.22 0.004 260)",
-      "--color-elevated": "oklch(0.27 0.004 260)",
-      "--color-raised": "oklch(0.32 0.004 260)",
-      "--color-ink": "oklch(0.97 0.003 260)",
-      "--color-ink-muted": "oklch(0.72 0.003 260)",
-      "--color-ink-subtle": "oklch(0.50 0.003 260)",
-      "--color-edge": "oklch(0.36 0.004 260 / 0.55)",
-      "--color-edge-soft": "oklch(0.36 0.004 260 / 0.25)",
-      "--color-accent": "#8267ff",
-      "--color-accent-soft": "rgb(130 103 255 / 0.18)",
+      "--color-canvas": "#0a0b0d",
+      "--color-surface": "#111214",
+      "--color-elevated": "#18191c",
+      "--color-raised": "#242529",
+      "--color-ink": "#f4f2ed",
+      "--color-ink-muted": "#a8aaad",
+      "--color-ink-subtle": "#737579",
+      "--color-edge": "rgb(75 77 80 / 0.72)",
+      "--color-edge-soft": "rgb(75 77 80 / 0.38)",
+      "--color-accent": "#a8aaad",
+      "--color-accent-soft": "rgb(168 170 173 / 0.16)",
       "--color-danger": "oklch(0.55 0.18 25)",
     },
   },
@@ -1613,16 +1613,16 @@ export type ThemeSettings = {
 };
 
 export const DEFAULT_CUSTOM_COLORS: CustomColors = {
-  canvas: "#1f2128",
-  surface: "#292c34",
-  elevated: "#34373f",
-  raised: "#3f424b",
-  ink: "#f6f6f8",
-  inkMuted: "#aaadb6",
-  inkSubtle: "#6e7079",
-  edge: "#70727b",
-  accent: "#d3a064",
-  danger: "#d35a3a",
+  canvas: "#0a0b0d",
+  surface: "#111214",
+  elevated: "#18191c",
+  raised: "#242529",
+  ink: "#f4f2ed",
+  inkMuted: "#a8aaad",
+  inkSubtle: "#737579",
+  edge: "#4b4d50",
+  accent: "#a8aaad",
+  danger: "#b94545",
 };
 
 export const DEFAULT_THEME: ThemeSettings = {
