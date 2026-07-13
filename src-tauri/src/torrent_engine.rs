@@ -295,6 +295,104 @@ fn merge_trackers(trackers: Vec<String>) -> Vec<String> {
     trackers::merge_into(trackers)
 }
 
+/// Metadata fetch timeouts (B7). Lowered from a single 60s/45s ceiling to a
+/// reasonable per-attempt budget with ONE retry using fresh DHT peers, so a
+/// slow-but-working torrent still gets ample time while a stalled one recovers
+/// instead of dying after a single dead-ended wait.
+const META_TIMEOUT_FIRST: Duration = Duration::from_secs(30);
+const META_TIMEOUT_RETRY: Duration = Duration::from_secs(20);
+const INIT_TIMEOUT: Duration = Duration::from_secs(25);
+/// Short budget for the concurrent side-DHT peer lookup (B7). Was a serial 3s
+/// tax before add; now the lookup races the metadata fetch instead of blocking
+/// it, and librqbit's own tracker+DHT discovery proceeds in parallel.
+const DHT_SEED_BUDGET: Duration = Duration::from_millis(1500);
+
+fn peer_opts() -> PeerConnectionOptions {
+    PeerConnectionOptions {
+        connect_timeout: Some(Duration::from_secs(7)),
+        read_write_timeout: Some(Duration::from_secs(10)),
+        keep_alive_interval: None,
+    }
+}
+
+fn add_opts(
+    paused: bool,
+    only_files: Option<Vec<usize>>,
+    trackers: Vec<String>,
+    seed: Vec<SocketAddr>,
+) -> AddTorrentOptions {
+    AddTorrentOptions {
+        overwrite: true,
+        paused,
+        only_files,
+        trackers: Some(merge_trackers(trackers)),
+        initial_peers: (!seed.is_empty()).then_some(seed),
+        peer_opts: Some(peer_opts()),
+        force_tracker_interval: Some(Duration::from_secs(300)),
+        ..Default::default()
+    }
+}
+
+/// Acquire an initialized torrent handle: fetch metadata under a bounded
+/// timeout and retry ONCE with fresh side-DHT peers before hard-failing (B7).
+///
+/// Concurrency (B7): the side-DHT `seed_peers` lookup runs with a short budget
+/// and its peers are handed to librqbit as `initial_peers`, while librqbit's
+/// own tracker + DHT discovery proceeds concurrently — the lookup no longer
+/// adds a serial multi-second tax ahead of the metadata fetch. On a metadata
+/// timeout we pull fresh DHT peers and re-add once instead of dead-ending.
+async fn acquire_handle(
+    session: &Arc<Session>,
+    magnet: &str,
+    paused: bool,
+    only_files: Option<Vec<usize>>,
+    trackers: Vec<String>,
+) -> Result<Arc<librqbit::ManagedTorrent>, String> {
+    let dht = current_side_dht();
+    let seed = match &dht {
+        Some(d) => dht_boot::seed_peers(d, magnet, 40, DHT_SEED_BUDGET).await,
+        None => Vec::new(),
+    };
+
+    let attempt = |seed: Vec<SocketAddr>, meta_timeout: Duration| {
+        let opts = add_opts(paused, only_files.clone(), trackers.clone(), seed);
+        async move {
+            let added = timeout(
+                meta_timeout,
+                session.add_torrent(AddTorrent::from_url(magnet), Some(opts)),
+            )
+            .await
+            .map_err(|_| "metadata timed out".to_string())?
+            .map_err(|e| format!("{e:#}"))?;
+            let handle = added
+                .into_handle()
+                .ok_or_else(|| "torrent added as list-only".to_string())?;
+            Ok::<_, String>(handle)
+        }
+    };
+
+    let handle = match attempt(seed, META_TIMEOUT_FIRST).await {
+        Ok(h) => h,
+        Err(e) if e == "metadata timed out" => {
+            eprintln!("[torrent-engine] metadata timed out, retrying with fresh peers");
+            let fresh = match &dht {
+                Some(d) => dht_boot::seed_peers(d, magnet, 40, DHT_SEED_BUDGET).await,
+                None => Vec::new(),
+            };
+            attempt(fresh, META_TIMEOUT_RETRY)
+                .await
+                .map_err(|e| format!("metadata timed out after retry: {e}"))?
+        }
+        Err(e) => return Err(e),
+    };
+
+    timeout(INIT_TIMEOUT, handle.wait_until_initialized())
+        .await
+        .map_err(|_| "torrent init timed out".to_string())?
+        .map_err(|e| format!("{e:#}"))?;
+    Ok(handle)
+}
+
 #[tauri::command]
 pub async fn torrent_engine_add(
     app: AppHandle,
@@ -303,34 +401,14 @@ pub async fn torrent_engine_add(
     file_idx: Option<usize>,
 ) -> Result<AddResult, String> {
     let session = ensure_session(&app).await?;
-    let seed = match current_side_dht() {
-        Some(d) => dht_boot::seed_peers(&d, magnet.as_str(), 40, Duration::from_secs(3)).await,
-        None => Vec::new(),
-    };
-    let opts = AddTorrentOptions {
-        overwrite: true,
-        paused: true,
-        only_files: file_idx.map(|i| vec![i]),
-        trackers: Some(merge_trackers(trackers)),
-        initial_peers: (!seed.is_empty()).then_some(seed),
-        peer_opts: Some(PeerConnectionOptions {
-            connect_timeout: Some(Duration::from_secs(7)),
-            read_write_timeout: Some(Duration::from_secs(10)),
-            keep_alive_interval: None,
-        }),
-        force_tracker_interval: Some(Duration::from_secs(300)),
-        ..Default::default()
-    };
-    let added = timeout(
-        Duration::from_secs(60),
-        session.add_torrent(AddTorrent::from_url(magnet.as_str()), Some(opts)),
+    let handle = acquire_handle(
+        &session,
+        magnet.as_str(),
+        true,
+        file_idx.map(|i| vec![i]),
+        trackers,
     )
-    .await
-    .map_err(|_| "metadata timed out: no peers reached in 60s".to_string())?
-    .map_err(|e| format!("{e:#}"))?;
-    let handle = added
-        .into_handle()
-        .ok_or_else(|| "torrent added as list-only".to_string())?;
+    .await?;
     let info_hash = format!("{:?}", handle.info_hash());
     let files = handle
         .with_metadata(|m| {
@@ -348,10 +426,6 @@ pub async fn torrent_engine_add(
                 })
                 .collect::<Vec<_>>()
         })
-        .map_err(|e| format!("{e:#}"))?;
-    timeout(Duration::from_secs(45), handle.wait_until_initialized())
-        .await
-        .map_err(|_| "torrent init timed out".to_string())?
         .map_err(|e| format!("{e:#}"))?;
     let narrow_idx = file_idx
         .filter(|&i| i < files.len())
@@ -385,39 +459,14 @@ pub(crate) async fn ensure_added(
         Some(h) => h,
         None => {
             let magnet = build_magnet(hash);
-            let seed = match current_side_dht() {
-                Some(d) => dht_boot::seed_peers(&d, magnet.as_str(), 40, Duration::from_secs(3)).await,
-                None => Vec::new(),
-            };
-            let opts = AddTorrentOptions {
-                overwrite: true,
-                paused: file_idx.is_none(),
-                only_files: file_idx.map(|i| vec![i]),
-                trackers: Some(merge_trackers(trackers)),
-                initial_peers: (!seed.is_empty()).then_some(seed),
-                peer_opts: Some(PeerConnectionOptions {
-                    connect_timeout: Some(Duration::from_secs(7)),
-                    read_write_timeout: Some(Duration::from_secs(10)),
-                    keep_alive_interval: None,
-                }),
-                force_tracker_interval: Some(Duration::from_secs(300)),
-                ..Default::default()
-            };
-            let added = timeout(
-                Duration::from_secs(60),
-                session.add_torrent(AddTorrent::from_url(magnet.as_str()), Some(opts)),
+            acquire_handle(
+                &session,
+                magnet.as_str(),
+                file_idx.is_none(),
+                file_idx.map(|i| vec![i]),
+                trackers,
             )
-            .await
-            .map_err(|_| "metadata timed out: no peers reached in 60s".to_string())?
-            .map_err(|e| format!("{e:#}"))?;
-            let h = added
-                .into_handle()
-                .ok_or_else(|| "torrent added as list-only".to_string())?;
-            timeout(Duration::from_secs(45), h.wait_until_initialized())
-                .await
-                .map_err(|_| "torrent init timed out".to_string())?
-                .map_err(|e| format!("{e:#}"))?;
-            h
+            .await?
         }
     };
     let info_hash = format!("{:?}", handle.info_hash());

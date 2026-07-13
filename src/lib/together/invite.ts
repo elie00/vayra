@@ -1,14 +1,18 @@
 import { normalizeRoomCode } from "./protocol";
 
-const RELAY_PARAM = "harbor-relay";
-const ROOM_PARAM = "harbor-room";
+const RELAY_PARAM = "vayra-relay";
+const ROOM_PARAM = "vayra-room";
+// Legacy param names, still accepted when parsing so invite links shared before
+// the VAYRA rebrand keep resolving.
+const LEGACY_RELAY_PARAM = "harbor-relay";
+const LEGACY_ROOM_PARAM = "harbor-room";
 
 export type ParsedInvite = {
   relayUrl: string;
   roomCode: string;
 };
 
-export const WEB_JOIN_BASE = "https://app.harbor.site";
+export const WEB_JOIN_BASE = "https://vayra.eybo.tech";
 
 export function buildInviteUrl(relayUrl: string, roomCode: string, origin?: string): string {
   const local =
@@ -25,8 +29,8 @@ export function buildInviteUrl(relayUrl: string, roomCode: string, origin?: stri
 export function parseInviteFromLocation(): ParsedInvite | null {
   if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
-  const relay = params.get(RELAY_PARAM)?.trim();
-  const roomRaw = params.get(ROOM_PARAM)?.trim();
+  const relay = (params.get(RELAY_PARAM) ?? params.get(LEGACY_RELAY_PARAM))?.trim();
+  const roomRaw = (params.get(ROOM_PARAM) ?? params.get(LEGACY_ROOM_PARAM))?.trim();
   if (!relay || !roomRaw) return null;
   const room = normalizeRoomCode(roomRaw);
   if (!room) return null;
@@ -39,5 +43,7 @@ export function clearInviteParams(): void {
   const url = new URL(window.location.href);
   url.searchParams.delete(RELAY_PARAM);
   url.searchParams.delete(ROOM_PARAM);
+  url.searchParams.delete(LEGACY_RELAY_PARAM);
+  url.searchParams.delete(LEGACY_ROOM_PARAM);
   window.history.replaceState(null, "", url.toString());
 }
