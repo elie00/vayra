@@ -13,6 +13,10 @@ import {
   CIRA_PRESENCE_EXPIRY_REFRESH_MS,
   hasExpiringCiraPresence,
 } from "./presence-lifecycle";
+import {
+  reconcilePendingCiraInvite,
+  type PendingCiraInvite,
+} from "./pending-invite";
 import { createCiraRepository } from "./repository";
 import type {
   CiraInvitation,
@@ -25,7 +29,7 @@ import type {
 // un battement toutes les 45 s garde une marge confortable.
 const HEARTBEAT_MS = 45_000;
 
-export type CiraStatus = "loading" | "unavailable" | "signedOut" | "ready";
+export type CiraStatus = "loading" | "unavailable" | "signedOut" | "ready" | "error";
 
 type CiraValue = {
   status: CiraStatus;
@@ -61,17 +65,24 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const [relationships, setRelationships] = useState<CiraRelationship[]>([]);
   const [blocks, setBlocks] = useState<CiraProfile[]>([]);
   const [invitations, setInvitations] = useState<CiraInvitation[]>([]);
-  const [pendingInviteCode, setPendingInviteCode] = useState<string | null>(null);
+  const [pendingInvite, setPendingInvite] = useState<PendingCiraInvite | null>(null);
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const userId = user?.id ?? null;
+
+  useEffect(() => {
+    setPendingInvite((current) => reconcilePendingCiraInvite(current, userId));
+    sessionIdRef.current = crypto.randomUUID();
+  }, [userId]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!user) {
-      setRepo(null);
+    setRepo(null);
+    setMe(null);
+    setRelationships([]);
+    setBlocks([]);
+    setInvitations([]);
+    if (!userId) {
       setStatus("signedOut");
-      setMe(null);
-      setRelationships([]);
-      setBlocks([]);
-      setInvitations([]);
       return;
     }
     setStatus("loading");
@@ -86,7 +97,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [userId]);
 
   const refresh = useCallback(async () => {
     if (!repo) return;
@@ -110,7 +121,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       setStatus("ready");
     } catch (err) {
       console.warn("[cira] refresh failed", err);
-      setStatus("ready");
+      setStatus("error");
     }
   }, [repo]);
 
@@ -162,7 +173,6 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   // Battement de présence : uniquement sous consentement explicite. La
   // session est identifiée par un UUID stable pour toute la vie de l'app
   // (identité explicite, jamais "la plus récente").
-  const sessionIdRef = useRef<string>(crypto.randomUUID());
   const optedIn = status === "ready" && me?.presenceOptIn === true;
   useEffect(() => {
     if (!repo || !optedIn) return;
@@ -191,12 +201,16 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     };
   }, [repo, optedIn]);
 
-  const presentInvite = useCallback((code: string) => {
-    setPendingInviteCode(code);
-  }, []);
+  const presentInvite = useCallback(
+    (code: string) => {
+      setPendingInvite({ code, ownerUserId: userId });
+    },
+    [userId],
+  );
   const clearPendingInvite = useCallback(() => {
-    setPendingInviteCode(null);
+    setPendingInvite(null);
   }, []);
+  const pendingInviteCode = pendingInvite?.code ?? null;
 
   const value = useMemo<CiraValue>(
     () => ({
