@@ -666,7 +666,7 @@ function InviteDecisionModal() {
 
 export function CiraPanel() {
   const t = useT();
-  const { status, me } = useCira();
+  const { status, me, refresh } = useCira();
   const { setActive } = useSettingsActiveContext();
 
   if (status === "signedOut") {
@@ -704,6 +704,19 @@ export function CiraPanel() {
     return (
       <Section title={t("CIRA")} subtitle={t("Your close circle on VAYRA.")}>
         <p className="text-[13px] text-ink-subtle">{t("Loading…")}</p>
+      </Section>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <Section title={t("CIRA unavailable")} subtitle={t("Your close circle on VAYRA.")}>
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+          <p className="text-[13px] text-ink-subtle">
+            {t("CIRA couldn't be loaded. Your existing data has not been changed.")}
+          </p>
+          <SmallButton label={t("Try again")} tone="primary" onClick={() => void refresh()} />
+        </div>
       </Section>
     );
   }
