@@ -456,6 +456,21 @@ function RequestsCard() {
                   tone="danger"
                   onClick={() => run(repo.declineRequest(r.id))}
                 />
+                <button
+                  onClick={() => {
+                    void confirmDialog(
+                      t("Block {name}? They won't be able to contact you again.", {
+                        name: r.profile.displayName,
+                      }),
+                    ).then((ok) => {
+                      if (ok) run(repo.blockUser(r.profile.userId));
+                    });
+                  }}
+                  aria-label={t("Block user")}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-edge-soft text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
+                >
+                  <ShieldOff size={14} />
+                </button>
               </>
             }
           />
