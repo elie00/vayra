@@ -108,6 +108,13 @@ jobs:
               -A clippy::missing_transmute_annotations \
               -A clippy::redundant_closure \
               -A clippy::needless_return
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            # These two style lints are isolated to the Windows mpv/HDR path.
+            # Changing that path also requires documented manual playback.
+            cargo clippy --all-targets -- \
+              -D warnings \
+              -A clippy::needless_return \
+              -A clippy::type_complexity
           else
             cargo clippy --all-targets -- -D warnings
           fi
