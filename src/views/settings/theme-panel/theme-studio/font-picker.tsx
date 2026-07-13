@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { FONT_PAIRS, type FontPairId } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
 import { CustomFontTiles } from "../custom-font-tiles";
 
 export function FontPicker({
@@ -13,6 +14,7 @@ export function FontPicker({
   onPickPair: (id: FontPairId) => void;
   onPickCustom: (id: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="grid grid-cols-1 gap-2.5">
       {Object.values(FONT_PAIRS).map((p) => {
@@ -42,7 +44,7 @@ export function FontPicker({
               )}
             </div>
             <span className="truncate text-[13.5px] text-ink-muted" style={{ fontFamily: p.sans }}>
-              Pick up an episode
+              {t("Pick up an episode")}
             </span>
             <span className="mt-1 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
               {p.name}

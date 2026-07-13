@@ -4,7 +4,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { useFavorites } from "@/lib/iptv/favorites";
 import { togglePin, usePinnedOrder } from "@/lib/iptv/pins";
 import type { EpgProgram, IptvChannel } from "@/lib/iptv/types";
-import { useT } from "@/lib/i18n";
+import { t, useT } from "@/lib/i18n";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { FavoriteButton } from "./favorite-button";
 
@@ -203,7 +203,7 @@ function channelMeta(ch: IptvChannel): Meta {
     poster: ch.logo ?? undefined,
     logo: ch.logo ?? undefined,
     background: ch.logo ?? undefined,
-    description: ch.group ? `Live channel · ${ch.group}` : "Live channel",
-    releaseInfo: "Live",
+    description: ch.group ? t("Live channel · {group}", { group: ch.group }) : t("Live channel"),
+    releaseInfo: t("Live"),
   };
 }

@@ -23,6 +23,7 @@ import { EditorPanels } from "./editor-panels";
 import { FloatingInspector } from "./floating-inspector";
 import { ProfilePicker } from "./profile-picker";
 import { usePreviewBackdrop } from "./use-preview-backdrop";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   theme: ThemeId;
@@ -85,6 +86,7 @@ export function EditorOverlay({
   onResetToDefaults,
   onUnhide,
 }: Props) {
+  const t = useT();
   const chromeRef = useRef<HTMLDivElement>(null);
   const [chromeW, setChromeW] = useState(0);
   const [winSize, setWinSize] = useState(() => ({
@@ -161,7 +163,7 @@ export function EditorOverlay({
   const mid = chromeW > 0 && chromeW < 1300;
   const compact = chromeW > 0 && chromeW < 1000;
   const tight = chromeW > 0 && chromeW < 600;
-  const sizeLabel = tight ? "Tight" : compact ? "Compact" : mid ? "Mid" : "Wide";
+  const sizeLabel = tight ? t("Tight") : compact ? t("Compact") : mid ? t("Mid") : t("Wide");
 
   const controlVariants = useMemo(
     () => Object.fromEntries(config.controls.map((c) => [c.id, c.variant ?? "auto"])),
@@ -219,13 +221,13 @@ export function EditorOverlay({
       <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/8 px-8 py-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-[10.5px] font-bold uppercase tracking-[0.32em] text-white/45">
-            Layout editor · {theme === "stremio" ? "Stremio" : "Default"}
+            {t("Layout editor")} · {theme === "stremio" ? "Stremio" : t("Default")}
           </span>
           <h2
             className="text-[22px] font-medium tracking-tight"
             style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
           >
-            Click any control to edit it.
+            {t("Click any control to edit it.")}
           </h2>
         </div>
         <div className="flex items-center gap-2.5">
@@ -254,13 +256,13 @@ export function EditorOverlay({
             }`}
           >
             <Save size={14} strokeWidth={2.4} />
-            {justSaved ? "Saved" : "Save"}
+            {justSaved ? t("Saved") : t("Save")}
           </button>
           <button
             type="button"
             onClick={toggleFullscreen}
-            aria-label={isFs ? "Exit fullscreen" : "Enter fullscreen"}
-            title={isFs ? "Exit fullscreen" : "Enter fullscreen"}
+            aria-label={isFs ? t("Exit fullscreen") : t("Enter fullscreen")}
+            title={isFs ? t("Exit fullscreen") : t("Enter fullscreen")}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white/85 transition-colors hover:bg-white/15 hover:text-white"
           >
             {isFs ? <Minimize size={14} strokeWidth={2.4} /> : <Maximize size={14} strokeWidth={2.4} />}
@@ -268,11 +270,11 @@ export function EditorOverlay({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close editor"
+            aria-label={t("Close editor")}
             className="flex h-11 items-center gap-2 rounded-full border border-white/15 bg-white/8 ps-3 pe-5 text-[13px] font-medium text-white/85 transition-colors hover:bg-white/15 hover:text-white"
           >
             <X size={15} strokeWidth={2.4} />
-            Close
+            {t("Close")}
           </button>
         </div>
       </header>
@@ -365,11 +367,12 @@ function HiddenTray({
   onUnhide: (id: PlayerControlId) => void;
   onSelect: (id: PlayerControlId | null) => void;
 }) {
+  const t = useT();
   const hidden = config.controls.filter((c) => c.hidden);
   if (hidden.length === 0) return null;
   return (
     <div className="flex shrink-0 items-center gap-3 overflow-x-auto border-b border-white/8 px-8 py-2.5">
-      <span className="shrink-0 text-[10.5px] font-bold uppercase tracking-[0.24em] text-white/40">Hidden</span>
+      <span className="shrink-0 text-[10.5px] font-bold uppercase tracking-[0.24em] text-white/40">{t("Hidden")}</span>
       <div className="flex items-center gap-1.5">
         {hidden.map((c) => (
           <button
@@ -379,7 +382,7 @@ function HiddenTray({
               onUnhide(c.id);
               onSelect(c.id);
             }}
-            title={`Show ${CONTROL_META[c.id]?.label ?? c.id}`}
+            title={t("Show {name}", { name: CONTROL_META[c.id]?.label ?? c.id })}
             className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/5 py-1.5 ps-2.5 pe-3 text-[12px] font-medium text-white/65 transition-colors hover:border-white/25 hover:bg-white/12 hover:text-white"
           >
             <Plus size={12} strokeWidth={2.6} />
@@ -392,16 +395,17 @@ function HiddenTray({
 }
 
 function ModeSwitch({ mode, onChange }: { mode: PlayerMode; onChange: (m: PlayerMode) => void }) {
+  const t = useT();
   return (
     <div className="flex h-11 items-center gap-0.5 rounded-full border border-white/10 bg-white/4 p-1">
       <ModePill active={mode === "normal"} onClick={() => onChange("normal")} icon={<Film size={13} strokeWidth={2.4} />}>
-        Normal
+        {t("Normal")}
       </ModePill>
       <ModePill active={mode === "live"} onClick={() => onChange("live")} icon={<Tv size={13} strokeWidth={2.4} />}>
-        Live TV
+        {t("Live TV")}
       </ModePill>
       <ModePill active={mode === "together"} onClick={() => onChange("together")} icon={<Users size={13} strokeWidth={2.4} />}>
-        Together
+        {t("Together")}
       </ModePill>
     </div>
   );

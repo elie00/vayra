@@ -18,10 +18,12 @@ import sync from "./fr/sync";
 import together from "./fr/together";
 import coverage from "./fr/coverage";
 import sweep from "./fr/sweep";
+import sweep2 from "./fr/sweep2";
 
 const fr: Record<string, string> = {
   ...coverage,
   ...sweep,
+  ...sweep2,
   ...chrome,
   ...common,
   ...catalog,

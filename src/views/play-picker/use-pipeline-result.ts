@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Addon } from "@/lib/addons";
 import { isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
+import { t } from "@/lib/i18n";
 import { buildPickerConfigHash, clearOnePickerCache, getPickerCache, setPickerCache } from "@/lib/picker-cache";
 import { useSettings } from "@/lib/settings";
 import { readPlayback } from "@/lib/playback-history";
@@ -181,7 +182,7 @@ export function usePipelineResult({
       })
       .catch((e) => {
         if (ac.signal.aborted) return;
-        setResolveError(e instanceof Error ? e.message : "Couldn't load streams. Check your addons and connection.");
+        setResolveError(e instanceof Error ? e.message : t("Couldn't load streams. Check your addons and connection."));
         setLoading(false);
         setPipelineDone(true);
         setAutoSettleReady(true);

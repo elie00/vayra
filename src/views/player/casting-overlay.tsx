@@ -1,5 +1,6 @@
 import { CastIcon } from "@/components/player/cast-icon";
 import type { CastDeviceInfo } from "@/lib/cast";
+import { useT } from "@/lib/i18n";
 
 export function CastingOverlay({
   device,
@@ -14,7 +15,8 @@ export function CastingOverlay({
   playing: boolean;
   connecting?: boolean;
 }) {
-  const label = connecting ? "Connecting to" : playing ? "Casting to" : "Paused on";
+  const t = useT();
+  const label = connecting ? t("Connecting to") : playing ? t("Casting to") : t("Paused on");
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex animate-[harbor-cast-in_240ms_ease-out] items-center justify-center bg-canvas">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-canvas via-canvas to-canvas/95" />

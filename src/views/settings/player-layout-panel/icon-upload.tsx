@@ -1,5 +1,6 @@
 import { Image as ImageIcon, Layers, RotateCcw, Upload } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
+import { t as tr, useT } from "@/lib/i18n";
 
 const MAX_BYTES = 256 * 1024;
 const WARN_BYTES = Math.floor(MAX_BYTES * 0.8);
@@ -23,10 +24,11 @@ export function IconUpload({
   states?: readonly { id: string; label: string; url: string | undefined }[];
   onApplyToAll?: (dataUrl: string) => void;
 }) {
+  const t = useT();
   if (!replaceable) {
     return (
       <span className="flex h-9 items-center whitespace-nowrap rounded-lg bg-white/4 px-3 text-[10px] uppercase tracking-[0.16em] text-white/35">
-        Icon locked
+        {t("Icon locked")}
       </span>
     );
   }
@@ -62,11 +64,11 @@ function SingleUpload({
     if (!file) return;
     setWarning(null);
     if (!/^image\//.test(file.type)) {
-      window.alert("Please choose a PNG, SVG, JPG, or WebP image.");
+      window.alert(tr("Please choose a PNG, SVG, JPG, or WebP image."));
       return;
     }
     if (file.size > MAX_BYTES) {
-      window.alert(`Icon must be under ${Math.round(MAX_BYTES / 1024)} KB. Yours is ${Math.round(file.size / 1024)} KB.`);
+      window.alert(tr("Icon must be under {max} KB. Yours is {size} KB.", { max: String(Math.round(MAX_BYTES / 1024)), size: String(Math.round(file.size / 1024)) }));
       return;
     }
     setBusy(true);
@@ -75,13 +77,13 @@ function SingleUpload({
       const sanitized = file.type === "image/svg+xml" ? sanitizeSvgDataUrl(dataUrl) : dataUrl;
       const dims = await probeImage(sanitized);
       const messages: string[] = [];
-      if (file.size > WARN_BYTES) messages.push(`large file (${Math.round(file.size / 1024)} KB)`);
-      if (dims && (dims.w < MIN_DIM || dims.h < MIN_DIM)) messages.push(`tiny (${dims.w}×${dims.h}px)`);
-      if (dims && (dims.w > MAX_DIM || dims.h > MAX_DIM)) messages.push(`huge (${dims.w}×${dims.h}px)`);
+      if (file.size > WARN_BYTES) messages.push(tr("large file ({size} KB)", { size: String(Math.round(file.size / 1024)) }));
+      if (dims && (dims.w < MIN_DIM || dims.h < MIN_DIM)) messages.push(tr("tiny ({w}×{h}px)", { w: String(dims.w), h: String(dims.h) }));
+      if (dims && (dims.w > MAX_DIM || dims.h > MAX_DIM)) messages.push(tr("huge ({w}×{h}px)", { w: String(dims.w), h: String(dims.h) }));
       if (messages.length > 0) setWarning(messages.join(" · "));
       onUpload(sanitized);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not read the file.");
+      window.alert(err instanceof Error ? err.message : tr("Could not read the file."));
     } finally {
       setBusy(false);
     }
@@ -125,6 +127,7 @@ function MultiStateUpload({
   onReset: (state?: string) => void;
   onApplyToAll?: (dataUrl: string) => void;
 }) {
+  const t = useT();
   const [activeState, setActiveState] = useState(states[0]?.id);
   const active = states.find((s) => s.id === activeState) ?? states[0];
   if (!active) return null;
@@ -141,7 +144,7 @@ function MultiStateUpload({
             }`}
           >
             {s.url && <span className="h-2 w-2 rounded-full bg-emerald-400" />}
-            {s.label}
+            {t(s.label)}
           </button>
         ))}
       </div>
@@ -155,7 +158,7 @@ function MultiStateUpload({
         <button
           type="button"
           onClick={() => onApplyToAll(active.url!)}
-          title="Use this icon for all states"
+          title={t("Use this icon for all states")}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/15 hover:text-white"
         >
           <Layers size={13} strokeWidth={2.3} />
@@ -178,9 +181,10 @@ function Thumb({
   warning: string | null;
   label?: string;
 }) {
+  const t = useT();
   return (
     <div
-      title={warning ?? (label ? `${label} icon` : undefined)}
+      title={warning ?? (label ? t("{label} icon", { label }) : undefined)}
       className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-white/8 transition-colors ${
         dragOver ? "border-accent ring-2 ring-accent/40" : warning ? "border-info/40" : "border-white/12"
       }`}
@@ -200,6 +204,7 @@ function Thumb({
 }
 
 function PickButton({ onPick, busy }: { onPick: (file: File | undefined) => void; busy: boolean }) {
+  const t = useT();
   const ref = useRef<HTMLInputElement>(null);
   return (
     <>
@@ -217,8 +222,8 @@ function PickButton({ onPick, busy }: { onPick: (file: File | undefined) => void
         type="button"
         disabled={busy}
         onClick={() => ref.current?.click()}
-        title="Upload icon"
-        aria-label="Upload icon"
+        title={t("Upload icon")}
+        aria-label={t("Upload icon")}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Upload size={14} strokeWidth={2.3} />
@@ -228,12 +233,13 @@ function PickButton({ onPick, busy }: { onPick: (file: File | undefined) => void
 }
 
 function ResetButton({ onClick }: { onClick: () => void }) {
+  const t = useT();
   return (
     <button
       type="button"
       onClick={onClick}
-      title="Reset to default"
-      aria-label="Reset icon"
+      title={t("Reset to default")}
+      aria-label={t("Reset icon")}
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/15 hover:text-white"
     >
       <RotateCcw size={13} strokeWidth={2.3} />
@@ -253,9 +259,9 @@ function readAsDataURL(file: File): Promise<string> {
     reader.onload = () => {
       const r = reader.result;
       if (typeof r === "string") resolve(r);
-      else reject(new Error("Unexpected file contents."));
+      else reject(new Error(tr("Unexpected file contents.")));
     };
-    reader.onerror = () => reject(new Error("Could not read the file."));
+    reader.onerror = () => reject(new Error(tr("Could not read the file.")));
     reader.readAsDataURL(file);
   });
 }

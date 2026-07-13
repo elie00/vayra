@@ -1,4 +1,5 @@
 import { CastMenu } from "@/components/player/cast-menu";
+import { useT } from "@/lib/i18n";
 import { getCastPositionPrecise, useCastPosition } from "@/lib/player/cast-interp";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { CastDeviceInfo } from "@/lib/cast";
@@ -63,6 +64,7 @@ export function CastLayer({
   hasActiveSub: boolean;
   onPickAnother: () => void;
 }) {
+  const t = useT();
   return (
     <>
       <CastMenu
@@ -122,14 +124,14 @@ export function CastLayer({
             }}
             className="shrink-0 rounded-full bg-info/30 px-3 py-1 text-[11.5px] font-semibold text-info hover:bg-info/50"
           >
-            Pick another
+            {t("Pick another")}
           </button>
           <button
             type="button"
             onClick={() => cast.setCastIncompatError(null)}
             className="shrink-0 rounded-full px-2 py-1 text-[11.5px] font-medium text-info/80 hover:text-info"
           >
-            Dismiss
+            {t("Dismiss")}
           </button>
         </div>
       )}

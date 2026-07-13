@@ -19,6 +19,7 @@ import { buildPlayInvite } from "@/lib/together/build-invite";
 import { type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { openInAppBrowser, openUrl } from "@/lib/window";
 import { enqueueDownload } from "@/lib/download/downloads-store";
+import { t } from "@/lib/i18n";
 import { formatStreamQuality, humanError, isDebridFailure } from "./picker-utils";
 
 export function usePickHandler({
@@ -158,7 +159,7 @@ export function usePickHandler({
         } catch (e) {
           setFailedStreams((prev) => new Set(prev).add(stream));
           const willRetry = autoActive && autoAttemptIdx + 1 < autoCandidatesLength;
-          if (!willRetry) setResolveError("Could not start the local stream proxy. Pick another stream.");
+          if (!willRetry) setResolveError(t("Could not start the local stream proxy. Pick another stream."));
           advanceAuto();
           return;
         }
@@ -185,7 +186,7 @@ export function usePickHandler({
         const willRetry = autoActive && autoAttemptIdx + 1 < autoCandidatesLength;
         advanceAuto();
         if (!willRetry && !autoActive) {
-          setResolveError("This source isn't ready on your debrid yet. Try it again in a moment or pick another.");
+          setResolveError(t("This source isn't ready on your debrid yet. Try it again in a moment or pick another."));
         }
         return;
       }
@@ -323,7 +324,7 @@ export function usePickHandler({
     }
     const target = debrids.find((d) => d.queueCache);
     if (!target?.queueCache) {
-      setResolveError("Your debrid service doesn't support queueing torrents from VAYRA yet.");
+      setResolveError(t("Your debrid service doesn't support queueing torrents from VAYRA yet."));
       return;
     }
     setResolving({ stream });

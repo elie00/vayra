@@ -1,4 +1,5 @@
 import { Check, Pencil } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 const CARD_STYLES = [
   { id: "flat", name: "Flat", blurb: "Solid surfaces, clean edges." },
@@ -26,6 +27,7 @@ export function StylePicker({
   onChange: (v: string) => void;
   onEditCustom?: () => void;
 }) {
+  const t = useT();
   const list = kind === "card" ? CARD_STYLES : BUTTON_STYLES;
   return (
     <div className="grid grid-cols-2 gap-2.5">
@@ -49,8 +51,8 @@ export function StylePicker({
             <Swatch kind={kind} variant={s.id} active={active} />
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[13.5px] font-semibold text-ink">{s.name}</span>
-                <span className="text-[11.5px] text-ink-subtle">{s.blurb}</span>
+                <span className="text-[13.5px] font-semibold text-ink">{t(s.name)}</span>
+                <span className="text-[11.5px] text-ink-subtle">{t(s.blurb)}</span>
               </div>
               {active && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-canvas">
@@ -66,6 +68,7 @@ export function StylePicker({
 }
 
 function Swatch({ kind, variant, active }: { kind: "card" | "button"; variant: string; active: boolean }) {
+  const t = useT();
   if (variant === "custom") {
     return (
       <div
@@ -143,7 +146,7 @@ function Swatch({ kind, variant, active }: { kind: "card" | "button"; variant: s
               "inset 0 1px 0 rgba(255,255,255,0.5), 0 6px 18px -6px rgba(0,0,0,0.45)",
           }}
         >
-          Button
+          {t("Button")}
         </div>
       </div>
     );
@@ -160,7 +163,7 @@ function Swatch({ kind, variant, active }: { kind: "card" | "button"; variant: s
             boxShadow: "0 2px 6px -2px rgba(15,15,18,0.10)",
           }}
         >
-          Button
+          {t("Button")}
         </div>
       </div>
     );
@@ -171,7 +174,7 @@ function Swatch({ kind, variant, active }: { kind: "card" | "button"; variant: s
         className="rounded-full px-4 py-2 text-[12px] font-semibold"
         style={{ background: "var(--color-accent)", color: "#fff" }}
       >
-        Button
+        {t("Button")}
       </div>
     </div>
   );

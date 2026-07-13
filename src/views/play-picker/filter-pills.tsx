@@ -1,4 +1,5 @@
 import { Languages, Zap } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { abbreviateLanguages, normalizeLangCode } from "./picker-utils";
 
 export function CachedFilterPill({
@@ -10,6 +11,7 @@ export function CachedFilterPill({
   hiddenCount: number;
   onToggle: () => void;
 }) {
+  const t = useT();
   return (
     <button
       onClick={onToggle}
@@ -21,7 +23,7 @@ export function CachedFilterPill({
       aria-pressed={on}
     >
       <Zap size={11} fill={on ? "currentColor" : "none"} strokeWidth={2.2} />
-      {on ? `Cached only · +${hiddenCount}` : `Show all sources`}
+      {on ? t("Cached only · +{count}", { count: hiddenCount }) : t("Show all sources")}
     </button>
   );
 }
@@ -39,6 +41,7 @@ export function LanguageFilterPill({
   onToggle: () => void;
   isAnime: boolean;
 }) {
+  const t = useT();
   const display = isAnime
     ? languages
     : languages.filter((l) => normalizeLangCode(l) !== "ja");
@@ -54,7 +57,7 @@ export function LanguageFilterPill({
       aria-pressed={on}
     >
       <Languages size={11} strokeWidth={2.2} />
-      {on ? `${label} only · +${hiddenCount}` : `Show ${label} only`}
+      {on ? t("{label} only · +{count}", { label, count: hiddenCount }) : t("Show {label} only", { label })}
     </button>
   );
 }

@@ -1,5 +1,6 @@
 import { AlertTriangle, Image as ImageIcon, Loader2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { t as tr, useT } from "@/lib/i18n";
 
 const ACCEPTED_TYPES = "image/png,image/gif,image/webp,image/jpeg,image/svg+xml,.svg";
 const MAX_GIF_SIZE = 2 * 1024 * 1024;
@@ -26,6 +27,7 @@ export function SeekImageUpload({
   targetDim?: number;
   targetQuality?: number;
 }) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function SeekImageUpload({
       onSelect(result.url);
     } catch (e) {
       console.warn("[seek-image] processing failed", e);
-      setError("Couldn't read that image. Try a different file.");
+      setError(t("Couldn't read that image. Try a different file."));
     } finally {
       setBusy(false);
     }
@@ -86,7 +88,7 @@ export function SeekImageUpload({
         </div>
         <div className="flex flex-1 flex-col gap-1">
           <p className="text-[12.5px] font-medium text-ink">
-            {value ? "Custom image loaded" : emptyTitle}
+            {value ? t("Custom image loaded") : emptyTitle}
           </p>
           <p className="text-[11px] leading-snug text-ink-subtle">{hint}</p>
         </div>
@@ -97,7 +99,7 @@ export function SeekImageUpload({
           className="flex h-9 items-center gap-1.5 rounded-full bg-raised px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-wait disabled:opacity-60"
         >
           <Upload size={12} strokeWidth={2.2} />
-          {busy ? "Processing" : value ? "Replace" : "Upload"}
+          {busy ? t("Processing") : value ? t("Replace") : t("Upload")}
         </button>
         <button
           type="button"
@@ -107,7 +109,7 @@ export function SeekImageUpload({
           }}
           disabled={!value}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-raised text-ink-muted transition-all duration-200 hover:bg-danger hover:text-white disabled:pointer-events-none disabled:scale-90 disabled:opacity-0"
-          aria-label="Remove image"
+          aria-label={t("Remove image")}
         >
           <X size={13} strokeWidth={2.2} />
         </button>
@@ -161,7 +163,7 @@ async function processSeekImage(file: File, maxDim: number, quality: number): Pr
   if (isSvg) {
     if (file.size > MAX_SVG_SIZE) {
       return {
-        error: `That SVG is ${formatBytes(file.size)} (max 512 KB). Optimize it at svgomg or save it smaller and try again.`,
+        error: tr("That SVG is {size} (max 512 KB). Optimize it at svgomg or save it smaller and try again.", { size: formatBytes(file.size) }),
       };
     }
     const text = await file.text();
@@ -172,7 +174,7 @@ async function processSeekImage(file: File, maxDim: number, quality: number): Pr
   if (isGif) {
     if (file.size > MAX_GIF_SIZE) {
       return {
-        error: `Animated GIFs are kept as-is to preserve animation, but this one is ${formatBytes(file.size)} and the cap is 2 MB. Try a shorter or lower-frame-rate version.`,
+        error: tr("Animated GIFs are kept as-is to preserve animation, but this one is {size} and the cap is 2 MB. Try a shorter or lower-frame-rate version.", { size: formatBytes(file.size) }),
       };
     }
     const url = await readAsDataUrl(file);
@@ -181,18 +183,18 @@ async function processSeekImage(file: File, maxDim: number, quality: number): Pr
 
   if (file.size > MAX_RASTER_SOURCE) {
     return {
-      error: `That file is ${formatBytes(file.size)}. Source images need to be under 16 MB before resizing.`,
+      error: tr("That file is {size}. Source images need to be under 16 MB before resizing.", { size: formatBytes(file.size) }),
     };
   }
 
   const sourceUrl = await readAsDataUrl(file);
   const downsized = await downsizeRaster(sourceUrl, maxDim, quality);
-  if (!downsized) return { error: "Couldn't read that image. Try a PNG, JPEG, or WebP." };
+  if (!downsized) return { error: tr("Couldn't read that image. Try a PNG, JPEG, or WebP.") };
   if (downsized.length > MAX_STORED_BYTES) {
     const tighter = await downsizeRaster(sourceUrl, Math.round(maxDim / 2), 0.82);
     if (tighter && tighter.length <= MAX_STORED_BYTES) return { url: tighter };
     return {
-      error: "Even after auto-shrinking this image is still too big to store. Try one with a tighter crop.",
+      error: tr("Even after auto-shrinking this image is still too big to store. Try one with a tighter crop."),
     };
   }
   return { url: downsized };

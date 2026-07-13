@@ -1,10 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { ImagePlus, Move, ZoomIn } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 const OUT_W = 1600;
 const OUT_H = 900;
 
 export function CoverCropper({ onChange }: { onChange: (blob: Blob | null) => void }) {
+  const t = useT();
   const frameRef = useRef<HTMLDivElement>(null);
   const imgEl = useRef<HTMLImageElement | null>(null);
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
@@ -120,14 +122,14 @@ export function CoverCropper({ onChange }: { onChange: (blob: Blob | null) => vo
               ))}
             </div>
             <div className="pointer-events-none absolute bottom-2 start-2 flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white/80 backdrop-blur-sm">
-              <Move size={11} /> drag to position
+              <Move size={11} /> {t("drag to position")}
             </div>
           </>
         ) : (
           <button type="button" onClick={pick} className="flex h-full w-full flex-col items-center justify-center gap-2 text-ink-subtle transition-colors hover:text-ink">
             <ImagePlus size={28} strokeWidth={1.6} />
-            <span className="text-[13px] font-medium">Add a cover image</span>
-            <span className="text-[11.5px]">A 16:9 shot of your theme looks best</span>
+            <span className="text-[13px] font-medium">{t("Add a cover image")}</span>
+            <span className="text-[11.5px]">{t("A 16:9 shot of your theme looks best")}</span>
           </button>
         )}
       </div>
@@ -150,7 +152,7 @@ export function CoverCropper({ onChange }: { onChange: (blob: Blob | null) => vo
             className="h-1.5 flex-1 cursor-pointer accent-accent"
           />
           <button type="button" onClick={pick} className="shrink-0 text-[12px] font-medium text-ink-muted transition-colors hover:text-ink">
-            Replace
+            {t("Replace")}
           </button>
         </div>
       )}

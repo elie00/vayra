@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { useT } from "@/lib/i18n";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { openUrl } from "@/lib/window";
@@ -15,10 +16,11 @@ export function AutoExhaustedModal({
   triedCount: number;
   onBrowseManually: () => void;
 }) {
+  const t = useT();
   const { goBack } = useView();
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, true);
-  const title = meta.name ?? "this title";
+  const title = meta.name ?? t("this title");
   const epSuffix = episode
     ? ` S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
     : "";
@@ -43,35 +45,34 @@ export function AutoExhaustedModal({
           VAYRA
         </p>
         <h2 id="auto-exhausted-title" className="mt-3 text-start text-[24px] font-semibold leading-tight text-ink" dir="auto">
-          We could not find a working stream
+          {t("We could not find a working stream")}
         </h2>
         <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
-          VAYRA checked every available source for {title}{epSuffix} and none of them played.
-          The most common reasons:
+          {t("VAYRA checked every available source for {title}{epSuffix} and none of them played. The most common reasons:", { title, epSuffix })}
         </p>
         <ul className="mt-3 space-y-1.5 text-start text-[13.5px] leading-relaxed text-ink-muted" dir="auto">
-          <li dir="auto">· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.</li>
-          <li dir="auto">· No stream addon is installed yet (Torrentio, MediaFusion, Comet).</li>
-          <li dir="auto">· This title is too new and no source has it cached yet.</li>
+          <li dir="auto">{t("· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.")}</li>
+          <li dir="auto">{t("· No stream addon is installed yet (Torrentio, MediaFusion, Comet).")}</li>
+          <li dir="auto">{t("· This title is too new and no source has it cached yet.")}</li>
         </ul>
         <div className="mt-7 flex flex-col gap-2.5">
           <button
             onClick={onBrowseManually}
             className="flex h-11 items-center justify-center rounded-full bg-ink text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90"
           >
-            Browse streams manually
+            {t("Browse streams manually")}
           </button>
           <button
             onClick={() => openUrl(mailto)}
             className="flex h-11 items-center justify-center rounded-full bg-elevated text-[13.5px] font-medium text-ink ring-1 ring-edge-soft transition-colors hover:bg-raised"
           >
-            Send a bug report
+            {t("Send a bug report")}
           </button>
           <button
             onClick={goBack}
             className="mt-1 text-[12.5px] text-ink-subtle transition-colors hover:text-ink-muted"
           >
-            Back
+            {t("Back")}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import type { ThemeLayout } from "@/lib/theme";
 
 type LayoutDef = {
@@ -60,6 +61,7 @@ export function LayoutPicker({
   value: ThemeLayout;
   onChange: (v: ThemeLayout) => void;
 }) {
+  const t = useT();
   return (
     <div className="grid grid-cols-2 gap-2.5">
       {LAYOUTS.map((l) => {
@@ -80,8 +82,8 @@ export function LayoutPicker({
             </div>
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[13.5px] font-semibold text-ink">{l.name}</span>
-                <span className="text-[11.5px] text-ink-subtle">{l.blurb}</span>
+                <span className="text-[13.5px] font-semibold text-ink">{t(l.name)}</span>
+                <span className="text-[11.5px] text-ink-subtle">{t(l.blurb)}</span>
               </div>
               {active && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-canvas">
