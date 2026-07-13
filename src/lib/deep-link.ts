@@ -46,6 +46,8 @@ export function onVayraAuthCallback(handler: (rawUrl: string) => void): () => vo
 
 const CIRA_INVITE_EVENT = "vayra:deeplink-cira-invite";
 let pendingCiraInviteCode: string | null = null;
+const CIRA_GROUP_INVITE_EVENT = "vayra:deeplink-cira-group-invite";
+let pendingCiraGroupInviteCode: string | null = null;
 
 // vayra://cira/invite#t=<code> - même convention que la page web : le code
 // reste dans le fragment, jamais dans une query string.
@@ -85,6 +87,46 @@ export function onCiraInvite(handler: (code: string) => void): () => void {
   };
   window.addEventListener(CIRA_INVITE_EVENT, listener);
   return () => window.removeEventListener(CIRA_INVITE_EVENT, listener);
+}
+
+// vayra://cira/group#t=<code> keeps private-group links distinct from
+// relationship invitations while preserving the fragment-only secret.
+export function parseCiraGroupInviteCode(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "vayra:" || url.hostname !== "cira" || url.pathname !== "/group") {
+      return null;
+    }
+    const match = /(?:^|[#&])t=([^&]+)/.exec(url.hash);
+    if (!match) return null;
+    const code = decodeURIComponent(match[1]).trim();
+    return code.length > 0 ? code : null;
+  } catch {
+    return null;
+  }
+}
+
+export function emitCiraGroupInvite(code: string): void {
+  pendingCiraGroupInviteCode = code;
+  window.dispatchEvent(
+    new CustomEvent<{ code: string }>(CIRA_GROUP_INVITE_EVENT, { detail: { code } }),
+  );
+}
+
+export function onCiraGroupInvite(handler: (code: string) => void): () => void {
+  if (pendingCiraGroupInviteCode) {
+    const code = pendingCiraGroupInviteCode;
+    pendingCiraGroupInviteCode = null;
+    handler(code);
+  }
+  const listener = (event: Event) => {
+    const detail = (event as CustomEvent<{ code: string }>).detail;
+    if (!detail?.code) return;
+    pendingCiraGroupInviteCode = null;
+    handler(detail.code);
+  };
+  window.addEventListener(CIRA_GROUP_INVITE_EVENT, listener);
+  return () => window.removeEventListener(CIRA_GROUP_INVITE_EVENT, listener);
 }
 
 export function emitDeepLinkInstall(rawUrl: string): void {
@@ -236,6 +278,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
           emitCiraInvite(ciraInvite);
           continue;
         }
+        const ciraGroupInvite = parseCiraGroupInviteCode(u);
+        if (ciraGroupInvite) {
+          emitCiraGroupInvite(ciraGroupInvite);
+          continue;
+        }
         const authKey = parseStremioAuthKey(u);
         if (authKey) {
           emitStremioAuthKey(authKey);
@@ -262,6 +309,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       const ciraInvite = parseCiraInviteCode(u);
       if (ciraInvite) {
         emitCiraInvite(ciraInvite);
+        return;
+      }
+      const ciraGroupInvite = parseCiraGroupInviteCode(u);
+      if (ciraGroupInvite) {
+        emitCiraGroupInvite(ciraGroupInvite);
         return;
       }
       const open = parseStremioOpen(u);

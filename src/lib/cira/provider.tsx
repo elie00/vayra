@@ -48,6 +48,9 @@ type CiraValue = {
   pendingInviteCode: string | null;
   presentInvite: (code: string) => void;
   clearPendingInvite: () => void;
+  pendingGroupInviteCode: string | null;
+  presentGroupInvite: (code: string) => void;
+  clearPendingGroupInvite: () => void;
 };
 
 const CiraContext = createContext<CiraValue | null>(null);
@@ -72,11 +75,13 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const [groups, setGroups] = useState<CiraGroup[]>([]);
   const [groupInvitations, setGroupInvitations] = useState<CiraGroupInvitation[]>([]);
   const [pendingInvite, setPendingInvite] = useState<PendingCiraInvite | null>(null);
+  const [pendingGroupInvite, setPendingGroupInvite] = useState<PendingCiraInvite | null>(null);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const userId = user?.id ?? null;
 
   useEffect(() => {
     setPendingInvite((current) => reconcilePendingCiraInvite(current, userId));
+    setPendingGroupInvite((current) => reconcilePendingCiraInvite(current, userId));
     sessionIdRef.current = crypto.randomUUID();
   }, [userId]);
 
@@ -225,6 +230,12 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     setPendingInvite(null);
   }, []);
   const pendingInviteCode = pendingInvite?.code ?? null;
+  const presentGroupInvite = useCallback(
+    (code: string) => setPendingGroupInvite({ code, ownerUserId: userId }),
+    [userId],
+  );
+  const clearPendingGroupInvite = useCallback(() => setPendingGroupInvite(null), []);
+  const pendingGroupInviteCode = pendingGroupInvite?.code ?? null;
 
   const value = useMemo<CiraValue>(
     () => ({
@@ -240,8 +251,11 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       pendingInviteCode,
       presentInvite,
       clearPendingInvite,
+      pendingGroupInviteCode,
+      presentGroupInvite,
+      clearPendingGroupInvite,
     }),
-    [status, repo, me, relationships, blocks, invitations, groups, groupInvitations, refresh, pendingInviteCode, presentInvite, clearPendingInvite],
+    [status, repo, me, relationships, blocks, invitations, groups, groupInvitations, refresh, pendingInviteCode, presentInvite, clearPendingInvite, pendingGroupInviteCode, presentGroupInvite, clearPendingGroupInvite],
   );
 
   return <CiraContext.Provider value={value}>{children}</CiraContext.Provider>;

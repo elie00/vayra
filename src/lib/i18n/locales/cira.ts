@@ -61,6 +61,7 @@ export const ciraEn: Record<string, string> = {
   "This group has reached its member limit.": "This group has reached its member limit.", "This member is no longer in the group.": "This member is no longer in the group.", "That role isn't available.": "That role isn't available.",
   "Transfer ownership before leaving the group.": "Transfer ownership before leaving the group.", "This group invitation is no longer available.": "This group invitation is no longer available.",
   "This person is already in the group.": "This person is already in the group.", "Choose a link duration between 5 minutes and 24 hours.": "Choose a link duration between 5 minutes and 24 hours.",
+  "Private group invitation": "Private group invitation", "Join group": "Join group", "{count} members": "{count} members",
 };
 
 export const ciraFr: Record<string, string> = {
@@ -116,6 +117,7 @@ export const ciraFr: Record<string, string> = {
   "This group has reached its member limit.": "Ce groupe a atteint sa limite de membres.", "This member is no longer in the group.": "Cette personne ne fait plus partie du groupe.", "That role isn't available.": "Ce rôle n'est pas disponible.",
   "Transfer ownership before leaving the group.": "Transférez la propriété avant de quitter le groupe.", "This group invitation is no longer available.": "Cette invitation de groupe n'est plus disponible.",
   "This person is already in the group.": "Cette personne fait déjà partie du groupe.", "Choose a link duration between 5 minutes and 24 hours.": "Choisissez une durée de lien entre 5 minutes et 24 heures.",
+  "Private group invitation": "Invitation à un groupe privé", "Join group": "Rejoindre le groupe", "{count} members": "{count} membres",
 };
 
 export const ciraDe: Record<string, string> = {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Crown, Link2, Plus, Settings2, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
 import { CiraError } from "@/lib/cira";
 import { useCira } from "@/lib/cira/provider";
-import type { CiraGroup, CiraGroupLink, CiraGroupMember } from "@/lib/cira";
+import type { CiraGroup, CiraGroupLink, CiraGroupLinkPreview, CiraGroupMember } from "@/lib/cira";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import { Section } from "./shared";
@@ -184,6 +184,66 @@ function GroupInvitations() {
   );
 }
 
+function GroupLinkDecision() {
+  const t = useT();
+  const { repo, pendingGroupInviteCode, clearPendingGroupInvite, refresh } = useCira();
+  const [preview, setPreview] = useState<CiraGroupLinkPreview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setPreview(null);
+    setError(null);
+    if (!repo || !pendingGroupInviteCode) return;
+    let cancelled = false;
+    void repo.previewGroupLink(pendingGroupInviteCode).then((value) => {
+      if (!cancelled) setPreview(value);
+    }).catch((cause) => {
+      if (!cancelled) setError(groupError(t, cause));
+    });
+    return () => { cancelled = true; };
+  }, [repo, pendingGroupInviteCode, t]);
+
+  if (!repo || !pendingGroupInviteCode) return null;
+  const join = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await repo.acceptGroupLink(pendingGroupInviteCode);
+      await refresh();
+      clearPendingGroupInvite();
+    } catch (cause) {
+      setError(groupError(t, cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="cira-group-invite-title" className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-edge bg-elevated p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 id="cira-group-invite-title" className="text-[18px] font-medium text-ink">{t("Private group invitation")}</h3>
+            {preview && <p className="mt-1 text-[12px] text-ink-subtle">{t("Invited by {name}", { name: preview.creatorDisplayName })}</p>}
+          </div>
+          <button aria-label={t("Close")} onClick={clearPendingGroupInvite} className="text-ink-subtle hover:text-ink"><X size={16} /></button>
+        </div>
+        {preview ? (
+          <div className="rounded-xl border border-edge-soft bg-canvas/40 p-4">
+            <p className="text-[15px] font-medium text-ink">{preview.groupName}</p>
+            {preview.groupDescription && <p className="mt-1 text-[12.5px] text-ink-muted">{preview.groupDescription}</p>}
+            <p className="mt-2 text-[11.5px] text-ink-subtle">{t("{count} members", { count: preview.memberCount })}</p>
+          </div>
+        ) : error ? <p className="text-[12.5px] text-danger">{error}</p> : <p className="text-[12.5px] text-ink-subtle">{t("Checking the invitation…")}</p>}
+        <div className="flex justify-end gap-2">
+          <ActionButton onClick={clearPendingGroupInvite}>{t("Cancel")}</ActionButton>
+          <button onClick={() => void join()} disabled={!preview || busy} className="h-9 rounded-lg bg-ink px-4 text-[12px] font-semibold text-canvas disabled:opacity-45">{t("Join group")}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GroupDetails({ group }: { group: CiraGroup }) {
   const t = useT();
   const { repo, me, relationships, refresh } = useCira();
@@ -355,6 +415,7 @@ export function CiraGroupsCard() {
   return (
     <Section title={t("CIRA groups")} subtitle={t("Private circles with explicit membership and roles. Nothing is public or searchable.")}>
       <div className="flex flex-col gap-4">
+        <GroupLinkDecision />
         <GroupInvitations />
         <div className="flex flex-wrap gap-2">
           {groups.map((group) => (
