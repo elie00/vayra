@@ -12,6 +12,7 @@ import {
   summarizeFilter,
   type CustomStreamFilter,
 } from "@/lib/streams/custom-filters";
+import { useT } from "@/lib/i18n";
 import { badgeFor, type BadgeDimension } from "./filter-builder/badge-maps";
 
 function MultiPill({
@@ -165,6 +166,7 @@ export function FilterBuilder({
   onDelete?: (id: string) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState<CustomStreamFilter>(() => initial ?? newCustomFilter(""));
 
   useEffect(() => {
@@ -209,14 +211,14 @@ export function FilterBuilder({
         <div className="flex items-start justify-between gap-4 border-b border-edge-soft px-6 pb-4 pt-6">
           <div className="flex min-w-0 flex-col gap-1">
             <h2 className="font-display text-[20px] font-medium tracking-tight text-ink">
-              {isEdit ? "Edit filter" : "New filter"}
+              {isEdit ? t("Edit filter") : t("New filter")}
             </h2>
             <p className="truncate text-[12.5px] text-ink-muted">{summary}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("Close")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
           >
             <X size={18} />
@@ -225,12 +227,12 @@ export function FilterBuilder({
 
         <div className="flex flex-col gap-5 overflow-y-auto px-6 py-5">
           <div className="flex flex-col gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">Name</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Name")}</span>
             <input
               value={draft.name}
               autoFocus
               spellCheck={false}
-              placeholder="My filter"
+              placeholder={t("My filter")}
               onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && canSave) {
@@ -243,28 +245,28 @@ export function FilterBuilder({
           </div>
 
           <MultiSection
-            title="Resolution"
+            title={t("Resolution")}
             options={RESOLUTION_OPTIONS}
             dimension="resolution"
             selected={draft.resolution ?? []}
             onToggle={(v) => toggleMulti("resolution", v)}
           />
           <MultiSection
-            title="Source"
+            title={t("Source")}
             options={SOURCE_OPTIONS}
             dimension="source"
             selected={draft.source ?? []}
             onToggle={(v) => toggleMulti("source", v)}
           />
           <MultiSection
-            title="Codec"
+            title={t("Codec")}
             options={CODEC_OPTIONS}
             dimension="codec"
             selected={draft.codec ?? []}
             onToggle={(v) => toggleMulti("codec", v)}
           />
           <MultiSection
-            title="Audio"
+            title={t("Audio")}
             options={AUDIO_OPTIONS}
             dimension="audio"
             selected={draft.audio ?? []}
@@ -273,14 +275,14 @@ export function FilterBuilder({
 
           <div className="flex flex-col gap-2.5">
             <ToggleSection
-              title="HDR only"
-              sub="Keep Dolby Vision, HDR10, HLG. Drop SDR."
+              title={t("HDR only")}
+              sub={t("Keep Dolby Vision, HDR10, HLG. Drop SDR.")}
               value={draft.requireHdr === true}
               onChange={(v) => setDraft((d) => ({ ...d, requireHdr: v }))}
             />
             <ToggleSection
-              title="Cached only"
-              sub="Only streams already in your debrid library."
+              title={t("Cached only")}
+              sub={t("Only streams already in your debrid library.")}
               value={draft.cachedOnly === true}
               onChange={(v) => setDraft((d) => ({ ...d, cachedOnly: v }))}
             />
@@ -288,16 +290,16 @@ export function FilterBuilder({
 
           <div className="flex flex-col gap-2.5">
             <NumberSection
-              title="Min seeders"
-              sub="Excludes direct and debrid streams with no seeders."
-              placeholder="Any"
+              title={t("Min seeders")}
+              sub={t("Excludes direct and debrid streams with no seeders.")}
+              placeholder={t("Any")}
               value={draft.minSeeders}
               onChange={(v) => setDraft((d) => ({ ...d, minSeeders: v }))}
             />
             <NumberSection
-              title="Max size (GB)"
-              sub="Caps file size. Unknown sizes still pass."
-              placeholder="Any"
+              title={t("Max size (GB)")}
+              sub={t("Caps file size. Unknown sizes still pass.")}
+              placeholder={t("Any")}
               value={draft.maxSizeGb}
               onChange={(v) => setDraft((d) => ({ ...d, maxSizeGb: v }))}
             />
@@ -305,7 +307,7 @@ export function FilterBuilder({
 
           {isFilterEmpty(draft) && (
             <p className="rounded-lg bg-raised/60 px-3.5 py-2.5 text-[12.5px] text-ink-muted">
-              No dimensions set. This filter matches every stream.
+              {t("No dimensions set. This filter matches every stream.")}
             </p>
           )}
         </div>
@@ -318,7 +320,7 @@ export function FilterBuilder({
               className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-danger transition-colors hover:bg-danger/12"
             >
               <Trash2 size={15} />
-              Delete
+              {t("Delete")}
             </button>
           ) : (
             <span />
@@ -329,7 +331,7 @@ export function FilterBuilder({
               onClick={onClose}
               className="rounded-xl px-4 py-2.5 text-[13.5px] font-semibold text-ink-muted transition-colors hover:text-ink"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="button"
@@ -338,7 +340,7 @@ export function FilterBuilder({
               className="flex items-center gap-1.5 rounded-xl bg-ink px-5 py-2.5 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               <Check size={15} strokeWidth={2.6} />
-              {isEdit ? "Save" : "Create"}
+              {isEdit ? t("Save") : t("Create")}
             </button>
           </div>
         </div>

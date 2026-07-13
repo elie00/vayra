@@ -52,6 +52,7 @@ const TABS: { view: View; label: string; Icon: NavIcon }[] = [
 ];
 
 export function MobileShell() {
+  const t = useT();
   const { topKind, setView, player } = useView();
   const open = usePlusOpen();
   // The tab bar shows everywhere except the fullscreen playback contexts.
@@ -64,7 +65,7 @@ export function MobileShell() {
       {!hidden && (
         <nav
           data-vayra-tabbar
-          aria-label="Primary"
+          aria-label={t("Primary")}
           className="fixed inset-x-0 bottom-0 z-[90] flex items-stretch justify-around border-t border-edge-soft/60 bg-canvas/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
         >
           {TABS.map((tab) => (

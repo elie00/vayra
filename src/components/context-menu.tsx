@@ -157,7 +157,7 @@ export function ContextMenu() {
       <Item
         key="go-to-host"
         icon={<Navigation size={14} strokeWidth={2} />}
-        label="Go to host"
+        label={t("Go to host")}
         onClick={goToHost}
         accent
       />,
@@ -189,14 +189,14 @@ export function ContextMenu() {
     };
     if (!playerActions) {
       items.push(
-        <Item key="details" icon={<Info size={14} strokeWidth={2} />} label="View details" onClick={handleDetails} />,
+        <Item key="details" icon={<Info size={14} strokeWidth={2} />} label={t("View details")} onClick={handleDetails} />,
       );
     }
     items.push(
       <Item
         key="watchlist"
         icon={isWatchlisted ? <BookmarkCheck size={14} strokeWidth={2} /> : <Bookmark size={14} strokeWidth={2} />}
-        label={isWatchlisted ? "In watchlist" : "Add to watchlist"}
+        label={isWatchlisted ? t("In watchlist") : t("Add to watchlist")}
         onClick={handleWatchlist}
         accent={isWatchlisted}
       />,
@@ -205,7 +205,7 @@ export function ContextMenu() {
       <Item
         key="favorite"
         icon={<Star size={14} strokeWidth={2} fill={isFav ? "currentColor" : "none"} />}
-        label={isFav ? "Favorited" : "Favorite"}
+        label={isFav ? t("Favorited") : t("Favorite")}
         onClick={() => {
           toggleFavorite({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });
           close();
@@ -217,7 +217,7 @@ export function ContextMenu() {
       <Item
         key="local-list"
         icon={isLocal ? <ListChecks size={14} strokeWidth={2} /> : <ListPlus size={14} strokeWidth={2} />}
-        label={isLocal ? "In my list" : "Add to my list"}
+        label={isLocal ? t("In my list") : t("Add to my list")}
         onClick={() => {
           toggleLocalList({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });
           close();
@@ -232,10 +232,10 @@ export function ContextMenu() {
           icon={isWatched ? <EyeOff size={14} strokeWidth={2} /> : <CheckCheck size={14} strokeWidth={2} />}
           label={
             isWatched
-              ? "Mark as unwatched"
+              ? t("Mark as unwatched")
               : meta.type === "series"
-                ? "Mark all watched"
-                : "Mark as watched"
+                ? t("Mark all watched")
+                : t("Mark as watched")
           }
           onClick={() => {
             if (isWatched) void unmarkMetaWatched(meta);
@@ -251,7 +251,7 @@ export function ContextMenu() {
         <Item
           key="bring"
           icon={<UserPlus size={14} strokeWidth={2} />}
-          label="Invite your CIRA here"
+          label={t("Invite your CIRA here")}
           onClick={handleBring}
         />,
       );
@@ -262,7 +262,7 @@ export function ContextMenu() {
         <Item
           key="fullscreen"
           icon={<Maximize size={14} strokeWidth={2} />}
-          label="Full screen"
+          label={t("Full screen")}
           onClick={() => {
             playerActions.toggleFullscreen();
             close();
@@ -274,7 +274,7 @@ export function ContextMenu() {
           <Item
             key="download"
             icon={<Download size={14} strokeWidth={2} />}
-            label="Download Video"
+            label={t("Download Video")}
             onClick={() => {
               playerActions.download();
               close();
@@ -309,7 +309,7 @@ export function ContextMenu() {
         <Item
           key="bring-page"
           icon={<UserPlus size={14} strokeWidth={2} />}
-          label={`Invite your CIRA to ${label}`}
+          label={t("Invite your CIRA to {label}", { label })}
           onClick={handleBringPage}
         />,
       );
@@ -325,7 +325,7 @@ export function ContextMenu() {
         <Item
           key="bring-addon"
           icon={<UserPlus size={14} strokeWidth={2} />}
-          label={`Invite your CIRA to ${label}`}
+          label={t("Invite your CIRA to {label}", { label })}
           onClick={handleBringAddon}
         />,
       );
@@ -337,7 +337,7 @@ export function ContextMenu() {
       <Item
         key="set-title-backdrop"
         icon={<Wallpaper size={14} strokeWidth={2} />}
-        label="Set as a backdrop"
+        label={t("Set as a backdrop")}
         onClick={() => {
           setTitleBackdrop(metaId, url);
           close();
@@ -350,7 +350,7 @@ export function ContextMenu() {
         <Item
           key="reset-title-backdrop"
           icon={<RotateCcw size={14} strokeWidth={2} />}
-          label="Reset to original"
+          label={t("Reset to original")}
           onClick={() => {
             clearTitleBackdrop(metaId);
             close();
@@ -407,14 +407,14 @@ export function ContextMenu() {
       <Item
         key="copy"
         icon={<Copy size={14} strokeWidth={2} />}
-        label="Copy"
+        label={t("Copy")}
         onClick={handleCopy}
         disabled={!canCopy}
       />,
       <Item
         key="paste"
         icon={<ClipboardPaste size={14} strokeWidth={2} />}
-        label="Paste"
+        label={t("Paste")}
         onClick={handlePaste}
         disabled={!canPaste}
       />,

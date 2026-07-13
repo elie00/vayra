@@ -3,6 +3,7 @@ import { AudioLines } from "lucide-react";
 import { useSettings } from "@/lib/settings";
 import { identifyNowPlaying } from "@/lib/song-id";
 import { Tooltip } from "@/components/player/transport/tooltip";
+import { useT } from "@/lib/i18n";
 
 export function IdentifySongButton({
   className,
@@ -15,6 +16,7 @@ export function IdentifySongButton({
 }) {
   const { settings } = useSettings();
   const [pending, setPending] = useState(false);
+  const t = useT();
 
   if (!settings.songIdEnabled && !editing) return null;
 
@@ -29,12 +31,12 @@ export function IdentifySongButton({
   };
 
   return (
-    <Tooltip label="Identify song">
+    <Tooltip label={t("Identify song")}>
       <button
         type="button"
         onClick={onClick}
         disabled={pending}
-        aria-label="Identify song"
+        aria-label={t("Identify song")}
         className={
           className ??
           "pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 disabled:opacity-50"

@@ -9,9 +9,11 @@ import {
   useUpdate,
 } from "@/lib/updater/use-update";
 import { UpdateCard } from "./update-card";
+import { useT } from "@/lib/i18n";
 
 export function UpdateRoot() {
   const u = useUpdate();
+  const t = useT();
   useEffect(() => {
     startUpdateWatcher();
   }, []);
@@ -22,10 +24,10 @@ export function UpdateRoot() {
 
   const label =
     u.status === "downloading"
-      ? `Downloading ${Math.round(u.progress * 100)}%`
+      ? t("Downloading {pct}%", { pct: Math.round(u.progress * 100) })
       : u.status === "downloaded"
-        ? "Restart to update"
-        : "Update ready";
+        ? t("Restart to update")
+        : t("Update ready");
 
   return createPortal(
     <div className="fixed bottom-5 end-5 z-[120] flex items-center gap-1.5">
@@ -45,7 +47,7 @@ export function UpdateRoot() {
       {u.status === "available" && (
         <button
           onClick={dismissUpdate}
-          aria-label="Dismiss"
+          aria-label={t("Dismiss")}
           className="flex h-7 w-7 items-center justify-center rounded-full bg-elevated/90 text-ink-subtle shadow-md transition-colors hover:bg-raised hover:text-ink"
         >
           <X size={13} strokeWidth={2.4} />

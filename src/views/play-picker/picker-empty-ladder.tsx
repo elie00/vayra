@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { useT } from "@/lib/i18n";
 import { EmptyState, FilteredOutState, NoSourcesState, TheatresEmptyState } from "./empty-states";
 import type { usePipelineResult } from "./use-pipeline-result";
 
@@ -38,6 +39,7 @@ export function PickerEmptyLadder({
   onShowAll: () => void;
   onSearchWider: () => void;
 }) {
+  const t = useT();
   const isStillInTheatres = useMemo(() => {
     if (!result || meta.type !== "movie") return false;
     if (allCount > 0) return false;
@@ -69,14 +71,18 @@ export function PickerEmptyLadder({
     <>
       {addonsSettled && (!streamIds || streamIds.length === 0) && (
         <EmptyState
-          message="VAYRA couldn't resolve a usable ID for this title. Add a TMDB key in Library settings or sign in to Stremio to broaden coverage."
-          action={{ label: "Open Library settings", onClick: onOpenLibrarySettings }}
+          message={t(
+            "VAYRA couldn't resolve a usable ID for this title. Add a TMDB key in Library settings or sign in to Stremio to broaden coverage.",
+          )}
+          action={{ label: t("Open Library settings"), onClick: onOpenLibrarySettings }}
         />
       )}
       {addonsSettled && streamIds && streamIds.length > 0 && debridCount === 0 && allCount === 0 && (
         <EmptyState
-          message="No playable streams turned up, and no debrid is configured. Real-Debrid, TorBox, AllDebrid, Premiumize, or Debrid-Link will unlock raw torrent results. Some addons bake debrid in (Sootio, Comet/ElfHosted, MediaFusion/ElfHosted) and play without your own keys."
-          action={{ label: "Set up a debrid", onClick: onOpenStreamingSettings }}
+          message={t(
+            "No playable streams turned up, and no debrid is configured. Real-Debrid, TorBox, AllDebrid, Premiumize, or Debrid-Link will unlock raw torrent results. Some addons bake debrid in (Sootio, Comet/ElfHosted, MediaFusion/ElfHosted) and play without your own keys.",
+          )}
+          action={{ label: t("Set up a debrid"), onClick: onOpenStreamingSettings }}
         />
       )}
       {addonsSettled && streamIds && streamIds.length > 0 && allCount === 0 && debridCount > 0 && rawCount === 0 && (
@@ -106,14 +112,20 @@ export function PickerEmptyLadder({
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-info/30 bg-info/[0.06] px-5 py-3.5 text-[13px] text-ink">
           <div className="flex min-w-0 flex-1 flex-col">
             <p className="font-semibold text-info">
-              {allCount === 1 ? "Only 1 source after filtering" : "Only 2 sources after filtering"}
+              {allCount === 1 ? t("Only 1 source after filtering") : t("Only 2 sources after filtering")}
             </p>
             <p className="text-[12.5px] leading-snug text-ink-muted">
               {allCount === 1
-                ? "Clean releases for this title haven't surfaced yet. The result below may not match the title you're looking for, so confirm the filename and size before playing."
-                : "Clean releases for this title are still scarce. Confirm the filename and size before playing."}
+                ? t(
+                    "Clean releases for this title haven't surfaced yet. The result below may not match the title you're looking for, so confirm the filename and size before playing.",
+                  )
+                : t(
+                    "Clean releases for this title are still scarce. Confirm the filename and size before playing.",
+                  )}
               {rawCount - allCount > 0 && !forceShowAll
-                ? ` VAYRA dropped ${rawCount - allCount} suspicious or mismatched result${rawCount - allCount === 1 ? "" : "s"}.`
+                ? rawCount - allCount === 1
+                  ? ` ${t("VAYRA dropped {count} suspicious or mismatched result.", { count: rawCount - allCount })}`
+                  : ` ${t("VAYRA dropped {count} suspicious or mismatched results.", { count: rawCount - allCount })}`
                 : ""}
             </p>
           </div>
@@ -122,7 +134,7 @@ export function PickerEmptyLadder({
               onClick={onShowAll}
               className="shrink-0 rounded-full border border-info/40 bg-info/10 px-4 py-2 text-[12.5px] font-semibold text-info transition-[transform,background-color] hover:scale-[1.02] hover:bg-info/20 active:scale-[0.98]"
             >
-              Show everything anyway
+              {t("Show everything anyway")}
             </button>
           )}
         </div>

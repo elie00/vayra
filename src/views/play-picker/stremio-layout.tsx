@@ -2,6 +2,7 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { addonLogoSrc, resolveAddonLogo } from "@/components/addon-logo";
 import type { Addon } from "@/lib/addons";
+import { useT } from "@/lib/i18n";
 import type { ScoredStream } from "@/lib/streams/types";
 import { StremioRow } from "./stremio-row";
 import { FACET_DIMS, facetOptions, matchesFacets, type FacetState } from "./stream-facets";
@@ -34,6 +35,7 @@ export function StremioLayout({
   download?: boolean;
   isAnime?: boolean;
 }) {
+  const t = useT();
   const [filter, setFilter] = useState<string>("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [facet, setFacet] = useState<FacetState>({});
@@ -112,8 +114,8 @@ export function StremioLayout({
     });
   }, [customFiltered, facet, filter, addonRank, preserveOrder]);
   const filterLabel = filter === "all"
-    ? "All"
-    : addonOptions.find((o) => o.id === filter)?.name ?? "All";
+    ? t("All")
+    : addonOptions.find((o) => o.id === filter)?.name ?? t("All");
   const filterLogo = filter === "all" ? null : addonLogoMap.get(filter) ?? null;
   return (
     <div className="flex flex-col gap-3">
@@ -150,7 +152,7 @@ export function StremioLayout({
               }`}
             >
               <CircleLogo addonId={null} addonName="All" logo={null} />
-              <span className="flex-1 truncate">All sources</span>
+              <span className="flex-1 truncate">{t("All sources")}</span>
               <span className="text-[12px] text-ink-subtle">{streams.length}</span>
             </button>
             {addonOptions.map((opt) => (
@@ -258,11 +260,12 @@ function PendingAddonsPill({
       return !returned.has(id);
     });
   }, [addons, streams]);
+  const t = useT();
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (pending.length <= 1) return;
-    const t = window.setInterval(() => setTick((v) => v + 1), 1800);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(() => setTick((v) => v + 1), 1800);
+    return () => window.clearInterval(timer);
   }, [pending.length]);
   if (pending.length === 0 && fallbackCount === 0) return null;
   const current = pending.length > 0 ? pending[tick % pending.length] : null;
@@ -278,8 +281,10 @@ function PendingAddonsPill({
         ) : (
           <span className="text-[12px] text-ink-muted">
             {fallbackCount > 0
-              ? `${fallbackCount} ${fallbackCount === 1 ? "addon" : "addons"} loading`
-              : "Loading more sources"}
+              ? fallbackCount === 1
+                ? t("{count} addon loading", { count: fallbackCount })
+                : t("{count} addons loading", { count: fallbackCount })
+              : t("Loading more sources")}
           </span>
         )}
       </div>
@@ -297,6 +302,7 @@ function Spinner() {
 }
 
 function PendingChip({ addon }: { addon: Addon }) {
+  const t = useT();
   const id = addon.manifest?.id ?? "";
   const name = addon.manifest?.name ?? id ?? "addon";
   const remoteLogo = resolveAddonLogo(addon.manifest?.logo, addon.transportUrl);
@@ -304,7 +310,7 @@ function PendingChip({ addon }: { addon: Addon }) {
   const src = remoteLogo ?? bundled ?? null;
   return (
     <span className="flex items-center gap-2 text-[12px] text-ink">
-      <span className="text-ink-subtle">Waiting for</span>
+      <span className="text-ink-subtle">{t("Waiting for")}</span>
       <span className="flex items-center gap-1.5">
         {src ? (
           <img src={src} alt="" className="h-4 w-4 rounded-sm object-contain" />
