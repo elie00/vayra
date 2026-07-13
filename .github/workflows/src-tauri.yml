@@ -94,6 +94,7 @@ jobs:
         run: pnpm build
 
       - name: clippy + test
+        shell: bash
         working-directory: src-tauri
         run: |
           # Keep Clippy strict. Linux carries a small, explicit style-lint debt
