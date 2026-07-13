@@ -179,6 +179,20 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
       return data.map((row) => toRelationship(asRecord(row)));
     },
 
+    async listRelationshipsPage(offset = 0, limit = 50) {
+      const record = asRecord(await rpc("cira_list_relationships_page", {
+        p_limit: limit,
+        p_offset: offset,
+      }));
+      if (!Array.isArray(record.items) || typeof record.has_more !== "boolean") {
+        throw new CiraError("UNKNOWN");
+      }
+      return {
+        items: record.items.map((row) => toRelationship(asRecord(row))),
+        hasMore: record.has_more,
+      };
+    },
+
     async sendRequest(handle) {
       await rpc("cira_send_request", { p_handle: handle });
     },
@@ -324,6 +338,21 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
       const data = await rpc("cira_list_group_members", { p_group_id: id });
       if (!Array.isArray(data)) throw new CiraError("UNKNOWN");
       return data.map((row) => toGroupMember(asRecord(row)));
+    },
+
+    async listGroupMembersPage(id, offset = 0, limit = 50) {
+      const record = asRecord(await rpc("cira_list_group_members_page", {
+        p_group_id: id,
+        p_limit: limit,
+        p_offset: offset,
+      }));
+      if (!Array.isArray(record.items) || typeof record.has_more !== "boolean") {
+        throw new CiraError("UNKNOWN");
+      }
+      return {
+        items: record.items.map((row) => toGroupMember(asRecord(row))),
+        hasMore: record.has_more,
+      };
     },
 
     async removeGroupMember(groupId, userId) {

@@ -59,8 +59,8 @@ begin
       raise exception 'TEST_FAILED: authenticated cannot execute public.%', r.proname;
     end if;
   end loop;
-  if n <> 40 then
-    raise exception 'TEST_FAILED: expected 40 public cira_ RPCs, found %', n;
+  if n <> 42 then
+    raise exception 'TEST_FAILED: expected 42 public cira_ RPCs, found %', n;
   end if;
 end;
 $do$;

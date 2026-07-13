@@ -24,6 +24,7 @@ const SQL_ERROR_CODES = [
   "ALREADY_GROUP_MEMBER",
   "INVALID_GROUP_INVITE",
   "GROUP_BLOCK_CONFLICT",
+  "INVALID_PAGE",
 ] as const;
 
 // Le message de CiraError est TOUJOURS le code seul: aucune donnée d'origine

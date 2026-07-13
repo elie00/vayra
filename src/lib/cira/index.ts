@@ -16,6 +16,7 @@ export type {
   CiraGroupMember,
   CiraGroupRole,
   CiraInboxSummary,
+  CiraPage,
   CiraPresence,
   CiraProfile,
   CiraRelationship,
