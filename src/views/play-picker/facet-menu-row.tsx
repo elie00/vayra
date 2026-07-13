@@ -2,6 +2,7 @@ import { Check, ChevronDown, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { FormatBadge, type BadgeKind } from "@/components/format-badge";
 import { summarizeFilter, type CustomStreamFilter } from "@/lib/streams/custom-filters";
+import { useT } from "@/lib/i18n";
 import { facetBadge } from "./filter-builder/badge-maps";
 import type { FacetDim, FacetOption } from "./stream-facets";
 
@@ -29,6 +30,7 @@ export function FacetMenuRow({
   onNewFilter: () => void;
   onEditFilter: (filter: CustomStreamFilter) => void;
 }) {
+  const t = useT();
   const [openKey, setOpenKey] = useState<string | null>(null);
   const visible = facets.filter((f) => f.options.length >= 2 || f.value !== "all");
   const narrowed = facets.some((f) => f.value !== "all") || activeFilterId !== null;
@@ -65,11 +67,11 @@ export function FacetMenuRow({
       <button
         type="button"
         onClick={onNewFilter}
-        title={filters.length > 0 ? "New filter" : "Create a custom filter"}
+        title={filters.length > 0 ? t("New filter") : t("Create a custom filter")}
         className="flex items-center gap-1 rounded-full bg-elevated/50 px-2.5 py-1.5 text-[12.5px] font-semibold text-ink-muted ring-1 ring-edge-soft/60 transition-colors hover:bg-elevated hover:text-ink"
       >
         <Plus size={13} strokeWidth={2.6} />
-        {filters.length === 0 && "Filter"}
+        {filters.length === 0 && t("Filter")}
       </button>
       {narrowed && (
         <button
@@ -77,7 +79,7 @@ export function FacetMenuRow({
           onClick={reset}
           className="px-2 py-1.5 text-[11.5px] font-semibold text-ink-subtle transition-colors hover:text-ink"
         >
-          Reset
+          {t("Reset")}
         </button>
       )}
     </div>
@@ -97,6 +99,7 @@ function FacetMenu({
   onClose: () => void;
   onPick: (value: string) => void;
 }) {
+  const t = useT();
   const active = entry.value !== "all";
   const badgeSlot = entry.options.some((o) => facetBadge(entry.dim.key, o.key) !== null);
   return (
@@ -111,7 +114,7 @@ function FacetMenu({
             : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated hover:text-ink"
         }`}
       >
-        {active ? entry.value : entry.dim.label}
+        {active ? entry.value : t(entry.dim.label)}
         <ChevronDown
           size={12}
           strokeWidth={2.4}
@@ -124,13 +127,13 @@ function FacetMenu({
         <>
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={t("Close menu")}
             onClick={onClose}
             className="fixed inset-0 z-10 cursor-default"
           />
           <div className="absolute start-0 top-full z-20 mt-1 min-w-[176px] rounded-xl bg-elevated p-1 ring-1 ring-edge shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)]">
             <MenuItem
-              label="All"
+              label={t("All")}
               count={entry.total}
               selected={!active}
               badge={null}
@@ -205,6 +208,7 @@ function SavedChip({
   onToggle: () => void;
   onEdit: () => void;
 }) {
+  const t = useT();
   return (
     <span
       className={`group flex items-center rounded-full text-[12.5px] font-semibold transition-colors ${
@@ -225,7 +229,7 @@ function SavedChip({
       <button
         type="button"
         onClick={onEdit}
-        aria-label={`Edit ${filter.name}`}
+        aria-label={t("Edit {name}", { name: filter.name })}
         className={`flex h-[26px] w-6 items-center justify-center rounded-full pe-1 transition-colors ${
           active ? "text-canvas/70 hover:text-canvas" : "text-ink-subtle hover:text-ink"
         }`}

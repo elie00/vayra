@@ -8,6 +8,7 @@ import {
   checkForUpdate,
   useUpdate,
 } from "@/lib/updater/use-update";
+import { useT } from "@/lib/i18n";
 
 function mb(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -15,6 +16,7 @@ function mb(bytes: number): string {
 
 export function UpdateCard() {
   const u = useUpdate();
+  const t = useT();
   const [shown, setShown] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
@@ -42,14 +44,14 @@ export function UpdateCard() {
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="text-[15px] font-semibold text-ink">
               {u.status === "downloaded"
-                ? "Update ready to install"
+                ? t("Update ready to install")
                 : u.status === "installing"
-                  ? "Installing update"
+                  ? t("Installing update")
                   : u.status === "downloading"
-                    ? "Downloading update"
+                    ? t("Downloading update")
                     : u.status === "error"
-                      ? "Update failed"
-                      : "Update available"}
+                      ? t("Update failed")
+                      : t("Update available")}
             </span>
             {u.version && (
               <span className="text-[12.5px] text-ink-subtle">VAYRA {u.version}</span>
@@ -58,7 +60,7 @@ export function UpdateCard() {
           {u.status !== "installing" && u.status !== "downloading" && (
             <button
               onClick={closeUpdatePanel}
-              aria-label="Close"
+              aria-label={t("Close")}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
             >
               <X size={16} strokeWidth={2.2} />
@@ -85,10 +87,10 @@ export function UpdateCard() {
             <div className="mt-1.5 flex items-center justify-between text-[11.5px] text-ink-subtle">
               <span>
                 {u.status === "downloaded"
-                  ? "Download complete"
+                  ? t("Download complete")
                   : determinate
-                    ? `${mb(u.downloadedBytes)} of ${mb(u.totalBytes)}`
-                    : "Fetching the latest build"}
+                    ? t("{done} of {total}", { done: mb(u.downloadedBytes), total: mb(u.totalBytes) })
+                    : t("Fetching the latest build")}
               </span>
               {u.status === "downloading" && determinate && <span>{pct}%</span>}
             </div>
@@ -97,41 +99,41 @@ export function UpdateCard() {
 
         {u.status === "error" && (
           <div className="mx-5 mb-1 rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-3 text-[12.5px] leading-relaxed text-ink-muted">
-            {u.error ?? "Something went wrong reaching the update server."}
+            {u.error ?? t("Something went wrong reaching the update server.")}
           </div>
         )}
 
         <div className="flex items-center justify-end gap-2 px-5 pb-4 pt-3">
           {u.status === "available" && (
             <>
-              <GhostButton onClick={dismissUpdate}>Later</GhostButton>
+              <GhostButton onClick={dismissUpdate}>{t("Later")}</GhostButton>
               <PrimaryButton onClick={() => void downloadUpdate()}>
-                <Download size={16} strokeWidth={2.2} /> Download
+                <Download size={16} strokeWidth={2.2} /> {t("Download")}
               </PrimaryButton>
             </>
           )}
           {u.status === "downloaded" && (
             <>
-              <GhostButton onClick={dismissUpdate}>Later</GhostButton>
+              <GhostButton onClick={dismissUpdate}>{t("Later")}</GhostButton>
               <PrimaryButton onClick={() => void installUpdate()}>
-                <RotateCw size={16} strokeWidth={2.2} /> Install & restart
+                <RotateCw size={16} strokeWidth={2.2} /> {t("Install & restart")}
               </PrimaryButton>
             </>
           )}
           {u.status === "installing" && (
-            <span className="text-[12px] text-ink-subtle">VAYRA will restart automatically.</span>
+            <span className="text-[12px] text-ink-subtle">{t("VAYRA will restart automatically.")}</span>
           )}
           {u.status === "error" && (
             <>
-              <GhostButton onClick={closeUpdatePanel}>Close</GhostButton>
+              <GhostButton onClick={closeUpdatePanel}>{t("Close")}</GhostButton>
               <PrimaryButton onClick={() => void checkForUpdate(true)}>
-                <RefreshCw size={16} strokeWidth={2.2} /> Try again
+                <RefreshCw size={16} strokeWidth={2.2} /> {t("Try again")}
               </PrimaryButton>
             </>
           )}
           {u.status === "downloading" && (
             <span className="flex items-center gap-1.5 text-[12px] text-ink-subtle">
-              <Check size={14} strokeWidth={2.4} className="text-accent" /> Keep using VAYRA while it downloads
+              <Check size={14} strokeWidth={2.4} className="text-accent" /> {t("Keep using VAYRA while it downloads")}
             </span>
           )}
         </div>

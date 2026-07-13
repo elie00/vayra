@@ -17,9 +17,11 @@ import spotlights from "./fr/spotlights";
 import sync from "./fr/sync";
 import together from "./fr/together";
 import coverage from "./fr/coverage";
+import sweep from "./fr/sweep";
 
 const fr: Record<string, string> = {
   ...coverage,
+  ...sweep,
   ...chrome,
   ...common,
   ...catalog,

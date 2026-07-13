@@ -5,6 +5,7 @@ import { AwardLogo, laurelColorFor } from "@/components/icons/award-logo";
 import { Laurel } from "@/components/icons/laurel";
 import type { AwardEntry, AwardType } from "@/lib/providers/wikidata";
 import { useView } from "@/lib/view";
+import { useT } from "@/lib/i18n";
 import { meta as cinemetaMeta, type Meta } from "@/lib/cinemeta";
 
 const TYPE_TITLE: Record<AwardType, string> = {
@@ -36,6 +37,7 @@ export function AwardDetailModal({
   onClose: () => void;
 }) {
   const { openMeta } = useView();
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number; place: "below" | "above" } | null>(null);
 
@@ -105,14 +107,14 @@ export function AwardDetailModal({
             {TYPE_TITLE[type]}
           </h3>
           <p className="text-[10.5px] text-ink-muted">
-            {wins > 0 && `${wins} ${wins === 1 ? "win" : "wins"}`}
+            {wins > 0 && `${wins} ${wins === 1 ? t("win") : t("wins")}`}
             {wins > 0 && noms > 0 && " · "}
-            {noms > 0 && `${noms} ${noms === 1 ? "nomination" : "nominations"}`}
+            {noms > 0 && `${noms} ${noms === 1 ? t("nomination") : t("nominations")}`}
           </p>
         </div>
         <button
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("Close")}
           className="flex h-7 w-7 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-canvas/60 hover:text-ink"
         >
           <X size={13} strokeWidth={2.2} />
@@ -183,6 +185,7 @@ function AwardRow({
   onOpen: (m: Meta) => void;
   onAfter: () => void;
 }) {
+  const t = useT();
   const won = group.result === "won";
   const work = useWorkMeta(group, type === "emmy");
   const poster = work?.poster ?? null;
@@ -230,7 +233,7 @@ function AwardRow({
               won ? "bg-accent/15 text-accent" : "bg-canvas/60 text-ink-muted"
             }`}
           >
-            {won ? "Won" : "Nom"}
+            {won ? t("Won") : t("Nom")}
           </span>
         </span>
         <span className="truncate text-[12px] font-semibold text-ink">

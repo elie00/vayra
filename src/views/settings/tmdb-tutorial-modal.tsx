@@ -1,6 +1,7 @@
 import { Check, ExternalLink, KeyRound, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFocusTrap } from "@/lib/use-focus-trap";
+import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 
 const STEPS: { title: string; body: string; callout?: boolean }[] = [
@@ -28,6 +29,7 @@ const STEPS: { title: string; body: string; callout?: boolean }[] = [
 ];
 
 export function TmdbGuideModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, open);
   useEffect(() => {
@@ -59,14 +61,14 @@ export function TmdbGuideModal({ open, onClose }: { open: boolean; onClose: () =
             </span>
             <div className="flex flex-col">
               <h2 id="tmdb-guide-title" className="font-display text-[20px] font-medium tracking-tight text-ink">
-                Get your free TMDB key
+                {t("Get your free TMDB key")}
               </h2>
-              <p className="text-[12.5px] text-ink-muted">About 30 seconds. No payment, ever.</p>
+              <p className="text-[12.5px] text-ink-muted">{t("About 30 seconds. No payment, ever.")}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("Close")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
           >
             <X size={18} strokeWidth={2.2} />
@@ -79,15 +81,13 @@ export function TmdbGuideModal({ open, onClose }: { open: boolean; onClose: () =
                 {i + 1}
               </span>
               <div className="flex min-w-0 flex-col gap-1.5">
-                <span className="text-[14.5px] font-medium text-ink">{step.title}</span>
-                <p className="text-[13px] leading-relaxed text-ink-muted">{step.body}</p>
+                <span className="text-[14.5px] font-medium text-ink">{t(step.title)}</span>
+                <p className="text-[13px] leading-relaxed text-ink-muted">{t(step.body)}</p>
                 {step.callout && (
                   <div className="mt-1 flex items-start gap-2 rounded-xl border border-accent/30 bg-accent/10 px-3.5 py-3">
                     <Check size={15} strokeWidth={2.6} className="mt-0.5 shrink-0 text-accent" />
                     <p className="text-[12.5px] leading-relaxed text-ink">
-                      For Application URL, type any address at all, like https://harbor.app or
-                      http://localhost. TMDB never visits it. The only thing you actually need is the
-                      API key.
+                      {t("For Application URL, type any address at all, like https://harbor.app or http://localhost. TMDB never visits it. The only thing you actually need is the API key.")}
                     </p>
                   </div>
                 )}
@@ -100,13 +100,13 @@ export function TmdbGuideModal({ open, onClose }: { open: boolean; onClose: () =
             onClick={onClose}
             className="rounded-full px-4 py-2 text-[13.5px] font-semibold text-ink-muted transition-colors hover:text-ink"
           >
-            Close
+            {t("Close")}
           </button>
           <button
             onClick={() => openUrl("https://www.themoviedb.org/settings/api")}
             className="flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[13.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
           >
-            Open TMDB
+            {t("Open TMDB")}
             <ExternalLink size={14} strokeWidth={2.2} />
           </button>
         </div>
