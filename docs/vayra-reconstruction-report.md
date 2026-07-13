@@ -1,6 +1,6 @@
 # VAYRA — Compte rendu de la reconstruction Harbor → VAYRA
 
-**Produit :** VAYRA · *A product by EYBO* · fork autonome de Harbor (`elie00/harbor`, remote `origin`).
+**Produit :** VAYRA · *A product by EYBO* · fork autonome de Harbor (`elie00/vayra`, remote `origin`).
 **État :** livré sur `main` (`ad3f0aa`), tag `vayra-identity-v1`. Toutes les branches alignées sur `main`.
 
 Ce document remplace l'ancien recap A/B/C. Il couvre les deux vagues du rebrand :
