@@ -18,6 +18,10 @@
 
 set -euo pipefail
 
+# macOS: an invalid LC_ALL makes the postmaster abort at startup
+# ("postmaster became multithreaded during startup"). Force a safe locale.
+export LC_ALL=C
+
 PGBIN="${PGBIN:-/opt/homebrew/opt/postgresql@15/bin}"
 PORT="${CIRA_TEST_PORT:-54329}"
 DB=cira_test
