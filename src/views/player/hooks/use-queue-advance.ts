@@ -15,6 +15,7 @@ export function useQueueAdvance(params: {
   isLive: boolean;
   startedNearEndRef: RefObject<boolean>;
   authority: LumaAuthority;
+  autoAdvance: boolean;
   openPicker: (
     meta: Meta,
     episode?: PlayEpisode,
@@ -22,7 +23,7 @@ export function useQueueAdvance(params: {
   ) => void;
   exitPlayer: () => void;
 }) {
-  const { src, snap, queue, isLive, startedNearEndRef, authority, openPicker, exitPlayer } = params;
+  const { src, snap, queue, isLive, startedNearEndRef, authority, autoAdvance, openPicker, exitPlayer } = params;
   const firedForRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export function useQueueAdvance(params: {
     if (!naturalEnd && !errorAtEnd && !reachedEnd) return;
     if (firedForRef.current === src.url) return;
 
-    if (queue.length > 0 && authority === "solo") {
+    if (queue.length > 0 && authority === "solo" && autoAdvance) {
       firedForRef.current = src.url;
       const next = queueBeginNext(authority);
       if (next.ok) openPicker(next.value.meta, next.value.episode, { autoPlay: true, resume: true });
@@ -52,5 +53,5 @@ export function useQueueAdvance(params: {
       setSleepAtEnd(false);
       exitPlayer();
     }
-  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, authority, openPicker, exitPlayer]);
+  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, authority, autoAdvance, openPicker, exitPlayer]);
 }

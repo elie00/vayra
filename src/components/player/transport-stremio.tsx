@@ -21,6 +21,7 @@ import {
 } from "./transport/control-renderer-stremio";
 import { useView } from "@/lib/view";
 import { useCastModalPlay } from "./use-cast-modal-play";
+import { LUMA_OPEN_EVENT } from "@/lib/luma";
 
 export type TransportStremioProps = {
   snap: PlayerSnapshot;
@@ -153,12 +154,21 @@ export function TransportStremio(p: TransportStremioProps) {
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
   const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
   const [castModalOpen, setCastModalOpen] = useState(false);
+  const [castModalInitialView, setCastModalInitialView] = useState<"title" | "queue">("title");
   const [showRemaining, setShowRemaining] = useState(false);
   const [config, setConfig] = useState<PlayerChromeConfig>(() => readPlayerChromeConfig("stremio"));
   const isLiveChannel = !!meta?.id?.startsWith("iptv:");
   const titleClickable = !!meta && !isLiveChannel;
   const { openMeta, exitPlayer } = useView();
   const castModalPlay = useCastModalPlay();
+  useEffect(() => {
+    const openLuma = () => {
+      setCastModalInitialView("queue");
+      setCastModalOpen(true);
+    };
+    window.addEventListener(LUMA_OPEN_EVENT, openLuma);
+    return () => window.removeEventListener(LUMA_OPEN_EVENT, openLuma);
+  }, []);
   const controlsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -214,7 +224,10 @@ export function TransportStremio(p: TransportStremioProps) {
     titleClickable,
     onBack,
     onFullscreen,
-    onTitleClick: () => setCastModalOpen(true),
+    onTitleClick: () => {
+      setCastModalInitialView("title");
+      setCastModalOpen(true);
+    },
     meta,
     metaImdbId,
     metaTitle,
@@ -246,6 +259,10 @@ export function TransportStremio(p: TransportStremioProps) {
     onRate,
     onPiP,
     onCast,
+    onLuma: () => {
+      setCastModalInitialView("queue");
+      setCastModalOpen(true);
+    },
     onToggleDraw,
     onToggleHideOthers,
     onClearDraw,
@@ -333,6 +350,7 @@ export function TransportStremio(p: TransportStremioProps) {
           currentEpisode={
             season != null && episode != null ? { season, episode } : null
           }
+          initialView={castModalInitialView}
         />
       )}
     </>

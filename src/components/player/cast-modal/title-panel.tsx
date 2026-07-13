@@ -211,7 +211,7 @@ export function TitlePanel({
               }`}
             >
               {queued ? <Check size={17} strokeWidth={2.6} /> : <Plus size={17} strokeWidth={2.4} />}
-              {queued ? t("Queued") : t("Queue")}
+              {queued ? t("In LUMA") : t("Add to LUMA")}
             </button>
           </div>
         </div>

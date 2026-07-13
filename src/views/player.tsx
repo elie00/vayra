@@ -12,7 +12,7 @@ import { useVayraAccount } from "@/lib/vayra-account";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
 import { queueBeginNext, queueAcknowledgeStarted, useQueue, useSleepAtEnd } from "@/lib/queue";
-import { lumaQueueKey, lumaStore, type LumaAuthority } from "@/lib/luma";
+import { LUMA_OPEN_EVENT, lumaQueueKey, lumaStore, setLumaAuthority, useLuma, type LumaAuthority } from "@/lib/luma";
 import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
@@ -221,6 +221,10 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           ? "vara-host"
           : "vara-guest"
         : "solo";
+  useEffect(() => {
+    setLumaAuthority(lumaAuthority);
+    return () => setLumaAuthority("solo");
+  }, [lumaAuthority]);
   const canControl = !inRoom || hasStarted;
   const guestPickRef = useRef(settings.togetherGuestsPick);
   guestPickRef.current = settings.togetherGuestsPick;
@@ -294,8 +298,9 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const startedNearEndRef = useStartedNearEnd(src.url, snap.status, snap.durationSec);
 
   const queue = useQueue();
+  const luma = useLuma();
   const sleepAtEndArmed = useSleepAtEnd();
-  const queueOrSleepArmed = (queue.length > 0 && lumaAuthority === "solo") || sleepAtEndArmed;
+  const queueOrSleepArmed = (queue.length > 0 && lumaAuthority === "solo" && luma.document.preferences.autoAdvance) || sleepAtEndArmed;
 
   useAutoNextEpisode({
     src,
@@ -627,6 +632,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     liveOverlay,
     toggleDvr: () => setDvrOpen((v) => !v),
     sleep,
+    toggleLuma: () => window.dispatchEvent(new Event(LUMA_OPEN_EVENT)),
     quickToolsEnabled,
     frameGrab,
     onToggleAnime4k: () => {
@@ -709,6 +715,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     isLive: isLiveLike,
     startedNearEndRef,
     authority: lumaAuthority,
+    autoAdvance: luma.document.preferences.autoAdvance,
     openPicker,
     exitPlayer,
   });

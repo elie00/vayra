@@ -40,6 +40,7 @@ export function usePlayerHotkeys(params: {
   onAnime4kOn?: () => void;
   onAnime4kOff?: () => void;
   onVolumeFeedback?: (volume: number, muted: boolean) => void;
+  toggleLuma: () => void;
 }) {
   const {
     bridgeRef,
@@ -72,6 +73,7 @@ export function usePlayerHotkeys(params: {
     onAnime4kOn,
     onAnime4kOff,
     onVolumeFeedback,
+    toggleLuma,
   } = params;
 
   const [showStats, setShowStats] = useState(false);
@@ -104,6 +106,7 @@ export function usePlayerHotkeys(params: {
     },
     toggleSleep: () =>
       sleep.mode.kind === "off" ? sleep.set({ kind: "end_episode" }) : sleep.cancel(),
+    toggleLuma,
     onScreenshot: quickToolsEnabled ? () => frameGrab.trigger() : undefined,
     onGifRecord: quickToolsEnabled ? () => gif.toggle() : undefined,
     onClipRecord: quickToolsEnabled ? () => clip.openChooser() : undefined,

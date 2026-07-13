@@ -2,6 +2,7 @@ import {
   Camera,
   ChevronLeft,
   Info,
+  ListVideo,
   Maximize,
   Minimize,
   Pause,
@@ -109,6 +110,7 @@ export type StremioRenderCtx = {
   onRate: (r: number) => void;
   onPiP: () => void;
   onCast: () => void;
+  onLuma?: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
   onClearDraw: () => void;
@@ -340,6 +342,15 @@ export function RenderedStremioControl({
       return <HdrToggleStremioBtn />;
     case "cast":
       return <CastButton onClick={ctx.onCast} capabilities={ctx.capabilities} />;
+    case "luma":
+      if (!ctx.onLuma) return null;
+      return (
+        <Tooltip label={`${tr("Open LUMA")} · Q`} side="top">
+          <StremioBtn onClick={ctx.onLuma} ariaLabel="LUMA">
+            <ListVideo size={24} strokeWidth={1.9} />
+          </StremioBtn>
+        </Tooltip>
+      );
     case "subtitle-menu":
       if (ctx.isLiveChannel && ctx.snap.subtitleTracks.length === 0) return null;
       return (
