@@ -490,7 +490,7 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
           setPostError(`HTTP ${e.status}: ${e.body.slice(0, 100) || "(empty body)"}`);
         }
       } else {
-        setPostError(e instanceof TypeError ? "Network error" : "Failed to post comment");
+        setPostError(e instanceof TypeError ? t("Network error") : t("Failed to post comment"));
       }
     }
     setPosting(false);

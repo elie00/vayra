@@ -1,6 +1,7 @@
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
+import { useT } from "@/lib/i18n";
 import { IMG } from "@/lib/providers/tmdb/tmdb-client";
 import { useMetaWatched } from "@/lib/watched-flag";
 import { ImdbIcon } from "@/components/icons/imdb-icon";
@@ -67,12 +68,13 @@ function ScrollRail({ children }: { children: React.ReactNode }) {
 }
 
 function RailArrow({ dir, onClick }: { dir: "left" | "right"; onClick: () => void }) {
+  const t = useT();
   const Icon = dir === "left" ? ChevronLeft : ChevronRight;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={dir === "left" ? "Scroll left" : "Scroll right"}
+      aria-label={dir === "left" ? t("Scroll left") : t("Scroll right")}
       className={`absolute top-[42%] z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/75 text-white opacity-0 ring-1 ring-white/15 backdrop-blur-sm transition-opacity duration-150 hover:bg-black/95 group-hover/rail:opacity-100 ${dir === "left" ? "left-0" : "right-0"}`}
     >
       <Icon size={20} strokeWidth={2.5} />

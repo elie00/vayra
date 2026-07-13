@@ -4,6 +4,7 @@ import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link
 import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
 import { EditionChip } from "./edition-chip";
@@ -25,9 +26,10 @@ export function StremioRow({
   download?: boolean;
   isAnime?: boolean;
 }) {
+  const t = useT();
   const { settings } = useSettings();
   const full = settings.fullStreamDescription;
-  const addonName = stream.addonName ?? "Source";
+  const addonName = stream.addonName ?? t("Source");
   const headline = stream.name?.trim() || addonName;
   const rawDescription = stream.title?.trim() || stream.description?.trim() || "";
   const description = full ? rawDescription : condenseDescription(rawDescription);
@@ -68,14 +70,14 @@ export function StremioRow({
           </div>
         )}
         {failed && (
-          <p className="text-[13px] font-medium text-danger">Unavailable, try another.</p>
+          <p className="text-[13px] font-medium text-danger">{t("Unavailable, try another.")}</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2 self-center">
         {link && <CopyLinkButton url={link} size={16} className="h-9 w-9" />}
         <button
           onClick={onPlay}
-          aria-label={download ? "Download" : "Play"}
+          aria-label={download ? t("Download") : t("Play")}
           className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent text-canvas shadow-[0_2px_6px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[transform,box-shadow] duration-150 ease-out hover:shadow-[0_5px_14px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.18)] active:scale-[0.96] active:duration-100"
         >
           {download ? (

@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FormatBadge } from "@/components/format-badge";
 import { useDebridClients } from "@/lib/debrid/registry";
+import { useT } from "@/lib/i18n";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { formatSize, hasCachedMarker, hasUncachedMarker, streamLeadBadge, streamLeadLabel } from "./picker-utils";
 
@@ -21,11 +22,12 @@ export function TierStrip({
   debrids: ReturnType<typeof useDebridClients>;
   langFilterSlot?: React.ReactNode;
 }) {
+  const tr = useT();
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <p className="text-[12px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
-          Switch quality
+          {tr("Switch quality")}
         </p>
         <QualityDisclaimer />
         {langFilterSlot}
@@ -42,7 +44,7 @@ export function TierStrip({
           const sizeStr = stream.size != null ? formatSize(stream.size) : null;
           const badgeKind = streamLeadBadge(stream, t);
           const accent = streamLeadLabel(stream, t);
-          const statusLabel = trulyInstantHere ? "Instant" : cachedHere ? "Cached" : "Cache";
+          const statusLabel = trulyInstantHere ? tr("Instant") : cachedHere ? tr("Cached") : tr("Cache");
           return (
             <button
               key={t}
@@ -68,7 +70,7 @@ export function TierStrip({
                   ) : cachedHere ? (
                     <Zap size={10} strokeWidth={2} className="text-ink-muted/70" />
                   ) : null}
-                  {statusLabel} · {sizeStr ?? "size unknown"}
+                  {statusLabel} · {sizeStr ?? tr("size unknown")}
                 </span>
               </div>
             </button>
@@ -80,6 +82,7 @@ export function TierStrip({
 }
 
 function QualityDisclaimer() {
+  const tr = useT();
   const wrapRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number; place: "above" | "below" } | null>(null);
@@ -126,10 +129,12 @@ function QualityDisclaimer() {
           >
             <span className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-accent">
               <Info size={11} strokeWidth={2.4} />
-              Quality labels come from addons
+              {tr("Quality labels come from addons")}
             </span>
             <p className="text-[12.5px] leading-snug text-ink-muted">
-              Each row's resolution badge is whatever the addon claimed. Some addons mislabel files: a 1080p or 4K tag on a brand-new theatrical release is often a CAM or TS rebadged. VAYRA pushes obvious mismatches down the ranking, but if a top result looks suspicious, scroll the source list or pick the Theater Capture tier instead.
+              {tr(
+                "Each row's resolution badge is whatever the addon claimed. Some addons mislabel files: a 1080p or 4K tag on a brand-new theatrical release is often a CAM or TS rebadged. VAYRA pushes obvious mismatches down the ranking, but if a top result looks suspicious, scroll the source list or pick the Theater Capture tier instead.",
+              )}
             </p>
           </div>,
           document.body,

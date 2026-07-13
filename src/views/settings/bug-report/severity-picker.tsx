@@ -1,4 +1,5 @@
 import type { Severity } from "@/lib/bug-report";
+import { useT } from "@/lib/i18n";
 
 const OPTIONS: Array<{ id: Severity; label: string; sub: string }> = [
   { id: "low", label: "Low", sub: "cosmetic, minor" },
@@ -21,6 +22,7 @@ export function SeverityPicker({
   value: Severity;
   onChange: (v: Severity) => void;
 }) {
+  const t = useT();
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {OPTIONS.map((o) => {
@@ -36,8 +38,8 @@ export function SeverityPicker({
                 : "border-edge-soft/60 bg-canvas/30 text-ink-muted hover:border-edge hover:text-ink"
             }`}
           >
-            <span className="text-[13.5px] font-semibold">{o.label}</span>
-            <span className="text-[11px] text-ink-subtle">{o.sub}</span>
+            <span className="text-[13.5px] font-semibold">{t(o.label)}</span>
+            <span className="text-[11px] text-ink-subtle">{t(o.sub)}</span>
           </button>
         );
       })}

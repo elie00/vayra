@@ -1,5 +1,6 @@
 import { Ban, Search, Upload } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 import { CHROME_ICONS } from "./chrome-icons";
 
 export function IconPicker({
@@ -9,6 +10,7 @@ export function IconPicker({
   value?: string;
   onSelect: (v: string | null) => void;
 }) {
+  const t = useT();
   const [q, setQ] = useState("");
   const [hover, setHover] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -25,12 +27,12 @@ export function IconPicker({
 
   const caption =
     hover === "__none"
-      ? "No icon (text only)"
+      ? t("No icon (text only)")
       : hover === "__upload"
-        ? "Upload your own image"
+        ? t("Upload your own image")
         : hover
           ? hover.replace(/-/g, " ")
-          : `${CHROME_ICONS.length} icons, or upload your own`;
+          : t("{count} icons, or upload your own", { count: CHROME_ICONS.length });
 
   return (
     <div className="flex flex-col gap-2 border-t border-edge-soft px-2.5 py-2.5">
@@ -40,7 +42,7 @@ export function IconPicker({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search icons"
+            placeholder={t("Search icons")}
             className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-subtle"
           />
         </div>
@@ -52,7 +54,7 @@ export function IconPicker({
           className="flex h-8 shrink-0 items-center gap-1 rounded-md border border-edge-soft px-2.5 text-[12px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
         >
           <Upload size={13} strokeWidth={2} />
-          Upload
+          {t("Upload")}
         </button>
         <input
           ref={fileRef}
@@ -87,7 +89,7 @@ export function IconPicker({
         ))}
         {filtered.length === 0 && (
           <p className="col-span-7 px-1 py-3 text-center text-[12px] text-ink-subtle">
-            No icons match that search. Try Upload.
+            {t("No icons match that search. Try Upload.")}
           </p>
         )}
       </div>

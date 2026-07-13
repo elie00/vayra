@@ -1,4 +1,5 @@
 import { Crown } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import {
   PANEL_META,
   PANELS,
@@ -113,6 +114,7 @@ function episodeTabStyle(corner: PanelCorner): React.CSSProperties {
 const AVATAR_COLORS = ["#8267ff", "#22d3ee", "#a78bfa"];
 
 function AvatarDockBody() {
+  const t = useT();
   return (
     <div className="pointer-events-none flex flex-col items-end gap-1.5 rounded-2xl border border-white/12 bg-black/35 p-2 backdrop-blur-xl shadow-[0_18px_50px_-22px_rgba(0,0,0,0.65)]">
       {AVATAR_COLORS.map((c, i) => (
@@ -124,7 +126,7 @@ function AvatarDockBody() {
           {["A", "J", "Y"][i]}
           {i === 0 && (
             <span
-              aria-label="Host"
+              aria-label={t("Host")}
               className="pointer-events-none absolute -top-2 -right-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-info text-black shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-2 ring-black/35"
             >
               <Crown size={11} strokeWidth={2.4} fill="currentColor" />
@@ -137,6 +139,7 @@ function AvatarDockBody() {
 }
 
 function EpisodesTabBody({ side }: { side: "left" | "right" }) {
+  const t = useT();
   return (
     <div
       className={`pointer-events-none flex h-32 flex-col items-center justify-center gap-2.5 bg-canvas/90 text-ink ring-1 ring-edge-soft shadow-[0_10px_32px_-10px_rgba(0,0,0,0.6)] ${
@@ -156,13 +159,14 @@ function EpisodesTabBody({ side }: { side: "left" | "right" }) {
         className="text-[11px] font-semibold uppercase tracking-[0.28em]"
         style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
       >
-        Up Next
+        {t("Up Next")}
       </span>
     </div>
   );
 }
 
 function ChatPanelBody() {
+  const t = useT();
   return (
     <div className="pointer-events-none flex w-[280px] flex-col gap-2 rounded-2xl border border-white/12 bg-black/45 p-3 backdrop-blur-xl shadow-[0_18px_50px_-22px_rgba(0,0,0,0.65)]">
       <div className="flex flex-col gap-1.5 text-[12.5px] leading-snug">
@@ -180,7 +184,7 @@ function ChatPanelBody() {
         </p>
       </div>
       <div className="mt-1 rounded-xl border border-white/10 bg-white/4 px-2.5 py-1.5 text-[12px] text-white/40">
-        Press T to chat...
+        {t("Press T to chat...")}
       </div>
     </div>
   );

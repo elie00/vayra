@@ -2,6 +2,7 @@ import { Check, Copy, Download } from "lucide-react";
 import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { downloadText } from "@/lib/download-text";
+import { useT } from "@/lib/i18n";
 import { SUITE_CHROME } from "./suite-theme";
 
 export function HoverTip({
@@ -61,6 +62,7 @@ export function HoverTip({
 }
 
 export function CopyName({ text }: { text: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const copy = () => {
     void navigator.clipboard.writeText(text);
@@ -68,11 +70,11 @@ export function CopyName({ text }: { text: string }) {
     window.setTimeout(() => setCopied(false), 1200);
   };
   return (
-    <HoverTip label="Click to copy" disabled={copied}>
+    <HoverTip label={t("Click to copy")} disabled={copied}>
       <button
         type="button"
         onClick={copy}
-        aria-label={`Copy ${text}`}
+        aria-label={t("Copy {text}", { text })}
         className="group/cn relative inline-grid cursor-pointer justify-items-start text-start [perspective:600px]"
       >
         <code
@@ -87,7 +89,7 @@ export function CopyName({ text }: { text: string }) {
           style={{ transform: copied ? "rotateX(0deg)" : "rotateX(-90deg)", opacity: copied ? 1 : 0 }}
         >
           <Check size={13} strokeWidth={2.6} className="text-accent" />
-          <code className="font-mono text-[13px] font-semibold text-accent">Copied</code>
+          <code className="font-mono text-[13px] font-semibold text-accent">{t("Copied")}</code>
         </span>
       </button>
     </HoverTip>
@@ -95,6 +97,7 @@ export function CopyName({ text }: { text: string }) {
 }
 
 export function CodeBlock({ code, filename, compact }: { code: string; filename?: string; compact?: boolean }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -120,7 +123,7 @@ export function CodeBlock({ code, filename, compact }: { code: string; filename?
             className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-white/[0.06] hover:text-ink"
           >
             <Download size={13} strokeWidth={2.2} />
-            Download
+            {t("Download")}
           </button>
         )}
         <button
@@ -129,7 +132,7 @@ export function CodeBlock({ code, filename, compact }: { code: string; filename?
           className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-white/[0.06] hover:text-ink"
         >
           {copied ? <Check size={13} strokeWidth={2.6} /> : <Copy size={13} strokeWidth={2.2} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("Copied") : t("Copy")}
         </button>
       </div>
       <pre className="overflow-auto px-4 py-3 font-mono text-[13px] leading-relaxed text-ink-muted">{code}</pre>

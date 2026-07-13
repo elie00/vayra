@@ -1,5 +1,6 @@
 import { Check, Copy, X } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 
 export function ExportBlock({
   text,
@@ -8,6 +9,7 @@ export function ExportBlock({
   text: string;
   onClose: () => void;
 }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -22,7 +24,7 @@ export function ExportBlock({
     <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-          Theme code
+          {t("Theme code")}
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -31,7 +33,7 @@ export function ExportBlock({
             className="flex h-9 items-center gap-1.5 rounded-lg bg-ink px-3.5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
           >
             {copied ? <Check size={12} strokeWidth={2.6} /> : <Copy size={12} strokeWidth={2.2} />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? t("Copied") : t("Copy")}
           </button>
           <button
             type="button"

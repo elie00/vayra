@@ -1,4 +1,5 @@
 import { Check, Copy } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import type { ThemePreset } from "@/lib/theme";
 
 export function ActiveBanner({
@@ -10,16 +11,17 @@ export function ActiveBanner({
   onExport: () => void;
   onCustomize: () => void;
 }) {
+  const t = useT();
   if (!theme) {
     return (
       <div className="flex items-center justify-between rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4">
         <div>
           <span className="text-[10.5px] font-bold uppercase tracking-[0.2em] text-ink-subtle">
-            Now using
+            {t("Now using")}
           </span>
-          <h3 className="mt-1 text-[16px] font-semibold text-ink">Custom palette</h3>
+          <h3 className="mt-1 text-[16px] font-semibold text-ink">{t("Custom palette")}</h3>
           <p className="mt-0.5 text-[12.5px] text-ink-muted">
-            Hand-tuned colors. Edit them in the section above.
+            {t("Hand-tuned colors. Edit them in the section above.")}
           </p>
         </div>
         <button
@@ -27,7 +29,7 @@ export function ActiveBanner({
           onClick={onCustomize}
           className="h-9 rounded-full bg-ink px-4 text-[12.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
         >
-          Edit colors
+          {t("Edit colors")}
         </button>
       </div>
     );
@@ -65,7 +67,7 @@ export function ActiveBanner({
             style={{ color: fgMuted }}
           >
             <Check size={11} strokeWidth={2.6} />
-            Now using
+            {t("Now using")}
           </div>
           <h3
             className="text-[22px] font-semibold tracking-tight"
@@ -79,9 +81,9 @@ export function ActiveBanner({
             </p>
           )}
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <Chip bg={chipBg} ring={chipRing} fg={fg}>{labelForLayout(theme.layout)}</Chip>
-            <Chip bg={chipBg} ring={chipRing} fg={fg}>{labelForCard(theme.cardStyle)}</Chip>
-            {theme.bokeh && <Chip bg={chipBg} ring={chipRing} fg={fg}>Bokeh</Chip>}
+            <Chip bg={chipBg} ring={chipRing} fg={fg}>{t(labelForLayout(theme.layout))}</Chip>
+            <Chip bg={chipBg} ring={chipRing} fg={fg}>{t(labelForCard(theme.cardStyle))}</Chip>
+            {theme.bokeh && <Chip bg={chipBg} ring={chipRing} fg={fg}>{t("Bokeh")}</Chip>}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -91,7 +93,7 @@ export function ActiveBanner({
             className="flex h-10 items-center gap-1.5 rounded-full border px-4 text-[12.5px] font-semibold backdrop-blur-md transition-all hover:-translate-y-px"
             style={{ borderColor: editBorder, background: editBg, color: fg }}
           >
-            Edit colors
+            {t("Edit colors")}
           </button>
           <button
             type="button"
@@ -100,7 +102,7 @@ export function ActiveBanner({
             style={{ background: exportBg, color: exportFg }}
           >
             <Copy size={13} strokeWidth={2.2} />
-            Copy theme
+            {t("Copy theme")}
           </button>
         </div>
       </div>

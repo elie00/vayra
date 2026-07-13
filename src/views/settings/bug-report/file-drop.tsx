@@ -1,5 +1,6 @@
 import { ImagePlus, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
 const MAX_BYTES = 100 * 1024 * 1024;
@@ -18,6 +19,7 @@ export function FileDrop({
   files: File[];
   onChange: (next: File[]) => void;
 }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [reject, setReject] = useState<string | null>(null);
@@ -28,15 +30,15 @@ export function FileDrop({
     const next: File[] = [...files];
     for (const f of list) {
       if (next.length >= MAX_FILES) {
-        setReject(`Max ${MAX_FILES} files.`);
+        setReject(t("Max {n} files.", { n: MAX_FILES }));
         break;
       }
       if (f.size > MAX_BYTES) {
-        setReject(`${f.name} is over 100 MB.`);
+        setReject(t("{name} is over 100 MB.", { name: f.name }));
         continue;
       }
       if (!f.type.startsWith("image/") && !f.type.startsWith("video/")) {
-        setReject(`${f.name} is not an image or video.`);
+        setReject(t("{name} is not an image or video.", { name: f.name }));
         continue;
       }
       next.push(f);
@@ -69,10 +71,10 @@ export function FileDrop({
       >
         <ImagePlus size={22} strokeWidth={1.7} />
         <span className="text-[13.5px] font-medium">
-          Drop screenshots or screen recordings, or click to browse
+          {t("Drop screenshots or screen recordings, or click to browse")}
         </span>
         <span className="text-[11.5px] text-ink-subtle">
-          PNG, JPG, WebP, GIF, MP4, WebM, MOV. Up to {MAX_FILES} files, 100 MB each.
+          {t("PNG, JPG, WebP, GIF, MP4, WebM, MOV. Up to {n} files, 100 MB each.", { n: MAX_FILES })}
         </span>
       </button>
       <input
@@ -104,7 +106,7 @@ export function FileDrop({
               <button
                 type="button"
                 onClick={() => remove(i)}
-                aria-label="Remove"
+                aria-label={t("Remove")}
                 className="absolute end-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-canvas/85 text-ink-muted opacity-0 transition-opacity hover:text-ink group-hover:opacity-100"
               >
                 <X size={13} strokeWidth={2.2} />
