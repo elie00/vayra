@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VAYRA — Private VARA invitation</title>
+    <meta name="description" content="You have been invited to a private VARA on VAYRA." />
+    <meta name="theme-color" content="#0A0B0D" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" href="/favicon.svg?v=canonical-1" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .shell { min-height: 100dvh; display: grid; place-items: center; padding: 2rem 1.25rem; }
+      .card { width: min(100%, 26rem); border: 1px solid var(--edge-soft); border-radius: 1.25rem; background: var(--surface); padding: 2rem 1.75rem; text-align: center; }
+      .brand { display: inline-flex; align-items: center; gap: .5rem; color: var(--titanium); font-family: var(--font-display); font-size: .85rem; letter-spacing: .22em; text-transform: uppercase; text-decoration: none; }
+      .brand img { width: 1.15rem; height: 1.15rem; }
+      h1 { margin: 1.25rem 0 .5rem; font-family: var(--font-display); font-size: 1.45rem; color: var(--ivory); }
+      p { margin: .35rem 0 0; color: var(--muted); font-size: .95rem; line-height: 1.55; }
+      .actions { display: grid; gap: .6rem; margin-top: 1.5rem; }
+      .button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.9rem; border-radius: .9rem; font-family: var(--font-display); font-size: .92rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+      .primary { background: var(--ivory); color: var(--mineral); border: 1px solid var(--ivory); }
+      .secondary { background: transparent; color: var(--titanium); border: 1px solid var(--edge); }
+      .code { margin-top: 1.25rem; padding: .65rem .75rem; border: 1px dashed var(--edge); border-radius: .75rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .86rem; letter-spacing: .08em; color: var(--ivory); overflow-wrap: anywhere; user-select: all; }
+      .note { margin-top: 1.35rem; font-size: .8rem; color: var(--subtle); }
+      .note a { color: var(--titanium); }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <main class="shell">
+      <div class="card">
+        <a class="brand" href="/"><img src="/favicon.svg?v=canonical-1" alt="" /><span>VAYRA</span></a>
+        <section id="valid" hidden>
+          <h1 id="title">Private VARA</h1>
+          <p id="copy">A CIRA invited you to a private viewing room. VAYRA will show the host and room details before you decide.</p>
+          <div class="actions">
+            <a id="open" class="button primary" href="#">Open in VAYRA</a>
+            <button id="copy-code" class="button secondary" type="button">Copy code</button>
+          </div>
+          <div id="code" class="code" aria-label="Private VARA invitation code"></div>
+          <p class="note"><span id="note">This short-lived link expires within one hour. Don't have the app?</span> <a id="download" href="/#download">Download VAYRA</a>.</p>
+        </section>
+        <section id="missing" hidden>
+          <h1 id="missing-title">Invalid VARA invitation</h1>
+          <p id="missing-copy">This link has no valid private room code. Ask your CIRA for a fresh link.</p>
+          <div class="actions"><a id="missing-download" class="button secondary" href="/#download">Download VAYRA</a></div>
+        </section>
+      </div>
+    </main>
+    <script>
+      (function () {
+        var messages = {
+          en: { page: "VAYRA — Private VARA invitation", title: "Private VARA", copy: "A CIRA invited you to a private viewing room. VAYRA will show the host and room details before you decide.", open: "Open in VAYRA", copyCode: "Copy code", copied: "Code copied", note: "This short-lived link expires within one hour. Don't have the app?", download: "Download VAYRA", invalid: "Invalid VARA invitation", invalidCopy: "This link has no valid private room code. Ask your CIRA for a fresh link." },
+          fr: { page: "VAYRA — Invitation VARA privée", title: "VARA privée", copy: "Une CIRA vous invite dans une room privée de visionnage. VAYRA affichera l’hôte et les détails avant votre décision.", open: "Ouvrir dans VAYRA", copyCode: "Copier le code", copied: "Code copié", note: "Ce lien de courte durée expire dans l’heure. Vous n’avez pas l’application ?", download: "Télécharger VAYRA", invalid: "Invitation VARA invalide", invalidCopy: "Ce lien ne contient aucun code de room privée valide. Demandez un nouveau lien à votre CIRA." },
+          de: { page: "VAYRA — Private VARA-Einladung", title: "Private VARA", copy: "Eine CIRA lädt dich in einen privaten Filmraum ein. VAYRA zeigt Host und Raumdetails, bevor du entscheidest.", open: "In VAYRA öffnen", copyCode: "Code kopieren", copied: "Code kopiert", note: "Dieser kurzlebige Link läuft innerhalb einer Stunde ab. Du hast die App noch nicht?", download: "VAYRA herunterladen", invalid: "Ungültige VARA-Einladung", invalidCopy: "Dieser Link enthält keinen gültigen privaten Raumcode. Bitte deine CIRA um einen neuen Link." },
+          es: { page: "VAYRA — Invitación VARA privada", title: "VARA privada", copy: "Una CIRA te invita a una sala privada. VAYRA mostrará el anfitrión y los detalles antes de que decidas.", open: "Abrir en VAYRA", copyCode: "Copiar código", copied: "Código copiado", note: "Este enlace de corta duración caduca en una hora. ¿No tienes la aplicación?", download: "Descargar VAYRA", invalid: "Invitación VARA no válida", invalidCopy: "Este enlace no contiene un código de sala privada válido. Pide uno nuevo a tu CIRA." },
+          it: { page: "VAYRA — Invito VARA privato", title: "VARA privata", copy: "Una CIRA ti invita in una room privata. VAYRA mostrerà host e dettagli prima della decisione.", open: "Apri in VAYRA", copyCode: "Copia codice", copied: "Codice copiato", note: "Questo link a breve durata scade entro un’ora. Non hai l’app?", download: "Scarica VAYRA", invalid: "Invito VARA non valido", invalidCopy: "Questo link non contiene un codice valido per una room privata. Chiedine uno nuovo alla tua CIRA." },
+          pt: { page: "VAYRA — Convite VARA privado", title: "VARA privada", copy: "Uma CIRA convidou você para uma sala privada. O VAYRA mostrará o anfitrião e os detalhes antes da decisão.", open: "Abrir no VAYRA", copyCode: "Copiar código", copied: "Código copiado", note: "Este link de curta duração expira em uma hora. Ainda não tem o aplicativo?", download: "Baixar VAYRA", invalid: "Convite VARA inválido", invalidCopy: "Este link não contém um código válido de sala privada. Peça um novo à sua CIRA." },
+          ar: { page: "VAYRA — دعوة VARA خاصة", title: "VARA خاصة", copy: "تدعوك CIRA إلى غرفة مشاهدة خاصة. سيعرض VAYRA المضيف والتفاصيل قبل أن تقرر.", open: "فتح في VAYRA", copyCode: "نسخ الرمز", copied: "تم نسخ الرمز", note: "تنتهي صلاحية هذا الرابط القصير خلال ساعة. ليس لديك التطبيق؟", download: "تنزيل VAYRA", invalid: "دعوة VARA غير صالحة", invalidCopy: "لا يحتوي هذا الرابط على رمز صالح لغرفة خاصة. اطلب رابطًا جديدًا من CIRA." }
+        };
+        var language = (navigator.language || "en").slice(0, 2).toLowerCase();
+        var text = messages[language] || messages.en;
+        document.documentElement.lang = messages[language] ? language : "en";
+        document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+        document.title = text.page;
+        document.querySelector('meta[name="description"]').content = text.copy;
+        document.getElementById("title").textContent = text.title;
+        document.getElementById("copy").textContent = text.copy;
+        document.getElementById("open").textContent = text.open;
+        document.getElementById("copy-code").textContent = text.copyCode;
+        document.getElementById("note").textContent = text.note;
+        document.getElementById("download").textContent = text.download;
+        document.getElementById("missing-title").textContent = text.invalid;
+        document.getElementById("missing-copy").textContent = text.invalidCopy;
+        document.getElementById("missing-download").textContent = text.download;
+        var match = /(?:^|[#&])t=([^&]+)/.exec(location.hash || "");
+        var raw = "";
+        try { raw = match ? decodeURIComponent(match[1]) : ""; } catch (_) { raw = ""; }
+        var code = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
+        if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+        if (!/^VARA[0-9A-HJKMNP-TV-Z]{20}$/.test(code)) {
+          document.getElementById("missing").hidden = false;
+          return;
+        }
+        document.getElementById("valid").hidden = false;
+        document.getElementById("code").textContent = code;
+        document.getElementById("open").href = "vayra://vara/invite#t=" + code;
+        document.getElementById("copy-code").addEventListener("click", function () {
+          if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+          navigator.clipboard.writeText(code).then(function () {
+            var button = document.getElementById("copy-code");
+            button.textContent = text.copied;
+            setTimeout(function () { button.textContent = text.copyCode; }, 2000);
+          }, function () {});
+        });
+      })();
+    </script>
+  </body>
+</html>

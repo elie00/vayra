@@ -42,6 +42,7 @@ import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { ListToastHost } from "@/components/lists/list-toast";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
+import { VaraInviteBridge } from "@/components/vara-invite-bridge";
 import { CiraProvider } from "@/lib/cira/provider";
 import { VaraProvider } from "@/lib/vara/provider";
 import { TogetherCursors } from "@/components/together-cursors";
@@ -281,6 +282,7 @@ export function App() {
                       </Suspense>
                       <TogetherInviteToast />
                       <CiraInviteBridge />
+                      <VaraInviteBridge />
                       <TogetherFloater />
                       <TogetherHostLeavingPrompt />
                       <TogetherSummonToast />
