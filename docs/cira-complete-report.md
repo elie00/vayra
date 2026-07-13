@@ -45,18 +45,22 @@ distincte.
   compteurs des demandes encore en attente.
 - Les réponses refusées et les invitations de groupe consommées sont
   supprimées, sans journal social rémanent.
+- Les demandes par handle utilisent un reçu aveugle de 24 heures : le
+  demandeur ne peut distinguer une cible réelle, inconnue, personnelle ou
+  bloquée avant que la personne réelle accepte explicitement.
 
 ## Modèle et opérations
 
-Les 10 tables publiques sont `cira_profiles`, `cira_friendships`,
-`cira_blocks`, `cira_presence`, `cira_invitations`, `cira_groups`,
-`cira_group_members`, `cira_group_invites`, `cira_group_links` et
-`cira_inbox_state`. Le ledger `private.cira_rate_limits` est la onzième table.
+Les 11 tables publiques sont `cira_profiles`, `cira_friendships`,
+`cira_request_receipts`, `cira_blocks`, `cira_presence`, `cira_invitations`,
+`cira_groups`, `cira_group_members`, `cira_group_invites`, `cira_group_links`
+et `cira_inbox_state`. Le ledger `private.cira_rate_limits` est la douzième
+table. La table de reçus n'est jamais directement lisible par les rôles API.
 
 Les 42 RPC publiques sont `security definer`, utilisent un `search_path` vide,
 dérivent le caller avec `auth.uid()` et ne sont jamais exécutables par `anon`.
-Les tables de tokens, groupes et boîte sociale n'ont aucun accès direct pour
-`authenticated`.
+Les tables de tokens, reçus aveugles, groupes et boîte sociale n'ont aucun
+accès direct pour `authenticated`.
 
 ## Client et surfaces
 

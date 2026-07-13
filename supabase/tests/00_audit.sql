@@ -31,6 +31,19 @@ begin
 end;
 $do$;
 
+-- Realtime and group integrity triggers are explicit and reviewable.
+do $do$
+declare
+  n integer;
+begin
+  select count(*) into n from pg_trigger
+  where tgname like 'cira\_%' and not tgisinternal;
+  if n <> 14 then
+    raise exception 'TEST_FAILED: expected 14 CIRA triggers, found %', n;
+  end if;
+end;
+$do$;
+
 -- Public RPCs: SECURITY DEFINER, pinned search_path, anon cannot
 -- execute, authenticated can.
 do $do$
