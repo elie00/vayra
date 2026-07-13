@@ -1,6 +1,8 @@
 export const ciraEn: Record<string, string> = {
   "CIRA": "CIRA",
   "CIRA unavailable": "CIRA unavailable",
+  "CIRA private beta": "CIRA private beta",
+  "CIRA is currently limited to invited beta accounts.": "CIRA is currently limited to invited beta accounts.",
   "Your close circle on VAYRA.": "Your close circle on VAYRA.",
   "Your close circle on VAYRA: friends, invitations, and presence.": "Your close circle on VAYRA: friends, invitations, and presence.",
   "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.": "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.",
@@ -71,6 +73,7 @@ export const ciraEn: Record<string, string> = {
 
 export const ciraFr: Record<string, string> = {
   ...ciraEn,
+  "CIRA private beta": "Bêta privée CIRA", "CIRA is currently limited to invited beta accounts.": "CIRA est actuellement réservée aux comptes invités à la bêta.",
   "CIRA unavailable": "CIRA indisponible", "Your close circle on VAYRA.": "Votre cercle proche sur VAYRA.",
   "Your close circle on VAYRA: friends, invitations, and presence.": "Votre cercle proche sur VAYRA : relations, invitations et présence.",
   "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.": "Votre cercle proche sur VAYRA. Relations, invitations et présence : tout est volontaire, rien n'est public.",
@@ -132,6 +135,7 @@ export const ciraFr: Record<string, string> = {
 
 export const ciraDe: Record<string, string> = {
   ...ciraEn,
+  "CIRA private beta": "Private CIRA-Beta", "CIRA is currently limited to invited beta accounts.": "CIRA ist derzeit auf eingeladene Beta-Konten beschränkt.",
   "CIRA unavailable": "CIRA nicht verfügbar", "Your close circle on VAYRA.": "Dein enger Kreis auf VAYRA.",
   "Your close circle on VAYRA: friends, invitations, and presence.": "Dein enger Kreis auf VAYRA: Kontakte, Einladungen und Präsenz.",
   "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.": "Dein enger Kreis auf VAYRA. Kontakte, Einladungen und Präsenz sind freiwillig und niemals öffentlich.",
@@ -159,6 +163,7 @@ export const ciraDe: Record<string, string> = {
 
 export const ciraEs: Record<string, string> = {
   ...ciraEn,
+  "CIRA private beta": "Beta privada de CIRA", "CIRA is currently limited to invited beta accounts.": "CIRA está limitado actualmente a cuentas invitadas a la beta.",
   "CIRA unavailable": "CIRA no disponible", "Your close circle on VAYRA.": "Tu círculo cercano en VAYRA.", "Your close circle on VAYRA: friends, invitations, and presence.": "Tu círculo cercano en VAYRA: contactos, invitaciones y presencia.", "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.": "Tu círculo cercano en VAYRA. Contactos, invitaciones y presencia: todo es opcional y nada es público.",
   "Your CIRA identity": "Tu identidad CIRA", "Your CIRA": "Tu CIRA", "The handle and name your CIRA see. Your handle is how people add you.": "El alias y el nombre que ve tu CIRA. Tu alias permite que te añadan.", "Pick a unique handle to start connecting with your CIRA — your close circle on VAYRA.": "Elige un alias único para conectar con tu CIRA, tu círculo cercano en VAYRA.",
   "Handle": "Alias", "Display name": "Nombre visible", "e.g. marie_04": "p. ej., marie_04", "How your CIRA see you": "Cómo te ve tu CIRA", "3-24 characters: lowercase letters, digits, underscore.": "3-24 caracteres: minúsculas, números y guion bajo.", "Save": "Guardar", "Saved": "Guardado", "Saving…": "Guardando…", "Create profile": "Crear perfil",
@@ -173,6 +178,7 @@ export const ciraEs: Record<string, string> = {
 
 export const ciraIt: Record<string, string> = {
   ...ciraEn,
+  "CIRA private beta": "Beta privata CIRA", "CIRA is currently limited to invited beta accounts.": "CIRA è attualmente riservata agli account invitati alla beta.",
   "CIRA unavailable": "CIRA non disponibile", "Your close circle on VAYRA.": "La tua cerchia ristretta su VAYRA.", "Your close circle on VAYRA: friends, invitations, and presence.": "La tua cerchia ristretta su VAYRA: contatti, inviti e presenza.", "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.": "La tua cerchia ristretta su VAYRA. Contatti, inviti e presenza sono facoltativi e mai pubblici.", "Your CIRA identity": "La tua identità CIRA", "Your CIRA": "La tua CIRA",
   "The handle and name your CIRA see. Your handle is how people add you.": "L'handle e il nome visibili alla tua CIRA. L'handle permette agli altri di aggiungerti.", "Pick a unique handle to start connecting with your CIRA — your close circle on VAYRA.": "Scegli un handle univoco per connetterti con la tua CIRA, la tua cerchia ristretta su VAYRA.", "Handle": "Handle", "Display name": "Nome visualizzato", "e.g. marie_04": "es. marie_04", "How your CIRA see you": "Come ti vede la tua CIRA", "3-24 characters: lowercase letters, digits, underscore.": "3-24 caratteri: lettere minuscole, numeri e trattino basso.", "Save": "Salva", "Saved": "Salvato", "Saving…": "Salvataggio…", "Create profile": "Crea profilo",
   "Presence": "Presenza", "Share my presence with my CIRA": "Condividi la mia presenza con la mia CIRA", "When enabled, your accepted CIRA see whether you're online or in a VARA room. Off by default; turning it off wipes your presence immediately.": "Se attiva, la tua CIRA accettata vede se sei online o in una room VARA. È disattivata per impostazione predefinita; disattivandola la presenza viene cancellata subito.", "Only accepted friends ever see it — never pending requests or strangers.": "La vedono solo i contatti accettati, mai richieste in sospeso o sconosciuti.", "Online": "Online", "Offline": "Offline", "In VARA": "In VARA",
@@ -186,6 +192,7 @@ export const ciraIt: Record<string, string> = {
 
 export const ciraPt: Record<string, string> = {
   ...ciraEn,
+  "CIRA private beta": "Beta privado do CIRA", "CIRA is currently limited to invited beta accounts.": "O CIRA está atualmente limitado a contas convidadas para o beta.",
   "CIRA unavailable": "CIRA indisponível", "Your close circle on VAYRA.": "Seu círculo próximo no VAYRA.", "Your close circle on VAYRA: friends, invitations, and presence.": "Seu círculo próximo no VAYRA: contatos, convites e presença.", "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.": "Seu círculo próximo no VAYRA. Contatos, convites e presença são opcionais e nunca públicos.", "Your CIRA identity": "Sua identidade CIRA", "Your CIRA": "Sua CIRA",
   "The handle and name your CIRA see. Your handle is how people add you.": "O identificador e o nome que sua CIRA vê. Seu identificador permite que adicionem você.", "Pick a unique handle to start connecting with your CIRA — your close circle on VAYRA.": "Escolha um identificador único para se conectar à sua CIRA, seu círculo próximo no VAYRA.", "Handle": "Identificador", "Display name": "Nome de exibição", "e.g. marie_04": "ex.: marie_04", "How your CIRA see you": "Como sua CIRA vê você", "3-24 characters: lowercase letters, digits, underscore.": "3 a 24 caracteres: letras minúsculas, números e sublinhado.", "Save": "Salvar", "Saved": "Salvo", "Saving…": "Salvando…", "Create profile": "Criar perfil",
   "Presence": "Presença", "Share my presence with my CIRA": "Compartilhar minha presença com minha CIRA", "When enabled, your accepted CIRA see whether you're online or in a VARA room. Off by default; turning it off wipes your presence immediately.": "Quando ativada, sua CIRA aceita vê se você está online ou em uma sala VARA. Desativada por padrão; ao desligar, sua presença é apagada imediatamente.", "Only accepted friends ever see it — never pending requests or strangers.": "Somente contatos aceitos veem, nunca solicitações pendentes ou desconhecidos.", "Online": "Online", "Offline": "Offline", "In VARA": "No VARA",
@@ -199,6 +206,7 @@ export const ciraPt: Record<string, string> = {
 
 export const ciraAr: Record<string, string> = {
   ...ciraEn,
+  "CIRA private beta": "إصدار CIRA التجريبي الخاص", "CIRA is currently limited to invited beta accounts.": "يقتصر CIRA حاليًا على الحسابات المدعوة إلى الإصدار التجريبي.",
   "CIRA unavailable": "CIRA غير متاحة", "Your close circle on VAYRA.": "دائرتك المقرّبة على VAYRA.", "Your close circle on VAYRA: friends, invitations, and presence.": "دائرتك المقرّبة على VAYRA: العلاقات والدعوات والحضور.", "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.": "دائرتك المقرّبة على VAYRA. العلاقات والدعوات والحضور اختيارية ولا شيء منها عام.", "Your CIRA identity": "هويتك في CIRA", "Your CIRA": "دائرة CIRA الخاصة بك",
   "The handle and name your CIRA see. Your handle is how people add you.": "المعرّف والاسم اللذان تراهما CIRA. يُستخدم المعرّف لإضافتك.", "Pick a unique handle to start connecting with your CIRA — your close circle on VAYRA.": "اختر معرّفًا فريدًا للتواصل مع CIRA، دائرتك المقرّبة على VAYRA.", "Handle": "المعرّف", "Display name": "اسم العرض", "e.g. marie_04": "مثال: marie_04", "How your CIRA see you": "كيف تراك CIRA", "3-24 characters: lowercase letters, digits, underscore.": "من 3 إلى 24 محرفًا: أحرف لاتينية صغيرة وأرقام وشرطة سفلية.", "Save": "حفظ", "Saved": "تم الحفظ", "Saving…": "جارٍ الحفظ…", "Create profile": "إنشاء ملف شخصي",
   "Presence": "الحضور", "Share my presence with my CIRA": "مشاركة حضوري مع CIRA", "When enabled, your accepted CIRA see whether you're online or in a VARA room. Off by default; turning it off wipes your presence immediately.": "عند التفعيل، ترى علاقات CIRA المقبولة إن كنت متصلًا أو داخل غرفة VARA. الميزة معطلة افتراضيًا، وتعطيلها يمحو حضورك فورًا.", "Only accepted friends ever see it — never pending requests or strangers.": "لا يراه إلا من قبلت علاقتهم، وليس الطلبات المعلقة أو الغرباء.", "Online": "متصل", "Offline": "غير متصل", "In VARA": "داخل VARA",

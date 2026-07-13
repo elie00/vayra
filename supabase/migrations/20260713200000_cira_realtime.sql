@@ -226,7 +226,8 @@ create policy cira_receive_own_channel
   for select
   to authenticated
   using (
-    realtime.messages.extension = 'broadcast'
+    private.cira_beta_access()
+    and realtime.messages.extension = 'broadcast'
     and realtime.topic() = 'cira:' || (select auth.uid()::text)
     -- Redundant with realtime's own per-topic authorization flow, but keeps
     -- the policy self-contained: a row is only ever visible on its own topic.

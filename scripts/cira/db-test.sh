@@ -74,8 +74,9 @@ create role service_role nologin;
 -- Minimal auth schema.
 create schema auth;
 create table auth.users (
-  id    uuid primary key,
-  email text
+  id                uuid primary key,
+  email             text,
+  raw_app_meta_data jsonb not null default '{"cira_beta": true}'::jsonb
 );
 
 -- auth.uid() reads request.jwt.claims, like the real Supabase helper.

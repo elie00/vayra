@@ -98,11 +98,32 @@ as $$
   );
 $$;
 
+-- Server-authoritative private-beta gate. raw_app_meta_data is writable only
+-- through Supabase's admin plane, never by the authenticated user. Looking up
+-- the auth row on every request also makes access revocation immediate instead
+-- of waiting for a JWT refresh.
+create function private.cira_beta_access()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from auth.users u
+    where u.id = auth.uid()
+      and u.raw_app_meta_data ->> 'cira_beta' = 'true'
+  );
+$$;
+
 revoke all on function private.cira_pair_exists(uuid)   from public, anon;
 revoke all on function private.cira_block_exists(uuid)  from public, anon;
 revoke all on function private.cira_any_block(uuid, uuid)    from public, anon;
+revoke all on function private.cira_beta_access() from public, anon;
 grant execute on function private.cira_pair_exists(uuid)   to authenticated;
 grant execute on function private.cira_block_exists(uuid)  to authenticated;
+grant execute on function private.cira_beta_access() to authenticated;
 -- cira_any_block is only called from SECURITY DEFINER RPCs (owner privileges
 -- apply inside them): no grant needed, and none given.
 
@@ -129,6 +150,9 @@ begin
   end if;
   if not exists (select 1 from auth.users u where u.id = v_uid) then
     raise exception 'NOT_AUTHENTICATED';
+  end if;
+  if not private.cira_beta_access() then
+    raise exception 'BETA_ACCESS_REQUIRED';
   end if;
   return v_uid;
 end;
@@ -292,9 +316,12 @@ create policy cira_profiles_select on public.cira_profiles
   for select
   to authenticated
   using (
-    user_id = (select auth.uid())
-    or private.cira_pair_exists(user_id)
-    or private.cira_block_exists(user_id)
+    private.cira_beta_access()
+    and (
+      user_id = (select auth.uid())
+      or private.cira_pair_exists(user_id)
+      or private.cira_block_exists(user_id)
+    )
   );
 
 -- Friendships: only participants can see the row.
@@ -302,22 +329,25 @@ create policy cira_friendships_select on public.cira_friendships
   for select
   to authenticated
   using (
-    requester_id = (select auth.uid())
-    or addressee_id = (select auth.uid())
+    private.cira_beta_access()
+    and (
+      requester_id = (select auth.uid())
+      or addressee_id = (select auth.uid())
+    )
   );
 
 -- Blocks: a user only sees the blocks they created.
 create policy cira_blocks_select on public.cira_blocks
   for select
   to authenticated
-  using (blocker_id = (select auth.uid()));
+  using (private.cira_beta_access() and blocker_id = (select auth.uid()));
 
 -- Presence: raw rows are visible only to their owner. Relations see presence
 -- exclusively through the cira_list_relationships() aggregation.
 create policy cira_presence_select on public.cira_presence
   for select
   to authenticated
-  using (user_id = (select auth.uid()));
+  using (private.cira_beta_access() and user_id = (select auth.uid()));
 
 -- cira_invitations: NO policy and NO grant -> no raw access for anyone
 -- through the API. private.cira_rate_limits: same.
