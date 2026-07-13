@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>VAYRA — Invitation CIRA</title>
+    <title>VAYRA — CIRA invitation</title>
     <meta
       name="description"
-      content="Quelqu'un vous invite à devenir son CIRA sur VAYRA."
+      content="Someone invited you to join their CIRA on VAYRA."
     />
     <meta name="theme-color" content="#0A0B0D" />
     <meta name="color-scheme" content="dark" />
@@ -118,39 +118,26 @@
         </a>
 
         <section id="invite-valid" hidden>
-          <h1>Invitation CIRA</h1>
-          <p>
-            Quelqu'un vous invite à devenir son CIRA — son cercle proche sur
-            VAYRA. Ouvrez l'application pour voir qui vous invite et accepter.
-          </p>
+          <h1 id="valid-title">CIRA invitation</h1>
+          <p id="valid-copy">Someone invited you to join their CIRA — their close circle on VAYRA. Open the app to see who invited you and decide.</p>
           <div class="invite-actions">
-            <a id="open-app" class="invite-btn invite-btn-primary" href="#">
-              Ouvrir dans VAYRA
-            </a>
+            <a id="open-app" class="invite-btn invite-btn-primary" href="#">Open in VAYRA</a>
             <button id="copy-code" class="invite-btn invite-btn-secondary" type="button">
-              Copier le code
+              Copy code
             </button>
           </div>
-          <div id="code-box" class="invite-code" aria-label="Code d'invitation"></div>
+          <div id="code-box" class="invite-code" aria-label="Invitation code"></div>
           <p class="invite-note">
-            L'invitation expire au bout de 30 minutes maximum. Pas encore
-            l'application ?
-            <a href="/#download">Télécharger VAYRA</a>, puis collez le code
-            dans Réglages&nbsp;→&nbsp;CIRA.
+            <span id="valid-note-before">The invitation expires after at most 30 minutes. Don't have the app?</span>
+            <a id="valid-download" href="/#download">Download VAYRA</a><span id="valid-note-after">, then paste the code in Settings → CIRA.</span>
           </p>
         </section>
 
         <section id="invite-missing" hidden>
-          <h1>Lien incomplet</h1>
-          <p>
-            Ce lien ne contient pas de code d'invitation. Demandez à la
-            personne qui vous invite de renvoyer le lien complet, ou collez le
-            code directement dans VAYRA (Réglages&nbsp;→&nbsp;CIRA).
-          </p>
+          <h1 id="missing-title">Invalid invitation</h1>
+          <p id="missing-copy">This link doesn't contain a valid invitation code. Ask the person inviting you for a fresh link, or paste the code directly in VAYRA under Settings → CIRA.</p>
           <div class="invite-actions">
-            <a class="invite-btn invite-btn-secondary" href="/#download">
-              Télécharger VAYRA
-            </a>
+            <a id="missing-download" class="invite-btn invite-btn-secondary" href="/#download">Download VAYRA</a>
           </div>
         </section>
       </div>
@@ -158,17 +145,91 @@
 
     <script>
       (function () {
+        var messages = {
+          en: {
+            title: "VAYRA — CIRA invitation", description: "Someone invited you to join their CIRA on VAYRA.", validTitle: "CIRA invitation",
+            validCopy: "Someone invited you to join their CIRA — their close circle on VAYRA. Open the app to see who invited you and decide.",
+            open: "Open in VAYRA", copy: "Copy code", copied: "Code copied", codeLabel: "Invitation code",
+            noteBefore: "The invitation expires after at most 30 minutes. Don't have the app?", download: "Download VAYRA", noteAfter: ", then paste the code in Settings → CIRA.",
+            missingTitle: "Invalid invitation", missingCopy: "This link doesn't contain a valid invitation code. Ask the person inviting you for a fresh link, or paste the code directly in VAYRA under Settings → CIRA."
+          },
+          fr: {
+            title: "VAYRA — Invitation CIRA", description: "Une personne vous invite à rejoindre sa CIRA sur VAYRA.", validTitle: "Invitation CIRA",
+            validCopy: "Une personne vous invite à rejoindre sa CIRA, son cercle proche sur VAYRA. Ouvrez l'application pour découvrir qui vous invite et décider.",
+            open: "Ouvrir dans VAYRA", copy: "Copier le code", copied: "Code copié", codeLabel: "Code d'invitation",
+            noteBefore: "L'invitation expire au bout de 30 minutes maximum. Vous n'avez pas encore l'application ?", download: "Télécharger VAYRA", noteAfter: ", puis collez le code dans Réglages → CIRA.",
+            missingTitle: "Invitation invalide", missingCopy: "Ce lien ne contient pas de code d'invitation valide. Demandez un nouveau lien à la personne qui vous invite, ou collez le code directement dans VAYRA sous Réglages → CIRA."
+          },
+          de: {
+            title: "VAYRA — CIRA-Einladung", description: "Jemand lädt dich in die eigene CIRA auf VAYRA ein.", validTitle: "CIRA-Einladung",
+            validCopy: "Jemand lädt dich in die eigene CIRA ein, den engen Kreis auf VAYRA. Öffne die App, um zu sehen, wer dich eingeladen hat, und zu entscheiden.",
+            open: "In VAYRA öffnen", copy: "Code kopieren", copied: "Code kopiert", codeLabel: "Einladungscode",
+            noteBefore: "Die Einladung läuft spätestens nach 30 Minuten ab. Du hast die App noch nicht?", download: "VAYRA herunterladen", noteAfter: ", dann füge den Code unter Einstellungen → CIRA ein.",
+            missingTitle: "Ungültige Einladung", missingCopy: "Dieser Link enthält keinen gültigen Einladungscode. Bitte um einen neuen Link oder füge den Code in VAYRA unter Einstellungen → CIRA ein."
+          },
+          es: {
+            title: "VAYRA — Invitación CIRA", description: "Alguien te invita a unirte a su CIRA en VAYRA.", validTitle: "Invitación CIRA",
+            validCopy: "Alguien te invita a unirte a su CIRA, su círculo cercano en VAYRA. Abre la aplicación para ver quién te invita y decidir.",
+            open: "Abrir en VAYRA", copy: "Copiar código", copied: "Código copiado", codeLabel: "Código de invitación",
+            noteBefore: "La invitación caduca en un máximo de 30 minutos. ¿Aún no tienes la aplicación?", download: "Descargar VAYRA", noteAfter: ", después pega el código en Ajustes → CIRA.",
+            missingTitle: "Invitación no válida", missingCopy: "Este enlace no contiene un código de invitación válido. Pide un enlace nuevo o pega el código directamente en VAYRA, en Ajustes → CIRA."
+          },
+          it: {
+            title: "VAYRA — Invito CIRA", description: "Qualcuno ti invita a unirti alla sua CIRA su VAYRA.", validTitle: "Invito CIRA",
+            validCopy: "Qualcuno ti invita a unirti alla sua CIRA, la sua cerchia ristretta su VAYRA. Apri l'app per vedere chi ti ha invitato e decidere.",
+            open: "Apri in VAYRA", copy: "Copia codice", copied: "Codice copiato", codeLabel: "Codice di invito",
+            noteBefore: "L'invito scade entro 30 minuti. Non hai ancora l'app?", download: "Scarica VAYRA", noteAfter: ", poi incolla il codice in Impostazioni → CIRA.",
+            missingTitle: "Invito non valido", missingCopy: "Questo link non contiene un codice di invito valido. Richiedi un nuovo link o incolla il codice direttamente in VAYRA in Impostazioni → CIRA."
+          },
+          pt: {
+            title: "VAYRA — Convite CIRA", description: "Alguém convidou você para entrar na CIRA dessa pessoa no VAYRA.", validTitle: "Convite CIRA",
+            validCopy: "Alguém convidou você para entrar na CIRA dessa pessoa, seu círculo próximo no VAYRA. Abra o aplicativo para ver quem convidou você e decidir.",
+            open: "Abrir no VAYRA", copy: "Copiar código", copied: "Código copiado", codeLabel: "Código de convite",
+            noteBefore: "O convite expira em no máximo 30 minutos. Ainda não tem o aplicativo?", download: "Baixar VAYRA", noteAfter: ", depois cole o código em Configurações → CIRA.",
+            missingTitle: "Convite inválido", missingCopy: "Este link não contém um código de convite válido. Peça um novo link ou cole o código diretamente no VAYRA em Configurações → CIRA."
+          },
+          ar: {
+            title: "VAYRA — دعوة CIRA", description: "يدعوك شخص للانضمام إلى CIRA الخاصة به على VAYRA.", validTitle: "دعوة CIRA",
+            validCopy: "يدعوك شخص للانضمام إلى CIRA الخاصة به، دائرته المقرّبة على VAYRA. افتح التطبيق لمعرفة من دعاك واتخاذ القرار.",
+            open: "فتح في VAYRA", copy: "نسخ الرمز", copied: "تم نسخ الرمز", codeLabel: "رمز الدعوة",
+            noteBefore: "تنتهي صلاحية الدعوة خلال 30 دقيقة كحد أقصى. ليس لديك التطبيق؟", download: "تنزيل VAYRA", noteAfter: "، ثم الصق الرمز في الإعدادات ← CIRA.",
+            missingTitle: "دعوة غير صالحة", missingCopy: "لا يحتوي هذا الرابط على رمز دعوة صالح. اطلب رابطًا جديدًا أو الصق الرمز مباشرة في VAYRA ضمن الإعدادات ← CIRA."
+          }
+        };
+        var language = (navigator.language || "en").slice(0, 2).toLowerCase();
+        var copy = messages[language] || messages.en;
+        document.documentElement.lang = messages[language] ? language : "en";
+        document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+        document.title = copy.title;
+        document.querySelector('meta[name="description"]').content = copy.description;
+        document.getElementById("valid-title").textContent = copy.validTitle;
+        document.getElementById("valid-copy").textContent = copy.validCopy;
+        document.getElementById("open-app").textContent = copy.open;
+        document.getElementById("copy-code").textContent = copy.copy;
+        document.getElementById("code-box").setAttribute("aria-label", copy.codeLabel);
+        document.getElementById("valid-note-before").textContent = copy.noteBefore + " ";
+        document.getElementById("valid-download").textContent = copy.download;
+        document.getElementById("valid-note-after").textContent = copy.noteAfter;
+        document.getElementById("missing-title").textContent = copy.missingTitle;
+        document.getElementById("missing-copy").textContent = copy.missingCopy;
+        document.getElementById("missing-download").textContent = copy.download;
+
         // The code lives in the URL FRAGMENT (#t=...) on purpose: it is never
         // sent to the server, never logged, never indexed. This page does no
         // network call at all - it only hands the code to the desktop app.
         var match = /(?:^|[#&])t=([^&]+)/.exec(location.hash || "");
-        var raw = match ? decodeURIComponent(match[1]) : "";
+        var raw = "";
+        try {
+          raw = match ? decodeURIComponent(match[1]) : "";
+        } catch (_) {
+          raw = "";
+        }
         // Mirrors normalizeInviteCode in the app (uppercase, [0-9A-Z] only).
         var code = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
 
         var valid = document.getElementById("invite-valid");
         var missing = document.getElementById("invite-missing");
-        if (!code) {
+        if (!/^CIRA[0-9A-HJKMNP-TV-Z]{20}$/.test(code)) {
           missing.hidden = false;
           return;
         }
@@ -182,9 +243,9 @@
         var copyBtn = document.getElementById("copy-code");
         copyBtn.addEventListener("click", function () {
           var done = function () {
-            copyBtn.textContent = "Code copié";
+            copyBtn.textContent = copy.copied;
             setTimeout(function () {
-              copyBtn.textContent = "Copier le code";
+              copyBtn.textContent = copy.copy;
             }, 2000);
           };
           if (navigator.clipboard && navigator.clipboard.writeText) {
