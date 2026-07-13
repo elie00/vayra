@@ -33,6 +33,7 @@ export function useKeyboardShortcuts(params: {
   toggleGuide?: () => void;
   toggleDvr?: () => void;
   toggleSleep?: () => void;
+  toggleLuma?: () => void;
   onScreenshot?: () => void;
   onGifRecord?: () => void;
   onClipRecord?: () => void;
@@ -69,6 +70,7 @@ export function useKeyboardShortcuts(params: {
     toggleGuide,
     toggleDvr,
     toggleSleep,
+    toggleLuma,
     onScreenshot,
     onGifRecord,
     onClipRecord,
@@ -342,6 +344,11 @@ export function useKeyboardShortcuts(params: {
         toggleSleep();
         return;
       }
+      if (match("playerLumaPanel") && toggleLuma) {
+        e.preventDefault();
+        toggleLuma();
+        return;
+      }
       if (match("playerScreenshot") && onScreenshot) {
         e.preventDefault();
         if (e.repeat) return;
@@ -408,7 +415,7 @@ export function useKeyboardShortcuts(params: {
       window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep, onVolumeFeedback, settings.playerEscExitsFullscreen, settings.playerConfirmLeave, update]);
+  }, [closePlayer, togglePip, drawMode, snap.muted, snap.volume, snap.rate, snap.durationSec, snap.subDelaySec, overrides, seekBackStepSec, seekForwardStepSec, seekTo, toggleSwitcher, toggleEpisodePanel, toggleGuide, toggleDvr, toggleSleep, toggleLuma, onScreenshot, onGifRecord, onClipRecord, onToggleCrop, onPanscanUp, onPanscanDown, onPrevChannel, onToggleAnime4k, onAnime4kOn, onAnime4kOff, onFrameStep, onVolumeFeedback, settings.playerEscExitsFullscreen, settings.playerConfirmLeave, update]);
 
   return { holdSpeedActive };
 }

@@ -40,6 +40,7 @@ export type HotkeyId =
   | "playerTvGuide"
   | "playerDvr"
   | "playerSleep"
+  | "playerLumaPanel"
   | "globalUiScaleUp"
   | "globalUiScaleDown"
   | "globalUiScaleReset"
@@ -105,6 +106,7 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: "playerTvGuide", scope: "Player", group: "Panels", label: "TV guide", description: "Open or close the live TV guide (live channels only).", defaultBinding: "g" },
   { id: "playerDvr", scope: "Player", group: "Panels", label: "DVR / record", description: "Open or close the live TV recorder (live channels only).", defaultBinding: "r" },
   { id: "playerSleep", scope: "Player", group: "Panels", label: "Sleep at end of episode", description: "Toggle a sleep timer that pauses when this episode ends.", defaultBinding: "l" },
+  { id: "playerLumaPanel", scope: "Player", group: "Panels", label: "Open LUMA", description: "Open your private playback queue and local continuity panel.", defaultBinding: "q" },
 ];
 
 export const HOTKEY_MAP: Record<HotkeyId, HotkeyDef> = Object.fromEntries(

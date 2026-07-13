@@ -1,5 +1,5 @@
 import { t as translate } from "@/lib/i18n";
-import { Camera, ChevronLeft, Info, Maximize, Minimize, PauseCircle, PictureInPicture2, PlayCircle, Replace, Tv } from "lucide-react";
+import { Camera, ChevronLeft, Info, ListVideo, Maximize, Minimize, PauseCircle, PictureInPicture2, PlayCircle, Replace, Tv } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
@@ -109,6 +109,7 @@ export type ControlContext = {
   onPiP: () => void;
   onFullscreen: () => void;
   onCast: () => void;
+  onLuma?: () => void;
   onToggleDraw: () => void;
   onToggleHideOthers: () => void;
   onClearDraw: () => void;
@@ -439,6 +440,14 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     case "cast": {
       if (ctx.tight) return null;
       return <CastButton onClick={ctx.onCast} capabilities={ctx.capabilities} />;
+    }
+    case "luma": {
+      if (!ctx.onLuma || ctx.tight) return null;
+      return (
+        <BigButton onClick={ctx.onLuma} ariaLabel="LUMA" tooltip={`${t("Open LUMA")} · Q`}>
+          <ListVideo size={22} strokeWidth={1.9} />
+        </BigButton>
+      );
     }
     case "fullscreen": {
       return (

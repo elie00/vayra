@@ -2,6 +2,7 @@ import { ChevronLeft, ListVideo, Search, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useQueue } from "@/lib/queue";
 import type { PlayEpisode } from "@/lib/view";
 import { EpisodePicker } from "./cast-modal/episode-picker";
@@ -29,6 +30,7 @@ export function CastModal({
   onOpenDetail,
   onPlay,
   currentEpisode,
+  initialView = "title",
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,14 +39,19 @@ export function CastModal({
   onOpenDetail?: (m: Meta) => void;
   onPlay?: (m: Meta, episode?: PlayEpisode) => void;
   currentEpisode?: PlayEpisode | null;
+  initialView?: "title" | "queue";
 }) {
   const t = useT();
   const queue = useQueue();
-  const [stack, setStack] = useState<StackView[]>([{ kind: "title", meta }]);
+  const initialStack = useCallback(
+    (): StackView[] => initialView === "queue" ? [{ kind: "title", meta }, { kind: "queue" }] : [{ kind: "title", meta }],
+    [initialView, meta],
+  );
+  const [stack, setStack] = useState<StackView[]>(initialStack);
 
   useEffect(() => {
-    if (open) setStack([{ kind: "title", meta }]);
-  }, [open, meta]);
+    if (open) setStack(initialStack());
+  }, [open, initialStack]);
 
   const [confirmTarget, setConfirmTarget] = useState<Meta | null>(null);
   useEffect(() => {
@@ -107,6 +114,8 @@ export function CastModal({
 
   const headerRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
   const [cardHeight, setCardHeight] = useState<number>();
   useLayoutEffect(() => {
     if (!open) return;
@@ -133,14 +142,19 @@ export function CastModal({
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center bg-black/70 p-6 backdrop-blur-md animate-in fade-in duration-200"
+      className="pointer-events-auto absolute inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 backdrop-blur-md animate-in fade-in duration-200 motion-reduce:animate-none sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget && !confirmTarget) onClose();
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={view.kind === "queue" ? "LUMA" : t("About this title")}
+        tabIndex={-1}
         style={cardHeight ? { height: cardHeight } : undefined}
-        className={`relative flex max-h-[88vh] w-[72vw] min-w-0 max-w-6xl flex-col overflow-hidden rounded-[18px] bg-neutral-950/75 ring-1 ring-white/10 shadow-[0_44px_120px_-32px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-[height,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in zoom-in-95 fade-in ${confirmTarget ? "pointer-events-none opacity-0" : ""}`}
+        className={`relative flex max-h-[92dvh] w-full min-w-0 max-w-6xl flex-col overflow-hidden rounded-t-[24px] bg-neutral-950/90 ring-1 ring-white/10 shadow-[0_44px_120px_-32px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-[height,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in slide-in-from-bottom-4 fade-in motion-reduce:animate-none motion-reduce:transition-none sm:max-h-[88vh] sm:w-[72vw] sm:rounded-[18px] sm:zoom-in-95 ${confirmTarget ? "pointer-events-none opacity-0" : ""}`}
       >
         {view.kind === "genre" ? (
           <GenreBackdrop
@@ -182,7 +196,7 @@ export function CastModal({
                 type="button"
                 onClick={openQueueView}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
-                aria-label={t("Queue")}
+                aria-label={t("Open LUMA")}
               >
                 <ListVideo size={19} strokeWidth={2.2} />
                 {queue.length > 0 && (
@@ -226,7 +240,7 @@ export function CastModal({
                       : view.kind === "genre"
                         ? `g:${view.name}:${view.mediaType}`
                         : view.kind === "queue"
-                          ? "queue"
+                          ? "luma"
                           : "search"
               }
               className="animate-in fade-in duration-200"

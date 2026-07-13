@@ -4,6 +4,7 @@ import type { PlayEpisode } from "@/lib/view";
 import { lumaQueueKey, lumaStore } from "./store";
 
 export * from "./types";
+export * from "./authority";
 export { LumaStore, lumaQueueKey, lumaStore } from "./store";
 export { lumaBackupKey, lumaInput, lumaStorageKey } from "./storage";
 
@@ -22,4 +23,3 @@ export function useIsInLuma(meta: Meta, episode?: PlayEpisode, profileId?: strin
     return itemKey === key;
   }));
 }
-

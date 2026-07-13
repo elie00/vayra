@@ -26,6 +26,7 @@ import {
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 import { SongIdToast } from "@/components/song-id-toast";
 import { useCastModalPlay } from "./use-cast-modal-play";
+import { LUMA_OPEN_EVENT } from "@/lib/luma";
 
 export function Transport({
   snap,
@@ -166,6 +167,7 @@ export function Transport({
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
   const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
   const [castModalOpen, setCastModalOpen] = useState(false);
+  const [castModalInitialView, setCastModalInitialView] = useState<"title" | "queue">("title");
   const [chromeConfig, setChromeConfig] = useState<PlayerChromeConfig>(() =>
     readPlayerChromeConfig("default"),
   );
@@ -173,6 +175,14 @@ export function Transport({
   const titleClickable = !!meta && !isLiveChannel;
   const { openMeta, exitPlayer } = useView();
   const castModalPlay = useCastModalPlay();
+  useEffect(() => {
+    const openLuma = () => {
+      setCastModalInitialView("queue");
+      setCastModalOpen(true);
+    };
+    window.addEventListener(LUMA_OPEN_EVENT, openLuma);
+    return () => window.removeEventListener(LUMA_OPEN_EVENT, openLuma);
+  }, []);
   const controlsRef = useRef<HTMLDivElement>(null);
   const [mid, setMid] = useState(false);
   const [compact, setCompact] = useState(false);
@@ -357,7 +367,10 @@ export function Transport({
     titleScale: settings.playerTitleScale,
     titleSeriesFirst: settings.playerTitleSeriesFirst,
     onBack,
-    onTitleClick: () => setCastModalOpen(true),
+    onTitleClick: () => {
+      setCastModalInitialView("title");
+      setCastModalOpen(true);
+    },
     meta,
     metaImdbId,
     metaTitle,
@@ -380,6 +393,10 @@ export function Transport({
     onPiP,
     onFullscreen,
     onCast,
+    onLuma: () => {
+      setCastModalInitialView("queue");
+      setCastModalOpen(true);
+    },
     onToggleDraw,
     onToggleHideOthers,
     onClearDraw,
@@ -495,6 +512,7 @@ export function Transport({
           currentEpisode={
             season != null && episode != null ? { season, episode } : null
           }
+          initialView={castModalInitialView}
         />
       )}
     </>
