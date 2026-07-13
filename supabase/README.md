@@ -3,15 +3,14 @@
 CIRA est le domaine social privacy-first de VAYRA, entièrement autonome et lié
 exclusivement à `auth.users.id`. Ce dossier contient :
 
-- `migrations/` — 5 migrations ordonnées : schéma + contraintes + index, RLS +
-  helpers privés, les RPC (`security definer`, `search_path = ''`), puis les
-  triggers Realtime (pings `changed` vides sur le canal privé `cira:<userId>`
-  + policy de réception sur `realtime.messages`) et le durcissement additif
-  des invitations (auto-preview et blocage croisé).
+- `migrations/` — 11 migrations ordonnées : relations, profils, présence,
+  invitations, RLS/RPC/Realtime, puis groupes privés, rôles, invitations de
+  groupe, frontière de blocage, boîte sociale dérivée et pagination bornée.
 - `tests/` — tests SQL multi-utilisateurs couvrant la matrice de menaces
   (RLS, acceptation forcée, énumération de handles, réutilisation de token,
-  blocage croisé, fuite de présence, avatar traçant, suppression de compte,
-  injection/XSS, rate limits).
+  rôles et propriété de groupe, blocage inter-groupes, fuite de présence,
+  avatar traçant, suppression de compte, injection/XSS, rate limits et pages
+  non bornées).
 - `../scripts/cira/db-test.sh` — harnais de test local.
 
 ## Lancer les tests
@@ -58,12 +57,12 @@ qui échouent si l'erreur attendue ne se produit **pas**.
 
 ## Application en production (dashboard Supabase → SQL Editor)
 
-Aucun inventaire prod n'est possible avec la clé publiable. Les quatre
-premières migrations sont défensives : uniquement des objets préfixés
+Aucun inventaire prod n'est possible avec la clé publiable. Les migrations
+initiales sont défensives : uniquement des objets préfixés
 `cira_` (+ `create schema if not exists private`), en `CREATE` simple —
-**toute collision échoue bruyamment au lieu d'écraser quoi que ce soit**. La
-cinquième est une mise à niveau additive et remplace uniquement deux RPC de
-même signature avec `create or replace function`.
+**toute collision échoue bruyamment au lieu d'écraser quoi que ce soit**. Les
+migrations suivantes sont additives ; les durcissements qui remplacent des
+RPC conservent leurs signatures.
 
 1. **Vérifier manuellement les collisions d'abord** — dans le SQL Editor :
 
@@ -78,14 +77,14 @@ même signature avec `create or replace function`.
    ```
 
    Pour une installation neuve, le résultat doit être **vide**. Sinon, ne pas
-   rejouer les quatre migrations initiales : vérifier d'abord s'il s'agit
+   rejouer les migrations déjà appliquées : vérifier d'abord s'il s'agit
    d'une installation CIRA existante avec les comptages de l'étape 3.
 
 2. Appliquer les migrations une par une dans l'ordre des timestamps :
 
-   - **installation neuve** : appliquer les 5 fichiers ;
-   - **installation possédant déjà les 4 migrations initiales** : appliquer
-     uniquement `20260713210000_cira_invitation_hardening.sql` ;
+   - **installation neuve** : appliquer les 11 fichiers dans l'ordre ;
+   - **installation CIRA existante** : appliquer uniquement les fichiers dont
+     le timestamp n'apparaît pas encore dans l'historique de migrations ;
    - dans le doute, arrêter : ne jamais rejouer le schéma initial ni supprimer
      un objet pour forcer le passage.
 
@@ -95,13 +94,13 @@ même signature avec `create or replace function`.
 3. Vérification rapide post-application :
 
    ```sql
-   -- 6 tables avec RLS, 19 RPC security definer
+   -- 11 tables avec RLS (10 publiques + ledger privé), 42 RPC security definer
    select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where c.relname like 'cira\_%' and c.relkind = 'r' and c.relrowsecurity; -- = 6
+   where c.relname like 'cira\_%' and c.relkind = 'r' and c.relrowsecurity; -- = 11
    select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'public' and p.proname like 'cira\_%' and p.prosecdef;  -- = 19
-   -- 7 triggers de notification realtime, 1 policy de réception
-   select count(*) from pg_trigger where tgname like 'cira\_%';              -- = 7
+   where n.nspname = 'public' and p.proname like 'cira\_%' and p.prosecdef;  -- = 42
+   -- 12 triggers CIRA (notifications + garde de blocage), 1 policy Realtime
+   select count(*) from pg_trigger where tgname like 'cira\_%';              -- = 12
    select count(*) from pg_policies
    where schemaname = 'realtime' and policyname = 'cira_receive_own_channel'; -- = 1
    ```
@@ -112,7 +111,7 @@ Notes :
 - Les tokens d'invitation ne sont jamais stockés ni loggés : seul
   `sha256(code normalisé)` est conservé ; le code clair n'est renvoyé qu'une
   seule fois par `cira_create_invitation`.
-- Caveat v1 connu (SQL transactionnel, pas d'Edge Function) : une RPC qui
+- Caveat transactionnel connu (SQL, pas d'Edge Function) : une RPC qui
   échoue par exception annule aussi l'incrément de son compteur de rate
   limit ; seuls les appels non-erronés sont comptés. Défenses primaires :
   tokens à 100 bits et réponses génériques (comptées) de
