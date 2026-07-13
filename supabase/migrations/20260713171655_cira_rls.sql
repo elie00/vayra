@@ -19,6 +19,7 @@
 ------------------------------------------------------------------------------
 revoke all on table public.cira_profiles    from public, anon, authenticated;
 revoke all on table public.cira_friendships from public, anon, authenticated;
+revoke all on table public.cira_request_receipts from public, anon, authenticated;
 revoke all on table public.cira_blocks      from public, anon, authenticated;
 revoke all on table public.cira_presence    from public, anon, authenticated;
 revoke all on table public.cira_invitations from public, anon, authenticated;
@@ -48,8 +49,9 @@ grant usage on schema private to authenticated;
 -- entitled to - which is exactly what the RLS policies below require.
 ------------------------------------------------------------------------------
 
--- True if any friendship row (pending or accepted) links the caller (auth.uid)
--- to p_other. Caller-scoped: cannot probe pairs the caller is not part of.
+-- True when a profile is legitimately visible to the caller: accepted pairs
+-- in either direction, or a pending request received by the caller. A pending
+-- outgoing request deliberately does not reveal the target profile.
 create function private.cira_pair_exists(p_other uuid)
 returns boolean
 language sql
@@ -62,6 +64,7 @@ as $$
     from public.cira_friendships f
     where f.user_low = least(auth.uid(), p_other)
       and f.user_high = greatest(auth.uid(), p_other)
+      and (f.status = 'accepted' or f.addressee_id = auth.uid())
   );
 $$;
 
@@ -304,6 +307,7 @@ revoke all on function private.cira_generate_invite_secret()                    
 ------------------------------------------------------------------------------
 alter table public.cira_profiles     enable row level security;
 alter table public.cira_friendships  enable row level security;
+alter table public.cira_request_receipts enable row level security;
 alter table public.cira_blocks       enable row level security;
 alter table public.cira_presence     enable row level security;
 alter table public.cira_invitations  enable row level security;
@@ -324,17 +328,25 @@ create policy cira_profiles_select on public.cira_profiles
     )
   );
 
--- Friendships: only participants can see the row.
+-- Friendships: accepted rows are visible to both participants. A pending row
+-- is visible only to its recipient; the requester sees a blind receipt.
 create policy cira_friendships_select on public.cira_friendships
   for select
   to authenticated
   using (
     private.cira_beta_access()
     and (
-      requester_id = (select auth.uid())
-      or addressee_id = (select auth.uid())
+      (status = 'accepted' and (
+        requester_id = (select auth.uid())
+        or addressee_id = (select auth.uid())
+      ))
+      or (status = 'pending' and addressee_id = (select auth.uid()))
     )
   );
+
+-- cira_request_receipts has no SELECT grant or policy: friendship_id is an
+-- internal link and must never become an existence oracle. Callers only see
+-- the projected blind shape returned by the relationship-list RPCs.
 
 -- Blocks: a user only sees the blocks they created.
 create policy cira_blocks_select on public.cira_blocks

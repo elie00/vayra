@@ -74,7 +74,9 @@ revoke all on function private.cira_notify(uuid[])   from public, anon, authenti
 -- private helper; they run underneath the security-definer RPCs).
 ------------------------------------------------------------------------------
 
--- Any friendship change concerns exactly the two members of the pair.
+-- Pending friendships notify only their recipient. The requester gets an
+-- indistinguishable notification from its blind receipt instead. Once a
+-- request is accepted, both participants are notified.
 create function private.cira_tg_friendships_notify()
 returns trigger
 language plpgsql
@@ -82,11 +84,44 @@ security definer
 set search_path = ''
 as $$
 begin
-  if tg_op = 'DELETE' then
-    perform private.cira_notify(array[old.requester_id, old.addressee_id]);
+  if tg_op = 'INSERT' then
+    if new.status = 'pending' then
+      perform private.cira_notify(array[new.addressee_id]);
+    else
+      perform private.cira_notify(array[new.requester_id, new.addressee_id]);
+    end if;
+  elsif tg_op = 'DELETE' then
+    if old.status = 'pending' then
+      perform private.cira_notify(array[old.addressee_id]);
+    else
+      perform private.cira_notify(array[old.requester_id, old.addressee_id]);
+    end if;
   else
     perform private.cira_notify(array[new.requester_id, new.addressee_id]);
   end if;
+  return null;
+end;
+$$;
+
+-- Every blind receipt change concerns its requester, whether or not a target
+-- profile or underlying friendship exists.
+create function private.cira_tg_request_receipts_notify()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- Acceptance deletes the linked receipt in the same transaction; the
+  -- friendship UPDATE already notifies both users, so avoid a duplicate ping.
+  if tg_op = 'DELETE' and old.friendship_id is not null and exists (
+    select 1 from public.cira_friendships f
+    where f.id = old.friendship_id and f.status = 'accepted'
+  ) then
+    return null;
+  end if;
+  perform private.cira_notify(array[case when tg_op = 'DELETE'
+    then old.requester_id else new.requester_id end]);
   return null;
 end;
 $$;
@@ -170,6 +205,7 @@ end;
 $$;
 
 revoke all on function private.cira_tg_friendships_notify() from public, anon, authenticated;
+revoke all on function private.cira_tg_request_receipts_notify() from public, anon, authenticated;
 revoke all on function private.cira_tg_profiles_notify()    from public, anon, authenticated;
 revoke all on function private.cira_tg_presence_notify()    from public, anon, authenticated;
 revoke all on function private.cira_tg_invitations_notify() from public, anon, authenticated;
@@ -182,6 +218,21 @@ revoke all on function private.cira_tg_blocks_notify()      from public, anon, a
 create trigger cira_friendships_notify
   after insert or update or delete on public.cira_friendships
   for each row execute function private.cira_tg_friendships_notify();
+
+create trigger cira_request_receipts_notify_ins_del
+  after insert or delete on public.cira_request_receipts
+  for each row execute function private.cira_tg_request_receipts_notify();
+
+-- An explicit re-send refreshes timestamps and must synchronize devices.
+-- FK ON DELETE SET NULL changes only friendship_id on decline/block and stays
+-- silent, otherwise it would reveal that a real target existed.
+create trigger cira_request_receipts_notify_upd
+  after update on public.cira_request_receipts
+  for each row
+  when (old.created_at is distinct from new.created_at
+     or old.expires_at is distinct from new.expires_at
+     or old.requested_handle is distinct from new.requested_handle)
+  execute function private.cira_tg_request_receipts_notify();
 
 create trigger cira_profiles_notify
   after update on public.cira_profiles

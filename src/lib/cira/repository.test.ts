@@ -533,7 +533,7 @@ describe("SQL row shapes to TS types", () => {
         { ...base, friendship_id: "f1", counterpart_id: "u1", status: "accepted", direction: "outgoing", presence: "in_vara" },
         { ...base, friendship_id: "f2", counterpart_id: "u2", status: "accepted", direction: "incoming", presence: "online" },
         { ...base, friendship_id: "f3", counterpart_id: "u3", status: "accepted", direction: "incoming", presence: "offline" },
-        { ...base, friendship_id: "f4", counterpart_id: "u4", status: "pending", direction: "outgoing", presence: null },
+        { ...base, friendship_id: "f4", counterpart_id: null, status: "pending", direction: "outgoing", presence: null },
         { ...base, friendship_id: "f5", counterpart_id: "u5", status: "pending", direction: "incoming", presence: null },
       ],
       error: null,
@@ -553,6 +553,7 @@ describe("SQL row shapes to TS types", () => {
       avatarKey: null,
     });
     expect(rows[0].createdAt).toBe("2026-07-13T10:00:00Z");
+    expect(rows[3].profile.userId).toBeNull();
   });
 
   it("listBlocks maps rows to profiles (presenceOptIn not exposed -> false)", async () => {

@@ -100,7 +100,7 @@ function toRelationship(row: JsonRecord): CiraRelationship {
           : "incoming",
     status,
     profile: {
-      userId: asString(row.counterpart_id),
+      userId: asNullableString(row.counterpart_id),
       handle: asString(row.handle),
       displayName: asString(row.display_name),
       avatarKey: asNullableString(row.avatar_key),

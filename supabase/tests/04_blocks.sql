@@ -50,7 +50,7 @@ end;
 $do$;
 
 -- Anti-oracle: for A, sending to the blocking user, to an unknown handle and
--- to itself returns the exact same payload, and nothing is written.
+-- to itself returns the exact same payload and creates the same blind receipt.
 do $do$
 declare
   v1 jsonb; v2 jsonb; v3 jsonb;
@@ -68,12 +68,16 @@ begin
   select count(*) into n from public.cira_friendships
   where requester_id = '00000000-0000-4000-8000-0000000004a1';
   if n <> 0 then raise exception 'TEST_FAILED: blocked send created a row'; end if;
+  select count(*) into n from public.cira_request_receipts
+  where requester_id = '00000000-0000-4000-8000-0000000004a1';
+  if n <> 3 then raise exception 'TEST_FAILED: expected 3 indistinguishable receipts, got %', n; end if;
 end;
 $do$;
 
 -- Visibility under block: blocker still sees the blocked profile (to render
 -- the list); the blocked user sees nothing; both relationship lists are
--- empty (=> no presence can leak through the only presence channel).
+-- contain no real relationship/profile (=> no presence can leak). The
+-- blocked user keeps only the three blind receipts created above.
 do $do$
 declare
   n integer;
@@ -92,7 +96,11 @@ begin
   where user_id = '00000000-0000-4000-8000-0000000004b2';
   if n <> 0 then raise exception 'TEST_FAILED: blocked user still sees blocker profile'; end if;
   select count(*) into n from public.cira_list_relationships();
-  if n <> 0 then raise exception 'TEST_FAILED: blocked user still lists the relation'; end if;
+  if n <> 3 then raise exception 'TEST_FAILED: blind receipt parity lost under block (%)', n; end if;
+  if exists (select 1 from public.cira_list_relationships()
+             where counterpart_id is not null or direction <> 'outgoing' or presence is not null) then
+    raise exception 'TEST_FAILED: blocked receipt exposed target data';
+  end if;
 end;
 $do$;
 

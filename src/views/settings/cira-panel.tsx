@@ -541,7 +541,7 @@ function RequestsCard() {
                         name: r.profile.displayName,
                       }),
                     ).then((ok) => {
-                      if (ok) run(repo.blockUser(r.profile.userId));
+                      if (ok && r.profile.userId) run(repo.blockUser(r.profile.userId));
                     });
                   }}
                   aria-label={t("Block user")}
@@ -604,7 +604,7 @@ function FriendsCard() {
                       void confirmDialog(
                         t("Remove {name} from your CIRA?", { name: r.profile.displayName }),
                       ).then((ok) => {
-                        if (ok) run(repo.removeFriend(r.profile.userId));
+                        if (ok && r.profile.userId) run(repo.removeFriend(r.profile.userId));
                       });
                     }}
                     aria-label={t("Remove friend")}
@@ -619,7 +619,7 @@ function FriendsCard() {
                           name: r.profile.displayName,
                         }),
                       ).then((ok) => {
-                        if (ok) run(repo.blockUser(r.profile.userId));
+                        if (ok && r.profile.userId) run(repo.blockUser(r.profile.userId));
                       });
                     }}
                     aria-label={t("Block user")}

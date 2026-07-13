@@ -1,8 +1,7 @@
 -- CIRA tests 07 - rate limits (private.cira_rate_limits, fixed windows).
 -- handle_check 10/5 min, invitation_create 10/10 min, invitation_redeem
--- 10/5 min, direct_request 20/10 min; 1 h retention purge; failed calls do
--- not consume budget (documented v1 caveat: erroring transactions roll the
--- counter back).
+-- 10/5 min, direct_request 20/10 min; 1 h retention purge. Generic request
+-- and invitation-token failures commit their counters.
 --
 -- NOTE: windows are fixed and epoch-aligned; each burst below runs in
 -- milliseconds, so crossing a window boundary mid-test is vanishingly

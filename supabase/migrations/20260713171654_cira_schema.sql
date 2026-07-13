@@ -74,6 +74,37 @@ create index cira_friendships_addressee_status_idx
   on public.cira_friendships (addressee_id, status);
 
 ------------------------------------------------------------------------------
+-- public.cira_request_receipts
+-- Blind, caller-owned receipts make direct handle requests non-enumerable:
+-- the requester sees the same pending receipt whether a handle exists or not.
+-- A nullable friendship link is never exposed and is cleared automatically
+-- when a real request is declined, blocked or deleted.
+------------------------------------------------------------------------------
+create table public.cira_request_receipts (
+  id               uuid primary key default gen_random_uuid(),
+  requester_id     uuid not null references public.cira_profiles (user_id) on delete cascade,
+  requested_handle text not null,
+  friendship_id    uuid references public.cira_friendships (id) on delete set null,
+  created_at       timestamptz not null default now(),
+  expires_at       timestamptz not null default (now() + interval '24 hours'),
+
+  constraint cira_request_receipts_handle_format
+    check (requested_handle = lower(requested_handle)
+       and requested_handle ~ '^[a-z0-9][a-z0-9_]{2,23}$'),
+  constraint cira_request_receipts_ttl
+    check (expires_at > created_at
+       and expires_at - created_at <= interval '24 hours')
+);
+
+create unique index cira_request_receipts_requester_handle_key
+  on public.cira_request_receipts (requester_id, requested_handle);
+create unique index cira_request_receipts_friendship_key
+  on public.cira_request_receipts (friendship_id)
+  where friendship_id is not null;
+create index cira_request_receipts_requester_expires_idx
+  on public.cira_request_receipts (requester_id, expires_at desc);
+
+------------------------------------------------------------------------------
 -- public.cira_blocks
 ------------------------------------------------------------------------------
 create table public.cira_blocks (

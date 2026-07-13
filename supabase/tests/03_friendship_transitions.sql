@@ -102,7 +102,8 @@ $do$;
 do $do$
 declare
   v jsonb;
-  rid uuid;
+  receipt_id uuid;
+  request_id uuid;
   r record;
 begin
   perform test.login('00000000-0000-4000-8000-0000000003a1');
@@ -118,16 +119,23 @@ begin
   if r.presence is not null then
     raise exception 'TEST_FAILED: pending counterpart exposes presence %', r.presence;
   end if;
-  rid := r.friendship_id;
+  receipt_id := r.friendship_id;
+  if r.counterpart_id is not null or r.display_name <> r.handle then
+    raise exception 'TEST_FAILED: outgoing receipt revealed a profile: %', r;
+  end if;
 
   perform test.login('00000000-0000-4000-8000-0000000003b2');
   select * into r from public.cira_list_relationships() where handle = 'f03_alice';
-  if r.friendship_id <> rid or r.status <> 'pending' or r.direction <> 'incoming' then
+  if r.friendship_id is null or r.friendship_id = receipt_id
+     or r.status <> 'pending' or r.direction <> 'incoming' then
     raise exception 'TEST_FAILED: addressee view wrong: %', r;
   end if;
+  request_id := r.friendship_id;
 
   perform test.logout();
-  insert into tvars values ('req_ab', rid::text);
+  insert into tvars values
+    ('req_ab', request_id::text),
+    ('receipt_ab', receipt_id::text);
 end;
 $do$;
 
@@ -200,12 +208,10 @@ begin
   end;
 
   perform test.login('00000000-0000-4000-8000-0000000003b2');
-  begin
-    perform public.cira_cancel_request(rid);
+  perform public.cira_cancel_request(rid); -- generic no-op: not B's receipt
+  if not exists (select 1 from public.cira_list_relationships() where friendship_id = rid) then
     raise exception 'TEST_FAILED: addressee cancelled the request';
-  exception when others then
-    if sqlerrm <> 'REQUEST_NOT_AVAILABLE' then raise; end if;
-  end;
+  end if;
 
   -- unknown request id
   begin
@@ -292,12 +298,7 @@ begin
   perform public.cira_send_request('f03_bob');
   select friendship_id into rid from public.cira_list_relationships() where handle = 'f03_bob';
   perform public.cira_cancel_request(rid);
-  begin
-    perform public.cira_cancel_request(rid);
-    raise exception 'TEST_FAILED: second cancel succeeded';
-  exception when others then
-    if sqlerrm <> 'REQUEST_NOT_AVAILABLE' then raise; end if;
-  end;
+  perform public.cira_cancel_request(rid); -- idempotent generic no-op
   perform test.logout();
   select count(*) into n from public.cira_friendships
   where user_low = '00000000-0000-4000-8000-0000000003a1';
@@ -349,22 +350,32 @@ begin
 end;
 $do$;
 
--- No enumeration oracle: unknown handle answers exactly like a success and
--- writes nothing.
+-- No enumeration oracle: a real and an unknown handle produce the same blind
+-- caller-visible shape; neither reveals a counterpart id before acceptance.
 do $do$
 declare
   v jsonb;
-  n integer;
+  real_row record;
+  ghost_row record;
 begin
   perform test.login('00000000-0000-4000-8000-0000000003a1');
   v := public.cira_send_request('f03_nobody_here');
   if v <> '{"status":"ok"}'::jsonb then
     raise exception 'TEST_FAILED: unknown handle leaked: %', v;
   end if;
-  perform test.logout();
-  select count(*) into n from public.cira_friendships
-  where requester_id = '00000000-0000-4000-8000-0000000003a1';
-  if n <> 0 then raise exception 'TEST_FAILED: ghost request row created'; end if;
+  perform public.cira_send_request('f03_carol');
+  select * into ghost_row from public.cira_list_relationships()
+  where handle = 'f03_nobody_here';
+  select * into real_row from public.cira_list_relationships()
+  where handle = 'f03_carol';
+  if ghost_row.counterpart_id is not null or real_row.counterpart_id is not null
+     or ghost_row.status <> real_row.status
+     or ghost_row.direction <> real_row.direction
+     or ghost_row.avatar_key is not null or real_row.avatar_key is not null then
+    raise exception 'TEST_FAILED: blind receipt shapes differ: % / %', ghost_row, real_row;
+  end if;
+  perform public.cira_cancel_request(ghost_row.friendship_id);
+  perform public.cira_cancel_request(real_row.friendship_id);
 end;
 $do$;
 

@@ -10,17 +10,13 @@
 -- INVALID_TRANSITION, INVITATION_UNAVAILABLE, RATE_LIMITED.
 --
 -- Anti-oracle rules:
---   * cira_send_request RESPONSE is identical (the same generic success) for:
+--   * cira_send_request RESPONSE and caller-visible receipt are identical for:
 --     unknown handle, own handle, blocked (either direction) targets, and an
 --     already-existing relation - so the returned value carries no handle
 --     enumeration signal, and repeat sends are idempotent. This is a
---     response-level guarantee only: a send to a REAL handle necessarily
---     persists observable state (a pending row visible to both counterparts,
---     and the target profile becomes visible to the requester as the
---     spec-sanctioned "counterpart of a request"). The enforced enumeration
---     defenses are therefore the generic response + the direct_request rate
---     limit + the fact a real request notifies the target - not the absence of
---     any side effect.
+--     a blind receipt is always persisted for a valid handle. Only the real
+--     recipient sees the underlying pending friendship; the requester learns
+--     the counterpart identity only after explicit acceptance.
 --   * All invitation failures (unknown, expired, consumed, revoked, blocked,
 --     self) collapse into the single INVITATION_UNAVAILABLE error.
 --
@@ -104,6 +100,8 @@ as $$
 declare
   v_uid      uuid;
   v_target   public.cira_profiles;
+  v_relation public.cira_friendships;
+  v_friendship_id uuid;
   v_handle   text;
   v_generic  constant jsonb := jsonb_build_object('status', 'ok');
 begin
@@ -113,36 +111,56 @@ begin
 
   v_handle := lower(coalesce(p_handle, ''));
 
+  -- Invalid syntax carries no existence information and creates no receipt.
+  if v_handle !~ '^[a-z0-9][a-z0-9_]{2,23}$' then
+    return v_generic;
+  end if;
+
+  delete from public.cira_request_receipts
+  where requester_id = v_uid and expires_at <= now();
+
   select * into v_target from public.cira_profiles where handle = v_handle;
-  -- Anti-oracle: unknown handle and own handle answer exactly like a success.
-  if not found or v_target.user_id = v_uid then
-    return v_generic;
+
+  if found and v_target.user_id <> v_uid then
+    perform private.cira_lock_pair(v_uid, v_target.user_id);
+
+    if not private.cira_any_block(v_uid, v_target.user_id) then
+      select * into v_relation
+      from public.cira_friendships f
+      where f.user_low = least(v_uid, v_target.user_id)
+        and f.user_high = greatest(v_uid, v_target.user_id);
+
+      -- An accepted counterpart is already known to the caller; sending again
+      -- remains a no-op and does not add a duplicate blind receipt.
+      if found and v_relation.status = 'accepted' then
+        return v_generic;
+      end if;
+
+      if found then
+        if v_relation.requester_id = v_uid then
+          v_friendship_id := v_relation.id;
+        else
+          -- The caller already sees this incoming request and therefore
+          -- already knows the requester. Do not create a duplicate receipt.
+          return v_generic;
+        end if;
+      else
+        insert into public.cira_friendships (requester_id, addressee_id, status)
+        values (v_uid, v_target.user_id, 'pending')
+        returning id into v_friendship_id;
+      end if;
+    end if;
   end if;
 
-  perform private.cira_lock_pair(v_uid, v_target.user_id);
-
-  -- Anti-oracle: blocked in either direction answers exactly like a success.
-  if private.cira_any_block(v_uid, v_target.user_id) then
-    return v_generic;
-  end if;
-
-  -- Anti-oracle: an existing relation (pending or accepted) with the target
-  -- answers with the SAME generic success. Raising ALREADY_RELATED here would
-  -- leak handle existence: a second send to a real handle finds the caller's
-  -- own pending row (created by the first send) and would error, while a second
-  -- send to a non-existent handle keeps returning the generic success - a clean
-  -- two-call enumeration oracle. Collapsing to the generic response keeps the
-  -- call idempotent (no duplicate row) and signal-free.
-  if exists (
-    select 1 from public.cira_friendships f
-    where f.user_low = least(v_uid, v_target.user_id)
-      and f.user_high = greatest(v_uid, v_target.user_id)
-  ) then
-    return v_generic;
-  end if;
-
-  insert into public.cira_friendships (requester_id, addressee_id, status)
-  values (v_uid, v_target.user_id, 'pending');
+  -- The caller sees this same row for real, unknown, self and blocked handles.
+  insert into public.cira_request_receipts as r
+    (requester_id, requested_handle, friendship_id, created_at, expires_at)
+  values
+    (v_uid, v_handle, v_friendship_id, now(), now() + interval '24 hours')
+  on conflict (requester_id, requested_handle) do update
+  set friendship_id = excluded.friendship_id,
+      created_at = excluded.created_at,
+      expires_at = excluded.expires_at;
 
   return v_generic;
 end;
@@ -193,6 +211,8 @@ begin
   set status = 'accepted', responded_at = now(), updated_at = now()
   where id = v_req.id;
 
+  delete from public.cira_request_receipts where friendship_id = v_req.id;
+
   return jsonb_build_object('status', 'ok');
 end;
 $$;
@@ -232,7 +252,7 @@ end;
 $$;
 
 ------------------------------------------------------------------------------
--- 5. cira_cancel_request (requester only; the row is DELETED)
+-- 5. cira_cancel_request (requester-owned blind receipt)
 ------------------------------------------------------------------------------
 create function public.cira_cancel_request(p_request_id uuid)
 returns jsonb
@@ -243,23 +263,35 @@ set search_path = ''
 as $$
 declare
   v_uid uuid;
+  v_receipt public.cira_request_receipts;
   v_req public.cira_friendships;
 begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
 
-  select * into v_req from public.cira_friendships where id = p_request_id;
-  if not found or v_req.requester_id <> v_uid or v_req.status <> 'pending' then
-    raise exception 'REQUEST_NOT_AVAILABLE';
-  end if;
-
-  perform private.cira_lock_pair(v_req.user_low, v_req.user_high);
-
-  delete from public.cira_friendships
-  where id = p_request_id and requester_id = v_uid and status = 'pending';
+  select * into v_receipt
+  from public.cira_request_receipts
+  where id = p_request_id and requester_id = v_uid and expires_at > now()
+  for update;
   if not found then
-    raise exception 'REQUEST_NOT_AVAILABLE';
+    return jsonb_build_object('status', 'ok');
   end if;
+
+  if v_receipt.friendship_id is not null then
+    select * into v_req
+    from public.cira_friendships
+    where id = v_receipt.friendship_id
+      and requester_id = v_uid
+      and status = 'pending';
+
+    if found then
+      perform private.cira_lock_pair(v_req.user_low, v_req.user_high);
+      delete from public.cira_friendships
+      where id = v_req.id and requester_id = v_uid and status = 'pending';
+    end if;
+  end if;
+
+  delete from public.cira_request_receipts where id = v_receipt.id;
 
   return jsonb_build_object('status', 'ok');
 end;
@@ -663,36 +695,43 @@ begin
   perform private.cira_require_profile(v_uid);
 
   return query
-  select
-    f.id,
-    cp.user_id,
-    cp.handle,
-    cp.display_name,
-    cp.avatar_key,
-    f.status,
-    case when f.requester_id = v_uid then 'outgoing' else 'incoming' end,
-    f.created_at,
-    f.responded_at,
-    case
-      when f.status <> 'accepted' then null
-      when not cp.presence_opt_in then 'offline'
-      else
-        case coalesce((
+  with visible as (
+    select
+      f.id as item_id,
+      cp.user_id as other_id,
+      cp.handle as other_handle,
+      cp.display_name as other_name,
+      cp.avatar_key as other_avatar,
+      f.status as item_status,
+      case when f.status = 'accepted' then 'accepted' else 'incoming' end as item_direction,
+      f.created_at as item_created_at,
+      f.responded_at as item_responded_at,
+      case
+        when f.status <> 'accepted' then null::text
+        when not cp.presence_opt_in then 'offline'
+        else case coalesce((
           select max(case p.state when 'in_vara' then 2 else 1 end)
           from public.cira_presence p
-          where p.user_id = cp.user_id
-            and p.expires_at > now()
-        ), 0)
-          when 2 then 'in_vara'
-          when 1 then 'online'
-          else 'offline'
-        end
-    end
-  from public.cira_friendships f
-  join public.cira_profiles cp
-    on cp.user_id = case when f.requester_id = v_uid then f.addressee_id else f.requester_id end
-  where f.requester_id = v_uid or f.addressee_id = v_uid
-  order by f.created_at desc;
+          where p.user_id = cp.user_id and p.expires_at > now()
+        ), 0) when 2 then 'in_vara' when 1 then 'online' else 'offline' end
+      end as item_presence
+    from public.cira_friendships f
+    join public.cira_profiles cp on cp.user_id = case
+      when f.requester_id = v_uid then f.addressee_id else f.requester_id end
+    where (f.status = 'accepted' and (f.requester_id = v_uid or f.addressee_id = v_uid))
+       or (f.status = 'pending' and f.addressee_id = v_uid)
+
+    union all
+
+    select r.id, null::uuid, r.requested_handle, r.requested_handle, null::text,
+      'pending'::text, 'outgoing'::text, r.created_at, null::timestamptz, null::text
+    from public.cira_request_receipts r
+    where r.requester_id = v_uid and r.expires_at > now()
+  )
+  select item_id, other_id, other_handle, other_name, other_avatar, item_status,
+    item_direction, item_created_at, item_responded_at, item_presence
+  from visible
+  order by item_created_at desc, item_id;
 end;
 $$;
 

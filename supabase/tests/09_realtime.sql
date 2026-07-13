@@ -49,8 +49,8 @@ begin
 end;
 $do$;
 
--- Friendship request + acceptance ping exactly the two members, with an
--- empty broadcast payload on the private channel.
+-- A real and unknown request both ping the sender once through a blind
+-- receipt. Only a real target receives a pending-request ping.
 do $do$
 declare
   rid uuid;
@@ -67,6 +67,13 @@ begin
              where event <> 'changed' or extension <> 'broadcast'
                 or private is not true or payload <> '{}'::jsonb) then
     raise exception 'TEST_FAILED: unexpected message shape';
+  end if;
+
+  perform test.login('00000000-0000-4000-8000-0000000009d4');
+  perform public.cira_send_request('f09_unknown_handle');
+  perform test.logout();
+  if pg_temp.pings('00000000-0000-4000-8000-0000000009d4') <> 1 then
+    raise exception 'TEST_FAILED: unknown request must ping sender like a real request';
   end if;
 
   perform test.login('00000000-0000-4000-8000-0000000009b2');
