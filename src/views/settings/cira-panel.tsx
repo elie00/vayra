@@ -630,13 +630,13 @@ function FriendsCard() {
             />
           ))}
           {error && <InlineNotice text={error} tone="error" />}
-          {relationshipsHasMore && (
-            <SmallButton
-              label={t("Load more CIRA")}
-              onClick={() => void loadMoreRelationships().catch((cause) => setError(errorText(t, cause)))}
-            />
-          )}
         </div>
+      )}
+      {relationshipsHasMore && (
+        <SmallButton
+          label={t("Load more CIRA")}
+          onClick={() => void loadMoreRelationships().catch((cause) => setError(errorText(t, cause)))}
+        />
       )}
     </Section>
   );
