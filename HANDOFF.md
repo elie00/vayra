@@ -1,7 +1,7 @@
 # Passation — Harbor (session Claude)
 
 ## État actuel (top-line)
-- **Repo** : `elie00/harbor` (autonome, détaché de `harborstremio` ; remote `origin`).
+- **Repo** : `elie00/vayra` (autonome, détaché de `harborstremio` ; remote `origin`).
 - **Branches** : `main` **==** `mobile-android` **==** `41149b4`, les deux poussées sur `origin`. Tout est sur `main`.
 - **CI `tauri-build.yml`** : **verte sur les 3 plateformes** (run `29185539882`) → installeurs téléchargeables en artefacts : `harbor-Windows` (.msi), `harbor-Linux-x86_64` (.deb + .AppImage), `harbor-macOS-AppleSilicon` (.dmg). macOS Intel retiré de la matrice.
 - **Arbre propre** ; seuls non-suivis volontaires : `.claude/`, `src-tauri/gen/android/app/src/main/assets/`, `tauri.properties`.
@@ -42,7 +42,7 @@
 - **Parité stubs mobiles** : toute commande de `generate_handler!` doit avoir un stub `mobile_stubs/<module>.rs`, sinon build Android `E0433`. Vérif rapide : `cargo check --target aarch64-linux-android --lib` (env NDK/CC requis).
 - **`.gitignore` global `lib/`** : masquait les nouveaux fichiers sous `src/lib/`. Résolu par `!/src/lib/` dans le `.gitignore` du repo (sinon `git add -f`).
 - **Cross-compile impossible depuis macOS** : le code `#[cfg(windows)]`/`#[cfg(linux)]` n'est PAS vérifié par `cargo check` hôte, et cross-check bute sur `libmpv2-sys` (besoin de mpv.lib/X11). **Seule la CI valide Windows/Linux.**
-- **CI = seul juge Windows/Linux** : itérer via `gh workflow run tauri-build.yml --ref main` puis lire `gh api repos/elie00/harbor/actions/jobs/<id>/logs`.
+- **CI = seul juge Windows/Linux** : itérer via `gh workflow run tauri-build.yml --ref main` puis lire `gh api repos/elie00/vayra/actions/jobs/<id>/logs`.
 
 ## Suivi restant (non bloquant)
 - **Linux** : build/packaging finis et verts ; le *polish du lecteur mpv natif* reste à valider sur une vraie machine Linux (rendu vidéo — ne pas modifier sans test de lecture sur plateforme).
