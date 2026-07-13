@@ -2,6 +2,7 @@ import { ArrowLeft, Check, Copy, Download, ImagePlus, Loader2, Trash2, X } from 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { setCustomThemePreview } from "@/lib/custom-themes";
+import { useT } from "@/lib/i18n";
 import { BETA_THEMES, type ThemePreset } from "@/lib/theme";
 import { BetaThemesCard, BetaThemesModal } from "./beta-themes-modal";
 import { clearUnseenDownloads, getUnseenDownloads, subscribeUnseen } from "@/lib/theme-store";
@@ -26,6 +27,7 @@ export function LibraryBrowser({
   onRemove: (id: string) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -59,7 +61,7 @@ export function LibraryBrowser({
     <div
       className="fixed inset-0 z-[210] flex flex-col bg-canvas"
       role="dialog"
-      aria-label="Theme library"
+      aria-label={t("Theme library")}
     >
       <header data-tauri-drag-region className="flex shrink-0 items-center justify-between gap-4 border-b border-edge-soft bg-surface/40 px-10 py-5">
         <div className="flex items-center gap-4">
@@ -69,19 +71,19 @@ export function LibraryBrowser({
             className="flex h-11 items-center gap-2 rounded-full border border-edge-soft bg-canvas/60 px-4 text-[13px] font-semibold text-ink-muted transition-all hover:-translate-x-0.5 rtl:hover:translate-x-0.5 hover:border-edge hover:text-ink"
           >
             <ArrowLeft size={15} strokeWidth={2.2} className="dir-icon" />
-            Back to settings
+            {t("Back to settings")}
           </button>
           <div data-tauri-drag-region className="flex flex-col">
-            <h1 className="pointer-events-none text-[24px] font-semibold tracking-tight text-ink">Theme Library</h1>
+            <h1 className="pointer-events-none text-[24px] font-semibold tracking-tight text-ink">{t("Theme Library")}</h1>
             <p className="pointer-events-none text-[13px] text-ink-subtle">
-              {entries.length} themes. Click Apply on any card to use it.
+              {t("{count} themes. Click Apply on any card to use it.", { count: entries.length })}
             </p>
           </div>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("Close")}
           className="flex h-10 w-10 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
         >
           <X size={18} strokeWidth={2.2} />
@@ -90,7 +92,7 @@ export function LibraryBrowser({
 
       <div className="flex shrink-0 items-center gap-2 border-b border-edge-soft bg-surface/20 px-10 py-3">
         <TabBtn active={tab === "library"} onClick={() => setTab("library")}>
-          My library
+          {t("My library")}
           {unseen > 0 && (
             <span className="harbor-pop ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-canvas">
               {unseen}
@@ -98,7 +100,7 @@ export function LibraryBrowser({
           )}
         </TabBtn>
         <TabBtn active={tab === "community"} onClick={() => setTab("community")}>
-          Community
+          {t("Community")}
         </TabBtn>
       </div>
 
@@ -109,7 +111,7 @@ export function LibraryBrowser({
           ) : (
           <>
           {featured.length > 0 && (
-            <BrowserSection title="Featured" subtitle="Hand-picked reskins from the VAYRA crew.">
+            <BrowserSection title={t("Featured")} subtitle={t("Hand-picked reskins from the VAYRA crew.")}>
               <BrowserGrid
                 entries={featured}
                 activeId={activeId}
@@ -122,7 +124,7 @@ export function LibraryBrowser({
           )}
 
           {BETA_THEMES.length > 0 && (
-            <BrowserSection title="Beta" subtitle="Experimental 1:1 ports of other apps.">
+            <BrowserSection title={t("Beta")} subtitle={t("Experimental 1:1 ports of other apps.")}>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <BetaThemesCard count={BETA_THEMES.length} onClick={() => setBetaOpen(true)} />
               </div>
@@ -130,7 +132,7 @@ export function LibraryBrowser({
           )}
 
           {builtIn.length > 0 && (
-            <BrowserSection title="Built-in" subtitle="Ships with VAYRA. Always available.">
+            <BrowserSection title={t("Built-in")} subtitle={t("Ships with VAYRA. Always available.")}>
               <BrowserGrid
                 entries={builtIn}
                 activeId={activeId}
@@ -143,7 +145,7 @@ export function LibraryBrowser({
           )}
 
           {templates.length > 0 && (
-            <BrowserSection title="Templates" subtitle="Starting points to remix and save your own.">
+            <BrowserSection title={t("Templates")} subtitle={t("Starting points to remix and save your own.")}>
               <BrowserGrid
                 entries={templates}
                 activeId={activeId}
@@ -156,7 +158,7 @@ export function LibraryBrowser({
           )}
 
           {yours.length > 0 && (
-            <BrowserSection title="Your themes" subtitle="Themes you imported or built.">
+            <BrowserSection title={t("Your themes")} subtitle={t("Themes you imported or built.")}>
               <BrowserGrid
                 entries={yours}
                 activeId={activeId}
@@ -266,6 +268,7 @@ function BrowserCard({
   onDownload: () => void;
   onRemove: () => void;
 }) {
+  const t = useT();
   const hasImage = !!theme.previewImage;
   const bg = theme.background?.image ?? `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
   const [busy, setBusy] = useState(false);
@@ -307,7 +310,7 @@ function BrowserCard({
       >
         {active && (
           <span className="absolute end-3 top-3 flex h-7 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-canvas shadow-[0_4px_12px_-4px_rgba(0,0,0,0.4)]">
-            <Check size={11} strokeWidth={3} /> Active
+            <Check size={11} strokeWidth={3} /> {t("Active")}
           </span>
         )}
         <div className="absolute bottom-0 left-0 right-0 flex h-2">
@@ -323,7 +326,7 @@ function BrowserCard({
             className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-canvas/45 text-[12px] font-semibold text-ink-muted opacity-0 backdrop-blur-[1px] transition-opacity hover:text-ink group-hover:opacity-100"
           >
             {busy ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} strokeWidth={1.9} />}
-            {busy ? "Adding" : "Add image"}
+            {busy ? t("Adding") : t("Add image")}
           </button>
         )}
       </div>
@@ -345,16 +348,16 @@ function BrowserCard({
                 : "bg-ink text-canvas hover:opacity-90"
             }`}
           >
-            {active ? "Active" : "Apply"}
+            {active ? t("Active") : t("Apply")}
           </button>
-          <IconButton label="Copy theme" onClick={onExport}>
+          <IconButton label={t("Copy theme")} onClick={onExport}>
             <Copy size={14} strokeWidth={2.2} />
           </IconButton>
-          <IconButton label="Download" onClick={onDownload}>
+          <IconButton label={t("Download")} onClick={onDownload}>
             <Download size={14} strokeWidth={2.2} />
           </IconButton>
           {removable && (
-            <IconButton label="Remove" onClick={onRemove} danger>
+            <IconButton label={t("Remove")} onClick={onRemove} danger>
               <Trash2 size={14} strokeWidth={2.2} />
             </IconButton>
           )}

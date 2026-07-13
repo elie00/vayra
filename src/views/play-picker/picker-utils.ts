@@ -7,6 +7,7 @@ import {
   type BadgeKind,
 } from "@/components/format-badge";
 import type { Meta } from "@/lib/cinemeta";
+import { t } from "@/lib/i18n";
 import type { Rejection } from "@/lib/streams/trust";
 import type { Addon } from "@/lib/addons";
 import type { ScoredStream, Stream, Tier } from "@/lib/streams/types";
@@ -44,7 +45,7 @@ export function contributorLabel(s: ScoredStream): string {
   const contribs = s.contributors;
   if (!contribs || contribs.length <= 1) return s.addonName;
   if (contribs.length === 2) return `${contribs[0].name} + ${contribs[1].name}`;
-  return `${contribs[0].name} + ${contribs.length - 1} more`;
+  return t("{name} + {count} more", { name: contribs[0].name, count: contribs.length - 1 });
 }
 
 export function addonInstanceKey(s: { addonUrl?: string; addonId: string }): string {
@@ -174,33 +175,33 @@ export function parseRuntimeMinutes(runtime: string | number | undefined): numbe
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
-export function streamLeadLabel(stream: ScoredStream, t: Tier): string {
+export function streamLeadLabel(stream: ScoredStream, tier: Tier): string {
   if (isRoughSource(stream)) {
-    if (stream.source === "CAM") return "Cam Recording";
-    if (stream.source === "TS" || stream.source === "HDTS") return "Telesync";
-    if (stream.source === "TC") return "Telecine";
-    if (stream.source === "SCR") return "Screener";
+    if (stream.source === "CAM") return t("Cam Recording");
+    if (stream.source === "TS" || stream.source === "HDTS") return t("Telesync");
+    if (stream.source === "TC") return t("Telecine");
+    if (stream.source === "SCR") return t("Screener");
   }
   const confidence = qualityConfidence(stream);
-  if (confidence === "unlabeled") return "No Label";
-  if (confidence === "unverified") return "Unverified";
-  switch (t) {
+  if (confidence === "unlabeled") return t("No Label");
+  if (confidence === "unverified") return t("Unverified");
+  switch (tier) {
     case "4K_DV":
-      return "Ultra HD · Dolby Vision";
+      return t("Ultra HD · Dolby Vision");
     case "4K_HDR":
-      return "Ultra HD · HDR";
+      return t("Ultra HD · HDR");
     case "4K":
-      return "Ultra HD";
+      return t("Ultra HD");
     case "1080p_HDR":
-      return "Full HD · HDR";
+      return t("Full HD · HDR");
     case "1080p":
-      return "Full HD";
+      return t("Full HD");
     case "720p":
-      return "HD";
+      return t("HD");
     case "SD":
-      return "Standard Def";
+      return t("Standard Def");
     case "ROUGH":
-      return "Theater Capture";
+      return t("Theater Capture");
   }
 }
 
@@ -269,13 +270,13 @@ export function confirmationLabel(meta: Meta, stream: ScoredStream): string | nu
     (meta.releaseDate ? new Date(meta.releaseDate).getFullYear() : null);
   if (year && !Number.isNaN(year)) parts.push(String(year));
   if (isRoughSource(stream)) {
-    if (stream.source === "CAM") parts.push("In Theatres");
-    else if (stream.source === "TS" || stream.source === "HDTS") parts.push("Theatrical Capture");
-    else if (stream.source === "TC") parts.push("Telecine Print");
-    else if (stream.source === "SCR") parts.push("Screener Copy");
+    if (stream.source === "CAM") parts.push(t("In Theatres"));
+    else if (stream.source === "TS" || stream.source === "HDTS") parts.push(t("Theatrical Capture"));
+    else if (stream.source === "TC") parts.push(t("Telecine Print"));
+    else if (stream.source === "SCR") parts.push(t("Screener Copy"));
   } else if (meta.type === "movie") {
-    if (stream.source === "BDRip") parts.push("Disc Source");
-    else if (stream.source === "WEB-DL" || stream.source === "WEBRip") parts.push("Web Release");
+    if (stream.source === "BDRip") parts.push(t("Disc Source"));
+    else if (stream.source === "WEB-DL" || stream.source === "WEBRip") parts.push(t("Web Release"));
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }
@@ -335,7 +336,7 @@ export function streamSummaryParts(s: ScoredStream): string[] {
   }
   if (s.codec !== "Other") parts.push(s.codec);
   if (s.hdrFormat) parts.push(s.hdrFormat);
-  if (s.seeders != null) parts.push(`${s.seeders} seeds`);
+  if (s.seeders != null) parts.push(t("{count} seeds", { count: s.seeders }));
   return parts;
 }
 
@@ -421,53 +422,53 @@ export function isEngineWarmingError(msg: string | null): boolean {
 export function humanError(code: string): string {
   switch (code) {
     case "not-cached":
-      return "This stream isn't cached on your debrid yet. Try a different one from the list.";
+      return t("This stream isn't cached on your debrid yet. Try a different one from the list.");
     case "still-downloading":
-      return "Your debrid is still adding this torrent. Give it 30-60s and hit Play again, or pick a cached source from the list.";
+      return t("Your debrid is still adding this torrent. Give it 30-60s and hit Play again, or pick a cached source from the list.");
     case "timeout":
-      return "Your debrid took too long to respond. Hit Play again, or try another stream.";
+      return t("Your debrid took too long to respond. Hit Play again, or try another stream.");
     case "stalled":
-      return "Your debrid couldn't fetch this torrent (no seeders). Pick a different source.";
+      return t("Your debrid couldn't fetch this torrent (no seeders). Pick a different source.");
     case "error":
-      return "Your debrid hit an error on this torrent. Pick a different source.";
+      return t("Your debrid hit an error on this torrent. Pick a different source.");
     case "stub-or-error-video":
-      return "Your debrid served a placeholder/error video instead of the real file. Pick another stream.";
+      return t("Your debrid served a placeholder/error video instead of the real file. Pick another stream.");
     case "all-debrids-failed":
-      return "None of your debrid services could deliver a working file. Pick another stream.";
+      return t("None of your debrid services could deliver a working file. Pick another stream.");
     case "no-debrid-could-play":
-      return "None of your debrid services could resolve this stream. Try a different one.";
+      return t("None of your debrid services could resolve this stream. Try a different one.");
     case "no-debrid-configured":
-      return "Add a debrid provider in Settings first.";
+      return t("Add a debrid provider in Settings first.");
     case "remote-server-unreachable-strict":
-      return "Remote streaming server unreachable. Strict mode is on, so local fallback is disabled.";
+      return t("Remote streaming server unreachable. Strict mode is on, so local fallback is disabled.");
     case "remote-server-unreachable":
-      return "Remote streaming server unreachable. Check the address in Settings > P2P & servers and that the server machine is online.";
+      return t("Remote streaming server unreachable. Check the address in Settings > P2P & servers and that the server machine is online.");
     case "engine-no-peers":
-      return "Couldn't reach any peers for this torrent. If this keeps happening, your network or ISP is likely blocking torrents (the local port doesn't matter) - use a debrid service or a VPN.";
+      return t("Couldn't reach any peers for this torrent. If this keeps happening, your network or ISP is likely blocking torrents (the local port doesn't matter) - use a debrid service or a VPN.");
     case "engine-not-ready":
       return ENGINE_WARMING_MESSAGE;
     case "direct-torrent-disabled":
-      return "Direct torrent streaming is turned off. Turn it on in Settings > P2P & servers to stream torrents without a debrid.";
+      return t("Direct torrent streaming is turned off. Turn it on in Settings > P2P & servers to stream torrents without a debrid.");
     case "no-source":
-      return "This stream has no playable source.";
+      return t("This stream has no playable source.");
     case "addon-not-configured":
-      return "This addon isn't fully configured. Open its setup page and finish the wizard.";
+      return t("This addon isn't fully configured. Open its setup page and finish the wizard.");
     case "external-url-only":
-      return "This source only opens in an external browser, not in VAYRA's player.";
+      return t("This source only opens in an external browser, not in VAYRA's player.");
     case "youtube-only":
-      return "This is a YouTube link, not a video file. Open it in a browser instead.";
+      return t("This is a YouTube link, not a video file. Open it in a browser instead.");
     case "nzb-needs-external-player":
-      return "This is a raw NZB file. It needs SABnzbd or NZBGet to download first, then play.";
+      return t("This is a raw NZB file. It needs SABnzbd or NZBGet to download first, then play.");
     case "unauthorized":
-      return "Your debrid key was rejected. Check it in Settings.";
+      return t("Your debrid key was rejected. Check it in Settings.");
     case "not-premium":
-      return "Your debrid subscription has expired.";
+      return t("Your debrid subscription has expired.");
     case "rate-limited":
-      return "The debrid service is rate-limiting us. Try again in a moment.";
+      return t("The debrid service is rate-limiting us. Try again in a moment.");
     case "aborted":
-      return "Cancelled.";
+      return t("Cancelled.");
     default:
-      return `Couldn't play this stream (${code}).`;
+      return t("Couldn't play this stream ({code}).", { code });
   }
 }
 

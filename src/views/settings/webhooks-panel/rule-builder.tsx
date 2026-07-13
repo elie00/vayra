@@ -73,38 +73,42 @@ function defaultTrigger(event: WebhookTrigger["event"]): WebhookTrigger {
   }
 }
 
-function describeTrigger(t: WebhookTrigger, trackedPeople: TrackedPerson[]): string {
-  switch (t.event) {
-    case "newMovie": return "Any new movie";
-    case "newSeries": return "Any new series";
-    case "newAnime": return "Any new anime";
+function describeTrigger(
+  t: ReturnType<typeof useT>,
+  trig: WebhookTrigger,
+  trackedPeople: TrackedPerson[],
+): string {
+  switch (trig.event) {
+    case "newMovie": return t("Any new movie");
+    case "newSeries": return t("Any new series");
+    case "newAnime": return t("Any new anime");
     case "fromTrackedPerson": {
-      const ids = t.personIds ?? [];
-      if (ids.length === 0) return `Any of your ${trackedPeople.length} tracked people`;
+      const ids = trig.personIds ?? [];
+      if (ids.length === 0) return t("Any of your {n} tracked people", { n: trackedPeople.length });
       const names = ids
         .map((id) => trackedPeople.find((p) => p.id === id)?.name)
         .filter(Boolean) as string[];
-      return names.join(", ") || "Tracked people";
+      return names.join(", ") || t("Tracked people");
     }
     case "fromGenre":
-      return t.genreIds.length === 0
-        ? "Any genre"
-        : `${t.mediaType === "movie" ? "Movies" : "Series"}: ${t.genreIds
+      return trig.genreIds.length === 0
+        ? t("Any genre")
+        : `${trig.mediaType === "movie" ? t("Movies") : t("Series")}: ${trig.genreIds
             .map((id) => Object.entries(MOVIE_GENRES).find(([, gid]) => gid === id)?.[0])
             .filter(Boolean)
             .join(", ")}`;
     case "fromProvider":
-      return t.providerIds.length === 0
-        ? "Any streamer"
-        : t.providerIds.map((id) => PROVIDERS.find((p) => p.id === id)?.name).filter(Boolean).join(", ");
+      return trig.providerIds.length === 0
+        ? t("Any streamer")
+        : trig.providerIds.map((id) => PROVIDERS.find((p) => p.id === id)?.name).filter(Boolean).join(", ");
     case "fromCountry":
-      return t.countryCodes.length === 0
-        ? "Any country"
-        : t.countryCodes.map((c) => COUNTRIES.find((x) => x.code === c)?.name ?? c).join(", ");
-    case "fromTraktAnticipated": return "Trakt anticipated";
-    case "fromTraktWatchlist": return "Your Trakt watchlist";
+      return trig.countryCodes.length === 0
+        ? t("Any country")
+        : trig.countryCodes.map((c) => COUNTRIES.find((x) => x.code === c)?.name ?? c).join(", ");
+    case "fromTraktAnticipated": return t("Trakt anticipated");
+    case "fromTraktWatchlist": return t("Your Trakt watchlist");
     case "liveTvEvent":
-      return `Live TV · ${t.favoritesOnly ? "favorites" : "all channels"} · ${t.leadMinutes ?? 15} min lead`;
+      return `Live TV · ${trig.favoritesOnly ? t("favorites") : t("all channels")} · ${t("{n} min lead", { n: trig.leadMinutes ?? 15 })}`;
   }
 }
 
@@ -189,7 +193,7 @@ export function RuleBuilder({
               <button
                 type="button"
                 onClick={() => toggleEnabled(r.id)}
-                aria-label={r.enabled ? "Disable rule" : "Enable rule"}
+                aria-label={r.enabled ? t("Disable rule") : t("Enable rule")}
                 className="shrink-0"
               >
                 <span
@@ -206,13 +210,13 @@ export function RuleBuilder({
               </button>
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-[13px] font-semibold text-ink">
-                  {r.name || EVENT_LABELS[r.trigger.event]}
+                  {r.name || t(EVENT_LABELS[r.trigger.event])}
                 </span>
                 <span className="truncate text-[11.5px] text-ink-subtle">
-                  {describeTrigger(r.trigger, trackedPeople)} →{" "}
+                  {describeTrigger(t, r.trigger, trackedPeople)} →{" "}
                   {[r.channels.discord && "Discord", r.channels.telegram && "Telegram"]
                     .filter(Boolean)
-                    .join(" + ") || "no channel"}
+                    .join(" + ") || t("no channel")}
                 </span>
               </div>
               <button
@@ -220,12 +224,12 @@ export function RuleBuilder({
                 onClick={() => setEditing(r)}
                 className="rounded-full px-2.5 py-1 text-[11.5px] font-medium text-ink-muted hover:bg-canvas/60 hover:text-ink"
               >
-                Edit
+                {t("Edit")}
               </button>
               <button
                 type="button"
                 onClick={() => remove(r.id)}
-                aria-label="Delete rule"
+                aria-label={t("Delete rule")}
                 className="flex h-7 w-7 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-danger/15 hover:text-danger"
               >
                 <Trash2 size={12} strokeWidth={1.9} />
@@ -264,6 +268,7 @@ function RuleEditor({
   onSave: (rule: Rule) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState<Rule>(rule);
 
   const setEvent = (event: WebhookTrigger["event"]) => {
@@ -275,30 +280,30 @@ function RuleEditor({
       <div className="flex max-h-[88vh] w-full max-w-[560px] flex-col gap-5 overflow-y-auto rounded-2xl border border-edge-soft bg-elevated p-6 shadow-[0_28px_80px_-20px_rgba(0,0,0,0.7)]">
         <div className="flex items-start justify-between">
           <h2 className="text-[18px] font-semibold text-ink">
-            {rule.name ? "Edit rule" : "New rule"}
+            {rule.name ? t("Edit rule") : t("New rule")}
           </h2>
           <button
             type="button"
             onClick={onCancel}
-            aria-label="Close"
+            aria-label={t("Close")}
             className="flex h-8 w-8 items-center justify-center rounded-full text-ink-subtle hover:bg-canvas/70 hover:text-ink"
           >
             <X size={14} strokeWidth={2.2} />
           </button>
         </div>
 
-        <Field label="Name">
+        <Field label={t("Name")}>
           <input
             type="text"
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            placeholder={EVENT_LABELS[draft.trigger.event]}
+            placeholder={t(EVENT_LABELS[draft.trigger.event])}
             maxLength={80}
             className="h-11 w-full rounded-xl border border-edge bg-canvas px-3.5 text-[13px] text-ink placeholder:text-ink-subtle outline-none focus:border-ink"
           />
         </Field>
 
-        <Field label="WHEN">
+        <Field label={t("WHEN")}>
           <select
             value={draft.trigger.event}
             onChange={(e) => setEvent(e.target.value as WebhookTrigger["event"])}
@@ -306,7 +311,7 @@ function RuleEditor({
           >
             {EVENT_ORDER.map((ev) => (
               <option key={ev} value={ev}>
-                {EVENT_LABELS[ev]}
+                {t(EVENT_LABELS[ev])}
               </option>
             ))}
           </select>
@@ -315,18 +320,18 @@ function RuleEditor({
         {draft.trigger.event === "fromGenre" && (
           <TriggerSubFields>
             <SubSelect
-              label="Media type"
+              label={t("Media type")}
               value={draft.trigger.mediaType}
               options={[
-                { value: "movie", label: "Movies" },
-                { value: "tv", label: "Series" },
+                { value: "movie", label: t("Movies") },
+                { value: "tv", label: t("Series") },
               ]}
               onChange={(v) =>
                 setDraft({ ...draft, trigger: { ...(draft.trigger as Extract<WebhookTrigger, { event: "fromGenre" }>), mediaType: v as "movie" | "tv" } })
               }
             />
             <SubChips
-              label="Genres"
+              label={t("Genres")}
               items={Object.entries(MOVIE_GENRES).map(([name, id]) => ({
                 key: String(id),
                 label: name,
@@ -346,7 +351,7 @@ function RuleEditor({
         {draft.trigger.event === "fromProvider" && (
           <TriggerSubFields>
             <SubChips
-              label="Streamers"
+              label={t("Streamers")}
               items={PROVIDERS.map((p) => ({
                 key: String(p.id),
                 label: p.name,
@@ -366,7 +371,7 @@ function RuleEditor({
         {draft.trigger.event === "fromCountry" && (
           <TriggerSubFields>
             <SubChips
-              label="Countries"
+              label={t("Countries")}
               items={COUNTRIES.map((c) => ({
                 key: c.code,
                 label: c.name,
@@ -395,11 +400,11 @@ function RuleEditor({
                 }}
                 className="h-4 w-4 accent-ink"
               />
-              <span className="text-[12.5px] text-ink">Only my favorited channels</span>
+              <span className="text-[12.5px] text-ink">{t("Only my favorited channels")}</span>
             </label>
             <label className="flex items-center gap-3">
               <span className="w-[140px] shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-                Heads up
+                {t("Heads up")}
               </span>
               <select
                 value={String(
@@ -413,27 +418,31 @@ function RuleEditor({
               >
                 {[5, 10, 15, 30, 60, 120].map((m) => (
                   <option key={m} value={m}>
-                    {m < 60 ? `${m} minutes before` : `${m / 60} hour${m === 60 ? "" : "s"} before`}
+                    {m < 60
+                      ? t("{n} minutes before", { n: m })
+                      : m === 60
+                        ? t("1 hour before")
+                        : t("{n} hours before", { n: m / 60 })}
                   </option>
                 ))}
               </select>
             </label>
             <p className="text-[11.5px] text-ink-subtle">
-              VAYRA scans your IPTV playlists' EPG every 30 min for programs about to start.
+              {t("VAYRA scans your IPTV playlists' EPG every 30 min for programs about to start.")}
             </p>
           </TriggerSubFields>
         )}
 
         {draft.trigger.event === "fromTrackedPerson" && trackedPeople.length === 0 && (
           <div className="rounded-lg border border-info/30 bg-info/5 px-3 py-2 text-[12px] text-info/85">
-            Add people in the Custom calendar manager first, then come back here.
+            {t("Add people in the Custom calendar manager first, then come back here.")}
           </div>
         )}
 
         {draft.trigger.event === "fromTrackedPerson" && trackedPeople.length > 0 && (
           <TriggerSubFields>
             <SubChips
-              label="People (empty = all tracked)"
+              label={t("People (empty = all tracked)")}
               items={trackedPeople.map((p) => ({
                 key: String(p.id),
                 label: p.name,
@@ -451,7 +460,7 @@ function RuleEditor({
           </TriggerSubFields>
         )}
 
-        <Field label="THEN notify on">
+        <Field label={t("THEN notify on")}>
           <div className="flex gap-2">
             <ChannelToggle
               label="Discord"
@@ -474,7 +483,7 @@ function RuleEditor({
             onClick={onCancel}
             className="h-10 rounded-xl px-4 text-[13px] font-medium text-ink-muted hover:text-ink"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             type="button"
@@ -482,7 +491,7 @@ function RuleEditor({
             disabled={!draft.channels.discord && !draft.channels.telegram}
             className="h-10 rounded-xl bg-ink px-5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            Save rule
+            {t("Save rule")}
           </button>
         </div>
       </div>
@@ -579,6 +588,7 @@ function ChannelToggle({
   disabled?: boolean;
   onToggle: () => void;
 }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -591,7 +601,7 @@ function ChannelToggle({
             ? "border-ink bg-ink text-canvas"
             : "border-edge-soft bg-canvas/40 text-ink-muted hover:border-edge hover:text-ink"
       }`}
-      title={disabled ? "Configure URL above first" : undefined}
+      title={disabled ? t("Configure URL above first") : undefined}
     >
       {label}
     </button>

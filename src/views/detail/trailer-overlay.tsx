@@ -164,7 +164,7 @@ function YouTubeEmbed({ id, title }: { id: string; title: string }) {
     <>
       <iframe
         src={`https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`}
-        title={`${title} trailer`}
+        title={t("{title} trailer", { title })}
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin"

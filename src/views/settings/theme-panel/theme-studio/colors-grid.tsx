@@ -1,4 +1,5 @@
 import { ColorPopoverTrigger } from "../../color-picker";
+import { useT } from "@/lib/i18n";
 import type { CustomColors } from "@/lib/theme";
 
 const FIELDS: Array<{ key: keyof CustomColors; label: string; hint: string }> = [
@@ -21,6 +22,7 @@ export function ColorsGrid({
   colors: CustomColors;
   onChange: (next: CustomColors) => void;
 }) {
+  const t = useT();
   return (
     <div className="-mx-1 flex flex-col">
       {FIELDS.map((f) => (
@@ -29,8 +31,8 @@ export function ColorsGrid({
           className="flex items-center justify-between gap-3 rounded-lg px-1 py-2.5 transition-colors hover:bg-white/[0.03]"
         >
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[14px] font-medium text-ink">{f.label}</span>
-            <span className="text-[12px] text-ink-subtle">{f.hint}</span>
+            <span className="text-[14px] font-medium text-ink">{t(f.label)}</span>
+            <span className="text-[12px] text-ink-subtle">{t(f.hint)}</span>
           </div>
           <ColorPopoverTrigger
             value={colors[f.key]}

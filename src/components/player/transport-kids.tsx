@@ -213,6 +213,7 @@ function KidsVolume({
   onMute: () => void;
   onVolume: (v: number) => void;
 }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const v = muted ? 0 : clamp01(volume);
   const fromX = (clientX: number) => {
@@ -225,7 +226,7 @@ function KidsVolume({
     <div className="flex items-center gap-3">
       <button
         onClick={onMute}
-        aria-label={v === 0 ? "Unmute" : "Mute"}
+        aria-label={v === 0 ? t("Unmute") : t("Mute")}
         className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 active:scale-95"
       >
         {v === 0 ? <VolumeX size={28} strokeWidth={2.2} /> : <Volume2 size={28} strokeWidth={2.2} />}

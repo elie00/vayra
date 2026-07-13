@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetch as tauriFetchImpl } from "@tauri-apps/plugin-http";
 import { relayOutdated } from "@/lib/together/relay-version";
+import { t } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 const safeFetch: typeof fetch = (input, init) =>
@@ -29,7 +30,7 @@ async function fetchRelayVersion(url: string): Promise<{ healthMs: number; versi
   const t0 = performance.now();
   const r = await safeFetch(`${httpBaseOf(url)}/health`, { method: "GET" });
   const healthMs = Math.round(performance.now() - t0);
-  if (!r.ok) throw new Error(`Worker health check returned ${r.status}`);
+  if (!r.ok) throw new Error(t("Worker health check returned {status}", { status: r.status }));
   let version: number | null = null;
   try {
     const body = (await r.json()) as { version?: number };
@@ -79,14 +80,14 @@ export function useRelayHealth(relayUrl: string): {
       const { healthMs, version } = await fetchRelayVersion(relayUrl);
       const needsUpdate = relayOutdated(version);
       const updateNote = needsUpdate
-        ? ` Your relay is running an older version (v${version ?? "?"}). Redeploy to pick up the latest worker.`
+        ? " " + t("Your relay is running an older version (v{version}). Redeploy to pick up the latest worker.", { version: version ?? "?" })
         : "";
       setTestResult({
         ok: true,
         healthMs,
         workerVersion: version,
         needsUpdate,
-        message: `Worker reachable in ${healthMs}ms.${updateNote}`,
+        message: t("Worker reachable in {ms}ms.", { ms: healthMs }) + updateNote,
       });
       setPassive({ version, needsUpdate });
     } catch (e) {

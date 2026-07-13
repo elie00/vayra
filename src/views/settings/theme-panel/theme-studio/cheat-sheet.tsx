@@ -16,6 +16,7 @@ import {
 } from "./cheat-sheet-data";
 import { RECIPES } from "./cheat-sheet-recipes";
 import { SUITE_CHROME } from "./suite-theme";
+import { useT } from "@/lib/i18n";
 
 const RECIPE_EXT: Record<string, string> = { css: "css", js: "js", harborstyle: "harborstyle", html: "html" };
 
@@ -43,6 +44,7 @@ const SECTIONS = [
 ] as const;
 
 export function CheatSheet({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const [active, setActive] = useState<(typeof SECTIONS)[number]["id"]>("tokens-color");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +93,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-[240] flex flex-col bg-canvas animate-[editorIn_220ms_ease-out]"
       style={SUITE_CHROME}
       role="dialog"
-      aria-label="Theme cheat sheet"
+      aria-label={t("Theme cheat sheet")}
     >
       <header
         data-tauri-drag-region
@@ -99,10 +101,10 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center gap-2.5 text-ink">
           <BookOpen size={20} strokeWidth={2} />
-          <span className="text-[17px] font-semibold tracking-tight">Cheat sheet</span>
+          <span className="text-[17px] font-semibold tracking-tight">{t("Cheat sheet")}</span>
         </div>
         <span className="ms-2 hidden text-[13px] text-ink-muted md:inline">
-          Every variable, selector, hook, and recipe for building custom VAYRA themes.
+          {t("Every variable, selector, hook, and recipe for building custom VAYRA themes.")}
         </span>
         <button
           type="button"
@@ -110,14 +112,14 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
           className="ms-auto flex h-11 items-center rounded-lg px-5 text-[14.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
           style={{ background: "var(--color-accent)" }}
         >
-          Done
+          {t("Done")}
         </button>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="hidden w-60 shrink-0 border-e border-edge-soft bg-surface px-2.5 py-4 lg:block">
           <span className="block px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-ink-subtle">
-            Contents
+            {t("Contents")}
           </span>
           <nav className="flex flex-col gap-0.5">
             {SECTIONS.map((s) => (
@@ -131,7 +133,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
                     : "text-ink-muted hover:bg-white/[0.03] hover:text-ink"
                 }`}
               >
-                {s.label}
+                {t(s.label)}
               </button>
             ))}
           </nav>
@@ -139,19 +141,19 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-[960px] flex-col gap-12 px-6 py-9 lg:px-10">
-            <Section id="tokens-color" title="Color tokens" sub="Every surface in VAYRA maps to one of these 12 variables.">
+            <Section id="tokens-color" title={t("Color tokens")} sub={t("Every surface in VAYRA maps to one of these 12 variables.")}>
               <TokenTable rows={COLOR_TOKENS} swatch />
             </Section>
 
-            <Section id="tokens-font" title="Font tokens" sub="Set on the root. Override any to swap typography.">
+            <Section id="tokens-font" title={t("Font tokens")} sub={t("Set on the root. Override any to swap typography.")}>
               <TokenTable rows={FONT_TOKENS} />
             </Section>
 
-            <Section id="tokens-easing" title="Easing tokens" sub="Shared transition curves. Use anywhere you transition.">
+            <Section id="tokens-easing" title={t("Easing tokens")} sub={t("Shared transition curves. Use anywhere you transition.")}>
               <TokenTable rows={EASING_TOKENS} />
             </Section>
 
-            <Section id="data-attrs" title="Root data attributes" sub="Set on <html>. Use them to scope styles to a specific layout/card/button choice.">
+            <Section id="data-attrs" title={t("Root data attributes")} sub={t("Set on <html>. Use them to scope styles to a specific layout/card/button choice.")}>
               <div className="flex flex-col gap-2.5">
                 {ROOT_DATA_ATTRS.map((d) => (
                   <div key={d.attr} className="rounded-lg border border-edge-soft bg-elevated/15 p-4">
@@ -176,7 +178,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
               </div>
             </Section>
 
-            <Section id="utilities" title="Tailwind utility shortcuts" sub="The Tailwind classes that already exist on every component. Override one of these in CSS and you change everywhere it's used.">
+            <Section id="utilities" title={t("Tailwind utility shortcuts")} sub={t("The Tailwind classes that already exist on every component. Override one of these in CSS and you change everywhere it's used.")}>
               <div className="grid gap-1.5 sm:grid-cols-2">
                 {TAILWIND_UTILITIES.map((u) => (
                   <div
@@ -190,7 +192,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
               </div>
             </Section>
 
-            <Section id="selectors" title="Stable selectors" sub="Class names and data attributes that won't change between releases. Safe to target from your CSS.">
+            <Section id="selectors" title={t("Stable selectors")} sub={t("Class names and data attributes that won't change between releases. Safe to target from your CSS.")}>
               <div className="flex flex-col gap-1.5">
                 {STABLE_SELECTORS.map((s) => (
                   <div
@@ -209,7 +211,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
               </div>
             </Section>
 
-            <Section id="z-index" title="Z-index map" sub="Pick a z-index for your overlays that sits where you want it.">
+            <Section id="z-index" title={t("Z-index map")} sub={t("Pick a z-index for your overlays that sits where you want it.")}>
               <div className="flex flex-col gap-1">
                 {Z_INDEX_MAP.map((l) => (
                   <div
@@ -228,7 +230,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
               </div>
             </Section>
 
-            <Section id="events" title="Window events" sub="Dispatched on window. Listen from your theme JS to react to VAYRA's lifecycle.">
+            <Section id="events" title={t("Window events")} sub={t("Dispatched on window. Listen from your theme JS to react to VAYRA's lifecycle.")}>
               <div className="flex flex-col gap-1.5">
                 {WINDOW_EVENTS.map((e) => (
                   <div
@@ -249,7 +251,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
               </div>
             </Section>
 
-            <Section id="views" title="View identifiers" sub="Use these strings if you wire a custom navbar that needs to navigate.">
+            <Section id="views" title={t("View identifiers")} sub={t("Use these strings if you wire a custom navbar that needs to navigate.")}>
               <div className="flex flex-wrap gap-1.5">
                 {VIEW_NAMES.map((v) => (
                   <span
@@ -265,7 +267,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
               </div>
             </Section>
 
-            <Section id="recipes" title="Recipes" sub="Copy-paste starters for common customizations.">
+            <Section id="recipes" title={t("Recipes")} sub={t("Copy-paste starters for common customizations.")}>
               <div className="flex flex-col gap-3">
                 {RECIPES.map((r) => (
                   <div key={r.title} className="rounded-lg border border-edge-soft bg-elevated/15 p-4">
@@ -290,11 +292,11 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
 
       <div className="pointer-events-auto fixed bottom-6 end-6 z-[50] flex flex-col items-center gap-1 rounded-xl border border-edge-soft bg-surface/90 p-1.5 backdrop-blur-md">
         {SECTIONS.map((s) => (
-          <HoverTip key={s.id} label={s.label} side="left">
+          <HoverTip key={s.id} label={t(s.label)} side="left">
             <button
               type="button"
               onClick={() => jump(s.id)}
-              aria-label={s.label}
+              aria-label={t(s.label)}
               className="flex h-5 w-5 items-center justify-center"
             >
               <span

@@ -322,7 +322,7 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
                         setPendingRating((prev) => (prev === next ? prev : next));
                       }}
                       className="group/star relative flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-150 hover:scale-110 hover:bg-info/10 active:scale-95"
-                      aria-label={`${(starIndex - 0.5).toFixed(1)} to ${starIndex}.0 stars`}
+                      aria-label={t("{from} to {to}.0 stars", { from: (starIndex - 0.5).toFixed(1), to: starIndex })}
                     >
                       {isFull ? (
                         <Star

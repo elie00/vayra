@@ -1,5 +1,6 @@
 import { ChevronDown, Download, Folder } from "lucide-react";
 import type { CodeLang } from "@/components/code-editor";
+import { useT } from "@/lib/i18n";
 import { IDE, type ThemeFile } from "./files";
 
 export function FileTree({
@@ -17,6 +18,7 @@ export function FileTree({
   onSelect: (id: CodeLang) => void;
   onDownload: (id: CodeLang) => void;
 }) {
+  const t = useT();
   return (
     <aside
       className="flex w-[264px] shrink-0 flex-col"
@@ -27,7 +29,7 @@ export function FileTree({
           className="text-[11px] font-bold uppercase tracking-[0.24em]"
           style={{ color: IDE.textFaint }}
         >
-          Project
+          {t("Project")}
         </span>
       </div>
 
@@ -77,7 +79,7 @@ export function FileTree({
               <button
                 type="button"
                 onClick={() => onDownload(f.id)}
-                aria-label={`Download ${f.name}`}
+                aria-label={t("Download {file}", { file: f.name })}
                 className="absolute end-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md opacity-0 transition-opacity hover:bg-white/10 group-hover/row:opacity-100"
                 style={{ color: IDE.textDim }}
               >

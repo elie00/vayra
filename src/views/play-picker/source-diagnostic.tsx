@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDebridClients } from "@/lib/debrid/registry";
+import { useT } from "@/lib/i18n";
 import type { PipelineResult } from "@/lib/streams/pipeline";
 import type { Stream } from "@/lib/streams/types";
 import { hasCachedMarker } from "@/lib/streams/cached";
@@ -12,6 +13,7 @@ export function SourceDiagnostic({
   result: PipelineResult;
   debrids: ReturnType<typeof useDebridClients>;
 }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const counts = useMemo(() => {
     const fromRaw: Stream[] = [...result.raw.library, ...result.raw.addon];
@@ -30,7 +32,6 @@ export function SourceDiagnostic({
       debrids.some((d) => s.cached[d.slug] || s.inLibrary[d.slug]) ||
       hasCachedMarker(s),
   ).length;
-  const sourceWord = counts.length === 1 ? "source" : "sources";
   return (
     <div className="flex flex-col gap-2">
       <button
@@ -38,9 +39,13 @@ export function SourceDiagnostic({
         onClick={() => setExpanded((v) => !v)}
         className="flex items-center gap-2 self-start text-[12px] text-ink-subtle/80 transition-colors hover:text-ink-muted"
       >
-        <span className="font-semibold text-ink-muted">{cachedTotal} cached</span>
+        <span className="font-semibold text-ink-muted">{t("{count} cached", { count: cachedTotal })}</span>
         <span className="text-ink-subtle/40">·</span>
-        <span>{totalRaw} found across {counts.length} {sourceWord}</span>
+        <span>
+          {counts.length === 1
+            ? t("{count} found across {sources} source", { count: totalRaw, sources: counts.length })
+            : t("{count} found across {sources} sources", { count: totalRaw, sources: counts.length })}
+        </span>
         <ChevronDown
           size={13}
           strokeWidth={2}
@@ -49,10 +54,10 @@ export function SourceDiagnostic({
       </button>
       {expanded && (
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 ps-1 text-[11px] text-ink-subtle/70">
-          <span>{result.picker.all.length} kept after dedupe</span>
+          <span>{t("{count} kept after dedupe", { count: result.picker.all.length })}</span>
           <span className="text-ink-subtle/40">·</span>
           {counts.length === 0 ? (
-            <span className="text-ink-subtle/60">no sources returned anything</span>
+            <span className="text-ink-subtle/60">{t("no sources returned anything")}</span>
           ) : (
             counts.map(([name, n], i) => (
               <span key={name} className="flex items-center gap-1.5">

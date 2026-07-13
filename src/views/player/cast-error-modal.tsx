@@ -54,7 +54,7 @@ export function CastErrorModal({
               className="text-[20px] font-semibold leading-tight text-ink"
               style={{ fontFamily: "Fraunces, serif" }}
             >
-              {error.title}
+              {t(error.title)}
             </h2>
             {error.deviceName && (
               <p className="mt-1 text-[12px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
@@ -63,7 +63,7 @@ export function CastErrorModal({
             )}
           </div>
         </div>
-        <p className="text-[14px] leading-relaxed text-ink-muted">{error.message}</p>
+        <p className="text-[14px] leading-relaxed text-ink-muted">{t(error.message)}</p>
         {error.steps && error.steps.length > 0 && (
           <ol className="mt-5 space-y-2.5">
             {error.steps.map((step, i) => (
@@ -71,7 +71,7 @@ export function CastErrorModal({
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 text-[11.5px] font-semibold text-accent">
                   {i + 1}
                 </span>
-                <span className="flex-1 pt-0.5">{step}</span>
+                <span className="flex-1 pt-0.5">{t(step)}</span>
               </li>
             ))}
           </ol>

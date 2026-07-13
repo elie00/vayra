@@ -73,7 +73,7 @@ export function SourceErrorCard({
             </span>
             <span className="font-mono text-[13px] font-semibold text-rose-300">
               {codeLabel}
-              {statusName ? ` ${statusName}` : ""}
+              {statusName ? ` ${t(statusName)}` : ""}
             </span>
           </div>
           {error.host && (

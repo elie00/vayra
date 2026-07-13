@@ -1,6 +1,7 @@
 import { BookOpen, Check, Copy, Download, Play, Redo2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { CodeEditor, type CodeLang } from "@/components/code-editor";
+import { useT } from "@/lib/i18n";
 import { downloadText } from "@/lib/download-text";
 import { CheatSheet } from "./cheat-sheet";
 import { FileTree } from "./code-popout/file-tree";
@@ -34,6 +35,7 @@ export function CodePopout({
   canUndo: boolean;
   canRedo: boolean;
 }) {
+  const t = useT();
   const [tab, setTab] = useState<CodeLang>(initialTab);
   const [caret, setCaret] = useState({ line: 1, col: 1 });
   const [copied, setCopied] = useState(false);
@@ -74,7 +76,7 @@ export function CodePopout({
           <span style={{ color: IDE.textDim }}>{themeName}</span>
           <span style={{ color: IDE.textFaint }}>/</span>
           <span className="font-semibold" style={{ color: IDE.text }}>
-            Code
+            {t("Code")}
           </span>
         </span>
         <button
@@ -83,7 +85,7 @@ export function CodePopout({
           className="ms-auto flex h-10 items-center rounded-lg px-5 text-[14.5px] font-semibold transition-opacity hover:opacity-90"
           style={{ background: IDE.accent, color: IDE.overlay }}
         >
-          Done
+          {t("Done")}
         </button>
       </header>
 
@@ -132,7 +134,7 @@ export function CodePopout({
                 type="button"
                 onClick={onUndo}
                 disabled={!canUndo}
-                title="Undo (Ctrl/Cmd + Z)"
+                title={t("Undo (Ctrl/Cmd + Z)")}
                 className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/10 disabled:pointer-events-none disabled:opacity-30"
                 style={{ color: IDE.textDim }}
               >
@@ -142,7 +144,7 @@ export function CodePopout({
                 type="button"
                 onClick={onRedo}
                 disabled={!canRedo}
-                title="Redo (Ctrl/Cmd + Shift + Z)"
+                title={t("Redo (Ctrl/Cmd + Shift + Z)")}
                 className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-white/10 disabled:pointer-events-none disabled:opacity-30"
                 style={{ color: IDE.textDim }}
               >
@@ -156,7 +158,7 @@ export function CodePopout({
                 style={{ color: IDE.textDim }}
               >
                 <BookOpen size={15} strokeWidth={2.2} />
-                Cheat sheet
+                {t("Cheat sheet")}
               </button>
               {tab === "js" && (
                 <button
@@ -167,7 +169,7 @@ export function CodePopout({
                   style={{ background: "#98c379", color: IDE.overlay }}
                 >
                   <Play size={14} strokeWidth={2.6} fill="currentColor" />
-                  Run
+                  {t("Run")}
                 </button>
               )}
               <button
@@ -177,7 +179,7 @@ export function CodePopout({
                 style={{ color: copied ? "#98c379" : IDE.textDim }}
               >
                 {copied ? <Check size={15} strokeWidth={2.6} /> : <Copy size={15} strokeWidth={2.2} />}
-                {copied ? "Copied" : "Copy"}
+                {copied ? t("Copied") : t("Copy")}
               </button>
               <button
                 type="button"
@@ -186,7 +188,7 @@ export function CodePopout({
                 style={{ color: IDE.textDim }}
               >
                 <Download size={15} strokeWidth={2.2} />
-                Download
+                {t("Download")}
               </button>
             </div>
           </div>
@@ -204,7 +206,7 @@ export function CodePopout({
             {!value && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <span className="text-[14px]" style={{ color: IDE.textFaint }}>
-                  {meta.name} is empty. Start typing to restyle VAYRA.
+                  {t("{file} is empty. Start typing to restyle VAYRA.", { file: meta.name })}
                 </span>
               </div>
             )}

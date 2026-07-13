@@ -5,7 +5,7 @@ import { getPlayerShell, type PlayerShellProps } from "@/lib/player-shells/regis
 import { writePlayerPrefs } from "@/lib/player-prefs";
 import { writePlayerVolume } from "@/lib/player-volume";
 import { useSettings } from "@/lib/settings";
-import { LANGUAGES } from "@/lib/i18n";
+import { LANGUAGES, useT } from "@/lib/i18n";
 import { translateCues, type TranslateProvider } from "@/lib/subtitles/translate";
 import type { SubCue } from "@/lib/subtitles/parser";
 import type { useVideoDownload } from "./hooks/use-video-download";
@@ -123,6 +123,7 @@ export function ShellLayer({
 }) {
   const ActiveShell = getPlayerShell(shellId).Component;
   const { settings } = useSettings();
+  const tt = useT();
   return (
     <ActiveShell
       snap={shellSnap}
@@ -190,7 +191,7 @@ export function ShellLayer({
           }
         }
         if (!cues || cues.length === 0) {
-          return { ok: false, error: "No subtitle cues to translate" };
+          return { ok: false, error: tt("No subtitle cues to translate") };
         }
 
         // 2. Provider from settings.
@@ -199,7 +200,7 @@ export function ShellLayer({
             ? { kind: "ollama", baseUrl: settings.ollamaUrl, model: settings.ollamaModel }
             : { kind: "openrouter", apiKey: settings.aiSearchKey, model: settings.aiSearchModel };
         if (provider.kind === "openrouter" && !provider.apiKey.trim()) {
-          return { ok: false, error: "Add an OpenRouter API key in Settings" };
+          return { ok: false, error: tt("Add an OpenRouter API key in Settings") };
         }
         const targetName = LANGUAGES.find((l) => l.code === code)?.label ?? "English";
 
@@ -236,7 +237,7 @@ export function ShellLayer({
         const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
         const ok = await b.addSubtitle(dataUrl, code, label, true);
         if (ok) rememberSubChoice({ lang: code });
-        return ok ? { ok: true } : { ok: false, error: "Could not apply translated track" };
+        return ok ? { ok: true } : { ok: false, error: tt("Could not apply translated track") };
       }}
       onAudioDelay={(s) => bridgeRef.current?.setAudioDelay(s)}
       onAddSubtitle={(url, lang, title2) => {
