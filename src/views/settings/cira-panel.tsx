@@ -11,6 +11,7 @@ import {
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow, useSettingsActiveContext } from "./shared";
+import { CiraGroupsCard } from "./cira-groups-card";
 
 function errorText(t: ReturnType<typeof useT>, err: unknown): string {
   const code = err instanceof CiraError ? err.code : "UNKNOWN";
@@ -772,6 +773,7 @@ export function CiraPanel() {
         <>
           <RequestsCard />
           <FriendsCard />
+          <CiraGroupsCard />
           <InviteCard />
           <PresenceCard />
           <BlocksCard />
