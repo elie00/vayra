@@ -1,0 +1,43 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/themes/api/themes",
+      "destination": "/themes/api/themes/index.json"
+    },
+    {
+      "source": "/api/imdb/(.*)",
+      "destination": "/api/imdb/[...path]"
+    },
+    {
+      "source": "/api/tvdb/v4/(.*)",
+      "destination": "/api/tvdb/v4/[...path]"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/themes/api/themes",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        }
+      ]
+    }
+  ]
+}
