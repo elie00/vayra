@@ -5,7 +5,7 @@
 -- leaks / decliner tracking structurally impossible.
 \echo '=== 00_audit ==='
 
--- RLS enabled on the 6 cira_ tables (5 public + private.cira_rate_limits).
+-- RLS enabled on all CIRA tables (7 public + private.cira_rate_limits).
 do $do$
 declare
   n integer;
@@ -15,8 +15,8 @@ begin
   join pg_namespace ns on ns.oid = c.relnamespace
   where c.relname like 'cira\_%' and c.relkind = 'r'
     and ns.nspname in ('public', 'private');
-  if n <> 6 then
-    raise exception 'TEST_FAILED: expected 6 cira_ tables, found %', n;
+  if n <> 8 then
+    raise exception 'TEST_FAILED: expected 8 cira_ tables, found %', n;
   end if;
 
   select count(*) into n
@@ -25,8 +25,8 @@ begin
   where c.relname like 'cira\_%' and c.relkind = 'r'
     and ns.nspname in ('public', 'private')
     and c.relrowsecurity;
-  if n <> 6 then
-    raise exception 'TEST_FAILED: RLS is not enabled on all 6 cira_ tables (only %)', n;
+  if n <> 8 then
+    raise exception 'TEST_FAILED: RLS is not enabled on all 8 cira_ tables (only %)', n;
   end if;
 end;
 $do$;
@@ -134,7 +134,7 @@ begin
 end;
 $do$;
 
--- The 9 required indexes, with the right 3 unique.
+-- Required privacy, lookup and uniqueness indexes.
 do $do$
 declare
   idx text;
@@ -148,7 +148,10 @@ begin
     'cira_presence_expires_idx',
     'cira_presence_user_expires_idx',
     'cira_invitations_token_hash_key',
-    'cira_invitations_creator_expires_idx'
+    'cira_invitations_creator_expires_idx',
+    'cira_groups_owner_idx',
+    'cira_group_members_user_idx',
+    'cira_group_members_one_owner'
   ] loop
     if not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = idx) then
       raise exception 'TEST_FAILED: missing index %', idx;
@@ -162,6 +165,16 @@ begin
                           'cira_invitations_token_hash_key')
         and indexdef like 'CREATE UNIQUE INDEX%') <> 3 then
     raise exception 'TEST_FAILED: handle / pair / token_hash indexes must be UNIQUE';
+  end if;
+
+  if not exists (
+    select 1 from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'cira_group_members_one_owner'
+      and indexdef like 'CREATE UNIQUE INDEX%'
+      and indexdef like '%WHERE (role = ''owner''::text)%'
+  ) then
+    raise exception 'TEST_FAILED: group membership must enforce one owner at most';
   end if;
 end;
 $do$;
@@ -187,6 +200,15 @@ begin
   if cols <> array['id', 'creator_id', 'token_hash', 'created_at', 'expires_at',
                    'consumed_at', 'outcome', 'revoked_at'] then
     raise exception 'TEST_FAILED: unexpected cira_invitations columns: %', cols;
+  end if;
+
+  select array_agg(attname order by attnum) into cols
+  from pg_attribute
+  where attrelid = 'public.cira_groups'::regclass
+    and attnum > 0 and not attisdropped;
+  if cols <> array['id', 'owner_id', 'name', 'description', 'avatar_key',
+                   'max_members', 'created_at', 'updated_at'] then
+    raise exception 'TEST_FAILED: unexpected cira_groups columns: %', cols;
   end if;
 end;
 $do$;
