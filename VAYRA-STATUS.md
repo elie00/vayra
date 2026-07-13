@@ -1,0 +1,66 @@
+# VAYRA — État global & feuille de route
+
+*Recap transversal : app + site/backend + domaine + prochaines actions.*
+*Produit : VAYRA · A product by EYBO.*
+
+---
+
+## 1. Application (dépôt `harbor`, branche `main` — CI verte)
+
+| Chantier | État |
+|---|---|
+| **Identité Harbor → VAYRA** | ✅ Reconstruction complète : bundle `app.vayra`, package Android, keyring migré (dual-read), crate `vayra-core`, commandes IPC `vayra_*`, events `vayra://*`, formats `.vayra*`. Compat Harbor conservée là où nécessaire. |
+| **VARA + VEYA** (prototype) | ✅ Room privée + synchro de lecture : broker autonome `vayra-vara-broker` (socket), client Rust, réconciliateur `inRoom`. Validé E2E (probe socket 8/8), 2-process réel, ~150 tests + observation GUI. |
+| **i18n** | ✅ **Français par défaut** + couverture complète (1738 traductions, 0 zone anglaise). Switcher dans les paramètres. |
+| **Perf chargement** | ✅ 8 correctifs B1→B8 : résolution debrid parallèle (~90s→~15s), singleton WASM, cache `cacheCheck`, rendu progressif, coupure 30s non-destructive, first-frame, P2P. |
+| **Palette** | ✅ Violet VAYRA (travail Codex, mergé). |
+
+## 2. Site & backend (dépôt `vayra-site` → Vercel)
+
+**Déployé : https://vayra-site.vercel.app**
+
+### ✅ LIVE (aucun secret)
+- Landing VAYRA (hero, VARA/VEYA, téléchargements)
+- `/updates/ad-segments.json`, `/api/hero/anime.json`, `/themes/api/themes`, `/discord/*`
+- `/api/imdb/*` (GraphQL keyless) — *reste : peaufiner le parsing d'id*
+
+### 🔒 Déployés mais INERTES (renvoient `501` jusqu'aux secrets)
+| Service | Env Vercel requis | Portail |
+|---|---|---|
+| Trakt | `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET` | trakt.tv/oauth/applications |
+| MAL | `MAL_CLIENT_ID` / `MAL_CLIENT_SECRET` (+ `MAL_REDIRECT_URI`) | myanimelist.net/apiconfig |
+| AniList | `ANILIST_CLIENT_ID` / `ANILIST_CLIENT_SECRET` | anilist.co/settings/developer |
+| TVDB | `TVDB_API_KEY` | thetvdb.com/dashboard/account/apikey |
+| Feedback | `FEEDBACK_WEBHOOK_URL` (Discord/Slack) | — |
+
+Détails : `VAYRA-INFRA-SETUP.md` + `docs/setup-*.md`.
+
+## 3. Domaine — `eybo.tech` (trouvé dans le travail de Codex)
+
+- Domaine réel : **`eybo.tech`** (EYBO).
+- Email auth déjà en place : `mail.eybo.tech` (Resend) + **Supabase** — branche `feat/vayra-email-auth` (Codex, **pas encore mergée**). Callback `vayra://auth/callback`.
+- ⚠️ Le placeholder **`app.vayra.site`** (liens d'invitation, commit `66a74e3`) devra être réconcilié vers un sous-domaine `eybo.tech`.
+
+## 4. Cas particuliers
+- **Relay watch-party** : aucun backend à monter — l'app déploie déjà **ton** relay sur **ton** Cloudflare (token dans les réglages). `pub.harbor.site` = simple défaut.
+- **Updater** : manifeste `/updates/latest.json` (template) + script prêts, **mais** signer exige la clé privée minisign → décision : clé existante ou **nouvelle paire VAYRA**.
+- **Endpoints app** : toujours pointés sur `harbor.site` — **ne pas repointer** avant que chaque service soit configuré + le domaine `eybo.tech` mappé sur Vercel.
+
+---
+
+## 5. Prochaines actions — qui fait quoi
+
+### Toi (Elie) — plus tard
+1. Créer les **4 apps dev** (Trakt, MAL, AniList) + **clé TVDB** → secrets.
+2. Choisir le **sous-domaine `eybo.tech`** à brancher sur le projet Vercel (ex. `vayra.eybo.tech`).
+3. Trancher pour l'**updater** (clé existante vs nouvelle paire).
+
+### Moi — sur ton go
+- Réconcilier `app.vayra.site` → sous-domaine `eybo.tech` (liens d'invitation).
+- Corriger le parsing IMDb.
+- Brancher les env Vercel + repointer les endpoints app une fois les services servis.
+- Merger la branche **email-auth** de Codex quand prête.
+
+---
+
+*Mémoire projet à jour : `vayra-infra-backend.md`, `vayra-identity-reconstruction.md`.*
