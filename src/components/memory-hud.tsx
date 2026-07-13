@@ -63,7 +63,7 @@ export function MemoryHud() {
   const caches = getCacheReports().slice(0, 12);
   const samples = getSamples();
   const recent = samples.slice(-8).reverse();
-  const heapColor = delta > 200 ? "#ff7676" : delta > 100 ? "#ffb866" : "#7eb6ff";
+  const heapColor = delta > 200 ? "#ff7676" : delta > 100 ? "#4b9dff" : "#7eb6ff";
 
   return (
     <div
@@ -149,7 +149,7 @@ function NativeLine() {
   const m = getNativeMem();
   const tier = getRamTier();
   if (m.total <= 0) return null;
-  const color = m.total > 1800 ? "#ff7676" : m.total > 1200 ? "#ffb866" : "#7eea9f";
+  const color = m.total > 1800 ? "#ff7676" : m.total > 1200 ? "#4b9dff" : "#7eea9f";
   return (
     <div className="flex items-center justify-between gap-2 border-t border-edge-soft pt-1.5">
       <span className="font-bold text-ink">RSS</span>

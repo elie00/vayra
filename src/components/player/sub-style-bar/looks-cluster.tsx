@@ -118,7 +118,7 @@ export function LooksCluster({ settings, update }: { settings: Settings; update:
               }`}
             >
               {p.name}
-              {isSel && dirty && <span aria-label={t("unsaved changes")} className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
+              {isSel && dirty && <span aria-label={t("unsaved changes")} className="h-1.5 w-1.5 rounded-full bg-info" />}
             </button>
           </PresetTip>
         );

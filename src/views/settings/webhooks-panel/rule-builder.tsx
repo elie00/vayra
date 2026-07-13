@@ -169,7 +169,7 @@ export function RuleBuilder({
         </button>
       </div>
       {!canDiscord && !canTelegram && (
-        <div className="rounded-lg border border-amber-200/30 bg-amber-200/5 px-3 py-2 text-[11.5px] text-amber-200/85">
+        <div className="rounded-lg border border-info/30 bg-info/5 px-3 py-2 text-[11.5px] text-info/85">
           {t("Add a Discord or Telegram URL above before creating rules.")}
         </div>
       )}
@@ -425,7 +425,7 @@ function RuleEditor({
         )}
 
         {draft.trigger.event === "fromTrackedPerson" && trackedPeople.length === 0 && (
-          <div className="rounded-lg border border-amber-200/30 bg-amber-200/5 px-3 py-2 text-[12px] text-amber-200/85">
+          <div className="rounded-lg border border-info/30 bg-info/5 px-3 py-2 text-[12px] text-info/85">
             Add people in the Custom calendar manager first, then come back here.
           </div>
         )}

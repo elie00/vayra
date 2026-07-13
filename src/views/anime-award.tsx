@@ -14,7 +14,7 @@ const SOURCE_TINTS: Record<AwardSourceId, string> = {
   crunchyroll: "#f47521",
   taaf: "#e91e63",
   jmaf: "#c41e3a",
-  r_anime: "#ff4500",
+  r_anime: "#8267ff",
   animation_kobe: "#8a6a3b",
 };
 
@@ -31,7 +31,7 @@ export function AnimeAwardView({ sourceId }: { sourceId: AwardSourceId }) {
     setQuery("");
   }, [sourceId]);
 
-  const tint = SOURCE_TINTS[sourceId] ?? "#E8AA6C";
+  const tint = SOURCE_TINTS[sourceId] ?? "#8267FF";
   const totalWins = data.categories.reduce((n, c) => n + c.winners.length, 0);
 
   const filteredCategories = useMemo(() => {

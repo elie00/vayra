@@ -35,7 +35,7 @@ export function TogetherRelayBanner() {
 
   return (
     <div className="flex items-start gap-2.5 rounded-[14px] border border-edge-soft bg-elevated px-3.5 py-3">
-      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-amber-300">
+      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-info/15 text-info">
         <TriangleAlert size={12} strokeWidth={2.2} />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">

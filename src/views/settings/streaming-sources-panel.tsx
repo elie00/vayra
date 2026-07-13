@@ -511,7 +511,7 @@ function AioStatusBanner({ snapshot }: { snapshot: AioStatusSnapshot }) {
         onClick={() => setOpen(true)}
         className={`mb-2 flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2 text-start text-[12px] transition-colors ${
           hasWarning
-            ? "border-amber-300/40 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
+            ? "border-info/40 bg-info/10 text-info hover:bg-info/15"
             : "border-edge-soft bg-canvas/40 text-ink-muted hover:bg-canvas/60"
         }`}
       >
@@ -549,7 +549,7 @@ function HealthBadge({
     health.status === "expired"
       ? "text-rose-200"
       : health.status === "expiring"
-        ? "text-amber-200"
+        ? "text-info"
         : health.status === "active"
           ? "text-emerald-200"
           : "text-ink-subtle";
@@ -557,7 +557,7 @@ function HealthBadge({
     health.status === "expired"
       ? "bg-rose-300"
       : health.status === "expiring"
-        ? "bg-amber-300"
+        ? "bg-info"
         : health.status === "active"
           ? "bg-emerald-300"
           : "bg-ink-subtle";

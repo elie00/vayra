@@ -74,7 +74,7 @@ export function VolumeControl({
       ? "rgba(255,255,255,0.92)"
       : `linear-gradient(to right, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.92) ${
           (breakPct / filledPct) * 100
-        }%, #f97316 ${(breakPct / filledPct) * 100}%, ${color} 100%)`;
+        }%, #4b9dff ${(breakPct / filledPct) * 100}%, ${color} 100%)`;
 
   const muteBtn = (
     <Tooltip label={label}>

@@ -5,8 +5,8 @@ export const RECIPES: Recipe[] = [
     title: "Tint the cinema badge",
     lang: "css",
     code: `.harbor-cinema-badge {
-  color: #ff6b35;
-  border-color: rgba(255, 107, 53, 0.4);
+  color: #8267ff;
+  border-color: rgba(130, 103, 255, 0.4);
 }`,
     why: "Recolor an accent-flavored badge without touching the global accent.",
   },

@@ -18,7 +18,7 @@ export function CustomIcon({ url, size }: { url: string; size: number }) {
       <AlertCircle
         size={size}
         strokeWidth={1.6}
-        className="pointer-events-none select-none text-amber-400/70"
+        className="pointer-events-none select-none text-info/70"
       />
     );
   }

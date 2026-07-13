@@ -401,7 +401,7 @@ function ManifestPreview({
           <div className="flex items-center gap-2">
             <h3 className="truncate text-[16px] font-semibold text-ink">{manifest.name}</h3>
             {matchKind !== "fresh" && (
-              <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300 ring-1 ring-amber-300/30">
+              <span className="rounded-full bg-info/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-info ring-1 ring-info/30">
                 {t("Update")}
               </span>
             )}
@@ -417,7 +417,7 @@ function ManifestPreview({
         </div>
       </div>
       {matchKind === "hostname-match" && replaceName && (
-        <p className="rounded-lg bg-amber-300/[0.06] px-3 py-2 text-[12px] leading-relaxed text-amber-200 ring-1 ring-amber-300/20">
+        <p className="rounded-lg bg-info/[0.06] px-3 py-2 text-[12px] leading-relaxed text-info ring-1 ring-info/20">
           {t("Looks like a re-configure of {name}. We'll replace the existing entry so you don't end up with two copies.", { name: replaceName })}
         </p>
       )}

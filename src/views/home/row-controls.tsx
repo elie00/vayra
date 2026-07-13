@@ -252,7 +252,7 @@ function KidCtrl({
         primary
           ? "bg-[#1f8f88] text-white"
           : active
-            ? "bg-amber-400 text-[#0e3a43]"
+            ? "bg-info text-[#0e3a43]"
             : "bg-[#eaf6f5] text-[#0e3a43] hover:bg-[#d4eeec]"
       }`}
     >

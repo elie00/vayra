@@ -45,7 +45,7 @@ function pillClass(state: RoomState): string {
     case "guest":
       return "bg-sky-500/15 text-sky-300";
     case "desynced":
-      return "bg-amber-400/15 text-amber-300";
+      return "bg-info/15 text-info";
     case "error":
       return "bg-red-500/15 text-red-300";
     case "solo":
