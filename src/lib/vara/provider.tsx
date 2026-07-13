@@ -40,6 +40,7 @@ type VaraValue = {
   refresh: () => Promise<void>;
   activateRoom: (room: VaraRemoteRoom) => void;
   leaveActiveRoom: () => Promise<void>;
+  closeActiveRoom: () => Promise<void>;
   presentLink: (code: string) => void;
   clearPendingLink: () => void;
 };
@@ -175,6 +176,15 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [activeRoom, transport, repo, refresh]);
 
+  const closeActiveRoom = useCallback(async () => {
+    const room = activeRoom;
+    if (!room || !transport || !repo) return;
+    setActiveRoom(null);
+    transport.leave(room.id);
+    await repo.closeRoom(room.id);
+    await refresh();
+  }, [activeRoom, transport, repo, refresh]);
+
   const presentLink = useCallback((code: string) => setPendingLinkCode(code), []);
   const clearPendingLink = useCallback(() => setPendingLinkCode(null), []);
 
@@ -190,6 +200,7 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     refresh,
     activateRoom,
     leaveActiveRoom,
+    closeActiveRoom,
     presentLink,
     clearPendingLink,
   }), [
@@ -204,6 +215,7 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     refresh,
     activateRoom,
     leaveActiveRoom,
+    closeActiveRoom,
     presentLink,
     clearPendingLink,
   ]);

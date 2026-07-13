@@ -428,3 +428,57 @@ Object.assign(ciraAr, varaEn, {
   "This VARA is full.": "VARA هذه ممتلئة.", "This VARA invitation is no longer available.": "دعوة VARA هذه لم تعد متاحة.", "This VARA is no longer available.": "VARA هذه لم تعد متاحة.",
   "Leave the current local watch session before entering a remote VARA.": "غادر جلسة المشاهدة المحلية الحالية قبل دخول VARA بعيدة.", "VEYA paused": "VEYA متوقفة مؤقتًا", "host": "المضيف", "guest": "ضيف",
 });
+
+const varaLifecycleEn: Record<string, string> = {
+  "Close VARA": "Close VARA", "Close this VARA for every member?": "Close this VARA for every member?",
+  "Leave this private VARA?": "Leave this private VARA?", "Sent VARA invitations": "Sent VARA invitations",
+  "Cancel invitation": "Cancel invitation", "Active private links": "Active private links",
+  "{used} of {max} uses · expires {date}": "{used} of {max} uses · expires {date}",
+  "Transfer VEYA host": "Transfer VEYA host", "Transfer VEYA host to {name}?": "Transfer VEYA host to {name}?",
+  "VEYA host transferred.": "VEYA host transferred.",
+};
+
+Object.assign(ciraEn, varaLifecycleEn);
+Object.assign(ciraFr, varaLifecycleEn, {
+  "Close VARA": "Fermer VARA", "Close this VARA for every member?": "Fermer cette VARA pour tous les membres ?",
+  "Leave this private VARA?": "Quitter cette VARA privée ?", "Sent VARA invitations": "Invitations VARA envoyées",
+  "Cancel invitation": "Annuler l’invitation", "Active private links": "Liens privés actifs",
+  "{used} of {max} uses · expires {date}": "{used} utilisation(s) sur {max} · expire à {date}",
+  "Transfer VEYA host": "Transférer l’hôte VEYA", "Transfer VEYA host to {name}?": "Transférer l’hôte VEYA à {name} ?",
+  "VEYA host transferred.": "Hôte VEYA transféré.",
+});
+Object.assign(ciraDe, varaLifecycleEn, {
+  "Close VARA": "VARA schließen", "Close this VARA for every member?": "Diese VARA für alle Mitglieder schließen?",
+  "Leave this private VARA?": "Diese private VARA verlassen?", "Sent VARA invitations": "Gesendete VARA-Einladungen",
+  "Cancel invitation": "Einladung zurückziehen", "Active private links": "Aktive private Links",
+  "{used} of {max} uses · expires {date}": "{used} von {max} Nutzungen · läuft um {date} ab",
+  "Transfer VEYA host": "VEYA-Host übertragen", "Transfer VEYA host to {name}?": "VEYA-Host an {name} übertragen?", "VEYA host transferred.": "VEYA-Host übertragen.",
+});
+Object.assign(ciraEs, varaLifecycleEn, {
+  "Close VARA": "Cerrar VARA", "Close this VARA for every member?": "¿Cerrar esta VARA para todos los miembros?",
+  "Leave this private VARA?": "¿Salir de esta VARA privada?", "Sent VARA invitations": "Invitaciones VARA enviadas",
+  "Cancel invitation": "Cancelar invitación", "Active private links": "Enlaces privados activos",
+  "{used} of {max} uses · expires {date}": "{used} de {max} usos · caduca a las {date}",
+  "Transfer VEYA host": "Transferir anfitrión VEYA", "Transfer VEYA host to {name}?": "¿Transferir el anfitrión VEYA a {name}?", "VEYA host transferred.": "Anfitrión VEYA transferido.",
+});
+Object.assign(ciraIt, varaLifecycleEn, {
+  "Close VARA": "Chiudi VARA", "Close this VARA for every member?": "Chiudere questa VARA per tutti i membri?",
+  "Leave this private VARA?": "Uscire da questa VARA privata?", "Sent VARA invitations": "Inviti VARA inviati",
+  "Cancel invitation": "Annulla invito", "Active private links": "Link privati attivi",
+  "{used} of {max} uses · expires {date}": "{used} utilizzi su {max} · scade alle {date}",
+  "Transfer VEYA host": "Trasferisci host VEYA", "Transfer VEYA host to {name}?": "Trasferire l’host VEYA a {name}?", "VEYA host transferred.": "Host VEYA trasferito.",
+});
+Object.assign(ciraPt, varaLifecycleEn, {
+  "Close VARA": "Fechar VARA", "Close this VARA for every member?": "Fechar esta VARA para todos os membros?",
+  "Leave this private VARA?": "Sair desta VARA privada?", "Sent VARA invitations": "Convites VARA enviados",
+  "Cancel invitation": "Cancelar convite", "Active private links": "Links privados ativos",
+  "{used} of {max} uses · expires {date}": "{used} de {max} usos · expira às {date}",
+  "Transfer VEYA host": "Transferir anfitrião VEYA", "Transfer VEYA host to {name}?": "Transferir o anfitrião VEYA para {name}?", "VEYA host transferred.": "Anfitrião VEYA transferido.",
+});
+Object.assign(ciraAr, varaLifecycleEn, {
+  "Close VARA": "إغلاق VARA", "Close this VARA for every member?": "إغلاق VARA هذه لجميع الأعضاء؟",
+  "Leave this private VARA?": "مغادرة VARA الخاصة هذه؟", "Sent VARA invitations": "دعوات VARA المرسلة",
+  "Cancel invitation": "إلغاء الدعوة", "Active private links": "الروابط الخاصة النشطة",
+  "{used} of {max} uses · expires {date}": "{used} من {max} استخدامات · تنتهي في {date}",
+  "Transfer VEYA host": "نقل مضيف VEYA", "Transfer VEYA host to {name}?": "نقل مضيف VEYA إلى {name}؟", "VEYA host transferred.": "تم نقل مضيف VEYA.",
+});

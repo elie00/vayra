@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Link2, LogIn, LogOut, Plus, RadioTower, UserPlus, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, Copy, Crown, Link2, LogIn, LogOut, Plus, RadioTower, Trash2, UserPlus, X } from "lucide-react";
 import { useCira } from "@/lib/cira/provider";
+import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import { VaraError } from "@/lib/vara/errors";
 import { useVara } from "@/lib/vara/provider";
-import type { VaraRoomLinkPreview, VaraRoomLinkSecret } from "@/lib/vara/types";
+import type { VaraRoomLink, VaraRoomLinkPreview, VaraRoomLinkSecret } from "@/lib/vara/types";
 import { Section } from "./shared";
 
 function varaErrorText(t: ReturnType<typeof useT>, error: unknown): string {
@@ -78,12 +79,14 @@ export function VaraRoomsCard() {
     refresh,
     activateRoom,
     leaveActiveRoom,
+    closeActiveRoom,
     clearPendingLink,
   } = useVara();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [secret, setSecret] = useState<VaraRoomLinkSecret | null>(null);
   const [preview, setPreview] = useState<VaraRoomLinkPreview | null>(null);
+  const [links, setLinks] = useState<VaraRoomLink[]>([]);
 
   const friends = useMemo(() => relationships.filter(
     (relationship) => relationship.status === "accepted" && relationship.profile.userId,
@@ -92,6 +95,20 @@ export function VaraRoomsCard() {
   const canManageActive = !!activeRoom && !!me && (
     activeRoom.ownerId === me.userId || activeRoom.hostId === me.userId
   );
+  const isActiveOwner = activeRoom?.ownerId === me?.userId;
+  const isActiveHost = activeRoom?.hostId === me?.userId;
+
+  const refreshLinks = useCallback(async () => {
+    if (!repo || !activeRoom || !canManageActive) {
+      setLinks([]);
+      return;
+    }
+    setLinks(await repo.listLinks(activeRoom.id));
+  }, [repo, activeRoom, canManageActive]);
+
+  useEffect(() => {
+    void refreshLinks().catch(() => setLinks([]));
+  }, [refreshLinks]);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +150,7 @@ export function VaraRoomsCard() {
     if (!repo || !activeRoom) return;
     const next = await repo.createLink(activeRoom.id, 900, 1);
     setSecret(next);
+    await refreshLinks();
   }, t("Short-lived invitation created."));
 
   const acceptLink = () => run(async () => {
@@ -146,6 +164,7 @@ export function VaraRoomsCard() {
   }, t("You joined the private VARA."));
 
   const incomingInvitations = invitations.filter((invite) => invite.direction === "incoming");
+  const outgoingInvitations = invitations.filter((invite) => invite.direction === "outgoing");
 
   if (status === "loading") {
     return <Section title={t("Private VARA rooms")}><p className="text-[13px] text-ink-subtle">{t("Loading…")}</p></Section>;
@@ -176,10 +195,17 @@ export function VaraRoomsCard() {
           </div>
           {activeRoom ? (
             <ActionButton
-              label={t("Leave VARA")}
-              icon={LogOut}
+              label={isActiveOwner ? t("Close VARA") : t("Leave VARA")}
+              icon={isActiveOwner ? Trash2 : LogOut}
               disabled={busy}
-              onClick={() => void run(() => leaveActiveRoom())}
+              onClick={() => void confirmDialog(
+                isActiveOwner
+                  ? t("Close this VARA for every member?")
+                  : t("Leave this private VARA?"),
+              ).then((confirmed) => {
+                if (!confirmed) return;
+                void run(() => isActiveOwner ? closeActiveRoom() : leaveActiveRoom());
+              })}
             />
           ) : (
             <ActionButton
@@ -245,6 +271,24 @@ export function VaraRoomsCard() {
           </div>
         ) : null}
 
+        {outgoingInvitations.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Sent VARA invitations")}</p>
+            {outgoingInvitations.map((invite) => (
+              <div key={invite.id} className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft px-4 py-3">
+                <div>
+                  <p className="text-[13.5px] font-medium text-ink">{invite.invitee.displayName}</p>
+                  <p className="text-[11.5px] text-ink-subtle">@{invite.invitee.handle}</p>
+                </div>
+                <ActionButton label={t("Cancel invitation")} icon={X} disabled={busy} onClick={() => void run(async () => {
+                  await repo.cancelInvitation(invite.id);
+                  await refresh();
+                })} />
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         {activeRoom && canManageActive ? (
           <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/30 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -272,6 +316,45 @@ export function VaraRoomsCard() {
               <div className="flex items-center gap-2 rounded-xl border border-edge-soft bg-elevated/50 p-3">
                 <code className="min-w-0 flex-1 truncate text-[11.5px] text-ink-muted">{secret.url}</code>
                 <ActionButton label={t("Copy")} icon={Copy} onClick={() => void navigator.clipboard.writeText(secret.url)} />
+              </div>
+            ) : null}
+            {links.length > 0 ? (
+              <div className="grid gap-2 border-t border-edge-soft pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Active private links")}</p>
+                {links.map((link) => (
+                  <div key={link.id} className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft px-3 py-2.5">
+                    <p className="text-[11.5px] text-ink-subtle">
+                      {t("{used} of {max} uses · expires {date}", {
+                        used: link.useCount,
+                        max: link.maxUses,
+                        date: new Date(link.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                      })}
+                    </p>
+                    <ActionButton label={t("Revoke")} icon={Trash2} disabled={busy} onClick={() => void run(async () => {
+                      await repo.revokeLink(link.id);
+                      await refreshLinks();
+                    })} />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {isActiveHost && activeRoom.members.length > 1 ? (
+              <div className="grid gap-2 border-t border-edge-soft pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{t("Transfer VEYA host")}</p>
+                <div className="flex flex-wrap gap-2">
+                  {activeRoom.members.filter((member) => member.userId !== me?.userId).map((member) => (
+                    <ActionButton key={member.userId} label={member.displayName} icon={Crown} disabled={busy} onClick={() => void confirmDialog(
+                      t("Transfer VEYA host to {name}?", { name: member.displayName }),
+                    ).then((confirmed) => {
+                      if (!confirmed) return;
+                      void run(async () => {
+                        const room = await repo.transferHost(activeRoom.id, member.userId);
+                        activateRoom(room);
+                        await refresh();
+                      }, t("VEYA host transferred."));
+                    })} />
+                  ))}
+                </div>
               </div>
             ) : null}
           </div>
