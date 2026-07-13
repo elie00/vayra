@@ -11,6 +11,10 @@ const ARTWORKS_BASE = "https://artworks.thetvdb.com";
 let cachedToken = null; // { token: string, t: number }
 const TOKEN_TTL_MS = 23 * 60 * 60 * 1000;
 
+// Surfaces the reason a login failed so callers can return a useful 502
+// (e.g. bad key vs. a user-supported key that needs a PIN).
+const tvdbState = { lastLoginError: null };
+
 /**
  * Log in to TVDB and return a bearer token, or null if the API key is missing
  * or login fails.
@@ -21,19 +25,31 @@ async function getTvdbToken() {
   if (cachedToken && Date.now() - cachedToken.t < TOKEN_TTL_MS) {
     return cachedToken.token;
   }
+  // User-supported (subscriber) keys must also send a PIN. Project keys omit it.
+  const pin = process.env.TVDB_PIN;
+  const body = pin ? { apikey: apiKey, pin } : { apikey: apiKey };
   try {
     const res = await fetch(`${TVDB_BASE}/login`, {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ apikey: apiKey }),
+      body: JSON.stringify(body),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const txt = (await res.text().catch(() => "")).slice(0, 200);
+      tvdbState.lastLoginError = `login HTTP ${res.status}${pin ? " (with PIN)" : " (no PIN)"}: ${txt}`;
+      return null;
+    }
     const j = await res.json();
     const token = j && j.data && j.data.token;
-    if (!token) return null;
+    if (!token) {
+      tvdbState.lastLoginError = "login ok but no token in response";
+      return null;
+    }
+    tvdbState.lastLoginError = null;
     cachedToken = { token, t: Date.now() };
     return token;
-  } catch {
+  } catch (e) {
+    tvdbState.lastLoginError = `login threw: ${e && e.message}`;
     return null;
   }
 }
@@ -82,4 +98,5 @@ export {
   tvdbGet,
   tvdbImg,
   seriesIdFromImdb,
+  tvdbState,
 };

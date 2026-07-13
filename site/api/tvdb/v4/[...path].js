@@ -11,7 +11,7 @@
 // bearer token (obtained via TVDB login with TVDB_API_KEY) and forward the TVDB
 // response body verbatim so `j.data` matches exactly.
 
-import { TVDB_BASE, getTvdbToken } from "../../_lib/tvdb.js";
+import { TVDB_BASE, getTvdbToken, tvdbState } from "../../_lib/tvdb.js";
 
 export default async (req, res) => {
   if (!process.env.TVDB_API_KEY) {
@@ -35,7 +35,7 @@ export default async (req, res) => {
 
   const token = await getTvdbToken();
   if (!token) {
-    res.status(502).json({ error: "tvdb login failed" });
+    res.status(502).json({ error: "tvdb login failed", detail: tvdbState.lastLoginError });
     return;
   }
 
