@@ -209,3 +209,98 @@ export const ciraAr: Record<string, string> = {
   "CIRA invitation": "دعوة CIRA", "Checking the invitation…": "جارٍ التحقق من الدعوة…", "Close": "إغلاق", "{name} (@{handle}) invites you to join their CIRA.": "يدعوك {name} (@{handle}) للانضمام إلى CIRA الخاصة به.", "Sign in to your VAYRA account": "سجّل الدخول إلى حساب VAYRA", "Sign in to your VAYRA account first.": "سجّل الدخول إلى حساب VAYRA أولًا.", "CIRA is tied to your private VAYRA identity.": "ترتبط CIRA بهويتك الخاصة في VAYRA.", "Go to Account": "الانتقال إلى الحساب",
   "The VAYRA account service isn't configured in this build yet.": "خدمة حساب VAYRA غير مهيأة بعد في هذا الإصدار.", "Loading…": "جارٍ التحميل…", "Try again": "إعادة المحاولة", "CIRA couldn't be loaded. Your existing data has not been changed.": "تعذر تحميل CIRA. لم تتغير بياناتك الحالية.", "Choose your CIRA handle first.": "اختر معرّف CIRA أولًا.", "That handle or display name isn't valid.": "المعرّف أو اسم العرض غير صالح.", "That handle is already taken.": "هذا المعرّف مستخدم بالفعل.", "This request can't be sent. Check the handle and try again.": "تعذر إرسال الطلب. تحقق من المعرّف وحاول مجددًا.", "You're already connected with this person.": "أنت مرتبط بهذا الشخص بالفعل.", "That action isn't available anymore.": "هذا الإجراء لم يعد متاحًا.", "This invitation is no longer valid. Ask for a fresh link.": "هذه الدعوة لم تعد صالحة. اطلب رابطًا جديدًا.", "Too many attempts. Wait a moment and try again.": "محاولات كثيرة جدًا. انتظر قليلًا وحاول مجددًا.", "Network error. Check your connection and try again.": "خطأ في الشبكة. تحقق من اتصالك وحاول مجددًا.", "Something went wrong. Try again.": "حدث خطأ. حاول مجددًا.",
 };
+
+Object.assign(ciraDe, {
+  "CIRA groups": "CIRA-Gruppen", "Private circles with explicit membership and roles. Nothing is public or searchable.": "Private Kreise mit eindeutigen Mitgliedschaften und Rollen. Nichts ist öffentlich oder durchsuchbar.",
+  "New group": "Neue Gruppe", "Create group": "Gruppe erstellen", "Create a private group for a part of your CIRA.": "Erstelle eine private Gruppe für einen Teil deiner CIRA.",
+  "Group name": "Gruppenname", "Private description": "Private Beschreibung", "Member limit": "Mitgliederlimit", "Members": "Mitglieder",
+  "owner": "Eigentümer", "admin": "Admin", "member": "Mitglied", "{count} of {limit} members": "{count} von {limit} Mitgliedern",
+  "Edit": "Bearbeiten", "Delete": "Löschen", "Leave": "Verlassen", "Remove": "Entfernen", "Transfer": "Übertragen", "Make admin": "Zum Admin machen", "Make member": "Zum Mitglied machen",
+  "Invite": "Einladen", "Invite an accepted CIRA relation": "Akzeptierten CIRA-Kontakt einladen", "Choose a person": "Person auswählen",
+  "Group invitations": "Gruppeneinladungen", "Invited by {name}": "Eingeladen von {name}", "Invited {name}": "{name} eingeladen",
+  "Single-use group link": "Einmaliger Gruppenlink", "Valid for 15 minutes and one new member.": "15 Minuten und für ein neues Mitglied gültig.", "Create link": "Link erstellen", "Active until {time}": "Aktiv bis {time}",
+  "Private group invitation": "Private Gruppeneinladung", "Join group": "Gruppe beitreten", "{count} members": "{count} Mitglieder",
+  "Visible only to your CIRA relations and private groups.": "Nur für deine CIRA-Kontakte und privaten Gruppen sichtbar.",
+  "CIRA inbox": "CIRA-Postfach", "Pending social actions, synchronized across your devices without keeping an activity history.": "Ausstehende soziale Aktionen, geräteübergreifend synchronisiert, ohne Aktivitätsverlauf.",
+  "{requests} requests · {groups} group invitations": "{requests} Anfragen · {groups} Gruppeneinladungen", "{count} new": "{count} neu", "Everything here has been seen": "Alles wurde angesehen", "Mark as seen": "Als gesehen markieren",
+  "Load more CIRA": "Weitere CIRA-Kontakte laden", "Load more members": "Weitere Mitglieder laden",
+  "This private group is no longer available.": "Diese private Gruppe ist nicht mehr verfügbar.", "You don't have permission to do that in this group.": "Du hast dafür in dieser Gruppe keine Berechtigung.",
+  "This group has reached its member limit.": "Diese Gruppe hat ihr Mitgliederlimit erreicht.", "Transfer ownership before leaving the group.": "Übertrage die Eigentümerschaft, bevor du die Gruppe verlässt.",
+  "This group invitation is no longer available.": "Diese Gruppeneinladung ist nicht mehr verfügbar.", "A blocked person is already in this group.": "Eine blockierte Person ist bereits in dieser Gruppe."
+});
+
+Object.assign(ciraEs, {
+  "CIRA groups": "Grupos CIRA", "Private circles with explicit membership and roles. Nothing is public or searchable.": "Círculos privados con miembros y roles explícitos. Nada es público ni se puede buscar.",
+  "New group": "Nuevo grupo", "Create group": "Crear grupo", "Create a private group for a part of your CIRA.": "Crea un grupo privado para una parte de tu CIRA.",
+  "Group name": "Nombre del grupo", "Private description": "Descripción privada", "Member limit": "Límite de miembros", "Members": "Miembros",
+  "owner": "Propietario", "admin": "Administrador", "member": "Miembro", "{count} of {limit} members": "{count} de {limit} miembros",
+  "Edit": "Editar", "Delete": "Eliminar", "Leave": "Salir", "Remove": "Quitar", "Transfer": "Transferir", "Make admin": "Hacer administrador", "Make member": "Hacer miembro",
+  "Invite": "Invitar", "Invite an accepted CIRA relation": "Invitar a un contacto CIRA aceptado", "Choose a person": "Elegir una persona",
+  "Group invitations": "Invitaciones de grupo", "Invited by {name}": "Invitación de {name}", "Invited {name}": "Invitaste a {name}",
+  "Single-use group link": "Enlace de grupo de un solo uso", "Valid for 15 minutes and one new member.": "Válido durante 15 minutos y para un nuevo miembro.", "Create link": "Crear enlace", "Active until {time}": "Activo hasta las {time}",
+  "Private group invitation": "Invitación a grupo privado", "Join group": "Unirse al grupo", "{count} members": "{count} miembros",
+  "Visible only to your CIRA relations and private groups.": "Visible solo para tus contactos CIRA y grupos privados.",
+  "CIRA inbox": "Bandeja CIRA", "Pending social actions, synchronized across your devices without keeping an activity history.": "Acciones sociales pendientes sincronizadas entre dispositivos sin guardar historial.",
+  "{requests} requests · {groups} group invitations": "{requests} solicitudes · {groups} invitaciones de grupo", "{count} new": "{count} nuevas", "Everything here has been seen": "Todo está visto", "Mark as seen": "Marcar como visto",
+  "Load more CIRA": "Cargar más contactos CIRA", "Load more members": "Cargar más miembros",
+  "This private group is no longer available.": "Este grupo privado ya no está disponible.", "You don't have permission to do that in this group.": "No tienes permiso para hacerlo en este grupo.",
+  "This group has reached its member limit.": "Este grupo alcanzó su límite de miembros.", "Transfer ownership before leaving the group.": "Transfiere la propiedad antes de salir del grupo.",
+  "This group invitation is no longer available.": "Esta invitación de grupo ya no está disponible.", "A blocked person is already in this group.": "Ya hay una persona bloqueada en este grupo."
+});
+
+Object.assign(ciraIt, {
+  "CIRA groups": "Gruppi CIRA", "Private circles with explicit membership and roles. Nothing is public or searchable.": "Cerchie private con membri e ruoli espliciti. Nulla è pubblico o ricercabile.",
+  "New group": "Nuovo gruppo", "Create group": "Crea gruppo", "Create a private group for a part of your CIRA.": "Crea un gruppo privato per una parte della tua CIRA.",
+  "Group name": "Nome del gruppo", "Private description": "Descrizione privata", "Member limit": "Limite membri", "Members": "Membri",
+  "owner": "Proprietario", "admin": "Amministratore", "member": "Membro", "{count} of {limit} members": "{count} di {limit} membri",
+  "Edit": "Modifica", "Delete": "Elimina", "Leave": "Esci", "Remove": "Rimuovi", "Transfer": "Trasferisci", "Make admin": "Rendi amministratore", "Make member": "Rendi membro",
+  "Invite": "Invita", "Invite an accepted CIRA relation": "Invita un contatto CIRA accettato", "Choose a person": "Scegli una persona",
+  "Group invitations": "Inviti ai gruppi", "Invited by {name}": "Invito di {name}", "Invited {name}": "Hai invitato {name}",
+  "Single-use group link": "Link di gruppo monouso", "Valid for 15 minutes and one new member.": "Valido per 15 minuti e un nuovo membro.", "Create link": "Crea link", "Active until {time}": "Attivo fino alle {time}",
+  "Private group invitation": "Invito a un gruppo privato", "Join group": "Entra nel gruppo", "{count} members": "{count} membri",
+  "Visible only to your CIRA relations and private groups.": "Visibile solo ai tuoi contatti CIRA e gruppi privati.",
+  "CIRA inbox": "Posta CIRA", "Pending social actions, synchronized across your devices without keeping an activity history.": "Azioni sociali in sospeso sincronizzate tra dispositivi senza conservare uno storico.",
+  "{requests} requests · {groups} group invitations": "{requests} richieste · {groups} inviti ai gruppi", "{count} new": "{count} nuovi", "Everything here has been seen": "Tutto è stato visto", "Mark as seen": "Segna come visto",
+  "Load more CIRA": "Carica altri contatti CIRA", "Load more members": "Carica altri membri",
+  "This private group is no longer available.": "Questo gruppo privato non è più disponibile.", "You don't have permission to do that in this group.": "Non hai il permesso di farlo in questo gruppo.",
+  "This group has reached its member limit.": "Questo gruppo ha raggiunto il limite di membri.", "Transfer ownership before leaving the group.": "Trasferisci la proprietà prima di uscire dal gruppo.",
+  "This group invitation is no longer available.": "Questo invito al gruppo non è più disponibile.", "A blocked person is already in this group.": "Una persona bloccata è già in questo gruppo."
+});
+
+Object.assign(ciraPt, {
+  "CIRA groups": "Grupos CIRA", "Private circles with explicit membership and roles. Nothing is public or searchable.": "Círculos privados com membros e funções explícitas. Nada é público ou pesquisável.",
+  "New group": "Novo grupo", "Create group": "Criar grupo", "Create a private group for a part of your CIRA.": "Crie um grupo privado para uma parte da sua CIRA.",
+  "Group name": "Nome do grupo", "Private description": "Descrição privada", "Member limit": "Limite de membros", "Members": "Membros",
+  "owner": "Proprietário", "admin": "Administrador", "member": "Membro", "{count} of {limit} members": "{count} de {limit} membros",
+  "Edit": "Editar", "Delete": "Excluir", "Leave": "Sair", "Remove": "Remover", "Transfer": "Transferir", "Make admin": "Tornar administrador", "Make member": "Tornar membro",
+  "Invite": "Convidar", "Invite an accepted CIRA relation": "Convidar uma relação CIRA aceita", "Choose a person": "Escolher uma pessoa",
+  "Group invitations": "Convites de grupo", "Invited by {name}": "Convite de {name}", "Invited {name}": "Você convidou {name}",
+  "Single-use group link": "Link de grupo de uso único", "Valid for 15 minutes and one new member.": "Válido por 15 minutos e para um novo membro.", "Create link": "Criar link", "Active until {time}": "Ativo até {time}",
+  "Private group invitation": "Convite para grupo privado", "Join group": "Entrar no grupo", "{count} members": "{count} membros",
+  "Visible only to your CIRA relations and private groups.": "Visível apenas para suas relações CIRA e grupos privados.",
+  "CIRA inbox": "Caixa CIRA", "Pending social actions, synchronized across your devices without keeping an activity history.": "Ações sociais pendentes sincronizadas entre dispositivos sem manter histórico.",
+  "{requests} requests · {groups} group invitations": "{requests} solicitações · {groups} convites de grupo", "{count} new": "{count} novos", "Everything here has been seen": "Tudo foi visto", "Mark as seen": "Marcar como visto",
+  "Load more CIRA": "Carregar mais relações CIRA", "Load more members": "Carregar mais membros",
+  "This private group is no longer available.": "Este grupo privado não está mais disponível.", "You don't have permission to do that in this group.": "Você não tem permissão para fazer isso neste grupo.",
+  "This group has reached its member limit.": "Este grupo atingiu o limite de membros.", "Transfer ownership before leaving the group.": "Transfira a propriedade antes de sair do grupo.",
+  "This group invitation is no longer available.": "Este convite de grupo não está mais disponível.", "A blocked person is already in this group.": "Uma pessoa bloqueada já está neste grupo."
+});
+
+Object.assign(ciraAr, {
+  "CIRA groups": "مجموعات CIRA", "Private circles with explicit membership and roles. Nothing is public or searchable.": "دوائر خاصة بعضوية وأدوار واضحة. لا شيء عام أو قابل للبحث.",
+  "New group": "مجموعة جديدة", "Create group": "إنشاء مجموعة", "Create a private group for a part of your CIRA.": "أنشئ مجموعة خاصة لجزء من CIRA الخاصة بك.",
+  "Group name": "اسم المجموعة", "Private description": "وصف خاص", "Member limit": "حد الأعضاء", "Members": "الأعضاء",
+  "owner": "المالك", "admin": "مشرف", "member": "عضو", "{count} of {limit} members": "{count} من أصل {limit} أعضاء",
+  "Edit": "تعديل", "Delete": "حذف", "Leave": "مغادرة", "Remove": "إزالة", "Transfer": "نقل", "Make admin": "تعيين مشرف", "Make member": "تعيين عضو",
+  "Invite": "دعوة", "Invite an accepted CIRA relation": "دعوة علاقة CIRA مقبولة", "Choose a person": "اختر شخصًا",
+  "Group invitations": "دعوات المجموعات", "Invited by {name}": "دعوة من {name}", "Invited {name}": "تمت دعوة {name}",
+  "Single-use group link": "رابط مجموعة للاستخدام مرة واحدة", "Valid for 15 minutes and one new member.": "صالح لمدة 15 دقيقة ولعضو جديد واحد.", "Create link": "إنشاء رابط", "Active until {time}": "نشط حتى {time}",
+  "Private group invitation": "دعوة إلى مجموعة خاصة", "Join group": "الانضمام إلى المجموعة", "{count} members": "{count} أعضاء",
+  "Visible only to your CIRA relations and private groups.": "مرئي فقط لعلاقات CIRA ومجموعاتك الخاصة.",
+  "CIRA inbox": "صندوق CIRA", "Pending social actions, synchronized across your devices without keeping an activity history.": "إجراءات اجتماعية معلقة ومتزامنة بين أجهزتك دون حفظ سجل نشاط.",
+  "{requests} requests · {groups} group invitations": "{requests} طلبات · {groups} دعوات مجموعات", "{count} new": "{count} جديدة", "Everything here has been seen": "تمت مشاهدة كل شيء", "Mark as seen": "تحديد كمقروء",
+  "Load more CIRA": "تحميل المزيد من علاقات CIRA", "Load more members": "تحميل المزيد من الأعضاء",
+  "This private group is no longer available.": "هذه المجموعة الخاصة لم تعد متاحة.", "You don't have permission to do that in this group.": "ليست لديك صلاحية تنفيذ ذلك في هذه المجموعة.",
+  "This group has reached its member limit.": "بلغت هذه المجموعة حد الأعضاء.", "Transfer ownership before leaving the group.": "انقل الملكية قبل مغادرة المجموعة.",
+  "This group invitation is no longer available.": "دعوة المجموعة هذه لم تعد متاحة.", "A blocked person is already in this group.": "يوجد شخص محظور بالفعل في هذه المجموعة."
+});
