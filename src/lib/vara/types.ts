@@ -68,6 +68,7 @@ export type VaraErrorCode =
   | "ALREADY_VARA_MEMBER"
   | "VARA_ROOM_FULL"
   | "INVALID_VARA_INVITE"
+  | "VARA_SYNC_CONFLICT"
   | "RATE_LIMITED"
   | "NETWORK"
   | "UNKNOWN";

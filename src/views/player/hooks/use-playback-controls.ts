@@ -4,6 +4,7 @@ import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { writePlayerPrefs } from "@/lib/player-prefs";
 import type { RoomCommand } from "@/lib/together/protocol";
+import type { VeyaSender } from "./use-veya-sync";
 
 export function usePlaybackControls(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
@@ -18,6 +19,10 @@ export function usePlaybackControls(params: {
   togglePlayCast: () => Promise<void>;
   seekCast: (sec: number) => Promise<void>;
   sendCommand: (command: RoomCommand) => void;
+  remoteVeya?: {
+    active: boolean;
+    send: VeyaSender;
+  };
 }) {
   const {
     bridgeRef,
@@ -32,6 +37,7 @@ export function usePlaybackControls(params: {
     togglePlayCast,
     seekCast,
     sendCommand,
+    remoteVeya,
   } = params;
 
   const rememberSubChoice = useCallback(
@@ -72,6 +78,15 @@ export function usePlaybackControls(params: {
       return;
     }
     if (!canControl) return;
+    if (remoteVeya?.active) {
+      const action = snapRef.current.status === "playing" ? "pause" : "play";
+      remoteVeya.send({ action, atMs: Date.now() });
+      const b = bridgeRef.current;
+      if (!b) return;
+      if (action === "pause") b.pause();
+      else b.play().catch(() => {});
+      return;
+    }
     if (inRoom && !isHost) {
       sendCommand(snapRef.current.status === "playing" ? { action: "pause" } : { action: "play" });
       return;
@@ -89,11 +104,17 @@ export function usePlaybackControls(params: {
       return;
     }
     if (!canControl) return;
-    if (inRoom && !isHost) {
-      sendCommand({ action: "seek", positionSeconds: Math.max(0, pos + delta) });
+    const target = Math.max(0, pos + delta);
+    if (remoteVeya?.active) {
+      remoteVeya.send({ action: "seek", positionSeconds: target, atMs: Date.now() });
+      bridgeRef.current?.seek(target);
       return;
     }
-    bridgeRef.current?.seek(Math.max(0, pos + delta));
+    if (inRoom && !isHost) {
+      sendCommand({ action: "seek", positionSeconds: target });
+      return;
+    }
+    bridgeRef.current?.seek(target);
   };
 
   const seekTo = useCallback(
@@ -103,13 +124,19 @@ export function usePlaybackControls(params: {
         return;
       }
       if (!canControl) return;
-      if (inRoom && !isHost) {
-        sendCommand({ action: "seek", positionSeconds: Math.max(0, sec) });
+      const target = Math.max(0, sec);
+      if (remoteVeya?.active) {
+        remoteVeya.send({ action: "seek", positionSeconds: target, atMs: Date.now() });
+        bridgeRef.current?.seek(target);
         return;
       }
-      bridgeRef.current?.seek(Math.max(0, sec));
+      if (inRoom && !isHost) {
+        sendCommand({ action: "seek", positionSeconds: target });
+        return;
+      }
+      bridgeRef.current?.seek(target);
     },
-    [castDevice, canControl, inRoom, isHost, sendCommand, seekCast, bridgeRef],
+    [castDevice, canControl, remoteVeya, inRoom, isHost, sendCommand, seekCast, bridgeRef],
   );
 
   return { rememberSubChoice, cycleSubtitles, playPauseToggle, seekStep, seekTo };

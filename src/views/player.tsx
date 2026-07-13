@@ -7,6 +7,8 @@ import { useSettings } from "@/lib/settings";
 import { writePlayerVolume } from "@/lib/player-volume";
 import { nameColor } from "@/lib/together/colors";
 import { useTogether } from "@/lib/together/provider";
+import { useVara } from "@/lib/vara/provider";
+import { useVayraAccount } from "@/lib/vayra-account";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
 import { queueShift, useQueue, useSleepAtEnd } from "@/lib/queue";
@@ -54,6 +56,7 @@ import { useAutoEndExit } from "./player/hooks/use-auto-end-exit";
 import { useQueueAdvance } from "./player/hooks/use-queue-advance";
 import { usePipMode } from "./player/hooks/use-pip-mode";
 import { usePlaybackControls } from "./player/hooks/use-playback-controls";
+import { useVeyaSync } from "./player/hooks/use-veya-sync";
 import { usePlaybackPresence } from "./player/hooks/use-playback-presence";
 import { usePlayerExit } from "./player/hooks/use-player-exit";
 import { usePendingSeekApply } from "./player/hooks/use-pending-seek-apply";
@@ -76,6 +79,7 @@ import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
 import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
+import { VaraStatusPill } from "@/components/player/vara-status-pill";
 
 let hdrFallbackNoticeShown = false;
 
@@ -128,6 +132,12 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     startRoom,
     hostSource,
   } = useTogether();
+  const { user: vayraUser } = useVayraAccount();
+  const {
+    activeRoom: remoteVaraRoom,
+    transport: remoteVeyaTransport,
+    leaveActiveRoom: leaveRemoteVara,
+  } = useVara();
   const stageRef = useRef<HTMLDivElement>(null);
   const videoMountRef = useRef<HTMLDivElement>(null);
   const bridgeRef = useRef<PlayerBridge | null>(null);
@@ -197,6 +207,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const episode = src.episode?.episode;
   const inRoom = roomSnapshot.state === "joined" && roomSnapshot.participants.length >= 2;
   const isHost = inRoom && roomSnapshot.hostClientId === clientId;
+  const remoteVeyaActive = !!remoteVaraRoom && !!remoteVeyaTransport && roomSnapshot.state !== "joined" && !cast.castDevice;
+  const remoteVeyaHost = remoteVeyaActive && remoteVaraRoom.hostId === vayraUser?.id;
   const canControl = !inRoom || hasStarted;
   const guestPickRef = useRef(settings.togetherGuestsPick);
   guestPickRef.current = settings.togetherGuestsPick;
@@ -491,6 +503,36 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     mediaKey: `${src.meta.id}|${src.episode?.season ?? ""}|${src.episode?.episode ?? ""}`,
   });
 
+  const { send: sendRemoteVeya } = useVeyaSync({
+    inRoom: remoteVeyaActive,
+    transport: remoteVeyaTransport,
+    bridgeRef,
+    clientId,
+    getLocalPosition: () => snapRef.current.positionSec,
+  });
+
+  useEffect(() => {
+    if (!remoteVeyaActive || !remoteVeyaHost || !remoteVeyaTransport) return;
+    const publish = () => {
+      const current = snapRef.current;
+      if (current.status !== "playing" && current.status !== "paused" && current.status !== "ended") return;
+      remoteVeyaTransport.publishState({
+        rev: 0,
+        playing: current.status === "playing",
+        positionSec: Math.max(0, current.positionSec),
+        rate: current.rate > 0 ? current.rate : 1,
+        buffering: current.buffering,
+        ended: current.status === "ended",
+        anchorAtMs: Date.now(),
+        updatedBy: clientId,
+        hostClientId: clientId,
+      });
+    };
+    publish();
+    const id = window.setInterval(publish, 3000);
+    return () => window.clearInterval(id);
+  }, [remoteVeyaActive, remoteVeyaHost, remoteVeyaTransport, clientId, snapRef]);
+
   const { rememberSubChoice, cycleSubtitles, playPauseToggle, seekStep, seekTo } = usePlaybackControls({
     bridgeRef,
     snapRef,
@@ -504,6 +546,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     togglePlayCast: cast.togglePlayCast,
     seekCast: cast.seekCast,
     sendCommand,
+    remoteVeya: { active: remoteVeyaActive, send: sendRemoteVeya },
   });
 
   const textSync = useTextSync(bridgeRef.current, src.meta.id);
@@ -941,6 +984,16 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
         }}
       />
       {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
+      {remoteVaraRoom && chromeVisible && !pipMode ? (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-[130] -translate-x-1/2">
+          <VaraStatusPill
+            syncActive={remoteVeyaActive}
+            isHost={remoteVaraRoom.hostId === vayraUser?.id}
+            memberCount={remoteVaraRoom.members.length}
+            onLeaveRoom={() => void leaveRemoteVara()}
+          />
+        </div>
+      ) : null}
       {sourceError && (
         <SourceErrorCard
           error={sourceError}
