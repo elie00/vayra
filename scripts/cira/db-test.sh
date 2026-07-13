@@ -130,6 +130,44 @@ begin
   perform set_config('request.jwt.claims', '', true);
 end;
 $$;
+
+-- Minimal Realtime shim: realtime.send appends to realtime.messages, like
+-- the real broadcast-from-database helper. RLS is enabled so the migration's
+-- SELECT policy is actually exercised by the tests.
+create schema realtime;
+create table realtime.messages (
+  topic       text        not null,
+  extension   text        not null,
+  payload     jsonb,
+  event       text,
+  private     boolean,
+  inserted_at timestamptz not null default now()
+);
+alter table realtime.messages enable row level security;
+grant usage on schema realtime to anon, authenticated, service_role;
+grant select on realtime.messages to anon, authenticated, service_role;
+
+create function realtime.send(payload jsonb, event text, topic text, private boolean default true)
+returns void
+language sql
+security definer
+as $$
+  insert into realtime.messages (payload, event, topic, private, extension)
+  values (payload, event, topic, private, 'broadcast');
+$$;
+grant execute on function realtime.send(jsonb, text, text, boolean)
+  to anon, authenticated, service_role;
+
+-- The real realtime.topic() returns the topic of the websocket subscription
+-- being authorized; the harness reads a GUC the test sets explicitly.
+create function realtime.topic()
+returns text
+language sql
+stable
+as $$
+  select nullif(current_setting('realtime.topic', true), '')
+$$;
+grant execute on function realtime.topic() to anon, authenticated, service_role;
 SQL
 
 echo "==> applying migrations"
