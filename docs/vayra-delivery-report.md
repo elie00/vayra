@@ -342,6 +342,15 @@ de la branche `ops/release-readiness` a réellement terminé avec succès :
 | Clippy + tests Rust Windows | succès |
 | Clippy + tests Rust Linux | succès |
 
+Cette passe a ensuite été intégrée à `main` par `6014fed`. À la suite de la
+correction i18n `0e59332`, les workflows `main` ont confirmé le même état :
+
+| Workflow `main` | Résultat |
+| --- | --- |
+| [Frontend #29249715349](https://github.com/elie00/vayra/actions/runs/29249715349) | typecheck, WASM, lint et 153 tests réussis |
+| [Android #29249715392](https://github.com/elie00/vayra/actions/runs/29249715392) | APK Android aarch64 debug construit et téléversé |
+| [Native #29249715406](https://github.com/elie00/vayra/actions/runs/29249715406) | Android, macOS, Windows et Linux réussis |
+
 `cargo fmt --manifest-path src-tauri/Cargo.toml --check` reste en échec local
 sur un passif de formatage réparti dans de nombreux fichiers Rust préexistants.
 Aucun reformatage massif n'a été appliqué dans cette passe afin de ne pas
@@ -380,23 +389,21 @@ faite au moment de la rédaction de ce document.
 
 ## 8. Limites et travaux encore nécessaires
 
-1. **Intégration release-readiness :** le correctif CI Rust est vert sur
-   `ops/release-readiness` mais doit encore être relu puis intégré à `main`.
-2. **Cast réel :** Chromecast, Roku, Google TV et Samsung doivent être testés sur
+1. **Cast réel :** Chromecast, Roku, Google TV et Samsung doivent être testés sur
    matériel.
-3. **VARA/VEYA :** le scénario manuel deux processus reste obligatoire avant de
+2. **VARA/VEYA :** le scénario manuel deux processus reste obligatoire avant de
    considérer le prototype comme validé de bout en bout.
-4. **Email callback :** tester le lien reçu jusqu’au retour dans une application
+3. **Email callback :** tester le lien reçu jusqu’au retour dans une application
    packagée sur chaque plateforme.
-5. **Migration utilisateur :** l’ancien `localStorage` lié au bundle Harbor ne
+4. **Migration utilisateur :** l’ancien `localStorage` lié au bundle Harbor ne
    migre pas automatiquement ; le chemin supporté reste export `.harbx` puis
    restauration.
-6. **Endpoints historiques :** certaines références `harbor.site`, emails de
+5. **Endpoints historiques :** certaines références `harbor.site`, emails de
    support et contrats réseau sont encore conservés tant que l’infrastructure de
    remplacement n’est pas entièrement disponible.
-7. **Player :** aucune modification future de libmpv, HDR, shaders, décodage ou
+6. **Player :** aucune modification future de libmpv, HDR, shaders, décodage ou
    P2P ne doit être fusionnée sans test de lecture manuel documenté.
-8. **Artefacts locaux :** `.claude/`, les assets Android générés et
+7. **Artefacts locaux :** `.claude/`, les assets Android générés et
    `tauri.properties` restent ignorés. Le document source
    `docs/vara-veya-architecture.md` est versionné avec le projet.
 
@@ -407,7 +414,6 @@ VAYRA autonome, cohérent visuellement et techniquement, doté d’une base
 collaborative, d’une authentification propre, d’un pipeline de lecture plus
 réactif et d’une présence publique déployée.
 
-La priorité suivante est de relire puis intégrer `ops/release-readiness` à
-`main`, puis d’exécuter les validations manuelles impossibles en CI : matériel
-de cast, lecture multiplateforme, VARA/VEYA à deux instances et callback email
-dans les builds packagés.
+La priorité suivante est d'exécuter les validations manuelles impossibles en
+CI : matériel de cast, lecture multiplateforme, VARA/VEYA à deux instances et
+callback email dans les builds packagés.
