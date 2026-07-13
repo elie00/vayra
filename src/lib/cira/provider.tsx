@@ -7,8 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { useTogether } from "@/lib/together/provider";
 import { useVayraAccount, getVayraSupabaseClient } from "@/lib/vayra-account";
+import { useVara } from "@/lib/vara/provider";
 import {
   CIRA_PRESENCE_EXPIRY_REFRESH_MS,
   hasExpiringCiraPresence,
@@ -67,8 +67,8 @@ export function useCira(): CiraValue {
 
 export function CiraProvider({ children }: { children: React.ReactNode }) {
   const { user } = useVayraAccount();
-  const { snapshot } = useTogether();
-  const inVara = !!snapshot.room;
+  const { activeRoom } = useVara();
+  const inVara = activeRoom !== null;
 
   const [repo, setRepo] = useState<CiraRepository | null>(null);
   const [status, setStatus] = useState<CiraStatus>("loading");

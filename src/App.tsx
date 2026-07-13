@@ -43,6 +43,7 @@ import { ListToastHost } from "@/components/lists/list-toast";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
 import { CiraProvider } from "@/lib/cira/provider";
+import { VaraProvider } from "@/lib/vara/provider";
 import { TogetherCursors } from "@/components/together-cursors";
 import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
 import { TogetherInviteToast } from "@/components/together-invite-toast";
@@ -255,6 +256,7 @@ export function App() {
         <AuthProvider>
           <OnboardingProvider>
             <TogetherProvider>
+            <VaraProvider>
             <CiraProvider>
               <ViewProvider>
                 <SearchProvider>
@@ -314,6 +316,7 @@ export function App() {
                 </SearchProvider>
               </ViewProvider>
             </CiraProvider>
+            </VaraProvider>
             </TogetherProvider>
           </OnboardingProvider>
         </AuthProvider>
