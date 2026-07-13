@@ -1,9 +1,20 @@
 export { CiraError, toCiraError } from "./errors";
-export { createCiraRepository, normalizeInviteCode } from "./repository";
+export {
+  createCiraRepository,
+  normalizeInviteCode,
+  requireValidGroupInviteCode,
+} from "./repository";
 export type {
   CiraErrorCode,
   CiraInvitation,
   CiraInviteSecret,
+  CiraGroup,
+  CiraGroupInvitation,
+  CiraGroupLink,
+  CiraGroupLinkPreview,
+  CiraGroupLinkSecret,
+  CiraGroupMember,
+  CiraGroupRole,
   CiraPresence,
   CiraProfile,
   CiraRelationship,
