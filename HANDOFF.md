@@ -5,7 +5,9 @@
 - **Branche de référence** : `main`, poussée sur `origin`. Les anciennes branches de livraison ne doivent pas être assimilées à `main` sans comparaison Git.
 - **CI** : les derniers jobs frontend et Android sont verts. Le job Rust `src-tauri` du run `29243177920` échoue avant Clippy car le sidecar `binaries/yt-dlp-x86_64-unknown-linux-gnu` n'est pas préparé ; correction en cours dans la passe release-readiness.
 - **Monorepo** : application à la racine, site public et fonctions Vercel sous `site/`. Vercel suit `elie00/vayra`, branche `main`, Root Directory `site`.
-- **Non-suivis locaux préservés** : `.claude/`, `docs/vara-veya-architecture.md`, `src-tauri/gen/android/app/src/main/assets/`, `tauri.properties`.
+- **Artefacts locaux** : `.claude/`, les assets Android générés et
+  `tauri.properties` sont ignorés. L'architecture VARA/VEYA est versionnée dans
+  `docs/vara-veya-architecture.md`.
 - **Binaires locaux livrés** : `/Applications/Harbor.app` (macOS, reconstruite à jour), `~/Desktop/harbor-android-v4.apk`.
 
 ## Travaux réalisés (par thème)

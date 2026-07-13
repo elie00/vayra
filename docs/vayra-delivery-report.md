@@ -372,10 +372,9 @@ faite au moment de la rédaction de ce document.
    remplacement n’est pas entièrement disponible.
 7. **Player :** aucune modification future de libmpv, HDR, shaders, décodage ou
    P2P ne doit être fusionnée sans test de lecture manuel documenté.
-8. **Fichiers locaux non suivis :** `.claude/`,
-   `docs/vara-veya-architecture.md`, les assets Android générés et
-   `tauri.properties` sont volontairement restés hors des commits de la branche
-   courante.
+8. **Artefacts locaux :** `.claude/`, les assets Android générés et
+   `tauri.properties` restent ignorés. Le document source
+   `docs/vara-veya-architecture.md` est versionné avec le projet.
 
 ## 9. Conclusion
 
