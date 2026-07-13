@@ -113,6 +113,12 @@ export function createAllDebrid(apiKey: string): DebridStore {
     return { ok: true, data: merged };
   }
 
+  // Best-effort removal of a magnet we added; used to clean up when the caller
+  // aborts a losing concurrent resolution so we don't orphan transfers.
+  async function removeMagnet(id: number): Promise<void> {
+    await get<unknown>(`/magnet/delete?id=${id}`, AbortSignal.timeout(4000)).catch(() => {});
+  }
+
   async function playableUrl(
     magnet: string,
     fileIdx: number | undefined,
@@ -141,9 +147,15 @@ export function createAllDebrid(apiKey: string): DebridStore {
     let chosenLink: AdMagnetLink | null = null;
 
     for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
-      if (signal.aborted) return { ok: false, code: "aborted", status: 0 };
+      if (signal.aborted) {
+        await removeMagnet(id);
+        return { ok: false, code: "aborted", status: 0 };
+      }
       const s = await get<{ magnets: AdMagnetStatus }>(`/magnet/status?id=${id}`, signal);
-      if (!s.ok) return s;
+      if (!s.ok) {
+        if (signal.aborted) await removeMagnet(id);
+        return s;
+      }
       entry = s.data.magnets;
       if (!entry) {
         await sleep(POLL_DELAY_MS, signal);
