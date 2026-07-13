@@ -1,5 +1,8 @@
 # CIRA v1 — rapport de livraison consolidé
 
+> Rapport historique du premier socle. Il est remplacé pour l'état courant
+> par [`cira-complete-report.md`](./cira-complete-report.md).
+
 **Date** : 2026-07-13  
 **Branche** : `fix/cira-presence-expiry`  
 **Base** : `main` à `6dfcf15`
