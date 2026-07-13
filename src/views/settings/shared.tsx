@@ -7,6 +7,7 @@ import { HoverPreviewCard } from "./setting-preview";
 export type SectionId =
   | "basics"
   | "account"
+  | "cira"
   | "library"
   | "trakt"
   | "anilist"
