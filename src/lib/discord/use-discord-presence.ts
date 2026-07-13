@@ -11,7 +11,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { configureDiscord, setBrowsePresence, setPartyPresence, type BrowsePresence } from "./presence";
 import { useActivityHint } from "./activity-hint";
 
-const JOIN_BASE = "https://app.vayra.site";
+const JOIN_BASE = "https://vayra.eybo.tech";
 
 const AWARD_IMG = "https://harbor.site/discord/awards";
 const NORMAL_AWARD_IMG: Record<string, string> = {

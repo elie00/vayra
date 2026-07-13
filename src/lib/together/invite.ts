@@ -12,7 +12,7 @@ export type ParsedInvite = {
   roomCode: string;
 };
 
-export const WEB_JOIN_BASE = "https://app.vayra.site";
+export const WEB_JOIN_BASE = "https://vayra.eybo.tech";
 
 export function buildInviteUrl(relayUrl: string, roomCode: string, origin?: string): string {
   const local =
