@@ -9,6 +9,10 @@ import {
 } from "react";
 import { useTogether } from "@/lib/together/provider";
 import { useVayraAccount, getVayraSupabaseClient } from "@/lib/vayra-account";
+import {
+  CIRA_PRESENCE_EXPIRY_REFRESH_MS,
+  hasExpiringCiraPresence,
+} from "./presence-lifecycle";
 import { createCiraRepository } from "./repository";
 import type {
   CiraInvitation,
@@ -110,10 +114,32 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     }
   }, [repo]);
 
+  const refreshRelationships = useCallback(async () => {
+    if (!repo) return;
+    try {
+      setRelationships(await repo.listRelationships());
+    } catch (err) {
+      console.warn("[cira] presence expiry refresh failed", err);
+    }
+  }, [repo]);
+
   useEffect(() => {
     if (!repo) return;
     void refresh();
   }, [repo, refresh]);
+
+  // L'expiration d'une présence est un passage du temps, pas une mutation SQL :
+  // aucun trigger Realtime ne peut donc annoncer le passage hors ligne. Tant
+  // qu'au moins une relation est affichée active, une relecture légère après
+  // la TTL serveur empêche un statut en ligne de rester figé indéfiniment.
+  const hasExpiringPresence = hasExpiringCiraPresence(relationships);
+  useEffect(() => {
+    if (!repo || status !== "ready" || !hasExpiringPresence) return;
+    const interval = window.setInterval(() => {
+      void refreshRelationships();
+    }, CIRA_PRESENCE_EXPIRY_REFRESH_MS);
+    return () => window.clearInterval(interval);
+  }, [repo, status, hasExpiringPresence, refreshRelationships]);
 
   // Invalidation temps réel : un ping "changed" -> relecture, légèrement
   // coalescée pour absorber les rafales (un accept = plusieurs pings).

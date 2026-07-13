@@ -9,8 +9,8 @@ import type {
   CiraVisiblePresence,
 } from "./types";
 
-// PR 4 : la page n'existe pas encore — on ne fait que construire l'URL.
-// Le code voyage dans le fragment (#t=), jamais en query string.
+// La page statique transmet le code à l'app sans appel réseau. Le code voyage
+// dans le fragment (#t=), jamais en query string.
 const INVITE_URL_PREFIX = "https://vayra.eybo.tech/cira/invite#t=";
 
 // Symétrique de private.cira_normalize_invite_code :
@@ -237,9 +237,9 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
 
     // Broadcast privé par utilisateur (topic `cira:<userId>`), événement
     // `changed` sans payload exploité : le callback déclenche une relecture par
-    // RPC côté appelant. Aucun trigger serveur n'émet encore sur ce canal —
-    // il est prêt côté client et reste silencieux tant que le serveur ne
-    // publie pas. L'unsubscribe est idempotent et n'orpheline pas le channel.
+    // RPC côté appelant. Les triggers serveur n'envoient qu'une invalidation,
+    // jamais de donnée sociale. L'unsubscribe est idempotent et n'orpheline pas
+    // le channel.
     subscribeInvalidations(onChange) {
       let channel: RealtimeChannel | null = null;
       let disposed = false;
