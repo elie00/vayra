@@ -159,7 +159,7 @@ create table realtime.messages (
 );
 alter table realtime.messages enable row level security;
 grant usage on schema realtime to anon, authenticated, service_role;
-grant select on realtime.messages to anon, authenticated, service_role;
+grant select, insert on realtime.messages to anon, authenticated, service_role;
 
 create function realtime.send(payload jsonb, event text, topic text, private boolean default true)
 returns void
