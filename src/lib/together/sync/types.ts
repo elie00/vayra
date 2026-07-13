@@ -6,8 +6,9 @@
 // The wire never carries a PlayerSource / URL — only PlaybackState and
 // PlaybackCommand cross the broker. No imports from player/, tauri, or DOM.
 
-// Fixed local room, no codes needed for the demo; keep the 6-char shape reusable.
-export type RoomId = string; // e.g. "vara-demo"
+// Opaque room id. The local compatibility broker and remote Supabase transport
+// share this contract; callers must not infer information from its shape.
+export type RoomId = string;
 
 // Where an applied action came from — the anti-loop discriminator.
 export type SyncOrigin = "local" | "remote";
