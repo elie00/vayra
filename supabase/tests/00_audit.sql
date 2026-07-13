@@ -5,7 +5,7 @@
 -- leaks / decliner tracking structurally impossible.
 \echo '=== 00_audit ==='
 
--- RLS enabled on all CIRA tables (10 public + private.cira_rate_limits).
+-- RLS enabled on all CIRA tables (11 public + private.cira_rate_limits).
 do $do$
 declare
   n integer;
@@ -15,8 +15,8 @@ begin
   join pg_namespace ns on ns.oid = c.relnamespace
   where c.relname like 'cira\_%' and c.relkind = 'r'
     and ns.nspname in ('public', 'private');
-  if n <> 11 then
-    raise exception 'TEST_FAILED: expected 11 cira_ tables, found %', n;
+  if n <> 12 then
+    raise exception 'TEST_FAILED: expected 12 cira_ tables, found %', n;
   end if;
 
   select count(*) into n
@@ -25,8 +25,8 @@ begin
   where c.relname like 'cira\_%' and c.relkind = 'r'
     and ns.nspname in ('public', 'private')
     and c.relrowsecurity;
-  if n <> 11 then
-    raise exception 'TEST_FAILED: RLS is not enabled on all 11 cira_ tables (only %)', n;
+  if n <> 12 then
+    raise exception 'TEST_FAILED: RLS is not enabled on all 12 cira_ tables (only %)', n;
   end if;
 end;
 $do$;
@@ -128,6 +128,9 @@ begin
   if has_table_privilege('authenticated', 'public.cira_invitations', 'select') then
     raise exception 'TEST_FAILED: authenticated can select cira_invitations (token_hash!)';
   end if;
+  if has_table_privilege('authenticated', 'public.cira_request_receipts', 'select') then
+    raise exception 'TEST_FAILED: authenticated can read receipt friendship links';
+  end if;
   if has_table_privilege('authenticated', 'private.cira_rate_limits', 'select') then
     raise exception 'TEST_FAILED: authenticated can select cira_rate_limits';
   end if;
@@ -144,6 +147,9 @@ begin
     'cira_friendships_requester_status_idx',
     'cira_friendships_addressee_status_idx',
     'cira_friendships_pair_key',
+    'cira_request_receipts_requester_handle_key',
+    'cira_request_receipts_friendship_key',
+    'cira_request_receipts_requester_expires_idx',
     'cira_blocks_blocked_idx',
     'cira_presence_expires_idx',
     'cira_presence_user_expires_idx',
@@ -204,6 +210,15 @@ begin
   if cols <> array['id', 'creator_id', 'token_hash', 'created_at', 'expires_at',
                    'consumed_at', 'outcome', 'revoked_at'] then
     raise exception 'TEST_FAILED: unexpected cira_invitations columns: %', cols;
+  end if;
+
+  select array_agg(attname order by attnum) into cols
+  from pg_attribute
+  where attrelid = 'public.cira_request_receipts'::regclass
+    and attnum > 0 and not attisdropped;
+  if cols <> array['id', 'requester_id', 'requested_handle', 'friendship_id',
+                   'created_at', 'expires_at'] then
+    raise exception 'TEST_FAILED: unexpected cira_request_receipts columns: %', cols;
   end if;
 
   select array_agg(attname order by attnum) into cols

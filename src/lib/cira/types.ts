@@ -13,7 +13,10 @@ export type CiraRelationship = {
   id: string;
   direction: "incoming" | "outgoing" | "accepted";
   status: "pending" | "accepted";
-  profile: Pick<CiraProfile, "userId" | "handle" | "displayName" | "avatarKey">;
+  profile: Omit<Pick<CiraProfile, "userId" | "handle" | "displayName" | "avatarKey">, "userId"> & {
+    /** Null only for a blind outgoing request receipt, before acceptance. */
+    userId: string | null;
+  };
   presence: CiraVisiblePresence;
   createdAt: string;
 };

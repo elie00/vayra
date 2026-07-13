@@ -282,7 +282,8 @@ function GroupDetails({ group }: { group: CiraGroup }) {
   if (!repo || !me) return null;
   const memberIds = new Set(members.map((member) => member.userId));
   const inviteable = relationships.filter(
-    (relationship) => relationship.status === "accepted" && !memberIds.has(relationship.profile.userId),
+    (relationship) => relationship.status === "accepted" && relationship.profile.userId !== null
+      && !memberIds.has(relationship.profile.userId),
   );
   const run = async (action: Promise<unknown>) => {
     setError(null);
@@ -329,7 +330,7 @@ function GroupDetails({ group }: { group: CiraGroup }) {
             {t("Invite an accepted CIRA relation")}
             <select value={friendId} onChange={(event) => setFriendId(event.target.value)} className="h-10 rounded-lg border border-edge bg-elevated px-3 text-[13px] text-ink outline-none">
               <option value="">{t("Choose a person")}</option>
-              {inviteable.map((relationship) => <option key={relationship.profile.userId} value={relationship.profile.userId}>{relationship.profile.displayName} (@{relationship.profile.handle})</option>)}
+              {inviteable.map((relationship) => <option key={relationship.profile.userId!} value={relationship.profile.userId!}>{relationship.profile.displayName} (@{relationship.profile.handle})</option>)}
             </select>
           </label>
           <ActionButton disabled={!friendId} onClick={() => {

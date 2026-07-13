@@ -65,7 +65,7 @@ declare
 begin
   perform test.login_anon();
   foreach t in array array[
-    'public.cira_profiles', 'public.cira_friendships', 'public.cira_blocks',
+    'public.cira_profiles', 'public.cira_friendships', 'public.cira_request_receipts', 'public.cira_blocks',
     'public.cira_presence', 'public.cira_invitations', 'private.cira_rate_limits'
   ] loop
     begin
@@ -112,6 +112,10 @@ begin
       ($q$insert into public.cira_friendships (requester_id, addressee_id, status) values ('00000000-0000-4000-8000-0000000002a1', '00000000-0000-4000-8000-0000000002c3', 'pending')$q$),
       ($q$update public.cira_friendships set status = 'accepted', responded_at = now()$q$),
       ($q$delete from public.cira_friendships$q$),
+      ($q$select count(*) from public.cira_request_receipts$q$),
+      ($q$insert into public.cira_request_receipts (requester_id, requested_handle) values ('00000000-0000-4000-8000-0000000002a1', 'f02_fake')$q$),
+      ($q$update public.cira_request_receipts set expires_at = now() + interval '1 hour'$q$),
+      ($q$delete from public.cira_request_receipts$q$),
       ($q$insert into public.cira_blocks (blocker_id, blocked_id) values ('00000000-0000-4000-8000-0000000002a1', '00000000-0000-4000-8000-0000000002c3')$q$),
       ($q$update public.cira_blocks set created_at = now()$q$),
       ($q$delete from public.cira_blocks$q$),
@@ -143,15 +147,17 @@ do $do$
 declare
   n integer;
 begin
-  -- A sees itself + counterpart B, not C; sees the pending pair; sees only
-  -- its own presence rows.
+  -- A sees only itself and its blind outgoing receipt. The pending target
+  -- profile and friendship remain hidden until B accepts.
   perform test.login('00000000-0000-4000-8000-0000000002a1');
   select count(*) into n from public.cira_profiles;
-  if n <> 2 then raise exception 'TEST_FAILED: A sees % profiles (expected 2: self + counterpart)', n; end if;
+  if n <> 1 then raise exception 'TEST_FAILED: A sees % profiles (expected self only)', n; end if;
   select count(*) into n from public.cira_profiles where user_id = '00000000-0000-4000-8000-0000000002c3';
   if n <> 0 then raise exception 'TEST_FAILED: A can see stranger C profile'; end if;
   select count(*) into n from public.cira_friendships;
-  if n <> 1 then raise exception 'TEST_FAILED: A sees % friendships (expected 1)', n; end if;
+  if n <> 0 then raise exception 'TEST_FAILED: A sees % pending friendships (expected 0)', n; end if;
+  select count(*) into n from public.cira_list_relationships() where direction = 'outgoing';
+  if n <> 1 then raise exception 'TEST_FAILED: A sees % blind receipts (expected 1)', n; end if;
   select count(*) into n from public.cira_presence;
   if n <> 1 then raise exception 'TEST_FAILED: A sees % presence rows (expected 1: own)', n; end if;
 
@@ -161,6 +167,8 @@ begin
   if n <> 2 then raise exception 'TEST_FAILED: B sees % profiles (expected 2)', n; end if;
   select count(*) into n from public.cira_friendships;
   if n <> 1 then raise exception 'TEST_FAILED: B sees % friendships (expected 1)', n; end if;
+  select count(*) into n from public.cira_list_relationships() where direction = 'outgoing';
+  if n <> 0 then raise exception 'TEST_FAILED: B sees another user''s blind receipt'; end if;
   select count(*) into n from public.cira_presence;
   if n <> 0 then raise exception 'TEST_FAILED: B can read raw presence rows of A'; end if;
 
@@ -194,17 +202,22 @@ begin
     raise exception 'TEST_FAILED: stranger C can probe B''s relations';
   end if;
 
-  -- A, who IS in the pair, still gets the correct answer for its own side,
-  -- and false for an unrelated third party.
+  -- Pending requester A cannot use the profile helper to reveal B.
   perform test.login('00000000-0000-4000-8000-0000000002a1');
-  if not private.cira_pair_exists('00000000-0000-4000-8000-0000000002b2') then
-    raise exception 'TEST_FAILED: participant A cannot see its own A-B pair';
+  if private.cira_pair_exists('00000000-0000-4000-8000-0000000002b2') then
+    raise exception 'TEST_FAILED: pending requester A can reveal target B';
   end if;
   if private.cira_pair_exists('00000000-0000-4000-8000-0000000002c3') then
     raise exception 'TEST_FAILED: A sees a non-existent A-C relation';
   end if;
 
+  perform test.login('00000000-0000-4000-8000-0000000002b2');
+  if not private.cira_pair_exists('00000000-0000-4000-8000-0000000002a1') then
+    raise exception 'TEST_FAILED: pending recipient B cannot see requester A';
+  end if;
+
   -- Block helper is caller-scoped too: A blocks C; only A can observe it.
+  perform test.login('00000000-0000-4000-8000-0000000002a1');
   perform public.cira_block_user('00000000-0000-4000-8000-0000000002c3');
   if not private.cira_block_exists('00000000-0000-4000-8000-0000000002c3') then
     raise exception 'TEST_FAILED: blocker A cannot observe its own block';

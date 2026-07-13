@@ -9,10 +9,10 @@ begin
   v_uid := private.cira_require_uid();
   perform private.cira_require_profile(v_uid);
   if p_limit not between 1 and 100 or p_offset < 0 then raise exception 'INVALID_PAGE'; end if;
-  with page as (
+  with visible as (
     select f.id as friendship_id, cp.user_id as counterpart_id, cp.handle,
       cp.display_name, cp.avatar_key, f.status,
-      case when f.requester_id = v_uid then 'outgoing' else 'incoming' end as direction,
+      case when f.status = 'accepted' then 'accepted' else 'incoming' end as direction,
       f.created_at, f.responded_at,
       case when f.status <> 'accepted' then null
         when not cp.presence_opt_in then 'offline'
@@ -22,8 +22,18 @@ begin
     from public.cira_friendships f
     join public.cira_profiles cp on cp.user_id = case
       when f.requester_id = v_uid then f.addressee_id else f.requester_id end
-    where f.requester_id = v_uid or f.addressee_id = v_uid
-    order by f.created_at desc, f.id
+    where (f.status = 'accepted' and (f.requester_id = v_uid or f.addressee_id = v_uid))
+       or (f.status = 'pending' and f.addressee_id = v_uid)
+
+    union all
+
+    select r.id, null::uuid, r.requested_handle, r.requested_handle, null::text,
+      'pending'::text, 'outgoing'::text, r.created_at, null::timestamptz, null::text
+    from public.cira_request_receipts r
+    where r.requester_id = v_uid and r.expires_at > now()
+  ), page as (
+    select * from visible
+    order by created_at desc, friendship_id
     limit p_limit + 1 offset p_offset
   ), numbered as (select page.*, row_number() over () as rn from page)
   select coalesce(jsonb_agg(to_jsonb(numbered) - 'rn' order by rn)
