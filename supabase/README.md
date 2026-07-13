@@ -3,10 +3,11 @@
 CIRA est le domaine social privacy-first de VAYRA, entièrement autonome et lié
 exclusivement à `auth.users.id`. Ce dossier contient :
 
-- `migrations/` — 4 migrations ordonnées : schéma + contraintes + index, RLS +
+- `migrations/` — 5 migrations ordonnées : schéma + contraintes + index, RLS +
   helpers privés, les RPC (`security definer`, `search_path = ''`), puis les
   triggers Realtime (pings `changed` vides sur le canal privé `cira:<userId>`
-  + policy de réception sur `realtime.messages`).
+  + policy de réception sur `realtime.messages`) et le durcissement additif
+  des invitations (auto-preview et blocage croisé).
 - `tests/` — tests SQL multi-utilisateurs couvrant la matrice de menaces
   (RLS, acceptation forcée, énumération de handles, réutilisation de token,
   blocage croisé, fuite de présence, avatar traçant, suppression de compte,
@@ -57,10 +58,12 @@ qui échouent si l'erreur attendue ne se produit **pas**.
 
 ## Application en production (dashboard Supabase → SQL Editor)
 
-Aucun inventaire prod n'est possible avec la clé publiable, donc les
-migrations sont défensives : uniquement des objets préfixés `cira_` (+
-`create schema if not exists private`), en `CREATE` simple — **toute
-collision échoue bruyamment au lieu d'écraser quoi que ce soit**.
+Aucun inventaire prod n'est possible avec la clé publiable. Les quatre
+premières migrations sont défensives : uniquement des objets préfixés
+`cira_` (+ `create schema if not exists private`), en `CREATE` simple —
+**toute collision échoue bruyamment au lieu d'écraser quoi que ce soit**. La
+cinquième est une mise à niveau additive et remplace uniquement deux RPC de
+même signature avec `create or replace function`.
 
 1. **Vérifier manuellement les collisions d'abord** — dans le SQL Editor :
 
@@ -74,11 +77,20 @@ collision échoue bruyamment au lieu d'écraser quoi que ce soit**.
    where p.proname like 'cira\_%';
    ```
 
-   Le résultat doit être **vide**. Sinon, ne rien appliquer et investiguer.
+   Pour une installation neuve, le résultat doit être **vide**. Sinon, ne pas
+   rejouer les quatre migrations initiales : vérifier d'abord s'il s'agit
+   d'une installation CIRA existante avec les comptages de l'étape 3.
 
-2. Appliquer les 4 migrations **dans l'ordre des timestamps**, une par une,
-   chacune collée intégralement dans le SQL Editor (chaque exécution du SQL
-   Editor est transactionnelle : une erreur annule le fichier en cours).
+2. Appliquer les migrations une par une dans l'ordre des timestamps :
+
+   - **installation neuve** : appliquer les 5 fichiers ;
+   - **installation possédant déjà les 4 migrations initiales** : appliquer
+     uniquement `20260713210000_cira_invitation_hardening.sql` ;
+   - dans le doute, arrêter : ne jamais rejouer le schéma initial ni supprimer
+     un objet pour forcer le passage.
+
+   Chaque exécution du SQL Editor est transactionnelle : une erreur annule le
+   fichier en cours.
 
 3. Vérification rapide post-application :
 
