@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { exportThemeJson, getCustomThemes, type CustomTheme } from "@/lib/custom-themes";
 import { recordUpload, uploadTheme } from "@/lib/theme-store";
 import { CoverCropper } from "./theme-upload/cover-cropper";
@@ -10,6 +11,7 @@ import { scaleToBlob } from "./theme-upload/upload-utils";
 const STEPS = ["Theme", "Cover", "Screenshots", "Details"];
 
 export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const myThemes = useMemo(() => getCustomThemes(), []);
   const [step, setStep] = useState(0);
   const [theme, setTheme] = useState<CustomTheme | null>(myThemes[0] ?? null);
@@ -84,18 +86,18 @@ export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[220] flex flex-col bg-canvas" role="dialog" aria-label="Share a theme">
+    <div className="fixed inset-0 z-[220] flex flex-col bg-canvas" role="dialog" aria-label={t("Share a theme")}>
       <header data-tauri-drag-region className="flex shrink-0 items-center justify-between gap-4 border-b border-edge-soft bg-surface/40 px-10 py-5">
         <div data-tauri-drag-region className="flex items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/15 text-accent">
             <Sparkles size={18} strokeWidth={2} />
           </span>
           <div className="flex flex-col">
-            <h1 className="pointer-events-none text-[20px] font-semibold tracking-tight text-ink">Share a theme</h1>
-            <p className="pointer-events-none text-[12.5px] text-ink-subtle">It goes to a quick review, then it's live for everyone.</p>
+            <h1 className="pointer-events-none text-[20px] font-semibold tracking-tight text-ink">{t("Share a theme")}</h1>
+            <p className="pointer-events-none text-[12.5px] text-ink-subtle">{t("It goes to a quick review, then it's live for everyone.")}</p>
           </div>
         </div>
-        <button onClick={onClose} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-elevated hover:text-ink">
+        <button onClick={onClose} aria-label={t("Close")} className="flex h-10 w-10 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-elevated hover:text-ink">
           <X size={18} strokeWidth={2.2} />
         </button>
       </header>
@@ -143,7 +145,7 @@ export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
             onClick={() => (step === 0 ? onClose() : setStep((s) => s - 1))}
             className="flex h-11 items-center gap-2 rounded-xl border border-edge-soft px-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
-            <ArrowLeft size={15} className="dir-icon" /> {step === 0 ? "Cancel" : "Back"}
+            <ArrowLeft size={15} className="dir-icon" /> {step === 0 ? t("Cancel") : t("Back")}
           </button>
           {step < STEPS.length - 1 ? (
             <button
@@ -151,7 +153,7 @@ export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
               disabled={!canAdvance}
               className="flex h-11 items-center gap-2 rounded-xl bg-ink px-6 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
             >
-              Continue <ArrowRight size={15} className="dir-icon" />
+              {t("Continue")} <ArrowRight size={15} className="dir-icon" />
             </button>
           ) : (
             <button
@@ -160,7 +162,7 @@ export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
               className="flex h-11 items-center gap-2 rounded-xl bg-accent px-6 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {submitting ? "Submitting…" : "Submit for review"}
+              {submitting ? t("Submitting…") : t("Submit for review")}
             </button>
           )}
         </footer>
@@ -171,6 +173,7 @@ export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
 }
 
 function StepRail({ step }: { step: number }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-2">
       {STEPS.map((label, i) => (
@@ -183,7 +186,7 @@ function StepRail({ step }: { step: number }) {
             >
               {i < step ? <Check size={14} strokeWidth={3} /> : i + 1}
             </span>
-            <span className={`text-[13px] font-semibold ${i <= step ? "text-ink" : "text-ink-subtle"}`}>{label}</span>
+            <span className={`text-[13px] font-semibold ${i <= step ? "text-ink" : "text-ink-subtle"}`}>{t(label)}</span>
           </div>
           {i < STEPS.length - 1 && (
             <div className="h-px flex-1 bg-edge-soft">
@@ -197,17 +200,18 @@ function StepRail({ step }: { step: number }) {
 }
 
 function ThemeStep({ themes, selected, onSelect }: { themes: CustomTheme[]; selected: CustomTheme | null; onSelect: (t: CustomTheme) => void }) {
+  const tr = useT();
   if (themes.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-edge px-6 py-16 text-center">
-        <span className="text-[15px] font-semibold text-ink">No themes to share yet</span>
-        <span className="max-w-[38ch] text-[13px] text-ink-muted">Build one in the studio or import a theme file first, then come back to share it.</span>
+        <span className="text-[15px] font-semibold text-ink">{tr("No themes to share yet")}</span>
+        <span className="max-w-[38ch] text-[13px] text-ink-muted">{tr("Build one in the studio or import a theme file first, then come back to share it.")}</span>
       </div>
     );
   }
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[14px] text-ink-muted">Pick one of your themes to share.</p>
+      <p className="text-[14px] text-ink-muted">{tr("Pick one of your themes to share.")}</p>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {themes.map((t) => {
           const active = selected?.id === t.id;
@@ -234,16 +238,17 @@ function ThemeStep({ themes, selected, onSelect }: { themes: CustomTheme[]; sele
 }
 
 function ShotsStep({ shots, onAdd, onRemove }: { shots: { url: string }[]; onAdd: () => void; onRemove: (i: number) => void }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[14px] text-ink-muted">Add up to 6 screenshots so people can see your theme in action. Optional, but they sell it.</p>
+      <p className="text-[14px] text-ink-muted">{t("Add up to 6 screenshots so people can see your theme in action. Optional, but they sell it.")}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {shots.map((s, i) => (
           <div key={i} className="group relative aspect-video overflow-hidden rounded-xl border border-edge-soft">
             <img src={s.url} alt="" className="h-full w-full object-cover" />
             <button
               onClick={() => onRemove(i)}
-              aria-label="Remove"
+              aria-label={t("Remove")}
               className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/75 group-hover:opacity-100"
             >
               <Trash2 size={13} />
@@ -256,7 +261,7 @@ function ShotsStep({ shots, onAdd, onRemove }: { shots: { url: string }[]; onAdd
             className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-edge text-ink-subtle transition-colors hover:border-accent hover:text-ink"
           >
             {shots.length === 0 ? <ImagePlus size={24} strokeWidth={1.6} /> : <Plus size={22} strokeWidth={1.8} />}
-            <span className="text-[12.5px] font-medium">Add screenshot</span>
+            <span className="text-[12.5px] font-medium">{t("Add screenshot")}</span>
           </button>
         )}
       </div>
@@ -279,16 +284,17 @@ function DetailsStep({
   onAuthor: (v: string) => void;
   onBlurb: (v: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="flex max-w-[460px] flex-col gap-5">
-      <Field label="Theme name">
+      <Field label={t("Theme name")}>
         <input value={name} onChange={(e) => onName(e.target.value)} maxLength={60} className="h-11 rounded-xl border border-edge-soft bg-elevated/40 px-3.5 text-[14px] text-ink focus:border-edge focus:outline-none" />
       </Field>
-      <Field label="Your name" hint="Shown as the author. Remembered for next time.">
-        <input value={author} onChange={(e) => onAuthor(e.target.value)} maxLength={60} placeholder="Anonymous" className="h-11 rounded-xl border border-edge-soft bg-elevated/40 px-3.5 text-[14px] text-ink placeholder:text-ink-subtle focus:border-edge focus:outline-none" />
+      <Field label={t("Your name")} hint={t("Shown as the author. Remembered for next time.")}>
+        <input value={author} onChange={(e) => onAuthor(e.target.value)} maxLength={60} placeholder={t("Anonymous")} className="h-11 rounded-xl border border-edge-soft bg-elevated/40 px-3.5 text-[14px] text-ink placeholder:text-ink-subtle focus:border-edge focus:outline-none" />
       </Field>
-      <Field label="Tagline" hint="One line shown under the name.">
-        <textarea value={blurb} onChange={(e) => onBlurb(e.target.value)} maxLength={160} rows={2} className="resize-none rounded-xl border border-edge-soft bg-elevated/40 px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-subtle focus:border-edge focus:outline-none" placeholder="A short, punchy description" />
+      <Field label={t("Tagline")} hint={t("One line shown under the name.")}>
+        <textarea value={blurb} onChange={(e) => onBlurb(e.target.value)} maxLength={160} rows={2} className="resize-none rounded-xl border border-edge-soft bg-elevated/40 px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-subtle focus:border-edge focus:outline-none" placeholder={t("A short, punchy description")} />
       </Field>
     </div>
   );
@@ -305,23 +311,24 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 function SuccessView({ share, copied, onCopy, onDone }: { share: string; copied: boolean; onCopy: () => void; onDone: () => void }) {
+  const t = useT();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-10 text-center">
       <span className="harbor-step flex h-16 w-16 items-center justify-center rounded-full bg-accent/15 text-accent">
         <Check size={32} strokeWidth={2.5} />
       </span>
       <div className="flex flex-col gap-1.5">
-        <h2 className="font-display text-[26px] font-medium text-ink">Submitted for review</h2>
-        <p className="max-w-[42ch] text-[14px] text-ink-muted">Thanks for sharing. It'll appear in the library once it's approved. You can manage it any time from your uploads.</p>
+        <h2 className="font-display text-[26px] font-medium text-ink">{t("Submitted for review")}</h2>
+        <p className="max-w-[42ch] text-[14px] text-ink-muted">{t("Thanks for sharing. It'll appear in the library once it's approved. You can manage it any time from your uploads.")}</p>
       </div>
       <div className="flex items-center gap-2 rounded-xl border border-edge-soft bg-elevated/40 px-3 py-2">
         <span className="max-w-[280px] truncate text-[12.5px] text-ink-muted">{share}</span>
         <button onClick={onCopy} className="flex h-8 items-center gap-1.5 rounded-lg bg-ink px-3 text-[12px] font-semibold text-canvas">
-          {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copied" : "Copy link"}
+          {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? t("Copied") : t("Copy link")}
         </button>
       </div>
       <button onClick={onDone} className="mt-2 h-11 rounded-xl bg-accent px-8 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90">
-        Done
+        {t("Done")}
       </button>
     </div>
   );

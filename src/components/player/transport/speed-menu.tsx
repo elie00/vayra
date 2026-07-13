@@ -254,6 +254,7 @@ function Row({
   onClick: () => void;
   onRemove?: () => void;
 }) {
+  const t = useT();
   return (
     <div className="relative flex items-center">
       <button
@@ -273,7 +274,7 @@ function Row({
             e.stopPropagation();
             onRemove();
           }}
-          aria-label="Remove preset"
+          aria-label={t("Remove preset")}
           className="absolute end-2 flex h-6 w-6 items-center justify-center rounded-md text-ink-subtle transition-colors hover:bg-danger/15 hover:text-danger"
         >
           <X size={13} strokeWidth={2.4} />
@@ -294,6 +295,7 @@ function AddPresetInput({
   units?: { labels: [string, string]; factor: number };
   onAdd: (value: number) => boolean;
 }) {
+  const t = useT();
   const [val, setVal] = useState("");
   const [unit, setUnit] = useState(0);
   const submit = () => {
@@ -333,7 +335,7 @@ function AddPresetInput({
       )}
       <button
         onClick={submit}
-        aria-label="Add preset"
+        aria-label={t("Add preset")}
         className="flex h-7 w-7 items-center justify-center rounded-md bg-raised text-ink-muted transition-colors hover:bg-canvas/55 hover:text-ink"
       >
         <Plus size={15} strokeWidth={2.4} />

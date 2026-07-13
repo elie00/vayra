@@ -1,21 +1,23 @@
 import type { ReactNode } from "react";
 import { usePlaybackDownloadedGated, usePlaybackPositionGated } from "@/lib/player/playback-clock";
+import { useT } from "@/lib/i18n";
 import { fmtTime } from "./transport-utils";
 import type { TimeFormat } from "@/lib/player-chrome";
 
 function CachedDot({ active }: { active: boolean }): ReactNode {
+  const t = useT();
   const downloaded = usePlaybackDownloadedGated(active);
   if (downloaded < 0.999) return null;
   return (
     <span
       className="ms-2 inline-block h-2 w-2 shrink-0 rounded-full bg-[#22c55e] align-middle shadow-[0_0_4px_rgba(34,197,94,0.7)]"
-      title="Cached"
+      title={t("Cached")}
     />
   );
 }
 
-function cycleTitle(fmt: TimeFormat): string {
-  return fmt === "remaining" ? "Show total length" : "Show time left";
+function cycleTitle(fmt: TimeFormat, t: ReturnType<typeof useT>): string {
+  return fmt === "remaining" ? t("Show total length") : t("Show time left");
 }
 
 export function TimeStart({
@@ -35,6 +37,7 @@ export function TimeStart({
   stremio?: boolean;
   onCycle?: () => void;
 }): ReactNode {
+  const t = useT();
   const positionSec = usePlaybackPositionGated(active);
   if (isLiveChannel) return null;
   if (stremio) {
@@ -62,7 +65,7 @@ export function TimeStart({
         <button
           type="button"
           onClick={onCycle}
-          title={cycleTitle(fmt)}
+          title={cycleTitle(fmt, t)}
           className={`${cls} cursor-pointer transition-colors hover:text-white`}
         >
           {inner}
@@ -94,6 +97,7 @@ export function TimeEnd({
   active: boolean;
   onCycle?: () => void;
 }): ReactNode {
+  const t = useT();
   const positionSec = usePlaybackPositionGated(active);
   if (isLiveChannel || tight) return null;
   const fmt: TimeFormat = timeFormat ?? "start-end";
@@ -108,7 +112,7 @@ export function TimeEnd({
       <button
         type="button"
         onClick={onCycle}
-        title={cycleTitle(fmt)}
+        title={cycleTitle(fmt, t)}
         className={`${cls} pointer-events-auto cursor-pointer transition-colors hover:text-white/95`}
       >
         {text}

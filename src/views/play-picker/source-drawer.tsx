@@ -6,6 +6,7 @@ import { FlagStack } from "@/components/flag";
 import { FormatBadge } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import { useDebridClients } from "@/lib/debrid/registry";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
@@ -50,6 +51,7 @@ export function SourceDrawer({
   showName: string;
   episode?: PlayEpisode;
 }) {
+  const t = useT();
   const [addonFilter, setAddonFilter] = useState("all");
   const addonOptions = useMemo(() => buildAddonOptions(streams), [streams]);
   const shown = useMemo(
@@ -69,20 +71,22 @@ export function SourceDrawer({
           size={14}
           className={`transition-transform duration-300 ${open ? "rotate-180" : ""}`}
         />
-        <span>{open ? "Hide all sources" : "All sources"}</span>
+        <span>{open ? t("Hide all sources") : t("All sources")}</span>
         <span className="text-ink-subtle/80">{count}</span>
         {usedAddons.length > 0 && (
           <span className="flex items-center gap-2">
             <AddonLogoStack addons={usedAddons} size="sm" max={5} />
             <span className="text-ink-subtle/80">
-              {addonCount} addon{addonCount === 1 ? "" : "s"}
+              {addonCount === 1
+                ? t("{count} addon", { count: addonCount })
+                : t("{count} addons", { count: addonCount })}
             </span>
           </span>
         )}
       </button>
       {open && addonOptions.length > 1 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <AddonPill active={addonFilter === "all"} onClick={() => setAddonFilter("all")} label="All" count={streams.length} />
+          <AddonPill active={addonFilter === "all"} onClick={() => setAddonFilter("all")} label={t("All")} count={streams.length} />
           {addonOptions.map((o) => (
             <AddonPill
               key={o.id}
@@ -163,6 +167,7 @@ function SourceRow({
   showName: string;
   episode?: PlayEpisode;
 }) {
+  const t = useT();
   const { settings } = useSettings();
   const cachedDebrids = debrids.filter((d) => stream.cached[d.slug]);
   const libraryDebrids = debrids.filter((d) => stream.inLibrary[d.slug]);
@@ -220,27 +225,27 @@ function SourceRow({
           {libraryDebrids.length > 0 ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.14em] text-accent">
               <Zap size={12} fill="currentColor" strokeWidth={0} />
-              In {libraryDebrids.map((d) => d.name).join(" + ")}
+              {t("In {debrids}", { debrids: libraryDebrids.map((d) => d.name).join(" + ") })}
             </span>
           ) : cachedDebrids.length > 0 ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
               <Zap size={11} strokeWidth={2} />
-              Cached on {cachedDebrids.map((d) => d.name).join(" + ")}
+              {t("Cached on {debrids}", { debrids: cachedDebrids.map((d) => d.name).join(" + ") })}
             </span>
           ) : addonCached ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
               <Zap size={11} strokeWidth={2} />
-              Cached
+              {t("Cached")}
             </span>
           ) : !stream.url && !stream.infoHash && (stream.externalUrl || stream.ytId) ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
               <ExternalLink size={11} strokeWidth={2.2} />
-              External
+              {t("External")}
             </span>
           ) : !stream.url ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
               <Download size={11} strokeWidth={2.2} />
-              {debrids.length === 0 && stream.infoHash ? "Stream" : "Cache"}
+              {debrids.length === 0 && stream.infoHash ? t("Stream") : t("Cache")}
             </span>
           ) : null}
           {resolving ? (

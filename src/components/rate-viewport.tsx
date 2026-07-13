@@ -2,6 +2,7 @@ import { ArrowUpRight, ExternalLink, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { openUrl } from "@/lib/window";
+import { useT } from "@/lib/i18n";
 
 export function RateViewport({
   url,
@@ -14,6 +15,7 @@ export function RateViewport({
   logo?: string | null;
   onClose: () => void;
 }) {
+  const t = useT();
   const [loaded, setLoaded] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -63,7 +65,7 @@ export function RateViewport({
             </span>
           )}
           <span className="truncate text-[10.5px] font-bold uppercase tracking-[0.22em] text-accent">
-            Rate · powered by stremio-addons.net
+            {t("Rate · powered by")} stremio-addons.net
           </span>
           <span className="hidden truncate text-[12.5px] font-medium text-ink-muted sm:inline">
             · {title}
@@ -76,12 +78,12 @@ export function RateViewport({
             className="flex h-9 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <ExternalLink size={12} strokeWidth={2.4} />
-            Open in browser
+            {t("Open in browser")}
           </button>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("Close")}
             className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-elevated/60 hover:text-ink"
           >
             <X size={16} strokeWidth={2.2} />
@@ -94,18 +96,17 @@ export function RateViewport({
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-canvas">
             <div className="flex items-center gap-2 text-ink-muted">
               <Loader2 size={20} className="animate-spin" />
-              <span className="text-[13px]">Loading stremio-addons.net…</span>
+              <span className="text-[13px]">{t("Loading stremio-addons.net…")}</span>
             </div>
           </div>
         )}
         {blocked && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
             <p className="text-[14px] font-semibold text-ink">
-              stremio-addons.net blocks embedding from outside their site.
+              {t("stremio-addons.net blocks embedding from outside their site.")}
             </p>
             <p className="max-w-[40ch] text-[12.5px] text-ink-muted">
-              That&apos;s the correct security posture: it stops other sites from impersonating
-              the rating UI. Use the button below to rate in your browser.
+              {t("That's the correct security posture: it stops other sites from impersonating the rating UI. Use the button below to rate in your browser.")}
             </p>
             <button
               type="button"
@@ -116,7 +117,7 @@ export function RateViewport({
               className="flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
             >
               <ArrowUpRight size={13} strokeWidth={2.4} />
-              Open on stremio-addons.net
+              {t("Open on stremio-addons.net")}
             </button>
           </div>
         )}
