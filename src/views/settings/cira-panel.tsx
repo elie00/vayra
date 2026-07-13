@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Link2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
+import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
+import { CatAvatar } from "@/components/icons/cat-avatar";
+import { avatarUrl } from "@/lib/avatars/catalog";
 import { useCira } from "@/lib/cira/provider";
 import { CiraError } from "@/lib/cira";
 import type { CiraInviteSecret, CiraProfile, CiraRelationship } from "@/lib/cira";
@@ -70,18 +73,27 @@ function PersonRow({
   trailing,
   sub,
 }: {
-  profile: Pick<CiraProfile, "handle" | "displayName">;
+  profile: Pick<CiraProfile, "handle" | "displayName"> & { avatarKey?: string | null };
   trailing: React.ReactNode;
   sub?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="truncate text-[14px] font-medium text-ink">{profile.displayName}</span>
-        <span className="flex items-center gap-2 text-[12px] text-ink-subtle">
-          @{profile.handle}
-          {sub}
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-elevated ring-1 ring-edge-soft">
+          {profile.avatarKey ? (
+            <img src={avatarUrl(profile.avatarKey)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+          ) : (
+            <CatAvatar className="h-full w-full" />
+          )}
         </span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="truncate text-[14px] font-medium text-ink">{profile.displayName}</span>
+          <span className="flex items-center gap-2 text-[12px] text-ink-subtle">
+            @{profile.handle}
+            {sub}
+          </span>
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">{trailing}</div>
     </div>
@@ -121,19 +133,23 @@ function ProfileCard() {
   const { me, repo, refresh } = useCira();
   const [handle, setHandle] = useState(me?.handle ?? "");
   const [displayName, setDisplayName] = useState(me?.displayName ?? "");
+  const [avatarKey, setAvatarKey] = useState<string | null>(me?.avatarKey ?? null);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
 
   useEffect(() => {
     setHandle(me?.handle ?? "");
     setDisplayName(me?.displayName ?? "");
+    setAvatarKey(me?.avatarKey ?? null);
   }, [me]);
 
   const normalizedHandle = handle.trim().toLowerCase();
   const handleValid = /^[a-z0-9][a-z0-9_]{2,23}$/.test(normalizedHandle);
   const nameValid = displayName.trim().length >= 1 && displayName.trim().length <= 48;
   const dirty =
-    normalizedHandle !== (me?.handle ?? "") || displayName.trim() !== (me?.displayName ?? "");
+    normalizedHandle !== (me?.handle ?? "") || displayName.trim() !== (me?.displayName ?? "") ||
+    avatarKey !== (me?.avatarKey ?? null);
 
   const save = async () => {
     if (!repo || busy) return;
@@ -143,7 +159,7 @@ function ProfileCard() {
       await repo.saveProfile({
         handle: normalizedHandle,
         displayName: displayName.trim(),
-        avatarKey: me?.avatarKey ?? null,
+        avatarKey,
       });
       await refresh();
       setNotice({ text: t("Saved"), tone: "ok" });
@@ -164,6 +180,15 @@ function ProfileCard() {
       }
     >
       <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => setAvatarOpen(true)} className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-elevated ring-2 ring-edge-soft transition hover:ring-ink">
+            {avatarKey ? <img src={avatarUrl(avatarKey)} alt="" className="h-full w-full object-cover" /> : <CatAvatar className="h-full w-full" />}
+          </button>
+          <div>
+            <button type="button" onClick={() => setAvatarOpen(true)} className="text-[13px] font-medium text-ink hover:underline">{t("Choose an avatar")}</button>
+            <p className="text-[11.5px] text-ink-subtle">{t("Visible only to your CIRA relations and private groups.")}</p>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-4">
           <div className="flex min-w-52 flex-1 flex-col gap-1.5">
             <label className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
@@ -205,6 +230,13 @@ function ProfileCard() {
           />
           {notice && <InlineNotice text={notice.text} tone={notice.tone} />}
         </div>
+        {avatarOpen && (
+          <AvatarCatalogModal
+            current={avatarKey ? avatarUrl(avatarKey) : null}
+            onPick={(id) => { setAvatarKey(id); setAvatarOpen(false); }}
+            onClose={() => setAvatarOpen(false)}
+          />
+        )}
       </div>
     </Section>
   );
