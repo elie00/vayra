@@ -38,6 +38,17 @@ function IconBasics(p: IconProps) {
   );
 }
 
+function IconCira(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <circle cx="9" cy="8.5" r="3" />
+      <path d="M3.8 19c.9-2.6 2.9-4 5.2-4s4.3 1.4 5.2 4" />
+      <circle cx="16.8" cy="9.5" r="2.3" />
+      <path d="M15.6 14.6c1.9.1 3.7 1.3 4.5 3.4" />
+    </IconBase>
+  );
+}
+
 function IconAccount(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -327,6 +338,12 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         label: "Account",
         Icon: IconAccount,
         keywords: ["stremio", "sign in", "login", "profile", "logout"],
+      },
+      {
+        id: "cira",
+        label: "CIRA",
+        Icon: IconCira,
+        keywords: ["cira", "friends", "circle", "invite", "invitation", "presence", "social", "block", "handle"],
       },
       {
         id: "library",
@@ -1190,6 +1207,7 @@ export function SettingsNav({
   const status: Record<SectionId, string | null> = {
     basics: null,
     account: null,
+    cira: null,
     library: libraryKeys > 0 ? `${libraryKeys}/5` : null,
     trakt: null,
     anilist: null,

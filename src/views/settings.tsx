@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AccountStub } from "./settings/account";
+import { CiraPanel } from "./settings/cira-panel";
 import { AdvancedPanel } from "./settings/advanced-panel";
 import { BasicsPanel } from "./settings/basics-panel";
 import { BugReportPanel } from "./settings/bug-report-panel";
@@ -40,6 +41,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   account: {
     label: "Account",
     sub: "Your Stremio sign-in. Library, watch progress, and addons sync from here.",
+  },
+  cira: {
+    label: "CIRA",
+    sub: "Your close circle on VAYRA. Friends, invitations, presence — all opt-in, nothing public.",
   },
   library: {
     label: "Library & metadata",
@@ -258,6 +263,8 @@ export function Settings() {
           {active === "basics" && <BasicsPanel />}
 
           {active === "account" && <AccountStub />}
+
+          {active === "cira" && <CiraPanel />}
 
           {active === "library" && (
             <LibraryPanel

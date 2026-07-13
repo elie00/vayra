@@ -41,6 +41,8 @@ import { MobileNotice } from "@/components/mobile-notice";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { ListToastHost } from "@/components/lists/list-toast";
 import { TogetherChatToast } from "@/components/together-chat-toast";
+import { CiraInviteBridge } from "@/components/cira-invite-bridge";
+import { CiraProvider } from "@/lib/cira/provider";
 import { TogetherCursors } from "@/components/together-cursors";
 import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
 import { TogetherInviteToast } from "@/components/together-invite-toast";
@@ -253,6 +255,7 @@ export function App() {
         <AuthProvider>
           <OnboardingProvider>
             <TogetherProvider>
+            <CiraProvider>
               <ViewProvider>
                 <SearchProvider>
                 <DvrProvider>
@@ -275,6 +278,7 @@ export function App() {
                         <OnboardingModal />
                       </Suspense>
                       <TogetherInviteToast />
+                      <CiraInviteBridge />
                       <TogetherFloater />
                       <TogetherHostLeavingPrompt />
                       <TogetherSummonToast />
@@ -309,6 +313,7 @@ export function App() {
                 </DvrProvider>
                 </SearchProvider>
               </ViewProvider>
+            </CiraProvider>
             </TogetherProvider>
           </OnboardingProvider>
         </AuthProvider>

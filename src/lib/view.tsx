@@ -120,6 +120,7 @@ export type ScrollSnapshot = {
 
 export type SettingsSection =
   | "account"
+  | "cira"
   | "library"
   | "trakt"
   | "anilist"
