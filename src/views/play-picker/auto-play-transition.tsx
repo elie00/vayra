@@ -33,7 +33,7 @@ export function AutoPlayTransition({
     setStubNotice(t("Last source wasn't actually cached on your debrid yet. Trying another."));
     const timer = window.setTimeout(() => setStubNotice(null), 6000);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [t]);
   return (
     <main className={`fixed inset-0 z-[120] overflow-hidden ${kid ? "bg-[#0c4a6e]" : "bg-black"}`}>
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 z-20 h-16" />

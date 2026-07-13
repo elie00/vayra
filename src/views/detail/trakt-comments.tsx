@@ -494,7 +494,7 @@ export function TraktComments({ resolution }: { resolution: IdResolution | null 
       }
     }
     setPosting(false);
-  }, [target, text, posting, commentsCacheKey, spoiler]);
+  }, [target, text, posting, commentsCacheKey, spoiler, t]);
 
   const handleDelete = useCallback((id: number) => {
     setComments((prev) => prev.filter((c) => c.id !== id));
