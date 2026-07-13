@@ -2,10 +2,10 @@
 
 **Produit :** VAYRA — *A product by EYBO*<br>
 **Période couverte :** 11–13 juillet 2026<br>
-**Dépôt application :** [`elie00/vayra`](https://github.com/elie00/vayra)<br>
-**Dépôt site :** [`elie00/vayra-site`](https://github.com/elie00/vayra-site)<br>
-**Site en production :** [`vayra-site.vercel.app`](https://vayra-site.vercel.app/)<br>
-**Branche applicative courante :** `feat/vayra-mineral-monochrome`
+**Monorepo :** [`elie00/vayra`](https://github.com/elie00/vayra)<br>
+**Site :** dossier `site/` du monorepo, déployé sur [`vayra.eybo.tech`](https://vayra.eybo.tech/)<br>
+**Preview Vercel :** [`vayra-site.vercel.app`](https://vayra-site.vercel.app/)<br>
+**Branche de référence :** `main`
 
 ## 1. Objet du document
 
@@ -50,16 +50,15 @@ Le fork Harbor a été transformé en produit autonome VAYRA avec :
 | --- | --- |
 | Dépôt principal | `https://github.com/elie00/vayra.git` |
 | Ancienne URL | `elie00/harbor` redirige en HTTP 301 vers `elie00/vayra` |
-| `main` / `origin/main` | `d39b204` — `chore(brand): point invite/join base at vayra.eybo.tech` |
-| Branche active | `feat/vayra-mineral-monochrome`, poussée sur `origin` |
-| Écart branche active / `main` | `0` commit propre à `main`, `24` commits propres à la branche active après ce rapport |
-| Site | branche `codex/mineral-monochrome-site` à `2724d22` |
-| Production Vercel | `https://vayra-site.vercel.app/`, réponse HTTP 200 |
+| Branche de référence | `main`, avec identité, auth email, Mineral Monochrome et site consolidés |
+| Site | dossier `site/` du même dépôt, Root Directory Vercel `site` |
+| Production Vercel | `https://vayra.eybo.tech/`, réponse HTTP 200 au dernier contrôle |
+| Preview Vercel | `https://vayra-site.vercel.app/`, conservée pour les validations techniques |
 | Tags VAYRA | `vayra-brand-v1`, `vayra-identity-v1`, `vara-veya-proto-v1` |
 
-**Point important :** les derniers travaux d’authentification, de traduction et
-de design Mineral Monochrome sont poussés sur
-`feat/vayra-mineral-monochrome`, mais ne sont pas encore contenus dans `main`.
+**Point important :** les travaux d’authentification et de design Mineral
+Monochrome sont contenus dans `main`. Les branches historiques restent des
+références de travail et ne doivent pas être fusionnées à nouveau sans audit.
 
 ## 4. Travaux réalisés par domaine
 
@@ -139,6 +138,13 @@ en CI.
 
 Les notes historiques indiquent une CI verte Windows, Linux et macOS Apple
 Silicon. Windows et Linux restent à valider uniquement via GitHub Actions.
+
+La passe `ops/release-readiness` a ensuite réparé le contrôle Rust sans modifier
+le comportement du player : préparation de placeholders pour les sidecars lors
+des contrôles statiques (`a137695`), exécution Bash multiplateforme (`d8b5fdf`),
+correction de deux emprunts Windows hors player (`04914f4`) et quarantaine
+ciblée des seuls lints de style player nécessitant une validation manuelle
+(`d430afc`, `0b87cd0`).
 
 ### 4.6 Rebranding visible Harbor → VAYRA
 
@@ -315,7 +321,7 @@ déploiement.
 | --- | --- |
 | `pnpm exec tsc -b` | succès |
 | `pnpm lint` | succès |
-| `pnpm test -- --runInBand` | 26 fichiers, 153 tests réussis |
+| `pnpm test` | 26 fichiers, 153 tests réussis |
 | `cargo check --manifest-path src-tauri/Cargo.toml` | succès |
 | `PATH="$HOME/.cargo/bin:$PATH" pnpm build` | succès |
 | `git diff --check` | succès |
@@ -323,6 +329,23 @@ déploiement.
 Le premier `pnpm build` lancé avec le Rust Homebrew a échoué faute de cible WASM.
 La même commande avec la toolchain rustup dans le `PATH` a réussi. Ce point est
 un détail d’environnement local, pas une régression du code.
+
+### Application native — passe release-readiness
+
+Le workflow [`src-tauri` #29248392883](https://github.com/elie00/vayra/actions/runs/29248392883)
+de la branche `ops/release-readiness` a réellement terminé avec succès :
+
+| Job | Résultat |
+| --- | --- |
+| Android debug build (arm64) | succès |
+| Clippy + tests Rust macOS | succès |
+| Clippy + tests Rust Windows | succès |
+| Clippy + tests Rust Linux | succès |
+
+`cargo fmt --manifest-path src-tauri/Cargo.toml --check` reste en échec local
+sur un passif de formatage réparti dans de nombreux fichiers Rust préexistants.
+Aucun reformatage massif n'a été appliqué dans cette passe afin de ne pas
+mélanger cette dette avec les correctifs CI.
 
 ### Site
 
@@ -352,14 +375,13 @@ faite au moment de la rédaction de ce document.
 | VARA/VEYA | `vara-broker/`, `src/lib/together/sync/`, `src-tauri/src/vara_client.rs` |
 | Cast | `src-tauri/src/cast.rs`, `src/lib/player/cast-interp.ts`, UI cast/player |
 | Traductions | `src/lib/i18n/locales/` |
-| Site | dépôt `vayra-site`, dossier `public/`, fonctions `api/` |
+| Site | `site/public/`, fonctions `site/api/`, configuration `site/vercel.json` |
 | CI | `.github/workflows/` |
 
 ## 8. Limites et travaux encore nécessaires
 
-1. **Fusion de la branche courante :** les 22 commits propres à
-   `feat/vayra-mineral-monochrome` doivent encore être intégrés à `main` après
-   revue et CI.
+1. **Intégration release-readiness :** le correctif CI Rust est vert sur
+   `ops/release-readiness` mais doit encore être relu puis intégré à `main`.
 2. **Cast réel :** Chromecast, Roku, Google TV et Samsung doivent être testés sur
    matériel.
 3. **VARA/VEYA :** le scénario manuel deux processus reste obligatoire avant de
@@ -374,10 +396,9 @@ faite au moment de la rédaction de ce document.
    remplacement n’est pas entièrement disponible.
 7. **Player :** aucune modification future de libmpv, HDR, shaders, décodage ou
    P2P ne doit être fusionnée sans test de lecture manuel documenté.
-8. **Fichiers locaux non suivis :** `.claude/`,
-   `docs/vara-veya-architecture.md`, les assets Android générés et
-   `tauri.properties` sont volontairement restés hors des commits de la branche
-   courante.
+8. **Artefacts locaux :** `.claude/`, les assets Android générés et
+   `tauri.properties` restent ignorés. Le document source
+   `docs/vara-veya-architecture.md` est versionné avec le projet.
 
 ## 9. Conclusion
 
@@ -386,7 +407,7 @@ VAYRA autonome, cohérent visuellement et techniquement, doté d’une base
 collaborative, d’une authentification propre, d’un pipeline de lecture plus
 réactif et d’une présence publique déployée.
 
-La priorité suivante est de faire relire et fusionner
-`feat/vayra-mineral-monochrome` dans `main`, puis d’exécuter les validations
-manuelles impossibles en CI : matériel de cast, lecture multiplateforme,
-VARA/VEYA à deux instances et callback email dans les builds packagés.
+La priorité suivante est de relire puis intégrer `ops/release-readiness` à
+`main`, puis d’exécuter les validations manuelles impossibles en CI : matériel
+de cast, lecture multiplateforme, VARA/VEYA à deux instances et callback email
+dans les builds packagés.

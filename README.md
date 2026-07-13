@@ -683,9 +683,9 @@ Thank you to everyone, named and unnamed, whose open work VAYRA builds upon.
 </div>
 
 <!-- reference links -->
-[releases]: https://github.com/harborstremio/harbor/releases
-[issues]: https://github.com/harborstremio/harbor/issues
-[discussions]: https://github.com/harborstremio/harbor/discussions
+[releases]: https://github.com/elie00/vayra/releases
+[issues]: https://github.com/elie00/vayra/issues
+[discussions]: https://github.com/elie00/vayra/discussions
 [license]: ./LICENSE
 [tauri]: https://v2.tauri.app/
 [react]: https://react.dev/
