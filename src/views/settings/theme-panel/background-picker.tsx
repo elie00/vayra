@@ -43,7 +43,7 @@ export function BackgroundPicker({
     } else if (imageData) {
       justSetRef.current = false;
     }
-  }, [imageData]);
+  }, [imageData, t]);
 
   const onFile = async (file: File | null) => {
     if (!file) return;
