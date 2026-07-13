@@ -1,6 +1,7 @@
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { CiraError, toCiraError } from "./errors";
 import type {
+  CiraInvitation,
   CiraInviteSecret,
   CiraProfile,
   CiraRelationship,
@@ -172,6 +173,32 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
         expiresAt: asString(record.expires_at),
       };
       return secret;
+    },
+
+    async listInvitations() {
+      const data = await rpc("cira_list_invitations");
+      if (!Array.isArray(data)) throw new CiraError("UNKNOWN");
+      return data.map((row): CiraInvitation => {
+        const record = asRecord(row);
+        // La RPC renvoie status consumed/revoked/expired/active + outcome
+        // accepted/declined ; on replie sur l'état client à 5 valeurs.
+        const status = asString(record.status);
+        const outcome = asNullableString(record.outcome);
+        const state: CiraInvitation["state"] =
+          status === "consumed"
+            ? outcome === "declined"
+              ? "declined"
+              : "accepted"
+            : status === "revoked" || status === "expired"
+              ? status
+              : "active";
+        return {
+          id: asString(record.invitation_id),
+          createdAt: asString(record.created_at),
+          expiresAt: asString(record.expires_at),
+          state,
+        };
+      });
     },
 
     async previewInvitation(token) {

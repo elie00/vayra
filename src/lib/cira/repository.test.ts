@@ -106,6 +106,13 @@ describe("createCiraRepository RPC wiring", () => {
       rpcData: [],
     },
     {
+      name: "listInvitations -> cira_list_invitations",
+      call: (repo) => repo.listInvitations(),
+      rpcName: "cira_list_invitations",
+      rpcArgs: undefined,
+      rpcData: [],
+    },
+    {
       name: "sendRequest -> cira_send_request",
       call: (repo) => repo.sendRequest("marie"),
       rpcName: "cira_send_request",
@@ -441,6 +448,29 @@ describe("SQL row shapes to TS types", () => {
     await expect(
       createCiraRepository(mock.client).previewInvitation("CIRA-AB12-CD34-EF56-GH78-JK90"),
     ).resolves.toEqual({ handle: "marie", displayName: "Marie", avatarKey: null });
+  });
+
+  it("listInvitations folds status/outcome into the 5-state client enum", async () => {
+    const mock = makeClient();
+    const base = { created_at: "2026-07-13T12:00:00Z", expires_at: "2026-07-13T12:15:00Z" };
+    mock.rpc.mockResolvedValue({
+      data: [
+        { invitation_id: "i1", status: "active", outcome: null, ...base },
+        { invitation_id: "i2", status: "consumed", outcome: "accepted", ...base },
+        { invitation_id: "i3", status: "consumed", outcome: "declined", ...base },
+        { invitation_id: "i4", status: "revoked", outcome: null, ...base },
+        { invitation_id: "i5", status: "expired", outcome: null, ...base },
+      ],
+      error: null,
+    });
+    const list = await createCiraRepository(mock.client).listInvitations();
+    expect(list.map((i) => [i.id, i.state])).toEqual([
+      ["i1", "active"],
+      ["i2", "accepted"],
+      ["i3", "declined"],
+      ["i4", "revoked"],
+      ["i5", "expired"],
+    ]);
   });
 });
 
