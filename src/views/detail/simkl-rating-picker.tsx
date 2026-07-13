@@ -91,13 +91,13 @@ export function SimklRatingPicker({
 
               {isHalf && (
                 <div className="absolute inset-0 w-[50%] overflow-hidden pointer-events-none">
-                  <Star size={20} className="fill-amber-400 text-amber-400" />
+                  <Star size={20} className="fill-info text-info" />
                 </div>
               )}
 
               {isFilled && (
                 <div className="absolute inset-0 pointer-events-none">
-                  <Star size={20} className="fill-amber-400 text-amber-400" />
+                  <Star size={20} className="fill-info text-info" />
                 </div>
               )}
 
@@ -121,7 +121,7 @@ export function SimklRatingPicker({
         {loading ? (
           <Loader2 size={13} className="animate-spin text-ink-subtle" />
         ) : currentRating !== null ? (
-          <span className="font-bold text-amber-400">{currentRating}/10</span>
+          <span className="font-bold text-info">{currentRating}/10</span>
         ) : (
           <span className="text-ink-subtle">{t("Rate on SIMKL")}</span>
         )}

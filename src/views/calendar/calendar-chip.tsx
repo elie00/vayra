@@ -27,7 +27,7 @@ export function CalendarChip({
   const tagClass = item.isAnime
     ? "bg-rose-400/20 text-rose-200"
     : item.type === "movie"
-      ? "bg-amber-400/20 text-amber-200"
+      ? "bg-info/20 text-info"
       : "bg-blue-400/20 text-blue-200";
   return (
     <button
@@ -130,7 +130,7 @@ function ChipTooltip({
           <p className="text-[12px] text-ink-muted">{dateLabel}</p>
           {item.voteAverage > 0 && (
             <p className="text-[11.5px] text-ink-muted">
-              <span className="text-amber-300">★</span> {item.voteAverage.toFixed(1)}
+              <span className="text-info">★</span> {item.voteAverage.toFixed(1)}
             </p>
           )}
         </div>

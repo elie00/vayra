@@ -266,7 +266,7 @@ function ExportLogButton() {
 
   const pill =
     state === "exporting"
-      ? { dot: "bg-amber-400 animate-pulse", text: t("Exporting"), chip: "bg-amber-500/15 text-amber-300" }
+      ? { dot: "bg-info animate-pulse", text: t("Exporting"), chip: "bg-info/15 text-info" }
       : state === "done"
         ? { dot: "bg-emerald-400", text: t("Exported"), chip: "bg-emerald-500/15 text-emerald-400" }
         : state === "error"

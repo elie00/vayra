@@ -39,8 +39,8 @@ export function AdvancedMpvSection() {
         )}
       </div>
       {check.risky.length > 0 && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3.5 py-3 text-[12px] leading-snug text-ink">
-          <AlertTriangle size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-amber-300" />
+        <div className="flex items-start gap-2.5 rounded-xl border border-info/40 bg-info/10 px-3.5 py-3 text-[12px] leading-snug text-ink">
+          <AlertTriangle size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-info" />
           <span>
             {t("Heads up: {keys} can load outside scripts or open your player to the network. Only keep these if you know exactly what they do.", {
               keys: check.risky.join(", "),

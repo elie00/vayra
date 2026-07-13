@@ -68,12 +68,12 @@ const TONES = {
   },
   dark: {
     bg: "bg-black/55",
-    fg: "text-amber-300",
-    ring: "ring-1 ring-amber-300/30",
+    fg: "text-info",
+    ring: "ring-1 ring-info/30",
   },
   light: {
     bg: "bg-white/85",
-    fg: "text-amber-700",
-    ring: "ring-1 ring-amber-700/30",
+    fg: "text-info",
+    ring: "ring-1 ring-info/30",
   },
 } as const;

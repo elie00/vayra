@@ -14,7 +14,7 @@ function DecisionLine({ data }: { data: PreviewData }) {
         {data.rating.kind === "mal" ? (
           <MalLogo className="h-[11px] w-auto text-ink-muted" />
         ) : data.rating.kind === "tmdb" ? (
-          <Star className="h-[11px] w-[11px] text-amber-400" fill="currentColor" strokeWidth={0} />
+          <Star className="h-[11px] w-[11px] text-info" fill="currentColor" strokeWidth={0} />
         ) : (
           <ImdbIcon className="h-[11px] w-auto rounded-[2px]" />
         )}

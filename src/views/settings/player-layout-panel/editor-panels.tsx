@@ -110,7 +110,7 @@ function episodeTabStyle(corner: PanelCorner): React.CSSProperties {
     : { right: 0, top: "50%", transform: "translateY(-50%)" };
 }
 
-const AVATAR_COLORS = ["#f97316", "#22d3ee", "#a78bfa"];
+const AVATAR_COLORS = ["#8267ff", "#22d3ee", "#a78bfa"];
 
 function AvatarDockBody() {
   return (
@@ -125,7 +125,7 @@ function AvatarDockBody() {
           {i === 0 && (
             <span
               aria-label="Host"
-              className="pointer-events-none absolute -top-2 -right-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-300 text-black shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-2 ring-black/35"
+              className="pointer-events-none absolute -top-2 -right-1 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full bg-info text-black shadow-[0_2px_6px_rgba(0,0,0,0.45)] ring-2 ring-black/35"
             >
               <Crown size={11} strokeWidth={2.4} fill="currentColor" />
             </span>
@@ -167,7 +167,7 @@ function ChatPanelBody() {
     <div className="pointer-events-none flex w-[280px] flex-col gap-2 rounded-2xl border border-white/12 bg-black/45 p-3 backdrop-blur-xl shadow-[0_18px_50px_-22px_rgba(0,0,0,0.65)]">
       <div className="flex flex-col gap-1.5 text-[12.5px] leading-snug">
         <p>
-          <span className="font-semibold text-amber-300">Alex</span>
+          <span className="font-semibold text-info">Alex</span>
           <span className="ms-1.5 text-white/90">this scene is wild</span>
         </p>
         <p>

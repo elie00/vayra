@@ -44,7 +44,7 @@ function RowTitle({ row }: { row: HomeRow }) {
   const catalogId = isLetterboxd ? row.key.replace("letterboxd-", "") : "";
 
   const badge = isLetterboxd ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
+    <span className="inline-flex items-center gap-1 rounded-full bg-info/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-info/80">
       Letterboxd
     </span>
   ) : null;

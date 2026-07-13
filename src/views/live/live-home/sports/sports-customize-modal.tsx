@@ -131,7 +131,7 @@ export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustom
                       </span>
                       <button
                         onClick={() => toggleGroup(g.key)}
-                        className={`text-[11px] font-medium transition-colors ${allSel ? "text-danger hover:text-danger/80" : someSel ? "text-amber-400 hover:text-amber-300" : "text-ink-subtle hover:text-ink"}`}
+                        className={`text-[11px] font-medium transition-colors ${allSel ? "text-danger hover:text-danger/80" : someSel ? "text-info hover:text-info" : "text-ink-subtle hover:text-ink"}`}
                       >
                         {allSel ? t("sports.customize.deselectGroupAll") : t("sports.customize.selectGroupAll")}
                       </button>

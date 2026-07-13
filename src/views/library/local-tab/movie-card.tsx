@@ -68,7 +68,7 @@ export function OwnedCard({
         />
         <LocalBadge label={entry.resolution ?? t("local")} className="absolute start-2 top-2" />
         {entry.needsReview && !selectMode && (
-          <span className="absolute bottom-2 start-2 inline-flex items-center gap-1 rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-black">
+          <span className="absolute bottom-2 start-2 inline-flex items-center gap-1 rounded-md bg-info px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-black">
             <AlertTriangle size={9} strokeWidth={2.6} />
             {t("review")}
           </span>

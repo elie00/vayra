@@ -26,8 +26,8 @@ const SHAPES: Array<{ id: "circle" | "square" | "image" | "hidden"; label: strin
 const PRESET_COLORS = [
   "",
   "#ff3b30",
-  "#ff9500",
-  "#ffcc00",
+  "#8267ff",
+  "#4b9dff",
   "#34c759",
   "#5ac8fa",
   "#007aff",
@@ -106,7 +106,7 @@ export function SeekBarPanel() {
                     ? "linear-gradient(135deg, transparent 47%, var(--color-ink-subtle) 47% 53%, transparent 53%)"
                     : undefined,
                 }}
-                aria-label={isDefault ? t("Default (gold accent)") : c}
+                aria-label={isDefault ? t("Default (VAYRA violet)") : c}
               />
             );
           })}

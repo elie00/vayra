@@ -87,7 +87,7 @@ function PreviewCard({
           {n}
         </span>
         <div className="absolute bottom-2 start-2 flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 backdrop-blur-sm">
-          <span className="text-[10.5px] font-bold tabular-nums text-amber-300">{rating}</span>
+          <span className="text-[10.5px] font-bold tabular-nums text-info">{rating}</span>
         </div>
         <span className="absolute bottom-2 end-2 rounded-md bg-canvas/85 px-1.5 py-0.5 text-[10.5px] font-medium text-ink-muted">
           {t("{n}m", { n: runtime })}

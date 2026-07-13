@@ -41,7 +41,7 @@ function isBlocked(reason: Reason, level: Level): boolean {
 function Badge({ label }: { label: string }) {
   const tone =
     label === "CAM" || label === "EXE"
-      ? "bg-amber-500/15 text-amber-300 ring-amber-500/30"
+      ? "bg-info/15 text-info ring-info/30"
       : label === "HDR" || label === "DV"
         ? "bg-violet-500/15 text-violet-300 ring-violet-500/30"
         : label === "Atmos"
@@ -68,7 +68,7 @@ export function StreamFilterPreview({ level }: { level: Level }) {
           {t("What gets through")}
         </span>
         {level === "off" ? (
-          <span className="text-[11px] text-amber-400/90">{t("No filtering")}</span>
+          <span className="text-[11px] text-info/90">{t("No filtering")}</span>
         ) : (
           <span className="flex items-center gap-1.5 text-[11px] tabular-nums text-ink-subtle">
             <span className="font-semibold text-ink">{blocked}</span> {t("blocked")}

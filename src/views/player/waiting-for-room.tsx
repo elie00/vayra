@@ -6,13 +6,13 @@ import { useT } from "@/lib/i18n";
 
 function readyPillClass(ready: boolean, stale: boolean): string {
   if (ready) return "bg-emerald-500/15 text-emerald-300";
-  if (stale) return "bg-amber-400/15 text-amber-300";
+  if (stale) return "bg-info/15 text-info";
   return "bg-white/10 text-white/70";
 }
 
 function readyDotClass(ready: boolean, stale: boolean): string {
   if (ready) return "bg-emerald-400";
-  if (stale) return "bg-amber-400";
+  if (stale) return "bg-info";
   return "bg-white/40";
 }
 
