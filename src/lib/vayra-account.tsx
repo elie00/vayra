@@ -86,6 +86,13 @@ function accountClient(): Promise<SupabaseClient | null> {
   return singleton;
 }
 
+// Exposition contrôlée du singleton pour les modules VAYRA (ex. src/lib/cira)
+// qui ne doivent JAMAIS créer un second client Supabase. Résout null quand le
+// compte VAYRA n'est pas configuré.
+export function getVayraSupabaseClient(): Promise<SupabaseClient | null> {
+  return accountClient();
+}
+
 type VayraAccountValue = {
   configured: boolean;
   loading: boolean;
