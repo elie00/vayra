@@ -15,8 +15,8 @@ export const COLOR_TOKENS: TokenRow[] = [
   { name: "--color-ink-subtle", type: "color", defaultValue: "oklch(0.50 0.003 260)", desc: "Captions, eyebrow labels, hints, dim metadata." },
   { name: "--color-edge", type: "color", defaultValue: "oklch(0.36 0.004 260 / 0.55)", desc: "Strong borders and dividers. Includes alpha." },
   { name: "--color-edge-soft", type: "color", defaultValue: "oklch(0.36 0.004 260 / 0.25)", desc: "Soft borders. Used for low-emphasis containers." },
-  { name: "--color-accent", type: "color", defaultValue: "#8267ff", desc: "Brand color. Active states, focus rings, buttons." },
-  { name: "--color-accent-soft", type: "color", defaultValue: "rgb(130 103 255 / 0.18)", desc: "Accent tints, hover backgrounds, glow effects." },
+  { name: "--color-accent", type: "color", defaultValue: "#a8aaad", desc: "Brand color. Active states, focus rings, buttons." },
+  { name: "--color-accent-soft", type: "color", defaultValue: "rgb(168 170 173 / 0.16)", desc: "Accent tints, hover backgrounds, and restrained emphasis." },
   { name: "--color-danger", type: "color", defaultValue: "oklch(0.55 0.18 25)", desc: "Errors, destructive actions, delete buttons." },
 ];
 
