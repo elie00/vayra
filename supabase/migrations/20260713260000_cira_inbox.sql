@@ -76,4 +76,3 @@ revoke all on function public.cira_get_inbox() from public, anon;
 revoke all on function public.cira_mark_inbox_seen() from public, anon;
 grant execute on function public.cira_get_inbox() to authenticated;
 grant execute on function public.cira_mark_inbox_seen() to authenticated;
-

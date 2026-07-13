@@ -19,8 +19,9 @@ exclusivement à `auth.users.id`. Ce dossier contient :
 bash scripts/cira/db-test.sh
 ```
 
-Prérequis : PostgreSQL 15 (`brew install postgresql@15`, binaires attendus
-dans `/opt/homebrew/opt/postgresql@15/bin`, surchargeable via `PGBIN=…`).
+Prérequis : PostgreSQL 15 ou plus récent (`brew install postgresql@15`). Le
+harnais utilise d'abord `pg_config --bindir`, puis le chemin Homebrew, et reste
+surchargeable via `PGBIN=…`.
 
 Le harnais :
 
@@ -45,65 +46,126 @@ Les utilisateurs sont simulés par
 assertions d'échec attendu utilisent des blocs `DO` avec `BEGIN/EXCEPTION`
 qui échouent si l'erreur attendue ne se produit **pas**.
 
-## Pourquoi pas Supabase CLI ni pgTAP ?
+## Pourquoi PostgreSQL nu pour les tests ?
 
-- **Supabase CLI** : non installée dans l'environnement, et le dépôt n'a ni
-  `config.toml` ni stack Supabase locale (Docker). Le schéma ne dépend de
-  Supabase que via `auth.users` et `auth.uid()`, tous deux shimés en
-  quelques lignes : un PostgreSQL 15 nu suffit et reste beaucoup plus rapide.
+- Le schéma ne dépend de Supabase que via `auth.users`, `auth.uid()` et les
+  primitives Realtime, shimées uniquement par le harnais. Un PostgreSQL 15+
+  jetable suffit donc pour les régressions SQL et évite de dépendre de Docker.
 - **pgTAP / pg_prove** : extension et outillage non disponibles localement.
   Les blocs `DO` + `ON_ERROR_STOP` fournissent la même valeur (assertion =
   exception) sans dépendance supplémentaire.
 
-## Application en production (dashboard Supabase → SQL Editor)
+La même suite est obligatoire dans GitHub Actions via
+`.github/workflows/cira-db.yml` dès qu'une migration, un test SQL ou le harnais
+change.
 
-Aucun inventaire prod n'est possible avec la clé publiable. Les migrations
-initiales sont défensives : uniquement des objets préfixés
-`cira_` (+ `create schema if not exists private`), en `CREATE` simple —
-**toute collision échoue bruyamment au lieu d'écraser quoi que ce soit**. Les
-migrations suivantes sont additives ; les durcissements qui remplacent des
-RPC conservent leurs signatures.
+## Déploiement en bêta privée
 
-1. **Vérifier manuellement les collisions d'abord** — dans le SQL Editor :
+Le SQL Editor n'est pas la procédure de déploiement : il ne produit pas
+d'historique reproductible. Utiliser la Supabase CLI liée au projet cible. Ne
+jamais committer l'access token, le mot de passe PostgreSQL, une service-role
+key, un dump ou le contenu de `supabase/.temp/`.
 
-   ```sql
-   select n.nspname, c.relname as objet, 'table/index' as type
-   from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where c.relname like 'cira\_%'
-   union all
-   select n.nspname, p.proname, 'fonction'
-   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where p.proname like 'cira\_%';
+### 1. Préconditions et sauvegarde
+
+1. Partir de `main` propre, après succès des contrôles GitHub Actions frontend
+   et `cira-db`.
+2. Installer la Supabase CLI, s'authentifier localement puis lier explicitement
+   le projet :
+
+   ```bash
+   supabase login
+   supabase link --project-ref "$SUPABASE_PROJECT_REF"
+   supabase migration list --linked
    ```
 
-   Pour une installation neuve, le résultat doit être **vide**. Sinon, ne pas
-   rejouer les migrations déjà appliquées : vérifier d'abord s'il s'agit
-   d'une installation CIRA existante avec les comptages de l'étape 3.
+   `supabase/config.toml` initialise le projet CLI sans identifiant distant;
+   `supabase/.temp/`, créé par `link`, est ignoré par Git.
 
-2. Appliquer les migrations une par une dans l'ordre des timestamps :
+3. Vérifier dans **Database → Backups** qu'un point de restauration antérieur
+   au déploiement est disponible. Sur un projet sans sauvegarde récupérable,
+   créer en plus des dumps logiques hors du dépôt, depuis une connexion obtenue
+   dans le panneau **Connect** :
 
-   - **installation neuve** : appliquer les 11 fichiers dans l'ordre ;
-   - **installation CIRA existante** : appliquer uniquement les fichiers dont
-     le timestamp n'apparaît pas encore dans l'historique de migrations ;
-   - dans le doute, arrêter : ne jamais rejouer le schéma initial ni supprimer
-     un objet pour forcer le passage.
-
-   Chaque exécution du SQL Editor est transactionnelle : une erreur annule le
-   fichier en cours.
-
-3. Vérification rapide post-application :
-
-   ```sql
-   -- 11 tables avec RLS (10 publiques + ledger privé), 42 RPC security definer
-   select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where c.relname like 'cira\_%' and c.relkind = 'r' and c.relrowsecurity; -- = 11
-   select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'public' and p.proname like 'cira\_%' and p.prosecdef;  -- = 42
-   -- 12 triggers CIRA (notifications + garde de blocage), 1 policy Realtime
-   select count(*) from pg_trigger where tgname like 'cira\_%';              -- = 12
-   select count(*) from pg_policies
-   where schemaname = 'realtime' and policyname = 'cira_receive_own_channel'; -- = 1
+   ```bash
+   BACKUP_DIR="$HOME/vayra-backups/cira-$(date -u +%Y%m%dT%H%M%SZ)"
+   install -d -m 700 "$BACKUP_DIR"
+   supabase db dump --db-url "$SUPABASE_DB_URL" -f "$BACKUP_DIR/roles.sql" --role-only
+   supabase db dump --db-url "$SUPABASE_DB_URL" -f "$BACKUP_DIR/schema.sql"
+   supabase db dump --db-url "$SUPABASE_DB_URL" -f "$BACKUP_DIR/data.sql" --use-copy --data-only \
+     -x storage.buckets_vectors -x storage.vector_indexes
    ```
+
+   Le répertoire doit rester mode `0700`; les fichiers doivent être non vides.
+   Une sauvegarde non vérifiée n'autorise pas le déploiement.
+
+### 2. Inventaire et dry-run
+
+Les migrations initiales sont défensives : objets préfixés `cira_` et schéma
+`private`; une collision provoque une erreur au lieu d'écraser un objet. Avant
+le premier déploiement, exécuter cette requête en lecture seule :
+
+```sql
+select n.nspname, c.relname as object_name, 'relation' as object_type
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where c.relname like 'cira\_%'
+union all
+select n.nspname, p.proname, 'function'
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where p.proname like 'cira\_%';
+```
+
+Pour une installation neuve, le résultat doit être vide. Sinon, arrêter et
+réconcilier l'inventaire avec `supabase migration list --linked`; ne jamais
+utiliser `migration repair` pour masquer une migration non appliquée.
+
+Le dry-run doit annoncer exactement les onze timestamps `20260713…`, dans
+l'ordre, et aucune autre migration :
+
+```bash
+supabase db push --linked --dry-run
+```
+
+### 3. Application et contrôle
+
+Appliquer uniquement après validation de la sauvegarde et du dry-run :
+
+```bash
+supabase db push --linked
+supabase migration list --linked
+```
+
+Puis exécuter le contrôle post-application :
+
+```sql
+select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where c.relname like 'cira\_%' and c.relkind = 'r' and c.relrowsecurity; -- 11
+
+select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname like 'cira\_%' and p.prosecdef; -- 42
+
+select count(*) from pg_trigger where tgname like 'cira\_%'; -- 12
+
+select count(*) from pg_policies
+where schemaname = 'realtime' and policyname = 'cira_receive_own_channel'; -- 1
+```
+
+Une divergence est un échec de déploiement. Ne pas activer de comptes bêta
+avant d'avoir expliqué la divergence ou restauré le point pré-déploiement.
+
+### 4. Accès bêta et recette à deux comptes
+
+CIRA est fermé côté serveur par `auth.users.raw_app_meta_data.cira_beta`. La
+clé doit être ajoutée via l'API Admin Supabase ou l'éditeur utilisateur du
+Dashboard, jamais depuis le client et jamais via `user_metadata`. Après le
+changement, les deux comptes doivent se déconnecter/reconnecter afin d'obtenir
+un JWT actualisé.
+
+N'autoriser que deux comptes de recette, puis vérifier successivement : profil
+et handle, demande/refus/annulation/acceptation/suppression, invitation courte,
+blocage croisé, groupe/rôles/transfert de propriété, présence opt-in et TTL,
+pages HTTPS et deep links. Confirmer séparément que la session Stremio et
+VARA/VEYA sont inchangées. Élargir la bêta seulement après cette recette.
 
 Notes :
 
@@ -111,8 +173,12 @@ Notes :
 - Les tokens d'invitation ne sont jamais stockés ni loggés : seul
   `sha256(code normalisé)` est conservé ; le code clair n'est renvoyé qu'une
   seule fois par `cira_create_invitation`.
-- Caveat transactionnel connu (SQL, pas d'Edge Function) : une RPC qui
-  échoue par exception annule aussi l'incrément de son compteur de rate
-  limit ; seuls les appels non-erronés sont comptés. Défenses primaires :
-  tokens à 100 bits et réponses génériques (comptées) de
-  `cira_send_request`.
+- Les échecs de preview/acceptation/refus d'un token retournent une erreur
+  métier dans le résultat plutôt qu'une exception PostgreSQL : le compteur de
+  tentative est ainsi committé. Les tokens restent opaques (100 bits), hashés
+  au repos et retirés de la barre d'adresse dès leur lecture.
+- Il n'existe aucune recherche ou liste publique de handles. La demande par
+  handle exact reste un compromis produit : un compte bêta qui connaît déjà un
+  handle peut confirmer son existence via l'état de sa demande. La gate bêta,
+  la limite de débit et le blocage bornent ce risque; supprimer totalement cet
+  oracle nécessiterait de retirer ce parcours ou d'introduire des reçus leurres.
