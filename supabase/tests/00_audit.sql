@@ -31,7 +31,7 @@ begin
 end;
 $do$;
 
--- The 19 public RPCs: SECURITY DEFINER, pinned search_path, anon cannot
+-- Public RPCs: SECURITY DEFINER, pinned search_path, anon cannot
 -- execute, authenticated can.
 do $do$
 declare
@@ -59,8 +59,8 @@ begin
       raise exception 'TEST_FAILED: authenticated cannot execute public.%', r.proname;
     end if;
   end loop;
-  if n <> 19 then
-    raise exception 'TEST_FAILED: expected 19 public cira_ RPCs, found %', n;
+  if n <> 28 then
+    raise exception 'TEST_FAILED: expected 28 public cira_ RPCs, found %', n;
   end if;
 end;
 $do$;
