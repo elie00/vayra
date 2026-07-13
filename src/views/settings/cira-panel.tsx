@@ -21,6 +21,8 @@ function errorText(t: ReturnType<typeof useT>, err: unknown): string {
   switch (code) {
     case "NOT_AUTHENTICATED":
       return t("Sign in to your VAYRA account first.");
+    case "BETA_ACCESS_REQUIRED":
+      return t("CIRA is currently limited to invited beta accounts.");
     case "PROFILE_REQUIRED":
       return t("Choose your CIRA handle first.");
     case "INVALID_PROFILE":
@@ -810,6 +812,16 @@ export function CiraPanel() {
       <Section title={t("CIRA")} subtitle={t("Your close circle on VAYRA.")}>
         <p className="text-[13px] text-ink-subtle">
           {t("The VAYRA account service isn't configured in this build yet.")}
+        </p>
+      </Section>
+    );
+  }
+
+  if (status === "restricted") {
+    return (
+      <Section title={t("CIRA private beta")} subtitle={t("Your close circle on VAYRA.")}>
+        <p className="text-[13px] text-ink-subtle">
+          {t("CIRA is currently limited to invited beta accounts.")}
         </p>
       </Section>
     );

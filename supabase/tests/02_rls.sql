@@ -9,6 +9,11 @@ insert into auth.users (id) values
   ('00000000-0000-4000-8000-0000000002b2'),
   ('00000000-0000-4000-8000-0000000002c3');
 
+insert into auth.users (id, raw_app_meta_data)
+values ('00000000-0000-4000-8000-0000000002d4', '{}'::jsonb);
+insert into public.cira_profiles (user_id, handle, display_name)
+values ('00000000-0000-4000-8000-0000000002d4', 'f02_unlisted', 'Unlisted');
+
 -- Fixtures through the real RPCs.
 do $do$
 begin
@@ -27,6 +32,31 @@ $do$;
 insert into public.cira_presence (user_id, session_id, state, expires_at)
 values ('00000000-0000-4000-8000-0000000002a1', gen_random_uuid(), 'online',
         now() + interval '90 seconds');
+
+-- A valid Supabase account without server-controlled cira_beta app metadata
+-- can neither see its own pre-existing profile nor execute any CIRA RPC.
+do $do$
+declare
+  n integer;
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', '00000000-0000-4000-8000-0000000002d4',
+                      'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+  select count(*) into n from public.cira_profiles;
+  if n <> 0 then
+    raise exception 'TEST_FAILED: unlisted beta account can read CIRA profiles';
+  end if;
+  begin
+    perform public.cira_list_relationships();
+    raise exception 'TEST_FAILED: unlisted beta account can execute CIRA RPC';
+  exception
+    when others then
+      if sqlerrm <> 'BETA_ACCESS_REQUIRED' then raise; end if;
+  end;
+  perform test.logout();
+end;
+$do$;
 
 -- anon: no table access at all, no RPC execution.
 do $do$

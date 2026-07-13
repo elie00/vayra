@@ -325,6 +325,7 @@ describe("createCiraRepository RPC wiring", () => {
 describe("error mapping through the repository", () => {
   const sqlCodes: CiraErrorCode[] = [
     "NOT_AUTHENTICATED",
+    "BETA_ACCESS_REQUIRED",
     "PROFILE_REQUIRED",
     "INVALID_PROFILE",
     "HANDLE_UNAVAILABLE",

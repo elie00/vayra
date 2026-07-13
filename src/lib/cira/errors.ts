@@ -4,6 +4,7 @@ import type { CiraErrorCode } from "./types";
 // le MESSAGE PostgREST est alors exactement le code.
 const SQL_ERROR_CODES = [
   "NOT_AUTHENTICATED",
+  "BETA_ACCESS_REQUIRED",
   "PROFILE_REQUIRED",
   "INVALID_PROFILE",
   "HANDLE_UNAVAILABLE",

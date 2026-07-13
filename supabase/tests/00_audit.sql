@@ -88,12 +88,12 @@ begin
       raise exception 'TEST_FAILED: anon can execute private.%', r.proname;
     end if;
     -- Exposure surface: the ONLY private helpers authenticated may execute are
-    -- the two caller-scoped policy helpers referenced by the cira_profiles
-    -- SELECT policy. Any other private.cira_* reachable by authenticated (e.g.
+    -- the two caller-scoped policy helpers and the argument-free beta gate
+    -- referenced by SELECT policies. Any other private.cira_* reachable by authenticated (e.g.
     -- an arbitrary-pair probe helper) is a social-graph enumeration hole.
     if has_function_privilege('authenticated', r.oid, 'execute')
-       and r.proname not in ('cira_pair_exists', 'cira_block_exists') then
-      raise exception 'TEST_FAILED: authenticated can execute private.% (only cira_pair_exists / cira_block_exists are allowed)', r.proname;
+       and r.proname not in ('cira_pair_exists', 'cira_block_exists', 'cira_beta_access') then
+      raise exception 'TEST_FAILED: authenticated can execute unexpected private helper %', r.proname;
     end if;
   end loop;
 end;

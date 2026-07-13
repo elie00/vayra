@@ -32,7 +32,7 @@ import type {
 // un battement toutes les 45 s garde une marge confortable.
 const HEARTBEAT_MS = 45_000;
 
-export type CiraStatus = "loading" | "unavailable" | "signedOut" | "ready" | "error";
+export type CiraStatus = "loading" | "unavailable" | "signedOut" | "restricted" | "ready" | "error";
 
 type CiraValue = {
   status: CiraStatus;
@@ -84,6 +84,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const [pendingGroupInvite, setPendingGroupInvite] = useState<PendingCiraInvite | null>(null);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const userId = user?.id ?? null;
+  const betaAccess = user?.app_metadata?.cira_beta === true;
 
   useEffect(() => {
     setPendingInvite((current) => reconcilePendingCiraInvite(current, userId));
@@ -106,6 +107,10 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       setStatus("signedOut");
       return;
     }
+    if (!betaAccess) {
+      setStatus("restricted");
+      return;
+    }
     setStatus("loading");
     void getVayraSupabaseClient().then((client) => {
       if (cancelled) return;
@@ -118,7 +123,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, betaAccess]);
 
   const refresh = useCallback(async () => {
     if (!repo) return;

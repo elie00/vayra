@@ -4,6 +4,7 @@ import type { CiraErrorCode } from "./types";
 
 const SQL_CODES: CiraErrorCode[] = [
   "NOT_AUTHENTICATED",
+  "BETA_ACCESS_REQUIRED",
   "PROFILE_REQUIRED",
   "INVALID_PROFILE",
   "HANDLE_UNAVAILABLE",
