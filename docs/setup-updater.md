@@ -40,7 +40,7 @@ platform it reads `platforms[<key>]`, downloads `url`, and verifies the download
   "notes": "…",                    // shown in the app update card (use-update.ts -> update.body)
   "pub_date": "2026-07-13T00:00:00.000Z",  // RFC3339
   "platforms": {
-    "darwin-aarch64":  { "signature": "<contents of .sig>", "url": "https://github.com/elie00/harbor/releases/download/v0.9.36/VAYRA_aarch64.app.tar.gz" },
+    "darwin-aarch64":  { "signature": "<contents of .sig>", "url": "https://github.com/elie00/vayra/releases/download/v0.9.36/VAYRA_aarch64.app.tar.gz" },
     "darwin-x86_64":   { "signature": "…", "url": "…VAYRA_x64.app.tar.gz" },
     "linux-x86_64":    { "signature": "…", "url": "…VAYRA_0.9.36_amd64.AppImage" },
     "windows-x86_64":  { "signature": "…", "url": "…VAYRA_0.9.36_x64-setup.exe" }
@@ -54,7 +54,7 @@ platform it reads `platforms[<key>]`, downloads `url`, and verifies the download
 - `signature` is the **raw text contents** of the `.sig` sidecar that `tauri build`
   produces next to each updater artifact — NOT a path, NOT base64-of-the-file.
 - `url` points at the GitHub release asset:
-  `https://github.com/elie00/harbor/releases/download/<tag>/<artifact>`.
+  `https://github.com/elie00/vayra/releases/download/<tag>/<artifact>`.
 
 App-side consumers (for reference, do not edit):
 - `src/lib/updater/use-update.ts` — calls `check()` from `@tauri-apps/plugin-updater`,
@@ -70,7 +70,7 @@ App-side consumers (for reference, do not edit):
 
 The secret lives in **CI (GitHub Actions), not this site**: signing releases requires the
 minisign **private key** that matches the pubkey in `tauri.conf.json`. Store it as a
-GitHub Actions secret on the `elie00/harbor` repo:
+GitHub Actions secret on the `elie00/vayra` repo:
 
 | Secret | Where it's used | Where to get it |
 | --- | --- | --- |
@@ -102,9 +102,9 @@ matches. Just wire the key into CI:
 ```bash
 # On the machine that has the existing key file (default location):
 #   macOS/Linux: ~/.tauri/vayra.key   (or wherever you saved it)
-# Add it as a GitHub Actions secret on elie00/harbor:
-gh secret set TAURI_SIGNING_PRIVATE_KEY --repo elie00/harbor < ~/.tauri/vayra.key
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo elie00/harbor   # paste the key password (or empty)
+# Add it as a GitHub Actions secret on elie00/vayra:
+gh secret set TAURI_SIGNING_PRIVATE_KEY --repo elie00/vayra < ~/.tauri/vayra.key
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo elie00/vayra   # paste the key password (or empty)
 ```
 
 ### Option B — Generate a NEW keypair (REQUIRES a separate app change to approve)
@@ -123,9 +123,9 @@ npm run tauri signer generate -- -w ~/.tauri/vayra.key
 # 2. In the harbor repo (SEPARATE, APPROVED CHANGE — not done here):
 #    set src-tauri/tauri.conf.json -> plugins.updater.pubkey = "<the new public key>"
 
-# 3. Store the PRIVATE key + password as GitHub Actions secrets on elie00/harbor:
-gh secret set TAURI_SIGNING_PRIVATE_KEY --repo elie00/harbor < ~/.tauri/vayra.key
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo elie00/harbor
+# 3. Store the PRIVATE key + password as GitHub Actions secrets on elie00/vayra:
+gh secret set TAURI_SIGNING_PRIVATE_KEY --repo elie00/vayra < ~/.tauri/vayra.key
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo elie00/vayra
 ```
 
 > Never commit `vayra.key` (the private key) to any repo. It only belongs in the GitHub
@@ -154,7 +154,7 @@ Once a release tag exists on GitHub with the signed artifacts + `.sig` files upl
 ```bash
 # 1. Download the .sig sidecars from the release into a folder:
 mkdir -p /tmp/vayra-sigs
-gh release download v0.9.36 --repo elie00/harbor --pattern '*.sig' --dir /tmp/vayra-sigs
+gh release download v0.9.36 --repo elie00/vayra --pattern '*.sig' --dir /tmp/vayra-sigs
 
 # 2. Generate the manifest into this site's public/ dir:
 node scripts/gen-latest-json.mjs \

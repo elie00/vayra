@@ -44,7 +44,7 @@ Footnotes:
   `[]`) is the only correct static response. Populating it would require that private key.
 - `**` The updater **manifest** is a static file and needs no secret to serve. The
   `TAURI_SIGNING_PRIVATE_KEY` is **not** a Vercel secret — it lives as a GitHub Actions
-  secret on the `elie00/harbor` build repo and is used only when generating per-release
+  secret on the `elie00/vayra` build repo and is used only when generating per-release
   signatures. See §4.
 
 ### LIVE-now vs NEEDS-SECRET at a glance
@@ -107,7 +107,7 @@ produces — you'll paste those into Vercel in §3.
 
 - [ ] **8. (Only if you'll ship app updates) Tauri updater signing key** — not a web signup;
       see §4. → produces `TAURI_SIGNING_PRIVATE_KEY` (+ `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`)
-      as **GitHub Actions secrets on `elie00/harbor`**, not Vercel env vars.
+      as **GitHub Actions secrets on `elie00/vayra`**, not Vercel env vars.
 
 ### All env vars, by where they live
 
@@ -127,7 +127,7 @@ produces — you'll paste those into Vercel in §3.
 | `IMDB_API_BASE` | optional | `api/imdb/*` |
 | `FEEDBACK_WEBHOOK_URL` | required for feedback/adreport | `api/v1/feedback.js`, `api/v1/adreport.js` |
 
-**GitHub Actions secrets on `elie00/harbor`** (NOT Vercel):
+**GitHub Actions secrets on `elie00/vayra`** (NOT Vercel):
 
 | Var | Required? | For |
 |---|---|---|
@@ -195,12 +195,12 @@ plugin verifies every release's signature against that pubkey. Two paths:
   `tauri.conf.json` pubkey) plus a bridging release signed with the old key so current
   installs can cross over. More disruptive — only if the old key is truly unavailable.
 
-Store the chosen private key as GitHub Actions secrets **on `elie00/harbor`** (the build
+Store the chosen private key as GitHub Actions secrets **on `elie00/vayra`** (the build
 repo), not on this site:
 
 ```bash
-gh secret set TAURI_SIGNING_PRIVATE_KEY --repo elie00/harbor
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo elie00/harbor   # empty string if none
+gh secret set TAURI_SIGNING_PRIVATE_KEY --repo elie00/vayra
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo elie00/vayra   # empty string if none
 ```
 
 Producing the live manifest: `public/updates/latest.json` currently ships as a **template**
@@ -210,7 +210,7 @@ one per release with the committed script:
 
 ```bash
 # download the .sig sidecars produced by the signed build, then:
-gh release download v0.9.36 --repo elie00/harbor --pattern '*.sig' --dir ./sigs
+gh release download v0.9.36 --repo elie00/vayra --pattern '*.sig' --dir ./sigs
 node scripts/gen-latest-json.mjs --tag v0.9.36 --sig-dir ./sigs
 # writes public/updates/latest.json with signatures inlined for
 # darwin-aarch64 / darwin-x86_64 / linux-x86_64 / windows-x86_64

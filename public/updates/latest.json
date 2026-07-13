@@ -5,19 +5,19 @@
   "platforms": {
     "darwin-aarch64": {
       "signature": "REPLACE_WITH_CONTENTS_OF_VAYRA_aarch64.app.tar.gz.sig",
-      "url": "https://github.com/elie00/harbor/releases/download/v0.9.36/VAYRA_aarch64.app.tar.gz"
+      "url": "https://github.com/elie00/vayra/releases/download/v0.9.36/VAYRA_aarch64.app.tar.gz"
     },
     "darwin-x86_64": {
       "signature": "REPLACE_WITH_CONTENTS_OF_VAYRA_x64.app.tar.gz.sig",
-      "url": "https://github.com/elie00/harbor/releases/download/v0.9.36/VAYRA_x64.app.tar.gz"
+      "url": "https://github.com/elie00/vayra/releases/download/v0.9.36/VAYRA_x64.app.tar.gz"
     },
     "linux-x86_64": {
       "signature": "REPLACE_WITH_CONTENTS_OF_VAYRA_amd64.AppImage.sig",
-      "url": "https://github.com/elie00/harbor/releases/download/v0.9.36/VAYRA_0.9.36_amd64.AppImage"
+      "url": "https://github.com/elie00/vayra/releases/download/v0.9.36/VAYRA_0.9.36_amd64.AppImage"
     },
     "windows-x86_64": {
       "signature": "REPLACE_WITH_CONTENTS_OF_VAYRA_x64-setup.exe.sig",
-      "url": "https://github.com/elie00/harbor/releases/download/v0.9.36/VAYRA_0.9.36_x64-setup.exe"
+      "url": "https://github.com/elie00/vayra/releases/download/v0.9.36/VAYRA_0.9.36_x64-setup.exe"
     }
   }
 }

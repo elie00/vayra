@@ -11,13 +11,13 @@
 // assembles the manifest from `.sig` files you already have.
 //
 // USAGE:
-//   node scripts/gen-latest-json.mjs --tag v0.9.36 --sig-dir ./sigs [--notes "..."] [--repo elie00/harbor] [--out public/updates/latest.json]
+//   node scripts/gen-latest-json.mjs --tag v0.9.36 --sig-dir ./sigs [--notes "..."] [--repo elie00/vayra] [--out public/updates/latest.json]
 //
 // --tag       Git tag of the GitHub release (e.g. v0.9.36). The leading "v" is stripped
 //             to derive the version and to build artifact filenames.
 // --sig-dir   Directory containing the *.sig files downloaded from the release assets.
 // --notes     Release notes string (optional). If omitted, a placeholder is written.
-// --repo      GitHub owner/repo (default: elie00/harbor).
+// --repo      GitHub owner/repo (default: elie00/vayra).
 // --out       Output path (default: public/updates/latest.json relative to repo root).
 //
 // The mapping below assumes the DEFAULT Tauri v2 artifact names. If your CI renames
@@ -44,14 +44,14 @@ const args = parseArgs(process.argv.slice(2));
 if (!args.tag || !args["sig-dir"]) {
   console.error(
     "Missing required args.\n" +
-      "USAGE: node scripts/gen-latest-json.mjs --tag v0.9.36 --sig-dir ./sigs [--notes \"...\"] [--repo elie00/harbor] [--out public/updates/latest.json]",
+      "USAGE: node scripts/gen-latest-json.mjs --tag v0.9.36 --sig-dir ./sigs [--notes \"...\"] [--repo elie00/vayra] [--out public/updates/latest.json]",
   );
   process.exit(1);
 }
 
 const tag = args.tag;
 const version = tag.replace(/^v/, "");
-const repo = args.repo || "elie00/harbor";
+const repo = args.repo || "elie00/vayra";
 const sigDir = resolve(args["sig-dir"]);
 const notes = args.notes || `Release ${tag}`;
 
