@@ -137,7 +137,7 @@ a {
   width: 1.8rem;
   height: 1.8rem;
   flex: none;
-  fill: currentColor;
+  object-fit: contain;
 }
 
 .nav-links {
@@ -421,7 +421,6 @@ h2 em {
 }
 .stage-mark {
   width: 10rem;
-  fill: var(--ivory);
   opacity: 0.9;
   filter: drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.4));
   animation: mark-breathe 6s var(--ease-soft) infinite alternate;
@@ -625,7 +624,7 @@ h2 em {
   border-radius: 1.35rem;
   background: linear-gradient(150deg, #0d0e10, #1b1c1f);
 }
-.feature-visual svg {
+.feature-visual .feature-mark {
   position: absolute;
   right: 9%;
   bottom: -20%;

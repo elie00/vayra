@@ -1,19 +1,5 @@
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  viewBox="0 0 512 512"
-  width="512"
-  height="512"
-  role="img"
-  aria-labelledby="title"
->
-  <title id="title">VAYRA</title>
-  <rect x="28" y="28" width="456" height="456" rx="112" fill="#0A0B0D" />
-  <g transform="translate(76,76) scale(0.72)" fill="#F4F2ED">
-    <path
-      d="M170 74C99 91 62 154 76 225c14 73 85 142 211 207-61-49-105-94-129-137-42-74-37-161 12-221Z"
-    />
-    <path
-      d="M342 74c71 17 108 80 94 151-14 73-85 142-211 207 61-49 105-94 129-137-42-74-37-161 12-221Z"
-    />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">VAYRA mark</title>
+  <path fill="#F4F2ED" d="M170 74C99 91 62 154 76 225c14 73 85 142 211 207-61-49-105-94-129-137-42-74-37-161 12-221Z"/>
+  <path fill="#F4F2ED" d="M342 74c71 17 108 80 94 151-14 73-85 142-211 207 61-49 105-94 129-137 42-74 37-161-12-221Z"/>
 </svg>
