@@ -312,6 +312,12 @@ begin
 
   perform test.login('00000000-0000-4000-8000-0000000006a1');
   begin
+    perform public.cira_preview_invitation(v ->> 'code');
+    raise exception 'TEST_FAILED: creator previewed own invitation';
+  exception when others then
+    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
+  end;
+  begin
     perform public.cira_accept_invitation(v ->> 'code');
     raise exception 'TEST_FAILED: creator accepted own invitation';
   exception when others then
@@ -336,6 +342,12 @@ begin
   begin
     perform public.cira_accept_invitation(v ->> 'code');
     raise exception 'TEST_FAILED: blocked user accepted the invitation';
+  exception when others then
+    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
+  end;
+  begin
+    perform public.cira_decline_invitation(v ->> 'code');
+    raise exception 'TEST_FAILED: blocked user declined the invitation';
   exception when others then
     if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
   end;
