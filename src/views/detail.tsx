@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Check, HardDrive, Layers, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
+import { Check, HardDrive, Layers, ListPlus, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
 import { animeDetails, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
 import { kitsuAnime } from "@/lib/providers/kitsu";
@@ -54,6 +54,8 @@ import { useScrollMemory, useView, type PlayEpisode } from "@/lib/view";
 import { prefetchSegments } from "@/lib/skip-intro";
 import { useT } from "@/lib/i18n";
 import { AddToListMenu } from "@/components/lists/add-to-list-menu";
+import { AddToCollectionMenu } from "@/components/lists/add-to-collection-menu";
+import { useVara } from "@/lib/vara/provider";
 import type { ListItemInput } from "@/lib/custom-lists";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToMalButton } from "@/components/mal/add-to-mal-button";
@@ -341,6 +343,10 @@ export function DetailView({
   const actionStage = useHeroActionOverflow(actionRowRef, [meta.id]);
   const addToListRef = useRef<HTMLButtonElement | null>(null);
   const [addToListOpen, setAddToListOpen] = useState(false);
+  const addToCollectionRef = useRef<HTMLButtonElement | null>(null);
+  const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
+  const vara = useVara();
+  const canUseCollections = vara.status === "ready" && vara.repo !== null;
 
   useEffect(() => {
     let cancelled = false;
@@ -1319,6 +1325,31 @@ export function DetailView({
                       open={addToListOpen}
                       onClose={() => setAddToListOpen(false)}
                     />
+                    {canUseCollections && (
+                      <>
+                        <button
+                          ref={addToCollectionRef}
+                          type="button"
+                          onClick={() => setAddToCollectionOpen((v) => !v)}
+                          aria-label={t("Add to a group collection")}
+                          title={t("Add to a group collection")}
+                          className="group flex h-12 w-12 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
+                        >
+                          <ListPlus size={20} strokeWidth={1.9} />
+                        </button>
+                        <AddToCollectionMenu
+                          seed={{
+                            metaId: meta.id,
+                            type: meta.type,
+                            title: title || meta.name,
+                            poster: meta.poster ?? detail?.poster,
+                          }}
+                          anchorRef={addToCollectionRef}
+                          open={addToCollectionOpen}
+                          onClose={() => setAddToCollectionOpen(false)}
+                        />
+                      </>
+                    )}
                     {settings.showWatchedButton && meta.type === "movie" && (
                       <button
                         type="button"
