@@ -3,7 +3,7 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode, PlayerSrc } from "@/lib/view";
-import { getSleepAtEnd, queueBeginNext, setSleepAtEnd, type QueueItem } from "@/lib/queue";
+import { queueBeginNext, type QueueItem } from "@/lib/queue";
 import type { LumaAuthority } from "@/lib/luma";
 
 const STUB_MAX_SEC = 150;
@@ -16,14 +16,14 @@ export function useQueueAdvance(params: {
   startedNearEndRef: RefObject<boolean>;
   authority: LumaAuthority;
   autoAdvance: boolean;
+  suspended: boolean;
   openPicker: (
     meta: Meta,
     episode?: PlayEpisode,
     opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean },
   ) => void;
-  exitPlayer: () => void;
 }) {
-  const { src, snap, queue, isLive, startedNearEndRef, authority, autoAdvance, openPicker, exitPlayer } = params;
+  const { src, snap, queue, isLive, startedNearEndRef, authority, autoAdvance, suspended, openPicker } = params;
   const firedForRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +40,7 @@ export function useQueueAdvance(params: {
     const errorAtEnd = snap.errorCode != null && pos >= snap.durationSec - 2;
     const reachedEnd = snap.status !== "playing" && pos >= snap.durationSec - 1;
     if (!naturalEnd && !errorAtEnd && !reachedEnd) return;
+    if (suspended) return;
     if (firedForRef.current === src.url) return;
 
     if (queue.length > 0 && authority === "solo" && autoAdvance) {
@@ -48,10 +49,5 @@ export function useQueueAdvance(params: {
       if (next.ok) openPicker(next.value.meta, next.value.episode, { autoPlay: true, resume: true });
       return;
     }
-    if (getSleepAtEnd()) {
-      firedForRef.current = src.url;
-      setSleepAtEnd(false);
-      exitPlayer();
-    }
-  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, authority, autoAdvance, openPicker, exitPlayer]);
+  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, authority, autoAdvance, suspended, openPicker]);
 }

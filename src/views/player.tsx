@@ -11,7 +11,7 @@ import { useVara } from "@/lib/vara/provider";
 import { useVayraAccount } from "@/lib/vayra-account";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
-import { queueBeginNext, queueAcknowledgeStarted, useQueue, useSleepAtEnd } from "@/lib/queue";
+import { queueBeginNext, queueAcknowledgeStarted, useQueue } from "@/lib/queue";
 import { LUMA_OPEN_EVENT, lumaQueueKey, lumaStore, setLumaAuthority, useLuma, type LumaAuthority } from "@/lib/luma";
 import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
@@ -85,7 +85,7 @@ import { VaraStatusPill } from "@/components/player/vara-status-pill";
 let hdrFallbackNoticeShown = false;
 
 export function PlayerView({ src }: { src: PlayerSrc }) {
-  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc, exitPlayer } = useView();
+  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
   const { settings, update } = useSettings();
   const isKid = useActiveKid() != null;
   const t = useT();
@@ -297,10 +297,16 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   const startedNearEndRef = useStartedNearEnd(src.url, snap.status, snap.durationSec);
 
+  const sleep = useSleepTimer({
+    bridgeRef,
+    status: snap.status,
+    durationSec: snap.durationSec,
+    srcUrl: src.url,
+  });
   const queue = useQueue();
   const luma = useLuma();
-  const sleepAtEndArmed = useSleepAtEnd();
-  const queueOrSleepArmed = (queue.length > 0 && lumaAuthority === "solo" && luma.document.preferences.autoAdvance) || sleepAtEndArmed;
+  const sleepArmed = sleep.mode.kind !== "off";
+  const queueOrSleepArmed = (queue.length > 0 && lumaAuthority === "solo" && luma.document.preferences.autoAdvance) || sleepArmed;
 
   useAutoNextEpisode({
     src,
@@ -318,12 +324,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     durationSec: snap.durationSec,
     enabled: quickToolsEnabled,
     resetKey: src.url,
-  });
-  const sleep = useSleepTimer({
-    bridgeRef,
-    status: snap.status,
-    durationSec: snap.durationSec,
-    srcUrl: src.url,
   });
   const frameGrab = useFrameGrab({
     bridgeRef,
@@ -716,8 +716,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     startedNearEndRef,
     authority: lumaAuthority,
     autoAdvance: luma.document.preferences.autoAdvance,
+    suspended: sleepArmed,
     openPicker,
-    exitPlayer,
   });
 
   useEffect(() => {

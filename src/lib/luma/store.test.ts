@@ -92,6 +92,15 @@ describe("LUMA local store", () => {
     expect(store.getSnapshot().document.migration.legacyQueueImported).toBe(true);
   });
 
+  it("imports the unscoped legacy queue into only one profile", () => {
+    values.set("harbor.queue.v1", JSON.stringify([{ id: "legacy", meta: movie, addedAt: 123 }]));
+    const alice = new LumaStore("alice");
+    const bob = new LumaStore("bob");
+    expect(alice.getSnapshot().document.queue).toHaveLength(1);
+    expect(bob.getSnapshot().document.queue).toHaveLength(0);
+    expect(values.get("vayra.luma.legacy-owner.v1")).toBe("alice");
+  });
+
   it("recovers the last good document after corruption", () => {
     const first = new LumaStore("alice");
     first.add({ meta: movie });
@@ -127,4 +136,3 @@ describe("LUMA local store", () => {
     expect(store.getSnapshot().document.resumes).toHaveLength(0);
   });
 });
-
