@@ -42,6 +42,24 @@ describe("LUMA local store", () => {
     });
   });
 
+  it("persists local-library identity without copying the file path", () => {
+    values.set("harbor.library.local.v1", JSON.stringify([{
+      id: "entry-1",
+      path: "/private/media/movie.mkv",
+      title: "Local Movie",
+      filename: "movie.mkv",
+      type: "movie",
+      year: null,
+      addedAt: 1,
+    }]));
+    const store = new LumaStore("alice");
+    expect(store.add({ meta: { id: "local:entry-1", type: "movie", name: "Local Movie" } }).ok).toBe(true);
+    const raw = values.get(lumaStorageKey("alice"))!;
+    expect(raw).toContain('"kind":"local-library"');
+    expect(raw).toContain('"entryId":"entry-1"');
+    expect(raw).not.toContain("/private/media/movie.mkv");
+  });
+
   it("isolates profiles and refuses duplicate or oversized queues", () => {
     const alice = new LumaStore("alice");
     const bob = new LumaStore("bob");

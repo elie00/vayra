@@ -28,6 +28,8 @@ export type PlayEpisode = {
 
 export type PlayerSrc = {
   meta: Meta;
+  /** Stable local-library identity. Never contains a file path. */
+  localLibraryEntryId?: string;
   imdbId?: string;
   imdbIdVerified?: boolean;
   episode?: PlayEpisode;
