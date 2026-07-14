@@ -135,3 +135,26 @@ Recette à effectuer avec deux comptes et Android + desktop :
 Les tests automatisés ne remplacent pas cette recette multi-appareils. Aucun
 test manuel n'est déclaré réussi tant qu'il n'a pas été exécuté sur les
 binaires concernés.
+
+## Journal de déploiement — 14 juillet 2026
+
+- sauvegarde distante réalisée avant migration : schéma et données, puis
+  redump du schéma après migration ; fichiers conservés hors du dépôt avec des
+  permissions utilisateur uniquement et sommes SHA-256 vérifiées ;
+- migration `20260714090000_cira_discover_hardening.sql` appliquée au projet
+  Supabase lié après un dry-run confirmant qu'elle était l'unique migration
+  absente ; historique local et distant ensuite aligné ;
+- site statique déployé en production et promu sur
+  `https://vayra.eybo.tech` ; `/cira/invite` répond en HTTP 200 avec CSP,
+  `no-store`, `no-referrer`, anti-framing et anti-indexation actifs ;
+- recette de production exécutée avec deux comptes temporaires admis à la
+  bêta : profils, handle exact non énumérable, acceptation de relation,
+  aperçu minimal, acceptation/refus/révocation d'invitation, rejet du replay
+  et frontière de blocage ont réussi ;
+- les deux comptes temporaires ont été supprimés et un contrôle administratif
+  a confirmé qu'il n'en restait aucun ; les clés administratives temporaires
+  ont été effacées après la recette.
+
+La recette physique d'affichage, de caméra et de focus sur des binaires
+Android et desktop reste une validation de release manuelle : elle ne peut pas
+être remplacée honnêtement par la recette API de production.
