@@ -158,10 +158,15 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
     else b.pause();
   };
 
-  // Late-join snapshot: applied unconditionally (no rev gate) to catch up.
+  // Late-join snapshot. The transport broadcasts the authority's snapshot to the
+  // WHOLE channel, so every already-initialized peer receives it too; gate on the
+  // same monotonic rev rule as applyState so only a client that has not yet caught
+  // up to this rev (a genuine late joiner / a peer that missed updates) seeks.
+  // Without this an established peer is force-sought every time anyone (re)joins.
   const applySnapshot = (state: PlaybackState): void => {
     const b = getBridge();
     if (!b) return;
+    if (!shouldApply(state.rev, appliedRev)) return;
     appliedRev = state.rev;
     const nowMs = now();
     applyingOrigin = "remote";

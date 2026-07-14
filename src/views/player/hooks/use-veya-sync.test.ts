@@ -322,6 +322,37 @@ describe("createVeyaWiring — late-join snapshot", () => {
 
     wiring.dispose();
   });
+
+  it("does NOT re-seek an already-initialized peer when a snapshot is re-broadcast (B1)", () => {
+    const clock = fakeClock();
+    const { bridge, calls } = mockBridge();
+    const t = new FakeTransport({ clientId: "guest", name: "G" });
+    t.join("r");
+    const wiring = createVeyaWiring({
+      transport: t,
+      getBridge: () => bridge,
+      clientId: "guest",
+      getLocalPosition: () => 300,
+      now: clock.now,
+    });
+
+    // Peer catches up to rev 5 via a normal heartbeat.
+    t._deliverState(state({ rev: 5, playing: false, positionSec: 300 }));
+    calls.seek.mockClear();
+
+    // Another client (re)joins: the authority BROADCASTS its retained snapshot to
+    // the whole channel. This already-synced peer must ignore rev <= appliedRev.
+    t._deliverSnapshot(state({ rev: 5, playing: true, positionSec: 999 }));
+    t._deliverSnapshot(state({ rev: 3, playing: true, positionSec: 111 }));
+    expect(calls.seek).not.toHaveBeenCalled();
+
+    // A genuinely newer snapshot (peer missed updates) still applies.
+    t._deliverSnapshot(state({ rev: 6, playing: false, positionSec: 620 }));
+    expect(calls.seek).toHaveBeenCalledTimes(1);
+    expect(calls.seek).toHaveBeenCalledWith(620);
+
+    wiring.dispose();
+  });
 });
 
 describe("solo regression — inRoom=false wires nothing", () => {
