@@ -28,6 +28,7 @@ declare
   c uuid := '00000000-0000-4000-8000-0000000020c3';
   d uuid := '00000000-0000-4000-8000-0000000020d4';
   col uuid;
+  dave_inv uuid;
 begin
   perform test.login(a);
   g := (public.cira_create_group('Archive club'))->>'group_id';
@@ -56,10 +57,17 @@ begin
   if (select archived_at from public.cira_groups where id=g) is null then
     raise exception 'TEST_FAILED: not archived';
   end if;
-  if exists (select 1 from public.cira_group_invites where group_id=g)
-     or exists (select 1 from public.cira_group_links where group_id=g) then
-    raise exception 'TEST_FAILED: invites/links not purged on archive';
+  -- invitations/links are kept (data preserved) but inert: dave's pending
+  -- invitation survives, yet accepting it is refused while archived.
+  if not exists (select 1 from public.cira_group_invites where group_id=g and invitee_id=d) then
+    raise exception 'TEST_FAILED: invitation destroyed on archive';
   end if;
+  select id into dave_inv from public.cira_group_invites where group_id=g and invitee_id=d;
+  perform test.login(d);
+  begin
+    perform public.cira_accept_group_invite(dave_inv);
+    raise exception 'TEST_FAILED: joined an archived group via pending invite';
+  exception when others then if sqlerrm <> 'GROUP_ARCHIVED' then raise; end if; end;
 
   -- archived: no invite, no link, no collection, no group VARA
   perform test.login(a);

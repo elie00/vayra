@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Archive, ArchiveRestore, Check, Copy, Crown, Link2, Plus, Settings2, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
 import { CiraError } from "@/lib/cira";
 import { useCira } from "@/lib/cira/provider";
@@ -195,6 +195,10 @@ function GroupLinkDecision() {
   const [preview, setPreview] = useState<CiraGroupLinkPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // useT() returns a fresh function each render; keep it in a ref so it is not
+  // an effect dependency (otherwise the preview fetch loops on every render).
+  const tRef = useRef(t);
+  tRef.current = t;
 
   useEffect(() => {
     setPreview(null);
@@ -204,10 +208,10 @@ function GroupLinkDecision() {
     void repo.previewGroupLink(pendingGroupInviteCode).then((value) => {
       if (!cancelled) setPreview(value);
     }).catch((cause) => {
-      if (!cancelled) setError(groupError(t, cause));
+      if (!cancelled) setError(groupError(tRef.current, cause));
     });
     return () => { cancelled = true; };
-  }, [repo, pendingGroupInviteCode, t]);
+  }, [repo, pendingGroupInviteCode]);
 
   if (!repo || !pendingGroupInviteCode) return null;
   const join = async () => {
@@ -264,20 +268,25 @@ function GroupDetails({ group }: { group: CiraGroup }) {
   const [error, setError] = useState<string | null>(null);
   const canManage = group.role === "owner" || group.role === "admin";
   const archived = group.archivedAt !== null;
+  // Monotonic request id: a stale in-flight load (e.g. after switching groups
+  // fast) must not overwrite the current group's members/links.
+  const loadReq = useRef(0);
 
   const load = async () => {
     if (!repo) return;
+    const req = ++loadReq.current;
     try {
       const [nextMembers, nextLinks] = await Promise.all([
         repo.listGroupMembersPage(group.id),
         canManage ? repo.listGroupLinks(group.id) : Promise.resolve([]),
       ]);
+      if (req !== loadReq.current) return;
       setMembers(nextMembers.items);
       setMembersHasMore(nextMembers.hasMore);
       setLinks(nextLinks);
       setError(null);
     } catch (cause) {
-      setError(groupError(t, cause));
+      if (req === loadReq.current) setError(groupError(t, cause));
     }
   };
 

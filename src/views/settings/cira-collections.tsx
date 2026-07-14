@@ -292,10 +292,12 @@ function AddItemForm({
 
 function CollectionDetail({
   collection,
+  archived,
   onBack,
   onChanged,
 }: {
   collection: VaraCollection;
+  archived: boolean;
   onBack: () => void;
   onChanged: () => void;
 }) {
@@ -416,7 +418,7 @@ function CollectionDetail({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Btn onClick={startVara} disabled={busy} title={t("Create a private VARA room to watch together")}>
+          <Btn onClick={startVara} disabled={busy || archived} title={archived ? t("This group is archived. Restore it to make changes.") : t("Create a private VARA room to watch together")}>
             <RadioTower size={13} />{t("Start a VARA")}
           </Btn>
           {collection.canManage && (
@@ -620,6 +622,7 @@ export function GroupCollections({ group }: { group: CiraGroup }) {
       {selected ? (
         <CollectionDetail
           collection={selected}
+          archived={group.archivedAt !== null}
           onBack={() => setSelectedId(null)}
           onChanged={() => void load()}
         />
