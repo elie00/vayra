@@ -14,20 +14,27 @@ export type Backup = {
   exportedAt: string;
   data: Record<string, string>;
   bgImage?: string | null;
+  includesLocalActivity?: boolean;
 };
 
-function isPortable(key: string): boolean {
+function isLumaKey(key: string): boolean {
+  return key.startsWith("vayra.luma.v1.");
+}
+
+function isPortable(key: string, includeLocalActivity = false): boolean {
+  if (includeLocalActivity && isLumaKey(key)) return true;
   if (!key.startsWith("harbor.")) return false;
   if (key === "harbor.auth" || key.startsWith("harbor.auth.")) return false;
   if (key === "harbor.together.clientId") return false;
   return true;
 }
 
-export async function buildBackup(): Promise<Backup> {
+export async function buildBackup(options: { includeLocalActivity?: boolean } = {}): Promise<Backup> {
+  const includeLocalActivity = options.includeLocalActivity === true;
   const data: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key || !isPortable(key)) continue;
+    if (!key || !isPortable(key, includeLocalActivity)) continue;
     const value = localStorage.getItem(key);
     if (value != null) data[key] = value;
   }
@@ -38,12 +45,13 @@ export async function buildBackup(): Promise<Backup> {
     app: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev",
     exportedAt: new Date().toISOString(),
     data,
+    includesLocalActivity: includeLocalActivity,
     ...(bgImage ? { bgImage } : {}),
   };
 }
 
-export async function downloadBackup(): Promise<boolean> {
-  const backup = await buildBackup();
+export async function downloadBackup(options: { includeLocalActivity?: boolean } = {}): Promise<boolean> {
+  const backup = await buildBackup(options);
   const text = JSON.stringify(backup, null, 2);
   const stamp = new Date().toISOString().slice(0, 10);
   return downloadText(`vayra-backup-${stamp}.vayrx`, text, ["vayrx"], "VAYRA backup");
@@ -70,7 +78,7 @@ export function parseBackup(text: string): ParsedBackup {
   }
   const data: Record<string, string> = {};
   for (const [k, v] of Object.entries(b.data)) {
-    if (typeof v === "string" && isPortable(k)) data[k] = v;
+    if (typeof v === "string" && isPortable(k, true)) data[k] = v;
   }
   if (Object.keys(data).length === 0) {
     return { ok: false, error: "This backup contained nothing restorable." };
@@ -83,6 +91,7 @@ export function parseBackup(text: string): ParsedBackup {
       app: typeof b.app === "string" ? b.app : "unknown",
       exportedAt: typeof b.exportedAt === "string" ? b.exportedAt : "",
       data,
+      includesLocalActivity: b.includesLocalActivity === true || Object.keys(data).some(isLumaKey),
       ...(typeof b.bgImage === "string" || b.bgImage === null ? { bgImage: b.bgImage } : {}),
     },
   };
@@ -96,11 +105,11 @@ export async function applyBackup(backup: Backup): Promise<void> {
   const stale: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && isPortable(key)) stale.push(key);
+    if (key && isPortable(key, backup.includesLocalActivity === true)) stale.push(key);
   }
   for (const key of stale) localStorage.removeItem(key);
   for (const [k, v] of Object.entries(backup.data)) {
-    if (!isPortable(k)) continue;
+    if (!isPortable(k, backup.includesLocalActivity === true)) continue;
     try {
       localStorage.setItem(k, v);
     } catch {

@@ -17,12 +17,14 @@ import spotlights from "./fr/spotlights";
 import sync from "./fr/sync";
 import together from "./fr/together";
 import { ciraFr } from "./cira";
+import { lumaFr } from "./luma";
 import coverage from "./fr/coverage";
 import sweep from "./fr/sweep";
 import sweep2 from "./fr/sweep2";
 
 const fr: Record<string, string> = {
   ...ciraFr,
+  ...lumaFr,
   ...coverage,
   ...sweep,
   ...sweep2,

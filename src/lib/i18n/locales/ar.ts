@@ -18,9 +18,11 @@ import spotlights from "./ar/spotlights";
 import sync from "./ar/sync";
 import together from "./ar/together";
 import { ciraAr } from "./cira";
+import { lumaAr } from "./luma";
 
 const ar: Record<string, string> = {
   ...ciraAr,
+  ...lumaAr,
   ...chrome,
   ...common,
   ...catalog,

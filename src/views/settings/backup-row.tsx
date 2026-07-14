@@ -11,11 +11,12 @@ export function BackupRow() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Backup | null>(null);
   const [applying, setApplying] = useState(false);
+  const [includeLocalActivity, setIncludeLocalActivity] = useState(false);
 
   const doExport = async () => {
     setError(null);
     try {
-      const saved = await downloadBackup();
+      const saved = await downloadBackup({ includeLocalActivity });
       if (saved) {
         setExported(true);
         window.setTimeout(() => setExported(false), 1600);
@@ -62,11 +63,17 @@ export function BackupRow() {
       />
 
       <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+          <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-medium text-ink">{t("Export everything")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
-            {t("Saves your whole VAYRA setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Stremio sign-in is left out on purpose.")}
+            {t("Saves your VAYRA setup without sign-ins or LUMA activity by default.")}
           </span>
+          </div>
+          <label className="flex w-fit cursor-pointer items-center gap-2 text-[12px] text-ink-muted">
+            <input type="checkbox" checked={includeLocalActivity} onChange={(event) => setIncludeLocalActivity(event.target.checked)} className="h-4 w-4 accent-ink" />
+            <span>{t("Include private LUMA queue and resume activity")}</span>
+          </label>
         </div>
         <button
           type="button"
@@ -144,6 +151,9 @@ function RestoreConfirm({
         </p>
         <p className="mt-2 text-[12px] text-ink-subtle">
           {t("Saved {when} from VAYRA {app}.", { when, app: backup.app })}
+        </p>
+        <p className="mt-2 text-[12px] font-medium text-ink-muted">
+          {backup.includesLocalActivity ? t("This backup includes private LUMA activity.") : t("This backup does not include LUMA activity.")}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button

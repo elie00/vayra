@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Play } from "lucide-react";
+import { Check, ChevronDown, ListVideo, Play } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
@@ -17,6 +17,7 @@ import { useTvdbSeasonTypes } from "@/views/detail/series-episodes/use-tvdb-seas
 import { TvdbOrderPanel } from "@/views/detail/series-episodes/tvdb-order-panel";
 import type { PickerItem } from "@/views/detail/series-episodes/season-arc-picker";
 import { seasonDateRange } from "@/lib/providers/tvdb-order";
+import { queueToggle, useQueue } from "@/lib/queue";
 
 type DropOption = { key: string; label: string };
 
@@ -83,6 +84,7 @@ export function EpisodePicker({
 }) {
   const t = useT();
   const { settings, update } = useSettings();
+  const queue = useQueue();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
   const { traktWatched, simklWatched } = useWatchedSets({
@@ -263,14 +265,13 @@ export function EpisodePicker({
             const sub = [ep.airDate?.slice(0, 10), ep.runtime ? `${ep.runtime}m` : null]
               .filter(Boolean)
               .join(" · ");
+            const queued = queue.some((item) => item.meta.id === meta.id && item.episode?.season === ep.season && item.episode?.episode === ep.episode);
             return (
-              <button
+              <div
                 key={`${ep.season}-${ep.episode}`}
-                type="button"
-                onClick={() => onPlayEpisode(ep)}
-                className="group flex flex-col gap-2 text-start"
+                className="group relative flex flex-col gap-2 text-start"
               >
-                <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-white/[0.06] ring-1 ring-white/10 transition duration-200 group-hover:ring-white/25">
+                <button type="button" onClick={() => onPlayEpisode(ep)} className="relative aspect-video w-full overflow-hidden rounded-xl bg-white/[0.06] text-start outline-none ring-1 ring-white/10 transition duration-200 group-hover:ring-white/25 focus-visible:ring-2 focus-visible:ring-white">
                   {thumb ? (
                     <img
                       src={thumb}
@@ -301,14 +302,19 @@ export function EpisodePicker({
                       <div className="h-full bg-accent" style={{ width: `${Math.min(100, prog.ratio * 100)}%` }} />
                     </div>
                   )}
-                </div>
-                <div className="flex flex-col gap-0.5 px-0.5">
+                </button>
+                <div className="flex min-w-0 items-start gap-2 px-0.5">
+                  <div className="min-w-0 flex-1">
                   <span className={`line-clamp-1 text-[13px] font-semibold ${prog.watched ? "text-white/55" : "text-white/90"}`}>
                     {ep.name || t("Episode {n}", { n: ep.episode })}
                   </span>
                   {sub && <span className="text-[11.5px] text-white/45">{sub}</span>}
+                  </div>
+                  <button type="button" onClick={() => queueToggle(meta, ep)} aria-pressed={queued} aria-label={queued ? t("Remove episode from LUMA") : t("Add episode to LUMA")} className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white ${queued ? "bg-white text-black" : "bg-white/[0.08] text-white/55 hover:bg-white/15 hover:text-white"}`}>
+                    {queued ? <Check size={14} strokeWidth={2.8} /> : <ListVideo size={14} strokeWidth={2.2} />}
+                  </button>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

@@ -67,7 +67,7 @@ export function AdvancedPanel() {
 
       <Section
         title={t("Backup & restore")}
-        subtitle={t("Export your entire VAYRA setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Stremio sign-in.")}
+        subtitle={t("Export your VAYRA setup to a single file. Sign-ins and private LUMA activity stay out unless you explicitly include LUMA.")}
       >
         <SettingsRecoverRow />
         <BackupRow />
@@ -800,4 +800,3 @@ function AnimeRepairRow() {
     />
   );
 }
-

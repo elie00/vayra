@@ -1,7 +1,9 @@
 import { ciraEn } from "./cira";
+import { lumaEn } from "./luma";
 
 const en: Record<string, string> = {
   ...ciraEn,
+  ...lumaEn,
   "nav.home": "Home",
   "nav.discover": "Discover",
   "nav.catalogs": "Catalogs",
