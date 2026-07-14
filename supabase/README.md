@@ -3,9 +3,10 @@
 CIRA est le domaine social privacy-first de VAYRA, entièrement autonome et lié
 exclusivement à `auth.users.id`. Ce dossier contient :
 
-- `migrations/` — 11 migrations ordonnées : relations, profils, présence,
+- `migrations/` — 12 migrations CIRA ordonnées : relations, profils, présence,
   invitations, RLS/RPC/Realtime, puis groupes privés, rôles, invitations de
-  groupe, frontière de blocage, boîte sociale dérivée et pagination bornée.
+  groupe, frontière de blocage, boîte sociale dérivée, pagination bornée et
+  cycle de vie Discover sans historique terminal.
 - `tests/` — tests SQL multi-utilisateurs couvrant la matrice de menaces
   (RLS, acceptation forcée, énumération de handles, réutilisation de token,
   rôles et propriété de groupe, blocage inter-groupes, fuite de présence,
