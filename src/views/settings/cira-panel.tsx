@@ -323,11 +323,22 @@ function InviteCard() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const mobile = isMobileDevice();
+  const qrErrorText = t("The QR code couldn't be generated. Copy the link instead.");
+  const hasTimedInvitation = Boolean(secret) || invitations.some((invitation) =>
+    isActiveCiraInvitation(invitation, Date.now()),
+  );
 
   useEffect(() => {
+    if (!hasTimedInvitation) return;
     const interval = window.setInterval(() => setNow(Date.now()), CIRA_INVITATION_CLOCK_MS);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [hasTimedInvitation]);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 2_000);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
 
   useEffect(() => {
     if (secret && Date.parse(secret.expiresAt) <= now) setSecret(null);
@@ -343,7 +354,7 @@ function InviteCard() {
       errorCorrectionLevel: "M",
       color: { dark: "#0B0C10", light: "#F5F3EE" },
     }).catch(() => {
-      if (active) setNotice({ text: t("The QR code couldn't be generated. Copy the link instead."), tone: "error" });
+      if (active) setNotice({ text: qrErrorText, tone: "error" });
     });
     return () => {
       active = false;
@@ -352,7 +363,7 @@ function InviteCard() {
       canvas.width = 1;
       canvas.height = 1;
     };
-  }, [secret, t]);
+  }, [secret, qrErrorText]);
 
   const active = useMemo(
     () => invitations.filter((invitation) => invitation.id !== secret?.invitationId && isActiveCiraInvitation(invitation, now)),
@@ -383,7 +394,6 @@ function InviteCard() {
       if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
       await navigator.clipboard.writeText(secret.url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
       setNotice({
         text: t("Couldn't copy the invitation link. Copy the code instead."),
@@ -552,8 +562,10 @@ function InviteCard() {
                 if (e.key === "Enter") void sendRequest();
               }}
               placeholder={t("Add by handle, e.g. @marie_04")}
+              maxLength={25}
               spellCheck={false}
               autoComplete="off"
+              autoCapitalize="none"
               className="h-10 min-w-0 flex-1 rounded-xl border border-edge bg-elevated px-3 font-mono text-[13px] text-ink placeholder:text-ink-subtle/55 outline-none focus:border-ink"
             />
             <button
@@ -590,8 +602,10 @@ function InviteCard() {
                 onChange={(e) => setCodeDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && codeDraft.trim()) submitInvitationInput(codeDraft); }}
                 placeholder={t("Paste a CIRA link or code")}
+                maxLength={256}
                 spellCheck={false}
                 autoComplete="off"
+                autoCapitalize="none"
                 className="h-10 min-w-0 flex-1 rounded-xl border border-edge bg-elevated px-3 font-mono text-[13px] text-ink placeholder:text-ink-subtle/55 outline-none focus:border-ink"
               />
               <SmallButton label={t("Preview")} onClick={() => submitInvitationInput(codeDraft)} disabled={!codeDraft.trim()} />
