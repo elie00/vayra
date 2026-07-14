@@ -205,11 +205,19 @@ $$;
 
 -- Re-created from 20260714200000: insert member_policy (members_can_edit is now
 -- a generated column), keep the archived guard and the legacy boolean param.
-create or replace function public.vara_create_collection(
+-- p_member_policy lets the client set any of the three levels in a single call;
+-- when null it falls back to the legacy boolean (reader/contributor) so the
+-- create + collaborator-upgrade no longer needs a non-atomic second RPC.
+-- The extra parameter changes the signature, so drop the 4-arg version first
+-- (create-or-replace would leave it behind as an overload, still inserting into
+-- the now-generated members_can_edit column).
+drop function if exists public.vara_create_collection(uuid, text, text, boolean);
+create function public.vara_create_collection(
   p_group_id uuid,
   p_name text,
   p_description text default null,
-  p_members_can_edit boolean default false
+  p_members_can_edit boolean default false,
+  p_member_policy text default null
 )
 returns jsonb
 language plpgsql
@@ -221,6 +229,7 @@ declare
   v_uid uuid;
   v_role text;
   v_description text;
+  v_policy text;
   v_col public.vara_collections;
 begin
   v_uid := private.vara_require_uid();
@@ -237,8 +246,16 @@ begin
      or p_name ~ '[<>[:cntrl:]]'
      or (v_description is not null and
          (char_length(v_description) > 240 or v_description ~ '[<>[:cntrl:]]'))
-     or p_members_can_edit is null then
+     or (p_member_policy is null and p_members_can_edit is null) then
     raise exception 'INVALID_COLLECTION';
+  end if;
+
+  if p_member_policy is null then
+    v_policy := case when p_members_can_edit then 'contributor' else 'reader' end;
+  elsif p_member_policy in ('reader', 'contributor', 'collaborator') then
+    v_policy := p_member_policy;
+  else
+    raise exception 'INVALID_COLLECTION_POLICY';
   end if;
 
   if (select count(*) from public.vara_collections c
@@ -254,8 +271,7 @@ begin
     group_id, created_by, updated_by, name, description, member_policy
   )
   values (
-    p_group_id, v_uid, v_uid, p_name, v_description,
-    case when p_members_can_edit then 'contributor' else 'reader' end
+    p_group_id, v_uid, v_uid, p_name, v_description, v_policy
   )
   returning * into v_col;
 
@@ -540,6 +556,10 @@ create trigger vara_purge_delegates_on_member_removal
 ------------------------------------------------------------------------------
 -- API privileges
 ------------------------------------------------------------------------------
+-- Re-apply the execution ACL: the dropped 4-arg vara_create_collection took its
+-- revoke/grant with it, and a fresh function defaults to EXECUTE for public.
+revoke all on function public.vara_create_collection(uuid, text, text, boolean, text) from public, anon;
+grant execute on function public.vara_create_collection(uuid, text, text, boolean, text) to authenticated;
 revoke all on function public.vara_set_collection_policy(uuid, text) from public, anon;
 revoke all on function public.vara_add_collection_delegate(uuid, uuid) from public, anon;
 revoke all on function public.vara_remove_collection_delegate(uuid, uuid) from public, anon;

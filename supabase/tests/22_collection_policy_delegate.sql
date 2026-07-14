@@ -81,6 +81,20 @@ begin
   if (public.vara_get_collection(col)->>'members_can_edit')::boolean is distinct from true then
     raise exception 'TEST_FAILED: generated members_can_edit wrong';
   end if;
+
+  -- Atomic create at an explicit policy (single call, no upgrade RPC needed)
+  perform test.login(a);
+  if (public.vara_create_collection(g, 'Collab list', null, true, 'collaborator')
+        ->>'member_policy') <> 'collaborator' then
+    raise exception 'TEST_FAILED: atomic collaborator create';
+  end if;
+  if (public.vara_create_collection(g, 'Reader list', null, true, 'reader')
+        ->>'member_policy') <> 'reader' then
+    raise exception 'TEST_FAILED: p_member_policy did not override boolean';
+  end if;
+  begin perform public.vara_create_collection(g, 'Bad policy', null, false, 'wrong');
+    raise exception 'TEST_FAILED: invalid policy accepted at create';
+  exception when others then if sqlerrm <> 'INVALID_COLLECTION_POLICY' then raise; end if; end;
 end;
 $do$;
 
