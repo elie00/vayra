@@ -5,6 +5,7 @@ import { useCira } from "@/lib/cira/provider";
 import type { CiraGroup, CiraGroupLink, CiraGroupLinkPreview, CiraGroupMember } from "@/lib/cira";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
+import { GroupCollections } from "./cira-collections";
 import { Section } from "./shared";
 
 function groupError(t: ReturnType<typeof useT>, error: unknown): string {
@@ -407,6 +408,9 @@ function GroupDetails({ group }: { group: CiraGroup }) {
           }).catch((cause) => setError(groupError(t, cause)))}>{t("Load more members")}</ActionButton>
         )}
       </div>
+
+      <GroupCollections group={group} />
+
       {error && <p className="text-[12px] text-danger">{error}</p>}
     </div>
   );
