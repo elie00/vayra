@@ -119,6 +119,8 @@ export type VaraCollectionInput = {
   name: string;
   description: string | null;
   membersCanEdit: boolean;
+  /** Full policy for the create path: sets any of the three levels atomically. */
+  memberPolicy?: VaraCollectionPolicy;
 };
 
 export type VaraCollectionItemInput = {

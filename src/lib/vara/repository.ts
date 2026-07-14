@@ -407,6 +407,7 @@ export function createVaraRepository(client: SupabaseClient): VaraRepository {
         p_name: input.name,
         p_description: input.description,
         p_members_can_edit: input.membersCanEdit,
+        p_member_policy: input.memberPolicy ?? null,
       }));
     },
     async updateCollection(collectionId, input) {

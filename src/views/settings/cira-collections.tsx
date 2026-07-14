@@ -124,15 +124,20 @@ function CollectionForm({
       const input = {
         name: name.trim(),
         description: description.trim() || null,
-        // Legacy boolean only spans reader/contributor; the collaborator level
-        // is applied right after via the dedicated policy RPC.
+        // Legacy boolean spans reader/contributor only; memberPolicy carries the
+        // full level so create is a single atomic RPC (no collaborator upgrade).
         membersCanEdit: policy !== "reader",
+        memberPolicy: policy,
       };
-      const saved = collection
-        ? await repo.updateCollection(collection.id, input)
-        : await repo.createCollection(groupId, input);
-      if (saved.memberPolicy !== policy) {
-        await repo.setCollectionPolicy(saved.id, policy);
+      if (collection) {
+        // Edit path: update is idempotent, so the policy upgrade may stay a
+        // second call — a retry reuses the same id and never duplicates.
+        const saved = await repo.updateCollection(collection.id, input);
+        if (saved.memberPolicy !== policy) {
+          await repo.setCollectionPolicy(saved.id, policy);
+        }
+      } else {
+        await repo.createCollection(groupId, input);
       }
       onDone();
     } catch (cause) {
@@ -401,7 +406,11 @@ function CollectionDetail({
   const { me } = useCira();
   const { openMeta } = useView();
   const canEditThis = (item: VaraCollectionItem) =>
-    collection.canEditAll || (collection.canEditItems && item.addedBy?.userId === me?.userId);
+    collection.canEditAll ||
+    (collection.canEditItems &&
+      me != null &&
+      item.addedBy != null &&
+      item.addedBy.userId === me.userId);
   const [items, setItems] = useState<VaraCollectionItem[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [editing, setEditing] = useState(false);
