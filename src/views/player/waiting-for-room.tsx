@@ -46,7 +46,7 @@ export function WaitingForRoom(props: {
     <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/72 backdrop-blur-md">
       <div className="flex max-w-sm flex-col items-center gap-5 px-8 text-center">
         <LottiePlayer data={waitingAnim} className="h-28 w-28" />
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5" role="status" aria-live="polite" aria-atomic="true">
           <h2 className="text-[18px] font-semibold text-white">
             {isHost ? t("Ready when you are") : t("Waiting for the host to start")}
           </h2>
