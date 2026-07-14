@@ -63,7 +63,7 @@ function cleanText(value: unknown, max: number): string | undefined {
 function safeArtwork(value: unknown): string | undefined {
   const artwork = cleanText(value, 2_048);
   if (!artwork) return undefined;
-  if (/^(https?:|data:image\/)/i.test(artwork)) return artwork;
+  if (/^https?:/i.test(artwork)) return artwork;
   return undefined;
 }
 

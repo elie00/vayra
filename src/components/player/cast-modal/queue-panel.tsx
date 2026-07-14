@@ -13,7 +13,7 @@ import {
 import { useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { activeProfileId } from "@/lib/active-profile-id";
-import { getLumaAuthority, lumaStore, useLuma } from "@/lib/luma";
+import { getLumaAuthority, lumaStore, resolveLumaPlaybackTarget, useLuma } from "@/lib/luma";
 import { useT } from "@/lib/i18n";
 import {
   queueBeginNext,
@@ -25,7 +25,7 @@ import {
   useQueue,
   type QueueItem,
 } from "@/lib/queue";
-import type { PlayEpisode } from "@/lib/view";
+import { useView, type PlayEpisode } from "@/lib/view";
 
 function episodeLabel(ep?: PlayEpisode): string | null {
   if (!ep) return null;
@@ -163,6 +163,7 @@ export function QueuePanel({ onPlay }: { onPlay: (meta: Meta, episode?: PlayEpis
   const t = useT();
   const profileId = activeProfileId();
   const snapshot = useLuma(profileId);
+  const { openPlayer } = useView();
   const queue = useQueue();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -191,7 +192,14 @@ export function QueuePanel({ onPlay }: { onPlay: (meta: Meta, episode?: PlayEpis
       setAnnouncement(next.error.message);
       return;
     }
-    onPlay(next.value.meta, next.value.episode);
+    const resolved = resolveLumaPlaybackTarget(next.value);
+    if (!resolved.ok) {
+      lumaStore(profileId).rejectStart(resolved.message);
+      setAnnouncement(t(resolved.message));
+      return;
+    }
+    if (resolved.target.kind === "player") openPlayer(resolved.target.src);
+    else onPlay(resolved.target.meta, resolved.target.episode);
   };
 
   return (
