@@ -5,6 +5,7 @@ import type {
   VaraCollectionItem,
   VaraCollectionItemInput,
   VaraCollectionMediaType,
+  VaraCollectionPolicy,
   VaraCollectionRole,
   VaraMember,
   VaraPage,
@@ -124,6 +125,14 @@ function toProfileCard(value: unknown): VaraProfileCard | null {
   };
 }
 
+const COLLECTION_POLICIES: readonly VaraCollectionPolicy[] = ["reader", "contributor", "collaborator"];
+
+function asCollectionPolicy(value: unknown): VaraCollectionPolicy {
+  const p = asString(value);
+  if ((COLLECTION_POLICIES as readonly string[]).includes(p)) return p as VaraCollectionPolicy;
+  throw new VaraError("UNKNOWN");
+}
+
 export function toCollection(value: unknown): VaraCollection {
   const row = asRecord(value);
   return {
@@ -131,13 +140,16 @@ export function toCollection(value: unknown): VaraCollection {
     groupId: asString(row.group_id),
     name: asString(row.name),
     description: asNullableString(row.description),
+    memberPolicy: asCollectionPolicy(row.member_policy),
     membersCanEdit: asBoolean(row.members_can_edit),
     itemCount: asNumber(row.item_count),
     createdBy: toProfileCard(row.created_by),
     updatedBy: toProfileCard(row.updated_by),
     myRole: asCollectionRole(row.my_role),
     canManage: asBoolean(row.can_manage),
+    isDelegate: asBoolean(row.is_delegate),
     canEditItems: asBoolean(row.can_edit_items),
+    canEditAll: asBoolean(row.can_edit_all),
     createdAt: asString(row.created_at),
     updatedAt: asString(row.updated_at),
   };
@@ -405,8 +417,30 @@ export function createVaraRepository(client: SupabaseClient): VaraRepository {
         p_members_can_edit: input.membersCanEdit,
       }));
     },
+    async setCollectionPolicy(collectionId, policy) {
+      return toCollection(await rpc("vara_set_collection_policy", {
+        p_collection_id: collectionId,
+        p_member_policy: policy,
+      }));
+    },
     async deleteCollection(collectionId) {
       await rpc("vara_delete_collection", { p_collection_id: collectionId });
+    },
+
+    async listCollectionDelegates(collectionId) {
+      const data = await rpc("vara_list_collection_delegates", { p_collection_id: collectionId });
+      if (!Array.isArray(data)) throw new VaraError("UNKNOWN");
+      return data.map((row) => {
+        const card = toProfileCard(row);
+        if (!card) throw new VaraError("UNKNOWN");
+        return card;
+      });
+    },
+    async addCollectionDelegate(collectionId, userId) {
+      await rpc("vara_add_collection_delegate", { p_collection_id: collectionId, p_user_id: userId });
+    },
+    async removeCollectionDelegate(collectionId, userId) {
+      await rpc("vara_remove_collection_delegate", { p_collection_id: collectionId, p_user_id: userId });
     },
 
     async listCollectionItemsPage(collectionId, offset = 0, limit = 100) {
