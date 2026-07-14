@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import type { VaraRemoteRoom, VaraRepository } from "@/lib/vara/types";
 import type { PlaybackCommand, PlaybackState, RoomMember } from "./types";
+import { VaraError } from "@/lib/vara/errors";
 import { WebSocketTransport } from "./websocket-transport";
 
 const USER_A = "00000000-0000-4000-8000-0000000000a1";
@@ -289,6 +290,37 @@ describe("WebSocketTransport", () => {
     expect(second.send).toHaveBeenLastCalledWith(expect.objectContaining({
       payload: expect.objectContaining({ rev: 7_000_002 }),
     }));
+    h.transport.close();
+  });
+
+  it("stops reconnecting and releases the channel when the room is permanently gone", async () => {
+    const h = makeHarness();
+    vi.mocked(h.repository.getRoom).mockRejectedValue(new VaraError("VARA_ROOM_UNAVAILABLE"));
+    const rosters: RoomMember[][] = [];
+    h.transport.onMembers((members) => rosters.push(members));
+    h.transport.join(ROOM_ID);
+    await flush();
+    // Signals teardown to the room machine via an empty roster.
+    expect(rosters.at(-1)).toEqual([]);
+    // No unbounded retry: advancing well past every backoff delay must not
+    // trigger a second getRoom call.
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(h.repository.getRoom).toHaveBeenCalledTimes(1);
+    h.transport.close();
+  });
+
+  it("keeps retrying on a transient network error", async () => {
+    const h = makeHarness();
+    vi.mocked(h.repository.getRoom)
+      .mockRejectedValueOnce(new VaraError("NETWORK"))
+      .mockResolvedValue(ROOM);
+    h.transport.join(ROOM_ID);
+    await flush();
+    // First attempt failed transiently; the backoff must schedule a retry.
+    await vi.advanceTimersByTimeAsync(1_000);
+    await flush();
+    expect(h.repository.getRoom).toHaveBeenCalledTimes(2);
+    expect(h.channels.some((entry) => entry.topic === ROOM.topic)).toBe(true);
     h.transport.close();
   });
 
