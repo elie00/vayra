@@ -4,7 +4,10 @@ import { VaraError } from "./errors";
 import {
   createVaraRepository,
   normalizeVaraInviteCode,
+  requireValidCollectionItem,
   requireValidVaraInviteCode,
+  toCollection,
+  toCollectionItem,
   toVaraRoom,
 } from "./repository";
 
@@ -31,6 +34,41 @@ const ROOM_ROW = {
       joined_at: "2026-07-13T22:00:00Z",
     },
   ],
+};
+
+const COLLECTION_ROW = {
+  collection_id: "col-1",
+  group_id: "group-1",
+  name: "Watch order",
+  description: "Club nights",
+  members_can_edit: true,
+  item_count: 4,
+  created_by: {
+    user_id: USER_ID,
+    handle: "elie",
+    display_name: "Élie",
+    avatar_key: null,
+  },
+  updated_by: null,
+  my_role: "owner",
+  can_manage: true,
+  can_edit_items: true,
+  created_at: "2026-07-14T10:00:00Z",
+  updated_at: "2026-07-14T10:05:00Z",
+};
+
+const ITEM_ROW = {
+  item_id: "item-1",
+  collection_id: "col-1",
+  meta_id: "kitsu:44042",
+  media_type: "anime",
+  season: 1,
+  episode: 5,
+  title: "Episode 5",
+  poster_url: "https://images.metahub.space/poster/small/tt1/img",
+  position: 2,
+  added_by: null,
+  added_at: "2026-07-14T10:04:00Z",
 };
 
 function makeClient(session = true) {
@@ -73,6 +111,83 @@ describe("VARA room decoder", () => {
   it("rejects a non-opaque topic", () => {
     expect(() => toVaraRoom({ ...ROOM_ROW, topic: "vara-demo" })).toThrowError(
       new VaraError("UNKNOWN"),
+    );
+  });
+});
+
+describe("VARA collection decoders", () => {
+  it("maps a collection and masks a null author", () => {
+    expect(toCollection(COLLECTION_ROW)).toMatchObject({
+      id: "col-1",
+      groupId: "group-1",
+      membersCanEdit: true,
+      itemCount: 4,
+      createdBy: { handle: "elie" },
+      updatedBy: null,
+      myRole: "owner",
+      canManage: true,
+      canEditItems: true,
+    });
+  });
+
+  it("maps an item without any playback or source field", () => {
+    const item = toCollectionItem(ITEM_ROW);
+    expect(item).toMatchObject({
+      id: "item-1",
+      metaId: "kitsu:44042",
+      mediaType: "anime",
+      season: 1,
+      episode: 5,
+      position: 2,
+      addedBy: null,
+    });
+    expect(Object.keys(item)).not.toContain("stream");
+    expect(Object.keys(item)).not.toContain("source");
+  });
+});
+
+describe("requireValidCollectionItem", () => {
+  const base = { metaId: "tt0111161", mediaType: "movie", title: "Film" } as const;
+
+  it("accepts a public reference and trims the title", () => {
+    expect(requireValidCollectionItem({ ...base, title: "  Film  " })).toEqual({
+      metaId: "tt0111161",
+      mediaType: "movie",
+      title: "Film",
+      season: null,
+      episode: null,
+      posterUrl: null,
+    });
+  });
+
+  it("keeps a valid https poster on a dotted host", () => {
+    const poster = "https://images.metahub.space/poster/small/tt0111161/img";
+    expect(requireValidCollectionItem({ ...base, posterUrl: poster }).posterUrl).toBe(poster);
+  });
+
+  it("drops season/episode on a non-episodic type", () => {
+    const result = requireValidCollectionItem({ ...base, season: 1, episode: 2 });
+    expect(result.season).toBeNull();
+    expect(result.episode).toBeNull();
+  });
+
+  it("keeps season/episode on series and anime", () => {
+    expect(requireValidCollectionItem({
+      metaId: "kitsu:1", mediaType: "anime", title: "Ep", season: 1, episode: 5,
+    })).toMatchObject({ season: 1, episode: 5 });
+  });
+
+  it.each([
+    ["a meta id with a slash", { ...base, metaId: "tt1/evil" }],
+    ["an http image", { ...base, posterUrl: "http://img.example.com/p.jpg" }],
+    ["an ip-literal image host", { ...base, posterUrl: "https://192.168.1.5/p.jpg" }],
+    ["a single-label host", { ...base, posterUrl: "https://localhost/p.jpg" }],
+    ["a userinfo image url", { ...base, posterUrl: "https://a@img.example.com/p.jpg" }],
+    ["a bracketed title", { ...base, title: "XSS <img>" }],
+    ["a non-https scheme", { ...base, posterUrl: "javascript:alert(1)" }],
+  ])("rejects %s", (_label, input) => {
+    expect(() => requireValidCollectionItem(input)).toThrowError(
+      new VaraError("INVALID_COLLECTION_ITEM"),
     );
   });
 });
@@ -159,6 +274,61 @@ describe("createVaraRepository RPC wiring", () => {
       call: (repo) => repo.closeRoom(ROOM_ID),
       fn: "vara_close_room",
       args: { p_room_id: ROOM_ID },
+    },
+    {
+      name: "listGroupCollectionsPage",
+      call: (repo) => repo.listGroupCollectionsPage("group-1", 10, 25),
+      fn: "vara_list_group_collections_page",
+      args: { p_group_id: "group-1", p_limit: 25, p_offset: 10 },
+      data: { items: [], has_more: false },
+    },
+    {
+      name: "createCollection",
+      call: (repo) => repo.createCollection("group-1", {
+        name: "Watch order",
+        description: null,
+        membersCanEdit: true,
+      }),
+      fn: "vara_create_collection",
+      args: {
+        p_group_id: "group-1",
+        p_name: "Watch order",
+        p_description: null,
+        p_members_can_edit: true,
+      },
+      data: COLLECTION_ROW,
+    },
+    {
+      name: "moveCollectionItem",
+      call: (repo) => repo.moveCollectionItem("item-1", 3),
+      fn: "vara_move_collection_item",
+      args: { p_item_id: "item-1", p_position: 3 },
+      data: ITEM_ROW,
+    },
+    {
+      name: "addCollectionItem",
+      call: (repo) => repo.addCollectionItem("col-1", {
+        metaId: "tt0111161",
+        mediaType: "movie",
+        title: "The Film",
+      }),
+      fn: "vara_add_collection_item",
+      args: {
+        p_collection_id: "col-1",
+        p_meta_id: "tt0111161",
+        p_media_type: "movie",
+        p_title: "The Film",
+        p_season: null,
+        p_episode: null,
+        p_poster_url: null,
+      },
+      data: ITEM_ROW,
+    },
+    {
+      name: "removeCollectionItem",
+      call: (repo) => repo.removeCollectionItem("item-1"),
+      fn: "vara_remove_collection_item",
+      args: { p_item_id: "item-1" },
     },
   ];
 

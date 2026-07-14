@@ -54,6 +54,74 @@ export type VaraRoomLinkPreview = {
   expiresAt: string;
 };
 
+// A group role, mirrored from CIRA. A collection is always scoped to a group,
+// so the viewer's role governs what they may do with it.
+export type VaraCollectionRole = "owner" | "admin" | "member";
+
+// Catalogue reference types accepted in a collection. Deliberately public: a
+// meta id and public poster, never a source, stream, addon or info-hash.
+export type VaraCollectionMediaType =
+  | "movie"
+  | "series"
+  | "anime"
+  | "tv"
+  | "channel";
+
+/** Author card, or null when the author left and/or is blocked (masked). */
+export type VaraProfileCard = {
+  userId: string;
+  handle: string;
+  displayName: string;
+  avatarKey: string | null;
+};
+
+export type VaraCollection = {
+  id: string;
+  groupId: string;
+  name: string;
+  description: string | null;
+  membersCanEdit: boolean;
+  itemCount: number;
+  createdBy: VaraProfileCard | null;
+  updatedBy: VaraProfileCard | null;
+  myRole: VaraCollectionRole | null;
+  canManage: boolean;
+  canEditItems: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VaraCollectionItem = {
+  id: string;
+  collectionId: string;
+  metaId: string;
+  mediaType: VaraCollectionMediaType;
+  season: number | null;
+  episode: number | null;
+  title: string;
+  posterUrl: string | null;
+  position: number;
+  addedBy: VaraProfileCard | null;
+  addedAt: string;
+};
+
+export type VaraCollectionInput = {
+  name: string;
+  description: string | null;
+  membersCanEdit: boolean;
+};
+
+export type VaraCollectionItemInput = {
+  metaId: string;
+  mediaType: VaraCollectionMediaType;
+  title: string;
+  season?: number | null;
+  episode?: number | null;
+  posterUrl?: string | null;
+};
+
+export type VaraPage<T> = { items: T[]; hasMore: boolean };
+
 export type VaraErrorCode =
   | "NOT_AUTHENTICATED"
   | "BETA_ACCESS_REQUIRED"
@@ -69,6 +137,15 @@ export type VaraErrorCode =
   | "VARA_ROOM_FULL"
   | "INVALID_VARA_INVITE"
   | "VARA_SYNC_CONFLICT"
+  | "INVALID_COLLECTION"
+  | "COLLECTION_NOT_FOUND"
+  | "COLLECTION_FORBIDDEN"
+  | "COLLECTION_LIMIT_REACHED"
+  | "INVALID_COLLECTION_ITEM"
+  | "COLLECTION_ITEM_LIMIT_REACHED"
+  | "COLLECTION_ITEM_DUPLICATE"
+  | "COLLECTION_ITEM_NOT_FOUND"
+  | "INVALID_PAGE"
   | "RATE_LIMITED"
   | "NETWORK"
   | "UNKNOWN";
@@ -98,4 +175,26 @@ export interface VaraRepository {
   previewLink(code: string): Promise<VaraRoomLinkPreview>;
   acceptLink(code: string): Promise<VaraRemoteRoom>;
   revokeLink(linkId: string): Promise<void>;
+
+  listGroupCollectionsPage(
+    groupId: string,
+    offset?: number,
+    limit?: number,
+  ): Promise<VaraPage<VaraCollection>>;
+  getCollection(collectionId: string): Promise<VaraCollection>;
+  createCollection(groupId: string, input: VaraCollectionInput): Promise<VaraCollection>;
+  updateCollection(collectionId: string, input: VaraCollectionInput): Promise<VaraCollection>;
+  deleteCollection(collectionId: string): Promise<void>;
+
+  listCollectionItemsPage(
+    collectionId: string,
+    offset?: number,
+    limit?: number,
+  ): Promise<VaraPage<VaraCollectionItem>>;
+  addCollectionItem(
+    collectionId: string,
+    input: VaraCollectionItemInput,
+  ): Promise<VaraCollectionItem>;
+  removeCollectionItem(itemId: string): Promise<void>;
+  moveCollectionItem(itemId: string, position: number): Promise<VaraCollectionItem>;
 }
