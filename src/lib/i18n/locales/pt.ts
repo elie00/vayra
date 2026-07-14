@@ -1,7 +1,9 @@
 import { ciraPt } from "./cira";
+import { lumaPt } from "./luma";
 
 const pt: Record<string, string> = {
   ...ciraPt,
+  ...lumaPt,
   "nav.home": "Início",
   "nav.discover": "Descobrir",
   "nav.movies": "Filmes",

@@ -1,7 +1,9 @@
 import { ciraDe } from "./cira";
+import { lumaDe } from "./luma";
 
 const de: Record<string, string> = {
   ...ciraDe,
+  ...lumaDe,
   "nav.home": "Start",
   "nav.discover": "Entdecken",
   "nav.catalogs": "Kataloge",

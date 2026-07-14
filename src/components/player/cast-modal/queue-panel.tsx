@@ -32,11 +32,11 @@ function episodeLabel(ep?: PlayEpisode): string | null {
   return `S${ep.imdbSeason ?? ep.season} · E${String(ep.imdbEpisode ?? ep.episode).padStart(2, "0")}`;
 }
 
-function persistenceLabel(state: ReturnType<typeof useLuma>["persistence"]): string {
-  if (state === "recovered") return "Dernier état sain restauré";
-  if (state === "volatile") return "Mode mémoire — stockage local indisponible";
-  if (state === "future-schema") return "Mise à jour de VAYRA requise";
-  return "Enregistré localement";
+function persistenceLabel(state: ReturnType<typeof useLuma>["persistence"], t: ReturnType<typeof useT>): string {
+  if (state === "recovered") return t("Last healthy state restored");
+  if (state === "volatile") return t("Memory mode — local storage unavailable");
+  if (state === "future-schema") return t("VAYRA update required");
+  return t("Saved locally");
 }
 
 export function LumaToggleButton({ meta, episode }: { meta: Meta; episode?: PlayEpisode }) {
@@ -203,7 +203,7 @@ export function QueuePanel({ onPlay }: { onPlay: (meta: Meta, episode?: PlayEpis
           <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-white/50">{t("Your private queue and playback continuity, stored only on this device.")}</p>
         </div>
         <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-medium ${snapshot.persistence === "volatile" || snapshot.persistence === "future-schema" ? "border-white/20 bg-white/10 text-white" : "border-white/10 bg-white/[0.04] text-white/55"}`}>
-          <HardDrive size={13} aria-hidden="true" /> {persistenceLabel(snapshot.persistence)}
+          <HardDrive size={13} aria-hidden="true" /> {persistenceLabel(snapshot.persistence, t)}
         </span>
       </div>
 
