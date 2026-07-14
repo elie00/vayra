@@ -46,6 +46,11 @@ describe("eventToBinding", () => {
     expect(eventToBinding(key({ key: "/" }))).toBe("/");
     expect(eventToBinding(key({ key: "ArrowLeft" }))).toBe("ArrowLeft");
   });
+
+  it("ne jette pas quand l'événement n'a pas de key (synthétique)", () => {
+    expect(eventToBinding(key({ key: undefined as unknown as string }))).toBe("");
+    expect(eventToBinding(key({ key: "", ctrlKey: true }))).toBe("");
+  });
 });
 
 describe("isTypingTarget", () => {

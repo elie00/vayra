@@ -116,6 +116,9 @@ export const HOTKEY_MAP: Record<HotkeyId, HotkeyDef> = Object.fromEntries(
 export function eventToBinding(e: KeyboardEvent): string {
   const mods: string[] = [];
   let key = e.key;
+  // Some keydown events carry no `key` (synthetic/composition events, and some
+  // automation): return "" so callers match no binding instead of throwing.
+  if (typeof key !== "string" || key.length === 0) return "";
   const isLetter = key.length === 1 && /[a-zA-Z]/.test(key);
   if (e.ctrlKey) mods.push("ctrl");
   if (e.shiftKey && !isLetter) mods.push("shift");
