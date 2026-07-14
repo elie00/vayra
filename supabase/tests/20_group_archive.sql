@@ -32,6 +32,7 @@ begin
   perform test.login(a);
   g := (public.cira_create_group('Archive club'))->>'group_id';
   col := (public.vara_create_collection(g, 'Liste')) ->> 'collection_id';
+  perform public.vara_add_collection_item(col, 'tt0111161', 'movie', 'Film');
   perform test.logout();
   insert into public.cira_group_members(group_id,user_id,role) values (g,b,'admin'),(g,c,'member');
   insert into public.cira_friendships(requester_id,addressee_id,status,responded_at)
@@ -83,6 +84,13 @@ begin
   if (public.vara_get_collection(col)->>'name') <> 'Liste' then
     raise exception 'TEST_FAILED: collection unreadable when archived';
   end if;
+  if (public.vara_get_collection(col)->>'item_count')::int <> 1 then
+    raise exception 'TEST_FAILED: archived collection item lost';
+  end if;
+  -- archived: collection content is frozen (add item refused via lock helper)
+  begin perform public.vara_add_collection_item(col, 'tt0000009', 'movie', 'X');
+    raise exception 'TEST_FAILED: item added on archived group';
+  exception when others then if sqlerrm <> 'GROUP_ARCHIVED' then raise; end if; end;
   perform public.cira_update_group(g, 'Archive club v2');
   perform test.logout();
   if (select name from public.cira_groups where id=g) <> 'Archive club v2' then
