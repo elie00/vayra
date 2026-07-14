@@ -13,6 +13,7 @@ export {
   parseCiraDiscoverPayload,
 } from "./discover";
 export type {
+  CiraBulkInviteResult,
   CiraErrorCode,
   CiraInvitation,
   CiraInviteSecret,

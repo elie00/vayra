@@ -38,6 +38,7 @@ function collectionError(t: ReturnType<typeof useT>, error: unknown): string {
     COLLECTION_ITEM_LIMIT_REACHED: t("This collection is full."),
     COLLECTION_ITEM_DUPLICATE: t("That title is already in this collection."),
     COLLECTION_ITEM_NOT_FOUND: t("This item is no longer in the collection."),
+    GROUP_ARCHIVED: t("This group is archived. Restore it to make changes."),
     VARA_SYNC_CONFLICT: t("Leave the current local watch session before entering a remote VARA."),
     RATE_LIMITED: t("Too many attempts. Wait a moment and try again."),
     NETWORK: t("Network error. Check your connection and try again."),
@@ -370,7 +371,7 @@ function CollectionDetail({
     void (async () => {
       try {
         if (syncConflict) throw new VaraError("VARA_SYNC_CONFLICT");
-        const room = await repo.createRoom(4 * 60 * 60, 8);
+        const room = await repo.createRoom(4 * 60 * 60, 8, collection.groupId);
         activateRoom(room);
       } catch (cause) {
         setError(collectionError(t, cause));
@@ -543,7 +544,7 @@ export function GroupCollections({ group }: { group: CiraGroup }) {
   // used as effect dependencies stay stable and never loop.
   const tRef = useRef(t);
   tRef.current = t;
-  const canManage = group.role === "owner" || group.role === "admin";
+  const canManage = (group.role === "owner" || group.role === "admin") && group.archivedAt === null;
 
   const load = useCallback(async () => {
     if (!repo) return;

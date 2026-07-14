@@ -251,6 +251,9 @@ describe("createCiraRepository RPC wiring", () => {
       rpcData: { ...GROUP_ROW, avatar_key: "moon", max_members: 50, description: null },
     },
     { name: "deleteGroup -> cira_delete_group", call: (repo) => repo.deleteGroup("g1"), rpcName: "cira_delete_group", rpcArgs: { p_group_id: "g1" } },
+    { name: "archiveGroup -> cira_archive_group", call: (repo) => repo.archiveGroup("g1"), rpcName: "cira_archive_group", rpcArgs: { p_group_id: "g1" } },
+    { name: "restoreGroup -> cira_restore_group", call: (repo) => repo.restoreGroup("g1"), rpcName: "cira_restore_group", rpcArgs: { p_group_id: "g1" } },
+    { name: "inviteGroupMembers -> cira_invite_group_members", call: (repo) => repo.inviteGroupMembers("g1", ["u2", "u3"]), rpcName: "cira_invite_group_members", rpcArgs: { p_group_id: "g1", p_user_ids: ["u2", "u3"] }, rpcData: { invited: 2, already_member: 0, skipped: 0 } },
     { name: "listGroupMembers -> cira_list_group_members", call: (repo) => repo.listGroupMembers("g1"), rpcName: "cira_list_group_members", rpcArgs: { p_group_id: "g1" }, rpcData: [] },
     { name: "listGroupMembersPage -> cira_list_group_members_page", call: (repo) => repo.listGroupMembersPage("g1", 50, 25), rpcName: "cira_list_group_members_page", rpcArgs: { p_group_id: "g1", p_limit: 25, p_offset: 50 }, rpcData: { items: [], has_more: false } },
     { name: "removeGroupMember -> cira_remove_group_member", call: (repo) => repo.removeGroupMember("g1", "u2"), rpcName: "cira_remove_group_member", rpcArgs: { p_group_id: "g1", p_user_id: "u2" } },
@@ -319,6 +322,17 @@ describe("createCiraRepository RPC wiring", () => {
     );
     expect(mock.eq).toHaveBeenCalledWith("user_id", USER_ID);
     expect(mock.maybeSingle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("bulk invite decodes only the aggregated counters", () => {
+  it("maps invited / already_member / skipped and nothing else", async () => {
+    const mock = makeClient();
+    mock.rpc.mockResolvedValue({ data: { invited: 3, already_member: 1, skipped: 2 }, error: null });
+    const res = await createCiraRepository(mock.client).inviteGroupMembers("g1", ["a", "b"]);
+    expect(res).toEqual({ invited: 3, alreadyMember: 1, skipped: 2 });
+    // no per-user attribution is ever surfaced
+    expect(Object.keys(res)).toEqual(["invited", "alreadyMember", "skipped"]);
   });
 });
 

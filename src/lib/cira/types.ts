@@ -45,8 +45,17 @@ export type CiraGroup = {
   maxMembers: number;
   memberCount: number;
   role: CiraGroupRole;
+  /** Non-null when the group is archived (frozen for admissions/content). */
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** Aggregated, non-attributable result of a bulk group invitation. */
+export type CiraBulkInviteResult = {
+  invited: number;
+  alreadyMember: number;
+  skipped: number;
 };
 
 export type CiraGroupMember = Pick<
@@ -124,6 +133,8 @@ export type CiraErrorCode =
   | "ALREADY_GROUP_MEMBER"
   | "INVALID_GROUP_INVITE"
   | "GROUP_BLOCK_CONFLICT"
+  | "GROUP_ARCHIVED"
+  | "INVALID_BULK_INVITE"
   | "INVALID_PAGE"
   | "NETWORK"
   | "UNKNOWN";
@@ -169,6 +180,8 @@ export interface CiraRepository {
     maxMembers: number;
   }): Promise<CiraGroup>;
   deleteGroup(id: string): Promise<void>;
+  archiveGroup(id: string): Promise<void>;
+  restoreGroup(id: string): Promise<void>;
   listGroupMembers(id: string): Promise<CiraGroupMember[]>;
   listGroupMembersPage(id: string, offset?: number, limit?: number): Promise<CiraPage<CiraGroupMember>>;
   removeGroupMember(groupId: string, userId: string): Promise<void>;
@@ -177,6 +190,7 @@ export interface CiraRepository {
   leaveGroup(groupId: string): Promise<void>;
 
   inviteGroupMember(groupId: string, userId: string): Promise<void>;
+  inviteGroupMembers(groupId: string, userIds: string[]): Promise<CiraBulkInviteResult>;
   listGroupInvitations(): Promise<CiraGroupInvitation[]>;
   acceptGroupInvitation(id: string): Promise<void>;
   declineGroupInvitation(id: string): Promise<void>;
