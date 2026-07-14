@@ -183,7 +183,7 @@ function CollectionForm({
           </label>
         ))}
       </fieldset>
-      {error && <p className="text-[12px] text-danger">{error}</p>}
+      {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
         <Btn onClick={onDone}>{t("Cancel")}</Btn>
         <Btn primary onClick={() => void save()} disabled={busy || !name.trim()}>
@@ -306,7 +306,7 @@ function AddItemForm({
           className="h-10 rounded-lg border border-edge bg-elevated px-3 text-[13px] text-ink outline-none focus:border-ink"
         />
       </label>
-      {error && <p className="text-[12px] text-danger">{error}</p>}
+      {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
         <Btn onClick={onDone}>{t("Cancel")}</Btn>
         <Btn primary onClick={() => void add()} disabled={busy || !metaId.trim() || !title.trim()}>
@@ -383,7 +383,7 @@ function CollectionAccess({ collection }: { collection: VaraCollection }) {
             </select>
             <Btn disabled={!pick} onClick={() => { if (!pick) return; void run(repo.addCollectionDelegate(collection.id, pick)).then(() => setPick("")); }}>{t("Delegate")}</Btn>
           </div>
-          {error && <p className="text-[12px] text-danger">{error}</p>}
+          {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
         </>
       )}
     </div>
@@ -405,12 +405,18 @@ function CollectionDetail({
   const { repo, activateRoom, syncConflict } = useVara();
   const { me } = useCira();
   const { openMeta } = useView();
+  // An archived group is read-only server-side (every mutation raises
+  // GROUP_ARCHIVED via vara_lock_collection); mirror that in the UI so no
+  // affordance is shown that would always fail.
+  const manageable = collection.canManage && !archived;
+  const itemsEditable = collection.canEditItems && !archived;
   const canEditThis = (item: VaraCollectionItem) =>
-    collection.canEditAll ||
-    (collection.canEditItems &&
-      me != null &&
-      item.addedBy != null &&
-      item.addedBy.userId === me.userId);
+    !archived &&
+    (collection.canEditAll ||
+      (collection.canEditItems &&
+        me != null &&
+        item.addedBy != null &&
+        item.addedBy.userId === me.userId));
   const [items, setItems] = useState<VaraCollectionItem[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -528,16 +534,16 @@ function CollectionDetail({
           <Btn onClick={startVara} disabled={busy || archived} title={archived ? t("This group is archived. Restore it to make changes.") : t("Create a private VARA room to watch together")}>
             <RadioTower size={13} />{t("Start a VARA")}
           </Btn>
-          {collection.canManage && (
+          {manageable && (
             <Btn onClick={() => setEditing((value) => !value)}><Pencil size={13} />{t("Edit")}</Btn>
           )}
-          {collection.canManage && (
+          {manageable && (
             <Btn danger onClick={() => void deleteCollection()}><Trash2 size={13} />{t("Delete")}</Btn>
           )}
         </div>
       </div>
 
-      {editing && collection.canManage && (
+      {editing && manageable && (
         <CollectionForm
           groupId={collection.groupId}
           collection={collection}
@@ -556,12 +562,12 @@ function CollectionDetail({
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
           {t("{count} items", { count: collection.itemCount })}
         </span>
-        {collection.canEditItems && !adding && (
+        {itemsEditable && !adding && (
           <Btn onClick={() => setAdding(true)}><Plus size={13} />{t("Add item")}</Btn>
         )}
       </div>
 
-      {adding && collection.canEditItems && (
+      {adding && itemsEditable && (
         <AddItemForm
           collectionId={collection.id}
           onDone={() => {
@@ -637,7 +643,7 @@ function CollectionDetail({
           </Btn>
         )}
       </div>
-      {error && <p className="text-[12px] text-danger">{error}</p>}
+      {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
     </div>
   );
 }
@@ -777,7 +783,7 @@ export function GroupCollections({ group }: { group: CiraGroup }) {
           </div>
         )
       )}
-      {error && <p className="text-[12px] text-danger">{error}</p>}
+      {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
     </div>
   );
 }
