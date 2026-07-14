@@ -1,6 +1,14 @@
-# The linked Vercel project has `site/` as its remote root. Uploading the whole
-# application repository exceeds Vercel's source archive limit and is neither
-# required nor desirable for the static public site.
-*
-!site/
-!site/**
+# The linked Vercel project has `site/` as its remote root. Keep that directory
+# in the source archive while excluding desktop/mobile build trees and caches.
+node_modules/
+dist/
+src/
+src-tauri/
+vayra-core/
+vara-broker/
+public/
+flatpak/
+supabase/
+docs/
+examples/
+scripts/
