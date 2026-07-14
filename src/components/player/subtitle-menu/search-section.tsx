@@ -74,14 +74,14 @@ export function SearchSection(props: SubtitleMenuProps) {
         preferredLangs: settings.preferredSubLangs ?? [],
       };
       
-      // Log search attempt for debugging (will appear in terminal)
+      // Log search attempt for debugging (will appear in terminal).
+      // Never log the query — it is typically the watched title.
       console.log('[SUBTITLES SEARCH] Starting with:', {
         hasImdbId: !!metaImdbId,
         addonsCount: addons?.length ?? 0,
         providers: searchOpts.providers,
-        query: searchQuery,
       });
-      
+
       const r = await searchSubtitles(searchQuery, searchOpts);
       
       // Log results by source (will appear in terminal)

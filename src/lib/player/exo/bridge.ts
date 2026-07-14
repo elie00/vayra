@@ -222,7 +222,8 @@ export function createExoBridge(): PlayerBridge {
     try {
       track.cues = await fetchAndParse(track.url);
     } catch (e) {
-      console.warn(`[exo] subtitle load failed ${track.url}`, e);
+      // Do not log track.url — a subtitle URL can carry the watched-content id.
+      console.warn(`[exo] subtitle load failed`, e);
       track.cues = [];
     } finally {
       track.loading = false;
