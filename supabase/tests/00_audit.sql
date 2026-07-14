@@ -72,8 +72,8 @@ begin
       raise exception 'TEST_FAILED: authenticated cannot execute public.%', r.proname;
     end if;
   end loop;
-  if n <> 42 then
-    raise exception 'TEST_FAILED: expected 42 public cira_ RPCs, found %', n;
+  if n <> 45 then
+    raise exception 'TEST_FAILED: expected 45 public cira_ RPCs, found %', n;
   end if;
 end;
 $do$;
@@ -239,7 +239,7 @@ begin
   where attrelid = 'public.cira_groups'::regclass
     and attnum > 0 and not attisdropped;
   if cols <> array['id', 'owner_id', 'name', 'description', 'avatar_key',
-                   'max_members', 'created_at', 'updated_at'] then
+                   'max_members', 'created_at', 'updated_at', 'archived_at'] then
     raise exception 'TEST_FAILED: unexpected cira_groups columns: %', cols;
   end if;
 end;
