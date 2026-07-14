@@ -307,6 +307,10 @@ function CollectionDetail({
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // useT() returns a fresh function each render; keep it in a ref so callbacks
+  // used as effect dependencies stay stable and never loop.
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const load = useCallback(async () => {
     if (!repo) return;
@@ -316,9 +320,9 @@ function CollectionDetail({
       setHasMore(page.hasMore);
       setError(null);
     } catch (cause) {
-      setError(collectionError(t, cause));
+      setError(collectionError(tRef.current, cause));
     }
-  }, [repo, collection.id, t]);
+  }, [repo, collection.id]);
 
   useEffect(() => {
     void load();
@@ -518,6 +522,10 @@ export function GroupCollections({ group }: { group: CiraGroup }) {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const timerRef = useRef<number | null>(null);
+  // useT() returns a fresh function each render; keep it in a ref so callbacks
+  // used as effect dependencies stay stable and never loop.
+  const tRef = useRef(t);
+  tRef.current = t;
   const canManage = group.role === "owner" || group.role === "admin";
 
   const load = useCallback(async () => {
@@ -532,12 +540,12 @@ export function GroupCollections({ group }: { group: CiraGroup }) {
       if (cause instanceof VaraError && cause.code === "PROFILE_REQUIRED") {
         setCollections([]);
       } else {
-        setError(collectionError(t, cause));
+        setError(collectionError(tRef.current, cause));
       }
     } finally {
       setReady(true);
     }
-  }, [repo, group.id, t]);
+  }, [repo, group.id]);
 
   useEffect(() => {
     setSelectedId(null);
