@@ -17,6 +17,7 @@ import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import type { HomeRow } from "@/views/home/home-types";
 import { RowSkeleton } from "@/views/home/row-skeleton";
+import { LumaResumeSection } from "@/views/home/luma-resume-section";
 
 // Mobile-first Home (Apple Sports card model). Rendered from `Home` in
 // src/views/home.tsx when isMobileTauri(); every data hook still runs in the
@@ -71,6 +72,8 @@ export function MobileHome({
         <TmdbNudge suppress={nudgeSuppress} />
 
         {heroSlides.length > 0 && <MobileHeroRow slides={heroSlides} />}
+
+        <LumaResumeSection />
 
         <MobileContinueWatching items={cwItems} signedIn={signedIn} onDismiss={onDismissCw} />
 

@@ -76,6 +76,7 @@ import { AddSourceModal } from "@/components/add-source-modal";
 import type { SourceRow } from "@/lib/custom-sources";
 import { isMobileTauri } from "@/lib/platform";
 import { MobileHome } from "@/mobile/home";
+import { LumaResumeSection } from "./home/luma-resume-section";
 
 export function Home({ active = true }: { active?: boolean }) {
   const { authKey, user } = useAuth();
@@ -856,6 +857,9 @@ export function Home({ active = true }: { active?: boolean }) {
             </div>
           )}
           <div data-scroll-anchor="cw">
+            <LumaResumeSection />
+          </div>
+          <div data-scroll-anchor="cw-cloud">
             <CWSection
               signedIn={!!authKey}
               items={cwItems}
