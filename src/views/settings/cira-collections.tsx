@@ -307,30 +307,41 @@ function CollectionDetail({
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Serializes item mutations so a rapid double-click can't fire two moves with
+  // the same stale position before the list reloads.
+  const [mutating, setMutating] = useState(false);
   // useT() returns a fresh function each render; keep it in a ref so callbacks
   // used as effect dependencies stay stable and never loop.
   const tRef = useRef(t);
   tRef.current = t;
 
+  const cancelledRef = useRef(false);
   const load = useCallback(async () => {
     if (!repo) return;
     try {
       const page = await repo.listCollectionItemsPage(collection.id);
+      if (cancelledRef.current) return;
       setItems(page.items);
       setHasMore(page.hasMore);
       setError(null);
     } catch (cause) {
-      setError(collectionError(tRef.current, cause));
+      if (!cancelledRef.current) setError(collectionError(tRef.current, cause));
     }
   }, [repo, collection.id]);
 
   useEffect(() => {
+    cancelledRef.current = false;
     void load();
+    return () => {
+      cancelledRef.current = true;
+    };
   }, [load, collection.updatedAt]);
 
   if (!repo) return null;
 
   const run = async (action: Promise<unknown>) => {
+    if (mutating) return;
+    setMutating(true);
     setError(null);
     try {
       await action;
@@ -338,12 +349,17 @@ function CollectionDetail({
       onChanged();
     } catch (cause) {
       setError(collectionError(t, cause));
+    } finally {
+      setMutating(false);
     }
   };
 
   const move = (item: VaraCollectionItem, direction: -1 | 1) => {
+    if (mutating) return;
+    // Clamp against the true total (itemCount), not the loaded page, so an item
+    // can move past the current page; the RPC clamps to the real bound anyway.
     const target = item.position + direction;
-    if (target < 1 || target > items.length) return;
+    if (target < 1 || target > collection.itemCount) return;
     void run(repo.moveCollectionItem(item.id, target));
   };
 
@@ -465,7 +481,7 @@ function CollectionDetail({
                 <>
                   <button
                     aria-label={t("Move up")}
-                    disabled={item.position <= 1}
+                    disabled={mutating || item.position <= 1}
                     onClick={() => move(item, -1)}
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-edge-soft text-ink-muted hover:text-ink disabled:opacity-30"
                   >
@@ -473,7 +489,7 @@ function CollectionDetail({
                   </button>
                   <button
                     aria-label={t("Move down")}
-                    disabled={item.position >= items.length}
+                    disabled={mutating || item.position >= collection.itemCount}
                     onClick={() => move(item, 1)}
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-edge-soft text-ink-muted hover:text-ink disabled:opacity-30"
                   >
@@ -481,8 +497,9 @@ function CollectionDetail({
                   </button>
                   <button
                     aria-label={t("Remove")}
+                    disabled={mutating}
                     onClick={() => void remove(item)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/25 text-danger hover:bg-danger/10"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/25 text-danger hover:bg-danger/10 disabled:opacity-30"
                   >
                     <X size={14} />
                   </button>
