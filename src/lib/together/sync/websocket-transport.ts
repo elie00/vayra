@@ -4,6 +4,7 @@ import type {
   SupabaseClient,
 } from "@supabase/supabase-js";
 import type { VaraRemoteRoom, VaraRepository } from "@/lib/vara/types";
+import { VaraError } from "@/lib/vara/errors";
 import type { SyncTransport, Unsubscribe } from "./transport";
 import type {
   PlaybackCommand,
@@ -44,6 +45,12 @@ export type WebSocketTransportOptions = {
   now?: () => number;
   timers?: TimerApi;
 };
+
+const PERMANENT_ROOM_ERROR_CODES = new Set<string>([
+  "INVALID_VARA_ROOM",
+  "VARA_ROOM_UNAVAILABLE",
+  "VARA_ROOM_FORBIDDEN",
+]);
 
 const RECONNECT_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 15_000, 30_000] as const;
 const LEASE_TICK_MS = 15_000;
@@ -269,11 +276,28 @@ export class WebSocketTransport implements SyncTransport {
           this.scheduleReconnect();
         }
       });
-    } catch {
-      if (generation === this.generation && !this.intentionalLeave) {
+    } catch (error) {
+      if (generation !== this.generation || this.intentionalLeave) return;
+      if (error instanceof VaraError && PERMANENT_ROOM_ERROR_CODES.has(error.code)) {
+        // Room is permanently gone (expired / closed / caller removed): stop
+        // retrying and release the channel instead of looping reconnect forever.
+        this.teardownUnavailable();
+      } else {
         this.scheduleReconnect();
       }
     }
+  }
+
+  /** Give up on a permanently-unavailable room without touching server state. */
+  private teardownUnavailable(): void {
+    this.generation += 1;
+    this.clearReconnect();
+    this.stopLeaseTimer();
+    this.removeRoomChannel();
+    this.roomId = null;
+    this.descriptor = null;
+    this.lastPublishedState = null;
+    this.membersEmitter.emit([]);
   }
 
   private bindChannel(channel: RealtimeChannel, generation: number): void {
