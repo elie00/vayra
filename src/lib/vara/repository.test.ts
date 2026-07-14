@@ -181,6 +181,8 @@ describe("requireValidCollectionItem", () => {
     ["a meta id with a slash", { ...base, metaId: "tt1/evil" }],
     ["an http image", { ...base, posterUrl: "http://img.example.com/p.jpg" }],
     ["an ip-literal image host", { ...base, posterUrl: "https://192.168.1.5/p.jpg" }],
+    ["a hex ip-literal host", { ...base, posterUrl: "https://0x7f.0.0.1/p.jpg" }],
+    ["a numeric-tld host", { ...base, posterUrl: "https://example.123/p.jpg" }],
     ["a single-label host", { ...base, posterUrl: "https://localhost/p.jpg" }],
     ["a userinfo image url", { ...base, posterUrl: "https://a@img.example.com/p.jpg" }],
     ["a bracketed title", { ...base, title: "XSS <img>" }],

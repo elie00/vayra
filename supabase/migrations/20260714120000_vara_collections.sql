@@ -70,13 +70,16 @@ create table public.vara_collection_items (
     check (char_length(title) between 1 and 200),
   constraint vara_collection_items_title_clean
     check (title !~ '[<>[:cntrl:]]'),
-  -- Validated public https image: dotted host (no localhost, no IP literal,
-  -- no userinfo, no IPv6 bracket), sane path charset, bounded length.
+  -- Validated public https image. The host must end in an ALPHABETIC TLD, which
+  -- structurally excludes every IP-literal form (decimal, octal AND hexadecimal
+  -- like 0x7f.0.0.1), localhost (needs a dot), userinfo (@ out of charset) and
+  -- IPv6 (bracket rejected). Sane path charset, bounded length. The all-digit
+  -- negative filter is kept as defence in depth.
   constraint vara_collection_items_poster_https
     check (
       poster_url is null or (
         char_length(poster_url) <= 2048
-        and poster_url ~ '^https://[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+(:[0-9]{1,5})?(/[^[:space:][:cntrl:]<>"''\\]*)?$'
+        and poster_url ~ '^https://([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,63}(:[0-9]{1,5})?(/[^[:space:][:cntrl:]<>"''\\]*)?$'
         and poster_url !~ '^https://[0-9]+(\.[0-9]+)+([:/]|$)'
       )
     ),
@@ -525,7 +528,7 @@ begin
      or p_title ~ '[<>[:cntrl:]]'
      or (v_poster is not null and (
            char_length(v_poster) > 2048
-        or v_poster !~ '^https://[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+(:[0-9]{1,5})?(/[^[:space:][:cntrl:]<>"''\\]*)?$'
+        or v_poster !~ '^https://([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,63}(:[0-9]{1,5})?(/[^[:space:][:cntrl:]<>"''\\]*)?$'
         or v_poster ~ '^https://[0-9]+(\.[0-9]+)+([:/]|$)'
      )) then
     raise exception 'INVALID_COLLECTION_ITEM';
@@ -584,9 +587,15 @@ declare
   v_manager boolean;
 begin
   v_uid := private.vara_require_uid();
+  -- COLLECTION_NOT_FOUND (not COLLECTION_ITEM_NOT_FOUND) when the item is
+  -- unknown: otherwise a non-member could tell "this id is an item somewhere"
+  -- (-> COLLECTION_NOT_FOUND via the lock) apart from "no such id", an
+  -- existence oracle unbounded to the caller's groups. Membership is only
+  -- proven after the lock, so the item-specific code is reserved for the
+  -- re-read below.
   select i.* into v_item from public.vara_collection_items i
   where i.id = p_item_id;
-  if not found then raise exception 'COLLECTION_ITEM_NOT_FOUND'; end if;
+  if not found then raise exception 'COLLECTION_NOT_FOUND'; end if;
   v_col := private.vara_lock_collection(v_item.collection_id, v_uid);
 
   -- Re-read under the lock: the item may have moved or vanished meanwhile.
@@ -641,9 +650,11 @@ begin
   if p_position is null or p_position < 1 then
     raise exception 'INVALID_COLLECTION_ITEM';
   end if;
+  -- COLLECTION_NOT_FOUND before membership is proven (see remove for the
+  -- existence-oracle rationale); COLLECTION_ITEM_NOT_FOUND only after the lock.
   select i.* into v_item from public.vara_collection_items i
   where i.id = p_item_id;
-  if not found then raise exception 'COLLECTION_ITEM_NOT_FOUND'; end if;
+  if not found then raise exception 'COLLECTION_NOT_FOUND'; end if;
   v_col := private.vara_lock_collection(v_item.collection_id, v_uid);
 
   select i.* into v_item from public.vara_collection_items i
