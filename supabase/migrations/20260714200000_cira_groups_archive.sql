@@ -452,6 +452,37 @@ end;
 $$;
 
 ------------------------------------------------------------------------------
+-- Collection content is read-only on an archived group. vara_lock_collection is
+-- the single serialization point for every collection/item mutation (update,
+-- delete, add/remove/move item); guarding it here freezes them all at once,
+-- while reads (which never take this lock) stay open. Re-created from
+-- 20260714120000 with the archived check after membership is proven.
+------------------------------------------------------------------------------
+create or replace function private.vara_lock_collection(p_collection_id uuid, p_user_id uuid)
+returns public.vara_collections
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_col public.vara_collections;
+begin
+  select * into v_col from public.vara_collections
+  where id = p_collection_id
+  for update;
+  if not found
+     or private.cira_group_role(v_col.group_id, p_user_id) is null then
+    raise exception 'COLLECTION_NOT_FOUND';
+  end if;
+  if private.cira_group_is_archived(v_col.group_id) then
+    raise exception 'GROUP_ARCHIVED';
+  end if;
+  return v_col;
+end;
+$$;
+
+------------------------------------------------------------------------------
 -- VARA from a group context: vara_create_room gains an optional p_group_id so
 -- the server can refuse launching a room for an archived group (answers Q1).
 -- The prior 2-arg signature is dropped and replaced by a 3-arg one whose last
