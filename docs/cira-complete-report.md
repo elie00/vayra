@@ -76,7 +76,8 @@ accès direct pour `authenticated`.
 
 ## Migrations
 
-Les 11 fichiers `supabase/migrations/20260713*.sql` doivent être appliqués
+Les 12 migrations CIRA, des fichiers `20260713*.sql` jusqu'à
+`20260714090000_cira_discover_hardening.sql`, doivent être appliquées
 strictement dans l'ordre. Les ajouts complets vont de
 `20260713220000_cira_groups_schema.sql` à
 `20260713270000_cira_pagination.sql`. La procédure d'installation et de mise à
@@ -98,7 +99,7 @@ git diff --check
 ```
 
 Le harnais PostgreSQL applique toutes les migrations sur une instance 15
-jetable et exécute 16 fichiers SQL de menace. Ils couvrent RLS, transitions,
+jetable et exécute 18 fichiers SQL de menace. Ils couvrent RLS, transitions,
 blocs, présence, tokens, suppression de compte, Realtime, rôles, propriété,
 groupes, invitations, blocage transversal, boîte sociale et pagination.
 

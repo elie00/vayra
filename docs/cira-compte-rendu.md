@@ -161,7 +161,7 @@ n'ont pas été modifiés par ces travaux.
 
 | Validation | Résultat |
 |---|---|
-| Harnais PostgreSQL | 16/16 fichiers SQL réussis |
+| Harnais PostgreSQL | voir la dernière exécution documentée ; le harnais compte désormais 18 fichiers SQL |
 | Tests Vitest | 283/283 réussis |
 | `pnpm exec tsc -b` | Succès |
 | `pnpm lint` | Succès, aucune alerte ESLint |
@@ -183,7 +183,7 @@ bloquent pas la compilation.
 ## Étapes restantes avant production
 
 1. Fusionner `feat/cira-complete` dans `main` après revue.
-2. Appliquer les 11 migrations dans le projet Supabase de production.
+2. Appliquer les 12 migrations CIRA dans le projet Supabase de production.
 3. Vérifier les comptages, RLS, RPC et triggers après migration.
 4. Réaliser une recette avec au moins deux comptes et deux appareils.
 5. Tester les invitations web et deep links sur desktop et Android.
