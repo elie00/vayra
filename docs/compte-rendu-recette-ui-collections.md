@@ -6,69 +6,68 @@
 
 **Dépôt :** `elie00/vayra`
 
-**Commit de référence :** `04fe615` (descendant de `12993ab`, déploiement base)
+**Commit de référence :** `0ac76cd` (descendant de `12993ab`, déploiement base)
 
-**Verdict :** recette d'interface **partielle** — contrôle négatif validé, chemin
-positif reporté faute de compte bêta ; un bug préexistant bloquant a été corrigé.
+**Verdict :** recette d'interface **complète et réussie** — contrôles négatif et
+positif validés en conditions réelles ; deux blocages d'environnement levés et un
+bug préexistant corrigé en chemin.
 
 ## 1. Résumé exécutif
 
-La recette d'interface de VARA Collections a été conduite en pilotant l'application
-réelle (serveur de développement Vite, navigateur via extension). Une recette
-d'interface pilote une **session navigateur unique et stateful** : elle n'est pas
-parallélisable en agents concurrents, elle a donc été exécutée séquentiellement.
+La recette d'interface de VARA Collections a été conduite de bout en bout en
+pilotant l'application réelle (serveur de développement Vite, navigateur via
+extension), avec un compte bêta connecté. Le **contrôle négatif** (bouton absent
+hors compte bêta) et l'ensemble du **chemin positif** (bouton visible, menu,
+ajout depuis la fiche média, item dans la collection, attribution, ordre/retrait,
+lancement d'une VARA) ont été observés fonctionnels.
 
-Le **contrôle négatif** attendu est confirmé : hors compte bêta, le bouton
-« Ajouter à une collection » n'apparaît pas sur la fiche média. Le **chemin
-positif** (bouton visible, menu, ajout, ordre, retrait, « Lancer une VARA ») n'a
-pas pu être exécuté faute d'un compte portant le flag `cira_beta` connecté dans
-l'environnement de test. Au cours de la recette, un **bug préexistant** de gestion
-des raccourcis clavier, sans rapport avec les collections, a fait planter
-l'application ; il a été identifié et corrigé.
+Deux blocages d'environnement, propres au développement web, ont dû être levés :
+la connexion au compte VAYRA (lien magique) ne se complétait pas dans un
+navigateur, et la redirection n'était pas autorisée côté Supabase. Un bug
+préexistant de gestion des raccourcis clavier, sans rapport avec les collections,
+a également été corrigé.
 
-## 2. Ce qui a été validé par observation réelle
+## 2. Contrôle négatif
 
-- L'application démarre, la recherche fonctionne, une fiche média s'ouvre et
-  **se rend sans erreur JavaScript** liée au code des collections.
-- Les modules modifiés (`src/views/detail.tsx` et
-  `src/components/lists/add-to-collection-menu.tsx`) sont **transformés par Vite
-  en développement** et **intégrés au bundle Rollup de production** sans erreur.
-- **Contrôle négatif** : sur la fiche média en session invité (non bêta), l'arbre
-  d'accessibilité ne comporte que « Ajouter aux favoris » et « Ajouter à la
-  liste ». Le bouton « Ajouter à une collection » est **absent**, conforme à son
-  affichage conditionnel (`vara.status === "ready"`, soit compte bêta + profil
-  CIRA).
-- L'écran de connexion au compte VAYRA (lien magique par e-mail, **sans mot de
-  passe**) est accessible et fonctionnel, distinct de la connexion Stremio.
+En session invité (non bêta), sur une fiche média, l'arbre d'accessibilité ne
+comporte que « Ajouter aux favoris » et « Ajouter à la liste ». Le bouton
+« Ajouter à une collection de groupe » est **absent**, conforme à son affichage
+conditionnel (`vara.status === "ready"`, soit compte bêta + profil CIRA).
 
-## 3. Ce qui reste à exécuter
+## 3. Déblocage de la connexion en développement web
 
-Le chemin positif de l'interface reste à réaliser manuellement avec un compte
-bêta connecté :
+- **Pont d'authentification web (dev only).** Le flux VAYRA se complète
+  normalement via le deep link desktop `vayra://auth/callback`, que le navigateur
+  ne sait pas router. En développement uniquement (`import.meta.env.DEV`, compilé
+  hors production) et hors Tauri, le lien magique est renvoyé vers l'origine de
+  développement et le paramètre `?code=` est échangé en page. La production et le
+  bureau conservent le flux deep link inchangé.
+- **Autorisation de redirection.** L'URL `http://localhost:5199/**` a été ajoutée
+  aux Redirect URLs du projet Supabase (Authentication → URL Configuration),
+  réglage de développement réversible. Sans elle, Supabase ignorait la
+  redirection et retombait sur le Site URL (`vayra://auth/callback`).
 
-1. affichage du bouton uniquement pour un compte `cira_beta` doté d'un profil
-   CIRA ;
-2. ouverture du menu listant les seules collections que l'appelant peut éditer ;
-3. ajout du titre affiché, avec repli sans image si le poster est rejeté ;
-4. vérification de l'ordre et du retrait ;
-5. action explicite « Lancer une VARA » depuis une collection.
+Après ces deux ajustements, la connexion par lien magique se complète dans le
+navigateur : session `elie.yvon.d@gmail.com` établie, flag `cira_beta` actif,
+profil CIRA créé (`elie_test`), statut *ready*.
 
-Ces comportements restent couverts par la **recette SQL distante (23 contrôles
-verts)**, qui exerce exactement les RPC appelées par l'interface, par les tests
-unitaires du repository et par la compilation.
+## 4. Chemin positif validé en conditions réelles
 
-## 4. Blocages rencontrés
-
-- **Compte bêta manquant.** Aucun compte connu ne porte le flag `cira_beta`. Le
-  flag peut être posé sur `raw_app_meta_data` via la Management API Supabase une
-  fois un compte VAYRA créé ; la recette positive pourra alors être finie en
-  quelques minutes. Aucune saisie d'identifiant n'est effectuée par l'assistant :
-  la connexion reste une action de l'utilisateur.
-- **Stockage restreint.** Le contexte piloté par l'extension émet des erreurs
-  « Access to storage is not allowed from this context » ; le flux de connexion
-  PKCE peut ne pas persister sa session dans ce contexte. Une session bêta se
-  teste plus sûrement dans un onglet Chrome ordinaire ou dans l'application
-  Tauri.
+1. Création via l'interface d'un groupe CIRA (« Ciné club test ») puis d'une
+   collection (« Marathon SF »), option « membres peuvent éditer » activée ; la
+   carte Collections s'affiche et fonctionne.
+2. Sur une fiche média, le bouton **« Ajouter à une collection de groupe »**
+   apparaît (là où il est absent en session invité).
+3. Le menu liste la collection éditable avec son groupe et son compteur d'items.
+4. L'ajout du titre affiché (« The Animatrix ») confirme visuellement : compteur
+   0 → 1 et coche de validation.
+5. Dans la collection, l'item apparaît avec son affiche, son type (« Anime »),
+   l'attribution « ajouté par Elie », sa position, et l'attribution de la
+   collection « Créée par Elie · dernière modification par Elie » ; les contrôles
+   d'ordre (monter/descendre), de retrait et d'ouverture sont présents.
+6. L'action **« Lancer une VARA »** depuis la collection crée et active une room
+   privée (« VARA active · 1 participant »), explicitement et sans autorité de
+   lecture ni source. La room de test a été refermée ensuite.
 
 ## 5. Bug corrigé — raccourcis clavier
 
@@ -77,41 +76,47 @@ unitaires du repository et par la compilation.
 
 **Cause.** Le gestionnaire global `onKey` (`src/App.tsx`), branché sur tous les
 `keydown` en phase capture, appelle `eventToBinding()` (`src/lib/hotkeys.ts`),
-qui lisait `e.key.length` sans garde. Certains événements clavier ne portent pas
-de `key` (événements synthétiques ou de composition, et une partie de
-l'automatisation), d'où l'exception qui faisait planter toute l'application.
+qui lisait `e.key.length` sans garde ; certains événements clavier ne portent pas
+de `key`.
 
 **Correctif.** `eventToBinding` renvoie désormais `""` lorsque `e.key` n'est pas
-une chaîne non vide ; l'événement ne correspond alors à aucun raccourci au lieu
-de lever une exception. Les autres helpers du gestionnaire tolèrent déjà une
-`key` absente. Un test de régression a été ajouté.
-
-Ce bug est **préexistant et sans rapport avec VARA Collections**.
+une chaîne non vide, avec un test de régression. Bug préexistant, sans rapport
+avec les collections.
 
 ## 6. Validations exécutées
 
 | Commande ou contrôle | Résultat |
 | --- | --- |
-| `pnpm test` sur `src/lib/hotkeys.test.ts` | Succès — 9 tests (dont la régression) |
 | `pnpm exec tsc -b` | Succès |
 | `pnpm lint` (`eslint --max-warnings 0`) | Succès |
+| `pnpm test` sur `hotkeys.test.ts` (dont la régression) | Succès — 9 tests |
 | Transformation Vite dev + build Rollup des modules Collections | Succès |
-| Contrôle négatif du bouton sur fiche média (session invité) | Bouton absent, conforme |
+| Contrôle négatif du bouton (session invité) | Bouton absent, conforme |
+| Chemin positif complet (compte bêta connecté) | Réussi de bout en bout |
 
-## 7. Micro-commit
+## 7. Micro-commits
 
 - `04fe615` — `fix(hotkeys): don't crash on keydown events without a key`
+- `0ac76cd` — `feat(auth): complete VAYRA magic-link sign-in in web dev`
 
-Au moment de ce rapport, `main` et `origin/main` pointent sur `04fe615`. Aucune
-donnée applicative, aucun secret et aucune donnée utilisateur n'a été modifié ;
-la recette d'interface n'a produit aucun changement de code hors ce correctif.
+Au moment de ce rapport, `main` et `origin/main` pointent sur `0ac76cd`.
 
-## 8. Fichiers de référence
+## 8. Éléments à noter
 
-- `docs/compte-rendu-vara-collections.md` : livraison fonctionnelle des
-  collections.
+- **Réglage Supabase de développement** : la redirect URL `http://localhost:5199/**`
+  reste dans l'allowlist du projet ; elle peut être retirée sans impact sur la
+  production (qui utilise le deep link `vayra://`).
+- **Données de test** laissées sur le compte de démonstration : profil CIRA
+  `elie_test`, groupe « Ciné club test », collection « Marathon SF » et son item.
+  Elles peuvent être supprimées à tout moment depuis l'interface.
+- La production et l'application desktop ne sont pas affectées : le pont web est
+  compilé hors des builds de production.
+
+## 9. Fichiers de référence
+
+- `docs/compte-rendu-vara-collections.md` : livraison fonctionnelle.
 - `docs/deploiement-vara-collections.md` : déploiement base et audit distant.
+- `src/lib/vayra-account.tsx` : pont d'authentification web de développement.
 - `src/views/settings/cira-collections.tsx`,
-  `src/components/lists/add-to-collection-menu.tsx` : surfaces d'interface des
-  collections.
+  `src/components/lists/add-to-collection-menu.tsx` : surfaces d'interface.
 - `src/lib/hotkeys.ts` : correctif de robustesse des raccourcis clavier.
