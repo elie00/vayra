@@ -2,8 +2,8 @@
 -- Token format (CIRA-XXXX-... Crockford base32), normalisation (case and
 -- dashes ignored), only the sha256 hash is stored, single use (double
 -- acceptance: exactly one succeeds), expired/revoked/consumed/unknown/self/
--- blocked all collapse into INVITATION_UNAVAILABLE, decline stores no
--- identity, the target is derived from the token only.
+-- blocked all collapse into INVITATION_UNAVAILABLE. Terminal rows are deleted
+-- so no invitation activity history remains at rest.
 -- Users: A (06a1), B (06b2), C (06c3), D (06d4).
 \echo '=== 06_invitations ==='
 
@@ -134,9 +134,8 @@ begin
     and status = 'accepted' and responded_at is not null;
   if n <> 1 then raise exception 'TEST_FAILED: relation not created by invitation'; end if;
   select count(*) into n from public.cira_invitations
-  where id = (select t.v from tvars t where t.k = 'id1')::uuid
-    and consumed_at is not null and outcome = 'accepted' and revoked_at is null;
-  if n <> 1 then raise exception 'TEST_FAILED: invitation not consumed as accepted'; end if;
+  where id = (select t.v from tvars t where t.k = 'id1')::uuid;
+  if n <> 0 then raise exception 'TEST_FAILED: accepted invitation history retained'; end if;
 
   -- double acceptance: C reuses the same code -> refused, no relation
   perform test.login('00000000-0000-4000-8000-0000000006c3');
@@ -161,8 +160,8 @@ begin
   perform test.login('00000000-0000-4000-8000-0000000006a1');
   select status into v_status from public.cira_list_invitations()
   where invitation_id = (select t.v from tvars t where t.k = 'id1')::uuid;
-  if v_status <> 'consumed' then
-    raise exception 'TEST_FAILED: consumed invitation listed as %', v_status;
+  if v_status is not null then
+    raise exception 'TEST_FAILED: accepted invitation listed as %', v_status;
   end if;
 
   -- new invitation, revoked by its creator; then unusable and not
@@ -172,32 +171,27 @@ begin
   insert into tvars values ('code2', v ->> 'code'), ('id2', v ->> 'invitation_id');
 
   perform test.login('00000000-0000-4000-8000-0000000006a1');
-  perform public.cira_revoke_invitation((v ->> 'invitation_id')::uuid);
+  v := public.cira_revoke_invitation((v ->> 'invitation_id')::uuid);
+  if v ->> 'status' <> 'ok' then raise exception 'TEST_FAILED: revoke failed: %', v; end if;
   select status into v_status from public.cira_list_invitations()
-  where invitation_id = (v ->> 'invitation_id')::uuid;
-  if v_status <> 'revoked' then
+    where invitation_id = (select t.v from tvars t where t.k = 'id2')::uuid;
+  if v_status is not null then
     raise exception 'TEST_FAILED: revoked invitation listed as %', v_status;
   end if;
-  begin
-    perform public.cira_revoke_invitation((v ->> 'invitation_id')::uuid);
-    raise exception 'TEST_FAILED: double revoke succeeded';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_revoke_invitation((select t.v from tvars t where t.k = 'id2')::uuid);
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: double revoke response %', v;
+  end if;
   -- revoking a CONSUMED invitation is refused
-  begin
-    perform public.cira_revoke_invitation((select t.v from tvars t where t.k = 'id1')::uuid);
-    raise exception 'TEST_FAILED: revoke of consumed invitation succeeded';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_revoke_invitation((select t.v from tvars t where t.k = 'id1')::uuid);
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: consumed revoke response %', v;
+  end if;
   -- unknown id
-  begin
-    perform public.cira_revoke_invitation(gen_random_uuid());
-    raise exception 'TEST_FAILED: revoke of unknown invitation succeeded';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_revoke_invitation(gen_random_uuid());
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: unknown revoke response %', v;
+  end if;
 
   -- a revoked token can no longer be redeemed
   perform test.login('00000000-0000-4000-8000-0000000006c3');
@@ -219,12 +213,10 @@ begin
   insert into tvars values ('code3', v ->> 'code'), ('id3', v ->> 'invitation_id');
 
   perform test.login('00000000-0000-4000-8000-0000000006b2');
-  begin
-    perform public.cira_revoke_invitation((v ->> 'invitation_id')::uuid);
-    raise exception 'TEST_FAILED: non-creator revoked the invitation';
-  exception when others then
-    if sqlerrm <> 'INVITATION_UNAVAILABLE' then raise; end if;
-  end;
+  v := public.cira_revoke_invitation((v ->> 'invitation_id')::uuid);
+  if v ->> 'error' is distinct from 'INVITATION_UNAVAILABLE' then
+    raise exception 'TEST_FAILED: non-creator revoke response %', v;
+  end if;
 end;
 $do$;
 
@@ -252,14 +244,13 @@ begin
   perform test.login('00000000-0000-4000-8000-0000000006a1');
   select status into v_status from public.cira_list_invitations()
   where invitation_id = (select t.v from tvars t where t.k = 'id3')::uuid;
-  if v_status <> 'expired' then
+  if v_status is not null then
     raise exception 'TEST_FAILED: expired invitation listed as %', v_status;
   end if;
 end;
 $do$;
 
--- Decline: consumes the token, records ONLY the outcome (no decliner
--- identity - the table has no column for it, see 00_audit), no relation.
+-- Decline deletes the token without retaining the decliner or an outcome.
 do $do$
 declare
   v jsonb;
@@ -272,9 +263,8 @@ begin
 
   perform test.logout();
   select count(*) into n from public.cira_invitations
-  where id = (v ->> 'invitation_id')::uuid
-    and consumed_at is not null and outcome = 'declined';
-  if n <> 1 then raise exception 'TEST_FAILED: decline not recorded'; end if;
+  where id = (v ->> 'invitation_id')::uuid;
+  if n <> 0 then raise exception 'TEST_FAILED: declined invitation history retained'; end if;
   select count(*) into n from public.cira_friendships
   where user_low = least('00000000-0000-4000-8000-0000000006a1'::uuid, '00000000-0000-4000-8000-0000000006c3'::uuid)
     and user_high = greatest('00000000-0000-4000-8000-0000000006a1'::uuid, '00000000-0000-4000-8000-0000000006c3'::uuid);
