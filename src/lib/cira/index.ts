@@ -4,6 +4,14 @@ export {
   normalizeInviteCode,
   requireValidGroupInviteCode,
 } from "./repository";
+export {
+  CIRA_DISCOVER_ORIGIN,
+  CIRA_DISCOVER_PATH,
+  CiraQrError,
+  decodeCiraQrFile,
+  formatCiraInviteCode,
+  parseCiraDiscoverPayload,
+} from "./discover";
 export type {
   CiraErrorCode,
   CiraInvitation,
