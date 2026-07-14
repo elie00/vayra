@@ -67,6 +67,9 @@ export type VaraCollectionMediaType =
   | "tv"
   | "channel";
 
+/** Per-collection member edit policy. */
+export type VaraCollectionPolicy = "reader" | "contributor" | "collaborator";
+
 /** Author card, or null when the author left and/or is blocked (masked). */
 export type VaraProfileCard = {
   userId: string;
@@ -80,13 +83,20 @@ export type VaraCollection = {
   groupId: string;
   name: string;
   description: string | null;
+  memberPolicy: VaraCollectionPolicy;
   membersCanEdit: boolean;
   itemCount: number;
   createdBy: VaraProfileCard | null;
   updatedBy: VaraProfileCard | null;
   myRole: VaraCollectionRole | null;
+  /** owner/admin of the group, or this collection's delegate. */
   canManage: boolean;
+  /** the viewer holds a delegate grant on this collection. */
+  isDelegate: boolean;
+  /** may add / edit at least their own items. */
   canEditItems: boolean;
+  /** may edit ANY item (collaborator, manager, delegate). */
+  canEditAll: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -142,6 +152,8 @@ export type VaraErrorCode =
   | "INVALID_COLLECTION"
   | "COLLECTION_NOT_FOUND"
   | "COLLECTION_FORBIDDEN"
+  | "INVALID_COLLECTION_POLICY"
+  | "COLLECTION_DELEGATE_UNAVAILABLE"
   | "COLLECTION_LIMIT_REACHED"
   | "INVALID_COLLECTION_ITEM"
   | "COLLECTION_ITEM_LIMIT_REACHED"
@@ -186,7 +198,12 @@ export interface VaraRepository {
   getCollection(collectionId: string): Promise<VaraCollection>;
   createCollection(groupId: string, input: VaraCollectionInput): Promise<VaraCollection>;
   updateCollection(collectionId: string, input: VaraCollectionInput): Promise<VaraCollection>;
+  setCollectionPolicy(collectionId: string, policy: VaraCollectionPolicy): Promise<VaraCollection>;
   deleteCollection(collectionId: string): Promise<void>;
+
+  listCollectionDelegates(collectionId: string): Promise<VaraProfileCard[]>;
+  addCollectionDelegate(collectionId: string, userId: string): Promise<void>;
+  removeCollectionDelegate(collectionId: string, userId: string): Promise<void>;
 
   listCollectionItemsPage(
     collectionId: string,

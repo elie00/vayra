@@ -10,7 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { CiraGroup } from "@/lib/cira";
+import type { CiraGroup, CiraGroupMember } from "@/lib/cira";
 import { useCira } from "@/lib/cira/provider";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
@@ -23,6 +23,8 @@ import type {
   VaraCollectionItem,
   VaraCollectionItemInput,
   VaraCollectionMediaType,
+  VaraCollectionPolicy,
+  VaraProfileCard,
 } from "@/lib/vara/types";
 
 const MEDIA_TYPES: VaraCollectionMediaType[] = ["movie", "series", "anime", "tv", "channel"];
@@ -33,6 +35,8 @@ function collectionError(t: ReturnType<typeof useT>, error: unknown): string {
     INVALID_COLLECTION: t("Check the collection name and description."),
     COLLECTION_NOT_FOUND: t("This collection is no longer available."),
     COLLECTION_FORBIDDEN: t("You don't have permission to do that in this collection."),
+    INVALID_COLLECTION_POLICY: t("That editing policy isn't available."),
+    COLLECTION_DELEGATE_UNAVAILABLE: t("You can only delegate to a member of this group."),
     COLLECTION_LIMIT_REACHED: t("This group already has the maximum number of collections."),
     INVALID_COLLECTION_ITEM: t("Check the catalogue reference and poster image."),
     COLLECTION_ITEM_LIMIT_REACHED: t("This collection is full."),
@@ -102,10 +106,16 @@ function CollectionForm({
   const { repo } = useVara();
   const [name, setName] = useState(collection?.name ?? "");
   const [description, setDescription] = useState(collection?.description ?? "");
-  const [membersCanEdit, setMembersCanEdit] = useState(collection?.membersCanEdit ?? false);
+  const [policy, setPolicy] = useState<VaraCollectionPolicy>(collection?.memberPolicy ?? "reader");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!repo) return null;
+
+  const policyOptions: { value: VaraCollectionPolicy; label: string; hint: string }[] = [
+    { value: "reader", label: t("Read only"), hint: t("Members can view. Only managers add or reorder.") },
+    { value: "contributor", label: t("Contribute own items"), hint: t("Members add items and manage only their own.") },
+    { value: "collaborator", label: t("Full collaboration"), hint: t("Members add and edit any item in the list.") },
+  ];
 
   const save = async () => {
     setBusy(true);
@@ -114,10 +124,16 @@ function CollectionForm({
       const input = {
         name: name.trim(),
         description: description.trim() || null,
-        membersCanEdit,
+        // Legacy boolean only spans reader/contributor; the collaborator level
+        // is applied right after via the dedicated policy RPC.
+        membersCanEdit: policy !== "reader",
       };
-      if (collection) await repo.updateCollection(collection.id, input);
-      else await repo.createCollection(groupId, input);
+      const saved = collection
+        ? await repo.updateCollection(collection.id, input)
+        : await repo.createCollection(groupId, input);
+      if (saved.memberPolicy !== policy) {
+        await repo.setCollectionPolicy(saved.id, policy);
+      }
       onDone();
     } catch (cause) {
       setError(collectionError(t, cause));
@@ -147,15 +163,21 @@ function CollectionForm({
           className="resize-none rounded-lg border border-edge bg-elevated p-3 text-[13px] text-ink outline-none focus:border-ink"
         />
       </label>
-      <label className="flex items-start gap-2.5 text-[12.5px] text-ink-muted">
-        <input
-          type="checkbox"
-          checked={membersCanEdit}
-          onChange={(event) => setMembersCanEdit(event.target.checked)}
-          className="mt-0.5"
-        />
-        <span>{t("Let members add and reorder items. Only owners and admins can rename or delete the collection.")}</span>
-      </label>
+      <fieldset className="flex flex-col gap-1.5" aria-label={t("Member editing policy")}>
+        <span className="text-[12px] font-medium text-ink-muted">{t("Member editing policy")}</span>
+        {policyOptions.map((opt) => (
+          <label key={opt.value} className="flex cursor-pointer items-start gap-2.5 rounded-lg px-1 py-1 text-[12.5px] text-ink-muted hover:bg-elevated/40">
+            <input
+              type="radio"
+              name="member-policy"
+              checked={policy === opt.value}
+              onChange={() => setPolicy(opt.value)}
+              className="mt-0.5"
+            />
+            <span><span className="text-ink">{opt.label}</span> — {opt.hint}</span>
+          </label>
+        ))}
+      </fieldset>
       {error && <p className="text-[12px] text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
         <Btn onClick={onDone}>{t("Cancel")}</Btn>
@@ -290,6 +312,79 @@ function AddItemForm({
   );
 }
 
+function CollectionAccess({ collection }: { collection: VaraCollection }) {
+  const t = useT();
+  const { repo } = useVara();
+  const { repo: ciraRepo } = useCira();
+  const [open, setOpen] = useState(false);
+  const [delegates, setDelegates] = useState<VaraProfileCard[]>([]);
+  const [members, setMembers] = useState<CiraGroupMember[]>([]);
+  const [pick, setPick] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const tRef = useRef(t);
+  tRef.current = t;
+
+  const load = useCallback(async () => {
+    if (!repo || !ciraRepo) return;
+    try {
+      const [del, mem] = await Promise.all([
+        repo.listCollectionDelegates(collection.id),
+        ciraRepo.listGroupMembersPage(collection.groupId, 0, 100),
+      ]);
+      setDelegates(del);
+      setMembers(mem.items);
+      setError(null);
+    } catch (cause) {
+      setError(collectionError(tRef.current, cause));
+    }
+  }, [repo, ciraRepo, collection.id, collection.groupId]);
+
+  useEffect(() => {
+    if (open) void load();
+  }, [open, load, collection.updatedAt]);
+
+  if (!repo || !ciraRepo) return null;
+  const delegateIds = new Set(delegates.map((d) => d.userId));
+  const candidates = members.filter((m) => m.role === "member" && !delegateIds.has(m.userId));
+  const run = async (action: Promise<unknown>) => {
+    setError(null);
+    try {
+      await action;
+      await load();
+    } catch (cause) {
+      setError(collectionError(t, cause));
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/20 p-3">
+      <button onClick={() => setOpen((o) => !o)} className="flex items-center justify-between text-[12.5px] font-medium text-ink">
+        {t("Delegate collection admin")}
+        <span className="text-[11px] text-ink-subtle">{delegates.length > 0 ? t("{count} delegate(s)", { count: delegates.length }) : t("None")}</span>
+      </button>
+      {open && (
+        <>
+          <p className="text-[11px] text-ink-subtle">{t("Delegates can rename, set the policy and delete this collection — never manage the group.")}</p>
+          {delegates.map((d) => (
+            <div key={d.userId} className="flex items-center justify-between rounded-lg border border-edge-soft px-3 py-2 text-[12.5px]">
+              <span className="text-ink">{d.displayName} <span className="text-ink-subtle">@{d.handle}</span></span>
+              <button onClick={() => void run(repo.removeCollectionDelegate(collection.id, d.userId))} className="text-danger hover:underline">{t("Remove")}</button>
+            </div>
+          ))}
+          <div className="flex items-end gap-2">
+            <select value={pick} onChange={(event) => setPick(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-edge bg-elevated px-2 text-[12.5px] text-ink outline-none">
+              <option value="">{t("Choose a member")}</option>
+              {candidates.map((m) => <option key={m.userId} value={m.userId}>{m.displayName} (@{m.handle})</option>)}
+            </select>
+            <Btn disabled={!pick} onClick={() => { if (!pick) return; void run(repo.addCollectionDelegate(collection.id, pick)).then(() => setPick("")); }}>{t("Delegate")}</Btn>
+          </div>
+          {error && <p className="text-[12px] text-danger">{error}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
 function CollectionDetail({
   collection,
   archived,
@@ -303,7 +398,10 @@ function CollectionDetail({
 }) {
   const t = useT();
   const { repo, activateRoom, syncConflict } = useVara();
+  const { me } = useCira();
   const { openMeta } = useView();
+  const canEditThis = (item: VaraCollectionItem) =>
+    collection.canEditAll || (collection.canEditItems && item.addedBy?.userId === me?.userId);
   const [items, setItems] = useState<VaraCollectionItem[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -441,6 +539,10 @@ function CollectionDetail({
         />
       )}
 
+      {(collection.myRole === "owner" || collection.myRole === "admin") && !archived && (
+        <CollectionAccess collection={collection} />
+      )}
+
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
           {t("{count} items", { count: collection.itemCount })}
@@ -480,7 +582,7 @@ function CollectionDetail({
             </div>
             <div className="flex items-center gap-1">
               <Btn onClick={() => openMeta(toMeta(item))} title={t("Open in VAYRA")}><Play size={13} />{t("Open")}</Btn>
-              {collection.canEditItems && (
+              {canEditThis(item) && (
                 <>
                   <button
                     aria-label={t("Move up")}
@@ -639,7 +741,7 @@ export function GroupCollections({ group }: { group: CiraGroup }) {
                   <p className="truncate text-[13px] text-ink">{collection.name}</p>
                   <p className="truncate text-[11px] text-ink-subtle">
                     {t("{count} items", { count: collection.itemCount })}
-                    {collection.membersCanEdit && ` · ${t("members can edit")}`}
+                    {collection.memberPolicy !== "reader" && ` · ${t(`policy.${collection.memberPolicy}`)}`}
                   </p>
                 </div>
                 <ListVideo size={15} className="shrink-0 text-ink-subtle" />

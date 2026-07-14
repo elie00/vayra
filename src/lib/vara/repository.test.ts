@@ -41,7 +41,10 @@ const COLLECTION_ROW = {
   group_id: "group-1",
   name: "Watch order",
   description: "Club nights",
+  member_policy: "collaborator",
   members_can_edit: true,
+  is_delegate: false,
+  can_edit_all: true,
   item_count: 4,
   created_by: {
     user_id: USER_ID,
@@ -313,6 +316,32 @@ describe("createVaraRepository RPC wiring", () => {
       fn: "vara_move_collection_item",
       args: { p_item_id: "item-1", p_position: 3 },
       data: ITEM_ROW,
+    },
+    {
+      name: "setCollectionPolicy",
+      call: (repo) => repo.setCollectionPolicy("col-1", "contributor"),
+      fn: "vara_set_collection_policy",
+      args: { p_collection_id: "col-1", p_member_policy: "contributor" },
+      data: { ...COLLECTION_ROW, member_policy: "contributor" },
+    },
+    {
+      name: "addCollectionDelegate",
+      call: (repo) => repo.addCollectionDelegate("col-1", "u2"),
+      fn: "vara_add_collection_delegate",
+      args: { p_collection_id: "col-1", p_user_id: "u2" },
+    },
+    {
+      name: "removeCollectionDelegate",
+      call: (repo) => repo.removeCollectionDelegate("col-1", "u2"),
+      fn: "vara_remove_collection_delegate",
+      args: { p_collection_id: "col-1", p_user_id: "u2" },
+    },
+    {
+      name: "listCollectionDelegates",
+      call: (repo) => repo.listCollectionDelegates("col-1"),
+      fn: "vara_list_collection_delegates",
+      args: { p_collection_id: "col-1" },
+      data: [{ user_id: "u2", handle: "bob", display_name: "Bob", avatar_key: null }],
     },
     {
       name: "addCollectionItem",
