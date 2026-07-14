@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, Check, Copy, Link2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
+import { Bell, Camera, ImagePlus, QrCode, Share2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
+import QRCode from "qrcode";
 import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { avatarUrl } from "@/lib/avatars/catalog";
 import { useCira } from "@/lib/cira/provider";
 import { CiraError } from "@/lib/cira";
+import { CiraQrError, decodeCiraQrFile, parseCiraDiscoverPayload } from "@/lib/cira";
 import type { CiraInviteSecret, CiraProfile, CiraRelationship } from "@/lib/cira";
 import {
   CIRA_INVITATION_CLOCK_MS,
@@ -13,6 +15,8 @@ import {
 } from "@/lib/cira/invitation-lifecycle";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
+import { isMobileDevice } from "@/lib/platform";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { Section, ToggleRow, useSettingsActiveContext } from "./shared";
 import { CiraGroupsCard } from "./cira-groups-card";
 import { VaraRoomsCard } from "./vara-rooms-card";
@@ -312,18 +316,47 @@ function InviteCard() {
   const [copied, setCopied] = useState(false);
   const [handleDraft, setHandleDraft] = useState("");
   const [codeDraft, setCodeDraft] = useState("");
-  const [busy, setBusy] = useState<"link" | "request" | "code" | null>(null);
+  const [busy, setBusy] = useState<"link" | "request" | "scan" | null>(null);
   const [notice, setNotice] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const mobile = isMobileDevice();
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), CIRA_INVITATION_CLOCK_MS);
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (secret && Date.parse(secret.expiresAt) <= now) setSecret(null);
+  }, [secret, now]);
+
+  useEffect(() => {
+    const canvas = qrCanvasRef.current;
+    if (!secret || !canvas) return;
+    let active = true;
+    void QRCode.toCanvas(canvas, secret.url, {
+      width: 264,
+      margin: 4,
+      errorCorrectionLevel: "M",
+      color: { dark: "#0B0C10", light: "#F5F3EE" },
+    }).catch(() => {
+      if (active) setNotice({ text: t("The QR code couldn't be generated. Copy the link instead."), tone: "error" });
+    });
+    return () => {
+      active = false;
+      const context = canvas.getContext("2d");
+      context?.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 1;
+      canvas.height = 1;
+    };
+  }, [secret, t]);
+
   const active = useMemo(
-    () => invitations.filter((invitation) => isActiveCiraInvitation(invitation, now)),
-    [invitations, now],
+    () => invitations.filter((invitation) => invitation.id !== secret?.invitationId && isActiveCiraInvitation(invitation, now)),
+    [invitations, now, secret?.invitationId],
   );
 
   if (!repo) return null;
@@ -359,6 +392,21 @@ function InviteCard() {
     }
   };
 
+  const shareLink = async () => {
+    if (!secret) return;
+    if (!navigator.share) {
+      await copyLink();
+      return;
+    }
+    setNotice(null);
+    try {
+      await navigator.share({ title: t("CIRA invitation"), text: t("Join my private CIRA on VAYRA."), url: secret.url });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setNotice({ text: t("Couldn't share the invitation. Copy the link instead."), tone: "error" });
+    }
+  };
+
   const sendRequest = async () => {
     const target = handleDraft.trim().toLowerCase().replace(/^@/, "");
     if (!target) return;
@@ -379,44 +427,90 @@ function InviteCard() {
     }
   };
 
+  const submitInvitationInput = (value: string) => {
+    const compact = value.toUpperCase().replace(/[^0-9A-Z]/g, "");
+    if (compact.startsWith("CIRAG")) {
+      presentGroupInvite(value);
+      setCodeDraft("");
+      return;
+    }
+    const payload = parseCiraDiscoverPayload(value);
+    if (!payload) {
+      setNotice({ text: t("This QR code or invitation link isn't a valid private CIRA invitation."), tone: "error" });
+      return;
+    }
+    setNotice(null);
+    presentInvite(payload.code);
+    setCodeDraft("");
+  };
+
+  const scanImage = async (file: File | undefined) => {
+    if (!file || busy) return;
+    setBusy("scan");
+    setNotice(null);
+    try {
+      const payload = await decodeCiraQrFile(file);
+      presentInvite(payload.code);
+    } catch (error) {
+      const key = error instanceof CiraQrError ? error.code : "QR_PAYLOAD_UNAVAILABLE";
+      const text = key === "IMAGE_TOO_LARGE"
+        ? t("This image is too large to scan safely.")
+        : key === "IMAGE_TYPE_UNSUPPORTED"
+          ? t("Choose a PNG, JPEG, or WebP image.")
+          : t("No valid private CIRA QR code was found in this image.");
+      setNotice({ text, tone: "error" });
+    } finally {
+      setBusy(null);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+    }
+  };
+
   return (
     <Section
-      title={t("Invite your CIRA")}
-      subtitle={t("Share a short-lived link, add someone by handle, or paste a code you received.")}
+      title={t("CIRA Discover")}
+      subtitle={t("Connect intentionally by exact handle or a private, short-lived QR invitation. Nothing is public or suggested.")}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[13px] font-medium text-ink">{t("My temporary CIRA QR")}</p>
+              <p className="text-[11.5px] text-ink-subtle">{t("It contains only an opaque invitation link — never your profile or activity.")}</p>
+            </div>
             <button
               onClick={() => void createLink()}
               disabled={busy === "link"}
               className="flex h-10 items-center gap-2 rounded-xl bg-ink px-4 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02] disabled:opacity-45"
             >
-              <Link2 size={14} />
-              {t("Create an invite link")}
+              <QrCode size={14} />
+              {t("Create private QR")}
             </button>
-            <span className="text-[12px] text-ink-subtle">
-              {t("Valid 15 minutes, one person, revocable.")}
-            </span>
           </div>
           {secret && (
-            <div className="flex items-center gap-2 rounded-xl border border-dashed border-edge bg-elevated px-3 py-2.5">
-              <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink">
-                {secret.url}
-              </span>
-              <button
-                onClick={() => void copyLink()}
-                aria-label={t("Copy invite link")}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-canvas/40 hover:text-ink"
-              >
-                {copied ? <Check size={14} className="text-accent" /> : <Copy size={14} />}
-              </button>
+            <div className="grid gap-4 rounded-2xl border border-edge bg-elevated p-4 sm:grid-cols-[auto_1fr] sm:items-center">
+              <canvas ref={qrCanvasRef} role="img" aria-label={t("Temporary private CIRA invitation QR code")} className="mx-auto h-52 w-52 rounded-xl bg-[#F5F3EE]" />
+              <div className="flex min-w-0 flex-col gap-3">
+                <p className="text-[12px] leading-relaxed text-ink-muted">
+                  {t("Show this QR only to the person you want to add. The first decision consumes it.")}
+                </p>
+                <code className="break-all rounded-lg border border-edge-soft bg-canvas/50 p-2 text-[11px] text-ink-subtle">{secret.code}</code>
+                <div className="flex flex-wrap gap-2">
+                  <SmallButton label={copied ? t("Copied") : t("Copy link")} onClick={() => void copyLink()} />
+                  <button type="button" onClick={() => void shareLink()} className="flex h-9 items-center gap-2 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink">
+                    <Share2 size={13} /> {t("Share")}
+                  </button>
+                  <SmallButton
+                    label={t("Revoke")}
+                    tone="danger"
+                    onClick={() => void repo.revokeInvitation(secret.invitationId).then(async () => { setSecret(null); await refresh(); }).catch((error) => setNotice({ text: errorText(t, error), tone: "error" }))}
+                  />
+                </div>
+                <span className="text-[11.5px] text-ink-subtle">
+                  {expiresInLabel(t, secret.expiresAt, now)} — {t("one person, one decision, revocable.")}
+                </span>
+              </div>
             </div>
-          )}
-          {secret && (
-            <span className="text-[11.5px] text-ink-subtle">
-              {expiresInLabel(t, secret.expiresAt, now)} — {t("the link is shown only once.")}
-            </span>
           )}
           {active.length > 0 && (
             <div className="flex flex-col gap-1.5 border-t border-edge-soft/60 pt-3">
@@ -444,8 +538,13 @@ function InviteCard() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <div className="flex min-w-60 flex-1 items-center gap-2">
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+            <div>
+              <p className="text-[13px] font-medium text-ink">{t("Add by exact handle")}</p>
+              <p className="text-[11.5px] text-ink-subtle">{t("No profile preview or public search. The same private receipt is shown whether the handle can receive requests or not.")}</p>
+            </div>
+            <div className="flex items-center gap-2">
             <input
               value={handleDraft}
               onChange={(e) => setHandleDraft(e.target.value)}
@@ -465,38 +564,41 @@ function InviteCard() {
             >
               <UserPlus size={15} />
             </button>
+            </div>
+            <p className="text-[11px] text-ink-subtle">{t("If delivered, the recipient will see only your minimal CIRA profile before deciding.")}</p>
           </div>
-          <div className="flex min-w-60 flex-1 items-center gap-2">
-            <input
-              value={codeDraft}
-              onChange={(e) => setCodeDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && codeDraft.trim()) {
-                  const code = codeDraft.trim();
-                  if (/^CIRAG/i.test(code.replace(/[^0-9A-Z]/gi, ""))) presentGroupInvite(code);
-                  else presentInvite(code);
-                  setCodeDraft("");
-                }
-              }}
-              placeholder={t("Paste an invite code")}
-              spellCheck={false}
-              autoComplete="off"
-              className="h-10 min-w-0 flex-1 rounded-xl border border-edge bg-elevated px-3 font-mono text-[13px] text-ink placeholder:text-ink-subtle/55 outline-none focus:border-ink"
-            />
-            <SmallButton
-              label={t("Use code")}
-              onClick={() => {
-                if (!codeDraft.trim()) return;
-                const code = codeDraft.trim();
-                if (/^CIRAG/i.test(code.replace(/[^0-9A-Z]/gi, ""))) presentGroupInvite(code);
-                else presentInvite(code);
-                setCodeDraft("");
-              }}
-              disabled={codeDraft.trim().length === 0}
-            />
+          <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+            <div>
+              <p className="text-[13px] font-medium text-ink">{t("Scan or import a private QR")}</p>
+              <p className="text-[11.5px] text-ink-subtle">{t("Images are decoded only on this device and are never uploaded.")}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {mobile && (
+                <button type="button" disabled={busy === "scan"} onClick={() => cameraInputRef.current?.click()} className="flex h-10 items-center gap-2 rounded-xl border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted hover:border-edge hover:text-ink disabled:opacity-45">
+                  <Camera size={14} /> {t("Take a QR photo")}
+                </button>
+              )}
+              <button type="button" disabled={busy === "scan"} onClick={() => imageInputRef.current?.click()} className="flex h-10 items-center gap-2 rounded-xl border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted hover:border-edge hover:text-ink disabled:opacity-45">
+                <ImagePlus size={14} /> {busy === "scan" ? t("Scanning…") : t("Choose QR image")}
+              </button>
+            </div>
+            <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" aria-label={t("Choose a QR code image")} onChange={(event) => void scanImage(event.target.files?.[0])} />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="sr-only" aria-label={t("Take a QR code photo")} onChange={(event) => void scanImage(event.target.files?.[0])} />
+            <div className="flex items-center gap-2">
+              <input
+                value={codeDraft}
+                onChange={(e) => setCodeDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && codeDraft.trim()) submitInvitationInput(codeDraft); }}
+                placeholder={t("Paste a CIRA link or code")}
+                spellCheck={false}
+                autoComplete="off"
+                className="h-10 min-w-0 flex-1 rounded-xl border border-edge bg-elevated px-3 font-mono text-[13px] text-ink placeholder:text-ink-subtle/55 outline-none focus:border-ink"
+              />
+              <SmallButton label={t("Preview")} onClick={() => submitInvitationInput(codeDraft)} disabled={!codeDraft.trim()} />
+            </div>
           </div>
         </div>
-        {notice && <InlineNotice text={notice.text} tone={notice.tone} />}
+        <div aria-live="polite">{notice && <InlineNotice text={notice.text} tone={notice.tone} />}</div>
       </div>
     </Section>
   );
@@ -680,10 +782,11 @@ function BlocksCard() {
 function InviteDecisionModal() {
   const t = useT();
   const { pendingInviteCode, clearPendingInvite, repo, refresh } = useCira();
-  const [preview, setPreview] = useState<Pick<CiraProfile, "handle" | "displayName"> | null>(null);
+  const [preview, setPreview] = useState<Pick<CiraProfile, "handle" | "displayName" | "avatarKey"> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, Boolean(pendingInviteCode && repo));
 
   useEffect(() => {
     if (!pendingInviteCode) return;
@@ -754,12 +857,17 @@ function InviteDecisionModal() {
         {error ? (
           <InlineNotice text={error} tone="error" />
         ) : preview ? (
-          <p className="text-[14px] leading-relaxed text-ink-muted">
-            {t("{name} (@{handle}) invites you to join their CIRA.", {
-              name: preview.displayName,
-              handle: preview.handle,
-            })}
-          </p>
+          <div className="flex items-center gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4">
+            <span className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-elevated ring-1 ring-edge-soft">
+              {preview.avatarKey ? <img src={avatarUrl(preview.avatarKey)} alt="" className="h-full w-full object-cover" /> : <CatAvatar className="h-full w-full" />}
+            </span>
+            <p className="text-[14px] leading-relaxed text-ink-muted">
+              {t("{name} (@{handle}) invites you to join their CIRA.", {
+                name: preview.displayName,
+                handle: preview.handle,
+              })}
+            </p>
+          </div>
         ) : (
           <p className="text-[13px] text-ink-subtle">{t("Checking the invitation…")}</p>
         )}
