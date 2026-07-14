@@ -1,3 +1,5 @@
+import { parseCiraDiscoverPayload } from "./cira/invite-code";
+
 const EVENT = "vayra:deeplink-install";
 const OPEN_EVENT = "vayra:deeplink-open";
 const VAYRA_AUTH_EVENT = "vayra:deeplink-auth-callback";
@@ -54,18 +56,8 @@ let pendingVaraInviteCode: string | null = null;
 // vayra://cira/invite#t=<code> - même convention que la page web : le code
 // reste dans le fragment, jamais dans une query string.
 export function parseCiraInviteCode(rawUrl: string): string | null {
-  try {
-    const url = new URL(rawUrl);
-    if (url.protocol !== "vayra:" || url.hostname !== "cira" || url.pathname !== "/invite") {
-      return null;
-    }
-    const m = /(?:^|[#&])t=([^&]+)/.exec(url.hash);
-    if (!m) return null;
-    const code = decodeURIComponent(m[1]).trim();
-    return code.length > 0 ? code : null;
-  } catch {
-    return null;
-  }
+  const payload = parseCiraDiscoverPayload(rawUrl);
+  return payload?.source === "deep-link" ? payload.code : null;
 }
 
 export function emitCiraInvite(code: string): void {

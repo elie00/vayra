@@ -1,5 +1,7 @@
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { CiraError, toCiraError } from "./errors";
+import { normalizeInviteCode, requireValidInviteCode } from "./invite-code";
+export { normalizeInviteCode, requireValidInviteCode } from "./invite-code";
 import type {
   CiraInvitation,
   CiraInviteSecret,
@@ -21,21 +23,6 @@ import type {
 // dans le fragment (#t=), jamais en query string.
 const INVITE_URL_PREFIX = "https://vayra.eybo.tech/cira/invite#t=";
 const GROUP_INVITE_URL_PREFIX = "https://vayra.eybo.tech/cira/group#t=";
-
-// Symétrique de private.cira_normalize_invite_code :
-// upper() puis suppression de tout caractère hors [0-9A-Z].
-export function normalizeInviteCode(code: string): string {
-  return code.toUpperCase().replace(/[^0-9A-Z]/g, "");
-}
-
-export function requireValidInviteCode(code: string): string {
-  if (code.length > 64) throw new CiraError("INVITATION_UNAVAILABLE");
-  const normalized = normalizeInviteCode(code);
-  if (!/^CIRA[0-9A-HJKMNP-TV-Z]{20}$/.test(normalized)) {
-    throw new CiraError("INVITATION_UNAVAILABLE");
-  }
-  return normalized;
-}
 
 export function requireValidGroupInviteCode(code: string): string {
   if (code.length > 64) throw new CiraError("GROUP_INVITE_UNAVAILABLE");
