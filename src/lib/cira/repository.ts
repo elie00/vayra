@@ -106,6 +106,7 @@ function toGroup(row: JsonRecord): CiraGroup {
     maxMembers: asNumber(row.max_members),
     memberCount: asNumber(row.member_count),
     role: asGroupRole(row.role),
+    archivedAt: asNullableString(row.archived_at),
     createdAt: asString(row.created_at),
     updatedAt: asString(row.updated_at),
   };
@@ -325,6 +326,14 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
       await rpc("cira_delete_group", { p_group_id: id });
     },
 
+    async archiveGroup(id) {
+      await rpc("cira_archive_group", { p_group_id: id });
+    },
+
+    async restoreGroup(id) {
+      await rpc("cira_restore_group", { p_group_id: id });
+    },
+
     async listGroupMembers(id) {
       const data = await rpc("cira_list_group_members", { p_group_id: id });
       if (!Array.isArray(data)) throw new CiraError("UNKNOWN");
@@ -368,6 +377,18 @@ export function createCiraRepository(client: SupabaseClient): CiraRepository {
 
     async inviteGroupMember(groupId, userId) {
       await rpc("cira_invite_group_member", { p_group_id: groupId, p_user_id: userId });
+    },
+
+    async inviteGroupMembers(groupId, userIds) {
+      const record = asRecord(await rpc("cira_invite_group_members", {
+        p_group_id: groupId,
+        p_user_ids: userIds,
+      }));
+      return {
+        invited: asNumber(record.invited),
+        alreadyMember: asNumber(record.already_member),
+        skipped: asNumber(record.skipped),
+      };
     },
 
     async listGroupInvitations() {

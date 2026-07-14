@@ -210,6 +210,13 @@ describe("createVaraRepository RPC wiring", () => {
       data: ROOM_ROW,
     },
     {
+      name: "createRoom with group context",
+      call: (repo) => repo.createRoom(3600, 6, "group-1"),
+      fn: "vara_create_room",
+      args: { p_ttl_seconds: 3600, p_max_members: 6, p_group_id: "group-1" },
+      data: ROOM_ROW,
+    },
+    {
       name: "getRoom",
       call: (repo) => repo.getRoom(ROOM_ID),
       fn: "vara_get_room",

@@ -244,10 +244,11 @@ export function createVaraRepository(client: SupabaseClient): VaraRepository {
   }
 
   return {
-    async createRoom(ttlSeconds, maxMembers) {
+    async createRoom(ttlSeconds, maxMembers, groupId) {
       return toVaraRoom(await rpc("vara_create_room", {
         ...(ttlSeconds === undefined ? {} : { p_ttl_seconds: ttlSeconds }),
         ...(maxMembers === undefined ? {} : { p_max_members: maxMembers }),
+        ...(groupId === undefined ? {} : { p_group_id: groupId }),
       }));
     },
     async getRoom(roomId) {

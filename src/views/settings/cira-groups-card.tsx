@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Crown, Link2, Plus, Settings2, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Copy, Crown, Link2, Plus, Settings2, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
 import { CiraError } from "@/lib/cira";
 import { useCira } from "@/lib/cira/provider";
 import type { CiraGroup, CiraGroupLink, CiraGroupLinkPreview, CiraGroupMember } from "@/lib/cira";
@@ -23,6 +23,9 @@ function groupError(t: ReturnType<typeof useT>, error: unknown): string {
     ALREADY_GROUP_MEMBER: t("This person is already in the group."),
     INVALID_GROUP_INVITE: t("Choose a link duration between 5 minutes and 24 hours."),
     GROUP_BLOCK_CONFLICT: t("A blocked person is already in this group."),
+    GROUP_ARCHIVED: t("This group is archived. Restore it to make changes."),
+    INVALID_BULK_INVITE: t("Select between 1 and 50 people to invite."),
+    RATE_LIMITED: t("Too many attempts. Wait a moment and try again."),
     NETWORK: t("Network error. Check your connection and try again."),
   };
   return messages[code] ?? t("Something went wrong. Try again.");
@@ -253,11 +256,14 @@ function GroupDetails({ group }: { group: CiraGroup }) {
   const [membersHasMore, setMembersHasMore] = useState(false);
   const [links, setLinks] = useState<CiraGroupLink[]>([]);
   const [editing, setEditing] = useState(false);
-  const [friendId, setFriendId] = useState("");
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const [inviting, setInviting] = useState(false);
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
   const [secret, setSecret] = useState<{ url: string; code: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canManage = group.role === "owner" || group.role === "admin";
+  const archived = group.archivedAt !== null;
 
   const load = async () => {
     if (!repo) return;
@@ -309,12 +315,23 @@ function GroupDetails({ group }: { group: CiraGroup }) {
           <div className="flex items-center gap-2">
             <h3 className="text-[16px] font-medium text-ink">{group.name}</h3>
             <span className="rounded-full border border-edge-soft px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink-subtle">{t(group.role)}</span>
+            {archived && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-edge-soft bg-elevated px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink-subtle">
+                <Archive size={11} />{t("Archived")}
+              </span>
+            )}
           </div>
           {group.description && <p className="mt-1 text-[12.5px] text-ink-muted">{group.description}</p>}
           <p className="mt-1 text-[11.5px] text-ink-subtle">{t("{count} of {limit} members", { count: group.memberCount, limit: group.maxMembers })}</p>
+          {archived && <p className="mt-1 text-[11.5px] text-ink-subtle">{t("Archived groups are read-only: no new members, invitations, links, collections or VARA until restored.")}</p>}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {canManage && <ActionButton onClick={() => setEditing((value) => !value)}><Settings2 size={13} />{t("Edit")}</ActionButton>}
+          {canManage && (
+            archived
+              ? <ActionButton onClick={() => void run(repo.restoreGroup(group.id))}><ArchiveRestore size={13} />{t("Restore")}</ActionButton>
+              : <ActionButton onClick={() => void confirmDialog(t("Archive {name}? It becomes read-only until you restore it. Nothing is deleted.", { name: group.name })).then((ok) => { if (ok) return run(repo.archiveGroup(group.id)); })}><Archive size={13} />{t("Archive")}</ActionButton>
+          )}
           {group.role === "owner" ? (
             <ActionButton onClick={() => void deleteGroup()} danger><Trash2 size={13} />{t("Delete")}</ActionButton>
           ) : (
@@ -325,23 +342,61 @@ function GroupDetails({ group }: { group: CiraGroup }) {
 
       {editing && <GroupForm group={group} onDone={() => setEditing(false)} />}
 
-      {canManage && inviteable.length > 0 && (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="flex min-w-52 flex-1 flex-col gap-1.5 text-[11.5px] font-medium text-ink-muted">
-            {t("Invite an accepted CIRA relation")}
-            <select value={friendId} onChange={(event) => setFriendId(event.target.value)} className="h-10 rounded-lg border border-edge bg-elevated px-3 text-[13px] text-ink outline-none">
-              <option value="">{t("Choose a person")}</option>
-              {inviteable.map((relationship) => <option key={relationship.profile.userId!} value={relationship.profile.userId!}>{relationship.profile.displayName} (@{relationship.profile.handle})</option>)}
-            </select>
-          </label>
-          <ActionButton disabled={!friendId} onClick={() => {
-            if (!friendId) return;
-            void run(repo.inviteGroupMember(group.id, friendId)).then(() => setFriendId(""));
-          }}><UserPlus size={13} />{t("Invite")}</ActionButton>
+      {canManage && !archived && inviteable.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl border border-edge-soft p-3" role="group" aria-label={t("Invite accepted CIRA relations")}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11.5px] font-medium text-ink-muted">{t("Invite accepted CIRA relations")}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSelectedFriends((cur) => cur.size === inviteable.length ? new Set() : new Set(inviteable.map((r) => r.profile.userId!)))}
+                className="text-[11.5px] text-ink-subtle hover:text-ink"
+              >
+                {selectedFriends.size === inviteable.length ? t("Clear all") : t("Select all")}
+              </button>
+              <ActionButton
+                disabled={inviting || selectedFriends.size === 0}
+                onClick={() => {
+                  const ids = [...selectedFriends];
+                  setInviting(true);
+                  setInviteNotice(null);
+                  setError(null);
+                  void repo.inviteGroupMembers(group.id, ids)
+                    .then((res) => {
+                      setSelectedFriends(new Set());
+                      setInviteNotice(t("{invited} invited, {member} already members, {skipped} skipped.", { invited: res.invited, member: res.alreadyMember, skipped: res.skipped }));
+                      return refresh().then(() => load());
+                    })
+                    .catch((cause) => setError(groupError(t, cause)))
+                    .finally(() => setInviting(false));
+                }}
+              ><UserPlus size={13} />{t("Invite ({count})", { count: selectedFriends.size })}</ActionButton>
+            </div>
+          </div>
+          <div className="flex max-h-52 flex-col gap-1 overflow-y-auto">
+            {inviteable.map((relationship) => {
+              const id = relationship.profile.userId!;
+              const checked = selectedFriends.has(id);
+              return (
+                <label key={id} className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-elevated/50">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => setSelectedFriends((cur) => {
+                      const next = new Set(cur);
+                      if (event.target.checked) next.add(id); else next.delete(id);
+                      return next;
+                    })}
+                  />
+                  <span className="min-w-0 truncate text-[13px] text-ink">{relationship.profile.displayName} <span className="text-ink-subtle">@{relationship.profile.handle}</span></span>
+                </label>
+              );
+            })}
+          </div>
+          {inviteNotice && <p className="text-[11.5px] text-ink-subtle">{inviteNotice}</p>}
         </div>
       )}
 
-      {canManage && (
+      {canManage && !archived && (
         <div className="flex flex-col gap-2 rounded-xl border border-edge-soft p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>

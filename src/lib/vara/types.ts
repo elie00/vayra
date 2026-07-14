@@ -137,6 +137,8 @@ export type VaraErrorCode =
   | "VARA_ROOM_FULL"
   | "INVALID_VARA_INVITE"
   | "VARA_SYNC_CONFLICT"
+  | "GROUP_NOT_FOUND"
+  | "GROUP_ARCHIVED"
   | "INVALID_COLLECTION"
   | "COLLECTION_NOT_FOUND"
   | "COLLECTION_FORBIDDEN"
@@ -151,7 +153,7 @@ export type VaraErrorCode =
   | "UNKNOWN";
 
 export interface VaraRepository {
-  createRoom(ttlSeconds?: number, maxMembers?: number): Promise<VaraRemoteRoom>;
+  createRoom(ttlSeconds?: number, maxMembers?: number, groupId?: string): Promise<VaraRemoteRoom>;
   getRoom(roomId: string): Promise<VaraRemoteRoom>;
   listRooms(): Promise<VaraRemoteRoom[]>;
   closeRoom(roomId: string): Promise<void>;
