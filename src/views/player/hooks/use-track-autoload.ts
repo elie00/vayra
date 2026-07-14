@@ -95,16 +95,13 @@ export function useTrackAutoload(params: {
     autoSubLoadKeyRef.current = key;
     const enabled = settings.subProvidersEnabled ?? {};
     void (async () => {
-      console.info("[subs/autoload] starting", {
-        imdbId: resolvedImdbId,
-        season: src.episode?.season,
-        episode: src.episode?.episode,
-        langs,
-      });
+      // Do not log content identifiers (imdbId/season/episode) or the moviehash
+      // fingerprint — DoD privacy gate forbids watched-content ids in logs.
+      console.info("[subs/autoload] starting", { langs });
       const { videoHash, videoSize } = settings.subtitleAutoSync
         ? await resolveVideoHash(src)
         : {};
-      if (videoHash) console.info(`[subs/autoload] moviehash ${videoHash} (${videoSize})`);
+      if (videoHash) console.info(`[subs/autoload] moviehash resolved`);
       const results = await searchSubtitles(
         {
           imdbId: resolvedImdbId,

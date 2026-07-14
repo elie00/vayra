@@ -189,7 +189,8 @@ export function createHtml5Bridge(): PlayerBridge {
     try {
       track.cues = await fetchAndParse(track.url);
     } catch (e) {
-      console.warn(`[subtitles] failed to load ${track.url}`, e);
+      // Do not log track.url — a subtitle URL can carry the watched-content id.
+      console.warn(`[subtitles] failed to load`, e);
       track.cues = [];
     } finally {
       track.loading = false;
