@@ -99,9 +99,13 @@ begin
   end if;
 
   if v_group.archived_at is null then
-    -- Pending invitations and links carry no useful state once frozen.
-    delete from public.cira_group_invites where group_id = p_group_id;
-    delete from public.cira_group_links where group_id = p_group_id;
+    -- Pending invitations and links are kept but rendered inert: the admission
+    -- trigger refuses any join on an archived group, so accept-invite and
+    -- accept-link cannot admit anyone. We deliberately do NOT delete them here —
+    -- that would take the invite/link row locks AFTER the group lock, inverting
+    -- the invite→group lock order of cira_accept_group_invite/link and
+    -- deadlocking under concurrency. Keeping them is also truer to "archive
+    -- without destroying data": restore re-enables any that have not expired.
     update public.cira_groups
     set archived_at = now(), updated_at = now()
     where id = p_group_id

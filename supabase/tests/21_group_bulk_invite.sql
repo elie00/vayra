@@ -30,6 +30,7 @@ declare
   e uuid := '00000000-0000-4000-8000-0000000021e5';
   f uuid := '00000000-0000-4000-8000-0000000021f6';
   res jsonb;
+  dave_inv uuid;
 begin
   perform test.login(a);
   g := (public.cira_create_group('Bulk club', null, null, 10))->>'group_id';
@@ -42,24 +43,37 @@ begin
   perform test.login(f);
   perform public.cira_block_user(d);
 
-  -- Bulk invite bob (invitable), carol (member), dave (blocked by frank), eve (no relation)
+  -- Bulk invite bob (invitable), carol (member), dave (blocked by member frank),
+  -- eve (no relation). Anti-oracle: dave is INVITED like the single path (the
+  -- block is enforced only at accept time), so the target<->member block never
+  -- leaks into `skipped`. Only eve (no accepted relation) is skipped.
   perform test.login(a);
   res := public.cira_invite_group_members(g, array[b,c,d,e]);
-  if (res->>'invited')::int <> 1 then raise exception 'TEST_FAILED: invited<>1 (%)', res; end if;
+  if (res->>'invited')::int <> 2 then raise exception 'TEST_FAILED: invited<>2 (%)', res; end if;
   if (res->>'already_member')::int <> 1 then raise exception 'TEST_FAILED: already<>1 (%)', res; end if;
-  if (res->>'skipped')::int <> 2 then raise exception 'TEST_FAILED: skipped<>2 (%)', res; end if;
+  if (res->>'skipped')::int <> 1 then raise exception 'TEST_FAILED: skipped<>1 (%)', res; end if;
   -- result carries only counters, never ids
   if res ? 'ids' or res ? 'skipped_ids' or res ? 'blocked' then
     raise exception 'TEST_FAILED: result leaks per-user detail (%)', res;
   end if;
-  -- only bob got an actual invitation
+  -- bob and dave got invitations; eve (no relation) did not
   perform test.logout();
-  if not exists (select 1 from public.cira_group_invites where group_id=g and invitee_id=b) then
-    raise exception 'TEST_FAILED: bob not invited';
+  if not exists (select 1 from public.cira_group_invites where group_id=g and invitee_id=b)
+     or not exists (select 1 from public.cira_group_invites where group_id=g and invitee_id=d) then
+    raise exception 'TEST_FAILED: invitable target not invited';
   end if;
-  if exists (select 1 from public.cira_group_invites where group_id=g and invitee_id in (d,e)) then
-    raise exception 'TEST_FAILED: ineligible target invited';
+  if exists (select 1 from public.cira_group_invites where group_id=g and invitee_id=e) then
+    raise exception 'TEST_FAILED: non-relation invited';
   end if;
+  -- dave still cannot actually join: the admission trigger enforces the block
+  select id into dave_inv from public.cira_group_invites where group_id=g and invitee_id=d;
+  perform test.login(d);
+  begin
+    perform public.cira_accept_group_invite(dave_inv);
+    raise exception 'TEST_FAILED: blocked target joined via bulk invite';
+  exception when others then
+    if sqlerrm not in ('GROUP_BLOCK_CONFLICT','GROUP_INVITE_UNAVAILABLE') then raise; end if;
+  end;
 
   -- Idempotent: re-inviting bob refreshes, no duplicate, counts as invited
   perform test.login(a);

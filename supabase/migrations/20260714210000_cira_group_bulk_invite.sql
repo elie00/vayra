@@ -7,11 +7,14 @@
 --
 -- Privacy: the result is AGGREGATED and never attributable. It returns three
 -- counters — invited, already_member, skipped — and never the per-user reason
--- or id list. `already_member` is already visible to the caller (it lists the
--- members); everything else (no accepted relation, block, capacity, duplicate)
--- collapses into `skipped`, so the caller cannot turn the call into an oracle
--- on a third party's relations or blocks. This is strictly less revealing than
--- the existing single-invite path, which surfaces a per-invitation error.
+-- or id list. Crucially, `skipped` folds in ONLY the conditions the existing
+-- single-invite path already exposes to the caller (a caller↔target block, or
+-- no accepted friendship) plus capacity; it never folds in whether the target
+-- blocks an existing member, which would make a one-element call a one-bit
+-- oracle on a third party's private block list. A target that blocks a member
+-- is still invited here (as in single-invite) and rejected only at accept time
+-- by the admission trigger, surfaced to the invitee alone. The call is thus no
+-- more revealing than the single-invite path.
 
 create function public.cira_invite_group_members(
   p_group_id uuid,
@@ -81,22 +84,20 @@ begin
 
     perform private.cira_lock_pair(v_uid, v_id);
 
-    -- Skipped (no reason exposed) when the target is not an accepted, non-blocked
-    -- relation of the caller, OR is in a block with an EXISTING member — the
-    -- latter would fail the admission trigger anyway. The group row lock, held
-    -- since the top, blocks any concurrent cira_block_user on this group, so the
-    -- member set and blocks are stable here.
+    -- Skipped (no reason exposed) only for the two conditions the single-invite
+    -- path already surfaces to the caller: a block between caller and target, or
+    -- no accepted friendship. We deliberately do NOT test whether the target
+    -- blocks an EXISTING member: folding that into the aggregate `skipped` would
+    -- turn the call into a one-bit oracle on a third party's private block list
+    -- (a single-element array defeats aggregation). Such a doomed invitation is
+    -- harmless — the admission trigger rejects it at accept time, surfaced only
+    -- to the invitee, exactly as in the single-invite path.
     if private.cira_any_block(v_uid, v_id)
        or not exists (
          select 1 from public.cira_friendships f
          where f.status = 'accepted'
            and f.user_low = least(v_uid, v_id)
            and f.user_high = greatest(v_uid, v_id)
-       )
-       or exists (
-         select 1 from public.cira_group_members m
-         where m.group_id = p_group_id
-           and private.cira_any_block(v_id, m.user_id)
        ) then
       v_skipped := v_skipped + 1;
       continue;
