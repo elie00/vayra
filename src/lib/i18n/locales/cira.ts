@@ -929,3 +929,34 @@ Object.assign(ciraAr, collectionsEn, {
   "media.tv": "تلفاز",
   "media.channel": "قناة",
 });
+
+const collectionsPickerEn = {
+  "Add to a group collection": "Add to a group collection",
+  "No collection you can edit. Create one from a CIRA group in Settings.": "No collection you can edit. Create one from a CIRA group in Settings.",
+};
+
+Object.assign(ciraEn, collectionsPickerEn);
+Object.assign(ciraFr, collectionsPickerEn, {
+  "Add to a group collection": "Ajouter à une collection de groupe",
+  "No collection you can edit. Create one from a CIRA group in Settings.": "Aucune collection modifiable. Créez-en une depuis un groupe CIRA dans les Réglages.",
+});
+Object.assign(ciraDe, collectionsPickerEn, {
+  "Add to a group collection": "Zu einer Gruppensammlung hinzufügen",
+  "No collection you can edit. Create one from a CIRA group in Settings.": "Keine bearbeitbare Sammlung. Erstelle eine über eine CIRA-Gruppe in den Einstellungen.",
+});
+Object.assign(ciraEs, collectionsPickerEn, {
+  "Add to a group collection": "Añadir a una colección de grupo",
+  "No collection you can edit. Create one from a CIRA group in Settings.": "Ninguna colección editable. Crea una desde un grupo CIRA en Ajustes.",
+});
+Object.assign(ciraIt, collectionsPickerEn, {
+  "Add to a group collection": "Aggiungi a una raccolta di gruppo",
+  "No collection you can edit. Create one from a CIRA group in Settings.": "Nessuna raccolta modificabile. Creane una da un gruppo CIRA nelle Impostazioni.",
+});
+Object.assign(ciraPt, collectionsPickerEn, {
+  "Add to a group collection": "Adicionar a uma coleção de grupo",
+  "No collection you can edit. Create one from a CIRA group in Settings.": "Nenhuma coleção editável. Crie uma a partir de um grupo CIRA nas Configurações.",
+});
+Object.assign(ciraAr, collectionsPickerEn, {
+  "Add to a group collection": "إضافة إلى مجموعة",
+  "No collection you can edit. Create one from a CIRA group in Settings.": "لا توجد مجموعة قابلة للتعديل. أنشئ واحدة من مجموعة CIRA في الإعدادات.",
+});
