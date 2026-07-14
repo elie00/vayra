@@ -73,8 +73,11 @@ export function useResumeAutosave(params: {
       (sn.durationSec > 0 && pos / sn.durationSec >= WATCHED_RATIO) || sn.status === "ended";
     lastSavedRef.current = pos * 1000;
     saveResumeMs(id, pos * 1000, se, ep);
+    const lumaMeta = s.localLibraryEntryId
+      ? { ...s.meta, id: `local:${s.localLibraryEntryId}` }
+      : s.meta;
     lumaStore().recordProgress({
-      meta: s.meta,
+      meta: lumaMeta,
       episode: s.episode,
       positionMs: Math.floor(pos * 1000),
       durationMs: Math.max(0, Math.floor(sn.durationSec * 1000)),

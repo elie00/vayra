@@ -11,6 +11,7 @@ export function episodeLabel(e: LocalEntry): string | null {
 export function localPlayerSrc(entry: LocalEntry): PlayerSrc {
   const epLabel = episodeLabel(entry);
   return {
+    localLibraryEntryId: entry.id,
     meta: {
       id: entry.imdbId ?? `local:${entry.id}`,
       type: entry.type === "show" ? "series" : "movie",

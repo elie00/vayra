@@ -35,7 +35,7 @@ describe("LUMA playback target resolution", () => {
     });
     expect(resolved).toMatchObject({
       ok: true,
-      target: { kind: "player", src: { url: "/private/videos/film.mkv" } },
+      target: { kind: "player", src: { url: "/private/videos/film.mkv", localLibraryEntryId: "local-entry-1" } },
     });
   });
 
