@@ -1,0 +1,6 @@
+# The linked Vercel project has `site/` as its remote root. Uploading the whole
+# application repository exceeds Vercel's source archive limit and is neither
+# required nor desirable for the static public site.
+*
+!site/
+!site/**
