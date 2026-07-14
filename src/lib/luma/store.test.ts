@@ -135,4 +135,17 @@ describe("LUMA local store", () => {
     store.recordProgress({ meta: movie, positionMs: 340_000, durationMs: 360_000 });
     expect(store.getSnapshot().document.resumes).toHaveLength(0);
   });
+
+  it("persists the latest progress on a fixed throttle instead of an endless debounce", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    const store = new LumaStore("alice");
+    store.recordProgress({ meta: movie, positionMs: 60_000, durationMs: 360_000 });
+    vi.advanceTimersByTime(2_999);
+    store.recordProgress({ meta: movie, positionMs: 90_000, durationMs: 360_000 });
+    vi.advanceTimersByTime(1);
+
+    const persisted = JSON.parse(values.get(lumaStorageKey("alice"))!) as { resumes: Array<{ positionMs: number }> };
+    expect(persisted.resumes[0]?.positionMs).toBe(90_000);
+  });
 });

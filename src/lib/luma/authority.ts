@@ -19,3 +19,16 @@ export function subscribeLumaAuthority(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
+
+export function deriveLumaAuthority(input: {
+  castActive: boolean;
+  togetherJoined: boolean;
+  togetherIsHost: boolean;
+  varaActive: boolean;
+  varaIsHost: boolean;
+}): LumaAuthority {
+  if (input.castActive) return "cast";
+  if (input.togetherJoined) return input.togetherIsHost ? "together-host" : "together-guest";
+  if (input.varaActive) return input.varaIsHost ? "vara-host" : "vara-guest";
+  return "solo";
+}

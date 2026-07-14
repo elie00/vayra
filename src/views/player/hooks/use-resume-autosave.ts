@@ -147,6 +147,7 @@ export function useResumeAutosave(params: {
     const ms = pos * 1000;
     if (!force && Math.abs(ms - lastSavedRef.current) < 1500) return;
     record(s, sn, se, ep);
+    if (force) lumaStore().flushProgress();
   }, []);
 
   useEffect(() => {
@@ -171,6 +172,7 @@ export function useResumeAutosave(params: {
     const myEpisode = episode;
     return () => {
       record(latestRef.current.src, latestRef.current.snap, mySeason, myEpisode);
+      lumaStore().flushProgress();
     };
   }, [src.url, src.meta.id, season, episode]);
 

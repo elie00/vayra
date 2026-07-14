@@ -5,6 +5,7 @@ import { lumaQueueKey, lumaStore } from "./store";
 
 export * from "./types";
 export * from "./authority";
+export * from "./playback";
 export { LumaStore, lumaQueueKey, lumaStore } from "./store";
 export { lumaBackupKey, lumaInput, lumaStorageKey } from "./storage";
 

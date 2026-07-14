@@ -34,6 +34,7 @@ export class LumaStore {
   private snapshot: LumaSnapshot;
   private readonly listeners = new Set<Listener>();
   private progressTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastProgressWriteAt = 0;
 
   constructor(profileId: string) {
     this.profileId = profileId || "default";
@@ -230,20 +231,35 @@ export class LumaStore {
     const next: LumaDocumentV1 = { ...document, resumes, revision: document.revision + 1, updatedAt: now };
     this.snapshot = { ...this.snapshot, document: next };
     this.emit();
-    if (this.progressTimer) clearTimeout(this.progressTimer);
-    this.progressTimer = setTimeout(() => {
+    const elapsed = Date.now() - this.lastProgressWriteAt;
+    if (elapsed >= 4_000) this.flushProgress();
+    else if (!this.progressTimer) {
+      this.progressTimer = setTimeout(() => this.flushProgress(), Math.max(1, 4_000 - elapsed));
+    }
+    return { ok: true, value: undefined };
+  }
+
+  flushProgress(): boolean {
+    if (this.progressTimer) {
+      clearTimeout(this.progressTimer);
       this.progressTimer = null;
-      const saved = saveLumaDocument(this.snapshot.document);
-      if (!saved) {
-        this.snapshot = {
-          ...this.snapshot,
-          persistence: "volatile",
-          lastError: { code: "storage-unavailable", message: "La progression LUMA n’a pas pu être persistée localement." },
-        };
+    }
+    const saved = saveLumaDocument(this.snapshot.document);
+    if (saved) {
+      this.lastProgressWriteAt = Date.now();
+      if (this.snapshot.persistence === "volatile" && this.snapshot.lastError?.code === "storage-unavailable") {
+        this.snapshot = { ...this.snapshot, persistence: "ready", lastError: null };
         this.emit();
       }
-    }, 4_000);
-    return { ok: true, value: undefined };
+      return true;
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      persistence: "volatile",
+      lastError: { code: "storage-unavailable", message: "La progression LUMA n’a pas pu être persistée localement." },
+    };
+    this.emit();
+    return false;
   }
 
   clearResume(id: string): LumaResult<undefined> {
@@ -255,7 +271,7 @@ export class LumaStore {
   }
 
   dispose(): void {
-    if (this.progressTimer) clearTimeout(this.progressTimer);
+    this.flushProgress();
     this.listeners.clear();
   }
 }

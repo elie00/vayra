@@ -11,8 +11,9 @@ import { useVara } from "@/lib/vara/provider";
 import { useVayraAccount } from "@/lib/vayra-account";
 import { buildPlayInvite } from "@/lib/together/build-invite";
 import { useView, type PlayerSrc, type PlayEpisode } from "@/lib/view";
-import { queueBeginNext, queueAcknowledgeStarted, useQueue } from "@/lib/queue";
-import { LUMA_OPEN_EVENT, lumaQueueKey, lumaStore, setLumaAuthority, useLuma, type LumaAuthority } from "@/lib/luma";
+import { queueBeginNext, queueAcknowledgeStarted, queueRejectStart, useQueue } from "@/lib/queue";
+import { deriveLumaAuthority, LUMA_OPEN_EVENT, lumaQueueKey, lumaStore, resolveLumaPlaybackTarget, setLumaAuthority, useLuma } from "@/lib/luma";
+import { readLocalLibrary } from "@/lib/local-library";
 import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
@@ -85,7 +86,7 @@ import { VaraStatusPill } from "@/components/player/vara-status-pill";
 let hdrFallbackNoticeShown = false;
 
 export function PlayerView({ src }: { src: PlayerSrc }) {
-  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc } = useView();
+  const { setChromeHidden, topPath, openPicker, openPlayer, exitPlayback, replacePlayerSrc } = useView();
   const { settings, update } = useSettings();
   const isKid = useActiveKid() != null;
   const t = useT();
@@ -210,17 +211,17 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const isHost = inRoom && roomSnapshot.hostClientId === clientId;
   const remoteVeyaActive = !!remoteVaraRoom && !!remoteVeyaTransport && roomSnapshot.state !== "joined" && !cast.castDevice;
   const remoteVeyaHost = remoteVeyaActive && remoteVaraRoom.hostId === vayraUser?.id;
-  const lumaAuthority: LumaAuthority = cast.castDevice
-    ? "cast"
-    : inRoom
-      ? isHost
-        ? "together-host"
-        : "together-guest"
-      : remoteVeyaActive
-        ? remoteVeyaHost
-          ? "vara-host"
-          : "vara-guest"
-        : "solo";
+  const togetherLumaActive = roomSnapshot.state === "joined";
+  const remoteVaraLumaActive = !!remoteVaraRoom && !togetherLumaActive && !cast.castDevice;
+  const togetherLumaHost = togetherLumaActive && roomSnapshot.hostClientId === clientId;
+  const remoteVaraLumaHost = remoteVaraLumaActive && remoteVaraRoom.hostId === vayraUser?.id;
+  const lumaAuthority = deriveLumaAuthority({
+    castActive: Boolean(cast.castDevice),
+    togetherJoined: togetherLumaActive,
+    togetherIsHost: togetherLumaHost,
+    varaActive: remoteVaraLumaActive,
+    varaIsHost: remoteVaraLumaHost,
+  });
   useEffect(() => {
     setLumaAuthority(lumaAuthority);
     return () => setLumaAuthority("solo");
@@ -718,6 +719,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     autoAdvance: luma.document.preferences.autoAdvance,
     suspended: sleepArmed,
     openPicker,
+    openPlayer,
   });
 
   useEffect(() => {
@@ -726,13 +728,18 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     const pendingId = store.getSnapshot().pendingItemId;
     if (!pendingId) return;
     const pending = store.getSnapshot().document.queue.find((item) => item.id === pendingId);
+    if (!pending) return;
+    if (pending.ref.kind === "local-library") {
+      const entryId = pending.ref.entryId;
+      const local = readLocalLibrary().find((entry) => entry.id === entryId);
+      if (local && isLocalUrl(src.url) && local.path === src.url) queueAcknowledgeStarted(pendingId);
+      return;
+    }
     const currentKey = lumaQueueKey(src.meta, src.episode);
-    if (!pending || !currentKey) return;
-    const pendingKey = pending.ref.kind === "catalog"
-      ? `catalog:${pending.ref.metaId}${pending.ref.episode ? `:${pending.ref.episode.season}:${pending.ref.episode.episode}` : ""}`
-      : `local:${pending.ref.entryId}${pending.ref.episode ? `:${pending.ref.episode.season}:${pending.ref.episode.episode}` : ""}`;
+    if (!currentKey) return;
+    const pendingKey = `catalog:${pending.ref.metaId}${pending.ref.episode ? `:${pending.ref.episode.season}:${pending.ref.episode.episode}` : ""}`;
     if (pendingKey === currentKey) queueAcknowledgeStarted(pendingId);
-  }, [snap.rendered, src.meta, src.episode]);
+  }, [snap.rendered, src.meta, src.episode, src.url]);
 
   const isLocalSrc = isLocalUrl(src.url);
   const cancelToPicker = useCallback(() => {
@@ -1072,7 +1079,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
             if (queue.length > 0 && lumaAuthority === "solo") {
               const next = queueBeginNext(lumaAuthority);
               if (next.ok) {
-                openPicker(next.value.meta, next.value.episode, { autoPlay: true, resume: true });
+                const resolved = resolveLumaPlaybackTarget(next.value);
+                if (!resolved.ok) {
+                  queueRejectStart(resolved.message);
+                  return;
+                }
+                if (resolved.target.kind === "player") openPlayer(resolved.target.src);
+                else openPicker(resolved.target.meta, resolved.target.episode, { autoPlay: true, resume: true });
                 return;
               }
             }

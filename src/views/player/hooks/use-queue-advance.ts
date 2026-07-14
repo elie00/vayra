@@ -3,8 +3,8 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode, PlayerSrc } from "@/lib/view";
-import { queueBeginNext, type QueueItem } from "@/lib/queue";
-import type { LumaAuthority } from "@/lib/luma";
+import { queueBeginNext, queueRejectStart, type QueueItem } from "@/lib/queue";
+import { resolveLumaPlaybackTarget, type LumaAuthority } from "@/lib/luma";
 
 const STUB_MAX_SEC = 150;
 
@@ -22,8 +22,9 @@ export function useQueueAdvance(params: {
     episode?: PlayEpisode,
     opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean },
   ) => void;
+  openPlayer: (src: PlayerSrc) => void;
 }) {
-  const { src, snap, queue, isLive, startedNearEndRef, authority, autoAdvance, suspended, openPicker } = params;
+  const { src, snap, queue, isLive, startedNearEndRef, authority, autoAdvance, suspended, openPicker, openPlayer } = params;
   const firedForRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -46,8 +47,16 @@ export function useQueueAdvance(params: {
     if (queue.length > 0 && authority === "solo" && autoAdvance) {
       firedForRef.current = src.url;
       const next = queueBeginNext(authority);
-      if (next.ok) openPicker(next.value.meta, next.value.episode, { autoPlay: true, resume: true });
+      if (next.ok) {
+        const resolved = resolveLumaPlaybackTarget(next.value);
+        if (!resolved.ok) {
+          queueRejectStart(resolved.message);
+          return;
+        }
+        if (resolved.target.kind === "player") openPlayer(resolved.target.src);
+        else openPicker(resolved.target.meta, resolved.target.episode, { autoPlay: true, resume: true });
+      }
       return;
     }
-  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, authority, autoAdvance, suspended, openPicker]);
+  }, [snap.status, snap.errorCode, snap.durationSec, src.url, isLive, queue, startedNearEndRef, authority, autoAdvance, suspended, openPicker, openPlayer]);
 }
