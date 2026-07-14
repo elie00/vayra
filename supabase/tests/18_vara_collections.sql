@@ -170,6 +170,20 @@ begin
   exception when others then
     if sqlerrm <> 'INVALID_COLLECTION_ITEM' then raise; end if;
   end;
+  -- Hexadecimal IP literal (0x7f.0.0.1 -> 127.0.0.1): the alphabetic-TLD rule
+  -- rejects it where an all-digit filter alone would not.
+  begin
+    perform public.vara_add_collection_item(
+      c, 'tt0111161', 'movie', 'HexIp', null, null, 'https://0x7f.0.0.1/p.jpg');
+    raise exception 'TEST_FAILED: hex IP image host accepted';
+  exception when others then
+    if sqlerrm <> 'INVALID_COLLECTION_ITEM' then raise; end if;
+  end;
+  -- A legitimate dotted CDN host with an alphabetic TLD is still accepted.
+  perform public.vara_remove_collection_item(
+    (public.vara_add_collection_item(
+      c, 'tt0111161', 'movie', 'Good poster', null, null,
+      'https://images.metahub.space/poster/small/tt0111161/img')->>'item_id')::uuid);
 end;
 $do$;
 
@@ -350,6 +364,57 @@ begin
     raise exception 'TEST_FAILED: outsider added item';
   exception when others then
     if sqlerrm <> 'COLLECTION_NOT_FOUND' then raise; end if;
+  end;
+end;
+$do$;
+
+-- Existence oracle: an outsider gets the SAME error for a real item they
+-- can't reach and for a non-existent id (both COLLECTION_NOT_FOUND), so the
+-- error never reveals whether an id is an item somewhere.
+do $do$
+declare
+  c uuid;
+  real_item uuid;
+begin
+  perform test.logout();
+  select id into c from public.vara_collections where name = 'Watch order';
+  select id into real_item from public.vara_collection_items
+  where collection_id = c order by position limit 1;
+
+  perform test.login('00000000-0000-4000-8000-0000000018d4');  -- outsider
+  begin
+    perform public.vara_remove_collection_item(real_item);
+    raise exception 'TEST_FAILED: outsider removed a real item';
+  exception when others then
+    if sqlerrm <> 'COLLECTION_NOT_FOUND' then
+      raise exception 'TEST_FAILED: real item leaked % to outsider', sqlerrm;
+    end if;
+  end;
+  begin
+    perform public.vara_remove_collection_item(
+      '00000000-0000-4000-8000-00000000dead');
+    raise exception 'TEST_FAILED: missing item did not error';
+  exception when others then
+    if sqlerrm <> 'COLLECTION_NOT_FOUND' then
+      raise exception 'TEST_FAILED: missing item leaked % (oracle)', sqlerrm;
+    end if;
+  end;
+  begin
+    perform public.vara_move_collection_item(real_item, 1);
+    raise exception 'TEST_FAILED: outsider moved a real item';
+  exception when others then
+    if sqlerrm <> 'COLLECTION_NOT_FOUND' then
+      raise exception 'TEST_FAILED: move leaked % to outsider', sqlerrm;
+    end if;
+  end;
+  begin
+    perform public.vara_move_collection_item(
+      '00000000-0000-4000-8000-00000000dead', 1);
+    raise exception 'TEST_FAILED: missing item move did not error';
+  exception when others then
+    if sqlerrm <> 'COLLECTION_NOT_FOUND' then
+      raise exception 'TEST_FAILED: move missing leaked % (oracle)', sqlerrm;
+    end if;
   end;
 end;
 $do$;

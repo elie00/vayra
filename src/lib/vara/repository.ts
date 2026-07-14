@@ -172,8 +172,10 @@ function toPage<T>(value: unknown, decode: (row: unknown) => T): VaraPage<T> {
 // server would raise, and — crucially — guarantees the app never sends a
 // non-public reference or a non-https/private-host image toward the database.
 const META_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
+// Host must end in an alphabetic TLD: excludes every IP-literal form (decimal,
+// octal AND hexadecimal like 0x7f.0.0.1), localhost, userinfo and IPv6.
 const POSTER_URL_RE =
-  /^https:\/\/[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+(:[0-9]{1,5})?(\/[^\s<>"'\\]*)?$/;
+  /^https:\/\/([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,63}(:[0-9]{1,5})?(\/[^\s<>"'\\]*)?$/;
 const POSTER_IP_RE = /^https:\/\/[0-9]+(\.[0-9]+)+([:/]|$)/;
 
 export function requireValidCollectionItem(
