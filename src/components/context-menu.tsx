@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, EyeOff, Info, ListChecks, ListPlus, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, EyeOff, Info, ListChecks, ListPlus, ListVideo, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
@@ -14,6 +14,7 @@ import { useTmdbImdbId } from "@/lib/providers/tmdb";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { useInLocalWatchlist, useLocalWatchlist } from "@/lib/local-watchlist";
 import { clearTitleBackdrop, getTitleBackdrop, setTitleBackdrop } from "@/lib/title-backdrop";
+import { queueToggle, useQueue } from "@/lib/queue";
 
 const MENU_WIDTH = 220;
 const MENU_HEIGHT = 120;
@@ -68,6 +69,8 @@ export function ContextMenu() {
   const isFav = useIsFavorite(targetMetaId);
   const { toggle: toggleLocalList } = useLocalWatchlist();
   const isLocal = useInLocalWatchlist(targetMetaId);
+  const lumaQueue = useQueue();
+  const isInLuma = targetMetaId ? lumaQueue.some((item) => item.meta.id === targetMetaId && !item.episode) : false;
 
   const goToHost = () => {
     if (!hostLocation) return;
@@ -192,6 +195,18 @@ export function ContextMenu() {
         <Item key="details" icon={<Info size={14} strokeWidth={2} />} label={t("View details")} onClick={handleDetails} />,
       );
     }
+    items.push(
+      <Item
+        key="luma"
+        icon={<ListVideo size={14} strokeWidth={2} />}
+        label={isInLuma ? t("In LUMA") : t("Add to LUMA")}
+        onClick={() => {
+          queueToggle(meta);
+          close();
+        }}
+        accent={isInLuma}
+      />,
+    );
     items.push(
       <Item
         key="watchlist"
