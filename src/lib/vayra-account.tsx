@@ -13,7 +13,16 @@ import { onVayraAuthCallback } from "./deep-link";
 
 const SESSION_ACCOUNT = "vayra-email-session-v1";
 const WEB_SESSION_KEY = "vayra.email.session.v1";
-const REDIRECT_URL = "vayra://auth/callback";
+const isTauriRuntime =
+  typeof window !== "undefined" &&
+  ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
+// Production and desktop complete auth through the vayra:// deep link. In web
+// dev the browser can't route that scheme, so bounce the magic link back to the
+// running dev origin and exchange the code in-page (see the DEV effect below).
+const REDIRECT_URL =
+  import.meta.env.DEV && !isTauriRuntime && typeof window !== "undefined"
+    ? `${window.location.origin}/`
+    : "vayra://auth/callback";
 const DEFAULT_SUPABASE_URL = "https://kbuwutnzqapwnvzgyjtw.supabase.co";
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_kLf8ZEhewgc7j5qDAVjCrA_FTdPB2uh";
 
@@ -162,6 +171,35 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
         else setSession(data.session);
         setLoading(false);
       });
+    });
+  }, [client]);
+
+  // DEV-only web bridge: the desktop deep link never fires in a browser, so
+  // pick up the ?code= the magic link bounced to this origin and exchange it.
+  // Compiled out of production builds (import.meta.env.DEV is statically false).
+  useEffect(() => {
+    if (!client || isTauriRuntime || !import.meta.env.DEV) return;
+    const url = new URL(window.location.href);
+    const errDesc = url.searchParams.get("error_description") ?? url.searchParams.get("error");
+    const code = url.searchParams.get("code");
+    if (!code && !errDesc) return;
+    const strip = () => {
+      url.searchParams.delete("code");
+      url.searchParams.delete("error");
+      url.searchParams.delete("error_description");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    };
+    if (errDesc) {
+      setError(errDesc);
+      strip();
+      return;
+    }
+    setLoading(true);
+    void client.auth.exchangeCodeForSession(code as string).then(({ data, error: exchangeError }) => {
+      if (exchangeError) setError(exchangeError.message);
+      else setSession(data.session);
+      setLoading(false);
+      strip();
     });
   }, [client]);
 
