@@ -99,6 +99,10 @@ will be migrated separately.
   installs keep resolving.
 - The `harbor.` `localStorage` prefix and all `harbor.*` / `harbor:*` storage keys
   are kept so existing user state and legacy `.harbx` restores keep working.
+- LUMA writes new profile-scoped documents under `vayra.luma.v1.*`, but reads
+  `harbor.queue.v1` and `harbor.localcw.v1` once for a non-destructive migration.
+  The obsolete `harbor.queue.sleepAtEnd.v1` key is intentionally ignored because
+  the player sleep timer is now the sole end-of-playback authority.
 - `.harborstyle` and `harbor-backup` `.harbx` files remain readable (dual-read).
 - `window.harbor` is kept permanently as an alias of `window.vayra`, and the
   public `.harbor-*` CSS theming classes and the `[data-harbor-nav]` selector are
@@ -137,3 +141,6 @@ covered by `android-build.yml` (debug assemble, `applicationId app.vayra`, JNI +
 `loadLibrary` link), and the `app.vayra` package rename was also validated with a
 local `aarch64` debug build producing a working APK. Player, cast, HDR, shaders,
 Stremio, and collaborative playback keep their existing manual playback checks.
+
+The local LUMA continuity contract, migration and authority matrix are documented
+in [`luma.md`](./luma.md).
