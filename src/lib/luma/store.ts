@@ -128,8 +128,8 @@ export class LumaStore {
     const blocked = this.blocked();
     if (blocked) return blocked;
     if (this.snapshot.document.queue.length === 0) return { ok: true, value: undefined };
-    this.commit({ ...this.snapshot.document, queue: [] });
     this.snapshot = { ...this.snapshot, pendingItemId: null };
+    this.commit({ ...this.snapshot.document, queue: [] });
     return { ok: true, value: undefined };
   }
 
@@ -149,6 +149,8 @@ export class LumaStore {
   }
 
   reorder(orderedIds: string[]): LumaResult<undefined> {
+    const blocked = this.blocked();
+    if (blocked) return blocked;
     const known = new Map(this.snapshot.document.queue.map((item) => [item.id, item]));
     const queue = orderedIds.flatMap((id) => {
       const item = known.get(id);
@@ -284,4 +286,3 @@ export function lumaQueueKey(meta: Meta, episode?: PlayEpisode): string | null {
   const mapped = lumaInput(meta, episode);
   return mapped ? lumaRefKey(mapped.ref) : null;
 }
-

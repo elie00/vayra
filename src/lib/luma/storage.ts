@@ -19,6 +19,7 @@ import {
 const LEGACY_QUEUE_KEY = "harbor.queue.v1";
 const LEGACY_RESUME_KEY = "harbor.localcw.v1";
 const LOCAL_LIBRARY_KEY = "harbor.library.local.v1";
+const LEGACY_MIGRATION_OWNER_KEY = "vayra.luma.legacy-owner.v1";
 
 export function lumaStorageKey(profileId: string): string {
   return `vayra.luma.v1.${encodeURIComponent(profileId || "default")}`;
@@ -296,6 +297,19 @@ function migrateLegacyResume(now: number): LumaResumeEntry[] {
   }
 }
 
+function claimLegacyMigration(profileId: string): boolean {
+  try {
+    const hasLegacy = localStorage.getItem(LEGACY_QUEUE_KEY) != null || localStorage.getItem(LEGACY_RESUME_KEY) != null;
+    if (!hasLegacy) return false;
+    const owner = localStorage.getItem(LEGACY_MIGRATION_OWNER_KEY);
+    if (owner) return owner === profileId;
+    localStorage.setItem(LEGACY_MIGRATION_OWNER_KEY, profileId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export type LumaLoadResult = {
   document: LumaDocumentV1;
   persistence: LumaPersistenceState;
@@ -323,8 +337,9 @@ export function loadLumaDocument(profileId: string, now = Date.now()): LumaLoadR
     if (parsed.kind === "valid") return { document: parsed.document, persistence: "recovered" };
   }
   const document = emptyLumaDocument(profileId, now);
-  document.queue = migrateLegacyQueue();
-  document.resumes = migrateLegacyResume(now);
+  const ownsLegacyMigration = claimLegacyMigration(profileId);
+  document.queue = ownsLegacyMigration ? migrateLegacyQueue() : [];
+  document.resumes = ownsLegacyMigration ? migrateLegacyResume(now) : [];
   document.migration = {
     legacyQueueImported: true,
     legacyResumeImported: true,
@@ -354,4 +369,3 @@ export function parseLumaStorageEvent(raw: string | null, profileId: string, now
   const parsed = parseDocument(raw, profileId, now);
   return parsed.kind === "valid" ? parsed.document : null;
 }
-

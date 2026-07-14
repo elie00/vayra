@@ -17,9 +17,6 @@ export type QueueItem = {
   addedAt: number;
 };
 
-const SLEEP_KEY = "harbor.queue.sleepAtEnd.v1";
-const sleepListeners = new Set<() => void>();
-
 function fromLuma(item: LumaQueueItem): QueueItem {
   const episode = item.ref.episode
     ? {
@@ -72,11 +69,6 @@ export function queueBeginNext(authority: LumaAuthority): LumaResult<QueueItem> 
   return result.ok ? { ok: true, value: fromLuma(result.value) } : result;
 }
 
-export function queueShift(): QueueItem | null {
-  const result = queueBeginNext("solo");
-  return result.ok ? result.value : null;
-}
-
 export function queueAcknowledgeStarted(id: string): void {
   lumaStore().acknowledgeStarted(id);
 }
@@ -96,33 +88,4 @@ export function useIsQueued(meta: Meta, episode?: PlayEpisode): boolean {
   const key = lumaQueueKey(meta, episode);
   if (!key) return false;
   return queue.some((item) => lumaQueueKey(item.meta, item.episode) === key);
-}
-
-export function getSleepAtEnd(): boolean {
-  try {
-    return localStorage.getItem(SLEEP_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-export function setSleepAtEnd(on: boolean): void {
-  try {
-    if (on) localStorage.setItem(SLEEP_KEY, "1");
-    else localStorage.removeItem(SLEEP_KEY);
-  } catch {
-    /* compatibility setting remains best-effort */
-  }
-  for (const listener of sleepListeners) listener();
-}
-
-export function useSleepAtEnd(): boolean {
-  return useSyncExternalStore(
-    (listener) => {
-      sleepListeners.add(listener);
-      return () => sleepListeners.delete(listener);
-    },
-    getSleepAtEnd,
-    getSleepAtEnd,
-  );
 }
