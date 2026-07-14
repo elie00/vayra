@@ -10,7 +10,8 @@
     />
     <meta name="theme-color" content="#0A0B0D" />
     <meta name="color-scheme" content="dark" />
-    <meta name="robots" content="noindex" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="referrer" content="no-referrer" />
     <link rel="icon" href="/favicon.svg?v=canonical-1" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
     <style>
@@ -217,10 +218,12 @@
         // The code lives in the URL FRAGMENT (#t=...) on purpose: it is never
         // sent to the server, never logged, never indexed. This page does no
         // network call at all - it only hands the code to the desktop app.
-        var match = /(?:^|[#&])t=([^&]+)/.exec(location.hash || "");
         var raw = "";
         try {
-          raw = match ? decodeURIComponent(match[1]) : "";
+          var fragmentEntries = Array.from(new URLSearchParams((location.hash || "").slice(1)).entries());
+          raw = fragmentEntries.length === 1 && fragmentEntries[0][0] === "t"
+            ? fragmentEntries[0][1]
+            : "";
         } catch (_) {
           raw = "";
         }
@@ -228,7 +231,7 @@
         var code = raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
         // Remove the bearer secret from the visible URL and browser history as
         // soon as it has been copied into this page's short-lived memory.
-        if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+        if (location.hash || location.search) history.replaceState(null, "", location.pathname);
 
         var valid = document.getElementById("invite-valid");
         var missing = document.getElementById("invite-missing");

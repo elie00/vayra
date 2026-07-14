@@ -1,20 +1,19 @@
 import jsQR from "jsqr";
-import { requireValidInviteCode } from "./repository";
-
-export const CIRA_DISCOVER_ORIGIN = "https://vayra.eybo.tech";
-export const CIRA_DISCOVER_PATH = "/cira/invite";
+import { parseCiraDiscoverPayload } from "./invite-code";
+import type { CiraDiscoverPayload } from "./invite-code";
+export {
+  CIRA_DISCOVER_ORIGIN,
+  CIRA_DISCOVER_PATH,
+  formatCiraInviteCode,
+  parseCiraDiscoverPayload,
+} from "./invite-code";
+export type { CiraDiscoverPayload } from "./invite-code";
 export const CIRA_QR_MAX_FILE_BYTES = 8 * 1024 * 1024;
 export const CIRA_QR_MAX_SOURCE_PIXELS = 24_000_000;
 export const CIRA_QR_DECODE_EDGE = 2_048;
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const ALLOWED_IMAGE_EXTENSIONS = /\.(?:png|jpe?g|webp)$/i;
-
-export type CiraDiscoverPayload = {
-  code: string;
-  canonicalUrl: string;
-  source: "https" | "deep-link" | "code";
-};
 
 export type CiraQrErrorCode =
   | "IMAGE_TYPE_UNSUPPORTED"
@@ -29,64 +28,6 @@ export class CiraQrError extends Error {
     super(code);
     this.name = "CiraQrError";
     this.code = code;
-  }
-}
-
-export function formatCiraInviteCode(code: string): string {
-  const normalized = requireValidInviteCode(code);
-  const secret = normalized.slice(4);
-  return `CIRA-${secret.match(/.{4}/g)!.join("-")}`;
-}
-
-function strictFragmentCode(url: URL): string | null {
-  if (url.search || !url.hash.startsWith("#")) return null;
-  const entries = [...new URLSearchParams(url.hash.slice(1)).entries()];
-  if (entries.length !== 1 || entries[0][0] !== "t") return null;
-  return entries[0][1];
-}
-
-/** Parse only intentional CIRA inputs without opening or following a URL. */
-export function parseCiraDiscoverPayload(raw: string): CiraDiscoverPayload | null {
-  const value = raw.trim();
-  if (!value || value.length > 256) return null;
-
-  let rawCode: string | null = null;
-  let source: CiraDiscoverPayload["source"] = "code";
-  try {
-    const url = new URL(value);
-    if (
-      url.protocol === "https:" &&
-      url.origin === CIRA_DISCOVER_ORIGIN &&
-      url.pathname === CIRA_DISCOVER_PATH &&
-      !url.username &&
-      !url.password
-    ) {
-      rawCode = strictFragmentCode(url);
-      source = "https";
-    } else if (
-      url.protocol === "vayra:" &&
-      url.hostname === "cira" &&
-      url.pathname === "/invite"
-    ) {
-      rawCode = strictFragmentCode(url);
-      source = "deep-link";
-    } else {
-      return null;
-    }
-  } catch {
-    rawCode = value;
-  }
-
-  if (!rawCode) return null;
-  try {
-    const code = formatCiraInviteCode(rawCode);
-    return {
-      code,
-      canonicalUrl: `${CIRA_DISCOVER_ORIGIN}${CIRA_DISCOVER_PATH}#t=${code}`,
-      source,
-    };
-  } catch {
-    return null;
   }
 }
 

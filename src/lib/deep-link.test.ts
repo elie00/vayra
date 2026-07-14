@@ -34,19 +34,18 @@ describe("CIRA group invite deep links", () => {
 });
 
 describe("CIRA invite deep links", () => {
-  it("extracts the code from the fragment", () => {
-    expect(parseCiraInviteCode("vayra://cira/invite#t=CIRA-AB12-CD34")).toBe("CIRA-AB12-CD34");
-    expect(parseCiraInviteCode("vayra://cira/invite#x=1&t=ab12")).toBe("ab12");
-  });
-
-  it("decodes percent-encoded fragments", () => {
-    expect(parseCiraInviteCode("vayra://cira/invite#t=AB%2D12")).toBe("AB-12");
+  it("extracts and normalises one valid fragment code", () => {
+    expect(parseCiraInviteCode("vayra://cira/invite#t=ciraab12cd34ef56gh78jk90")).toBe(
+      "CIRA-AB12-CD34-EF56-GH78-JK90",
+    );
   });
 
   it("rejects other schemes, hosts, paths, and missing codes", () => {
     expect(parseCiraInviteCode("vayra://cira/invite")).toBeNull();
     expect(parseCiraInviteCode("vayra://cira/invite#t=")).toBeNull();
     expect(parseCiraInviteCode("vayra://cira/invite?t=QUERY")).toBeNull();
+    expect(parseCiraInviteCode("vayra://cira/invite#x=1&t=CIRA-AB12-CD34-EF56-GH78-JK90")).toBeNull();
+    expect(parseCiraInviteCode("vayra://cira/invite#t=AB%2D12")).toBeNull();
     expect(parseCiraInviteCode("vayra://auth/callback?code=x")).toBeNull();
     expect(parseCiraInviteCode("harbor://cira/invite#t=AB12")).toBeNull();
     expect(parseCiraInviteCode("https://vayra.eybo.tech/cira/invite#t=AB12")).toBeNull();
