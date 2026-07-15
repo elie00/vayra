@@ -44,9 +44,9 @@ cast activable seulement sur **mpv** (CAST-2) ; seek exo = aller-retour natif ~5
 | B4 | Hôte **seek arrière** (−90 s) | Idem, pas de tempête de seek | | | | |
 | B5 | Invité **seek** localement | Se propage à la room (contrôle symétrique — VEYA-N3) | | | | |
 | B6 | **Arrivée tardive** : C3 rejoint en cours | C3 se cale via snapshot ; **C1/C2 ne bougent PAS** (VEYA-B1 corrigé) | | | | |
-| B7 | Hôte passe en **2×** | ⚠️ Attendu défaillant : invité seek-storm (**VEYA-N1 non corrigé**) — consigner FAIL | | | | |
+| B7 | Hôte passe en **2×** | Les invités adoptent la vitesse 2× et convergent, sans seek-storm (VEYA-N1 corrigé) | | | | |
 | B8 | **Bascule de média** : un invité ouvre un autre titre en restant dans la room | L'invité n'est **plus** happé sur le mauvais contenu (VEYA-B2 corrigé) ; un invité sur le même contenu synchronise toujours | | | | |
-| B9 | **Transfert d'hôte** : l'hôte quitte, un invité revendique | Nouvel hôte ; vérifier reprise du heartbeat (risque VEYA-N2, jusqu'à ~15 s) | | | | |
+| B9 | **Transfert d'hôte** : l'hôte quitte, un invité revendique | Nouvel hôte ; le heartbeat reprend depuis la nouvelle autorité sans attendre le rafraîchissement provider (VEYA-N2 corrigé) | | | | |
 
 ## C. Réseau & résilience (scénario 4)
 
@@ -55,7 +55,7 @@ cast activable seulement sur **mpv** (CAST-2) ; seek exo = aller-retour natif ~5
 | C1 | Couper le réseau d'un invité 20 s puis rétablir | Reconnexion, **appartenance conservée**, resync | | | | |
 | C2 | Reconnexions répétées (flapping) d'un invité | Pas de stutter room-wide chez les autres (VEYA-B1 corrigé) | | | | |
 | C3 | Activer une room **TTL-expirée** depuis la liste | Pas de boucle « joining » infinie ; teardown propre (VARA-1 corrigé) | | | | |
-| C4 | Laisser une room expirer pendant l'affichage de la liste | ⚠️ Room morte reste « joignable » (**VARA-2 non corrigé**) — consigner | | | | |
+| C4 | Laisser une room expirer pendant l'affichage de la liste | La room morte disparaît de la liste à l'expiration (VARA-2 corrigé) | | | | |
 
 ## D. Cast (scénario 5)
 
@@ -63,7 +63,7 @@ cast activable seulement sur **mpv** (CAST-2) ; seek exo = aller-retour natif ~5
 | --- | --- | --- | --- | --- | --- | --- |
 | D1 | Bouton cast présent ? | Oui sur **mpv** ; non sur html5/exo (CAST-2, différence connue) | | N/A | N/A | |
 | D2 | Activer le cast en cours de VEYA | VEYA **suspendu**, cast/player sans régression (steady-state OK) | | N/A | N/A | |
-| D3 | Fenêtre de connexion cast (juste après le tap) | ⚠️ Risque : commandes distantes pilotent le bridge local (**CAST-1**) — observer | | N/A | N/A | |
+| D3 | Fenêtre de connexion cast (juste après le tap) | VEYA + room-sync suspendus pendant la connexion (castEngagedRef), le bridge local n'est plus piloté (CAST-1 corrigé) | | N/A | N/A | |
 | D4 | Arrêt du cast | Retour au player local ; vérifier reprise lecture (risque `stopCast` pause) | | N/A | N/A | |
 
 ## E. Contrôle d'accès (scénarios 6-7)
@@ -95,8 +95,8 @@ cast activable seulement sur **mpv** (CAST-2) ; seek exo = aller-retour natif ~5
 | G1 | **Clavier seul** : créer/inviter/rejoindre/quitter | Tout atteignable au clavier | | | | |
 | G2 | **Lecteur d'écran** dans le lobby | Statut de synchro annoncé (`aria-live`, A11Y-1 corrigé) | | | | |
 | G3 | **Lecteur d'écran** : erreur réseau dans les collections | Annoncée (`role=alert`, A11Y-4 corrigé) | | | | |
-| G4 | **Lecteur d'écran** : présence des participants | ⚠️ Non annoncée (**A11Y-2 non corrigé**) — consigner | | | | |
-| G5 | Popover VARA : piège de focus | ⚠️ Absent (**A11Y-3 non corrigé**) — consigner | | | | |
+| G4 | **Lecteur d'écran** : présence des participants | Statut (hôte/pause/absent/parti) annoncé (A11Y-2 corrigé) | | | | |
+| G5 | Popover VARA : piège de focus | Tab confiné au popover, focus restauré à la fermeture (A11Y-3 corrigé) | | | | |
 | G6 | **RTL** (arabe) : lobby, collections | Miroir correct, pas de casse | | | | |
 | G7 | **Mobile** : cibles tactiles, débordements | Utilisable | N/A | | | |
 | G8 | **États vides** (aucune collection, aucun item, room vide) | Message clair, pas d'écran mort | | | | |
@@ -113,7 +113,7 @@ bug-report si déclenché.
 | H3 | Échec de chargement de sous-titre | Aucune URL de sous-titre loguée (PRIV-3 corrigé) | |
 | H4 | Recherche de sous-titres | Aucune requête/titre logué (PRIV-4 corrigé) | |
 | H5 | Tout le parcours VEYA | Aucun média/URL/source/infoHash/IP/appareil/session Stremio sur le fil VEYA ni en logs | |
-| H6 | Déclencher « signaler un bug » | Inspecter le payload : ⚠️ contient erreurs globales + stack (**PRIV-BUGREPORT**, attend accord) — consigner ce qui part | |
+| H6 | Déclencher « signaler un bug » | Inspecter le payload : aucune URL/magnet/jeton hex (scrubbé, PRIV-BUGREPORT corrigé) | |
 | H7 | Si `together`/`useRoomSync` est emprunté | ⚠️ `infoHash`/`mediaId` sur le canal (**DEF-VEYA-BOUNDARY**, hors Watch Room) — consigner | |
 
 ---
