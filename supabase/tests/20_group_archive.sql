@@ -29,6 +29,8 @@ declare
   d uuid := '00000000-0000-4000-8000-0000000020d4';
   col uuid;
   dave_inv uuid;
+  room_grouped uuid;
+  room_solo uuid;
 begin
   perform test.login(a);
   g := (public.cira_create_group('Archive club'))->>'group_id';
@@ -42,6 +44,9 @@ begin
   perform test.login(a);
   perform public.cira_invite_group_member(g, d);
   perform public.cira_create_group_link(g);
+  -- a group-scoped room and an unrelated room, both live before archiving
+  room_grouped := (public.vara_create_room(14400, 8, g)) ->> 'room_id';
+  room_solo := (public.vara_create_room(14400, 8)) ->> 'room_id';
 
   -- member cannot archive
   perform test.login(c);
@@ -56,6 +61,13 @@ begin
   perform test.logout();
   if (select archived_at from public.cira_groups where id=g) is null then
     raise exception 'TEST_FAILED: not archived';
+  end if;
+  -- archiving closes the group's live VARA room but leaves unrelated rooms alone
+  if exists (select 1 from public.vara_rooms where id = room_grouped) then
+    raise exception 'TEST_FAILED: group room not closed on archive';
+  end if;
+  if not exists (select 1 from public.vara_rooms where id = room_solo) then
+    raise exception 'TEST_FAILED: unrelated room closed on archive';
   end if;
   -- invitations/links are kept (data preserved) but inert: dave's pending
   -- invitation survives, yet accepting it is refused while archived.
