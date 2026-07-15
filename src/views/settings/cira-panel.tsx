@@ -21,6 +21,7 @@ import { useVayraAccount } from "@/lib/vayra-account";
 import { Section, ToggleRow, useSettingsActiveContext } from "./shared";
 import { CiraGroupsCard } from "./cira-groups-card";
 import { VaraRoomsCard } from "./vara-rooms-card";
+import { PrivateBetaGuideCard } from "./private-beta-guide-card";
 
 function errorText(t: ReturnType<typeof useT>, err: unknown): string {
   const code = err instanceof CiraError ? err.code : "UNKNOWN";
@@ -999,6 +1000,7 @@ export function CiraPanel() {
 
   return (
     <div className="flex flex-col gap-5">
+      <PrivateBetaGuideCard />
       <ProfileCard />
       {me && (
         <>
