@@ -57,13 +57,14 @@ export function usePlayerCast(params: {
   const sync = useMemo(
     () => ({
       activeRef: session.castActiveRef,
+      engagedRef: session.castEngagedRef,
       play: session.playCast,
       pause: session.pauseCast,
       seek: session.seekCast,
       getPosition: session.getCastPosition,
       isPlaying: session.isCastPlaying,
     }),
-    [session.castActiveRef, session.playCast, session.pauseCast, session.seekCast, session.getCastPosition, session.isCastPlaying],
+    [session.castActiveRef, session.castEngagedRef, session.playCast, session.pauseCast, session.seekCast, session.getCastPosition, session.isCastPlaying],
   );
 
   return { ...session, ...pick, sync };

@@ -115,6 +115,11 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
   castDeviceRef.current = castDevice;
   const castActiveRef = useRef<boolean>(false);
   castActiveRef.current = castDevice != null;
+  // True from the moment a device is picked (pending) through active connection.
+  // Used to SUSPEND local sync during the async connect window, before the cast
+  // device is ready to be driven (castActiveRef still false) — CAST-1.
+  const castEngagedRef = useRef<boolean>(false);
+  castEngagedRef.current = castDevice != null || pendingCastDevice != null;
   const castPlayingRef = useRef<boolean>(true);
 
   useEffect(() => {
@@ -288,6 +293,7 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
     stopCast,
     seekCast,
     castActiveRef,
+    castEngagedRef,
     playCast,
     pauseCast,
     getCastPosition,
