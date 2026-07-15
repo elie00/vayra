@@ -41,6 +41,9 @@ export function useRoomSync(params: {
   setForeignNotice: (n: ForeignNotice | null) => void;
   cast?: {
     activeRef: RefObject<boolean>;
+    // True from device pick through active connection (CAST-1): suspend local
+    // playback during the connect window even before the device can be driven.
+    engagedRef?: RefObject<boolean>;
     play: () => Promise<void> | void;
     pause: () => Promise<void> | void;
     seek: (sec: number) => Promise<void> | void;
@@ -164,7 +167,7 @@ export function useRoomSync(params: {
       if (pos != null) applySeek(pos);
     };
     const off = onIncomingCommand((from, command) => {
-      if (cast?.activeRef.current) return;
+      if (cast?.engagedRef?.current ?? cast?.activeRef.current) return;
       const b = bridgeRef.current;
       if (!b) return;
       if (command.action === "play") {
@@ -191,7 +194,7 @@ export function useRoomSync(params: {
     if (!inRoom) return;
     return onIncomingState((state) => {
       if (state.updatedBy === clientId) return;
-      if (cast?.activeRef.current) return;
+      if (cast?.engagedRef?.current ?? cast?.activeRef.current) return;
       const b = bridgeRef.current;
       if (!b) return;
       if (isDifferentMedia(state, src)) {

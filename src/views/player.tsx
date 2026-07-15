@@ -210,8 +210,12 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const episode = src.episode?.episode;
   const inRoom = roomSnapshot.state === "joined" && roomSnapshot.participants.length >= 2;
   const isHost = inRoom && roomSnapshot.hostClientId === clientId;
-  const remoteVeyaActive = !!remoteVaraRoom && !!remoteVeyaTransport && roomSnapshot.state !== "joined" && !cast.castDevice;
-  const remoteVeyaHost = remoteVeyaActive && remoteVaraRoom.hostId === vayraUser?.id;
+  const remoteVeyaActive =
+    !!remoteVaraRoom &&
+    !!remoteVeyaTransport &&
+    roomSnapshot.state !== "joined" &&
+    !cast.castDevice &&
+    !cast.pendingCastDevice;
   const togetherLumaActive = roomSnapshot.state === "joined";
   const remoteVaraLumaActive = !!remoteVaraRoom && !togetherLumaActive && !cast.castDevice;
   const togetherLumaHost = togetherLumaActive && roomSnapshot.hostClientId === clientId;
@@ -537,8 +541,12 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     getLocalContentKey: () => localContentKeyRef.current,
   });
 
+  // Run the heartbeat on every active client; publishState no-ops on non-authority
+  // devices (its internal isAuthorityClient gate). This way a lease-based host
+  // transfer resumes heartbeating immediately from the new authority, without
+  // waiting for the provider to refresh the room's hostId (VEYA-N2).
   useEffect(() => {
-    if (!remoteVeyaActive || !remoteVeyaHost || !remoteVeyaTransport) return;
+    if (!remoteVeyaActive || !remoteVeyaTransport) return;
     const publish = () => {
       const current = snapRef.current;
       if (current.status !== "playing" && current.status !== "paused" && current.status !== "ended") return;
@@ -558,7 +566,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     publish();
     const id = window.setInterval(publish, 3000);
     return () => window.clearInterval(id);
-  }, [remoteVeyaActive, remoteVeyaHost, remoteVeyaTransport, clientId, snapRef]);
+  }, [remoteVeyaActive, remoteVeyaTransport, clientId, snapRef]);
 
   const { rememberSubChoice, cycleSubtitles, playPauseToggle, seekStep, seekTo } = usePlaybackControls({
     bridgeRef,
