@@ -3,7 +3,15 @@ import { useState } from "react";
 import type { Diagnostics } from "@/lib/bug-report";
 import { useT } from "@/lib/i18n";
 
-export function DiagnosticsCard({ diag }: { diag: Diagnostics | null }) {
+export function DiagnosticsCard({
+  diag,
+  included,
+  onIncludedChange,
+}: {
+  diag: Diagnostics | null;
+  included: boolean;
+  onIncludedChange: (included: boolean) => void;
+}) {
   const t = useT();
   const [open, setOpen] = useState(false);
   if (!diag) {
@@ -13,7 +21,7 @@ export function DiagnosticsCard({ diag }: { diag: Diagnostics | null }) {
       </div>
     );
   }
-  const compact = `VAYRA ${diag.appVersion} · ${diag.os}${diag.osVersion ? ` ${diag.osVersion}` : ""} · ${diag.viewport} · ${diag.locale}`;
+  const compact = `VAYRA ${diag.appVersion} · ${diag.channel} · ${diag.recentErrors.length} ${t("recent errors")}`;
   return (
     <div className="rounded-xl border border-edge-soft/55 bg-canvas/30">
       <button
@@ -25,7 +33,7 @@ export function DiagnosticsCard({ diag }: { diag: Diagnostics | null }) {
           <ShieldCheck size={14} strokeWidth={1.9} />
         </span>
         <div className="flex min-w-0 flex-col">
-          <span className="text-[12px] font-semibold text-ink">{t("What gets sent")}</span>
+          <span className="text-[12px] font-semibold text-ink">{t("Optional privacy-safe diagnostic")}</span>
           <span className="truncate text-[11.5px] text-ink-subtle">{compact}</span>
         </div>
         <span className="ms-auto text-ink-subtle">
@@ -35,24 +43,18 @@ export function DiagnosticsCard({ diag }: { diag: Diagnostics | null }) {
       {open && (
         <div className="border-t border-edge-soft/55 px-4 py-3">
           <p className="mb-2 text-[11.5px] leading-relaxed text-ink-muted">
-            {t("Auto-included. No keys, no library, no URLs. Just structural flags so reproductions go faster.")}
+            {t("Nothing is included unless you opt in. It contains only the app version, beta channel and redacted error messages.")}
           </p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11.5px] font-mono text-ink-muted">
             <Pair k={t("App")} v={diag.appVersion} />
-            <Pair k="OS" v={`${diag.os} ${diag.osVersion}`} />
-            <Pair k={t("Viewport")} v={diag.viewport} />
-            <Pair k={t("Locale")} v={diag.locale} />
-            <Pair k={t("Player")} v={diag.flags.playerEngine} />
-            <Pair k={t("Region")} v={diag.flags.region} />
-            <Pair k={t("TMDB key")} v={diag.flags.hasTmdb ? t("yes") : t("no")} />
-            <Pair k={t("RPDB key")} v={diag.flags.hasRpdb ? t("yes") : t("no")} />
-            <Pair k="Trakt" v={diag.flags.hasTrakt ? t("yes") : t("no")} />
-            <Pair k="Stremio" v={diag.flags.hasStremio ? t("signed in") : t("guest")} />
-            <Pair k={t("Debrid keys")} v={String(diag.flags.debridCount)} />
-            <Pair k={t("Addons")} v={String(diag.flags.addonCount)} />
-            <Pair k={t("IPTV lists")} v={String(diag.flags.iptvCount)} />
+            <Pair k={t("Channel")} v={diag.channel} />
             <Pair k={t("Recent errors")} v={String(diag.recentErrors.length)} />
           </div>
+          <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-edge-soft px-3 py-2.5">
+            <input type="checkbox" checked={included} onChange={(event) => onIncludedChange(event.target.checked)} className="mt-0.5 h-4 w-4 accent-ink" />
+            <span className="text-[11.5px] leading-relaxed text-ink-muted">{t("Include this diagnostic with my report.")}</span>
+          </label>
+          <p className="mt-2 text-[11px] leading-relaxed text-ink-subtle">{t("Never included: content, source, URL, addon, info-hash, progress, library, local path, IP address, device details or Stremio session.")}</p>
         </div>
       )}
     </div>

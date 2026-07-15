@@ -1,7 +1,6 @@
 import { AtSign, Github, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useAuth } from "@/lib/auth";
 import {
   collectDiagnostics,
   installBugReportErrorCapture,
@@ -9,7 +8,6 @@ import {
   type Diagnostics,
   type Severity,
 } from "@/lib/bug-report";
-import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Section } from "./shared";
 import { ContributorCard } from "./bug-report/contributor-card";
@@ -20,8 +18,6 @@ import { SuccessCard } from "./bug-report/success-card";
 
 export function BugReportPanel() {
   const t = useT();
-  const { settings } = useSettings();
-  const auth = useAuth();
   const [summary, setSummary] = useState("");
   const [severity, setSeverity] = useState<Severity>("normal");
   const [steps, setSteps] = useState("");
@@ -36,46 +32,25 @@ export function BugReportPanel() {
   const [error, setError] = useState<string | null>(null);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [diag, setDiag] = useState<Diagnostics | null>(null);
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
+  const [filesReviewed, setFilesReviewed] = useState(false);
 
   useEffect(() => installBugReportErrorCapture(), []);
 
   useEffect(() => {
     let cancelled = false;
-    void collectDiagnostics({
-      playerEngine: settings.playerEngine,
-      region: settings.region,
-      hasTmdb: !!settings.tmdbKey,
-      hasRpdb: !!settings.rpdbKey,
-      hasTrakt: !!settings.traktAccessToken,
-      hasStremio: !!auth.authKey,
-      debridCount: [settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey].filter(Boolean).length,
-      addonCount: 0,
-      iptvCount: settings.iptvPlaylists.length,
-    }).then((d) => {
+    void collectDiagnostics().then((d) => {
       if (!cancelled) setDiag(d);
     });
     return () => {
       cancelled = true;
     };
-  }, [
-    settings.playerEngine,
-    settings.region,
-    settings.tmdbKey,
-    settings.rpdbKey,
-    settings.traktAccessToken,
-    settings.iptvPlaylists.length,
-    settings.rdKey,
-    settings.tbKey,
-    settings.adKey,
-    settings.pmKey,
-    settings.dlKey,
-    auth.authKey,
-  ]);
+  }, []);
 
-  const canSubmit = summary.trim().length >= 6 && diag && !submitting;
+  const canSubmit = summary.trim().length >= 6 && (!files.length || filesReviewed) && !submitting;
 
   const submit = async () => {
-    if (!canSubmit || !diag) return;
+    if (!canSubmit) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -92,7 +67,7 @@ export function BugReportPanel() {
           consentCredit,
           files,
         },
-        diag,
+        includeDiagnostics ? diag : null,
       );
       setSubmittedId(id);
     } catch (e) {
@@ -109,6 +84,8 @@ export function BugReportPanel() {
     setExpected("");
     setActual("");
     setFiles([]);
+    setFilesReviewed(false);
+    setIncludeDiagnostics(false);
     setError(null);
     setSubmittedId(null);
   };
@@ -170,6 +147,14 @@ export function BugReportPanel() {
         subtitle={t("Drop a clip of the bug if you can. A 5-second screen recording usually says more than five paragraphs.")}
       >
         <FileDrop files={files} onChange={setFiles} />
+        {files.length > 0 && (
+          <label className="mt-3 flex items-start gap-2.5 rounded-xl border border-edge-soft bg-canvas/30 px-4 py-3">
+            <input type="checkbox" checked={filesReviewed} onChange={(event) => setFilesReviewed(event.target.checked)} className="mt-0.5 h-4 w-4 accent-ink" />
+            <span className="text-[12.5px] leading-relaxed text-ink-muted">
+              {t("I reviewed these files. They contain no watched content, stream source, addon, local path, account secret, IP address or Stremio session.")}
+            </span>
+          </label>
+        )}
       </Section>
 
       <Section
@@ -221,7 +206,7 @@ export function BugReportPanel() {
 
       <ContributorCard />
 
-      <DiagnosticsCard diag={diag} />
+      <DiagnosticsCard diag={diag} included={includeDiagnostics} onIncludedChange={setIncludeDiagnostics} />
 
       {error && (
         <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-[12.5px] text-danger">
@@ -231,7 +216,7 @@ export function BugReportPanel() {
 
       <div className="sticky bottom-3 z-10 flex items-center justify-end gap-3 rounded-2xl border border-edge-soft bg-elevated/85 px-5 py-3 backdrop-blur">
         <span className="me-auto text-[11.5px] text-ink-subtle">
-          {canSubmit ? t("Ready to send") : summary.trim().length < 6 ? t("Summary needs at least 6 characters") : t("Preparing…")}
+          {canSubmit ? t("Ready to send") : summary.trim().length < 6 ? t("Summary needs at least 6 characters") : files.length > 0 && !filesReviewed ? t("Review attached files before sending") : t("Preparing…")}
         </span>
         <button
           type="button"

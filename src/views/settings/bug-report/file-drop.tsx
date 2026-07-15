@@ -1,5 +1,5 @@
 import { ImagePlus, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
@@ -120,7 +120,8 @@ export function FileDrop({
 }
 
 function FilePreview({ file }: { file: File }) {
-  const url = URL.createObjectURL(file);
+  const url = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
   if (file.type.startsWith("video/")) {
     return (
       <video

@@ -24,6 +24,18 @@ describe("redactSensitive", () => {
     expect(out).not.toContain("0123456789abcdef");
   });
 
+  it("strips VAYRA deep links, invite codes, IP addresses and local paths", () => {
+    const out = redactSensitive(
+      "open vayra://cira/invite#t=CIRA-AB12-CD34-EF56-GH78-JK90 from 192.168.1.4 at /Users/eybo/Movies/a.mkv",
+    );
+    expect(out).not.toContain("AB12-CD34");
+    expect(out).not.toContain("192.168.1.4");
+    expect(out).not.toContain("/Users/eybo");
+    expect(out).toContain("[url]");
+    expect(out).toContain("[ip]");
+    expect(out).toContain("[path]");
+  });
+
   it("leaves ordinary error text intact", () => {
     expect(redactSensitive("TypeError: cannot read property x of undefined")).toBe(
       "TypeError: cannot read property x of undefined",
