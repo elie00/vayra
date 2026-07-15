@@ -105,19 +105,9 @@ export async function submitErrorReport(args: {
   fd.set("ua", "");
   fd.set("viewport", "");
   fd.set("locale", "");
-  fd.set(
-    "diagnostics",
-    JSON.stringify({
-      source: "auto-error-report",
-      code: args.code,
-      title: safeTitle,
-      detail: args.detail ? redactSensitive(args.detail) : null,
-      recentErrors: getRecentErrors().slice(-20).map(({ msg, src }) => ({
-        msg: redactSensitive(msg),
-        ...(src ? { src: redactSensitive(src) } : {}),
-      })),
-    }),
-  );
+  // The error overlay is a voluntary report, but its local diagnostic buffer
+  // is still a separate consent boundary. Never attach it implicitly.
+  fd.set("diagnostics", "{}");
   const res = await fetch(`${ENDPOINT}/v1/reports`, { method: "POST", body: fd });
   if (!res.ok) {
     const j = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
