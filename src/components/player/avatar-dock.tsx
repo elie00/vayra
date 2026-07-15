@@ -38,11 +38,30 @@ export function AvatarDock({
   corner?: PanelCorner;
   hidden?: boolean;
 }) {
+  const t = useT();
   if (hidden) return null;
   if (participants.length === 0) return null;
   const lastPauserId =
     syncState && !syncState.playing && syncState.updatedBy ? syncState.updatedBy : null;
   const alignRight = corner === "top-right" || corner === "bottom-right";
+
+  // Screen-reader announcement of meaningful presence/sync changes. Rendered in
+  // a visually-hidden aria-live region so it is spoken without relying on the
+  // hover-only visual label (which is display:none to assistive tech).
+  const statusSummary = participants
+    .filter((p) => p.id !== selfId)
+    .map((p) => {
+      const lastSeen = presenceMap.get(p.id) ?? p.joinedAt;
+      const stale = now - lastSeen > ACTIVE_THRESHOLD_MS;
+      const loc = participantLocations.get(p.id);
+      const leftPlayer = !!loc && loc.kind !== "player";
+      if (leftPlayer) return `${p.name}${t(" · left the video")}`;
+      if (p.id === lastPauserId) return `${p.name}${t(" · paused")}`;
+      if (stale) return `${p.name}${t(" · away")}`;
+      return null;
+    })
+    .filter(Boolean)
+    .join(", ");
 
   const attention = participants.some((p) => {
     if (p.id === selfId) return false;
@@ -60,6 +79,9 @@ export function AvatarDock({
         surface ? "pointer-events-none opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {statusSummary}
+      </div>
       <div className={`flex flex-col gap-1.5 rounded-2xl border border-white/12 bg-black/35 px-2.5 py-2 backdrop-blur-xl shadow-[0_18px_50px_-22px_rgba(0,0,0,0.65)] ${alignRight ? "items-end" : "items-start"}`}>
         {participants.map((p) => {
           const lastSeen = p.id === selfId ? now : presenceMap.get(p.id) ?? p.joinedAt;
@@ -108,9 +130,19 @@ function Avatar({
     ? selfColor ?? nameColor(participant.name)
     : participant.color ?? nameColor(participant.name);
   const dim = isPauser || isStale || leftPlayer || !participant.ready;
+  const statusLabel =
+    participant.name +
+    (isSelf ? t(" · you") : "") +
+    (isHost ? t(" · host") : "") +
+    (isStale ? t(" · away") : "") +
+    (isPauser ? t(" · paused") : "") +
+    (leftPlayer ? t(" · left the video") : "");
   return (
     <div className="group/avatar pointer-events-auto flex items-center gap-2">
-      <span className="hidden whitespace-nowrap rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md group-hover/avatar:inline-flex">
+      <span
+        aria-hidden
+        className="hidden whitespace-nowrap rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md group-hover/avatar:inline-flex"
+      >
         {participant.name}
         {isSelf && t(" · you")}
         {isHost && t(" · host")}
@@ -119,7 +151,8 @@ function Avatar({
         {leftPlayer && t(" · left the video")}
       </span>
       <span
-        aria-label={participant.name}
+        role="img"
+        aria-label={statusLabel}
         className={`relative inline-flex h-9 w-9 transition-[opacity,filter] duration-500 ${
           dim ? "opacity-55 grayscale-[40%]" : "opacity-100"
         }`}
