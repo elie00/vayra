@@ -76,12 +76,24 @@ export interface VeyaWiringDeps {
   clientId: string;
   getLocalPosition: () => number;
   now: () => number;
+  // Opaque fingerprint of the media THIS client is playing. When both this and
+  // the incoming intent carry a key and they differ, the intent is ignored so a
+  // peer on a different title/episode is never force-synced (same-media guard).
+  getLocalContentKey?: () => string | null;
 }
 
 // Framework-free core. Subscribes to the transport, applies remote intent to the
 // bridge behind the anti-loop suppress window, and exposes the outgoing sender.
 export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
   const { transport, getBridge, clientId, getLocalPosition, now } = deps;
+  const getLocalContentKey = deps.getLocalContentKey ?? (() => null);
+
+  // Same-media guard: drop an incoming intent only when BOTH ends declare a
+  // content key and they differ. Absent keys fail open (unchanged behavior).
+  const mediaMismatch = (incoming?: string): boolean => {
+    const local = getLocalContentKey();
+    return local != null && incoming != null && local !== incoming;
+  };
 
   // Anti-loop state shared between the incoming-apply and outgoing-send seams.
   let applyingOrigin: SyncOrigin = "local";
@@ -106,6 +118,7 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
   const applyCommand = (cmd: PlaybackCommand): void => {
     const b = getBridge();
     if (!b) return;
+    if (mediaMismatch(cmd.contentKey)) return;
     // Dedup: a corr we already applied must not be re-applied (race guard).
     if (lru.has(cmd.corr)) return;
     lru.add(cmd.corr);
@@ -124,6 +137,7 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
   const applyState = (state: PlaybackState): void => {
     const b = getBridge();
     if (!b) return;
+    if (mediaMismatch(state.contentKey)) return;
     if (!shouldApply(state.rev, appliedRev)) return;
     appliedRev = state.rev;
 
@@ -166,6 +180,7 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
   const applySnapshot = (state: PlaybackState): void => {
     const b = getBridge();
     if (!b) return;
+    if (mediaMismatch(state.contentKey)) return;
     if (!shouldApply(state.rev, appliedRev)) return;
     appliedRev = state.rev;
     const nowMs = now();
@@ -193,7 +208,14 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
     if (!shouldForward("local", applyingOrigin, nowMs, suppressUntil)) return;
     applyingOrigin = "local";
     const corr: CorrId = { member: clientId, seq: ++seq };
-    const base = { origin: "local" as const, corr, rev: 0, atMs: intent.atMs };
+    const localKey = getLocalContentKey();
+    const base = {
+      origin: "local" as const,
+      corr,
+      rev: 0,
+      atMs: intent.atMs,
+      ...(localKey != null ? { contentKey: localKey } : {}),
+    };
     let cmd: PlaybackCommand;
     if (intent.action === "seek") {
       cmd = { action: "seek", positionSeconds: intent.positionSeconds, ...base };
@@ -225,6 +247,7 @@ export function useVeyaSync(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
   clientId: string;
   getLocalPosition: () => number;
+  getLocalContentKey?: () => string | null;
   now?: () => number;
 }): { send: VeyaSender } {
   const { inRoom, transport, bridgeRef, clientId, getLocalPosition } = params;
@@ -237,6 +260,8 @@ export function useVeyaSync(params: {
   nowRef.current = now;
   const getPosRef = useRef(getLocalPosition);
   getPosRef.current = getLocalPosition;
+  const getKeyRef = useRef(params.getLocalContentKey);
+  getKeyRef.current = params.getLocalContentKey;
   const clientIdRef = useRef(clientId);
   clientIdRef.current = clientId;
 
@@ -250,6 +275,7 @@ export function useVeyaSync(params: {
       getBridge: () => bridgeRef.current,
       clientId: clientIdRef.current,
       getLocalPosition: () => getPosRef.current(),
+      getLocalContentKey: () => getKeyRef.current?.() ?? null,
       now: () => nowRef.current(),
     });
     wiringRef.current = wiring;

@@ -64,6 +64,10 @@ function finiteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function contentKeyOk(value: unknown): value is string | undefined {
+  return value === undefined || (typeof value === "string" && value.length > 0 && value.length <= 64);
+}
+
 function parseCommand(value: unknown): PlaybackCommand | null {
   if (!isRecord(value) || !isRecord(value.corr)) return null;
   const action = value.action;
@@ -75,13 +79,15 @@ function parseCommand(value: unknown): PlaybackCommand | null {
     !Number.isSafeInteger(value.corr.seq) ||
     !finiteNumber(value.rev) ||
     value.rev < 0 ||
-    !finiteNumber(value.atMs)
+    !finiteNumber(value.atMs) ||
+    !contentKeyOk(value.contentKey)
   ) return null;
   const base = {
     origin: "remote" as const,
     corr: { member: value.corr.member, seq: value.corr.seq as number },
     rev: value.rev,
     atMs: value.atMs,
+    ...(typeof value.contentKey === "string" ? { contentKey: value.contentKey } : {}),
   };
   if (action === "seek") {
     if (!finiteNumber(value.positionSeconds) || value.positionSeconds < 0) return null;
@@ -109,7 +115,8 @@ function parseState(value: unknown): PlaybackState | null {
     value.updatedBy.length > 128 ||
     typeof value.hostClientId !== "string" ||
     value.hostClientId.length === 0 ||
-    value.hostClientId.length > 128
+    value.hostClientId.length > 128 ||
+    !contentKeyOk(value.contentKey)
   ) return null;
   return {
     rev: value.rev as number,
@@ -121,6 +128,7 @@ function parseState(value: unknown): PlaybackState | null {
     anchorAtMs: value.anchorAtMs,
     updatedBy: value.updatedBy,
     hostClientId: value.hostClientId,
+    ...(typeof value.contentKey === "string" ? { contentKey: value.contentKey } : {}),
   };
 }
 
