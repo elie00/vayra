@@ -21,23 +21,8 @@ export type BugReportInput = {
 
 export type Diagnostics = {
   appVersion: string;
-  os: string;
-  osVersion: string;
-  ua: string;
-  viewport: string;
-  locale: string;
-  flags: {
-    playerEngine: string;
-    region: string;
-    hasTmdb: boolean;
-    hasRpdb: boolean;
-    hasTrakt: boolean;
-    hasStremio: boolean;
-    debridCount: number;
-    addonCount: number;
-    iptvCount: number;
-  };
-  recentErrors: Array<{ ts: number; msg: string; src?: string }>;
+  channel: "private-beta";
+  recentErrors: Array<{ msg: string; src?: string }>;
 };
 
 const ERR_BUFFER: Array<{ ts: number; msg: string; src?: string }> = [];
@@ -49,9 +34,13 @@ let installed = false;
 // before it is buffered or shipped in a report.
 export function redactSensitive(input: string): string {
   return input
-    .replace(/\b(?:https?|wss?|ftp|file|stremio):\/\/\S+/gi, "[url]")
+    .replace(/\b(?:https?|wss?|ftp|file|stremio|vayra|harbor):\/\/\S+/gi, "[url]")
     .replace(/\bmagnet:\?\S+/gi, "[magnet]")
-    .replace(/\b[0-9a-f]{16,}\b/gi, "[hash]");
+    .replace(/\b(?:CIRA|CIRAG|VARA)(?:-[0-9A-Z]{4}){3,6}\b/gi, "[invite]")
+    .replace(/\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b/g, "[token]")
+    .replace(/\b[0-9a-f]{16,}\b/gi, "[hash]")
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[ip]")
+    .replace(/(?:[A-Za-z]:\\|\/(?:Users|home|var|tmp)\/)[^\s)\]}]+/g, "[path]");
 }
 
 export function installBugReportErrorCapture() {
@@ -76,49 +65,14 @@ export function getRecentErrors() {
   return ERR_BUFFER.slice();
 }
 
-export async function collectDiagnostics(opts: {
-  playerEngine: string;
-  region: string;
-  hasTmdb: boolean;
-  hasRpdb: boolean;
-  hasTrakt: boolean;
-  hasStremio: boolean;
-  debridCount: number;
-  addonCount: number;
-  iptvCount: number;
-}): Promise<Diagnostics> {
-  let osName = "unknown";
-  let osVer = "";
-  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-  if (/windows nt 10/i.test(ua)) osName = "Windows";
-  else if (/mac os x/i.test(ua)) osName = "macOS";
-  else if (/linux/i.test(ua)) osName = "Linux";
-  try {
-    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-      const modName = "@tauri-apps/plugin-os";
-      const osMod: { platform?: () => Promise<string>; version?: () => Promise<string> } =
-        await import(/* @vite-ignore */ modName).catch(() => ({}));
-      try {
-        osName = (await osMod.platform?.()) || osName;
-      } catch {}
-      try {
-        osVer = (await osMod.version?.()) || "";
-      } catch {}
-    }
-  } catch {}
-
-  const viewport =
-    typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "";
-
+export async function collectDiagnostics(): Promise<Diagnostics> {
   return {
     appVersion: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev",
-    os: osName,
-    osVersion: osVer,
-    ua,
-    viewport,
-    locale: typeof navigator !== "undefined" ? navigator.language : "",
-    flags: opts,
-    recentErrors: getRecentErrors().slice(-20),
+    channel: "private-beta",
+    recentErrors: getRecentErrors().slice(-20).map(({ msg, src }) => ({
+      msg: redactSensitive(msg),
+      ...(src ? { src: redactSensitive(src) } : {}),
+    })),
   };
 }
 
@@ -128,20 +82,6 @@ export async function submitErrorReport(args: {
   message: string;
   detail?: string;
 }): Promise<{ id: string }> {
-  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-  const winMatch = ua.match(/Windows NT ([\d.]+)/i);
-  const macMatch = ua.match(/Mac OS X ([\d_.]+)/i);
-  let os = "unknown";
-  let osVersion = "";
-  if (winMatch) {
-    os = "Windows";
-    osVersion = winMatch[1] === "10.0" ? "10/11" : winMatch[1];
-  } else if (macMatch) {
-    os = "macOS";
-    osVersion = macMatch[1].replace(/_/g, ".");
-  } else if (/linux/i.test(ua)) {
-    os = "Linux";
-  }
   const safeTitle = redactSensitive(args.title);
   const safeMessage = redactSensitive(args.message);
   const summary = `[${args.code}] ${safeTitle}: ${safeMessage}`.slice(0, 240);
@@ -156,14 +96,11 @@ export async function submitErrorReport(args: {
   fd.set("reporter_contact", "");
   fd.set("consent_credit", "0");
   fd.set("app_version", typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev");
-  fd.set("os", os);
-  fd.set("os_version", osVersion);
-  fd.set("ua", ua);
-  fd.set(
-    "viewport",
-    typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "",
-  );
-  fd.set("locale", typeof navigator !== "undefined" ? navigator.language : "");
+  fd.set("os", "");
+  fd.set("os_version", "");
+  fd.set("ua", "");
+  fd.set("viewport", "");
+  fd.set("locale", "");
   fd.set(
     "diagnostics",
     JSON.stringify({
@@ -171,11 +108,10 @@ export async function submitErrorReport(args: {
       code: args.code,
       title: safeTitle,
       detail: args.detail ? redactSensitive(args.detail) : null,
-      path:
-        typeof window !== "undefined"
-          ? redactSensitive(window.location.pathname + window.location.hash)
-          : "",
-      recentErrors: getRecentErrors().slice(-20),
+      recentErrors: getRecentErrors().slice(-20).map(({ msg, src }) => ({
+        msg: redactSensitive(msg),
+        ...(src ? { src: redactSensitive(src) } : {}),
+      })),
     }),
   );
   const res = await fetch(`${ENDPOINT}/v1/reports`, { method: "POST", body: fd });
@@ -188,26 +124,29 @@ export async function submitErrorReport(args: {
 
 export async function submitBugReport(
   input: BugReportInput,
-  diag: Diagnostics,
+  diag: Diagnostics | null,
 ): Promise<{ id: string }> {
   const fd = new FormData();
-  fd.set("summary", input.summary);
+  fd.set("summary", redactSensitive(input.summary));
   fd.set("severity", input.severity);
-  fd.set("steps", input.steps);
-  fd.set("expected", input.expected);
-  fd.set("actual", input.actual);
+  fd.set("steps", redactSensitive(input.steps));
+  fd.set("expected", redactSensitive(input.expected));
+  fd.set("actual", redactSensitive(input.actual));
   fd.set("reporter_name", input.reporterName);
   fd.set("reporter_github", input.reporterGithub);
   fd.set("reporter_contact", input.reporterContact);
   fd.set("consent_credit", input.consentCredit ? "1" : "0");
-  fd.set("app_version", diag.appVersion);
-  fd.set("os", diag.os);
-  fd.set("os_version", diag.osVersion);
-  fd.set("ua", diag.ua);
-  fd.set("viewport", diag.viewport);
-  fd.set("locale", diag.locale);
-  fd.set("diagnostics", JSON.stringify({ flags: diag.flags, recentErrors: diag.recentErrors }));
-  for (const f of input.files) fd.append("files", f, f.name);
+  fd.set("app_version", diag?.appVersion ?? "not-shared");
+  fd.set("os", "");
+  fd.set("os_version", "");
+  fd.set("ua", "");
+  fd.set("viewport", "");
+  fd.set("locale", "");
+  fd.set("diagnostics", diag ? JSON.stringify(diag) : "{}");
+  for (const [index, file] of input.files.entries()) {
+    const extension = file.name.match(/\.(png|jpe?g|webp|gif|mp4|webm|mov)$/i)?.[1]?.toLowerCase();
+    fd.append("files", file, `attachment-${index + 1}${extension ? `.${extension}` : ""}`);
+  }
 
   const res = await fetch(`${ENDPOINT}/v1/reports`, { method: "POST", body: fd });
   if (!res.ok) {
