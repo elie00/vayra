@@ -1,9 +1,11 @@
 import { ciraDe } from "./cira";
 import { lumaDe } from "./luma";
+import { privateBetaDe } from "./private-beta";
 
 const de: Record<string, string> = {
   ...ciraDe,
   ...lumaDe,
+  ...privateBetaDe,
   "nav.home": "Start",
   "nav.discover": "Entdecken",
   "nav.catalogs": "Kataloge",

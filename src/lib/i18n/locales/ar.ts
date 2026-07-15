@@ -19,10 +19,12 @@ import sync from "./ar/sync";
 import together from "./ar/together";
 import { ciraAr } from "./cira";
 import { lumaAr } from "./luma";
+import { privateBetaAr } from "./private-beta";
 
 const ar: Record<string, string> = {
   ...ciraAr,
   ...lumaAr,
+  ...privateBetaAr,
   ...chrome,
   ...common,
   ...catalog,

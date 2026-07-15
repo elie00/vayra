@@ -18,6 +18,7 @@ import sync from "./fr/sync";
 import together from "./fr/together";
 import { ciraFr } from "./cira";
 import { lumaFr } from "./luma";
+import { privateBetaFr } from "./private-beta";
 import coverage from "./fr/coverage";
 import sweep from "./fr/sweep";
 import sweep2 from "./fr/sweep2";
@@ -25,6 +26,7 @@ import sweep2 from "./fr/sweep2";
 const fr: Record<string, string> = {
   ...ciraFr,
   ...lumaFr,
+  ...privateBetaFr,
   ...coverage,
   ...sweep,
   ...sweep2,
