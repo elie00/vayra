@@ -100,7 +100,11 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
   let suppressUntil = 0;
   let seq = 0;
   let appliedRev = 0;
-  let softNudgeActive = false;
+  // Authority (host) playback rate; the base the guest plays at between nudges.
+  // Without tracking it a host at 1.5×/2× would seek-storm the guest forever.
+  let authorityRate = 1;
+  // What we last pushed to the bridge, so we never re-issue an identical rate.
+  let appliedRate = 1;
   const lru = new CorrLru(64);
 
   const openSuppress = (): void => {
@@ -108,10 +112,15 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
     suppressUntil = now() + VEYA_SUPPRESS_MS;
   };
 
+  const setBridgeRate = (rate: number): void => {
+    if (rate === appliedRate) return;
+    appliedRate = rate;
+    getBridge()?.setRate(rate);
+  };
+
+  // Drop any soft nudge and return to the authority's base rate.
   const clearSoftNudge = (): void => {
-    if (!softNudgeActive) return;
-    softNudgeActive = false;
-    getBridge()?.setRate(1);
+    setBridgeRate(authorityRate);
   };
 
   // Apply an incoming remote command to the bridge behind the suppress window.
@@ -140,6 +149,7 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
     if (mediaMismatch(state.contentKey)) return;
     if (!shouldApply(state.rev, appliedRev)) return;
     appliedRev = state.rev;
+    authorityRate = state.rate > 0 ? state.rate : 1;
 
     const nowMs = now();
     const target = extrapolateTarget(state, nowMs);
@@ -157,10 +167,9 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
     if (action === "none") {
       clearSoftNudge();
     } else if (action === "soft") {
-      // Soft rate-nudge toward the target instead of a hard jump.
+      // Soft rate-nudge around the authority's base rate instead of a hard jump.
       const ahead = localPos > target;
-      softNudgeActive = true;
-      b.setRate(ahead ? 1 / SOFT_NUDGE_RATE : SOFT_NUDGE_RATE);
+      setBridgeRate(authorityRate * (ahead ? 1 / SOFT_NUDGE_RATE : SOFT_NUDGE_RATE));
     } else {
       // Hard: jump to the extrapolated authority position.
       clearSoftNudge();
@@ -183,6 +192,7 @@ export function createVeyaWiring(deps: VeyaWiringDeps): VeyaWiring {
     if (mediaMismatch(state.contentKey)) return;
     if (!shouldApply(state.rev, appliedRev)) return;
     appliedRev = state.rev;
+    authorityRate = state.rate > 0 ? state.rate : 1;
     const nowMs = now();
     applyingOrigin = "remote";
     suppressUntil = nowMs + VEYA_SUPPRESS_MS;
