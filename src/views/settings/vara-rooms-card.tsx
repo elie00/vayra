@@ -18,14 +18,24 @@ function varaErrorText(t: ReturnType<typeof useT>, error: unknown): string {
     case "PROFILE_REQUIRED":
       return t("Choose your CIRA handle first.");
     case "VARA_ROOM_FULL":
-      return t("This VARA is full.");
+      return t("This VARA is full. Ask the host to make room or create another private room.");
     case "VARA_INVITE_UNAVAILABLE":
     case "INVALID_VARA_INVITE":
-      return t("This VARA invitation is no longer available.");
+      return t("This VARA invitation expired or was revoked. Ask for a fresh short-lived link.");
     case "VARA_ROOM_UNAVAILABLE":
-      return t("This VARA is no longer available.");
+      return t("This VARA expired or was closed. Ask an accepted relation to create a new room.");
+    case "VARA_ROOM_FORBIDDEN":
+      return t("You no longer have access to this VARA. Return to CIRA; VAYRA does not reveal whether a block or removal caused it.");
+    case "VARA_NOT_HOST":
+      return t("Only the current VEYA host can do that. Ask the host to transfer control first.");
+    case "VARA_HOST_LEASE_ACTIVE":
+      return t("Another VEYA host is still active. Wait briefly or ask them to transfer control.");
+    case "VARA_HOST_TRANSFER_UNAVAILABLE":
+      return t("Host transfer is no longer available. Refresh the room and choose an active member.");
     case "VARA_SYNC_CONFLICT":
-      return t("Leave the current local watch session before entering a remote VARA.");
+      return t("Leave the current local watch session before entering a remote VARA, then try again.");
+    case "GROUP_ARCHIVED":
+      return t("This group is archived. Ask an owner or admin to restore it, or create a direct VARA.");
     case "RATE_LIMITED":
       return t("Too many attempts. Wait a moment and try again.");
     case "NETWORK":
@@ -177,6 +187,12 @@ export function VaraRoomsCard() {
       subtitle={t("Watch together with your CIRA through private, synchronized rooms.")}
     >
       <div className="flex flex-col gap-4">
+        <div className="rounded-2xl border border-edge-soft bg-elevated/55 p-4" role="note">
+          <p className="text-[13.5px] font-medium text-ink">{t("Before entering a Watch Room")}</p>
+          <p className="mt-1 text-[12.5px] leading-5 text-ink-muted">
+            {t("Each participant opens their own content locally. VAYRA never shares the stream, source or addon; VEYA synchronizes only play, pause and seeking.")}
+          </p>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-4">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-elevated text-ink">
