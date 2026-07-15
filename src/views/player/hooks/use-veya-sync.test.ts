@@ -252,6 +252,27 @@ describe("createVeyaWiring — drift reconciliation", () => {
     wiring.dispose();
   });
 
+  it("applies the authority playback rate so a 2x host doesn't seek-storm (N1)", () => {
+    const clock = fakeClock();
+    const { bridge, calls } = mockBridge();
+    const t = new FakeTransport({ clientId: "guest", name: "G" });
+    t.join("r");
+    const wiring = createVeyaWiring({
+      transport: t,
+      getBridge: () => bridge,
+      clientId: "guest",
+      getLocalPosition: () => 100, // far behind => hard drift
+      now: clock.now,
+    });
+
+    // Host at 2x, paused at 105 => hard drift => seek AND adopt the 2x base rate.
+    t._deliverState(state({ rev: 2, playing: false, positionSec: 105, rate: 2 }));
+    expect(calls.seek).toHaveBeenCalledWith(105);
+    expect(calls.setRate).toHaveBeenCalledWith(2);
+
+    wiring.dispose();
+  });
+
   it("host buffering suspends correction (no seek, no rate change)", () => {
     const clock = fakeClock();
     const { bridge, calls } = mockBridge();
