@@ -17,6 +17,7 @@ import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import { isMobileDevice } from "@/lib/platform";
 import { useFocusTrap } from "@/lib/use-focus-trap";
+import { useVayraAccount } from "@/lib/vayra-account";
 import { Section, ToggleRow, useSettingsActiveContext } from "./shared";
 import { CiraGroupsCard } from "./cira-groups-card";
 import { VaraRoomsCard } from "./vara-rooms-card";
@@ -907,7 +908,9 @@ function InviteDecisionModal() {
 export function CiraPanel() {
   const t = useT();
   const { status, me, refresh } = useCira();
+  const { loading: accountLoading, refreshAccess } = useVayraAccount();
   const { setActive } = useSettingsActiveContext();
+  const [accessNotice, setAccessNotice] = useState<string | null>(null);
 
   if (status === "signedOut") {
     return (
@@ -943,9 +946,32 @@ export function CiraPanel() {
   if (status === "restricted") {
     return (
       <Section title={t("CIRA private beta")} subtitle={t("Your close circle on VAYRA.")}>
-        <p className="text-[13px] text-ink-subtle">
-          {t("CIRA is currently limited to invited beta accounts.")}
-        </p>
+        <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+          <p className="text-[13px] text-ink-subtle">
+            {t("CIRA is currently limited to invited beta accounts.")}
+          </p>
+          <p className="text-[12px] text-ink-subtle">
+            {t("Already invited? Refresh your access after the operator enables your account.")}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <SmallButton
+              label={accountLoading ? t("Refreshing…") : t("Refresh beta access")}
+              tone="primary"
+              disabled={accountLoading}
+              onClick={() => {
+                setAccessNotice(null);
+                void refreshAccess()
+                  .then((granted) => {
+                    if (!granted) {
+                      setAccessNotice(t("Access is not enabled for this account yet."));
+                    }
+                  })
+                  .catch(() => setAccessNotice(t("Access could not be refreshed. Try again.")));
+              }}
+            />
+            {accessNotice ? <InlineNotice text={accessNotice} tone="error" /> : null}
+          </div>
+        </div>
       </Section>
     );
   }
