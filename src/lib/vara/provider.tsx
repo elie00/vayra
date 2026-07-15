@@ -167,6 +167,32 @@ export function VaraProvider({ children }: { children: ReactNode }) {
     else transport.join(activeRoom.id);
   }, [activeRoom, transport, syncConflict]);
 
+  // TTL expiry has no server sweeper and fires no `changed` ping, so a dead room
+  // would linger in the list as "joinable". Prune expired rooms from local state
+  // when their earliest expiry elapses (client-only, no server call).
+  useEffect(() => {
+    const all = activeRoom ? [...rooms, activeRoom] : rooms;
+    const times = all
+      .map((room) => Date.parse(room.expiresAt))
+      .filter((ms) => Number.isFinite(ms));
+    if (times.length === 0) return;
+    const soonest = Math.min(...times);
+    const prune = () => {
+      const now = Date.now();
+      setRooms((prev) => {
+        const next = prev.filter((room) => Date.parse(room.expiresAt) > now);
+        // Preserve the reference when nothing expired, else the effect (keyed on
+        // `rooms`) would re-run on every tick and loop.
+        return next.length === prev.length ? prev : next;
+      });
+      setActiveRoom((current) =>
+        current && Date.parse(current.expiresAt) <= now ? null : current,
+      );
+    };
+    const id = window.setTimeout(prune, Math.max(0, soonest - Date.now()) + 500);
+    return () => window.clearTimeout(id);
+  }, [rooms, activeRoom]);
+
   const leaveActiveRoom = useCallback(async () => {
     const room = activeRoom;
     if (!room || !transport || !repo) return;
