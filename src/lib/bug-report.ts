@@ -65,6 +65,10 @@ export function getRecentErrors() {
   return ERR_BUFFER.slice();
 }
 
+export function clearRecentErrors(): void {
+  ERR_BUFFER.length = 0;
+}
+
 export async function collectDiagnostics(): Promise<Diagnostics> {
   return {
     appVersion: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev",

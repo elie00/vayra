@@ -2,6 +2,7 @@ import { AtSign, Github, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
+  clearRecentErrors,
   collectDiagnostics,
   installBugReportErrorCapture,
   submitBugReport,
@@ -32,7 +33,6 @@ export function BugReportPanel() {
   const [error, setError] = useState<string | null>(null);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [diag, setDiag] = useState<Diagnostics | null>(null);
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
   const [filesReviewed, setFilesReviewed] = useState(false);
 
   useEffect(() => installBugReportErrorCapture(), []);
@@ -67,7 +67,7 @@ export function BugReportPanel() {
           consentCredit,
           files,
         },
-        includeDiagnostics ? diag : null,
+        null,
       );
       setSubmittedId(id);
     } catch (e) {
@@ -85,7 +85,6 @@ export function BugReportPanel() {
     setActual("");
     setFiles([]);
     setFilesReviewed(false);
-    setIncludeDiagnostics(false);
     setError(null);
     setSubmittedId(null);
   };
@@ -206,7 +205,13 @@ export function BugReportPanel() {
 
       <ContributorCard />
 
-      <DiagnosticsCard diag={diag} included={includeDiagnostics} onIncludedChange={setIncludeDiagnostics} />
+      <DiagnosticsCard
+        diag={diag}
+        onClear={() => {
+          clearRecentErrors();
+          void collectDiagnostics().then(setDiag);
+        }}
+      />
 
       {error && (
         <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-[12.5px] text-danger">

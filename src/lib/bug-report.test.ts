@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { redactSensitive } from "./bug-report";
+import { clearRecentErrors, getRecentErrors, redactSensitive } from "./bug-report";
 
 describe("redactSensitive", () => {
+  it("lets the user erase the in-memory diagnostic", () => {
+    clearRecentErrors();
+    expect(getRecentErrors()).toEqual([]);
+  });
+
   it("strips http(s) URLs (addon transport, subtitle, stream)", () => {
     const out = redactSensitive(
       "failed https://stremio.torbox.app/deadbeefcafebabe/manifest.json loading",
