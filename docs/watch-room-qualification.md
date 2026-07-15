@@ -61,10 +61,13 @@ gaté par le moteur) : **différence de plateforme connue**, non corrigée à l'
 correctif propre exige une détection cast native + matériel de test — consignée, à trancher
 avec observation.
 
-## En attente de ton accord explicite
+## Décidé + implémenté
 
-- **ARCHIVE-ROOM-GAP** : décision produit (évincer les rooms lancées avant archivage, ou
-  accepter la limite bornée au TTL).
+- **ARCHIVE-ROOM-GAP** (`20260715120000`, non déployée) : décision « geler pour de vrai » —
+  `vara_rooms.group_id` persisté et `cira_archive_group` ferme les rooms ouvertes du groupe.
+  Ordre de verrous groupe→room conservé, aucune donnée durable détruite, rooms hors-groupe
+  intactes. Test d'éviction dans `20_group_archive.sql`. **À déployer** avec le protocole
+  habituel (préflight → backup → dry-run → apply → audit) sur ton feu vert.
 
 ## Décisions produit ouvertes
 

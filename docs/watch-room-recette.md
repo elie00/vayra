@@ -76,7 +76,7 @@ cast activable seulement sur **mpv** (CAST-2) ; seek exo = aller-retour natif ~5
 | E4 | **Expiration** d'invitation | Invitation non acceptable après TTL | | | | |
 | E5 | **Archiver** le groupe | Collections en **lecture seule** : Edit/Delete/Add/Move/Remove absents (ACCESS-1 corrigé) ; « Démarrer une VARA » désactivé | | | | |
 | E6 | Restaurer le groupe | Actions réapparaissent | | | | |
-| E7 | Room VARA lancée **avant** archivage | ⚠️ Continue jusqu'au TTL (**ARCHIVE-ROOM-GAP**, décision produit) — consigner | | | | |
+| E7 | Room VARA lancée **avant** archivage | La room du groupe est **fermée** à l'archivage (clients → VARA_ROOM_UNAVAILABLE, teardown propre) ; une room hors-groupe reste ouverte (ARCHIVE-ROOM-GAP corrigé) | | | | |
 
 ## F. Collections v2 : policy & délégation (scénario 7)
 
