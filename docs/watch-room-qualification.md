@@ -1,15 +1,17 @@
 # VAYRA Watch Room — rapport de qualification
 
 **Date :** 14 juillet 2026 (UTC) · **Branche :** `main` · **Base :** `f601b314`
-**Correctifs de ce lot :** `6ed008e`, `0da7b9d`, `87acecb`, `5a7f505`
+**Correctifs de ce lot :** `6ed008e`, `0da7b9d`, `87acecb`, `5a7f505`, `3cbd355`, `2025fb5`
 
 ## Verdict
 
-> ## 🟠 BLOQUÉ pour la bêta élargie — audit et durcissement sûr : PASS
+> ## 🟡 PASS AVEC LIMITES — reste la seule observation sur appareils réels
 >
-> Le lot d'audit et les corrections de stabilité **réalisables sans matériel** sont
-> **complets et verts** (tsc, ESLint, 378 tests, build prod). La sortie en bêta élargie
-> reste **bloquée** sur deux conditions que l'assistant ne peut pas lever seul.
+> Tous les défauts de sévérité **bloquante** sont **corrigés** (dont VEYA-B2 et A11Y-2). Le
+> code est vert (tsc, ESLint, **386 tests**, build prod). Il ne reste, avant de déclarer une
+> plateforme validée, que **l'observation sur de vrais binaires et appareils** — un geste
+> humain (deux comptes / deux appareils / cast), **prévu ultérieurement** par le responsable.
+> Aucune plateforme ne peut être déclarée validée avant cette observation (INTERDIT respecté).
 
 ## Ce qui est PASS (fait et vérifié statiquement)
 
@@ -23,17 +25,17 @@
 | Tempête de seek au snapshot (VEYA-B1) | ✅ corrigée + test (`87acecb`) |
 | Collections archivées en lecture seule (ACCESS-1) | ✅ corrigée (`5a7f505`) |
 | Annonces lecteur d'écran lobby + erreurs (A11Y-1/4) | ✅ corrigées (`5a7f505`) |
+| Garde même-média VEYA (VEYA-B2) | ✅ corrigée + 8 tests (`3cbd355`) |
+| Présence/statut participants annoncés (A11Y-2) | ✅ corrigée (`2025fb5`) |
 | Modèle d'accès serveur (blocage/exclusion/expiration/archive, Collections v2) | ✅ sain à l'audit (null-safe, verrou unique, rotation topic) |
 | Confidentialité du fil VEYA | ✅ propre (position seule) |
 | Suite de tests / build | ✅ 378 passés (flake `local-transport` connu, hors périmètre) ; build 7,65 s |
 
-## Conditions bloquantes avant bêta élargie
+## Condition restante avant bêta élargie
 
-### Condition 1 — corriger deux défauts de sévérité bloquante restants
-- **VEYA-B2** (garde même-média) : fix filaire prêt et documenté (audit §3). Exige une
-  modification du protocole de sync → à appliquer **puis observer** sur deux appareils.
-- **A11Y-2** (présence/statut des participants non annoncés) : `aria-live` + libellés +
-  dock focusable.
+### ~~Condition 1 — deux blocages restants~~ ✅ LEVÉE
+VEYA-B2 (`3cbd355`) et A11Y-2 (`2025fb5`) sont corrigés et couverts par tests. Il ne reste
+aucun défaut de sévérité bloquante non corrigé.
 
 ### Condition 2 — observation réelle (gate de la DÉFINITION DE DONE)
 La DoD impose l'observation « sur de vrais binaires et appareils, pas seulement par tests ».
