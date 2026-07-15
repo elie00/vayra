@@ -44,6 +44,16 @@ const ERR_BUFFER: Array<{ ts: number; msg: string; src?: string }> = [];
 const MAX_ERRORS = 50;
 let installed = false;
 
+// Privacy gate: nothing leaving the device may carry a URL, source, addon URL,
+// magnet/info-hash or embedded credential. Scrub those from any free-text field
+// before it is buffered or shipped in a report.
+export function redactSensitive(input: string): string {
+  return input
+    .replace(/\b(?:https?|wss?|ftp|file|stremio):\/\/\S+/gi, "[url]")
+    .replace(/\bmagnet:\?\S+/gi, "[magnet]")
+    .replace(/\b[0-9a-f]{16,}\b/gi, "[hash]");
+}
+
 export function installBugReportErrorCapture() {
   if (installed || typeof window === "undefined") return;
   installed = true;
@@ -58,7 +68,7 @@ export function installBugReportErrorCapture() {
 }
 
 function push(msg: string, src?: string) {
-  ERR_BUFFER.push({ ts: Date.now(), msg: msg.slice(0, 600), src });
+  ERR_BUFFER.push({ ts: Date.now(), msg: redactSensitive(msg).slice(0, 600), src });
   while (ERR_BUFFER.length > MAX_ERRORS) ERR_BUFFER.shift();
 }
 
@@ -132,13 +142,15 @@ export async function submitErrorReport(args: {
   } else if (/linux/i.test(ua)) {
     os = "Linux";
   }
-  const summary = `[${args.code}] ${args.title}: ${args.message}`.slice(0, 240);
+  const safeTitle = redactSensitive(args.title);
+  const safeMessage = redactSensitive(args.message);
+  const summary = `[${args.code}] ${safeTitle}: ${safeMessage}`.slice(0, 240);
   const fd = new FormData();
   fd.set("summary", summary);
   fd.set("severity", "high");
   fd.set("steps", "");
   fd.set("expected", "");
-  fd.set("actual", args.message);
+  fd.set("actual", safeMessage);
   fd.set("reporter_name", "");
   fd.set("reporter_github", "");
   fd.set("reporter_contact", "");
@@ -157,11 +169,11 @@ export async function submitErrorReport(args: {
     JSON.stringify({
       source: "auto-error-report",
       code: args.code,
-      title: args.title,
-      detail: args.detail || null,
+      title: safeTitle,
+      detail: args.detail ? redactSensitive(args.detail) : null,
       path:
         typeof window !== "undefined"
-          ? window.location.pathname + window.location.hash
+          ? redactSensitive(window.location.pathname + window.location.hash)
           : "",
       recentErrors: getRecentErrors().slice(-20),
     }),
