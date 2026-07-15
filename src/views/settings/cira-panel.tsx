@@ -22,6 +22,7 @@ import { Section, ToggleRow, useSettingsActiveContext } from "./shared";
 import { CiraGroupsCard } from "./cira-groups-card";
 import { VaraRoomsCard } from "./vara-rooms-card";
 import { PrivateBetaGuideCard } from "./private-beta-guide-card";
+import { PrivateBetaHelpCard } from "./private-beta-help-card";
 
 function errorText(t: ReturnType<typeof useT>, err: unknown): string {
   const code = err instanceof CiraError ? err.code : "UNKNOWN";
@@ -1009,6 +1010,7 @@ export function CiraPanel() {
           <FriendsCard />
           <CiraGroupsCard />
           <VaraRoomsCard />
+          <PrivateBetaHelpCard />
           <InviteCard />
           <PresenceCard />
           <BlocksCard />
