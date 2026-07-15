@@ -5,15 +5,14 @@ import { useT } from "@/lib/i18n";
 
 export function DiagnosticsCard({
   diag,
-  included,
-  onIncludedChange,
+  onClear,
 }: {
   diag: Diagnostics | null;
-  included: boolean;
-  onIncludedChange: (included: boolean) => void;
+  onClear: () => void;
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   if (!diag) {
     return (
       <div className="flex items-center gap-2 rounded-xl border border-edge-soft/55 bg-canvas/30 px-4 py-3 text-[12px] text-ink-subtle">
@@ -43,17 +42,34 @@ export function DiagnosticsCard({
       {open && (
         <div className="border-t border-edge-soft/55 px-4 py-3">
           <p className="mb-2 text-[11.5px] leading-relaxed text-ink-muted">
-            {t("Nothing is included unless you opt in. It contains only the app version, beta channel and redacted error messages.")}
+            {t("This diagnostic stays in memory on this device. It contains only the app version, beta channel and redacted error messages, and is never attached automatically.")}
           </p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11.5px] font-mono text-ink-muted">
             <Pair k={t("App")} v={diag.appVersion} />
             <Pair k={t("Channel")} v={diag.channel} />
             <Pair k={t("Recent errors")} v={String(diag.recentErrors.length)} />
           </div>
-          <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-edge-soft px-3 py-2.5">
-            <input type="checkbox" checked={included} onChange={(event) => onIncludedChange(event.target.checked)} className="mt-0.5 h-4 w-4 accent-ink" />
-            <span className="text-[11.5px] leading-relaxed text-ink-muted">{t("Include this diagnostic with my report.")}</span>
-          </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(JSON.stringify(diag, null, 2)).then(() => {
+                  setCopied(true);
+                  window.setTimeout(() => setCopied(false), 1400);
+                });
+              }}
+              className="h-9 rounded-lg border border-edge-soft px-3 text-[11.5px] font-medium text-ink-muted hover:text-ink"
+            >
+              {copied ? t("Copied") : t("Copy local diagnostic")}
+            </button>
+            <button
+              type="button"
+              onClick={onClear}
+              className="h-9 rounded-lg border border-edge-soft px-3 text-[11.5px] font-medium text-ink-subtle hover:border-danger/40 hover:text-danger"
+            >
+              {t("Clear local diagnostic")}
+            </button>
+          </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-subtle">{t("Never included: content, source, URL, addon, info-hash, progress, library, local path, IP address, device details or Stremio session.")}</p>
         </div>
       )}
