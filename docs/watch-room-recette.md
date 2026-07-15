@@ -45,7 +45,7 @@ cast activable seulement sur **mpv** (CAST-2) ; seek exo = aller-retour natif ~5
 | B5 | Invité **seek** localement | Se propage à la room (contrôle symétrique — VEYA-N3) | | | | |
 | B6 | **Arrivée tardive** : C3 rejoint en cours | C3 se cale via snapshot ; **C1/C2 ne bougent PAS** (VEYA-B1 corrigé) | | | | |
 | B7 | Hôte passe en **2×** | ⚠️ Attendu défaillant : invité seek-storm (**VEYA-N1 non corrigé**) — consigner FAIL | | | | |
-| B8 | **Bascule de média** : un invité ouvre un autre titre en restant dans la room | ⚠️ Attendu défaillant : invité happé sur le mauvais contenu (**VEYA-B2 non corrigé**) — consigner FAIL | | | | |
+| B8 | **Bascule de média** : un invité ouvre un autre titre en restant dans la room | L'invité n'est **plus** happé sur le mauvais contenu (VEYA-B2 corrigé) ; un invité sur le même contenu synchronise toujours | | | | |
 | B9 | **Transfert d'hôte** : l'hôte quitte, un invité revendique | Nouvel hôte ; vérifier reprise du heartbeat (risque VEYA-N2, jusqu'à ~15 s) | | | | |
 
 ## C. Réseau & résilience (scénario 4)

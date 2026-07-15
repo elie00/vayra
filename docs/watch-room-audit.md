@@ -96,8 +96,8 @@ accord), **ACCORD** (changement de protocole de confidentialité → attend ton 
 | **ACCESS-1** | majeur | 7 | Groupe archivé : `CollectionDetail` affichait encore Edit/Delete/Add/Move/Remove (serveur rejette, mais UI ≠ vérité serveur) | ✅ CORRIGÉ (`5a7f505`) |
 | **A11Y-1** | bloquant | 9 | `waiting-for-room` : statut de synchro/prêt sans `aria-live` → lecteur d'écran jamais informé | ✅ CORRIGÉ (`5a7f505`) |
 | **A11Y-4** | majeur | 9 | `cira-collections` : erreurs réseau rendues en texte nu sans `role=alert` | ✅ CORRIGÉ (`5a7f505`) |
-| **VEYA-B2** | bloquant | 3-4 | **Aucune garde même-média** sur le fil VEYA : l'état/commandes de l'hôte s'appliquent à un invité affichant un **autre** contenu (le chemin `together` a `isDifferentMedia`, pas VEYA) | ⏳ DOCUMENTÉ — changement de protocole filaire, exige observation 2 appareils (voir §3) |
-| **A11Y-2** | bloquant | 9 | `avatar-dock` : présence/statut (hôte en pause, absent, non prêt) **visuel uniquement**, label en `display:none` au survol, dock non focusable | ⏳ DOCUMENTÉ (fix : `aria-live` + libellés, dock focusable) |
+| **VEYA-B2** | bloquant | 3-4 | **Aucune garde même-média** sur le fil VEYA : l'état/commandes de l'hôte s'appliquent à un invité affichant un **autre** contenu (le chemin `together` a `isDifferentMedia`, pas VEYA) | ✅ CORRIGÉ (`3cbd355`) — `contentKey` opaque (hash non identifiant) sur le fil, drop si divergence. **À observer** sur 2 appareils (bascule de média) |
+| **A11Y-2** | bloquant | 9 | `avatar-dock` : présence/statut (hôte en pause, absent, non prêt) **visuel uniquement**, label en `display:none` au survol, dock non focusable | ✅ CORRIGÉ (`2025fb5`) — `aria-label` composé par avatar + région `aria-live` |
 
 ### 2.2 Majeurs non bloquants (à traiter avant élargissement)
 
@@ -131,15 +131,17 @@ accord), **ACCORD** (changement de protocole de confidentialité → attend ton 
 
 ---
 
-## 3. Fix prêt pour VEYA-B2 (à appliquer pendant la session d'observation)
+## 3. VEYA-B2 — corrigé (`3cbd355`)
 
-Ajouter au type filaire un **`contentKey` non identifiant** (hash court de `metaId+saison+épisode`, pas l'id brut — préserve la propriété « aucun contenu sur le fil ») :
-1. `types.ts` : `PlaybackState`/`PlaybackCommand` gagnent `contentKey?: string`.
-2. `websocket-transport.ts` `parseState`/`parseCommand` : valider `contentKey` optionnel (string ≤ 64).
-3. Publication : l'hôte stampe `contentKey` du média courant ; l'émetteur de commande aussi.
-4. Application (`use-veya-sync.ts`) : si `contentKey` local **et** entrant présents et différents → **drop** (ne pas seek/play/pause). Miroir de `isDifferentMedia()` du chemin `together`.
-5. Test : un invité sur `contentKey` B ignore un heartbeat/commande `contentKey` A.
+Implémenté comme prévu : `contentKey` opaque non identifiant (hash FNV-1a de
+`metaId|saison|épisode`, jamais l'id brut) ajouté au type filaire (optionnel, validé
+strictement s'il est présent), estampillé par l'hôte (heartbeat) et par l'émetteur de
+commande, comparé à l'application — **drop** si les deux clés sont présentes et diffèrent,
+fail-open sinon (rétro-compatible). Fichiers : `content-key.ts`, `types.ts`,
+`websocket-transport.ts` (parseurs), `use-veya-sync.ts`, `player.tsx`. Couvert par 8 tests
+(déterminisme du hash + garde command/state/snapshot + fail-open).
 
-Non appliqué maintenant car le protocole de sync doit être **observé sur deux appareils**
-(arrivée tardive + bascule de média) avant modification — cf. « observe before editing » et
-ta DÉFINITION DE DONE (« sur de vrais binaires et appareils »).
+**Reste à faire (humain)** : observer sur **deux appareils** qu'un invité qui bascule vers un
+autre titre/épisode n'est plus happé, et qu'un invité sur le même contenu synchronise
+toujours. La logique est verrouillée par les tests ; l'observation valide le comportement
+réel (cf. ta DÉFINITION DE DONE).
