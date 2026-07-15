@@ -103,19 +103,19 @@ accord), **ACCORD** (changement de protocole de confidentialité → attend ton 
 
 | ID | Scénario | Défaut | Statut |
 | --- | --- | --- | --- |
-| **VARA-2** | 7 | Expiration TTL non reflétée dans la liste des rooms (aucun sweeper serveur, aucun broadcast) → room morte affichée « joignable » | ⏳ DOCUMENTÉ — fix : timer client dans `VaraProvider` prunant sur `expiresAt` |
-| **VEYA-N1** | 3 | `applyState` n'applique jamais `setRate(state.rate)` → à 1,5×/2× l'hôte, les invités **seek-storment** toutes les ~2 s sans converger | ⏳ DOCUMENTÉ — fix : appliquer la vitesse de l'autorité avant la décision de dérive (nécessite `getLocalRate`) |
-| **VEYA-N2** | 3 | Transfert d'hôte : le nouveau publieur ne heartbeat pas tant que le provider n'a pas rafraîchi `hostId` → trou d'autorité (voire permanent si pas de ping `changed`) | ⏳ DOCUMENTÉ — fix : piloter la boucle de publication depuis `transport.isAuthority()`, pas l'état provider |
-| **CAST-1** | 5 | Fenêtre de **connexion cast** (`pendingCastDevice` posé, `castDevice` encore null) : ni VEYA ni room-sync gatés → commandes distantes pilotent le bridge local pendant l'attente | ⏳ DOCUMENTÉ — exige matériel cast ; fix : gater sur `pendingCastDevice` |
-| **CAST-2** | 8 | Bouton cast gaté par le **moteur** (mpv=activé, html5/exo=désactivé) et non par le support natif → cast inatteignable pour le live/IPTV forcé sur html5 | ⏳ DOCUMENTÉ (différence de plateforme, à documenter au minimum) |
-| **A11Y-3** | 9 | `together-modal` déclare `aria-modal` sans **piège de focus** ni restauration | ⏳ DOCUMENTÉ (`use-focus-trap` existe, non branché) |
-| **A11Y-5** | 9 | `chat-overlay` : messages entrants sans `aria-live`, toast accessible supprimé en lecture | ⏳ DOCUMENTÉ |
+| **VARA-2** | 7 | Expiration TTL non reflétée dans la liste des rooms (aucun sweeper serveur, aucun broadcast) → room morte affichée « joignable » | ✅ CORRIGÉ (`d6c81c0`) — timer client dans `VaraProvider` prunant sur `expiresAt` (référence préservée) |
+| **VEYA-N1** | 3 | `applyState` n'applique jamais `setRate(state.rate)` → à 1,5×/2× l'hôte, les invités **seek-storment** toutes les ~2 s sans converger | ✅ CORRIGÉ (`e8ed6e0`) — vitesse de l'autorité suivie et appliquée + nudge relatif |
+| **VEYA-N2** | 3 | Transfert d'hôte : le nouveau publieur ne heartbeat pas tant que le provider n'a pas rafraîchi `hostId` → trou d'autorité (voire permanent si pas de ping `changed`) | ✅ CORRIGÉ (`890e06d`) — heartbeat sur tous les clients, garde `isAuthorityClient` du transport |
+| **CAST-1** | 5 | Fenêtre de **connexion cast** (`pendingCastDevice` posé, `castDevice` encore null) : ni VEYA ni room-sync gatés → commandes distantes pilotent le bridge local pendant l'attente | ✅ CORRIGÉ (`890e06d`) — `castEngagedRef` (pending‖active) suspend VEYA + room-sync pendant la connexion. **À observer** (matériel cast) |
+| **CAST-2** | 8 | Bouton cast gaté par le **moteur** (mpv=activé, html5/exo=désactivé) et non par le support natif → cast inatteignable pour le live/IPTV forcé sur html5 | ⏳ DOCUMENTÉ — **différence de plateforme connue** ; le corriger proprement exige une détection cast native indépendante du moteur + matériel de test. Consigné, non modifié à l'aveugle |
+| **A11Y-3** | 9 | `together-modal` déclare `aria-modal` sans **piège de focus** ni restauration | ✅ CORRIGÉ (`c7457b0`) — `useFocusTrap` branché sur le variant popover |
+| **A11Y-5** | 9 | `chat-overlay` : messages entrants sans `aria-live`, toast accessible supprimé en lecture | ✅ CORRIGÉ (`c7457b0`) — flux de messages en région `role="log" aria-live` |
 
-### 2.3 Attendant ton accord explicite (protocole de confidentialité)
+### 2.3 Protocole de confidentialité — corrigé sur accord
 
-| ID | Défaut | Proposition |
+| ID | Défaut | Statut |
 | --- | --- | --- |
-| **PRIV-BUGREPORT** | `submitErrorReport` expédie hors-appareil (`bugs.harbor.site`) les erreurs globales (600 c ×20) + la stack complète, sans liste blanche ni redaction. **Déclenché par l'utilisateur** (bouton « signaler »), donc consenti, mais le contenu peut porter URL/id de contenu | Ajouter une **liste blanche** de champs + scrubbing des URL/clés (`transportUrl`, chemins de fichier) avant envoi. **Changement de protocole de confidentialité → j'attends ton accord explicite** avant de toucher `bug-report.ts` |
+| **PRIV-BUGREPORT** | `submitErrorReport` expédiait hors-appareil (`bugs.harbor.site`) les erreurs globales + la stack sans redaction | ✅ CORRIGÉ sur accord explicite (`3b2c3c2`) — `redactSensitive` scrubbe URL (http/stremio/file/ws), magnet et longs jetons hex (info-hash / clé API) à la capture **et** à l'envoi ; 4 tests |
 
 ### 2.4 Constats de frontière / limites connues (non-défauts, à consigner)
 

@@ -53,15 +53,16 @@ entier ; en particulier les scénarios qui ne peuvent PASSER que par observation
 Tant que la recette n'est pas exécutée et consignée, **aucune plateforme ne peut être
 déclarée validée** (ton propre INTERDIT).
 
-## Majeurs non bloquants à traiter avant/pendant l'élargissement
+## Majeurs non bloquants — corrigés
 
-VARA-2 (room morte listée), VEYA-N1 (vitesse hôte non appliquée), VEYA-N2 (trou d'autorité
-au transfert), CAST-1/2, A11Y-3/5. Fixes documentés dans l'audit §2.2.
+VARA-2 (`d6c81c0`), VEYA-N1 (`e8ed6e0`), VEYA-N2 + CAST-1 (`890e06d`), A11Y-3 + A11Y-5
+(`c7457b0`), et PRIV-BUGREPORT (`3b2c3c2`, sur accord). Il reste **CAST-2** (bouton cast
+gaté par le moteur) : **différence de plateforme connue**, non corrigée à l'aveugle car son
+correctif propre exige une détection cast native + matériel de test — consignée, à trancher
+avec observation.
 
 ## En attente de ton accord explicite
 
-- **PRIV-BUGREPORT** : durcir le payload de signalement (liste blanche + scrubbing) —
-  changement de **protocole de confidentialité**, non touché sans ton feu vert.
 - **ARCHIVE-ROOM-GAP** : décision produit (évincer les rooms lancées avant archivage, ou
   accepter la limite bornée au TTL).
 
