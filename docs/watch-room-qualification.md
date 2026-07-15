@@ -39,10 +39,19 @@ aucun défaut de sévérité bloquante non corrigé.
 
 ### Condition 2 — observation réelle (gate de la DÉFINITION DE DONE)
 La DoD impose l'observation « sur de vrais binaires et appareils, pas seulement par tests ».
-**Aucun scénario n'a été observé sur binaire réel** ici — je n'ai ni les deux comptes/deux
-appareils, ni le récepteur cast, ni l'Android/ExoPlayer, et je ne crée pas de compte ni ne
-saisis de mot de passe (contraintes de sécurité). Exécuter la **matrice de recette** en
-entier ; en particulier les scénarios qui ne peuvent PASSER que par observation :
+
+**Observations mono-instance déjà effectuées** (15 juil. 2026, via Claude Chrome, build
+`vite` sur `localhost:5173`, session invité) :
+- Boot de l'app livrée : accueil complet rendu, **aucune fuite en console** au démarrage
+  (torbox/moviehash/transportUrl/subtitle) — PASS.
+- **A11Y-3 / recette G5** (popover VARA) : `role="dialog"` + `aria-modal="true"` +
+  `aria-label`, **focus déplacé dans le dialog à l'ouverture**, **Tab** dernier→premier et
+  **Shift+Tab** premier→dernier vérifiés en exécution — PASS.
+
+**Reste à observer** — je n'ai ni les deux comptes/deux appareils, ni le récepteur cast, ni
+l'Android/ExoPlayer, et je ne crée pas de compte ni ne saisis de mot de passe (contraintes de
+sécurité). Exécuter la **matrice de recette** ; en particulier les scénarios qui ne peuvent
+PASSER que par observation :
 
 - **3-4** (play/pause/seek, arrivée tardive, reconnexion, transfert d'hôte) — 2 appareils.
 - **5** (suspension VEYA sous cast, fenêtre de connexion cast — CAST-1) — récepteur réel.
@@ -56,15 +65,16 @@ déclarée validée** (ton propre INTERDIT).
 ## Majeurs non bloquants — corrigés
 
 VARA-2 (`d6c81c0`), VEYA-N1 (`e8ed6e0`), VEYA-N2 + CAST-1 (`890e06d`), A11Y-3 + A11Y-5
-(`c7457b0`), et PRIV-BUGREPORT (`3b2c3c2`, sur accord). Il reste **CAST-2** (bouton cast
-gaté par le moteur) : **différence de plateforme connue**, non corrigée à l'aveugle car son
-correctif propre exige une détection cast native + matériel de test — consignée, à trancher
-avec observation.
+(`c7457b0`), et PRIV-BUGREPORT (`3b2c3c2`, sur accord). **CAST-2** est **reclassé** :
+comportement intentionnel (le cast est une fonctionnalité du backend mpv, énoncée par le
+bouton lui-même), pas un défaut — l'élargir est une décision produit à valider avec matériel,
+pas une correction à l'aveugle.
 
 ## Décidé + implémenté
 
-- **ARCHIVE-ROOM-GAP** (`20260715120000`, non déployée) : décision « geler pour de vrai » —
-  `vara_rooms.group_id` persisté et `cira_archive_group` ferme les rooms ouvertes du groupe.
+- **ARCHIVE-ROOM-GAP** (`20260715120000`, **déployée** — cf. `deploiement-archive-room-gap.md`) :
+  décision « geler pour de vrai » — `vara_rooms.group_id` persisté et `cira_archive_group`
+  ferme les rooms ouvertes du groupe.
   Ordre de verrous groupe→room conservé, aucune donnée durable détruite, rooms hors-groupe
   intactes. Test d'éviction dans `20_group_archive.sql`. **À déployer** avec le protocole
   habituel (préflight → backup → dry-run → apply → audit) sur ton feu vert.
