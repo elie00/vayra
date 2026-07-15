@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -53,8 +54,18 @@ export function PrivateBetaLaunchProvider({ children }: { children: ReactNode })
   const eligible = status === "ready" && user?.app_metadata?.cira_beta === true;
   const [state, setState] = useState<PrivateBetaLaunchState>(() => readState(userId));
   const [open, setOpen] = useState(false);
+  const previousUserIdRef = useRef<string | null>(userId);
 
   useEffect(() => {
+    const previousUserId = previousUserIdRef.current;
+    if (previousUserId && previousUserId !== userId && typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(privateBetaLaunchStorageKey(previousUserId));
+      } catch {
+        // Best-effort privacy cleanup; the value contains completion flags only.
+      }
+    }
+    previousUserIdRef.current = userId;
     setState(readState(userId));
     setOpen(false);
   }, [userId]);
