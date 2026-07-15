@@ -110,6 +110,7 @@ type VayraAccountValue = {
   error: string | null;
   clearError: () => void;
   sendMagicLink: (email: string) => Promise<void>;
+  refreshAccess: () => Promise<boolean>;
   signOut: () => Promise<void>;
 };
 
@@ -229,6 +230,23 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, [client]);
 
+  const refreshAccess = useCallback(async () => {
+    if (!client) throw new Error("VAYRA email sign-in is not configured yet.");
+    setError(null);
+    setLoading(true);
+    try {
+      const { data, error: refreshError } = await client.auth.refreshSession();
+      if (refreshError) {
+        setError(refreshError.message);
+        throw refreshError;
+      }
+      setSession(data.session);
+      return data.session?.user.app_metadata?.cira_beta === true;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
   const value = useMemo<VayraAccountValue>(
     () => ({
       configured: supabaseConfigured,
@@ -238,9 +256,10 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       error,
       clearError: () => setError(null),
       sendMagicLink,
+      refreshAccess,
       signOut,
     }),
-    [error, loading, sendMagicLink, session, signOut],
+    [error, loading, refreshAccess, sendMagicLink, session, signOut],
   );
 
   return <VayraAccountContext.Provider value={value}>{children}</VayraAccountContext.Provider>;
