@@ -355,6 +355,69 @@ describe("createVeyaWiring — late-join snapshot", () => {
   });
 });
 
+describe("createVeyaWiring — same-media guard (B2)", () => {
+  function wiringOnMedia(localKey: string | null) {
+    const clock = fakeClock();
+    const { bridge, calls } = mockBridge();
+    const t = new FakeTransport({ clientId: "guest", name: "G" });
+    t.join("r");
+    const wiring = createVeyaWiring({
+      transport: t,
+      getBridge: () => bridge,
+      clientId: "guest",
+      getLocalPosition: () => 100,
+      getLocalContentKey: () => localKey,
+      now: clock.now,
+    });
+    return { t, calls, wiring };
+  }
+
+  it("drops a state heartbeat whose contentKey differs from the local media", () => {
+    const { t, calls, wiring } = wiringOnMedia("aaaa1111");
+    t._deliverState(state({ rev: 2, playing: false, positionSec: 900, contentKey: "bbbb2222" }));
+    expect(calls.seek).not.toHaveBeenCalled();
+    expect(calls.pause).not.toHaveBeenCalled();
+    wiring.dispose();
+  });
+
+  it("drops a command whose contentKey differs from the local media", () => {
+    const { t, calls, wiring } = wiringOnMedia("aaaa1111");
+    t._deliverCommand({
+      action: "seek", origin: "local", corr: { member: "host", seq: 1 },
+      rev: 0, atMs: 0, positionSeconds: 500, contentKey: "bbbb2222",
+    });
+    expect(calls.seek).not.toHaveBeenCalled();
+    wiring.dispose();
+  });
+
+  it("drops a snapshot whose contentKey differs from the local media", () => {
+    const { t, calls, wiring } = wiringOnMedia("aaaa1111");
+    t._deliverSnapshot(state({ rev: 9, playing: true, positionSec: 800, contentKey: "bbbb2222" }));
+    expect(calls.seek).not.toHaveBeenCalled();
+    wiring.dispose();
+  });
+
+  it("applies when contentKeys match", () => {
+    const { t, calls, wiring } = wiringOnMedia("aaaa1111");
+    t._deliverState(state({ rev: 2, playing: false, positionSec: 900, contentKey: "aaaa1111" }));
+    expect(calls.seek).toHaveBeenCalledWith(900);
+    wiring.dispose();
+  });
+
+  it("fails open when either side omits the key (back-compat)", () => {
+    // Local key present, incoming absent -> apply.
+    const a = wiringOnMedia("aaaa1111");
+    a.t._deliverState(state({ rev: 2, playing: false, positionSec: 900 }));
+    expect(a.calls.seek).toHaveBeenCalledWith(900);
+    a.wiring.dispose();
+    // Local key absent, incoming present -> apply.
+    const b = wiringOnMedia(null);
+    b.t._deliverState(state({ rev: 2, playing: false, positionSec: 700, contentKey: "bbbb2222" }));
+    expect(b.calls.seek).toHaveBeenCalledWith(700);
+    b.wiring.dispose();
+  });
+});
+
 describe("solo regression — inRoom=false wires nothing", () => {
   it("no transport is created/subscribed and the control path is untouched", () => {
     // A transport whose every method is a spy; the solo path must call NONE.

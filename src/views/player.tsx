@@ -59,6 +59,7 @@ import { useQueueAdvance } from "./player/hooks/use-queue-advance";
 import { usePipMode } from "./player/hooks/use-pip-mode";
 import { usePlaybackControls } from "./player/hooks/use-playback-controls";
 import { useVeyaSync } from "./player/hooks/use-veya-sync";
+import { contentKeyOf } from "@/lib/together/sync/content-key";
 import { usePlaybackPresence } from "./player/hooks/use-playback-presence";
 import { usePlayerExit } from "./player/hooks/use-player-exit";
 import { usePendingSeekApply } from "./player/hooks/use-pending-seek-apply";
@@ -521,12 +522,19 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     mediaKey: `${src.meta.id}|${src.episode?.season ?? ""}|${src.episode?.episode ?? ""}`,
   });
 
+  const localContentKey = contentKeyOf(
+    `${src.meta.id}|${src.episode?.season ?? ""}|${src.episode?.episode ?? ""}`,
+  );
+  const localContentKeyRef = useRef(localContentKey);
+  localContentKeyRef.current = localContentKey;
+
   const { send: sendRemoteVeya } = useVeyaSync({
     inRoom: remoteVeyaActive,
     transport: remoteVeyaTransport,
     bridgeRef,
     clientId,
     getLocalPosition: () => snapRef.current.positionSec,
+    getLocalContentKey: () => localContentKeyRef.current,
   });
 
   useEffect(() => {
@@ -544,6 +552,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
         anchorAtMs: Date.now(),
         updatedBy: clientId,
         hostClientId: clientId,
+        contentKey: localContentKeyRef.current,
       });
     };
     publish();

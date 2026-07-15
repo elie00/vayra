@@ -31,12 +31,16 @@ export interface PlaybackState {
   anchorAtMs: number; // Date.now() when positionSec sampled (for extrapolation)
   updatedBy: string; // clientId of author (host) — like SyncState.updatedBy
   hostClientId: string; // authority holder
+  // Opaque, non-identifying fingerprint of the author's current media (see
+  // content-key.ts). Optional for back-compat; when present on both ends and
+  // mismatched, the receiver ignores the intent (same-media guard).
+  contentKey?: string;
 }
 
 // Grounded in RoomCommand (protocol.ts:48-51). Adds origin + corr + rev.
 export type PlaybackCommand =
-  | { action: "play"; origin: SyncOrigin; corr: CorrId; rev: number; atMs: number }
-  | { action: "pause"; origin: SyncOrigin; corr: CorrId; rev: number; atMs: number }
+  | { action: "play"; origin: SyncOrigin; corr: CorrId; rev: number; atMs: number; contentKey?: string }
+  | { action: "pause"; origin: SyncOrigin; corr: CorrId; rev: number; atMs: number; contentKey?: string }
   | {
       action: "seek";
       origin: SyncOrigin;
@@ -44,6 +48,7 @@ export type PlaybackCommand =
       rev: number;
       atMs: number;
       positionSeconds: number;
+      contentKey?: string;
     };
 
 // Minimal member model (subset of Participant, protocol.ts:3-10).
