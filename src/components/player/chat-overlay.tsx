@@ -109,20 +109,22 @@ export function ChatOverlay({
         showStream ? "opacity-100" : "opacity-0"
       }`}
     >
-      {grouped.map(({ message, isContinuation }) => {
-        const isSelf = message.from === selfId;
-        const ident = isSelf ? selfIdentity : participants.find((p) => p.id === message.from);
-        return (
-          <Bubble
-            key={`${message.from}-${message.at}`}
-            message={message}
-            isSelf={isSelf}
-            isContinuation={isContinuation}
-            avatar={ident?.avatar ?? null}
-            color={ident?.color ?? null}
-          />
-        );
-      })}
+      <div className="flex flex-col" role="log" aria-live="polite" aria-relevant="additions">
+        {grouped.map(({ message, isContinuation }) => {
+          const isSelf = message.from === selfId;
+          const ident = isSelf ? selfIdentity : participants.find((p) => p.id === message.from);
+          return (
+            <Bubble
+              key={`${message.from}-${message.at}`}
+              message={message}
+              isSelf={isSelf}
+              isContinuation={isContinuation}
+              avatar={ident?.avatar ?? null}
+              color={ident?.color ?? null}
+            />
+          );
+        })}
+      </div>
       {composing ? (
         <form
           onSubmit={(e) => {

@@ -1,5 +1,6 @@
 import { Check, Copy, LogOut, MousePointer2, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import type { Meta } from "@/lib/cinemeta";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
@@ -35,6 +36,11 @@ export function TogetherPopover({
   const [draftName, setDraftName] = useState(displayName);
   const [copied, setCopied] = useState(false);
   const [view, setView] = useState<"default" | "link">("default");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // Anchored popover variant is a modal dialog: trap Tab and restore focus on
+  // close. The "sheet" variant lives inside the mobile bottom sheet which owns
+  // its own focus handling, so leave it alone.
+  useFocusTrap(dialogRef, variant !== "sheet");
 
   useEffect(() => {
     setDraftName(displayName);
@@ -109,6 +115,7 @@ export function TogetherPopover({
 
   return (
     <div
+      ref={dialogRef}
       role={variant === "sheet" ? undefined : "dialog"}
       aria-modal={variant === "sheet" ? undefined : "true"}
       aria-label={t("VARA")}
