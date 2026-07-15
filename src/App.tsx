@@ -59,6 +59,7 @@ import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider } from "@/lib/auth";
 import { VayraAccountProvider } from "@/lib/vayra-account";
+import { PrivateBetaLaunchProvider } from "@/lib/private-beta-launch-provider";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
 import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
@@ -259,6 +260,7 @@ export function App() {
             <TogetherProvider>
             <VaraProvider>
             <CiraProvider>
+            <PrivateBetaLaunchProvider>
               <ViewProvider>
                 <SearchProvider>
                 <DvrProvider>
@@ -317,6 +319,7 @@ export function App() {
                 </DvrProvider>
                 </SearchProvider>
               </ViewProvider>
+            </PrivateBetaLaunchProvider>
             </CiraProvider>
             </VaraProvider>
             </TogetherProvider>
