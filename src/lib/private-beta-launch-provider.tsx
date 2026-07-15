@@ -27,6 +27,7 @@ type PrivateBetaLaunchValue = {
   progress: PrivateBetaLaunchProgress;
   completedCount: number;
   openGuide: () => void;
+  closeGuide: () => void;
   dismissGuide: () => void;
   markRoomBriefingSeen: () => void;
   resetGuide: () => void;
@@ -98,6 +99,7 @@ export function PrivateBetaLaunchProvider({ children }: { children: ReactNode })
     setState((current) => ({ ...current, dismissed: false }));
     setOpen(true);
   }, []);
+  const closeGuide = useCallback(() => setOpen(false), []);
   const dismissGuide = useCallback(() => {
     setState((current) => ({ ...current, dismissed: true }));
     setOpen(false);
@@ -117,10 +119,11 @@ export function PrivateBetaLaunchProvider({ children }: { children: ReactNode })
     progress,
     completedCount: Object.values(progress).filter(Boolean).length,
     openGuide,
+    closeGuide,
     dismissGuide,
     markRoomBriefingSeen,
     resetGuide,
-  }), [dismissGuide, eligible, markRoomBriefingSeen, open, openGuide, progress, resetGuide, state]);
+  }), [closeGuide, dismissGuide, eligible, markRoomBriefingSeen, open, openGuide, progress, resetGuide, state]);
 
   return (
     <PrivateBetaLaunchContext.Provider value={value}>
