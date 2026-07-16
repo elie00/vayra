@@ -4,7 +4,8 @@
 insert into auth.users (id) values
   ('00000000-0000-4000-8000-0000000016a1'),
   ('00000000-0000-4000-8000-0000000016b2'),
-  ('00000000-0000-4000-8000-0000000016c3');
+  ('00000000-0000-4000-8000-0000000016c3'),
+  ('00000000-0000-4000-8000-0000000016d4');
 
 do $do$
 begin
@@ -14,6 +15,8 @@ begin
   perform public.cira_upsert_profile('f16_bob', 'Bob');
   perform test.login('00000000-0000-4000-8000-0000000016c3');
   perform public.cira_upsert_profile('f16_carol', 'Carol');
+  perform test.login('00000000-0000-4000-8000-0000000016d4');
+  perform public.cira_upsert_profile('f16_dave', 'Dave');
 end;
 $do$;
 
@@ -150,6 +153,46 @@ begin
   if exists (select 1 from public.vara_rooms where id = v_room)
      or exists (select 1 from public.vara_room_members where room_id = v_room) then
     raise exception 'TEST_FAILED: close retained room state';
+  end if;
+end;
+$do$;
+
+-- Expired-room GC is off the read path: vara_list_rooms neither returns nor
+-- deletes an expired room; private.vara_gc_expired_rooms() reaps it.
+do $do$
+declare
+  d uuid := '00000000-0000-4000-8000-0000000016d4';
+  r uuid;
+begin
+  perform test.login(d);
+  r := (public.vara_create_room(3600, 4)) ->> 'room_id';
+  perform test.logout();
+  -- Backdate created_at too so the expiry CHECK (expires_at > created_at) holds.
+  update public.vara_rooms
+  set created_at = now() - interval '2 hours', expires_at = now() - interval '1 hour'
+  where id = r;
+
+  -- list must not return the expired room...
+  perform test.login(d);
+  if exists (
+    select 1 from public.vara_list_rooms() as t(elem)
+    where (elem->>'room_id')::uuid = r
+  ) then
+    raise exception 'TEST_FAILED: expired room still listed';
+  end if;
+  perform test.logout();
+
+  -- ...but the read path must NOT have deleted it (GC is cron-only now).
+  if not exists (select 1 from public.vara_rooms where id = r) then
+    raise exception 'TEST_FAILED: vara_list_rooms deleted the expired room (GC leaked onto read path)';
+  end if;
+
+  -- the dedicated GC reaps it.
+  if private.vara_gc_expired_rooms() < 1 then
+    raise exception 'TEST_FAILED: gc reported nothing deleted';
+  end if;
+  if exists (select 1 from public.vara_rooms where id = r) then
+    raise exception 'TEST_FAILED: gc did not delete the expired room';
   end if;
 end;
 $do$;
