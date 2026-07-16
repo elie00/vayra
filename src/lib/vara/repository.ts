@@ -243,16 +243,24 @@ export function requireValidVaraInviteCode(code: string): string {
 }
 
 export function createVaraRepository(client: SupabaseClient): VaraRepository {
-  async function rpc(fn: string, args?: JsonRecord): Promise<unknown> {
+  // Resolves the session once, then runs the RPC, returning both the result and
+  // the caller's id so callers that need the uid (e.g. createLink) don't issue a
+  // second getSession.
+  async function rpcAs(fn: string, args?: JsonRecord): Promise<{ data: unknown; userId: string }> {
     const { data: authData } = await client.auth.getSession();
-    if (!authData.session?.user?.id) throw new VaraError("NOT_AUTHENTICATED");
+    const userId = authData.session?.user?.id;
+    if (!userId) throw new VaraError("NOT_AUTHENTICATED");
     const { data, error } = await client.rpc(fn, args);
     if (error) throw toVaraError(error);
     if (typeof data === "object" && data !== null && "error" in data) {
       const code = (data as JsonRecord).error;
       if (typeof code === "string") throw toVaraError({ message: code });
     }
-    return data;
+    return { data, userId };
+  }
+
+  async function rpc(fn: string, args?: JsonRecord): Promise<unknown> {
+    return (await rpcAs(fn, args)).data;
   }
 
   return {
@@ -336,15 +344,16 @@ export function createVaraRepository(client: SupabaseClient): VaraRepository {
     },
 
     async createLink(roomId, ttlSeconds, maxUses) {
-      const row = asRecord(await rpc("vara_create_room_link", {
+      const { data, userId } = await rpcAs("vara_create_room_link", {
         p_room_id: roomId,
         ...(ttlSeconds === undefined ? {} : { p_ttl_seconds: ttlSeconds }),
         ...(maxUses === undefined ? {} : { p_max_uses: maxUses }),
-      }));
+      });
+      const row = asRecord(data);
       const code = asString(row.code);
       return {
         id: asString(row.link_id),
-        creatorId: (await client.auth.getSession()).data.session?.user?.id ?? "",
+        creatorId: userId,
         code,
         url: `${LINK_PREFIX}${code}`,
         maxUses: asNumber(row.max_uses),
