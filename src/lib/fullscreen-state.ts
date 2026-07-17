@@ -146,16 +146,10 @@ export async function exitAnyFullscreen(): Promise<void> {
   if (typeof document !== "undefined" && document.fullscreenElement) {
     await document.exitFullscreen().catch(() => {});
   }
-  if (isTauri()) {
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const w = getCurrentWindow();
-      if (await w.isFullscreen().catch(() => false)) await w.setFullscreen(false).catch(() => {});
-    } catch {
-      /* ignore */
-    }
-  }
-  if (windowFullscreen) await exitWindowFullscreen();
+  // Toujours passer par window_fullscreen_exit (no-op hors fullscreen) : un
+  // setFullscreen(false) direct sautait la restauration de la géométrie
+  // sauvegardée et laissait la fenêtre sur son petit cadre pré-fullscreen.
+  await exitWindowFullscreen();
 }
 
 if (isTauri()) {
