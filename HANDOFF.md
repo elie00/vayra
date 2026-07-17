@@ -68,6 +68,17 @@
   supporté, pas de trigger `pull_request_target`, `pnpm/action-setup` lit
   toujours `packageManager`). Les v7 de checkout/setup-node (sorties < 1 mois)
   ont été volontairement évitées au profit des v6 éprouvées.
+- `e94c1e6` **fenêtre qui rétrécit en sortant de la lecture corrigée** : deux
+  défauts cumulés. (1) Le chemin Échap du player (`exitAnyFullscreen`)
+  appelait `setFullscreen(false)` directement, court-circuitant
+  `window_fullscreen_exit` et sa restauration de géométrie → routé via
+  `exitWindowFullscreen`. (2) `window_fullscreen_enter` dé-maximise avant le
+  fullscreen mais la sortie ne re-maximisait jamais, et sur macOS la
+  restauration de taille était appliquée pendant l'animation asynchrone de
+  sortie (avalée) → `was_maximized` mémorisé, attente de fin de transition,
+  re-maximisation avec retry. ⚠️ **À valider sur l'app buildée** (comportement
+  fenêtre non testable en unit) : fenêtre agrandie → vidéo → fullscreen → Échap
+  doit rendre la taille d'avant.
 
 ### 6. Packaging & docs
 - `d15f49f` `bundle.category/shortDescription/longDescription/homepage/publisher` (alimentent .desktop/AppStream Linux, deb/rpm, NSIS Windows, catégorie macOS).
