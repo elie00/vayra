@@ -4,14 +4,14 @@
 - **Repo** : `elie00/vayra` (autonome, détaché de `harborstremio` ; remote `origin`).
 - **Branche de référence** : `main`, poussée sur `origin`. Les anciennes branches de livraison ne doivent pas être assimilées à `main` sans comparaison Git.
 - **CI** : `ops/release-readiness` a été intégrée à `main` par `6014fed`, puis
-  la correction i18n `0e59332` a été poussée. Les runs `main`
-  [`29249715349`](https://github.com/elie00/vayra/actions/runs/29249715349),
-  [`29249715392`](https://github.com/elie00/vayra/actions/runs/29249715392) et
-  [`29249715406`](https://github.com/elie00/vayra/actions/runs/29249715406)
-  sont verts : frontend, deux builds Android debug, Clippy et tests Rust sur
-  macOS, Windows et Linux. Les placeholders de sidecars servent uniquement aux
-  contrôles statiques ; les builds de release continuent de télécharger les
-  binaires réels vérifiés.
+  la correction i18n `0e59332` a été poussée. Les placeholders de sidecars
+  servent uniquement aux contrôles statiques ; les builds de release
+  continuent de télécharger les binaires réels vérifiés. Depuis `d9f4df3`
+  (2026-07-17), les workflows tournent sur les majeures Node 24 des actions
+  (checkout v6, setup-node v6, setup-java v5, upload-artifact v6,
+  pnpm/action-setup v6) et `node-version: 24` ; les 5 workflows (frontend,
+  android-build, src-tauri, vayra-core, cira-db) sont verts sur ce commit,
+  sans plus aucun avertissement de dépréciation Node 20.
 - **Monorepo** : application à la racine, site public et fonctions Vercel sous `site/`. Vercel suit `elie00/vayra`, branche `main`, Root Directory `site`.
 - **Artefacts locaux** : `.claude/`, les assets Android générés et
   `tauri.properties` sont ignorés. L'architecture VARA/VEYA est versionnée dans
@@ -55,11 +55,35 @@
 - `04914f4` corrige deux emprunts superflus lors de l'initialisation de la
   fenêtre Windows, sans toucher au player.
 
-### 5. Packaging & docs
+### 5. Fiabilisation tests & CI Node 24 (session 2026-07-17)
+- `8e2ce73` **test flaky corrigé** : `local-transport.test.ts` échouait
+  aléatoirement quand toute la suite tournait en parallèle — son `flush()`
+  attendait 10 ms d'horloge murale, parfois insuffisant pour résoudre les
+  imports dynamiques mockés. Remplacé par 20 tours de boucle d'événements
+  (déterministe quelle que soit la charge). Suite frontend : 405/405 stable.
+- `d9f4df3` **CI migrée vers Node 24** : checkout v4→v6, setup-node v4→v6,
+  setup-java v4→v5, upload-artifact v4→v6, pnpm/action-setup v4→v6, et
+  `node-version` 20→24 (Node 20 EOL avril 2026). Notes de version vérifiées :
+  aucun changement cassant pour notre usage (`cache: pnpm` explicite toujours
+  supporté, pas de trigger `pull_request_target`, `pnpm/action-setup` lit
+  toujours `packageManager`). Les v7 de checkout/setup-node (sorties < 1 mois)
+  ont été volontairement évitées au profit des v6 éprouvées.
+
+### 6. Packaging & docs
 - `d15f49f` `bundle.category/shortDescription/longDescription/homepage/publisher` (alimentent .desktop/AppStream Linux, deb/rpm, NSIS Windows, catégorie macOS).
 - `5dc996d` / `2a036da` roadmap README mise à jour (platform hardening coché ; statut réel des items ouverts).
 
 ## Pièges à connaître (récurrents)
+- **PATH rustup obligatoire pour le wasm** : avec le PATH par défaut, `pnpm
+  build`/`pnpm core:wasm` utilisent le `rustc` Homebrew (`/opt/homebrew/bin`),
+  qui n'a pas la cible `wasm32-unknown-unknown`. Préfixer
+  `export PATH="$HOME/.cargo/bin:$PATH"` (comme pour Android).
+- **Cache Cargo pollué par l'ancien chemin `harbor/`** : tout
+  `src-tauri/target` antérieur au renommage `~/PycharmProjects/harbor` →
+  `~/PycharmProjects/vayra` contient des chemins absolus périmés et fait
+  échouer le build local (« failed to read plugin permissions …/harbor/… »)
+  alors que la CI est verte. Remède :
+  `cargo clean --manifest-path src-tauri/Cargo.toml`.
 - **Parité stubs mobiles** : toute commande de `generate_handler!` doit avoir un stub `mobile_stubs/<module>.rs`, sinon build Android `E0433`. Vérif rapide : `cargo check --target aarch64-linux-android --lib` (env NDK/CC requis).
 - **`.gitignore` global `lib/`** : masquait les nouveaux fichiers sous `src/lib/`. Résolu par `!/src/lib/` dans le `.gitignore` du repo (sinon `git add -f`).
 - **Cross-compile impossible depuis macOS** : le code `#[cfg(windows)]`/`#[cfg(linux)]` n'est PAS vérifié par `cargo check` hôte, et cross-check bute sur `libmpv2-sys` (besoin de mpv.lib/X11). **Seule la CI valide Windows/Linux.**
@@ -72,7 +96,9 @@
 - **More translations** : ouvert (ajouter d'autres langues au besoin).
 
 ## Build / vérif par plateforme
-- **Frontend** : `pnpm exec tsc -b && pnpm lint && pnpm test`.
+- **Frontend** : `pnpm exec tsc -b && pnpm lint && pnpm test`. Pour le build
+  complet (`pnpm build`), préfixer `export PATH="$HOME/.cargo/bin:$PATH"`
+  (cible wasm absente du rustc Homebrew).
 - **Rust desktop** : `cargo test --manifest-path src-tauri/Cargo.toml && cargo clippy --all-targets -- -D warnings`.
 - **Android** : `export PATH="$HOME/.cargo/bin:$PATH" ANDROID_HOME=… NDK_HOME=…/27.3.13750724 JAVA_HOME=/opt/homebrew/opt/openjdk@17` puis `pnpm tauri android build --target aarch64` (APK dans `gen/android/app/build/outputs/apk/universal/release/`).
 - **macOS** : `pnpm run tauri:build:macos` (build + bundle libmpv autonome).
