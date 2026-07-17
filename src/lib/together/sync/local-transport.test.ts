@@ -41,9 +41,13 @@ function emit(event: string, payload: unknown): void {
 }
 
 // The default bridge resolves two dynamic imports before invoke/listen fire, so
-// settle on a macrotask (microtask flushes are not enough).
+// settle on macrotasks (microtask flushes are not enough). Spin several
+// event-loop turns rather than a fixed wall-clock delay: under a loaded
+// full-suite run a single 10ms wait can race the dynamic imports (flake).
 async function flush(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 10));
+  for (let i = 0; i < 20; i++) {
+    await new Promise((r) => setTimeout(r, 0));
+  }
 }
 
 const sampleState: PlaybackState = {
