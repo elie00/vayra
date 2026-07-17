@@ -21,7 +21,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Flatpak tooling
         run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder appstream desktop-file-utils ostree
       - name: Configure Flathub
@@ -46,7 +46,7 @@ jobs:
         run: |
           ostree init --repo=.flatpak-work/validation-repo --mode=archive-z2
           flatpak build-import-bundle --update-appstream --no-update-summary .flatpak-work/validation-repo Harbor.flatpak
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Harbor-flatpak-x86_64
           path: Harbor.flatpak

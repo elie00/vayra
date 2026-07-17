@@ -25,7 +25,7 @@ jobs:
             bundle: deb,appimage
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Linux deps
         if: contains(matrix.platform.runner, 'ubuntu')
@@ -61,11 +61,11 @@ jobs:
             vayra-core
             src-tauri
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - name: Install JS deps
@@ -184,7 +184,7 @@ jobs:
 
       - name: Upload artifacts
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: vayra-${{ matrix.platform.name }}
           path: |
