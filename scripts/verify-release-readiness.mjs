@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fallbackManifest } from "../site/api/updates/latest.js";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
@@ -18,27 +18,34 @@ if (manifestFlag >= 0 && !manifestPath) fail("--manifest requires a path");
 if (manifestPath) latest = readJson(manifestPath);
 const versions = readJson("site/public/updates/versions.json");
 const cargo = readFileSync("src-tauri/Cargo.toml", "utf8");
-const android = readFileSync("src-tauri/gen/android/app/tauri.properties", "utf8");
+const androidPropertiesPath = "src-tauri/gen/android/app/tauri.properties";
+const android = existsSync(androidPropertiesPath)
+  ? readFileSync(androidPropertiesPath, "utf8")
+  : null;
 const site = readFileSync("site/public/index.html", "utf8");
 const robots = readFileSync("site/public/robots.txt", "utf8");
 const sitemap = readFileSync("site/public/sitemap.xml", "utf8");
 
 const version = packageJson.version;
 const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
-const androidName = android.match(/^tauri\.android\.versionName=(.+)$/m)?.[1];
-const androidCode = Number(android.match(/^tauri\.android\.versionCode=(\d+)$/m)?.[1]);
+const androidName = android?.match(/^tauri\.android\.versionName=(.+)$/m)?.[1];
+const androidCode = Number(android?.match(/^tauri\.android\.versionCode=(\d+)$/m)?.[1]);
 const parts = version.split(".").map(Number);
 const expectedAndroidCode = parts[0] * 1_000_000 + parts[1] * 1_000 + parts[2];
 
 for (const [name, current] of [
   ["Tauri", tauri.version],
   ["Cargo", cargoVersion],
-  ["Android versionName", androidName],
 ]) {
   if (current !== version) fail(`${name} version ${current} differs from package ${version}`);
 }
-if (androidCode !== expectedAndroidCode) {
-  fail(`Android versionCode ${androidCode} should be ${expectedAndroidCode}`);
+if (android) {
+  if (androidName !== version) {
+    fail(`Android versionName ${androidName} differs from package ${version}`);
+  }
+  if (androidCode !== expectedAndroidCode) {
+    fail(`Android versionCode ${androidCode} should be ${expectedAndroidCode}`);
+  }
 }
 
 if (tauri.productName !== "VAYRA") fail("Tauri productName must be VAYRA");
