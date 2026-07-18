@@ -2,6 +2,14 @@
 // Keys are the exact English source strings used as i18n keys.
 
 const coverage: Record<string, string> = {
+  "Delete VAYRA account": "Supprimer le compte VAYRA",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Supprime définitivement votre compte VAYRA et toutes les données cloud CIRA/VARA. LUMA, l’historique local et Stremio ne sont pas supprimés.",
+  "Delete account": "Supprimer le compte",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "Cette action est irréversible. Saisissez DELETE VAYRA pour confirmer la suppression définitive du compte distant.",
+  "Type DELETE VAYRA to confirm": "Saisissez DELETE VAYRA pour confirmer",
+  "Permanently delete": "Supprimer définitivement",
+  "Deleting…": "Suppression…",
+  "Account deletion failed. Please retry.": "La suppression du compte a échoué. Réessayez.",
   "+ Watchlist": "+ À voir",
   ", {hiddenCount} hidden": ", {hiddenCount} masqués",
   ", {n} unrepairable": ", {n} irréparables",

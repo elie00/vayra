@@ -27,6 +27,7 @@ export function AccountStub() {
     loading: vayraAccountLoading,
     user: vayraUser,
     signOut: signOutVayra,
+    deleteAccount: deleteVayraAccount,
   } = useVayraAccount();
   const { settings, update } = useSettings();
   const { displayName, setDisplayName } = useTogether();
@@ -51,6 +52,10 @@ export function AccountStub() {
   const [editingName, setEditingName] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePhrase, setDeletePhrase] = useState("");
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     setNameDraft(displayName);
@@ -223,6 +228,79 @@ export function AccountStub() {
           )}
         </div>
       </Section>
+
+      {vayraUser && (
+        <Section
+          title={t("Delete VAYRA account")}
+          subtitle={t("Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.")}
+        >
+          <div className="flex flex-col gap-3 rounded-2xl border border-danger/30 bg-danger/5 p-5">
+            {!deleteOpen ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteOpen(true);
+                }}
+                className="flex h-10 self-start items-center rounded-xl border border-danger/35 px-4 text-[12.5px] font-semibold text-danger transition-colors hover:bg-danger/10"
+              >
+                {t("Delete account")}
+              </button>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-[12.5px] leading-relaxed text-ink-muted">
+                  {t("This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.")}
+                </p>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+                    {t("Type DELETE VAYRA to confirm")}
+                  </span>
+                  <input
+                    value={deletePhrase}
+                    onChange={(event) => setDeletePhrase(event.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="h-10 rounded-xl border border-danger/30 bg-canvas px-3 font-mono text-[13px] text-ink outline-none focus:border-danger"
+                  />
+                </label>
+                {deleteError && <p role="alert" className="text-[12px] text-danger">{deleteError}</p>}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteOpen(false);
+                      setDeletePhrase("");
+                      setDeleteError(null);
+                    }}
+                    disabled={deletePending}
+                    className="h-10 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-muted"
+                  >
+                    {t("Cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deletePhrase !== "DELETE VAYRA" || deletePending}
+                    onClick={() => {
+                      setDeletePending(true);
+                      setDeleteError(null);
+                      void deleteVayraAccount()
+                        .then(() => {
+                          setDeleteOpen(false);
+                          setDeletePhrase("");
+                        })
+                        .catch(() => setDeleteError(t("Account deletion failed. Please retry.")))
+                        .finally(() => setDeletePending(false));
+                    }}
+                    className="h-10 rounded-xl bg-danger px-4 text-[12.5px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {deletePending ? t("Deleting…") : t("Permanently delete")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
 
       <Section
         title={t("Profiles")}

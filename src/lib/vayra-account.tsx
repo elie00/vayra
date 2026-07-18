@@ -112,6 +112,7 @@ type VayraAccountValue = {
   sendMagicLink: (email: string) => Promise<void>;
   refreshAccess: () => Promise<boolean>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 };
 
 const VayraAccountContext = createContext<VayraAccountValue | null>(null);
@@ -247,6 +248,23 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
     }
   }, [client]);
 
+  const deleteAccount = useCallback(async () => {
+    if (!client) throw new Error("VAYRA email sign-in is not configured yet.");
+    setError(null);
+    setLoading(true);
+    try {
+      const { error: deleteError } = await client.rpc("cira_delete_account");
+      if (deleteError) {
+        setError(deleteError.message);
+        throw deleteError;
+      }
+      await client.auth.signOut({ scope: "local" }).catch(() => undefined);
+      setSession(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
   const value = useMemo<VayraAccountValue>(
     () => ({
       configured: supabaseConfigured,
@@ -258,8 +276,9 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       sendMagicLink,
       refreshAccess,
       signOut,
+      deleteAccount,
     }),
-    [error, loading, refreshAccess, sendMagicLink, session, signOut],
+    [deleteAccount, error, loading, refreshAccess, sendMagicLink, session, signOut],
   );
 
   return <VayraAccountContext.Provider value={value}>{children}</VayraAccountContext.Provider>;
