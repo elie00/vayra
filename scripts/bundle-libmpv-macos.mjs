@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Post-build: embarque libmpv.2.dylib + toutes ses deps Homebrew transitives
-// dans Harbor.app/Contents/Frameworks et reroute les install_name vers
+// dans VAYRA.app/Contents/Frameworks et reroute les install_name vers
 // @executable_path/../Frameworks (layout macOS standard, sans @rpath).
 // A lancer APRES: pnpm exec tauri build --bundles app
 // Idempotent. Necessite: brew install dylibbundler
@@ -14,7 +14,7 @@ if (process.platform !== "darwin") {
 }
 
 const APP = resolve(
-  process.argv[2] ?? "src-tauri/target/release/bundle/macos/Harbor.app"
+  process.argv[2] ?? "src-tauri/target/release/bundle/macos/VAYRA.app"
 );
 const BIN = join(APP, "Contents/MacOS/harbor");
 const FRAMEWORKS = join(APP, "Contents/Frameworks");
@@ -109,11 +109,23 @@ for (const f of allBinaries) {
   }
 }
 
-// --- Re-codesign ad-hoc (les edits install_name_tool invalident les signatures) ---
-console.log("[bundle-libmpv] re-codesigning (ad-hoc)...");
-for (const f of dylibs) sh(`codesign --force --sign - "${join(FRAMEWORKS, f)}"`);
-sh(`codesign --force --sign - "${BIN}"`);
-sh(`codesign --force --deep --sign - "${APP}"`);
+// --- Re-sign after install_name_tool edits invalidate the previous signature. ---
+// Local builds stay ad-hoc. Release CI provides a Developer ID identity and gets
+// a hardened-runtime, timestamped signature that can subsequently be notarized.
+const signingIdentity = process.env.APPLE_SIGNING_IDENTITY?.trim() || "-";
+const releaseFlags =
+  signingIdentity === "-"
+    ? ["--force", "--sign", "-"]
+    : ["--force", "--options", "runtime", "--timestamp", "--sign", signingIdentity];
+const sign = (target, extra = []) =>
+  execFileSync("codesign", [...releaseFlags, ...extra, target], { stdio: "inherit" });
+
+console.log(
+  `[bundle-libmpv] re-signing (${signingIdentity === "-" ? "ad-hoc" : "Developer ID"})...`,
+);
+for (const f of dylibs) sign(join(FRAMEWORKS, f));
+sign(BIN);
+sign(APP, ["--deep"]);
 
 // --- Verification ---
 console.log("\n[bundle-libmpv] verification:");

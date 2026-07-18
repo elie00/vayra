@@ -3,6 +3,14 @@ import { lumaPt } from "./luma";
 import { privateBetaPt } from "./private-beta";
 
 const pt: Record<string, string> = {
+  "Delete VAYRA account": "Excluir conta VAYRA",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Exclua permanentemente sua conta VAYRA e todos os dados CIRA/VARA na nuvem. LUMA, histórico local e Stremio não são excluídos.",
+  "Delete account": "Excluir conta",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "Esta ação não pode ser desfeita. Digite DELETE VAYRA para confirmar a exclusão permanente.",
+  "Type DELETE VAYRA to confirm": "Digite DELETE VAYRA para confirmar",
+  "Permanently delete": "Excluir permanentemente",
+  "Deleting…": "Excluindo…",
+  "Account deletion failed. Please retry.": "Não foi possível excluir a conta. Tente novamente.",
   ...ciraPt,
   ...lumaPt,
   ...privateBetaPt,
@@ -179,6 +187,10 @@ const pt: Record<string, string> = {
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Por favor, adicione sua chave de API do TMDB nas configurações de Biblioteca e Metadados para visualizar esta pasta.",
   "OK": "OK",
   "Loading...": "Carregando...",
+  "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.": "O VAYRA procura novas versões no seu canal privado. Nada é instalado sem a sua escolha e uma atualização dispensada não volta a ser exibida.",
+  "Build identity and support links for reporting an issue.": "Identidade da compilação e links de suporte para relatar um problema.",
+  "Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.": "Não foi possível acessar o serviço de versões do VAYRA. Verifique a conexão e tente novamente.",
+  "Checking the VAYRA release service for a newer build.": "Procurando uma compilação mais recente no serviço de versões do VAYRA.",
 };
 
 export default pt;

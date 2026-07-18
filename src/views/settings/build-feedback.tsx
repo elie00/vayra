@@ -7,7 +7,7 @@ import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 
 const KEY = "harbor.build.rating.v1";
-const REPO_ISSUE = "https://github.com/harborstremio/harbor/issues/new";
+const REPO_ISSUE = "https://github.com/elie00/vayra/issues/new";
 
 type Stop = { label: string; Icon: ComponentType<{ size?: number; strokeWidth?: number }>; color: string };
 const STOPS: Stop[] = [

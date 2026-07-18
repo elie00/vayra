@@ -42,8 +42,8 @@ const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window
 // Updater, system tray, stremio deeplink handler and Discord presence are all
 // desktop-only; on mobile Tauri they behave like the web build (hidden).
 const desktopOnly = hasDesktopFeatures();
-const DOWNLOAD_URL = "https://harbor.site/download";
-const SOURCE_URL = "https://github.com/harborstremio/harbor";
+const DOWNLOAD_URL = "https://vayra.eybo.tech/#download";
+const SOURCE_URL = "https://github.com/elie00/vayra";
 
 export function AdvancedPanel() {
   const t = useT();
@@ -54,7 +54,7 @@ export function AdvancedPanel() {
       {desktopOnly && (
         <Section
           title={t("Updates")}
-          subtitle={t("VAYRA checks harbor.site for new versions and installs them in place. Nothing installs until you choose to, and a dismissed update never nags you again.")}
+          subtitle={t("VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.")}
         >
           <div className="flex flex-col gap-2.5">
             <UpdatesRow />
@@ -142,7 +142,7 @@ export function AdvancedPanel() {
 
       <Section
         title={t("About")}
-        subtitle={t("Build identity. Useful when filing a bug report at bugs@harbor.site.")}
+        subtitle={t("Build identity and support links for reporting an issue.")}
       >
         <AboutRow />
       </Section>
@@ -331,7 +331,7 @@ function UpdatesRow() {
   const busy = u.status === "checking";
   const status =
     u.status === "checking"
-      ? t("Checking harbor.site for a newer build.")
+      ? t("Checking the VAYRA release service for a newer build.")
       : u.status === "downloading"
         ? t("Downloading {pct}%", { pct: Math.round(u.progress * 100) })
         : u.status === "downloaded"
@@ -586,7 +586,7 @@ function AboutRow() {
     <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5 text-[13px] text-ink-muted">
       <InfoLine label={t("Version")} value={`${__APP_VERSION__}${IS_BETA_BUILD ? " (Beta)" : ""}`} />
       <InfoLine label={t("Build")} value={isTauri ? t("Desktop (Tauri 2 / WebView2)") : t("Web")} />
-      <InfoLine label={t("Bug reports")} value="bugs@harbor.site" />
+      <InfoLine label={t("Bug reports")} value="github.com/elie00/vayra/issues" />
     </div>
   );
 }

@@ -1,0 +1,150 @@
+name: android-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build
+        required: true
+        default: main
+      release_tag:
+        description: Optional existing draft release tag to receive the artifacts
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: android-release-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  signed-android:
+    name: Signed Android APK and AAB
+    runs-on: ubuntu-22.04
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Require Android signing material
+        shell: bash
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for value in "$KEYSTORE" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD"; do
+            test -n "$value" || { echo "Android release signing secret missing" >&2; exit 1; }
+          done
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r27c
+          local-cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,wasm32-unknown-unknown
+
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            vayra-core
+            src-tauri
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies and verify release metadata
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm release:check
+
+      - name: Materialize the ignored Android keystore
+        shell: bash
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYSTORE_PATH="$RUNNER_TEMP/vayra-release.jks"
+          printf '%s' "$KEYSTORE" | base64 --decode > "$KEYSTORE_PATH"
+          {
+            printf 'storeFile=%s\n' "$KEYSTORE_PATH"
+            printf 'storePassword=%s\n' "$STORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+          } > src-tauri/gen/android/key.properties
+          chmod 600 "$KEYSTORE_PATH" src-tauri/gen/android/key.properties
+
+      - name: Build signed release APK and AAB
+        env:
+          NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: pnpm tauri android build --target aarch64 armv7 x86_64 --apk --aab --ci
+
+      - name: Verify signatures and write checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          AAB="$(find src-tauri/gen/android/app/build/outputs/bundle -type f -name '*.aab' -print -quit)"
+          test -n "$APK" && test -n "$AAB"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          jarsigner -verify -certs "$AAB"
+          sha256sum "$APK" "$AAB" > android-SHA256SUMS.txt
+
+      - name: Attest Android artifacts
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
+
+      - name: Upload signed Android artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: vayra-android-release
+          path: |
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
+            src-tauri/gen/android/app/build/outputs/mapping/**/mapping.txt
+            android-SHA256SUMS.txt
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Attach to an existing draft release
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "${{ inputs.release_tag }}" --repo "${{ github.repository }}" --json isDraft --jq '.isDraft' | grep -qx true
+          find src-tauri/gen/android/app/build/outputs -type f \( -name '*.apk' -o -name '*.aab' -o -name 'mapping.txt' \) -print0 \
+            | xargs -0 gh release upload "${{ inputs.release_tag }}" --repo "${{ github.repository }}" --clobber
+          gh release upload "${{ inputs.release_tag }}" android-SHA256SUMS.txt --repo "${{ github.repository }}" --clobber

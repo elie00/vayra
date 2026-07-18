@@ -3,6 +3,14 @@ import { lumaIt } from "./luma";
 import { privateBetaIt } from "./private-beta";
 
 const it: Record<string, string> = {
+  "Delete VAYRA account": "Elimina account VAYRA",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Elimina definitivamente il tuo account VAYRA e tutti i dati cloud CIRA/VARA. LUMA, la cronologia locale e Stremio non vengono eliminati.",
+  "Delete account": "Elimina account",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "Questa azione è irreversibile. Digita DELETE VAYRA per confermare l’eliminazione permanente.",
+  "Type DELETE VAYRA to confirm": "Digita DELETE VAYRA per confermare",
+  "Permanently delete": "Elimina definitivamente",
+  "Deleting…": "Eliminazione…",
+  "Account deletion failed. Please retry.": "Eliminazione dell’account non riuscita. Riprova.",
   ...ciraIt,
   ...lumaIt,
   ...privateBetaIt,
@@ -181,6 +189,10 @@ const it: Record<string, string> = {
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Aggiungi la tua chiave API di TMDB nelle impostazioni Libreria e metadati per visualizzare questa cartella.",
   "OK": "OK",
   "Loading...": "Caricamento...",
+  "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.": "VAYRA cerca nuove versioni nel proprio canale privato. Nulla viene installato senza la tua scelta e un aggiornamento ignorato non viene riproposto.",
+  "Build identity and support links for reporting an issue.": "Identità della build e link di supporto per segnalare un problema.",
+  "Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.": "Impossibile raggiungere il servizio delle versioni VAYRA. Controlla la connessione e riprova.",
+  "Checking the VAYRA release service for a newer build.": "Ricerca di una build più recente sul servizio delle versioni VAYRA.",
 };
 
 export default it;
