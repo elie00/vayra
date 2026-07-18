@@ -7,7 +7,10 @@ cd "$root"
 version="$(node -p "require('./package.json').version")"
 tauri_version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
 package_manager="$(node -p "require('./package.json').packageManager")"
-pnpm_version="${package_manager#pnpm@}"
+pnpm_spec="${package_manager#pnpm@}"
+pnpm_version="${pnpm_spec%%+*}"
+pnpm_major="${pnpm_version%%.*}"
+pnpm_store_version="v$pnpm_major"
 metadata="flatpak/site.vayra.Vayra.metainfo.xml"
 manifest="flatpak/site.vayra.Vayra.yml"
 
@@ -16,7 +19,7 @@ if [[ "$version" != "$tauri_version" ]]; then
   exit 1
 fi
 
-if [[ "$package_manager" != pnpm@11.* || ! "$pnpm_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+if [[ ! "$package_manager" =~ ^pnpm@(10|11)\.[0-9]+\.[0-9]+(\+sha512\.[0-9a-f]+)?$ ]]; then
   echo "unsupported packageManager $package_manager; review the pnpm source and store version" >&2
   exit 1
 fi
@@ -77,10 +80,14 @@ if [[ ! -x "$venv/bin/flatpak-node-generator" ]]; then
 fi
 
 curl -fsSL "https://registry.npmjs.org/pnpm/-/pnpm-$pnpm_version.tgz" -o "$pnpm_archive"
-pnpm_sha256="$(sha256sum "$pnpm_archive" | cut -d' ' -f1)"
+if command -v sha256sum >/dev/null 2>&1; then
+  pnpm_sha256="$(sha256sum "$pnpm_archive" | cut -d' ' -f1)"
+else
+  pnpm_sha256="$(shasum -a 256 "$pnpm_archive" | cut -d' ' -f1)"
+fi
 
 "$venv/bin/flatpak-node-generator" pnpm pnpm-lock.yaml \
-  --pnpm-store-version v11 \
+  --pnpm-store-version "$pnpm_store_version" \
   --node-sdk-extension org.freedesktop.Sdk.Extension.node22//25.08 \
   -o "$node_output"
 python3 - "$node_output" <<'PY'
@@ -150,4 +157,4 @@ desktop-file-validate flatpak/site.vayra.Vayra.desktop
 appstreamcli validate --no-net "$metadata"
 flatpak-builder --show-manifest "$manifest" >/dev/null
 
-echo "Flatpak sources and metadata refreshed for Harbor $version ($release_date)."
+echo "Flatpak sources and metadata refreshed for VAYRA $version ($release_date)."
