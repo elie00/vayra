@@ -1,4 +1,12 @@
 const settings: Record<string, string> = {
+  "Delete VAYRA account": "حذف حساب VAYRA",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "احذف حساب VAYRA وجميع بيانات CIRA وVARA السحابية نهائيًا. لن تُحذف LUMA أو السجل المحلي أو Stremio.",
+  "Delete account": "حذف الحساب",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "لا يمكن التراجع عن هذا الإجراء. اكتب DELETE VAYRA لتأكيد الحذف النهائي للحساب البعيد.",
+  "Type DELETE VAYRA to confirm": "اكتب DELETE VAYRA للتأكيد",
+  "Permanently delete": "حذف نهائي",
+  "Deleting…": "جارٍ الحذف…",
+  "Account deletion failed. Please retry.": "فشل حذف الحساب. حاول مرة أخرى.",
   "Home hero": "واجهة العنوان المميّز",
   "Make the featured banner on Home bigger and sharper.": "اجعل لافتة العنوان المميّز في الصفحة الرئيسية أكبر وأوضح.",
   "Full hero banner": "لافتة بطل كاملة",

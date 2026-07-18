@@ -67,8 +67,32 @@ begin
 end;
 $do$;
 
--- Account deletion.
-delete from auth.users where id = '00000000-0000-4000-8000-0000000008a1';
+-- Self-service account deletion can only target auth.uid().
+do $do$
+declare
+  ok boolean;
+begin
+  perform test.login('00000000-0000-4000-8000-0000000008a1');
+  ok := public.cira_delete_account();
+  if ok is distinct from true then
+    raise exception 'TEST_FAILED: self-service deletion did not confirm success';
+  end if;
+  perform test.logout();
+end;
+$do$;
+
+-- Anonymous callers cannot execute the deletion RPC.
+do $do$
+begin
+  perform test.login_anon();
+  begin
+    perform public.cira_delete_account();
+    raise exception 'TEST_FAILED: anonymous account deletion succeeded';
+  exception when insufficient_privilege then null;
+  end;
+  perform test.logout();
+end;
+$do$;
 
 -- Zero orphans; B and C survive untouched.
 do $do$

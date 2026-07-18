@@ -3,6 +3,14 @@ import { lumaDe } from "./luma";
 import { privateBetaDe } from "./private-beta";
 
 const de: Record<string, string> = {
+  "Delete VAYRA account": "VAYRA-Konto löschen",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Lösche dein VAYRA-Konto und alle CIRA/VARA-Cloud-Daten dauerhaft. Lokale LUMA-Daten, Verlauf und Stremio werden nicht gelöscht.",
+  "Delete account": "Konto löschen",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "Dies kann nicht rückgängig gemacht werden. Gib DELETE VAYRA ein, um die dauerhafte Löschung zu bestätigen.",
+  "Type DELETE VAYRA to confirm": "Zur Bestätigung DELETE VAYRA eingeben",
+  "Permanently delete": "Dauerhaft löschen",
+  "Deleting…": "Wird gelöscht…",
+  "Account deletion failed. Please retry.": "Das Konto konnte nicht gelöscht werden. Versuche es erneut.",
   ...ciraDe,
   ...lumaDe,
   ...privateBetaDe,

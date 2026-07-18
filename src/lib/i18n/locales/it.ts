@@ -3,6 +3,14 @@ import { lumaIt } from "./luma";
 import { privateBetaIt } from "./private-beta";
 
 const it: Record<string, string> = {
+  "Delete VAYRA account": "Elimina account VAYRA",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Elimina definitivamente il tuo account VAYRA e tutti i dati cloud CIRA/VARA. LUMA, la cronologia locale e Stremio non vengono eliminati.",
+  "Delete account": "Elimina account",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "Questa azione è irreversibile. Digita DELETE VAYRA per confermare l’eliminazione permanente.",
+  "Type DELETE VAYRA to confirm": "Digita DELETE VAYRA per confermare",
+  "Permanently delete": "Elimina definitivamente",
+  "Deleting…": "Eliminazione…",
+  "Account deletion failed. Please retry.": "Eliminazione dell’account non riuscita. Riprova.",
   ...ciraIt,
   ...lumaIt,
   ...privateBetaIt,
