@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   prepare:
-    name: Prepare draft release
+    name: Validate release inputs
     runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -45,23 +45,6 @@ jobs:
           test "${{ inputs.release_tag }}" = "v$VERSION"
           node scripts/verify-release-readiness.mjs
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-      - name: Create or validate draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          TAG="${{ inputs.release_tag }}"
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' | grep -qx true
-          else
-            gh release create "$TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "${{ inputs.ref }}" \
-              --title "VAYRA ${{ steps.version.outputs.version }}" \
-              --notes "Signed VAYRA ${{ steps.version.outputs.version }} release candidate." \
-              --draft
-          fi
 
   build:
     name: Signed ${{ matrix.name }}
@@ -381,14 +364,6 @@ jobs:
           path: release-artifacts/*
           retention-days: 30
           if-no-files-found: error
-      - name: Attach artifacts to draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: >-
-          gh release upload "${{ inputs.release_tag }}" release-artifacts/*
-          --repo "$GITHUB_REPOSITORY" --clobber
-
   finalize:
     name: Validate and optionally publish
     needs: [prepare, build]
@@ -402,15 +377,24 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
+      - name: Download every verified platform artifact
+        uses: actions/download-artifact@v8
+        with:
+          pattern: vayra-*-signed
+          path: release-artifacts
+          merge-multiple: true
       - name: Generate and validate updater manifest
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          test -n "$(find release-artifacts -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+          test -n "$(find release-artifacts -maxdepth 1 -type f -name '*.exe' -print -quit)"
+          test -n "$(find release-artifacts -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$(find release-artifacts -maxdepth 1 -type f -name '*.deb' -print -quit)"
           mkdir -p release-signatures
-          gh release download "${{ inputs.release_tag }}" --repo "$GITHUB_REPOSITORY" \
-            --pattern '*.sig' --dir release-signatures
+          find release-artifacts -maxdepth 1 -type f -name '*.sig' -exec cp {} release-signatures/ \;
           node site/scripts/gen-latest-json.mjs \
             --tag "${{ inputs.release_tag }}" \
             --sig-dir release-signatures \
@@ -418,7 +402,24 @@ jobs:
             --out release-signatures/latest.json
           node scripts/verify-release-readiness.mjs --published \
             --manifest release-signatures/latest.json
-          gh release upload "${{ inputs.release_tag }}" release-signatures/latest.json \
+      - name: Create the draft only after every platform passes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.release_tag }}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' | grep -qx true
+          else
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "${{ inputs.ref }}" \
+              --title "VAYRA ${{ needs.prepare.outputs.version }}" \
+              --notes "Signed VAYRA ${{ needs.prepare.outputs.version }} release candidate." \
+              --draft
+          fi
+          gh release upload "$TAG" release-artifacts/* release-signatures/latest.json \
             --repo "$GITHUB_REPOSITORY" --clobber
       - name: Publish verified release
         if: inputs.publish == true
