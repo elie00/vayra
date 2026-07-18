@@ -25,7 +25,7 @@ export function MobileNotice() {
         </p>
       </div>
       <a
-        href="https://github.com/harborstremio/harbor"
+        href="https://github.com/elie00/vayra"
         target="_blank"
         rel="noreferrer"
         className="flex h-11 items-center justify-center rounded-full bg-elevated px-6 text-[14px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-raised"

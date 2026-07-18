@@ -40,6 +40,10 @@ const en: Record<string, string> = {
   "common.loading": "Loading",
   "common.retry": "Retry",
   "common.more": "More",
+  "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.": "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.",
+  "Build identity and support links for reporting an issue.": "Build identity and support links for reporting an issue.",
+  "Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.": "Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.",
+  "Checking the VAYRA release service for a newer build.": "Checking the VAYRA release service for a newer build.",
 
   "search.placeholder": "Search movies, shows, people…",
 

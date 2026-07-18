@@ -181,6 +181,10 @@ const de: Record<string, string> = {
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Bitte füge deinen TMDB-API-Schlüssel in den Einstellungen für Bibliothek & Metadaten hinzu, um diesen Ordner anzuzeigen.",
   "OK": "OK",
   "Loading...": "Wird geladen...",
+  "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.": "VAYRA sucht über seinen privaten Veröffentlichungskanal nach neuen Versionen. Nichts wird ohne deine Auswahl installiert und eine verworfene Aktualisierung wird nicht erneut angezeigt.",
+  "Build identity and support links for reporting an issue.": "Build-Identität und Support-Links zum Melden eines Problems.",
+  "Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.": "Der VAYRA-Veröffentlichungsdienst ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
+  "Checking the VAYRA release service for a newer build.": "Der VAYRA-Veröffentlichungsdienst wird auf einen neueren Build geprüft.",
 };
 
 export default de;

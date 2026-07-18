@@ -6,7 +6,7 @@ import { installerUrl, type VersionEntry } from "@/lib/updater/versions";
 import { openUrl } from "@/lib/window";
 import { VersionNotesModal } from "./version-notes-modal";
 
-const RELEASES_URL = "https://github.com/harborstremio/harbor/releases";
+const RELEASES_URL = "https://github.com/elie00/vayra/releases";
 
 export function VersionItem({ entry, isCurrent }: { entry: VersionEntry; isCurrent: boolean }) {
   const t = useT();
