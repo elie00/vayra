@@ -82,9 +82,7 @@ modules:
     buildsystem: simple
     build-commands:
       - node flatpak-node/pnpm-cli/bin/pnpm.cjs install --offline --frozen-lockfile
-      - install -Dm755 flatpak-node/pnpm-cli/bin/pnpm.cjs /tmp/vayra-build-bin/pnpm
-      - install -Dm755 flatpak-node/wasm-pack/wasm-pack /tmp/vayra-build-bin/wasm-pack
-      - env PATH="/tmp/vayra-build-bin:$PATH" node node_modules/@tauri-apps/cli/tauri.js build --config src-tauri/tauri.flatpak.conf.json --no-bundle
+      - node node_modules/@tauri-apps/cli/tauri.js build --config src-tauri/tauri.flatpak.conf.json --no-bundle
       - install -Dm755 src-tauri/target/release/harbor /app/bin/harbor
       - install -Dm644 flatpak/site.vayra.Vayra.desktop /app/share/applications/site.vayra.Vayra.desktop
       - install -Dm644 flatpak/site.vayra.Vayra.metainfo.xml /app/share/metainfo/site.vayra.Vayra.metainfo.xml
@@ -108,11 +106,5 @@ modules:
         url: https://registry.npmjs.org/pnpm/-/pnpm-10.27.0.tgz
         sha256: d3c7c3d12d87d177e32f01748d5994fb20cd5becf11670ee60530c374ffeabb3
         dest: flatpak-node/pnpm-cli
-      - type: archive
-        url: https://github.com/wasm-bindgen/wasm-pack/releases/download/v0.13.1/wasm-pack-v0.13.1-x86_64-unknown-linux-musl.tar.gz
-        sha256: c539d91ccab2591a7e975bcf82c82e1911b03335c80aa83d67ad25ed2ad06539
-        dest: flatpak-node/wasm-pack
-        only-arches:
-          - x86_64
       - node-sources.json
       - cargo-sources.json
