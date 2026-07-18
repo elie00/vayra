@@ -7,7 +7,7 @@
   <img src="src/assets/brand/vayra/vayra-wordmark-dark.svg" width="320">
 </picture>
 
-### A Stremio Client Built for Adventure!
+### Personal cinema. Private rooms. Shared timing.
 
 
 VAYRA is a personal and collaborative viewing experience with a native player, stream ranking, Wikidata, private viewing rooms, PiP, DVR, Live TV, anime, a theme engine, and more.
@@ -37,25 +37,14 @@ playback continuity, a personal queue and the immersive living-room experience.
 
 <br/>
 
-<p align="center">
-  <img src="https://harbor.site/readme-media/hero.png" width="900">
-  <br/>
-  <sub>VAYRA on launch: a rotating hero, Continue Watching, and full width rails. Works on Cinemeta out of the box; richer with a free TMDB key.</sub>
-</p>
-
-
-
 > [!IMPORTANT]
 > VAYRA is a media player and a client for the open Stremio addon protocol. It hosts, indexes, and ships no media, and it bundles no content addons. You bring your own addons and sources. See the [Disclaimer](#disclaimer).
->VAYRA is not for-profit and is a passion project, you are free to sell, re-use or profit off of it. All of your bugs, issues and feedbacks will be addressed promptly as long as scope permits. Please leave a Issue if you have feedback or a bug, so we can better address you. It is HIGHLY reccomended that you build your OWN VAYRA from the latest source when available, as our bundled releases will not include windows/os certification/sig (it is a free project) so to avoid any popups we suggest building it yourself. We will try to push updates frequently but we are sometimes segmented by our timezones so it may take some time for your bugs to be rolled into the update endpoint and for us to test it! Thank you for trying it out and helping us make it a better project!
->Stremio has released their **[Supporter tier](https://blog.stremio.com/stremio-supporters-a-way-to-sustain-our-development/)** PLEASE CONSIDER SUPPORTING THEM AND BUYING THIS. We heavily encourage you to use Stremio's Official Apps on Mobile, and Tvs. VAYRA is NOT a stremio competitor, it is a different flavor of player for the ecosystem. To get the most out of VAYRA, please sign up with a [stremio account](https://stremio.com) (it's free) To Support Stremio visit : https://www.stremio.com/donate (P.S.A VAYRA is not endorsed by or created by Stremio ltd or it's contributors it is a independent open sourced project)
-<br/>
-ATTENTION: VAYRA DOES NOT AND WILL NOT HAVE A DISCORD OR ASK YOU FOR DONATIONS! If someone claims to be us and asks you for donations or to join their discord, IT IS NOT US. Have an issue? Open it on github so you and everyone else can know and see exactly how we messed up, and how we will fix it! Yes we do see your emails to bugs@harbor.site and Bug reports to the bug endpoint FYI the fastest way to get our attention is through github, we will still handle unique reports that have not been already sorted. Want to donate to a good cause visit: National Pediatric Cancer Foundation (https://nationalpcf.org/), Electronic Frontier Foundation (https://www.eff.org/) or St.Jude's (https://www.stjude.org/) email us with a receipt of your donation and we will implement your features in a priority manner. Include NPCF , EFF or SaintJude in title so we can track you! If you have a preferred cause visit https://www.charitynavigator.org/ and donate to a top rated charity of your choice and include CHARITY in email title
-<br/>
-<br/>
-VAYRA IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR IT. WE DO NOT PROVIDE ANY CONTENT OR TELL YOU HOW TO DO IT. IT IS JUST CODE ON A REPO. IT'S CONTRIBUTORS ARE NOT RESPONSIBLE FOR WHAT YOU DO WITH IT OR WHAT STREMIO ADDONS AND SOURCES YOU ALREADY HAVE. FOLLOW ALL LAWS OF YOUR JURIDSTICTION.
-<br/>
-<br/>
+
+VAYRA is independent from Stremio Ltd. A Stremio account is optional and remains
+separate from the VAYRA email account used for private collaborative features.
+VAYRA has no donation campaign or official Discord. Use [GitHub Issues][issues]
+for reproducible bugs and the [support page](https://vayra.eybo.tech/support)
+for privacy-safe support guidance.
 <details>
 <summary><kbd>Table of contents</kbd></summary>
 
@@ -67,7 +56,7 @@ VAYRA IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR I
   - [The stream engine](#the-stream-engine)
   - [The player](#the-player)
   - [Casting](#casting)
-  - [Together: watch parties](#together-watch-parties)
+  - [VARA and VEYA: private viewing rooms](#vara-and-veya-private-viewing-rooms)
   - [Live TV and Multiview](#live-tv-and-multiview)
   - [Anime](#anime)
   - [Addons](#addons)
@@ -113,8 +102,10 @@ The application and public website are maintained together in this single
 - **Go Deep.** Dive deep into your favorite shows, actors, genres and more. View lists of award recipients for the Oscars, BAFTA, Cannes, SAG, and more. Anime cast and award metadata, along with Episode/Season Deduplication and Merge. Your rows learn from your watch history and likes, to always suggest you your next best watch.
 - **Robust Appstore.** VAYRA allows you to configure and install addons without leaving the desktop client by allowing you to natively install third party addons via a built in viewport. Easily manage your installed Addons and Browse for new ones in a bespoke experience that merges the Stremio Community addons API with the [Stremio-addons.net](https://stremio-addons.net) API, giving you wide coverage and custom reccomendations.
 - **Stremio-addons.net Integration.** The first platform with direct community ratings, top trending, and manifest feed to the [Stremio-addons.net](https://stremio-addons.net) API
-- **VARA, on your own relay.** A synced watch party with live on screen cursors and drawing, on a relay that deploys to your own Cloudflare account in one click. No central server.
-- **LUMA, private by design.** Resume locally and manage a personal playback queue from desktop or Android. LUMA is profile-scoped, works offline, never uploads activity, and yields playback authority to cast, Together and VARA/VEYA sessions.
+- **VARA and VEYA.** Private rooms with opaque invitations and synchronized
+  playback intent. Every participant opens content locally; media sources never
+  enter the room protocol.
+- **LUMA, private by design.** Resume locally and manage a personal playback queue from desktop or Android. LUMA is profile-scoped, works offline, never uploads activity, and yields playback authority to cast and VARA/VEYA sessions.
 - **Live TV and Multiview.** Bring M3U or Xtream playlists and get a real EPG grid guide, favorites, catchup, and up to four channels at once in a grid. Missed the show? play a rerun or record the next episode using built in DVR. Switch channels while in the live player at any time with the TV Guide
 - **Stream switcher** In player switcher allows you to hop streams if you get served a bad one without leaving the player and going through results again. Play next episodes with ease on the player UI controls or in a full "Next Up" sidebar.
 - **Casts across the room.** DLNA/UPnP, Chromecast, AirPlay, and Roku via the native Rust casting layer. Chromecast launches VAYRA's separately deployed CAF receiver; its source is not part of this repository.
@@ -150,44 +141,10 @@ Eleven themes and seven font pairings, a live theme studio for every token, cust
 </tr>
 </table>
 
-<table>
-<tr>
-<td width="50%" align="center">
-<img src="https://harbor.site/readme-media/detail.png" width="100%"><br/>
-<sub><b>Detail page</b> &middot; ratings from IMDb, Rotten Tomatoes, and MAL, award laurels, cast and crew, episodes, and region aware Watch on chips.</sub>
-</td>
-<td width="50%" align="center">
-<img src="https://harbor.site/readme-media/discover.png" width="100%"><br/>
-<sub><b>Discover</b> &middot; up to 14 rotating daily rails tuned by what you open, play, and save, plus a daily Critics Pick.</sub>
-</td>
-</tr>
-<tr>
-<td width="50%" align="center">
-<img src="https://harbor.site/readme-media/player.png" width="100%"><br/>
-<sub><b>Player</b> &middot; native libmpv, trickplay seek previews, skip intro/outro, and a customizable seek bar.</sub>
-</td>
-<td width="50%" align="center">
-<img src="https://harbor.site/readme-media/live-tv.png" width="100%"><br/>
-<sub><b>Live TV</b> &middot; M3U and Xtream playlists rendered as a real EPG grid guide with favorites and catchup.</sub>
-</td>
-</tr>
-<tr>
-<td width="50%" align="center">
-<img src="https://harbor.site/readme-media/multiview.png" width="100%"><br/>
-<sub><b>Multiview</b> &middot; one, two, three, or 2x2 streams at once, with independent audio focus per tile.</sub>
-</td>
-<td width="50%" align="center">
-<img src="https://harbor.site/readme-media/together.jpg" width="100%"><br/>
-<sub><b>Together</b> &middot; synced playback, a live chat overlay, on screen cursors, and collaborative drawing.</sub>
-</td>
-</tr>
-<tr>
-<td colspan="2" align="center">
-<img src="https://harbor.site/readme-media/themes.png" width="80%"><br/>
-<sub><b>Themes</b> &middot; eleven presets and a full visual studio. Colors, fonts, card and button shapes, backgrounds, and the entire nav layout.</sub>
-</td>
-</tr>
-</table>
+The interface combines catalog and detail views, a native player, Live TV and
+Multiview, a theme studio, CIRA relationship controls, private VARA rooms and a
+local LUMA queue. Release screenshots will be published only from qualified
+VAYRA builds; historical Harbor-hosted media is intentionally not embedded.
 
 <br/>
 
@@ -270,13 +227,15 @@ Send playback across the room through VAYRA's native Rust casting and local prox
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
-### Together: watch parties
+### VARA and VEYA: private viewing rooms
 
-- Create or join a room with a six character code; invite by link.
-- Synced play, pause, and seek with RTT adjusted clock alignment so everyone stays together.
-- Live chat, **on screen cursors** with named colors, and **collaborative drawing** over the video.
-- A host can summon everyone to a view or a title and send play invites that late joiners receive on connect.
-- The relay deploys to **your own Cloudflare account in one click** (deploy, check, and delete from inside VAYRA). There is no central VAYRA server in the loop.
+- Create or join a private VARA through a short-lived opaque invitation.
+- Each participant opens their own content locally; no stream URL, source,
+  addon, info-hash or file path is shared with the room.
+- VEYA synchronizes only play, pause and seek intent with clock correction.
+- Host transfer, reconnect, expiry and removal states are surfaced explicitly.
+- CIRA relationships and groups can be used to invite known participants.
+- VARA deliberately has no chat, feed, public directory or media analytics.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -364,21 +323,10 @@ Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden 
 - **A built in bug reporter** that auto collects safe diagnostics (no secret values).
 - **Backup and restore** of your full setup to a `.harbx` file.
 - **Classic Stremio home mode** that renders every addon catalog row.
-- **Deep links** for `harbor://` and `stremio://`, with single instance focus.
+- **Deep links** for `vayra://` and `stremio://`, with the legacy `harbor://`
+  scheme retained only for backwards compatibility.
 - **Custom CSS, JS, and HTML overlays** for power users.
 - **Trickplay scrub previews** decoded on the fly for torrents and local files, so the seek bar shows the exact frame you are hovering.
-
-<p align="left">
-  <img src="https://harbor.site/readme-media/trickplay.jpg" width="720">
-  <br/>
-  <sub>Trickplay seek previews, generated live for torrents and local files.</sub>
-</p>
-
-<p align="left">
-  <img src="https://harbor.site/readme-media/richactivity.gif" width="320">
-  <br/>
-  <sub>Discord Rich Presence, cycling live as you browse and watch.</sub>
-</p>
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -386,38 +334,41 @@ Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden 
 
 VAYRA is designed to minimize data collection and keep persisted settings on your machine.
 
-- **No telemetry.** VAYRA collects no analytics and sends nothing home.
+- **No behavioural analytics.** VAYRA does not track viewing behaviour.
 - **Local persistence.** TMDB, RPDB, OMDB, Trakt, and debrid credentials are stored on your device. Native desktop requests go directly to the configured services.
-- **Web proxy disclosure.** The hosted web build routes CORS-restricted addon, subtitle, and debrid API requests through its same-origin `/api-proxy`; authorization headers for those requests transit that deployment. Torrentio and TorBox addon requests are sent directly. Self-hosters control the proxy endpoint.
-- **No VAYRA relay for Together or casting.** Watch party relays deploy to your own Cloudflare account, and casting runs on your local network. This statement does not apply to the web build's CORS proxy described above.
+- **Explicit cloud boundary.** Supabase stores the VAYRA account and CIRA data you choose to create. VARA carries ephemeral playback intent, never media sources. LUMA remains local.
+- **Local casting.** Casting stays on the local network. Private VARA rooms use the configured VAYRA relay only for room membership and VEYA playback intent.
 - **A built in privacy blocker** at the WebView level, with a live counter.
 - **You choose your sources.** What metadata and streams VAYRA sees is entirely determined by the addons and services you configure.
+
+The complete public policy is available at
+[vayra.eybo.tech/privacy](https://vayra.eybo.tech/privacy).
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## Install
 
-Download the latest build for macOS or Windows from the [Releases page][releases], or open VAYRA in your browser.
+Public installers are released only after platform signing and playback
+qualification. Until a signed release appears on the [Releases page][releases],
+build from source; do not install binaries shared elsewhere.
 
 | Platform | Format |
 |---|---|
 | **macOS** | `.dmg` (macOS 11.0 or newer) |
 | **Windows** | `.exe` NSIS installer (current user install) |
-| **Web** | Open in any modern browser, nothing to install |
-| **Linux** | In testing, coming soon (`.deb`, `.rpm`, and `.AppImage` planned) |
+| **Linux** | `.deb`, `.AppImage`, or Flatpak after Linux playback qualification |
+| **Android** | Signed `.apk` for private beta; Play distribution is not yet enabled |
 
 > [!NOTE]
-> macOS, Windows, and the web are supported at launch. A native Linux build is in testing right now.
+> Packaging CI covers macOS Apple Silicon, Windows x64, Linux x64 and Android.
+> A green build is not a playback qualification; each published platform must
+> pass its manual release recipe.
 
-### Linux (in testing, coming soon)
+### Linux
 
-<p align="center">
-  <img src="https://harbor.site/readme-media/linux.png" width="900">
-  <br/>
-  <sub>VAYRA running natively on Linux, in a Together watch party.</sub>
-</p>
-
-Linux is up and running natively, and it is in active testing right now. We decided to take a couple extra weeks so the native player feels great for full time Linux users before we call it ready. Coming soon.
+Linux packages are built in CI and remain release candidates until a manual
+libmpv, audio, fullscreen, cast and VARA playback pass is documented on the
+target distribution.
 
 **Out of the box, VAYRA works on Cinemeta.** You can browse, play, and cast immediately. Adding a free **TMDB key** in Settings is optional and unlocks the richer trending, theaters, per service, and Watch on experiences described above. Your installed Stremio addons merge in automatically when you sign in, deduplicated against the built in rails.
 
@@ -486,7 +437,9 @@ pnpm run setup
 pnpm tauri build
 ```
 
-Bundles are emitted for your platform (dmg on macOS, NSIS on Windows; Linux deb, rpm, and AppImage targets are in progress).
+Bundles are emitted for the current platform. Public distribution uses the
+signed release workflows; local bundles are development artifacts and are not
+equivalent to notarized or Authenticode-signed releases.
 
 </details>
 
@@ -530,7 +483,7 @@ flowchart TD
     Anime["Kitsu / AniZip"]
     Trakt["Trakt"]
     Debrid["Debrid: RD / AD / PM / DL / TorBox"]
-    Relay["Your Cloudflare relay (Together)"]
+    Relay["Private VARA relay"]
   end
 
   UI -->|desktop| NativeCore
@@ -582,17 +535,17 @@ Directional, not a set of promises. Priorities shift with feedback.
 
 - [x] Native libmpv player with trickplay and skip segments
 - [x] Rust stream ranking core (`vayra-core`) compiled to WASM
-- [x] Watch parties with cursors and drawing on a self hosted relay
+- [x] Privacy-safe VARA rooms and VEYA playback-intent synchronization
 - [x] Live TV EPG guide and Multiview
 - [x] First class anime room with Kitsu and AniZip
 - [x] Theme studio with custom layouts
-- [x] macOS, Windows, and web launch builds
-- [ ] Native Linux build — deb and AppImage build in CI; remaining work is native mpv player polish and on-device validation (needs a Linux machine to test playback)
+- [x] Build pipelines for macOS, Windows, Linux, Android and Flatpak
+- [ ] Platform certificates, store enrollment and final on-device playback qualification
 - [ ] Expanded casting device matrix — shipped: Roku (per-model capabilities), Chromecast/Google TV, and 4K DLNA TVs (Samsung/LG/Sony); AirPlay 2 devices are detected and shown as pairing-required, but full AirPlay 2 casting still needs the proprietary pairing/streaming protocol and an Apple TV to validate
 - [ ] More translations — shipped: Arabic, Portuguese, French, Spanish, German, Italian; more languages welcome
 - [x] A bundled, growing theme gallery with installable themes and no hosted-service dependency
 - [x] Release readiness baseline: narrower desktop capabilities and OS credential storage for desktop secrets
-- [x] Release readiness baseline: integration coverage for stream selection, resume, IPTV, Together, and persistence paths
+- [x] Release readiness baseline: integration coverage for stream selection, resume, IPTV, VARA/VEYA, CIRA, LUMA and persistence paths
 - [x] Zero-warning frontend hooks lint and native CI covering Linux, macOS, Windows, and an Android debug build
 - [x] Checksum-verified external downloads and optimized format-badge assets
 - [x] Shared native/WASM stream core wired into builds, with a runtime smoke test and TypeScript fallback
@@ -619,7 +572,10 @@ Tauri uses the system WebView and a Rust backend, which keeps the shell small an
 Not on desktop: VAYRA's native Rust torrent engine can stream raw torrents directly. A debrid service is optional and adds cached, instant playback. Browser builds cannot use the native torrent engine and need a directly playable source or a configured service.
 
 **Does VAYRA operate a backend?**
-The desktop app does not need a VAYRA API backend for normal provider requests. The hosted web build does use a same-origin `/api-proxy` for CORS-restricted services; see [Privacy](#privacy). Together rooms use the Cloudflare relay you deploy yourself.
+Supabase provides opt-in VAYRA accounts and privacy-scoped CIRA data. VARA uses
+a relay for room membership and ephemeral VEYA intent. Provider and playback
+sources remain local and are never added to the social data model. See
+[Privacy](#privacy).
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -693,9 +649,9 @@ Thank you to everyone, named and unnamed, whose open work VAYRA builds upon.
 [rust]: https://www.rust-lang.org/
 
 <!-- badges -->
-[badge-version]: https://img.shields.io/badge/version-0.9.21-D9A441?style=for-the-badge&labelColor=1a1a1a
-[badge-license]: https://img.shields.io/badge/license-MIT-D9A441?style=for-the-badge&labelColor=1a1a1a
-[badge-tauri]: https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white&labelColor=1a1a1a
-[badge-react]: https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white&labelColor=1a1a1a
-[badge-rust]: https://img.shields.io/badge/core-Rust%20to%20WASM-DEA584?style=for-the-badge&logo=rust&logoColor=white&labelColor=1a1a1a
-[badge-platforms]: https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Web-Linux%20soon-8a8a8a?style=for-the-badge&labelColor=1a1a1a
+[badge-version]: https://img.shields.io/badge/version-0.9.36-f5f3ee?style=for-the-badge&labelColor=0b0c10
+[badge-license]: https://img.shields.io/badge/license-MIT-f5f3ee?style=for-the-badge&labelColor=0b0c10
+[badge-tauri]: https://img.shields.io/badge/Tauri-2-f5f3ee?style=for-the-badge&logo=tauri&logoColor=0b0c10&labelColor=0b0c10
+[badge-react]: https://img.shields.io/badge/React-19-f5f3ee?style=for-the-badge&logo=react&logoColor=0b0c10&labelColor=0b0c10
+[badge-rust]: https://img.shields.io/badge/core-Rust%20to%20WASM-f5f3ee?style=for-the-badge&logo=rust&logoColor=0b0c10&labelColor=0b0c10
+[badge-platforms]: https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux%20%C2%B7%20Android-release%20candidates-f5f3ee?style=for-the-badge&labelColor=0b0c10
