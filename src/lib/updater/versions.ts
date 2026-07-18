@@ -1,7 +1,7 @@
 import { isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { safeFetch } from "@/lib/safe-fetch";
 
-const INDEX_URL = "https://harbor.site/updates/versions-beta.json";
+const INDEX_URL = "https://vayra.eybo.tech/updates/versions.json";
 
 export type VersionEntry = {
   version: string;

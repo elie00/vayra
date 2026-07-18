@@ -34,7 +34,7 @@ export function SuccessCard({
         </button>
         <button
           type="button"
-          onClick={() => openUrl("https://github.com/harborstremio/harbor/pulls")}
+          onClick={() => openUrl("https://github.com/elie00/vayra/pulls")}
           className="flex h-10 items-center gap-2 rounded-xl border border-edge-soft bg-elevated px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink"
         >
           <GitPullRequest size={13} strokeWidth={1.9} />

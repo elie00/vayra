@@ -3,6 +3,14 @@ import { lumaEs } from "./luma";
 import { privateBetaEs } from "./private-beta";
 
 const es: Record<string, string> = {
+  "Delete VAYRA account": "Eliminar la cuenta VAYRA",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Elimina permanentemente tu cuenta VAYRA y todos los datos de CIRA/VARA en la nube. LUMA, el historial local y Stremio no se eliminan.",
+  "Delete account": "Eliminar cuenta",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "Esta acción no se puede deshacer. Escribe DELETE VAYRA para confirmar la eliminación permanente.",
+  "Type DELETE VAYRA to confirm": "Escribe DELETE VAYRA para confirmar",
+  "Permanently delete": "Eliminar permanentemente",
+  "Deleting…": "Eliminando…",
+  "Account deletion failed. Please retry.": "No se pudo eliminar la cuenta. Inténtalo de nuevo.",
   ...ciraEs,
   ...lumaEs,
   ...privateBetaEs,
@@ -181,6 +189,10 @@ const es: Record<string, string> = {
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Añade tu clave de API de TMDB en los ajustes de Biblioteca y metadatos para ver esta carpeta.",
   "OK": "Aceptar",
   "Loading...": "Cargando...",
+  "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.": "VAYRA busca nuevas versiones en su canal privado. Nada se instala sin que lo elijas y una actualización descartada no vuelve a mostrarse.",
+  "Build identity and support links for reporting an issue.": "Identidad de la compilación y enlaces de soporte para informar de un problema.",
+  "Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.": "No se pudo acceder al servicio de versiones de VAYRA. Comprueba tu conexión e inténtalo de nuevo.",
+  "Checking the VAYRA release service for a newer build.": "Buscando una compilación más reciente en el servicio de versiones de VAYRA.",
 };
 
 export default es;

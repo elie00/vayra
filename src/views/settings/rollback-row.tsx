@@ -7,7 +7,7 @@ import { openUrl } from "@/lib/window";
 import { useVersionHistory } from "./rollback-row/use-version-history";
 import { VersionItem } from "./rollback-row/version-item";
 
-const RELEASES_URL = "https://github.com/harborstremio/harbor/releases";
+const RELEASES_URL = "https://github.com/elie00/vayra/releases";
 
 export function RollbackRow() {
   const t = useT();
@@ -97,7 +97,7 @@ function HistoryError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-start gap-2.5 px-3.5 py-4">
       <p className="text-[12px] leading-relaxed text-ink-subtle">
-        {t("Couldn't reach harbor.site to load earlier builds. Check your connection and try again.")}
+        {t("Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.")}
       </p>
       <div className="flex items-center gap-3">
         <button

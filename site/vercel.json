@@ -4,6 +4,10 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/updates/latest.json",
+      "destination": "/api/updates/latest"
+    },
+    {
       "source": "/themes/api/themes",
       "destination": "/themes/api/themes/index.json"
     },

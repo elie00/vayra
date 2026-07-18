@@ -3,6 +3,14 @@ import { lumaDe } from "./luma";
 import { privateBetaDe } from "./private-beta";
 
 const de: Record<string, string> = {
+  "Delete VAYRA account": "VAYRA-Konto löschen",
+  "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Lösche dein VAYRA-Konto und alle CIRA/VARA-Cloud-Daten dauerhaft. Lokale LUMA-Daten, Verlauf und Stremio werden nicht gelöscht.",
+  "Delete account": "Konto löschen",
+  "This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.": "Dies kann nicht rückgängig gemacht werden. Gib DELETE VAYRA ein, um die dauerhafte Löschung zu bestätigen.",
+  "Type DELETE VAYRA to confirm": "Zur Bestätigung DELETE VAYRA eingeben",
+  "Permanently delete": "Dauerhaft löschen",
+  "Deleting…": "Wird gelöscht…",
+  "Account deletion failed. Please retry.": "Das Konto konnte nicht gelöscht werden. Versuche es erneut.",
   ...ciraDe,
   ...lumaDe,
   ...privateBetaDe,
@@ -181,6 +189,10 @@ const de: Record<string, string> = {
   "Please add your TMDB API key in the Library & Metadata settings to view this folder.": "Bitte füge deinen TMDB-API-Schlüssel in den Einstellungen für Bibliothek & Metadaten hinzu, um diesen Ordner anzuzeigen.",
   "OK": "OK",
   "Loading...": "Wird geladen...",
+  "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.": "VAYRA sucht über seinen privaten Veröffentlichungskanal nach neuen Versionen. Nichts wird ohne deine Auswahl installiert und eine verworfene Aktualisierung wird nicht erneut angezeigt.",
+  "Build identity and support links for reporting an issue.": "Build-Identität und Support-Links zum Melden eines Problems.",
+  "Couldn't reach the VAYRA release service to load earlier builds. Check your connection and try again.": "Der VAYRA-Veröffentlichungsdienst ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
+  "Checking the VAYRA release service for a newer build.": "Der VAYRA-Veröffentlichungsdienst wird auf einen neueren Build geprüft.",
 };
 
 export default de;

@@ -22,6 +22,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
+      - name: Build vayra-core WASM
+        run: wasm-pack build vayra-core --target web --out-dir pkg
       - name: Install Flatpak tooling
         run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder appstream desktop-file-utils ostree
       - name: Configure Flathub
@@ -41,14 +48,14 @@ jobs:
       - name: Build repository
         run: flatpak-builder --user --force-clean --state-dir=.flatpak-work/state --repo=.flatpak-work/repo .flatpak-work/build flatpak/site.vayra.Vayra.yml
       - name: Build single-file bundle
-        run: flatpak build-bundle .flatpak-work/repo Harbor.flatpak site.vayra.Vayra
+        run: flatpak build-bundle .flatpak-work/repo VAYRA.flatpak site.vayra.Vayra
       - name: Validate bundle
         run: |
           ostree init --repo=.flatpak-work/validation-repo --mode=archive-z2
-          flatpak build-import-bundle --update-appstream --no-update-summary .flatpak-work/validation-repo Harbor.flatpak
+          flatpak build-import-bundle --update-appstream --no-update-summary .flatpak-work/validation-repo VAYRA.flatpak
       - uses: actions/upload-artifact@v6
         with:
-          name: Harbor-flatpak-x86_64
-          path: Harbor.flatpak
+          name: vayra-flatpak-x86_64
+          path: VAYRA.flatpak
           retention-days: 14
           if-no-files-found: error

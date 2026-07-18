@@ -1,12 +1,12 @@
-# The linked Vercel project has `site/` as its remote root. Keep that directory
-# in the source archive while excluding desktop/mobile build trees and caches.
+# The linked Vercel project has `site/` as its remote root. Patterns are
+# therefore evaluated from that directory by Vercel: never exclude `public/`
+# or `api/`, which are the site's deployable outputs.
 node_modules/
 dist/
 src/
 src-tauri/
 vayra-core/
 vara-broker/
-public/
 flatpak/
 supabase/
 docs/

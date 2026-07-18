@@ -81,7 +81,7 @@ modules:
   - name: harbor
     buildsystem: simple
     build-commands:
-      - node flatpak-node/pnpm-cli/bin/pnpm.cjs install --offline --frozen-lockfile --trust-lockfile
+      - node flatpak-node/pnpm-cli/bin/pnpm.cjs install --offline --frozen-lockfile
       - node node_modules/@tauri-apps/cli/tauri.js build --config src-tauri/tauri.flatpak.conf.json --no-bundle
       - install -Dm755 src-tauri/target/release/harbor /app/bin/harbor
       - install -Dm644 flatpak/site.vayra.Vayra.desktop /app/share/applications/site.vayra.Vayra.desktop
@@ -103,8 +103,8 @@ modules:
           - vayra-core/target
           - src-tauri/target
       - type: archive
-        url: https://registry.npmjs.org/pnpm/-/pnpm-11.9.0.tgz
-        sha256: 2b567aa66026238078ac2e0a33bec3febd60e962987aac697456f3180819b287
+        url: https://registry.npmjs.org/pnpm/-/pnpm-10.27.0.tgz
+        sha256: d3c7c3d12d87d177e32f01748d5994fb20cd5becf11670ee60530c374ffeabb3
         dest: flatpak-node/pnpm-cli
       - node-sources.json
       - cargo-sources.json

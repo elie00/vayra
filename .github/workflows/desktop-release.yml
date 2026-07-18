@@ -1,0 +1,441 @@
+name: desktop-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build
+        required: true
+        default: main
+      release_tag:
+        description: Semver tag matching the application version
+        required: true
+        default: v0.9.36
+      publish:
+        description: Publish after every signed artifact passes verification
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: desktop-release-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare draft release
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Verify tag and release metadata
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          test "${{ inputs.release_tag }}" = "v$VERSION"
+          node scripts/verify-release-readiness.mjs
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Create or validate draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.release_tag }}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' | grep -qx true
+          else
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "${{ inputs.ref }}" \
+              --title "VAYRA ${{ steps.version.outputs.version }}" \
+              --notes "Signed VAYRA ${{ steps.version.outputs.version }} release candidate." \
+              --draft
+          fi
+
+  build:
+    name: Signed ${{ matrix.name }}
+    needs: prepare
+    environment: release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            os: macos
+            runner: macos-15
+            target: aarch64-apple-darwin
+          - name: Windows x64
+            os: windows
+            runner: windows-2025
+            target: x86_64-pc-windows-msvc
+          - name: Linux x64
+            os: linux
+            runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Require release signing material
+        shell: bash
+        env:
+          UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          UPDATER_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$UPDATER_KEY" && test -n "$UPDATER_PASSWORD"
+          if [ "${{ matrix.os }}" = macos ]; then
+            for value in "$APPLE_CERTIFICATE" "$APPLE_CERTIFICATE_PASSWORD" "$APPLE_SIGNING_IDENTITY" "$APPLE_ID" "$APPLE_PASSWORD" "$APPLE_TEAM_ID"; do
+              test -n "$value" || { echo "Apple release secret missing" >&2; exit 1; }
+            done
+          elif [ "${{ matrix.os }}" = windows ]; then
+            test -n "$WINDOWS_CERTIFICATE" && test -n "$WINDOWS_CERTIFICATE_PASSWORD" || {
+              echo "Windows release certificate missing" >&2
+              exit 1
+            }
+          fi
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev libasound2-dev libmpv-dev libgtk-3-dev patchelf
+
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos'
+        shell: bash
+        run: |
+          brew install mpv pkg-config dylibbundler
+          echo "PKG_CONFIG_PATH=$(brew --prefix mpv)/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }},wasm32-unknown-unknown
+      - name: Install wasm-pack 0.13.1
+        run: cargo install wasm-pack --version 0.13.1 --locked
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            vayra-core
+            src-tauri
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies and verify metadata
+        shell: bash
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm release:check
+      - name: Fetch Windows libmpv
+        if: matrix.os == 'windows'
+        run: pnpm setup:libmpv
+      - name: Fetch and verify release sidecars
+        shell: bash
+        env:
+          YTDLP_VERSION: "2026.07.04"
+        run: |
+          set -euo pipefail
+          mkdir -p src-tauri/binaries
+          cd src-tauri/binaries
+          TARGET="${{ matrix.target }}"
+          EXT=""
+          if [[ "$TARGET" == *"windows"* ]]; then EXT=".exe"; fi
+
+          sha256check() {
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum --check -
+            elif command -v shasum >/dev/null 2>&1; then
+              shasum -a 256 --check -
+            else
+              read -r expected file
+              actual=$(certutil -hashfile "$file" SHA256 | sed -n 2p | tr -d '[:space:]\r' | tr 'A-F' 'a-f')
+              test "$actual" = "$expected"
+            fi
+          }
+
+          curl --fail --location --retry 3 \
+            "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/SHA2-256SUMS" \
+            -o yt-dlp.SHA2-256SUMS
+          if [[ "$TARGET" == *"windows"* ]]; then
+            YTDLP_ASSET="yt-dlp.exe"
+          elif [[ "$TARGET" == *"apple"* ]]; then
+            YTDLP_ASSET="yt-dlp_macos"
+          else
+            YTDLP_ASSET="yt-dlp"
+          fi
+          curl --fail --location --retry 3 \
+            "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/${YTDLP_ASSET}" \
+            -o "$YTDLP_ASSET"
+          grep "  ${YTDLP_ASSET}$" yt-dlp.SHA2-256SUMS | sha256check
+          mv "$YTDLP_ASSET" "yt-dlp-${TARGET}${EXT}"
+          chmod +x "yt-dlp-${TARGET}${EXT}" || true
+
+          if [[ "$TARGET" == *"windows"* ]]; then
+            FFMPEG_ASSET="ffmpeg-n8.1-latest-win64-gpl-8.1.zip"
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/checksums.sha256" \
+              -o checksums.sha256
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/${FFMPEG_ASSET}" \
+              -o "$FFMPEG_ASSET"
+            grep "  ${FFMPEG_ASSET}$" checksums.sha256 | sha256check
+            unzip -j "$FFMPEG_ASSET" "*/bin/ffmpeg.exe" "*/bin/ffprobe.exe"
+            mv ffmpeg.exe "ffmpeg-${TARGET}${EXT}"
+            mv ffprobe.exe "ffprobe-${TARGET}${EXT}"
+          elif [[ "$TARGET" == *"apple"* ]]; then
+            FFMPEG_SHA256="15e67ff413d3d2436ddb3efd282344e50b8f1c6f834979b984371b90ebaf0449"
+            FFPROBE_SHA256="582842ca7e76197ae8f4299b7f5f2d257b42168f314fc37a675708b9d5f847e0"
+            curl --fail --location --retry 3 "https://www.osxexperts.net/ffmpeg6arm.zip" -o ffmpeg.zip
+            curl --fail --location --retry 3 "https://www.osxexperts.net/ffprobe6arm.zip" -o ffprobe.zip
+            echo "${FFMPEG_SHA256}  ffmpeg.zip" | sha256check
+            echo "${FFPROBE_SHA256}  ffprobe.zip" | sha256check
+            unzip -o ffmpeg.zip
+            unzip -o ffprobe.zip
+            mv ffmpeg "ffmpeg-${TARGET}${EXT}"
+            mv ffprobe "ffprobe-${TARGET}${EXT}"
+            chmod +x "ffmpeg-${TARGET}${EXT}" "ffprobe-${TARGET}${EXT}"
+          else
+            FFMPEG_ASSET="ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz"
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/checksums.sha256" \
+              -o checksums.sha256
+            curl --fail --location --retry 3 \
+              "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/${FFMPEG_ASSET}" \
+              -o "$FFMPEG_ASSET"
+            grep "  ${FFMPEG_ASSET}$" checksums.sha256 | sha256check
+            tar -xf "$FFMPEG_ASSET" --strip-components=2 --wildcards '*/bin/ffmpeg' '*/bin/ffprobe'
+            mv ffmpeg "ffmpeg-${TARGET}${EXT}"
+            mv ffprobe "ffprobe-${TARGET}${EXT}"
+          fi
+
+      - name: Import Apple Developer ID certificate
+        if: matrix.os == 'macos'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          CERTIFICATE_PATH="$RUNNER_TEMP/vayra-release.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/vayra-signing.keychain-db"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$RUNNER_TEMP" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$RUNNER_TEMP" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$RUNNER_TEMP" "$KEYCHAIN_PATH"
+
+      - name: Import Windows Authenticode certificate
+        if: matrix.os == 'windows'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          $certificatePath = Join-Path $env:RUNNER_TEMP "vayra-release.pfx"
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          $certificate = Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          if (-not $certificate.HasPrivateKey) { throw "Imported certificate has no private key" }
+          $config = @{
+            bundle = @{
+              windows = @{
+                certificateThumbprint = $certificate.Thumbprint
+                digestAlgorithm = "sha256"
+                timestampUrl = "http://timestamp.digicert.com"
+              }
+            }
+          } | ConvertTo-Json -Depth 5
+          $configPath = Join-Path $env:RUNNER_TEMP "windows-signing.json"
+          $config | Set-Content -Path $configPath -Encoding utf8
+          "WINDOWS_SIGNING_CONFIG=$configPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build signed Windows release
+        if: matrix.os == 'windows'
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: >-
+          pnpm tauri build --target ${{ matrix.target }} --bundles nsis
+          --config src-tauri/tauri.release.conf.json
+          --config "$env:WINDOWS_SIGNING_CONFIG" --ci
+
+      - name: Verify Windows signatures
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "src-tauri/target/${{ matrix.target }}/release/bundle/nsis" -Filter "*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "NSIS installer missing" }
+          $signature = Get-AuthenticodeSignature $installer.FullName
+          if ($signature.Status -ne "Valid") { throw "Invalid Authenticode signature: $($signature.Status)" }
+
+      - name: Build signed Linux release
+        if: matrix.os == 'linux'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: >-
+          pnpm tauri build --target ${{ matrix.target }} --bundles deb appimage
+          --config src-tauri/tauri.release.conf.json --ci
+
+      - name: Build and notarize macOS release
+        if: matrix.os == 'macos'
+        shell: bash
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          TARGET="${{ matrix.target }}"
+          BUNDLE_DIR="src-tauri/target/$TARGET/release/bundle"
+          APP="$BUNDLE_DIR/macos/VAYRA.app"
+          OUTPUT="$BUNDLE_DIR/release-output"
+          pnpm tauri build --target "$TARGET" --bundles app --no-sign --ci
+          node scripts/bundle-libmpv-macos.mjs "$APP"
+
+          mkdir -p "$OUTPUT"
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/VAYRA-notarization.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/VAYRA-notarization.zip" \
+            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" --wait
+          xcrun stapler staple "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          spctl --assess --type execute --verbose=2 "$APP"
+
+          UPDATER="$OUTPUT/VAYRA_aarch64.app.tar.gz"
+          tar -czf "$UPDATER" -C "$(dirname "$APP")" "$(basename "$APP")"
+          pnpm tauri signer sign "$UPDATER"
+
+          DMG_STAGE="$RUNNER_TEMP/vayra-dmg"
+          mkdir -p "$DMG_STAGE"
+          ditto "$APP" "$DMG_STAGE/VAYRA.app"
+          ln -s /Applications "$DMG_STAGE/Applications"
+          DMG="$OUTPUT/VAYRA_${{ needs.prepare.outputs.version }}_aarch64.dmg"
+          hdiutil create -volname VAYRA -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG"
+          codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$DMG"
+          xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+          xcrun stapler staple "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+
+      - name: Collect release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          case "${{ matrix.os }}" in
+            macos)
+              find "src-tauri/target/${{ matrix.target }}/release/bundle/release-output" -type f -exec cp {} release-artifacts/ \;
+              ;;
+            windows)
+              find "src-tauri/target/${{ matrix.target }}/release/bundle/nsis" -type f \
+                \( -name '*.exe' -o -name '*.sig' \) -exec cp {} release-artifacts/ \;
+              ;;
+            linux)
+              find "src-tauri/target/${{ matrix.target }}/release/bundle" -type f \
+                \( -name '*.deb' -o -name '*.AppImage' -o -name '*.sig' \) -exec cp {} release-artifacts/ \;
+              ;;
+          esac
+          test -n "$(find release-artifacts -type f -print -quit)"
+          find release-artifacts -type f ! -name 'SHA256SUMS-*.txt' -print0 | sort -z | xargs -0 shasum -a 256 > "release-artifacts/SHA256SUMS-${{ matrix.os }}.txt"
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: release-artifacts/*
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: vayra-${{ matrix.os }}-signed
+          path: release-artifacts/*
+          retention-days: 30
+          if-no-files-found: error
+      - name: Attach artifacts to draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: >-
+          gh release upload "${{ inputs.release_tag }}" release-artifacts/*
+          --repo "$GITHUB_REPOSITORY" --clobber
+
+  finalize:
+    name: Validate and optionally publish
+    needs: [prepare, build]
+    runs-on: ubuntu-22.04
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Generate and validate updater manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-signatures
+          gh release download "${{ inputs.release_tag }}" --repo "$GITHUB_REPOSITORY" \
+            --pattern '*.sig' --dir release-signatures
+          node site/scripts/gen-latest-json.mjs \
+            --tag "${{ inputs.release_tag }}" \
+            --sig-dir release-signatures \
+            --notes "VAYRA ${{ needs.prepare.outputs.version }}" \
+            --out release-signatures/latest.json
+          node scripts/verify-release-readiness.mjs --published \
+            --manifest release-signatures/latest.json
+          gh release upload "${{ inputs.release_tag }}" release-signatures/latest.json \
+            --repo "$GITHUB_REPOSITORY" --clobber
+      - name: Publish verified release
+        if: inputs.publish == true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release edit "${{ inputs.release_tag }}" --repo "$GITHUB_REPOSITORY" \
+            --draft=false --latest
+          for attempt in $(seq 1 20); do
+            LIVE_VERSION="$(curl --fail --silent --show-error \
+              https://vayra.eybo.tech/updates/latest.json | jq -r '.version // empty')" || true
+            if [ "$LIVE_VERSION" = "${{ needs.prepare.outputs.version }}" ]; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Published release is not yet visible through the VAYRA updater gateway" >&2
+          exit 1

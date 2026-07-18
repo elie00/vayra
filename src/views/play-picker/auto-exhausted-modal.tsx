@@ -24,14 +24,15 @@ export function AutoExhaustedModal({
   const epSuffix = episode
     ? ` S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
     : "";
-  const subject = `VAYRA: no working stream for ${title}${epSuffix}`;
+  const subject = "VAYRA: no working stream";
   const body =
-    `Title: ${title}${epSuffix}\n` +
-    `IMDb: ${meta.id ?? ""}\n` +
     `Streams tried: ${triedCount}\n` +
     `\nWhat happened: VAYRA could not find a working stream automatically.\n` +
-    `\n(Add any extra detail here)`;
-  const mailto = `mailto:bugs@harbor.site?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    `\nFor privacy, VAYRA did not include the title, source, URL, addon or account. Add only details you explicitly want to share.`;
+  const issueUrl = `https://github.com/elie00/vayra/issues/new?${new URLSearchParams({
+    title: subject,
+    body,
+  }).toString()}`;
   return (
     <main className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-black px-6">
       <div
@@ -63,7 +64,7 @@ export function AutoExhaustedModal({
             {t("Browse streams manually")}
           </button>
           <button
-            onClick={() => openUrl(mailto)}
+            onClick={() => openUrl(issueUrl)}
             className="flex h-11 items-center justify-center rounded-full bg-elevated text-[13.5px] font-medium text-ink ring-1 ring-edge-soft transition-colors hover:bg-raised"
           >
             {t("Send a bug report")}
