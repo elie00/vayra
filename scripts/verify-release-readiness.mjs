@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { fallbackManifest } from "../site/api/updates/latest.js";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 const fail = (message) => {
@@ -10,7 +11,11 @@ const fail = (message) => {
 const packageJson = readJson("package.json");
 const tauri = readJson("src-tauri/tauri.conf.json");
 const releaseConfig = readJson("src-tauri/tauri.release.conf.json");
-const latest = readJson("site/public/updates/latest.json");
+let latest = fallbackManifest;
+const manifestFlag = process.argv.indexOf("--manifest");
+const manifestPath = manifestFlag >= 0 ? process.argv[manifestFlag + 1] : null;
+if (manifestFlag >= 0 && !manifestPath) fail("--manifest requires a path");
+if (manifestPath) latest = readJson(manifestPath);
 const versions = readJson("site/public/updates/versions.json");
 const cargo = readFileSync("src-tauri/Cargo.toml", "utf8");
 const android = readFileSync("src-tauri/gen/android/app/tauri.properties", "utf8");
@@ -54,13 +59,14 @@ if (releaseConfig.bundle?.createUpdaterArtifacts !== true) {
   fail("release config does not create updater artifacts");
 }
 if (!Array.isArray(versions.versions)) fail("versions.json must contain a versions array");
-if (/REPLACE_WITH|TEMPLATE/i.test(JSON.stringify(latest))) fail("latest.json contains placeholders");
+if (/REPLACE_WITH|TEMPLATE/i.test(JSON.stringify(latest))) fail("updater fallback contains placeholders");
 
 for (const [name, content] of [["site", site], ["robots", robots], ["sitemap", sitemap]]) {
   if (!content.includes("https://vayra.eybo.tech")) fail(`${name} lacks the canonical VAYRA URL`);
 }
 
 if (process.argv.includes("--published")) {
+  if (!manifestPath) fail("--published requires --manifest <generated-latest.json>");
   const required = ["darwin-aarch64", "linux-x86_64", "windows-x86_64"];
   if (latest.version !== version) fail(`published manifest ${latest.version} differs from ${version}`);
   for (const platform of required) {

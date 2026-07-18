@@ -16,7 +16,7 @@ est la seule URL destinée à être indexée et partagée publiquement.
 - `public/styles.css` — direction Mineral Monochrome
 - `public/motion.js` — révélations légères avec mode mouvement réduit
 - `public/favicon.svg` — marque VAYRA monochrome
-- `api/` — fonctions serverless OAuth, métadonnées et feedback
+- `api/` — fonctions serverless updater, OAuth, métadonnées et feedback
 - `vercel.json` — config statique (clean URLs, en-têtes de sécurité)
 
 ## Déploiement Vercel
