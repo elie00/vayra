@@ -1,16 +1,17 @@
 # VAYRA — finalisation produit et distribution
 
 Date : 18 juillet 2026  
-Branche : `release/product-finalization`  
+Branche qualifiée : `main` (`89f6ab6`)
 Version qualifiée par le code : `0.9.36`
 
 ## Verdict
 
 Le produit, le backend social privé, le site public et les chaînes de build sont
-prêts pour une **release candidate de bêta privée**. La publication publique des
-installateurs desktop reste bloquée volontairement tant que les certificats
-Apple Developer ID et Windows Authenticode ne sont pas fournis et que la recette
-de lecture manuelle n'est pas signée sur chaque plateforme.
+prêts pour une **release candidate de bêta privée**. L'APK et l'AAB Android
+signés ont été produits, contrôlés et attestés depuis `main`. La publication
+publique des installateurs desktop reste bloquée volontairement tant que les
+certificats Apple Developer ID et Windows Authenticode ne sont pas fournis et
+que la recette de lecture manuelle n'est pas signée sur chaque plateforme.
 
 Aucun changement de cette passe ne touche au décodage vidéo, HDR, shaders, P2P,
 cast ou protocole de lecture.
@@ -88,6 +89,16 @@ cast ou protocole de lecture.
 | `7ef7385` | suppression du conflit avec le fallback statique |
 | `1122444` | orchestration de la distribution desktop signée |
 | `de06edf` | alignement des promesses publiques du README |
+| `35c9536` | documentation de la procédure de release privée |
+| `29da788` | sources Flatpak compatibles avec pnpm 10 |
+| `2fbafe5` | options d'installation pnpm 10 dans le sandbox Flatpak |
+| `7a9677e` | outils frontend épinglés pour le build Flatpak |
+| `55119f3` | génération WASM avant l'entrée dans le sandbox Flatpak |
+| `22e438b` | validation Android fiable sur runner propre |
+
+Les travaux ont été fusionnés par les PR #2 et #3. La branche `main` est
+protégée : passage par pull request obligatoire, administrateurs inclus,
+résolution des conversations requise, suppression et force-push interdits.
 
 ## Validations réellement exécutées
 
@@ -110,6 +121,19 @@ cast ou protocole de lecture.
 | CI frontend GitHub | PASS |
 | CI Rust/Tauri GitHub | PASS |
 | CI base CIRA GitHub | PASS |
+| CI Flatpak complète, bundle et dépôt OSTree | PASS — [run 29658571414](https://github.com/elie00/vayra/actions/runs/29658571414) |
+| CI Android signée sur `main` | PASS — [run 29659291433](https://github.com/elie00/vayra/actions/runs/29659291433) |
+| signature APK | PASS — schéma v2, un signataire |
+| signature AAB | PASS — `jarsigner -verify` |
+| checksums Android | PASS — APK `2843878139ecf6c4b8b2c91aa650c3c15ede5e1ac72ea390bfb0f28e73df5540`, AAB `a88bce8639017dca506bacd05cfb2c3908a663a931916050e9fe03be0e52d68e` |
+| attestations GitHub APK/AAB | PASS — `gh attestation verify` |
+
+L'artefact CI `vayra-android-release` contient l'APK universel, l'AAB, la
+cartographie R8 et les sommes SHA-256. Il expire le 17 août 2026 ; une copie de
+contrôle est conservée localement dans le répertoire ignoré
+`_backups/android-release-29659291433/`. Le certificat Android conserve
+intentionnellement son identité technique historique afin de préserver la chaîne
+de mise à jour ; ce nom n'est pas une surface de marque visible.
 
 Le build Vite signale encore des avertissements de découpage de chunks et le
 `eval` fourni par `lottie-web`. Ils ne font pas échouer le build et doivent être
@@ -131,19 +155,19 @@ mesurés avant un refactor de performance.
    les proxies optionnels AniList, MAL, Trakt, TVDB et feedback. Les variables
    Vercel existent mais restent vides ; les endpoints historiques fonctionnels
    ne doivent pas être coupés avant leur remplacement qualifié.
-7. Créer et publier le tag `v0.9.36` uniquement après succès des workflows
-   signés et de la recette manuelle. Aucune release GitHub n'est publiée au
+7. Créer et publier le tag `v0.9.36` uniquement après succès du workflow desktop
+   signé et de la recette manuelle. Aucune release GitHub n'est publiée au
    moment de ce rapport.
 
 ## Recette de publication
 
-1. Fusionner cette branche dans `main` après CI verte.
-2. Déclencher `android-release` sur `main` et vérifier APK/AAB sur un appareil.
-3. Ajouter les certificats desktop manquants.
-4. Déclencher `desktop-release` avec `release_tag=v0.9.36` et `publish=false`.
-5. Télécharger les artefacts du brouillon et signer la recette de lecture.
-6. Relancer avec `publish=true` seulement si les artefacts et la recette sont
+1. Installer l'APK signé du run 29659291433 sur un appareil Android et signer la
+   recette de lecture réelle.
+2. Ajouter les certificats desktop manquants.
+3. Déclencher `desktop-release` avec `release_tag=v0.9.36` et `publish=false`.
+4. Télécharger les artefacts du brouillon et signer la recette de lecture.
+5. Relancer avec `publish=true` seulement si les artefacts et la recette sont
    identiques et valides.
-7. Vérifier que le gateway public retourne `0.9.36` avec les trois plateformes,
+6. Vérifier que le gateway public retourne `0.9.36` avec les trois plateformes,
    puis tester l'absence de mise à jour sur 0.9.36 et une mise à jour depuis la
    release VAYRA précédente lorsqu'elle existera.
