@@ -112,6 +112,24 @@ jobs:
           APK="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' -print -quit)"
           AAB="$(find src-tauri/gen/android/app/build/outputs/bundle -type f -name '*.aab' -print -quit)"
           test -n "$APK" && test -n "$AAB"
+          VERSION="$(node -p "require('./package.json').version")"
+          IFS=. read -r VERSION_MAJOR VERSION_MINOR VERSION_PATCH <<< "$VERSION"
+          EXPECTED_ANDROID_CODE=$((VERSION_MAJOR * 1000000 + VERSION_MINOR * 1000 + VERSION_PATCH))
+          mapfile -d '' METADATA_FILES < <(find src-tauri/gen/android/app/build/outputs -type f -name output-metadata.json -print0)
+          test "${#METADATA_FILES[@]}" -gt 0
+          node - "$VERSION" "$EXPECTED_ANDROID_CODE" "${METADATA_FILES[@]}" <<'NODE'
+          const [, , version, expectedCode, ...paths] = process.argv;
+          for (const path of paths) {
+            const metadata = JSON.parse(require("node:fs").readFileSync(path, "utf8"));
+            for (const element of metadata.elements ?? []) {
+              if (element.versionName !== version || element.versionCode !== Number(expectedCode)) {
+                throw new Error(
+                  `${path} contains Android ${element.versionName} (${element.versionCode}), expected ${version} (${expectedCode})`,
+                );
+              }
+            }
+          }
+          NODE
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
           test -x "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs "$APK"
