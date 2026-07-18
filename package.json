@@ -20,7 +20,8 @@
     "setup:ffmpeg": "node scripts/fetch-ffmpeg.mjs",
     "setup:fonts": "node scripts/fetch-fonts.mjs",
     "bundle:macos": "node scripts/bundle-libmpv-macos.mjs",
-    "tauri:build:macos": "tauri build --bundles app && node scripts/bundle-libmpv-macos.mjs"
+    "tauri:build:macos": "tauri build --bundles app && node scripts/bundle-libmpv-macos.mjs",
+    "release:check": "node scripts/verify-release-readiness.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
