@@ -2,7 +2,7 @@
 // gen-latest-json.mjs — generate public/updates/latest.json for the Tauri updater.
 //
 // The Tauri updater plugin (tauri-plugin-updater v2, configured in the VAYRA app at
-// src-tauri/tauri.conf.json -> plugins.updater.endpoints = ["https://harbor.site/updates/latest.json"])
+// src-tauri/tauri.conf.json -> plugins.updater.endpoints = ["https://vayra.eybo.tech/updates/latest.json"])
 // fetches this JSON and, for the running platform key, downloads `url` and verifies it
 // against `signature` using the minisign PUBLIC key baked into tauri.conf. The signature
 // is the RAW CONTENTS of the `.sig` file that `tauri build` emits next to each update

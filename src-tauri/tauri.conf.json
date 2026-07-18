@@ -42,12 +42,12 @@
     "category": "Video",
     "shortDescription": "A client for the Stremio protocol",
     "longDescription": "VAYRA is an independent personal and collaborative media player by EYBO and a client for the open Stremio addon protocol. It hosts and indexes no content: what you can browse or play depends entirely on the addons and services you configure. Native libmpv playback, a Rust stream ranking core, private viewing rooms, Live TV, and per-service catalogs.",
-    "homepage": "https://harbor.site",
+    "homepage": "https://vayra.eybo.tech",
     "publisher": "EYBO",
     "fileAssociations": [
       {
         "ext": ["mkv", "mp4", "avi", "mov", "webm", "m4v"],
-        "name": "HarborVideo",
+        "name": "VAYRAVideo",
         "description": "Video file",
         "role": "Viewer"
       }
@@ -115,8 +115,8 @@
       }
     },
     "updater": {
-      "endpoints": ["https://harbor.site/updates/latest.json"],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIyNjlEMjU4NjQ4OTM2MjAKUldRZ05vbGtXTkpwc3ZDQnlvZUYyL2VEWHgwODdJa2dkZ2xlNWk3emRWL1V0dXVrcUJlVmhCWEUK",
+      "endpoints": ["https://vayra.eybo.tech/updates/latest.json"],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg1NTgxNzhCMTUwMTIyMjIKUldRaUlnRVZpeGRZaGFVajh6WWltU1RpQ2F6ek1McC9qODVHcEVGdjA5aVRQZ1FFVmlFM3VqSE8K",
       "windows": {
         "installMode": "passive"
       }

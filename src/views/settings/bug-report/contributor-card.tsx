@@ -2,7 +2,7 @@ import { GitPullRequest, Github } from "lucide-react";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 
-const REPO = "https://github.com/harborstremio/harbor";
+const REPO = "https://github.com/elie00/vayra";
 
 export function ContributorCard() {
   const t = useT();
