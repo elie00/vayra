@@ -56,8 +56,8 @@ node site/scripts/gen-latest-json.mjs \
 
 Upload the generated manifest only after every referenced release asset exists.
 Never hand-write signatures and never publish placeholder values. The checked-in
-`site/public/updates/latest.json` remains the explicit no-update fallback and is
-not edited for every release.
+The explicit no-update fallback lives in `site/api/updates/latest.js` and is not
+edited for every release.
 
 ## Required checks
 

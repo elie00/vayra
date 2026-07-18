@@ -3,7 +3,7 @@ const RELEASE_MANIFEST =
 const RELEASE_ASSET_PREFIX =
   "https://github.com/elie00/vayra/releases/download/";
 
-const fallbackManifest = {
+export const fallbackManifest = {
   version: "0.9.36",
   notes: "No signed VAYRA update is currently published.",
   pub_date: "2026-07-18T00:00:00.000Z",
