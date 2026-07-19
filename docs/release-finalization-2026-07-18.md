@@ -1,7 +1,7 @@
 # VAYRA — finalisation produit et distribution
 
 Date : 18 juillet 2026  
-Branche qualifiée : `main` (`89f6ab6`)
+Branche qualifiée : `main` (`e62bc1b`)
 Version qualifiée par le code : `0.9.36`
 
 ## Verdict
@@ -29,10 +29,11 @@ cast ou protocole de lecture.
 - Le gateway updater accepte uniquement les manifests dont les artefacts sont
   servis par `github.com/elie00/vayra/releases/download/`. Sans release signée,
   il retourne la version courante avec `platforms: {}`.
-- Le workflow `desktop-release.yml` prépare une release GitHub brouillon,
-  construit les trois plateformes, exige les secrets de signature, notarise
-  macOS, vérifie Authenticode sous Windows, atteste les artefacts, génère
-  `latest.json` puis ne publie que sur demande explicite.
+- Le workflow `desktop-release.yml` construit les trois plateformes dans des
+  artefacts CI internes, exige les secrets de signature, notarise macOS, vérifie
+  Authenticode sous Windows et atteste les artefacts. Il ne crée le tag et la
+  release GitHub brouillon qu'après le succès des trois builds et la validation
+  de `latest.json`, puis ne publie que sur demande explicite.
 - Le workflow `android-release.yml` fabrique APK et AAB multi-ABI, vérifie leurs
   signatures, produit les sommes SHA-256 et les attestations de provenance.
 - Le workflow Flatpak produit maintenant `VAYRA.flatpak` et un artefact nommé
@@ -95,6 +96,7 @@ cast ou protocole de lecture.
 | `7a9677e` | outils frontend épinglés pour le build Flatpak |
 | `55119f3` | génération WASM avant l'entrée dans le sandbox Flatpak |
 | `22e438b` | validation Android fiable sur runner propre |
+| `7cc99a5` | création atomique du tag et du brouillon desktop |
 
 Les travaux ont été fusionnés par les PR #2 et #3. La branche `main` est
 protégée : passage par pull request obligatoire, administrateurs inclus,
@@ -127,6 +129,7 @@ résolution des conversations requise, suppression et force-push interdits.
 | signature AAB | PASS — `jarsigner -verify` |
 | checksums Android | PASS — APK `2843878139ecf6c4b8b2c91aa650c3c15ede5e1ac72ea390bfb0f28e73df5540`, AAB `a88bce8639017dca506bacd05cfb2c3908a663a931916050e9fe03be0e52d68e` |
 | attestations GitHub APK/AAB | PASS — `gh attestation verify` |
+| syntaxe du workflow desktop | PASS — `actionlint` 1.7.7 |
 
 L'artefact CI `vayra-android-release` contient l'APK universel, l'AAB, la
 cartographie R8 et les sommes SHA-256. Il expire le 17 août 2026 ; une copie de
