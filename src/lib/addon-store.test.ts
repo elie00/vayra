@@ -38,6 +38,19 @@ function manifestResponse(id: string, name = id) {
 }
 
 describe("addon installation", () => {
+  it("installs locally without treating Stremio as a requirement", async () => {
+    mocks.fetch.mockResolvedValueOnce(manifestResponse("local.addon"));
+
+    const result = await installFromUrl("https://addon.example/local/manifest.json");
+
+    expect(result.syncedToStremio).toBe(false);
+    expect(mocks.userAddons).not.toHaveBeenCalled();
+    expect(mocks.setUserAddons).not.toHaveBeenCalled();
+    expect(loadInstalled()).toMatchObject([
+      { id: "local.addon", transportUrl: "https://addon.example/local/manifest.json" },
+    ]);
+  });
+
   it("replaces an existing configuration with the same manifest id", async () => {
     mocks.fetch
       .mockResolvedValueOnce(manifestResponse("example.addon"))

@@ -53,11 +53,11 @@ export function NotSignedInState({ onSignIn }: { onSignIn: () => void }) {
   const t = useT();
   return (
     <EmptyShell
-      heading={t("Sign in to see your library calendar")}
+      heading={t("Connect Stremio to see your library calendar")}
       body={t(
-        "My Library shows upcoming episodes from the shows you've saved on Stremio. Sign in to wire it up.",
+        "My Library shows upcoming episodes from the shows you've saved on Stremio. Connect it as an optional integration in Settings.",
       )}
-      action={<ActionButton onClick={onSignIn}>{t("Sign in")}</ActionButton>}
+      action={<ActionButton onClick={onSignIn}>{t("Open account settings")}</ActionButton>}
     />
   );
 }

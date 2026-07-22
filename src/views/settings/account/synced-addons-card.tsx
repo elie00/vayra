@@ -37,7 +37,7 @@ export function SyncedAddonsCard() {
   if (!authKey) {
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-edge-soft bg-canvas/40 p-5 text-[13px] text-ink-subtle">
-        {t("Sign in to Stremio first. Your installed addons sync from there.")}
+        {t("Connect Stremio above to import or export its addon collection. Your local VAYRA addons keep working without it.")}
       </div>
     );
   }

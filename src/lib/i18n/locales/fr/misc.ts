@@ -1,4 +1,67 @@
 const misc: Record<string, string> = {
+  "VAYRA account": "Compte VAYRA",
+  "Local profile": "Profil local",
+  "Stremio integration": "Intégration Stremio",
+  "Connect Stremio": "Connecter Stremio",
+  "Disconnect Stremio": "Déconnecter Stremio",
+  "Optional. Import or export your Stremio library, watch progress, and addon collection.":
+    "Facultatif. Importe ou exporte ta bibliothèque Stremio, ta progression et ta collection d’addons.",
+  "Optional integration for importing or exporting your library, watch progress, and addons.":
+    "Intégration facultative pour importer ou exporter ta bibliothèque, ta progression et tes addons.",
+  "Stremio is not connected": "Stremio n’est pas connecté",
+  "Connect it only if you want to import or export your library, watch progress, and addons.":
+    "Connecte-le uniquement pour importer ou exporter ta bibliothèque, ta progression et tes addons.",
+  "Connect Stremio above to import or export its addon collection. Your local VAYRA addons keep working without it.":
+    "Connecte Stremio ci-dessus pour importer ou exporter sa collection d’addons. Tes addons VAYRA locaux continuent de fonctionner sans lui.",
+  "Your VAYRA identity, profiles, and optional connections to services such as Stremio.":
+    "Ton identité VAYRA, tes profils et les connexions facultatives à des services comme Stremio.",
+  "Your private VAYRA identity, connected with a passwordless email link.":
+    "Ton identité VAYRA privée, accessible par un lien envoyé par e-mail, sans mot de passe.",
+  "No VAYRA account connected": "Aucun compte VAYRA connecté",
+  "Connected by email. Stremio remains a separate service.":
+    "Connecté par e-mail. Stremio reste un service séparé.",
+  "Sign in or create an account with your email address.":
+    "Connecte-toi ou crée un compte avec ton adresse e-mail.",
+  "Continue with email": "Continuer avec l’e-mail",
+  "Sign in to VAYRA": "Se connecter à VAYRA",
+  "Sign in or create your VAYRA account": "Connecte-toi ou crée ton compte VAYRA",
+  "Use your email for your VAYRA identity. No password required.":
+    "Utilise ton e-mail pour ton identité VAYRA. Aucun mot de passe nécessaire.",
+  "Enter your email to sign in or create your private VAYRA identity. No password required.":
+    "Saisis ton e-mail pour te connecter ou créer ton identité VAYRA privée. Aucun mot de passe nécessaire.",
+  "Sign out of VAYRA": "Se déconnecter de VAYRA",
+  "Check your inbox and open the VAYRA sign-in link on this device.":
+    "Consulte ta boîte mail et ouvre le lien de connexion VAYRA sur cet appareil.",
+  "Email me a sign-in link": "M’envoyer un lien de connexion",
+  "Sign in or create a VAYRA account": "Se connecter ou créer un compte VAYRA",
+  "Use one private VAYRA identity for the app. External services stay optional.":
+    "Utilise une identité VAYRA privée pour l’application. Les services externes restent facultatifs.",
+  "Your VAYRA identity is connected here.": "Ton identité VAYRA est connectée ici.",
+  "Connect Stremio in Settings": "Connecter Stremio dans les Paramètres",
+  "Connect Stremio to see your library calendar":
+    "Connecte Stremio pour afficher le calendrier de ta bibliothèque",
+  "My Library shows upcoming episodes from the shows you've saved on Stremio. Connect it as an optional integration in Settings.":
+    "Ma bibliothèque affiche les prochains épisodes des séries enregistrées sur Stremio. Connecte-le comme intégration facultative dans les Paramètres.",
+  "Open account settings": "Ouvrir les paramètres du compte",
+  "Your media, profiles, and watch experience in one place. Connect only the services you choose.":
+    "Tes médias, tes profils et ton expérience de visionnage au même endroit. Connecte uniquement les services de ton choix.",
+  "Your VAYRA account stays separate from optional services.":
+    "Ton compte VAYRA reste séparé des services facultatifs.",
+  "Step 2 · VAYRA account": "Étape 2 · Compte VAYRA",
+  "Your VAYRA account": "Ton compte VAYRA",
+  "Use one private VAYRA identity for your profiles, settings, CIRA, and VARA. Stremio stays an optional integration you can connect later in Settings.":
+    "Utilise une identité VAYRA privée pour tes profils, tes paramètres, CIRA et VARA. Stremio reste une intégration facultative que tu pourras connecter plus tard dans les Paramètres.",
+  "VAYRA account connected": "Compte VAYRA connecté",
+  "Check your inbox": "Consulte ta boîte mail",
+  "Open the VAYRA sign-in link on this device. Your account will be created automatically if this email is new.":
+    "Ouvre le lien de connexion VAYRA sur cet appareil. Ton compte sera créé automatiquement si cette adresse est nouvelle.",
+  "Use another email": "Utiliser une autre adresse",
+  "Sign in or create my account": "Me connecter ou créer mon compte",
+  "After saving, select this profile and connect Stremio from Settings. Library and addons stay separate.":
+    "Après l’enregistrement, sélectionne ce profil et connecte Stremio depuis les Paramètres. La bibliothèque et les addons resteront séparés.",
+  "Stremio sync is optional": "La synchronisation Stremio est facultative",
+  "Addons work in VAYRA without Stremio. Connect it in Settings only if you want to import or export your addon collection.":
+    "Les addons fonctionnent dans VAYRA sans Stremio. Connecte-le dans les Paramètres uniquement pour importer ou exporter ta collection d’addons.",
   Collections: "Collections",
   "Open settings": "Ouvrir les paramètres",
   "Collapse sidebar": "Replier la barre latérale",

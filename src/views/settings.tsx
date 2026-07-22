@@ -40,7 +40,7 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   account: {
     label: "Account",
-    sub: "Your Stremio sign-in. Library, watch progress, and addons sync from here.",
+    sub: "Your VAYRA identity, profiles, and optional connections to services such as Stremio.",
   },
   cira: {
     label: "CIRA",

@@ -47,7 +47,7 @@ async function pushToStremio(
   replaceIds: string[] = [],
 ): Promise<boolean> {
   const authKey = readAuthKey();
-  if (!authKey) return true;
+  if (!authKey) return false;
   try {
     const current = await userAddons(authKey);
     const idsToReplace = new Set([addon.manifest.id, ...replaceIds]);
