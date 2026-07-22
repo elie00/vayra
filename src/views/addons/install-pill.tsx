@@ -1,5 +1,6 @@
 import { Check, Loader2, Plus, Settings2, X } from "lucide-react";
 import { useState } from "react";
+import { manifestRequiresConfiguration } from "@/lib/addon-store";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { withMinDuration } from "./addons-utils";
@@ -11,13 +12,11 @@ export function InstallPill({
   installed,
   onInstall,
   onUninstall,
-  onOpen,
 }: {
   resolved: ResolvedAddon;
   installed: boolean;
   onInstall: () => void | Promise<void>;
   onUninstall: () => void | Promise<void>;
-  onOpen: () => void;
 }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
@@ -69,15 +68,11 @@ export function InstallPill({
       </button>
     );
   }
-  const hints = resolved.manifest?.behaviorHints;
-  const needsConfigure = hints?.configurable === true || hints?.configurationRequired === true;
+  const needsConfigure = manifestRequiresConfiguration(resolved.manifest);
   if (needsConfigure) {
     return (
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onOpen();
-        }}
+        onClick={runInstall}
         className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-all duration-150 ease-out hover:opacity-90 active:scale-[0.96]"
       >
         <Settings2 size={14} strokeWidth={2.2} />
