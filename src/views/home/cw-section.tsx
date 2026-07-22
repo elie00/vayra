@@ -1,12 +1,11 @@
-import { useState } from "react";
 import { LogIn } from "lucide-react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
-import { AuthModal } from "@/components/auth-modal";
 import { ContinueCard } from "@/components/continue-card";
 import { Row } from "@/components/row";
 import { useT } from "@/lib/i18n";
 import { type LibraryItem } from "@/lib/stremio";
 import { isLibraryItemWatched } from "@/lib/trakt/library-key";
+import { useView } from "@/lib/view";
 
 type Props = {
   signedIn: boolean;
@@ -17,20 +16,18 @@ type Props = {
 
 export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
   const t = useT();
-  const [showAuth, setShowAuth] = useState(false);
+  const { openSettings } = useView();
 
   const signInButton = signedIn ? null : (
     <button
       type="button"
-      onClick={() => setShowAuth(true)}
+      onClick={() => openSettings("account")}
       className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-edge-soft px-3 py-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
     >
       <LogIn size={13} strokeWidth={2.2} />
-      {t("profile.signIn")}
+      {t("Connect Stremio in Settings")}
     </button>
   );
-
-  const authModal = showAuth ? <AuthModal onClose={() => setShowAuth(false)} /> : null;
 
   if (items.length > 0) {
     return (
@@ -51,7 +48,6 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
             />
           ))}
         </Row>
-        {authModal}
       </>
     );
   }
@@ -68,9 +64,9 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
             <span>{t("Sign in to")}</span>
             <button
               type="button"
-              onClick={() => setShowAuth(true)}
+              onClick={() => openSettings("account")}
               className="rounded-md transition-opacity hover:opacity-80"
-              aria-label={t("profile.signIn")}
+              aria-label={t("Connect Stremio in Settings")}
             >
               <img
                 src={stremioWordmark}
@@ -83,7 +79,6 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
           </p>
         )}
       </div>
-      {authModal}
     </div>
   );
 }

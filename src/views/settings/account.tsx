@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
-import { AuthModal } from "@/components/auth-modal";
+import { AuthModal, StremioAuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/lib/auth";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
@@ -46,7 +46,8 @@ export function AccountStub() {
       updateProfile(activeProfile.id, { name: next });
     }
   };
-  const [showAuth, setShowAuth] = useState(false);
+  const [showVayraAuth, setShowVayraAuth] = useState(false);
+  const [showStremioAuth, setShowStremioAuth] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName);
   const [editingName, setEditingName] = useState(false);
@@ -61,10 +62,9 @@ export function AccountStub() {
     setNameDraft(displayName);
   }, [displayName]);
 
-  const stremioAvatar = user?.avatar ?? null;
   const harborAvatar = settings.harborAvatar;
   const customAvatar = activeProfile?.avatar ?? harborAvatar ?? null;
-  const effectiveAvatar = customAvatar ?? stremioAvatar;
+  const effectiveAvatar = customAvatar;
 
   const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -143,9 +143,9 @@ export function AccountStub() {
                   <span className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
                     {displayName}
                   </span>
-                  {user && (
+                  {vayraUser?.email && (
                     <span className="text-[13px] text-ink-subtle">
-                      ({user.fullname || user.email.split("@")[0]})
+                      ({vayraUser.email.split("@")[0]})
                     </span>
                   )}
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden className="text-ink-subtle">
@@ -174,7 +174,7 @@ export function AccountStub() {
                     onClick={() => pushIdentity({ harborAvatar: null })}
                     className="flex h-9 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
                   >
-                    {stremioAvatar ? t("Reset to Stremio avatar") : t("Reset to default")}
+                    {t("Reset to default")}
                   </button>
                 )}
               </div>
@@ -219,7 +219,7 @@ export function AccountStub() {
             </button>
           ) : (
             <button
-              onClick={() => setShowAuth(true)}
+              onClick={() => setShowVayraAuth(true)}
               disabled={!vayraAccountConfigured || vayraAccountLoading}
               className="flex h-10 shrink-0 items-center rounded-xl bg-accent px-4 text-[13px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-45"
             >
@@ -314,8 +314,8 @@ export function AccountStub() {
       </Section>
 
       <Section
-        title={t("Stremio account")}
-        subtitle={t("Library, watch progress, and addon collection sync from this account.")}
+        title={t("Stremio integration")}
+        subtitle={t("Optional. Import or export your Stremio library, watch progress, and addon collection.")}
       >
         {user ? (
           <div className="relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-edge-soft bg-canvas/40 p-5">
@@ -353,7 +353,7 @@ export function AccountStub() {
             </div>
             <div className="mt-1 flex items-center gap-2 border-t border-edge-soft/60 pt-3">
               <button
-                onClick={() => setShowAuth(true)}
+                onClick={() => setShowStremioAuth(true)}
                 className="flex h-10 items-center gap-1.5 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
               >
                 {t("Re-authenticate")}
@@ -362,23 +362,23 @@ export function AccountStub() {
                 onClick={signOut}
                 className="flex h-10 items-center gap-1.5 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
               >
-                {t("Sign out")}
+                {t("Disconnect Stremio")}
               </button>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
             <div className="flex flex-col">
-              <span className="text-[14px] font-medium text-ink">{t("Not signed in")}</span>
+              <span className="text-[14px] font-medium text-ink">{t("Stremio is not connected")}</span>
               <span className="text-[12.5px] text-ink-subtle">
-                {t("Sign in to sync your library, watch progress, and addons.")}
+                {t("Connect it only if you want to import or export your library, watch progress, and addons.")}
               </span>
             </div>
             <button
-              onClick={() => setShowAuth(true)}
+              onClick={() => setShowStremioAuth(true)}
               className="flex h-10 items-center gap-1.5 rounded-xl bg-ink px-4 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
             >
-              {t("Sign in")}
+              {t("Connect Stremio")}
             </button>
           </div>
         )}
@@ -391,7 +391,8 @@ export function AccountStub() {
         <SyncedAddonsCard />
       </Section>
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showVayraAuth && <AuthModal onClose={() => setShowVayraAuth(false)} />}
+      {showStremioAuth && <StremioAuthModal onClose={() => setShowStremioAuth(false)} />}
       {avatarPickerOpen && (
         <AvatarCatalogModal
           current={effectiveAvatar}

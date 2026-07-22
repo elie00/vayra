@@ -485,7 +485,7 @@ export function EditorView({
               onClick={() => setShareWith(null)}
               icon={<UserIcon size={14} strokeWidth={2.2} />}
               title={t("Use a separate Stremio account")}
-              sub={t("Sign in from the sidebar after saving. Library and addons stay separate.")}
+              sub={t("After saving, select this profile and connect Stremio from Settings. Library and addons stay separate.")}
             />
           </div>
         </div>
