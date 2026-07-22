@@ -3,7 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import stremioAddonsLogo from "@/assets/stremio-addons-net.png";
 import { ArrowedScrollRow } from "@/components/arrowed-scroll-row";
 import { addonSiteUrl, listAddons, type SAAddon } from "@/lib/providers/stremio-addons";
-import { fetchManifestAt, installAddon, manifestToConfigureUrl } from "@/lib/addon-store";
+import {
+  fetchManifestAt,
+  installAddon,
+  manifestRequiresConfiguration,
+  manifestToConfigureUrl,
+} from "@/lib/addon-store";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { openUrl } from "@/lib/window";
 
@@ -202,13 +207,12 @@ function CommunityCard({
     if (!m?.id || busy) return;
     setBusy(true);
     try {
-      let hints = (m as { behaviorHints?: { configurable?: boolean; configurationRequired?: boolean } })
-        .behaviorHints;
-      if (!hints) {
+      let manifest = m;
+      if (!manifest?.behaviorHints) {
         const full = await fetchManifestAt(addon.manifestUrl).catch(() => null);
-        hints = full?.behaviorHints;
+        manifest = full ?? manifest;
       }
-      if (hints?.configurable === true || hints?.configurationRequired === true) {
+      if (manifestRequiresConfiguration(manifest)) {
         openInstallerViewport(manifestToConfigureUrl(addon.manifestUrl), name, logo ?? null);
         return;
       }

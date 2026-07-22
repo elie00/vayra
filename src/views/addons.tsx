@@ -2,6 +2,7 @@ import { Check, ChevronRight, Library, Sparkles, Star, TrendingUp } from "lucide
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AgeGateModal } from "@/components/age-gate-modal";
 import { HarborLoader } from "@/components/harbor-loader";
+import { openInstallerViewport } from "@/components/installer-viewport";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -12,7 +13,15 @@ import { useCategories } from "@/lib/providers/stremio-addons";
 import { prefetchTopAddonLogos } from "@/lib/providers/addon-logo-prefetch";
 import { relatedAddons, recommendedAddons } from "@/lib/addons-store/recommend";
 import { loadDisplayOrder } from "@/lib/addons-store/reorder";
-import { fetchManifestAt, installAddon, installFromUrl, loadInstalled, uninstallAddon } from "@/lib/addon-store";
+import {
+  fetchManifestAt,
+  installAddon,
+  installFromUrl,
+  loadInstalled,
+  manifestRequiresConfiguration,
+  manifestToConfigureUrl,
+  uninstallAddon,
+} from "@/lib/addon-store";
 import { useAuth } from "@/lib/auth";
 import streamsIcon from "@/assets/category/streams.svg";
 import catalogsIcon from "@/assets/category/catalogs.svg";
@@ -183,9 +192,12 @@ export function AddonsView() {
       if (!manifest?.behaviorHints) {
         manifest = await fetchManifestAt(r.transportUrl).catch(() => manifest);
       }
-      const hints = manifest?.behaviorHints;
-      if (hints?.configurable === true || hints?.configurationRequired === true) {
-        openAddonDetail(manifest?.id ?? r.manifest?.id ?? r.curated?.id ?? r.transportUrl);
+      if (manifestRequiresConfiguration(manifest ?? undefined)) {
+        openInstallerViewport(
+          manifestToConfigureUrl(r.transportUrl),
+          manifest?.name ?? r.manifest?.name ?? r.curated?.id,
+          manifest?.logo ?? r.manifest?.logo ?? null,
+        );
         return;
       }
       const addon = await installAddon(manifest?.id ?? r.manifest?.id ?? r.curated?.id ?? "", r.transportUrl);

@@ -41,12 +41,19 @@ function readAuthKey(): string | null {
   return readActiveStremioAuthKey();
 }
 
-async function pushToStremio(addon: Addon, mode: "install" | "uninstall"): Promise<boolean> {
+async function pushToStremio(
+  addon: Addon,
+  mode: "install" | "uninstall",
+  replaceIds: string[] = [],
+): Promise<boolean> {
   const authKey = readAuthKey();
   if (!authKey) return true;
   try {
     const current = await userAddons(authKey);
-    const filtered = current.filter((a) => a.transportUrl !== addon.transportUrl);
+    const idsToReplace = new Set([addon.manifest.id, ...replaceIds]);
+    const filtered = current.filter(
+      (a) => a.transportUrl !== addon.transportUrl && !idsToReplace.has(a.manifest.id),
+    );
     const next = mode === "install" ? [...filtered, addon] : filtered;
     return await setUserAddons(authKey, next);
   } catch {
@@ -208,6 +215,15 @@ export function findHostnameMatch(transportUrl: string): InstalledAddon | null {
   return loadInstalled().find((a) => transportHost(a.transportUrl) === host) ?? null;
 }
 
+export function manifestRequiresConfiguration(
+  manifest: Addon["manifest"] | null | undefined,
+): boolean {
+  return (
+    manifest?.behaviorHints?.configurable === true ||
+    manifest?.behaviorHints?.configurationRequired === true
+  );
+}
+
 export type AddonUrlParse =
   | { kind: "ok"; url: string }
   | { kind: "error"; message: string };
@@ -261,15 +277,8 @@ export type InstallResult = {
   replaced: boolean;
 };
 
-export async function installAddon(id: string, transportUrl: string): Promise<Addon> {
-  const manifest = await fetchManifestAt(transportUrl);
-  const canonicalId = manifest.id || id;
-  const next = loadInstalled().filter((a) => a.transportUrl !== transportUrl);
-  next.push({ id: canonicalId, transportUrl, installedAt: Date.now(), manifest });
-  saveInstalled(next);
-  const addon: Addon = { manifest, transportUrl };
-  await pushToStremio(addon, "install");
-  return addon;
+export async function installAddon(_id: string, transportUrl: string): Promise<Addon> {
+  return (await installFromUrl(transportUrl)).addon;
 }
 
 export async function installFromUrl(
@@ -284,25 +293,20 @@ export async function installFromUrl(
   const replaceId = options.replaceId && options.replaceId !== id ? options.replaceId : null;
   const replacedById = before.some((a) => a.id === id);
   const replacedByOld = replaceId != null && before.some((a) => a.id === replaceId);
-  const next = before.filter((a) => a.transportUrl !== parsed.url && (!replaceId || a.id !== replaceId));
+  const next = before.filter(
+    (a) =>
+      a.transportUrl !== parsed.url &&
+      a.id !== id &&
+      (!replaceId || a.id !== replaceId),
+  );
   next.push({ id, transportUrl: parsed.url, installedAt: Date.now(), manifest });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl: parsed.url };
-  const syncedToStremio = await pushToStremio(addon, "install");
-  if (replaceId && replaceId !== id) {
-    const authKey = readAuthKey();
-    if (authKey) {
-      try {
-        const current = await userAddons(authKey);
-        const trimmed = current.filter((a) => a.manifest.id !== replaceId);
-        if (trimmed.length !== current.length) {
-          await setUserAddons(authKey, trimmed);
-        }
-      } catch {
-        /* noop */
-      }
-    }
-  }
+  const syncedToStremio = await pushToStremio(
+    addon,
+    "install",
+    replaceId ? [replaceId] : [],
+  );
   return { addon, syncedToStremio, replaced: replacedById || replacedByOld };
 }
 
