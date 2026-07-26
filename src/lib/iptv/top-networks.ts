@@ -248,11 +248,50 @@ export const UK_NETWORK_ROWS: NetworkRow[] = [
   },
 ];
 
+export const FR_NETWORK_ROWS: NetworkRow[] = [
+  {
+    id: "fr-tnt",
+    title: "TNT",
+    networks: [
+      { id: "tf1", displayName: "TF1", match: /\btf1\b/i, exclude: /tf1\s*(s(é|e)ries|films)/i },
+      { id: "france-2", displayName: "France 2", match: /france\s*2\b/i },
+      { id: "france-3", displayName: "France 3", match: /france\s*3\b/i },
+      { id: "france-4", displayName: "France 4", match: /france\s*4\b/i },
+      { id: "france-5", displayName: "France 5", match: /france\s*5\b/i },
+      { id: "arte", displayName: "Arte", match: /\barte\b/i, exclude: /concert/i },
+      { id: "m6", displayName: "M6", match: /\bm6\b/i, exclude: /music|boutique/i },
+      { id: "c8", displayName: "C8", match: /\bc8\b/i },
+      { id: "w9", displayName: "W9", match: /\bw9\b/i },
+      { id: "tmc", displayName: "TMC", match: /\btmc\b/i },
+      { id: "tfx", displayName: "TFX", match: /\btfx\b/i },
+      { id: "nrj-12", displayName: "NRJ 12", match: /nrj\s*12\b/i },
+      { id: "gulli", displayName: "Gulli", match: /gulli/i },
+      { id: "6ter", displayName: "6ter", match: /\b6ter\b/i },
+      { id: "cherie-25", displayName: "Chérie 25", match: /ch[ée]rie\s*25\b/i },
+      { id: "rmc-story", displayName: "RMC Story", match: /rmc\s*story/i },
+      { id: "rmc-decouverte", displayName: "RMC Découverte", match: /rmc\s*d[ée]couverte/i },
+    ],
+  },
+  {
+    id: "fr-info",
+    title: "Info",
+    networks: [
+      { id: "bfm-tv", displayName: "BFM TV", match: /bfm\s*tv/i },
+      { id: "cnews", displayName: "CNews", match: /\bcnews\b/i },
+      { id: "lci", displayName: "LCI", match: /\blci\b/i },
+      { id: "franceinfo", displayName: "franceinfo", match: /france\s*info/i },
+      { id: "france-24", displayName: "France 24", match: /france\s*24\b/i },
+      { id: "euronews", displayName: "Euronews", match: /euronews/i },
+    ],
+  },
+];
+
 export function rowsForRegion(region: string): NetworkRow[] {
   const r = region.toUpperCase();
   if (r === "US" || r === "USA") return US_NETWORK_ROWS;
   if (r === "BR" || r === "BRA") return BR_NETWORK_ROWS;
   if (r === "GB" || r === "UK") return UK_NETWORK_ROWS;
+  if (r === "FR" || r === "FRA") return FR_NETWORK_ROWS;
   return [];
 }
 
@@ -263,6 +302,8 @@ const REGION_GROUP_TOKENS: Record<string, string[]> = {
   BRA: ["BR", "BRA", "BRASIL", "BRAZIL"],
   GB: ["UK", "GB", "BRITAIN", "BRITISH", "ENGLAND"],
   UK: ["UK", "GB", "BRITAIN", "BRITISH", "ENGLAND"],
+  FR: ["FR", "FRA", "FRANCE", "FRENCH"],
+  FRA: ["FR", "FRA", "FRANCE", "FRENCH"],
 };
 
 export function filterChannelsByRegion(
