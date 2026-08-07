@@ -1,4 +1,4 @@
-import { ArrowDownUp, Check, CheckCheck, ChevronDown, EyeOff } from "lucide-react";
+import { ArrowDownToLine, ArrowDownUp, Check, CheckCheck, ChevronDown, EyeOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 
@@ -9,17 +9,35 @@ export function EpisodeGridControls({
   onSort,
   allWatched,
   onMarkSeason,
+  onDownloadSeason,
 }: {
   sort: Sort;
   onSort: (s: Sort) => void;
   allWatched: boolean;
   onMarkSeason: (watched: boolean) => void;
+  onDownloadSeason?: () => void;
 }) {
   return (
     <div className="flex items-center gap-2">
       <SortMenu sort={sort} onSort={onSort} />
+      {onDownloadSeason && <DownloadSeasonButton onClick={onDownloadSeason} />}
       <OptionsMenu allWatched={allWatched} onMarkSeason={onMarkSeason} />
     </div>
+  );
+}
+
+function DownloadSeasonButton({ onClick }: { onClick: () => void }) {
+  const t = useT();
+  const label = t("Download season");
+  return (
+    <button
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-edge-soft bg-canvas/90 text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
+    >
+      <ArrowDownToLine size={16} strokeWidth={2.2} />
+    </button>
   );
 }
 
