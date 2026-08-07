@@ -16,9 +16,10 @@ import { registerStreamProxy } from "@/lib/stream-proxy";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayInvite } from "@/lib/together/protocol";
 import { buildPlayInvite } from "@/lib/together/build-invite";
-import { type PlayEpisode, type PlayerSrc } from "@/lib/view";
+import { type PickerIntent, type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { openInAppBrowser, openUrl } from "@/lib/window";
 import { enqueueDownload } from "@/lib/download/downloads-store";
+import { runSeasonDownload, type SeasonDownloadProgress } from "@/lib/download/season-download";
 import { t } from "@/lib/i18n";
 import { formatStreamQuality, humanError, isDebridFailure } from "./picker-utils";
 
@@ -41,6 +42,8 @@ export function usePickHandler({
   openPlayer,
   intent,
   onDownloadStarted,
+  seasonEpisodes,
+  onSeasonProgress,
   autoActive,
   autoAttemptIdx,
   autoCandidatesLength,
@@ -67,8 +70,10 @@ export function usePickHandler({
   sendInvite: (invite: PlayInvite) => void;
   claimHost: (fresh: boolean) => void;
   openPlayer: (src: PlayerSrc) => void;
-  intent?: "play" | "download";
+  intent?: PickerIntent;
   onDownloadStarted?: (label?: string | null) => void;
+  seasonEpisodes?: PlayEpisode[];
+  onSeasonProgress?: (p: SeasonDownloadProgress | null) => void;
   autoActive: boolean;
   autoAttemptIdx: number;
   autoCandidatesLength: number;
@@ -271,6 +276,42 @@ export function usePickHandler({
     }
   };
 
+  // Season mode never goes through resolveAndOpen: the pack has to be re-resolved
+  // once per episode with that episode's hint, which runSeasonDownload owns.
+  const startSeasonDownload = (stream: ScoredStream) => {
+    if (!seasonEpisodes || seasonEpisodes.length === 0) return;
+    setResolveError(null);
+    const ac = new AbortController();
+    resolveAcRef.current?.abort();
+    resolveAcRef.current = ac;
+    void runSeasonDownload({
+      meta,
+      stream,
+      episodes: seasonEpisodes,
+      debrids,
+      signal: ac.signal,
+      onProgress: (p) => {
+        if (!ac.signal.aborted) onSeasonProgress?.(p);
+      },
+    })
+      .then((p) => {
+        if (ac.signal.aborted) return;
+        onSeasonProgress?.(null);
+        if (p.queued === 0 && p.skipped === 0) {
+          setResolveError(
+            t("Couldn't pull any episode out of this source. Pick another pack."),
+          );
+          return;
+        }
+        onDownloadStarted?.(null);
+      })
+      .catch(() => {
+        if (ac.signal.aborted) return;
+        onSeasonProgress?.(null);
+        setResolveError(humanError("all-debrids-failed"));
+      });
+  };
+
   const startResolve = (stream: ScoredStream, committed: boolean, forceP2p = false) => {
     setResolveError(null);
     setQueuedHash(null);
@@ -285,6 +326,10 @@ export function usePickHandler({
 
   const onPlay = (stream: ScoredStream, committed = true, skipP2pConfirm = false, auto = false) => {
     autoPickRef.current = auto;
+    if (intent === "download-season") {
+      startSeasonDownload(stream);
+      return;
+    }
     if (!stream.url && stream.externalUrl) {
       openUrl(stream.externalUrl);
       return;

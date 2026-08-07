@@ -17,7 +17,7 @@ import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
 
-import { useScrollMemory, useView, type PlayEpisode, type PlayerSrc } from "@/lib/view";
+import { useScrollMemory, useView, type PickerIntent, type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { prefetchSegments } from "@/lib/skip-intro";
 
 import { exitWindowFullscreen } from "@/lib/fullscreen-state";
@@ -59,6 +59,8 @@ import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
 import { LocalStreamCard } from "./play-picker/local-stream-card";
 import { SubtitleSelectStep } from "./play-picker/subtitle-select-step";
+import { SeasonDownloadOverlay } from "./play-picker/season-download-overlay";
+import type { SeasonDownloadProgress } from "@/lib/download/season-download";
 
 const TIER_ORDER: Tier[] = ["4K_DV", "4K_HDR", "4K", "1080p_HDR", "1080p", "720p", "SD", "ROUGH"];
 
@@ -69,15 +71,19 @@ export function PlayPicker({
   attempt,
   intent,
   resume,
+  seasonEpisodes,
 }: {
   meta: Meta;
   episode?: PlayEpisode;
   autoPlay?: boolean;
   attempt?: number;
-  intent?: "play" | "download";
+  intent?: PickerIntent;
   resume?: boolean;
+  seasonEpisodes?: PlayEpisode[];
 }) {
-  const isDownload = intent === "download";
+  const t = useT();
+  const isSeasonDownload = intent === "download-season";
+  const isDownload = intent === "download" || isSeasonDownload;
   const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
   const backToDetail = () => {
     void exitWindowFullscreen();
@@ -258,9 +264,14 @@ export function PlayPicker({
   const displayStreams = useMemo(() => {
     const all = filteredPicker?.all ?? [];
     const base = addonOrderMode && result ? orderByAddonNative(all, result.raw.addon, addons) : all;
-    if (!hostMatch) return base;
-    return base.slice().sort((a, b) => (hostMatch.get(b) ?? 0) - (hostMatch.get(a) ?? 0));
-  }, [filteredPicker, addonOrderMode, result, addons, hostMatch]);
+    const ranked = hostMatch
+      ? base.slice().sort((a, b) => (hostMatch.get(b) ?? 0) - (hostMatch.get(a) ?? 0))
+      : base;
+    // A season download re-targets one torrent per episode, so only multi-episode
+    // torrents qualify: a single-file release has nothing else to pull from.
+    if (!isSeasonDownload) return ranked;
+    return ranked.filter((s) => s.seasonPack && !!s.infoHash);
+  }, [filteredPicker, addonOrderMode, result, addons, hostMatch, isSeasonDownload]);
 
   const langHiddenCount = useMemo(() => {
     if (!result || preferredLangs.length === 0) return 0;
@@ -338,8 +349,8 @@ export function PlayPicker({
     !roomGuestPick;
   useEffect(() => {
     if (!autoActive) return;
-    const t = window.setTimeout(() => setAutoCancelled(true), 45_000);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setAutoCancelled(true), 45_000);
+    return () => window.clearTimeout(timer);
   }, [autoActive]);
 
   const previousMatch: ScoredStream | null = useMemo(() => {
@@ -387,6 +398,8 @@ export function PlayPicker({
     [settings.subtitlePreselect, isDownload, inSession, openPlayer],
   );
 
+  const [seasonProgress, setSeasonProgress] = useState<SeasonDownloadProgress | null>(null);
+
   const { onPlay, onCache, queuedHash, debridDown, resetDebridDown, abortResolve, p2pConfirm, confirmP2p, cancelP2p } = usePickHandler({
     meta: metaForDisplay,
     imdbId,
@@ -406,6 +419,8 @@ export function PlayPicker({
     openPlayer: openPlayerGated,
     intent,
     onDownloadStarted: () => setView("downloads"),
+    seasonEpisodes,
+    onSeasonProgress: setSeasonProgress,
     autoActive,
     autoAttemptIdx,
     autoCandidatesLength: autoCandidates.length,
@@ -497,8 +512,8 @@ export function PlayPicker({
   const [maxWaitElapsed, setMaxWaitElapsed] = useState(false);
   useEffect(() => {
     setMaxWaitElapsed(false);
-    const t = window.setTimeout(() => setMaxWaitElapsed(true), 30_000);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setMaxWaitElapsed(true), 30_000);
+    return () => window.clearTimeout(timer);
   }, [streamIds]);
   // Stream-capable addons that haven't returned yet: discovery is genuinely ongoing.
   const stillDiscovering = useMemo(() => {
@@ -529,8 +544,8 @@ export function PlayPicker({
     setStubBanner(
       "Last source wasn't actually cached on your debrid yet. Pick another from the list.",
     );
-    const t = window.setTimeout(() => setStubBanner(null), 6000);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setStubBanner(null), 6000);
+    return () => window.clearTimeout(timer);
   }, [streamIds]);
   useEffect(() => {
     if (
@@ -614,6 +629,19 @@ export function PlayPicker({
     );
   }
 
+  if (seasonProgress) {
+    return (
+      <SeasonDownloadOverlay
+        meta={metaForDisplay}
+        progress={seasonProgress}
+        onCancel={() => {
+          abortResolve();
+          setSeasonProgress(null);
+        }}
+      />
+    );
+  }
+
   if (showAutoTransition) {
     return (
       <AutoPlayTransition
@@ -670,9 +698,21 @@ export function PlayPicker({
 
         {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
 
-        {isDownload && (
+        {isDownload && !isSeasonDownload && (
           <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-3.5 text-[13.5px] text-ink-muted">
             Choose a source to save offline. You can track progress on the Downloads page.
+          </div>
+        )}
+
+        {isSeasonDownload && (
+          <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-3.5 text-[13.5px] text-ink-muted">
+            {t("Only multi-episode torrents are listed: every episode of this season is pulled from the one source you pick.")}
+          </div>
+        )}
+
+        {isSeasonDownload && addonsSettled && allCount > 0 && displayStreams.length === 0 && (
+          <div className="rounded-2xl border border-info/30 bg-info/10 px-5 py-4 text-[13.5px] text-info">
+            {t("No season pack found for this season. Download episodes one by one instead.")}
           </div>
         )}
 
