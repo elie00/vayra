@@ -1,4 +1,9 @@
-export type EpisodeHint = { season: number | null; episode: number | null };
+export type EpisodeHint = {
+  season: number | null;
+  episode: number | null;
+  /** Episode number counted from the first episode of the series, when known. */
+  absolute?: number | null;
+};
 
 const VIDEO_EXT_RE = /\.(mkv|mp4|avi|mov|m4v|webm|ts|flv|wmv|m2ts|mpg|mpeg|ogv|3gp)(\?|#|$)/i;
 
@@ -27,7 +32,9 @@ export function matchEpisodeFileIndex(names: string[], hint: EpisodeHint | undef
     }
     if (anyMatch >= 0) return anyMatch;
   }
-  return matchAbsoluteEpisodeIndex(names, hint.episode);
+  // Long-running shows are released with one continuous count, so the in-season
+  // number would point at the wrong file: prefer the absolute one when we have it.
+  return matchAbsoluteEpisodeIndex(names, hint.absolute ?? hint.episode);
 }
 
 // Anime batches usually number files absolutely ("… - 1043 [1080p].mkv") with no
