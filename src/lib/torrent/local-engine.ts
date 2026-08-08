@@ -90,6 +90,17 @@ export async function torrentEngineSelect(infoHash: string, fileIdx: number): Pr
   );
 }
 
+export async function torrentEngineSelectMany(infoHash: string, fileIdxs: number[]): Promise<boolean> {
+  if (!isTauri || fileIdxs.length === 0) return false;
+  try {
+    await invoke("torrent_engine_select_many", { infoHash, fileIdxs });
+    return true;
+  } catch (e) {
+    console.warn("[engine] select_many failed", e);
+    return false;
+  }
+}
+
 export async function torrentEngineStats(
   infoHash: string,
   fileIdx: number | null,

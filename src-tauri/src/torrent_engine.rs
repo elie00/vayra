@@ -537,10 +537,24 @@ pub fn torrent_engine_lan_stop() {
 
 #[tauri::command]
 pub async fn torrent_engine_select(info_hash: String, file_idx: usize) -> Result<(), String> {
+    torrent_engine_select_many(info_hash, vec![file_idx]).await
+}
+
+/// Select several files at once. Streaming narrows a torrent down to the single file
+/// being watched, but saving a whole season needs every wanted file downloading at the
+/// same time, which one-file-at-a-time selection cannot express.
+#[tauri::command]
+pub async fn torrent_engine_select_many(
+    info_hash: String,
+    file_idxs: Vec<usize>,
+) -> Result<(), String> {
+    if file_idxs.is_empty() {
+        return Err("no file selected".to_string());
+    }
     let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
     let id = TorrentIdOrHash::parse(&info_hash).map_err(|e| e.to_string())?;
     let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
-    let only: HashSet<usize> = HashSet::from([file_idx]);
+    let only: HashSet<usize> = file_idxs.into_iter().collect();
     session.update_only_files(&handle, &only).await.map_err(|e| format!("{e:#}"))?;
     session.unpause(&handle).await.map_err(|e| format!("{e:#}"))?;
     Ok(())
