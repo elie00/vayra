@@ -15,6 +15,8 @@ export type PickerIntent = "play" | "download" | "download-season";
 export type PlayEpisode = {
   season: number;
   episode: number;
+  /** Position counted from the series' first episode — how long-running shows are released. */
+  absoluteEpisode?: number;
   name?: string;
   imdbId?: string;
   imdbSeason?: number;

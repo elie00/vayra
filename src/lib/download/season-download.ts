@@ -1,7 +1,10 @@
 import type { Meta } from "@/lib/cinemeta";
-import type { DebridStore } from "@/lib/debrid/types";
+import { magnetFromHash, type DebridStore } from "@/lib/debrid/types";
+import { matchEpisodeFileIndex } from "@/lib/streams/episode-file";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
+import { torrentEngineAdd, torrentEngineSelectMany } from "@/lib/torrent/local-engine";
+import { isVideoFile, localTorrentAllowed, trackersFromSources } from "@/lib/torrent/stremio-stream";
 import type { PlayEpisode } from "@/lib/view";
 import { activeDownloadFor, enqueueDownload } from "./downloads-store";
 
@@ -77,6 +80,8 @@ export async function runSeasonDownload(args: {
   };
   const emit = () => onProgress?.({ ...p });
 
+  if (debrids.length === 0) return runLocalEngineSeasonDownload({ ...args, label, p, emit });
+
   for (const ep of episodes) {
     if (signal.aborted) break;
     p.current = ep;
@@ -92,6 +97,7 @@ export async function runSeasonDownload(args: {
     const r = await resolveStream(base, debrids, signal, true, false, {
       season: ep.season ?? null,
       episode: ep.episode ?? null,
+      absolute: ep.absoluteEpisode ?? null,
     });
     if (signal.aborted) break;
     p.done += 1;
@@ -106,6 +112,106 @@ export async function runSeasonDownload(args: {
       streamLabel: label,
       url: r.data.url,
       headers: r.data.headers,
+    });
+    p.queued += 1;
+    emit();
+  }
+
+  p.current = null;
+  emit();
+  return p;
+}
+
+/**
+ * P2P variant. Without a debrid there is no per-episode link to ask for: the torrent
+ * is added once, every wanted file is selected in a single call, and each file is then
+ * pulled over HTTP from the engine. Selecting them together is what makes this work —
+ * one-file-at-a-time selection would have each download deselect the previous one.
+ */
+async function runLocalEngineSeasonDownload(args: {
+  meta: Meta;
+  stream: ScoredStream;
+  episodes: PlayEpisode[];
+  signal: AbortSignal;
+  label: string | null;
+  p: SeasonDownloadProgress;
+  emit: () => void;
+}): Promise<SeasonDownloadProgress> {
+  const { meta, stream, episodes, signal, label, p, emit } = args;
+  if (!stream.infoHash || !localTorrentAllowed()) {
+    p.failed = p.total;
+    p.current = null;
+    emit();
+    return p;
+  }
+
+  const added = await torrentEngineAdd(
+    magnetFromHash(stream.infoHash),
+    trackersFromSources(stream.sources),
+  );
+  if (signal.aborted) return p;
+  if (!added || added.files.length === 0) {
+    p.failed = p.total;
+    p.current = null;
+    emit();
+    return p;
+  }
+
+  const videos = added.files.filter(isVideoFile);
+  const pool = videos.length > 0 ? videos : added.files;
+  const names = pool.map((f) => f.name);
+
+  // Resolve every episode to a file first: the engine selection has to name all of
+  // them at once, so nothing can be queued before the whole mapping is known.
+  const planned: Array<{ ep: PlayEpisode; idx: number }> = [];
+  for (const ep of episodes) {
+    const existing = activeDownloadFor(meta.id, ep.season, ep.episode);
+    if (existing && (existing.status === "downloading" || existing.status === "done")) {
+      p.skipped += 1;
+      p.done += 1;
+      continue;
+    }
+    const mi = matchEpisodeFileIndex(names, {
+      season: ep.season ?? null,
+      episode: ep.episode ?? null,
+      absolute: ep.absoluteEpisode ?? null,
+    });
+    if (mi < 0) {
+      p.failed += 1;
+      p.done += 1;
+      continue;
+    }
+    planned.push({ ep, idx: pool[mi].idx });
+  }
+  emit();
+
+  if (planned.length === 0) {
+    p.current = null;
+    emit();
+    return p;
+  }
+
+  const selected = await torrentEngineSelectMany(
+    added.info_hash,
+    planned.map((x) => x.idx),
+  );
+  if (signal.aborted) return p;
+  if (!selected) {
+    p.failed += planned.length;
+    p.current = null;
+    emit();
+    return p;
+  }
+
+  for (const { ep, idx } of planned) {
+    if (signal.aborted) break;
+    p.current = ep;
+    emit();
+    await enqueueDownload({
+      meta,
+      episode: ep,
+      streamLabel: label,
+      url: `${added.stream_base}/${added.info_hash.toLowerCase()}/${idx}`,
     });
     p.queued += 1;
     emit();

@@ -245,9 +245,16 @@ export function SeriesEpisodes({
   });
   const markSeason = useMarkSeason({ meta, active, enrichedEpisodes, simklConnected });
   const downloadSeason = () => {
+    // Long-running shows are released with one continuous count, so a season pack's
+    // files carry the absolute number. Derive it from the earlier seasons' counts;
+    // specials (season 0) never take part in that count.
+    const offset = seasons
+      .filter((s) => s.seasonNumber >= 1 && s.seasonNumber < active)
+      .reduce((sum, s) => sum + (s.episodeCount || 0), 0);
     const eps = enrichedEpisodes.map((ep) => ({
       season: ep.seasonNumber,
       episode: ep.episodeNumber,
+      absoluteEpisode: offset > 0 ? offset + ep.episodeNumber : undefined,
       runtime: ep.runtime ?? undefined,
       name: ep.name || undefined,
       still: ep.stillUrl,

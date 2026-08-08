@@ -208,6 +208,8 @@ export function AnimeEpisodes({
     const eps = displayEpisodes.map((ep) => ({
       season: animeSeasonKey(ep),
       episode: ep.number,
+      // Kitsu already counts episodes across the whole run, which is how batches name them.
+      absoluteEpisode: ep.number,
       name: ep.title,
       still: ep.thumbnail ?? undefined,
       kitsuStreamId: ep.streamId,
