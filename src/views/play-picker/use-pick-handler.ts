@@ -279,7 +279,16 @@ export function usePickHandler({
   // Season mode never goes through resolveAndOpen: the pack has to be re-resolved
   // once per episode with that episode's hint, which runSeasonDownload owns.
   const startSeasonDownload = (stream: ScoredStream) => {
-    if (!seasonEpisodes || seasonEpisodes.length === 0) return;
+    if (!seasonEpisodes || seasonEpisodes.length === 0) {
+      setResolveError(t("No episode list reached the picker. Reopen the season and try again."));
+      return;
+    }
+    if (debrids.length === 0) {
+      setResolveError(
+        t("A season download needs a debrid service: the local torrent engine can only serve one file per torrent at a time."),
+      );
+      return;
+    }
     setResolveError(null);
     const ac = new AbortController();
     resolveAcRef.current?.abort();

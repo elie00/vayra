@@ -80,6 +80,10 @@ const downloads: Record<string, string> = {
     "Aucun pack de saison trouvé pour cette saison. Télécharge les épisodes un par un.",
   "Couldn't pull any episode out of this source. Pick another pack.":
     "Impossible d'extraire un épisode de cette source. Choisis un autre pack.",
+  "No episode list reached the picker. Reopen the season and try again.":
+    "La liste d'épisodes n'est pas arrivée jusqu'ici. Rouvre la saison et réessaie.",
+  "A season download needs a debrid service: the local torrent engine can only serve one file per torrent at a time.":
+    "Le téléchargement de saison nécessite un service debrid : le moteur torrent local ne peut servir qu'un fichier à la fois par torrent.",
 
   "Go to show": "Aller à la série",
   Completed: "Terminé",

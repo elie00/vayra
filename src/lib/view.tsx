@@ -401,7 +401,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const matchDetailGame = top.kind === "match-detail" ? top.game : null;
   const picker = useMemo(
     () => top.kind === "picker"
-      ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent, resume: top.resume }
+      ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent, resume: top.resume, seasonEpisodes: top.seasonEpisodes }
       : null,
     [top],
   );
