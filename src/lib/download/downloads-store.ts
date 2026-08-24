@@ -44,7 +44,17 @@ let snapshot: DownloadItem[] = [];
 
 const PERSIST_KEY = "harbor.downloads.v1";
 
+// A download reports progress about four times a second, so persisting on every
+// change would serialize the whole list and block on localStorage that often —
+// times the number of active downloads, which a season queue makes large.
+const PERSIST_DEBOUNCE_MS = 1000;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
 function persist() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
   try {
     const durable = [...items.values()].map((d) => ({ ...d, bytesPerSec: 0 }));
     localStorage.setItem(PERSIST_KEY, JSON.stringify(durable));
@@ -53,9 +63,17 @@ function persist() {
   }
 }
 
-function rebuild() {
+function schedulePersist() {
+  if (persistTimer) return;
+  persistTimer = setTimeout(persist, PERSIST_DEBOUNCE_MS);
+}
+
+// `durable` writes right away: what the list looks like after a restart hinges on
+// it. Byte counts only refine an entry that is already on disk, so they can wait.
+function rebuild(durable = true) {
   snapshot = [...items.values()].sort((a, b) => b.startedAt - a.startedAt);
-  persist();
+  if (durable) persist();
+  else schedulePersist();
   listeners.forEach((l) => l());
 }
 
@@ -82,7 +100,7 @@ function patch(id: string, next: Partial<DownloadItem>) {
   const cur = items.get(id);
   if (!cur) return;
   items.set(id, { ...cur, ...next });
-  rebuild();
+  rebuild(next.status !== undefined && next.status !== cur.status);
 }
 
 function sep(): string {
