@@ -794,6 +794,7 @@ pub fn run() {
             torrent_engine::torrent_engine_add,
             torrent_engine::torrent_engine_select,
             torrent_engine::torrent_engine_select_many,
+            torrent_engine::torrent_engine_release,
             torrent_engine::torrent_engine_stats,
             torrent_engine::torrent_engine_remove,
             torrent_engine::torrent_engine_selftest,
