@@ -34,7 +34,14 @@ export function matchEpisodeFileIndex(names: string[], hint: EpisodeHint | undef
   }
   // Long-running shows are released with one continuous count, so the in-season
   // number would point at the wrong file: prefer the absolute one when we have it.
-  return matchAbsoluteEpisodeIndex(names, hint.absolute ?? hint.episode);
+  // A season pack of the same show may still number its files within the season,
+  // so fall back to that number rather than give up.
+  const absolute = hint.absolute ?? null;
+  if (absolute != null && absolute !== hint.episode) {
+    const byAbsolute = matchAbsoluteEpisodeIndex(names, absolute);
+    if (byAbsolute >= 0) return byAbsolute;
+  }
+  return matchAbsoluteEpisodeIndex(names, hint.episode);
 }
 
 // Anime batches usually number files absolutely ("… - 1043 [1080p].mkv") with no
