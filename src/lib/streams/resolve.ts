@@ -336,9 +336,11 @@ async function tryLocalEngine(
   const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName ?? null;
   let chosenIdx = stream.fileIdx;
   if (chosenIdx == null || chosenIdx < 0) {
-    const season = hint?.season ?? stream.season;
-    const episode = hint?.episode ?? stream.episode;
-    chosenIdx = selectEngineFileIdx(added.files, season, episode);
+    chosenIdx = selectEngineFileIdx(added.files, {
+      season: hint?.season ?? stream.season ?? null,
+      episode: hint?.episode ?? stream.episode ?? null,
+      absolute: hint?.absolute ?? null,
+    });
   }
   await torrentEngineSelect(added.info_hash, chosenIdx);
   const engineUrl = `${added.stream_base}/${added.info_hash.toLowerCase()}/${chosenIdx}`;
@@ -366,10 +368,10 @@ function engineFailureCode(): string {
   return "engine-not-ready";
 }
 
-function selectEngineFileIdx(files: TorrentFile[], season?: number | null, episode?: number | null): number {
+function selectEngineFileIdx(files: TorrentFile[], hint: EpisodeHint): number {
   const vids = files.filter(isVideoFile);
   const pool = vids.length > 0 ? vids : files;
-  const mi = matchEpisodeFileIndex(pool.map((f) => f.name), { season: season ?? null, episode: episode ?? null });
+  const mi = matchEpisodeFileIndex(pool.map((f) => f.name), hint);
   if (mi >= 0) return pool[mi].idx;
   const largest = pool.reduce((a, b) => (b.length > a.length ? b : a));
   return largest.idx;

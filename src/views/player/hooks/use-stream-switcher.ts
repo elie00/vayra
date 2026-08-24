@@ -81,7 +81,11 @@ export function useStreamSwitcher(params: {
       const ac = new AbortController();
       swapAcRef.current = ac;
       const hint = src.episode
-        ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
+        ? {
+            season: src.episode.season ?? null,
+            episode: src.episode.episode ?? null,
+            absolute: src.episode.absoluteEpisode ?? null,
+          }
         : undefined;
       const r = await resolveStream(stream, debrids, ac.signal, true, false, hint);
       if (ac.signal.aborted) return;

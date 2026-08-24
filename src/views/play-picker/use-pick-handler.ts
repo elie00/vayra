@@ -127,7 +127,13 @@ export function usePickHandler({
     resolveAcRef.current = ac;
     let opened = false;
     try {
-      const hint = episode ? { season: episode.season ?? null, episode: episode.episode ?? null } : undefined;
+      const hint = episode
+        ? {
+            season: episode.season ?? null,
+            episode: episode.episode ?? null,
+            absolute: episode.absoluteEpisode ?? null,
+          }
+        : undefined;
       const r = await resolveStream(stream, debrids, ac.signal, userCommitted, forceP2p, hint);
       if (ac.signal.aborted) return;
       if (!r.ok) {
