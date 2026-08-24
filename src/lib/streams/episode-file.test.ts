@@ -50,6 +50,17 @@ describe("matchEpisodeFileIndex", () => {
     expect(matchEpisodeFileIndex(names, { season: 1, episode: 7, absolute: 7 })).toBe(1);
   });
 
+  it("falls back to the in-season number when the absolute one finds nothing", () => {
+    // Season packs of a long-running show still name files by the in-season number.
+    const names = ["Show - 04.mkv", "Show - 05.mkv"];
+    expect(matchEpisodeFileIndex(names, { season: 3, episode: 5, absolute: 45 })).toBe(1);
+  });
+
+  it("prefers the absolute number when both could match", () => {
+    const names = ["Show - 05.mkv", "Show - 45.mkv"];
+    expect(matchEpisodeFileIndex(names, { season: 3, episode: 5, absolute: 45 })).toBe(1);
+  });
+
   it("returns -1 without an episode hint", () => {
     expect(matchEpisodeFileIndex(["Show.S01E01.mkv"], undefined)).toBe(-1);
     expect(matchEpisodeFileIndex(["Show.S01E01.mkv"], { season: 1, episode: null })).toBe(-1);
