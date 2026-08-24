@@ -5,7 +5,7 @@ mod selftest;
 mod stream_route;
 mod trackers;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
@@ -52,6 +52,51 @@ fn engine() -> &'static Mutex<EngineState> {
 }
 
 pub const LAN_SERVER_PORT: u16 = 11470;
+
+/// Files a save is holding open on a torrent, keyed by info hash. Streaming narrows a
+/// torrent down to the one file being watched, so without this, playing an episode out
+/// of a season pack would deselect every other episode still being saved from it, and
+/// those downloads would stall with no error to show for it.
+fn saved_files() -> &'static Mutex<HashMap<String, HashSet<usize>>> {
+    static S: OnceLock<Mutex<HashMap<String, HashSet<usize>>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn hash_key(info_hash: &str) -> String {
+    info_hash.trim().to_ascii_lowercase()
+}
+
+fn remember_saved(info_hash: &str, idxs: &[usize]) {
+    let mut map = saved_files().lock().unwrap();
+    map.entry(hash_key(info_hash)).or_default().extend(idxs.iter().copied());
+}
+
+fn forget_saved(info_hash: &str, idxs: &[usize]) {
+    let mut map = saved_files().lock().unwrap();
+    let key = hash_key(info_hash);
+    let Some(set) = map.get_mut(&key) else { return };
+    for idx in idxs {
+        set.remove(idx);
+    }
+    if set.is_empty() {
+        map.remove(&key);
+    }
+}
+
+/// What the torrent should be downloading: whatever a save is holding, plus the file
+/// being streamed right now.
+fn wanted_files(info_hash: &str, stream_idx: Option<usize>) -> HashSet<usize> {
+    let mut wanted = saved_files()
+        .lock()
+        .unwrap()
+        .get(&hash_key(info_hash))
+        .cloned()
+        .unwrap_or_default();
+    if let Some(idx) = stream_idx {
+        wanted.insert(idx);
+    }
+    wanted
+}
 
 const CACHE_SWEEP_INTERVAL_SECS: u64 = 30;
 
@@ -430,8 +475,8 @@ pub async fn torrent_engine_add(
     let narrow_idx = file_idx
         .filter(|&i| i < files.len())
         .or_else(|| files.iter().max_by_key(|f| f.length).map(|f| f.idx));
-    if let Some(idx) = narrow_idx {
-        let only: HashSet<usize> = HashSet::from([idx]);
+    let only = wanted_files(&info_hash, narrow_idx);
+    if !only.is_empty() {
         if let Err(e) = session.update_only_files(&handle, &only).await {
             eprintln!("[torrent-engine] initial file narrowing failed: {e:#}");
         }
@@ -535,9 +580,11 @@ pub fn torrent_engine_lan_stop() {
     st.lan_port = None;
 }
 
+/// Narrow a torrent to the file being streamed, without dropping the files a save is
+/// still pulling from it.
 #[tauri::command]
 pub async fn torrent_engine_select(info_hash: String, file_idx: usize) -> Result<(), String> {
-    torrent_engine_select_many(info_hash, vec![file_idx]).await
+    apply_selection(&info_hash, wanted_files(&info_hash, Some(file_idx))).await
 }
 
 /// Select several files at once. Streaming narrows a torrent down to the single file
@@ -551,10 +598,25 @@ pub async fn torrent_engine_select_many(
     if file_idxs.is_empty() {
         return Err("no file selected".to_string());
     }
+    remember_saved(&info_hash, &file_idxs);
+    apply_selection(&info_hash, wanted_files(&info_hash, None)).await
+}
+
+/// Release files a save no longer needs, so a later stream can narrow the torrent back
+/// down instead of seeding a whole pack forever.
+#[tauri::command]
+pub async fn torrent_engine_release(info_hash: String, file_idxs: Vec<usize>) -> Result<(), String> {
+    forget_saved(&info_hash, &file_idxs);
+    Ok(())
+}
+
+async fn apply_selection(info_hash: &str, only: HashSet<usize>) -> Result<(), String> {
+    if only.is_empty() {
+        return Err("no file selected".to_string());
+    }
     let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
-    let id = TorrentIdOrHash::parse(&info_hash).map_err(|e| e.to_string())?;
+    let id = TorrentIdOrHash::parse(info_hash).map_err(|e| e.to_string())?;
     let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
-    let only: HashSet<usize> = file_idxs.into_iter().collect();
     session.update_only_files(&handle, &only).await.map_err(|e| format!("{e:#}"))?;
     session.unpause(&handle).await.map_err(|e| format!("{e:#}"))?;
     Ok(())
@@ -665,4 +727,48 @@ pub async fn torrent_engine_set_options(
 #[tauri::command]
 pub async fn torrent_engine_selftest(app: AppHandle) -> selftest::SelfTestResult {
     selftest::run(app).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The registry is process-wide, so each test works on its own info hash.
+    #[test]
+    fn a_stream_keeps_the_files_a_save_holds() {
+        let hash = "aaaa000000000000000000000000000000000001";
+        remember_saved(hash, &[3, 4, 5]);
+        let wanted = wanted_files(hash, Some(9));
+        assert_eq!(wanted, HashSet::from([3, 4, 5, 9]));
+    }
+
+    #[test]
+    fn releasing_a_save_narrows_the_torrent_back_down() {
+        let hash = "aaaa000000000000000000000000000000000002";
+        remember_saved(hash, &[1, 2]);
+        forget_saved(hash, &[1, 2]);
+        assert_eq!(wanted_files(hash, Some(7)), HashSet::from([7]));
+        assert!(wanted_files(hash, None).is_empty());
+    }
+
+    #[test]
+    fn releasing_one_file_leaves_the_others_selected() {
+        let hash = "aaaa000000000000000000000000000000000003";
+        remember_saved(hash, &[1, 2, 3]);
+        forget_saved(hash, &[2]);
+        assert_eq!(wanted_files(hash, None), HashSet::from([1, 3]));
+    }
+
+    #[test]
+    fn the_hash_case_does_not_split_the_registry() {
+        let hash = "AAAA000000000000000000000000000000000004";
+        remember_saved(hash, &[6]);
+        assert_eq!(wanted_files(&hash.to_ascii_lowercase(), None), HashSet::from([6]));
+    }
+
+    #[test]
+    fn saves_on_one_torrent_do_not_reach_another() {
+        remember_saved("aaaa000000000000000000000000000000000005", &[1]);
+        assert!(wanted_files("aaaa000000000000000000000000000000000006", None).is_empty());
+    }
 }
