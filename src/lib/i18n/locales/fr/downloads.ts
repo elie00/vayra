@@ -68,6 +68,7 @@ const downloads: Record<string, string> = {
   "Saving GIF…": "Enregistrement du GIF…",
   "Continue Watching screenshots": "Captures de Reprendre la lecture",
 
+  Waiting: "En attente",
   "Download season": "Télécharger la saison",
   "Preparing season download": "Préparation du téléchargement de la saison",
   "{n} queued": "{n} en file d'attente",

@@ -40,7 +40,9 @@ type DownloadGroup =
   | { kind: "show"; metaId: string; title: string; poster: string | null; items: DownloadItem[] };
 
 function statusRank(s: DownloadItem["status"]): number {
-  return s === "downloading" ? 0 : s === "error" ? 1 : s === "done" ? 2 : 3;
+  if (s === "downloading") return 0;
+  if (s === "queued") return 1;
+  return s === "error" ? 2 : s === "done" ? 3 : 4;
 }
 
 function buildGroups(items: DownloadItem[]): DownloadGroup[] {
@@ -76,6 +78,7 @@ function buildGroups(items: DownloadItem[]): DownloadGroup[] {
 export function DownloadsView() {
   const items = useDownloads();
   const active = items.filter((d) => d.status === "downloading").length;
+  const queued = items.filter((d) => d.status === "queued").length;
   const savedBytes = items.reduce(
     (sum, d) => (d.status === "done" ? sum + (d.totalBytes ?? d.receivedBytes) : sum),
     0,
@@ -93,6 +96,7 @@ export function DownloadsView() {
               : [
                   `${items.length} item${items.length === 1 ? "" : "s"}`,
                   active > 0 ? `${active} downloading` : null,
+                  queued > 0 ? `${queued} waiting` : null,
                   savedBytes > 0 ? `${fmtBytes(savedBytes)} saved` : null,
                 ]
                   .filter(Boolean)
@@ -186,6 +190,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
   );
   const pct = Math.round(d.ratio * 100);
   const downloading = d.status === "downloading";
+  const queued = d.status === "queued";
   const playLocal = () =>
     openPlayer({
       meta: {
@@ -250,6 +255,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
               </>
             )}
             {d.status === "error" && <span className="text-danger">Failed: {d.error ?? "download error"}</span>}
+            {queued && <span className="text-ink-subtle">Waiting for a free slot</span>}
             {d.status === "canceled" && <span className="text-ink-subtle">Canceled</span>}
             {d.status === "interrupted" && (
               <span className="text-info/85">Interrupted: re-download to finish</span>
@@ -258,7 +264,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        {downloading ? (
+        {downloading || queued ? (
           <RowBtn label="Cancel download" onClick={() => cancelDownload(d.id)}>
             <X size={16} strokeWidth={2.2} />
           </RowBtn>
