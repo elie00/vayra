@@ -80,6 +80,8 @@ const downloads: Record<string, string> = {
     "Aucun pack de saison trouvé pour cette saison. Télécharge les épisodes un par un.",
   "Couldn't pull any episode out of this source. Pick another pack.":
     "Impossible d'extraire un épisode de cette source. Choisis un autre pack.",
+  "None of this season's episodes have aired yet.":
+    "Aucun épisode de cette saison n'est encore sorti.",
   "No episode list reached the picker. Reopen the season and try again.":
     "La liste d'épisodes n'est pas arrivée jusqu'ici. Rouvre la saison et réessaie.",
 

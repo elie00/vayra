@@ -300,6 +300,10 @@ export function usePickHandler({
       .then((p) => {
         if (ac.signal.aborted) return;
         onSeasonProgress?.(null);
+        if (p.total === 0) {
+          setResolveError(t("None of this season's episodes have aired yet."));
+          return;
+        }
         if (p.queued === 0 && p.skipped === 0) {
           setResolveError(
             t("Couldn't pull any episode out of this source. Pick another pack."),
