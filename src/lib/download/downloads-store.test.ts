@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   mkdir: vi.fn(),
   remove: vi.fn(),
   downloadDir: vi.fn(),
+  torrentEngineRelease: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/api/path", () => ({ downloadDir: mocks.downloadDir }));
@@ -16,9 +17,13 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
 }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ revealItemInDir: vi.fn() }));
 vi.mock("./video-download", () => ({ startDownload: mocks.startDownload }));
+vi.mock("@/lib/torrent/local-engine", async (orig) => ({
+  ...(await orig<typeof import("@/lib/torrent/local-engine")>()),
+  torrentEngineRelease: mocks.torrentEngineRelease,
+}));
 
 import type { Meta } from "@/lib/cinemeta";
-import { enqueueDownload } from "./downloads-store";
+import { enqueueDownload, removeDownload } from "./downloads-store";
 
 const meta = { id: "tt1", name: "Show" } as unknown as Meta;
 
@@ -43,6 +48,8 @@ beforeEach(() => {
   for (const m of Object.values(mocks)) m.mockReset();
   mocks.downloadDir.mockResolvedValue("/dl");
   mocks.exists.mockResolvedValue(false);
+  mocks.remove.mockResolvedValue(undefined);
+  mocks.mkdir.mockResolvedValue(undefined);
   mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => store.get(k) ?? null,
@@ -84,5 +91,45 @@ describe("enqueueDownload persistence", () => {
       receivedBytes: number;
     }>;
     expect(saved.find((d) => d.id === id)?.receivedBytes).toBe(7_000_000);
+  });
+});
+
+describe("engine file release", () => {
+  const engineUrl = "http://127.0.0.1:11470/stream/0123456789abcdef0123456789abcdef01234567/4";
+
+  it("hands the file back once the download settles", async () => {
+    let finish = () => {};
+    mocks.startDownload.mockReturnValue({
+      promise: new Promise<void>((res) => (finish = res)),
+      abort: vi.fn(),
+    });
+
+    await enqueueDownload({ meta, url: engineUrl });
+    expect(mocks.torrentEngineRelease).not.toHaveBeenCalled();
+
+    finish();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mocks.torrentEngineRelease).toHaveBeenCalledWith(
+      "0123456789abcdef0123456789abcdef01234567",
+      [4],
+    );
+  });
+
+  it("hands the file back when the entry is removed mid-download", async () => {
+    const id = await enqueueDownload({ meta, url: engineUrl });
+    removeDownload(id);
+
+    expect(mocks.torrentEngineRelease).toHaveBeenCalledWith(
+      "0123456789abcdef0123456789abcdef01234567",
+      [4],
+    );
+  });
+
+  it("leaves a plain HTTP download alone", async () => {
+    const id = await enqueueDownload({ meta, url: "https://cdn.example/video.mkv" });
+    removeDownload(id);
+
+    expect(mocks.torrentEngineRelease).not.toHaveBeenCalled();
   });
 });
