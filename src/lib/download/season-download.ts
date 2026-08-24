@@ -140,6 +140,7 @@ async function runLocalEngineSeasonDownload(args: {
   const { meta, stream, episodes, signal, label, p, emit } = args;
   if (!stream.infoHash || !localTorrentAllowed()) {
     p.failed = p.total;
+    p.done = p.total;
     p.current = null;
     emit();
     return p;
@@ -152,6 +153,7 @@ async function runLocalEngineSeasonDownload(args: {
   if (signal.aborted) return p;
   if (!added || added.files.length === 0) {
     p.failed = p.total;
+    p.done = p.total;
     p.current = null;
     emit();
     return p;
@@ -198,6 +200,7 @@ async function runLocalEngineSeasonDownload(args: {
   if (signal.aborted) return p;
   if (!selected) {
     p.failed += planned.length;
+    p.done += planned.length;
     p.current = null;
     emit();
     return p;
@@ -214,6 +217,7 @@ async function runLocalEngineSeasonDownload(args: {
       url: `${added.stream_base}/${added.info_hash.toLowerCase()}/${idx}`,
     });
     p.queued += 1;
+    p.done += 1;
     emit();
   }
 
