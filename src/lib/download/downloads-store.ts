@@ -19,7 +19,7 @@ export type DownloadItem = {
   streamLabel: string | null;
   url: string;
   path: string;
-  status: "downloading" | "done" | "error" | "canceled" | "interrupted";
+  status: "queued" | "downloading" | "done" | "error" | "canceled" | "interrupted";
   receivedBytes: number;
   totalBytes: number | null;
   ratio: number;
@@ -40,6 +40,19 @@ const items = new Map<string, DownloadItem>();
 const handles = new Map<string, DownloadHandle>();
 const speed = new Map<string, { bytes: number; at: number }>();
 const listeners = new Set<() => void>();
+
+/**
+ * How many downloads actually run at once. A season queues every episode at
+ * once, and letting all of them pull together helps none of them finish: over
+ * the local torrent engine they compete for the same pieces, and each waiting
+ * request holds a connection open the whole time.
+ */
+export const MAX_ACTIVE_DOWNLOADS = 3;
+
+// Downloads accepted but not started yet, oldest first, with the headers their
+// request needs once a slot frees up.
+const waiting: string[] = [];
+const waitingHeaders = new Map<string, Record<string, string> | undefined>();
 
 let snapshot: DownloadItem[] = [];
 
@@ -86,7 +99,7 @@ function hydrate() {
     if (!Array.isArray(arr)) return;
     for (const d of arr) {
       if (!d || typeof d.id !== "string" || typeof d.path !== "string") continue;
-      const status = d.status === "downloading" ? "interrupted" : d.status;
+      const status = d.status === "downloading" || d.status === "queued" ? "interrupted" : d.status;
       items.set(d.id, { ...d, status, bytesPerSec: 0 });
     }
     snapshot = [...items.values()].sort((a, b) => b.startedAt - a.startedAt);
@@ -211,10 +224,23 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     error: null,
     startedAt: Date.now(),
   };
-  items.set(id, item);
+  const free = handles.size < MAX_ACTIVE_DOWNLOADS;
+  items.set(id, { ...item, status: free ? "downloading" : "queued" });
   speed.set(id, { bytes: 0, at: Date.now() });
+  if (free) {
+    beginDownload(id, headers ?? undefined);
+  } else {
+    waiting.push(id);
+    waitingHeaders.set(id, headers ?? undefined);
+  }
   rebuild();
+  return id;
+}
 
+function beginDownload(id: string, headers: Record<string, string> | undefined): void {
+  const item = items.get(id);
+  if (!item) return;
+  const { url, path } = item;
   const handle = startDownload(id, url, path, (p) => {
     const now = Date.now();
     const s = speed.get(id);
@@ -229,7 +255,7 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
       ratio: p.ratio,
       ...(bps > 0 ? { bytesPerSec: bps } : {}),
     });
-  }, headers ?? undefined);
+  }, headers);
   handles.set(id, handle);
   handle.promise
     .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))
@@ -244,12 +270,40 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
       handles.delete(id);
       speed.delete(id);
       releaseEngineFile(url);
+      pump();
     });
-  return id;
+}
+
+// Hand the freed slot to the entry that has waited longest and is still wanted.
+function pump(): void {
+  while (handles.size < MAX_ACTIVE_DOWNLOADS) {
+    const id = waiting.shift();
+    if (id === undefined) return;
+    const headers = waitingHeaders.get(id);
+    waitingHeaders.delete(id);
+    if (items.get(id)?.status !== "queued") continue;
+    patch(id, { status: "downloading" });
+    beginDownload(id, headers);
+    return;
+  }
+}
+
+function dropFromQueue(id: string): void {
+  const at = waiting.indexOf(id);
+  if (at >= 0) waiting.splice(at, 1);
+  waitingHeaders.delete(id);
 }
 
 export function cancelDownload(id: string): void {
-  handles.get(id)?.abort();
+  const handle = handles.get(id);
+  if (handle) {
+    handle.abort();
+    return;
+  }
+  // Nothing to abort: it never got a slot.
+  if (items.get(id)?.status !== "queued") return;
+  dropFromQueue(id);
+  patch(id, { status: "canceled", bytesPerSec: 0 });
 }
 
 export function removeDownload(id: string): void {
@@ -257,6 +311,7 @@ export function removeDownload(id: string): void {
   handles.get(id)?.abort();
   handles.delete(id);
   speed.delete(id);
+  dropFromQueue(id);
   if (item) releaseEngineFile(item.url);
   if (items.delete(id)) rebuild();
   if (item) {
@@ -286,5 +341,5 @@ export function useDownloads(): DownloadItem[] {
 
 export function useActiveDownloadCount(): number {
   const all = useDownloads();
-  return all.filter((d) => d.status === "downloading").length;
+  return all.filter((d) => d.status === "downloading" || d.status === "queued").length;
 }

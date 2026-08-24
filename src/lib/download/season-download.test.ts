@@ -72,6 +72,33 @@ describe("runSeasonDownload over P2P", () => {
     expect(p.total).toBe(3);
   });
 
+  it("does not queue an episode that is already waiting its turn", async () => {
+    mocks.torrentEngineAdd.mockResolvedValue({
+      info_hash: "ABCDEF",
+      stream_base: "http://127.0.0.1:9000",
+      files: [
+        { idx: 0, name: "Show.S01E01.mkv", length: 1 },
+        { idx: 1, name: "Show.S01E02.mkv", length: 1 },
+      ],
+    });
+    mocks.torrentEngineSelectMany.mockResolvedValue(true);
+    mocks.activeDownloadFor.mockImplementation((_id: string, _s: number, ep: number) =>
+      ep === 1 ? { status: "queued" } : null,
+    );
+
+    const p = await runSeasonDownload({
+      meta,
+      stream: pack,
+      episodes: episodes(2),
+      debrids: [],
+      signal: new AbortController().signal,
+    });
+
+    expect(p.skipped).toBe(1);
+    expect(p.queued).toBe(1);
+    expect(p.done).toBe(2);
+  });
+
   it("counts episodes missing from the pack as done too", async () => {
     mocks.torrentEngineAdd.mockResolvedValue({
       info_hash: "ABCDEF",
