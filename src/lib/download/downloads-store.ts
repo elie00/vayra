@@ -4,6 +4,7 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
+import { engineFileFromUrl, torrentEngineRelease } from "@/lib/torrent/local-engine";
 import { buildDefaultFilename, sanitizeName } from "./filename";
 import { startDownload, type DownloadHandle } from "./video-download";
 
@@ -95,6 +96,13 @@ function hydrate() {
 }
 
 hydrate();
+
+// A save pulled from the local engine holds its file selected for as long as it runs.
+// Hand it back once it stops, or the torrent stays pinned to the whole pack.
+function releaseEngineFile(url: string) {
+  const f = engineFileFromUrl(url);
+  if (f) void torrentEngineRelease(f.infoHash, [f.fileIdx]);
+}
 
 function patch(id: string, next: Partial<DownloadItem>) {
   const cur = items.get(id);
@@ -235,6 +243,7 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     .finally(() => {
       handles.delete(id);
       speed.delete(id);
+      releaseEngineFile(url);
     });
   return id;
 }
@@ -248,6 +257,7 @@ export function removeDownload(id: string): void {
   handles.get(id)?.abort();
   handles.delete(id);
   speed.delete(id);
+  if (item) releaseEngineFile(item.url);
   if (items.delete(id)) rebuild();
   if (item) {
     void remove(item.path).catch(() => {});
