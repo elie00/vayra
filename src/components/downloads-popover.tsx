@@ -93,6 +93,7 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
     ? Math.min(100, Math.round((d.receivedBytes / d.totalBytes) * 100))
     : Math.round(d.ratio * 100);
   const downloading = d.status === "downloading";
+  const queued = d.status === "queued";
   return (
     <div className="group flex items-center gap-2.5 rounded-xl px-2 py-2 transition-colors hover:bg-raised/50">
       <button
@@ -129,13 +130,15 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
                   ? d.error ?? t("Failed")
                   : d.status === "interrupted"
                     ? t("Interrupted")
-                    : t("Canceled")}
+                    : queued
+                      ? t("Waiting")
+                      : t("Canceled")}
             </span>
           )}
         </span>
       </button>
       <div className="flex shrink-0 items-center gap-0.5">
-        {downloading ? (
+        {downloading || queued ? (
           <RowBtn label={t("Cancel")} onClick={() => cancelDownload(d.id)}>
             <X size={14} strokeWidth={2.2} />
           </RowBtn>
