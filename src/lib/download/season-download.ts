@@ -6,7 +6,7 @@ import type { ScoredStream } from "@/lib/streams/types";
 import { torrentEngineAdd, torrentEngineSelectMany } from "@/lib/torrent/local-engine";
 import { isVideoFile, localTorrentAllowed, trackersFromSources } from "@/lib/torrent/stremio-stream";
 import type { PlayEpisode } from "@/lib/view";
-import { activeDownloadFor, enqueueDownload } from "./downloads-store";
+import { activeDownloadFor, enqueueDownload, type DownloadItem } from "./downloads-store";
 
 export type SeasonDownloadProgress = {
   total: number;
@@ -22,6 +22,10 @@ export type SeasonDownloadProgress = {
 function hasAired(ep: PlayEpisode): boolean {
   const t = ep.airDate ? Date.parse(ep.airDate) : NaN;
   return !Number.isFinite(t) || t <= Date.now();
+}
+
+function alreadySaving(status: DownloadItem["status"]): boolean {
+  return status === "queued" || status === "downloading" || status === "done";
 }
 
 export function seasonPackEligible(stream: ScoredStream): boolean {
@@ -98,7 +102,7 @@ export async function runSeasonDownload(args: {
     emit();
 
     const existing = activeDownloadFor(meta.id, ep.season, ep.episode);
-    if (existing && (existing.status === "downloading" || existing.status === "done")) {
+    if (existing && alreadySaving(existing.status)) {
       p.skipped += 1;
       p.done += 1;
       continue;
@@ -178,7 +182,7 @@ async function runLocalEngineSeasonDownload(args: {
   const planned: Array<{ ep: PlayEpisode; idx: number }> = [];
   for (const ep of episodes) {
     const existing = activeDownloadFor(meta.id, ep.season, ep.episode);
-    if (existing && (existing.status === "downloading" || existing.status === "done")) {
+    if (existing && alreadySaving(existing.status)) {
       p.skipped += 1;
       p.done += 1;
       continue;

@@ -23,7 +23,12 @@ vi.mock("@/lib/torrent/local-engine", async (orig) => ({
 }));
 
 import type { Meta } from "@/lib/cinemeta";
-import { enqueueDownload, removeDownload } from "./downloads-store";
+import {
+  cancelDownload,
+  enqueueDownload,
+  MAX_ACTIVE_DOWNLOADS,
+  removeDownload,
+} from "./downloads-store";
 
 const meta = { id: "tt1", name: "Show" } as unknown as Meta;
 
@@ -62,6 +67,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  for (const d of JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{ id: string }>) {
+    removeDownload(d.id);
+  }
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -131,5 +139,90 @@ describe("engine file release", () => {
     removeDownload(id);
 
     expect(mocks.torrentEngineRelease).not.toHaveBeenCalled();
+  });
+});
+
+describe("download concurrency", () => {
+  function startable() {
+    let finish = () => {};
+    const handle = { promise: new Promise<void>((res) => (finish = res)), abort: vi.fn() };
+    return { handle, finish };
+  }
+
+  it("runs no more than the concurrency limit at once", async () => {
+    const finishers: Array<() => void> = [];
+    mocks.startDownload.mockImplementation(() => {
+      const s = startable();
+      finishers.push(s.finish);
+      return s.handle;
+    });
+
+    const ids: string[] = [];
+    for (let i = 0; i < MAX_ACTIVE_DOWNLOADS + 3; i++) {
+      ids.push(await enqueueDownload({ meta, url: `https://cdn/${i}.mkv` }));
+    }
+
+    expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS);
+  });
+
+  it("starts a waiting download when a running one finishes", async () => {
+    const finishers: Array<() => void> = [];
+    mocks.startDownload.mockImplementation(() => {
+      const s = startable();
+      finishers.push(s.finish);
+      return s.handle;
+    });
+
+    const ids: string[] = [];
+    for (let i = 0; i < MAX_ACTIVE_DOWNLOADS + 1; i++) {
+      ids.push(await enqueueDownload({ meta, url: `https://cdn/${i}.mkv` }));
+    }
+    expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS);
+
+    finishers[0]();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS + 1);
+  });
+
+  it("cancels a download that never started", async () => {
+    mocks.startDownload.mockImplementation(() => startable().handle);
+
+    const ids: string[] = [];
+    for (let i = 0; i < MAX_ACTIVE_DOWNLOADS + 2; i++) {
+      ids.push(await enqueueDownload({ meta, url: `https://cdn/${i}.mkv` }));
+    }
+    const waiting = ids[ids.length - 1];
+    cancelDownload(waiting);
+
+    const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{
+      id: string;
+      status: string;
+    }>;
+    expect(saved.find((d) => d.id === waiting)?.status).toBe("canceled");
+    expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS);
+  });
+
+  it("does not let a removed waiting download take a slot later", async () => {
+    const finishers: Array<() => void> = [];
+    mocks.startDownload.mockImplementation(() => {
+      const s = startable();
+      finishers.push(s.finish);
+      return s.handle;
+    });
+
+    const ids: string[] = [];
+    for (let i = 0; i < MAX_ACTIVE_DOWNLOADS + 2; i++) {
+      ids.push(await enqueueDownload({ meta, url: `https://cdn/${i}.mkv` }));
+    }
+    removeDownload(ids[MAX_ACTIVE_DOWNLOADS]);
+
+    finishers[0]();
+    await vi.advanceTimersByTimeAsync(0);
+
+    // The slot goes to the one still waiting, not to the removed entry.
+    expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS + 1);
+    const lastUrl = mocks.startDownload.mock.calls.at(-1)?.[1];
+    expect(lastUrl).toBe(`https://cdn/${MAX_ACTIVE_DOWNLOADS + 1}.mkv`);
   });
 });
