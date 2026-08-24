@@ -156,3 +156,43 @@ describe("runSeasonDownload through a debrid", () => {
     expect(mocks.enqueueDownload).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("runSeasonDownload episode selection", () => {
+  const debrids = [{ kind: "rd" }] as never[];
+
+  function dated(airDate: string | undefined, episode: number): PlayEpisode {
+    return { season: 1, episode, airDate } as PlayEpisode;
+  }
+
+  it("leaves out episodes that have not aired yet", async () => {
+    mocks.resolveStream.mockResolvedValue({ ok: true, data: { url: "https://cdn/f.mkv" } });
+    const future = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+
+    const p = await runSeasonDownload({
+      meta,
+      stream: pack,
+      episodes: [dated("2020-01-01", 1), dated("2020-01-08", 2), dated(future, 3)],
+      debrids,
+      signal: new AbortController().signal,
+    });
+
+    expect(p.total).toBe(2);
+    expect(p.queued).toBe(2);
+    expect(p.failed).toBe(0);
+  });
+
+  it("still tries an episode with no known air date", async () => {
+    mocks.resolveStream.mockResolvedValue({ ok: true, data: { url: "https://cdn/f.mkv" } });
+
+    const p = await runSeasonDownload({
+      meta,
+      stream: pack,
+      episodes: [dated(undefined, 1), dated("not-a-date", 2)],
+      debrids,
+      signal: new AbortController().signal,
+    });
+
+    expect(p.total).toBe(2);
+    expect(p.queued).toBe(2);
+  });
+});

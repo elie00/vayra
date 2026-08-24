@@ -257,6 +257,7 @@ export function SeriesEpisodes({
       absoluteEpisode: offset > 0 ? offset + ep.episodeNumber : undefined,
       runtime: ep.runtime ?? undefined,
       name: ep.name || undefined,
+      airDate: ep.airDate ?? undefined,
       still: ep.stillUrl,
       imdbId: cinemetaVideos?.find(
         (v) => v.season === ep.seasonNumber && v.episode === ep.episodeNumber,

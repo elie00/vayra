@@ -17,6 +17,13 @@ export type SeasonDownloadProgress = {
   current: PlayEpisode | null;
 };
 
+// An episode still to come is not missing from the pack — asking for it would only
+// report it as a failure. A date we cannot read is no reason to skip one.
+function hasAired(ep: PlayEpisode): boolean {
+  const t = ep.airDate ? Date.parse(ep.airDate) : NaN;
+  return !Number.isFinite(t) || t <= Date.now();
+}
+
 export function seasonPackEligible(stream: ScoredStream): boolean {
   return !!stream.infoHash;
 }
@@ -67,7 +74,8 @@ export async function runSeasonDownload(args: {
   signal: AbortSignal;
   onProgress?: (p: SeasonDownloadProgress) => void;
 }): Promise<SeasonDownloadProgress> {
-  const { meta, stream, episodes, debrids, signal, onProgress } = args;
+  const { meta, stream, debrids, signal, onProgress } = args;
+  const episodes = args.episodes.filter(hasAired);
   const label = seasonStreamLabel(stream);
   const base = neutralizePackStream(stream);
   const p: SeasonDownloadProgress = {
@@ -80,7 +88,9 @@ export async function runSeasonDownload(args: {
   };
   const emit = () => onProgress?.({ ...p });
 
-  if (debrids.length === 0) return runLocalEngineSeasonDownload({ ...args, label, p, emit });
+  if (debrids.length === 0) {
+    return runLocalEngineSeasonDownload({ ...args, episodes, label, p, emit });
+  }
 
   for (const ep of episodes) {
     if (signal.aborted) break;
