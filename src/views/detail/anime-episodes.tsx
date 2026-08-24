@@ -211,6 +211,7 @@ export function AnimeEpisodes({
       // Kitsu already counts episodes across the whole run, which is how batches name them.
       absoluteEpisode: ep.number,
       name: ep.title,
+      airDate: ep.airdate ?? undefined,
       still: ep.thumbnail ?? undefined,
       kitsuStreamId: ep.streamId,
       imdbId: ep.imdbId,
