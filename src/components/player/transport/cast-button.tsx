@@ -19,7 +19,9 @@ export function CastButton({
       tooltip={
         supported
           ? t("Cast to a device")
-          : t("Casting comes with the mpv backend")
+          : capabilities.engine === "exo"
+            ? t("Casting isn't available on Android yet")
+            : t("Casting comes with the mpv backend")
       }
       disabled={!supported}
     >
