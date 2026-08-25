@@ -18,6 +18,24 @@ type DownloadEvent =
   | { kind: "error"; message: string }
   | { kind: "canceled"; received: number };
 
+/**
+ * Delete a download's file, and the half-written `.part` next to it. Goes through
+ * the backend: the fs plugin is scoped to the app's own folders, so removing a file
+ * from the user's download directory is refused there.
+ */
+export async function removeDownloadFile(destPath: string): Promise<void> {
+  await invoke("download_remove_file", { dest: destPath });
+}
+
+/** Whether something already sits at this path — same scope reason as above. */
+export async function downloadFileExists(path: string): Promise<boolean> {
+  try {
+    return await invoke<boolean>("download_file_exists", { path });
+  } catch {
+    return false;
+  }
+}
+
 export function startDownload(
   id: string,
   url: string,

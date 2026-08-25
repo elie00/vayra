@@ -703,6 +703,8 @@ pub fn run() {
             trailer::fetch_trailer,
             download::download_start,
             download::download_cancel,
+            download::download_remove_file,
+            download::download_file_exists,
             stream_proxy::proxy_register,
             stream_proxy::proxy_unregister,
             stream_proxy::proxy_gc_idle,

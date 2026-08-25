@@ -2,21 +2,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   startDownload: vi.fn(),
-  exists: vi.fn(),
   mkdir: vi.fn(),
-  remove: vi.fn(),
   downloadDir: vi.fn(),
   torrentEngineRelease: vi.fn(),
+  removeDownloadFile: vi.fn(),
+  downloadFileExists: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/api/path", () => ({ downloadDir: mocks.downloadDir }));
-vi.mock("@tauri-apps/plugin-fs", () => ({
-  exists: mocks.exists,
-  mkdir: mocks.mkdir,
-  remove: mocks.remove,
-}));
+vi.mock("@tauri-apps/plugin-fs", () => ({ mkdir: mocks.mkdir }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ revealItemInDir: vi.fn() }));
-vi.mock("./video-download", () => ({ startDownload: mocks.startDownload }));
+vi.mock("./video-download", () => ({
+  startDownload: mocks.startDownload,
+  removeDownloadFile: mocks.removeDownloadFile,
+  downloadFileExists: mocks.downloadFileExists,
+}));
 vi.mock("@/lib/torrent/local-engine", async (orig) => ({
   ...(await orig<typeof import("@/lib/torrent/local-engine")>()),
   torrentEngineRelease: mocks.torrentEngineRelease,
@@ -52,8 +52,8 @@ beforeEach(() => {
   writes = 0;
   for (const m of Object.values(mocks)) m.mockReset();
   mocks.downloadDir.mockResolvedValue("/dl");
-  mocks.exists.mockResolvedValue(false);
-  mocks.remove.mockResolvedValue(undefined);
+  mocks.downloadFileExists.mockResolvedValue(false);
+  mocks.removeDownloadFile.mockResolvedValue(undefined);
   mocks.mkdir.mockResolvedValue(undefined);
   mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
   vi.stubGlobal("localStorage", {
@@ -224,5 +224,34 @@ describe("download concurrency", () => {
     expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS + 1);
     const lastUrl = mocks.startDownload.mock.calls.at(-1)?.[1];
     expect(lastUrl).toBe(`https://cdn/${MAX_ACTIVE_DOWNLOADS + 1}.mkv`);
+  });
+});
+
+describe("removing a download", () => {
+  it("deletes the file from disk, not just the entry", async () => {
+    mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
+
+    const id = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
+    const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{
+      id: string;
+      path: string;
+    }>;
+    const path = saved.find((d) => d.id === id)?.path;
+
+    removeDownload(id);
+
+    expect(mocks.removeDownloadFile).toHaveBeenCalledWith(path);
+  });
+
+  it("survives a delete the filesystem refuses", async () => {
+    mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
+    mocks.removeDownloadFile.mockRejectedValue(new Error("permission denied"));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const id = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
+    expect(() => removeDownload(id)).not.toThrow();
+
+    const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{ id: string }>;
+    expect(saved.find((d) => d.id === id)).toBeUndefined();
   });
 });
