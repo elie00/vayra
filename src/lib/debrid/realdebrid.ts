@@ -144,6 +144,7 @@ export function createRealDebrid(apiKey: string): DebridStore {
     const links = info.data.links ?? [];
     if (links.length === 0) return { ok: false, code: "no-link", status: 0 };
     const linkIdx = pickLinkIndex(info.data.files, ensureIdx(info.data.files ?? []), links.length);
+    if (linkIdx < 0) return { ok: false, code: "wrong-file", status: 0 };
     const link = links[linkIdx];
 
     const u = await postForm<RdUnrestrict>("/unrestrict/link", { link }, signal);
@@ -232,20 +233,23 @@ async function wrap<T>(call: () => Promise<Response>): Promise<DebridResult<T>> 
   }
 }
 
-function pickRdFiles(files: RdFile[], fileIdx: number | undefined): number[] {
+export function pickRdFiles(files: RdFile[], fileIdx: number | undefined): number[] {
   if (fileIdx != null && files[fileIdx]) return [files[fileIdx].id];
   const videos = files.filter((f) => VIDEO_EXTS.some((ext) => f.path.toLowerCase().endsWith(ext)));
   if (videos.length === 0) return files.map((f) => f.id);
   return videos.map((f) => f.id);
 }
 
-function pickLinkIndex(files: RdFile[] | undefined, fileIdx: number | undefined, linkCount: number): number {
+export function pickLinkIndex(files: RdFile[] | undefined, fileIdx: number | undefined, linkCount: number): number {
   if (!files || fileIdx == null) return 0;
   const selected = files.filter((f) => f.selected === 1);
   const target = files[fileIdx];
   if (!target) return 0;
   const offset = selected.findIndex((f) => f.id === target.id);
-  if (offset < 0) return 0;
+  // The wanted file has no link of its own: the torrent is already in the
+  // account with a different selection. Link 0 is some other episode, so say so
+  // rather than hand it over as if it were the one asked for.
+  if (offset < 0) return -1;
   return Math.min(offset, linkCount - 1);
 }
 
@@ -275,7 +279,7 @@ type RdTorrentSummary = {
   status: string;
 };
 
-type RdFile = {
+export type RdFile = {
   id: number;
   path: string;
   bytes: number;
