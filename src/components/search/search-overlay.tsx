@@ -28,6 +28,7 @@ export function SearchOverlay() {
   const { openFilter, openMeta } = useView();
   const t = useT();
   const [guideOpen, setGuideOpen] = useState(false);
+  const [aiRunSignal, setAiRunSignal] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -116,6 +117,14 @@ export function SearchOverlay() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
+              // Shift+Enter runs the AI search on what is typed, without having
+              // to reach for the button below the results.
+              if (e.key === "Enter" && e.shiftKey) {
+                if (!query.trim()) return;
+                e.preventDefault();
+                setAiRunSignal((n) => n + 1);
+                return;
+              }
               if (e.key === "Enter" && results?.topMatch) {
                 e.preventDefault();
                 recordRecent(query);
@@ -181,7 +190,7 @@ export function SearchOverlay() {
             </button>
           )}
 
-          {trimmed && !directInput && <AiSearchSection query={trimmed} onClose={close} />}
+          {trimmed && !directInput && <AiSearchSection query={trimmed} onClose={close} runSignal={aiRunSignal} />}
 
           {trimmed && !directInput && hasResults && results && (
             <div className="flex flex-col gap-8 pb-12">
