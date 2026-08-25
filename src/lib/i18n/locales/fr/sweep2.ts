@@ -653,6 +653,7 @@ const sweep2: Record<string, string> = {
   "This source only opens in an external browser, not in VAYRA's player.": "Cette source ne s'ouvre que dans un navigateur externe, pas dans le lecteur de VAYRA.",
   "This stream has no playable source.": "Ce flux n'a aucune source lisible.",
   "This stream isn't cached on your debrid yet. Try a different one from the list.": "Ce flux n'est pas encore en cache sur votre debrid. Essayez-en un autre dans la liste.",
+  "Your debrid holds this pack with a different episode pulled. Pick another source, or add this episode on your debrid first.": "Votre debrid a ce pack avec un autre épisode récupéré. Choisissez une autre source, ou ajoutez d'abord cet épisode sur votre debrid.",
   "This week": "Cette semaine",
   "Thriller": "Thriller",
   "Tight": "Étroit",
