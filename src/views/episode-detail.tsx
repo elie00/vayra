@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Eye, Play } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
 import type { EpisodeDetail } from "@/lib/providers/tmdb/tmdb-episode-types";
 import type { CastEntry } from "@/lib/providers/tmdb";
@@ -22,6 +22,8 @@ import { Pill } from "@/views/detail/pill";
 import { PlayModeHint } from "@/views/detail/play-mode-hint";
 import { TraktComments } from "@/views/detail/trakt-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
+import { episodePageBlurred } from "@/lib/spoilers";
+import { readResumeEntry } from "@/lib/resume";
 
 export interface EpisodeDetailViewProps {
   seriesId: string;
@@ -45,6 +47,15 @@ export function EpisodeDetailView({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLElement>(null);
+
+  // The hero fills the screen, so there is no hovering it to peek the way an
+  // episode row allows: hold the images until the viewer asks to see them.
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    setRevealed(false);
+  }, [seriesId, season, episode]);
+  const started = readResumeEntry(seriesId, season, episode) != null;
+  const blurred = episodePageBlurred(settings, { started }) && !revealed;
 
   const resolvedImdb = useTmdbImdbId(seriesMeta?.id);
   const imdbId = resolvedImdb ?? (seriesMeta?.id.startsWith("tt") ? seriesMeta.id : null);
@@ -226,11 +237,24 @@ export function EpisodeDetailView({
               alt=""
               decoding="async"
               fetchPriority="high"
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full object-cover ${
+                blurred ? "scale-[1.04] blur-[26px]" : ""
+              } transition-[filter,transform] duration-300`}
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
+
+          {blurred && (
+            <button
+              type="button"
+              onClick={() => setRevealed(true)}
+              className="absolute end-8 top-8 flex h-10 items-center gap-2 rounded-full border border-edge-soft bg-elevated/85 px-4 text-[13px] font-medium text-ink-muted backdrop-blur-md transition-colors hover:bg-raised hover:text-ink"
+            >
+              <Eye size={15} strokeWidth={2.2} />
+              {t("Reveal images")}
+            </button>
+          )}
 
           <div className="absolute inset-x-0 bottom-0 px-12 pb-14">
             <div className="max-w-3xl">
@@ -320,7 +344,9 @@ export function EpisodeDetailView({
                     src={getImageUrl(still.filePath, "w780")}
                     alt={`${episodeData.name} — ${t("Still {n}", { n: idx + 1 })}`}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className={`h-full w-full object-cover transition-[transform,filter] duration-300 ${
+                      blurred ? "scale-[1.04] blur-[18px]" : "group-hover:scale-105"
+                    }`}
                   />
                 </div>
               ))}
