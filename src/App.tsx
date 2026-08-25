@@ -79,6 +79,7 @@ import { SearchOverlay } from "@/components/search/search-overlay";
 import { SearchHotkey } from "@/components/search/search-hotkey";
 import { CommandPalette } from "@/components/command-palette";
 import { RoomHotkeys } from "@/components/room-hotkeys";
+import { MobileIntegration } from "@/components/mobile-integration";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
@@ -287,6 +288,7 @@ export function App() {
                       <MiddleClickScroll />
                       <ThemeBackdrop />
                       <WatchlistSync />
+                      <MobileIntegration />
                       <Shell />
                       <Suspense fallback={null}>
                         <OnboardingModal />
