@@ -544,7 +544,11 @@ pub async fn mpv_start(
             }
         }
         let _ = mpv.set_property("cache-on-disk", "yes");
-        let _ = mpv.set_property("network-timeout", "600");
+        // A connection that died while the video sat paused is only noticed once
+        // this elapses: at ten minutes, pressing play left the viewer staring at a
+        // still frame long enough to assume the button had not worked. A minute is
+        // still far more patience than a stream that is coming back needs.
+        let _ = mpv.set_property("network-timeout", "60");
         let _ = mpv.set_property("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_on_network_error=1");
         let _ = mpv.set_property("stream-buffer-size", "32MiB");
     }
