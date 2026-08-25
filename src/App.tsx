@@ -77,6 +77,8 @@ import { SettingsProvider } from "@/lib/settings";
 import { SearchProvider, useSearch } from "@/lib/search-context";
 import { SearchOverlay } from "@/components/search/search-overlay";
 import { SearchHotkey } from "@/components/search/search-hotkey";
+import { CommandPalette } from "@/components/command-palette";
+import { RoomHotkeys } from "@/components/room-hotkeys";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
@@ -311,6 +313,8 @@ export function App() {
                       <CurfewGuard />
                       <SearchOverlay />
                       <SearchHotkey />
+                      <CommandPalette />
+                      <RoomHotkeys />
                       <EmbedViewportRoot />
                       <InstallerViewportRoot />
                       <UpdateRoot />
