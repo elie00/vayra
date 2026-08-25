@@ -9,12 +9,10 @@ import { useVayraAccount } from "@/lib/vayra-account";
 import { StremioWebButton } from "./auth-modal/stremio-web-button";
 
 export function AuthModal({ onClose }: { onClose: () => void }) {
-  const [mode, setMode] = useState<"vayra" | "stremio">("vayra");
-  if (mode === "stremio") return <StremioAuthModal onClose={onClose} />;
-  return <VayraEmailModal onClose={onClose} onStremio={() => setMode("stremio")} />;
+  return <VayraEmailModal onClose={onClose} />;
 }
 
-function VayraEmailModal({ onClose, onStremio }: { onClose: () => void; onStremio: () => void }) {
+function VayraEmailModal({ onClose }: { onClose: () => void }) {
   const { configured, loading, user, error, clearError, sendMagicLink, signOut } = useVayraAccount();
   const t = useT();
   const [email, setEmail] = useState("");
@@ -59,10 +57,10 @@ function VayraEmailModal({ onClose, onStremio }: { onClose: () => void; onStremi
             <Mail size={20} strokeWidth={2} />
           </div>
           <h2 id="vayra-auth-title" className="font-display text-[22px] font-medium tracking-tight text-ink">
-            {t("Sign in to VAYRA")}
+            {t("Sign in or create your VAYRA account")}
           </h2>
           <p className="text-center text-[13px] leading-snug text-ink-muted">
-            {t("Use your email for your VAYRA identity. No password required.")}
+            {t("Enter your email to sign in or create your private VAYRA identity. No password required.")}
           </p>
         </div>
 
@@ -102,18 +100,6 @@ function VayraEmailModal({ onClose, onStremio }: { onClose: () => void; onStremi
           </>
         )}
 
-        <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-edge-soft" />
-          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">{t("or")}</span>
-          <span className="h-px flex-1 bg-edge-soft" />
-        </div>
-        <button
-          type="button"
-          onClick={onStremio}
-          className="flex h-11 items-center justify-center rounded-xl border border-edge bg-canvas text-[14px] font-semibold text-ink transition-colors hover:bg-raised"
-        >
-          {t("Connect with Stremio")}
-        </button>
         <button type="button" onClick={onClose} className="self-start text-[12.5px] text-ink-subtle hover:text-ink-muted">
           {t("Cancel")}
         </button>
@@ -123,7 +109,7 @@ function VayraEmailModal({ onClose, onStremio }: { onClose: () => void; onStremi
   );
 }
 
-function StremioAuthModal({ onClose }: { onClose: () => void }) {
+export function StremioAuthModal({ onClose }: { onClose: () => void }) {
   const { signIn, signInWithKey } = useAuth();
   const t = useT();
   const [email, setEmail] = useState("");
@@ -175,10 +161,10 @@ function StremioAuthModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex flex-col items-center gap-2">
           <h2 id="auth-modal-title" className="font-display text-[22px] font-medium tracking-tight text-ink">
-            {t("Login to Stremio")}
+            {t("Connect Stremio")}
           </h2>
           <p className="text-center text-[13px] leading-snug text-ink-muted">
-            {t("Brings in your library, watchlist, and installed addons.")}
+            {t("Optional integration for importing or exporting your library, watch progress, and addons.")}
           </p>
         </div>
 

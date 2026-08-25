@@ -2,18 +2,18 @@ import { ArrowRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DoneStep } from "@/components/onboarding/done-step";
 import { Dots } from "@/components/onboarding/dots";
+import { AccountStep } from "@/components/onboarding/account-step";
 import { LayoutStep } from "@/components/onboarding/layout-step";
 import { SplashStep } from "@/components/onboarding/splash-step";
 import { StreamingStep } from "@/components/onboarding/streaming-step";
-import { StremioStep } from "@/components/onboarding/stremio-step";
 import { SubtitlesStep } from "@/components/onboarding/subtitles-step";
 import { TmdbStep } from "@/components/onboarding/tmdb-step";
 import { WelcomeStep } from "@/components/onboarding/welcome-step";
 import { useT } from "@/lib/i18n";
 import { useOnboarding } from "@/lib/onboarding";
 
-type StepId = "splash" | "welcome" | "layout" | "tmdb" | "stremio" | "streaming" | "subtitles" | "done";
-const STEPS: StepId[] = ["splash", "welcome", "layout", "tmdb", "stremio", "streaming", "subtitles", "done"];
+type StepId = "splash" | "welcome" | "account" | "layout" | "tmdb" | "streaming" | "subtitles" | "done";
+const STEPS: StepId[] = ["splash", "welcome", "account", "layout", "tmdb", "streaming", "subtitles", "done"];
 
 export function OnboardingModal() {
   const { onboarded, finishOnboarding } = useOnboarding();
@@ -67,9 +67,9 @@ export function OnboardingModal() {
             <div className="flex min-h-[440px] flex-col justify-center px-6 py-10 sm:px-12">
               <div key={step} className="animate-step-in">
                 {step === "welcome" && <WelcomeStep />}
+                {step === "account" && <AccountStep />}
                 {step === "layout" && <LayoutStep />}
                 {step === "tmdb" && <TmdbStep />}
-                {step === "stremio" && <StremioStep />}
                 {step === "streaming" && <StreamingStep />}
                 {step === "subtitles" && <SubtitlesStep />}
                 {step === "done" && <DoneStep />}
@@ -83,7 +83,7 @@ export function OnboardingModal() {
                 onJump={(i) => setStepIdx(i + 1)}
               />
               <div className="flex items-center gap-2.5">
-                {(step === "tmdb" || step === "stremio" || step === "streaming" || step === "subtitles") && (
+                {(step === "account" || step === "tmdb" || step === "streaming" || step === "subtitles") && (
                   <button
                     key={`skip-${step}`}
                     onClick={next}

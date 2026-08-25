@@ -41,13 +41,43 @@ function emit(event: string, payload: unknown): void {
 }
 
 // The default bridge resolves two dynamic imports before invoke/listen fire, so
-// settle on macrotasks (microtask flushes are not enough). Spin several
-// event-loop turns rather than a fixed wall-clock delay: under a loaded
-// full-suite run a single 10ms wait can race the dynamic imports (flake).
-async function flush(): Promise<void> {
-  for (let i = 0; i < 20; i++) {
+// settle on macrotasks (microtask flushes are not enough). Wait on the effect
+// itself rather than on a turn count: under a loaded full-suite run any fixed
+// number of turns can come up short, which is what used to make this file flake.
+async function waitFor(what: string, done: () => boolean): Promise<void> {
+  const deadline = Date.now() + 5000;
+  while (!done()) {
+    if (Date.now() > deadline) throw new Error(`timed out waiting for ${what}`);
     await new Promise((r) => setTimeout(r, 0));
   }
+}
+
+const EVENTS = [
+  "vayra://sync-welcome",
+  "vayra://sync-members",
+  "vayra://sync-host",
+  "vayra://sync-cmd",
+  "vayra://sync-state",
+  "vayra://sync-error",
+];
+
+// join() wires the listeners and invokes the join command through the same
+// bridge promise; both have to have landed before a test emits or asserts.
+async function joined(): Promise<void> {
+  await waitFor("the join wiring", () => {
+    const wired = EVENTS.every((e) => (listeners.get(e)?.length ?? 0) > 0);
+    return wired && invokeMock.mock.calls.some((c) => c[0] === "vayra_sync_join");
+  });
+}
+
+async function invoked(cmd: string): Promise<void> {
+  await waitFor(cmd, () => invokeMock.mock.calls.some((c) => c[0] === cmd));
+}
+
+// Only for the negative case: nothing is expected to happen, so there is no
+// effect to wait on — give the bridge more turns than it could ever need.
+async function settle(): Promise<void> {
+  for (let i = 0; i < 50; i++) await new Promise((r) => setTimeout(r, 0));
 }
 
 const sampleState: PlaybackState = {
@@ -81,7 +111,7 @@ describe("LocalTransport (Tauri wire)", () => {
   it("serializes join with camelCase clientId/name", async () => {
     const t = new LocalTransport({ clientId: "c1", name: "Alice" });
     t.join("vara-demo");
-    await flush();
+    await joined();
     expect(invokeMock).toHaveBeenCalledWith("vayra_sync_join", {
       room: "vara-demo",
       clientId: "c1",
@@ -93,9 +123,9 @@ describe("LocalTransport (Tauri wire)", () => {
   it("serializes command send under vayra_sync_send", async () => {
     const t = new LocalTransport({ clientId: "c1", name: "Alice" });
     t.join("vara-demo");
-    await flush();
+    await joined();
     t.sendCommand(sampleCmd);
-    await flush();
+    await invoked("vayra_sync_send");
     expect(invokeMock).toHaveBeenCalledWith("vayra_sync_send", {
       room: "vara-demo",
       cmd: sampleCmd,
@@ -106,9 +136,9 @@ describe("LocalTransport (Tauri wire)", () => {
   it("serializes publish under statePayload arg name", async () => {
     const t = new LocalTransport({ clientId: "c1", name: "Alice" });
     t.join("vara-demo");
-    await flush();
+    await joined();
     t.publishState(sampleState);
-    await flush();
+    await invoked("vayra_sync_publish");
     expect(invokeMock).toHaveBeenCalledWith("vayra_sync_publish", {
       room: "vara-demo",
       statePayload: sampleState,
@@ -120,7 +150,7 @@ describe("LocalTransport (Tauri wire)", () => {
     const t = new LocalTransport({ clientId: "c1", name: "Alice" });
     t.sendCommand(sampleCmd);
     t.publishState(sampleState);
-    await flush();
+    await settle();
     expect(invokeMock).not.toHaveBeenCalled();
     t.close();
   });
@@ -130,7 +160,7 @@ describe("LocalTransport (Tauri wire)", () => {
     const got: PlaybackCommand[] = [];
     t.onCommand((c) => got.push(c));
     t.join("vara-demo");
-    await flush();
+    await joined();
     emit("vayra://sync-cmd", { t: "cmd", room: "vara-demo", cmd: sampleCmd });
     expect(got).toEqual([sampleCmd]);
     t.close();
@@ -141,7 +171,7 @@ describe("LocalTransport (Tauri wire)", () => {
     const got: PlaybackState[] = [];
     t.onState((s) => got.push(s));
     t.join("vara-demo");
-    await flush();
+    await joined();
     emit("vayra://sync-state", {
       t: "state",
       room: "vara-demo",
@@ -159,7 +189,7 @@ describe("LocalTransport (Tauri wire)", () => {
     t.onSnapshot((s) => snaps.push(s));
     t.onMembers((m) => (members = m));
     t.join("vara-demo");
-    await flush();
+    await joined();
 
     emit("vayra://sync-welcome", {
       t: "welcome",
@@ -195,7 +225,7 @@ describe("LocalTransport (Tauri wire)", () => {
     let members = new Array<{ clientId: string; isHost: boolean }>();
     t.onMembers((m) => (members = m));
     t.join("vara-demo");
-    await flush();
+    await joined();
     emit("vayra://sync-welcome", {
       t: "welcome",
       room: "vara-demo",
@@ -223,7 +253,7 @@ describe("LocalTransport (Tauri wire)", () => {
     const got: PlaybackCommand[] = [];
     t.onCommand((c) => got.push(c));
     t.join("vara-demo");
-    await flush();
+    await joined();
     t.close();
     emit("vayra://sync-cmd", { t: "cmd", room: "vara-demo", cmd: sampleCmd });
     expect(got).toHaveLength(0);

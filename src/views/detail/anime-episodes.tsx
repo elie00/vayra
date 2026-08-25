@@ -13,6 +13,7 @@ import { EpisodeWatchedMenu, type WatchedMenuTarget } from "@/components/episode
 import { manualWatchedVersion, subscribeManualWatched } from "@/lib/manual-watched";
 import { useT } from "@/lib/i18n";
 import { AnimeEpisodeRow } from "./anime-episodes/episode-row";
+import { animeSeasonKey } from "./anime-episodes/anime-season-key";
 import { AnimeSeasonPicker } from "./anime-episodes/anime-season-picker";
 import { MovieEntryCard } from "./anime-episodes/movie-entry-card";
 import { useAnimeOrder } from "./anime-episodes/use-anime-order";
@@ -112,7 +113,7 @@ export function AnimeEpisodes({
     preferredSeasonKey ?? undefined,
   );
   const routing = useAnimeWatchedRouting(meta, franchise);
-  const { openMeta } = useView();
+  const { openMeta, openPicker } = useView();
   const [activeEntryId, setActiveEntryId] = useState(currentId);
   useEffect(() => {
     setActiveEntryId(currentId);
@@ -203,6 +204,22 @@ export function AnimeEpisodes({
     settings,
   });
   const markSeason = (watched: boolean) => routing.markMany(displayEpisodes, watched);
+  const downloadSeason = () => {
+    const eps = displayEpisodes.map((ep) => ({
+      season: animeSeasonKey(ep),
+      episode: ep.number,
+      // Kitsu already counts episodes across the whole run, which is how batches name them.
+      absoluteEpisode: ep.number,
+      name: ep.title,
+      airDate: ep.airdate ?? undefined,
+      still: ep.thumbnail ?? undefined,
+      kitsuStreamId: ep.streamId,
+      imdbId: ep.imdbId,
+      imdbSeason: ep.imdbSeason,
+      imdbEpisode: ep.imdbEpisode,
+    }));
+    openPicker(meta, eps[0], { intent: "download-season", seasonEpisodes: eps });
+  };
 
   const orderedEpisodes = useMemo(
     () => (settings.episodeSort === "newest" ? displayEpisodes.slice().reverse() : displayEpisodes),
@@ -306,6 +323,7 @@ export function AnimeEpisodes({
               onSort={(s) => update({ episodeSort: s })}
               allWatched={allWatched}
               onMarkSeason={markSeason}
+              onDownloadSeason={displayEpisodes.length > 0 ? downloadSeason : undefined}
             />
           )}
           {!isOneOff && (

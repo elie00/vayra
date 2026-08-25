@@ -2,6 +2,7 @@ import { lruSet } from "@/lib/cache";
 import { registerCache } from "@/lib/memory-profiler";
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Meta } from "./cinemeta";
+import { withAbsoluteEpisodes } from "@/lib/series-absolute";
 import type { PlayEpisode } from "./view";
 import { tmdbDetails, tmdbSeasonEpisodes } from "./providers/tmdb";
 import { resolveMeta } from "./meta-resource";
@@ -291,8 +292,11 @@ async function loadCinemetaEpisodes(id: string): Promise<PlayEpisode[] | null> {
     });
   }
   eps.sort((a, b) => a.season - b.season || a.episode - b.episode);
-  lruSet(cinemetaListCache, id, eps, SEASON_CACHE_MAX);
-  return eps;
+  // The whole run is in hand here, so the absolute position can be derived once and
+  // travel with every episode the app hands to the file matcher.
+  const numbered = withAbsoluteEpisodes(eps);
+  lruSet(cinemetaListCache, id, numbered, SEASON_CACHE_MAX);
+  return numbered;
 }
 
 function uniqueSeasons(eps: PlayEpisode[] | null): number[] {
@@ -316,6 +320,21 @@ function uniqueAnimeSeasons(eps: PlayEpisode[] | null): number[] {
   return [...set].sort((a, b) => a - b);
 }
 
+// How long each TMDB season is, remembered from the season list so one season's
+// episodes can be placed in the whole run without a second request. Absent until
+// the list has been asked for, in which case the absolute number is simply left out.
+const tmdbSeasonLengths = new Map<string, Map<number, number>>();
+
+function tmdbAbsoluteOffset(tvId: number, season: number): number {
+  const lengths = tmdbSeasonLengths.get(String(tvId));
+  if (!lengths) return 0;
+  let offset = 0;
+  for (const [num, count] of lengths) {
+    if (num >= 1 && num < season) offset += count;
+  }
+  return offset;
+}
+
 export async function fetchSeasonList(meta: Meta, opts: { tmdbKey: string }): Promise<number[]> {
   if (meta.type !== "series" && !isAnimeId(meta.id)) return [];
   if (meta.id.startsWith("tt")) {
@@ -323,8 +342,15 @@ export async function fetchSeasonList(meta: Meta, opts: { tmdbKey: string }): Pr
   }
   if (meta.id.startsWith("tmdb:tv:") && opts.tmdbKey) {
     const detail = await tmdbDetails(opts.tmdbKey, meta).catch(() => null);
-    const nums = (detail?.seasons ?? []).map((s) => s.seasonNumber).filter((n) => n >= 1);
-    return [...new Set(nums)].sort((a, b) => a - b);
+    const seasons = (detail?.seasons ?? []).filter((s) => s.seasonNumber >= 1);
+    const tvId = meta.id.split(":")[2] ?? "";
+    if (tvId && seasons.length > 0) {
+      tmdbSeasonLengths.set(
+        tvId,
+        new Map(seasons.map((s) => [s.seasonNumber, s.episodeCount || 0])),
+      );
+    }
+    return [...new Set(seasons.map((s) => s.seasonNumber))].sort((a, b) => a - b);
   }
   return uniqueAnimeSeasons(await getNonStandardEpisodes(meta));
 }
@@ -342,7 +368,10 @@ export async function fetchSeasonEpisodes(
   if (meta.id.startsWith("tmdb:tv:") && opts.tmdbKey) {
     const tvId = parseInt(meta.id.split(":")[2] ?? "", 10);
     if (!Number.isFinite(tvId)) return [];
-    return tmdbSeason(opts.tmdbKey, tvId, season);
+    const eps = await tmdbSeason(opts.tmdbKey, tvId, season);
+    const offset = tmdbAbsoluteOffset(tvId, season);
+    if (offset === 0) return eps;
+    return eps.map((e) => ({ ...e, absoluteEpisode: e.absoluteEpisode ?? offset + e.episode }));
   }
   const eps = await getNonStandardEpisodes(meta);
   return (eps ?? []).filter((e) => animeSeasonKey(e) === season);
@@ -355,7 +384,7 @@ export async function fetchEpisodeList(meta: Meta, opts: { tmdbKey: string }): P
     const seasons = await fetchSeasonList(meta, opts);
     const all: PlayEpisode[] = [];
     for (const s of seasons) all.push(...(await fetchSeasonEpisodes(meta, s, opts)));
-    return all;
+    return withAbsoluteEpisodes(all);
   }
   return (await getNonStandardEpisodes(meta)) ?? [];
 }

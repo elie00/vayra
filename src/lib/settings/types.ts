@@ -442,6 +442,7 @@ export type Settings = {
   feedLocaleBias: boolean;
   uiLanguage: UiLanguage;
   arabicWelcomeSeen: boolean;
+  localeDetected: boolean;
   cropMode: string;
   customLists: CustomList[];
   pauseListStatusOnPause: boolean;

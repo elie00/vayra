@@ -1,8 +1,8 @@
 import { ChevronRight, Eye, EyeOff, Languages, LogIn, MonitorPlay, Palette, Zap } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { useVayraAccount } from "@/lib/vayra-account";
 import { PlayModePanel } from "./player-panel";
 import { Section, useSettingsActiveContext } from "./shared";
 
@@ -14,7 +14,7 @@ const ENGINE_LABEL: Record<string, string> = {
 
 export function BasicsPanel() {
   const t = useT();
-  const { user } = useAuth();
+  const { user } = useVayraAccount();
   const { settings } = useSettings();
   const { setActive } = useSettingsActiveContext();
 
@@ -111,9 +111,9 @@ function SignInRow({
           <LogIn size={19} strokeWidth={2} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[15px] font-semibold text-ink">{t("Sign in to Stremio")}</span>
+          <span className="text-[15px] font-semibold text-ink">{t("Sign in or create a VAYRA account")}</span>
           <span className="text-[12.5px] leading-snug text-ink-muted">
-            {t("Sync your library, watch progress, and installed addons across every device.")}
+            {t("Use one private VAYRA identity for the app. External services stay optional.")}
           </span>
         </div>
         <span className="shrink-0 rounded-full bg-accent/15 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-accent">
@@ -133,10 +133,10 @@ function SignInRow({
         <LogIn size={19} strokeWidth={2} />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[15px] font-semibold text-ink">{t("Stremio account")}</span>
+        <span className="text-[15px] font-semibold text-ink">{t("VAYRA account")}</span>
         <span className="flex items-center gap-2 text-[12.5px] leading-snug text-ink-muted">
           <span className="truncate tracking-wide">
-            {email ? (reveal ? email : maskEmail(email)) : t("Your library and watch progress sync here.")}
+            {email ? (reveal ? email : maskEmail(email)) : t("Your VAYRA identity is connected here.")}
           </span>
           {email && (
             <button

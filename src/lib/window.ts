@@ -3,6 +3,8 @@ import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { isMobileTauri } from "@/lib/platform";
+import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 
 // Mobile Tauri rejects every plugin:window|* invoke ("Window API not available
 // on mobile"), so never hold a window handle there — the desktop titlebar/resize
@@ -17,19 +19,28 @@ function isTauri() {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
-export const minimize = () => win?.minimize();
-
-export const toggleMaximize = async () => {
-  if (!win) return;
-  if (IS_MAC) {
-    const fs = await win.isFullscreen().catch(() => false);
-    await win.setFullscreen(!fs).catch(() => {});
-    return;
-  }
-  await win.toggleMaximize().catch(() => {});
+export const minimize = async () => {
+  await win?.minimize().catch(() => {});
 };
 
-export const close = () => win?.close();
+/**
+ * The middle window button. macOS puts a window fullscreen where the other
+ * platforms maximize it, and going fullscreen has to run through the app's own
+ * enter/exit: those are what save the window's frame and give it back on the way
+ * out, and what the rest of the UI reads to know it is fullscreen. Calling
+ * `setFullscreen` straight left the window on a stale frame and the UI out of step.
+ */
+export const toggleMaximize = async () => {
+  if (IS_MAC) {
+    await toggleWindowFullscreen();
+    return;
+  }
+  await win?.toggleMaximize().catch(() => {});
+};
+
+export const close = async () => {
+  await win?.close().catch(() => {});
+};
 
 export type ResizeDir =
   | "East"
@@ -46,13 +57,16 @@ export function startResize(direction: ResizeDir) {
 }
 
 export function useMaximized(): boolean {
+  // On macOS the button toggles fullscreen, whose state the app already tracks:
+  // read it rather than re-probe the window, or the icon lags a resize behind.
+  const fullscreen = useWindowFullscreen();
   const [maxed, setMaxed] = useState(false);
   useEffect(() => {
-    if (!win) return;
+    if (!win || IS_MAC) return;
     let cancelled = false;
     let timer: number | null = null;
     const check = () => {
-      (IS_MAC ? win.isFullscreen() : win.isMaximized()).then((v) => {
+      win.isMaximized().then((v) => {
         if (!cancelled) setMaxed(v);
       });
     };
@@ -71,7 +85,7 @@ export function useMaximized(): boolean {
       unlisten.then((fn) => fn());
     };
   }, []);
-  return maxed;
+  return IS_MAC ? fullscreen : maxed;
 }
 
 export function openUrl(url: string) {

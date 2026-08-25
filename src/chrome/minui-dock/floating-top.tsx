@@ -4,7 +4,7 @@ import { CatAvatar } from "@/components/icons/cat-avatar";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { RecordingPill } from "@/chrome/recording-pill";
 import { TogetherButton } from "@/chrome/topbar";
-import { useAuth } from "@/lib/auth";
+import { useVayraAccount } from "@/lib/vayra-account";
 import { useT } from "@/lib/i18n";
 import { useProfiles } from "@/lib/profiles";
 import { useSearch } from "@/lib/search-context";
@@ -139,7 +139,7 @@ function ProfilePill({
   onOpenSettings: () => void;
   settingsActive: boolean;
 }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useVayraAccount();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
@@ -156,7 +156,7 @@ function ProfilePill({
   }, [open]);
 
   const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+    activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback");
   const color = activeProfile?.color ?? "var(--color-accent)";
   const harborAvatar = settings.harborAvatar;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
@@ -249,7 +249,7 @@ function ProfilePill({
             {user && (
               <MenuRow
                 onClick={() => {
-                  signOut();
+                  void signOut();
                   setOpen(false);
                 }}
                 icon={<LogOut size={14} strokeWidth={2.2} />}

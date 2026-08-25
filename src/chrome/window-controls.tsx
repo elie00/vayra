@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
-import { close, minimize } from "@/lib/window";
-import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
-import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
+import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { hasDesktopFeatures } from "@/lib/platform";
@@ -12,16 +10,16 @@ const IS_TAURI = hasDesktopFeatures();
 
 export function WindowControls() {
   const { settings } = useSettings();
-  const fullscreen = useWindowFullscreen();
+  const maxed = useMaximized();
   const t = useT();
   if (!IS_TAURI || settings.useNativeTitleBar) return null;
   return (
     <div data-tauri-drag-region="false" className="flex items-center gap-2">
-      <Ctl label={t("chrome.minimize")} onClick={minimize}>
+      <Ctl label={t("chrome.minimize")} onClick={() => void minimize()}>
         <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       </Ctl>
-      <Ctl label={fullscreen ? t("chrome.restore") : t("chrome.maximize")} onClick={() => void toggleWindowFullscreen()}>
-        {fullscreen ? (
+      <Ctl label={maxed ? t("chrome.restore") : t("chrome.maximize")} onClick={() => void toggleMaximize()}>
+        {maxed ? (
           <>
             <rect x="2.5" y="4.5" width="6" height="6" stroke="currentColor" strokeWidth="1.4" rx="1" />
             <path d="M5 4.5V3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5H9" stroke="currentColor" strokeWidth="1.4" fill="none" />
@@ -30,7 +28,7 @@ export function WindowControls() {
           <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.4" rx="1.2" />
         )}
       </Ctl>
-      <Ctl label={t("common.close")} onClick={close} danger>
+      <Ctl label={t("common.close")} onClick={() => void close()} danger>
         <path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       </Ctl>
     </div>

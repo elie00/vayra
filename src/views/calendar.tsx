@@ -17,7 +17,6 @@ import { useTrakt } from "@/lib/trakt/provider";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
-import { AuthModal } from "@/components/auth-modal";
 import { DayModal } from "./calendar/day-modal";
 import { EmptyState, ErrorState, NoKeyState, NotSignedInState } from "./calendar/empty-states";
 import { MonthGrid } from "./calendar/month-grid";
@@ -36,7 +35,6 @@ export function CalendarView() {
   const t = useT();
   const { settings, update } = useSettings();
   const { authKey } = useAuth();
-  const [showAuth, setShowAuth] = useState(false);
   const { openSettings, openMeta } = useView();
   const today = useMemo(() => new Date(), []);
   const [year, setYear] = useState(today.getFullYear());
@@ -134,7 +132,7 @@ export function CalendarView() {
 
   let body: React.ReactNode;
   if (source === "library" && !authKey) {
-    body = <NotSignedInState onSignIn={() => setShowAuth(true)} />;
+    body = <NotSignedInState onSignIn={() => openSettings("account")} />;
   } else if (source === "all" && !settings.tmdbKey) {
     body = <NoKeyState onSetup={() => openSettings("library")} />;
   } else if (error) {
@@ -320,7 +318,6 @@ export function CalendarView() {
         />
       )}
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </main>
   );
 }

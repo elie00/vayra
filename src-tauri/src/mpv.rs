@@ -90,6 +90,27 @@ impl MpvState {
     }
 }
 
+/// mpv deletes its on-disk cache when it closes a file, but a crash or a kill
+/// leaves the whole buffer — up to half a gigabyte per playback — sitting in the
+/// cache directory with nothing left to claim it.
+fn sweep_stale_cache(dir: &std::path::Path) {
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let stale = entry
+            .metadata()
+            .and_then(|m| m.modified())
+            .map(|t| t.elapsed().map(|d| d.as_secs() > 3600).unwrap_or(false))
+            .unwrap_or(false);
+        if stale {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
+}
+
 const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     ("time-pos", 1, PropertyKind::Double),
     ("duration", 2, PropertyKind::Double),
@@ -108,6 +129,9 @@ const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     ("dheight", 15, PropertyKind::Int64),
     ("video-params/gamma", 16, PropertyKind::String),
     ("demuxer-cache-duration", 17, PropertyKind::Double),
+    // `cache-pause` makes mpv pause itself when the buffer runs dry, which looks
+    // exactly like a pause the viewer asked for unless this says otherwise.
+    ("paused-for-cache", 18, PropertyKind::Flag),
 ];
 
 #[derive(Clone, Copy)]
@@ -534,14 +558,19 @@ pub async fn mpv_start(
         let _ = mpv.set_property("demuxer-max-back-bytes", "64MiB");
         let _ = mpv.set_property("demuxer-readahead-secs", "300");
         if let Ok(base) = app.path().app_cache_dir() {
-            let dvr = base.join("mpv-cache");
-            let _ = std::fs::create_dir_all(&dvr);
-            if let Some(s) = dvr.to_str() {
+            let dir = base.join("mpv-cache");
+            let _ = std::fs::create_dir_all(&dir);
+            sweep_stale_cache(&dir);
+            if let Some(s) = dir.to_str() {
                 let _ = mpv.set_property("cache-dir", s);
             }
         }
         let _ = mpv.set_property("cache-on-disk", "yes");
-        let _ = mpv.set_property("network-timeout", "600");
+        // A connection that died while the video sat paused is only noticed once
+        // this elapses: at ten minutes, pressing play left the viewer staring at a
+        // still frame long enough to assume the button had not worked. A minute is
+        // still far more patience than a stream that is coming back needs.
+        let _ = mpv.set_property("network-timeout", "60");
         let _ = mpv.set_property("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_on_network_error=1");
         let _ = mpv.set_property("stream-buffer-size", "32MiB");
     }

@@ -122,6 +122,7 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
       if (parsed.streamSort === "harbor") parsed.streamSort = "addon";
       parsed._streamSortAddonV1 = true;
     }
+    if (parsed.localeDetected === undefined) parsed.localeDetected = true;
     if (parsed.aiSearchModel) parsed.aiSearchModel = migrateModelId(parsed.aiSearchModel);
     if (!parsed._mpvEmbedV3) {
       parsed.playerMpvEmbed = true;

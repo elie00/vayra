@@ -90,6 +90,35 @@ export async function torrentEngineSelect(infoHash: string, fileIdx: number): Pr
   );
 }
 
+export async function torrentEngineSelectMany(infoHash: string, fileIdxs: number[]): Promise<boolean> {
+  if (!isTauri || fileIdxs.length === 0) return false;
+  try {
+    await invoke("torrent_engine_select_many", { infoHash, fileIdxs });
+    return true;
+  } catch (e) {
+    console.warn("[engine] select_many failed", e);
+    return false;
+  }
+}
+
+/**
+ * Hand back the files a finished save was holding, so a later stream can narrow the
+ * torrent down again instead of keeping a whole pack selected.
+ */
+export async function torrentEngineRelease(infoHash: string, fileIdxs: number[]): Promise<void> {
+  if (!isTauri || fileIdxs.length === 0) return;
+  await invoke("torrent_engine_release", { infoHash, fileIdxs }).catch((e) =>
+    console.warn("[engine] release failed", e),
+  );
+}
+
+/** Read back the torrent file an engine (or Stremio server) stream URL points at. */
+export function engineFileFromUrl(url: string): { infoHash: string; fileIdx: number } | null {
+  const m = /\/([0-9a-f]{40})\/(\d+)(?:[?#]|$)/i.exec(url);
+  if (!m) return null;
+  return { infoHash: m[1].toLowerCase(), fileIdx: Number(m[2]) };
+}
+
 export async function torrentEngineStats(
   infoHash: string,
   fileIdx: number | null,

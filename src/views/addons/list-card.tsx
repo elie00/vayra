@@ -49,7 +49,6 @@ export function ListCard({
         installed={installed}
         onInstall={onInstall}
         onUninstall={onUninstall}
-        onOpen={onOpen}
       />
     </div>
   );

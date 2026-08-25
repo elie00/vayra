@@ -76,7 +76,7 @@ export function useAddons(authKey: string | null, settings: Settings): {
       }
       const userStreamCount = merged.filter(declaresStream).length;
       setUserHasStreamAddons(userStreamCount > 0);
-      const list = withDebridKeys(merged, debridKeys);
+      const list = withDebridKeys(merged, debridKeys, settings.preferredLanguages);
       const existingTorboxIdx = list.findIndex(
         (a) =>
           a.manifest.id === "app.torbox.stremio" ||
@@ -106,7 +106,7 @@ export function useAddons(authKey: string | null, settings: Settings): {
     return () => {
       cancelled = true;
     };
-  }, [authKey, settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey]);
+  }, [authKey, settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey, settings.preferredLanguages]);
 
   return { addons, userHasStreamAddons };
 }

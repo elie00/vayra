@@ -10,9 +10,13 @@ import { franchiseRoot, franchiseRootSync } from "./providers/anime-franchise-ro
 const isAnimeMetaId = (id: string) => /^(kitsu|mal|anilist|anidb):/.test(id);
 export type View = "home" | "settings" | "anime" | "discover" | "catalogs" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads" | "wrapped" | "sports" | "stats";
 
+export type PickerIntent = "play" | "download" | "download-season";
+
 export type PlayEpisode = {
   season: number;
   episode: number;
+  /** Position counted from the series' first episode — how long-running shows are released. */
+  absoluteEpisode?: number;
   name?: string;
   imdbId?: string;
   imdbSeason?: number;
@@ -110,7 +114,7 @@ export type Frame =
   | { kind: "grid"; grid: GridSpec }
   | { kind: "award"; awardType: import("./providers/wikidata").AwardType }
   | { kind: "anime-award"; sourceId: import("./anime-awards").AwardSourceId }
-  | { kind: "picker"; meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }
+  | { kind: "picker"; meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: PickerIntent; resume?: boolean; seasonEpisodes?: PlayEpisode[] }
   | { kind: "player"; src: PlayerSrc }
   | { kind: "match-detail"; game: SportsGame };
 
@@ -170,11 +174,11 @@ type ViewValue = {
   animeAwardSource: import("./anime-awards").AwardSourceId | null;
   openAnimeAward: (s: import("./anime-awards").AwardSourceId) => void;
   homeResetTick: number;
-  picker: { meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean } | null;
+  picker: { meta: Meta; episode?: PlayEpisode; autoPlay?: boolean; attempt?: number; intent?: PickerIntent; resume?: boolean; seasonEpisodes?: PlayEpisode[] } | null;
   openPicker: (
     meta: Meta,
     episode?: PlayEpisode,
-    opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean },
+    opts?: { autoPlay?: boolean; attempt?: number; intent?: PickerIntent; resume?: boolean; seasonEpisodes?: PlayEpisode[] },
   ) => void;
   player: PlayerSrc | null;
   openPlayer: (src: PlayerSrc) => void;
@@ -399,7 +403,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const matchDetailGame = top.kind === "match-detail" ? top.game : null;
   const picker = useMemo(
     () => top.kind === "picker"
-      ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent, resume: top.resume }
+      ? { meta: top.meta, episode: top.episode, autoPlay: top.autoPlay, attempt: top.attempt, intent: top.intent, resume: top.resume, seasonEpisodes: top.seasonEpisodes }
       : null,
     [top],
   );
@@ -769,7 +773,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, [setNavStack]);
 
   const openPicker = useCallback(
-    (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean }) => {
+    (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: PickerIntent; resume?: boolean; seasonEpisodes?: PlayEpisode[] }) => {
       if (opts?.autoPlay) beginMarathonAdvance();
       setNavStack((cur) => {
         const t = cur[cur.length - 1];
@@ -789,6 +793,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           attempt: opts?.attempt,
           intent: opts?.intent,
           resume: opts?.resume,
+          seasonEpisodes: opts?.seasonEpisodes,
         });
       });
     },

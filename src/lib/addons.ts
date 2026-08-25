@@ -1,4 +1,5 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
+import { normalizeLang } from "@/lib/subtitles/language";
 import type { Meta } from "./cinemeta";
 import { fetchManifestAt, filterEnabled, loadInstalled } from "./addon-store";
 
@@ -174,8 +175,32 @@ export type DebridKeySet = {
   dlKey?: string;
 };
 
-export function torrentioConfigFor(keys: DebridKeySet): string {
+// Values accepted by the "Priority Language" field of torrentio.strem.fun/configure.
+// Torrentio exposes no "english" value: it is a list of foreign languages.
+const TORRENTIO_LANGUAGES: Record<string, string> = {
+  ja: "japanese", ru: "russian", it: "italian", pt: "portuguese", "pt-br": "portuguese",
+  es: "spanish", "es-419": "latino", ko: "korean", zh: "chinese", fr: "french",
+  de: "german", nl: "dutch", hi: "hindi", te: "telugu", ta: "tamil", pl: "polish",
+  lt: "lithuanian", lv: "latvian", et: "estonian", cs: "czech", sk: "slovakian",
+  sl: "slovenian", hu: "hungarian", ro: "romanian", bg: "bulgarian", sr: "serbian",
+  hr: "croatian", uk: "ukrainian", el: "greek", da: "danish", fi: "finnish",
+  sv: "swedish", no: "norwegian", tr: "turkish", ar: "arabic", fa: "persian",
+  he: "hebrew", vi: "vietnamese", id: "indonesian", ms: "malay", th: "thai",
+};
+
+function torrentioLanguages(preferredLanguages: string[]): string[] {
+  const out = new Set<string>();
+  for (const name of preferredLanguages) {
+    const value = TORRENTIO_LANGUAGES[normalizeLang(name)];
+    if (value) out.add(value);
+  }
+  return [...out];
+}
+
+export function torrentioConfigFor(keys: DebridKeySet, preferredLanguages: string[] = []): string {
   const parts: string[] = [];
+  const langs = torrentioLanguages(preferredLanguages);
+  if (langs.length > 0) parts.push(`language=${langs.join(",")}`);
   if (keys.tbKey) parts.push(`torbox=${keys.tbKey.trim()}`);
   if (keys.rdKey) parts.push(`realdebrid=${keys.rdKey.trim()}`);
   if (keys.adKey) parts.push(`alldebrid=${keys.adKey.trim()}`);
@@ -232,8 +257,12 @@ export function torboxAddonFor(tbKey: string): Addon | null {
   };
 }
 
-export function withDebridKeys(addons: Addon[], keys: DebridKeySet): Addon[] {
-  const config = torrentioConfigFor(keys);
+export function withDebridKeys(
+  addons: Addon[],
+  keys: DebridKeySet,
+  preferredLanguages: string[] = [],
+): Addon[] {
+  const config = torrentioConfigFor(keys, preferredLanguages);
   const torrentioCount = addons.filter(
     (a) => a.manifest.id === "com.stremio.torrentio.addon",
   ).length;

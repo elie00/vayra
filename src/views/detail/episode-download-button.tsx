@@ -29,7 +29,9 @@ export function EpisodeDownloadButton({
   const dl = activeDownloadFor(meta.id, episode?.season ?? null, episode?.episode ?? null);
   if (isLocal) return null;
   const status = dl?.status;
-  const downloading = status === "downloading";
+  // A queued episode already belongs to a run: show it as under way, and let the
+  // same click call it off, or a second click would queue it all over again.
+  const downloading = status === "downloading" || status === "queued";
   const done = status === "done";
   const failed = status === "error";
   const persistent = downloading || done || failed;

@@ -17,7 +17,7 @@ export function WelcomeStep() {
         </div>
         <p className="text-[15.5px] leading-relaxed text-ink-muted">
           {t(
-            "A client for the Stremio protocol. Two minutes to set up; most of it optional. You stay in control of every key.",
+            "Your media, profiles, and watch experience in one place. Connect only the services you choose.",
           )}
         </p>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
@@ -26,7 +26,7 @@ export function WelcomeStep() {
       </div>
       <div className="grid grid-cols-3 gap-3 pt-2">
         <Bullet title={t("Current")}>{t("Trending, in theaters, what's on every streamer.")}</Bullet>
-        <Bullet title={t("Yours")}>{t("Your Stremio library + addons sync in untouched.")}</Bullet>
+        <Bullet title={t("Yours")}>{t("Your VAYRA account stays separate from optional services.")}</Bullet>
         <Bullet title={t("Quiet")}>{t("No telemetry, no servers, no bundled keys.")}</Bullet>
       </div>
     </div>
