@@ -15,10 +15,6 @@ export async function svpLaunch(): Promise<void> {
   await invoke("svp_launch");
 }
 
-export async function svpEnsureRunning(): Promise<boolean> {
-  return invoke<boolean>("svp_ensure_running");
-}
-
 export async function svpApply(targetFps: string): Promise<string> {
   return invoke<string>("svp_apply", { targetFps });
 }
