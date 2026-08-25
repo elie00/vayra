@@ -30,7 +30,18 @@ export function compileMpvOptions(s: Settings): string {
   const lines: string[] = [...(QUALITY_LINES[s.mpvQuality] ?? [])];
   if (s.mpvHwdec === "on") lines.push("hwdec=yes");
   else if (s.mpvHwdec === "off") lines.push("hwdec=no");
-  if (s.mpvBufferBoost) lines.push("cache=yes", "demuxer-max-bytes=150MiB", "demuxer-readahead-secs=20");
+  // These are applied after the playback defaults in mpv.rs, so they replace them
+  // outright — and have to sit above them, or the toggle a viewer reaches for on a
+  // bad connection makes the buffer smaller than leaving it off. Defaults there:
+  // cache-secs 120, demuxer-max-bytes 256MiB, demuxer-readahead-secs 120.
+  if (s.mpvBufferBoost) {
+    lines.push(
+      "cache=yes",
+      "cache-secs=300",
+      "demuxer-max-bytes=512MiB",
+      "demuxer-readahead-secs=300",
+    );
+  }
   if (s.mpvDownmixStereo) lines.push("audio-channels=stereo");
   if (s.audioDevice && s.audioDevice !== "auto") lines.push(`audio-device=${s.audioDevice}`);
   if (s.playerDisplayPanel === "oled" && s.playerHdrToSdr) lines.push("target-contrast=inf");
