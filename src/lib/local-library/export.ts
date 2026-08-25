@@ -1,4 +1,3 @@
-import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
 import {
   tmdbDetails,
   tmdbSeasonEpisodes,
@@ -178,11 +177,8 @@ function extFromPath(filePath: string, fallback: string): string {
 
 async function downloadTo(url: string, dest: string): Promise<boolean> {
   try {
-    const res = await tauriHttpFetch(url);
-    if (!res.ok) return false;
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    const { writeFile } = await import("@tauri-apps/plugin-fs");
-    await writeFile(dest, bytes);
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("vayra_download_to_file", { url, dest });
     return true;
   } catch {
     return false;
@@ -229,7 +225,9 @@ async function exportMovieInner(
   const art = await resolveArtworkPaths(key, metaId, detail.originalLanguage);
 
   const path = await import("@tauri-apps/api/path");
-  const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+  const { invoke } = await import("@tauri-apps/api/core");
+  const writeTextFile = (path: string, contents: string) =>
+    invoke<void>("vayra_write_text_file", { path, contents });
   const dir = await path.dirname(entry.path);
   const stem = (await path.basename(entry.path)).replace(/\.[^.]+$/, "");
   const at = (name: string) => path.join(dir, name);
@@ -286,7 +284,9 @@ async function exportSeriesInner(
   const art = await resolveArtworkPaths(key, metaId, detail.originalLanguage);
 
   const path = await import("@tauri-apps/api/path");
-  const { writeTextFile } = await import("@tauri-apps/plugin-fs");
+  const { invoke } = await import("@tauri-apps/api/core");
+  const writeTextFile = (path: string, contents: string) =>
+    invoke<void>("vayra_write_text_file", { path, contents });
   const root = await seriesRootDir(path, episodes[0].path);
   const atRoot = (name: string) => path.join(root, name);
 
