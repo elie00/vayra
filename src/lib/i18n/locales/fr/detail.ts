@@ -73,6 +73,7 @@ const detail: Record<string, string> = {
   "Episode information is not available": "Les informations de l'épisode ne sont pas disponibles",
   "Unable to connect": "Connexion impossible",
   "Stills": "Photos de l'épisode",
+  "Reveal images": "Afficher les images",
   "Guest Stars": "Invités",
   "Guest Stars · {n}": "Invités · {n}",
   "Overview": "Synopsis",

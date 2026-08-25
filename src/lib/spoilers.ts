@@ -4,6 +4,7 @@ export type SpoilerSettings = {
   spoilerHideTitles: boolean;
   spoilerHideDescriptions: boolean;
   spoilerSkipNext: boolean;
+  blurEpisodes: boolean;
 };
 
 export type SpoilerMask = { thumb: boolean; title: boolean; desc: boolean };
@@ -27,6 +28,22 @@ export function spoilerMaskFor(
     title: s.spoilerHideTitles,
     desc: s.spoilerHideDescriptions,
   };
+}
+
+/**
+ * Whether an episode's own page should hold its images behind a reveal. The list
+ * masks above peek on hover, which a full-bleed hero image cannot do: this one
+ * waits for a deliberate click instead.
+ *
+ * An episode already started has nothing left to give away, and the toggle sits
+ * inside "Blur spoilers", so it means nothing on its own.
+ */
+export function episodePageBlurred(
+  s: SpoilerSettings,
+  opts: { started: boolean },
+): boolean {
+  if (!s.hideSpoilers || !s.blurEpisodes) return false;
+  return !opts.started;
 }
 
 export function spoilerActive(mask: SpoilerMask): boolean {
