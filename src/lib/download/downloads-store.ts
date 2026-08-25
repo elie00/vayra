@@ -1,12 +1,17 @@
 import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
-import { exists, mkdir, remove } from "@tauri-apps/plugin-fs";
+import { mkdir } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
 import { engineFileFromUrl, torrentEngineRelease } from "@/lib/torrent/local-engine";
 import { buildDefaultFilename, sanitizeName } from "./filename";
-import { startDownload, type DownloadHandle } from "./video-download";
+import {
+  downloadFileExists,
+  removeDownloadFile,
+  startDownload,
+  type DownloadHandle,
+} from "./video-download";
 
 export type DownloadItem = {
   id: string;
@@ -141,11 +146,7 @@ async function resolveDir(): Promise<string> {
 
 async function pathTaken(path: string): Promise<boolean> {
   for (const d of items.values()) if (d.path === path) return true;
-  try {
-    return await exists(path);
-  } catch {
-    return false;
-  }
+  return await downloadFileExists(path);
 }
 
 async function uniquePath(path: string): Promise<string> {
@@ -315,8 +316,9 @@ export function removeDownload(id: string): void {
   if (item) releaseEngineFile(item.url);
   if (items.delete(id)) rebuild();
   if (item) {
-    void remove(item.path).catch(() => {});
-    void remove(`${item.path}.part`).catch(() => {});
+    void removeDownloadFile(item.path).catch((e: unknown) => {
+      console.warn(`[downloads] could not delete ${item.path}`, e);
+    });
   }
 }
 
