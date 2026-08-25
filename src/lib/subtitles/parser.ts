@@ -17,7 +17,13 @@ export async function fetchAndParse(url: string): Promise<SubCue[]> {
 }
 
 export function parseSubtitle(raw: string, format?: SubFormat): SubCue[] {
-  const text = raw.replace(/^﻿/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const text = raw
+    .replace(/^﻿/, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    // A separator line padded with spaces is common in the wild and stops blocks
+    // splitting, which swallowed every cue after the first in that run.
+    .replace(/^[ \t]+$/gm, "");
   const fmt = format ?? detectFormat(text);
   if (fmt === "vtt") return parseVtt(text);
   if (fmt === "ass" || fmt === "ssa") return parseAss(text);
@@ -179,16 +185,31 @@ function decodeText(bytes: Uint8Array): string {
   }
 }
 
+/**
+ * The cue to show at this moment, or null.
+ *
+ * Cues are sorted by start but may overlap — a sign or a song line held on
+ * screen while dialogue comes and goes is ordinary in ASS. A plain binary search
+ * on both ends walks past such a cue and reports nothing, so the subtitle
+ * vanishes mid-line. Instead: binary search for the last cue that has started,
+ * then walk back for the most recent one still running.
+ */
 export function findActiveCue(cues: SubCue[], timeSec: number): SubCue | null {
   if (cues.length === 0) return null;
   let lo = 0;
   let hi = cues.length - 1;
+  let started = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    const c = cues[mid];
-    if (timeSec < c.start) hi = mid - 1;
-    else if (timeSec >= c.end) lo = mid + 1;
-    else return c;
+    if (cues[mid].start <= timeSec) {
+      started = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  for (let i = started; i >= 0; i--) {
+    if (timeSec < cues[i].end) return cues[i];
   }
   return null;
 }
