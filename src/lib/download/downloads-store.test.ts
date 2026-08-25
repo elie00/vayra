@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   startDownload: vi.fn(),
-  mkdir: vi.fn(),
   downloadDir: vi.fn(),
   torrentEngineRelease: vi.fn(),
   removeDownloadFile: vi.fn(),
@@ -10,7 +9,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tauri-apps/api/path", () => ({ downloadDir: mocks.downloadDir }));
-vi.mock("@tauri-apps/plugin-fs", () => ({ mkdir: mocks.mkdir }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ revealItemInDir: vi.fn() }));
 vi.mock("./video-download", () => ({
   startDownload: mocks.startDownload,
@@ -54,7 +52,6 @@ beforeEach(() => {
   mocks.downloadDir.mockResolvedValue("/dl");
   mocks.downloadFileExists.mockResolvedValue(false);
   mocks.removeDownloadFile.mockResolvedValue(undefined);
-  mocks.mkdir.mockResolvedValue(undefined);
   mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => store.get(k) ?? null,
