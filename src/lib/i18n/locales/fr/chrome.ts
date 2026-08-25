@@ -96,6 +96,8 @@ const chrome: Record<string, string> = {
   "Couldn't find an AniList avatar on your account.":
     "Aucun avatar AniList trouvé sur ton compte.",
   "Couldn't reach AniList.": "Impossible de joindre AniList.",
+  "Couldn't reach MyAnimeList. Try refreshing.":
+    "Impossible de joindre MyAnimeList. Essaie d'actualiser.",
   "Couldn't find a Simkl avatar on your account.":
     "Aucun avatar Simkl trouvé sur ton compte.",
   "Couldn't reach Simkl.": "Impossible de joindre Simkl.",
