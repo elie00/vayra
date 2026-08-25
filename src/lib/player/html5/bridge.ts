@@ -14,6 +14,9 @@ import { bufferedAhead, readAudioTracks, videoAudio } from "./audio-tracks";
 import { mapErrorCode, mapErrorMessage } from "./error-map";
 import { mountCustomPip } from "./pip";
 
+// readyState: enough data to keep playing from the current position.
+const HAVE_FUTURE_DATA = 3;
+
 let DOCUMENT_PIP_KNOWN_BROKEN = false;
 
 export function createHtml5Bridge(): PlayerBridge {
@@ -87,11 +90,16 @@ export function createHtml5Bridge(): PlayerBridge {
       snap.status = "ended";
     } else if (!video.paused) {
       snap.status = "playing";
-    } else if (video.readyState >= 3) {
+    } else if (video.readyState >= HAVE_FUTURE_DATA) {
       snap.status = "paused";
     } else {
       snap.status = "loading";
     }
+    // An element starved of data stays unpaused, so status alone reads as playing
+    // while nothing moves. Said plainly here, the play button knows the viewer is
+    // waiting on the stream rather than asking to stop it.
+    snap.buffering =
+      !video.paused && !video.ended && !video.error && video.readyState < HAVE_FUTURE_DATA;
     // First-frame / render-ready: latch once the element is actually playing
     // and the clock has advanced past 0. This lands after the real first frame,
     // whereas status flips to "playing" as soon as the element is unpaused.
