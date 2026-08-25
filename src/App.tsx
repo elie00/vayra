@@ -100,6 +100,7 @@ import { SFX } from "@/lib/sfx";
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
 const importWrapped = () => import("@/views/wrapped");
+const importStats = () => import("@/views/stats");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
@@ -129,6 +130,7 @@ const importOnboarding = () => import("@/components/onboarding");
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
+const StatsView = lazy(() => importStats().then((m) => ({ default: m.StatsView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
 const Discover = lazy(() => importDiscover().then((m) => ({ default: m.Discover })));
@@ -774,6 +776,7 @@ function Shell() {
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
   const wrappedTop = topKind === "wrapped";
+  const statsTop = topKind === "stats";
   const queueTop = topKind === "queue";
   const serviceTop = topKind === "service";
   const homeTop = topKind === "home";
@@ -818,6 +821,7 @@ function Shell() {
   const addonsAlive = useIdleEvict(addonsTop);
   const calendarAlive = useIdleEvict(calendarTop);
   const wrappedAlive = useIdleEvict(wrappedTop);
+  const statsAlive = useIdleEvict(statsTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
   const serviceAlive = useKeepAlive(serviceTop, serviceTop && !!service);
   const detailAlive = useKeepAlive(detailTop, !!meta);
@@ -920,6 +924,13 @@ function Shell() {
           <div className={layer(wrappedTop)}>
             <Suspense fallback={null}>
               <WrappedView active={wrappedTop} />
+            </Suspense>
+          </div>
+        )}
+        {statsAlive && (
+          <div className={layer(statsTop)}>
+            <Suspense fallback={null}>
+              <StatsView active={statsTop} />
             </Suspense>
           </div>
         )}
