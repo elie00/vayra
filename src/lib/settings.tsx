@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { applyTheme, isKnownPreset, nextColorTheme } from "@/lib/theme";
+import { applyTheme, isKnownPreset } from "@/lib/theme";
 import { applyAppIcon } from "@/lib/app-icon";
 import { getCustomThemes, subscribeCustomThemes } from "@/lib/custom-themes";
 import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
@@ -314,9 +314,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           }));
         },
       ).then(track);
-      void listen("harbor://cycle-theme", () => {
-        setSettings((s) => ({ ...s, theme: { ...s.theme, preset: nextColorTheme(s.theme.preset) } }));
-      }).then(track);
       void listen<string>("vayra://set-theme", (e) => {
         const id = e.payload;
         if (!id || (!isKnownPreset(id) && !id.startsWith("user:"))) return;
