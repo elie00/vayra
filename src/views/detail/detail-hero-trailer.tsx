@@ -17,7 +17,7 @@ export function DetailHeroTrailer({
   const { settings } = useSettings();
   const [info, setInfo] = useState<TrailerInfo | null>(null);
   const [ready, setReady] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(!settings.detailTrailerAudio);
   const videoRef = useRef<HTMLVideoElement>(null);
   const pageVisible = usePageVisible();
   const wantsPlayback = !!info && !paused && pageVisible;
@@ -25,7 +25,7 @@ export function DetailHeroTrailer({
   useEffect(() => {
     setInfo(null);
     setReady(false);
-    setMuted(true);
+    setMuted(!settings.detailTrailerAudio);
     if (!candidateId || isMobileTauri()) return;
     let cancelled = false;
     fetchTrailer(candidateId, resolveTrailerQuality(settings.trailerQuality)).then((i) => {
@@ -34,13 +34,24 @@ export function DetailHeroTrailer({
     return () => {
       cancelled = true;
     };
-  }, [candidateId, settings.trailerQuality]);
+  }, [candidateId, settings.trailerQuality, settings.detailTrailerAudio]);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (wantsPlayback) v.play().catch(() => {});
-    else v.pause();
+    if (!wantsPlayback) {
+      v.pause();
+      return;
+    }
+    // Browsers refuse to start a video with sound before the page has been
+    // interacted with. Rather than leave the trailer silent and still, drop back
+    // to muted — which they do allow — and play.
+    v.play().catch(() => {
+      if (v.muted) return;
+      setMuted(true);
+      v.muted = true;
+      void v.play().catch(() => {});
+    });
   }, [wantsPlayback]);
 
   useEffect(() => {
