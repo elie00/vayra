@@ -38,11 +38,9 @@ async function dirIndex(dir: string): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (!isTauri) return out;
   try {
-    const { readDir } = await import("@tauri-apps/plugin-fs");
-    const entries = await readDir(dir);
-    for (const e of entries) {
-      if (e.isFile) out.set(e.name.toLowerCase(), e.name);
-    }
+    const { invoke } = await import("@tauri-apps/api/core");
+    const names = await invoke<string[]>("vayra_list_dir_files", { dir });
+    for (const name of names) out.set(name.toLowerCase(), name);
   } catch {
     /* unreadable dir */
   }
@@ -149,8 +147,8 @@ export async function findShowArt(
 export async function readNfo(nfoPath: string): Promise<ParsedNfo | null> {
   if (!isTauri) return null;
   try {
-    const { readTextFile } = await import("@tauri-apps/plugin-fs");
-    const xml = await readTextFile(nfoPath);
+    const { invoke } = await import("@tauri-apps/api/core");
+    const xml = await invoke<string>("vayra_read_text_file", { path: nfoPath });
     return parseNfo(xml);
   } catch {
     return null;

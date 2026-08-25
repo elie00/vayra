@@ -1,5 +1,4 @@
 import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
-import { mkdir } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
@@ -195,8 +194,10 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     const settings = raw ? (JSON.parse(raw) as { downloadCreateFolders?: boolean }) : null;
     if (settings?.downloadCreateFolders && dir) {
       const folderName = sanitizeName(meta.name || "download");
+      // The backend creates the folder along with the file it writes there; this
+      // path is outside what the fs plugin is scoped to, so asking it here only
+      // ever raised an error to swallow.
       dir = `${dir}${dir.endsWith(sep()) ? "" : sep()}${folderName}`;
-      await mkdir(dir, { recursive: true }).catch(() => {});
     }
   } catch {}
   const filename = buildDefaultFilename(meta, episode, url, streamLabel);
