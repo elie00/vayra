@@ -20,8 +20,8 @@ import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { useView } from "@/lib/view";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
-import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
-import { close, minimize } from "@/lib/window";
+
+import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { isMobileTauri } from "@/lib/platform";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
@@ -34,6 +34,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const t = useT();
   const preview = useThemePreview();
   const fullscreen = useWindowFullscreen();
+  const maxed = useMaximized();
   if (chromeHidden && !connecting) return null;
   const layout = preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
@@ -150,14 +151,14 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
           {!onLiveRoot && <TogetherButton />}
           {IS_TAURI && !settings.useNativeTitleBar && (
             <div className="ms-1 flex items-center gap-2">
-              <Control label={t("chrome.minimize")} onClick={minimize}>
+              <Control label={t("chrome.minimize")} onClick={() => void minimize()}>
                 <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
                   <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </Control>
-              <Control label={fullscreen ? t("chrome.restore") : t("chrome.maximize")} onClick={() => void toggleWindowFullscreen()}>
+              <Control label={maxed ? t("chrome.restore") : t("chrome.maximize")} onClick={() => void toggleMaximize()}>
                 <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
-                  {fullscreen ? (
+                  {maxed ? (
                     <>
                       <rect x="2.5" y="4.5" width="6" height="6" stroke="currentColor" strokeWidth="1.4" rx="1" />
                       <path d="M5 4.5V3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5H9" stroke="currentColor" strokeWidth="1.4" fill="none" />

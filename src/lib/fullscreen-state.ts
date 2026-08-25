@@ -82,26 +82,39 @@ export async function reassertWindowFullscreen(): Promise<void> {
   }
 }
 
+// The flag is only ever set when the window actually moved: claiming a state the
+// window is not in leaves the button showing the opposite of what it would do.
 export async function enterWindowFullscreen(): Promise<void> {
-  setWindowFullscreen(true);
   if (isTauri()) {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
       await invoke("window_fullscreen_enter");
     } catch {
-      /* ignore */
+      return;
     }
   } else if (document.documentElement.requestFullscreen) {
-    void document.documentElement.requestFullscreen().catch(() => {});
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch {
+      return;
+    }
   }
+  setWindowFullscreen(true);
 }
 
-export async function exitWindowFullscreen(): Promise<void> {
-  if (suppressNextExit) {
+/**
+ * `userInitiated` is how a button press gets through: an auto-advance asks for the
+ * next exit to be ignored so the next episode stays fullscreen, and that used to
+ * swallow a press that landed in the same second — the button did nothing.
+ */
+export async function exitWindowFullscreen(
+  opts?: { userInitiated?: boolean },
+): Promise<void> {
+  if (suppressNextExit && !opts?.userInitiated) {
     suppressNextExit = false;
     return;
   }
-  setWindowFullscreen(false);
+  if (opts?.userInitiated) suppressNextExit = false;
   if (isTauri()) {
     try {
       const { invoke } = await import("@tauri-apps/api/core");
@@ -109,11 +122,16 @@ export async function exitWindowFullscreen(): Promise<void> {
         restorePosition: loadStoredSettings().fullscreenRestorePosition !== false,
       });
     } catch {
-      /* ignore */
+      return;
     }
   } else if (document.fullscreenElement) {
-    void document.exitFullscreen().catch(() => {});
+    try {
+      await document.exitFullscreen();
+    } catch {
+      return;
+    }
   }
+  setWindowFullscreen(false);
 }
 
 export async function exitWindowFullscreenOnPlayerClose(): Promise<void> {
@@ -121,8 +139,9 @@ export async function exitWindowFullscreenOnPlayerClose(): Promise<void> {
   await exitWindowFullscreen();
 }
 
+/** Always a deliberate act — a keypress, a button — so it is never suppressed. */
 export async function toggleWindowFullscreen(): Promise<void> {
-  if (windowFullscreen) await exitWindowFullscreen();
+  if (windowFullscreen) await exitWindowFullscreen({ userInitiated: true });
   else await enterWindowFullscreen();
 }
 
@@ -149,7 +168,8 @@ export async function exitAnyFullscreen(): Promise<void> {
   // Toujours passer par window_fullscreen_exit (no-op hors fullscreen) : un
   // setFullscreen(false) direct sautait la restauration de la géométrie
   // sauvegardée et laissait la fenêtre sur son petit cadre pré-fullscreen.
-  await exitWindowFullscreen();
+  // Déclenché par Échap : c'est un geste explicite, il ne se laisse pas supprimer.
+  await exitWindowFullscreen({ userInitiated: true });
 }
 
 if (isTauri()) {
