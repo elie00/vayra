@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 import { buildCatchupUrl } from "@/lib/iptv/catchup";
 import { headersFromChannel } from "@/lib/iptv/channel-headers";
 import { recordChannelPlay } from "@/lib/iptv/channel-stats";
@@ -84,7 +84,10 @@ export function useLiveActions(params: {
           filters: [{ name: "M3U Playlist", extensions: ["m3u", "m3u8"] }],
         });
         if (!target) return;
-        await writeTextFile(target, buildM3u(playlist.channels, playlist.epgUrl));
+        await invoke("vayra_write_text_file", {
+          path: target,
+          contents: buildM3u(playlist.channels, playlist.epgUrl),
+        });
       } catch (e) {
         console.warn("[live] export playlist failed", e);
       }
