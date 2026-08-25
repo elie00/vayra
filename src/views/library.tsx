@@ -1,12 +1,14 @@
-import { BarChart3, Bookmark, Clock, HardDrive } from "lucide-react";
+import { BarChart3, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
 import simklLogo from "@/assets/simkl.png";
 import malLogo from "@/assets/mal.png";
+import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import { useAnilist } from "@/lib/anilist/provider";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useMal } from "@/lib/mal/provider";
+import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -17,6 +19,8 @@ import { LocalTab } from "./library/local-tab";
 import { TabBtn, type Tab } from "./library/shared";
 import { SimklTab } from "./library/simkl-tab";
 import { MalTab } from "./library/mal-tab";
+import { MyListsTab } from "./library/my-lists-tab";
+import { LetterboxdTab } from "./library/letterboxd-tab";
 import { TraktTab } from "./library/trakt-tab";
 import { WatchlistTab } from "./library/watchlist-tab";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
@@ -33,7 +37,9 @@ function readSavedTab(): Tab {
       v === "trakt" ||
       v === "anilist" ||
       v === "simkl" ||
-      v === "mal"
+      v === "mal" ||
+      v === "lists" ||
+      v === "letterboxd"
     )
       return v;
   } catch {}
@@ -46,6 +52,7 @@ export function LibraryView({ active }: { active: boolean }) {
   const { isConnected: anilistConnected } = useAnilist();
   const { isConnected: simklConnected } = useSimkl();
   const { isConnected: malConnected } = useMal();
+  const lb = useLetterboxd();
   const scrollRef = useRef<HTMLElement>(null);
   useScrollMemory("library", scrollRef, active);
 
@@ -72,6 +79,10 @@ export function LibraryView({ active }: { active: boolean }) {
   }, [tab, malConnected]);
 
   useEffect(() => {
+    if (tab === "letterboxd" && !lb.isActive) setTab("watchlist");
+  }, [tab, lb.isActive]);
+
+  useEffect(() => {
     if (!active) return;
     const label =
       tab === "watchlist"
@@ -84,7 +95,11 @@ export function LibraryView({ active }: { active: boolean }) {
               ? "Browsing their Simkl library"
               : tab === "mal"
                 ? "Browsing their MyAnimeList library"
-                : "Browsing their Stremio library";
+                : tab === "lists"
+                  ? "Browsing their lists"
+                  : tab === "letterboxd"
+                    ? "Browsing their Letterboxd library"
+                    : "Browsing their Stremio library";
     return pushActivityHint({ details: label, state: "Library" });
   }, [active, tab]);
 
@@ -101,6 +116,7 @@ export function LibraryView({ active }: { active: boolean }) {
           anilistConnected={anilistConnected}
           simklConnected={simklConnected}
           malConnected={malConnected}
+          letterboxdActive={lb.isActive}
         />
         {tab === "watchlist" && <WatchlistTab />}
         {tab === "history" && <HistoryTab />}
@@ -109,6 +125,8 @@ export function LibraryView({ active }: { active: boolean }) {
         {tab === "anilist" && anilistConnected && <AnilistTab />}
         {tab === "simkl" && simklConnected && <SimklTab />}
         {tab === "mal" && malConnected && <MalTab />}
+        {tab === "lists" && <MyListsTab />}
+        {tab === "letterboxd" && lb.isActive && <LetterboxdTab />}
       </div>
     </main>
   );
@@ -121,6 +139,7 @@ function Header({
   anilistConnected,
   simklConnected,
   malConnected,
+  letterboxdActive,
 }: {
   tab: Tab;
   onTab: (t: Tab) => void;
@@ -128,6 +147,7 @@ function Header({
   anilistConnected: boolean;
   simklConnected: boolean;
   malConnected: boolean;
+  letterboxdActive: boolean;
 }) {
   const t = useT();
   const { openStats } = useView();
@@ -166,6 +186,10 @@ function Header({
           <HardDrive size={14} strokeWidth={2.2} />
           {t("Local")}
         </TabBtn>
+        <TabBtn active={tab === "lists"} onClick={() => onTab("lists")}>
+          <Layers size={14} strokeWidth={2.2} />
+          {t("My Lists")}
+        </TabBtn>
         {traktConnected && (
           <TabBtn active={tab === "trakt"} onClick={() => onTab("trakt")}>
             <img src={traktLogo} alt="" className="h-3.5 w-3.5 object-contain" />
@@ -188,6 +212,12 @@ function Header({
           <TabBtn active={tab === "mal"} onClick={() => onTab("mal")}>
             <img src={malLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
             MAL
+          </TabBtn>
+        )}
+        {letterboxdActive && (
+          <TabBtn active={tab === "letterboxd"} onClick={() => onTab("letterboxd")}>
+            <img src={letterboxdLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
+            Letterboxd
           </TabBtn>
         )}
       </div>
