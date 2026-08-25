@@ -19,6 +19,7 @@ import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
 import { exitWindowFullscreenOnPlayerClose, startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
+import { syncEngineCacheOptions } from "@/lib/torrent/engine-config-sync";
 import { useOverlayPinned } from "@/lib/overlay-pin";
 import { isMobileDevice, isWeb } from "@/lib/platform";
 import { activeLayout } from "@/lib/theme";
@@ -499,6 +500,18 @@ function Shell() {
   }, [settings.soundTheme]);
   useEffect(() => startMaintenance(), []);
   useEffect(() => startWindowFullscreenSync(), []);
+  // The engine reads its cache settings from its own config file at startup, so
+  // settings that arrived any other way — a restored backup, a second machine —
+  // would otherwise show in the panel without the engine ever seeing them.
+  useEffect(() => {
+    void syncEngineCacheOptions({
+      dir: settings.streamCacheDir || null,
+      retentionHours: settings.streamCacheRetentionHours,
+      maxGb: settings.streamCacheMaxGb,
+    });
+    // Startup reconciliation only: the panel pushes its own changes as they happen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const initAudio = () => SFX.init();
