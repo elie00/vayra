@@ -108,6 +108,9 @@ const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     ("dheight", 15, PropertyKind::Int64),
     ("video-params/gamma", 16, PropertyKind::String),
     ("demuxer-cache-duration", 17, PropertyKind::Double),
+    // `cache-pause` makes mpv pause itself when the buffer runs dry, which looks
+    // exactly like a pause the viewer asked for unless this says otherwise.
+    ("paused-for-cache", 18, PropertyKind::Flag),
 ];
 
 #[derive(Clone, Copy)]
