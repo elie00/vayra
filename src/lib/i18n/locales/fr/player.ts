@@ -102,6 +102,7 @@ const player: Record<string, string> = {
     "Ce fichier est signalé comme non lisible sur le web. Essaie le moteur mpv dans les Paramètres ou choisis un autre stream.",
 
   "Casting comes with the mpv backend": "La diffusion nécessite le moteur mpv",
+  "Casting isn't available on Android yet": "La diffusion n'est pas encore disponible sur Android",
   "Cast to TV or speaker": "Diffuser vers une TV ou une enceinte",
   "Burn in subtitles": "Incruster les sous-titres",
   "Subtitles are baked into the picture so they always show. Re-encodes the video.":
