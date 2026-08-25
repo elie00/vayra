@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
 import simklLogo from "@/assets/simkl.png";
+import malLogo from "@/assets/mal.png";
 import { useAnilist } from "@/lib/anilist/provider";
 import { useSimkl } from "@/lib/simkl/provider";
+import { useMal } from "@/lib/mal/provider";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -14,6 +16,7 @@ import { HistoryTab } from "./library/history-tab";
 import { LocalTab } from "./library/local-tab";
 import { TabBtn, type Tab } from "./library/shared";
 import { SimklTab } from "./library/simkl-tab";
+import { MalTab } from "./library/mal-tab";
 import { TraktTab } from "./library/trakt-tab";
 import { WatchlistTab } from "./library/watchlist-tab";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
@@ -29,7 +32,8 @@ function readSavedTab(): Tab {
       v === "local" ||
       v === "trakt" ||
       v === "anilist" ||
-      v === "simkl"
+      v === "simkl" ||
+      v === "mal"
     )
       return v;
   } catch {}
@@ -41,6 +45,7 @@ export function LibraryView({ active }: { active: boolean }) {
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
   const { isConnected: simklConnected } = useSimkl();
+  const { isConnected: malConnected } = useMal();
   const scrollRef = useRef<HTMLElement>(null);
   useScrollMemory("library", scrollRef, active);
 
@@ -63,6 +68,10 @@ export function LibraryView({ active }: { active: boolean }) {
   }, [tab, simklConnected]);
 
   useEffect(() => {
+    if (tab === "mal" && !malConnected) setTab("watchlist");
+  }, [tab, malConnected]);
+
+  useEffect(() => {
     if (!active) return;
     const label =
       tab === "watchlist"
@@ -73,7 +82,9 @@ export function LibraryView({ active }: { active: boolean }) {
             ? "Browsing their Trakt library"
             : tab === "simkl"
               ? "Browsing their Simkl library"
-              : "Browsing their Stremio library";
+              : tab === "mal"
+                ? "Browsing their MyAnimeList library"
+                : "Browsing their Stremio library";
     return pushActivityHint({ details: label, state: "Library" });
   }, [active, tab]);
 
@@ -89,6 +100,7 @@ export function LibraryView({ active }: { active: boolean }) {
           traktConnected={traktConnected}
           anilistConnected={anilistConnected}
           simklConnected={simklConnected}
+          malConnected={malConnected}
         />
         {tab === "watchlist" && <WatchlistTab />}
         {tab === "history" && <HistoryTab />}
@@ -96,6 +108,7 @@ export function LibraryView({ active }: { active: boolean }) {
         {tab === "trakt" && traktConnected && <TraktTab />}
         {tab === "anilist" && anilistConnected && <AnilistTab />}
         {tab === "simkl" && simklConnected && <SimklTab />}
+        {tab === "mal" && malConnected && <MalTab />}
       </div>
     </main>
   );
@@ -107,12 +120,14 @@ function Header({
   traktConnected,
   anilistConnected,
   simklConnected,
+  malConnected,
 }: {
   tab: Tab;
   onTab: (t: Tab) => void;
   traktConnected: boolean;
   anilistConnected: boolean;
   simklConnected: boolean;
+  malConnected: boolean;
 }) {
   const t = useT();
   const { openStats } = useView();
@@ -167,6 +182,12 @@ function Header({
           <TabBtn active={tab === "simkl"} onClick={() => onTab("simkl")}>
             <img src={simklLogo} alt="" className="h-3.5 w-3.5 object-contain" />
             Simkl
+          </TabBtn>
+        )}
+        {malConnected && (
+          <TabBtn active={tab === "mal"} onClick={() => onTab("mal")}>
+            <img src={malLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
+            MAL
           </TabBtn>
         )}
       </div>
