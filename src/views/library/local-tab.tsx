@@ -32,7 +32,10 @@ export function LocalTab() {
         return;
       }
       const { invoke } = await import("@tauri-apps/api/core");
-      const scanned = (await invoke("vayra_scan_folder", { folder })) as Array<{
+      const scanned = (await invoke("vayra_scan_folder", {
+        folder,
+        minSizeMb: settings.localMinFileSizeMb,
+      })) as Array<{
         path: string;
         filename: string;
         size: number;
@@ -75,7 +78,7 @@ export function LocalTab() {
     } finally {
       setBusy(false);
     }
-  }, [settings.tmdbKey, t]);
+  }, [settings.tmdbKey, settings.localMinFileSizeMb, t]);
 
   const [type, setType] = useState<TypeKey>("all");
   const [query, setQuery] = useState("");
