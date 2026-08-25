@@ -288,21 +288,27 @@ export function findCurrent(arr: EpgProgram[] | undefined, nowMs: number): {
   next: EpgProgram | null;
 } {
   if (!arr || arr.length === 0) return { current: null, next: null };
+  // Binary search for the last programme that has started, rather than for one
+  // that brackets `nowMs`: guides merged from several sources overlap, and a
+  // block running around its own parts made a two-ended search walk past it and
+  // report nothing on air.
   let lo = 0;
   let hi = arr.length - 1;
-  let foundIdx = -1;
+  let started = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    const p = arr[mid];
-    if (nowMs < p.startMs) hi = mid - 1;
-    else if (nowMs >= p.endMs) lo = mid + 1;
-    else {
-      foundIdx = mid;
-      break;
+    if (arr[mid].startMs <= nowMs) {
+      started = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
     }
   }
-  if (foundIdx < 0) {
-    return { current: null, next: arr[lo] ?? null };
+  // Everything before `started` has already begun, so the first one still to
+  // come sits right after it.
+  const next = arr[started + 1] ?? null;
+  for (let i = started; i >= 0; i--) {
+    if (nowMs < arr[i].endMs) return { current: arr[i], next };
   }
-  return { current: arr[foundIdx], next: arr[foundIdx + 1] ?? null };
+  return { current: null, next };
 }
