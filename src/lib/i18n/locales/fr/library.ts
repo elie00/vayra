@@ -4,6 +4,7 @@ const library: Record<string, string> = {
   "Watchlist is what you've saved for later. History is everything you've watched. Local is files on your computer.": "La watchlist, c'est ce que tu as gardé pour plus tard. L'historique, c'est tout ce que tu as regardé. Local, ce sont les fichiers sur ton ordinateur.",
   History: "Historique",
   Local: "Local",
+  "My Lists": "Mes listes",
   Watchlist: "Watchlist",
   "Watchlist only": "Watchlist uniquement",
   "Watchlist shows only saved titles": "La watchlist n'affiche que les titres enregistrés",
