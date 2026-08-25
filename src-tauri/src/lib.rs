@@ -3,6 +3,7 @@ mod cast_hls;
 mod cast_subs;
 mod cf_relay;
 mod download;
+mod user_files;
 mod fonts;
 mod http_fetch;
 mod local_lib;
@@ -705,6 +706,10 @@ pub fn run() {
             download::download_cancel,
             download::download_remove_file,
             download::download_file_exists,
+            user_files::vayra_list_dir_files,
+            user_files::vayra_read_text_file,
+            user_files::vayra_write_text_file,
+            user_files::vayra_download_to_file,
             stream_proxy::proxy_register,
             stream_proxy::proxy_unregister,
             stream_proxy::proxy_gc_idle,
