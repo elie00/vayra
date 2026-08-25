@@ -807,6 +807,7 @@ pub fn run() {
             torrent_engine::torrent_engine_selftest,
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,
+            torrent_engine::torrent_engine_get_options,
             torrent_engine::torrent_engine_set_options,
             torrent_engine::torrent_engine_lan_status,
             torrent_engine::torrent_engine_lan_start,
