@@ -374,6 +374,7 @@ export const DEFAULT: Settings = {
   feedLocaleBias: true,
   uiLanguage: "fr",
   arabicWelcomeSeen: false,
+  localeDetected: false,
   cropMode: "fit",
   customLists: [],
   pauseListStatusOnPause: false,

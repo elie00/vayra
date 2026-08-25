@@ -2,7 +2,12 @@ import { ChevronRight, Loader2, Plus, Sparkles, Star, TrendingUp } from "lucide-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { CardArtBackdrop } from "@/components/card-art-backdrop";
-import { installAddon, manifestToConfigureUrl } from "@/lib/addon-store";
+import {
+  fetchManifestAt,
+  installAddon,
+  manifestRequiresConfiguration,
+  manifestToConfigureUrl,
+} from "@/lib/addon-store";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { listAddons, risingEntryFor, useRising, type SAAddon } from "@/lib/providers/stremio-addons";
 import { useTopMovers } from "@/lib/providers/stremio-addons-velocity";
@@ -293,9 +298,10 @@ function CommunityRow({
   const install = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!m?.id || busy) return;
-    const hints = (m as { behaviorHints?: { configurable?: boolean; configurationRequired?: boolean } })
-      .behaviorHints;
-    if (hints?.configurable === true || hints?.configurationRequired === true) {
+    const manifest = m?.behaviorHints
+      ? m
+      : await fetchManifestAt(addon.manifestUrl).catch(() => m);
+    if (manifestRequiresConfiguration(manifest)) {
       openInstallerViewport(manifestToConfigureUrl(addon.manifestUrl), name, logo);
       return;
     }

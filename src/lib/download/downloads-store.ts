@@ -1,11 +1,17 @@
 import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
-import { exists, mkdir, remove } from "@tauri-apps/plugin-fs";
+import { mkdir } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
+import { engineFileFromUrl, torrentEngineRelease } from "@/lib/torrent/local-engine";
 import { buildDefaultFilename, sanitizeName } from "./filename";
-import { startDownload, type DownloadHandle } from "./video-download";
+import {
+  downloadFileExists,
+  removeDownloadFile,
+  startDownload,
+  type DownloadHandle,
+} from "./video-download";
 
 export type DownloadItem = {
   id: string;
@@ -18,7 +24,7 @@ export type DownloadItem = {
   streamLabel: string | null;
   url: string;
   path: string;
-  status: "downloading" | "done" | "error" | "canceled" | "interrupted";
+  status: "queued" | "downloading" | "done" | "error" | "canceled" | "interrupted";
   receivedBytes: number;
   totalBytes: number | null;
   ratio: number;
@@ -40,11 +46,34 @@ const handles = new Map<string, DownloadHandle>();
 const speed = new Map<string, { bytes: number; at: number }>();
 const listeners = new Set<() => void>();
 
+/**
+ * How many downloads actually run at once. A season queues every episode at
+ * once, and letting all of them pull together helps none of them finish: over
+ * the local torrent engine they compete for the same pieces, and each waiting
+ * request holds a connection open the whole time.
+ */
+export const MAX_ACTIVE_DOWNLOADS = 3;
+
+// Downloads accepted but not started yet, oldest first, with the headers their
+// request needs once a slot frees up.
+const waiting: string[] = [];
+const waitingHeaders = new Map<string, Record<string, string> | undefined>();
+
 let snapshot: DownloadItem[] = [];
 
 const PERSIST_KEY = "harbor.downloads.v1";
 
+// A download reports progress about four times a second, so persisting on every
+// change would serialize the whole list and block on localStorage that often —
+// times the number of active downloads, which a season queue makes large.
+const PERSIST_DEBOUNCE_MS = 1000;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
 function persist() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
   try {
     const durable = [...items.values()].map((d) => ({ ...d, bytesPerSec: 0 }));
     localStorage.setItem(PERSIST_KEY, JSON.stringify(durable));
@@ -53,9 +82,17 @@ function persist() {
   }
 }
 
-function rebuild() {
+function schedulePersist() {
+  if (persistTimer) return;
+  persistTimer = setTimeout(persist, PERSIST_DEBOUNCE_MS);
+}
+
+// `durable` writes right away: what the list looks like after a restart hinges on
+// it. Byte counts only refine an entry that is already on disk, so they can wait.
+function rebuild(durable = true) {
   snapshot = [...items.values()].sort((a, b) => b.startedAt - a.startedAt);
-  persist();
+  if (durable) persist();
+  else schedulePersist();
   listeners.forEach((l) => l());
 }
 
@@ -67,7 +104,7 @@ function hydrate() {
     if (!Array.isArray(arr)) return;
     for (const d of arr) {
       if (!d || typeof d.id !== "string" || typeof d.path !== "string") continue;
-      const status = d.status === "downloading" ? "interrupted" : d.status;
+      const status = d.status === "downloading" || d.status === "queued" ? "interrupted" : d.status;
       items.set(d.id, { ...d, status, bytesPerSec: 0 });
     }
     snapshot = [...items.values()].sort((a, b) => b.startedAt - a.startedAt);
@@ -78,11 +115,18 @@ function hydrate() {
 
 hydrate();
 
+// A save pulled from the local engine holds its file selected for as long as it runs.
+// Hand it back once it stops, or the torrent stays pinned to the whole pack.
+function releaseEngineFile(url: string) {
+  const f = engineFileFromUrl(url);
+  if (f) void torrentEngineRelease(f.infoHash, [f.fileIdx]);
+}
+
 function patch(id: string, next: Partial<DownloadItem>) {
   const cur = items.get(id);
   if (!cur) return;
   items.set(id, { ...cur, ...next });
-  rebuild();
+  rebuild(next.status !== undefined && next.status !== cur.status);
 }
 
 function sep(): string {
@@ -102,11 +146,7 @@ async function resolveDir(): Promise<string> {
 
 async function pathTaken(path: string): Promise<boolean> {
   for (const d of items.values()) if (d.path === path) return true;
-  try {
-    return await exists(path);
-  } catch {
-    return false;
-  }
+  return await downloadFileExists(path);
 }
 
 async function uniquePath(path: string): Promise<string> {
@@ -185,10 +225,23 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     error: null,
     startedAt: Date.now(),
   };
-  items.set(id, item);
+  const free = handles.size < MAX_ACTIVE_DOWNLOADS;
+  items.set(id, { ...item, status: free ? "downloading" : "queued" });
   speed.set(id, { bytes: 0, at: Date.now() });
+  if (free) {
+    beginDownload(id, headers ?? undefined);
+  } else {
+    waiting.push(id);
+    waitingHeaders.set(id, headers ?? undefined);
+  }
   rebuild();
+  return id;
+}
 
+function beginDownload(id: string, headers: Record<string, string> | undefined): void {
+  const item = items.get(id);
+  if (!item) return;
+  const { url, path } = item;
   const handle = startDownload(id, url, path, (p) => {
     const now = Date.now();
     const s = speed.get(id);
@@ -203,7 +256,7 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
       ratio: p.ratio,
       ...(bps > 0 ? { bytesPerSec: bps } : {}),
     });
-  }, headers ?? undefined);
+  }, headers);
   handles.set(id, handle);
   handle.promise
     .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))
@@ -217,12 +270,41 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     .finally(() => {
       handles.delete(id);
       speed.delete(id);
+      releaseEngineFile(url);
+      pump();
     });
-  return id;
+}
+
+// Hand the freed slot to the entry that has waited longest and is still wanted.
+function pump(): void {
+  while (handles.size < MAX_ACTIVE_DOWNLOADS) {
+    const id = waiting.shift();
+    if (id === undefined) return;
+    const headers = waitingHeaders.get(id);
+    waitingHeaders.delete(id);
+    if (items.get(id)?.status !== "queued") continue;
+    patch(id, { status: "downloading" });
+    beginDownload(id, headers);
+    return;
+  }
+}
+
+function dropFromQueue(id: string): void {
+  const at = waiting.indexOf(id);
+  if (at >= 0) waiting.splice(at, 1);
+  waitingHeaders.delete(id);
 }
 
 export function cancelDownload(id: string): void {
-  handles.get(id)?.abort();
+  const handle = handles.get(id);
+  if (handle) {
+    handle.abort();
+    return;
+  }
+  // Nothing to abort: it never got a slot.
+  if (items.get(id)?.status !== "queued") return;
+  dropFromQueue(id);
+  patch(id, { status: "canceled", bytesPerSec: 0 });
 }
 
 export function removeDownload(id: string): void {
@@ -230,10 +312,13 @@ export function removeDownload(id: string): void {
   handles.get(id)?.abort();
   handles.delete(id);
   speed.delete(id);
+  dropFromQueue(id);
+  if (item) releaseEngineFile(item.url);
   if (items.delete(id)) rebuild();
   if (item) {
-    void remove(item.path).catch(() => {});
-    void remove(`${item.path}.part`).catch(() => {});
+    void removeDownloadFile(item.path).catch((e: unknown) => {
+      console.warn(`[downloads] could not delete ${item.path}`, e);
+    });
   }
 }
 
@@ -258,5 +343,5 @@ export function useDownloads(): DownloadItem[] {
 
 export function useActiveDownloadCount(): number {
   const all = useDownloads();
-  return all.filter((d) => d.status === "downloading").length;
+  return all.filter((d) => d.status === "downloading" || d.status === "queued").length;
 }

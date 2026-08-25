@@ -2,7 +2,11 @@ import { ArrowUpDown, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
-import { isAddonEnabled, setAddonEnabled } from "@/lib/addon-store";
+import {
+  isAddonEnabled,
+  manifestRequiresConfiguration,
+  setAddonEnabled,
+} from "@/lib/addon-store";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, subtitleFromManifest } from "./addons-utils";
@@ -96,9 +100,7 @@ function InstalledRow({
   const r = resolved;
   const [busy, setBusy] = useState(false);
   const [enabled, setEnabled] = useState(() => isAddonEnabled(r.transportUrl));
-  const isConfigurable =
-    r.manifest?.behaviorHints?.configurable === true ||
-    r.manifest?.behaviorHints?.configurationRequired === true;
+  const isConfigurable = manifestRequiresConfiguration(r.manifest);
   const transportUrl = r.transportUrl;
 
   const handleUninstall = async (e: React.MouseEvent) => {

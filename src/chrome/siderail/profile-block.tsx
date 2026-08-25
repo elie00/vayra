@@ -1,13 +1,13 @@
 import { LogOut, Pencil, Settings as SettingsIcon, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CatAvatar } from "@/components/icons/cat-avatar";
-import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
+import { useVayraAccount } from "@/lib/vayra-account";
 
 export function ProfileBlock({ onOpenSettings }: { onOpenSettings: () => void }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useVayraAccount();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
@@ -24,7 +24,7 @@ export function ProfileBlock({ onOpenSettings }: { onOpenSettings: () => void })
   }, [open]);
 
   const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+    activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback");
   const color = activeProfile?.color ?? "var(--color-accent)";
   const avatar = activeProfile?.avatar ?? settings.harborAvatar;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
@@ -125,7 +125,7 @@ export function ProfileBlock({ onOpenSettings }: { onOpenSettings: () => void })
               <button
                 type="button"
                 onClick={() => {
-                  signOut();
+                  void signOut();
                   setOpen(false);
                 }}
                 className="flex items-center gap-2.5 border-t border-white/10 px-4 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"

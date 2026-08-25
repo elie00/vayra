@@ -1,7 +1,13 @@
 import { Plus, Loader2, Star, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { ArrowedScrollRow } from "@/components/arrowed-scroll-row";
-import { installAddon } from "@/lib/addon-store";
+import { openInstallerViewport } from "@/components/installer-viewport";
+import {
+  fetchManifestAt,
+  installAddon,
+  manifestRequiresConfiguration,
+  manifestToConfigureUrl,
+} from "@/lib/addon-store";
 import { useTopMovers, type MoverEntry } from "@/lib/providers/stremio-addons-velocity";
 
 export function TrendingAddonsRail({
@@ -66,6 +72,15 @@ function MoverCard({
     if (!c.manifestId || !c.manifestUrl || busy) return;
     setBusy(true);
     try {
+      const manifest = await fetchManifestAt(c.manifestUrl);
+      if (manifestRequiresConfiguration(manifest)) {
+        openInstallerViewport(
+          manifestToConfigureUrl(c.manifestUrl),
+          manifest.name ?? c.name ?? c.slug,
+          manifest.logo ?? c.logo ?? null,
+        );
+        return;
+      }
       await installAddon(c.manifestId, c.manifestUrl);
       onChange?.();
     } catch (err) {

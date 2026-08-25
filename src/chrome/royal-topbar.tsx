@@ -18,7 +18,7 @@ import { TvIcon } from "@/components/icons/tv-icon";
 import { AuthModal } from "@/components/auth-modal";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { TogetherButton } from "@/chrome/topbar";
-import { useAuth } from "@/lib/auth";
+import { useVayraAccount } from "@/lib/vayra-account";
 import { useT } from "@/lib/i18n";
 import { useProfiles } from "@/lib/profiles";
 import { useSearch } from "@/lib/search-context";
@@ -295,7 +295,7 @@ function RoyalProfileMenu({
   onOpenSettings: () => void;
   settingsActive: boolean;
 }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useVayraAccount();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
@@ -313,9 +313,9 @@ function RoyalProfileMenu({
   }, [open]);
 
   const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+    activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback");
   const color = activeProfile?.color ?? "#a8aaad";
-  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
+  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? null;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
   const dismiss = (run: () => void) => {
     setOpen(false);
@@ -392,12 +392,12 @@ function RoyalProfileMenu({
               <SettingsLucide size={13} strokeWidth={2.2} /> {t("nav.settings")}
             </MenuItem>
             {user ? (
-              <MenuItem bordered onClick={() => dismiss(signOut)}>
+              <MenuItem bordered onClick={() => dismiss(() => void signOut())}>
                 <LogOut size={13} strokeWidth={2.2} /> {t("Sign out")}
               </MenuItem>
             ) : (
               <MenuItem bordered onClick={() => dismiss(() => setAuthOpen(true))}>
-                <LogIn size={13} strokeWidth={2.2} /> {t("profile.signIn")}
+                <LogIn size={13} strokeWidth={2.2} /> {t("Sign in to VAYRA")}
               </MenuItem>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { CommunityAddonsRail } from "@/components/community-addons-rail";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { idOf } from "./addons-utils";
 import { CategoryGrid } from "./category-grid";
 import { HeroCard } from "./hero-card";
@@ -29,6 +30,7 @@ export function DiscoverPane({
   onRefetch?: () => void;
 }) {
   const t = useT();
+  const { openSettings } = useView();
   const essentialRail = rails.find((r) => r.rail.id === "essential");
   const otherRails = rails.filter((r) => r.rail.id !== "essential");
   const editorPicks = essentialRail
@@ -38,11 +40,20 @@ export function DiscoverPane({
   return (
     <div className="flex flex-col gap-12">
       {!authKey && (
-        <div className="rounded-2xl border border-info/30 bg-info/[0.06] px-5 py-4 text-[13.5px] text-ink">
-          <p className="font-semibold text-info">{t("Sign in to sync your addons across devices")}</p>
-          <p className="mt-1 text-ink-muted">
-            {t("Anything you install in VAYRA pushes back to your Stremio account so it shows up on mobile too. Sign in via the avatar in the bottom-left of the sidebar.")}
-          </p>
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-info/30 bg-info/[0.06] px-5 py-4 text-[13.5px] text-ink">
+          <div>
+            <p className="font-semibold text-info">{t("Stremio sync is optional")}</p>
+            <p className="mt-1 text-ink-muted">
+              {t("Addons work in VAYRA without Stremio. Connect it in Settings only if you want to import or export your addon collection.")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => openSettings("account")}
+            className="shrink-0 rounded-full border border-info/30 px-3 py-1.5 text-[12px] font-semibold text-info transition-colors hover:bg-info/10"
+          >
+            {t("Open settings")}
+          </button>
         </div>
       )}
       {hero && (

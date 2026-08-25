@@ -76,6 +76,35 @@ pub async fn download_start(
     }
 }
 
+/// Delete a finished or half-written download from disk.
+///
+/// The frontend cannot do this itself: the fs plugin is scoped to the app's own
+/// picture folder, so a `remove` on the user's download directory is refused, and
+/// the file outlived the entry that was supposed to own it.
+#[tauri::command]
+pub async fn download_remove_file(dest: String) -> Result<(), String> {
+    let part = format!("{}.part", dest);
+    let mut failure: Option<String> = None;
+    for path in [dest.as_str(), part.as_str()] {
+        match tokio::fs::remove_file(path).await {
+            Ok(()) => {}
+            // Only one of the two is expected to be there at any point.
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => failure = Some(format!("{}: {}", path, e)),
+        }
+    }
+    match failure {
+        Some(e) => Err(e),
+        None => Ok(()),
+    }
+}
+
+/// Whether a path is already taken, so a new download can pick another name.
+#[tauri::command]
+pub async fn download_file_exists(path: String) -> bool {
+    tokio::fs::metadata(&path).await.is_ok()
+}
+
 #[tauri::command]
 pub fn download_cancel(state: State<'_, DownloadState>, id: String) {
     if let Some(flag) = state.tasks.lock().unwrap().get(&id) {

@@ -12,6 +12,7 @@ import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress"
 import { scrollToDataEp } from "@/lib/episode-scroll";
 import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { useView } from "@/lib/view";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useT } from "@/lib/i18n";
@@ -59,6 +60,7 @@ export function SeriesEpisodes({
 }) {
   const t = useT();
   const { settings, update } = useSettings();
+  const { openPicker } = useView();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
   const mwVersion = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
@@ -242,6 +244,27 @@ export function SeriesEpisodes({
     settings,
   });
   const markSeason = useMarkSeason({ meta, active, enrichedEpisodes, simklConnected });
+  const downloadSeason = () => {
+    // Long-running shows are released with one continuous count, so a season pack's
+    // files carry the absolute number. Derive it from the earlier seasons' counts;
+    // specials (season 0) never take part in that count.
+    const offset = seasons
+      .filter((s) => s.seasonNumber >= 1 && s.seasonNumber < active)
+      .reduce((sum, s) => sum + (s.episodeCount || 0), 0);
+    const eps = enrichedEpisodes.map((ep) => ({
+      season: ep.seasonNumber,
+      episode: ep.episodeNumber,
+      absoluteEpisode: offset > 0 ? offset + ep.episodeNumber : undefined,
+      runtime: ep.runtime ?? undefined,
+      name: ep.name || undefined,
+      airDate: ep.airDate ?? undefined,
+      still: ep.stillUrl,
+      imdbId: cinemetaVideos?.find(
+        (v) => v.season === ep.seasonNumber && v.episode === ep.episodeNumber,
+      )?.id,
+    }));
+    openPicker(meta, eps[0], { intent: "download-season", seasonEpisodes: eps });
+  };
 
   return (
     <div data-episodes className="flex scroll-mt-24 flex-col gap-6">
@@ -259,6 +282,7 @@ export function SeriesEpisodes({
               onSort={(s) => update({ episodeSort: s })}
               allWatched={allWatched}
               onMarkSeason={markSeason}
+              onDownloadSeason={enrichedEpisodes.length > 0 ? downloadSeason : undefined}
             />
           )}
           <EpisodeSearchToggle

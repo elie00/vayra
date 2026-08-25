@@ -14,9 +14,19 @@ import { useT } from "@/lib/i18n";
 
 const EVENT = "vayra:open-installer";
 
-type InstallerDetail = { url: string; title?: string; logo?: string | null };
+type InstallerDetail = {
+  url: string;
+  title?: string;
+  logo?: string | null;
+  replaceId?: string;
+};
 
-export function openInstallerViewport(url: string, title?: string, logo?: string | null): void {
+export function openInstallerViewport(
+  url: string,
+  title?: string,
+  logo?: string | null,
+  replaceId?: string,
+): void {
   if (typeof window === "undefined") return;
   // Linux: the in-page iframe can't capture the addon's stremio:// install link
   // (WebKitGTK refuses the scheme). Route through the VAYRA Browser window, where
@@ -26,7 +36,7 @@ export function openInstallerViewport(url: string, title?: string, logo?: string
       invoke("browser_open", { url }).catch(() => {
         window.__harborInstallerOpen = true;
         window.dispatchEvent(
-          new CustomEvent<InstallerDetail>(EVENT, { detail: { url, title, logo } }),
+          new CustomEvent<InstallerDetail>(EVENT, { detail: { url, title, logo, replaceId } }),
         );
       });
     });
@@ -34,7 +44,7 @@ export function openInstallerViewport(url: string, title?: string, logo?: string
   }
   window.__harborInstallerOpen = true;
   window.dispatchEvent(
-    new CustomEvent<InstallerDetail>(EVENT, { detail: { url, title, logo } }),
+    new CustomEvent<InstallerDetail>(EVENT, { detail: { url, title, logo, replaceId } }),
   );
 }
 
@@ -54,6 +64,7 @@ export function InstallerViewportRoot() {
       url={request.url}
       title={request.title ?? new URL(request.url).hostname}
       logo={request.logo ?? null}
+      replaceId={request.replaceId}
       onClose={() => setRequest(null)}
     />
   );
@@ -69,11 +80,13 @@ function InstallerViewport({
   url,
   title,
   logo,
+  replaceId,
   onClose,
 }: {
   url: string;
   title: string;
   logo: string | null;
+  replaceId?: string;
   onClose: () => void;
 }) {
   const t = useT();
@@ -137,7 +150,7 @@ function InstallerViewport({
       }
       setPhase({ kind: "installing", name: null });
       try {
-        const result = await installFromUrl(normalized);
+        const result = await installFromUrl(normalized, { replaceId });
         const name = result.addon.manifest.name ?? "Addon";
         const logo = result.addon.manifest.logo ?? null;
         const id = result.addon.manifest.id;
@@ -153,7 +166,7 @@ function InstallerViewport({
         setPhase({ kind: "error", message: msg });
       }
     },
-    [onClose],
+    [onClose, replaceId],
   );
 
   useEffect(() => {

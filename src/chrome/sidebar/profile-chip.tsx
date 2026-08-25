@@ -1,29 +1,22 @@
-import { Lock, LogIn, LogOut, Pencil, Plus, Smartphone, Users } from "lucide-react";
+import { Lock, LogIn, LogOut, Pencil, Plus, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AuthModal } from "@/components/auth-modal";
-import { ConnectPhoneModal } from "@/components/connect-phone-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { useT } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
-import { isMobileTauri } from "@/lib/platform";
 import { useProfiles, type Profile } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
-import type { User } from "@/lib/stremio";
-import { openUrl } from "@/lib/window";
-
-const STREMIO_REGISTER_URL = "https://www.stremio.com/register";
+import { useVayraAccount } from "@/lib/vayra-account";
 
 export function ProfileChip({
   collapsed = false,
   menuPlacement = "above",
 }: { collapsed?: boolean; menuPlacement?: "above" | "below" } = {}) {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useVayraAccount();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
-  const [connectOpen, setConnectOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,13 +39,13 @@ export function ProfileChip({
           collapsed ? "" : "lg:justify-start lg:px-3"
         }`}
       >
-        <ProfileAvatar profile={activeProfile} user={user} fallbackAvatar={settings.harborAvatar} />
+        <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} />
         <div className={`hidden min-w-0 flex-1 ${collapsed ? "" : "lg:block"}`}>
           <div className="truncate text-[14.5px] font-medium tracking-tight text-ink">
-            {activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback")}
+            {activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback")}
           </div>
           <div className="truncate text-[12px] text-ink-subtle">
-            <SubtitleText active={activeProfile} profiles={profiles} user={user} />
+            <SubtitleText user={user} />
           </div>
         </div>
       </button>
@@ -82,7 +75,7 @@ export function ProfileChip({
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-raised"
                 >
                   <span className="relative inline-flex shrink-0">
-                    <ProfileAvatar profile={p} user={null} fallbackAvatar={null} compact />
+                    <ProfileAvatar profile={p} fallbackAvatar={null} compact />
                     {p.passwordHash && (
                       <span className="absolute -bottom-0.5 -end-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink shadow-sm ring-1 ring-edge">
                         <Lock size={8} strokeWidth={2.6} />
@@ -139,22 +132,10 @@ export function ProfileChip({
                 {t("profile.new")}
               </button>
             )}
-            {user && !isMobileTauri() && (
-              <button
-                onClick={() => {
-                  setConnectOpen(true);
-                  setMenuOpen(false);
-                }}
-                className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
-              >
-                <Smartphone size={14} strokeWidth={2.2} />
-                {t("Connect your phone")}
-              </button>
-            )}
             {user ? (
               <button
                 onClick={() => {
-                  signOut();
+                  void signOut();
                   setMenuOpen(false);
                 }}
                 className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
@@ -171,7 +152,7 @@ export function ProfileChip({
                 className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
               >
                 <LogIn size={14} strokeWidth={2.2} />
-                {t("profile.signIn")}
+                {t("Sign in to VAYRA")}
               </button>
             )}
           </div>
@@ -179,24 +160,21 @@ export function ProfileChip({
       )}
 
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
-      {connectOpen && <ConnectPhoneModal onClose={() => setConnectOpen(false)} />}
     </div>
   );
 }
 
 function ProfileAvatar({
   profile,
-  user,
   fallbackAvatar,
   compact,
 }: {
   profile: Profile | null;
-  user: User | null;
   fallbackAvatar: string | null;
   compact?: boolean;
 }) {
   const dim = compact ? "h-9 w-9" : "h-12 w-12";
-  const src = profile?.avatar ?? fallbackAvatar ?? user?.avatar ?? null;
+  const src = profile?.avatar ?? fallbackAvatar ?? null;
   const ringStyle = profile?.color ? { boxShadow: `0 0 0 2px ${profile.color}` } : undefined;
   return (
     <div
@@ -212,44 +190,10 @@ function ProfileAvatar({
   );
 }
 
-function SubtitleText({
-  active,
-  profiles,
-  user,
-}: {
-  active: Profile | null;
-  profiles: Profile[];
-  user: User | null;
-}) {
+function SubtitleText({ user }: { user: { email?: string } | null }) {
   const t = useT();
-  if (active?.shareStremioWith) {
-    const src = profiles.find((p) => p.id === active.shareStremioWith);
-    if (src) return <>{t("Sharing {name}'s Stremio", { name: src.name })}</>;
-  }
   if (user) {
-    return <>{t("profile.signedIn")}</>;
+    return <>{t("VAYRA account")}</>;
   }
-  return (
-    <>
-      {t("Sign in to")}{" "}
-      <span
-        role="link"
-        tabIndex={0}
-        onClick={(e) => {
-          e.stopPropagation();
-          openUrl(STREMIO_REGISTER_URL);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-            openUrl(STREMIO_REGISTER_URL);
-          }
-        }}
-        className="cursor-pointer text-ink transition-colors hover:text-accent"
-      >
-        Stremio
-      </span>
-    </>
-  );
+  return <>{t("Local profile")}</>;
 }

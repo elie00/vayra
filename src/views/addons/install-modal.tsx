@@ -206,6 +206,7 @@ export function AddonInstallModal({
                       manifestToConfigureUrl(mode.existing.transportUrl),
                       mode.existing.name,
                       mode.existing.logo ?? null,
+                      mode.existing.id,
                     );
                     onClose();
                   }}

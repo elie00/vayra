@@ -48,7 +48,6 @@ export function FeatureCard({
             installed={installed}
             onInstall={onInstall}
             onUninstall={onUninstall}
-            onOpen={onOpen}
           />
         </div>
         {resolved.manifest?.description && (

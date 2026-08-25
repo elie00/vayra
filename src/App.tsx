@@ -13,6 +13,7 @@ import { StremioRail } from "@/chrome/stremio-rail";
 import { TopDock } from "@/chrome/topdock";
 import { CinematicOverlay } from "@/chrome/cinematic-overlay";
 import { Topbar } from "@/chrome/topbar";
+import { useFirstRunLocaleDetect } from "@/lib/region/locale-cascade";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
 import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
 import { exitWindowFullscreenOnPlayerClose, startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
@@ -467,6 +468,7 @@ function Shell() {
     layout === "forest" ||
     layout === "stremio";
   useViewPreloader();
+  useFirstRunLocaleDetect();
 
   const handleTvBack = useCallback(() => {
     if (stackKinds.length > 1 || topKind !== "home") {
@@ -1058,10 +1060,11 @@ function Shell() {
                 key={`picker-${picker.meta.id}-${picker.episode?.season ?? ""}-${picker.episode?.episode ?? ""}-${picker.attempt ?? 0}-${picker.intent ?? "play"}`}
                 meta={picker.meta}
                 episode={picker.episode}
-                autoPlay={picker.intent === "download" ? false : picker.autoPlay}
+                autoPlay={picker.intent === "play" || picker.intent == null ? picker.autoPlay : false}
                 attempt={picker.attempt}
                 intent={picker.intent}
                 resume={picker.resume}
+                seasonEpisodes={picker.seasonEpisodes}
               />
             </Suspense>
           </div>

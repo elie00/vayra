@@ -4,7 +4,7 @@ import { HarborMark } from "@/components/icons/harbor-mark";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { RecordingPill } from "@/chrome/recording-pill";
 import { TogetherButton } from "@/chrome/topbar";
-import { useAuth } from "@/lib/auth";
+import { useVayraAccount } from "@/lib/vayra-account";
 import { useT } from "@/lib/i18n";
 import { useProfiles } from "@/lib/profiles";
 import { useSearch } from "@/lib/search-context";
@@ -248,7 +248,7 @@ function ProfileChipCompact({
   onOpenSettings: () => void;
   settingsActive: boolean;
 }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useVayraAccount();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
@@ -265,9 +265,9 @@ function ProfileChipCompact({
   }, [open]);
 
   const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+    activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback");
   const color = activeProfile?.color ?? "#7cd6ff";
-  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
+  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? null;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
 
   return (
@@ -369,7 +369,7 @@ function ProfileChipCompact({
               <button
                 type="button"
                 onClick={() => {
-                  signOut();
+                  void signOut();
                   setOpen(false);
                 }}
                 className="flex items-center gap-2.5 border-t border-white/10 px-4 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"

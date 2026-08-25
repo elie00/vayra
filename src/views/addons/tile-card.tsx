@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { AddonStarBadge } from "@/components/addon-star-badge";
 import { CardArtBackdrop } from "@/components/card-art-backdrop";
+import { manifestRequiresConfiguration } from "@/lib/addon-store";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { idOf, nameOf, subtitleFromManifest } from "./addons-utils";
@@ -21,17 +22,11 @@ export function TileCard({
   const t = useT();
   const description = resolved.manifest?.description ?? subtitleFromManifest(resolved);
   const [installing, setInstalling] = useState(false);
-  const configurable =
-    !!resolved.manifest?.behaviorHints?.configurable ||
-    !!resolved.manifest?.behaviorHints?.configurationRequired;
+  const configurable = manifestRequiresConfiguration(resolved.manifest);
 
   const handle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (installed || installing) return;
-    if (configurable) {
-      onOpen();
-      return;
-    }
     setInstalling(true);
     try {
       await onInstall();
