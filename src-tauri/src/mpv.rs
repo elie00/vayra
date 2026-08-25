@@ -552,11 +552,15 @@ pub async fn mpv_start(
         let _ = mpv.set_property("stream-buffer-size", "16MiB");
     } else {
         let _ = mpv.set_property("cache", "yes");
-        let _ = mpv.set_property("cache-secs", "300");
+        // Five minutes and half a gigabyte of read-ahead meant a paused episode
+        // kept pulling — and writing to disk — long after the viewer had stepped
+        // away. Two minutes still rides out a P2P stall without downloading the
+        // rest of the episode to sit on it.
+        let _ = mpv.set_property("cache-secs", "120");
         let _ = mpv.set_property("cache-pause", "yes");
-        let _ = mpv.set_property("demuxer-max-bytes", "512MiB");
-        let _ = mpv.set_property("demuxer-max-back-bytes", "64MiB");
-        let _ = mpv.set_property("demuxer-readahead-secs", "300");
+        let _ = mpv.set_property("demuxer-max-bytes", "256MiB");
+        let _ = mpv.set_property("demuxer-max-back-bytes", "32MiB");
+        let _ = mpv.set_property("demuxer-readahead-secs", "120");
         if let Ok(base) = app.path().app_cache_dir() {
             let dir = base.join("mpv-cache");
             let _ = std::fs::create_dir_all(&dir);
