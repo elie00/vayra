@@ -90,6 +90,27 @@ impl MpvState {
     }
 }
 
+/// mpv deletes its on-disk cache when it closes a file, but a crash or a kill
+/// leaves the whole buffer — up to half a gigabyte per playback — sitting in the
+/// cache directory with nothing left to claim it.
+fn sweep_stale_cache(dir: &std::path::Path) {
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let stale = entry
+            .metadata()
+            .and_then(|m| m.modified())
+            .map(|t| t.elapsed().map(|d| d.as_secs() > 3600).unwrap_or(false))
+            .unwrap_or(false);
+        if stale {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
+}
+
 const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     ("time-pos", 1, PropertyKind::Double),
     ("duration", 2, PropertyKind::Double),
@@ -537,9 +558,10 @@ pub async fn mpv_start(
         let _ = mpv.set_property("demuxer-max-back-bytes", "64MiB");
         let _ = mpv.set_property("demuxer-readahead-secs", "300");
         if let Ok(base) = app.path().app_cache_dir() {
-            let dvr = base.join("mpv-cache");
-            let _ = std::fs::create_dir_all(&dvr);
-            if let Some(s) = dvr.to_str() {
+            let dir = base.join("mpv-cache");
+            let _ = std::fs::create_dir_all(&dir);
+            sweep_stale_cache(&dir);
+            if let Some(s) = dir.to_str() {
                 let _ = mpv.set_property("cache-dir", s);
             }
         }
