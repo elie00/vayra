@@ -152,6 +152,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "pause" && typeof data === "boolean") {
         snap.status = data ? "paused" : "playing";
       }
+      // mpv pauses itself when the buffer runs dry (`cache-pause`). Left unsaid,
+      // that reads as a pause the viewer asked for: the play button then sends a
+      // pause, and the one thing it was pressed to do is the one thing it does not.
+      if (name === "paused-for-cache" && typeof data === "boolean") {
+        snap.buffering = data;
+      }
       if (name === "eof-reached" && data === true) snap.status = "ended";
       if (name === "volume" && typeof data === "number") snap.volume = data / 100;
       if (name === "mute" && typeof data === "boolean") snap.muted = data;

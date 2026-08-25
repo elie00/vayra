@@ -6,6 +6,16 @@ import { writePlayerPrefs } from "@/lib/player-prefs";
 import type { RoomCommand } from "@/lib/together/protocol";
 import type { VeyaSender } from "./use-veya-sync";
 
+/**
+ * What the play button should do next. mpv pausing itself to refill its buffer
+ * (`cache-pause`) is not the viewer pausing: reading it as one turned the next
+ * press into a pause, and a second press — after mpv had resumed on its own —
+ * into another, so the video never came back.
+ */
+export function shouldResume(snap: Pick<PlayerSnapshot, "status" | "buffering">): boolean {
+  return snap.status !== "playing" || snap.buffering;
+}
+
 export function usePlaybackControls(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
   snapRef: RefObject<PlayerSnapshot>;
@@ -68,6 +78,8 @@ export function usePlaybackControls(params: {
     }
   };
 
+  const wantsToPlay = () => shouldResume(snapRef.current);
+
   const playPauseToggle = () => {
     if (inRoom && isHost && !hasStarted) {
       startHost();
@@ -79,7 +91,7 @@ export function usePlaybackControls(params: {
     }
     if (!canControl) return;
     if (remoteVeya?.active) {
-      const action = snapRef.current.status === "playing" ? "pause" : "play";
+      const action = wantsToPlay() ? "play" : "pause";
       remoteVeya.send({ action, atMs: Date.now() });
       const b = bridgeRef.current;
       if (!b) return;
@@ -88,13 +100,13 @@ export function usePlaybackControls(params: {
       return;
     }
     if (inRoom && !isHost) {
-      sendCommand(snapRef.current.status === "playing" ? { action: "pause" } : { action: "play" });
+      sendCommand(wantsToPlay() ? { action: "play" } : { action: "pause" });
       return;
     }
     const b = bridgeRef.current;
     if (!b) return;
-    if (snapRef.current.status === "playing") b.pause();
-    else b.play().catch(() => {});
+    if (wantsToPlay()) b.play().catch(() => {});
+    else b.pause();
   };
 
   const seekStep = (delta: number) => {
