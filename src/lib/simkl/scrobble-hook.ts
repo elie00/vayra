@@ -26,7 +26,9 @@ const STUB_MAX_SEC = 150;
 export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }): void {
   const { isConnected } = useSimkl();
   const { settings } = useSettings();
-  const enabled = isConnected;
+  // "Scrobble to SIMKL" is a choice about what leaves the machine: being connected
+  // is not the same as agreeing to report every play.
+  const enabled = isConnected && settings.simklScrobbleEnabled;
   const pauseOnPauseRef = useRef(settings.pauseListStatusOnPause);
   pauseOnPauseRef.current = settings.pauseListStatusOnPause;
   const lastActionRef = useRef<LastAction>(null);
