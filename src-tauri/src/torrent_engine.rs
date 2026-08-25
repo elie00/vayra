@@ -196,7 +196,7 @@ async fn new_session(
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Default)]
-struct EngineConfig {
+pub struct EngineConfig {
     dir: Option<String>,
     retention_hours: Option<u64>,
     max_gb: Option<u64>,
@@ -694,6 +694,13 @@ pub async fn torrent_engine_hard_reset(app: AppHandle) -> Result<EngineStatusDto
     engine().lock().unwrap().last_error = None;
     init(app).await?;
     Ok(torrent_engine_status())
+}
+
+/// The engine's own copy of these settings, so the frontend can tell whether what
+/// it shows is what the engine is actually running on.
+#[tauri::command]
+pub fn torrent_engine_get_options(app: AppHandle) -> EngineConfig {
+    read_config(&app)
 }
 
 #[tauri::command]

@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { EngineCacheConfig } from "./engine-config-sync";
 import { stopFullDownload } from "./full-download";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -185,6 +186,16 @@ export async function torrentEngineHardReset(): Promise<EngineStatus | null> {
     return await invoke<EngineStatus>("torrent_engine_hard_reset");
   } catch (e) {
     console.warn("[engine] hard reset failed", e);
+    return null;
+  }
+}
+
+/** The cache settings the engine is actually running on, from its own config. */
+export async function readEngineOptions(): Promise<EngineCacheConfig | null> {
+  if (!isTauri) return null;
+  try {
+    return await invoke<EngineCacheConfig>("torrent_engine_get_options");
+  } catch {
     return null;
   }
 }
