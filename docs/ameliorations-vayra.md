@@ -1,0 +1,169 @@
+# Comment améliorer VAYRA
+
+Dernière mise à jour : 26 août 2026. Constats tirés d'un audit du dépôt mené sur
+plusieurs séances, qui a produit les PR #7 à #40. Le document classe les pistes
+par impact décroissant et donne, pour chacune, les faits qui la fondent.
+
+## Résumé
+
+Le code lui-même est de bonne facture : typage strict, lint sans avertissement,
+CI verte sur cinq workflows. La majorité des défauts corrigés ne venaient pas
+d'erreurs de logique mais **de code livré puis débranché**, et de valeurs qui ne
+circulaient pas jusqu'à leur destination. Ce sont des défauts qu'aucun des
+garde-fous en place ne pouvait voir.
+
+---
+
+## 1. Le problème principal : la façon dont le code arrive dans `main`
+
+**11 commits sur 816** portent un message du type « beta sync », « v0.9.21 sync »
+ou « Clean-Repush ». Ces onze commits sont à l'origine de la majorité des
+régressions trouvées — non par ce qu'ils ajoutent, mais par ce qu'ils écrasent.
+
+Fonctionnalités livrées, montées, puis débranchées par un de ces commits :
+
+| Fonctionnalité | Livrée | Débranchée | Rétablie par |
+|---|---|---|---|
+| UI complète de la bibliothèque locale | 9 juil. | 12 juil. | #13 |
+| Onglet MyAnimeList | 11 juil. | lendemain | #18 |
+| Onglets Listes et Letterboxd | 9 juil. | 12 juil. | #21 |
+| Palette de commandes + raccourcis de room | 28 juin | plus tard | #22 |
+| Barre « modifications non enregistrées » | 10 juil. | **le jour même** | #25 |
+| Bouton Retour matériel Android | 2 juil. | plus tard | #23 |
+| Vue Stats, salle Sports | — | jamais rendues | #19, #20 |
+| Shift+Entrée et bouton web de la recherche | 9 juil. | plus tard | #27, #38 |
+
+Le schéma est constant : un fichier de montage (`App.tsx`, `library.tsx`,
+`settings.tsx`) résolu sur une copie antérieure. Le code livré reste dans
+l'arbre, seul le point de montage disparaît — **ce qui ne casse ni le build, ni
+les tests, ni le lint**. Invisible en CI, invisible en revue.
+
+### Pistes
+
+- **Interdire les commits fourre-tout.** Un sync qui touche 200 fichiers ne peut
+  pas être relu. Si le flux impose des imports depuis une autre source, les
+  faire passer par une PR au diff lisible.
+- **Ajouter un garde-fou mécanique.** Un test qui monte l'application et vérifie
+  que chaque vue déclarée dans le type `View` a un rendu, et que chaque onglet du
+  type `Tab` a un bouton, aurait attrapé six des sept régressions ci-dessus.
+
+---
+
+## 2. Le typage donne une assurance partielle
+
+Le projet est en TypeScript strict avec `--max-warnings 0`. Malgré cela :
+
+- `buffering` : champ déclaré sur le snapshot du lecteur, lu par trois
+  consommateurs, qu'aucun bridge ne renseignait (#11) ;
+- `runSignal` : attendu par un effet avant de lancer la recherche IA, jamais
+  transmis (#27) ;
+- `localMinFileSizeMb` : réglage exposé à l'utilisateur, jamais passé au
+  scanner, qui retombait sur sa valeur par défaut (#12) ;
+- `hdrPassthrough` : champ de capacité renseigné par quatre bridges qui se
+  contredisaient, lu par personne (#39) ;
+- `mpvBufferBoost` : réglage nommé « Build a bigger buffer » qui **réduisait** le
+  buffer de 120 s à 20 s (#9).
+
+Le compilateur valide les formes, pas les circuits. Ces cinq cas ont en commun
+d'être **optionnels** : `prop?`, `param = 0`, `unwrap_or(...)`. L'optionalité est
+le point aveugle.
+
+### Piste
+
+Se méfier des valeurs par défaut silencieuses aux frontières. `runSignal = 0`
+aurait dû être requis ; `min_size_mb.unwrap_or(50)` aurait dû être une erreur
+explicite plutôt qu'un repli muet.
+
+---
+
+## 3. La couverture de tests est inverse du risque
+
+**76 fichiers de test pour 1675 fichiers source**, soit 254 000 lignes.
+
+La répartition pose plus de problème que le volume : `together/sync` compte sept
+fichiers de test pour du code qui fonctionnait déjà, tandis que le **debrid
+(1791 lignes)** et les **sous-titres (1204 lignes)** n'en avaient aucun — et les
+premiers tests écrits y ont immédiatement révélé des défauts visibles à l'écran
+(#29, #31, #33).
+
+Plus gros modules encore sans test :
+
+| Module | Lignes |
+|---|---|
+| `lib/theme.ts` | 1752 |
+| `lib/player/html5/bridge.ts` | 799 |
+| `lib/together/client.ts` | 718 |
+| `lib/sports/espn.ts` | 663 |
+| `lib/stremboxd/client.ts` | 660 |
+
+### Piste
+
+Cibler les **fonctions pures qui décident** : quel fichier lire, quel sous-titre
+afficher, quel épisode est vu, quelle source jouer. Ce sont elles qui produisent
+les symptômes que l'utilisateur remarque, et elles se testent sans mock.
+
+---
+
+## 4. Les erreurs sont avalées par habitude
+
+Le motif `.catch(() => {})` est répandu. Il a masqué :
+
+- des appels système de fichiers **refusés par les permissions Tauri** : export
+  `.nfo`, export de playlist IPTV, lecture des `.nfo`, suppression des fichiers
+  téléchargés (#10) ;
+- l'invocation d'une commande Rust qui n'a jamais existé (#24).
+
+Dans chaque cas, l'utilisateur voit un bouton qui semble fonctionner et ne
+produit rien.
+
+### Pistes
+
+- Un `catch` vide devrait être une décision motivée par un commentaire, pas un
+  réflexe.
+- **Revoir les capabilities Tauri.** Le scope actuel se limite à
+  `$PICTURE/Harbor`, ce qui condamne toute fonctionnalité disque écrite côté
+  frontend. Le contournement retenu (#10) passe par des commandes backend, ce
+  qui est cohérent avec le reste du projet, mais mérite d'être posé comme règle
+  explicite.
+
+---
+
+## 5. Un cap produit : ne jamais jouer autre chose que ce qui est demandé
+
+Trois défauts distincts menaient au même symptôme — **le mauvais épisode se
+lance** :
+
+- le numéro d'épisode absolu, implémenté et testé, n'était transmis par aucun
+  chemin de lecture (#7) ;
+- Real-Debrid renvoyait le lien d'un autre fichier quand l'épisode demandé
+  n'était pas sélectionné dans un pack déjà présent au compte (#33) ;
+- les quatre autres debrids repliaient sur « le plus gros fichier » quand la
+  correspondance d'épisode échouait (#37).
+
+Aucun ne produit d'erreur : ils livrent silencieusement autre chose. C'est la
+classe de défaut la plus coûteuse en confiance.
+
+### Piste
+
+Tenir un principe simple : **quand on ne sait pas, échouer plutôt que deviner.**
+C'est ce qui a été appliqué aux cinq services debrid.
+
+---
+
+## 6. Deux dettes visibles pour l'utilisateur francophone
+
+- **979 clés sur 4904 (19 %) sans traduction française.** Ce n'est pas un
+  défaut de fonctionnement, mais un utilisateur francophone rencontre de
+  l'anglais quotidiennement. Deux cas déjà corrigés montrent le genre de
+  résultat : « Vu 3 days ago » (#35) et un message d'erreur MAL (#26).
+- **Le bundle initial pèse 3 Mo** (906 Ko gzip). Sur desktop, les fichiers sont
+  lus depuis le disque local : l'impact porte sur le temps d'analyse du
+  JavaScript, pas sur le réseau. Les sept catalogues i18n y sont chargés d'un
+  bloc alors qu'un seul sert par session.
+
+---
+
+## Si une seule chose devait être faite
+
+**Le garde-fou sur les points de montage** (§1). C'est peu de travail, et cela
+ferme la vanne d'où provenait l'essentiel des régressions corrigées ici.
