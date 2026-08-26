@@ -18,6 +18,8 @@
 //
 // Docs: https://myanimelist.net/apiconfig/references/authorization#step-5-exchange-authorization-code-for-refresh-and-access-tokens
 
+import { cleanLine, enforceRateLimit, readJsonBody } from "../_lib/public-request.js";
+
 const MAL_TOKEN_URL = "https://myanimelist.net/v1/oauth2/token";
 
 export default async (req, res) => {
@@ -34,25 +36,23 @@ export default async (req, res) => {
       .json({ error: "not configured", needs: "MAL_CLIENT_ID/MAL_CLIENT_SECRET" });
   }
 
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      body = {};
-    }
+  if (!enforceRateLimit(req, res, { scope: "mal-token", limit: 30, windowMs: 10 * 60_000 })) {
+    return;
   }
-  body = body || {};
 
-  const grantType = typeof body.grant_type === "string" ? body.grant_type : "";
+  const parsed = readJsonBody(req, 4_096);
+  if (parsed.error) return res.status(parsed.status).json({ error: parsed.error });
+  const body = parsed.body;
+
+  const grantType = cleanLine(body.grant_type, 64);
 
   const form = new URLSearchParams();
   form.set("client_id", clientId);
   form.set("client_secret", clientSecret);
 
   if (grantType === "authorization_code") {
-    const code = typeof body.code === "string" ? body.code : "";
-    const codeVerifier = typeof body.code_verifier === "string" ? body.code_verifier : "";
+    const code = cleanLine(body.code, 1_024);
+    const codeVerifier = cleanLine(body.code_verifier, 1_024);
     if (!code || !codeVerifier) {
       return res.status(400).json({ error: "missing code or code_verifier" });
     }
@@ -63,7 +63,7 @@ export default async (req, res) => {
     const redirectUri = process.env.MAL_REDIRECT_URI;
     if (redirectUri) form.set("redirect_uri", redirectUri);
   } else if (grantType === "refresh_token") {
-    const refreshToken = typeof body.refresh_token === "string" ? body.refresh_token : "";
+    const refreshToken = cleanLine(body.refresh_token, 2_048);
     if (!refreshToken) {
       return res.status(400).json({ error: "missing refresh_token" });
     }
@@ -78,6 +78,7 @@ export default async (req, res) => {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: form.toString(),
+      signal: AbortSignal.timeout(8_000),
     });
 
     const text = await upstream.text();
@@ -86,9 +87,7 @@ export default async (req, res) => {
     res.status(upstream.status);
     res.setHeader("Content-Type", "application/json");
     return res.send(text);
-  } catch (e) {
-    return res
-      .status(502)
-      .json({ error: "upstream error", detail: String(e && e.message ? e.message : e) });
+  } catch {
+    return res.status(502).json({ error: "upstream error" });
   }
 };

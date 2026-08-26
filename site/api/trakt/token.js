@@ -17,6 +17,8 @@
 //
 // Docs: https://trakt.docs.apiary.io/#reference/authentication-oauth/get-token/exchange-refresh_token-for-access_token
 
+import { cleanLine, enforceRateLimit, readJsonBody } from "../_lib/public-request.js";
+
 const TRAKT_TOKEN_URL = "https://api.trakt.tv/oauth/token";
 // Trakt requires a redirect_uri even for refresh; the OOB value is what device
 // / PIN based apps use and matches how these tokens were originally minted.
@@ -36,17 +38,14 @@ export default async (req, res) => {
       .json({ error: "not configured", needs: "TRAKT_CLIENT_ID/TRAKT_CLIENT_SECRET" });
   }
 
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      body = {};
-    }
+  if (!enforceRateLimit(req, res, { scope: "trakt-token", limit: 30, windowMs: 10 * 60_000 })) {
+    return;
   }
-  body = body || {};
 
-  const refreshToken = typeof body.refresh_token === "string" ? body.refresh_token : "";
+  const parsed = readJsonBody(req, 4_096);
+  if (parsed.error) return res.status(parsed.status).json({ error: parsed.error });
+
+  const refreshToken = cleanLine(parsed.body.refresh_token, 2_048);
   if (!refreshToken) {
     return res.status(400).json({ error: "missing refresh_token" });
   }
@@ -62,6 +61,7 @@ export default async (req, res) => {
         redirect_uri: OOB_REDIRECT_URI,
         grant_type: "refresh_token",
       }),
+      signal: AbortSignal.timeout(8_000),
     });
 
     const text = await upstream.text();
@@ -69,9 +69,7 @@ export default async (req, res) => {
     res.status(upstream.status);
     res.setHeader("Content-Type", "application/json");
     return res.send(text);
-  } catch (e) {
-    return res
-      .status(502)
-      .json({ error: "upstream error", detail: String(e && e.message ? e.message : e) });
+  } catch {
+    return res.status(502).json({ error: "upstream error" });
   }
 };

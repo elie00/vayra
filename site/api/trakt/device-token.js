@@ -20,6 +20,8 @@
 //
 // Docs: https://trakt.docs.apiary.io/#reference/authentication-devices/get-token/poll-for-the-access_token
 
+import { cleanLine, enforceRateLimit, readJsonBody } from "../_lib/public-request.js";
+
 const TRAKT_DEVICE_TOKEN_URL = "https://api.trakt.tv/oauth/device/token";
 
 export default async (req, res) => {
@@ -36,17 +38,16 @@ export default async (req, res) => {
       .json({ error: "not configured", needs: "TRAKT_CLIENT_ID/TRAKT_CLIENT_SECRET" });
   }
 
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      body = {};
-    }
+  // Device auth legitimately polls every few seconds, so keep this ceiling
+  // above the normal flow while still bounding abusive traffic.
+  if (!enforceRateLimit(req, res, { scope: "trakt-device-token", limit: 150, windowMs: 10 * 60_000 })) {
+    return;
   }
-  body = body || {};
 
-  const code = typeof body.code === "string" ? body.code : "";
+  const parsed = readJsonBody(req, 4_096);
+  if (parsed.error) return res.status(parsed.status).json({ error: parsed.error });
+
+  const code = cleanLine(parsed.body.code, 512);
   if (!code) {
     return res.status(400).json({ error: "missing code" });
   }
@@ -60,6 +61,7 @@ export default async (req, res) => {
         client_id: clientId,
         client_secret: clientSecret,
       }),
+      signal: AbortSignal.timeout(8_000),
     });
 
     const text = await upstream.text();
@@ -68,9 +70,7 @@ export default async (req, res) => {
     res.status(upstream.status);
     res.setHeader("Content-Type", "application/json");
     return res.send(text);
-  } catch (e) {
-    return res
-      .status(502)
-      .json({ error: "upstream error", detail: String(e && e.message ? e.message : e) });
+  } catch {
+    return res.status(502).json({ error: "upstream error" });
   }
 };
