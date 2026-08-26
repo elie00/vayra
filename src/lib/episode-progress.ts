@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import { manualWatchedState } from "@/lib/manual-watched";
 import { lastPlayedEpisode, readResumeEntry } from "@/lib/resume";
 
@@ -103,25 +104,27 @@ export function getEpisodeProgress(
   };
 }
 
+/** Reads as "Watched {ago}" beside an episode, so it goes through the catalog
+ *  like the sentence around it rather than staying in English. */
 export function formatRelativeWatched(ts: number): string {
   if (!ts) return "";
   const now = Date.now();
   const diffMs = Math.max(0, now - ts);
   const sec = Math.floor(diffMs / 1000);
-  if (sec < 60) return "just now";
+  if (sec < 60) return t("just now");
   const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
+  if (min < 60) return t("{n}m ago", { n: min });
   const hour = Math.floor(min / 60);
-  if (hour < 24) return `${hour}h ago`;
+  if (hour < 24) return t("{n}h ago", { n: hour });
   const day = Math.floor(hour / 24);
-  if (day === 1) return "yesterday";
-  if (day < 7) return `${day} days ago`;
-  if (day < 14) return "last week";
-  if (day < 30) return `${Math.floor(day / 7)} weeks ago`;
+  if (day === 1) return t("yesterday");
+  if (day < 7) return t("{n} days ago", { n: day });
+  if (day < 14) return t("last week");
+  if (day < 30) return t("{n} weeks ago", { n: Math.floor(day / 7) });
   if (day < 365) {
     const month = Math.floor(day / 30);
-    return month === 1 ? "last month" : `${month} months ago`;
+    return month === 1 ? t("last month") : t("{n} months ago", { n: month });
   }
   const year = Math.floor(day / 365);
-  return year === 1 ? "last year" : `${year} years ago`;
+  return year === 1 ? t("last year") : t("{n} years ago", { n: year });
 }
