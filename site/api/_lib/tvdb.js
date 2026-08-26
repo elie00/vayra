@@ -33,6 +33,7 @@ async function getTvdbToken() {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) {
       const txt = (await res.text().catch(() => "")).slice(0, 200);
@@ -61,6 +62,7 @@ async function tvdbGet(path) {
   try {
     const res = await fetch(`${TVDB_BASE}${path}`, {
       headers: { authorization: `Bearer ${token}`, accept: "application/json" },
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return null;
     return await res.json();

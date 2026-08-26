@@ -16,13 +16,15 @@
 // IMDB_API_KEY (+ optionally IMDB_API_BASE) and this proxy forwards the key as a
 // Bearer token; otherwise it uses the keyless IMDb GraphQL directly.
 
+import { enforceRateLimit } from "../_lib/public-request.js";
+
 const IMDB_GRAPHQL = "https://api.graphql.imdb.com/";
 
 function isTt(s) {
-  return typeof s === "string" && /^tt\d+$/.test(s);
+  return typeof s === "string" && /^tt\d{1,12}$/.test(s);
 }
 
-async function imdbGraphQL(query, variables) {
+async function imdbGraphQL(query, variables, signal) {
   const headers = { "content-type": "application/json", accept: "application/json" };
   // Optional: some deployments proxy IMDb GraphQL behind an auth'd gateway.
   if (process.env.IMDB_API_KEY) {
@@ -33,15 +35,16 @@ async function imdbGraphQL(query, variables) {
     method: "POST",
     headers,
     body: JSON.stringify({ query, variables }),
+    signal,
   });
   if (!res.ok) return null;
   return res.json();
 }
 
 // --- title rating ---------------------------------------------------------
-async function handleTitle(tt) {
+async function handleTitle(tt, signal) {
   const q = `query R($id: ID!) { title(id: $id) { ratingsSummary { aggregateRating } } }`;
-  const j = await imdbGraphQL(q, { id: tt });
+  const j = await imdbGraphQL(q, { id: tt }, signal);
   const raw =
     j && j.data && j.data.title && j.data.title.ratingsSummary
       ? j.data.title.ratingsSummary.aggregateRating
@@ -51,7 +54,7 @@ async function handleTitle(tt) {
 }
 
 // --- episode ratings ------------------------------------------------------
-async function handleEpisodes(tt) {
+async function handleEpisodes(tt, signal) {
   const q = `query E($id: ID!, $after: ID) {
     title(id: $id) {
       episodes {
@@ -71,7 +74,7 @@ async function handleEpisodes(tt) {
   const ratings = {};
   let after = null;
   for (let page = 0; page < 40; page += 1) {
-    const j = await imdbGraphQL(q, { id: tt, after });
+    const j = await imdbGraphQL(q, { id: tt, after }, signal);
     const conn =
       j && j.data && j.data.title && j.data.title.episodes
         ? j.data.title.episodes.episodes
@@ -106,7 +109,7 @@ async function handleEpisodes(tt) {
 }
 
 // --- parental guide -------------------------------------------------------
-async function handleParental(tt) {
+async function handleParental(tt, signal) {
   const q = `query P($id: ID!) {
     title(id: $id) {
       parentsGuide {
@@ -117,7 +120,7 @@ async function handleParental(tt) {
       }
     }
   }`;
-  const j = await imdbGraphQL(q, { id: tt });
+  const j = await imdbGraphQL(q, { id: tt }, signal);
   const cats =
     j && j.data && j.data.title && j.data.title.parentsGuide
       ? j.data.title.parentsGuide.categories
@@ -145,9 +148,18 @@ function routeParts(req) {
 }
 
 export default async (req, res) => {
-  const [kind, tt] = routeParts(req);
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
+    res.status(405).json({ error: "method not allowed" });
+    return;
+  }
+  if (!enforceRateLimit(req, res, { scope: "imdb", limit: 300, windowMs: 10 * 60_000 })) {
+    return;
+  }
+  const parts = routeParts(req);
+  const [kind, tt] = parts;
 
-  if (!isTt(tt)) {
+  if (parts.length !== 2 || !isTt(tt)) {
     res.status(400).json({ error: "invalid imdb id" });
     return;
   }
@@ -157,16 +169,17 @@ export default async (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=21600, s-maxage=86400");
 
   try {
+    const signal = AbortSignal.timeout(15_000);
     if (kind === "title") {
-      res.status(200).json(await handleTitle(tt));
+      res.status(200).json(await handleTitle(tt, signal));
       return;
     }
     if (kind === "episodes") {
-      res.status(200).json(await handleEpisodes(tt));
+      res.status(200).json(await handleEpisodes(tt, signal));
       return;
     }
     if (kind === "parental") {
-      res.status(200).json(await handleParental(tt));
+      res.status(200).json(await handleParental(tt, signal));
       return;
     }
     res.status(404).json({ error: "unknown imdb route" });

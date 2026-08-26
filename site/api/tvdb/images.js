@@ -14,6 +14,7 @@
 // absolute-number key when present and the season/episode key always.
 
 import { getTvdbToken, tvdbGet, tvdbImg, seriesIdFromImdb } from "../_lib/tvdb.js";
+import { enforceRateLimit } from "../_lib/public-request.js";
 
 const ORDER_SLUG = {
   aired: "default",
@@ -26,8 +27,25 @@ const ORDER_SLUG = {
 };
 
 export default async (req, res) => {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
+    res.status(405).json({ error: "method not allowed" });
+    return;
+  }
   if (!process.env.TVDB_API_KEY) {
     res.status(501).json({ error: "not configured", needs: "TVDB_API_KEY" });
+    return;
+  }
+  if (!enforceRateLimit(req, res, { scope: "tvdb-images", limit: 300, windowMs: 10 * 60_000 })) {
+    return;
+  }
+
+  const q = req.query || {};
+  const seriesParam = typeof q.series === "string" && /^\d{1,10}$/.test(q.series) ? q.series : null;
+  const imdbParam = typeof q.imdb === "string" && /^tt\d{1,12}$/.test(q.imdb) ? q.imdb : null;
+  if (!seriesParam && !imdbParam) {
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+    res.status(200).json({ images: {} });
     return;
   }
 
@@ -37,10 +55,9 @@ export default async (req, res) => {
     return;
   }
 
-  const q = req.query || {};
-  let seriesId = q.series ? Number(q.series) : null;
-  if ((!seriesId || !Number.isFinite(seriesId)) && q.imdb) {
-    seriesId = await seriesIdFromImdb(String(q.imdb));
+  let seriesId = seriesParam ? Number(seriesParam) : null;
+  if (!seriesId && imdbParam) {
+    seriesId = await seriesIdFromImdb(imdbParam);
   }
   if (!seriesId || !Number.isFinite(seriesId) || seriesId <= 0) {
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
