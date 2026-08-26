@@ -34,14 +34,11 @@
         { "url": "http://*:*/**" }
       ]
     },
-    "dialog:default",
     "dialog:allow-open",
     "dialog:allow-save",
-    "dialog:allow-confirm",
-    "dialog:allow-ask",
     "dialog:allow-message",
     "deep-link:default",
-    "process:default",
+    "process:allow-restart",
     "clipboard-manager:allow-write-image",
     {
       "identifier": "fs:allow-write-file",
