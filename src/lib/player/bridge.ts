@@ -121,7 +121,6 @@ export type PlayerCapabilities = {
   pictureInPicture: boolean;
   airplay: boolean;
   chromecast: boolean;
-  hdrPassthrough: boolean;
   hardwareDecode: boolean;
 };
 

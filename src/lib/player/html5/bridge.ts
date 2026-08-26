@@ -741,7 +741,6 @@ export function createHtml5Bridge(): PlayerBridge {
         pictureInPicture: !!nativePiP || docPiP,
         airplay: typeof (window as { WebKitPlaybackTargetAvailabilityEvent?: unknown }).WebKitPlaybackTargetAvailabilityEvent !== "undefined",
         chromecast: false,
-        hdrPassthrough: false,
         hardwareDecode: true,
       };
     },
