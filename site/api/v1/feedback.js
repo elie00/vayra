@@ -8,6 +8,8 @@
 // No DB: forward the submission to a configurable webhook (Discord/Slack).
 // If FEEDBACK_WEBHOOK_URL is unset, return 501 not-configured (deploys but inert).
 
+import { cleanLine, enforceRateLimit, readJsonBody } from "../_lib/public-request.js";
+
 export default async (req, res) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -19,19 +21,21 @@ export default async (req, res) => {
     return res.status(501).json({ error: "not configured", needs: "FEEDBACK_WEBHOOK_URL" });
   }
 
-  // Vercel parses JSON bodies automatically; fall back to manual parse if needed.
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      body = {};
-    }
+  if (!enforceRateLimit(req, res, { scope: "feedback", limit: 12, windowMs: 10 * 60_000 })) {
+    return;
   }
-  body = body || {};
 
-  const version = typeof body.version === "string" ? body.version : "unknown";
-  const rating = Number.isFinite(body.rating) ? body.rating : null;
+  const parsed = readJsonBody(req, 2_048);
+  if (parsed.error) {
+    return res.status(parsed.status).json({ error: parsed.error });
+  }
+  const body = parsed.body;
+
+  const version = cleanLine(body.version, 64) || "unknown";
+  const rating = Number.isInteger(body.rating) && body.rating >= 1 && body.rating <= 5
+    ? body.rating
+    : null;
+  if (rating === null) return res.status(400).json({ error: "rating must be an integer from 1 to 5" });
   const beta = body.beta === true;
 
   const content =
@@ -46,7 +50,8 @@ export default async (req, res) => {
     const wr = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, text: content }),
+      body: JSON.stringify({ content, text: content, allowed_mentions: { parse: [] } }),
+      signal: AbortSignal.timeout(8_000),
     });
     if (!wr.ok) {
       return res.status(502).json({ error: "webhook failed", status: wr.status });
