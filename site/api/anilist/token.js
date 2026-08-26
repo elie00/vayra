@@ -16,6 +16,8 @@
 //
 // Docs: https://docs.anilist.co/guide/auth/#making-the-authorization-code-grant
 
+import { cleanLine, enforceRateLimit, readJsonBody } from "../_lib/public-request.js";
+
 const ANILIST_TOKEN_URL = "https://anilist.co/api/v2/oauth/token";
 // Must match ANILIST_PIN_REDIRECT_URI in the client's config.ts.
 const ANILIST_PIN_REDIRECT_URI = "https://anilist.co/api/v2/oauth/pin";
@@ -34,17 +36,14 @@ export default async (req, res) => {
       .json({ error: "not configured", needs: "ANILIST_CLIENT_ID/ANILIST_CLIENT_SECRET" });
   }
 
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      body = {};
-    }
+  if (!enforceRateLimit(req, res, { scope: "anilist-token", limit: 30, windowMs: 10 * 60_000 })) {
+    return;
   }
-  body = body || {};
 
-  const code = typeof body.code === "string" ? body.code : "";
+  const parsed = readJsonBody(req, 4_096);
+  if (parsed.error) return res.status(parsed.status).json({ error: parsed.error });
+
+  const code = cleanLine(parsed.body.code, 1_024);
   if (!code) {
     return res.status(400).json({ error: "missing code" });
   }
@@ -60,6 +59,7 @@ export default async (req, res) => {
         redirect_uri: ANILIST_PIN_REDIRECT_URI,
         code,
       }),
+      signal: AbortSignal.timeout(8_000),
     });
 
     const text = await upstream.text();
@@ -82,9 +82,7 @@ export default async (req, res) => {
       return res.status(502).json({ error: "no access_token from AniList" });
     }
     return res.status(200).json({ access_token: json.access_token });
-  } catch (e) {
-    return res
-      .status(502)
-      .json({ error: "upstream error", detail: String(e && e.message ? e.message : e) });
+  } catch {
+    return res.status(502).json({ error: "upstream error" });
   }
 };
