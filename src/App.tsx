@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
@@ -861,6 +861,129 @@ function Shell() {
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
 
+  // This registry is the mount contract for every primary View. Keeping it as
+  // an exhaustive Record makes a removed mount a type error instead of dead,
+  // silently unreachable UI.
+  const primaryViewMounts = {
+    home: (
+      <div className={layer(homeTop)}>
+        <Home active={homeTop} />
+      </div>
+    ),
+    settings: settingsAlive ? (
+      <div className={layer(settingsTop)}>
+        <Suspense fallback={null}>
+          <Settings active={settingsTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    anime: animeAlive ? (
+      <div className={layer(animeTop)}>
+        <Suspense fallback={null}>
+          <AnimeView active={animeTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    discover: discoverAlive ? (
+      <div className={layer(discoverTop)}>
+        <Suspense fallback={null}>
+          <Discover active={discoverTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    catalogs: catalogsAlive ? (
+      <div className={layer(catalogsTop)}>
+        <Suspense fallback={null}>
+          <Catalogs active={catalogsTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    addons: addonsAlive ? (
+      <div className={layer(addonsTop)}>
+        <Suspense fallback={null}>
+          <AddonsView />
+        </Suspense>
+      </div>
+    ) : null,
+    calendar: calendarAlive ? (
+      <div className={layer(calendarTop)}>
+        <Suspense fallback={null}>
+          <CalendarView />
+        </Suspense>
+      </div>
+    ) : null,
+    wrapped: wrappedAlive ? (
+      <div className={layer(wrappedTop)}>
+        <Suspense fallback={null}>
+          <WrappedView active={wrappedTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    stats: statsAlive ? (
+      <div className={layer(statsTop)}>
+        <Suspense fallback={null}>
+          <StatsView active={statsTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    sports: sportsAlive ? (
+      <div className={layer(sportsTop)}>
+        <Suspense fallback={null}>
+          <SportsHome active={sportsTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    movies: moviesAlive ? (
+      <div className={layer(moviesTop)}>
+        <Suspense fallback={null}>
+          <Movies active={moviesTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    kids: kidsAlive ? (
+      <div className={layer(kidsTop)}>
+        <Suspense fallback={null}>
+          <Kids active={kidsTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    shows: showsAlive ? (
+      <div className={layer(showsTop)}>
+        <Suspense fallback={null}>
+          <Shows active={showsTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    library: libraryAlive ? (
+      <div className={layer(libraryTop)}>
+        <Suspense fallback={null}>
+          <LibraryView active={libraryTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    live: liveAlive ? (
+      <div className={layer(liveTop)}>
+        <Suspense fallback={null}>
+          <LiveView active={liveTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    vod: vodAlive ? (
+      <div className={layer(vodTop)}>
+        <Suspense fallback={null}>
+          <PlaylistVodView active={vodTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    downloads: downloadsAlive ? (
+      <div className={layer(downloadsTop)}>
+        <Suspense fallback={null}>
+          <DownloadsView />
+        </Suspense>
+      </div>
+    ) : null,
+  } satisfies Record<View, ReactNode>;
+
   return (
     <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "sidebar" && <Sidebar />}
@@ -885,121 +1008,9 @@ function Shell() {
       )}
       {!playerActive && <WindowResizeEdges />}
       <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}>
-        <div className={layer(homeTop)}>
-          <Home active={homeTop} />
-        </div>
-        {settingsAlive && (
-          <div className={layer(settingsTop)}>
-            <Suspense fallback={null}>
-              <Settings active={settingsTop} />
-            </Suspense>
-          </div>
-        )}
-        {animeAlive && (
-          <div className={layer(animeTop)}>
-            <Suspense fallback={null}>
-              <AnimeView active={animeTop} />
-            </Suspense>
-          </div>
-        )}
-        {discoverAlive && (
-          <div className={layer(discoverTop)}>
-            <Suspense fallback={null}>
-              <Discover active={discoverTop} />
-            </Suspense>
-          </div>
-        )}
-        {catalogsAlive && (
-          <div className={layer(catalogsTop)}>
-            <Suspense fallback={null}>
-              <Catalogs active={catalogsTop} />
-            </Suspense>
-          </div>
-        )}
-        {addonsAlive && (
-          <div className={layer(addonsTop)}>
-            <Suspense fallback={null}>
-              <AddonsView />
-            </Suspense>
-          </div>
-        )}
-        {calendarAlive && (
-          <div className={layer(calendarTop)}>
-            <Suspense fallback={null}>
-              <CalendarView />
-            </Suspense>
-          </div>
-        )}
-        {wrappedAlive && (
-          <div className={layer(wrappedTop)}>
-            <Suspense fallback={null}>
-              <WrappedView active={wrappedTop} />
-            </Suspense>
-          </div>
-        )}
-        {statsAlive && (
-          <div className={layer(statsTop)}>
-            <Suspense fallback={null}>
-              <StatsView active={statsTop} />
-            </Suspense>
-          </div>
-        )}
-        {sportsAlive && (
-          <div className={layer(sportsTop)}>
-            <Suspense fallback={null}>
-              <SportsHome active={sportsTop} />
-            </Suspense>
-          </div>
-        )}
-        {moviesAlive && (
-          <div className={layer(moviesTop)}>
-            <Suspense fallback={null}>
-              <Movies active={moviesTop} />
-            </Suspense>
-          </div>
-        )}
-        {kidsAlive && (
-          <div className={layer(kidsTop)}>
-            <Suspense fallback={null}>
-              <Kids active={kidsTop} />
-            </Suspense>
-          </div>
-        )}
-        {showsAlive && (
-          <div className={layer(showsTop)}>
-            <Suspense fallback={null}>
-              <Shows active={showsTop} />
-            </Suspense>
-          </div>
-        )}
-        {libraryAlive && (
-          <div className={layer(libraryTop)}>
-            <Suspense fallback={null}>
-              <LibraryView active={libraryTop} />
-            </Suspense>
-          </div>
-        )}
-        {liveAlive && (
-          <div className={layer(liveTop)}>
-            <Suspense fallback={null}>
-              <LiveView active={liveTop} />
-            </Suspense>
-          </div>
-        )}
-        {vodAlive && (
-          <div className={layer(vodTop)}>
-            <Suspense fallback={null}>
-              <PlaylistVodView active={vodTop} />
-            </Suspense>
-          </div>
-        )}
-        {downloadsAlive && (
-          <div className={layer(downloadsTop)}>
-            <Suspense fallback={null}>
-              <DownloadsView />
-            </Suspense>
-          </div>
-        )}
+        {Object.entries(primaryViewMounts).map(([view, mount]) => (
+          <Fragment key={view}>{mount}</Fragment>
+        ))}
         {queueAlive && (
           <div className={layer(queueTop)}>
             <Suspense fallback={null}>
