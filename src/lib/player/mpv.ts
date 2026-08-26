@@ -584,7 +584,6 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
         pictureInPicture: true,
         airplay: false,
         chromecast: true,
-        hdrPassthrough: false,
         hardwareDecode: true,
       };
     },

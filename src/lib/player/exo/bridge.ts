@@ -527,7 +527,6 @@ export function createExoBridge(): PlayerBridge {
         pictureInPicture: true,
         airplay: false,
         chromecast: false,
-        hdrPassthrough: false,
         hardwareDecode: true,
       };
     },
