@@ -17,6 +17,7 @@ import { AddonResults } from "./addon-results";
 import { MagnetCard } from "./magnet-card";
 import { UrlCard } from "./url-card";
 import { AiSearchSection } from "./ai-search-section";
+import { WebSearchButton } from "./web-search-button";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
@@ -140,6 +141,7 @@ export function SearchOverlay() {
             autoComplete="off"
           />
           {status === "loading" && <Loader2 size={18} className="shrink-0 animate-spin text-ink-subtle" />}
+          <WebSearchButton />
           {query && (
             <button
               type="button"
