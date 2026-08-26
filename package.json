@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
+    "audit:deps": "pnpm audit --audit-level=moderate",
     "tauri": "tauri",
     "tauri:build:linux-system": "tauri build --config src-tauri/tauri.linux-system.conf.json",
     "setup:libmpv": "node scripts/fetch-libmpv.mjs",
