@@ -130,7 +130,7 @@ export function ShellLayer({
       engine={engine}
       useOverlayPopups={false}
       onMenuOpenChange={onMenuOpenChange}
-      capabilities={bridgeRef.current?.capabilities() ?? { engine: "html5", pictureInPicture: false, airplay: false, chromecast: false, hdrPassthrough: false, hardwareDecode: true }}
+      capabilities={bridgeRef.current?.capabilities() ?? { engine: "html5", pictureInPicture: false, airplay: false, chromecast: false, hardwareDecode: true }}
       visible={visible}
       fullscreen={fullscreen}
       drawMode={drawMode}

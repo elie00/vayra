@@ -13,7 +13,6 @@ const MOCK_CAPS: PlayerCapabilities = {
   pictureInPicture: true,
   airplay: false,
   chromecast: true,
-  hdrPassthrough: true,
   hardwareDecode: true,
 };
 
