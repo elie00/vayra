@@ -1,6 +1,7 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dlog, dwarn } from "@/lib/debug";
 import { matchEpisodeFileIndex, type EpisodeHint } from "@/lib/streams/episode-file";
+import { canFallBackToLargest } from "./pick-file";
 import {
   hashFromMagnet,
   magnetFromHash,
@@ -307,6 +308,7 @@ function pickTbFile(files: TbFile[], fileIdx: number | undefined, hint?: Episode
   const pool = videos.length > 0 ? videos : files;
   const mi = matchEpisodeFileIndex(pool.map((f) => f.short_name ?? f.name ?? ""), hint);
   if (mi >= 0) return pool[mi];
+  if (!canFallBackToLargest(hint, pool.length)) return null;
   return pool.slice().sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0] ?? null;
 }
 

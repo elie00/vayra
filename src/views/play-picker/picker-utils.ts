@@ -431,6 +431,8 @@ export function humanError(code: string): string {
       return t("Your debrid couldn't fetch this torrent (no seeders). Pick a different source.");
     case "error":
       return t("Your debrid hit an error on this torrent. Pick a different source.");
+    case "no-video-file":
+      return t("This source doesn't hold the file we're after. Pick another one.");
     case "wrong-file":
       return t("Your debrid holds this pack with a different episode pulled. Pick another source, or add this episode on your debrid first.");
     case "stub-or-error-video":
