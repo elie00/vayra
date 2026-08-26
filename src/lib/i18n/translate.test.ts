@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import en from "./locales/en";
 import fr from "./locales/fr";
 import { setUiLanguage } from "./store";
-import { t } from "./translate";
+import { isUiLanguageLoaded, loadUiLanguage, t } from "./translate";
 
-afterEach(() => setUiLanguage("en"));
+beforeAll(async () => loadUiLanguage("fr"));
+afterAll(() => setUiLanguage("en"));
 
 describe("French interface catalog", () => {
   it("contains every key from the canonical English catalog", () => {
@@ -12,6 +13,7 @@ describe("French interface catalog", () => {
   });
 
   it("translates entries and interpolates variables", () => {
+    expect(isUiLanguageLoaded("fr")).toBe(true);
     setUiLanguage("fr");
     expect(t("common.save")).toBe("Enregistrer");
     expect(t("Guest Stars · {n}", { n: 3 })).toBe("Invités · 3");
