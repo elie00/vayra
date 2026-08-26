@@ -51,7 +51,14 @@ export function planExport(items: WatchlistSource[]): ExportPlan {
     }
     const ids = idToTraktIds(item.id);
     if (!ids) continue;
-    const isShow = item.type === "series" || item.type === "tv" || item.type === "channel";
+    // The row's type is optional, but a TMDB id already says which kind it is —
+    // and the two id spaces overlap, so guessing wrong sends Trakt a different
+    // title entirely rather than nothing.
+    const isShow =
+      item.type === "series" ||
+      item.type === "tv" ||
+      item.type === "channel" ||
+      (!item.type && item.id.startsWith("tmdb:tv:"));
     (isShow ? shows : movies).push({ ids });
   }
   return { movies, shows, skippedAnime, total };
