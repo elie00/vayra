@@ -41,6 +41,8 @@ jobs:
           cache: pnpm
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
+      - name: Audit JS dependencies
+        run: pnpm audit:deps
       - name: Typecheck
         run: pnpm exec tsc -b
       - name: Production build (includes vayra-core WASM)
