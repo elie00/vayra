@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
@@ -8,6 +8,7 @@ import { fetchAndParse, type SubCue } from "@/lib/subtitles/parser";
 import { applySync } from "@/lib/subtitles/text-sync";
 import { toSrt, toVtt } from "@/lib/subtitles/serialize";
 import { estimateSubtitleOffset, type AutoSyncResult } from "@/lib/subtitles/auto-sync";
+import { writeSubtitleTempFile } from "@/lib/subtitles/temp-file";
 
 export type AutoSyncStatus = "idle" | "analyzing" | "synced" | "declined" | "error";
 
@@ -119,10 +120,7 @@ async function applyResult(
   const shift = (t: number) => r.offsetSec + (r.ratio - 1) * t;
   const finalCues = applySync(cues, shift, 0);
   const text = fmt === "vtt" ? toVtt(finalCues) : toSrt(finalCues);
-  const pathMod = await import("@tauri-apps/api/path");
-  const dir = await pathMod.join(await pathMod.tempDir(), "harbor-subs");
-  const filePath = await pathMod.join(dir, `autosync-${Date.now()}.${fmt}`);
-  await invoke("save_text_file", { path: filePath, contents: text });
+  const filePath = await writeSubtitleTempFile(text, fmt);
   await b.addSubtitle(filePath, undefined, `Synced (${fmt.toUpperCase()})`, true);
   b.setSubDelay(0);
 }
