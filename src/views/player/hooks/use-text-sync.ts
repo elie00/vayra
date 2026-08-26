@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { SubCue } from "@/lib/subtitles/parser";
@@ -7,6 +6,7 @@ import { getCuesAnySource } from "@/lib/subtitles/extract";
 import { toSrt, toVtt } from "@/lib/subtitles/serialize";
 import { applyLinear, deltaFn, type SyncPoint, type SyncSegment } from "@/lib/subtitles/text-sync";
 import { writePlayerPrefs } from "@/lib/player-prefs";
+import { writeSubtitleTempFile } from "@/lib/subtitles/temp-file";
 
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
 
@@ -171,7 +171,7 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
     try {
       const corrected = applyLinear(cur.cues, cur.points, cur.nudge, cur.segments);
       const text = cur.sourceFormat === "vtt" ? toVtt(corrected) : toSrt(corrected);
-      const path = await writeTemp(text, cur.sourceFormat, `synced-${Date.now()}`);
+      const path = await writeTemp(text, cur.sourceFormat);
       let applied = false;
       if (path) {
         const ok = await b?.addSubtitle(path, undefined, `Synced (${cur.sourceFormat.toUpperCase()})`, true);
@@ -212,16 +212,10 @@ export function useTextSync(bridge: PlayerBridge | null, metaId: string) {
   };
 }
 
-async function writeTemp(text: string, ext: "srt" | "vtt", name?: string): Promise<string | null> {
+async function writeTemp(text: string, ext: "srt" | "vtt"): Promise<string | null> {
   if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return null;
   try {
-    const pathMod = await import("@tauri-apps/api/path");
-    const tmpDir = await pathMod.tempDir();
-    const dir = await pathMod.join(tmpDir, "harbor-subs");
-    const fileName = `${name ?? "preview"}.${ext}`;
-    const filePath = await pathMod.join(dir, fileName);
-    await invoke("save_text_file", { path: filePath, contents: text });
-    return filePath;
+    return await writeSubtitleTempFile(text, ext);
   } catch {
     return null;
   }

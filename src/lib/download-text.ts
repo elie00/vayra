@@ -11,10 +11,11 @@ export async function saveTextFileWithPath(
   if (IS_TAURI) {
     try {
       const { save } = await import("@tauri-apps/plugin-dialog");
-      const { invoke } = await import("@tauri-apps/api/core");
+      const { writeFile } = await import("@tauri-apps/plugin-fs");
       const path = await save({ defaultPath: filename, filters: [{ name: label, extensions }] });
       if (!path) return { saved: false, path: null };
-      await invoke("save_text_file", { path, contents: text });
+      // The save dialog adds this exact path to Tauri's filesystem scope.
+      await writeFile(path, new TextEncoder().encode(text));
       return { saved: true, path };
     } catch (err) {
       console.warn("[harbor] native save failed, falling back", err);

@@ -218,13 +218,8 @@ export function ShellLayer({
         const label = `${targetName} (AI)`;
         if (isTauri) {
           try {
-            const p = await import("@tauri-apps/api/path");
-            const dir = await p.join(await p.tempDir(), "harbor-subs");
-            const fp = await p.join(dir, `translated-${Date.now()}.srt`);
-            await (await import("@tauri-apps/api/core")).invoke("save_text_file", {
-              path: fp,
-              contents: text,
-            });
+            const { writeSubtitleTempFile } = await import("@/lib/subtitles/temp-file");
+            const fp = await writeSubtitleTempFile(text, "srt");
             const ok = await b.addSubtitle(fp, code, label, true);
             if (ok) {
               rememberSubChoice({ lang: code });

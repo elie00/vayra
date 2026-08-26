@@ -193,15 +193,78 @@ async fn deeplink_is_stremio_registered(app: tauri::AppHandle) -> Result<bool, S
         .map_err(|e| e.to_string())
 }
 
+const MAX_TEMP_SUBTITLE_BYTES: usize = 16 * 1024 * 1024;
+static TEMP_SUBTITLE_SEQUENCE: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+
+fn valid_subtitle_extension(extension: &str) -> bool {
+    matches!(extension, "srt" | "vtt")
+}
+
 #[tauri::command]
-async fn save_text_file(path: String, contents: String) -> Result<(), String> {
-    let target = std::path::PathBuf::from(&path);
-    if let Some(parent) = target.parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent).map_err(|e| format!("create folder: {}", e))?;
+fn write_subtitle_temp_file(extension: String, contents: String) -> Result<String, String> {
+    use std::io::Write;
+
+    if !valid_subtitle_extension(&extension) {
+        return Err("unsupported subtitle extension".into());
+    }
+    if contents.len() > MAX_TEMP_SUBTITLE_BYTES {
+        return Err("subtitle file is too large".into());
+    }
+
+    let directory = std::env::temp_dir().join("vayra-subs");
+    std::fs::create_dir_all(&directory).map_err(|_| "could not create subtitle temp folder")?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|_| "system clock is unavailable")?
+        .as_nanos();
+
+    for _ in 0..8 {
+        let sequence = TEMP_SUBTITLE_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let target = directory.join(format!(
+            "vayra-subtitle-{}-{now}-{sequence}.{extension}",
+            std::process::id()
+        ));
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&target)
+        {
+            Ok(mut file) => {
+                if file.write_all(contents.as_bytes()).is_err() {
+                    let _ = std::fs::remove_file(&target);
+                    return Err("could not write subtitle temp file".into());
+                }
+                return Ok(target.to_string_lossy().into_owned());
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(_) => return Err("could not create subtitle temp file".into()),
         }
     }
-    std::fs::write(&target, contents.as_bytes()).map_err(|e| format!("write file: {}", e))
+    Err("could not allocate subtitle temp file".into())
+}
+
+#[cfg(test)]
+mod subtitle_temp_file_tests {
+    use super::{valid_subtitle_extension, write_subtitle_temp_file};
+
+    #[test]
+    fn only_expected_subtitle_extensions_are_allowed() {
+        assert!(valid_subtitle_extension("srt"));
+        assert!(valid_subtitle_extension("vtt"));
+        assert!(!valid_subtitle_extension("../txt"));
+        assert!(!valid_subtitle_extension("ass"));
+    }
+
+    #[test]
+    fn creates_a_new_file_only_inside_the_subtitle_temp_folder() {
+        let path = write_subtitle_temp_file("srt".into(), "subtitle".into()).unwrap();
+        let target = std::path::PathBuf::from(path);
+        assert_eq!(target.parent().and_then(|p| p.file_name()), Some("vayra-subs".as_ref()));
+        assert_eq!(target.extension(), Some("srt".as_ref()));
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "subtitle");
+        std::fs::remove_file(target).unwrap();
+    }
 }
 
 #[cfg(windows)]
@@ -682,7 +745,7 @@ pub fn run() {
             vayra_set_webview_visible,
             vayra_try_suspend_webview,
             vayra_resume_webview,
-            save_text_file,
+            write_subtitle_temp_file,
             cast_server::stop_stremio_sidecar,
             cast_server::cast_server_stop,
             web_server::web_serve_start,
