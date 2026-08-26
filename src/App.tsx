@@ -166,7 +166,7 @@ const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.Playlis
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
 const OnboardingModal = lazy(() => importOnboarding().then((m) => ({ default: m.OnboardingModal })));
 
-function useViewPreloader() {
+function usePlaybackPathPreloader() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
@@ -179,25 +179,11 @@ function useViewPreloader() {
         : window.setTimeout(cb, 1200);
     schedule(() => {
       if (cancelled) return;
+      // Prime only the hot path from a home card to playback. Loading every
+      // route here made lazy views parse immediately after startup anyway.
       void importDetail();
       void importPlayPicker();
       void importPlayer();
-      void importSettings();
-      void importAddons();
-      void importDiscover();
-      void importPerson();
-      void importFilter();
-      void importCalendar();
-      void importMovies();
-      void importShows();
-      void importLive();
-      void importAnime();
-      void importQueue();
-      void importAward();
-      void importAnimeAward();
-      void importService();
-      void importMatchDetail();
-      void importOnboarding();
     });
     return () => {
       cancelled = true;
@@ -478,7 +464,7 @@ function Shell() {
     layout === "nord" ||
     layout === "forest" ||
     layout === "stremio";
-  useViewPreloader();
+  usePlaybackPathPreloader();
   useFirstRunLocaleDetect();
 
   const handleTvBack = useCallback(() => {
