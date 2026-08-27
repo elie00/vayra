@@ -4,6 +4,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { copyText } from "@/lib/clipboard";
 import { useSettings } from "@/lib/settings";
 import { BUNDLED_SERVER_URL, getCastServerStatus, restartCastServer } from "@/lib/stremio-server";
+import {
+  WEB_UI_SERVER_ERROR_EVENT,
+  type WebUiServerErrorDetail,
+} from "@/lib/web-ui-server";
 import { openUrl } from "@/lib/window";
 import { ToggleRow, settingsAnchor } from "../shared";
 import { isTauri } from "./internals";
@@ -12,6 +16,7 @@ import { useT } from "@/lib/i18n";
 const WEB_PORT = 11471;
 
 type EngineState = "checking" | "running" | "starting" | "stopped";
+type WebServerError = WebUiServerErrorDetail | { enabled: true; message: null };
 
 const PILL: Record<EngineState, { label: string; dot: string; chip: string }> = {
   checking: { label: "Checking", dot: "bg-ink-subtle", chip: "bg-ink-subtle/15 text-ink-muted" },
@@ -111,7 +116,7 @@ export function ServerAddressSection() {
   const [lanIp, setLanIp] = useState<string | null>(null);
   const [engine, setEngine] = useState<EngineState>("checking");
   const [acting, setActing] = useState(false);
-  const [webError, setWebError] = useState(false);
+  const [webError, setWebError] = useState<WebServerError | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [webToken, setWebToken] = useState<string | null>(null);
   const aliveRef = useRef(true);
@@ -142,16 +147,27 @@ export function ServerAddressSection() {
   }, []);
 
   useEffect(() => {
+    const onWebServerError = (event: Event) => {
+      setWebError((event as CustomEvent<WebUiServerErrorDetail>).detail);
+    };
+    window.addEventListener(WEB_UI_SERVER_ERROR_EVENT, onWebServerError);
+    return () => window.removeEventListener(WEB_UI_SERVER_ERROR_EVENT, onWebServerError);
+  }, []);
+
+  useEffect(() => {
     if (!isTauri || !settings.serveWebUi) {
-      setWebError(false);
       return;
     }
     const t = window.setTimeout(() => {
       void invoke<boolean>("web_serve_status")
         .then((ok) => {
-          if (aliveRef.current) setWebError(!ok);
+          if (aliveRef.current) setWebError(ok ? null : { enabled: true, message: null });
         })
-        .catch(() => {});
+        .catch((error) => {
+          if (aliveRef.current) {
+            setWebError({ enabled: true, message: error instanceof Error ? error.message : String(error) });
+          }
+        });
     }, 800);
     return () => window.clearTimeout(t);
   }, [settings.serveWebUi]);
@@ -167,7 +183,12 @@ export function ServerAddressSection() {
       .then((tok) => {
         if (aliveRef.current) setWebToken(tok);
       })
-      .catch(() => {});
+      .catch((error) => {
+        if (aliveRef.current) {
+          setWebToken(null);
+          setWebError({ enabled: true, message: error instanceof Error ? error.message : String(error) });
+        }
+      });
   }, [settings.serveWebUi]);
 
   if (!isTauri) return null;
@@ -254,7 +275,10 @@ export function ServerAddressSection() {
         label={t("VAYRA in your browser")}
         sub={t("Serves this exact install of VAYRA as a web app on your network. Open it on a phone, laptop, or TV browser, sign in there, and it streams through this computer.")}
         value={settings.serveWebUi}
-        onChange={(v) => update({ serveWebUi: v })}
+        onChange={(v) => {
+          setWebError(null);
+          update({ serveWebUi: v });
+        }}
       />
       {settings.serveWebUi && (
         <>
@@ -270,12 +294,19 @@ export function ServerAddressSection() {
               {t("This link includes a private access token so only devices you share it with can open VAYRA. Opening it on this computer doesn't need the token.")}
             </p>
           )}
-          {webError && (
-            <span className="text-[12px] text-danger">
-              {t("Couldn't start on port {WEB_PORT}. Another app may be using it; toggle off and on to retry.", { WEB_PORT: String(WEB_PORT) })}
-            </span>
-          )}
         </>
+      )}
+      {webError && (
+        <span className="text-[12px] text-danger">
+          {webError.enabled
+            ? t("Couldn't start on port {WEB_PORT}. Another app may be using it; toggle off and on to retry.", { WEB_PORT: String(WEB_PORT) })
+            : t("Something went wrong.")}
+          {webError.message && (
+            <code className="mt-1 block break-all font-mono text-[11px] text-danger/80">
+              {webError.message}
+            </code>
+          )}
+        </span>
       )}
     </section>
   );
