@@ -165,7 +165,7 @@ C'est ce qui a été appliqué aux cinq services debrid.
 
 ## 7. Reprise bloquée quand un téléchargement se termine pendant la pause
 
-**À corriger — priorité haute.** Scénario observé :
+**Corrigé par la PR #59.** Scénario observé :
 
 1. lancer la lecture d'un épisode pendant son téléchargement ;
 2. mettre la lecture en pause ;
@@ -177,15 +177,16 @@ terminé ne doit ni invalider le média courant, ni désynchroniser l'état
 pause/lecture du bridge. Play doit reprendre **le même épisode, à la même
 position**, que la source soit encore en téléchargement ou désormais locale.
 
-### Correction attendue
+### Correction livrée
 
-- tracer la transition `paused → téléchargement terminé → play` entre le store
-  de téléchargements, la sélection du média et le bridge du lecteur ;
-- empêcher un remplacement de source ou un remontage du lecteur de perdre la
-  commande Play ;
-- ajouter un test de régression reproduisant exactement cette séquence, au
-  minimum pour le bridge concerné et idéalement pour chaque moteur de lecture
-  qui peut consommer un téléchargement en cours.
+- le bridge mpv renseignait bien `buffering`, mais le hook React filtrait les
+  changements de ce champ : la transition de fin de téléchargement n'atteignait
+  donc pas toujours le bouton Play ;
+- `buffering` fait désormais partie du contrat de publication du snapshot, avec
+  un test de régression couvrant `paused + buffering → paused + terminé` ;
+- la fin d'un téléchargement n'ouvre plus automatiquement le dossier système,
+  ce qui évite de voler le focus au lecteur. Le bouton de téléchargement terminé
+  conserve l'action explicite d'ouverture du dossier.
 
 ---
 
