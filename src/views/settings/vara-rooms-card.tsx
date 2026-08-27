@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Copy, Crown, Link2, LogIn, LogOut, Plus, RadioTower, Trash2, UserPlus, X } from "lucide-react";
 import { useCira } from "@/lib/cira/provider";
+import { copyText } from "@/lib/clipboard";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import { VaraError } from "@/lib/vara/errors";
@@ -331,7 +332,7 @@ export function VaraRoomsCard() {
             {secret ? (
               <div className="flex items-center gap-2 rounded-xl border border-edge-soft bg-elevated/50 p-3">
                 <code className="min-w-0 flex-1 truncate text-[11.5px] text-ink-muted">{secret.url}</code>
-                <ActionButton label={t("Copy")} icon={Copy} onClick={() => void navigator.clipboard.writeText(secret.url)} />
+                <ActionButton label={t("Copy")} icon={Copy} onClick={() => void copyText(secret.url)} />
               </div>
             ) : null}
             {links.length > 0 ? (

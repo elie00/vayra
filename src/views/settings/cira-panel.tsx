@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { avatarUrl } from "@/lib/avatars/catalog";
+import { copyText } from "@/lib/clipboard";
 import { useCira } from "@/lib/cira/provider";
 import { CiraError } from "@/lib/cira";
 import { CiraQrError, decodeCiraQrFile, parseCiraDiscoverPayload } from "@/lib/cira";
@@ -393,11 +394,9 @@ function InviteCard() {
   const copyLink = async () => {
     if (!secret) return;
     setNotice(null);
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
-      await navigator.clipboard.writeText(secret.url);
+    if (await copyText(secret.url)) {
       setCopied(true);
-    } catch {
+    } else {
       setNotice({
         text: t("Couldn't copy the invitation link. Copy the code instead."),
         tone: "error",

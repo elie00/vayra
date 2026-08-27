@@ -1,6 +1,7 @@
 import { BookOpen, Check, Copy, Download, Play, Redo2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { CodeEditor, type CodeLang } from "@/components/code-editor";
+import { copyText } from "@/lib/clipboard";
 import { useT } from "@/lib/i18n";
 import { downloadText } from "@/lib/download-text";
 import { CheatSheet } from "./cheat-sheet";
@@ -55,8 +56,8 @@ export function CodePopout({
     if (f) void downloadText(f.name, values[id], [f.id], "VAYRA theme");
   };
 
-  const copy = () => {
-    void navigator.clipboard.writeText(value);
+  const copy = async () => {
+    if (!(await copyText(value))) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1300);
   };

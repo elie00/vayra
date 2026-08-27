@@ -3,6 +3,7 @@ import { Archive, ArchiveRestore, Check, Copy, Crown, Link2, Plus, Settings2, Sh
 import { CiraError } from "@/lib/cira";
 import { useCira } from "@/lib/cira/provider";
 import type { CiraGroup, CiraGroupLink, CiraGroupLinkPreview, CiraGroupMember } from "@/lib/cira";
+import { copyText } from "@/lib/clipboard";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import { GroupCollections } from "./cira-collections";
@@ -420,7 +421,7 @@ function GroupDetails({ group }: { group: CiraGroup }) {
           {secret && (
             <div className="flex items-center gap-2 rounded-lg bg-elevated px-3 py-2">
               <code className="min-w-0 flex-1 truncate text-[11.5px] text-ink-muted">{secret.url}</code>
-              <button aria-label={t("Copy invite link")} onClick={() => void navigator.clipboard.writeText(secret.url).then(() => setCopied(true))} className="text-ink-subtle hover:text-ink">
+              <button aria-label={t("Copy invite link")} onClick={() => void copyText(secret.url).then((ok) => ok && setCopied(true))} className="text-ink-subtle hover:text-ink">
                 {copied ? <Check size={14} /> : <Copy size={14} />}
               </button>
             </div>

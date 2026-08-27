@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Download, Loader2, Share2, Star, X } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 import { downloadTheme, rateTheme, type StoreTheme } from "@/lib/theme-store";
 import { useT } from "@/lib/i18n";
 
@@ -42,13 +43,9 @@ export function CommunityDetail({
   };
 
   const share = async () => {
-    try {
-      await navigator.clipboard.writeText(t.share);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* ignore */
-    }
+    if (!(await copyText(t.share))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const shownRating = myRating || Math.round(t.ratingAvg);
