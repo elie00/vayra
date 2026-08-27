@@ -80,13 +80,8 @@ export function useVideoDownload({ url, meta, episode }: Args) {
     });
     handleRef.current = handle;
     handle.promise
-      .then(async () => {
+      .then(() => {
         setStatus({ kind: "done", path: path! });
-        try {
-          await revealItemInDir(path!);
-        } catch {
-          return;
-        }
       })
       .catch((e: unknown) => {
         if (e instanceof Error && e.name === "AbortError") {
