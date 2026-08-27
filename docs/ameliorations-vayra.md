@@ -1,6 +1,6 @@
 # Comment améliorer VAYRA
 
-Dernière mise à jour : 26 août 2026. Constats tirés d'un audit du dépôt mené sur
+Dernière mise à jour : 27 août 2026. Constats tirés d'un audit du dépôt mené sur
 plusieurs séances, qui a produit les PR #7 à #40. Le document classe les pistes
 par impact décroissant et donne, pour chacune, les faits qui la fondent.
 
@@ -160,6 +160,32 @@ C'est ce qui a été appliqué aux cinq services debrid.
   lus depuis le disque local : l'impact porte sur le temps d'analyse du
   JavaScript, pas sur le réseau. Les sept catalogues i18n y sont chargés d'un
   bloc alors qu'un seul sert par session.
+
+---
+
+## 7. Reprise bloquée quand un téléchargement se termine pendant la pause
+
+**À corriger — priorité haute.** Scénario observé :
+
+1. lancer la lecture d'un épisode pendant son téléchargement ;
+2. mettre la lecture en pause ;
+3. attendre que le téléchargement passe à l'état terminé ;
+4. appuyer sur Play.
+
+La lecture ne redémarre pas. La transition du téléchargement vers l'état
+terminé ne doit ni invalider le média courant, ni désynchroniser l'état
+pause/lecture du bridge. Play doit reprendre **le même épisode, à la même
+position**, que la source soit encore en téléchargement ou désormais locale.
+
+### Correction attendue
+
+- tracer la transition `paused → téléchargement terminé → play` entre le store
+  de téléchargements, la sélection du média et le bridge du lecteur ;
+- empêcher un remplacement de source ou un remontage du lecteur de perdre la
+  commande Play ;
+- ajouter un test de régression reproduisant exactement cette séquence, au
+  minimum pour le bridge concerné et idéalement pour chaque moteur de lecture
+  qui peut consommer un téléchargement en cours.
 
 ---
 
