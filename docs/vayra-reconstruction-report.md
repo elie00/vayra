@@ -47,7 +47,7 @@ JS `invoke` ↔ Rust `#[command]` · Rust `emit` ↔ JS `listen` · Kotlin packa
 
 - **Serveurs externes** (infra réelle, hors repo) : `harbor.site` + sous-domaines (`app.`/`pub.`/`bugs.`), endpoint updater, `bugs@harbor.site`. → à migrer plus tard.
 - **Compat** : scheme `harbor://` (gardé à côté de `vayra://`, liens/QR toujours en `harbor://`) ; préfixe localStorage `harbor.` + clés ; `window.harbor` alias ; classes CSS publiques `.harbor-*`.
-- **Interne invisible** : `harbor_lib` (nom `.so`), crate `harbor`, classes Kotlin `HarborCredentials`/`HarborExoBridge`, composants `HarborMark`/`HarborLoader`.
+- **Interne invisible** : `harbor_lib` (nom `.so`), classes Kotlin `HarborCredentials`/`HarborExoBridge`, composants `HarborMark`/`HarborLoader`. Le package Cargo et l'exécutable desktop sont désormais `vayra` (`VAYRA.exe` sous Windows).
 - **Transport/données** : User-Agent réseau, `AGENT` AllDebrid, dossiers `Pictures/Harbor` + `Harbor DVR`, scheme `stremio://`.
 
 ## 5. Validation
@@ -74,4 +74,4 @@ JS `invoke` ↔ Rust `#[command]` · Rust `emit` ↔ JS `listen` · Kotlin packa
 
 - Migrer les endpoints externes `harbor.site` + `bugs@harbor.site` (domaine/serveur réel) quand l'infra VAYRA sera prête.
 - À terme, basculer la **génération** des liens/QR de `harbor://` vers `vayra://` une fois le parc mis à jour.
-- Optionnel : renommer les identifiants internes invisibles restants (`harbor_lib`, crate `harbor`, classes Kotlin) — sans bénéfice utilisateur, churn pur.
+- Optionnel : renommer les identifiants internes invisibles restants (`harbor_lib`, classes Kotlin) — sans bénéfice utilisateur, churn pur.
