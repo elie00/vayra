@@ -26,6 +26,10 @@ export function pickDebridForAddon(s: ReturnType<typeof useSettings>["settings"]
   return null;
 }
 
+function addonActionError(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export function RecommendedAddonCard({
   id,
   title,
@@ -53,8 +57,10 @@ export function RecommendedAddonCard({
     const current = cometKeyFromUrl(url);
     const stale = !current || current.service !== debrid.service || current.apiKey !== debrid.key.trim();
     if (!stale) return;
-    installAddon(id, urlBuilder(debrid.service, debrid.key)).catch(() => {});
-  }, [id, debrid, urlBuilder, settings.tbKey, settings.rdKey, settings.adKey, settings.pmKey, settings.dlKey]);
+    installAddon(id, urlBuilder(debrid.service, debrid.key)).catch((cause: unknown) => {
+      setError(addonActionError(cause, t("Install failed.")));
+    });
+  }, [id, debrid, urlBuilder, settings.tbKey, settings.rdKey, settings.adKey, settings.pmKey, settings.dlKey, t]);
 
   const onInstall = async () => {
     if (!debrid) return;
@@ -63,16 +69,24 @@ export function RecommendedAddonCard({
     try {
       await installAddon(id, urlBuilder(debrid.service, debrid.key));
       setInstalled(true);
-    } catch (e: any) {
-      setError(e?.message ?? "Install failed");
+    } catch (cause: unknown) {
+      setError(addonActionError(cause, t("Install failed.")));
     } finally {
       setBusy(false);
     }
   };
 
-  const onUninstall = () => {
-    void uninstallAddon(id);
-    setInstalled(false);
+  const onUninstall = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await uninstallAddon(id);
+      setInstalled(false);
+    } catch (cause: unknown) {
+      setError(addonActionError(cause, t("Couldn't remove. Try again.")));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -99,6 +113,7 @@ export function RecommendedAddonCard({
       {installed ? (
         <button
           onClick={onUninstall}
+          disabled={busy}
           className="flex h-10 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[13px] font-medium text-ink-muted transition-colors hover:border-danger/60 hover:bg-danger/10 hover:text-danger"
         >
           <Trash2 size={13} strokeWidth={2.2} />
