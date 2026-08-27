@@ -11,6 +11,7 @@ on:
       - "vite.config.ts"
       - "vitest.config.ts"
       - "eslint.config.js"
+      - "scripts/check-bundle-budgets.mjs"
       - ".github/workflows/frontend.yml"
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - "vite.config.ts"
       - "vitest.config.ts"
       - "eslint.config.js"
+      - "scripts/check-bundle-budgets.mjs"
       - ".github/workflows/frontend.yml"
 
 jobs:
@@ -47,6 +49,8 @@ jobs:
         run: pnpm exec tsc -b
       - name: Production build (includes vayra-core WASM)
         run: pnpm build
+      - name: Enforce bundle budgets
+        run: pnpm perf:budget
       - name: WASM runtime smoke test
         run: pnpm core:wasm:smoke
       - name: Lint (react-hooks)
