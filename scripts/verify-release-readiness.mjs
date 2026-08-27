@@ -25,6 +25,7 @@ const android = existsSync(androidPropertiesPath)
 const site = readFileSync("site/public/index.html", "utf8");
 const robots = readFileSync("site/public/robots.txt", "utf8");
 const sitemap = readFileSync("site/public/sitemap.xml", "utf8");
+const windowsInstallerHooks = readFileSync("src-tauri/installer-hooks.nsh", "utf8");
 
 const version = packageJson.version;
 const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
@@ -64,6 +65,9 @@ if (!tauri.plugins?.updater?.pubkey || tauri.plugins.updater.pubkey === legacyUp
 }
 if (releaseConfig.bundle?.createUpdaterArtifacts !== true) {
   fail("release config does not create updater artifacts");
+}
+if (!windowsInstallerHooks.includes("@('VAYRA.exe', 'Harbor.exe')")) {
+  fail("Windows installer hook must preserve both VAYRA.exe and legacy Harbor.exe");
 }
 if (!Array.isArray(versions.versions)) fail("versions.json must contain a versions array");
 if (/REPLACE_WITH|TEMPLATE/i.test(JSON.stringify(latest))) fail("updater fallback contains placeholders");
