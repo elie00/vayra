@@ -2,19 +2,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LogIn, LogOut, Pencil, Search, Settings as SettingsLucide, Users } from "lucide-react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { CatAvatar } from "@/components/icons/cat-avatar";
-import { AddonsIcon } from "@/components/icons/addons-icon";
-import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
-import { AnimeIcon } from "@/components/icons/anime-icon";
-import { CalendarIcon } from "@/components/icons/calendar-icon";
-import { DiscoverIcon } from "@/components/icons/discover-icon";
-import { HomeIcon } from "@/components/icons/home-icon";
-import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
-import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
-import { SportsIcon } from "@/components/icons/sports-icon";
-import { MoviesIcon } from "@/components/icons/movies-icon";
-import { SettingsIcon } from "@/components/icons/settings-icon";
-import { TvIcon } from "@/components/icons/tv-icon";
+import {
+  COLLECTION_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  type NavItem as NavDef,
+} from "@/chrome/nav-items";
 import { AuthModal } from "@/components/auth-modal";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { TogetherButton } from "@/chrome/topbar";
@@ -25,42 +17,15 @@ import { useSearch } from "@/lib/search-context";
 import { effectiveBinding, eventToBinding, formatBindingForDisplay, isTypingTarget } from "@/lib/hotkeys";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-type NavDef = {
-  render: (active: boolean) => ReactNode;
-  label: string;
-  view: View;
-  hideKey?: "anime" | "liveTv" | "sports";
-  parentalKey?: LockableTab;
-  pinGated?: boolean;
-};
-
-const PRIMARY: NavDef[] = [
-  { render: (a) => <HomeIcon active={a} />, label: "Home", view: "home" },
-  { render: (a) => <DiscoverIcon active={a} />, label: "Discover", view: "discover", parentalKey: "discover" },
-  { render: (a) => <MoviesIcon active={a} />, label: "Movies", view: "movies", parentalKey: "movies" },
-  { render: (a) => <TvIcon active={a} />, label: "Shows", view: "shows", parentalKey: "shows" },
-  { render: (a) => <AnimeIcon active={a} />, label: "Anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
-  { render: (a) => <LiveTvIcon active={a} />, label: "Live TV", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
-  { render: (a) => <SportsIcon active={a} />, label: "Sports", view: "sports", hideKey: "sports", parentalKey: "sports" },
-  { render: (a) => <PlaylistVodIcon active={a} />, label: "Playlists", view: "vod" },
-];
-
-const COLLECTIONS: NavDef[] = [
-  { render: (a) => <CalendarIcon active={a} />, label: "Calendar", view: "calendar", parentalKey: "calendar" },
-  { render: (a) => <LibraryIcon active={a} />, label: "My Library", view: "library", parentalKey: "library" },
-  { render: (a) => <DownloadsNavIcon active={a} />, label: "Downloads", view: "downloads" },
-  { render: (a) => <AddonsIcon active={a} />, label: "Addons", view: "addons", parentalKey: "addons" },
-  { render: (a) => <SettingsIcon active={a} />, label: "Settings", view: "settings", pinGated: true },
-];
-
-const BAR_SECONDARY = COLLECTIONS.filter((c) => c.view !== "settings");
+const PRIMARY = PRIMARY_NAV_ITEMS;
+const BAR_SECONDARY = COLLECTION_NAV_ITEMS.filter((item) => item.section === "collections");
 
 export function RoyalTopbar() {
   const { view, setView, chromeHidden } = useView();
