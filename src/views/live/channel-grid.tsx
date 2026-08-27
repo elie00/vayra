@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Check, ChevronDown, ChevronUp, Copy, Tv } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
+import { copyText } from "@/lib/clipboard";
 import { useT } from "@/lib/i18n";
 import { isHydratableChannel } from "@/lib/iptv/channel-hydration";
 import { computeTvgIdCounts, epgProgramsForChannel } from "@/lib/iptv/epg-resolver";
@@ -98,11 +99,9 @@ export function ErrorBlock({ message, onRetry }: { message: string; onRetry: () 
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(classified.raw);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch {}
+    if (!(await copyText(classified.raw))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
   };
 
   return (

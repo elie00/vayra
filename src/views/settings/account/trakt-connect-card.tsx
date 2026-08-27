@@ -1,6 +1,7 @@
 import { ArrowRight, Check, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import traktLogo from "@/assets/trakt.png";
+import { copyText } from "@/lib/clipboard";
 import { useSettings } from "@/lib/settings";
 import {
   fetchTraktUser,
@@ -119,11 +120,9 @@ export function TraktConnectCard() {
 
   const copy = async () => {
     if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code.user_code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    } catch {}
+    if (!(await copyText(code.user_code))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
   };
 
   const cancel = () => {

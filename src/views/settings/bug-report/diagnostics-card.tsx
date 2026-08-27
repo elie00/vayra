@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { Diagnostics } from "@/lib/bug-report";
+import { copyText } from "@/lib/clipboard";
 import { useT } from "@/lib/i18n";
 
 export function DiagnosticsCard({
@@ -53,7 +54,8 @@ export function DiagnosticsCard({
             <button
               type="button"
               onClick={() => {
-                void navigator.clipboard.writeText(JSON.stringify(diag, null, 2)).then(() => {
+                void copyText(JSON.stringify(diag, null, 2)).then((ok) => {
+                  if (!ok) return;
                   setCopied(true);
                   window.setTimeout(() => setCopied(false), 1400);
                 });

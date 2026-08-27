@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { copyText } from "@/lib/clipboard";
 import { useT } from "@/lib/i18n";
 import { exportThemeJson, getCustomThemes, type CustomTheme } from "@/lib/custom-themes";
 import { recordUpload, uploadTheme } from "@/lib/theme-store";
@@ -107,13 +108,9 @@ export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
           share={result.share}
           copied={copied}
           onCopy={async () => {
-            try {
-              await navigator.clipboard.writeText(result.share);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            } catch {
-              /* ignore */
-            }
+            if (!(await copyText(result.share))) return;
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
           }}
           onDone={onClose}
         />

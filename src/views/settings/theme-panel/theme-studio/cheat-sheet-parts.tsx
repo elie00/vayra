@@ -1,6 +1,7 @@
 import { Check, Copy, Download } from "lucide-react";
 import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { copyText } from "@/lib/clipboard";
 import { downloadText } from "@/lib/download-text";
 import { useT } from "@/lib/i18n";
 import { SUITE_CHROME } from "./suite-theme";
@@ -64,8 +65,8 @@ export function HoverTip({
 export function CopyName({ text }: { text: string }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
-  const copy = () => {
-    void navigator.clipboard.writeText(text);
+  const copy = async () => {
+    if (!(await copyText(text))) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
   };
@@ -73,7 +74,7 @@ export function CopyName({ text }: { text: string }) {
     <HoverTip label={t("Click to copy")} disabled={copied}>
       <button
         type="button"
-        onClick={copy}
+        onClick={() => void copy()}
         aria-label={t("Copy {text}", { text })}
         className="group/cn relative inline-grid cursor-pointer justify-items-start text-start [perspective:600px]"
       >
@@ -100,13 +101,9 @@ export function CodeBlock({ code, filename, compact }: { code: string; filename?
   const t = useT();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch {
-      return;
-    }
+    if (!(await copyText(code))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
   };
   const download = () => {
     const name = filename ?? "snippet.txt";

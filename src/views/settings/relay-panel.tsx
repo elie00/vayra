@@ -2,6 +2,7 @@ import { BookOpen, Check, Copy, Download, Loader2, Power, Radio, ShieldCheck, Wi
 import { useState } from "react";
 import cloudflareLogo from "@/assets/cloudflare.webp";
 import pubRelaySvg from "@/assets/pubrelay.svg";
+import { copyText } from "@/lib/clipboard";
 import { deleteRelay } from "@/lib/together/cf-deploy";
 import { HARBOR_PUBLIC_RELAY, isPublicRelay } from "@/lib/together/relay-version";
 import { useSettings } from "@/lib/settings";
@@ -46,7 +47,7 @@ export function TogetherRelayPanel({
 
   const copy = async () => {
     if (!settings.togetherRelayUrl) return;
-    await navigator.clipboard.writeText(settings.togetherRelayUrl);
+    if (!(await copyText(settings.togetherRelayUrl))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   };

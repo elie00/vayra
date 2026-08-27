@@ -1,5 +1,6 @@
 import { Check, Copy, X } from "lucide-react";
 import { useState } from "react";
+import { copyText } from "@/lib/clipboard";
 import { useT } from "@/lib/i18n";
 
 export function ExportBlock({
@@ -12,13 +13,9 @@ export function ExportBlock({
   const t = useT();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch {
-      return;
-    }
+    if (!(await copyText(text))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
   };
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 p-4">
