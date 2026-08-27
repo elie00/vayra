@@ -13,9 +13,7 @@ import type { SubTrack } from "./types";
 import { bufferedAhead, readAudioTracks, videoAudio } from "./audio-tracks";
 import { mapErrorCode, mapErrorMessage } from "./error-map";
 import { mountCustomPip } from "./pip";
-
-// readyState: enough data to keep playing from the current position.
-const HAVE_FUTURE_DATA = 3;
+import { deriveHtml5PlaybackState } from "./playback-state";
 
 let DOCUMENT_PIP_KNOWN_BROKEN = false;
 
@@ -83,29 +81,26 @@ export function createHtml5Bridge(): PlayerBridge {
     snap.videoWidth = video.videoWidth || 0;
     snap.videoHeight = video.videoHeight || 0;
     if (video.error) {
-      snap.status = "error";
       snap.errorCode = mapErrorCode(video.error.code);
       snap.errorMessage = mapErrorMessage(video.error.code);
-    } else if (video.ended) {
-      snap.status = "ended";
-    } else if (!video.paused) {
-      snap.status = "playing";
-    } else if (video.readyState >= HAVE_FUTURE_DATA) {
-      snap.status = "paused";
-    } else {
-      snap.status = "loading";
     }
+    const playback = deriveHtml5PlaybackState({
+      paused: video.paused,
+      ended: video.ended,
+      hasError: video.error !== null,
+      readyState: video.readyState,
+      currentTime: video.currentTime,
+      rendered: snap.rendered,
+    });
+    snap.status = playback.status;
     // An element starved of data stays unpaused, so status alone reads as playing
     // while nothing moves. Said plainly here, the play button knows the viewer is
     // waiting on the stream rather than asking to stop it.
-    snap.buffering =
-      !video.paused && !video.ended && !video.error && video.readyState < HAVE_FUTURE_DATA;
+    snap.buffering = playback.buffering;
     // First-frame / render-ready: latch once the element is actually playing
     // and the clock has advanced past 0. This lands after the real first frame,
     // whereas status flips to "playing" as soon as the element is unpaused.
-    if (!snap.rendered && !video.paused && !video.error && video.currentTime > 0) {
-      snap.rendered = true;
-    }
+    snap.rendered = playback.rendered;
     emit();
   };
 
