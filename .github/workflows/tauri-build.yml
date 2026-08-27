@@ -196,14 +196,15 @@ jobs:
           $required = @(
             "VAYRA.exe",
             "libmpv-2.dll",
-            "yt-dlp-${{ matrix.platform.target }}.exe",
-            "ffmpeg-${{ matrix.platform.target }}.exe",
-            "ffprobe-${{ matrix.platform.target }}.exe"
+            "yt-dlp.exe",
+            "ffmpeg.exe",
+            "ffprobe.exe"
           )
 
           try {
             $process = Start-Process $installer.FullName -ArgumentList @("/S", "/D=$installDir") -Wait -PassThru
             if ($process.ExitCode -ne 0) { throw "NSIS smoke install failed with exit code $($process.ExitCode)" }
+            Get-ChildItem $installDir -File | Select-Object -ExpandProperty Name | Sort-Object
             foreach ($name in $required) {
               $path = Join-Path $installDir $name
               if (-not (Test-Path $path -PathType Leaf)) { throw "NSIS payload is missing $name" }
