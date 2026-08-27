@@ -35,6 +35,8 @@ const androidCode = Number(android?.match(/^tauri\.android\.versionCode=(\d+)$/m
 const parts = version.split(".").map(Number);
 const expectedAndroidCode = parts[0] * 1_000_000 + parts[1] * 1_000 + parts[2];
 
+if (packageJson.name !== "vayra") fail("JavaScript package name must be vayra");
+
 for (const [name, current] of [
   ["Tauri", tauri.version],
   ["Cargo", cargoVersion],
