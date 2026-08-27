@@ -1,9 +1,15 @@
-# The linked Vercel project has `site/` as its remote root. Patterns are
-# therefore evaluated from that directory by Vercel: never exclude `public/`
-# or `api/`, which are the site's deployable outputs.
+# VAYRA Lite is deployed from the repository root. Keep only the web sources,
+# generated WASM package, public assets, scripts and serverless API.
 node_modules/
 dist/
+.vercel/
+.flatpak-work/
+_backups/
+.idea/
+.claude/
+*.tsbuildinfo
 src-tauri/
+vayra-core/target/
 vara-broker/
 flatpak/
 supabase/
