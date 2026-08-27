@@ -1,6 +1,7 @@
 import { Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, EyeOff, Info, ListChecks, ListPlus, ListVideo, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
+import { emitAppFeedback } from "@/lib/app-feedback";
 import { copyText } from "@/lib/clipboard";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
 import { useT } from "@/lib/i18n";
@@ -394,7 +395,13 @@ export function ContextMenu() {
     const canPaste = element != null;
     const handleCopy = async () => {
       if (!canCopy) return;
-      await copyText(selection);
+      const copied = await copyText(selection);
+      if (!copied) {
+        emitAppFeedback({
+          kind: "error",
+          text: t("Couldn't copy. Select the URL manually."),
+        });
+      }
       close();
     };
     const handlePaste = async () => {
@@ -414,7 +421,12 @@ export function ContextMenu() {
           element.focus();
           document.execCommand("insertText", false, text);
         }
-      } catch {}
+      } catch {
+        emitAppFeedback({
+          kind: "error",
+          text: t("Something went wrong. Try again."),
+        });
+      }
       close();
     };
     items.push(

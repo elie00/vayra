@@ -41,7 +41,7 @@ import { MemoryHud } from "@/components/memory-hud";
 import { OfflineBanner } from "@/chrome/offline-banner";
 import { MobileNotice } from "@/components/mobile-notice";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
-import { ListToastHost } from "@/components/lists/list-toast";
+import { AppFeedbackHost } from "@/components/app-feedback-host";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
 import { PrivateBetaLaunchModal } from "@/components/private-beta-launch-modal";
@@ -289,7 +289,7 @@ export function App() {
                       <TogetherParticipantLeftToast />
                       <AnilistSyncToast />
                       <MalSyncToast />
-                      <ListToastHost />
+                      <AppFeedbackHost />
                       <TogetherLeaveForLiveModal />
                       <TogetherLocationPublisher />
                       <DiscordPresence />
