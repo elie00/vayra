@@ -1,57 +1,21 @@
 import { ChevronDown, Lock } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HarborMark } from "@/components/icons/harbor-mark";
-import { AddonsIcon } from "@/components/icons/addons-icon";
-import { CalendarIcon } from "@/components/icons/calendar-icon";
+import {
+  COLLECTION_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  type NavItem as CanonicalNavItem,
+} from "@/chrome/nav-items";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
-import { AnimeIcon } from "@/components/icons/anime-icon";
-import { DiscoverIcon } from "@/components/icons/discover-icon";
-import { HomeIcon } from "@/components/icons/home-icon";
-import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
-import { SportsIcon } from "@/components/icons/sports-icon";
-import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
-import { MoviesIcon } from "@/components/icons/movies-icon";
-import { SettingsIcon } from "@/components/icons/settings-icon";
-import { TvIcon } from "@/components/icons/tv-icon";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useParental, type LockableTab } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
-import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { isMobileTauri } from "@/lib/platform";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
-
-type NavDef = {
-  render: (active: boolean) => ReactNode;
-  labelKey: string;
-  view?: View;
-  hideKey?: "anime" | "liveTv" | "sports";
-  parentalKey?: LockableTab;
-  pinGated?: boolean;
-};
-
-const PRIMARY: NavDef[] = [
-  { render: (active) => <HomeIcon active={active} />, labelKey: "nav.home", view: "home" },
-  { render: (active) => <DiscoverIcon active={active} />, labelKey: "nav.discover", view: "discover", parentalKey: "discover" },
-  { render: (active) => <MoviesIcon active={active} />, labelKey: "nav.movies", view: "movies", parentalKey: "movies" },
-  { render: (active) => <TvIcon active={active} />, labelKey: "nav.shows", view: "shows", parentalKey: "shows" },
-  { render: (active) => <AnimeIcon active={active} />, labelKey: "nav.anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
-  { render: (active) => <LiveTvIcon active={active} />, labelKey: "nav.live", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
-  { render: (active) => <SportsIcon active={active} />, labelKey: "nav.sports", view: "sports", hideKey: "sports", parentalKey: "sports" },
-  { render: (active) => <PlaylistVodIcon active={active} />, labelKey: "nav.playlists", view: "vod" },
-];
-
-const COLLECTIONS: NavDef[] = [
-  { render: (active) => <CalendarIcon active={active} />, labelKey: "nav.calendar", view: "calendar", parentalKey: "calendar" },
-  { render: (active) => <LibraryIcon active={active} />, labelKey: "nav.library", view: "library", parentalKey: "library" },
-  { render: (active) => <DownloadsNavIcon active={active} />, labelKey: "nav.downloads", view: "downloads" },
-  { render: (active) => <AddonsIcon active={active} />, labelKey: "nav.addons", view: "addons", parentalKey: "addons" },
-  { render: (active) => <SettingsIcon active={active} />, labelKey: "nav.settings", view: "settings", pinGated: true },
-];
 
 export function Sidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -215,13 +179,13 @@ function ScrollableNav({
 }) {
   const { settings } = useSettings();
   const t = useT();
-  const isItemVisible = (item: NavDef) => {
+  const isItemVisible = (item: CanonicalNavItem) => {
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
     if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };
-  const visiblePrimary = PRIMARY.filter(isItemVisible);
+  const visiblePrimary = PRIMARY_NAV_ITEMS.filter(isItemVisible);
   const ref = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ top: boolean; bottom: boolean }>({
     top: false,
@@ -263,11 +227,11 @@ function ScrollableNav({
         <div className="flex flex-col gap-1.5">
           {visiblePrimary.map((item) => (
             <NavItem
-              key={item.labelKey}
+              key={item.id}
               {...item}
               collapsed={collapsed}
-              active={item.view ? view === item.view : false}
-              onClick={item.view ? () => setView(item.view!) : undefined}
+              active={view === item.view}
+              onClick={() => setView(item.view)}
             />
           ))}
         </div>
@@ -275,20 +239,16 @@ function ScrollableNav({
           <div className="mx-3 h-px bg-gradient-to-r from-transparent via-edge-soft/55 to-transparent" />
         </div>
         <div className="flex flex-col gap-1.5">
-          {COLLECTIONS.filter(isItemVisible).map((item) => {
+          {COLLECTION_NAV_ITEMS.filter(isItemVisible).map((item) => {
             const gated = !!item.pinGated && locked;
             return (
               <NavItem
-                key={item.labelKey}
+                key={item.id}
                 {...item}
                 gated={gated}
                 collapsed={collapsed}
-                active={item.view ? view === item.view : false}
-                onClick={
-                  item.view
-                    ? () => (gated ? onPinNav(item.view!) : setView(item.view!))
-                    : undefined
-                }
+                active={view === item.view}
+                onClick={() => (gated ? onPinNav(item.view) : setView(item.view))}
               />
             );
           })}
@@ -317,7 +277,7 @@ function ScrollableNav({
 
 function NavItem({
   render,
-  labelKey,
+  label,
   active,
   onClick,
   gated,
@@ -325,15 +285,15 @@ function NavItem({
   view,
 }: {
   render: (active: boolean) => ReactNode;
-  labelKey: string;
+  label: string;
   active?: boolean;
   onClick?: () => void;
   gated?: boolean;
   collapsed?: boolean;
-  view?: View;
+  view: View;
 }) {
   const t = useT();
-  const label = t(labelKey);
+  const translatedLabel = t(label);
   const [hovered, setHovered] = useState(false);
   return (
     <button
@@ -343,8 +303,8 @@ function NavItem({
       data-vayra-nav={view}
       data-active={active ? "" : undefined}
       aria-current={active ? "page" : undefined}
-      aria-label={gated ? t("chrome.lockedRequiresPin", { label }) : label}
-      title={gated ? t("chrome.lockedShort", { label }) : label}
+      aria-label={gated ? t("chrome.lockedRequiresPin", { label: translatedLabel }) : translatedLabel}
+      title={gated ? t("chrome.lockedShort", { label: translatedLabel }) : translatedLabel}
       className={`relative flex h-14 items-center justify-center gap-4 rounded-xl text-[16px] transition-colors duration-150 ${
         collapsed ? "" : "lg:justify-start lg:px-4"
       } ${
@@ -365,7 +325,7 @@ function NavItem({
           </span>
         )}
       </span>
-      {!collapsed && <span className="hidden lg:inline">{label}</span>}
+      {!collapsed && <span className="hidden lg:inline">{translatedLabel}</span>}
     </button>
   );
 }
