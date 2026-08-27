@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   COLLECTION_NAV_ITEMS,
+  filterNavItemsForCapabilities,
   NAV_ITEMS,
   PRIMARY_NAV_ITEMS,
   STANDARD_NAV_ITEMS,
 } from "./nav-items";
+import { capabilitiesFor } from "@/lib/platform-capabilities";
 
 describe("canonical chrome navigation", () => {
   it("keeps every item id and destination unique", () => {
@@ -44,5 +46,12 @@ describe("canonical chrome navigation", () => {
     ]);
     expect(STANDARD_NAV_ITEMS.some((item) => item.view === "kids")).toBe(false);
     expect(STANDARD_NAV_ITEMS.some((item) => item.view === "catalogs")).toBe(false);
+  });
+
+  it("removes native-only destinations from the web chrome", () => {
+    const webItems = filterNavItemsForCapabilities(NAV_ITEMS, capabilitiesFor("web"));
+    expect(webItems.some((item) => item.view === "downloads")).toBe(false);
+    expect(webItems.some((item) => item.view === "library")).toBe(true);
+    expect(webItems.some((item) => item.view === "settings")).toBe(true);
   });
 });

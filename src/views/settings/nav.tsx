@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { activeLayout } from "@/lib/theme";
+import {
+  currentPlatformCapabilities,
+  type PlatformCapabilities,
+} from "@/lib/platform-capabilities";
 import { useView } from "@/lib/view";
 import { settingsAnchor, type SectionId } from "./shared";
 import { markSectionSeen, useSettingsNew } from "./settings-new";
@@ -316,9 +320,10 @@ type NavItem = {
   label: string;
   Icon: (p: IconProps) => React.ReactElement;
   keywords?: string[];
+  requires?: keyof PlatformCapabilities;
 };
 
-const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
+const ALL_NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
   {
     heading: null,
     items: [
@@ -466,6 +471,7 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
           "scrub freely",
           "webdav",
         ],
+        requires: "nativeTorrent",
       },
     ],
   },
@@ -483,12 +489,14 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         label: "Video tuning",
         Icon: IconVideoTune,
         keywords: ["mpv", "advanced mpv", "mpv.conf", "mpv options", "video quality", "picture quality", "performance", "potato", "low end", "weak pc", "shit computer", "hardware decoding", "hwdec", "buffer", "downmix", "upscaling", "scaling", "tonemap", "tuning", "quality preset"],
+        requires: "mpvPlayback",
       },
       {
         id: "anime",
         label: "Anime tweaks",
         Icon: IconAnime,
         keywords: ["anime", "anime4k", "anime 4k", "upscale", "upscaling", "shaders", "smooth motion", "motion smoothing", "interpolation", "svp", "smoothvideo", "frame interpolation", "60fps", "48fps", "fluid"],
+        requires: "mpvPlayback",
       },
       {
         id: "playerLayout",
@@ -550,6 +558,21 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
     ],
   },
 ];
+
+const CAPABILITIES = currentPlatformCapabilities();
+
+const NAV_GROUPS = ALL_NAV_GROUPS.map((group) => ({
+  ...group,
+  items: group.items.filter((item) => !item.requires || CAPABILITIES[item.requires]),
+})).filter((group) => group.items.length > 0);
+
+const AVAILABLE_SECTION_IDS = new Set<SectionId>(
+  NAV_GROUPS.flatMap((group) => group.items.map((item) => item.id)),
+);
+
+export function isSettingsSectionAvailable(section: SectionId): boolean {
+  return AVAILABLE_SECTION_IDS.has(section);
+}
 
 type SettingsOption = { label: string; section: SectionId; anchorTitle?: string; keywords?: string[] };
 
@@ -1170,8 +1193,9 @@ export function SettingsNav({
     if (!trimmed) return null;
     return SETTINGS_OPTIONS.filter(
       (o) =>
-        o.label.toLowerCase().includes(trimmed) ||
-        (o.keywords ?? []).some((k) => k.toLowerCase().includes(trimmed)),
+        AVAILABLE_SECTION_IDS.has(o.section) &&
+        (o.label.toLowerCase().includes(trimmed) ||
+          (o.keywords ?? []).some((k) => k.toLowerCase().includes(trimmed))),
     );
   }, [trimmed]);
 

@@ -4,6 +4,9 @@ import { createPortal } from "react-dom";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
+
+const CAPABILITIES = currentPlatformCapabilities();
 
 type Command = { id: string; label: string; run: () => void };
 
@@ -59,7 +62,9 @@ export function CommandPalette() {
       { id: "vod", label: t("nav.playlists"), run: go(() => view.setView("vod")) },
       { id: "calendar", label: t("nav.calendar"), run: go(() => view.setView("calendar")) },
       { id: "library", label: t("nav.library"), run: go(() => view.setView("library")) },
-      { id: "downloads", label: t("nav.downloads"), run: go(() => view.setView("downloads")) },
+      ...(CAPABILITIES.nativeDownloads
+        ? [{ id: "downloads", label: t("nav.downloads"), run: go(() => view.setView("downloads")) }]
+        : []),
       { id: "collections", label: t("Collections"), run: go(() => view.openCollections()) },
       { id: "queue", label: t("Discovery Queue"), run: go(() => view.openQueue()) },
       { id: "stats", label: t("Stats"), run: go(() => view.openStats()) },

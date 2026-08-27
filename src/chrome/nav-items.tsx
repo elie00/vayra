@@ -15,6 +15,10 @@ import { SportsIcon } from "@/components/icons/sports-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import type { LockableTab } from "@/lib/parental";
+import {
+  currentPlatformCapabilities,
+  type PlatformCapabilities,
+} from "@/lib/platform-capabilities";
 import type { View } from "@/lib/view";
 
 export type NavItemId =
@@ -43,6 +47,7 @@ export type NavItem = {
   hideKey?: "anime" | "liveTv" | "sports";
   parentalKey?: LockableTab;
   pinGated?: boolean;
+  requires?: keyof PlatformCapabilities;
 };
 
 export type NavCustomization = {
@@ -64,20 +69,32 @@ export const NAV_ITEMS = [
   { id: "vod", label: "nav.playlists", render: (active) => <PlaylistVodIcon active={active} />, view: "vod", section: "primary" },
   { id: "calendar", label: "nav.calendar", render: (active) => <CalendarIcon active={active} />, view: "calendar", section: "collections", parentalKey: "calendar" },
   { id: "library", label: "nav.library", render: (active) => <LibraryIcon active={active} />, view: "library", section: "collections", parentalKey: "library" },
-  { id: "downloads", label: "nav.downloads", render: (active) => <DownloadsNavIcon active={active} />, view: "downloads", section: "collections" },
+  { id: "downloads", label: "nav.downloads", render: (active) => <DownloadsNavIcon active={active} />, view: "downloads", section: "collections", requires: "nativeDownloads" },
   { id: "addons", label: "nav.addons", render: (active) => <AddonsIcon active={active} />, view: "addons", section: "collections", parentalKey: "addons" },
   { id: "settings", label: "nav.settings", render: (active) => <SettingsIcon active={active} />, view: "settings", section: "system", pinGated: true },
 ] as const satisfies readonly NavItem[];
 
-export const PRIMARY_NAV_ITEMS: readonly NavItem[] = NAV_ITEMS.filter(
+export function filterNavItemsForCapabilities(
+  items: readonly NavItem[],
+  capabilities: PlatformCapabilities,
+): NavItem[] {
+  return items.filter((item) => !item.requires || capabilities[item.requires]);
+}
+
+export const AVAILABLE_NAV_ITEMS: readonly NavItem[] = filterNavItemsForCapabilities(
+  NAV_ITEMS,
+  currentPlatformCapabilities(),
+);
+
+export const PRIMARY_NAV_ITEMS: readonly NavItem[] = AVAILABLE_NAV_ITEMS.filter(
   (item) => item.section === "primary",
 );
 
-export const COLLECTION_NAV_ITEMS: readonly NavItem[] = NAV_ITEMS.filter(
+export const COLLECTION_NAV_ITEMS: readonly NavItem[] = AVAILABLE_NAV_ITEMS.filter(
   (item) => item.section === "collections" || item.section === "system",
 );
 
-export const STANDARD_NAV_ITEMS: readonly NavItem[] = NAV_ITEMS.filter(
+export const STANDARD_NAV_ITEMS: readonly NavItem[] = AVAILABLE_NAV_ITEMS.filter(
   (item) => item.section !== "contextual",
 );
 

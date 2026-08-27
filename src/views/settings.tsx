@@ -6,7 +6,7 @@ import { BasicsPanel } from "./settings/basics-panel";
 import { BugReportPanel } from "./settings/bug-report-panel";
 import { LibraryPanel, type LibraryKey } from "./settings/library-panel";
 import { LanguagePanel } from "./settings/language-panel";
-import { SettingsNav, SettingsTabs } from "./settings/nav";
+import { isSettingsSectionAvailable, SettingsNav, SettingsTabs } from "./settings/nav";
 import { SettingsJumpBar } from "./settings/jump-bar";
 import { SettingsUnsavedChanges } from "./settings/unsaved-changes";
 import { HotkeysPanel } from "./settings/hotkeys-panel";
@@ -148,8 +148,11 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   const [dlDraft, setDlDraft] = useState(settings.dlKey);
   const [savedKey, setSavedKey] = useState<SavedKey | null>(null);
   const { settingsSectionRequest } = useView();
+  const requestedInitialSection = settingsSectionRequest.section as SectionId | null;
   const [active, setActive] = useState<SectionId>(
-    (settingsSectionRequest.section as SectionId | null) ?? "account",
+    requestedInitialSection && isSettingsSectionAvailable(requestedInitialSection)
+      ? requestedInitialSection
+      : "account",
   );
   const [relayMode, setRelayMode] = useState<RelayMode>("panel");
   const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
@@ -161,7 +164,8 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   };
 
   useEffect(() => {
-    if (settingsSectionRequest.section) setActive(settingsSectionRequest.section as SectionId);
+    const requested = settingsSectionRequest.section as SectionId | null;
+    if (requested && isSettingsSectionAvailable(requested)) setActive(requested);
   }, [settingsSectionRequest]);
 
   useEffect(() => {
