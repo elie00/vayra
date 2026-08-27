@@ -1,9 +1,10 @@
-import lottie, { type AnimationItem } from "lottie-web";
+import type { AnimationItem } from "lottie-web";
 import { useCallback, useEffect, useRef, useState } from "react";
 import whiteBoat from "@/assets/lottie/addons-boat-white.json";
 import darkBoat from "@/assets/lottie/addons-boat-dark.json";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { prefetchTopAddonLogos, prefetchedTopAddonLogos } from "@/lib/providers/addon-logo-prefetch";
+import { loadLottie } from "@/lib/lottie";
 
 type Size = "sm" | "md" | "lg" | "xl";
 
@@ -88,14 +89,10 @@ export function HarborLoader({
 
   useEffect(() => {
     if (!cargo) return;
-    if (!ref.current) return;
-    const anim: AnimationItem = lottie.loadAnimation({
-      container: ref.current,
-      renderer: "svg",
-      loop: true,
-      autoplay: true,
-      animationData: dark ? whiteBoat : darkBoat,
-    });
+    const host = ref.current;
+    if (!host) return;
+    let cancelled = false;
+    let anim: AnimationItem | null = null;
     const onLoaded = () => {
       cycleRef.current = 0;
       paint();
@@ -104,12 +101,23 @@ export function HarborLoader({
       cycleRef.current += 3;
       paint();
     };
-    anim.addEventListener("DOMLoaded", onLoaded);
-    anim.addEventListener("loopComplete", onLoop);
+    void loadLottie().then((lottie) => {
+      if (cancelled) return;
+      anim = lottie.loadAnimation({
+        container: host,
+        renderer: "svg",
+        loop: true,
+        autoplay: true,
+        animationData: dark ? whiteBoat : darkBoat,
+      });
+      anim.addEventListener("DOMLoaded", onLoaded);
+      anim.addEventListener("loopComplete", onLoop);
+    });
     return () => {
-      anim.removeEventListener("DOMLoaded", onLoaded);
-      anim.removeEventListener("loopComplete", onLoop);
-      anim.destroy();
+      cancelled = true;
+      anim?.removeEventListener("DOMLoaded", onLoaded);
+      anim?.removeEventListener("loopComplete", onLoop);
+      anim?.destroy();
     };
   }, [dark, paint, cargo]);
 

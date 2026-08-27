@@ -1,5 +1,6 @@
-import lottie, { type AnimationItem } from "lottie-web";
+import type { AnimationItem } from "lottie-web";
 import { useEffect, useRef } from "react";
+import { loadLottie } from "@/lib/lottie";
 
 type Props = {
   data: object;
@@ -14,18 +15,24 @@ export function LottiePlayer({ data, className, loop = true, autoplay = true, sp
   const animRef = useRef<AnimationItem | null>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
-    const anim = lottie.loadAnimation({
-      container: ref.current,
-      renderer: "svg",
-      loop,
-      autoplay,
-      animationData: data,
+    const host = ref.current;
+    if (!host) return;
+    let cancelled = false;
+    void loadLottie().then((lottie) => {
+      if (cancelled) return;
+      const anim = lottie.loadAnimation({
+        container: host,
+        renderer: "svg",
+        loop,
+        autoplay,
+        animationData: data,
+      });
+      anim.setSpeed(speed);
+      animRef.current = anim;
     });
-    anim.setSpeed(speed);
-    animRef.current = anim;
     return () => {
-      anim.destroy();
+      cancelled = true;
+      animRef.current?.destroy();
       animRef.current = null;
     };
   }, [data, loop, autoplay, speed]);
