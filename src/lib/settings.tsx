@@ -11,6 +11,11 @@ import { STORAGE_KEY } from "./settings/defaults";
 import { persistSettings, readSettingsFile, readSettingsSecrets } from "./settings/file-store";
 import { loadFontData, saveFontData } from "./font-storage";
 import {
+  syncWebUiServer,
+  WEB_UI_SERVER_ERROR_EVENT,
+  type WebUiServerErrorDetail,
+} from "./web-ui-server";
+import {
   forkToProfile,
   loadEffective,
   persistEffective,
@@ -177,10 +182,25 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
-    void import("@tauri-apps/api/core").then(({ invoke }) => {
-      if (settings.serveWebUi) invoke("web_serve_start").catch(() => {});
-      else invoke("web_serve_stop").catch(() => {});
+    const enabled = settings.serveWebUi;
+    let cancelled = false;
+    void syncWebUiServer(enabled).then((result) => {
+      if (cancelled || result.ok) return;
+      console.error(`[web-ui] failed to ${enabled ? "start" : "stop"} server:`, result.message);
+      window.dispatchEvent(
+        new CustomEvent<WebUiServerErrorDetail>(WEB_UI_SERVER_ERROR_EVENT, {
+          detail: { enabled, message: result.message },
+        }),
+      );
+      if (enabled) {
+        setSettings((current) =>
+          current.serveWebUi ? { ...current, serveWebUi: false } : current,
+        );
+      }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [settings.serveWebUi]);
 
   useEffect(() => {
