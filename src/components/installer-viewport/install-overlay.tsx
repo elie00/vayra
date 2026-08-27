@@ -1,7 +1,8 @@
-import lottie, { type AnimationItem } from "lottie-web";
+import type { AnimationItem } from "lottie-web";
 import { Check } from "lucide-react";
 import { useEffect, useRef } from "react";
 import installBoat from "@/assets/lottie/install-boat-white.json";
+import { loadLottie } from "@/lib/lottie";
 
 export type OverlayPhase =
   | { kind: "installing"; name: string | null }
@@ -17,13 +18,8 @@ function InstallBoat({ logo }: { logo: string | null }) {
   useEffect(() => {
     const host = ref.current;
     if (!host) return;
-    const anim: AnimationItem = lottie.loadAnimation({
-      container: host,
-      renderer: "svg",
-      loop: true,
-      autoplay: true,
-      animationData: installBoat,
-    });
+    let cancelled = false;
+    let anim: AnimationItem | null = null;
 
     const keyLogo = () => {
       const url = logoRef.current;
@@ -40,12 +36,23 @@ function InstallBoat({ logo }: { logo: string | null }) {
       });
     };
 
-    anim.addEventListener("DOMLoaded", keyLogo);
-    anim.addEventListener("loopComplete", keyLogo);
+    void loadLottie().then((lottie) => {
+      if (cancelled) return;
+      anim = lottie.loadAnimation({
+        container: host,
+        renderer: "svg",
+        loop: true,
+        autoplay: true,
+        animationData: installBoat,
+      });
+      anim.addEventListener("DOMLoaded", keyLogo);
+      anim.addEventListener("loopComplete", keyLogo);
+    });
     return () => {
-      anim.removeEventListener("DOMLoaded", keyLogo);
-      anim.removeEventListener("loopComplete", keyLogo);
-      anim.destroy();
+      cancelled = true;
+      anim?.removeEventListener("DOMLoaded", keyLogo);
+      anim?.removeEventListener("loopComplete", keyLogo);
+      anim?.destroy();
     };
   }, []);
 
