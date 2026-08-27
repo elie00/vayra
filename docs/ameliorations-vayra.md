@@ -12,6 +12,11 @@ d'erreurs de logique mais **de code livré puis débranché**, et de valeurs qui
 circulaient pas jusqu'à leur destination. Ce sont des défauts qu'aucun des
 garde-fous en place ne pouvait voir.
 
+La suite est organisée dans l'ordre suivant : consolider l'UX/UI, qualifier une
+bêta Windows signable, construire VAYRA Lite pour le web, réduire les bundles,
+puis terminer par la qualification réelle de LUMA, CIRA, VARA et VEYA. Le
+périmètre de l'édition web est défini dans [`docs/vayra-lite.md`](vayra-lite.md).
+
 ---
 
 ## 1. Le problème principal : la façon dont le code arrive dans `main`
