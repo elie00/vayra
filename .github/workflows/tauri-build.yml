@@ -185,6 +185,33 @@ jobs:
           tauriScript: pnpm tauri
           args: --target ${{ matrix.platform.target }} --bundles ${{ matrix.platform.bundle }} ${{ matrix.platform.config }}
 
+      - name: Inspect Windows installer payload
+        if: matrix.platform.name == 'Windows'
+        shell: pwsh
+        run: |
+          $bundleDir = "src-tauri/target/${{ matrix.platform.target }}/release/bundle/nsis"
+          $installer = Get-ChildItem $bundleDir -Filter "*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "NSIS installer missing" }
+          if (-not (Get-Command 7z -ErrorAction SilentlyContinue)) { throw "7z is unavailable on the runner" }
+
+          $listing = (& 7z l $installer.FullName | Out-String)
+          if ($LASTEXITCODE -ne 0) { throw "Could not inspect the NSIS payload" }
+          $required = @(
+            "VAYRA\.exe",
+            "libmpv-2\.dll",
+            "yt-dlp.*\.exe",
+            "ffmpeg.*\.exe",
+            "ffprobe.*\.exe"
+          )
+          foreach ($pattern in $required) {
+            if ($listing -notmatch $pattern) { throw "NSIS payload is missing $pattern" }
+          }
+
+          $hash = Get-FileHash $installer.FullName -Algorithm SHA256
+          "$($hash.Hash.ToLower())  $($installer.Name)" |
+            Set-Content (Join-Path $bundleDir "SHA256SUMS-windows.txt") -Encoding ascii
+          Get-Item $installer.FullName | Format-List Name,Length,LastWriteTime
+
       - name: Upload artifacts
         if: success()
         uses: actions/upload-artifact@v6
@@ -196,5 +223,6 @@ jobs:
             src-tauri/target/${{ matrix.platform.target }}/release/bundle/**/*.AppImage
             src-tauri/target/${{ matrix.platform.target }}/release/bundle/**/*.msi
             src-tauri/target/${{ matrix.platform.target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.platform.target }}/release/bundle/**/SHA256SUMS-*.txt
           retention-days: 14
           if-no-files-found: warn
