@@ -11,6 +11,7 @@ import { LiveTvIcon } from "@/components/icons/live-tv-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
+import { SportsIcon } from "@/components/icons/sports-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import type { LockableTab } from "@/lib/parental";
@@ -25,6 +26,7 @@ export type NavItemId =
   | "kids"
   | "anime"
   | "live"
+  | "sports"
   | "vod"
   | "calendar"
   | "library"
@@ -37,6 +39,7 @@ export type NavItem = {
   label: string;
   render: (active: boolean) => ReactNode;
   view: View;
+  section: "primary" | "collections" | "system" | "contextual";
   hideKey?: "anime" | "liveTv" | "sports";
   parentalKey?: LockableTab;
   pinGated?: boolean;
@@ -48,24 +51,37 @@ export type NavCustomization = {
   renamed: Record<string, string>;
 };
 
-export const NAV_ITEMS: NavItem[] = [
-  { id: "home", label: "nav.home", render: (active) => <HomeIcon active={active} />, view: "home" },
-  { id: "discover", label: "nav.discover", render: (active) => <DiscoverIcon active={active} />, view: "discover", parentalKey: "discover" },
-  { id: "catalogs", label: "nav.catalogs", render: (active) => <CatalogsIcon active={active} />, view: "catalogs", parentalKey: "discover" },
-  { id: "movies", label: "nav.movies", render: (active) => <MoviesIcon active={active} />, view: "movies", parentalKey: "movies" },
-  { id: "shows", label: "nav.shows", render: (active) => <TvIcon active={active} />, view: "shows", parentalKey: "shows" },
-  { id: "kids", label: "nav.kids", render: (active) => <Popcorn size={26} strokeWidth={2.2} className={active ? "" : "opacity-70"} />, view: "kids" },
-  { id: "anime", label: "nav.anime", render: (active) => <AnimeIcon active={active} />, view: "anime", hideKey: "anime", parentalKey: "anime" },
-  { id: "live", label: "nav.live", render: (active) => <LiveTvIcon active={active} />, view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
-  { id: "vod", label: "nav.playlists", render: (active) => <PlaylistVodIcon active={active} />, view: "vod" },
-  { id: "calendar", label: "nav.calendar", render: (active) => <CalendarIcon active={active} />, view: "calendar", parentalKey: "calendar" },
-  { id: "library", label: "nav.library", render: (active) => <LibraryIcon active={active} />, view: "library", parentalKey: "library" },
-  { id: "downloads", label: "nav.downloads", render: (active) => <DownloadsNavIcon active={active} />, view: "downloads" },
-  { id: "addons", label: "nav.addons", render: (active) => <AddonsIcon active={active} />, view: "addons", parentalKey: "addons" },
-  { id: "settings", label: "nav.settings", render: (active) => <SettingsIcon active={active} />, view: "settings", pinGated: true },
-];
+export const NAV_ITEMS = [
+  { id: "home", label: "nav.home", render: (active) => <HomeIcon active={active} />, view: "home", section: "primary" },
+  { id: "discover", label: "nav.discover", render: (active) => <DiscoverIcon active={active} />, view: "discover", section: "primary", parentalKey: "discover" },
+  { id: "catalogs", label: "nav.catalogs", render: (active) => <CatalogsIcon active={active} />, view: "catalogs", section: "contextual", parentalKey: "discover" },
+  { id: "movies", label: "nav.movies", render: (active) => <MoviesIcon active={active} />, view: "movies", section: "primary", parentalKey: "movies" },
+  { id: "shows", label: "nav.shows", render: (active) => <TvIcon active={active} />, view: "shows", section: "primary", parentalKey: "shows" },
+  { id: "kids", label: "nav.kids", render: (active) => <Popcorn size={26} strokeWidth={2.2} className={active ? "" : "opacity-70"} />, view: "kids", section: "contextual" },
+  { id: "anime", label: "nav.anime", render: (active) => <AnimeIcon active={active} />, view: "anime", section: "primary", hideKey: "anime", parentalKey: "anime" },
+  { id: "live", label: "nav.live", render: (active) => <LiveTvIcon active={active} />, view: "live", section: "primary", hideKey: "liveTv", parentalKey: "liveTv" },
+  { id: "sports", label: "nav.sports", render: (active) => <SportsIcon active={active} />, view: "sports", section: "primary", hideKey: "sports", parentalKey: "sports" },
+  { id: "vod", label: "nav.playlists", render: (active) => <PlaylistVodIcon active={active} />, view: "vod", section: "primary" },
+  { id: "calendar", label: "nav.calendar", render: (active) => <CalendarIcon active={active} />, view: "calendar", section: "collections", parentalKey: "calendar" },
+  { id: "library", label: "nav.library", render: (active) => <LibraryIcon active={active} />, view: "library", section: "collections", parentalKey: "library" },
+  { id: "downloads", label: "nav.downloads", render: (active) => <DownloadsNavIcon active={active} />, view: "downloads", section: "collections" },
+  { id: "addons", label: "nav.addons", render: (active) => <AddonsIcon active={active} />, view: "addons", section: "collections", parentalKey: "addons" },
+  { id: "settings", label: "nav.settings", render: (active) => <SettingsIcon active={active} />, view: "settings", section: "system", pinGated: true },
+] as const satisfies readonly NavItem[];
 
-export function applyNavCustomization(items: NavItem[], cfg: NavCustomization): NavItem[] {
+export const PRIMARY_NAV_ITEMS: readonly NavItem[] = NAV_ITEMS.filter(
+  (item) => item.section === "primary",
+);
+
+export const COLLECTION_NAV_ITEMS: readonly NavItem[] = NAV_ITEMS.filter(
+  (item) => item.section === "collections" || item.section === "system",
+);
+
+export const STANDARD_NAV_ITEMS: readonly NavItem[] = NAV_ITEMS.filter(
+  (item) => item.section !== "contextual",
+);
+
+export function applyNavCustomization(items: readonly NavItem[], cfg: NavCustomization): NavItem[] {
   const shown = items
     .filter((it) => !cfg.hidden.includes(it.id))
     .map((it) => (cfg.renamed[it.id] ? { ...it, label: cfg.renamed[it.id] } : it));
