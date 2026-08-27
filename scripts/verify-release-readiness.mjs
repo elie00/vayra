@@ -11,6 +11,7 @@ const fail = (message) => {
 const packageJson = readJson("package.json");
 const tauri = readJson("src-tauri/tauri.conf.json");
 const releaseConfig = readJson("src-tauri/tauri.release.conf.json");
+const windowsConfig = readJson("src-tauri/tauri.windows.conf.json");
 let latest = fallbackManifest;
 const manifestFlag = process.argv.indexOf("--manifest");
 const manifestPath = manifestFlag >= 0 ? process.argv[manifestFlag + 1] : null;
@@ -68,6 +69,9 @@ if (releaseConfig.bundle?.createUpdaterArtifacts !== true) {
 }
 if (!windowsInstallerHooks.includes("@('VAYRA.exe', 'Harbor.exe')")) {
   fail("Windows installer hook must preserve both VAYRA.exe and legacy Harbor.exe");
+}
+if (windowsConfig.bundle?.resources?.["libmpv/libmpv-2.dll"] !== "libmpv-2.dll") {
+  fail("Windows bundle must ship libmpv-2.dll next to VAYRA.exe");
 }
 if (!Array.isArray(versions.versions)) fail("versions.json must contain a versions array");
 if (/REPLACE_WITH|TEMPLATE/i.test(JSON.stringify(latest))) fail("updater fallback contains placeholders");
