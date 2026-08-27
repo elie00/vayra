@@ -1,5 +1,6 @@
 import { Check, Copy, ExternalLink, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { copyText } from "@/lib/clipboard";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -32,13 +33,9 @@ export function TraktDeviceModal({ onClose }: { onClose: () => void }) {
 
   const onCopy = async () => {
     if (connectState.kind !== "awaiting") return;
-    try {
-      await navigator.clipboard.writeText(connectState.device.userCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    } catch {
-      return;
-    }
+    if (!(await copyText(connectState.device.userCode))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
   };
 
   return (
