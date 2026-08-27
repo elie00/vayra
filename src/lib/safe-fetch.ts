@@ -56,7 +56,7 @@ function rewriteForWeb(url: string, init?: RequestInit): { url: string; init?: R
     PROXY_HOSTS.has(parsed.hostname) || PROXY_SUFFIXES.some((s) => parsed.hostname.endsWith(s));
   if (!proxiable) return { url, init };
 
-  const proxied = `/api-proxy/${parsed.hostname}${parsed.pathname}${parsed.search}`;
+  const proxied = `/api-proxy?u=${encodeURIComponent(parsed.href)}`;
   if (!init?.headers) return { url: proxied, init };
   const out = new Headers(init.headers as HeadersInit);
   const auth = out.get("authorization");

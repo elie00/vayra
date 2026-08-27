@@ -48,8 +48,8 @@ sans prétendre reproduire les capacités natives du desktop.
 
 ## Architecture de livraison
 
-- publier le build Vite complet, et non le seul site vitrine de `site/` ;
-- héberger l'application sur un domaine dédié, séparé des pages publiques ;
+- publier le build Vite complet à la place du site vitrine de `site/` ;
+- conserver le projet et le domaine web existants comme point d'entrée de VAYRA Lite ;
 - conserver `/api-proxy` pour les fournisseurs qui ne permettent pas les appels
   directs depuis le navigateur ;
 - appliquer une politique CSP et une liste CORS explicites ;
