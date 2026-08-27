@@ -1,8 +1,8 @@
 import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
 import { Bookmark, Eye, ExternalLink, Heart, Loader2, Star, X } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
-import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
+import { runLetterboxdAction } from "@/lib/stremboxd/action";
 import {
   fetchLetterboxdStreams,
   type LetterboxdStreamInfo,
@@ -105,6 +105,7 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [tick] = useState(0);
   const [showRater, setShowRater] = useState(false);
   const [pendingRating, setPendingRating] = useState<number | null>(null);
@@ -121,6 +122,7 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
     setLoading(true);
     setInfo(null);
     setUnavailable(false);
+    setActionError(null);
 
     fetchLetterboxdStreams(lb.session.userId, id)
       .then((result) => {
@@ -173,13 +175,16 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
     const actionUrl = toggleSetParam(url, nextSet);
 
     setActionBusy(key);
+    setActionError(null);
     // Optimistic update — flip immediately
     optimisticUpdate({ [key]: nextSet } as Partial<LetterboxdStreamInfo>);
 
     try {
-      await fetch(actionUrl).catch(() => {});
-      // Don't re-fetch immediately — server caches rating data for 5 min
-      // and would return stale data. The optimistic update is enough.
+      const result = await runLetterboxdAction(actionUrl);
+      if (!result.ok) {
+        optimisticUpdate({ [key]: current } as Partial<LetterboxdStreamInfo>);
+        setActionError(result.message);
+      }
     } finally {
       setActionBusy(null);
     }
@@ -192,6 +197,8 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
     const submitUrl = buildRateSubmitUrl(parsed, rating);
 
     setActionBusy("rate");
+    setActionError(null);
+    const previousRating = info.userRating;
     const newRating = rating === "remove" ? null : rating;
     // Optimistic update
     optimisticUpdate({ userRating: newRating });
@@ -199,7 +206,11 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
     setPendingRating(null);
 
     try {
-      await fetch(submitUrl).catch(() => {});
+      const result = await runLetterboxdAction(submitUrl);
+      if (!result.ok) {
+        optimisticUpdate({ userRating: previousRating });
+        setActionError(result.message);
+      }
     } finally {
       setActionBusy(null);
     }
@@ -280,6 +291,13 @@ function LetterboxdPanelInner({ meta, imdbId }: { meta: Meta; imdbId: string | n
               onClick={() => performToggle("inWatchlist", info.watchlistUrl)}
             />
           </div>
+
+          {actionError && (
+            <div className="rounded-xl border border-danger/30 bg-danger/8 px-3.5 py-2.5 text-[12px] text-danger">
+              <span className="font-medium">{t("Something went wrong. Try again.")}</span>
+              <code className="ms-2 font-mono text-[11px] text-danger/80">{actionError}</code>
+            </div>
+          )}
 
           {/* In-app star rating picker */}
           {showRater && (
