@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { LogOut, Pencil, Search, Settings as SettingsIcon, Users } from "lucide-react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { CatAvatar } from "@/components/icons/cat-avatar";
+import {
+  COLLECTION_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  type NavItem as Tab,
+} from "@/chrome/nav-items";
 import { RecordingPill } from "@/chrome/recording-pill";
 import { TogetherButton } from "@/chrome/topbar";
 import { useVayraAccount } from "@/lib/vayra-account";
@@ -10,7 +15,7 @@ import { useProfiles } from "@/lib/profiles";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
@@ -18,29 +23,8 @@ import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-type Tab = {
-  label: string;
-  view: View;
-  parentalKey?: LockableTab;
-};
-
-const PRIMARY: Tab[] = [
-  { label: "Home", view: "home" },
-  { label: "Discover", view: "discover", parentalKey: "discover" },
-  { label: "Movies", view: "movies", parentalKey: "movies" },
-  { label: "Shows", view: "shows", parentalKey: "shows" },
-  { label: "Anime", view: "anime", parentalKey: "anime" },
-  { label: "Live TV", view: "live", parentalKey: "liveTv" },
-  { label: "Sports", view: "sports", parentalKey: "sports" },
-  { label: "Playlists", view: "vod" },
-];
-
-const SECONDARY: Tab[] = [
-  { label: "Calendar", view: "calendar", parentalKey: "calendar" },
-  { label: "Library", view: "library", parentalKey: "library" },
-  { label: "Downloads", view: "downloads" },
-  { label: "Addons", view: "addons", parentalKey: "addons" },
-];
+const PRIMARY = PRIMARY_NAV_ITEMS;
+const SECONDARY = COLLECTION_NAV_ITEMS.filter((item) => item.section === "collections");
 
 export function TopDock() {
   const { view, setView, chromeHidden } = useView();
@@ -67,6 +51,7 @@ export function TopDock() {
     .filter(
       (tab) =>
         (tab.view !== "vod" || settings.showPlaylistsTab) &&
+        (!tab.hideKey || !settings.hideContent[tab.hideKey]) &&
         (!tab.parentalKey || !locked || !hiddenTabs[tab.parentalKey]),
     )
     .map((tab) => {

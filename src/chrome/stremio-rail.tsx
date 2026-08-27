@@ -1,53 +1,18 @@
 import { Lock } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { AddonsIcon } from "@/components/icons/addons-icon";
-import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
-import { AnimeIcon } from "@/components/icons/anime-icon";
-import { CalendarIcon } from "@/components/icons/calendar-icon";
 import { CatAvatar } from "@/components/icons/cat-avatar";
-import { DiscoverIcon } from "@/components/icons/discover-icon";
 import { HarborMark } from "@/components/icons/harbor-mark";
-import { HomeIcon } from "@/components/icons/home-icon";
-import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
-import { SportsIcon } from "@/components/icons/sports-icon";
-import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
-import { MoviesIcon } from "@/components/icons/movies-icon";
-import { SettingsIcon } from "@/components/icons/settings-icon";
-import { TvIcon } from "@/components/icons/tv-icon";
+import { STANDARD_NAV_ITEMS } from "@/chrome/nav-items";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
 import { useView, type View } from "@/lib/view";
 
-type NavDef = {
-  render: (active: boolean) => ReactNode;
-  label: string;
-  view: View;
-  hideKey?: "anime" | "liveTv" | "sports";
-  parentalKey?: LockableTab;
-  pinGated?: boolean;
-};
-
-const ITEMS: NavDef[] = [
-  { render: (a) => <HomeIcon active={a} />, label: "Board", view: "home" },
-  { render: (a) => <DiscoverIcon active={a} />, label: "Discover", view: "discover", parentalKey: "discover" },
-  { render: (a) => <MoviesIcon active={a} />, label: "Movies", view: "movies", parentalKey: "movies" },
-  { render: (a) => <TvIcon active={a} />, label: "Shows", view: "shows", parentalKey: "shows" },
-  { render: (a) => <AnimeIcon active={a} />, label: "Anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
-  { render: (a) => <LiveTvIcon active={a} />, label: "Live", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
-  { render: (a) => <SportsIcon active={a} />, label: "Sports", view: "sports", hideKey: "sports", parentalKey: "sports" },
-  { render: (a) => <PlaylistVodIcon active={a} />, label: "Playlists", view: "vod" },
-  { render: (a) => <LibraryIcon active={a} />, label: "Library", view: "library", parentalKey: "library" },
-  { render: (a) => <DownloadsNavIcon active={a} />, label: "Downloads", view: "downloads" },
-  { render: (a) => <CalendarIcon active={a} />, label: "Calendar", view: "calendar", parentalKey: "calendar" },
-  { render: (a) => <AddonsIcon active={a} />, label: "Addons", view: "addons", parentalKey: "addons" },
-  { render: (a) => <SettingsIcon active={a} />, label: "Settings", view: "settings", pinGated: true },
-];
+const ITEMS = STANDARD_NAV_ITEMS;
 
 export function StremioRail() {
   const { view, setView, chromeHidden } = useView();

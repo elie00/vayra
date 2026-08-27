@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { HarborMark } from "@/components/icons/harbor-mark";
+import {
+  COLLECTION_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  type NavItem as Tab,
+} from "@/chrome/nav-items";
 import { ProfileBlock } from "@/chrome/siderail/profile-block";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { RecordingPill } from "@/chrome/recording-pill";
@@ -8,36 +13,16 @@ import { TogetherButton } from "@/chrome/topbar";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { close, minimize, toggleMaximize } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-type Tab = {
-  label: string;
-  view: View;
-  parentalKey?: LockableTab;
-};
-
-const PRIMARY: Tab[] = [
-  { label: "Home", view: "home" },
-  { label: "Discover", view: "discover", parentalKey: "discover" },
-  { label: "Movies", view: "movies", parentalKey: "movies" },
-  { label: "Shows", view: "shows", parentalKey: "shows" },
-  { label: "Anime", view: "anime", parentalKey: "anime" },
-  { label: "Live TV", view: "live", parentalKey: "liveTv" },
-  { label: "Sports", view: "sports", parentalKey: "sports" },
-  { label: "Playlists", view: "vod" },
-];
-
-const SECONDARY: Tab[] = [
-  { label: "Calendar", view: "calendar", parentalKey: "calendar" },
-  { label: "Library", view: "library", parentalKey: "library" },
-  { label: "Downloads", view: "downloads" },
-  { label: "Addons", view: "addons", parentalKey: "addons" },
-];
+const PRIMARY = PRIMARY_NAV_ITEMS;
+const SECONDARY = COLLECTION_NAV_ITEMS.filter((item) => item.section === "collections");
+const SETTINGS = COLLECTION_NAV_ITEMS.find((item) => item.section === "system")!;
 
 export function SideRail() {
   const { view, setView, chromeHidden } = useView();
@@ -49,17 +34,18 @@ export function SideRail() {
   const collapsed = settings.sidebarCollapsed;
 
   const navigate = (tab: Tab) => {
-    if (tab.parentalKey && locked && hiddenTabs[tab.parentalKey]) {
+    if (locked && (tab.pinGated || (tab.parentalKey && hiddenTabs[tab.parentalKey]))) {
       setPinFor(tab.view);
       return;
     }
     setView(tab.view);
   };
 
-  const visible = (tabs: Tab[]) =>
+  const visible = (tabs: readonly Tab[]) =>
     tabs.filter(
       (item) =>
         (item.view !== "vod" || settings.showPlaylistsTab) &&
+        (!item.hideKey || !settings.hideContent[item.hideKey]) &&
         (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]),
     );
 
@@ -103,7 +89,7 @@ export function SideRail() {
         <div className="flex-1 overflow-y-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex flex-col gap-0.5">
             {visible(PRIMARY).map((tab) => (
-              <RailItem key={tab.view} label={tab.label} active={view === tab.view} collapsed={collapsed} onClick={() => navigate(tab)} />
+              <RailItem key={tab.view} label={t(tab.label)} active={view === tab.view} collapsed={collapsed} onClick={() => navigate(tab)} />
             ))}
           </nav>
 
@@ -111,14 +97,14 @@ export function SideRail() {
 
           <nav className="flex flex-col gap-0.5">
             {visible(SECONDARY).map((tab) => (
-              <RailItem key={tab.view} label={tab.label} active={view === tab.view} collapsed={collapsed} onClick={() => navigate(tab)} />
+              <RailItem key={tab.view} label={t(tab.label)} active={view === tab.view} collapsed={collapsed} onClick={() => navigate(tab)} />
             ))}
           </nav>
 
           <GoldRule collapsed={collapsed} />
 
           <nav className="flex flex-col gap-0.5">
-            <RailItem label="Settings" active={view === "settings"} collapsed={collapsed} onClick={() => setView("settings")} />
+            <RailItem label={t(SETTINGS.label)} active={view === SETTINGS.view} collapsed={collapsed} onClick={() => navigate(SETTINGS)} />
           </nav>
         </div>
 

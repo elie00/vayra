@@ -12,7 +12,7 @@ import { useView, type View } from "@/lib/view";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { STANDARD_NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 import { ProfileChipCompact } from "@/chrome/cinematic-overlay/profile-chip-compact";
 
 const IS_TAURI =
@@ -42,13 +42,12 @@ export function CinematicOverlay() {
   };
 
   const navEntries: NavEntry[] = applyNavCustomization(
-    NAV_ITEMS,
+    STANDARD_NAV_ITEMS,
     settings.navCustomization,
   )
     .filter(
       (item) =>
         item.id !== "settings" &&
-        item.id !== "kids" &&
         (item.view !== "vod" || settings.showPlaylistsTab) &&
         (!item.hideKey || !settings.hideContent[item.hideKey]) &&
         (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]),
