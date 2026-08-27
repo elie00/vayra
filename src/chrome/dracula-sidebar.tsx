@@ -1,54 +1,21 @@
 import { Lock } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { AddonsIcon } from "@/components/icons/addons-icon";
-import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
-import { AnimeIcon } from "@/components/icons/anime-icon";
-import { CalendarIcon } from "@/components/icons/calendar-icon";
-import { DiscoverIcon } from "@/components/icons/discover-icon";
-import { HomeIcon } from "@/components/icons/home-icon";
-import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
-import { SportsIcon } from "@/components/icons/sports-icon";
-import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
-import { MoviesIcon } from "@/components/icons/movies-icon";
-import { SettingsIcon } from "@/components/icons/settings-icon";
-import { TvIcon } from "@/components/icons/tv-icon";
+import { useState } from "react";
+import {
+  COLLECTION_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  type NavItem as NavDef,
+} from "@/chrome/nav-items";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useT } from "@/lib/i18n";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 
-type NavDef = {
-  render: (active: boolean) => ReactNode;
-  labelKey: string;
-  view: View;
-  hideKey?: "anime" | "liveTv" | "sports";
-  parentalKey?: LockableTab;
-  pinGated?: boolean;
-};
-
-const PRIMARY: NavDef[] = [
-  { render: (a) => <HomeIcon active={a} />, labelKey: "nav.home", view: "home" },
-  { render: (a) => <DiscoverIcon active={a} />, labelKey: "nav.discover", view: "discover", parentalKey: "discover" },
-  { render: (a) => <MoviesIcon active={a} />, labelKey: "nav.movies", view: "movies", parentalKey: "movies" },
-  { render: (a) => <TvIcon active={a} />, labelKey: "nav.shows", view: "shows", parentalKey: "shows" },
-  { render: (a) => <AnimeIcon active={a} />, labelKey: "nav.anime", view: "anime", hideKey: "anime", parentalKey: "anime" },
-  { render: (a) => <LiveTvIcon active={a} />, labelKey: "nav.live", view: "live", hideKey: "liveTv", parentalKey: "liveTv" },
-  { render: (a) => <SportsIcon active={a} />, labelKey: "nav.sports", view: "sports", hideKey: "sports", parentalKey: "sports" },
-  { render: (a) => <PlaylistVodIcon active={a} />, labelKey: "nav.playlists", view: "vod" },
-];
-
-const COLLECTIONS: NavDef[] = [
-  { render: (a) => <CalendarIcon active={a} />, labelKey: "nav.calendar", view: "calendar", parentalKey: "calendar" },
-  { render: (a) => <LibraryIcon active={a} />, labelKey: "nav.library", view: "library", parentalKey: "library" },
-  { render: (a) => <DownloadsNavIcon active={a} />, labelKey: "nav.downloads", view: "downloads" },
-  { render: (a) => <AddonsIcon active={a} />, labelKey: "nav.addons", view: "addons", parentalKey: "addons" },
-  { render: (a) => <SettingsIcon active={a} />, labelKey: "nav.settings", view: "settings", pinGated: true },
-];
+const PRIMARY = PRIMARY_NAV_ITEMS;
+const COLLECTIONS = COLLECTION_NAV_ITEMS;
 
 export function DraculaSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -208,7 +175,7 @@ function NavPill({
   onClick: () => void;
 }) {
   const t = useT();
-  const label = t(item.labelKey);
+  const label = t(item.label);
   return (
     <button
       onClick={onClick}
@@ -252,5 +219,4 @@ function NavPill({
     </button>
   );
 }
-
 
