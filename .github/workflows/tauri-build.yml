@@ -192,19 +192,30 @@ jobs:
           $bundleDir = "src-tauri/target/${{ matrix.platform.target }}/release/bundle/nsis"
           $installer = Get-ChildItem $bundleDir -Filter "*.exe" | Select-Object -First 1
           if (-not $installer) { throw "NSIS installer missing" }
-          if (-not (Get-Command 7z -ErrorAction SilentlyContinue)) { throw "7z is unavailable on the runner" }
-
-          $listing = (& 7z l $installer.FullName | Out-String)
-          if ($LASTEXITCODE -ne 0) { throw "Could not inspect the NSIS payload" }
+          $installDir = Join-Path $env:RUNNER_TEMP "vayra-installer-smoke"
           $required = @(
-            "VAYRA\.exe",
-            "libmpv-2\.dll",
-            "yt-dlp.*\.exe",
-            "ffmpeg.*\.exe",
-            "ffprobe.*\.exe"
+            "VAYRA.exe",
+            "libmpv-2.dll",
+            "yt-dlp-${{ matrix.platform.target }}.exe",
+            "ffmpeg-${{ matrix.platform.target }}.exe",
+            "ffprobe-${{ matrix.platform.target }}.exe"
           )
-          foreach ($pattern in $required) {
-            if ($listing -notmatch $pattern) { throw "NSIS payload is missing $pattern" }
+
+          try {
+            $process = Start-Process $installer.FullName -ArgumentList @("/S", "/D=$installDir") -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "NSIS smoke install failed with exit code $($process.ExitCode)" }
+            foreach ($name in $required) {
+              $path = Join-Path $installDir $name
+              if (-not (Test-Path $path -PathType Leaf)) { throw "NSIS payload is missing $name" }
+            }
+          } finally {
+            $uninstaller = Join-Path $installDir "uninstall.exe"
+            if (Test-Path $uninstaller -PathType Leaf) {
+              Start-Process $uninstaller -ArgumentList "/S" -Wait
+            }
+            if (Test-Path $installDir) {
+              Remove-Item $installDir -Recurse -Force
+            }
           }
 
           $hash = Get-FileHash $installer.FullName -Algorithm SHA256
