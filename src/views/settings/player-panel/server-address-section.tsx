@@ -3,7 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { copyText } from "@/lib/clipboard";
 import { useSettings } from "@/lib/settings";
-import { BUNDLED_SERVER_URL, getCastServerStatus, restartCastServer } from "@/lib/stremio-server";
+import {
+  BUNDLED_SERVER_URL,
+  getCastServerStatus,
+  restartCastServer,
+  stopCastServer,
+} from "@/lib/stremio-server";
 import {
   WEB_UI_SERVER_ERROR_EVENT,
   type WebUiServerErrorDetail,
@@ -116,6 +121,7 @@ export function ServerAddressSection() {
   const [lanIp, setLanIp] = useState<string | null>(null);
   const [engine, setEngine] = useState<EngineState>("checking");
   const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [webError, setWebError] = useState<WebServerError | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [webToken, setWebToken] = useState<string | null>(null);
@@ -200,8 +206,17 @@ export function ServerAddressSection() {
 
   const start = async () => {
     setActing(true);
+    setActionError(null);
     setEngine("starting");
-    await restartCastServer();
+    const result = await restartCastServer();
+    if (!result.ok) {
+      if (aliveRef.current) {
+        setEngine("stopped");
+        setActionError(result.message);
+        setActing(false);
+      }
+      return;
+    }
     window.setTimeout(() => {
       void refresh().then(() => setActing(false));
     }, 1200);
@@ -209,7 +224,15 @@ export function ServerAddressSection() {
 
   const stop = async () => {
     setActing(true);
-    await invoke("cast_server_stop").catch(() => {});
+    setActionError(null);
+    const result = await stopCastServer();
+    if (!result.ok) {
+      if (aliveRef.current) {
+        setActionError(result.message);
+        setActing(false);
+      }
+      return;
+    }
     window.setTimeout(() => {
       void refresh().then(() => setActing(false));
     }, 600);
@@ -268,6 +291,14 @@ export function ServerAddressSection() {
           />
         )}
       </div>
+      {actionError && (
+        <div className="rounded-xl border border-danger/30 bg-danger/8 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-danger">
+          <span className="font-semibold">{t("Something went wrong.")}</span>
+          <code className="mt-1 block break-all font-mono text-[11px] text-danger/80">
+            {actionError}
+          </code>
+        </div>
+      )}
 
       <div className="h-px bg-edge-soft" />
 

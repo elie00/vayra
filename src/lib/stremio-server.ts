@@ -51,6 +51,17 @@ export type CastServerStatus = {
   restart_count: number;
 };
 
+export type CastServerActionResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+function actionError(error: unknown): CastServerActionResult {
+  return {
+    ok: false,
+    message: error instanceof Error && error.message ? error.message : String(error),
+  };
+}
+
 export async function getCastServerStatus(): Promise<CastServerStatus | null> {
   if (!isTauri) return null;
   try {
@@ -60,14 +71,25 @@ export async function getCastServerStatus(): Promise<CastServerStatus | null> {
   }
 }
 
-export async function restartCastServer(): Promise<boolean> {
-  if (!isTauri) return false;
+export async function restartCastServer(): Promise<CastServerActionResult> {
+  if (!isTauri) return { ok: false, message: "native runtime unavailable" };
   try {
     await invoke("cast_server_restart");
     probeCache = null;
-    return true;
-  } catch {
-    return false;
+    return { ok: true };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+export async function stopCastServer(): Promise<CastServerActionResult> {
+  if (!isTauri) return { ok: false, message: "native runtime unavailable" };
+  try {
+    await invoke("cast_server_stop");
+    probeCache = null;
+    return { ok: true };
+  } catch (error) {
+    return actionError(error);
   }
 }
 
