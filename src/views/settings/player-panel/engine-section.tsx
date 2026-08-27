@@ -6,10 +6,27 @@ import { BandwidthInput } from "./bandwidth-section";
 import { DesktopOnlyBlock } from "./internals";
 import { HdrModePicker } from "./hdr-mode";
 import { DisplayPanelSelector } from "./display-panel-selector";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
+
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 export function PlayerEnginePanel() {
   const { settings, update } = useSettings();
   const t = useT();
+
+  if (!PLATFORM_CAPABILITIES.mpvPlayback) {
+    return (
+      <div className="flex items-start gap-3.5 rounded-2xl border border-accent/25 bg-accent/8 px-5 py-4">
+        <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
+        <div className="flex flex-col gap-1">
+          <span className="text-[15px] font-semibold text-ink">HTML5</span>
+          <span className="text-[12.5px] leading-relaxed text-ink-muted">
+            {t("Active in VAYRA Lite. HTTP, HTTPS, HLS and DASH sources play when their video and audio codecs are supported by this browser.")}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   const choices: Array<{
     id: "auto" | "html5" | "mpv";

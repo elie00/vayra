@@ -38,8 +38,10 @@ import { pickTvdbImage } from "@/lib/providers/tvdb-proxy";
 import { TvdbOrderPanel } from "./series-episodes/tvdb-order-panel";
 import { parseKitsuId } from "@/lib/providers/kitsu";
 import { providerForModel } from "@/lib/ai-models";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 
 const WINDOW_STEP = 60;
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 export function AnimeEpisodes({
   meta,
@@ -323,7 +325,11 @@ export function AnimeEpisodes({
               onSort={(s) => update({ episodeSort: s })}
               allWatched={allWatched}
               onMarkSeason={markSeason}
-              onDownloadSeason={displayEpisodes.length > 0 ? downloadSeason : undefined}
+              onDownloadSeason={
+                PLATFORM_CAPABILITIES.nativeDownloads && displayEpisodes.length > 0
+                  ? downloadSeason
+                  : undefined
+              }
             />
           )}
           {!isOneOff && (

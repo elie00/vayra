@@ -4,6 +4,7 @@ import { downloadText } from "@/lib/download-text";
 import { getCuesAnySource } from "@/lib/subtitles/extract";
 import { toSrt } from "@/lib/subtitles/serialize";
 import { isWindowsDesktop } from "@/lib/platform";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 import { isAssTrack, isImageSubTrack } from "@/lib/player/sub-format";
 import { clearImportedSubs } from "@/lib/player/imported-subs";
 import { readPlayerVolume } from "@/lib/player-volume";
@@ -27,6 +28,7 @@ import { useVideoDownload } from "./use-video-download";
 import { useWebviewMemory } from "./use-webview-memory";
 
 const HDR_NATIVE_GAMMAS = new Set(["pq", "hlg"]);
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 export function usePlayerMedia(params: {
   src: PlayerSrc;
@@ -186,7 +188,7 @@ export function usePlayerMedia(params: {
     setPlayerActions({
       download: download.start,
       toggleFullscreen,
-      canDownload: !!src.url,
+      canDownload: PLATFORM_CAPABILITIES.nativeDownloads && !!src.url,
       downloadSubtitle: doDownloadSubtitle,
       canDownloadSubtitle: canDownloadSub,
     });
@@ -210,5 +212,11 @@ export function usePlayerMedia(params: {
     });
   }, [engine, src.url, src.meta.name, src.meta.poster, src.episode, snap.durationSec, bridgeRef]);
 
-  return { resolvedImdbId, subAssNative: suppressHtmlSubs, captureExitSnapshot, download, subDropToast };
+  return {
+    resolvedImdbId,
+    subAssNative: suppressHtmlSubs,
+    captureExitSnapshot,
+    download: PLATFORM_CAPABILITIES.nativeDownloads ? download : undefined,
+    subDropToast,
+  };
 }

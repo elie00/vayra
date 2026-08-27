@@ -9,8 +9,10 @@ import { AddToListMenu } from "@/components/lists/add-to-list-menu";
 import type { ListItemInput } from "@/lib/custom-lists";
 import { AnilistMenuItems, SimklMenuItems, TraktMenuItems } from "./overflow-sync-items";
 import { PreviewIcon } from "./preview-icon";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 
 const CIRCLES_SAVED_ESTIMATE = 132;
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 export function useHeroActionOverflow(rowRef: RefObject<HTMLDivElement | null>, refreshKey: unknown) {
   const [stage, setStage] = useState(0);
@@ -96,7 +98,8 @@ export function HeroActionOverflow({
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [listMenu, setListMenu] = useState(false);
 
-  const dl = canDownload ? activeDownloadFor(meta.id, null, null) : null;
+  const nativeDownloadAvailable = canDownload && PLATFORM_CAPABILITIES.nativeDownloads;
+  const dl = nativeDownloadAvailable ? activeDownloadFor(meta.id, null, null) : null;
   const downloading = dl?.status === "downloading" || dl?.status === "queued";
   const done = dl?.status === "done";
   const failed = dl?.status === "error";
@@ -230,7 +233,7 @@ export function HeroActionOverflow({
                 }}
               />
             )}
-            {canDownload && (
+            {nativeDownloadAvailable && (
               <Item
                 icon={
                   downloading ? (

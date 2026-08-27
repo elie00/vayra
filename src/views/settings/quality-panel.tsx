@@ -5,6 +5,9 @@ import { PlayModePanel, PlayerEnginePanel } from "./player-panel";
 import { Section, Segmented, ToggleRow, useSettingsActiveContext } from "./shared";
 import { CROP_PRESETS } from "@/views/player/hooks/use-video-fill";
 import { useT } from "@/lib/i18n";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
+
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 export function QualityPanel() {
   const t = useT();
@@ -21,12 +24,16 @@ export function QualityPanel() {
 
       <Section
         title={t("Player engine")}
-        subtitle={t("HTML5 plays everything WebView2 supports. mpv handles TrueHD, DTS-HD, AV1, weird containers, and HDR. Auto picks based on the source.")}
+        subtitle={
+          PLATFORM_CAPABILITIES.mpvPlayback
+            ? t("HTML5 plays everything WebView2 supports. mpv handles TrueHD, DTS-HD, AV1, weird containers, and HDR. Auto picks based on the source.")
+            : t("VAYRA Lite uses the browser player and accepts sources your browser can decode directly.")
+        }
       >
         <PlayerEnginePanel />
       </Section>
 
-      <Section
+      {PLATFORM_CAPABILITIES.mpvPlayback && <Section
         title={t("Stream quality in player")}
         subtitle={t("Show what you're actually watching, under the title in the player.")}
       >
@@ -36,9 +43,9 @@ export function QualityPanel() {
           value={settings.showQualityInfo}
           onChange={(v) => update({ showQualityInfo: v })}
         />
-      </Section>
+      </Section>}
 
-      <Section
+      {PLATFORM_CAPABILITIES.mpvPlayback && <Section
         title={t("Aspect ratio")}
         subtitle={t("Default picture shape on the mpv engine. Fit keeps the source as-is with any black bars; the rest stretch or crop to fill, handy for old 4:3 shows on a widescreen TV.")}
       >
@@ -57,7 +64,7 @@ export function QualityPanel() {
             {t("Turn it on in Player layout")}
           </button>
         </p>
-      </Section>
+      </Section>}
 
       <Section
         title={t("Audio")}
