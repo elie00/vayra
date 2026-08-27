@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>site.vayra.Vayra</id>
-  <name>Harbor</name>
-  <summary>A Stremio client built for adventure</summary>
+  <name>VAYRA</name>
+  <summary>Personal and collaborative media player</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <developer id="site.vayra">
-    <name>Harbor Developers</name>
+    <name>EYBO</name>
   </developer>
   <description>
-    <p>Harbor is a desktop media client for browsing and playing content from Stremio addons.</p>
+    <p>VAYRA is an independent personal and collaborative media player and a client for the open Stremio addon protocol.</p>
   </description>
   <launchable type="desktop-id">site.vayra.Vayra.desktop</launchable>
   <provides>
-    <binary>harbor</binary>
+    <binary>vayra</binary>
     <mediatype>x-scheme-handler/harbor</mediatype>
     <mediatype>x-scheme-handler/vayra</mediatype>
     <mediatype>x-scheme-handler/stremio</mediatype>
   </provides>
-  <url type="homepage">https://harbor.site/</url>
-  <url type="bugtracker">https://github.com/harborstremio/harbor/issues</url>
+  <url type="homepage">https://vayra.eybo.tech/</url>
+  <url type="bugtracker">https://github.com/elie00/vayra/issues</url>
   <content_rating type="oars-1.1" />
   <releases>
     <release version="0.9.36" date="2026-07-18" />

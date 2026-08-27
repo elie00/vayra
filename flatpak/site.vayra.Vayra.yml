@@ -2,7 +2,7 @@ app-id: site.vayra.Vayra
 runtime: org.gnome.Platform
 runtime-version: '49'
 sdk: org.gnome.Sdk
-command: harbor
+command: vayra
 
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
@@ -22,9 +22,9 @@ finish-args:
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
   env:
-    CARGO_HOME: /run/build/harbor/cargo
+    CARGO_HOME: /run/build/vayra/cargo
     CARGO_NET_OFFLINE: 'true'
-    npm_config_cache: /run/build/harbor/npm-cache
+    npm_config_cache: /run/build/vayra/npm-cache
     CI: 'true'
 
 modules:
@@ -78,12 +78,12 @@ modules:
         url: https://github.com/yt-dlp/yt-dlp/releases/download/2026.06.09/yt-dlp
         sha256: e5d57466682cfa9d61e9cf7c8a4f09b00f4a62af37d3bbdc4bcffdf63615feac
 
-  - name: harbor
+  - name: vayra
     buildsystem: simple
     build-commands:
       - node flatpak-node/pnpm-cli/bin/pnpm.cjs install --offline --frozen-lockfile
       - node node_modules/@tauri-apps/cli/tauri.js build --config src-tauri/tauri.flatpak.conf.json --no-bundle
-      - install -Dm755 src-tauri/target/release/harbor /app/bin/harbor
+      - install -Dm755 src-tauri/target/release/vayra /app/bin/vayra
       - install -Dm644 flatpak/site.vayra.Vayra.desktop /app/share/applications/site.vayra.Vayra.desktop
       - install -Dm644 flatpak/site.vayra.Vayra.metainfo.xml /app/share/metainfo/site.vayra.Vayra.metainfo.xml
       - install -Dm644 src-tauri/icons/32x32.png /app/share/icons/hicolor/32x32/apps/site.vayra.Vayra.png

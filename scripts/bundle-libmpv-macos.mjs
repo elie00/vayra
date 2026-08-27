@@ -16,7 +16,7 @@ if (process.platform !== "darwin") {
 const APP = resolve(
   process.argv[2] ?? "src-tauri/target/release/bundle/macos/VAYRA.app"
 );
-const BIN = join(APP, "Contents/MacOS/harbor");
+const BIN = join(APP, "Contents/MacOS/vayra");
 const FRAMEWORKS = join(APP, "Contents/Frameworks");
 
 if (!existsSync(BIN)) {
@@ -133,7 +133,7 @@ const binMpv = loads(BIN)
   .split("\n")
   .filter((l) => /libmpv/.test(l))
   .join("");
-console.log(`  harbor -> ${binMpv.trim()}`);
+console.log(`  vayra -> ${binMpv.trim()}`);
 
 const fails = [];
 // (1) plus aucune reference /opt/homebrew (otool -L = load commands)
@@ -142,7 +142,7 @@ for (const f of allBinaries) {
 }
 // (2) le binaire pointe bien sur la libmpv embarquee
 if (!/@executable_path\/\.\.\/Frameworks\/libmpv\.2\.dylib/.test(binMpv)) {
-  fails.push("harbor ne pointe pas sur @executable_path/../Frameworks/libmpv.2.dylib");
+  fails.push("vayra ne pointe pas sur @executable_path/../Frameworks/libmpv.2.dylib");
 }
 // (3) AUCUN LC_RPATH duplique nulle part (sinon dyld crashe au lancement)
 for (const f of allBinaries) {

@@ -113,7 +113,8 @@ will be migrated separately.
 ### Internal names with no user-facing value in renaming
 
 - The native library name `harbor_lib` (`[lib]` name; `System.loadLibrary`
-  regenerates to match) and the `src-tauri` crate name `harbor`.
+  regenerates to match). The Cargo package and desktop executable are now
+  named `vayra` (`VAYRA.exe` in the Windows bundle).
 - Kotlin class names `HarborCredentials`, `HarborExoBridge`, `MainActivity`
   (only their package moved to `app.vayra`).
 - Component/file names such as `HarborMark`, `HarborLoader`, `harbor-loader.tsx`,

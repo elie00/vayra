@@ -65,7 +65,7 @@ $dll = Get-ChildItem -Path $libDir -Filter "libmpv-2.dll" -Recurse -ErrorAction 
 if (-not $dll) {
     Write-Host "[setup-libmpv] WARN: libmpv-2.dll not found in archive" -ForegroundColor Yellow
 } else {
-    # Copy DLL next to harbor.exe so it loads at runtime (debug + release)
+    # Copy DLL next to vayra.exe so it loads at runtime (debug + release)
     $debugDir = Join-Path $root "target\debug"
     $releaseDir = Join-Path $root "target\release"
     foreach ($d in @($debugDir, $releaseDir)) {
@@ -85,4 +85,4 @@ Write-Host ""
 Write-Host "Or run cargo build through this script (sets LIB for one invocation):"
 Write-Host "  `$env:LIB = `"`$env:LIB;$libDirAbs`"; cargo build" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "After build, libmpv-2.dll has been copied next to harbor.exe."
+Write-Host "After build, libmpv-2.dll has been copied next to vayra.exe."

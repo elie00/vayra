@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Harbor
-Comment=A Stremio client built for adventure
-Exec=harbor %U
+Name=VAYRA
+Comment=Personal and collaborative media player
+Exec=vayra %U
 Icon=site.vayra.Vayra
 Terminal=false
 Type=Application
