@@ -1,0 +1,6 @@
+!.gitignore
+!package.json
+!vayra_core.js
+!vayra_core.d.ts
+!vayra_core_bg.wasm
+!vayra_core_bg.wasm.d.ts

@@ -3,12 +3,10 @@
 # or `api/`, which are the site's deployable outputs.
 node_modules/
 dist/
-src/
 src-tauri/
-vayra-core/
 vara-broker/
 flatpak/
 supabase/
 docs/
 examples/
-scripts/
+site/
