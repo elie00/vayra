@@ -1,6 +1,7 @@
 import { Check, Copy, ExternalLink, Loader2, Play, RotateCw, Square } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { copyText } from "@/lib/clipboard";
 import { useSettings } from "@/lib/settings";
 import { BUNDLED_SERVER_URL, getCastServerStatus, restartCastServer } from "@/lib/stremio-server";
 import { openUrl } from "@/lib/window";
@@ -41,11 +42,10 @@ async function readEngineState(): Promise<EngineState> {
 function AddressRow({ label, url, openable }: { label: string; url: string; openable?: boolean }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
-  const copy = () => {
-    void navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    });
+  const copy = async () => {
+    if (!(await copyText(url))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
   };
   return (
     <div className="flex flex-col gap-1.5">
@@ -56,7 +56,7 @@ function AddressRow({ label, url, openable }: { label: string; url: string; open
         </span>
         <button
           type="button"
-          onClick={copy}
+          onClick={() => void copy()}
           className={`flex h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3.5 text-[12.5px] font-medium transition-colors ${
             copied
               ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import snip404 from "@/assets/snip404.svg";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { submitErrorReport } from "@/lib/bug-report";
+import { copyText } from "@/lib/clipboard";
 import { useT } from "@/lib/i18n";
 
 export type HarborError = {
@@ -267,12 +268,10 @@ function TechnicalDetail({ content }: { content: string }) {
   const resetTimer = useRef<number | null>(null);
 
   const onCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      if (resetTimer.current) window.clearTimeout(resetTimer.current);
-      resetTimer.current = window.setTimeout(() => setCopied(false), 1600);
-    } catch {}
+    if (!(await copyText(content))) return;
+    setCopied(true);
+    if (resetTimer.current) window.clearTimeout(resetTimer.current);
+    resetTimer.current = window.setTimeout(() => setCopied(false), 1600);
   }, [content]);
 
   useEffect(() => {

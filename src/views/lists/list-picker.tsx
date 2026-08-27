@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { copyText } from "@/lib/clipboard";
 import { confirmDialog } from "@/lib/dialog";
 import { sourceLabel, type CustomList } from "@/lib/lists/types";
 import { useT } from "@/lib/i18n";
@@ -72,13 +73,9 @@ export function ListPicker({
   const editing = editingId ? lists.find((l) => l.id === editingId) ?? null : null;
 
   const copyRef = async (ref: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(ref);
-      setActions({ id, copied: true });
-      window.setTimeout(() => setActions((cur) => (cur?.id === id ? null : cur)), 1200);
-    } catch {
-      /* noop */
-    }
+    if (!(await copyText(ref))) return;
+    setActions({ id, copied: true });
+    window.setTimeout(() => setActions((cur) => (cur?.id === id ? null : cur)), 1200);
   };
 
   return (

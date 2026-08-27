@@ -2,6 +2,7 @@ import { Check, Copy, Eye, EyeOff, ExternalLink, Loader2, Settings2, Star, Trash
 import { useEffect, useRef, useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { setActiveAddon } from "@/lib/active-addon";
+import { copyText } from "@/lib/clipboard";
 import {
   manifestRequiresConfiguration,
   manifestToConfigureUrl,
@@ -147,12 +148,11 @@ export function AddonDetail({
 
   const copy = async (kind: "https" | "stremio") => {
     const text = kind === "stremio" ? stremioShareUrl : resolved.transportUrl;
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyText(text)) {
       setCopied(kind);
       setTimeout(() => setCopied(null), 1600);
       showToast("ok", kind === "stremio" ? t("Stremio link copied") : t("Manifest URL copied"));
-    } catch {
+    } else {
       showToast("error", t("Couldn't copy. Select the URL manually."));
     }
   };

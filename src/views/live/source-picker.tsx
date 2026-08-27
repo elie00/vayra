@@ -1,6 +1,7 @@
 import { ArrowUpToLine, Check, ChevronDown, ChevronUp, Copy, Download, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { copyText } from "@/lib/clipboard";
 import { confirmDialog } from "@/lib/dialog";
 import { useT } from "@/lib/i18n";
 import type { IptvPlaylistSource } from "@/lib/iptv/types";
@@ -78,15 +79,11 @@ export function SourcePicker({
   const ago = fetchedAt ? formatAgo(Date.now() - fetchedAt, t) : null;
 
   const copyUrl = async (url: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setActions({ id, copied: true });
-      window.setTimeout(() => {
-        setActions((cur) => (cur && cur.id === id ? null : cur));
-      }, 1200);
-    } catch {
-      /* noop */
-    }
+    if (!(await copyText(url))) return;
+    setActions({ id, copied: true });
+    window.setTimeout(() => {
+      setActions((cur) => (cur && cur.id === id ? null : cur));
+    }, 1200);
   };
 
   return (

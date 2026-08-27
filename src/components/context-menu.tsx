@@ -1,6 +1,7 @@
 import { Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, EyeOff, Info, ListChecks, ListPlus, ListVideo, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
+import { copyText } from "@/lib/clipboard";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
 import { useT } from "@/lib/i18n";
 import { usePlayerActions } from "@/lib/player-actions";
@@ -393,9 +394,7 @@ export function ContextMenu() {
     const canPaste = element != null;
     const handleCopy = async () => {
       if (!canCopy) return;
-      try {
-        await navigator.clipboard.writeText(selection);
-      } catch {}
+      await copyText(selection);
       close();
     };
     const handlePaste = async () => {
