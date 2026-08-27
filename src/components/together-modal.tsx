@@ -2,6 +2,7 @@ import { Check, Copy, LogOut, MousePointer2, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import type { Meta } from "@/lib/cinemeta";
+import { copyText } from "@/lib/clipboard";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
 import { useSelfIdentity } from "@/lib/together/use-self-identity";
@@ -78,13 +79,9 @@ export function TogetherPopover({
 
   const handleCopy = async () => {
     if (!snapshot.room) return;
-    try {
-      await navigator.clipboard.writeText(snapshot.room);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    } catch {
-      /* clipboard blocked */
-    }
+    if (!(await copyText(snapshot.room))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
   };
 
   const commitName = () => {

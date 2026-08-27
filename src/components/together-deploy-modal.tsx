@@ -2,6 +2,7 @@ import { ArrowRight, Check, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import cfTokenTutorial from "@/assets/cf-token-tutorial.png";
 import cloudflareLogoPng from "@/assets/cloudflare.png";
+import { copyText } from "@/lib/clipboard";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
@@ -26,13 +27,9 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
 
   const copyUrl = async () => {
     if (!result?.url) return;
-    try {
-      await navigator.clipboard.writeText(result.url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    } catch {
-      /* clipboard blocked */
-    }
+    if (!(await copyText(result.url))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
   };
 
   useEffect(() => {

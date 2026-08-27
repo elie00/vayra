@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import QRCode from "qrcode";
 import { useAuth } from "@/lib/auth";
+import { copyText } from "@/lib/clipboard";
 import { useT } from "@/lib/i18n";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
@@ -30,15 +31,11 @@ export function ConnectPhoneModal({ onClose }: { onClose: () => void }) {
       .catch(() => setQr(null));
   }, [authKey]);
 
-  const copyKey = () => {
+  const copyKey = async () => {
     if (!authKey) return;
-    void navigator.clipboard
-      .writeText(authKey)
-      .then(() => {
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {});
+    if (!(await copyText(authKey))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
   };
 
   if (!authKey) return null;
@@ -79,7 +76,7 @@ export function ConnectPhoneModal({ onClose }: { onClose: () => void }) {
 
         <button
           type="button"
-          onClick={copyKey}
+          onClick={() => void copyKey()}
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-edge bg-elevated text-[14px] font-semibold text-ink transition-colors hover:bg-raised"
         >
           {copied ? (
