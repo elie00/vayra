@@ -1,7 +1,7 @@
 import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import {
-  NAV_ITEMS,
+  AVAILABLE_NAV_ITEMS,
   effectiveNavOrder,
   moveNavItem,
   renameNavItem,
@@ -23,8 +23,10 @@ export function NavEditor({ layout }: { layout: ThemeLayout }) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; pos: "before" | "after" } | null>(null);
 
-  const byId = new Map<string, NavItem>(NAV_ITEMS.map((it) => [it.id, it]));
-  const rows = effectiveNavOrder(cfg).map((id) => byId.get(id)!);
+  const byId = new Map<string, NavItem>(AVAILABLE_NAV_ITEMS.map((it) => [it.id, it]));
+  const rows = effectiveNavOrder(cfg)
+    .map((id) => byId.get(id))
+    .filter((item): item is NavItem => item != null);
   const renamable = !ICON_ONLY.has(layout);
   const hasChanges =
     cfg.order.length > 0 || cfg.hidden.length > 0 || Object.keys(cfg.renamed).length > 0;

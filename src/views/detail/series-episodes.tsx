@@ -34,6 +34,9 @@ import { useEpisodeProgressMap } from "./series-episodes/use-episode-progress-ma
 import { useTvdbSeasonTypes } from "./series-episodes/use-tvdb-season-types";
 import { useSeriesTvdbStills } from "./series-episodes/use-series-tvdb-stills";
 import { TvdbOrderPanel } from "./series-episodes/tvdb-order-panel";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
+
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 export function SeriesEpisodes({
   meta,
@@ -282,7 +285,11 @@ export function SeriesEpisodes({
               onSort={(s) => update({ episodeSort: s })}
               allWatched={allWatched}
               onMarkSeason={markSeason}
-              onDownloadSeason={enrichedEpisodes.length > 0 ? downloadSeason : undefined}
+              onDownloadSeason={
+                PLATFORM_CAPABILITIES.nativeDownloads && enrichedEpisodes.length > 0
+                  ? downloadSeason
+                  : undefined
+              }
             />
           )}
           <EpisodeSearchToggle
@@ -430,4 +437,3 @@ export function SeriesEpisodes({
     </div>
   );
 }
-

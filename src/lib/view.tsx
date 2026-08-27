@@ -6,6 +6,9 @@ import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
 import { beginMarathonAdvance } from "./fullscreen-state";
 import { franchiseRoot, franchiseRootSync } from "./providers/anime-franchise-root";
+import { currentPlatformCapabilities } from "./platform-capabilities";
+
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 const isAnimeMetaId = (id: string) => /^(kitsu|mal|anilist|anidb):/.test(id);
 export type View = "home" | "settings" | "anime" | "discover" | "catalogs" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads" | "wrapped" | "sports" | "stats";
@@ -482,7 +485,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     nonce: 0,
   });
 
-  const setView = useCallback((v: View) => {
+  const setView = useCallback((requestedView: View) => {
+    const v = requestedView === "downloads" && !PLATFORM_CAPABILITIES.nativeDownloads
+      ? "home"
+      : requestedView;
     if (typeof window !== "undefined") {
       window.__harborProfiler?.recordNav(`view:${v}`);
     }
@@ -774,6 +780,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
 
   const openPicker = useCallback(
     (m: Meta, ep?: PlayEpisode, opts?: { autoPlay?: boolean; attempt?: number; intent?: PickerIntent; resume?: boolean; seasonEpisodes?: PlayEpisode[] }) => {
+      if (opts?.intent && opts.intent !== "play" && !PLATFORM_CAPABILITIES.nativeDownloads) return;
       if (opts?.autoPlay) beginMarathonAdvance();
       setNavStack((cur) => {
         const t = cur[cur.length - 1];

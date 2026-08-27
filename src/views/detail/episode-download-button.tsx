@@ -4,6 +4,9 @@ import { activeDownloadFor, cancelDownload, useDownloads } from "@/lib/download/
 import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
+
+const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 export function EpisodeDownloadButton({
   meta,
@@ -19,6 +22,7 @@ export function EpisodeDownloadButton({
   const t = useT();
   const { openPicker } = useView();
   useDownloads();
+  if (!PLATFORM_CAPABILITIES.nativeDownloads) return null;
   const tmdbMatch = meta.id.match(/^tmdb:(?:movie|tv):(\d+)$/);
   const tmdbId = tmdbMatch ? parseInt(tmdbMatch[1], 10) : null;
   const imdbId = meta.id.startsWith("tt") ? meta.id : null;
