@@ -1,7 +1,7 @@
 {
   "name": "vayra-core",
   "type": "module",
-  "description": "Shared protocol layer for Harbor: stream parsing, trust filtering, scoring.",
+  "description": "Shared protocol layer for VAYRA: stream parsing, trust filtering, scoring.",
   "version": "0.1.0",
   "files": [
     "vayra_core_bg.wasm",
