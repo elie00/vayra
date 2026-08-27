@@ -1,4 +1,4 @@
-import stremioDefaultAvatar from "@/assets/stremio-default-avatar.png";
+import stremioDefaultAvatar from "@/assets/stremio-default-avatar.webp";
 
 export function CatAvatar({ className }: { className?: string }) {
   return (
