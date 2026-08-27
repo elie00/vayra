@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { useMemo, useState } from "react";
+import { copyText } from "@/lib/clipboard";
 import { buildInviteUrl } from "@/lib/together/invite";
 import { useT } from "@/lib/i18n";
 import { LinkGlyph } from "./link-glyph";
@@ -22,11 +23,9 @@ export function InvitePanel({
 
   const copy = async () => {
     if (!inviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    } catch {}
+    if (!(await copyText(inviteUrl))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
   };
 
   if (!room) {
