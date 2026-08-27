@@ -7,6 +7,7 @@ import { getCustomIcon, type ControlVariant, type CustomIconMap, type PlayerCont
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { renderCustomIconControl } from "./custom-icon-renderer";
 import { realQualityLabel } from "@/lib/player/resolution-label";
+import { playbackSourceStatus } from "./playback-source-status";
 
 function getControlState(id: PlayerControlId, ctx: ControlContext): string | undefined {
   const preview = ctx.previewStates?.[id];
@@ -164,6 +165,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       const primary = swap ? ctx.subtitle : ctx.title;
       const secondary = swap ? ctx.title : ctx.subtitle;
       const qual = realQualityLabel(ctx.snap.videoWidth, ctx.snap.videoHeight);
+      const sourceStatus = playbackSourceStatus(ctx.snap, ctx.download);
       const lines = (
         <>
           <div className="flex items-center gap-2">
@@ -186,6 +188,32 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
             >
               {secondary}
             </p>
+          )}
+          {sourceStatus && (
+            <span
+              role="status"
+              aria-live="polite"
+              className={`mt-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums backdrop-blur-sm ${
+                sourceStatus.tone === "error"
+                  ? "bg-danger/20 text-red-100"
+                  : sourceStatus.tone === "success"
+                    ? "bg-emerald-400/20 text-emerald-100"
+                    : "bg-white/15 text-white/80"
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`h-1.5 w-1.5 rounded-full ${
+                  sourceStatus.tone === "error"
+                    ? "bg-danger"
+                    : sourceStatus.tone === "success"
+                      ? "bg-emerald-300"
+                      : "animate-pulse bg-white/75"
+                }`}
+              />
+              {t(sourceStatus.label)}
+              {sourceStatus.progress != null ? ` ${sourceStatus.progress}%` : ""}
+            </span>
           )}
         </>
       );
