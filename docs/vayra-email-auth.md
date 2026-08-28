@@ -17,7 +17,8 @@ clients. No secret or `service_role` key is present in the application.
 
 Email sign-up is enabled with mandatory email confirmation. Anonymous sign-in,
 phone sign-in, and manual identity linking are disabled. Email and Google are
-the supported VAYRA account providers. The packaged app uses
+the supported VAYRA account providers. The production Google OAuth application
+is external and published, and its secret is held only by Supabase. The packaged app uses
 `vayra://auth/callback`; Lite uses
 `https://vayra.eybo.tech/auth/callback`.
 
