@@ -47,6 +47,7 @@ const es: Record<string, string> = {
   "common.previous": "Anterior",
   "common.loading": "Cargando",
   "common.retry": "Reintentar",
+  "Skip to current content": "Ir directamente al contenido actual",
   "common.more": "Más",
 
   "search.placeholder": "Buscar películas, series, personas…",
