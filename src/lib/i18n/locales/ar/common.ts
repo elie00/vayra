@@ -34,6 +34,7 @@ const common: Record<string, string> = {
   Save: "حفظ",
   Saved: "تم الحفظ",
   Search: "بحث",
+  "Skip to current content": "الانتقال مباشرة إلى المحتوى الحالي",
   "See all": "عرض الكل",
   Send: "إرسال",
   Show: "إظهار",
