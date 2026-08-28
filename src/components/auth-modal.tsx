@@ -16,6 +16,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
 function VayraEmailModal({ onClose }: { onClose: () => void }) {
   const {
     configured,
+    googleConfigured,
     loading,
     user,
     error,
@@ -153,18 +154,22 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <>
-            <GoogleSignInButton
-              busy={googleBusy}
-              disabled={loading || !configured || busy}
-              onClick={continueWithGoogle}
-            />
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-edge-soft" />
-              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
-                {t("or continue with email")}
-              </span>
-              <span className="h-px flex-1 bg-edge-soft" />
-            </div>
+            {googleConfigured && (
+              <>
+                <GoogleSignInButton
+                  busy={googleBusy}
+                  disabled={loading || !configured || busy}
+                  onClick={continueWithGoogle}
+                />
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-edge-soft" />
+                  <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+                    {t("or continue with email")}
+                  </span>
+                  <span className="h-px flex-1 bg-edge-soft" />
+                </div>
+              </>
+            )}
             <Field label={t("Email")} type="email" value={email} onChange={setEmail} autoFocus disabled={busy || !configured} />
             {!configured && (
               <p className="rounded-lg bg-info/10 px-3 py-2 text-[12px] leading-relaxed text-info">

@@ -8,6 +8,7 @@ export function AccountStep() {
   const t = useT();
   const {
     configured,
+    googleConfigured,
     loading,
     user,
     error,
@@ -125,18 +126,22 @@ export function AccountStep() {
         </div>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-3">
-          <GoogleSignInButton
-            busy={googleBusy}
-            disabled={loading || !configured || busy}
-            onClick={continueWithGoogle}
-          />
-          <div className="flex items-center gap-3 py-1">
-            <span className="h-px flex-1 bg-edge-soft" />
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
-              {t("or continue with email")}
-            </span>
-            <span className="h-px flex-1 bg-edge-soft" />
-          </div>
+          {googleConfigured && (
+            <>
+              <GoogleSignInButton
+                busy={googleBusy}
+                disabled={loading || !configured || busy}
+                onClick={continueWithGoogle}
+              />
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-edge-soft" />
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+                  {t("or continue with email")}
+                </span>
+                <span className="h-px flex-1 bg-edge-soft" />
+              </div>
+            </>
+          )}
           <label className="flex flex-col gap-1.5">
             <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
               {t("Email")}

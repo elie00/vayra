@@ -103,6 +103,7 @@ export function getVayraSupabaseClient(): Promise<SupabaseClient | null> {
 
 type VayraAccountValue = {
   configured: boolean;
+  googleConfigured: boolean;
   loading: boolean;
   user: User | null;
   session: Session | null;
@@ -120,6 +121,7 @@ const VayraAccountContext = createContext<VayraAccountValue | null>(null);
 
 export function VayraAccountProvider({ children }: { children: ReactNode }) {
   const [client, setClient] = useState<SupabaseClient | null>(null);
+  const [googleConfigured, setGoogleConfigured] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(supabaseConfigured);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +133,22 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       setClient(loadedClient);
       if (!loadedClient) setLoading(false);
     });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    let cancelled = false;
+    void fetch(`${supabaseUrl}/auth/v1/settings`, {
+      headers: { apikey: supabaseAnonKey },
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((settings: { external?: { google?: boolean } } | null) => {
+        if (!cancelled) setGoogleConfigured(settings?.external?.google === true);
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
@@ -312,6 +330,7 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
   const value = useMemo<VayraAccountValue>(
     () => ({
       configured: supabaseConfigured,
+      googleConfigured,
       loading,
       user: session?.user ?? null,
       session,
@@ -324,7 +343,7 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       signOut,
       deleteAccount,
     }),
-    [deleteAccount, error, loading, refreshAccess, sendMagicLink, session, signInWithGoogle, signOut, verifyEmailOtp],
+    [deleteAccount, error, googleConfigured, loading, refreshAccess, sendMagicLink, session, signInWithGoogle, signOut, verifyEmailOtp],
   );
 
   return <VayraAccountContext.Provider value={value}>{children}</VayraAccountContext.Provider>;
