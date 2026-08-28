@@ -10,19 +10,18 @@ import {
   type ReactNode,
 } from "react";
 import { onVayraAuthCallback } from "./deep-link";
+import { openUrl } from "./window";
+import {
+  isVayraWebAuthCallback,
+  normalizeVayraAuthUrl,
+  vayraAuthRedirectUrl,
+} from "./vayra-auth-url";
 
 const SESSION_ACCOUNT = "vayra-email-session-v1";
 const WEB_SESSION_KEY = "vayra.email.session.v1";
 const isTauriRuntime =
   typeof window !== "undefined" &&
   ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
-// Production and desktop complete auth through the vayra:// deep link. In web
-// dev the browser can't route that scheme, so bounce the magic link back to the
-// running dev origin and exchange the code in-page (see the DEV effect below).
-const REDIRECT_URL =
-  import.meta.env.DEV && !isTauriRuntime && typeof window !== "undefined"
-    ? `${window.location.origin}/`
-    : "vayra://auth/callback";
 const DEFAULT_SUPABASE_URL = "https://kbuwutnzqapwnvzgyjtw.supabase.co";
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_kLf8ZEhewgc7j5qDAVjCrA_FTdPB2uh";
 
@@ -104,12 +103,15 @@ export function getVayraSupabaseClient(): Promise<SupabaseClient | null> {
 
 type VayraAccountValue = {
   configured: boolean;
+  googleConfigured: boolean;
   loading: boolean;
   user: User | null;
   session: Session | null;
   error: string | null;
   clearError: () => void;
   sendMagicLink: (email: string) => Promise<void>;
+  verifyEmailOtp: (email: string, token: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   refreshAccess: () => Promise<boolean>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -119,6 +121,7 @@ const VayraAccountContext = createContext<VayraAccountValue | null>(null);
 
 export function VayraAccountProvider({ children }: { children: ReactNode }) {
   const [client, setClient] = useState<SupabaseClient | null>(null);
+  const [googleConfigured, setGoogleConfigured] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(supabaseConfigured);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +133,22 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       setClient(loadedClient);
       if (!loadedClient) setLoading(false);
     });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    let cancelled = false;
+    void fetch(`${supabaseUrl}/auth/v1/settings`, {
+      headers: { apikey: supabaseAnonKey },
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((settings: { external?: { google?: boolean } } | null) => {
+        if (!cancelled) setGoogleConfigured(settings?.external?.google === true);
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
@@ -156,7 +175,7 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!client) return;
     return onVayraAuthCallback((rawUrl) => {
-      const callback = new URL(rawUrl);
+      const callback = new URL(normalizeVayraAuthUrl(rawUrl));
       const callbackError = callback.searchParams.get("error_description") ?? callback.searchParams.get("error");
       if (callbackError) {
         setError(callbackError);
@@ -176,12 +195,12 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
     });
   }, [client]);
 
-  // DEV-only web bridge: the desktop deep link never fires in a browser, so
-  // pick up the ?code= the magic link bounced to this origin and exchange it.
-  // Compiled out of production builds (import.meta.env.DEV is statically false).
+  // Lite completes both email and Google PKCE callbacks in the browser. The
+  // packaged app still receives the equivalent code through vayra://.
   useEffect(() => {
-    if (!client || isTauriRuntime || !import.meta.env.DEV) return;
-    const url = new URL(window.location.href);
+    if (!client || isTauriRuntime) return;
+    const url = new URL(normalizeVayraAuthUrl(window.location.href));
+    if (!isVayraWebAuthCallback(url, window.location.origin)) return;
     const errDesc = url.searchParams.get("error_description") ?? url.searchParams.get("error");
     const code = url.searchParams.get("code");
     if (!code && !errDesc) return;
@@ -189,6 +208,7 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       url.searchParams.delete("code");
       url.searchParams.delete("error");
       url.searchParams.delete("error_description");
+      url.pathname = "/";
       window.history.replaceState({}, "", url.pathname + url.search + url.hash);
     };
     if (errDesc) {
@@ -211,7 +231,7 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
       setError(null);
       const { error: signInError } = await client.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: REDIRECT_URL, shouldCreateUser: true },
+        options: { emailRedirectTo: vayraAuthRedirectUrl(), shouldCreateUser: true },
       });
       if (signInError) {
         setError(signInError.message);
@@ -220,6 +240,48 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
     },
     [client],
   );
+
+  const verifyEmailOtp = useCallback(
+    async (email: string, token: string) => {
+      if (!client) throw new Error("VAYRA email sign-in is not configured yet.");
+      setError(null);
+      const { data, error: verifyError } = await client.auth.verifyOtp({
+        email: email.trim(),
+        token: token.replace(/\D/g, ""),
+        type: "email",
+      });
+      if (verifyError) {
+        setError(verifyError.message);
+        throw verifyError;
+      }
+      setSession(data.session);
+    },
+    [client],
+  );
+
+  const signInWithGoogle = useCallback(async () => {
+    if (!client) throw new Error("VAYRA sign-in is not configured yet.");
+    setError(null);
+    const { data, error: oauthError } = await client.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: vayraAuthRedirectUrl(),
+        skipBrowserRedirect: true,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (oauthError) {
+      setError(oauthError.message);
+      throw oauthError;
+    }
+    if (!data.url) {
+      const missingUrl = new Error("Google sign-in did not return an authorization URL.");
+      setError(missingUrl.message);
+      throw missingUrl;
+    }
+    if (isTauriRuntime) openUrl(data.url);
+    else window.location.assign(data.url);
+  }, [client]);
 
   const signOut = useCallback(async () => {
     if (!client) return;
@@ -268,17 +330,20 @@ export function VayraAccountProvider({ children }: { children: ReactNode }) {
   const value = useMemo<VayraAccountValue>(
     () => ({
       configured: supabaseConfigured,
+      googleConfigured,
       loading,
       user: session?.user ?? null,
       session,
       error,
       clearError: () => setError(null),
       sendMagicLink,
+      verifyEmailOtp,
+      signInWithGoogle,
       refreshAccess,
       signOut,
       deleteAccount,
     }),
-    [deleteAccount, error, loading, refreshAccess, sendMagicLink, session, signOut],
+    [deleteAccount, error, googleConfigured, loading, refreshAccess, sendMagicLink, session, signInWithGoogle, signOut, verifyEmailOtp],
   );
 
   return <VayraAccountContext.Provider value={value}>{children}</VayraAccountContext.Provider>;

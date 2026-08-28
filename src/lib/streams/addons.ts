@@ -16,6 +16,7 @@ const SLOW_ADDON_PATTERNS = [
   /aiostreams/i,
   /jackettio/i,
   /torbox/i,
+  /webstreamr/i,
 ];
 
 function isSlowAddon(addon: Addon): boolean {

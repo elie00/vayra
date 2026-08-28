@@ -23,6 +23,8 @@ const misc: Record<string, string> = {
   "Sign in or create an account with your email address.":
     "Connecte-toi ou crée un compte avec ton adresse e-mail.",
   "Continue with email": "Continuer avec l’e-mail",
+  "Continue with Google": "Continuer avec Google",
+  "or continue with email": "ou continuer avec l’e-mail",
   "Sign in to VAYRA": "Se connecter à VAYRA",
   "Sign in or create your VAYRA account": "Connecte-toi ou crée ton compte VAYRA",
   "Use your email for your VAYRA identity. No password required.":
@@ -33,6 +35,9 @@ const misc: Record<string, string> = {
   "Check your inbox and open the VAYRA sign-in link on this device.":
     "Consulte ta boîte mail et ouvre le lien de connexion VAYRA sur cet appareil.",
   "Email me a sign-in link": "M’envoyer un lien de connexion",
+  "If the link opens in another browser, enter the 6-digit code from the email here.":
+    "Si le lien s’ouvre dans un autre navigateur, saisis ici le code à 6 chiffres reçu par e-mail.",
+  "6-digit sign-in code": "Code de connexion à 6 chiffres",
   "Sign in or create a VAYRA account": "Se connecter ou créer un compte VAYRA",
   "Use one private VAYRA identity for the app. External services stay optional.":
     "Utilise une identité VAYRA privée pour l’application. Les services externes restent facultatifs.",

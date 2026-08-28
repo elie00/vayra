@@ -5,6 +5,10 @@ export type ProxyResult = {
   url: string;
 };
 
+export function hasNativeStreamProxy(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
 export async function registerStreamProxy(
   url: string,
   headers?: Record<string, string>,

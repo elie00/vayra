@@ -19,7 +19,8 @@ sans prétendre reproduire les capacités natives du desktop.
 - lecture de liens directement lisibles fournis par un addon ou un service
   debrid configuré ;
 - pack géré préchargé : Cinemeta pour la découverte, WatchHub pour les offres
-  disponibles et OpenSubtitles pour les sous-titres ;
+  disponibles, OpenSubtitles pour les sous-titres et une source HTTP orientée
+  navigateur pour proposer des liens directs sans configuration ;
 - import automatique des addons du compte Stremio, sans doublon ni écrasement ;
 - source de streaming configurée automatiquement lorsqu'une clé debrid est
   enregistrée dans VAYRA ;
@@ -54,6 +55,9 @@ sans prétendre reproduire les capacités natives du desktop.
    meilleure source web compatible. Si aucune lecture directe n'existe mais
    qu'une offre légale est connue, afficher ces choix sans exposer la mécanique
    des addons.
+7. Les sources HTTP sont interrogées directement depuis le navigateur. Les
+   liens nécessitant des en-têtes transmettent ceux autorisés à HLS.js ou
+   mpegts.js et ne doivent jamais appeler le proxy natif Tauri.
 
 ## Architecture de livraison
 

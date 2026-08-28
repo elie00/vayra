@@ -2,19 +2,30 @@ import { describe, expect, it } from "vitest";
 import type { Addon } from "@/lib/addons";
 import {
   hasLiteDebridCredential,
+  liteHttpStreamTransportUrl,
   liteStarterAddons,
   mergeLiteStarterAddons,
 } from "./addon-pack";
 
 describe("VAYRA Lite addon pack", () => {
-  it("ships official discovery, availability and subtitle addons without setup", () => {
+  it("ships discovery, availability, subtitles and browser streams without setup", () => {
     const addons = liteStarterAddons({});
 
     expect(addons.map((addon) => addon.manifest.id)).toEqual([
       "com.linvo.cinemeta",
       "org.stremio.watchhub",
       "org.stremio.opensubtitlesv3",
+      "webstreamr-mbg",
     ]);
+  });
+
+  it("configures the HTTP stream addon for Lite's fallback languages", () => {
+    const url = decodeURIComponent(liteHttpStreamTransportUrl(["Italian"]));
+
+    expect(url).toContain('"multi":"on"');
+    expect(url).toContain('"en":"on"');
+    expect(url).toContain('"fr":"on"');
+    expect(url).toContain('"it":"on"');
   });
 
   it("adds a ready-to-use stream addon only when debrid is configured", () => {
@@ -45,6 +56,6 @@ describe("VAYRA Lite addon pack", () => {
     expect(merged.filter((addon) => addon.manifest.id === "org.stremio.watchhub")).toEqual([
       accountWatchHub,
     ]);
-    expect(merged).toHaveLength(3);
+    expect(merged).toHaveLength(4);
   });
 });
