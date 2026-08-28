@@ -23,6 +23,7 @@ import {
   sourceKeyFor,
 } from "./settings/profile-store";
 import type { Settings, StreamingService } from "./settings/types";
+import { applyLiteRuntimeSettings } from "./lite/runtime-settings";
 
 export type {
   ContentCategory,
@@ -403,9 +404,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [switchProfile],
   );
 
+  const runtimeSettings = useMemo(() => applyLiteRuntimeSettings(settings), [settings]);
   const value = useMemo(
-    () => ({ settings, update, toggleStreaming, switchProfile, setSettingsLinked }),
-    [settings, update, toggleStreaming, switchProfile, setSettingsLinked],
+    () => ({ settings: runtimeSettings, update, toggleStreaming, switchProfile, setSettingsLinked }),
+    [runtimeSettings, update, toggleStreaming, switchProfile, setSettingsLinked],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

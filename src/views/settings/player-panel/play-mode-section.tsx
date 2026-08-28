@@ -1,9 +1,11 @@
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { isWeb } from "@/lib/platform";
 
 export function PlayModePanel() {
   const { settings, update } = useSettings();
   const t = useT();
+  const lite = isWeb();
 
   const mode = settings.seasonSourceLock ? "season" : settings.instantPlay ? "instant" : "manual";
   const selectMode = (id: "instant" | "manual" | "season") => {
@@ -11,7 +13,7 @@ export function PlayModePanel() {
     else update({ instantPlay: id === "instant", seasonSourceLock: false });
   };
 
-  const choices: Array<{
+  const allChoices: Array<{
     id: "instant" | "manual" | "season";
     label: string;
     sub: string;
@@ -34,6 +36,7 @@ export function PlayModePanel() {
       sub: t("Pick a source once and VAYRA keeps playing the rest of that season from the same release, no re-picking. Works best with a debrid season pack. Skipped for anime."),
     },
   ];
+  const choices = lite ? allChoices.filter((choice) => choice.id === "instant") : allChoices;
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -62,7 +65,7 @@ export function PlayModePanel() {
                 <span className="text-[15px] font-semibold text-ink">{c.label}</span>
                 {c.recommended && (
                   <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-accent">
-                    {t("Recommended")}
+                    {lite ? "VAYRA Lite" : t("Recommended")}
                   </span>
                 )}
               </div>
