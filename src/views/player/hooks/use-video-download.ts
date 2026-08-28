@@ -13,13 +13,21 @@ import {
   type DownloadHandle,
   type DownloadProgress,
 } from "@/lib/download/video-download";
+import { nextDownloadTelemetry, type DownloadTelemetry } from "@/lib/download/telemetry";
 import { useSettings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
 
 export type DownloadStatus =
   | { kind: "idle" }
   | { kind: "preparing" }
-  | { kind: "downloading"; ratio: number; receivedBytes: number; totalBytes: number | null }
+  | {
+      kind: "downloading";
+      ratio: number;
+      receivedBytes: number;
+      totalBytes: number | null;
+      bytesPerSecond?: number | null;
+      etaSeconds?: number | null;
+    }
   | { kind: "done"; path: string }
   | { kind: "error"; message: string };
 
@@ -33,6 +41,7 @@ export function useVideoDownload({ url, meta, episode }: Args) {
   const { settings } = useSettings();
   const [status, setStatus] = useState<DownloadStatus>({ kind: "idle" });
   const handleRef = useRef<DownloadHandle | null>(null);
+  const telemetryRef = useRef<DownloadTelemetry | null>(null);
 
   useEffect(
     () => () => {
@@ -68,14 +77,19 @@ export function useVideoDownload({ url, meta, episode }: Args) {
       return;
     }
 
+    telemetryRef.current = null;
     setStatus({ kind: "downloading", ratio: 0, receivedBytes: 0, totalBytes: null });
     const id = randomUuid();
     const handle = startDownload(id, url, path, (p: DownloadProgress) => {
+      const telemetry = nextDownloadTelemetry(telemetryRef.current, p, performance.now());
+      telemetryRef.current = telemetry;
       setStatus({
         kind: "downloading",
         ratio: p.ratio,
         receivedBytes: p.receivedBytes,
         totalBytes: p.totalBytes,
+        bytesPerSecond: telemetry.bytesPerSecond,
+        etaSeconds: telemetry.etaSeconds,
       });
     });
     handleRef.current = handle;
@@ -95,6 +109,7 @@ export function useVideoDownload({ url, meta, episode }: Args) {
       })
       .finally(() => {
         handleRef.current = null;
+        telemetryRef.current = null;
       });
   }, [url, meta, episode, settings.downloadDir]);
 
