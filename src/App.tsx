@@ -42,6 +42,7 @@ import { OfflineBanner } from "@/chrome/offline-banner";
 import { MobileNotice } from "@/components/mobile-notice";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { AppFeedbackHost } from "@/components/app-feedback-host";
+import { AccessibilityNavigation } from "@/components/accessibility-navigation";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
 import { PrivateBetaLaunchModal } from "@/components/private-beta-launch-modal";
@@ -273,6 +274,7 @@ export function App() {
                       <MalAvatarSync />
                       <MiddleClickScroll />
                       <ThemeBackdrop />
+                      <AccessibilityNavigation />
                       <WatchlistSync />
                       <MobileIntegration />
                       <Shell />

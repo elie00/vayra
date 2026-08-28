@@ -39,6 +39,7 @@ const en: Record<string, string> = {
   "common.previous": "Previous",
   "common.loading": "Loading",
   "common.retry": "Retry",
+  "Skip to current content": "Skip to current content",
   "common.more": "More",
   "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.": "VAYRA checks its private release channel for new versions. Nothing installs until you choose to, and a dismissed update never nags you again.",
   "Build identity and support links for reporting an issue.": "Build identity and support links for reporting an issue.",
