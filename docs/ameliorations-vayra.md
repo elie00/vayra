@@ -1,13 +1,13 @@
 # Comment améliorer VAYRA
 
-Dernière mise à jour : 27 août 2026. Constats tirés d'un audit du dépôt mené sur
-plusieurs séances, qui a produit les PR #7 à #40. Le document classe les pistes
-par impact décroissant et donne, pour chacune, les faits qui la fondent.
+Dernière mise à jour : 28 août 2026. Constats tirés d'un audit du dépôt mené sur
+plusieurs séances, puis suivi de correction jusqu'à la PR #89. Le document
+conserve les faits qui ont motivé le chantier et indique désormais leur état.
 
 ## Résumé
 
-Le code lui-même est de bonne facture : typage strict, lint sans avertissement,
-CI verte sur cinq workflows. La majorité des défauts corrigés ne venaient pas
+Le code lui-même est de bonne facture : typage strict, lint sans avertissement
+et CI multiplateforme. La majorité des défauts corrigés ne venaient pas
 d'erreurs de logique mais **de code livré puis débranché**, et de valeurs qui ne
 circulaient pas jusqu'à leur destination. Ce sont des défauts qu'aucun des
 garde-fous en place ne pouvait voir.
@@ -16,6 +16,27 @@ La suite est organisée dans l'ordre suivant : consolider l'UX/UI, qualifier une
 bêta Windows signable, construire VAYRA Lite pour le web, réduire les bundles,
 puis terminer par la qualification réelle de LUMA, CIRA, VARA et VEYA. Le
 périmètre de l'édition web est défini dans [`docs/vayra-lite.md`](vayra-lite.md).
+
+### État au 28 août 2026
+
+| Chantier | État vérifié |
+|---|---|
+| UX/UI | navigation commune, retours d'action globaux et états de source livrés |
+| VAYRA Lite | application web en production à la place du site vitrine |
+| Performance | avatar réduit, Lottie différé et budgets de bundle bloquants en CI |
+| Windows | binaire `VAYRA.exe`, libmpv et outils externes vérifiés par installation silencieuse CI |
+| Linux/Flatpak | sources pnpm hors ligne actualisées, métadonnées et bundle validés en CI |
+| Identité interne | exécutables Cargo et package JavaScript renommés `vayra` |
+| LUMA/CIRA/VARA/VEYA | 228 tests ciblés et 23 suites SQL reproductibles via `pnpm qualify:systems` |
+
+La validation locale finale couvre 95 fichiers et 682 tests frontend. Le
+contrôle `release:check` valide en plus l'identité, la version et les ressources
+natives attendues par les paquets de release.
+
+Les seules validations qui ne peuvent pas être simulées honnêtement restent la
+recette de lecture sur deux comptes/appareils réels, le cast matériel et les
+contrôles d'accessibilité assistée. Elles sont des jalons de release, pas des
+fonctionnalités manquantes.
 
 ---
 
@@ -52,6 +73,12 @@ les tests, ni le lint**. Invisible en CI, invisible en revue.
   que chaque vue déclarée dans le type `View` a un rendu, et que chaque onglet du
   type `Tab` a un bouton, aurait attrapé six des sept régressions ci-dessus.
 
+### État
+
+**Corrigé.** `App.tsx` possède un contrat exhaustif `primaryViewMounts` vérifié
+par TypeScript et `src/chrome/nav-items.test.tsx` verrouille la navigation
+standard. Les layouts partagent désormais la même source de vérité.
+
 ---
 
 ## 2. Le typage donne une assurance partielle
@@ -78,6 +105,13 @@ le point aveugle.
 Se méfier des valeurs par défaut silencieuses aux frontières. `runSignal = 0`
 aurait dû être requis ; `min_size_mb.unwrap_or(50)` aurait dû être une erreur
 explicite plutôt qu'un repli muet.
+
+### État
+
+Les circuits cités ont été corrigés et les contrôles de release vérifient aussi
+les ressources natives obligatoires. La règle demeure active pour les nouvelles
+frontières : une valeur nécessaire ne doit plus devenir optionnelle uniquement
+pour faciliter le montage.
 
 ---
 
@@ -107,6 +141,14 @@ Cibler les **fonctions pures qui décident** : quel fichier lire, quel sous-titr
 afficher, quel épisode est vu, quelle source jouer. Ce sont elles qui produisent
 les symptômes que l'utilisateur remarque, et elles se testent sans mock.
 
+### État
+
+**Corrigé pour cette liste.** Les décisions de thème et ESPN, le client
+Stremboxd, la file/reconnexion Together et la machine d'état HTML5 possèdent
+maintenant des tests directs. Le bridge HTML5 délègue ses transitions visibles
+à une fonction pure couvrant lecture, pause, chargement, buffering, fin, erreur
+et premier rendu.
+
 ---
 
 ## 4. Les erreurs sont avalées par habitude
@@ -130,6 +172,16 @@ produit rien.
   frontend. Le contournement retenu (#10) passe par des commandes backend, ce
   qui est cohérent avec le reste du projet, mais mérite d'être posé comme règle
   explicite.
+
+### État
+
+Les actions disque concernées utilisent les commandes backend autorisées. Les
+échecs d'installation, de reconfiguration et de suppression d'addon sont
+désormais visibles et l'interface ne confirme plus une suppression refusée.
+Le lint possède en outre une jauge bloquante : les 271 rejets Promise historiques
+ne peuvent plus augmenter. Ils doivent décroître au fil des changements, ou être
+remplacés par un traitement, un retour utilisateur ou un commentaire justifiant
+le caractère best-effort.
 
 ---
 
@@ -166,6 +218,16 @@ C'est ce qui a été appliqué aux cinq services debrid.
   JavaScript, pas sur le réseau. Les sept catalogues i18n y sont chargés d'un
   bloc alors qu'un seul sert par session.
 
+### État
+
+**Corrigé et protégé.** Le français contient toutes les clés du catalogue
+anglais et un test de parité empêche toute nouvelle clé manquante. Seul l'anglais
+est chargé d'emblée ; les six autres catalogues sont importés à la demande.
+Lottie a également quitté le chemin critique et l'avatar par défaut est passé
+de 2,1 Mo à 51 Ko. Le chargement initial vérifié est de 800,8 Kio gzip, avec un
+budget CI fixé à 840 Kio ; des budgets séparés couvrent l'entrée, les réglages,
+le player, le WASM et l'avatar.
+
 ---
 
 ## 7. Reprise bloquée quand un téléchargement se termine pendant la pause
@@ -195,7 +257,10 @@ position**, que la source soit encore en téléchargement ou désormais locale.
 
 ---
 
-## Si une seule chose devait être faite
+## Prochain jalon de release
 
-**Le garde-fou sur les points de montage** (§1). C'est peu de travail, et cela
-ferme la vanne d'où provenait l'essentiel des régressions corrigées ici.
+Le garde-fou sur les points de montage est livré. Le prochain jalon n'est plus
+une correction de code connue : il s'agit d'exécuter la recette réelle
+multi-appareils de LUMA/CIRA/VARA/VEYA et les contrôles matériels listés dans
+`docs/compte-rendu-luma-complet.md` et
+`docs/compte-rendu-cira-vara-beta-privee.md`, sur les binaires de release.
