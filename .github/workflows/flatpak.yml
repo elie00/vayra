@@ -17,6 +17,10 @@ on:
       - pnpm-workspace.yaml
       - .github/workflows/flatpak.yml
 
+concurrency:
+  group: flatpak-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -33,6 +37,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y flatpak flatpak-builder appstream desktop-file-utils ostree
       - name: Configure Flathub
         run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+      - name: Restore Flatpak builder state
+        uses: actions/cache@v5
+        with:
+          path: .flatpak-work/state
+          key: flatpak-builder-v1-${{ runner.os }}-${{ hashFiles('flatpak/site.vayra.Vayra.yml', 'flatpak/node-sources.json', 'flatpak/cargo-sources.json', 'pnpm-lock.yaml', 'src-tauri/Cargo.lock', 'vayra-core/Cargo.lock') }}
+          restore-keys: |
+            flatpak-builder-v1-${{ runner.os }}-
       - name: Install pinned SDK
         run: >-
           flatpak install --user -y flathub
