@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { openUrl } from "@/lib/window";
 import { useVayraAccount } from "@/lib/vayra-account";
+import { GoogleSignInButton } from "./auth-modal/google-sign-in-button";
 import { StremioWebButton } from "./auth-modal/stremio-web-button";
 
 export function AuthModal({ onClose }: { onClose: () => void }) {
@@ -13,11 +14,23 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
 }
 
 function VayraEmailModal({ onClose }: { onClose: () => void }) {
-  const { configured, loading, user, error, clearError, sendMagicLink, signOut } = useVayraAccount();
+  const {
+    configured,
+    loading,
+    user,
+    error,
+    clearError,
+    sendMagicLink,
+    verifyEmailOtp,
+    signInWithGoogle,
+    signOut,
+  } = useVayraAccount();
   const t = useT();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState("");
   const dialogRef = useRef<HTMLFormElement>(null);
   useFocusTrap(dialogRef, true);
 
@@ -34,6 +47,25 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
     try {
       await sendMagicLink(email);
       setSent(true);
+    } catch {
+      // The provider exposes the actionable error message.
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const continueWithGoogle = () => {
+    setGoogleBusy(true);
+    clearError();
+    void signInWithGoogle().catch(() => setGoogleBusy(false));
+  };
+
+  const verifyCode = async () => {
+    if (otp.replace(/\D/g, "").length !== 6) return;
+    setBusy(true);
+    clearError();
+    try {
+      await verifyEmailOtp(email, otp);
     } catch {
       // The provider exposes the actionable error message.
     } finally {
@@ -77,11 +109,62 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         ) : sent ? (
-          <div className="rounded-xl border border-accent/25 bg-accent/10 px-4 py-3 text-[13px] leading-relaxed text-ink">
-            {t("Check your inbox and open the VAYRA sign-in link on this device.")}
+          <div className="flex flex-col gap-3 rounded-xl border border-accent/25 bg-accent/10 p-4">
+            <p className="text-[13px] leading-relaxed text-ink">
+              {t("Check your inbox and open the VAYRA sign-in link on this device.")}
+            </p>
+            <p className="text-[12px] leading-relaxed text-ink-muted">
+              {t("If the link opens in another browser, enter the 6-digit code from the email here.")}
+            </p>
+            <div className="flex gap-2">
+              <input
+                value={otp}
+                onChange={(event) => {
+                  setOtp(event.target.value.replace(/\D/g, "").slice(0, 6));
+                  clearError();
+                }}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                aria-label={t("6-digit sign-in code")}
+                placeholder="000000"
+                className="h-11 min-w-0 flex-1 rounded-xl border border-edge bg-canvas px-3 text-center font-mono text-[18px] tracking-[0.22em] text-ink outline-none focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={() => void verifyCode()}
+                disabled={busy || otp.length !== 6}
+                className="h-11 rounded-xl bg-accent px-4 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {busy ? <Loader2 size={15} className="animate-spin" /> : t("Verify")}
+              </button>
+            </div>
+            {error && <p role="alert" className="text-[12.5px] text-danger">{error}</p>}
+            <button
+              type="button"
+              onClick={() => {
+                setSent(false);
+                setOtp("");
+                clearError();
+              }}
+              className="self-start text-[12px] font-medium text-ink-subtle hover:text-ink"
+            >
+              {t("Use another email")}
+            </button>
           </div>
         ) : (
           <>
+            <GoogleSignInButton
+              busy={googleBusy}
+              disabled={loading || !configured || busy}
+              onClick={continueWithGoogle}
+            />
+            <div className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-edge-soft" />
+              <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+                {t("or continue with email")}
+              </span>
+              <span className="h-px flex-1 bg-edge-soft" />
+            </div>
             <Field label={t("Email")} type="email" value={email} onChange={setEmail} autoFocus disabled={busy || !configured} />
             {!configured && (
               <p className="rounded-lg bg-info/10 px-3 py-2 text-[12px] leading-relaxed text-info">

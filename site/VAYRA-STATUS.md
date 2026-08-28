@@ -42,7 +42,7 @@ Détails : `VAYRA-INFRA-SETUP.md` + `docs/setup-*.md`.
 - Domaine canonique confirmé : **`https://vayra.eybo.tech`**.
 - La preview **`https://vayra-site.vercel.app`** reste utilisable pour les
   validations techniques, mais ne constitue pas l'URL publique canonique.
-- Email auth en place sur `main` : `mail.eybo.tech` (Resend) + **Supabase**. Callback natif conservé : `vayra://auth/callback`.
+- Auth VAYRA en place : e-mail via `mail.eybo.tech` (Resend) + **Supabase**, avec code OTP de secours. L’intégration Google est prête côté client et doit être activée avec le client OAuth de production. Callback natif : `vayra://auth/callback`; callback Lite : `https://vayra.eybo.tech/auth/callback`.
 - Les liens d'invitation de l'application utilisent déjà
   **`https://vayra.eybo.tech`**. Leur traitement par la landing reste une
   intégration distincte à spécifier sans modifier le callback natif.

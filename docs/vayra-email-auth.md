@@ -16,8 +16,10 @@ in the frontend because publishable keys are explicitly designed for public
 clients. No secret or `service_role` key is present in the application.
 
 Email sign-up is enabled with mandatory email confirmation. Anonymous sign-in,
-phone sign-in, manual identity linking, and every social provider are disabled.
-Both the Site URL and redirect allow-list use `vayra://auth/callback`.
+phone sign-in, and manual identity linking are disabled. Email and Google are
+the supported VAYRA account providers. The packaged app uses
+`vayra://auth/callback`; Lite uses
+`https://vayra.eybo.tech/auth/callback`.
 
 ## Production email delivery
 
@@ -59,13 +61,16 @@ or exposed through a `VITE_*` variable.
 For an override project, configure the Supabase dashboard as follows:
 
 1. enable the Email provider and passwordless email sign-in;
-2. add `vayra://auth/callback` to the allowed redirect URLs;
+2. add `vayra://auth/callback` and the Lite HTTPS callback to the allowed
+   redirect URLs;
 3. configure the sender identity and email template for EYBO/VAYRA;
-4. keep Google, Apple, Microsoft, and every other social provider disabled.
+4. enable Google with a Web OAuth client whose authorized callback is the
+   Supabase project callback URL; keep other social providers disabled.
 
-The application uses PKCE. The email link must therefore be opened on the same
-device and VAYRA installation that requested it, because that installation owns
-the verifier required to exchange the callback code.
+The application uses PKCE. Opening the email link in the browser or VAYRA
+installation that requested it gives the smoothest hand-off. Every email also
+displays a six-digit OTP so a mail client that opens a different browser cannot
+block sign-in.
 
 ## Session storage
 
