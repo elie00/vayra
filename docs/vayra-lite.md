@@ -18,6 +18,11 @@ sans prétendre reproduire les capacités natives du desktop.
   charge par le navigateur ;
 - lecture de liens directement lisibles fournis par un addon ou un service
   debrid configuré ;
+- pack géré préchargé : Cinemeta pour la découverte, WatchHub pour les offres
+  disponibles et OpenSubtitles pour les sous-titres ;
+- import automatique des addons du compte Stremio, sans doublon ni écrasement ;
+- source de streaming configurée automatiquement lorsqu'une clé debrid est
+  enregistrée dans VAYRA ;
 - CIRA : amis, groupes privés, invitations et blocages ;
 - VARA : création et accès aux salons privés ;
 - VEYA : synchronisation play, pause et seek entre les membres d'un salon ;
@@ -45,6 +50,10 @@ sans prétendre reproduire les capacités natives du desktop.
    applications natives.
 5. Afficher clairement les capacités de la source : lecture directe, debrid
    nécessaire, codec non pris en charge ou fonction réservée au desktop.
+6. Le bouton principal est toujours une lecture express : VAYRA choisit la
+   meilleure source web compatible. Si aucune lecture directe n'existe mais
+   qu'une offre légale est connue, afficher ces choix sans exposer la mécanique
+   des addons.
 
 ## Architecture de livraison
 
