@@ -12,7 +12,7 @@ import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
 import { hasUncachedMarker } from "@/lib/streams/cached";
 import { preflightCheck } from "@/lib/streams/preflight";
 import { resolveStream } from "@/lib/streams/resolve";
-import { registerStreamProxy } from "@/lib/stream-proxy";
+import { hasNativeStreamProxy, registerStreamProxy } from "@/lib/stream-proxy";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayInvite } from "@/lib/together/protocol";
 import { buildPlayInvite } from "@/lib/together/build-invite";
@@ -163,7 +163,12 @@ export function usePickHandler({
       }
       debridFailStreakRef.current = 0;
       let playUrl = r.data.url;
-      if (intent !== "download" && r.data.headers && Object.keys(r.data.headers).length > 0) {
+      if (
+        intent !== "download" &&
+        hasNativeStreamProxy() &&
+        r.data.headers &&
+        Object.keys(r.data.headers).length > 0
+      ) {
         try {
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;
@@ -232,6 +237,7 @@ export function usePickHandler({
           : meta.releaseInfo,
         notWebReady: r.data.notWebReady,
         subtitles: r.data.subtitles,
+        headers: r.data.headers,
         attempt: attempt ?? 0,
         autoFired: autoPickRef.current,
         resume: !!resume,

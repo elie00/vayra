@@ -4,7 +4,7 @@ import { getPlaybackBuffered, getPlaybackPosition, usePlaybackFlag } from "@/lib
 import { isLocalUrl } from "@/lib/player/local-url";
 import { clearOnePickerCache } from "@/lib/picker-cache";
 import { resolveViaDebrids } from "@/lib/streams/resolve";
-import { registerStreamProxy } from "@/lib/stream-proxy";
+import { hasNativeStreamProxy, registerStreamProxy } from "@/lib/stream-proxy";
 import { buildTranscodedUrl, probeStremioServer } from "@/lib/stremio-server";
 import type { DebridStore } from "@/lib/debrid/types";
 import type { Meta } from "@/lib/cinemeta";
@@ -192,7 +192,11 @@ export function useAutoRetry(params: {
           const b = bridgeRef.current;
           if (r.ok && b) {
             let url = r.data.url;
-            if (r.data.headers && Object.keys(r.data.headers).length > 0) {
+            if (
+              hasNativeStreamProxy() &&
+              r.data.headers &&
+              Object.keys(r.data.headers).length > 0
+            ) {
               try {
                 url = (await registerStreamProxy(r.data.url, r.data.headers)).url;
               } catch {
@@ -200,7 +204,12 @@ export function useAutoRetry(params: {
               }
             }
             console.warn(`[player] debrid failover via ${r.via}`);
-            void b.load({ url, subtitles: src.subtitles, notWebReady: r.data.notWebReady ?? src.notWebReady });
+            void b.load({
+              url,
+              subtitles: src.subtitles,
+              notWebReady: r.data.notWebReady ?? src.notWebReady,
+              headers: r.data.headers,
+            });
           } else {
             triggerAutoRetry(`playback error "${snap.errorCode}"`);
           }
@@ -229,6 +238,7 @@ export function useAutoRetry(params: {
     }
     if (
       !proxyRetriedRef.current &&
+      hasNativeStreamProxy() &&
       !isLocal &&
       !isP2pEngine &&
       /^https?:\/\//i.test(src.url) &&
@@ -249,6 +259,7 @@ export function useAutoRetry(params: {
     }
     if (
       !transcodeRescueRef.current &&
+      hasNativeStreamProxy() &&
       !isLocal &&
       !isP2pEngine &&
       /^https?:\/\//i.test(src.url) &&
