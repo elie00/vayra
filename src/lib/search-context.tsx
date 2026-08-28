@@ -161,12 +161,6 @@ export function SearchProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const k = (e.key ?? "").toLowerCase();
-      if ((e.metaKey || e.ctrlKey) && k === "k") {
-        e.preventDefault();
-        setOpen((o) => !o);
-        return;
-      }
       if (e.key === "Escape" && open) {
         e.preventDefault();
         setOpen(false);
