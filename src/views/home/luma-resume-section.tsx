@@ -1,33 +1,10 @@
 import { HardDrive, Play, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import { Row } from "@/components/row";
-import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { useLuma, lumaStore, type LumaResumeEntry } from "@/lib/luma";
-import { readLocalLibrary } from "@/lib/local-library";
-import { localPlayerSrc } from "@/lib/local-library/player-src";
-import { useView, type PlayEpisode } from "@/lib/view";
-
-function asMeta(entry: LumaResumeEntry): Meta {
-  return {
-    id: entry.ref.kind === "catalog" ? entry.ref.metaId : `local:${entry.ref.entryId}`,
-    type: entry.ref.mediaType,
-    name: entry.presentation.title,
-    poster: entry.presentation.artwork,
-    background: entry.presentation.artwork,
-  };
-}
-
-function asEpisode(entry: LumaResumeEntry): PlayEpisode | undefined {
-  const episode = entry.ref.episode;
-  if (!episode) return undefined;
-  return {
-    season: episode.season,
-    episode: episode.episode,
-    videoId: episode.canonicalVideoId,
-    name: entry.presentation.episodeTitle,
-  };
-}
+import { lumaResumeEpisode, resolveLumaResumeTarget } from "@/lib/luma/resume-target";
+import { useView } from "@/lib/view";
 
 function formatRemaining(ms: number): string {
   const minutes = Math.max(1, Math.round(ms / 60_000));
@@ -41,25 +18,24 @@ function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; announce:
   const t = useT();
   const { openPicker, openPlayer } = useView();
   const progress = entry.durationMs > 0 ? Math.max(0, Math.min(1, entry.positionMs / entry.durationMs)) : 0;
-  const episode = asEpisode(entry);
+  const episode = lumaResumeEpisode(entry);
   const subtitle = [
     episode ? `S${episode.season} · E${String(episode.episode).padStart(2, "0")}` : null,
     formatRemaining(entry.durationMs - entry.positionMs),
   ].filter(Boolean).join(" · ");
 
   const resume = () => {
-    if (entry.ref.kind === "local-library") {
-      const entryId = entry.ref.entryId;
-      const local = readLocalLibrary().find((item) => item.id === entryId);
-      if (!local) {
-        lumaStore().clearResume(entry.id);
-        announce(t("This local file is no longer in your library."));
-        return;
-      }
-      openPlayer(localPlayerSrc(local));
+    const target = resolveLumaResumeTarget(entry);
+    if (target.kind === "missing-local") {
+      lumaStore().clearResume(entry.id);
+      announce(t("This local file is no longer in your library."));
       return;
     }
-    openPicker(asMeta(entry), episode, { autoPlay: true, resume: true });
+    if (target.kind === "local") {
+      openPlayer(target.player);
+      return;
+    }
+    openPicker(target.meta, target.episode, { autoPlay: true, resume: true });
   };
 
   return (
