@@ -61,6 +61,8 @@ import { LocalStreamCard } from "./play-picker/local-stream-card";
 import { SubtitleSelectStep } from "./play-picker/subtitle-select-step";
 import { SeasonDownloadOverlay } from "./play-picker/season-download-overlay";
 import type { SeasonDownloadProgress } from "@/lib/download/season-download";
+import { isWeb } from "@/lib/platform";
+import { shouldRevealLiteSourceFallback } from "@/lib/lite/runtime-settings";
 
 const TIER_ORDER: Tier[] = ["4K_DV", "4K_HDR", "4K", "1080p_HDR", "1080p", "720p", "SD", "ROUGH"];
 
@@ -555,9 +557,13 @@ export function PlayPicker({
       !autoExhausted &&
       !autoCancelled
     ) {
-      setAutoExhausted(true);
+      if (shouldRevealLiteSourceFallback(isWeb(), allCount, autoCandidates.length)) {
+        setAutoCancelled(true);
+      } else {
+        setAutoExhausted(true);
+      }
     }
-  }, [autoPlay, pipelineDone, autoCandidates.length, autoExhausted, autoCancelled]);
+  }, [autoPlay, pipelineDone, autoCandidates.length, autoExhausted, autoCancelled, allCount]);
 
   const engineWarming = isEngineWarmingError(resolveError);
   useEffect(() => {

@@ -22,7 +22,7 @@ périmètre de l'édition web est défini dans [`docs/vayra-lite.md`](vayra-lite
 | Chantier | État vérifié |
 |---|---|
 | UX/UI | navigation commune, retours d'action globaux et états de source livrés |
-| VAYRA Lite | application web en production à la place du site vitrine |
+| VAYRA Lite | application web en production, pack d'addons géré et lecture express |
 | Performance | avatar réduit, Lottie différé et budgets de bundle bloquants en CI |
 | Windows | binaire `VAYRA.exe`, libmpv et outils externes vérifiés par installation silencieuse CI |
 | Linux/Flatpak | sources pnpm hors ligne actualisées, métadonnées et bundle validés en CI |
@@ -264,3 +264,22 @@ une correction de code connue : il s'agit d'exécuter la recette réelle
 multi-appareils de LUMA/CIRA/VARA/VEYA et les contrôles matériels listés dans
 `docs/compte-rendu-luma-complet.md` et
 `docs/compte-rendu-cira-vara-beta-privee.md`, sur les binaires de release.
+
+---
+
+## 8. VAYRA Lite : connexion puis lecture, sans configuration d'addons
+
+**Pris en charge.** L'édition web embarque un pack géré d'addons officiels pour
+la découverte, les disponibilités et les sous-titres. À la connexion, les
+addons du compte Stremio sont fusionnés sans doublon et restent prioritaires.
+Lorsqu'une clé debrid est présente, VAYRA construit automatiquement la source
+configurée correspondante sans modifier la collection distante du compte.
+
+Le bouton principal utilise toujours la lecture express sur le web. VAYRA tente
+la meilleure source directement compatible avec le navigateur ; si le titre
+n'est disponible que chez un fournisseur externe, Lite affiche ces offres au
+lieu d'un message technique demandant d'installer un addon.
+
+Cette simplification ne promet pas une disponibilité universelle : la lecture
+directe reste conditionnée aux droits du fournisseur, à un service debrid le
+cas échéant, aux règles CORS et aux codecs pris en charge par le navigateur.
