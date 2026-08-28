@@ -7,7 +7,11 @@ import { getCustomIcon, type ControlVariant, type CustomIconMap, type PlayerCont
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { renderCustomIconControl } from "./custom-icon-renderer";
 import { realQualityLabel } from "@/lib/player/resolution-label";
-import { playbackSourceStatus } from "./playback-source-status";
+import {
+  formatTransferEta,
+  formatTransferRate,
+  playbackSourceStatus,
+} from "./playback-source-status";
 
 function getControlState(id: PlayerControlId, ctx: ControlContext): string | undefined {
   const preview = ctx.previewStates?.[id];
@@ -166,6 +170,12 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       const secondary = swap ? ctx.title : ctx.subtitle;
       const qual = realQualityLabel(ctx.snap.videoWidth, ctx.snap.videoHeight);
       const sourceStatus = playbackSourceStatus(ctx.snap, ctx.download);
+      const transferRate = sourceStatus?.bytesPerSecond != null
+        ? formatTransferRate(sourceStatus.bytesPerSecond)
+        : null;
+      const transferEta = sourceStatus?.etaSeconds != null
+        ? formatTransferEta(sourceStatus.etaSeconds, t)
+        : null;
       const lines = (
         <>
           <div className="flex items-center gap-2">
@@ -213,6 +223,8 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
               />
               {t(sourceStatus.label)}
               {sourceStatus.progress != null ? ` ${sourceStatus.progress}%` : ""}
+              {transferRate ? <span className="text-white/55">· {transferRate}</span> : null}
+              {transferEta ? <span className="text-white/55">· {transferEta}</span> : null}
             </span>
           )}
         </>
