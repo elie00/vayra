@@ -34,6 +34,7 @@ const common: Record<string, string> = {
   Save: "Enregistrer",
   Saved: "Enregistré",
   Search: "Rechercher",
+  "Skip to current content": "Aller directement au contenu actuel",
   "See all": "Tout voir",
   Send: "Envoyer",
   Show: "Afficher",
