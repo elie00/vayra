@@ -8,6 +8,8 @@ import {
 } from "@/lib/addons";
 import { applyOrderToItems, loadDisplayOrder } from "@/lib/addons-store/reorder";
 import type { useSettings } from "@/lib/settings";
+import { mergeLiteStarterAddons } from "@/lib/lite/addon-pack";
+import { isWeb } from "@/lib/platform";
 
 type Settings = ReturnType<typeof useSettings>["settings"];
 
@@ -51,9 +53,18 @@ export function useAddons(authKey: string | null, settings: Settings): {
       const stremioAddons = filterEnabled(authKey ? await userAddons(authKey).catch(() => []) : []);
       const installed = filterEnabled(await fetchInstalledAddons().catch(() => []));
       if (cancelled) return;
+      const sourceAddons = isWeb()
+        ? filterEnabled(
+            mergeLiteStarterAddons(
+              [...stremioAddons, ...installed],
+              debridKeys,
+              settings.preferredLanguages,
+            ),
+          )
+        : [...stremioAddons, ...installed];
       const merged: Addon[] = [];
       const idxByUrl = new Map<string, number>();
-      for (const a of [...stremioAddons, ...installed]) {
+      for (const a of sourceAddons) {
         const existingIdx = idxByUrl.get(a.transportUrl);
         if (existingIdx === undefined) {
           idxByUrl.set(a.transportUrl, merged.length);
