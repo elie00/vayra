@@ -1,18 +1,55 @@
-import { Search, CornerDownLeft } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft, Play, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { emitAppFeedback } from "@/lib/app-feedback";
+import { rankCommands } from "@/lib/command-search";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
+import { lumaStore, useLuma, type LumaResumeEntry } from "@/lib/luma";
+import { resolveLumaResumeTarget } from "@/lib/luma/resume-target";
+import { useSearch } from "@/lib/search-context";
 import { useView } from "@/lib/view";
 import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 
 const CAPABILITIES = currentPlatformCapabilities();
 
-type Command = { id: string; label: string; run: () => void };
+type Command = {
+  id: string;
+  label: string;
+  description?: string;
+  keywords?: string[];
+  kind: "resume" | "search" | "navigation";
+  run: () => void;
+};
+
+function resumeDescription(
+  entry: LumaResumeEntry,
+  translate: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  const episode = entry.ref.episode;
+  const episodeLabel = episode ? `S${episode.season} · E${String(episode.episode).padStart(2, "0")}` : null;
+  const seconds = Math.max(0, Math.ceil((entry.durationMs - entry.positionMs) / 1000));
+  let remaining: string | null = null;
+  if (seconds > 0 && seconds < 60) remaining = translate("{s}s left", { s: seconds });
+  else if (seconds >= 60 && seconds < 3600) remaining = translate("{m}m left", { m: Math.ceil(seconds / 60) });
+  else if (seconds >= 3600) {
+    const minutes = Math.ceil(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    remaining = rest
+      ? translate("{h}h {m}m left", { h: hours, m: rest })
+      : translate("{h}h left", { h: hours });
+  }
+  return [episodeLabel, entry.presentation.episodeTitle, remaining, translate("Local only")]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 export function CommandPalette() {
   const t = useT();
   const view = useView();
+  const search = useSearch();
+  const luma = useLuma();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
@@ -51,37 +88,80 @@ export function CommandPalette() {
       run();
       setOpen(false);
     };
+    const resume = luma.document.resumes[0];
+    const navigation = (id: string, label: string, run: () => void, keywords: string[] = []): Command => ({
+      id,
+      label,
+      keywords,
+      kind: "navigation",
+      run: go(run),
+    });
     return [
-      { id: "home", label: t("nav.home"), run: go(() => view.setView("home")) },
-      { id: "discover", label: t("nav.discover"), run: go(() => view.setView("discover")) },
-      { id: "movies", label: t("nav.movies"), run: go(() => view.setView("movies")) },
-      { id: "shows", label: t("nav.shows"), run: go(() => view.setView("shows")) },
-      { id: "anime", label: t("nav.anime"), run: go(() => view.setView("anime")) },
-      { id: "live", label: t("nav.live"), run: go(() => view.setView("live")) },
-      { id: "sports", label: t("nav.sports"), run: go(() => view.setView("sports")) },
-      { id: "vod", label: t("nav.playlists"), run: go(() => view.setView("vod")) },
-      { id: "calendar", label: t("nav.calendar"), run: go(() => view.setView("calendar")) },
-      { id: "library", label: t("nav.library"), run: go(() => view.setView("library")) },
-      ...(CAPABILITIES.nativeDownloads
-        ? [{ id: "downloads", label: t("nav.downloads"), run: go(() => view.setView("downloads")) }]
+      ...(resume
+        ? [{
+            id: "luma-resume",
+            label: t("Resume {title} with LUMA", { title: resume.presentation.title }),
+            description: resumeDescription(resume, t),
+            keywords: ["resume", "continue", "watch", "play", "luma", resume.presentation.title],
+            kind: "resume" as const,
+            run: go(() => {
+              const target = resolveLumaResumeTarget(resume);
+              if (target.kind === "missing-local") {
+                lumaStore().clearResume(resume.id);
+                emitAppFeedback({ kind: "info", text: t("This local file is no longer in your library.") });
+              } else if (target.kind === "local") {
+                view.openPlayer(target.player);
+              } else {
+                view.openPicker(target.meta, target.episode, { autoPlay: true, resume: true });
+              }
+            }),
+          }]
         : []),
-      { id: "collections", label: t("Collections"), run: go(() => view.openCollections()) },
-      { id: "queue", label: t("Discovery Queue"), run: go(() => view.openQueue()) },
-      { id: "stats", label: t("Stats"), run: go(() => view.openStats()) },
-      { id: "addons", label: t("nav.addons"), run: go(() => view.setView("addons")) },
-      { id: "settings", label: t("nav.settings"), run: go(() => view.openSettings()) },
+      {
+        id: "global-search",
+        label: t("common.search"),
+        description: t("search.placeholder"),
+        keywords: ["find", "movie", "show", "person", "addon"],
+        kind: "search" as const,
+        run: go(() => {
+          search.clear();
+          search.setOpen(true);
+        }),
+      },
+      navigation("home", t("nav.home"), () => view.setView("home"), ["start"]),
+      navigation("discover", t("nav.discover"), () => view.setView("discover"), ["browse", "explore"]),
+      navigation("movies", t("nav.movies"), () => view.setView("movies"), ["film", "cinema"]),
+      navigation("shows", t("nav.shows"), () => view.setView("shows"), ["series", "tv"]),
+      navigation("anime", t("nav.anime"), () => view.setView("anime")),
+      navigation("live", t("nav.live"), () => view.setView("live"), ["channel", "iptv"]),
+      navigation("sports", t("nav.sports"), () => view.setView("sports"), ["match", "game"]),
+      navigation("vod", t("nav.playlists"), () => view.setView("vod")),
+      navigation("calendar", t("nav.calendar"), () => view.setView("calendar"), ["schedule"]),
+      navigation("library", t("nav.library"), () => view.setView("library"), ["saved", "local"]),
+      ...(CAPABILITIES.nativeDownloads
+        ? [navigation("downloads", t("nav.downloads"), () => view.setView("downloads"), ["offline"])]
+        : []),
+      navigation("collections", t("Collections"), () => view.openCollections(), ["saved"]),
+      navigation("queue", t("Discovery Queue"), () => view.openQueue(), ["next"]),
+      navigation("stats", t("Stats"), () => view.openStats(), ["history", "activity"]),
+      navigation("addons", t("nav.addons"), () => view.setView("addons"), ["extensions"]),
+      navigation("settings", t("nav.settings"), () => view.openSettings(), ["preferences", "options"]),
     ];
-  }, [t, view]);
+  }, [luma.document.resumes, search, t, view]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return commands;
-    return commands.filter((c) => c.label.toLowerCase().includes(q));
+    return rankCommands(commands, query);
   }, [commands, query]);
 
   useEffect(() => {
     if (sel >= filtered.length) setSel(filtered.length > 0 ? filtered.length - 1 : 0);
   }, [filtered.length, sel]);
+
+  useEffect(() => {
+    const option = filtered[sel];
+    if (!open || !option) return;
+    document.getElementById(`cmdp-opt-${option.id}`)?.scrollIntoView({ block: "nearest" });
+  }, [filtered, open, sel]);
 
   if (!open) return null;
 
@@ -103,7 +183,7 @@ export function CommandPalette() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-start justify-center bg-black/50 px-4 pt-[12vh] backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-start justify-center bg-black/55 px-4 pt-[10dvh] backdrop-blur-md"
       onMouseDown={() => setOpen(false)}
     >
       <div
@@ -111,12 +191,12 @@ export function CommandPalette() {
         role="dialog"
         aria-modal="true"
         aria-label={t("Command palette")}
-        className="w-full max-w-xl overflow-hidden rounded-2xl border border-edge-soft bg-canvas shadow-2xl"
+        className="w-full max-w-[38rem] overflow-hidden rounded-[1.4rem] border border-edge-soft bg-canvas/92 shadow-[0_32px_90px_-32px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl"
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
       >
-        <div className="flex items-center gap-2.5 border-b border-edge-soft px-4">
-          <Search size={16} strokeWidth={1.9} className="shrink-0 text-ink-subtle" />
+        <div className="flex items-center gap-3 border-b border-edge-soft px-5">
+          <Search size={17} strokeWidth={1.9} className="shrink-0 text-ink-muted" />
           <input
             ref={inputRef}
             value={query}
@@ -130,18 +210,19 @@ export function CommandPalette() {
             aria-expanded
             aria-controls="command-palette-list"
             aria-activedescendant={filtered[sel] ? `cmdp-opt-${filtered[sel].id}` : undefined}
-            className="h-12 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-subtle"
+            className="h-14 flex-1 bg-transparent text-[14px] font-medium text-ink outline-none placeholder:font-normal placeholder:text-ink-subtle"
           />
+          <kbd className="hidden rounded-md border border-edge-soft bg-surface px-1.5 py-0.5 font-mono text-[10px] text-ink-subtle sm:block">esc</kbd>
         </div>
         <div
           ref={listRef}
           id="command-palette-list"
           role="listbox"
           aria-label={t("Command palette")}
-          className="max-h-[50vh] overflow-y-auto py-1.5"
+          className="max-h-[54dvh] overflow-y-auto p-2"
         >
           {filtered.length === 0 ? (
-            <div className="px-4 py-6 text-center text-[13px] text-ink-subtle">{t("No matches")}</div>
+            <div className="px-4 py-10 text-center text-[13px] text-ink-subtle">{t("No matches")}</div>
           ) : (
             filtered.map((c, i) => (
               <button
@@ -152,15 +233,31 @@ export function CommandPalette() {
                 aria-selected={i === sel}
                 onMouseEnter={() => setSel(i)}
                 onClick={() => c.run()}
-                className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[13.5px] transition-colors ${
-                  i === sel ? "bg-elevated text-ink" : "text-ink-muted hover:bg-elevated/60"
+                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-[background-color,transform] duration-150 active:scale-[0.995] ${
+                  i === sel ? "bg-raised text-ink" : "text-ink-muted hover:bg-elevated/70"
                 }`}
               >
-                <span>{c.label}</span>
-                {i === sel && <CornerDownLeft size={13} strokeWidth={1.9} className="text-ink-subtle" />}
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.7rem] border ${
+                  c.kind === "resume"
+                    ? "border-accent/30 bg-accent/12 text-accent"
+                    : c.kind === "search"
+                      ? "border-edge bg-elevated text-ink"
+                      : "border-edge-soft bg-surface text-ink-subtle"
+                }`}>
+                  {c.kind === "resume" ? <Play size={14} fill="currentColor" /> : c.kind === "search" ? <Search size={14} /> : <ArrowUpRight size={14} />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-semibold text-current">{c.label}</span>
+                  {c.description ? <span className="mt-0.5 block truncate text-[11.5px] font-normal text-ink-subtle">{c.description}</span> : null}
+                </span>
+                {i === sel && <CornerDownLeft size={14} strokeWidth={1.9} className="shrink-0 text-ink-subtle" />}
               </button>
             ))
           )}
+        </div>
+        <div className="flex items-center justify-between border-t border-edge-soft px-5 py-2 text-[10.5px] text-ink-subtle">
+          <span className="font-medium tracking-wide">VAYRA COMMAND</span>
+          <span className="flex items-center gap-3 font-mono"><span>↑↓</span><span>↵</span></span>
         </div>
       </div>
     </div>,
