@@ -12,6 +12,7 @@ const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window
 const DIRECT_HOSTS = new Set([
   "torrentio.strem.fun",
   "stremio.torbox.app",
+  "87d6a6ef6b58-webstreamrmbg.baby-beamup.club",
 ]);
 
 const PROXY_HOSTS = new Set([

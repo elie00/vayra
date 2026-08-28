@@ -7,7 +7,7 @@ import { SHORT_PLAYBACK_SEC } from "@/lib/dead-streams";
 import { savePlayback } from "@/lib/playback-history";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
-import { registerStreamProxy } from "@/lib/stream-proxy";
+import { hasNativeStreamProxy, registerStreamProxy } from "@/lib/stream-proxy";
 import type { PlayerSrc } from "@/lib/view";
 import type { DebridStore } from "@/lib/debrid/types";
 
@@ -95,7 +95,11 @@ export function useStreamSwitcher(params: {
         return;
       }
       let playUrl = r.data.url;
-      if (r.data.headers && Object.keys(r.data.headers).length > 0) {
+      if (
+        hasNativeStreamProxy() &&
+        r.data.headers &&
+        Object.keys(r.data.headers).length > 0
+      ) {
         try {
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;
@@ -120,6 +124,7 @@ export function useStreamSwitcher(params: {
           url: playUrl,
           subtitles: r.data.subtitles,
           notWebReady: r.data.notWebReady,
+          headers: r.data.headers,
           startAtSec: resumeAt > 5 ? resumeAt : undefined,
         });
         await b.play().catch(() => {});

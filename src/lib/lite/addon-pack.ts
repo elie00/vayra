@@ -40,6 +40,56 @@ const OFFICIAL_LITE_ADDONS: readonly Addon[] = [
   },
 ];
 
+const WEBSTREAMR_BASE = "https://87d6a6ef6b58-webstreamrmbg.baby-beamup.club";
+const WEBSTREAMR_LANGS: Readonly<Record<string, string>> = {
+  en: "en",
+  english: "en",
+  anglais: "en",
+  fr: "fr",
+  french: "fr",
+  français: "fr",
+  francais: "fr",
+  es: "es",
+  spanish: "es",
+  espagnol: "es",
+  de: "de",
+  german: "de",
+  allemand: "de",
+  it: "it",
+  italian: "it",
+  italien: "it",
+};
+
+export function liteHttpStreamTransportUrl(preferredLanguages: string[] = []): string {
+  // English and French make the zero-configuration pack useful immediately;
+  // explicit preferences add supported languages without removing that fallback.
+  const languages = new Set(["en", "fr"]);
+  for (const language of preferredLanguages) {
+    const normalized = language.trim().toLocaleLowerCase("en");
+    const code = WEBSTREAMR_LANGS[normalized];
+    if (code) languages.add(code);
+  }
+  const config = Object.fromEntries([
+    ["multi", "on"],
+    ...[...languages].sort().map((language) => [language, "on"]),
+  ]);
+  return `${WEBSTREAMR_BASE}/${encodeURIComponent(JSON.stringify(config))}/manifest.json`;
+}
+
+function liteHttpStreamAddon(preferredLanguages: string[]): Addon {
+  return {
+    transportUrl: liteHttpStreamTransportUrl(preferredLanguages),
+    manifest: {
+      id: "webstreamr-mbg",
+      name: "WebStreamrMBG",
+      version: "0.73.2",
+      resources: ["stream"],
+      types: ["movie", "series"],
+      idPrefixes: ["tt", "tmdb:"],
+    },
+  };
+}
+
 export function hasLiteDebridCredential(keys: DebridKeySet): boolean {
   return Object.values(keys).some((value) => typeof value === "string" && value.trim().length > 0);
 }
@@ -52,6 +102,7 @@ export function liteStarterAddons(
     ...addon,
     manifest: { ...addon.manifest },
   }));
+  addons.push(liteHttpStreamAddon(preferredLanguages));
   if (!hasLiteDebridCredential(keys)) return addons;
 
   const config = torrentioConfigFor(keys, preferredLanguages);

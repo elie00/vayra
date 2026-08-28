@@ -38,7 +38,7 @@ playback continuity, a personal queue and the immersive living-room experience.
 <br/>
 
 > [!IMPORTANT]
-> VAYRA is a media player and a client for the open Stremio addon protocol. It hosts, indexes, and ships no media, and it bundles no content addons. You bring your own addons and sources. See the [Disclaimer](#disclaimer).
+> VAYRA is a media player and a client for the open Stremio addon protocol. It hosts, indexes, and ships no media. VAYRA Lite preloads references to independent addons; you remain responsible for the sources you use. See the [Disclaimer](#disclaimer).
 
 VAYRA is independent from Stremio Ltd. A Stremio account is optional and remains
 separate from the VAYRA email account used for private collaborative features.

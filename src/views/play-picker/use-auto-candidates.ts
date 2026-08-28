@@ -6,6 +6,7 @@ import { streamMatchesEntry, streamMatchesSource, type PlaybackEntry } from "@/l
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores } from "@/lib/together/source-match";
 import { hostSourceStream } from "@/lib/together/host-stream";
+import { hasNativeStreamProxy } from "@/lib/stream-proxy";
 import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from "./picker-utils";
 
 const RES_PREF: Record<string, number> = { "1080p": 0, "720p": 1, "480p": 2, "4K": 3, SD: 4 };
@@ -62,6 +63,7 @@ export function useAutoCandidates(args: {
     const previousMatch = previousPlayback
       ? filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null
       : null;
+    const preferWebReady = !hasNativeStreamProxy();
     const sorted = filteredPicker.all.slice().sort((a, b) => {
       if (matchScores) {
         const dm = (matchScores.get(b) ?? 0) - (matchScores.get(a) ?? 0);
@@ -70,6 +72,11 @@ export function useAutoCandidates(args: {
       const aw = isWatchHub(a) ? 1 : 0;
       const bw = isWatchHub(b) ? 1 : 0;
       if (aw !== bw) return aw - bw;
+      if (preferWebReady) {
+        const ar = a.behaviorHints?.notWebReady === true ? 1 : 0;
+        const br = b.behaviorHints?.notWebReady === true ? 1 : 0;
+        if (ar !== br) return ar - br;
+      }
       const ai0 = instantTier(a);
       const bi0 = instantTier(b);
       if (ai0 !== bi0) return ai0 - bi0;

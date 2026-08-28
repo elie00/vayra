@@ -14,6 +14,7 @@ import { bufferedAhead, readAudioTracks, videoAudio } from "./audio-tracks";
 import { mapErrorCode, mapErrorMessage } from "./error-map";
 import { mountCustomPip } from "./pip";
 import { deriveHtml5PlaybackState } from "./playback-state";
+import { browserMediaHeaders } from "./request-headers";
 
 let DOCUMENT_PIP_KNOWN_BROKEN = false;
 
@@ -376,14 +377,29 @@ export function createHtml5Bridge(): PlayerBridge {
 
       const bare = src.url.toLowerCase().split("?")[0];
       const lowerUrl = src.url.toLowerCase();
+      const requestHeaders = browserMediaHeaders(src.headers);
+      const hasRequestHeaders = Object.keys(requestHeaders).length > 0;
       const isHls = /\.m3u8$/.test(bare) || lowerUrl.includes("m3u8") || lowerUrl.includes("/playlist/");
       const isTs = bare.endsWith(".ts") || (src.notWebReady === true && !isHls && !/\.(mp4|webm|mov|mkv|mpd)$/.test(bare));
       if (isHls && Hls.isSupported()) {
-        hls = new Hls(
-          src.notWebReady === true || src.isLive === true
+        hls = new Hls({
+          ...(src.notWebReady === true || src.isLive === true
             ? { enableWorker: true, lowLatencyMode: false, liveDurationInfinity: true, backBufferLength: 30 }
-            : { enableWorker: true },
-        );
+            : { enableWorker: true }),
+          ...(hasRequestHeaders
+            ? {
+                xhrSetup: (xhr: XMLHttpRequest) => {
+                  for (const [name, value] of Object.entries(requestHeaders)) {
+                    try {
+                      xhr.setRequestHeader(name, value);
+                    } catch {
+                      // A browser may still reserve a vendor-specific header.
+                    }
+                  }
+                },
+              }
+            : {}),
+        });
         hls.loadSource(src.url);
         hls.attachMedia(video);
         hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, refreshSnapshot);
@@ -391,7 +407,12 @@ export function createHtml5Bridge(): PlayerBridge {
       } else if (isTs && mpegts.isSupported()) {
         tsPlayer = mpegts.createPlayer(
           { type: "mpegts", url: src.url, isLive: true, cors: true },
-          { enableWorker: true, liveBufferLatencyChasing: true, lazyLoadMaxDuration: 4 },
+          {
+            enableWorker: true,
+            liveBufferLatencyChasing: true,
+            lazyLoadMaxDuration: 4,
+            ...(hasRequestHeaders ? { headers: requestHeaders } : {}),
+          },
         );
         tsPlayer.attachMediaElement(video);
         tsPlayer.on(mpegts.Events.ERROR, refreshSnapshot);

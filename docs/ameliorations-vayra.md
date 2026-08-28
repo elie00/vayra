@@ -22,7 +22,7 @@ périmètre de l'édition web est défini dans [`docs/vayra-lite.md`](vayra-lite
 | Chantier | État vérifié |
 |---|---|
 | UX/UI | navigation commune, retours d'action globaux et états de source livrés |
-| VAYRA Lite | application web en production, pack d'addons géré et lecture express |
+| VAYRA Lite | application web en production, pack d'addons géré, source HTTP et lecture express |
 | Performance | avatar réduit, Lottie différé et budgets de bundle bloquants en CI |
 | Windows | binaire `VAYRA.exe`, libmpv et outils externes vérifiés par installation silencieuse CI |
 | Linux/Flatpak | sources pnpm hors ligne actualisées, métadonnées et bundle validés en CI |

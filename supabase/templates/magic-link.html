@@ -26,8 +26,13 @@
                     </td>
                   </tr>
                 </table>
+                <div style="margin:24px 0 0;padding:18px;border:1px solid #4b4d50;border-radius:12px;background:#0a0b0d;text-align:center;">
+                  <p style="margin:0 0 8px;color:#a8aaad;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Code de secours</p>
+                  <p style="margin:0;color:#f4f2ed;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:28px;font-weight:700;letter-spacing:0.22em;">{{ .Token }}</p>
+                </div>
+                <p style="margin:12px 0 0;color:#a8aaad;font-size:13px;line-height:1.55;">Si l’e-mail ouvre un autre navigateur, saisissez ce code à 6 chiffres dans VAYRA.</p>
                 <p style="margin:28px 0 8px;color:#a8aaad;font-size:13px;line-height:1.55;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:</p>
-                <p style="margin:0;word-break:break-all;color:#c5c7ca;font-size:12px;line-height:1.55;">{{ .ConfirmationURL }}</p>
+                <p style="margin:0;word-break:break-all;color:#c5c7ca;font-size:12px;line-height:1.55;"><a href="{{ .ConfirmationURL }}" style="color:#c5c7ca;text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
                 <p style="margin:32px 0 0;color:#737579;font-size:12px;line-height:1.55;">Ce lien est personnel. Si vous n’êtes pas à l’origine de cette demande, ignorez simplement cet email.</p>
               </td>
             </tr>

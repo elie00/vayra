@@ -6,7 +6,7 @@ import { useDebridClients } from "@/lib/debrid/registry";
 import type { PanelCorner } from "@/lib/player-chrome";
 import { useSettings } from "@/lib/settings";
 import { spoilerMaskFor } from "@/lib/spoilers";
-import { registerStreamProxy } from "@/lib/stream-proxy";
+import { hasNativeStreamProxy, registerStreamProxy } from "@/lib/stream-proxy";
 import { preflightCheck } from "@/lib/streams/preflight";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
@@ -115,7 +115,11 @@ export function EpisodePanel({
         return;
       }
       let playUrl = r.data.url;
-      if (r.data.headers && Object.keys(r.data.headers).length > 0) {
+      if (
+        hasNativeStreamProxy() &&
+        r.data.headers &&
+        Object.keys(r.data.headers).length > 0
+      ) {
         try {
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;
@@ -138,8 +142,9 @@ export function EpisodePanel({
         episode: ep,
         url: playUrl,
         title: stream.parsedTitle ?? stream.title ?? stream.name ?? meta.name,
-        notWebReady: !stream.url && !!stream.infoHash,
-        subtitles: [],
+        notWebReady: r.data.notWebReady ?? (!stream.url && !!stream.infoHash),
+        subtitles: r.data.subtitles ?? [],
+        headers: r.data.headers,
         streamRef: {
           infoHash: stream.infoHash ?? null,
           fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
