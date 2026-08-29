@@ -20,7 +20,7 @@ export function WindowResizeEdges() {
   const { settings } = useSettings();
   if (!IS_TAURI || settings.useNativeTitleBar) return null;
   return (
-    <div className="pointer-events-none fixed inset-0 z-[115]">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[115]">
       {EDGES.map((e) => (
         <div
           key={e.dir}

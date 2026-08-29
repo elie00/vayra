@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
-import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
+import {
+  close,
+  minimize,
+  toggleMaximize,
+  useMaximized,
+  windowControlShortcut,
+  windowZoomLabel,
+} from "@/lib/window";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { hasDesktopFeatures } from "@/lib/platform";
@@ -15,10 +22,18 @@ export function WindowControls() {
   if (!IS_TAURI || settings.useNativeTitleBar) return null;
   return (
     <div data-tauri-drag-region="false" className="flex items-center gap-2">
-      <Ctl label={t("chrome.minimize")} onClick={() => void minimize()}>
+      <Ctl
+        label={t("chrome.minimize")}
+        shortcut={windowControlShortcut("minimize")}
+        onClick={() => void minimize()}
+      >
         <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       </Ctl>
-      <Ctl label={maxed ? t("chrome.restore") : t("chrome.maximize")} onClick={() => void toggleMaximize()}>
+      <Ctl
+        label={windowZoomLabel(maxed, t)}
+        shortcut={windowControlShortcut("zoom")}
+        onClick={() => void toggleMaximize()}
+      >
         {maxed ? (
           <>
             <rect x="2.5" y="4.5" width="6" height="6" stroke="currentColor" strokeWidth="1.4" rx="1" />
@@ -28,7 +43,12 @@ export function WindowControls() {
           <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.4" rx="1.2" />
         )}
       </Ctl>
-      <Ctl label={t("common.close")} onClick={() => void close()} danger>
+      <Ctl
+        label={t("common.close")}
+        shortcut={windowControlShortcut("close")}
+        onClick={() => void close()}
+        danger
+      >
         <path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       </Ctl>
     </div>
@@ -37,11 +57,13 @@ export function WindowControls() {
 
 function Ctl({
   label,
+  shortcut,
   onClick,
   danger,
   children,
 }: {
   label: string;
+  shortcut?: string;
   onClick: () => void;
   danger?: boolean;
   children: ReactNode;
@@ -50,14 +72,15 @@ function Ctl({
     <button
       type="button"
       aria-label={label}
+      aria-keyshortcuts={shortcut}
       title={label}
       onClick={onClick}
       data-tauri-drag-region="false"
-      className={`flex h-9 w-9 items-center justify-center rounded-full bg-elevated/85 text-ink-muted ring-1 ring-edge-soft/60 backdrop-blur-md transition-colors hover:text-ink ${
+      className={`flex h-11 w-11 items-center justify-center rounded-full bg-elevated/85 text-ink-muted ring-1 ring-edge-soft/60 backdrop-blur-md transition-colors hover:text-ink ${
         danger ? "hover:bg-danger hover:text-white" : "hover:bg-raised"
       }`}
     >
-      <svg width="16" height="16" viewBox="0 0 13 13" fill="none">
+      <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 13 13" fill="none">
         {children}
       </svg>
     </button>

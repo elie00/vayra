@@ -15,6 +15,20 @@ const win: Window | null = isTauri() && !isMobileTauri() ? getCurrentWindow() : 
 const IS_MAC =
   typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);
 
+type Translate = (key: string) => string;
+
+export function windowZoomLabel(maximized: boolean, translate: Translate): string {
+  if (IS_MAC) return translate(maximized ? "Exit fullscreen" : "Enter fullscreen");
+  return translate(maximized ? "chrome.restore" : "chrome.maximize");
+}
+
+export function windowControlShortcut(action: "close" | "minimize" | "zoom"): string | undefined {
+  if (!IS_MAC) return undefined;
+  if (action === "close") return "Meta+W";
+  if (action === "minimize") return "Meta+M";
+  return "Control+Meta+F";
+}
+
 function isTauri() {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
