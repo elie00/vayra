@@ -126,7 +126,12 @@ function SeasonPicker({
       </Step>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <button
+            type="button"
+            aria-label={t("Close")}
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => setOpen(false)}
+          />
           <div className="absolute start-14 top-14 z-20 grid max-h-[260px] w-[320px] grid-cols-5 gap-2 overflow-y-auto rounded-2xl bg-white p-3 shadow-[0_20px_50px_-16px_rgba(20,60,70,0.5)] ring-1 ring-[#1f8f88]/20">
             {seasons.map((s) => (
               <button

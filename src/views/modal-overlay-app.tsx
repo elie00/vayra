@@ -89,5 +89,13 @@ function ModalRouter() {
     );
   }
 
-  return <div className="fixed inset-0" style={{ background: "transparent" }} onClick={close} />;
+  return (
+    <button
+      type="button"
+      aria-label="Close modal"
+      className="fixed inset-0 cursor-default"
+      style={{ background: "transparent" }}
+      onClick={close}
+    />
+  );
 }

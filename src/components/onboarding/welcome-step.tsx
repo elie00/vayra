@@ -24,7 +24,7 @@ export function WelcomeStep() {
           A product by EYBO
         </p>
       </div>
-      <div className="grid grid-cols-3 gap-3 pt-2">
+      <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-3">
         <Bullet title={t("Current")}>{t("Trending, in theaters, what's on every streamer.")}</Bullet>
         <Bullet title={t("Yours")}>{t("Your VAYRA account stays separate from optional services.")}</Bullet>
         <Bullet title={t("Quiet")}>{t("No telemetry, no servers, no bundled keys.")}</Bullet>

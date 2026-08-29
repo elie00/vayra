@@ -1,5 +1,5 @@
 import { ArrowRight, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DoneStep } from "@/components/onboarding/done-step";
 import { Dots } from "@/components/onboarding/dots";
 import { AccountStep } from "@/components/onboarding/account-step";
@@ -20,9 +20,17 @@ export function OnboardingModal() {
   const t = useT();
   const [stepIdx, setStepIdx] = useState(0);
   const [closing, setClosing] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!onboarded) document.body.style.overflow = "hidden";
+    if (!onboarded) {
+      document.body.style.overflow = "hidden";
+      const frame = requestAnimationFrame(() => dialogRef.current?.focus({ preventScroll: true }));
+      return () => {
+        cancelAnimationFrame(frame);
+        document.body.style.overflow = "";
+      };
+    }
     return () => {
       document.body.style.overflow = "";
     };
@@ -41,17 +49,28 @@ export function OnboardingModal() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-canvas/85 backdrop-blur-md ${
+      className={`fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-canvas/85 p-4 backdrop-blur-md ${
         closing ? "opacity-0 transition-opacity duration-300" : "animate-fade-in"
       }`}
     >
       <div
-        className={`relative flex w-[min(92vw,580px)] flex-col overflow-hidden rounded-[28px] border border-edge-soft bg-elevated/95 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] ${
-          closing ? "scale-[0.97] opacity-0 transition-all duration-300" : "animate-modal-in"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("VAYRA setup")}
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          event.preventDefault();
+          finish();
+        }}
+        className={`relative my-auto flex max-h-[calc(100dvh-2rem)] w-full max-w-[580px] flex-col overflow-hidden rounded-[28px] border border-edge-soft bg-elevated/95 outline-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] ${
+          closing ? "scale-[0.97] opacity-0 transition-[transform,opacity] duration-300" : "animate-modal-in"
         }`}
       >
         {!isSplash && (
           <button
+            type="button"
             onClick={finish}
             aria-label={t("Skip setup")}
             className="absolute end-5 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
@@ -64,7 +83,7 @@ export function OnboardingModal() {
           <SplashStep onAdvance={next} />
         ) : (
           <>
-            <div className="flex min-h-[440px] flex-col justify-center px-6 py-10 sm:px-12">
+            <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto overscroll-contain px-5 py-8 sm:min-h-[440px] sm:px-12 sm:py-10">
               <div key={step} className="animate-step-in">
                 {step === "welcome" && <WelcomeStep />}
                 {step === "account" && <AccountStep />}
@@ -76,7 +95,7 @@ export function OnboardingModal() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-y-3 border-t border-edge-soft bg-canvas/40 px-4 py-5 sm:px-8">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-y-3 border-t border-edge-soft bg-canvas/40 px-4 py-4 sm:px-8 sm:py-5">
               <Dots
                 count={STEPS.length - 1}
                 active={Math.max(stepIdx - 1, 0)}
@@ -85,6 +104,7 @@ export function OnboardingModal() {
               <div className="flex items-center gap-2.5">
                 {(step === "account" || step === "tmdb" || step === "streaming" || step === "subtitles") && (
                   <button
+                    type="button"
                     key={`skip-${step}`}
                     onClick={next}
                     className="animate-skip-in h-11 whitespace-nowrap rounded-full px-4 text-[13px] font-medium text-ink-subtle transition-colors hover:text-ink"
@@ -94,6 +114,7 @@ export function OnboardingModal() {
                 )}
                 {stepIdx > 1 && stepIdx < STEPS.length - 1 && (
                   <button
+                    type="button"
                     onClick={back}
                     className="h-11 rounded-full px-5 text-[14px] font-medium text-ink-muted transition-colors hover:text-ink"
                   >
@@ -102,6 +123,7 @@ export function OnboardingModal() {
                 )}
                 {stepIdx < STEPS.length - 1 ? (
                   <button
+                    type="button"
                     onClick={next}
                     className="flex h-11 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.03] active:scale-[0.97]"
                   >
@@ -110,6 +132,7 @@ export function OnboardingModal() {
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={finish}
                     className="flex h-11 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.03] active:scale-[0.97]"
                   >
