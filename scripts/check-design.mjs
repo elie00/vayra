@@ -126,7 +126,7 @@ for (const absolute of sourceFiles(sourceRoot)) {
 const debtBudgets = {
   nonSemanticClick: 123,
   autoFocus: 36,
-  transitionAll: 168,
+  transitionAll: 167,
 };
 
 for (const [key, budget] of Object.entries(debtBudgets)) {

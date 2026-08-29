@@ -29,7 +29,7 @@ authentification Stremio, menus contextuels et overlays légers.
 | Overlays du lot | Corrigé | cibles de fermeture sémantiques et scroll contenu | Étendre progressivement |
 | Cibles non sémantiques | Dette : 123 | inventaire AST des `div`/`span` cliquables | Interdiction d'augmenter, réduction par lot |
 | Autofocus | Dette : 36 | inventaire AST des champs autofocus | Vérifier desktop/mobile puis réduire |
-| `transition-all` | Dette : 168 | inventaire source | Remplacer par propriétés explicites par composant |
+| `transition-all` | Dette : 167 | inventaire source | Remplacer par propriétés explicites par composant |
 
 ## Corrections de ce lot
 
@@ -43,6 +43,11 @@ authentification Stremio, menus contextuels et overlays légers.
 - les fonds cliquables corrigés utilisent de vrais boutons nommés ;
 - les interactions tactiles utilisent `touch-action: manipulation` et les
   champs autorisent explicitement la sélection de texte.
+- l'onboarding passe devant tous les chromes, devient un vrai dialogue nommé,
+  reste scrollable à faible hauteur et adapte ses cartes à une seule colonne
+  sur les écrans étroits ;
+- le dialogue reçoit le focus à l'ouverture et peut être quitté avec Échap ;
+- le splash réduit son titrage et son espacement sous 640 px, sans troncature.
 
 ## Critères de sortie permanents
 
@@ -60,13 +65,17 @@ authentification Stremio, menus contextuels et overlays légers.
 3. réduire `transition-all` en commençant par la navigation, les addons et les
    cartes de bibliothèque ;
 4. contrôler les dimensions d'images, les textes sous 12 px et les états vides ;
-5. rejouer la recette clavier et responsive à 390 × 844 sur les parcours
-   Accueil, Recherche, Lecture, Addons, Compte et Réglages.
+5. poursuivre la recette clavier et responsive à 390 × 844 sur les parcours
+   Recherche, Lecture, Addons, Compte et Réglages (Accueil et onboarding validés).
 
 ## Vérification du premier lot
 
 - `pnpm test:design` : 10/10 contrôles réussis ;
-- dette figée : 123 cibles non sémantiques, 36 autofocus et 168
+- dette figée : 123 cibles non sémantiques, 36 autofocus et 167
   `transition-all` ;
-- ESLint ciblé : réussi ;
-- TypeScript : réussi.
+- `pnpm lint` : réussi, dont 271/271 contrôles d'erreurs silencieuses ;
+- `pnpm test` : 708 tests réussis dans 103 fichiers ;
+- `pnpm build:web` : réussi, smoke test WASM et budgets inclus ;
+- recette navigateur 390 × 844 : onboarding entièrement visible, cartes sans
+  troncature, dialogue nommé et actif dans l'arbre d'accessibilité ;
+- ESLint ciblé et TypeScript après correction responsive : réussis.
