@@ -7,9 +7,7 @@ import { DownloadsButton } from "@/components/downloads-popover";
 import { RecordingPill } from "@/chrome/recording-pill";
 import {
   effectiveBinding,
-  eventToBinding,
   formatBindingForDisplay,
-  isTypingTarget,
 } from "@/lib/hotkeys";
 import { useT } from "@/lib/i18n";
 import { useSearch } from "@/lib/search-context";
@@ -21,8 +19,15 @@ import { useThemePreview } from "@/lib/theme-preview";
 import { useView } from "@/lib/view";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 
-import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
-import { isMobileTauri } from "@/lib/platform";
+import {
+  close,
+  minimize,
+  toggleMaximize,
+  useMaximized,
+  windowControlShortcut,
+  windowZoomLabel,
+} from "@/lib/window";
+import { isMacDesktop, isMobileTauri } from "@/lib/platform";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
 
@@ -151,13 +156,21 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
           {!onLiveRoot && <TogetherButton />}
           {IS_TAURI && !settings.useNativeTitleBar && (
             <div className="ms-1 flex items-center gap-2">
-              <Control label={t("chrome.minimize")} onClick={() => void minimize()}>
-                <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
+              <Control
+                label={t("chrome.minimize")}
+                shortcut={windowControlShortcut("minimize")}
+                onClick={() => void minimize()}
+              >
+                <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 13 13" fill="none">
                   <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </Control>
-              <Control label={maxed ? t("chrome.restore") : t("chrome.maximize")} onClick={() => void toggleMaximize()}>
-                <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
+              <Control
+                label={windowZoomLabel(maxed, t)}
+                shortcut={windowControlShortcut("zoom")}
+                onClick={() => void toggleMaximize()}
+              >
+                <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 13 13" fill="none">
                   {maxed ? (
                     <>
                       <rect x="2.5" y="4.5" width="6" height="6" stroke="currentColor" strokeWidth="1.4" rx="1" />
@@ -168,8 +181,12 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
                   )}
                 </svg>
               </Control>
-              <Control label={t("common.close")} onClick={close}>
-                <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
+              <Control
+                label={t("common.close")}
+                shortcut={windowControlShortcut("close")}
+                onClick={close}
+              >
+                <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 13 13" fill="none">
                   <path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </Control>
@@ -323,29 +340,20 @@ function SearchPill() {
   const { settings } = useSettings();
   const t = useT();
   const binding = effectiveBinding("globalSearchFocus", settings.hotkeys ?? {});
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e)) return;
-      if (eventToBinding(e) !== binding) return;
-      e.preventDefault();
-      setOpen(true);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [binding, setOpen]);
+  const mac = isMacDesktop();
 
   return (
     <button
       type="button"
       data-tauri-drag-region="false"
+      aria-keyshortcuts={mac ? "Meta+F" : undefined}
       onClick={() => setOpen(true)}
       className="flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/60 bg-elevated/80 px-5 text-start opacity-80 transition-[opacity,background-color] duration-200 hover:bg-elevated hover:opacity-100"
     >
       <Search size={16} strokeWidth={1.75} className="text-ink-subtle" />
       <span className="flex-1 truncate text-[14px] text-ink-subtle">{t("search.placeholder")}</span>
       <kbd className="hidden shrink-0 rounded-md border border-edge-soft bg-canvas/50 px-1.5 py-0.5 font-mono text-[10.5px] font-medium text-ink-subtle sm:inline">
-        {formatBindingForDisplay(binding)}
+        {mac ? "⌘ F" : formatBindingForDisplay(binding)}
       </kbd>
     </button>
   );
@@ -353,16 +361,21 @@ function SearchPill() {
 
 function Control({
   label,
+  shortcut,
   onClick,
   children,
 }: {
   label: string;
+  shortcut?: string;
   onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
     <button
+      type="button"
       aria-label={label}
+      aria-keyshortcuts={shortcut}
+      title={label}
       onClick={onClick}
       className="flex h-11 w-12 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
     >
