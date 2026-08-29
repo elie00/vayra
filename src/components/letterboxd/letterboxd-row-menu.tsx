@@ -31,8 +31,10 @@ export function LetterboxdRowMenu({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative inline-flex" onClick={(e) => e.stopPropagation()}>
+    <div ref={ref} className="relative inline-flex">
       <button
+        type="button"
+        aria-label={t("Edit row")}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
@@ -45,7 +47,8 @@ export function LetterboxdRowMenu({
       {open && (
         <div className="absolute start-0 top-7 z-50 flex flex-col gap-0.5 rounded-xl border border-edge-soft bg-canvas p-1.5 shadow-xl">
           <button
-            onClick={() => { onMoveUp(); setOpen(false); }}
+            type="button"
+            onClick={(event) => { event.stopPropagation(); onMoveUp(); setOpen(false); }}
             disabled={!canMoveUp}
             className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
           >
@@ -53,7 +56,8 @@ export function LetterboxdRowMenu({
             {t("Move up")}
           </button>
           <button
-            onClick={() => { onMoveDown(); setOpen(false); }}
+            type="button"
+            onClick={(event) => { event.stopPropagation(); onMoveDown(); setOpen(false); }}
             disabled={!canMoveDown}
             className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
           >
@@ -62,7 +66,8 @@ export function LetterboxdRowMenu({
           </button>
           <div className="my-0.5 h-px bg-edge-soft" />
           <button
-            onClick={() => { onToggleHidden(); setOpen(false); }}
+            type="button"
+            onClick={(event) => { event.stopPropagation(); onToggleHidden(); setOpen(false); }}
             className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
               hidden
                 ? "bg-accent/10 text-accent hover:bg-accent/20"
