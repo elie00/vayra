@@ -36,6 +36,10 @@ const indexHtml = read("index.html");
 const indexCss = read("src/index.css");
 const accessibilityNavigation = read("src/components/accessibility-navigation.tsx");
 const authModal = read("src/components/auth-modal.tsx");
+const searchHotkey = read("src/components/search/search-hotkey.tsx");
+const windowControls = read("src/chrome/window-controls.tsx");
+const windowResizeEdges = read("src/chrome/window-resize-edges.tsx");
+const windowContract = read("src/lib/window.ts");
 
 check(
   "browser zoom remains available",
@@ -89,6 +93,37 @@ check(
   "src/components/auth-modal.tsx",
   /function VayraEmailModal/,
   "auth fields need names, autocomplete, inline async feedback, and contained modal scroll",
+);
+check(
+  "macOS app search convention",
+  /event\.metaKey/.test(searchHotkey) && /event\.key\.toLowerCase\(\) === "f"/.test(searchHotkey),
+  "src/components/search/search-hotkey.tsx",
+  /matchesAppSearchShortcut/,
+  "macOS needs Command+F as an app-search shortcut",
+);
+check(
+  "macOS fullscreen window wording",
+  /"Exit fullscreen"\s*:\s*"Enter fullscreen"/.test(windowContract),
+  "src/lib/window.ts",
+  /windowZoomLabel/,
+  "the macOS green control must announce fullscreen rather than maximize",
+);
+check(
+  "macOS window keyboard contracts",
+  /"Meta\+W"/.test(windowContract) &&
+    /"Meta\+M"/.test(windowContract) &&
+    /"Control\+Meta\+F"/.test(windowContract) &&
+    /aria-keyshortcuts=\{shortcut\}/.test(windowControls),
+  "src/chrome/window-controls.tsx",
+  /aria-keyshortcuts/,
+  "custom window controls need their standard macOS shortcuts",
+);
+check(
+  "resize affordances stay assistive-technology neutral",
+  /<div aria-hidden="true" className="pointer-events-none fixed inset-0 z-\[115\]">/.test(windowResizeEdges),
+  "src/chrome/window-resize-edges.tsx",
+  /WindowResizeEdges/,
+  "invisible pointer-only resize edges must not appear as unnamed controls",
 );
 
 const debt = {

@@ -54,12 +54,25 @@ describe("toggleMaximize", () => {
     expect(mocks.toggleWindowFullscreen).toHaveBeenCalledTimes(1);
   });
 
+  it("uses fullscreen wording and macOS shortcuts for the green control", async () => {
+    const win = await loadOn("MacIntel");
+    const translate = (key: string) => key;
+
+    expect(win.windowZoomLabel(false, translate)).toBe("Enter fullscreen");
+    expect(win.windowZoomLabel(true, translate)).toBe("Exit fullscreen");
+    expect(win.windowControlShortcut("zoom")).toBe("Control+Meta+F");
+    expect(win.windowControlShortcut("minimize")).toBe("Meta+M");
+    expect(win.windowControlShortcut("close")).toBe("Meta+W");
+  });
+
   it("maximizes the window everywhere else", async () => {
     const win = await loadOn("Win32");
     await win.toggleMaximize();
 
     expect(mocks.toggleMaximize).toHaveBeenCalledTimes(1);
     expect(mocks.toggleWindowFullscreen).not.toHaveBeenCalled();
+    expect(win.windowZoomLabel(false, (key) => key)).toBe("chrome.maximize");
+    expect(win.windowControlShortcut("zoom")).toBeUndefined();
   });
 });
 
