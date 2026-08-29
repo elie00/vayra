@@ -70,7 +70,7 @@ authentification Stremio, menus contextuels et overlays légers.
 
 ## Vérification du premier lot
 
-- `pnpm test:design` : 10/10 contrôles réussis ;
+- `pnpm test:design` : 14/14 contrôles réussis, dont 4 contrats macOS ;
 - dette figée : 123 cibles non sémantiques, 36 autofocus et 167
   `transition-all` ;
 - `pnpm lint` : réussi, dont 271/271 contrôles d'erreurs silencieuses ;
