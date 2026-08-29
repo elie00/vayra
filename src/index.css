@@ -82,6 +82,13 @@ body {
     border: 0;
     padding: 0;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   input {
@@ -90,6 +97,13 @@ body {
     background: none;
     border: 0;
     outline: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    user-select: text;
+    cursor: text;
   }
 
   img {
@@ -1237,6 +1251,15 @@ html[data-theme-layout="minui"] .anime-award-banner-logo {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
   .harbor-forest-ray, .harbor-royal-glint { animation: none; }
 }
 
@@ -1273,8 +1296,11 @@ html[data-theme-layout="minui"] .anime-award-banner-logo {
 
 button:focus-visible,
 a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
 select:focus-visible,
 summary:focus-visible,
+[contenteditable="true"]:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--color-accent) !important;
   outline-offset: 2px;

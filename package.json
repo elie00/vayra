@@ -15,6 +15,7 @@
     "perf:budget": "node scripts/check-bundle-budgets.mjs",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:design": "node scripts/check-design.mjs",
     "test:systems": "vitest run src/lib/luma src/lib/cira src/lib/vara src/views/player/hooks/use-veya-sync.test.ts src/lib/i18n/locales/luma.parity.test.ts src/lib/i18n/locales/cira.parity.test.ts src/lib/i18n/locales/private-beta.parity.test.ts",
     "test:database": "bash scripts/cira/db-test.sh",
     "qualify:systems": "pnpm test:systems && pnpm test:database",

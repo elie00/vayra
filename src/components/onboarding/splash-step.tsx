@@ -59,12 +59,12 @@ export function SplashStep({ onAdvance }: { onAdvance: () => void }) {
         }}
       />
       <div className="relative flex h-full flex-col items-center justify-center gap-3 text-center">
-        <h1 className="animate-splash-title flex items-center gap-3 font-display text-[88px] font-medium leading-none tracking-tight text-ink">
+        <h1 className="animate-splash-title flex items-center gap-2 font-display text-[54px] font-medium leading-none tracking-tight text-ink sm:gap-3 sm:text-[88px]">
           <HarborMark className="h-[1em] w-[1em] shrink-0" />
           <span style={{ transform: "translateY(0.04em)" }}>VAYRA</span>
         </h1>
         <p
-          className="animate-splash-title text-[14px] uppercase tracking-[0.42em] text-ink-muted"
+          className="animate-splash-title text-[12px] uppercase tracking-[0.3em] text-ink-muted sm:text-[14px] sm:tracking-[0.42em]"
           style={{ animationDelay: "260ms" }}
         >
           {t("For watching things")}

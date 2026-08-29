@@ -75,21 +75,26 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
   };
 
   return createPortal(
-    <div className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center bg-canvas/80" onClick={onClose}>
+    <div className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center overflow-y-auto bg-canvas/80 p-4">
+      <button
+        type="button"
+        aria-label={t("Cancel")}
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+      />
       <form
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="vayra-auth-title"
-        onClick={(event) => event.stopPropagation()}
         onSubmit={submit}
-        className="animate-modal-in flex w-[min(92vw,420px)] flex-col gap-5 rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+        className="animate-modal-in relative z-10 my-auto flex w-[min(92vw,420px)] flex-col gap-5 overscroll-contain rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <div className="flex flex-col items-center gap-2">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/15 text-accent">
-            <Mail size={20} strokeWidth={2} />
+            <Mail size={20} strokeWidth={2} aria-hidden="true" />
           </div>
-          <h2 id="vayra-auth-title" className="font-display text-[22px] font-medium tracking-tight text-ink">
+          <h2 id="vayra-auth-title" className="text-balance text-center font-display text-[22px] font-medium tracking-tight text-ink">
             {t("Sign in or create your VAYRA account")}
           </h2>
           <p className="text-center text-[13px] leading-snug text-ink-muted">
@@ -119,6 +124,8 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
             </p>
             <div className="flex gap-2">
               <input
+                name="vayra-otp"
+                type="text"
                 value={otp}
                 onChange={(event) => {
                   setOtp(event.target.value.replace(/\D/g, "").slice(0, 6));
@@ -126,6 +133,9 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
                 }}
                 inputMode="numeric"
                 autoComplete="one-time-code"
+                enterKeyHint="done"
+                pattern="[0-9]*"
+                spellCheck={false}
                 aria-label={t("6-digit sign-in code")}
                 placeholder="000000"
                 className="h-11 min-w-0 flex-1 rounded-xl border border-edge bg-canvas px-3 text-center font-mono text-[18px] tracking-[0.22em] text-ink outline-none focus:border-accent"
@@ -139,7 +149,7 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
                 {busy ? <Loader2 size={15} className="animate-spin" /> : t("Verify")}
               </button>
             </div>
-            {error && <p role="alert" className="text-[12.5px] text-danger">{error}</p>}
+            {error && <p role="alert" aria-live="polite" className="text-[12.5px] text-danger">{error}</p>}
             <button
               type="button"
               onClick={() => {
@@ -170,13 +180,13 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
                 </div>
               </>
             )}
-            <Field label={t("Email")} type="email" value={email} onChange={setEmail} autoFocus disabled={busy || !configured} />
+            <Field name="vayra-email" label={t("Email")} type="email" value={email} onChange={setEmail} disabled={busy || !configured} />
             {!configured && (
               <p className="rounded-lg bg-info/10 px-3 py-2 text-[12px] leading-relaxed text-info">
                 {t("Email sign-in is not configured in this build yet.")}
               </p>
             )}
-            {error && <p className="rounded-lg bg-danger/15 px-3 py-2 text-[12.5px] text-danger">{error}</p>}
+            {error && <p role="alert" aria-live="polite" className="rounded-lg bg-danger/15 px-3 py-2 text-[12.5px] text-danger">{error}</p>}
             <button
               type="submit"
               disabled={busy || loading || !configured || !email.trim()}
@@ -234,21 +244,23 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
   };
 
   return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center bg-canvas/80"
-      onClick={onClose}
-    >
+    <div className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center overflow-y-auto bg-canvas/80 p-4">
+      <button
+        type="button"
+        aria-label={t("Cancel")}
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+      />
       <form
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-modal-title"
-        onClick={(e) => e.stopPropagation()}
         onSubmit={submit}
-        className="animate-modal-in flex w-[min(92vw,400px)] flex-col gap-5 rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+        className="animate-modal-in relative z-10 my-auto flex w-[min(92vw,400px)] flex-col gap-5 overscroll-contain rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <div className="flex flex-col items-center gap-2">
-          <h2 id="auth-modal-title" className="font-display text-[22px] font-medium tracking-tight text-ink">
+          <h2 id="auth-modal-title" className="text-balance text-center font-display text-[22px] font-medium tracking-tight text-ink">
             {t("Connect Stremio")}
           </h2>
           <p className="text-center text-[13px] leading-snug text-ink-muted">
@@ -268,6 +280,7 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
 
         {keyMode ? (
           <Field
+            name="stremio-session-key"
             label={t("Session key")}
             type="password"
             value={sessionKey}
@@ -277,6 +290,7 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
         ) : (
           <div className="flex flex-col gap-3">
             <Field
+              name="stremio-email"
               label={t("Email")}
               type="email"
               value={email}
@@ -284,6 +298,7 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
               disabled={busy}
             />
             <Field
+              name="stremio-password"
               label={t("Password")}
               type="password"
               value={password}
@@ -295,6 +310,8 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
 
         <button
           type="button"
+          role="checkbox"
+          aria-checked={remember}
           onClick={() => {
             setKeyMode((v) => !v);
             setError(null);
@@ -327,7 +344,7 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
         </button>
 
         {error && (
-          <p className="rounded-lg bg-danger/15 px-3 py-2 text-[12.5px] text-danger">{error}</p>
+          <p role="alert" aria-live="polite" className="rounded-lg bg-danger/15 px-3 py-2 text-[12.5px] text-danger">{error}</p>
         )}
 
         <button
@@ -371,18 +388,18 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
 }
 
 function Field({
+  name,
   label,
   type,
   value,
   onChange,
-  autoFocus,
   disabled,
 }: {
+  name: string;
   label: string;
   type: string;
   value: string;
   onChange: (v: string) => void;
-  autoFocus?: boolean;
   disabled?: boolean;
 }) {
   const t = useT();
@@ -395,9 +412,9 @@ function Field({
       </span>
       <div className="relative">
         <input
+          name={name}
           type={isPassword && show ? "text" : type}
           value={value}
-          autoFocus={autoFocus}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           spellCheck={false}
@@ -409,7 +426,6 @@ function Field({
         {isPassword && (
           <button
             type="button"
-            tabIndex={-1}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShow((v) => !v)}
             disabled={disabled}
