@@ -8,6 +8,7 @@ import { openUrl } from "@/lib/window";
 import { useVayraAccount } from "@/lib/vayra-account";
 import { GoogleSignInButton } from "./auth-modal/google-sign-in-button";
 import { StremioWebButton } from "./auth-modal/stremio-web-button";
+import { authSubmitAction } from "./auth-modal/submit-action";
 
 export function AuthModal({ onClose }: { onClose: () => void }) {
   return <VayraEmailModal onClose={onClose} />;
@@ -43,6 +44,10 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (authSubmitAction(sent, otp) === "verify") {
+      await verifyCode();
+      return;
+    }
     setBusy(true);
     clearError();
     try {
