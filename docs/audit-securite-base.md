@@ -99,3 +99,26 @@ La présence de `vayra://auth/callback` est ce qui permet au lien reçu par e-ma
 de revenir dans l'application installée. Le modèle d'e-mail propose en outre un
 code à six chiffres, qui ne dépend d'aucun schéma d'URL et reste donc utilisable
 si le navigateur du testeur bloque l'ouverture de l'application.
+
+## Accès à la bêta privée
+
+CIRA et VARA sont fermés par un drapeau applicatif. `private.cira_beta_access()`
+exige `app_metadata.cira_beta = true` sur le compte, et
+`private.cira_require_uid()` — appelée par les 77 fonctions métier — lève
+`BETA_ACCESS_REQUIRED` sans lui. Les quatre politiques RLS le vérifient également.
+
+**Rien ne pose ce drapeau automatiquement** : aucun déclencheur sur
+`auth.users`. Un testeur qui s'inscrit peut donc se connecter et se voir refuser
+les amis, la présence et les salles de visionnage. L'application le dit
+clairement (« CIRA est réservé aux comptes bêta invités »), mais c'est une étape
+d'exploitation à faire compte par compte :
+
+```bash
+node scripts/cira/beta-access.mjs list                     # qui a l'accès
+node scripts/cira/beta-access.mjs grant  testeur@mail.com  # ouvrir
+node scripts/cira/beta-access.mjs revoke testeur@mail.com  # fermer
+```
+
+Le drapeau voyage dans le JWT : après l'avoir accordé, le compte doit se
+déconnecter puis se reconnecter. Le testeur devra ensuite choisir son identifiant
+CIRA avant de pouvoir inviter quelqu'un.
