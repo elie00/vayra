@@ -61,3 +61,16 @@ export function isMobileDevice(): boolean {
   }
   return false;
 }
+
+/**
+ * The separator to build a file path with, for the machine the app is running
+ * on. `navigator.platform` is deprecated and browsers have begun freezing it, so
+ * the user agent decides and an empty value falls back to POSIX rather than
+ * throwing.
+ */
+export function pathSeparator(): string {
+  if (typeof navigator === "undefined") return "/";
+  const ua = (navigator.userAgent || "").toLowerCase();
+  const plat = (navigator.platform || "").toLowerCase();
+  return ua.includes("windows") || plat.includes("win") ? "\\" : "/";
+}
