@@ -16,6 +16,7 @@ import {
 import { nextDownloadTelemetry, type DownloadTelemetry } from "@/lib/download/telemetry";
 import { useSettings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
+import { pathSeparator } from "@/lib/platform";
 
 export type DownloadStatus =
   | { kind: "idle" }
@@ -55,7 +56,7 @@ export function useVideoDownload({ url, meta, episode }: Args) {
     setStatus({ kind: "preparing" });
     const defaultFilename = buildDefaultFilename(meta, episode, url);
     const ext = extensionFromUrl(url);
-    const sep = navigator.platform.toLowerCase().includes("win") ? "\\" : "/";
+    const sep = pathSeparator();
     const settingsDir = settings.downloadDir.trim();
     const dir = settingsDir || (await downloadDir().catch(() => "")) || "";
     const defaultPath = dir ? `${dir}${dir.endsWith(sep) ? "" : sep}${defaultFilename}` : defaultFilename;
