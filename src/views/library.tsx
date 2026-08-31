@@ -24,8 +24,12 @@ import { LetterboxdTab } from "./library/letterboxd-tab";
 import { TraktTab } from "./library/trakt-tab";
 import { WatchlistTab } from "./library/watchlist-tab";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
+import { tabAvailable } from "./library/tab-availability";
 
 const LIBRARY_TAB_KEY = "harbor.library.tab";
+
+const CAPABILITIES = currentPlatformCapabilities();
 
 function readSavedTab(): Tab {
   try {
@@ -33,7 +37,7 @@ function readSavedTab(): Tab {
     if (
       v === "watchlist" ||
       v === "history" ||
-      v === "local" ||
+      (v === "local" && tabAvailable("local", CAPABILITIES)) ||
       v === "trakt" ||
       v === "anilist" ||
       v === "simkl" ||
@@ -120,7 +124,7 @@ export function LibraryView({ active }: { active: boolean }) {
         />
         {tab === "watchlist" && <WatchlistTab />}
         {tab === "history" && <HistoryTab />}
-        {tab === "local" && <LocalTab />}
+        {tab === "local" && tabAvailable("local", CAPABILITIES) && <LocalTab />}
         {tab === "trakt" && traktConnected && <TraktTab />}
         {tab === "anilist" && anilistConnected && <AnilistTab />}
         {tab === "simkl" && simklConnected && <SimklTab />}
@@ -182,10 +186,12 @@ function Header({
           <Clock size={14} strokeWidth={2.2} />
           {t("History")}
         </TabBtn>
-        <TabBtn active={tab === "local"} onClick={() => onTab("local")}>
+{tabAvailable("local", CAPABILITIES) && (
+                  <TabBtn active={tab === "local"} onClick={() => onTab("local")}>
           <HardDrive size={14} strokeWidth={2.2} />
           {t("Local")}
         </TabBtn>
+        )}
         <TabBtn active={tab === "lists"} onClick={() => onTab("lists")}>
           <Layers size={14} strokeWidth={2.2} />
           {t("My Lists")}
