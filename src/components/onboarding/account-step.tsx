@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { useVayraAccount } from "@/lib/vayra-account";
 import { GoogleSignInButton } from "@/components/auth-modal/google-sign-in-button";
+import { authSubmitAction } from "@/components/auth-modal/submit-action";
 
 export function AccountStep() {
   const t = useT();
@@ -100,8 +101,17 @@ export function AccountStep() {
                 setOtp(event.target.value.replace(/\D/g, "").slice(0, 6));
                 clearError();
               }}
+              onKeyDown={(event) => {
+                // The field sits outside the form, so Enter would otherwise do
+                // nothing at all after typing a code.
+                if (event.key === "Enter" && authSubmitAction(true, otp) === "verify") {
+                  event.preventDefault();
+                  void verifyCode();
+                }
+              }}
               inputMode="numeric"
               autoComplete="one-time-code"
+              enterKeyHint="done"
               aria-label={t("6-digit sign-in code")}
               placeholder="000000"
               className="h-11 min-w-0 flex-1 rounded-xl border border-edge bg-canvas px-3 text-center font-mono text-[18px] tracking-[0.22em] text-ink outline-none focus:border-accent"
