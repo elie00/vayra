@@ -1,6 +1,7 @@
 import { AtSign, Github, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 import {
   clearRecentErrors,
   collectDiagnostics,
@@ -16,6 +17,8 @@ import { DiagnosticsCard } from "./bug-report/diagnostics-card";
 import { FileDrop } from "./bug-report/file-drop";
 import { SeverityPicker } from "./bug-report/severity-picker";
 import { SuccessCard } from "./bug-report/success-card";
+
+const CAPABILITIES = currentPlatformCapabilities();
 
 export function BugReportPanel() {
   const t = useT();
@@ -156,12 +159,14 @@ export function BugReportPanel() {
         )}
       </Section>
 
-      <Section
-        title={t("Player log")}
-        subtitle={t("If a stream or the video player misbehaves, export the player log and attach it above. It saves to your Downloads folder.")}
-      >
-        <ExportLogButton />
-      </Section>
+      {CAPABILITIES.mpvPlayback && (
+        <Section
+          title={t("Player log")}
+          subtitle={t("If a stream or the video player misbehaves, export the player log and attach it above. It saves to your Downloads folder.")}
+        >
+          <ExportLogButton />
+        </Section>
+      )}
 
       <Section
         title={t("Credit (optional)")}
