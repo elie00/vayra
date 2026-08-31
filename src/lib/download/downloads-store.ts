@@ -1,4 +1,5 @@
 import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
+import { pathSeparator } from "@/lib/platform";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
@@ -128,9 +129,7 @@ function patch(id: string, next: Partial<DownloadItem>) {
   rebuild(next.status !== undefined && next.status !== cur.status);
 }
 
-function sep(): string {
-  return navigator.platform.toLowerCase().includes("win") ? "\\" : "/";
-}
+const sep = pathSeparator;
 
 async function resolveDir(): Promise<string> {
   try {
