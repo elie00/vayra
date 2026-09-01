@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   HostUnreachableError,
   hostKey,
+  installGlobalFetchGuard,
   isLocalHost,
   netGuardSnapshot,
+  rawFetch,
   resetNetGuard,
   withHostGuard,
 } from "./net-guard";
@@ -142,6 +144,40 @@ describe("circuit breaker", () => {
     for (let i = 0; i < 4; i++) await withHostGuard(url, fail).catch(() => null);
 
     await expect(withHostGuard(url, () => Promise.resolve("ok"))).resolves.toBe("ok");
+  });
+
+  it("guards the global fetch without deadlocking on re-entry", async () => {
+    const original = globalThis.fetch;
+    try {
+      // The guard calls its base transport directly, never the patched global,
+      // so 12 concurrent calls to one host all settle even though six slots
+      // exist. If it re-entered itself, the six holders would each wait on an
+      // inner call that can never get a slot, and this would hang.
+      let inFlight = 0;
+      let peak = 0;
+      installGlobalFetchGuard((async () => {
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await Promise.resolve();
+        inFlight--;
+        return new Response("ok", { status: 200 });
+      }) as unknown as typeof fetch);
+
+      const all = await Promise.all(
+        Array.from({ length: 12 }, () => fetch("https://v3-cinemeta.strem.io/meta.json")),
+      );
+
+      expect(all).toHaveLength(12);
+      expect(all.every((r) => r.status === 200)).toBe(true);
+      expect(peak).toBeLessThanOrEqual(6);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it("keeps rawFetch pointing at the unpatched implementation", () => {
+    expect(typeof rawFetch).toBe("function");
+    expect(rawFetch).not.toBe(globalThis.fetch);
   });
 
   it("does not trip on HTTP error responses", async () => {

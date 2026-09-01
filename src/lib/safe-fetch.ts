@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { fetch as tauriFetchImpl } from "@tauri-apps/plugin-http";
 import { TrackerBlockedError, isBlockedUrl, noteBlocked } from "./privacy/blocklist";
-import { withHostGuard } from "./net-guard";
+import { rawFetch, withHostGuard } from "./net-guard";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -149,7 +149,7 @@ export const safeFetch: typeof fetch = (input, init) => {
   }
   if (typeof input === "string") {
     const r = rewriteForWeb(input, init);
-    return withHostGuard(r.url, () => fetch(r.url, r.init));
+    return withHostGuard(r.url, () => rawFetch(r.url, r.init));
   }
-  return fetch(input, init);
+  return rawFetch(input, init);
 };
