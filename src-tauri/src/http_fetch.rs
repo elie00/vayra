@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -38,6 +39,34 @@ fn parse_method(raw: Option<&str>) -> Result<reqwest::Method, String> {
     reqwest::Method::from_bytes(method.as_bytes()).map_err(|e| format!("method: {}", e))
 }
 
+/// Un client partagé pour tous les appels.
+///
+/// Auparavant chaque requête construisait son propre `Client`, donc son propre
+/// pool de connexions, son propre resolver DNS et un handshake TLS complet :
+/// aucune connexion n'était jamais réutilisée. Un client unique rétablit le
+/// keep-alive et le cache DNS, ce qui supprime l'essentiel du coût CPU des
+/// rafales de catalogue.
+///
+/// `connect_timeout` est distinct du timeout global : un hôte injoignable rend
+/// la main en 5 s au lieu de garder une socket morte pendant 30 s, alors qu'un
+/// téléchargement lent mais vivant garde son budget complet.
+fn shared_client() -> Result<&'static reqwest::Client, String> {
+    static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+    CLIENT
+        .get_or_init(|| {
+            reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(5))
+                .pool_idle_timeout(Duration::from_secs(90))
+                // Aligné sur le plafond par hôte appliqué côté frontend.
+                .pool_max_idle_per_host(6)
+                .no_proxy()
+                .build()
+                .map_err(|e| format!("client: {}", e))
+        })
+        .as_ref()
+        .map_err(|e| e.clone())
+}
+
 #[tauri::command]
 pub async fn vayra_fetch(args: VayraFetchArgs) -> Result<VayraFetchResponse, String> {
     // N'autoriser que http/https : empêche cette primitive de fetch natif (qui
@@ -47,15 +76,12 @@ pub async fn vayra_fetch(args: VayraFetchArgs) -> Result<VayraFetchResponse, Str
     let parsed_url = parse_http_url(&args.url)?;
 
     let timeout = Duration::from_millis(args.timeout_ms.unwrap_or(30_000));
-    let client = reqwest::Client::builder()
-        .timeout(timeout)
-        .no_proxy()
-        .build()
-        .map_err(|e| format!("client: {}", e))?;
+    let client = shared_client()?;
 
     let parsed_method = parse_method(args.method.as_deref())?;
 
-    let mut req = client.request(parsed_method, parsed_url);
+    // Le budget reste par requête : le client est partagé, pas son timeout.
+    let mut req = client.request(parsed_method, parsed_url).timeout(timeout);
 
     let mut has_user_agent = false;
     if let Some(headers) = args.headers {
