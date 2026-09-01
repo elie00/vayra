@@ -2,11 +2,16 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
+import { installGlobalFetchGuard } from "@/lib/net-guard";
 import { isAndroidTauri, isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { ModalOverlayApp } from "@/views/modal-overlay-app";
 import { HdrOverlayApp } from "@/views/hdr-overlay-app";
 import { PipApp } from "@/views/pip";
 import "@/index.css";
+
+// Before anything can issue a request: caps outbound concurrency per host and
+// trips a breaker on hosts that stop answering.
+installGlobalFetchGuard();
 
 function detectPipMode(): boolean {
   if (new URLSearchParams(window.location.search).get("pip") === "1") return true;

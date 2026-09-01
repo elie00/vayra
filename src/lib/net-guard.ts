@@ -135,6 +135,31 @@ export async function withHostGuard<T>(url: string, fn: () => Promise<T>): Promi
   }
 }
 
+// The window.fetch captured before any patching. safeFetch and the guard itself
+// MUST call this rather than the live global: if a guarded call re-entered the
+// guard for the same host, six in-flight requests each waiting on their own
+// inner request would hold every slot and deadlock the host permanently.
+export const rawFetch: typeof fetch =
+  typeof globalThis.fetch === "function"
+    ? globalThis.fetch.bind(globalThis)
+    : (() => {
+        throw new Error("fetch unavailable");
+      }) as unknown as typeof fetch;
+
+// Guards the global fetch as well. 51 call sites reach for window.fetch
+// directly instead of safeFetch, so guarding only safeFetch would leave most of
+// the app — and every third-party library — able to storm a host unchecked.
+// `base` defaults to the pre-patch fetch and exists so tests can supply their
+// own transport; production always wants the default.
+export function installGlobalFetchGuard(base: typeof fetch = rawFetch): void {
+  if (typeof globalThis.fetch !== "function") return;
+  globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const url =
+      typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url;
+    return withHostGuard(url, () => base(input, init));
+  }) as typeof fetch;
+}
+
 // Test seam: drops all recorded state.
 export function resetNetGuard(): void {
   hosts.clear();
