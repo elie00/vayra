@@ -75,10 +75,21 @@ export function hostKey(url: string): string | null {
 }
 
 // A connection-level failure — the host never answered. An HTTP error response
-// means the host is alive and must not count toward tripping the breaker.
+// resolves (it carries a status), so reaching here means the request itself
+// failed.
+//
+// Tauri rejects a `Result<_, String>` command with a bare string rather than an
+// Error, and that is the path the desktop build takes for nearly every request:
+// testing `instanceof Error` alone silently never counted a single desktop
+// failure, so the breaker stayed shut while the app kept dialling a dead host.
+//
+// Aborts are deliberate cancellations — navigating away mid-request must never
+// be mistaken for an unreachable host.
 function isConnectionFailure(err: unknown): boolean {
   if (err instanceof HostUnreachableError) return false;
-  return err instanceof Error;
+  if (typeof err === "string") return true;
+  if (err instanceof Error) return err.name !== "AbortError";
+  return false;
 }
 
 function release(s: HostState): void {
