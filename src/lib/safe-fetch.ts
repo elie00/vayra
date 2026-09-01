@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { fetch as tauriFetchImpl } from "@tauri-apps/plugin-http";
 import { TrackerBlockedError, isBlockedUrl, noteBlocked } from "./privacy/blocklist";
+import { withHostGuard } from "./net-guard";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -111,6 +112,22 @@ function isIdempotent(method: string | undefined): boolean {
   return m === "GET" || m === "HEAD" || m === "OPTIONS";
 }
 
+// vayra_fetch tags its failures by stage; "send:" means reqwest never got a
+// response. Retrying that through the plugin only opens a second dead socket to
+// the same address, so the fallback is reserved for the other stages (a
+// rejected method, a URL the native path refuses) where it can actually help.
+function isTransportFailure(err: unknown): boolean {
+  const msg = typeof err === "string" ? err : err instanceof Error ? err.message : "";
+  return msg.startsWith("send:");
+}
+
+function tauriFetchWithFallback(input: string, init?: RequestInit): Promise<Response> {
+  return tauriHarborFetch(input, init).catch((err) => {
+    if (isTransportFailure(err)) throw err;
+    return tauriFetchImpl(input, init as RequestInit) as Promise<Response>;
+  });
+}
+
 export const safeFetch: typeof fetch = (input, init) => {
   const target = typeof input === "string" ? input : input instanceof URL ? input.href : null;
   if (target && isBlockedUrl(target)) {
@@ -124,17 +141,15 @@ export const safeFetch: typeof fetch = (input, init) => {
   if (isTauri) {
     if (typeof input === "string") {
       if (isIdempotent(init?.method)) {
-        return tauriHarborFetch(input, init).catch(
-          () => tauriFetchImpl(input as string, init as RequestInit) as Promise<Response>,
-        );
+        return withHostGuard(input, () => tauriFetchWithFallback(input, init));
       }
-      return tauriHarborFetch(input, init);
+      return withHostGuard(input, () => tauriHarborFetch(input, init));
     }
     return tauriFetchImpl(input as unknown as string, init as RequestInit) as Promise<Response>;
   }
   if (typeof input === "string") {
     const r = rewriteForWeb(input, init);
-    return fetch(r.url, r.init);
+    return withHostGuard(r.url, () => fetch(r.url, r.init));
   }
   return fetch(input, init);
 };
