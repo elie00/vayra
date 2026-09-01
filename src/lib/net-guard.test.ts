@@ -137,6 +137,33 @@ describe("circuit breaker", () => {
     await expect(withHostGuard(url, () => Promise.resolve("ok"))).resolves.toBe("ok");
   });
 
+  it("trips on Tauri's bare-string rejections", async () => {
+    // invoke() rejects a Result<_, String> with the string itself, not an Error.
+    // This is the desktop path for nearly every request, so missing it left the
+    // breaker permanently shut.
+    const url = "https://v3-cinemeta.strem.io/meta.json";
+    for (let i = 0; i < 5; i++) {
+      await withHostGuard(url, () => Promise.reject("send: error sending request")).catch(
+        () => null,
+      );
+    }
+
+    await expect(withHostGuard(url, () => Promise.resolve("ok"))).rejects.toBeInstanceOf(
+      HostUnreachableError,
+    );
+  });
+
+  it("ignores deliberate aborts", async () => {
+    const url = "https://slow.example/x";
+    const abort = new Error("aborted");
+    abort.name = "AbortError";
+    for (let i = 0; i < 8; i++) {
+      await withHostGuard(url, () => Promise.reject(abort)).catch(() => null);
+    }
+
+    await expect(withHostGuard(url, () => Promise.resolve("ok"))).resolves.toBe("ok");
+  });
+
   it("clears the failure count on a success", async () => {
     const url = "https://flaky.example/x";
     for (let i = 0; i < 4; i++) await withHostGuard(url, fail).catch(() => null);
