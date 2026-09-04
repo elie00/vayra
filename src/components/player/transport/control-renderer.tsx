@@ -123,7 +123,8 @@ export type ControlContext = {
   onPrevEp: () => void;
   onNextEp: () => void;
   onDownloadStart?: () => void;
-  onDownloadCancel?: () => void;
+  onDownloadPause?: () => void;
+  onDownloadResume?: () => void;
   onDownloadReveal?: () => void;
   onDownloadReset?: () => void;
   onOpenDvr?: () => void;
@@ -290,14 +291,15 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     }
     case "download": {
       if (ctx.mid || ctx.isLiveChannel) return null;
-      if (!ctx.download || !ctx.onDownloadStart || !ctx.onDownloadCancel || !ctx.onDownloadReveal || !ctx.onDownloadReset) {
+      if (!ctx.download || !ctx.onDownloadStart || !ctx.onDownloadPause || !ctx.onDownloadResume || !ctx.onDownloadReveal || !ctx.onDownloadReset) {
         return null;
       }
       return (
         <DownloadButton
           status={ctx.download}
           onStart={ctx.onDownloadStart}
-          onCancel={ctx.onDownloadCancel}
+          onPause={ctx.onDownloadPause}
+          onResume={ctx.onDownloadResume}
           onReveal={ctx.onDownloadReveal}
           onReset={ctx.onDownloadReset}
         />

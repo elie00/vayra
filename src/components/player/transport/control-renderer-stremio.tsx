@@ -119,7 +119,8 @@ export type StremioRenderCtx = {
   onPrevEp: () => void;
   onNextEp: () => void;
   onDownloadStart?: () => void;
-  onDownloadCancel?: () => void;
+  onDownloadPause?: () => void;
+  onDownloadResume?: () => void;
   onDownloadReveal?: () => void;
   onDownloadReset?: () => void;
   onOpenDvr?: () => void;
@@ -299,12 +300,13 @@ export function RenderedStremioControl({
       return <DvrButton channelName={ctx.meta?.name ?? tr("Live")} onClick={ctx.onOpenDvr} />;
     case "download":
       if (ctx.isLiveChannel) return null;
-      if (!ctx.download || !ctx.onDownloadStart || !ctx.onDownloadCancel || !ctx.onDownloadReveal || !ctx.onDownloadReset) return null;
+      if (!ctx.download || !ctx.onDownloadStart || !ctx.onDownloadPause || !ctx.onDownloadResume || !ctx.onDownloadReveal || !ctx.onDownloadReset) return null;
       return (
         <DownloadButton
           status={ctx.download}
           onStart={ctx.onDownloadStart}
-          onCancel={ctx.onDownloadCancel}
+          onPause={ctx.onDownloadPause}
+          onResume={ctx.onDownloadResume}
           onReveal={ctx.onDownloadReveal}
           onReset={ctx.onDownloadReset}
         />

@@ -289,7 +289,8 @@ export function ShellLayer({
       episode={episode}
       download={download?.status}
       onDownloadStart={download?.start}
-      onDownloadCancel={download?.cancel}
+      onDownloadPause={download?.pause}
+      onDownloadResume={download?.resume}
       onDownloadReveal={download?.reveal}
       onDownloadReset={download?.reset}
       onOpenDvr={onOpenDvr}

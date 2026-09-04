@@ -86,7 +86,8 @@ export function Transport({
   onMenuOpenChange,
   download,
   onDownloadStart,
-  onDownloadCancel,
+  onDownloadPause,
+  onDownloadResume,
   onDownloadReveal,
   onDownloadReset,
   onOpenDvr,
@@ -149,7 +150,8 @@ export function Transport({
   onMenuOpenChange?: (open: boolean) => void;
   download?: DownloadStatus;
   onDownloadStart?: () => void;
-  onDownloadCancel?: () => void;
+  onDownloadPause?: () => void;
+  onDownloadResume?: () => void;
   onDownloadReveal?: () => void;
   onDownloadReset?: () => void;
   onOpenDvr?: () => void;
@@ -273,7 +275,8 @@ export function Transport({
         onMenuOpenChange={onMenuOpenChange}
         download={download}
         onDownloadStart={onDownloadStart}
-        onDownloadCancel={onDownloadCancel}
+        onDownloadPause={onDownloadPause}
+        onDownloadResume={onDownloadResume}
         onDownloadReveal={onDownloadReveal}
         onDownloadReset={onDownloadReset}
         onOpenDvr={onOpenDvr}
@@ -405,7 +408,8 @@ export function Transport({
     onPrevEp,
     onNextEp,
     onDownloadStart,
-    onDownloadCancel,
+    onDownloadPause,
+    onDownloadResume,
     onDownloadReveal,
     onDownloadReset,
     onOpenDvr,

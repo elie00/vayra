@@ -61,7 +61,8 @@ export type PlayerShellProps = {
   onMenuOpenChange?: (open: boolean) => void;
   download?: import("@/views/player/hooks/use-video-download").DownloadStatus;
   onDownloadStart?: () => void;
-  onDownloadCancel?: () => void;
+  onDownloadPause?: () => void;
+  onDownloadResume?: () => void;
   onDownloadReveal?: () => void;
   onDownloadReset?: () => void;
   onOpenDvr?: () => void;
