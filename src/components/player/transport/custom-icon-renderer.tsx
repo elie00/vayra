@@ -156,9 +156,30 @@ export function renderCustomIconControl(
       );
     }
     case "download": {
-      if (ctx.mid || ctx.isLiveChannel || !ctx.onDownloadStart) return null;
+      const kind = ctx.download?.kind;
+      const action =
+        kind === "downloading"
+          ? ctx.onDownloadPause
+          : kind === "paused"
+            ? ctx.onDownloadResume
+            : kind === "done"
+              ? ctx.onDownloadReveal
+              : kind === "error"
+                ? ctx.onDownloadReset
+                : ctx.onDownloadStart;
+      const label =
+        kind === "downloading"
+          ? t("Pause download")
+          : kind === "paused"
+            ? t("Resume download")
+            : kind === "done"
+              ? t("Show downloaded file")
+              : kind === "error"
+                ? t("Download failed")
+                : t("Download");
+      if (ctx.mid || ctx.isLiveChannel || !action) return null;
       return (
-        <BigButton onClick={ctx.onDownloadStart} ariaLabel={t("Download")} tooltip={t("Download")}>
+        <BigButton onClick={action} ariaLabel={label} tooltip={label}>
           <CustomIcon url={iconUrl} size={22} />
         </BigButton>
       );
@@ -265,15 +286,37 @@ export function renderCustomIconControlStremio(
           </StremioBtn>
         </Tooltip>
       );
-    case "download":
-      if (ctx.isLiveChannel || !ctx.onDownloadStart) return null;
+    case "download": {
+      const kind = ctx.download?.kind;
+      const action =
+        kind === "downloading"
+          ? ctx.onDownloadPause
+          : kind === "paused"
+            ? ctx.onDownloadResume
+            : kind === "done"
+              ? ctx.onDownloadReveal
+              : kind === "error"
+                ? ctx.onDownloadReset
+                : ctx.onDownloadStart;
+      const label =
+        kind === "downloading"
+          ? t("Pause download")
+          : kind === "paused"
+            ? t("Resume download")
+            : kind === "done"
+              ? t("Show downloaded file")
+              : kind === "error"
+                ? t("Download failed")
+                : t("Download");
+      if (ctx.isLiveChannel || !action) return null;
       return (
-        <Tooltip label={t("Download")}>
-          <StremioBtn onClick={ctx.onDownloadStart} ariaLabel={t("Download")}>
+        <Tooltip label={label}>
+          <StremioBtn onClick={action} ariaLabel={label}>
             <CustomIcon url={iconUrl} size={26} />
           </StremioBtn>
         </Tooltip>
       );
+    }
     case "cast":
       return (
         <Tooltip label={t("Cast")}>

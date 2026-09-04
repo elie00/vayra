@@ -29,6 +29,12 @@ export type DownloadStatus =
       bytesPerSecond?: number | null;
       etaSeconds?: number | null;
     }
+  | {
+      kind: "paused";
+      ratio: number;
+      receivedBytes: number;
+      totalBytes: number | null;
+    }
   | { kind: "done"; path: string }
   | { kind: "error"; message: string };
 
@@ -43,6 +49,13 @@ export function useVideoDownload({ url, meta, episode }: Args) {
   const [status, setStatus] = useState<DownloadStatus>({ kind: "idle" });
   const handleRef = useRef<DownloadHandle | null>(null);
   const telemetryRef = useRef<DownloadTelemetry | null>(null);
+  const targetRef = useRef<{ id: string; path: string } | null>(null);
+  const progressRef = useRef<DownloadProgress>({
+    ratio: 0,
+    receivedBytes: 0,
+    totalBytes: null,
+  });
+  const pauseRequestedRef = useRef(false);
 
   useEffect(
     () => () => {
@@ -50,6 +63,49 @@ export function useVideoDownload({ url, meta, episode }: Args) {
     },
     [],
   );
+
+  const begin = useCallback((target: { id: string; path: string }) => {
+    telemetryRef.current = null;
+    pauseRequestedRef.current = false;
+    const current = progressRef.current;
+    setStatus({ kind: "downloading", ...current });
+    const handle = startDownload(target.id, url, target.path, (p: DownloadProgress) => {
+      progressRef.current = p;
+      const telemetry = nextDownloadTelemetry(telemetryRef.current, p, performance.now());
+      telemetryRef.current = telemetry;
+      setStatus({
+        kind: "downloading",
+        ratio: p.ratio,
+        receivedBytes: p.receivedBytes,
+        totalBytes: p.totalBytes,
+        bytesPerSecond: telemetry.bytesPerSecond,
+        etaSeconds: telemetry.etaSeconds,
+      });
+    });
+    handleRef.current = handle;
+    handle.promise
+      .then(() => {
+        setStatus({ kind: "done", path: target.path });
+      })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === "AbortError") {
+          setStatus(
+            pauseRequestedRef.current
+              ? { kind: "paused", ...progressRef.current }
+              : { kind: "idle" },
+          );
+          return;
+        }
+        setStatus({
+          kind: "error",
+          message: e instanceof Error ? e.message : "Download failed",
+        });
+      })
+      .finally(() => {
+        if (handleRef.current === handle) handleRef.current = null;
+        telemetryRef.current = null;
+      });
+  }, [url]);
 
   const start = useCallback(async () => {
     if (handleRef.current) return;
@@ -78,43 +134,25 @@ export function useVideoDownload({ url, meta, episode }: Args) {
       return;
     }
 
-    telemetryRef.current = null;
-    setStatus({ kind: "downloading", ratio: 0, receivedBytes: 0, totalBytes: null });
-    const id = randomUuid();
-    const handle = startDownload(id, url, path, (p: DownloadProgress) => {
-      const telemetry = nextDownloadTelemetry(telemetryRef.current, p, performance.now());
-      telemetryRef.current = telemetry;
-      setStatus({
-        kind: "downloading",
-        ratio: p.ratio,
-        receivedBytes: p.receivedBytes,
-        totalBytes: p.totalBytes,
-        bytesPerSecond: telemetry.bytesPerSecond,
-        etaSeconds: telemetry.etaSeconds,
-      });
-    });
-    handleRef.current = handle;
-    handle.promise
-      .then(() => {
-        setStatus({ kind: "done", path: path! });
-      })
-      .catch((e: unknown) => {
-        if (e instanceof Error && e.name === "AbortError") {
-          setStatus({ kind: "idle" });
-          return;
-        }
-        setStatus({
-          kind: "error",
-          message: e instanceof Error ? e.message : "Download failed",
-        });
-      })
-      .finally(() => {
-        handleRef.current = null;
-        telemetryRef.current = null;
-      });
-  }, [url, meta, episode, settings.downloadDir]);
+    progressRef.current = { ratio: 0, receivedBytes: 0, totalBytes: null };
+    const target = { id: randomUuid(), path };
+    targetRef.current = target;
+    begin(target);
+  }, [url, meta, episode, settings.downloadDir, begin]);
+
+  const pause = useCallback(() => {
+    if (!handleRef.current) return;
+    pauseRequestedRef.current = true;
+    handleRef.current.abort();
+  }, []);
+
+  const resume = useCallback(() => {
+    if (handleRef.current || !targetRef.current) return;
+    begin(targetRef.current);
+  }, [begin]);
 
   const cancel = useCallback(() => {
+    pauseRequestedRef.current = false;
     handleRef.current?.abort();
   }, []);
 
@@ -131,5 +169,5 @@ export function useVideoDownload({ url, meta, episode }: Args) {
     setStatus({ kind: "idle" });
   }, []);
 
-  return { status, start, cancel, reveal, reset };
+  return { status, start, pause, resume, cancel, reveal, reset };
 }
