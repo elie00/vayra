@@ -13,6 +13,15 @@ beforeEach(() => {
 });
 
 describe("first-run locale detection flag", () => {
+  it("preserves an explicit font choice after restarting", () => {
+    storage.set(STORAGE_KEY, JSON.stringify({
+      theme: { ...DEFAULT.theme, preset: "sage", fontPair: "system", fontPairOverride: true },
+    }));
+    expect(loadStoredSettings().theme).toMatchObject({
+      preset: "sage", fontPair: "system", fontPairOverride: true,
+    });
+  });
+
   it("ships neutral defaults so detection decides the locale", () => {
     expect(DEFAULT.region).toBe("US");
     expect(DEFAULT.preferredLanguages).toEqual(["English"]);
