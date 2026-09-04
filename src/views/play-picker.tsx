@@ -20,7 +20,6 @@ import { isAddonRanked } from "@/lib/streams/addon-detect";
 import { useScrollMemory, useView, type PickerIntent, type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { prefetchSegments } from "@/lib/skip-intro";
 
-import { exitWindowFullscreen } from "@/lib/fullscreen-state";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
 import { AutoPlayTransition } from "./play-picker/auto-play-transition";
@@ -88,7 +87,6 @@ export function PlayPicker({
   const isDownload = intent === "download" || isSeasonDownload;
   const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
   const backToDetail = () => {
-    void exitWindowFullscreen();
     exitPickerToDetail(meta);
   };
   const { settings, update } = useSettings();

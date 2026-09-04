@@ -868,7 +868,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Ask to resume or start over", section: "player", anchorTitle: "Play button behavior", keywords: ["resume prompt", "start over", "restart dialog", "continue watching prompt", "resume or restart"] },
   { label: "Resume where you left off", section: "player", anchorTitle: "Play button behavior", keywords: ["resume playback", "saved position", "continue watching", "start from beginning", "rewatch shows"] },
   { label: "Keep same source on next episode", section: "player", anchorTitle: "Play button behavior", keywords: ["same release", "next episode source", "binge same source", "keep addon", "sticky source"] },
-  { label: "Stay in fullscreen after closing the player", section: "player", anchorTitle: "Play button behavior", keywords: ["keep fullscreen", "exit fullscreen", "fullscreen after close", "window mode", "fullscren"] },
   { label: "Volume pop-up while watching", section: "player", anchorTitle: "Play button behavior", keywords: ["volume hud", "volume overlay", "volume popup", "on screen volume", "scroll wheel volume", "osd"] },
   { label: "Pop-up position", section: "player", anchorTitle: "Play button behavior", keywords: ["volume position", "center", "top left", "top right", "hud placement", "overlay position"] },
   { label: "Auto", section: "player", anchorTitle: "Player engine", keywords: ["auto engine", "default engine", "best engine", "automatic pick"] },

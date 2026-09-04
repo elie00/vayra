@@ -135,8 +135,8 @@ export async function exitWindowFullscreen(
 }
 
 export async function exitWindowFullscreenOnPlayerClose(): Promise<void> {
-  if (loadStoredSettings().keepFullscreenOnExit) return;
-  await exitWindowFullscreen();
+  // Fullscreen belongs to the app window, not to the player view. Navigation,
+  // playback errors and closing a video must never change it implicitly.
 }
 
 /** Always a deliberate act — a keypress, a button — so it is never suppressed. */
