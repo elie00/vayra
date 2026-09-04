@@ -16,7 +16,7 @@ import { Topbar } from "@/chrome/topbar";
 import { useFirstRunLocaleDetect } from "@/lib/region/locale-cascade";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
 import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
-import { exitWindowFullscreenOnPlayerClose, startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { syncEngineCacheOptions } from "@/lib/torrent/engine-config-sync";
@@ -747,9 +747,6 @@ function Shell() {
 
   const playerActive = !!player;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
-  useEffect(() => {
-    if (!playerActive) void exitWindowFullscreenOnPlayerClose();
-  }, [playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
   const collectionTop = topKind === "collection";
