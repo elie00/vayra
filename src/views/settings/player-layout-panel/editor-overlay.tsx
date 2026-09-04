@@ -225,7 +225,7 @@ export function EditorOverlay({
           </span>
           <h2
             className="text-[22px] font-medium tracking-tight"
-            style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             {t("Click any control to edit it.")}
           </h2>

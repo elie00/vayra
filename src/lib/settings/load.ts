@@ -66,6 +66,7 @@ export function sanitizeTheme(t: Partial<ThemeSettings> | undefined): ThemeSetti
   return {
     preset,
     fontPair: fontOk ? (t.fontPair as ThemeSettings["fontPair"]) : DEFAULT_THEME.fontPair,
+    ...(t.fontPairOverride === true ? { fontPairOverride: true } : {}),
     backgroundDim: dimOk ? (t.backgroundDim as number) : DEFAULT_THEME.backgroundDim,
     backgroundImage: imgOk ? (t.backgroundImage ?? null) : null,
     customColors,

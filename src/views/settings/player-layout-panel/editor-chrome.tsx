@@ -77,7 +77,7 @@ export function FauxBackdrop({
         </span>
         <span
           className="text-[180px] font-medium leading-none tracking-tight text-white"
-          style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           {t("PREVIEW")}
         </span>

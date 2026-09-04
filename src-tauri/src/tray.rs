@@ -152,8 +152,11 @@ pub fn tray_set_custom_themes(app: AppHandle, themes: Vec<CustomThemeEntry>) {
 
 pub fn build(app: &AppHandle) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "tray_show", "Show VAYRA", true, None::<&str>)?;
-    let themes: [(&str, &str); 13] = [
+    let themes: [(&str, &str); 16] = [
         ("cool-grey", "VAYRA default"),
+        ("obsidian", "Obsidian"),
+        ("sage", "Sage"),
+        ("ivory", "Ivory"),
         ("nord", "Nord"),
         ("stremio", "Stremio"),
         ("crunch", "Crunchy"),

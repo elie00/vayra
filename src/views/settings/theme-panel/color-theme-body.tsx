@@ -27,6 +27,7 @@ export function ColorThemeBody({
   onSaveCustom: (c: CustomColors) => void;
   onClearCustom: () => void;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
@@ -66,6 +67,8 @@ export function ColorThemeBody({
         return (
           <button
             key={p.id}
+            type="button"
+            aria-pressed={active}
             onClick={() => onSelect(p.id)}
             className={`group relative flex h-[150px] flex-col justify-end overflow-hidden rounded-2xl border p-4 text-start transition-all ${
               active ? "border-ink" : "border-edge-soft hover:border-edge"
@@ -85,11 +88,11 @@ export function ColorThemeBody({
               {active && <Check size={14} strokeWidth={3} style={{ color: p.swatch[0] }} />}
             </div>
             <div className="relative">
-              <p className="text-[14.5px] font-semibold" style={{ color: p.swatch[2] }}>
-                {p.name}
+              <p className="text-[14.5px] font-semibold" style={{ color: p.tokens["--color-ink"] }}>
+                {t(p.name)}
               </p>
-              <p className="mt-0.5 text-[11.5px]" style={{ color: p.swatch[2], opacity: 0.6 }}>
-                {p.blurb}
+              <p className="mt-0.5 text-[11.5px]" style={{ color: p.tokens["--color-ink-muted"] }}>
+                {t(p.blurb)}
               </p>
             </div>
           </button>

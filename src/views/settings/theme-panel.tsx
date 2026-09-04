@@ -1,7 +1,7 @@
 import { PanelTop } from "lucide-react";
 import { ThemeGallery } from "@/components/theme-gallery";
 import { useSettings } from "@/lib/settings";
-import { type ThemeSettings } from "@/lib/theme";
+import { activeFontPair, type ThemeSettings } from "@/lib/theme";
 import { useT } from "@/lib/i18n";
 import { Section } from "./shared";
 import { SeekBarPanel } from "./player-panel";
@@ -31,7 +31,7 @@ export function ThemePanel() {
       >
         <ColorThemeBody
           activePreset={theme.preset}
-          fontPair={theme.fontPair}
+          fontPair={activeFontPair(theme)}
           customColors={theme.customColors}
           onSelect={(id) => setTheme({ preset: id })}
           onSaveCustom={(c) => setTheme({ preset: "custom", customColors: c })}
@@ -68,9 +68,9 @@ export function ThemePanel() {
         subtitle={t("Pick a display and body pairing, or upload your own font to use across VAYRA.")}
       >
         <FontGrid
-          pairValue={theme.fontPair}
+          pairValue={activeFontPair(theme)}
           customValue={theme.customFontId ?? null}
-          onPickPair={(f) => setTheme({ fontPair: f, customFontId: null })}
+          onPickPair={(f) => setTheme({ fontPair: f, fontPairOverride: true, customFontId: null })}
           onPickCustom={(id) => setTheme({ customFontId: id })}
         />
       </Section>
