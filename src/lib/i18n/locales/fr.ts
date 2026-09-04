@@ -22,6 +22,9 @@ import { privateBetaFr } from "./private-beta";
 import coverage from "./fr/coverage";
 import sweep from "./fr/sweep";
 import sweep2 from "./fr/sweep2";
+import desktop from "./fr/desktop";
+import appearance from "./fr/appearance";
+import settingsNavigation from "./fr/settings-navigation";
 
 const fr: Record<string, string> = {
   ...ciraFr,
@@ -48,6 +51,9 @@ const fr: Record<string, string> = {
   ...misc,
   ...awards,
   ...addons,
+  ...desktop,
+  ...appearance,
+  ...settingsNavigation,
   "nav.catalogs": "Catalogues",
   "nav.kids": "Enfants",
   "AniList Comments": "Commentaires AniList",
