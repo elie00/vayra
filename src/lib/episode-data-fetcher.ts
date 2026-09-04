@@ -9,6 +9,7 @@ import { tmdbEpisodeDetail } from "@/lib/providers/tmdb/tmdb-episode-details";
 import { getCachedEpisode, cacheEpisode } from "@/lib/providers/tmdb/tmdb-episode-cache";
 import { cinemetaEpisodeDetail } from "@/lib/cinemeta-episode";
 import type { EpisodeDetail } from "@/lib/providers/tmdb/tmdb-episode-types";
+import { effectiveTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
 
 /**
  * Extract TMDB ID from various meta ID formats
@@ -73,8 +74,9 @@ export async function fetchEpisodeData(
   episode: number,
   settings: Settings,
 ): Promise<EpisodeDetail | null> {
+  const language = effectiveTmdbLanguage() || "en";
   // 1. Check cache first (fastest path)
-  const cached = getCachedEpisode(seriesId, season, episode);
+  const cached = getCachedEpisode(seriesId, season, episode, language);
   if (cached) {
     return cached;
   }
@@ -90,11 +92,12 @@ export async function fetchEpisodeData(
           tmdbId,
           season,
           episode,
+          language,
         );
         
         if (tmdbData) {
           // Cache successful TMDB fetch
-          cacheEpisode(seriesId, season, episode, tmdbData);
+          cacheEpisode(seriesId, season, episode, tmdbData, language);
           return tmdbData;
         }
       }
@@ -133,7 +136,8 @@ export async function fetchEpisodeData(
       
       // Cache Cinemeta data with shorter TTL (1 hour) since it has limited info
       // This allows it to be replaced if TMDB data becomes available later
-      cacheEpisode(seriesId, season, episode, completeData);
+      // A provider/network fallback must not mask a later French TMDB response.
+      if (language.startsWith("en")) cacheEpisode(seriesId, season, episode, completeData, language);
       return completeData;
     }
   } catch (cinemetaError) {

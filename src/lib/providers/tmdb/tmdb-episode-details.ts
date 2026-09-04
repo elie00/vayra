@@ -22,12 +22,13 @@ export async function tmdbEpisodeDetail(
   tvId: number,
   seasonNumber: number,
   episodeNumber: number,
+  language = effectiveTmdbLanguage() || "en",
 ): Promise<EpisodeDetail | null> {
   try {
     const path = `tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}`;
     const params = {
       append_to_response: "credits,images,external_ids",
-      language: effectiveTmdbLanguage() || "en",
+      language,
       include_image_language: imageLangParam(),
     };
 
