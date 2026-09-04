@@ -8,7 +8,7 @@ export function Signature() {
   return (
     <div className="flex flex-col items-center gap-2 pt-2 pb-1">
       <p className="flex items-center gap-1.5 text-center text-[12px] tracking-wide text-ink-subtle">
-        VAYRA · A product by EYBO
+        {t("VAYRA · A product by EYBO")}
       </p>
       <button
         onClick={() => setOpen((v) => !v)}

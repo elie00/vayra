@@ -3,6 +3,7 @@ import { Check, Download as DownloadIcon, FolderOpen, Pause, Play, Trash2, X } f
 import { Poster, usePosterChain } from "@/components/poster";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
+import { getUiLanguage, t, useT } from "@/lib/i18n";
 import { DownloadDirBar } from "./downloads/download-dir-bar";
 import {
   cancelDownload,
@@ -16,15 +17,15 @@ import {
 
 function fmtBytes(n: number | null): string {
   if (n == null || n <= 0) return "";
-  if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(2)} GB`;
-  if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(0)} MB`;
-  return `${(n / 1024).toFixed(0)} KB`;
+  if (n >= 1024 ** 3) return t("{n} GB", { n: (n / 1024 ** 3).toLocaleString(getUiLanguage(), { maximumFractionDigits: 2 }) });
+  if (n >= 1024 ** 2) return t("{n} MB", { n: Math.round(n / 1024 ** 2) });
+  return t("{n} KB", { n: Math.round(n / 1024) });
 }
 
 function fmtSpeed(bps: number): string {
   if (bps <= 0) return "";
-  if (bps >= 1024 ** 2) return `${(bps / 1024 ** 2).toFixed(1)} MB/s`;
-  return `${(bps / 1024).toFixed(0)} KB/s`;
+  if (bps >= 1024 ** 2) return t("{n} MB/s", { n: (bps / 1024 ** 2).toLocaleString(getUiLanguage(), { maximumFractionDigits: 1 }) });
+  return t("{n} KB/s", { n: Math.round(bps / 1024) });
 }
 
 function fmtEta(d: DownloadItem): string {
@@ -32,9 +33,9 @@ function fmtEta(d: DownloadItem): string {
   const remain = d.totalBytes - d.receivedBytes;
   if (remain <= 0) return "";
   const secs = remain / d.bytesPerSec;
-  if (secs >= 3600) return `${Math.round(secs / 3600)}h left`;
-  if (secs >= 60) return `${Math.round(secs / 60)}m left`;
-  return `${Math.round(secs)}s left`;
+  if (secs >= 3600) return t("{n}h left", { n: Math.round(secs / 3600) });
+  if (secs >= 60) return t("{n}m left", { n: Math.round(secs / 60) });
+  return t("{n}s left", { n: Math.round(secs) });
 }
 
 type DownloadGroup =
@@ -78,6 +79,7 @@ function buildGroups(items: DownloadItem[]): DownloadGroup[] {
 }
 
 export function DownloadsView() {
+  const t = useT();
   const items = useDownloads();
   const active = items.filter((d) => d.status === "downloading").length;
   const queued = items.filter((d) => d.status === "queued").length;
@@ -92,16 +94,16 @@ export function DownloadsView() {
     <main className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-8">
-          <h1 className="text-[28px] font-semibold tracking-tight text-ink">Downloads</h1>
+          <h1 className="text-[28px] font-semibold tracking-tight text-ink">{t("Downloads")}</h1>
           <p className="mt-1.5 text-[13.5px] text-ink-subtle">
             {items.length === 0
-              ? "Saved movies and episodes for offline watching"
+              ? t("Saved movies and episodes for offline watching")
               : [
-                  `${items.length} item${items.length === 1 ? "" : "s"}`,
-                  active > 0 ? `${active} downloading` : null,
-                  queued > 0 ? `${queued} waiting` : null,
-                  paused > 0 ? `${paused} paused` : null,
-                  savedBytes > 0 ? `${fmtBytes(savedBytes)} saved` : null,
+                  items.length === 1 ? t("1 item") : t("{n} items", { n: items.length }),
+                  active > 0 ? t("{n} downloading", { n: active }) : null,
+                  queued > 0 ? t("{n} waiting", { n: queued }) : null,
+                  paused > 0 ? t("{n} paused", { n: paused }) : null,
+                  savedBytes > 0 ? t("{size} saved", { size: fmtBytes(savedBytes) }) : null,
                 ]
                   .filter(Boolean)
                   .join("  ·  ")}
@@ -131,15 +133,16 @@ export function DownloadsView() {
 }
 
 function EmptyState() {
+  const t = useT();
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-[20px] border border-dashed border-edge-soft bg-elevated/30 px-8 py-20 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-elevated text-ink-subtle">
         <DownloadIcon size={26} strokeWidth={1.8} />
       </div>
       <div className="flex flex-col gap-1.5">
-        <p className="text-[15px] font-semibold text-ink">No downloads yet</p>
+        <p className="text-[15px] font-semibold text-ink">{t("No downloads yet")}</p>
         <p className="max-w-[340px] text-[13.5px] leading-relaxed text-ink-muted">
-          Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.
+          {t("Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.")}
         </p>
       </div>
     </div>
@@ -147,6 +150,7 @@ function EmptyState() {
 }
 
 function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> }) {
+  const t = useT();
   const { settings } = useSettings();
   const poster = usePosterChain(settings.rpdbKey, group.metaId, group.poster ?? undefined, "series");
   const episodes = useMemo(
@@ -169,7 +173,7 @@ function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> 
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-[14px] font-semibold text-ink">{group.title}</span>
           <span className="text-[11.5px] text-ink-subtle">
-            {episodes.length} episode{episodes.length === 1 ? "" : "s"}
+            {episodes.length === 1 ? t("1 episode") : t("{n} episodes", { n: episodes.length })}
             {totalBytes > 0 ? `  ·  ${fmtBytes(totalBytes)}` : ""}
           </span>
         </div>
@@ -184,6 +188,7 @@ function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> 
 }
 
 function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolean }) {
+  const t = useT();
   const { openPlayer } = useView();
   const { settings } = useSettings();
   const poster = usePosterChain(
@@ -239,7 +244,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
               />
             </div>
             <div className="flex flex-wrap items-center gap-x-2 text-[11.5px] tabular-nums text-ink-muted">
-              <span>{paused ? `Paused at ${pct}%` : `${pct}%`}</span>
+              <span>{paused ? t("Paused at {pct}%", { pct }) : `${pct}%`}</span>
               {d.totalBytes != null && (
                 <span className="text-ink-subtle">
                   {fmtBytes(d.receivedBytes)} / {fmtBytes(d.totalBytes)}
@@ -255,16 +260,16 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
               <>
                 <Check size={13} className="text-accent" strokeWidth={2.6} />
                 <span className="text-ink-muted">
-                  Saved{d.streamLabel ? ` · ${d.streamLabel}` : ""}
+                  {t("Saved")}{d.streamLabel ? ` · ${d.streamLabel}` : ""}
                   {d.totalBytes ? ` · ${fmtBytes(d.totalBytes)}` : ""}
                 </span>
               </>
             )}
-            {d.status === "error" && <span className="text-danger">Failed: {d.error ?? "download error"}</span>}
-            {queued && <span className="text-ink-subtle">Waiting for a free slot</span>}
-            {d.status === "canceled" && <span className="text-ink-subtle">Canceled</span>}
+            {d.status === "error" && <span className="text-danger">{t("Failed: {error}", { error: d.error ? t(d.error) : t("download error") })}</span>}
+            {queued && <span className="text-ink-subtle">{t("Waiting for a free slot")}</span>}
+            {d.status === "canceled" && <span className="text-ink-subtle">{t("Canceled")}</span>}
             {d.status === "interrupted" && (
-              <span className="text-info/85">Interrupted · resume to continue</span>
+              <span className="text-info/85">{t("Interrupted · resume to continue")}</span>
             )}
           </span>
         )}
@@ -272,31 +277,31 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
       <div className="flex shrink-0 items-center gap-1">
         {downloading || queued ? (
           <>
-            <RowBtn label="Pause download" onClick={() => pauseDownload(d.id)}>
+            <RowBtn label={t("Pause download")} onClick={() => pauseDownload(d.id)}>
               <Pause size={16} strokeWidth={2.2} fill="currentColor" />
             </RowBtn>
-            <RowBtn label="Cancel download" onClick={() => cancelDownload(d.id)}>
+            <RowBtn label={t("Cancel download")} onClick={() => cancelDownload(d.id)}>
               <X size={16} strokeWidth={2.2} />
             </RowBtn>
           </>
         ) : (
           <>
             {resumable && (
-              <RowBtn label="Resume download" onClick={() => resumeDownload(d.id)}>
+              <RowBtn label={t("Resume download")} onClick={() => resumeDownload(d.id)}>
                 <Play size={16} strokeWidth={2.2} fill="currentColor" />
               </RowBtn>
             )}
             {d.status === "done" && (
               <>
-                <RowBtn label="Play" onClick={playLocal}>
+                <RowBtn label={t("Play")} onClick={playLocal}>
                   <Play size={16} strokeWidth={2.2} fill="currentColor" />
                 </RowBtn>
-                <RowBtn label="Show in folder" onClick={() => void revealDownload(d.id)}>
+                <RowBtn label={t("Show in folder")} onClick={() => void revealDownload(d.id)}>
                   <FolderOpen size={16} strokeWidth={2} />
                 </RowBtn>
               </>
             )}
-            <RowBtn label="Delete download and file" onClick={() => removeDownload(d.id)}>
+            <RowBtn label={t("Delete download and file")} onClick={() => removeDownload(d.id)}>
               <Trash2 size={16} strokeWidth={2} />
             </RowBtn>
           </>

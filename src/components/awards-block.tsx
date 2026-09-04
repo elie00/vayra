@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { Fragment, useState } from "react";
 import { tmdbPersonIdByName, tmdbPersonIdCached } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
@@ -60,6 +61,7 @@ export function AwardsBlock({ awards }: { awards: AwardEntry[] }) {
 }
 
 function AwardGroup({ type, entries }: { type: AwardType; entries: AwardEntry[] }) {
+  const t = useT();
   const { openAward } = useView();
   const wins = entries.filter((e) => e.result === "won" && e.category);
   const noms = entries.filter((e) => e.result === "nominated" && e.category);
@@ -143,7 +145,7 @@ function AwardGroup({ type, entries }: { type: AwardType; entries: AwardEntry[] 
           <div className="flex flex-col gap-2">
             {wins.length > 0 && (
               <h5 className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
-                Also Nominated
+                {t("Also Nominated")}
               </h5>
             )}
             <ul className="grid grid-cols-1 gap-x-10 gap-y-0 xl:grid-cols-2">
@@ -160,7 +162,7 @@ function AwardGroup({ type, entries }: { type: AwardType; entries: AwardEntry[] 
 
         {!hasDetail && (
           <p className="text-[13px] leading-relaxed text-ink-subtle">
-            Recognized at the {TYPE_TITLE[type].toLowerCase()}.
+            {t("Recognized at the")} {TYPE_TITLE[type].toLowerCase()}.
           </p>
         )}
       </div>
@@ -247,4 +249,3 @@ function PersonLink({ name }: { name: string }) {
     </button>
   );
 }
-

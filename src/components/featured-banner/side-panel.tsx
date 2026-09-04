@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
@@ -20,6 +21,7 @@ export function SidePanel({
   total: number;
   onOpenLightbox: (state: LightboxState) => void;
 }) {
+  const t = useT();
   const { settings } = useSettings();
   const [stills, setStills] = useState<string[]>([]);
   const description = useLocalizedOverview(meta);
@@ -97,7 +99,7 @@ export function SidePanel({
             <Star className="h-[12px] w-[12px] text-info" fill="currentColor" strokeWidth={0} />
           )}
           <span>{live.value}</span>
-          <span className="text-ink-subtle">· Top Rated</span>
+          <span className="text-ink-subtle">{t("· Top Rated")}</span>
         </div>
       )}
     </aside>

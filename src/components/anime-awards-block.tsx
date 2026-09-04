@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { ArrowUpRight } from "lucide-react";
 import {
   awardSourceMeta,
@@ -33,6 +34,7 @@ export function AnimeAwardsBlock({ name, year }: { name: string; year?: number }
 }
 
 function SourceGroup({ source, wins }: { source: AwardSourceId; wins: AwardWin[] }) {
+  const t = useT();
   const { openAnimeAward } = useView();
   const meta = awardSourceMeta(source);
   const years = uniqueYears(wins);
@@ -76,7 +78,7 @@ function SourceGroup({ source, wins }: { source: AwardSourceId; wins: AwardWin[]
             onClick={() => openAnimeAward(source)}
             className="mt-1 w-fit text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent transition-opacity hover:opacity-80"
           >
-            See all winners →
+            {t("See all winners →")}
           </button>
         </div>
       </header>

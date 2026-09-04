@@ -704,7 +704,7 @@ export function PlayPicker({
 
         {isDownload && !isSeasonDownload && (
           <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-3.5 text-[13.5px] text-ink-muted">
-            Choose a source to save offline. You can track progress on the Downloads page.
+            {t("Choose a source to save offline. You can track progress on the Downloads page.")}
           </div>
         )}
 
@@ -738,7 +738,7 @@ export function PlayPicker({
               <span className="absolute inset-0 rounded-full border-[1.5px] border-edge" />
               <span className="absolute inset-0 animate-spin rounded-full border-[1.5px] border-transparent border-t-ink" />
             </span>
-            Still searching slower sources…
+            {t("Still searching slower sources…")}
           </div>
         )}
 
