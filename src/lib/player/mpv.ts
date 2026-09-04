@@ -1,5 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { createResumeRecovery } from "./resume-recovery";
+import { emitAppFeedback } from "@/lib/app-feedback";
+import { t } from "@/lib/i18n";
 import {
   emptySnapshot,
   type PlayerBridge,
@@ -114,6 +117,11 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let mpvStarted = false;
   let suppressEndFileUntil = 0;
   let svpFilterFailed = false;
+  let currentSource: PlayerSource | null = null;
+  let viewerPaused = false;
+  let playbackGeneration = 0;
+  let resumeReloadPending = false;
+  let restoreAfterResume: (() => Promise<void>) | null = null;
   const urlByExternalFilename = new Map<string, string>();
 
   const handleSvpFilterFailure = () => {
@@ -131,6 +139,64 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     listeners.forEach((l) => l(next));
   };
 
+  const resumeRecovery = createResumeRecovery({
+    async reload(position, isCurrent) {
+      const source = currentSource;
+      if (!source || !mpvStarted) throw new Error("No loaded source");
+      const ownGeneration = playbackGeneration;
+      const samePlayback = () => ownGeneration === playbackGeneration && !viewerPaused;
+      const audio = snap.audioTracks.find((track) => track.selected);
+      const subtitle = snap.subtitleTracks.find((track) => track.selected);
+      const external = snap.subtitleTracks.filter((track) => track.external && track.externalFilename);
+      const saved = { rate: snap.rate, subDelay: snap.subDelaySec, audioDelay: snap.audioDelaySec };
+      // Headers are already attached to this mpv instance. Do not recreate the
+      // native window or discard the local torrent/cache session.
+      restoreAfterResume = async () => {
+        for (const track of external) {
+          if (!samePlayback()) return;
+          await invoke("mpv_sub_add", {
+            url: track.externalFilename,
+            lang: track.lang ?? null,
+            title: track.title ?? null,
+            select: track.id === subtitle?.id,
+          });
+        }
+        for (const [name, value] of [
+          ["speed", saved.rate], ["sub-delay", saved.subDelay], ["audio-delay", saved.audioDelay],
+        ] as const) {
+          if (!samePlayback()) return;
+          await invoke("mpv_set_property", { name, value });
+        }
+      };
+      if (!isCurrent()) return;
+      resumeReloadPending = true;
+      const opts = `start=${position},pause=no,aid=${audio?.id ?? "auto"},sid=${subtitle && !subtitle.external ? subtitle.id : "no"}`;
+      await invoke("mpv_command", { cmd: ["loadfile", source.url, "replace", 0, opts] });
+    },
+    onState(state) {
+      snap.buffering = state === "reloading";
+      snap.errorCode = null;
+      snap.errorMessage = null;
+      if (state === "failed") {
+        playbackGeneration++;
+        restoreAfterResume = null;
+        viewerPaused = true;
+        snap.status = "paused";
+        // Keep the position and the player open; never silently choose another
+        // source or mark the film watched because reconnection failed.
+        void invoke("mpv_set_property", { name: "pause", value: true }).catch(() => {
+          console.warn("[mpv] could not pause after resume failure");
+        });
+        emitAppFeedback({ kind: "error", text: t("Playback could not resume. Press Play to retry or choose another source."), durationMs: 10_000 });
+      } else if (state === "reloading") {
+        emitAppFeedback({ kind: "info", text: t("Reconnecting at your paused position…") });
+      } else if (!viewerPaused) {
+        snap.status = "playing";
+      }
+      emit();
+    },
+  });
+
   const handleEvent = (raw: MpvEvent) => {
     if (raw.event === "log") {
       const prefix = String((raw as { prefix?: unknown }).prefix ?? "");
@@ -147,10 +213,17 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     if (raw.event === "property-change") {
       const name = raw.name;
       const data = raw.data;
-      if (name === "time-pos" && typeof data === "number") snap.positionSec = data;
+      if (name === "time-pos" && typeof data === "number") {
+        // A reload can report zero before seeking. Keep the user's bookmark.
+        if (!resumeRecovery.isActive() || data >= snap.positionSec) snap.positionSec = data;
+        resumeRecovery.observe(data);
+      }
       if (name === "duration" && typeof data === "number") snap.durationSec = data;
       if (name === "pause" && typeof data === "boolean") {
-        snap.status = data ? "paused" : "playing";
+        // Also honor playback changes made by native media controls. Only hold
+        // a user pause over the transient unpause of an in-flight loadfile.
+        viewerPaused = data || (viewerPaused && resumeReloadPending);
+        snap.status = viewerPaused ? "paused" : "playing";
       }
       // mpv pauses itself when the buffer runs dry (`cache-pause`). Left unsaid,
       // that reads as a pause the viewer asked for: the play button then sends a
@@ -158,7 +231,13 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "paused-for-cache" && typeof data === "boolean") {
         snap.buffering = data;
       }
-      if (name === "eof-reached" && data === true) snap.status = "ended";
+      if (name === "eof-reached" && data === true && !viewerPaused) {
+        const reallyFinished = snap.durationSec > 0 && snap.positionSec >= snap.durationSec - 1;
+        if (!resumeRecovery.isActive() || reallyFinished) {
+          resumeRecovery.cancel();
+          snap.status = "ended";
+        }
+      }
       if (name === "volume" && typeof data === "number") snap.volume = data / 100;
       if (name === "mute" && typeof data === "boolean") snap.muted = data;
       if (name === "track-list" && Array.isArray(data)) {
@@ -240,6 +319,9 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     } else if (raw.event === "end-file") {
       const reason = (raw as { reason?: string }).reason?.toLowerCase();
       if (reason === "stop" || reason === "quit" || reason === "redirect") return;
+      // An expired connection during the user's pause must not advance the
+      // episode or close the view. The next explicit Play owns recovery.
+      if (viewerPaused || resumeRecovery.isActive()) return;
       if (Date.now() < suppressEndFileUntil) return;
       if (reason && reason !== "eof") {
         snap.status = "error";
@@ -250,9 +332,21 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       }
       emit();
     } else if (raw.event === "file-loaded") {
-      snap.status = "playing";
+      resumeReloadPending = false;
+      snap.status = viewerPaused ? "paused" : "playing";
       snap.errorCode = null;
       snap.errorMessage = null;
+      const restore = restoreAfterResume;
+      restoreAfterResume = null;
+      if (viewerPaused) {
+        void invoke("mpv_set_property", { name: "pause", value: true }).catch(() => {
+          console.warn("[mpv] could not preserve pause after loading");
+        });
+      } else if (restore) {
+        void restore().catch(() => {
+          emitAppFeedback({ kind: "error", text: t("Could not restore the selected playback tracks.") });
+        });
+      }
       emit();
     } else if (raw.event === "playback-restart") {
       // Fires once mpv has decoded and displayed the first frame (also after
@@ -293,6 +387,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       host = null;
     },
     async load(src: PlayerSource) {
+      playbackGeneration++;
+      resumeReloadPending = false;
+      resumeRecovery.cancel();
+      restoreAfterResume = null;
+      viewerPaused = false;
+      currentSource = { ...src, headers: src.headers ? { ...src.headers } : undefined };
       svpFilterFailed = false;
       snap.status = "loading";
       snap.errorCode = null;
@@ -439,12 +539,33 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       }
     },
     async play() {
-      await invoke("mpv_set_property", { name: "pause", value: false }).catch(() => {});
+      const resuming = viewerPaused || snap.status === "paused" || snap.status === "error" || snap.status === "ended" || snap.buffering;
+      viewerPaused = false;
+      if (resuming && currentSource && !currentSource.isLive) resumeRecovery.start(snap.positionSec);
+      try {
+        await invoke("mpv_set_property", { name: "pause", value: false });
+      } catch (error) {
+        if (resumeRecovery.isActive()) resumeRecovery.recover();
+        else {
+          emitAppFeedback({ kind: "error", text: t("Playback could not resume. Press Play to retry or choose another source.") });
+          throw error;
+        }
+      }
     },
     pause() {
+      playbackGeneration++;
+      viewerPaused = true;
+      resumeRecovery.cancel();
+      restoreAfterResume = null;
+      snap.status = "paused";
+      snap.buffering = false;
+      emit();
       invoke("mpv_set_property", { name: "pause", value: true }).catch(() => {});
     },
     seek(sec) {
+      playbackGeneration++;
+      resumeRecovery.cancel();
+      restoreAfterResume = null;
       snap.subText = "";
       snap.subStartSec = 0;
       emit();
@@ -595,6 +716,11 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       };
     },
     destroy() {
+      playbackGeneration++;
+      resumeReloadPending = false;
+      resumeRecovery.cancel();
+      restoreAfterResume = null;
+      currentSource = null;
       if (geomTimer != null) {
         window.clearInterval(geomTimer);
         geomTimer = null;
