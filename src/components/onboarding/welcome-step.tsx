@@ -21,7 +21,7 @@ export function WelcomeStep() {
           )}
         </p>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
-          A product by EYBO
+          {t("A product by EYBO")}
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-3">

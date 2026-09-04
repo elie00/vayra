@@ -74,7 +74,7 @@ export function GridView({ grid }: { grid: GridSpec }) {
             <p className="font-display text-[24px] font-bold text-[#0e3a43]">{t("Nothing here yet!")}</p>
           </div>
         ) : (
-          <p className="py-20 text-center text-[14px] text-ink-subtle">Nothing here yet.</p>
+          <p className="py-20 text-center text-[14px] text-ink-subtle">{t("Nothing here yet.")}</p>
         ))}
     </>
   );
@@ -129,7 +129,7 @@ export function GridView({ grid }: { grid: GridSpec }) {
             <h1 className="font-display text-[30px] font-medium leading-none tracking-tight text-ink">
               {grid.title}
             </h1>
-            <span className="text-[14px] text-ink-subtle">{metas.length} titles</span>
+            <span className="text-[14px] text-ink-subtle">{metas.length} {t("titles")}</span>
           </div>
           {body}
         </div>

@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { ArrowUpRight, Check, Loader2, Plus, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import stremioAddonsLogo from "@/assets/stremio-addons-net.png";
@@ -31,6 +32,7 @@ export function CommunityAddonsRail({
   onChange?: () => void;
   onOpen?: (manifestId: string) => void;
 }) {
+  const t = useT();
   const [sortMode, setSortMode] = useState<SortMode>("stars");
   const [items, setItems] = useState<SAAddon[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -77,10 +79,10 @@ export function CommunityAddonsRail({
           </button>
           <div className="flex flex-col gap-1">
             <span className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-accent">
-              Community ratings
+              {t("Community ratings")}
             </span>
             <h3 className="text-[24px] font-medium tracking-tight text-ink">
-              Top on{" "}
+              {t("Top on")}{" "}
               <button
                 type="button"
                 onClick={() => openUrl(SITE_URL)}
@@ -90,7 +92,7 @@ export function CommunityAddonsRail({
               </button>
             </h3>
             <p className="max-w-[52ch] text-[12.5px] text-ink-muted">
-              Ranked by the {SITE_NAME} community from their public index.
+              {t("Ranked by the")} {SITE_NAME} {t("community from their public index.")}
             </p>
           </div>
         </div>
@@ -102,7 +104,7 @@ export function CommunityAddonsRail({
             className="flex h-9 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <ArrowUpRight size={12} strokeWidth={2.4} className="dir-icon" />
-            Browse all
+            {t("Browse all")}
           </button>
         </div>
       </div>
@@ -126,21 +128,22 @@ export function CommunityAddonsRail({
 }
 
 function TabBar({ value, onChange }: { value: SortMode; onChange: (v: SortMode) => void }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-1 rounded-full border border-edge-soft bg-canvas/40 p-1">
-      {TABS.map((t) => {
-        const active = value === t.id;
+      {TABS.map((tab) => {
+        const active = value === tab.id;
         return (
           <button
-            key={t.id}
+            key={tab.id}
             type="button"
-            onClick={() => onChange(t.id)}
-            title={t.sub}
+            onClick={() => onChange(tab.id)}
+            title={t(tab.sub)}
             className={`h-8 rounded-full px-3 text-[12px] font-semibold transition-colors ${
               active ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"
             }`}
           >
-            {t.label}
+            {t(tab.label)}
           </button>
         );
       })}
@@ -191,6 +194,7 @@ function CommunityCard({
   onChange?: () => void;
   onOpen?: (manifestId: string) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const m = addon.manifest;
   const name = m?.name ?? addon.slug;
@@ -295,7 +299,7 @@ function CommunityCard({
           {installed ? (
             <span className="flex h-8 items-center gap-1 rounded-full bg-accent/15 px-2.5 text-[11.5px] font-semibold text-accent">
               <Check size={11} strokeWidth={2.6} />
-              Installed
+              {t("Installed")}
             </span>
           ) : (
             <button
@@ -309,7 +313,7 @@ function CommunityCard({
               ) : (
                 <Plus size={11} strokeWidth={2.6} />
               )}
-              Install
+              {t("Install")}
             </button>
           )}
         </div>
@@ -332,17 +336,19 @@ function SkeletonRow() {
 }
 
 function EmptyState() {
+  const t = useT();
   return (
     <p className="rounded-xl border border-dashed border-edge bg-canvas/30 px-4 py-6 text-center text-[12.5px] text-ink-subtle">
-      No addons match these filters right now.
+      {t("No addons match these filters right now.")}
     </p>
   );
 }
 
 function ErrorState({ message }: { message: string }) {
+  const t = useT();
   return (
     <p className="rounded-xl border border-dashed border-edge bg-canvas/30 px-4 py-6 text-center text-[12.5px] text-ink-subtle">
-      {SITE_NAME} should be reachable in a moment. They're deploying right now. Refresh once their docs go live.
+      {SITE_NAME} {t("should be reachable in a moment. They're deploying right now. Refresh once their docs go live.")}
       <br />
       <span className="text-[10.5px] opacity-70">({message})</span>
     </p>

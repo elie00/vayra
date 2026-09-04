@@ -13,7 +13,8 @@ import {
 } from "@/lib/addon-store";
 import { openUrl } from "@/lib/window";
 import { useSettings, type StreamingService } from "@/lib/settings";
-import { useT } from "@/lib/i18n";
+import { useT, useUiLanguage } from "@/lib/i18n";
+import { localizedLanguageName } from "@/lib/i18n/language-label";
 
 export function pickDebridForAddon(s: ReturnType<typeof useSettings>["settings"]):
   | { service: string; key: string; label: string }
@@ -269,6 +270,8 @@ export function LanguagesPicker({
   placeholder?: string;
 }) {
   const t = useT();
+  const uiLanguage = useUiLanguage();
+  const label = (name: string) => localizedLanguageName(name, uiLanguage);
   const resolvedPlaceholder = placeholder ?? t("Search languages (Tamil, Telugu, ...)");
   const [query, setQuery] = useState("");
   const selected = new Set(value);
@@ -280,7 +283,7 @@ export function LanguagesPicker({
   };
   const q = query.trim().toLowerCase();
   const available = options.filter((l) => !selected.has(l));
-  const matches = q ? available.filter((l) => l.toLowerCase().includes(q)) : available;
+  const matches = q ? available.filter((l) => l.toLowerCase().includes(q) || label(l).toLowerCase().includes(q)) : available;
   const COMMON = 24;
   const shown = q ? matches : matches.slice(0, COMMON);
   const moreCount = q ? 0 : matches.length - shown.length;
@@ -296,7 +299,7 @@ export function LanguagesPicker({
               className="group inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/15 px-3 py-1.5 text-[12.5px] font-semibold text-accent transition-colors hover:bg-accent/25"
             >
               <Flag language={lang} size="sm" showLabel={false} />
-              <span>{lang}</span>
+              <span>{label(lang)}</span>
               <X size={11} strokeWidth={2.4} className="opacity-70 group-hover:opacity-100" />
             </button>
           ))}
@@ -324,7 +327,7 @@ export function LanguagesPicker({
             className="inline-flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/30 px-2.5 py-1.5 text-[12px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <Flag language={lang} size="sm" showLabel={false} />
-            <span>{lang}</span>
+            <span>{label(lang)}</span>
           </button>
         ))}
         {moreCount > 0 && (

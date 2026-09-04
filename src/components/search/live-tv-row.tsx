@@ -1,9 +1,11 @@
+import { useT } from "@/lib/i18n";
 import { Radio, Tv } from "lucide-react";
 import type { LiveTvHit } from "@/lib/search";
 import { useView } from "@/lib/view";
 import type { Meta } from "@/lib/cinemeta";
 
 export function LiveTvRow({ items, onClose }: { items: LiveTvHit[]; onClose: () => void }) {
+  const t = useT();
   const { openPlayer } = useView();
   if (items.length === 0) return null;
   const play = (hit: LiveTvHit) => {
@@ -31,7 +33,7 @@ export function LiveTvRow({ items, onClose }: { items: LiveTvHit[]; onClose: () 
     <section>
       <h3 className="mb-3 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
         <Radio size={11} strokeWidth={2.2} />
-        Live TV
+        {t("Live TV")}
       </h3>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {items.map((hit, ix) => (
