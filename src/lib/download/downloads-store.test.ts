@@ -25,7 +25,9 @@ import {
   cancelDownload,
   enqueueDownload,
   MAX_ACTIVE_DOWNLOADS,
+  pauseDownload,
   removeDownload,
+  resumeDownload,
 } from "./downloads-store";
 
 const meta = { id: "tt1", name: "Show" } as unknown as Meta;
@@ -221,6 +223,77 @@ describe("download concurrency", () => {
     expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS + 1);
     const lastUrl = mocks.startDownload.mock.calls.at(-1)?.[1];
     expect(lastUrl).toBe(`https://cdn/${MAX_ACTIVE_DOWNLOADS + 1}.mkv`);
+  });
+});
+
+describe("pause and resume", () => {
+  it("keeps partial progress and request headers when a running download resumes", async () => {
+    const aborts: Array<ReturnType<typeof vi.fn>> = [];
+    mocks.startDownload.mockImplementation(() => {
+      let reject!: (reason: Error) => void;
+      const promise = new Promise<void>((_resolve, rej) => {
+        reject = rej;
+      });
+      const abort = vi.fn(() => {
+        const error = new Error("paused");
+        error.name = "AbortError";
+        reject(error);
+      });
+      aborts.push(abort);
+      return { promise, abort };
+    });
+
+    const id = await enqueueDownload({
+      meta,
+      url: "https://cdn/protected.mkv",
+      headers: { Authorization: "Bearer test" },
+    });
+    lastProgressCallback()({ receivedBytes: 8_000_000, totalBytes: 40_000_000, ratio: 0.2 });
+
+    pauseDownload(id);
+    resumeDownload(id); // A fast click must work even while abort is still settling.
+    await vi.advanceTimersByTimeAsync(0);
+
+    const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{
+      id: string;
+      receivedBytes: number;
+      status: string;
+    }>;
+    expect(aborts[0]).toHaveBeenCalledOnce();
+    expect(saved.find((d) => d.id === id)).toMatchObject({
+      receivedBytes: 8_000_000,
+      status: "downloading",
+    });
+    expect(mocks.startDownload).toHaveBeenCalledTimes(2);
+    expect(mocks.startDownload.mock.calls.at(-1)?.[4]).toEqual({ Authorization: "Bearer test" });
+  });
+
+  it("can pause and requeue a download before it starts", async () => {
+    mocks.startDownload.mockImplementation(() => ({
+      promise: new Promise<void>(() => {}),
+      abort: vi.fn(),
+    }));
+
+    const ids: string[] = [];
+    for (let i = 0; i < MAX_ACTIVE_DOWNLOADS + 1; i++) {
+      ids.push(await enqueueDownload({ meta, url: `https://cdn/${i}.mkv` }));
+    }
+    const waiting = ids.at(-1)!;
+
+    pauseDownload(waiting);
+    let saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{
+      id: string;
+      status: string;
+    }>;
+    expect(saved.find((d) => d.id === waiting)?.status).toBe("paused");
+
+    resumeDownload(waiting);
+    saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{
+      id: string;
+      status: string;
+    }>;
+    expect(saved.find((d) => d.id === waiting)?.status).toBe("queued");
+    expect(mocks.startDownload).toHaveBeenCalledTimes(MAX_ACTIVE_DOWNLOADS);
   });
 });
 

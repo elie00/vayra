@@ -24,7 +24,14 @@ export type DownloadItem = {
   streamLabel: string | null;
   url: string;
   path: string;
-  status: "queued" | "downloading" | "done" | "error" | "canceled" | "interrupted";
+  status:
+    | "queued"
+    | "downloading"
+    | "paused"
+    | "done"
+    | "error"
+    | "canceled"
+    | "interrupted";
   receivedBytes: number;
   totalBytes: number | null;
   ratio: number;
@@ -58,6 +65,10 @@ export const MAX_ACTIVE_DOWNLOADS = 3;
 // request needs once a slot frees up.
 const waiting: string[] = [];
 const waitingHeaders = new Map<string, Record<string, string> | undefined>();
+// Authorization headers are not persisted, but must survive a pause during the
+// current session so resuming the same protected source still works.
+const requestHeaders = new Map<string, Record<string, string> | undefined>();
+const resumeWhenSettled = new Set<string>();
 
 let snapshot: DownloadItem[] = [];
 
@@ -227,6 +238,7 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
   };
   const free = handles.size < MAX_ACTIVE_DOWNLOADS;
   items.set(id, { ...item, status: free ? "downloading" : "queued" });
+  requestHeaders.set(id, headers ?? undefined);
   speed.set(id, { bytes: 0, at: Date.now() });
   if (free) {
     beginDownload(id, headers ?? undefined);
@@ -259,10 +271,16 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
   }, headers);
   handles.set(id, handle);
   handle.promise
-    .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))
+    .then(() => {
+      patch(id, { status: "done", ratio: 1, bytesPerSec: 0 });
+      requestHeaders.delete(id);
+    })
     .catch((e: unknown) => {
       if (e instanceof Error && e.name === "AbortError") {
-        patch(id, { status: "canceled", bytesPerSec: 0 });
+        if (items.get(id)?.status !== "paused") {
+          patch(id, { status: "canceled", bytesPerSec: 0 });
+          requestHeaders.delete(id);
+        }
         return;
       }
       patch(id, { status: "error", error: e instanceof Error ? e.message : "Download failed", bytesPerSec: 0 });
@@ -271,8 +289,25 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
       handles.delete(id);
       speed.delete(id);
       releaseEngineFile(url);
+      if (resumeWhenSettled.delete(id) && items.get(id)?.status === "paused") {
+        startOrQueue(id);
+      }
       pump();
     });
+}
+
+function startOrQueue(id: string): void {
+  const item = items.get(id);
+  if (!item || handles.has(id)) return;
+  speed.set(id, { bytes: item.receivedBytes, at: Date.now() });
+  if (handles.size < MAX_ACTIVE_DOWNLOADS) {
+    patch(id, { status: "downloading", error: null, bytesPerSec: 0 });
+    beginDownload(id, requestHeaders.get(id));
+    return;
+  }
+  if (!waiting.includes(id)) waiting.push(id);
+  waitingHeaders.set(id, requestHeaders.get(id));
+  patch(id, { status: "queued", error: null, bytesPerSec: 0 });
 }
 
 // Hand the freed slot to the entry that has waited longest and is still wanted.
@@ -298,17 +333,42 @@ function dropFromQueue(id: string): void {
 export function cancelDownload(id: string): void {
   const handle = handles.get(id);
   if (handle) {
+    resumeWhenSettled.delete(id);
+    requestHeaders.delete(id);
+    patch(id, { status: "canceled", bytesPerSec: 0 });
     handle.abort();
     return;
   }
   // Nothing to abort: it never got a slot.
   if (items.get(id)?.status !== "queued") return;
   dropFromQueue(id);
+  requestHeaders.delete(id);
   patch(id, { status: "canceled", bytesPerSec: 0 });
+}
+
+export function pauseDownload(id: string): void {
+  const item = items.get(id);
+  if (!item || (item.status !== "downloading" && item.status !== "queued")) return;
+  if (item.status === "queued") dropFromQueue(id);
+  patch(id, { status: "paused", bytesPerSec: 0 });
+  handles.get(id)?.abort();
+  if (item.status === "queued") pump();
+}
+
+export function resumeDownload(id: string): void {
+  const status = items.get(id)?.status;
+  if (status !== "paused" && status !== "interrupted" && status !== "error") return;
+  if (handles.has(id)) {
+    resumeWhenSettled.add(id);
+    return;
+  }
+  startOrQueue(id);
 }
 
 export function removeDownload(id: string): void {
   const item = items.get(id);
+  resumeWhenSettled.delete(id);
+  requestHeaders.delete(id);
   handles.get(id)?.abort();
   handles.delete(id);
   speed.delete(id);
