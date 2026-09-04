@@ -1,12 +1,14 @@
 import { useMemo, type ReactNode } from "react";
-import { Check, Download as DownloadIcon, FolderOpen, Play, Trash2, X } from "lucide-react";
+import { Check, Download as DownloadIcon, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { DownloadDirBar } from "./downloads/download-dir-bar";
 import {
   cancelDownload,
+  pauseDownload,
   removeDownload,
+  resumeDownload,
   revealDownload,
   useDownloads,
   type DownloadItem,
@@ -41,8 +43,8 @@ type DownloadGroup =
 
 function statusRank(s: DownloadItem["status"]): number {
   if (s === "downloading") return 0;
-  if (s === "queued") return 1;
-  return s === "error" ? 2 : s === "done" ? 3 : 4;
+  if (s === "queued" || s === "paused") return 1;
+  return s === "error" || s === "interrupted" ? 2 : s === "done" ? 3 : 4;
 }
 
 function buildGroups(items: DownloadItem[]): DownloadGroup[] {
@@ -79,6 +81,7 @@ export function DownloadsView() {
   const items = useDownloads();
   const active = items.filter((d) => d.status === "downloading").length;
   const queued = items.filter((d) => d.status === "queued").length;
+  const paused = items.filter((d) => d.status === "paused").length;
   const savedBytes = items.reduce(
     (sum, d) => (d.status === "done" ? sum + (d.totalBytes ?? d.receivedBytes) : sum),
     0,
@@ -97,6 +100,7 @@ export function DownloadsView() {
                   `${items.length} item${items.length === 1 ? "" : "s"}`,
                   active > 0 ? `${active} downloading` : null,
                   queued > 0 ? `${queued} waiting` : null,
+                  paused > 0 ? `${paused} paused` : null,
                   savedBytes > 0 ? `${fmtBytes(savedBytes)} saved` : null,
                 ]
                   .filter(Boolean)
@@ -191,6 +195,8 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
   const pct = Math.round(d.ratio * 100);
   const downloading = d.status === "downloading";
   const queued = d.status === "queued";
+  const paused = d.status === "paused";
+  const resumable = paused || d.status === "interrupted" || d.status === "error";
   const playLocal = () =>
     openPlayer({
       meta: {
@@ -224,23 +230,23 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
             <span className="shrink-0 truncate text-[12px] text-ink-subtle">{d.subtitle}</span>
           )}
         </div>
-        {downloading ? (
+        {downloading || paused ? (
           <>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
               <div
-                className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
+                className={`h-full rounded-full transition-[width] duration-500 ease-out ${paused ? "bg-ink-muted" : "bg-accent"}`}
                 style={{ width: `${Math.max(2, pct)}%` }}
               />
             </div>
             <div className="flex flex-wrap items-center gap-x-2 text-[11.5px] tabular-nums text-ink-muted">
-              <span>{pct}%</span>
+              <span>{paused ? `Paused at ${pct}%` : `${pct}%`}</span>
               {d.totalBytes != null && (
                 <span className="text-ink-subtle">
                   {fmtBytes(d.receivedBytes)} / {fmtBytes(d.totalBytes)}
                 </span>
               )}
-              {fmtSpeed(d.bytesPerSec) && <span>· {fmtSpeed(d.bytesPerSec)}</span>}
-              {fmtEta(d) && <span className="text-ink-subtle">· {fmtEta(d)}</span>}
+              {downloading && fmtSpeed(d.bytesPerSec) && <span>· {fmtSpeed(d.bytesPerSec)}</span>}
+              {downloading && fmtEta(d) && <span className="text-ink-subtle">· {fmtEta(d)}</span>}
             </div>
           </>
         ) : (
@@ -258,18 +264,28 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
             {queued && <span className="text-ink-subtle">Waiting for a free slot</span>}
             {d.status === "canceled" && <span className="text-ink-subtle">Canceled</span>}
             {d.status === "interrupted" && (
-              <span className="text-info/85">Interrupted: re-download to finish</span>
+              <span className="text-info/85">Interrupted · resume to continue</span>
             )}
           </span>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {downloading || queued ? (
-          <RowBtn label="Cancel download" onClick={() => cancelDownload(d.id)}>
-            <X size={16} strokeWidth={2.2} />
-          </RowBtn>
+          <>
+            <RowBtn label="Pause download" onClick={() => pauseDownload(d.id)}>
+              <Pause size={16} strokeWidth={2.2} fill="currentColor" />
+            </RowBtn>
+            <RowBtn label="Cancel download" onClick={() => cancelDownload(d.id)}>
+              <X size={16} strokeWidth={2.2} />
+            </RowBtn>
+          </>
         ) : (
           <>
+            {resumable && (
+              <RowBtn label="Resume download" onClick={() => resumeDownload(d.id)}>
+                <Play size={16} strokeWidth={2.2} fill="currentColor" />
+              </RowBtn>
+            )}
             {d.status === "done" && (
               <>
                 <RowBtn label="Play" onClick={playLocal}>
@@ -297,7 +313,7 @@ function RowBtn({ label, onClick, children }: { label: string; onClick: () => vo
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-ink/10 hover:text-ink"
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       {children}
     </button>

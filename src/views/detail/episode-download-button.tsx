@@ -1,6 +1,11 @@
-import { ArrowDownToLine, Check, RotateCw, X } from "lucide-react";
+import { ArrowDownToLine, Check, Pause, Play, RotateCw } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
-import { activeDownloadFor, cancelDownload, useDownloads } from "@/lib/download/downloads-store";
+import {
+  activeDownloadFor,
+  pauseDownload,
+  resumeDownload,
+  useDownloads,
+} from "@/lib/download/downloads-store";
 import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -33,12 +38,13 @@ export function EpisodeDownloadButton({
   const dl = activeDownloadFor(meta.id, episode?.season ?? null, episode?.episode ?? null);
   if (isLocal) return null;
   const status = dl?.status;
-  // A queued episode already belongs to a run: show it as under way, and let the
-  // same click call it off, or a second click would queue it all over again.
+  // A queued episode already belongs to a run: expose the same pause control as
+  // a running one, or a second click would queue it all over again.
   const downloading = status === "downloading" || status === "queued";
+  const paused = status === "paused" || status === "interrupted";
   const done = status === "done";
   const failed = status === "error";
-  const persistent = downloading || done || failed;
+  const persistent = downloading || paused || done || failed;
   const ratio = dl?.ratio ?? 0;
   const pct = Math.round(ratio * 100);
   const isBar = variant === "bar";
@@ -47,7 +53,11 @@ export function EpisodeDownloadButton({
   const onClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (downloading && dl) {
-      cancelDownload(dl.id);
+      pauseDownload(dl.id);
+      return;
+    }
+    if ((paused || failed) && dl) {
+      resumeDownload(dl.id);
       return;
     }
     openPicker(meta, episode, { intent: "download" });
@@ -78,7 +88,9 @@ export function EpisodeDownloadButton({
       onClick={onClick}
       aria-label={
         downloading
-          ? t("Downloading {pct} percent, click to cancel", { pct })
+          ? t("Downloading {pct} percent, click to pause", { pct })
+          : paused
+            ? t("Paused at {pct} percent, click to resume", { pct })
           : done
             ? t("Saved offline")
             : failed
@@ -87,7 +99,9 @@ export function EpisodeDownloadButton({
       }
       title={
         downloading
-          ? t("Downloading {pct}%  ·  click to cancel", { pct })
+          ? t("Downloading {pct}%  ·  click to pause", { pct })
+          : paused
+            ? t("Paused at {pct}%  ·  click to resume", { pct })
           : done
             ? t("Saved offline")
             : failed
@@ -131,12 +145,15 @@ export function EpisodeDownloadButton({
           <span className="absolute text-[9.5px] font-semibold tabular-nums text-ink-muted transition-opacity duration-150 group-hover/dl:opacity-0">
             {pct}
           </span>
-          <X
+          <Pause
             size={dim * 0.34}
             strokeWidth={2.6}
+            fill="currentColor"
             className="absolute text-ink opacity-0 transition-opacity duration-150 group-hover/dl:opacity-100"
           />
         </>
+      ) : paused ? (
+        <Play size={dim * 0.4} strokeWidth={2.2} fill="currentColor" />
       ) : done ? (
         <Check size={dim * 0.46} strokeWidth={2.6} />
       ) : failed ? (

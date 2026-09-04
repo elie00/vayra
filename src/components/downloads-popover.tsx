@@ -1,9 +1,11 @@
-import { Download, FolderOpen, Trash2, X } from "lucide-react";
+import { Download, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import {
   cancelDownload,
+  pauseDownload,
   removeDownload,
+  resumeDownload,
   revealDownload,
   useDownloads,
   type DownloadItem,
@@ -94,6 +96,8 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
     : Math.round(d.ratio * 100);
   const downloading = d.status === "downloading";
   const queued = d.status === "queued";
+  const paused = d.status === "paused";
+  const resumable = paused || d.status === "interrupted" || d.status === "error";
   return (
     <div className="group flex items-center gap-2.5 rounded-xl px-2 py-2 transition-colors hover:bg-raised/50">
       <button
@@ -107,12 +111,17 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate text-[13px] font-medium text-ink">{d.title}</span>
           {d.subtitle && <span className="truncate text-[11px] text-ink-subtle">{d.subtitle}</span>}
-          {downloading ? (
+          {downloading || paused ? (
             <span className="mt-0.5 flex items-center gap-2">
               <span className="h-1 flex-1 overflow-hidden rounded-full bg-canvas">
-                <span className="block h-full rounded-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
+                <span
+                  className={`block h-full rounded-full transition-[width] ${paused ? "bg-ink-muted" : "bg-accent"}`}
+                  style={{ width: `${pct}%` }}
+                />
               </span>
-              <span className="shrink-0 text-[10.5px] tabular-nums text-ink-subtle">{pct}%</span>
+              <span className="shrink-0 text-[10.5px] tabular-nums text-ink-subtle">
+                {paused ? t("Paused") : `${pct}%`}
+              </span>
             </span>
           ) : (
             <span
@@ -139,11 +148,21 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
       </button>
       <div className="flex shrink-0 items-center gap-0.5">
         {downloading || queued ? (
-          <RowBtn label={t("Cancel")} onClick={() => cancelDownload(d.id)}>
-            <X size={14} strokeWidth={2.2} />
-          </RowBtn>
+          <>
+            <RowBtn label={t("Pause download")} onClick={() => pauseDownload(d.id)}>
+              <Pause size={14} strokeWidth={2.2} fill="currentColor" />
+            </RowBtn>
+            <RowBtn label={t("Cancel")} onClick={() => cancelDownload(d.id)}>
+              <X size={14} strokeWidth={2.2} />
+            </RowBtn>
+          </>
         ) : (
           <>
+            {resumable && (
+              <RowBtn label={t("Resume download")} onClick={() => resumeDownload(d.id)}>
+                <Play size={14} strokeWidth={2.2} fill="currentColor" />
+              </RowBtn>
+            )}
             {d.status === "done" && (
               <RowBtn label={t("Show in folder")} onClick={() => void revealDownload(d.id)}>
                 <FolderOpen size={14} strokeWidth={2} />
