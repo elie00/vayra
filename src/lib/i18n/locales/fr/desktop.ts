@@ -1,5 +1,7 @@
 // Exact source keys: keep punctuation and interpolation names in sync with the UI.
 const desktop: Record<string, string> = {
+  "Use French descriptions": "Utiliser les résumés français",
+  "French summaries are used when the catalog provides them. If no translation is available, the original summary is kept. No automatic translation service is used.": "Les résumés français sont utilisés lorsqu’ils sont disponibles dans le catalogue. Sinon, le résumé d’origine est conservé. Aucun service de traduction automatique n’est utilisé.",
   "Magnet stream": "Flux torrent",
   "Highest community stars": "Les mieux notés par la communauté",
   "Newest manifests": "Les dernières extensions ajoutées",

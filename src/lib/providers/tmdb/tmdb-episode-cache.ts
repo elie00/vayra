@@ -4,6 +4,7 @@
  */
 
 import { lruSet } from "@/lib/cache";
+import { effectiveTmdbLanguage } from "./tmdb-client";
 import type { EpisodeDetail, EpisodeCacheEntry } from "./tmdb-episode-types";
 
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -15,8 +16,8 @@ const episodeCache = new Map<string, EpisodeCacheEntry>();
  * Generate cache key for an episode
  * Format: episode:${seriesId}:${season}:${episode}
  */
-function getCacheKey(seriesId: string, season: number, episode: number): string {
-  return `episode:${seriesId}:${season}:${episode}`;
+function getCacheKey(seriesId: string, season: number, episode: number, language: string): string {
+  return `episode:${seriesId}:${season}:${episode}:${language}`;
 }
 
 /**
@@ -27,8 +28,9 @@ export function getCachedEpisode(
   seriesId: string,
   season: number,
   episode: number,
+  language = effectiveTmdbLanguage() || "en",
 ): EpisodeDetail | null {
-  const key = getCacheKey(seriesId, season, episode);
+  const key = getCacheKey(seriesId, season, episode, language);
   const cached = episodeCache.get(key);
   
   if (!cached) return null;
@@ -52,8 +54,9 @@ export function cacheEpisode(
   season: number,
   episode: number,
   data: EpisodeDetail,
+  language = effectiveTmdbLanguage() || "en",
 ): void {
-  const key = getCacheKey(seriesId, season, episode);
+  const key = getCacheKey(seriesId, season, episode, language);
   const entry: EpisodeCacheEntry = {
     data,
     timestamp: Date.now(),

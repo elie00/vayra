@@ -2,7 +2,7 @@ import { Github } from "lucide-react";
 import { useState } from "react";
 import { Dropdown, type DropdownOption } from "@/components/dropdown";
 import { useSettings } from "@/lib/settings";
-import { useT } from "@/lib/i18n";
+import { useT, useUiLanguage } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 import { Section, ToggleRow } from "./shared";
 import { SubtitleStylePanel } from "./player-panel";
@@ -35,6 +35,7 @@ const TMDB_LANGUAGES: DropdownOption[] = [
 export function LanguagePanel() {
   const { settings, update } = useSettings();
   const t = useT();
+  const uiLanguage = useUiLanguage();
   const [blockDraft, setBlockDraft] = useState(settings.trackBlockWords.join(", "));
   return (
     <>
@@ -117,6 +118,18 @@ export function LanguagePanel() {
         options={[{ value: "", label: t("English (default)") }, ...TMDB_LANGUAGES]}
         className="w-full max-w-[340px]"
       />
+      {uiLanguage === "fr" && (settings.tmdbLanguage !== "fr-FR" || !settings.translateDescriptions) && (
+        <button
+          type="button"
+          onClick={() => update({ tmdbLanguage: "fr-FR", translateDescriptions: true })}
+          className="w-fit rounded-xl bg-ink px-4 py-2.5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {t("Use French descriptions")}
+        </button>
+      )}
+      <p className="max-w-[65ch] text-[12px] leading-relaxed text-ink-muted">
+        {t("French summaries are used when the catalog provides them. If no translation is available, the original summary is kept. No automatic translation service is used.")}
+      </p>
       <ToggleRow
         label={t("Translate titles")}
         sub={t("On shows titles in your metadata language (English by default). Off keeps each title's original language, so anime and foreign films show their native names.")}

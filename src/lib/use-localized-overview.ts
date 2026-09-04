@@ -1,28 +1,30 @@
 import { useEffect, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
-import { tmdbMetadataOverview } from "@/lib/providers/tmdb/tmdb-lite";
+import { localizedMetadataOverview } from "@/lib/metadata-overview";
+import { effectiveTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
 import { useSettings } from "@/lib/settings";
 
-export function useLocalizedOverview(meta: Meta): string | undefined {
+export function useLocalizedOverview(meta: Meta | undefined): string | undefined {
   const { settings } = useSettings();
-  const isTmdb = meta.id.startsWith("tmdb:");
-  const [overview, setOverview] = useState<string | undefined>(
-    isTmdb ? undefined : meta.description,
-  );
+  const language = settings.translateDescriptions ? effectiveTmdbLanguage() || "en" : "en";
+  const id = meta?.id;
+  const type = meta?.type;
+  const fallback = meta?.description;
+  const requestKey = `${id}|${type}|${language}|${settings.tmdbKey}`;
+  const [result, setResult] = useState<{ key: string; overview?: string } | null>(null);
   useEffect(() => {
-    if (!isTmdb || !settings.tmdbKey) {
-      setOverview(meta.description);
-      return;
-    }
-    setOverview(undefined);
+    if (!id || !type || !settings.tmdbKey) return;
     let alive = true;
-    void tmdbMetadataOverview(settings.tmdbKey, meta.id).then((o) => {
-      if (alive) setOverview(o ?? meta.description);
-    });
+    void localizedMetadataOverview(settings.tmdbKey, { id, type, name: "" }, language)
+      .then((overview) => {
+        if (alive) setResult({ key: requestKey, overview });
+      })
+      .catch(() => {
+        if (alive) setResult({ key: requestKey });
+      });
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meta.id, settings.tmdbKey]);
-  return overview;
+  }, [id, type, language, requestKey, settings.tmdbKey]);
+  return result?.key === requestKey ? result.overview ?? fallback : fallback;
 }

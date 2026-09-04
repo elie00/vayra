@@ -592,7 +592,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, settings.tmdbKey, settings.fanartKey, settings.tvdbKey, settings.tmdbLanguage, isAnime, addonNative, detectedKitsu, meta]);
+  }, [meta.id, meta.type, settings.tmdbKey, settings.fanartKey, settings.tvdbKey, settings.tmdbLanguage, settings.translateDescriptions, settings.translateTitles, isAnime, addonNative, detectedKitsu, meta]);
 
   useEffect(() => {
     if (!detail) return;

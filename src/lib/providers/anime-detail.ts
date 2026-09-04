@@ -494,6 +494,8 @@ export async function animeDetails(
       if (!Number.isFinite(ay) || !Number.isFinite(ty) || Math.abs(ty - ay) <= 1) tmdbFull = fullRaw;
     }
     const patch: AnimeDetailExtras = {
+      ...(tmdbFull?.overview?.trim() ? { overview: tmdbFull.overview } : {}),
+      ...(tmdbFull?.tagline?.trim() ? { tagline: tmdbFull.tagline } : {}),
       logo,
       backdrop,
       poster,
