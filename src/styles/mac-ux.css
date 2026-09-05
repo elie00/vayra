@@ -12,6 +12,7 @@
 [data-mac-ux="true"] .mac-home-discovery h1 { font-size: 32px; }
 /* A tonal edge instead of a rule; never intercept content or keyboard focus. */
 [data-mac-sidebar] { border-inline-end: 0; background: color-mix(in srgb, var(--color-elevated) 38%, var(--color-canvas)); }
+[data-mac-sidebar] [data-vayra-nav][data-active] { background: var(--color-elevated); color: var(--color-ink); }
 [data-mac-sidebar]::after { content: ""; position: absolute; inset-block: 0; inset-inline-start: 100%; width: 40px; pointer-events: none; background: linear-gradient(to right, color-mix(in srgb, var(--color-elevated) 38%, var(--color-canvas)), transparent); }
 [dir="rtl"] [data-mac-sidebar]::after { background: linear-gradient(to left, color-mix(in srgb, var(--color-elevated) 38%, var(--color-canvas)), transparent); }
 @media (prefers-contrast: more) { [data-mac-sidebar] { border-inline-end: 1px solid var(--color-ink-muted); } [data-mac-sidebar]::after { display: none; } }
