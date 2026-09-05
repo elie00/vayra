@@ -21,7 +21,7 @@ import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { syncEngineCacheOptions } from "@/lib/torrent/engine-config-sync";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isMobileDevice, isWeb } from "@/lib/platform";
+import { isMacDesktop, isMobileDevice, isWeb } from "@/lib/platform";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { DevErrorTrigger } from "@/components/dev-error-trigger";
@@ -456,7 +456,7 @@ function Shell() {
   const kid = activeProfile?.kid ?? null;
   const preview = useThemePreview();
   const baseLayout = useMemo(
-    () => (preview ? preview.layout : activeLayout(settings.theme)),
+    () => (isMacDesktop() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],
   );
   const layout = kid ? "sidebar" : baseLayout;

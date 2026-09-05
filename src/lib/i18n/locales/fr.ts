@@ -25,6 +25,7 @@ import sweep2 from "./fr/sweep2";
 import desktop from "./fr/desktop";
 import appearance from "./fr/appearance";
 import settingsNavigation from "./fr/settings-navigation";
+import macUx from "./fr/mac-ux";
 
 const fr: Record<string, string> = {
   ...ciraFr,
@@ -54,6 +55,7 @@ const fr: Record<string, string> = {
   ...desktop,
   ...appearance,
   ...settingsNavigation,
+  ...macUx,
   "nav.catalogs": "Catalogues",
   "nav.kids": "Enfants",
   "AniList Comments": "Commentaires AniList",

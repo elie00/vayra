@@ -1,0 +1,12 @@
+/* Stable visual contract for the private macOS application. */
+@layer components {
+  .mac-page-title { @apply text-[32px] font-semibold leading-tight tracking-tight text-ink; font-family: var(--font-sans); }
+  .mac-primary-button { @apply inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2 text-[14px] font-semibold text-canvas; }
+  .mac-primary-button:hover { opacity: .88; }
+  .mac-secondary-button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-edge-soft px-4 py-2 text-[13px] font-medium text-ink-muted; }
+  .mac-secondary-button:hover { @apply bg-elevated text-ink; }
+}
+[data-mac-ux="true"] :is(button, a, input, summary):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+[data-mac-ux="true"] .mac-home-discovery :is(.h-\[560px\], .min-h-\[560px\]) { height: 360px; min-height: 360px; }
+[data-mac-ux="true"] .mac-home-discovery { margin-top: 0; }
+[data-mac-ux="true"] .mac-home-discovery h1 { font-size: 32px; }
