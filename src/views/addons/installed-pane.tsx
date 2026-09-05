@@ -10,6 +10,8 @@ import {
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, subtitleFromManifest } from "./addons-utils";
+import { AddonDiagnosticButton } from "./diagnostic-button";
+import { isMacDesktop } from "@/lib/platform";
 
 export function InstalledPane({
   installed,
@@ -129,7 +131,7 @@ function InstalledRow({
       role="button"
       tabIndex={0}
       onClick={() => !busy && onOpen(idOf(r))}
-      onKeyDown={(e) => !busy && (e.key === "Enter" || e.key === " ") && onOpen(idOf(r))}
+      onKeyDown={(e) => e.target === e.currentTarget && !busy && (e.key === "Enter" || e.key === " ") && onOpen(idOf(r))}
       className={`flex items-center gap-3.5 rounded-xl border bg-elevated px-4 py-3 text-start transition-all ${
         busy
           ? "border-edge-soft cursor-wait opacity-60"
@@ -149,6 +151,7 @@ function InstalledRow({
         <span className="truncate text-[11.5px] text-ink-subtle">
           {enabled ? subtitleFromManifest(r) : t("Off · catalogs and streams hidden")}
         </span>
+        {isMacDesktop() && transportUrl && <AddonDiagnosticButton url={transportUrl} />}
       </div>
       {!busy && (
         <HoverTooltip
