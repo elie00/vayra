@@ -7,6 +7,7 @@ import { BackupRow } from "./backup-row";
 import { SettingsRecoverRow } from "./settings-recover-row";
 import { PrivacyRow } from "./privacy-row";
 import { DownloadDirBar } from "../downloads/download-dir-bar";
+import { AutomaticBackups } from "./automatic-backups";
 
 export function MacConnectionsPanel() {
   const t = useT();
@@ -26,7 +27,7 @@ export function MacConnectionsPanel() {
 }
 export function MacPrivacyPanel() {
   const t = useT();
-  return <><Section title={t("Privacy")}><PrivacyRow /></Section><Section title={t("Backup & restore")} subtitle={t("Export your VAYRA setup to a single file. Sign-ins and private LUMA activity stay out unless you explicitly include LUMA.")}><SettingsRecoverRow /><BackupRow /></Section></>;
+  return <><Section title={t("Privacy")}><PrivacyRow /></Section><Section title={t("Backup & restore")} subtitle={t("Export your VAYRA setup to a single file. Sign-ins and private LUMA activity stay out unless you explicitly include LUMA.")}><AutomaticBackups /><SettingsRecoverRow /><BackupRow /></Section></>;
 }
 export function MacDownloadsPanel() {
   const t = useT();

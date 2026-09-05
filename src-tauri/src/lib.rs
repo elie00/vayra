@@ -9,6 +9,7 @@ mod http_fetch;
 mod local_lib;
 mod power;
 mod settings_store;
+mod settings_history;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
@@ -759,6 +760,8 @@ pub fn run() {
             svp::svp_apply,
             settings_store::settings_read,
             settings_store::settings_write,
+            settings_history::settings_history_record,
+            settings_history::settings_history_list,
             settings_store::settings_secrets_read,
             settings_store::settings_secrets_write,
             settings_store::auth_secret_read,
