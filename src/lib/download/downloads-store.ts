@@ -401,6 +401,8 @@ export function useDownloads(): DownloadItem[] {
   return useSyncExternalStore(subscribe, () => snapshot, () => snapshot);
 }
 
+export function downloadSnapshot(): readonly DownloadItem[] { return snapshot; }
+
 export function useActiveDownloadCount(): number {
   const all = useDownloads();
   return all.filter((d) => d.status === "downloading" || d.status === "queued").length;

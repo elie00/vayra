@@ -68,6 +68,8 @@ export type SubtitleStyle = {
 };
 
 export type PlayerSource = {
+  /** Resolve only a validated copy of this exact source, never another release. */
+  resolveLocalResume?: () => Promise<string | null>;
   url: string;
   subtitles?: { id?: string; url: string; lang?: string; m?: string }[];
   notWebReady?: boolean;

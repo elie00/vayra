@@ -40,6 +40,24 @@ function reloadCalls() {
 }
 
 describe("mpv resume integration", () => {
+  it("switches an exact downloaded copy at the bookmark without recreating the window", async () => {
+    const { bridge } = await loaded();
+    await bridge.load({ url: "https://example.invalid/film.mkv", resolveLocalResume: async () => "/Downloads/film.mkv" });
+    event({ event: "file-loaded" }); property("time-pos", 1800);
+    bridge.pause(); mocks.invoke.mockClear();
+    await bridge.play();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reloadCalls()[0][1].cmd).toEqual(["loadfile", "/Downloads/film.mkv", "replace", 0, expect.stringContaining("start=1800")]);
+    expect(mocks.invoke.mock.calls.some(([name]) => /fullscreen|mpv_start/.test(name))).toBe(false);
+  });
+  it("does not switch to a local file after the viewer cancels the pending check", async () => {
+    const { bridge } = await loaded();
+    let resolve!: (url: string) => void;
+    await bridge.load({ url: "https://example.invalid/film.mkv", resolveLocalResume: () => new Promise((done) => { resolve = done; }) });
+    event({ event: "file-loaded" }); bridge.pause(); mocks.invoke.mockClear();
+    const playing = bridge.play(); bridge.pause(); resolve("/Downloads/film.mkv"); await playing;
+    expect(reloadCalls()).toHaveLength(0);
+  });
   it("exposes reconnection and lets Cancel keep the current video paused", async () => {
     const { bridge, snapshot } = await loaded();
     bridge.pause();

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { createResumeRecovery } from "./resume-recovery";
+import { localResumeWithin, watchPlaybackWake } from "./wake-monitor";
 import { emitAppFeedback } from "@/lib/app-feedback";
 import { t } from "@/lib/i18n";
 import {
@@ -95,6 +96,8 @@ async function applyHeaderProps(headers?: Record<string, string>): Promise<void>
 }
 
 export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
+  let stopWakeMonitor: (() => void) | undefined;
+  let localResumeUrl: string | null = null;
   let host: HTMLElement | null = null;
   let snap: PlayerSnapshot = { ...emptySnapshot };
   let profileAf = "";
@@ -168,10 +171,17 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
           await invoke("mpv_set_property", { name, value });
         }
       };
-      if (!isCurrent()) return;
+      const localUrl = localResumeUrl ?? await localResumeWithin(source.resolveLocalResume);
+      localResumeUrl = null;
+      if (!isCurrent() || !samePlayback()) return;
+      if (localUrl) {
+        await applyHeaderProps();
+        if (!isCurrent() || !samePlayback()) return;
+      }
       resumeReloadPending = true;
       const opts = `start=${position},pause=no,aid=${audio?.id ?? "auto"},sid=${subtitle && !subtitle.external ? subtitle.id : "no"}`;
-      await invoke("mpv_command", { cmd: ["loadfile", source.url, "replace", 0, opts] });
+      await invoke("mpv_command", { cmd: ["loadfile", localUrl ?? source.url, "replace", 0, opts] });
+      if (localUrl && isCurrent() && samePlayback()) currentSource = { ...source, url: localUrl, headers: undefined, resolveLocalResume: undefined };
     },
     onState(state) {
       snap.resumeRecovery = state === "reloading" ? "reconnecting" : state === "failed" ? "failed" : null;
@@ -388,6 +398,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       host = null;
     },
     async load(src: PlayerSource) {
+      localResumeUrl = null;
+      stopWakeMonitor ??= watchPlaybackWake(() => {
+        if (!viewerPaused && currentSource && !currentSource.isLive && mpvStarted && (snap.status === "playing" || snap.buffering)) {
+          resumeRecovery.start(snap.positionSec);
+        }
+      });
       snap.resumeRecovery = null;
       playbackGeneration++;
       resumeReloadPending = false;
@@ -543,6 +559,17 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     async play() {
       const resuming = viewerPaused || snap.status === "paused" || snap.status === "error" || snap.status === "ended" || snap.buffering;
       viewerPaused = false;
+      const ownGeneration = playbackGeneration;
+      if (resuming && currentSource?.resolveLocalResume && !currentSource.isLive) {
+        const local = await localResumeWithin(currentSource.resolveLocalResume);
+        if (viewerPaused || ownGeneration !== playbackGeneration) return;
+        if (local && local !== currentSource.url) {
+          localResumeUrl = local;
+          resumeRecovery.start(snap.positionSec);
+          resumeRecovery.recover();
+          return;
+        }
+      }
       if (resuming && currentSource && !currentSource.isLive) resumeRecovery.start(snap.positionSec);
       try {
         await invoke("mpv_set_property", { name: "pause", value: false });
@@ -555,6 +582,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       }
     },
     pause() {
+      localResumeUrl = null;
       snap.resumeRecovery = null;
       playbackGeneration++;
       viewerPaused = true;
@@ -720,6 +748,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       };
     },
     destroy() {
+      stopWakeMonitor?.();
+      stopWakeMonitor = undefined;
       playbackGeneration++;
       resumeReloadPending = false;
       resumeRecovery.cancel();

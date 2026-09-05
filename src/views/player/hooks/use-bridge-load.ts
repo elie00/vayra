@@ -5,6 +5,9 @@ import { cloudWriteId, episodeFromVideoId, libraryGetOne } from "@/lib/stremio";
 import type { PlayerSrc } from "@/lib/view";
 import { videoIdFor } from "./use-stremio-sync";
 import { useSettings } from "@/lib/settings";
+import { downloadSnapshot } from "@/lib/download/downloads-store";
+import { validatedDownloadSource } from "@/lib/download/offline-playback";
+import { isMacDesktop } from "@/lib/platform";
 
 const RESUME_PROMPT_MIN_SEC = 30;
 const RESTART_THRESHOLD = 0.8;
@@ -98,6 +101,11 @@ export function useBridgeLoad(params: {
         !guestInRoom;
       try {
         await bridge.load({
+          resolveLocalResume: isMacDesktop() && !isLive && !inRoomRef.current ? async () => {
+            const copy = downloadSnapshot().find((d) => d.status === "done" && d.metaId === src.meta.id &&
+              (d.url === src.url || d.url === playUrl) && d.season === (src.episode?.season ?? null) && d.episode === (src.episode?.episode ?? null));
+            return copy ? (await validatedDownloadSource(copy))?.url ?? null : null;
+          } : undefined,
           url: playUrl,
           subtitles: src.subtitles,
           notWebReady: src.notWebReady,
