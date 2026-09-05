@@ -1,6 +1,6 @@
 [package]
 name = "vayra"
-version = "0.9.37"
+version = "0.9.38"
 description = "A Stremio client built for adventure"
 edition = "2021"
 
