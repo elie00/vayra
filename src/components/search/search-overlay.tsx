@@ -20,6 +20,7 @@ import { AiSearchSection } from "./ai-search-section";
 import { WebSearchButton } from "./web-search-button";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 import { useFocusTrap } from "@/lib/use-focus-trap";
+import "./search-field.css";
 
 export function SearchOverlay() {
   const { open, setOpen, query, setQuery, results, status, clear, recordRecent } = useSearch();
@@ -110,7 +111,7 @@ export function SearchOverlay() {
       />
 
       <div className="relative mx-auto flex h-full w-full max-w-[1080px] flex-col px-6 py-6 sm:px-10 sm:py-10">
-        <div className="modal-panel flex shrink-0 items-center gap-3 rounded-2xl border border-edge-soft/80 bg-elevated/70 px-5 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.7)]">
+        <div data-search-field="" className="modal-panel flex shrink-0 items-center gap-3 rounded-2xl border border-edge-soft/80 bg-elevated/70 px-5 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.7)]">
           <Search size={22} className="shrink-0 text-ink-muted" strokeWidth={1.9} />
           <input
             ref={inputRef}
@@ -136,7 +137,7 @@ export function SearchOverlay() {
             }}
             placeholder={t("Search movies, shows, people, genres, years...")}
             aria-label={t("Search movies, shows, people, genres, years...")}
-            className="h-16 flex-1 bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
+            className="h-16 min-w-0 flex-1 bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
             spellCheck={false}
             autoComplete="off"
           />
