@@ -4,11 +4,22 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { NavItem } from "./sidebar";
 import { NAV_ITEMS } from "./nav-items";
+import { readFileSync } from "node:fs";
 
 vi.mock("@/lib/i18n", () => ({ useT: () => (key: string) => key }));
 vi.mock("@/lib/download/downloads-store", () => ({ useActiveDownloadCount: () => 0 }));
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+it("keeps one canvas without a divider or selected tile while retaining motion", () => {
+  const css = readFileSync("src/styles/mac-ux.css", "utf8");
+  expect(css).toContain("[data-mac-sidebar] { border-inline-end: 0; background: var(--color-canvas); }");
+  expect(css).toContain("[data-vayra-nav][data-active] { background: transparent;");
+  expect(css).not.toContain("[data-mac-sidebar]::after");
+  expect(css).toContain(":hover [data-nav-icon]");
+  expect(css).toContain(":focus-visible [data-nav-icon]");
+  expect(css).toContain("prefers-reduced-motion: reduce");
+});
 
 it("gives every destination a motion target, including static icons", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
