@@ -51,6 +51,7 @@ export function Sidebar() {
         />
       )}
       <aside
+        data-mac-sidebar={isMacDesktop() ? "" : undefined}
         data-harbor-nav-drawer={mobile ? "" : undefined}
         aria-hidden={chromeHidden || (mobile && !drawerOpen)}
         className={
