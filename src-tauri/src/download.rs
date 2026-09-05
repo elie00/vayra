@@ -46,6 +46,17 @@ fn total_from_content_range(value: &str) -> Option<u64> {
     value.rsplit('/').next().and_then(|s| s.trim().parse::<u64>().ok())
 }
 
+fn valid_partial_range(value: &str, offset: u64, declared: Option<u64>) -> Option<u64> {
+    let (range, total) = value.strip_prefix("bytes ")?.split_once('/')?;
+    let (start, end) = range.split_once('-')?;
+    let start = start.parse::<u64>().ok()?;
+    let end = end.parse::<u64>().ok()?;
+    let total = total.parse::<u64>().ok()?;
+    if start != offset || end < start || end >= total { return None; }
+    if declared.is_some_and(|n| n != end - start + 1) { return None; }
+    Some(total)
+}
+
 #[tauri::command]
 pub async fn download_start(
     state: State<'_, DownloadState>,
@@ -105,6 +116,35 @@ pub async fn download_file_exists(path: String) -> bool {
     tokio::fs::metadata(&path).await.is_ok()
 }
 
+/// Read-only validation before opening a completed download. Partial files are
+/// never eligible; matching size detects missing or truncated local copies.
+#[tauri::command]
+pub async fn download_file_valid(path: String, expected_bytes: u64) -> bool {
+    if path.ends_with(".part") || expected_bytes == 0 { return false; }
+    tokio::fs::metadata(path).await
+        .map(|m| m.is_file() && m.len() == expected_bytes)
+        .unwrap_or(false)
+}
+
+#[tauri::command]
+pub async fn download_available_space(path: String) -> Result<u64, String> {
+    #[cfg(target_os = "macos")]
+    {
+        tokio::task::spawn_blocking(move || {
+            let path = std::ffi::CString::new(path).map_err(|_| "Invalid path".to_string())?;
+            let mut info = std::mem::MaybeUninit::<libc::statvfs>::uninit();
+            // statvfs initializes the structure only on success.
+            if unsafe { libc::statvfs(path.as_ptr(), info.as_mut_ptr()) } != 0 {
+                return Err("Storage information unavailable".to_string());
+            }
+            let info = unsafe { info.assume_init() };
+            Ok((info.f_bavail as u64).saturating_mul(info.f_frsize as u64))
+        }).await.map_err(|_| "Storage information unavailable".to_string())?
+    }
+    #[cfg(not(target_os = "macos"))]
+    { let _ = path; Err("Storage information unavailable".to_string()) }
+}
+
 #[tauri::command]
 pub fn download_cancel(state: State<'_, DownloadState>, id: String) {
     if let Some(flag) = state.tasks.lock().unwrap().get(&id) {
@@ -146,6 +186,7 @@ async fn run_download(
     for (k, v) in headers {
         req = req.header(k.as_str(), v.as_str());
     }
+    req = req.header(reqwest::header::ACCEPT_ENCODING, "identity");
     if start_byte > 0 {
         req = req.header(reqwest::header::RANGE, format!("bytes={}-", start_byte));
     } else if !has("range") {
@@ -165,7 +206,12 @@ async fn run_download(
     );
 
     if status == reqwest::StatusCode::RANGE_NOT_SATISFIABLE && start_byte > 0 {
-        let _ = tokio::fs::rename(&part, dest).await;
+        let total = resp.headers().get(reqwest::header::CONTENT_RANGE)
+            .and_then(|h| h.to_str().ok()).and_then(total_from_content_range);
+        if total != Some(start_byte) || start_byte < MIN_VIDEO_BYTES {
+            return Err(DownloadEnd::Failed("The source could not confirm the completed file size".to_string()));
+        }
+        tokio::fs::rename(&part, dest).await.map_err(|e| DownloadEnd::Failed(format!("rename: {}", e)))?;
         let _ = on_event.send(DownloadEvent::Done { received: start_byte });
         return Ok(());
     }
@@ -186,7 +232,7 @@ async fn run_download(
         || content_type.contains("html")
         || content_type.contains("json")
         || content_type.contains("xml");
-    if non_video || declared.map(|n| n < 65_536).unwrap_or(false) {
+    if non_video || (start_byte == 0 && declared.map(|n| n < 65_536).unwrap_or(false)) {
         let body = resp.text().await.unwrap_or_default();
         let snippet: String = body.chars().take(500).collect();
         eprintln!(
@@ -202,11 +248,11 @@ async fn run_download(
     }
 
     let resuming = start_byte > 0 && status == reqwest::StatusCode::PARTIAL_CONTENT;
-    let total = if resuming {
-        resp.headers()
-            .get(reqwest::header::CONTENT_RANGE)
-            .and_then(|h| h.to_str().ok())
-            .and_then(total_from_content_range)
+    let total = if status == reqwest::StatusCode::PARTIAL_CONTENT {
+        let total = resp.headers().get(reqwest::header::CONTENT_RANGE)
+            .and_then(|h| h.to_str().ok()).and_then(|h| valid_partial_range(h, start_byte, declared))
+            .ok_or_else(|| DownloadEnd::Failed("The source returned an invalid resume range".to_string()))?;
+        Some(total)
     } else {
         resp.content_length()
     };
@@ -252,8 +298,12 @@ async fn run_download(
         }
     }
 
-    let _ = writer.flush().await;
+    writer.flush().await.map_err(|e| DownloadEnd::Failed(format!("write: {}", e)))?;
     drop(writer);
+
+    if total.is_some_and(|expected| expected != received) {
+        return Err(DownloadEnd::Failed("The video is incomplete. Resume the download to continue.".to_string()));
+    }
 
     if received < MIN_VIDEO_BYTES {
         eprintln!("[harbor::download] refusing {} bytes (not a video file)", received);
@@ -284,5 +334,31 @@ fn log_host(url: &str) -> String {
     match url.split_once("://") {
         Some((scheme, rest)) => format!("{}://{}/…", scheme, rest.split('/').next().unwrap_or("")),
         None => url.chars().take(48).collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validates_exact_resume_ranges() {
+        assert_eq!(valid_partial_range("bytes 500-999/1000", 500, Some(500)), Some(1000));
+        assert_eq!(valid_partial_range("bytes 0-499/1000", 500, Some(500)), None);
+        assert_eq!(valid_partial_range("bytes 500-1000/1000", 500, None), None);
+        assert_eq!(valid_partial_range("bytes 500-999/1000", 500, Some(499)), None);
+        assert_eq!(valid_partial_range("bytes */1000", 500, None), None);
+    }
+
+    #[tokio::test]
+    async fn completed_copy_must_exist_and_match_recorded_size() {
+        let path = std::env::temp_dir().join(format!("vayra-file-check-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        tokio::fs::write(&path, b"test-video").await.unwrap();
+        let name = path.to_string_lossy().to_string();
+        assert!(download_file_valid(name.clone(), 10).await);
+        assert!(!download_file_valid(name.clone(), 11).await);
+        assert!(!download_file_valid(format!("{}.part", name), 10).await);
+        tokio::fs::remove_file(&path).await.unwrap();
+        assert!(!download_file_valid(name, 10).await);
     }
 }

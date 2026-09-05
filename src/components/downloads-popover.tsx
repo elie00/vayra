@@ -1,4 +1,5 @@
 import { Download, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
+import { downloadStatusLabel } from "@/lib/download/presentation";
 import { useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import {
@@ -39,7 +40,6 @@ export function DownloadsButton() {
     };
   }, [open]);
 
-  if (downloads.length === 0) return null;
 
   const goToShow = (d: DownloadItem) => {
     setOpen(false);
@@ -80,6 +80,7 @@ export function DownloadsButton() {
             </button>
           </div>
           <div className="flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto px-2 pb-2">
+            {downloads.length === 0 && <p className="px-2 py-5 text-[13px] text-ink-muted">{t("No downloads yet")}</p>}
             {downloads.slice(0, 8).map((d) => (
               <DownloadRow key={d.id} d={d} t={t} onOpen={() => goToShow(d)} />
             ))}
@@ -120,7 +121,7 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
                 />
               </span>
               <span className="shrink-0 text-[10.5px] tabular-nums text-ink-subtle">
-                {paused ? t("Paused") : `${pct}%`}
+                {paused ? downloadStatusLabel(d.status, t) : `${pct}%`}
               </span>
             </span>
           ) : (
@@ -133,15 +134,7 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
                     : "text-ink-subtle"
               }`}
             >
-              {d.status === "done"
-                ? t("Completed")
-                : d.status === "error"
-                  ? d.error ?? t("Failed")
-                  : d.status === "interrupted"
-                    ? t("Interrupted")
-                    : queued
-                      ? t("Waiting")
-                      : t("Canceled")}
+              {downloadStatusLabel(d.status, t)}
             </span>
           )}
         </span>
