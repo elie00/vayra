@@ -971,7 +971,7 @@ function Shell() {
 
   return (
     <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "sidebar" && <Sidebar />}
+      {!settingsTop && !playerActive && (!liveTop || isMacDesktop()) && !pickerTop && layout === "sidebar" && <Sidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}

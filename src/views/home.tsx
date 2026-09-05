@@ -74,7 +74,9 @@ import type { HomeRow } from "./home/home-types";
 import { RowSkeleton } from "./home/row-skeleton";
 import { AddSourceModal } from "@/components/add-source-modal";
 import type { SourceRow } from "@/lib/custom-sources";
-import { isMobileTauri } from "@/lib/platform";
+import { isMacDesktop, isMobileTauri } from "@/lib/platform";
+import { MacPersonalSections } from "./home/mac-personal-sections";
+import { MacDiscoveryBanner } from "./home/mac-discovery-banner";
 import { MobileHome } from "@/mobile/home";
 import { LumaResumeSection } from "./home/luma-resume-section";
 
@@ -790,6 +792,7 @@ export function Home({ active = true }: { active?: boolean }) {
     >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="relative flex flex-col gap-12">
+          {isMacDesktop() && <MacPersonalSections items={cwItems} watchlist={personalRows.find((r) => r.key === "harbor-watchlist")?.metas ?? []} onDismiss={onDismissCw} />}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
             <div className="pointer-events-auto">
               <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />
@@ -813,7 +816,7 @@ export function Home({ active = true }: { active?: boolean }) {
           {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && (
             <div
               data-scroll-anchor="hero"
-              className={`relative ${settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
+              className={`relative ${isMacDesktop() ? "mac-home-discovery" : settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
             >
               {editMode && (
                 <PinnedRowControls
@@ -822,11 +825,11 @@ export function Home({ active = true }: { active?: boolean }) {
                   onToggleHidden={() => handleToggleHidden("hero")}
                 />
               )}
-              <HeroCarousel
+              {isMacDesktop() ? <MacDiscoveryBanner meta={heroSlides[0]?.meta} /> : <HeroCarousel
                 slides={heroSlides}
-                full={settings.heroFull}
+                full={!isMacDesktop() && settings.heroFull}
                 fullQuality={settings.heroFullQuality}
-              />
+              />}
               {!editMode && (
                 <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
                   <CustomizeBar
@@ -856,7 +859,7 @@ export function Home({ active = true }: { active?: boolean }) {
               />
             </div>
           )}
-          <div data-scroll-anchor="cw">
+          {!isMacDesktop() && <><div data-scroll-anchor="cw">
             <LumaResumeSection />
           </div>
           <div data-scroll-anchor="cw-cloud">
@@ -867,6 +870,7 @@ export function Home({ active = true }: { active?: boolean }) {
               onDismiss={onDismissCw}
             />
           </div>
+          </>}
           {settings.homeMode !== "classic" && (
             <div data-scroll-anchor="streaming">
               <StreamingRail services={enabledServices} />
@@ -922,7 +926,7 @@ export function Home({ active = true }: { active?: boolean }) {
             Array.from({ length: 7 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)
           ) : (
             <CustomizableRows
-              rows={editMode ? editRows : visibleRows}
+              rows={(editMode ? editRows : visibleRows).filter((r) => !isMacDesktop() || r.key !== "harbor-watchlist")}
               editMode={editMode}
               customization={homeRowsCustom}
               orderKeys={orderKeys}

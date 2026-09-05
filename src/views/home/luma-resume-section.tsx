@@ -61,7 +61,7 @@ function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; announce:
   );
 }
 
-export function LumaResumeSection() {
+export function LumaResumeSection({ title }: { title?: string } = {}) {
   const t = useT();
   const snapshot = useLuma();
   const [announcement, setAnnouncement] = useState("");
@@ -70,7 +70,7 @@ export function LumaResumeSection() {
   return (
     <section aria-label={t("Resume with LUMA")}>
       <Row
-        title={t("Resume with LUMA")}
+        title={title ?? t("Resume with LUMA")}
         titleExtra={<span className="inline-flex items-center gap-1.5 rounded-full border border-edge-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-subtle"><ShieldCheck size={11} />{t("Local only")}</span>}
         min={260}
         shape="landscape"
