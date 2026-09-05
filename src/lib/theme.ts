@@ -1759,6 +1759,7 @@ function resolveTokens(theme: ThemeSettings): Record<string, string> {
 }
 
 export function activeFontPair(theme: ThemeSettings): FontPairId {
+  if (isMacDesktop() && !theme.fontPairOverride) return "system";
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   return theme.fontPairOverride ? theme.fontPair : preset?.fontPair ?? theme.fontPair;
 }

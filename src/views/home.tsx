@@ -792,7 +792,7 @@ export function Home({ active = true }: { active?: boolean }) {
     >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="relative flex flex-col gap-12">
-          {isMacDesktop() && <MacPersonalSections items={cwItems} watchlist={personalRows.find((r) => r.key === "harbor-watchlist")?.metas ?? []} onDismiss={onDismissCw} />}
+          {isMacDesktop() && <MacPersonalSections items={cwItems} libraryItems={items} onDismiss={onDismissCw} />}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
             <div className="pointer-events-auto">
               <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />

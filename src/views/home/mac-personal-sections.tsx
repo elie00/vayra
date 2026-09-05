@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Row } from "@/components/row";
 import { PickCard } from "@/components/pick-card";
 import { ContinueCard } from "@/components/continue-card";
@@ -8,11 +8,34 @@ import { useDownloads } from "@/lib/download/downloads-store";
 import { validatedDownloadSource } from "@/lib/download/offline-playback";
 import { useView } from "@/lib/view";
 import type { LibraryItem } from "@/lib/stremio";
-import type { Meta } from "@/lib/cinemeta";
+import { readLocalEntries, subscribeWatchlist } from "@/lib/watchlist";
+import { filterLibrary, mergeWatchlist } from "@/lib/watchlist-merge";
+import { useSettings } from "@/lib/settings";
+import { useTrakt } from "@/lib/trakt/provider";
+import { fetchWatchlist } from "@/lib/trakt/watchlist";
+import type { TraktItem } from "@/lib/trakt/types";
 import { LumaResumeSection } from "./luma-resume-section";
 
-export function MacPersonalSections({ items, watchlist, onDismiss }: { items: LibraryItem[]; watchlist: Meta[]; onDismiss: (item: LibraryItem) => void }) {
+export function MacPersonalSections({ items, libraryItems, onDismiss }: { items: LibraryItem[]; libraryItems: LibraryItem[]; onDismiss: (item: LibraryItem) => void }) {
   const t = useT();
+  const { settings } = useSettings();
+  const { isConnected: traktConnected } = useTrakt();
+  const [localEntries, setLocalEntries] = useState(readLocalEntries);
+  const [trakt, setTrakt] = useState<TraktItem[]>([]);
+  useEffect(() => {
+    const refresh = () => setLocalEntries(readLocalEntries());
+    const unsubscribe = subscribeWatchlist(refresh);
+    window.addEventListener("storage", refresh);
+    return () => { unsubscribe(); window.removeEventListener("storage", refresh); };
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    if (!traktConnected) { setTrakt([]); return; }
+    void fetchWatchlist().then((entries) => { if (!cancelled) setTrakt(entries); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [traktConnected]);
+  const watchlist = useMemo(() => mergeWatchlist(localEntries, filterLibrary(libraryItems, settings.libraryBookmarkedOnly), trakt)
+    .sort((a, b) => (b.date ?? 0) - (a.date ?? 0)).map((entry) => entry.meta), [localEntries, libraryItems, settings.libraryBookmarkedOnly, trakt]);
   const { openPlayer, setView } = useView();
   const luma = useLuma();
   const localIds = new Set(luma.document.preferences.rememberActivity ? luma.document.resumes.flatMap((e) => e.ref.kind === "catalog" ? [e.ref.metaId] : []) : []);

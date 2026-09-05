@@ -21,6 +21,8 @@ describe("theme decisions", () => {
     vi.stubGlobal("navigator", { userAgent: "Macintosh", platform: "MacIntel" });
     for (const preset of Object.values(THEME_PRESETS)) {
       expect(activeLayout({ ...DEFAULT_THEME, preset: preset.id })).toBe("sidebar");
+      expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id })).toBe("system");
+      expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id, fontPairOverride: true, fontPair: "general-sans" })).toBe("general-sans");
     }
   });
 
