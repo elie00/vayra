@@ -23,6 +23,9 @@ vi.mock("@/lib/torrent/local-engine", async (orig) => ({
 import type { Meta } from "@/lib/cinemeta";
 import {
   cancelDownload,
+  configureDownloads,
+  prioritizeDownload,
+  downloadSnapshot,
   enqueueDownload,
   MAX_ACTIVE_DOWNLOADS,
   pauseDownload,
@@ -63,6 +66,7 @@ beforeEach(() => {
     },
   });
   vi.stubGlobal("navigator", { platform: "MacIntel" });
+  configureDownloads({ concurrent: 3, quotaGiB: 0 });
 });
 
 afterEach(() => {
@@ -147,6 +151,29 @@ describe("download concurrency", () => {
     const handle = { promise: new Promise<void>((res) => (finish = res)), abort: vi.fn() };
     return { handle, finish };
   }
+
+  it("applies the chosen limit and promotes the selected queued download", async () => {
+    configureDownloads({ concurrent: 1 });
+    const first = startable(); mocks.startDownload.mockReturnValue(first.handle);
+    await enqueueDownload({ meta, url: "https://cdn/first.mkv" });
+    await enqueueDownload({ meta, url: "https://cdn/second.mkv" });
+    const third = await enqueueDownload({ meta, url: "https://cdn/third.mkv" });
+    prioritizeDownload(third); expect(mocks.startDownload).toHaveBeenCalledTimes(1);
+    first.finish(); mocks.startDownload.mockReturnValue(startable().handle);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.startDownload.mock.calls[1][0]).toBe(third);
+  });
+
+  it("reserves unknown-sized transfers and shares only the confirmed spare budget", async () => {
+    configureDownloads({ quotaGiB: 1 });
+    await enqueueDownload({ meta, url: "https://cdn/first.mkv" });
+    const second = await enqueueDownload({ meta, url: "https://cdn/second.mkv" });
+    expect(mocks.startDownload).toHaveBeenCalledTimes(1);
+    expect(downloadSnapshot().find((d) => d.id === second)?.status).toBe("queued");
+    lastProgressCallback()({ receivedBytes: 0, totalBytes: 256 * 1024 ** 2, ratio: 0 });
+    expect(mocks.startDownload).toHaveBeenCalledTimes(2);
+    expect(mocks.startDownload.mock.calls[1][5]).toBe(768 * 1024 ** 2);
+  });
 
   it("runs no more than the concurrency limit at once", async () => {
     const finishers: Array<() => void> = [];

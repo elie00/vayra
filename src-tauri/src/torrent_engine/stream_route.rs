@@ -162,20 +162,26 @@ async fn stream_file(
         .ok()
         .flatten()
         .unwrap_or("application/octet-stream");
+    let info_hash = handle.info_hash().as_string();
     let mut stream = match handle.stream(file_id) {
         Ok(s) => s,
         Err(e) => return (StatusCode::NOT_FOUND, format!("{e:#}")).into_response(),
     };
     let len = stream.len();
+    // Torrent piece hashes make this representation immutable, including after
+    // restarting the local engine. Numeric session IDs alone are not identities.
+    let etag = format!("\"{}-{}-{}\"", info_hash, file_id, len);
+    let range_allowed = headers.get(header::IF_RANGE).is_none_or(|v| v.to_str().ok() == Some(etag.as_str()));
     let parsed = headers
         .get(header::RANGE)
+        .filter(|_| range_allowed)
         .and_then(|v| v.to_str().ok())
         .and_then(parse_range);
     let (status, start, end) = match parsed {
         Some((s, e_opt)) => {
             let e = e_opt.map(|x| x + 1).unwrap_or(len);
             if e > len || e <= s {
-                return (StatusCode::RANGE_NOT_SATISFIABLE, "range not satisfiable").into_response();
+                return (StatusCode::RANGE_NOT_SATISFIABLE, [(header::CONTENT_RANGE, format!("bytes */{len}")), (header::ETAG, etag)], "range not satisfiable").into_response();
             }
             (StatusCode::PARTIAL_CONTENT, s, e)
         }
@@ -186,6 +192,7 @@ async fn stream_file(
     }
     let to_take = end - start;
     let mut out = HeaderMap::new();
+    out.insert(header::ETAG, HeaderValue::from_str(&etag).unwrap());
     out.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
     out.insert(header::CONTENT_TYPE, HeaderValue::from_static(ct));
     out.insert(

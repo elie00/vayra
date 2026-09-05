@@ -6,6 +6,7 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
 import { engineFileFromUrl, torrentEngineRelease } from "@/lib/torrent/local-engine";
 import { buildDefaultFilename, sanitizeName } from "./filename";
+import { DEFAULT_DOWNLOAD_POLICY, remainingBudget, sanitizeDownloadPolicy, type DownloadPolicy } from "./policy";
 import {
   downloadFileExists,
   removeDownloadFile,
@@ -14,6 +15,7 @@ import {
 } from "./video-download";
 
 export type DownloadItem = {
+  priority?: number;
   id: string;
   metaId: string;
   title: string;
@@ -52,6 +54,29 @@ const items = new Map<string, DownloadItem>();
 const handles = new Map<string, DownloadHandle>();
 const speed = new Map<string, { bytes: number; at: number }>();
 const listeners = new Set<() => void>();
+const reserved = new Map<string, number>();
+const POLICY_KEY = "vayra.download.policy.v1";
+let policy = DEFAULT_DOWNLOAD_POLICY;
+try { policy = sanitizeDownloadPolicy(JSON.parse(localStorage.getItem(POLICY_KEY) || "{}")); } catch { /* defaults */ }
+
+export function configureDownloads(next: Partial<DownloadPolicy>): void {
+  const previous = policy;
+  policy = sanitizeDownloadPolicy({ ...policy, ...next });
+  if (policy.quotaGiB && (!previous.quotaGiB || policy.quotaGiB < previous.quotaGiB)) {
+    for (const id of handles.keys()) pauseDownload(id);
+  }
+  for (const id of [...handles.keys()].slice(policy.concurrent)) pauseDownload(id);
+  try { localStorage.setItem(POLICY_KEY, JSON.stringify(policy)); } catch { /* session-only policy */ }
+  listeners.forEach((listener) => listener());
+  pump();
+}
+export function useDownloadPolicy(): DownloadPolicy { return useSyncExternalStore(subscribe, () => policy, () => policy); }
+export function prioritizeDownload(id: string): void {
+  const item = items.get(id);
+  if (item?.status !== "queued") return;
+  patch(id, { priority: Math.max(0, ...snapshot.map((d) => d.priority ?? 0)) + 1 });
+  pump();
+}
 
 /**
  * How many downloads actually run at once. A season queues every episode at
@@ -236,16 +261,9 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     error: null,
     startedAt: Date.now(),
   };
-  const free = handles.size < MAX_ACTIVE_DOWNLOADS;
-  items.set(id, { ...item, status: free ? "downloading" : "queued" });
+  items.set(id, { ...item, status: "queued" });
   requestHeaders.set(id, headers ?? undefined);
-  speed.set(id, { bytes: 0, at: Date.now() });
-  if (free) {
-    beginDownload(id, headers ?? undefined);
-  } else {
-    waiting.push(id);
-    waitingHeaders.set(id, headers ?? undefined);
-  }
+  startOrQueue(id);
   rebuild();
   return id;
 }
@@ -254,7 +272,15 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
   const item = items.get(id);
   if (!item) return;
   const { url, path } = item;
+  const available = remainingBudget(policy, [...items.values()].map((d) => d.receivedBytes), [...reserved.values()]);
+  if (available !== undefined && available <= 0) {
+    patch(id, { status: "error", error: "Download storage limit reached", bytesPerSec: 0 });
+    return;
+  }
+  const maxBytes = available === undefined ? undefined : item.receivedBytes + available;
+  if (available !== undefined) reserved.set(id, available);
   const handle = startDownload(id, url, path, (p) => {
+    if (maxBytes !== undefined) reserved.set(id, Math.max(0, Math.min(p.totalBytes ?? maxBytes, maxBytes) - p.receivedBytes));
     const now = Date.now();
     const s = speed.get(id);
     let bps = 0;
@@ -268,7 +294,8 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
       ratio: p.ratio,
       ...(bps > 0 ? { bytesPerSec: bps } : {}),
     });
-  }, headers);
+    pump();
+  }, headers, maxBytes);
   handles.set(id, handle);
   handle.promise
     .then(() => {
@@ -286,6 +313,7 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
       patch(id, { status: "error", error: e instanceof Error ? e.message : "Download failed", bytesPerSec: 0 });
     })
     .finally(() => {
+      reserved.delete(id);
       handles.delete(id);
       speed.delete(id);
       releaseEngineFile(url);
@@ -300,7 +328,8 @@ function startOrQueue(id: string): void {
   const item = items.get(id);
   if (!item || handles.has(id)) return;
   speed.set(id, { bytes: item.receivedBytes, at: Date.now() });
-  if (handles.size < MAX_ACTIVE_DOWNLOADS) {
+  const budget = remainingBudget(policy, [...items.values()].map((d) => d.receivedBytes), [...reserved.values()]);
+  if (handles.size < policy.concurrent && (budget === undefined || budget > 0 || handles.size === 0)) {
     patch(id, { status: "downloading", error: null, bytesPerSec: 0 });
     beginDownload(id, requestHeaders.get(id));
     return;
@@ -312,7 +341,10 @@ function startOrQueue(id: string): void {
 
 // Hand the freed slot to the entry that has waited longest and is still wanted.
 function pump(): void {
-  while (handles.size < MAX_ACTIVE_DOWNLOADS) {
+  waiting.sort((a, b) => (items.get(b)?.priority ?? 0) - (items.get(a)?.priority ?? 0));
+  while (handles.size < policy.concurrent) {
+    const available = remainingBudget(policy, [...items.values()].map((d) => d.receivedBytes), [...reserved.values()]);
+    if (available !== undefined && available <= 0) return;
     const id = waiting.shift();
     if (id === undefined) return;
     const headers = waitingHeaders.get(id);
@@ -320,7 +352,6 @@ function pump(): void {
     if (items.get(id)?.status !== "queued") continue;
     patch(id, { status: "downloading" });
     beginDownload(id, headers);
-    return;
   }
 }
 
@@ -366,6 +397,7 @@ export function resumeDownload(id: string): void {
 }
 
 export function removeDownload(id: string): void {
+  reserved.delete(id);
   const item = items.get(id);
   resumeWhenSettled.delete(id);
   requestHeaders.delete(id);
