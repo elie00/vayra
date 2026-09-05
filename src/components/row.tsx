@@ -187,9 +187,15 @@ export function Row({
   const restoredRef = useRef(false);
   const userInteractedRef = useRef(false);
   const { rememberRowScroll, recallRowScroll } = useView();
+  // Measure on content/layout inputs, never on the measured width itself.
+  // WebKit can alternate rounded widths while the sidebar is transitioning;
+  // feeding cellWidth back into this effect causes synchronous render loops.
   useLayoutEffect(() => {
     measure();
     measureScroll();
+  }, [children, measure, measureScroll]);
+
+  useLayoutEffect(() => {
     if (!trackEl || cellWidth == null) return;
     if (scrollKey && !restoredRef.current && childCount > 0) {
       const n = recallRowScroll(scrollKey);
@@ -202,7 +208,7 @@ export function Row({
     if (!userInteractedRef.current && readPos(trackEl) !== 0) {
       writePos(trackEl, 0);
     }
-  }, [children, childCount, cellWidth, trackEl, scrollKey, recallRowScroll, effMin, measure, measureScroll, readPos, writePos]);
+  }, [childCount, cellWidth, trackEl, scrollKey, recallRowScroll, readPos, writePos]);
 
   useEffect(() => {
     const container = containerRef.current;
