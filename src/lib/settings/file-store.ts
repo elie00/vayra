@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { STORAGE_KEY } from "./defaults";
 import type { Settings } from "./types";
+import { recordSettingsCheckpoint } from "./history";
+import { isMacDesktop } from "../platform";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -68,6 +70,7 @@ export async function readSettingsSecrets(): Promise<Partial<SettingsSecrets> | 
 }
 
 export async function persistSettings(settings: Settings): Promise<void> {
+  if (isMacDesktop()) await recordSettingsCheckpoint(settings);
   const { backgroundImage: _drop, ...themeRest } = settings.theme;
   void _drop;
   const serializable = { ...settings, theme: themeRest } as Settings;
