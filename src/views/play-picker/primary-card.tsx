@@ -14,6 +14,7 @@ import type { PlayEpisode } from "@/lib/view";
 import { EditionChip } from "./edition-chip";
 import { anyStreamCached, confirmationLabel, displayTitle, hasUncachedMarker, streamSummaryParts, torrentFilename } from "./picker-utils";
 import { PlayProvenance } from "./play-provenance";
+import { isMacDesktop } from "@/lib/platform";
 
 export function PrimaryCard({
   meta,
@@ -148,10 +149,13 @@ export function PrimaryCard({
               </p>
             )}
             <HostMatchChip match={match} long />
-            <p className="break-all font-mono text-[15.5px] leading-relaxed text-ink">
+            {isMacDesktop() && <p className="text-[17px] font-semibold text-ink">{meta.name}<span className="mt-1 block text-[13px] font-normal text-ink-muted">{[stream.resolution, isCached ? t("Available now") : t("Availability to check")].filter(Boolean).join(" · ")}</span></p>}
+            <details open={!isMacDesktop()} className="text-ink-muted"><summary className="cursor-pointer py-2 text-[13px]">{t("Technical details")}</summary>
+            <p className="break-all font-mono text-[13px] leading-relaxed text-ink-muted">
               {title}
             </p>
-            {fname && fname !== title && (
+            </details>
+            {!isMacDesktop() && fname && fname !== title && (
               <p className="break-all font-mono text-[12.5px] leading-relaxed text-ink-subtle/80">
                 {fname}
               </p>

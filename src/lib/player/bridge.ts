@@ -31,6 +31,7 @@ export type PlayerSnapshot = {
   durationSec: number;
   bufferedSec: number;
   buffering: boolean;
+  resumeRecovery?: "reconnecting" | "failed" | null;
   volume: number;
   muted: boolean;
   rate: number;

@@ -40,6 +40,18 @@ function reloadCalls() {
 }
 
 describe("mpv resume integration", () => {
+  it("exposes reconnection and lets Cancel keep the current video paused", async () => {
+    const { bridge, snapshot } = await loaded();
+    bridge.pause();
+    await bridge.play();
+    await vi.advanceTimersByTimeAsync(RESUME_CHECK_MS);
+    expect(snapshot().resumeRecovery).toBe("reconnecting");
+    bridge.pause();
+    expect(snapshot().resumeRecovery).toBeNull();
+    await vi.advanceTimersByTimeAsync(RESUME_RECOVERY_MS);
+    expect(snapshot().status).toBe("paused");
+    expect(mocks.invoke.mock.calls.some(([name]) => name === "window_fullscreen_exit")).toBe(false);
+  });
   it("honors unpause events from native media controls", async () => {
     const { bridge, snapshot } = await loaded();
     bridge.pause();

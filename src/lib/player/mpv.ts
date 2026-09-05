@@ -174,6 +174,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       await invoke("mpv_command", { cmd: ["loadfile", source.url, "replace", 0, opts] });
     },
     onState(state) {
+      snap.resumeRecovery = state === "reloading" ? "reconnecting" : state === "failed" ? "failed" : null;
       snap.buffering = state === "reloading";
       snap.errorCode = null;
       snap.errorMessage = null;
@@ -387,6 +388,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       host = null;
     },
     async load(src: PlayerSource) {
+      snap.resumeRecovery = null;
       playbackGeneration++;
       resumeReloadPending = false;
       resumeRecovery.cancel();
@@ -553,6 +555,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       }
     },
     pause() {
+      snap.resumeRecovery = null;
       playbackGeneration++;
       viewerPaused = true;
       resumeRecovery.cancel();
@@ -563,6 +566,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       invoke("mpv_set_property", { name: "pause", value: true }).catch(() => {});
     },
     seek(sec) {
+      snap.resumeRecovery = null;
       playbackGeneration++;
       resumeRecovery.cancel();
       restoreAfterResume = null;
