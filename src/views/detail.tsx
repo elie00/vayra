@@ -17,6 +17,7 @@ import { fetchAddonMeta } from "@/lib/addons";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
+import { isMacDesktop } from "@/lib/platform";
 import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
@@ -1028,7 +1029,9 @@ export function DetailView({
     ? t("Play Together")
     : isSeries && lastPlay
       ? t("Resume S{s}:E{e}", { s: lastPlay.season, e: lastPlay.episode })
-      : t("Play");
+      : isMacDesktop() && !isSeries && (readResumeEntry(meta.id)?.ms ?? 0) > 0
+        ? t("Resume at {time}", { time: `${Math.floor((readResumeEntry(meta.id)?.ms ?? 0) / 60000)}:${String(Math.floor((readResumeEntry(meta.id)?.ms ?? 0) / 1000) % 60).padStart(2, "0")}` })
+        : t("Play");
 
   const heroPills = (
     <>
@@ -1199,6 +1202,9 @@ export function DetailView({
                     {smartPlayLabel}
                   </button>
                   </PlayModeHint>
+                )}
+                {isMacDesktop() && actionStage < 2 && (
+                  <button type="button" className="mac-secondary-button" onClick={() => void smartPlay(true)}>{t("Choose another source")}</button>
                 )}
                 {actionStage < 2 && (
                   <button

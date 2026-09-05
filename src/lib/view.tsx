@@ -7,6 +7,7 @@ import type { SportsGame } from "./sports/espn";
 import { beginMarathonAdvance } from "./fullscreen-state";
 import { franchiseRoot, franchiseRootSync } from "./providers/anime-franchise-root";
 import { currentPlatformCapabilities } from "./platform-capabilities";
+import { playbackReturnStack } from "./navigation-return";
 
 const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
@@ -449,11 +450,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, [clearForwardStack]);
 
   const exitPlayback = useCallback(() => {
-    setNavStack((s) => {
-      let i = s.length - 1;
-      while (i > 0 && (s[i].kind === "player" || s[i].kind === "picker")) i--;
-      return s.slice(0, i + 1);
-    });
+    setNavStack(playbackReturnStack);
   }, [setNavStack]);
 
   const exitPickerToDetail = useCallback((m: Meta) => {
