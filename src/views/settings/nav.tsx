@@ -9,6 +9,7 @@ import {
 import { useView } from "@/lib/view";
 import { settingsAnchor, type SectionId } from "./shared";
 import { markSectionSeen, useSettingsNew } from "./settings-new";
+import { isMacDesktop } from "@/lib/platform";
 
 type IconProps = { size?: number; strokeWidth?: number };
 
@@ -561,7 +562,7 @@ const ALL_NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
 
 const CAPABILITIES = currentPlatformCapabilities();
 
-const NAV_GROUPS = ALL_NAV_GROUPS.map((group) => ({
+export const NAV_GROUPS = ALL_NAV_GROUPS.map((group) => ({
   ...group,
   items: group.items.filter((item) => !item.requires || CAPABILITIES[item.requires]),
 })).filter((group) => group.items.length > 0);
@@ -571,12 +572,12 @@ const AVAILABLE_SECTION_IDS = new Set<SectionId>(
 );
 
 export function isSettingsSectionAvailable(section: SectionId): boolean {
-  return AVAILABLE_SECTION_IDS.has(section);
+  return AVAILABLE_SECTION_IDS.has(section) || (isMacDesktop() && ["downloads", "connections", "privacy"].includes(section));
 }
 
 type SettingsOption = { label: string; section: SectionId; anchorTitle?: string; keywords?: string[] };
 
-const SETTINGS_OPTIONS: SettingsOption[] = [
+export const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Play button behavior", section: "player", anchorTitle: "Play button behavior", keywords: ["play mode", "instant", "instant play", "autoplay", "auto start", "manual picker", "choose stream", "source picker", "quality picker"] },
   { label: "Player engine", section: "player", anchorTitle: "Player engine", keywords: ["mpv", "html5", "engine", "playback", "embed mpv", "inline", "separate window", "hdr", "sdr", "tonemap", "tonemapping", "hdr display mode", "hdr separate window", "opaque", "passthrough", "line-free", "line free", "brightness line", "motion smoothing", "frame interpolation", "direct torrent", "stremio server", "built-in engine", "rust engine", "p2p", "re-encode", "transcode", "cast", "dlna", "anime4k", "upscale", "upscaling", "anime4k indicator", "fps", "av1", "dts-hd", "truehd", "codec"] },
   { label: "Aspect ratio", section: "player", anchorTitle: "Aspect ratio", keywords: ["aspect ratio", "fit", "fill", "zoom", "crop", "stretch", "black bars", "widescreen", "4:3", "16:9", "21:9"] },
@@ -1230,6 +1231,9 @@ export function SettingsNav({
     Object.values(settings.webhooks.sources).some(Boolean);
 
   const status: Record<SectionId, string | null> = {
+    downloads: null,
+    connections: null,
+    privacy: null,
     basics: null,
     account: null,
     cira: null,
