@@ -42,6 +42,7 @@ export function startDownload(
   destPath: string,
   onProgress: (p: DownloadProgress) => void,
   headers?: Record<string, string>,
+  maxBytes?: number,
 ): DownloadHandle {
   let settle = () => {};
   let fail = (_e: Error) => {};
@@ -87,6 +88,7 @@ export function startDownload(
     url,
     dest: destPath,
     headers: headers && Object.keys(headers).length > 0 ? headers : null,
+    maxBytes: maxBytes ?? null,
     onEvent: channel,
   }).catch((e: unknown) => {
     fail(e instanceof Error ? e : new Error(String(e)));

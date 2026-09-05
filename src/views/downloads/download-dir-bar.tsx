@@ -9,6 +9,7 @@ import { ToggleRow } from "@/views/settings/shared";
 import { invoke } from "@tauri-apps/api/core";
 import { isMacDesktop } from "@/lib/platform";
 import { getUiLanguage } from "@/lib/i18n";
+import { DownloadPolicyControls } from "./policy-controls";
 
 export function DownloadDirBar() {
   const t = useT();
@@ -92,6 +93,7 @@ export function DownloadDirBar() {
         onChange={(v) => update({ downloadCreateFolders: v })}
       />
       {isMacDesktop() && <p role="status" className="text-[13px] tabular-nums text-ink-muted">{freeBytes == null ? t("Available space could not be determined") : t("{size} GB available", { size: (freeBytes / 1024 ** 3).toLocaleString(getUiLanguage(), { maximumFractionDigits: 1 }) })}</p>}
+      {isMacDesktop() && <DownloadPolicyControls />}
     </div>
   );
 }

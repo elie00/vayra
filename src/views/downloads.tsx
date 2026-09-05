@@ -10,6 +10,7 @@ import { validatedDownloadSource } from "@/lib/download/offline-playback";
 import {
   cancelDownload,
   pauseDownload,
+  prioritizeDownload,
   removeDownload,
   resumeDownload,
   revealDownload,
@@ -274,6 +275,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {queued && <button type="button" className="mac-secondary-button" onClick={() => prioritizeDownload(d.id)}>{t("Move to front")}</button>}
         {downloading || queued ? (
           <>
             <RowBtn prominent label={t("Pause download")} onClick={() => pauseDownload(d.id)}>

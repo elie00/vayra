@@ -12,6 +12,8 @@ export function downloadStatusLabel(status: DownloadItem["status"], t: T): strin
   }
 }
 export function downloadRecoveryHint(error: string | null, t: T): string {
+  if (/storage limit/i.test(error ?? "")) return t("Storage budget reached. Increase it or remove a download before resuming.");
+  if (/source changed|resume identity|resuming unsupported/i.test(error ?? "")) return t("The source identity could not be verified. Your partial file is kept; start a new download to avoid mixing files.");
   if (/space|enospc|disk full/i.test(error ?? "")) return t("Free up space in the download folder before resuming.");
   if (/401|403|404|expired/i.test(error ?? "")) return t("The source is no longer available. Choose another source from the title page.");
   return t("Check your connection, then resume. The saved portion is kept when the source supports resuming.");
