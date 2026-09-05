@@ -249,10 +249,7 @@ function ScrollableNav({
             {!collapsed && <p className="px-3 pb-1 text-[12px] font-medium text-ink-subtle">{t(isExploreView(view) ? "Explore categories" : "Pinned categories")}</p>}
             {categories.filter((item) => isExploreView(view) || pins.includes(item.view)).map((item) => (
               <div key={item.id} className="flex min-w-0 items-center gap-1">
-                <button type="button" onClick={() => setView(item.view)} aria-current={view === item.view ? "page" : undefined} title={t(item.label)} className={`flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg px-3 text-start text-[13px] ${view === item.view ? "bg-elevated text-ink" : "text-ink-muted hover:bg-elevated/60"}`}>
-                  <span className="shrink-0 [&_svg]:h-5 [&_svg]:w-5">{item.render(view === item.view)}</span>
-                  {!collapsed && <span className="truncate">{t(item.label)}</span>}
-                </button>
+                <NavItem {...item} compact collapsed={collapsed} active={view === item.view} onClick={() => setView(item.view)} />
                 {!collapsed && item.id !== "discover" && <button type="button" aria-pressed={pins.includes(item.view)} aria-label={t(pins.includes(item.view) ? "Unpin {name}" : "Pin {name}", { name: t(item.label) })} onClick={() => update({ macPinnedViews: pins.includes(item.view) ? pins.filter((id) => id !== item.view) : [...pins, item.view] })} className={`flex h-11 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-elevated ${pins.includes(item.view) ? "text-accent" : "text-ink-subtle"}`}><Pin size={14} fill={pins.includes(item.view) ? "currentColor" : "none"} /></button>}
               </div>
             ))}
@@ -298,13 +295,14 @@ function ScrollableNav({
   );
 }
 
-function NavItem({
+export function NavItem({
   render,
   label,
   active,
   onClick,
   gated,
   collapsed,
+  compact = false,
   view,
 }: {
   render: (active: boolean) => ReactNode;
@@ -313,22 +311,26 @@ function NavItem({
   onClick?: () => void;
   gated?: boolean;
   collapsed?: boolean;
+  compact?: boolean;
   view: View;
 }) {
   const t = useT();
   const translatedLabel = t(label);
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={(event) => setFocused(event.currentTarget.matches(":focus-visible"))}
+      onBlur={() => setFocused(false)}
       data-vayra-nav={view}
       data-active={active ? "" : undefined}
       aria-current={active ? "page" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label: translatedLabel }) : translatedLabel}
       title={gated ? t("chrome.lockedShort", { label: translatedLabel }) : translatedLabel}
-      className={`relative flex h-14 items-center justify-center gap-4 rounded-xl text-[16px] transition-colors duration-150 ${
+      className={`relative flex items-center justify-center transition-colors duration-150 ${compact ? "min-h-11 min-w-0 flex-1 gap-3 rounded-lg text-[13px] [&_svg]:h-5 [&_svg]:w-5" : "h-14 gap-4 rounded-xl text-[16px]"} ${
         collapsed ? "" : "lg:justify-start lg:px-4"
       } ${
         collapsed
@@ -340,15 +342,15 @@ function NavItem({
             : "text-ink-muted hover:bg-elevated/50 hover:text-ink"
       }`}
     >
-      <span className={`relative ${gated ? "opacity-70" : ""}`}>
-        {render(!!active || hovered)}
+      <span data-nav-icon="" className={`relative inline-flex shrink-0 ${gated ? "opacity-70" : ""}`}>
+        {render(hovered || focused)}
         {gated && (
           <span className="absolute -bottom-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink-subtle ring-1 ring-edge">
             <Lock size={9} strokeWidth={2.4} />
           </span>
         )}
       </span>
-      {!collapsed && <span className="hidden lg:inline">{translatedLabel}</span>}
+      {!collapsed && <span className="hidden truncate lg:inline">{translatedLabel}</span>}
     </button>
   );
 }
