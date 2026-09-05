@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { ToggleRow } from "@/views/settings/shared";
+import { invoke } from "@tauri-apps/api/core";
+import { isMacDesktop } from "@/lib/platform";
+import { getUiLanguage } from "@/lib/i18n";
 
 export function DownloadDirBar() {
   const t = useT();
@@ -26,6 +29,16 @@ export function DownloadDirBar() {
 
   const current = settings.downloadDir || systemDefault;
   const isCustom = !!settings.downloadDir;
+  const [freeBytes, setFreeBytes] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isMacDesktop() || !current) return;
+    let alive = true;
+    setFreeBytes(null);
+    const refresh = () => { void invoke<number>("download_available_space", { path: current }).then((n) => { if (alive) setFreeBytes(n); }).catch(() => { if (alive) setFreeBytes(null); }); };
+    refresh();
+    const timer = window.setInterval(refresh, 30_000);
+    return () => { alive = false; window.clearInterval(timer); };
+  }, [current]);
 
   const pick = async () => {
     try {
@@ -73,11 +86,12 @@ export function DownloadDirBar() {
         )}
       </div>
       <ToggleRow
-        label="Organize downloads into folders"
-        note="Create a folder by movie or series name"
+        label={t("Organize downloads into folders")}
+        note={t("Create a folder by movie or series name")}
         value={settings.downloadCreateFolders}
         onChange={(v) => update({ downloadCreateFolders: v })}
       />
+      {isMacDesktop() && <p role="status" className="text-[13px] tabular-nums text-ink-muted">{freeBytes == null ? t("Available space could not be determined") : t("{size} GB available", { size: (freeBytes / 1024 ** 3).toLocaleString(getUiLanguage(), { maximumFractionDigits: 1 }) })}</p>}
     </div>
   );
 }
