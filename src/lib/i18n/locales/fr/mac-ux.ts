@@ -1,4 +1,5 @@
 const macUx: Record<string, string> = {
+  "My Watchlist": "À voir",
   "Automatic": "Automatique",
   "Create a folder by movie or series name": "Créer un dossier par film ou série",
   "Organize downloads into folders": "Organiser les téléchargements en dossiers",
@@ -25,7 +26,7 @@ const macUx: Record<string, string> = {
   "Download paused": "En pause",
   "Needs resuming": "À reprendre",
   "Ready to watch": "Prêt à regarder",
-  "Free up space or choose another folder before resuming.": "Libérez de l’espace ou choisissez un autre dossier avant de reprendre.",
+  "Free up space in the download folder before resuming.": "Libérez de l’espace dans le dossier de téléchargement avant de reprendre.",
   "The source is no longer available. Choose another source from the title page.": "La source n’est plus disponible. Choisissez-en une autre depuis la fiche du titre.",
   "Check your connection, then resume. The saved portion is kept when the source supports resuming.": "Vérifiez votre connexion, puis reprenez. La partie enregistrée est conservée si la source autorise la reprise.",
   "Available space could not be determined": "Espace disponible : information indisponible",
