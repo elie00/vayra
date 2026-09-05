@@ -1,10 +1,12 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Check, Download as DownloadIcon, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { getUiLanguage, t, useT } from "@/lib/i18n";
 import { DownloadDirBar } from "./downloads/download-dir-bar";
+import { downloadRecoveryHint, downloadStatusLabel } from "@/lib/download/presentation";
+import { validatedDownloadSource } from "@/lib/download/offline-playback";
 import {
   cancelDownload,
   pauseDownload,
@@ -81,6 +83,7 @@ function buildGroups(items: DownloadItem[]): DownloadGroup[] {
 export function DownloadsView() {
   const t = useT();
   const items = useDownloads();
+  const [filter, setFilter] = useState<"all" | "active" | "ready" | "attention">("all");
   const active = items.filter((d) => d.status === "downloading").length;
   const queued = items.filter((d) => d.status === "queued").length;
   const paused = items.filter((d) => d.status === "paused").length;
@@ -88,7 +91,7 @@ export function DownloadsView() {
     (sum, d) => (d.status === "done" ? sum + (d.totalBytes ?? d.receivedBytes) : sum),
     0,
   );
-  const groups = useMemo(() => buildGroups(items), [items]);
+  const groups = useMemo(() => buildGroups(items.filter((d) => filter === "all" || (filter === "ready" ? d.status === "done" : filter === "active" ? ["downloading", "queued"].includes(d.status) : ["paused", "error", "interrupted"].includes(d.status)))), [items, filter]);
 
   return (
     <main className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
@@ -111,6 +114,8 @@ export function DownloadsView() {
         </header>
 
         <DownloadDirBar />
+        {items.length > 0 && <div aria-label={t("Filter downloads")} className="mb-5 flex flex-wrap gap-2">{(["all", "active", "ready", "attention"] as const).map((id) => <button type="button" key={id} aria-pressed={filter === id} onClick={() => setFilter(id)} className={`mac-secondary-button ${filter === id ? "bg-raised text-ink" : "text-ink-muted"}`}>{t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs resuming")}</button>)}</div>}
+        {items.length > 0 && groups.length === 0 && <p role="status" className="py-8 text-[14px] text-ink-muted">{t("No downloads in this category")}</p>}
 
         {items.length === 0 ? (
           <EmptyState />
@@ -134,6 +139,7 @@ export function DownloadsView() {
 
 function EmptyState() {
   const t = useT();
+  const { setView } = useView();
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-[20px] border border-dashed border-edge-soft bg-elevated/30 px-8 py-20 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-elevated text-ink-subtle">
@@ -145,6 +151,7 @@ function EmptyState() {
           {t("Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.")}
         </p>
       </div>
+      <button type="button" className="mac-primary-button" onClick={() => setView("discover")}>{t("Explore")}</button>
     </div>
   );
 }
@@ -190,6 +197,7 @@ function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> 
 function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolean }) {
   const t = useT();
   const { openPlayer } = useView();
+  const [localError, setLocalError] = useState(false);
   const { settings } = useSettings();
   const poster = usePosterChain(
     settings.rpdbKey,
@@ -202,23 +210,11 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
   const queued = d.status === "queued";
   const paused = d.status === "paused";
   const resumable = paused || d.status === "interrupted" || d.status === "error";
-  const playLocal = () =>
-    openPlayer({
-      meta: {
-        id: d.metaId,
-        type: d.season != null ? "series" : "movie",
-        name: d.title,
-        poster: d.poster ?? undefined,
-      },
-      url: d.path,
-      title: d.title,
-      subtitle: d.subtitle ?? undefined,
-      notWebReady: true,
-      episode:
-        d.season != null && d.episode != null
-          ? { season: d.season, episode: d.episode }
-          : undefined,
-    });
+  const playLocal = async () => {
+    const source = await validatedDownloadSource(d);
+    setLocalError(!source);
+    if (source) openPlayer(source);
+  };
   return (
     <li className="group flex items-center gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-3 transition-colors hover:bg-elevated/70">
       <div
@@ -227,6 +223,9 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
         <Poster src={poster.src} onError={poster.onError} seed={d.metaId} ratio="portrait" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <span className="text-[12px] font-medium text-ink-muted">{downloadStatusLabel(d.status, t)}</span>
+        {localError && <p role="alert" className="text-[12px] text-danger">{t("This file is missing or incomplete. Download it again from the title page.")}</p>}
+        {(d.status === "error" || d.status === "interrupted") && <p className="max-w-[65ch] text-[12px] text-ink-muted">{downloadRecoveryHint(d.error, t)}</p>}
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="truncate text-[14.5px] font-semibold text-ink">
             {compact ? (d.subtitle ?? d.title) : d.title}
@@ -260,12 +259,12 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
               <>
                 <Check size={13} className="text-accent" strokeWidth={2.6} />
                 <span className="text-ink-muted">
-                  {t("Saved")}{d.streamLabel ? ` · ${d.streamLabel}` : ""}
+                  {t("Saved")}
                   {d.totalBytes ? ` · ${fmtBytes(d.totalBytes)}` : ""}
                 </span>
               </>
             )}
-            {d.status === "error" && <span className="text-danger">{t("Failed: {error}", { error: d.error ? t(d.error) : t("download error") })}</span>}
+            {d.status === "error" && d.error && <details className="text-ink-subtle"><summary>{t("Technical details")}</summary><p className="break-all">{d.error}</p></details>}
             {queued && <span className="text-ink-subtle">{t("Waiting for a free slot")}</span>}
             {d.status === "canceled" && <span className="text-ink-subtle">{t("Canceled")}</span>}
             {d.status === "interrupted" && (
@@ -277,7 +276,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
       <div className="flex shrink-0 items-center gap-1">
         {downloading || queued ? (
           <>
-            <RowBtn label={t("Pause download")} onClick={() => pauseDownload(d.id)}>
+            <RowBtn prominent label={t("Pause download")} onClick={() => pauseDownload(d.id)}>
               <Pause size={16} strokeWidth={2.2} fill="currentColor" />
             </RowBtn>
             <RowBtn label={t("Cancel download")} onClick={() => cancelDownload(d.id)}>
@@ -287,13 +286,13 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
         ) : (
           <>
             {resumable && (
-              <RowBtn label={t("Resume download")} onClick={() => resumeDownload(d.id)}>
+              <RowBtn prominent label={t("Resume download")} onClick={() => resumeDownload(d.id)}>
                 <Play size={16} strokeWidth={2.2} fill="currentColor" />
               </RowBtn>
             )}
             {d.status === "done" && (
               <>
-                <RowBtn label={t("Play")} onClick={playLocal}>
+                <RowBtn prominent label={t("Watch offline")} onClick={() => void playLocal()}>
                   <Play size={16} strokeWidth={2.2} fill="currentColor" />
                 </RowBtn>
                 <RowBtn label={t("Show in folder")} onClick={() => void revealDownload(d.id)}>
@@ -311,16 +310,17 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
   );
 }
 
-function RowBtn({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+function RowBtn({ label, onClick, children, prominent = false }: { label: string; onClick: () => void; children: ReactNode; prominent?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className={`flex min-h-11 items-center justify-center gap-2 rounded-lg text-ink-muted transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${prominent ? "bg-raised px-3 text-[12px] font-medium" : "w-11"}`}
     >
       {children}
+      {prominent && <span className="hidden sm:inline">{label}</span>}
     </button>
   );
 }

@@ -769,6 +769,8 @@ pub fn run() {
             download::download_cancel,
             download::download_remove_file,
             download::download_file_exists,
+            download::download_file_valid,
+            download::download_available_space,
             user_files::vayra_list_dir_files,
             user_files::vayra_read_text_file,
             user_files::vayra_write_text_file,

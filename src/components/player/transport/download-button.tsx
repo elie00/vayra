@@ -47,13 +47,13 @@ export function DownloadButton({
   }
 
   if (status.kind === "downloading") {
-    const pct = Math.round(status.ratio * 100);
     const detail = formatTooltip(status, speed, t);
     return (
       <Tooltip label={detail}>
         <button
           onClick={onPause}
-          aria-label={t("Downloading {pct}%, click to pause", { pct })}
+          aria-label={t("Pause download")}
+          title={t("Pause download")}
           className="group relative flex h-12 w-12 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/10 hover:text-white"
         >
           <ProgressRing ratio={status.ratio} indeterminate={!status.totalBytes} />
@@ -72,10 +72,10 @@ export function DownloadButton({
   if (status.kind === "paused") {
     const pct = Math.round(status.ratio * 100);
     return (
-      <Tooltip label={t("Paused at {pct}% · click to resume", { pct })}>
+      <Tooltip label={`${t("Resume download")} · ${pct}%`}>
         <button
           onClick={onResume}
-          aria-label={t("Paused at {pct}%, click to resume", { pct })}
+          aria-label={t("Resume download")}
           className="group relative flex h-12 w-12 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/10 hover:text-white"
         >
           <ProgressRing ratio={status.ratio} indeterminate={!status.totalBytes} />
