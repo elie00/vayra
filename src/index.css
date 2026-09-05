@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/mac-ux.css";
 
 @font-face {
   font-family: "WonderfulFontyCure";

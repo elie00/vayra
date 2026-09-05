@@ -345,6 +345,7 @@ export type Settings = {
     hidden: string[];
     renamed: Record<string, string>;
   };
+  macPinnedViews: string[];
   hotkeys: Record<string, string>;
   animeFavoriteGenres: number[];
   animeExcludeOrigins: string[];

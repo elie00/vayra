@@ -12,9 +12,17 @@ import {
   FONT_PAIRS,
 } from "./theme";
 import { exportThemeJson, parseThemeJson } from "./custom-themes";
+import { activeLayout } from "./theme";
 
 describe("theme decisions", () => {
   afterEach(() => vi.unstubAllGlobals());
+  it("keeps Mac navigation in the same place for every color theme", () => {
+    vi.stubGlobal("window", { __TAURI_INTERNALS__: {} });
+    vi.stubGlobal("navigator", { userAgent: "Macintosh", platform: "MacIntel" });
+    for (const preset of Object.values(THEME_PRESETS)) {
+      expect(activeLayout({ ...DEFAULT_THEME, preset: preset.id })).toBe("sidebar");
+    }
+  });
 
   it("uses one native font family across all three new palettes", () => {
     for (const preset of ["obsidian", "sage", "ivory"] as const) {

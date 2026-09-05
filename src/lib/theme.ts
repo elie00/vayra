@@ -1,4 +1,4 @@
-import { isMobileTauri } from "@/lib/platform";
+import { isMacDesktop, isMobileTauri } from "@/lib/platform";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
 import draculaPreview from "@/assets/theme-previews/dracula.png";
 import forestPreview from "@/assets/theme-previews/forest.png";
@@ -1780,10 +1780,11 @@ export function applyTheme(theme: ThemeSettings): void {
     root.style.setProperty("--font-display", pair.display);
     root.style.setProperty("--font-sans", pair.sans);
   }
-  const layout: ThemeLayout = preset?.layout ?? "sidebar";
+  const layout = activeLayout(theme);
   const cardStyle: ThemeCardStyle = preset?.cardStyle ?? "flat";
   const buttonStyle: ThemeButtonStyle = preset?.buttonStyle ?? "flat";
   root.dataset.themeLayout = layout;
+  root.dataset.macUx = isMacDesktop() ? "true" : "false";
   root.dataset.themeCard = cardStyle;
   root.dataset.themeButton = buttonStyle;
   root.dataset.themeBokeh = preset?.bokeh ? "on" : "off";
@@ -1792,7 +1793,7 @@ export function applyTheme(theme: ThemeSettings): void {
 export function activeLayout(theme: ThemeSettings): ThemeLayout {
   // On mobile Tauri every theme uses the drawer-capable "sidebar" layout, since
   // that is the only chrome adapted for a phone (hamburger + slide-over drawer).
-  if (isMobileTauri()) return "sidebar";
+  if (isMobileTauri() || isMacDesktop()) return "sidebar";
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   return preset?.layout ?? "sidebar";
 }
