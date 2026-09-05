@@ -23,7 +23,7 @@ export function MacSettingsNav({ active, onChange }: { active: SectionId; onChan
   const [query, setQuery] = useState("");
   const q = query.trim().toLocaleLowerCase();
   const matches = q ? SETTINGS_OPTIONS.filter((o) => [t(o.label), o.label, ...(o.keywords ?? [])].some((s) => s.toLocaleLowerCase().includes(q))).slice(0, 30) : [];
-  return <nav aria-label={t("Settings")} className="flex w-64 shrink-0 flex-col gap-5 border-e border-edge-soft bg-canvas px-4 pb-6 pt-8 max-sm:hidden">
+  return <nav aria-label={t("Settings")} className="flex w-64 shrink-0 flex-col gap-5 border-e border-edge-soft bg-canvas px-4 pb-6 pt-24 max-sm:hidden">
     <button type="button" onClick={() => canGoBack ? goBack() : setView("home")} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-[14px] font-medium text-ink hover:bg-elevated"><ArrowLeft size={17} />{t("Back")}</button>
     <label className="flex min-h-11 items-center gap-2 rounded-xl bg-elevated px-3 text-ink-subtle"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("Search settings")} aria-label={t("Search settings")} className="min-w-0 w-full bg-transparent text-[13px] text-ink outline-none" onKeyDown={(e) => { if (e.key === "Escape") setQuery(""); if (e.key === "Enter" && matches[0]) { const m = matches[0]; onChange(m.section, settingsAnchor(t(m.anchorTitle ?? m.label))); setQuery(""); } }} /></label>
     <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
