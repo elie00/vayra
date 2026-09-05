@@ -14,7 +14,7 @@ function formatRemaining(ms: number): string {
   return rest ? `${hours} h ${rest} min` : `${hours} h`;
 }
 
-function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; announce: (message: string) => void }) {
+export function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; announce: (message: string) => void }) {
   const t = useT();
   const { openPicker, openPlayer } = useView();
   const progress = entry.durationMs > 0 ? Math.max(0, Math.min(1, entry.positionMs / entry.durationMs)) : 0;
