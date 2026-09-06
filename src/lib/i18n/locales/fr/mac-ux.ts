@@ -1,4 +1,9 @@
 const macUx: Record<string, string> = {
+  "Fantasy": "Fantastique",
+  "Movies from {year}": "Films de {year}",
+  "{genre} movies": "Films · {genre}",
+  "{genre} shows": "Séries · {genre}",
+  "No titles found for {genre} on {service}": "Aucun titre trouvé pour {genre} sur {service}",
   "Unlimited": "Sans limite",
   "Automatic local backups": "Sauvegardes locales automatiques",
   "Keeps five previous versions of your language, playback and appearance preferences. Accounts, keys, configured links and viewing history are excluded.": "Conserve cinq versions précédentes de vos préférences de langue, de lecture et d’apparence. Comptes, clés, liens configurés et historique de visionnage sont exclus.",

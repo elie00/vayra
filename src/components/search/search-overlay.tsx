@@ -119,6 +119,9 @@ export function SearchOverlay() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
+              // IME confirmation, held keys and system shortcuts must not open
+              // a title or trigger an AI request while the user is still typing.
+              if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229 || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
               // Shift+Enter runs the AI search on what is typed, without having
               // to reach for the button below the results.
               if (e.key === "Enter" && e.shiftKey) {
@@ -127,7 +130,7 @@ export function SearchOverlay() {
                 setAiRunSignal((n) => n + 1);
                 return;
               }
-              if (e.key === "Enter" && results?.topMatch) {
+              if (e.key === "Enter" && results?.topMatch && results.query.trim() === query.trim()) {
                 e.preventDefault();
                 recordRecent(query);
                 const meta = results.topMatch.meta;
@@ -147,7 +150,10 @@ export function SearchOverlay() {
             <button
               type="button"
               aria-label={t("Clear")}
-              onClick={clear}
+              onClick={() => {
+                clear();
+                inputRef.current?.focus();
+              }}
               className="flex h-10 w-10 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
             >
               <X size={18} strokeWidth={2.2} />
@@ -187,7 +193,11 @@ export function SearchOverlay() {
                 <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
                   {t("Browse")}
                 </span>
-                <span className="text-[15px] font-semibold text-ink">{results.intent.label}</span>
+                <span className="text-[15px] font-semibold text-ink">
+                  {results.intent.kind === "year"
+                    ? t("Movies from {year}", { year: results.intent.year })
+                    : t(results.intent.mediaType === "movie" ? "{genre} movies" : "{genre} shows", { genre: t(results.intent.genre) })}
+                </span>
               </span>
               <CornerDownLeft size={15} className="ms-auto text-ink-subtle" />
             </button>
