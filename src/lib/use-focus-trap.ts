@@ -36,10 +36,13 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
       const first = els[0];
       const last = els[els.length - 1];
       const current = document.activeElement;
-      if (e.shiftKey && (current === first || !node.contains(current))) {
+      // A busy dialog focuses its container while all actions are disabled.
+      // When they become enabled again, both directions must re-enter the cycle.
+      const outsideCycle = !els.includes(current as HTMLElement);
+      if (e.shiftKey && (current === first || outsideCycle)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && current === last) {
+      } else if (!e.shiftKey && (current === last || outsideCycle)) {
         e.preventDefault();
         first.focus();
       }

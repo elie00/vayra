@@ -83,6 +83,11 @@ it("keeps a failed deletion actionable in the dialog and does not dismiss while 
   await act(async () => finish(false));
   expect(document.querySelector('[role="alert"]')?.textContent).toContain("Check folder permissions");
   expect(confirm().disabled).toBe(false);
+  expect(document.activeElement).toBe(document.querySelector('[role="dialog"]'));
+  await key("Tab", true);
+  expect(document.activeElement).toBe(confirm());
+  await key("Tab");
+  expect(document.activeElement?.textContent).toBe("Cancel");
   await click(confirm());
   expect(mocks.remove).toHaveBeenCalledTimes(2);
   expect(document.querySelector('[role="dialog"]')).toBeNull();
