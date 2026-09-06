@@ -2,6 +2,7 @@
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import type { Meta } from "@/lib/cinemeta";
 
 const mocks = vi.hoisted(() => ({ invoke: vi.fn(), save: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({
@@ -22,7 +23,7 @@ type Request = {
 };
 const hash = "0123456789abcdef0123456789abcdef01234567";
 const url = `http://127.0.0.1:11470/stream/${hash}/12`;
-const meta = { id: "retention-film", name: "Retention film", type: "movie" };
+const meta: Meta = { id: "retention-film", name: "Retention film", type: "movie" };
 let store: typeof import("@/lib/download/downloads-store");
 let engine: typeof import("@/lib/torrent/local-engine");
 let useVideoDownload: typeof import("./use-video-download").useVideoDownload;
