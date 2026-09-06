@@ -200,7 +200,7 @@ function RowBtn({
       disabled={disabled}
       aria-label={label}
       title={label}
-      onClick={onClick}
+      onClick={(event) => { event.currentTarget.focus(); onClick(); }}
       className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle opacity-0 transition-[color,background-color,opacity] hover:bg-canvas/60 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-40"
     >
       {children}

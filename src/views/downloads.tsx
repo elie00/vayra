@@ -322,7 +322,7 @@ function RowBtn({ label, onClick, children, prominent = false, disabled = false 
     <button
       type="button"
       disabled={disabled}
-      onClick={onClick}
+      onClick={(event) => { event.currentTarget.focus(); onClick(); }}
       aria-label={label}
       title={label}
       className={`flex min-h-11 items-center justify-center gap-2 rounded-lg text-ink-muted transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${prominent ? "bg-raised px-3 text-[12px] font-medium" : "w-11"}`}

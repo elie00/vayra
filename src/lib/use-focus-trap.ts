@@ -15,6 +15,7 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
     const node = ref.current;
     if (!node || typeof document === "undefined") return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const fallbackFocus = returnFocusRef?.current;
 
     const focusable = () =>
       Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
@@ -48,7 +49,7 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
     return () => {
       node.removeEventListener("keydown", onKeyDown);
       if (previouslyFocused?.isConnected) previouslyFocused.focus?.();
-      else returnFocusRef?.current?.focus();
+      else if (fallbackFocus?.isConnected) fallbackFocus.focus();
     };
   }, [ref, active, returnFocusRef]);
 }
