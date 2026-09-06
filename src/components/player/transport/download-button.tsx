@@ -1,4 +1,4 @@
-import { CircleCheck, Download, Pause, Play, TriangleAlert } from "lucide-react";
+import { CircleCheck, Clock3, Download, Pause, Play, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { useT } from "@/lib/i18n";
@@ -23,13 +23,15 @@ export function DownloadButton({
   onReset,
 }: Props) {
   const t = useT();
-  useEffect(() => {
-    if (status.kind !== "done") return;
-    const timer = setTimeout(onReset, 12000);
-    return () => clearTimeout(timer);
-  }, [status.kind, onReset]);
-
   const speed = useDownloadSpeed(status);
+
+  if (status.kind === "queued") {
+    return (
+      <BigButton onClick={onPause} ariaLabel={t("Pause download")} tooltip={`${t("Queued")} · ${t("click to pause")}`}>
+        <Clock3 size={22} strokeWidth={1.9} />
+      </BigButton>
+    );
+  }
 
   if (status.kind === "preparing") {
     return (
@@ -102,7 +104,7 @@ export function DownloadButton({
     return (
       <BigButton
         onClick={onReset}
-        ariaLabel={t("Download failed")}
+        ariaLabel={t("Retry download")}
         tooltip={t("Failed: {message}", { message: status.message })}
       >
         <TriangleAlert size={22} strokeWidth={1.9} className="text-red-300" />

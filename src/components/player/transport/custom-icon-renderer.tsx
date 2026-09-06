@@ -158,7 +158,7 @@ export function renderCustomIconControl(
     case "download": {
       const kind = ctx.download?.kind;
       const action =
-        kind === "downloading"
+        kind === "downloading" || kind === "queued"
           ? ctx.onDownloadPause
           : kind === "paused"
             ? ctx.onDownloadResume
@@ -168,14 +168,14 @@ export function renderCustomIconControl(
                 ? ctx.onDownloadReset
                 : ctx.onDownloadStart;
       const label =
-        kind === "downloading"
+        kind === "downloading" || kind === "queued"
           ? t("Pause download")
           : kind === "paused"
             ? t("Resume download")
             : kind === "done"
               ? t("Show downloaded file")
               : kind === "error"
-                ? t("Download failed")
+                ? t("Retry download")
                 : t("Download");
       if (ctx.mid || ctx.isLiveChannel || !action) return null;
       return (
@@ -289,7 +289,7 @@ export function renderCustomIconControlStremio(
     case "download": {
       const kind = ctx.download?.kind;
       const action =
-        kind === "downloading"
+        kind === "downloading" || kind === "queued"
           ? ctx.onDownloadPause
           : kind === "paused"
             ? ctx.onDownloadResume
@@ -299,14 +299,14 @@ export function renderCustomIconControlStremio(
                 ? ctx.onDownloadReset
                 : ctx.onDownloadStart;
       const label =
-        kind === "downloading"
+        kind === "downloading" || kind === "queued"
           ? t("Pause download")
           : kind === "paused"
             ? t("Resume download")
             : kind === "done"
               ? t("Show downloaded file")
               : kind === "error"
-                ? t("Download failed")
+                ? t("Retry download")
                 : t("Download");
       if (ctx.isLiveChannel || !action) return null;
       return (
