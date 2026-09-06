@@ -1,5 +1,5 @@
 import { ArrowUpDown, Settings2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import {
@@ -12,6 +12,7 @@ import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, subtitleFromManifest } from "./addons-utils";
 import { AddonDiagnosticButton } from "./diagnostic-button";
 import { isMacDesktop } from "@/lib/platform";
+import { UninstallAddonButton } from "./uninstall-addon-button";
 
 export function InstalledPane({
   installed,
@@ -29,6 +30,7 @@ export function InstalledPane({
   onReorder?: () => void;
 }) {
   const t = useT();
+  const paneRef = useRef<HTMLDivElement>(null);
   const q = search?.trim().toLowerCase() ?? "";
   const filtered = q
     ? installed.filter((r) => {
@@ -40,7 +42,7 @@ export function InstalledPane({
     : installed;
   if (installed.length === 0) {
     return (
-      <div className="rounded-2xl border border-edge-soft bg-elevated/30 p-12 text-center">
+      <div ref={paneRef} tabIndex={-1} className="rounded-2xl border border-edge-soft bg-elevated/30 p-12 text-center">
         <h3 className="font-display text-[22px] font-medium text-ink">{t("No addons installed yet")}</h3>
         <p className="mx-auto mt-2 max-w-md text-[13.5px] text-ink-muted">
           {t("Head to Discover. Cinemeta and OpenSubtitles cover the basics; Torrentio + a debrid key cover almost everything else.")}
@@ -50,7 +52,7 @@ export function InstalledPane({
   }
   if (filtered.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 p-10 text-center">
+      <div ref={paneRef} tabIndex={-1} className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 p-10 text-center">
         <p className="font-display text-[16px] font-medium text-ink">{t("No installed addon matches that.")}</p>
         <p className="mt-1.5 text-[12.5px] text-ink-subtle">
           {t("Clear the search to see all {n} installed.", { n: installed.length })}
@@ -59,7 +61,7 @@ export function InstalledPane({
     );
   }
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={paneRef} tabIndex={-1} aria-label={t("Installed")} className="flex flex-col gap-3">
       {onReorder && (
         <div className="flex justify-end">
           <button
@@ -80,6 +82,7 @@ export function InstalledPane({
             onOpen={onOpen}
             onUninstall={onUninstall}
             onManage={onManage}
+            returnFocusRef={paneRef}
           />
         ))}
       </div>
@@ -92,29 +95,19 @@ function InstalledRow({
   onOpen,
   onUninstall,
   onManage,
+  returnFocusRef,
 }: {
   resolved: ResolvedAddon;
   onOpen: (id: string) => void;
   onUninstall: (r: ResolvedAddon) => Promise<void>;
   onManage?: (r: ResolvedAddon) => void;
+  returnFocusRef: RefObject<HTMLElement | null>;
 }) {
   const t = useT();
   const r = resolved;
-  const [busy, setBusy] = useState(false);
   const [enabled, setEnabled] = useState(() => isAddonEnabled(r.transportUrl));
   const isConfigurable = manifestRequiresConfiguration(r.manifest);
   const transportUrl = r.transportUrl;
-
-  const handleUninstall = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (busy) return;
-    setBusy(true);
-    try {
-      await onUninstall(r);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -127,17 +120,7 @@ function InstalledRow({
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => !busy && onOpen(idOf(r))}
-      onKeyDown={(e) => e.target === e.currentTarget && !busy && (e.key === "Enter" || e.key === " ") && onOpen(idOf(r))}
-      className={`flex items-center gap-3.5 rounded-xl border bg-elevated px-4 py-3 text-start transition-all ${
-        busy
-          ? "border-edge-soft cursor-wait opacity-60"
-          : "border-edge-soft cursor-pointer hover:border-edge hover:bg-raised"
-      }`}
-    >
+    <div className="flex flex-wrap items-center gap-3.5 rounded-xl border border-edge-soft bg-elevated px-4 py-3 text-start">
       <div className={enabled ? "" : "opacity-45 transition-opacity"}>
         <AddonLogo
           addonId={idOf(r)}
@@ -147,14 +130,13 @@ function InstalledRow({
         />
       </div>
       <div className={`flex min-w-0 flex-1 flex-col gap-0.5 ${enabled ? "" : "opacity-55"}`}>
-        <span className="truncate text-[14px] font-medium text-ink">{nameOf(r)}</span>
+        <button type="button" onClick={() => onOpen(idOf(r))} className="truncate text-start text-[14px] font-medium text-ink hover:underline">{nameOf(r)}</button>
         <span className="truncate text-[11.5px] text-ink-subtle">
           {enabled ? subtitleFromManifest(r) : t("Off · catalogs and streams hidden")}
         </span>
         {isMacDesktop() && transportUrl && <AddonDiagnosticButton url={transportUrl} />}
       </div>
-      {!busy && (
-        <HoverTooltip
+      <HoverTooltip
           side="top"
           align="center"
           className="shrink-0"
@@ -176,9 +158,8 @@ function InstalledRow({
               }`}
             />
           </button>
-        </HoverTooltip>
-      )}
-      {isConfigurable && transportUrl && onManage && !busy && (
+      </HoverTooltip>
+      {isConfigurable && transportUrl && onManage && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -191,32 +172,7 @@ function InstalledRow({
           {t("Manage")}
         </button>
       )}
-      <button
-        onClick={handleUninstall}
-        disabled={busy}
-        className={`group/pill flex shrink-0 items-center gap-1 rounded-full px-3.5 py-1.5 text-[12px] font-semibold ring-1 transition-colors ${
-          busy
-            ? "bg-danger/15 text-danger ring-danger/30"
-            : "bg-elevated/70 text-ink ring-edge-soft hover:bg-danger/15 hover:text-danger hover:ring-danger/30"
-        }`}
-      >
-        {busy ? (
-          <>
-            <span>{t("Uninstalling")}</span>
-            <DotsAnim />
-          </>
-        ) : (
-          t("Installed")
-        )}
-      </button>
+      <UninstallAddonButton name={nameOf(r)} onUninstall={() => onUninstall(r)} returnFocusRef={returnFocusRef} />
     </div>
-  );
-}
-
-function DotsAnim() {
-  return (
-    <span className="inline-flex w-3 items-center">
-      <span className="dots-anim text-[12px] leading-none">...</span>
-    </span>
   );
 }

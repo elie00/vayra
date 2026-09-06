@@ -41,23 +41,25 @@ function readAuthKey(): string | null {
   return readActiveStremioAuthKey();
 }
 
+export type StremioSyncStatus = "not-connected" | "synced" | "failed";
+
 async function pushToStremio(
   addon: Addon,
   mode: "install" | "uninstall",
   replaceIds: string[] = [],
-): Promise<boolean> {
+): Promise<StremioSyncStatus> {
   const authKey = readAuthKey();
-  if (!authKey) return false;
+  if (!authKey) return "not-connected";
   try {
-    const current = await userAddons(authKey);
+    const current = await userAddons(authKey, { strict: true });
     const idsToReplace = new Set([addon.manifest.id, ...replaceIds]);
     const filtered = current.filter(
       (a) => a.transportUrl !== addon.transportUrl && !idsToReplace.has(a.manifest.id),
     );
     const next = mode === "install" ? [...filtered, addon] : filtered;
-    return await setUserAddons(authKey, next);
+    return await setUserAddons(authKey, next) ? "synced" : "failed";
   } catch {
-    return false;
+    return "failed";
   }
 }
 
@@ -143,6 +145,7 @@ function saveInstalled(list: InstalledAddon[]) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stripped));
       } catch (e2) {
         console.warn("[addons] localStorage still full after stripping manifests", e2);
+        throw e2;
       }
     } else {
       throw e;
@@ -274,6 +277,7 @@ export async function fetchManifestAt(transportUrl: string): Promise<Addon["mani
 export type InstallResult = {
   addon: Addon;
   syncedToStremio: boolean;
+  syncStatus: StremioSyncStatus;
   replaced: boolean;
 };
 
@@ -302,15 +306,27 @@ export async function installFromUrl(
   next.push({ id, transportUrl: parsed.url, installedAt: Date.now(), manifest });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl: parsed.url };
-  const syncedToStremio = await pushToStremio(
+  const syncStatus = await pushToStremio(
     addon,
     "install",
     replaceId ? [replaceId] : [],
   );
-  return { addon, syncedToStremio, replaced: replacedById || replacedByOld };
+  return { addon, syncStatus, syncedToStremio: syncStatus === "synced", replaced: replacedById || replacedByOld };
 }
 
 export async function uninstallAddon(id: string, transportUrl?: string): Promise<void> {
+  // A refused remote change must remain retryable, without claiming a local
+  // uninstall succeeded or resurrecting the addon on the next catalog refresh.
+  const authKey = readAuthKey();
+  if (authKey) {
+    const current = await userAddons(authKey, { strict: true });
+    const filtered = transportUrl
+      ? current.filter((a) => a.transportUrl !== transportUrl)
+      : current.filter((a) => a.manifest.id !== id);
+    if (filtered.length !== current.length && !await setUserAddons(authKey, filtered)) {
+      throw new Error("Stremio addon removal failed");
+    }
+  }
   const removed = transportUrl
     ? loadInstalled().filter((a) => a.transportUrl === transportUrl)
     : loadInstalled().filter((a) => a.id === id);
@@ -323,15 +339,6 @@ export async function uninstallAddon(id: string, transportUrl?: string): Promise
     let touched = false;
     for (const a of removed) if (disabled.delete(a.transportUrl)) touched = true;
     if (touched) saveDisabledAddons(disabled);
-  }
-  const authKey = readAuthKey();
-  if (!authKey) return;
-  const current = await userAddons(authKey).catch(() => [] as Addon[]);
-  const filtered = transportUrl
-    ? current.filter((a) => a.transportUrl !== transportUrl)
-    : current.filter((a) => a.manifest.id !== id);
-  if (filtered.length !== current.length) {
-    await setUserAddons(authKey, filtered).catch(() => {});
   }
 }
 

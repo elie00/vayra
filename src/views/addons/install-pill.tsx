@@ -1,9 +1,10 @@
-import { Check, Loader2, Plus, Settings2, X } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Plus, Settings2 } from "lucide-react";
+import { useState, type RefObject } from "react";
 import { manifestRequiresConfiguration } from "@/lib/addon-store";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
-import { withMinDuration } from "./addons-utils";
+import { nameOf, withMinDuration } from "./addons-utils";
+import { UninstallAddonButton } from "./uninstall-addon-button";
 
 const MIN_INSTALL_FEEDBACK_MS = 650;
 
@@ -12,11 +13,13 @@ export function InstallPill({
   installed,
   onInstall,
   onUninstall,
+  returnFocusRef,
 }: {
   resolved: ResolvedAddon;
   installed: boolean;
   onInstall: () => void | Promise<void>;
   onUninstall: () => void | Promise<void>;
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
@@ -27,17 +30,6 @@ export function InstallPill({
     setBusy(true);
     try {
       await withMinDuration(onInstall(), MIN_INSTALL_FEEDBACK_MS);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const runUninstall = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (busy) return;
-    setBusy(true);
-    try {
-      await withMinDuration(onUninstall(), 450);
     } finally {
       setBusy(false);
     }
@@ -57,15 +49,7 @@ export function InstallPill({
 
   if (installed) {
     return (
-      <button
-        onClick={runUninstall}
-        className="group/pill flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-elevated/70 px-5 text-[13.5px] font-semibold text-ink ring-1 ring-edge-soft transition-all duration-150 ease-out hover:bg-danger/15 hover:text-danger hover:ring-danger/30 active:scale-[0.96]"
-      >
-        <Check size={14} strokeWidth={2.6} className="block text-accent group-hover/pill:hidden" />
-        <X size={14} strokeWidth={2.6} className="hidden group-hover/pill:block" />
-        <span className="block group-hover/pill:hidden">{t("Installed")}</span>
-        <span className="hidden group-hover/pill:block">{t("Remove")}</span>
-      </button>
+      <UninstallAddonButton name={nameOf(resolved)} onUninstall={onUninstall} returnFocusRef={returnFocusRef} />
     );
   }
   const needsConfigure = manifestRequiresConfiguration(resolved.manifest);

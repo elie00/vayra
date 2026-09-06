@@ -1,5 +1,5 @@
-import { Check, Download, ExternalLink, Key, Loader2, Search, Trash2, X, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Download, ExternalLink, Key, Loader2, Search, X, Zap } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { AddonLogo } from "@/components/addon-logo";
 import { Flag } from "@/components/flag";
 import { ALL_LANGUAGE_NAMES } from "@/lib/subtitles/language";
@@ -15,6 +15,7 @@ import { openUrl } from "@/lib/window";
 import { useSettings, type StreamingService } from "@/lib/settings";
 import { useT, useUiLanguage } from "@/lib/i18n";
 import { localizedLanguageName } from "@/lib/i18n/language-label";
+import { UninstallAddonButton } from "@/views/addons/uninstall-addon-button";
 
 export function pickDebridForAddon(s: ReturnType<typeof useSettings>["settings"]):
   | { service: string; key: string; label: string }
@@ -46,9 +47,11 @@ export function RecommendedAddonCard({
 }) {
   const t = useT();
   const [installed, setInstalled] = useState(() => isInstalled(id));
+  const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debrid = pickDebridForAddon(settings);
+  const installedTransportUrl = transportUrlFor(id);
 
   useEffect(() => {
     setInstalled(isInstalled(id));
@@ -81,17 +84,18 @@ export function RecommendedAddonCard({
     setBusy(true);
     setError(null);
     try {
-      await uninstallAddon(id);
+      await uninstallAddon(id, installedTransportUrl ?? undefined);
       setInstalled(false);
     } catch (cause: unknown) {
       setError(addonActionError(cause, t("Couldn't remove. Try again.")));
+      throw cause;
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5">
+    <div ref={cardRef} tabIndex={-1} aria-label={title} className="flex items-center gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5">
       <AddonLogo addonId={id} addonName={title} size="lg" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex items-center gap-2">
@@ -112,14 +116,7 @@ export function RecommendedAddonCard({
         )}
       </div>
       {installed ? (
-        <button
-          onClick={onUninstall}
-          disabled={busy}
-          className="flex h-10 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[13px] font-medium text-ink-muted transition-colors hover:border-danger/60 hover:bg-danger/10 hover:text-danger"
-        >
-          <Trash2 size={13} strokeWidth={2.2} />
-          {t("Remove")}
-        </button>
+        <UninstallAddonButton name={title} onUninstall={onUninstall} showStatus={false} returnFocusRef={cardRef} />
       ) : (
         <button
           onClick={onInstall}
@@ -155,6 +152,7 @@ export function ManualAddonCard({
   const t = useT();
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const localId = `harbor-manual-${slug}`;
+  const cardRef = useRef<HTMLDivElement>(null);
   const [installedId, setInstalledId] = useState<string | null>(() => {
     const fromAlias = transportUrlFor(localId) ? localId : null;
     return fromAlias;
@@ -180,13 +178,14 @@ export function ManualAddonCard({
     }
   };
 
-  const onUninstall = () => {
-    void uninstallAddon(localId);
+  const onUninstall = async () => {
+    if (!installedId) return;
+    await uninstallAddon(installedId, transportUrlFor(installedId) ?? undefined);
     setInstalledId(null);
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5">
+    <div ref={cardRef} tabIndex={-1} aria-label={title} className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5">
       <div className="flex items-start gap-4">
         <AddonLogo addonId={localId} addonName={title} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -210,13 +209,7 @@ export function ManualAddonCard({
             {t("Configure")}
           </button>
           {installedId && (
-            <button
-              onClick={onUninstall}
-              className="flex h-10 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[13px] font-medium text-ink-muted transition-colors hover:border-danger/60 hover:bg-danger/10 hover:text-danger"
-            >
-              <Trash2 size={13} strokeWidth={2.2} />
-              {t("Remove")}
-            </button>
+            <UninstallAddonButton name={title} onUninstall={onUninstall} showStatus={false} returnFocusRef={cardRef} />
           )}
         </div>
       </div>
