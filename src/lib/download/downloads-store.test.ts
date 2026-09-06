@@ -472,20 +472,43 @@ describe("removing a download", () => {
     expect(downloadSnapshot().find((item) => item.id === afterRemoval)?.path).toBe("/dl/video.mkv");
   });
 
-  it("survives a delete the filesystem refuses", async () => {
+  it("keeps a refused deletion visible, reserved and recoverable until retry succeeds", async () => {
     mocks.removeDownloadFile.mockRejectedValue(new Error("permission denied"));
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const id = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
-    expect(() => removeDownload(id)).not.toThrow();
+    lastProgressCallback()({ receivedBytes: 1024, totalBytes: 2048, ratio: 0.5 });
+    const removal = removeDownload(id);
+    expect(removeDownload(id)).toBe(removal);
+    expect(downloadSnapshot().find((d) => d.id === id)?.status).toBe("removing");
+    expect(await removal).toBe(false);
 
-    const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{ id: string }>;
-    expect(saved.find((d) => d.id === id)).toBeUndefined();
+    const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]");
+    expect(saved.find((d: { id: string }) => d.id === id)).toMatchObject({ status: "removal-error", receivedBytes: 1024, error: "permission denied" });
     await vi.advanceTimersByTimeAsync(0);
-    expect(warn).toHaveBeenCalledOnce();
+    resumeDownload(id);
+    cancelDownload(id);
+    expect(downloadSnapshot().find((d) => d.id === id)?.status).toBe("removal-error");
+    const other = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
+    expect(downloadSnapshot().find((item) => item.id === other)?.path).toBe("/dl/Show (2).mkv");
     mocks.removeDownloadFile.mockResolvedValue(undefined);
-    const retry = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
-    expect(downloadSnapshot().find((item) => item.id === retry)?.path).toBe("/dl/Show.mkv");
-    warn.mockRestore();
+    expect(await removeDownload(id)).toBe(true);
+    expect(downloadSnapshot().some((d) => d.id === id)).toBe(false);
+    const afterRemoval = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
+    expect(downloadSnapshot().find((item) => item.id === afterRemoval)?.path).toBe("/dl/Show.mkv");
+  });
+
+  it("does not free storage budget for a file that could not be removed", async () => {
+    configureDownloads({ quotaGiB: 1 });
+    const id = await enqueueDownload({ meta, url: "https://cdn/full.mkv" });
+    lastProgressCallback()({ receivedBytes: 1024 ** 3, totalBytes: 1024 ** 3, ratio: 1 });
+    mocks.removeDownloadFile.mockRejectedValueOnce(new Error("permission denied"));
+    expect(await removeDownload(id)).toBe(false);
+    await vi.advanceTimersByTimeAsync(0);
+    const waitingId = await enqueueDownload({ meta, url: "https://cdn/next.mkv" });
+    expect(mocks.startDownload).toHaveBeenCalledTimes(1);
+    expect(downloadSnapshot().find((d) => d.id === waitingId)?.status).toBe("error");
+    expect(await removeDownload(id)).toBe(true);
+    resumeDownload(waitingId);
+    expect(mocks.startDownload).toHaveBeenCalledTimes(2);
   });
 });

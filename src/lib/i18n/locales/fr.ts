@@ -26,6 +26,7 @@ import desktop from "./fr/desktop";
 import appearance from "./fr/appearance";
 import settingsNavigation from "./fr/settings-navigation";
 import macUx from "./fr/mac-ux";
+import { downloadSafety } from "./fr/download-safety";
 
 const fr: Record<string, string> = {
   ...ciraFr,
@@ -56,6 +57,7 @@ const fr: Record<string, string> = {
   ...appearance,
   ...settingsNavigation,
   ...macUx,
+  ...downloadSafety,
   "nav.catalogs": "Catalogues",
   "nav.kids": "Enfants",
   "AniList Comments": "Commentaires AniList",

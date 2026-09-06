@@ -48,7 +48,10 @@ beforeEach(() => {
 });
 afterEach(async () => {
   await act(async () => root.unmount());
-  for (const item of downloadSnapshot()) removeDownload(item.id);
+  const removals = downloadSnapshot().map((item) => removeDownload(item.id));
+  // Removal now waits for the native writer to stop before dropping its entry.
+  for (const request of requests()) request.onEvent.onmessage({ kind: "canceled", received: 0 });
+  await Promise.all(removals);
   localStorage.clear();
   vi.unstubAllGlobals();
 });

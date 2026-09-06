@@ -9,6 +9,8 @@ export function downloadStatusLabel(status: DownloadItem["status"], t: T): strin
     case "interrupted": case "error": return t("Needs resuming");
     case "done": return t("Ready to watch");
     case "canceled": return t("Canceled");
+    case "removing": return t("Deleting file…");
+    case "removal-error": return t("File could not be deleted");
   }
 }
 export function downloadRecoveryHint(error: string | null, t: T): string {

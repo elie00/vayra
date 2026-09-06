@@ -34,6 +34,8 @@ export type DownloadItem = {
     | "done"
     | "error"
     | "canceled"
+    | "removing"
+    | "removal-error"
     | "interrupted";
   receivedBytes: number;
   totalBytes: number | null;
@@ -100,6 +102,7 @@ const waitingHeaders = new Map<string, Record<string, string> | undefined>();
 // current session so resuming the same protected source still works.
 const requestHeaders = new Map<string, Record<string, string> | undefined>();
 const resumeWhenSettled = new Set<string>();
+const removals = new Map<string, Promise<boolean>>();
 
 let snapshot: DownloadItem[] = [];
 
@@ -146,7 +149,7 @@ function hydrate() {
     if (!Array.isArray(arr)) return;
     for (const d of arr) {
       if (!d || typeof d.id !== "string" || typeof d.path !== "string") continue;
-      const status = d.status === "downloading" || d.status === "queued" ? "interrupted" : d.status;
+      const status = d.status === "removing" ? "removal-error" : d.status === "downloading" || d.status === "queued" ? "interrupted" : d.status;
       items.set(d.id, { ...d, status, bytesPerSec: 0 });
     }
     snapshot = [...items.values()].sort((a, b) => b.startedAt - a.startedAt);
@@ -355,10 +358,12 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
   handles.set(id, handle);
   handle.promise
     .then(() => {
+      if (items.get(id)?.status === "removing") return;
       patch(id, { status: "done", ratio: 1, bytesPerSec: 0 });
       requestHeaders.delete(id);
     })
     .catch((e: unknown) => {
+      if (items.get(id)?.status === "removing") return;
       if (e instanceof Error && e.name === "AbortError") {
         if (items.get(id)?.status !== "paused") {
           patch(id, { status: "canceled", bytesPerSec: 0 });
@@ -419,6 +424,7 @@ function dropFromQueue(id: string): void {
 }
 
 export function cancelDownload(id: string): void {
+  if (["removing", "removal-error"].includes(items.get(id)?.status ?? "")) return;
   const handle = handles.get(id);
   if (handle) {
     resumeWhenSettled.delete(id);
@@ -455,33 +461,44 @@ export function resumeDownload(id: string): void {
   startOrQueue(id);
 }
 
-export function removeDownload(id: string): void {
-  reserved.delete(id);
+export function removeDownload(id: string): Promise<boolean> {
+  const pending = removals.get(id);
+  if (pending) return pending;
   const item = items.get(id);
+  if (!item) return Promise.resolve(true);
   const handle = handles.get(id);
   // Retain ownership while the native task stops and deletion is in flight.
   // Otherwise a new enqueue could take the name and be deleted by this one.
-  if (item) for (const path of downloadPaths(item.path)) reservedPaths.add(path);
+  for (const path of downloadPaths(item.path)) reservedPaths.add(path);
   resumeWhenSettled.delete(id);
   requestHeaders.delete(id);
+  patch(id, { status: "removing", error: null, bytesPerSec: 0 });
   handle?.abort();
-  handles.delete(id);
   speed.delete(id);
   dropFromQueue(id);
-  if (items.delete(id)) rebuild();
-  if (item) {
+  const removal = (async () => {
     // Cancellation only sets a native flag; its event arrives after the writer
     // has stopped. Never unlink a partial while that old writer can recreate it.
-    const removal = handle
-      ? handle.promise.catch(() => { /* Expected cancellation/error: writer is stopped, so deletion is now safe. */ }).then(() => removeDownloadFile(item.path))
-      : removeDownloadFile(item.path);
-    void removal.catch((e: unknown) => {
-      console.warn(`[downloads] could not delete ${item.path}`, e);
-    }).finally(() => {
+    if (handle) await handle.promise.catch(() => { /* Writer stopped after cancellation or failure. */ });
+    try {
+      await removeDownloadFile(item.path);
+      items.delete(id);
+      rebuild();
+      return true;
+    } catch (error) {
+      // Keep the bytes in the quota and the item visible until native removal
+      // succeeds. A partially deleted file must not become playable/resumable.
+      patch(id, { status: "removal-error", error: error instanceof Error ? error.message : "File deletion failed" });
+      return false;
+    } finally {
+      removals.delete(id);
       releasePath(item.path);
       void releaseTorrentForDownload(id);
-    });
-  }
+      pump();
+    }
+  })();
+  removals.set(id, removal);
+  return removal;
 }
 
 export async function revealDownload(id: string): Promise<void> {

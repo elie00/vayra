@@ -10,6 +10,7 @@ import {
 import { useSettings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
 import { pathSeparator } from "@/lib/platform";
+import { t } from "@/lib/i18n";
 
 type Progress = { ratio: number; receivedBytes: number; totalBytes: number | null };
 export type DownloadStatus =
@@ -44,6 +45,8 @@ function statusFor(item: DownloadItem): DownloadStatus {
     case "done": return { kind: "done", path: item.path };
     case "error": return { kind: "error", message: item.error ?? "Download failed" };
     case "canceled": return { kind: "idle" };
+    case "removing": return { kind: "preparing" };
+    case "removal-error": return { kind: "error", message: t("File deletion needs attention. Open Downloads to retry.") };
   }
 }
 

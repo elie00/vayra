@@ -1,6 +1,7 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Check, Download as DownloadIcon, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
+import { DeleteDownloadDialog } from "@/components/delete-download-dialog";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { getUiLanguage, t, useT } from "@/lib/i18n";
@@ -11,7 +12,6 @@ import {
   cancelDownload,
   pauseDownload,
   prioritizeDownload,
-  removeDownload,
   resumeDownload,
   revealDownload,
   useDownloads,
@@ -48,7 +48,7 @@ type DownloadGroup =
 function statusRank(s: DownloadItem["status"]): number {
   if (s === "downloading") return 0;
   if (s === "queued" || s === "paused") return 1;
-  return s === "error" || s === "interrupted" ? 2 : s === "done" ? 3 : 4;
+  return s === "error" || s === "interrupted" || s === "removal-error" || s === "removing" ? 2 : s === "done" ? 3 : 4;
 }
 
 function buildGroups(items: DownloadItem[]): DownloadGroup[] {
@@ -84,6 +84,8 @@ function buildGroups(items: DownloadItem[]): DownloadGroup[] {
 export function DownloadsView() {
   const t = useT();
   const items = useDownloads();
+  const [pendingRemoval, setPendingRemoval] = useState<DownloadItem | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const [filter, setFilter] = useState<"all" | "active" | "ready" | "attention">("all");
   const active = items.filter((d) => d.status === "downloading").length;
   const queued = items.filter((d) => d.status === "queued").length;
@@ -92,13 +94,13 @@ export function DownloadsView() {
     (sum, d) => (d.status === "done" ? sum + (d.totalBytes ?? d.receivedBytes) : sum),
     0,
   );
-  const groups = useMemo(() => buildGroups(items.filter((d) => filter === "all" || (filter === "ready" ? d.status === "done" : filter === "active" ? ["downloading", "queued"].includes(d.status) : ["paused", "error", "interrupted"].includes(d.status)))), [items, filter]);
+  const groups = useMemo(() => buildGroups(items.filter((d) => filter === "all" || (filter === "ready" ? d.status === "done" : filter === "active" ? ["downloading", "queued", "removing"].includes(d.status) : ["paused", "error", "interrupted", "removal-error"].includes(d.status)))), [items, filter]);
 
   return (
     <main className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-8">
-          <h1 className="text-[28px] font-semibold tracking-tight text-ink">{t("Downloads")}</h1>
+          <h1 ref={headingRef} tabIndex={-1} className="text-[28px] font-semibold tracking-tight text-ink">{t("Downloads")}</h1>
           <p className="mt-1.5 text-[13.5px] text-ink-subtle">
             {items.length === 0
               ? t("Saved movies and episodes for offline watching")
@@ -115,7 +117,7 @@ export function DownloadsView() {
         </header>
 
         <DownloadDirBar />
-        {items.length > 0 && <div aria-label={t("Filter downloads")} className="mb-5 flex flex-wrap gap-2">{(["all", "active", "ready", "attention"] as const).map((id) => <button type="button" key={id} aria-pressed={filter === id} onClick={() => setFilter(id)} className={`mac-secondary-button ${filter === id ? "bg-raised text-ink" : "text-ink-muted"}`}>{t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs resuming")}</button>)}</div>}
+        {items.length > 0 && <div aria-label={t("Filter downloads")} className="mb-5 flex flex-wrap gap-2">{(["all", "active", "ready", "attention"] as const).map((id) => <button type="button" key={id} aria-pressed={filter === id} onClick={() => setFilter(id)} className={`mac-secondary-button ${filter === id ? "bg-raised text-ink" : "text-ink-muted"}`}>{t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs attention")}</button>)}</div>}
         {items.length > 0 && groups.length === 0 && <p role="status" className="py-8 text-[14px] text-ink-muted">{t("No downloads in this category")}</p>}
 
         {items.length === 0 ? (
@@ -125,15 +127,16 @@ export function DownloadsView() {
             {groups.map((g) =>
               g.kind === "movie" ? (
                 <ul key={g.item.id} className="contents">
-                  <DownloadRow d={g.item} />
+                  <DownloadRow d={g.item} onRemove={setPendingRemoval} />
                 </ul>
               ) : (
-                <ShowGroup key={g.metaId} group={g} />
+                <ShowGroup key={g.metaId} group={g} onRemove={setPendingRemoval} />
               ),
             )}
           </div>
         )}
       </div>
+      {pendingRemoval && <DeleteDownloadDialog item={pendingRemoval} returnFocusRef={headingRef} onClose={() => setPendingRemoval(null)} />}
     </main>
   );
 }
@@ -157,7 +160,7 @@ function EmptyState() {
   );
 }
 
-function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> }) {
+function ShowGroup({ group, onRemove }: { group: Extract<DownloadGroup, { kind: "show" }>; onRemove: (item: DownloadItem) => void }) {
   const t = useT();
   const { settings } = useSettings();
   const poster = usePosterChain(settings.rpdbKey, group.metaId, group.poster ?? undefined, "series");
@@ -188,14 +191,14 @@ function ShowGroup({ group }: { group: Extract<DownloadGroup, { kind: "show" }> 
       </div>
       <ul className="flex flex-col gap-1.5 border-t border-edge-soft/50 px-2 pb-2 pt-2">
         {episodes.map((d) => (
-          <DownloadRow key={d.id} d={d} compact />
+          <DownloadRow key={d.id} d={d} compact onRemove={onRemove} />
         ))}
       </ul>
     </div>
   );
 }
 
-function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolean }) {
+function DownloadRow({ d, compact = false, onRemove }: { d: DownloadItem; compact?: boolean; onRemove: (item: DownloadItem) => void }) {
   const t = useT();
   const { openPlayer } = useView();
   const [localError, setLocalError] = useState(false);
@@ -227,6 +230,7 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
         <span className="text-[12px] font-medium text-ink-muted">{downloadStatusLabel(d.status, t)}</span>
         {localError && <p role="alert" className="text-[12px] text-danger">{t("This file is missing or incomplete. Download it again from the title page.")}</p>}
         {(d.status === "error" || d.status === "interrupted") && <p className="max-w-[65ch] text-[12px] text-ink-muted">{downloadRecoveryHint(d.error, t)}</p>}
+        {d.status === "removal-error" && <p role="alert" className="max-w-[65ch] text-[12px] text-danger">{t("The file could not be fully deleted. It remains in Downloads. Check folder permissions, then try again.")}</p>}
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="truncate text-[14.5px] font-semibold text-ink">
             {compact ? (d.subtitle ?? d.title) : d.title}
@@ -302,7 +306,8 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
                 </RowBtn>
               </>
             )}
-            <RowBtn label={t("Delete download and file")} onClick={() => removeDownload(d.id)}>
+            {d.status === "removal-error" && <RowBtn label={t("Show in folder")} onClick={() => void revealDownload(d.id)}><FolderOpen size={16} /></RowBtn>}
+            <RowBtn disabled={d.status === "removing"} label={t(d.status === "removal-error" ? "Retry deletion" : "Delete download and file")} onClick={() => onRemove(d)}>
               <Trash2 size={16} strokeWidth={2} />
             </RowBtn>
           </>
@@ -312,10 +317,11 @@ function DownloadRow({ d, compact = false }: { d: DownloadItem; compact?: boolea
   );
 }
 
-function RowBtn({ label, onClick, children, prominent = false }: { label: string; onClick: () => void; children: ReactNode; prominent?: boolean }) {
+function RowBtn({ label, onClick, children, prominent = false, disabled = false }: { label: string; onClick: () => void; children: ReactNode; prominent?: boolean; disabled?: boolean }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       aria-label={label}
       title={label}

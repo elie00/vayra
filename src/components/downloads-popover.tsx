@@ -1,11 +1,11 @@
 import { Download, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { downloadStatusLabel } from "@/lib/download/presentation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { DeleteDownloadDialog } from "./delete-download-dialog";
 import type { Meta } from "@/lib/cinemeta";
 import {
   cancelDownload,
   pauseDownload,
-  removeDownload,
   resumeDownload,
   revealDownload,
   useDownloads,
@@ -21,16 +21,23 @@ export function DownloadsButton() {
   const t = useT();
   const { openMeta, setView } = useView();
   const [open, setOpen] = useState(false);
+  const [pendingRemoval, setPendingRemoval] = useState<DownloadItem | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const activeCount = downloads.filter((d) => d.status === "downloading").length;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || pendingRemoval) return;
     const onDown = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -38,7 +45,7 @@ export function DownloadsButton() {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, pendingRemoval]);
 
 
   const goToShow = (d: DownloadItem) => {
@@ -54,6 +61,10 @@ export function DownloadsButton() {
   return (
     <div ref={wrapRef} className="relative">
       <button
+        type="button"
+        ref={triggerRef}
+        aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         aria-label={t("Downloads")}
         onClick={() => setOpen((v) => !v)}
         className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
@@ -66,7 +77,7 @@ export function DownloadsButton() {
         )}
       </button>
       {open && (
-        <div className="absolute end-0 top-[calc(100%+8px)] z-50 w-[20rem] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in">
+        <div id={panelId} role="region" aria-label={t("Downloads")} className="absolute end-0 top-[calc(100%+8px)] z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in">
           <div className="flex items-center justify-between px-4 pb-2 pt-3">
             <span className="text-[13.5px] font-semibold text-ink">{t("Downloads")}</span>
             <button
@@ -82,16 +93,17 @@ export function DownloadsButton() {
           <div className="flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto px-2 pb-2">
             {downloads.length === 0 && <p className="px-2 py-5 text-[13px] text-ink-muted">{t("No downloads yet")}</p>}
             {downloads.slice(0, 8).map((d) => (
-              <DownloadRow key={d.id} d={d} t={t} onOpen={() => goToShow(d)} />
+              <DownloadRow key={d.id} d={d} t={t} onOpen={() => goToShow(d)} onRemove={() => setPendingRemoval(d)} />
             ))}
           </div>
         </div>
       )}
+      {pendingRemoval && <DeleteDownloadDialog item={pendingRemoval} returnFocusRef={triggerRef} onClose={() => setPendingRemoval(null)} />}
     </div>
   );
 }
 
-function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => void }) {
+function DownloadRow({ d, t, onOpen, onRemove }: { d: DownloadItem; t: T; onOpen: () => void; onRemove: () => void }) {
   const pct = d.totalBytes
     ? Math.min(100, Math.round((d.receivedBytes / d.totalBytes) * 100))
     : Math.round(d.ratio * 100);
@@ -129,7 +141,7 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
               className={`text-[10.5px] ${
                 d.status === "done"
                   ? "text-accent"
-                  : d.status === "error"
+                  : d.status === "error" || d.status === "removal-error"
                     ? "text-danger"
                     : "text-ink-subtle"
               }`}
@@ -156,12 +168,12 @@ function DownloadRow({ d, t, onOpen }: { d: DownloadItem; t: T; onOpen: () => vo
                 <Play size={14} strokeWidth={2.2} fill="currentColor" />
               </RowBtn>
             )}
-            {d.status === "done" && (
+            {(d.status === "done" || d.status === "removal-error") && (
               <RowBtn label={t("Show in folder")} onClick={() => void revealDownload(d.id)}>
                 <FolderOpen size={14} strokeWidth={2} />
               </RowBtn>
             )}
-            <RowBtn label={t("Remove")} onClick={() => removeDownload(d.id)}>
+            <RowBtn disabled={d.status === "removing"} label={t(d.status === "removal-error" ? "Retry deletion" : "Delete download and file")} onClick={onRemove}>
               <Trash2 size={14} strokeWidth={2} />
             </RowBtn>
           </>
@@ -175,17 +187,21 @@ function RowBtn({
   label,
   onClick,
   children,
+  disabled = false,
 }: {
   label: string;
   onClick: () => void;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <button
+      type="button"
+      disabled={disabled}
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="flex h-7 w-7 items-center justify-center rounded-lg text-ink-subtle opacity-0 transition-all hover:bg-canvas/60 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+      className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle opacity-0 transition-[color,background-color,opacity] hover:bg-canvas/60 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-40"
     >
       {children}
     </button>

@@ -9,7 +9,7 @@ const FOCUSABLE =
  * fermeture. À utiliser sur les modales/overlays pour éviter que Tab ne s'échappe
  * vers l'arrière-plan et pour ne pas perdre la position clavier.
  */
-export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean): void {
+export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean, returnFocusRef?: RefObject<HTMLElement | null>): void {
   useEffect(() => {
     if (!active) return;
     const node = ref.current;
@@ -47,7 +47,8 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
     node.addEventListener("keydown", onKeyDown);
     return () => {
       node.removeEventListener("keydown", onKeyDown);
-      previouslyFocused?.focus?.();
+      if (previouslyFocused?.isConnected) previouslyFocused.focus?.();
+      else returnFocusRef?.current?.focus();
     };
-  }, [ref, active]);
+  }, [ref, active, returnFocusRef]);
 }
