@@ -37,6 +37,21 @@
   dialogue annulé après fermeture, sélection native rejetée pendant pause ou
   annulation, collisions concurrentes, partiels existants et suppression différée.
 
+## Installation et contrôle sur le Mac
+
+- `/Applications/VAYRA.app` installée en 0.9.40, fermée proprement puis relancée.
+  Vérification stricte de signature réussie ; SHA-256 du binaire installé identique
+  au paquet construit : `4261f631f6b6a2be9ac3757e1bc47bb34c2c18cfa140b561646de83793050fe6`.
+- Après accord de l'utilisateur pour laisser la fenêtre disponible : Accueil →
+  Téléchargements → À reprendre → Prêt à regarder → Téléchargement → Tout →
+  Accueil. Les 18 entrées / 75,05 Go affichés avant mise à jour restent dans la
+  liste ; états vides corrects pour actifs/à reprendre, plein écran conservé.
+- Aucun clic de lecture, suppression, changement de dossier ou réglage pendant
+  ce contrôle. Il s'agit de validation de l'interface et des entrées, pas d'une
+  vérification de l'intégrité des 75,05 Go ni d'un transfert réseau utilisateur.
+- Ancienne application récupérable dans
+  `/Users/eybo/.Trash/VAYRA-before-unified-downloads-20260906.app`.
+
 ## Limites
 
 Les tests de transfert n'utilisent pas les sources ni identifiants personnels.
