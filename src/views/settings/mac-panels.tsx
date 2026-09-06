@@ -27,7 +27,7 @@ export function MacConnectionsPanel() {
 }
 export function MacPrivacyPanel() {
   const t = useT();
-  return <><Section title={t("Privacy")}><PrivacyRow /></Section><Section title={t("Backup & restore")} subtitle={t("Export your VAYRA setup to a single file. Sign-ins and private LUMA activity stay out unless you explicitly include LUMA.")}><AutomaticBackups /><SettingsRecoverRow /><BackupRow /></Section></>;
+  return <><Section title={t("Privacy")}><PrivacyRow /></Section><Section title={t("Backup & restore")} subtitle={t("Portable preferences, without accounts or configured services. Private lists, library references and viewing activity are optional.")}><AutomaticBackups /><SettingsRecoverRow /><BackupRow /></Section></>;
 }
 export function MacDownloadsPanel() {
   const t = useT();
