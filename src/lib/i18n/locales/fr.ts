@@ -27,6 +27,9 @@ import appearance from "./fr/appearance";
 import settingsNavigation from "./fr/settings-navigation";
 import macUx from "./fr/mac-ux";
 import { downloadSafety } from "./fr/download-safety";
+import { backupSafety } from "./fr/backup-safety";
+import { addonSafety } from "./fr/addon-safety";
+import { searchRecovery } from "./fr/search-recovery";
 
 const fr: Record<string, string> = {
   ...ciraFr,
@@ -58,6 +61,9 @@ const fr: Record<string, string> = {
   ...settingsNavigation,
   ...macUx,
   ...downloadSafety,
+  ...backupSafety,
+  ...addonSafety,
+  ...searchRecovery,
   "nav.catalogs": "Catalogues",
   "nav.kids": "Enfants",
   "AniList Comments": "Commentaires AniList",
