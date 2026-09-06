@@ -19,7 +19,7 @@ const GAP = 20;
 const EAGER_COUNT = 6;
 const NEAR_MARGIN = "300px";
 
-export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile";
+export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile" | "compact";
 
 const RowTrackContext = createContext<HTMLDivElement | null>(null);
 export const ScrollRootContext = createContext<HTMLElement | null>(null);
@@ -74,7 +74,7 @@ function LazyChild({
       style={{
         ...(span ? { gridColumn: span } : undefined),
         contentVisibility: visible ? "visible" : "auto",
-        containIntrinsicSize: visible ? undefined : "auto 200px",
+        containIntrinsicSize: visible ? undefined : shape === "compact" ? "auto 7rem" : "auto 200px",
       }}
     >
       {visible ? children : <Skeleton shape={shape} />}
@@ -84,6 +84,9 @@ function LazyChild({
 
 function Skeleton({ shape }: { shape: RowShape }) {
   const { settings } = useSettings();
+  if (shape === "compact") {
+    return <div className="h-28 w-full rounded-2xl bg-elevated/40" />;
+  }
   if (shape === "service") {
     return <div className="h-20 w-full rounded-xl bg-elevated/40" />;
   }

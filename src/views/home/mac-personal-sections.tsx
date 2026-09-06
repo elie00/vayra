@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Film } from "lucide-react";
 import { Row } from "@/components/row";
 import { PickCard } from "@/components/pick-card";
 import { ContinueCard } from "@/components/continue-card";
@@ -50,10 +51,24 @@ export function MacPersonalSections({ items, libraryItems, onDismiss }: { items:
       {watchlist.slice(0, 12).map((meta) => <PickCard key={meta.id} meta={meta} />)}
       {!watchlist.length && <button className="mac-secondary-button" onClick={() => setView("discover")}>{t("Find something to watch")}</button>}
     </Row>
-    {downloads.length > 0 && <Row title={t("Available offline")} min={240} shape="landscape" scrollKey="home:mac:offline" headerRight={<button className="mac-secondary-button" onClick={() => setView("downloads")}>{t("Open downloads")}</button>}>
-      {downloads.map((d) => <button key={d.id} type="button" onClick={() => { void validatedDownloadSource(d).then((src) => { if (src) openPlayer(src); else setError(t("This file is missing or incomplete. Download it again from the title page.")); }); }} className="flex min-h-28 items-center gap-3 rounded-2xl bg-elevated p-4 text-start hover:bg-raised">
-        {d.poster && <img src={d.poster} alt="" className="h-20 w-14 rounded-lg object-cover" loading="lazy" />}<span><span className="block text-[14px] font-semibold text-ink">{d.title}</span><span className="mt-1 block text-[12px] text-ink-muted">{d.subtitle || t("Watch offline")}</span></span>
-      </button>)}
+    {downloads.length > 0 && <Row title={t("Available offline")} min={240} shape="compact" scrollKey="home:mac:offline" headerRight={<button className="mac-secondary-button" onClick={() => setView("downloads")}>{t("Open downloads")}</button>}>
+      {downloads.map((d) => (
+        <button
+          key={d.id}
+          type="button"
+          title={[d.title, d.subtitle || t("Watch offline")].join("\n")}
+          onClick={() => { void validatedDownloadSource(d).then((src) => { if (src) openPlayer(src); else setError(t("This file is missing or incomplete. Download it again from the title page.")); }); }}
+          className="flex h-28 w-full min-w-0 items-center gap-3 rounded-2xl bg-elevated p-4 text-start hover:bg-raised"
+        >
+          <span aria-hidden="true" className="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-raised text-ink-muted">
+            {d.poster ? <img src={d.poster} alt="" className="h-full w-full object-cover" loading="lazy" /> : <Film size={22} />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="line-clamp-2 break-words text-[14px] leading-5 font-semibold text-ink">{d.title}</span>
+            <span className="mt-1 block truncate text-[12px] leading-4 text-ink-muted">{d.subtitle || t("Watch offline")}</span>
+          </span>
+        </button>
+      ))}
     </Row>}
     {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
   </section>;
