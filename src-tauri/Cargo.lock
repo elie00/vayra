@@ -6927,7 +6927,7 @@ dependencies = [
 
 [[package]]
 name = "vayra"
-version = "0.9.40"
+version = "0.9.41"
 dependencies = [
  "axum",
  "base64 0.22.1",
