@@ -40,16 +40,24 @@ export type DownloadStatus =
 
 type Args = {
   url: string;
+  headers?: Record<string, string> | null;
   meta: Meta;
   episode?: PlayEpisode;
 };
 
-export function useVideoDownload({ url, meta, episode }: Args) {
+type DownloadTarget = {
+  id: string;
+  path: string;
+  url: string;
+  headers?: Record<string, string>;
+};
+
+export function useVideoDownload({ url, headers, meta, episode }: Args) {
   const { settings } = useSettings();
   const [status, setStatus] = useState<DownloadStatus>({ kind: "idle" });
   const handleRef = useRef<DownloadHandle | null>(null);
   const telemetryRef = useRef<DownloadTelemetry | null>(null);
-  const targetRef = useRef<{ id: string; path: string } | null>(null);
+  const targetRef = useRef<DownloadTarget | null>(null);
   const progressRef = useRef<DownloadProgress>({
     ratio: 0,
     receivedBytes: 0,
@@ -64,12 +72,12 @@ export function useVideoDownload({ url, meta, episode }: Args) {
     [],
   );
 
-  const begin = useCallback((target: { id: string; path: string }) => {
+  const begin = useCallback((target: DownloadTarget) => {
     telemetryRef.current = null;
     pauseRequestedRef.current = false;
     const current = progressRef.current;
     setStatus({ kind: "downloading", ...current });
-    const handle = startDownload(target.id, url, target.path, (p: DownloadProgress) => {
+    const handle = startDownload(target.id, target.url, target.path, (p: DownloadProgress) => {
       progressRef.current = p;
       const telemetry = nextDownloadTelemetry(telemetryRef.current, p, performance.now());
       telemetryRef.current = telemetry;
@@ -81,7 +89,7 @@ export function useVideoDownload({ url, meta, episode }: Args) {
         bytesPerSecond: telemetry.bytesPerSecond,
         etaSeconds: telemetry.etaSeconds,
       });
-    });
+    }, target.headers);
     handleRef.current = handle;
     handle.promise
       .then(() => {
@@ -105,10 +113,13 @@ export function useVideoDownload({ url, meta, episode }: Args) {
         if (handleRef.current === handle) handleRef.current = null;
         telemetryRef.current = null;
       });
-  }, [url]);
+  }, []);
 
   const start = useCallback(async () => {
     if (handleRef.current) return;
+    // A source switch (or the next episode) must not change the source of an
+    // existing partial file. Keep credentials in memory with that source only.
+    const source = { url, headers: headers ? { ...headers } : undefined };
     setStatus({ kind: "preparing" });
     const defaultFilename = buildDefaultFilename(meta, episode, url);
     const ext = extensionFromUrl(url);
@@ -135,10 +146,10 @@ export function useVideoDownload({ url, meta, episode }: Args) {
     }
 
     progressRef.current = { ratio: 0, receivedBytes: 0, totalBytes: null };
-    const target = { id: randomUuid(), path };
+    const target = { id: randomUuid(), path, ...source };
     targetRef.current = target;
     begin(target);
-  }, [url, meta, episode, settings.downloadDir, begin]);
+  }, [url, headers, meta, episode, settings.downloadDir, begin]);
 
   const pause = useCallback(() => {
     if (!handleRef.current) return;
