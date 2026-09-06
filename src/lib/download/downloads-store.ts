@@ -327,21 +327,21 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
         const error = new Error("Download canceled"); error.name = "AbortError"; throw error;
       }
       transport = startDownload(id, url, path, (p) => {
-    if (maxBytes !== undefined) reserved.set(id, Math.max(0, Math.min(p.totalBytes ?? maxBytes, maxBytes) - p.receivedBytes));
-    const now = Date.now();
-    const s = speed.get(id);
-    let bps = 0;
-    if (s && now - s.at >= 500) {
-      bps = ((p.receivedBytes - s.bytes) / (now - s.at)) * 1000;
-      speed.set(id, { bytes: p.receivedBytes, at: now });
-    }
-    patch(id, {
-      receivedBytes: p.receivedBytes,
-      totalBytes: p.totalBytes,
-      ratio: p.ratio,
-      ...(bps > 0 ? { bytesPerSec: bps } : {}),
-    });
-    pump();
+        if (maxBytes !== undefined) reserved.set(id, Math.max(0, Math.min(p.totalBytes ?? maxBytes, maxBytes) - p.receivedBytes));
+        const now = Date.now();
+        const s = speed.get(id);
+        let bps = 0;
+        if (s && now - s.at >= 500) {
+          bps = ((p.receivedBytes - s.bytes) / (now - s.at)) * 1000;
+          speed.set(id, { bytes: p.receivedBytes, at: now });
+        }
+        patch(id, {
+          receivedBytes: p.receivedBytes,
+          totalBytes: p.totalBytes,
+          ratio: p.ratio,
+          ...(bps > 0 ? { bytesPerSec: bps } : {}),
+        });
+        pump();
       }, headers, maxBytes);
       await transport.promise;
     })().catch((error: unknown) => {
