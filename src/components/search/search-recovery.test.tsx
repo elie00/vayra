@@ -92,10 +92,14 @@ it("waits for every source before announcing a genuinely empty search", async ()
   await search("Fixture");
   expect(state.status).toBe("loading");
   expect(state.sources.cinemeta).toBe("pending");
+  const strayZero = () => Array.from(document.querySelectorAll("*")).flatMap((element) => Array.from(element.childNodes))
+    .some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim() === "0");
+  expect(strayZero()).toBe(false);
   expect(content()).not.toContain("Aucun résultat");
   expect(document.querySelector('[role="status"]')).not.toBeNull();
   await act(async () => delayed.resolve({ movies: [], series: [] }));
   expect(state.status).toBe("done");
+  expect(strayZero()).toBe(false);
   expect(content()).toContain(fr['No matches for "{query}"'].replace("{query}", "Fixture"));
 });
 

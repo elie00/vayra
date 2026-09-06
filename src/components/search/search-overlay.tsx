@@ -72,7 +72,7 @@ export function SearchOverlay() {
   const magnetInput = !!trimmed && isMagnetInput(trimmed);
   const urlInput = !!trimmed && !magnetInput && isDirectVideoUrl(trimmed);
   const directInput = magnetInput || urlInput;
-  const hasResults =
+  const hasResults = Boolean(
     results &&
     trimmed &&
     (results.topMatch ||
@@ -82,7 +82,7 @@ export function SearchOverlay() {
       results.liveTv.length ||
       results.anime.length ||
       results.addons.length ||
-      results.addonGroups.length);
+      results.addonGroups.length));
   const noResults =
     results &&
     trimmed &&
