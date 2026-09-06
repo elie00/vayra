@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
 import { useParental } from "@/lib/parental";
-import { searchAll, searchAnime, searchCinemeta, searchLiveTvChannels, type SearchResults } from "@/lib/search";
+import { detectIntent, searchAll, searchAnime, searchCinemeta, searchLiveTvChannels, type SearchResults } from "@/lib/search";
 import { searchAddonCatalogs, searchAddonGroups, mergeMetas } from "@/lib/search-addons";
 import { searchAddonIndex } from "@/lib/search-addon-index";
 import { gatherCatalogAddons, type Addon } from "@/lib/addons";
@@ -53,12 +53,14 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const { authKey } = useAuth();
   const { hiddenTabs } = useParental();
   const [open, setOpen] = useState(false);
-  const [query, setQueryState] = useState("");
+  const [queryState, setQueryState] = useState({ query: "" });
+  const { query } = queryState;
   const [results, setResults] = useState<SearchResults | null>(null);
   const [status, setStatus] = useState<SearchState["status"]>("idle");
   const [recent, setRecent] = useState<string[]>(() => loadRecent());
   const debounceRef = useRef<number | null>(null);
   const reqIdRef = useRef(0);
+  const queryRef = useRef("");
   const addonsRef = useRef<{ key: string | null; addons: Addon[] } | null>(null);
   const ensureAddons = useCallback(async (): Promise<Addon[]> => {
     if (addonsRef.current && addonsRef.current.key === authKey) return addonsRef.current.addons;
@@ -82,22 +84,37 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   }, [hiddenTabs.anime]);
 
   useEffect(() => {
+    // Own the generation before the debounce starts. A replaced query or an
+    // unmounted provider must never receive a late response from this search.
+    const id = ++reqIdRef.current;
     const trimmed = query.trim();
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    setResults(null);
     if (!trimmed) {
-      setResults(null);
       setStatus("idle");
       return;
     }
     setStatus("typing");
     const animeAllowed = !hiddenTabs.anime;
     const liveTvAllowed = !hiddenTabs.liveTv && settings.iptvPlaylists.length > 0;
-    debounceRef.current = window.setTimeout(() => {
-      const id = ++reqIdRef.current;
+    const timer = window.setTimeout(() => {
+      if (id !== reqIdRef.current) return;
+      debounceRef.current = null;
       setStatus("loading");
       const liveTv = liveTvAllowed ? searchLiveTvChannels(trimmed, settings.iptvPlaylists) : [];
-      const tmdbPromise = searchAll(settings.tmdbKey, trimmed, { excludeGenres });
-      const animePromise = animeAllowed ? searchAnime(trimmed) : Promise.resolve([]);
+      const tmdbPromise = searchAll(settings.tmdbKey, trimmed, { excludeGenres })
+        .catch((): SearchResults => ({
+          query: trimmed,
+          topMatch: null,
+          people: [],
+          movies: [],
+          series: [],
+          liveTv: [],
+          anime: [],
+          addonGroups: [],
+          addons: [],
+          intent: detectIntent(trimmed),
+        }));
+      const animePromise = animeAllowed ? searchAnime(trimmed).catch(() => []) : Promise.resolve([]);
       const addonsP = ensureAddons();
       const addonPromise = addonsP
         .then((a) => searchAddonCatalogs(a, trimmed))
@@ -132,14 +149,10 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         });
         setStatus("done");
       };
-      tmdbPromise
-        .then((r) => {
-          tmdbResult = r;
-          publish();
-        })
-        .catch(() => {
-          if (id === reqIdRef.current) setStatus("done");
-        });
+      void tmdbPromise.then((r) => {
+        tmdbResult = r;
+        publish();
+      });
       void animePromise.then((a) => {
         acc.anime = a;
         publish();
@@ -157,7 +170,15 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         publish();
       });
     }, 180);
-  }, [query, settings.tmdbKey, settings.iptvPlaylists, excludeGenres, hiddenTabs.anime, hiddenTabs.liveTv, authKey, ensureAddons]);
+    debounceRef.current = timer;
+    return () => {
+      // Invalidate the current generation, not a captured DOM node/reference.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      ++reqIdRef.current;
+      window.clearTimeout(timer);
+      if (debounceRef.current === timer) debounceRef.current = null;
+    };
+  }, [queryState, query, settings.tmdbKey, settings.iptvPlaylists, excludeGenres, hiddenTabs.anime, hiddenTabs.liveTv, authKey, ensureAddons]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -170,13 +191,25 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const setQuery = useCallback((q: string) => setQueryState(q), []);
+  const setQuery = useCallback((q: string) => {
+    if (q === queryRef.current) return;
+    queryRef.current = q;
+    // Invalidate synchronously, rather than waiting for the query effect: a
+    // response can settle between the input event and React's next effect.
+    ++reqIdRef.current;
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    // Keep a new query generation even if batched edits return to the same text.
+    setQueryState({ query: q });
+    setResults(null);
+    setStatus(q.trim() ? "typing" : "idle");
+  }, []);
 
   const clear = useCallback(() => {
-    setQueryState("");
-    setResults(null);
-    setStatus("idle");
-  }, []);
+    setQuery("");
+  }, [setQuery]);
 
   const recordRecent = useCallback((q: string) => {
     const trimmed = q.trim();
