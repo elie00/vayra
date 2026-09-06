@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   startDownload: vi.fn(),
   downloadDir: vi.fn(),
-  torrentEngineRelease: vi.fn(),
+  retainTorrentForDownload: vi.fn(),
+  releaseTorrentForDownload: vi.fn(),
   removeDownloadFile: vi.fn(),
   downloadFileExists: vi.fn(),
 }));
@@ -17,7 +18,8 @@ vi.mock("./video-download", () => ({
 }));
 vi.mock("@/lib/torrent/local-engine", async (orig) => ({
   ...(await orig<typeof import("@/lib/torrent/local-engine")>()),
-  torrentEngineRelease: mocks.torrentEngineRelease,
+  retainTorrentForDownload: mocks.retainTorrentForDownload,
+  releaseTorrentForDownload: mocks.releaseTorrentForDownload,
 }));
 
 import type { Meta } from "@/lib/cinemeta";
@@ -38,6 +40,21 @@ const meta = { id: "tt1", name: "Show" } as unknown as Meta;
 const store = new Map<string, string>();
 let writes = 0;
 
+function startable() {
+  let finish = () => {};
+  let reject!: (error: Error) => void;
+  const promise = new Promise<void>((resolve, fail) => {
+    finish = resolve;
+    reject = fail;
+  });
+  const abort = vi.fn(() => {
+    const error = new Error("canceled");
+    error.name = "AbortError";
+    reject(error);
+  });
+  return { handle: { promise, abort }, finish };
+}
+
 // Hand the store back the progress callback the download was started with.
 function lastProgressCallback(): (p: {
   receivedBytes: number;
@@ -57,7 +74,7 @@ beforeEach(() => {
   mocks.downloadDir.mockResolvedValue("/dl");
   mocks.downloadFileExists.mockResolvedValue(false);
   mocks.removeDownloadFile.mockResolvedValue(undefined);
-  mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
+  mocks.startDownload.mockImplementation(() => startable().handle);
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => {
@@ -69,12 +86,112 @@ beforeEach(() => {
   configureDownloads({ concurrent: 3, quotaGiB: 0 });
 });
 
-afterEach(() => {
+afterEach(async () => {
   for (const d of JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{ id: string }>) {
     removeDownload(d.id);
   }
+  await vi.advanceTimersByTimeAsync(0);
   vi.useRealTimers();
   vi.unstubAllGlobals();
+});
+
+describe("download destination ownership", () => {
+  it("reserves names before delayed filesystem checks for concurrent enqueues", async () => {
+    const checks: Array<{ path: string; finish: (exists: boolean) => void }> = [];
+    mocks.downloadFileExists.mockImplementation((path: string) => new Promise<boolean>((finish) => {
+      checks.push({ path, finish });
+    }));
+
+    const first = enqueueDownload({ meta, url: "https://cdn/first.mkv", destinationPath: "/chosen/video.mkv" });
+    const second = enqueueDownload({ meta, url: "https://cdn/second.mkv", destinationPath: "/chosen/video.mkv" });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(checks.map((check) => check.path)).toEqual([
+      "/chosen/video.mkv", "/chosen/video.mkv.part", "/chosen/video.mkv.part.vayra-resume.json",
+      "/chosen/video (2).mkv", "/chosen/video (2).mkv.part", "/chosen/video (2).mkv.part.vayra-resume.json",
+    ]);
+    for (const check of checks) check.finish(false);
+    const ids = await Promise.all([first, second]);
+
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(mocks.startDownload.mock.calls.map((call) => call[2])).toEqual([
+      "/chosen/video.mkv", "/chosen/video (2).mkv",
+    ]);
+  });
+
+  it("does not resolve a default folder for an explicitly chosen destination", async () => {
+    store.set("harbor.settings", JSON.stringify({ downloadDir: "/default", downloadCreateFolders: true }));
+    const id = await enqueueDownload({ meta, url: "https://cdn/video.mkv", destinationPath: "/chosen/My video.mp4" });
+
+    expect(mocks.downloadDir).not.toHaveBeenCalled();
+    expect(downloadSnapshot().find((item) => item.id === id)?.path).toBe("/chosen/My video.mp4");
+  });
+
+  it.each(["", ".part", ".part.vayra-resume.json"])("preserves an existing destination%s", async (suffix) => {
+    mocks.downloadFileExists.mockImplementation(async (path: string) => path === `/dl/Show.mkv${suffix}`);
+    const id = await enqueueDownload({ meta, url: "https://cdn/video.mkv" });
+
+    expect(downloadSnapshot().find((item) => item.id === id)?.path).toBe("/dl/Show (2).mkv");
+    expect(mocks.removeDownloadFile).not.toHaveBeenCalled();
+  });
+
+  it("does not let an explicit filename overlap another download's partial file", async () => {
+    await enqueueDownload({ meta, url: "https://cdn/first.mkv", destinationPath: "/dl/video.mkv" });
+    const second = await enqueueDownload({ meta, url: "https://cdn/second.mkv", destinationPath: "/dl/video.mkv.part" });
+
+    expect(downloadSnapshot().find((item) => item.id === second)?.path).toBe("/dl/video.mkv (2).part");
+  });
+
+  it("fails rather than reusing the original name after exhausting available suffixes", async () => {
+    mocks.downloadFileExists.mockResolvedValue(true);
+    await expect(enqueueDownload({ meta, url: "https://cdn/video.mkv" })).rejects.toThrow("Aucun nom de fichier disponible");
+    expect(mocks.startDownload).not.toHaveBeenCalled();
+    expect(downloadSnapshot()).toHaveLength(0);
+
+    mocks.downloadFileExists.mockResolvedValue(false);
+    const id = await enqueueDownload({ meta, url: "https://cdn/video.mkv" });
+    expect(downloadSnapshot().find((item) => item.id === id)?.path).toBe("/dl/Show.mkv");
+  });
+
+  it("releases the name and fails closed when a filesystem check fails", async () => {
+    mocks.downloadFileExists.mockRejectedValueOnce(new Error("permission denied"));
+    await expect(enqueueDownload({ meta, url: "https://cdn/video.mkv" })).rejects.toThrow("Impossible de vérifier la destination");
+    expect(mocks.startDownload).not.toHaveBeenCalled();
+
+    const id = await enqueueDownload({ meta, url: "https://cdn/video.mkv" });
+    expect(downloadSnapshot().find((item) => item.id === id)?.path).toBe("/dl/Show.mkv");
+  });
+
+  it("releases a reservation if creating its item throws before registration", async () => {
+    const brokenMeta = { id: "broken", get name(): string { throw new Error("invalid metadata"); } } as Meta;
+    await expect(enqueueDownload({ meta: brokenMeta, url: "https://cdn/video.mkv", destinationPath: "/chosen/video.mkv" })).rejects.toThrow("invalid metadata");
+
+    const id = await enqueueDownload({ meta, url: "https://cdn/video.mkv", destinationPath: "/chosen/video.mkv" });
+    expect(downloadSnapshot().find((item) => item.id === id)?.path).toBe("/chosen/video.mkv");
+  });
+
+  it("copies headers before asynchronous work without persisting credentials", async () => {
+    let resolveDirectory!: (directory: string) => void;
+    mocks.downloadDir.mockReturnValue(new Promise<string>((resolve) => { resolveDirectory = resolve; }));
+    const headers = { Authorization: "Bearer original", Referer: "https://original.example" };
+    const pending = enqueueDownload({ meta, url: "https://cdn/video.mkv", headers });
+    headers.Authorization = "Bearer changed";
+    headers.Referer = "https://changed.example";
+    resolveDirectory("/dl");
+    await pending;
+
+    expect(mocks.startDownload.mock.calls[0][4]).toEqual({
+      Authorization: "Bearer original", Referer: "https://original.example",
+    });
+    expect(mocks.startDownload.mock.calls[0][4]).not.toBe(headers);
+    expect(store.get("harbor.downloads.v1")).not.toMatch(/Bearer|Authorization|Referer/);
+  });
+
+  it("rejects an empty explicit name instead of silently saving elsewhere", async () => {
+    await expect(enqueueDownload({ meta, url: "https://cdn/video.mkv", destinationPath: " " })).rejects.toThrow("Choisissez un nom de fichier");
+    expect(mocks.downloadFileExists).not.toHaveBeenCalled();
+    expect(mocks.startDownload).not.toHaveBeenCalled();
+  });
 });
 
 describe("enqueueDownload persistence", () => {
@@ -115,43 +232,32 @@ describe("engine file release", () => {
       abort: vi.fn(),
     });
 
-    await enqueueDownload({ meta, url: engineUrl });
-    expect(mocks.torrentEngineRelease).not.toHaveBeenCalled();
+    const id = await enqueueDownload({ meta, url: engineUrl });
+    expect(mocks.releaseTorrentForDownload).not.toHaveBeenCalled();
 
     finish();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(mocks.torrentEngineRelease).toHaveBeenCalledWith(
-      "0123456789abcdef0123456789abcdef01234567",
-      [4],
-    );
+    expect(mocks.retainTorrentForDownload).toHaveBeenCalledWith(id, engineUrl);
+    expect(mocks.releaseTorrentForDownload).toHaveBeenCalledWith(id);
   });
 
   it("hands the file back when the entry is removed mid-download", async () => {
     const id = await enqueueDownload({ meta, url: engineUrl });
     removeDownload(id);
-
-    expect(mocks.torrentEngineRelease).toHaveBeenCalledWith(
-      "0123456789abcdef0123456789abcdef01234567",
-      [4],
-    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.releaseTorrentForDownload).toHaveBeenCalledWith(id);
   });
 
   it("leaves a plain HTTP download alone", async () => {
     const id = await enqueueDownload({ meta, url: "https://cdn.example/video.mkv" });
     removeDownload(id);
 
-    expect(mocks.torrentEngineRelease).not.toHaveBeenCalled();
+    expect(mocks.retainTorrentForDownload).not.toHaveBeenCalled();
   });
 });
 
 describe("download concurrency", () => {
-  function startable() {
-    let finish = () => {};
-    const handle = { promise: new Promise<void>((res) => (finish = res)), abort: vi.fn() };
-    return { handle, finish };
-  }
-
   it("applies the chosen limit and promotes the selected queued download", async () => {
     configureDownloads({ concurrent: 1 });
     const first = startable(); mocks.startDownload.mockReturnValue(first.handle);
@@ -296,11 +402,6 @@ describe("pause and resume", () => {
   });
 
   it("can pause and requeue a download before it starts", async () => {
-    mocks.startDownload.mockImplementation(() => ({
-      promise: new Promise<void>(() => {}),
-      abort: vi.fn(),
-    }));
-
     const ids: string[] = [];
     for (let i = 0; i < MAX_ACTIVE_DOWNLOADS + 1; i++) {
       ids.push(await enqueueDownload({ meta, url: `https://cdn/${i}.mkv` }));
@@ -326,8 +427,6 @@ describe("pause and resume", () => {
 
 describe("removing a download", () => {
   it("deletes the file from disk, not just the entry", async () => {
-    mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
-
     const id = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
     const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{
       id: string;
@@ -336,19 +435,57 @@ describe("removing a download", () => {
     const path = saved.find((d) => d.id === id)?.path;
 
     removeDownload(id);
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(mocks.removeDownloadFile).toHaveBeenCalledWith(path);
   });
 
+  it("reserves the name until the old writer stops and deferred deletion finishes", async () => {
+    let settleWriter!: (error: Error) => void;
+    const abort = vi.fn();
+    mocks.startDownload.mockReturnValueOnce({
+      promise: new Promise<void>((_resolve, reject) => { settleWriter = reject; }), abort,
+    });
+    let finishRemoval!: () => void;
+    mocks.removeDownloadFile.mockReturnValueOnce(new Promise<void>((resolve) => { finishRemoval = resolve; }));
+    const args = { meta, url: "https://cdn/a.mkv", destinationPath: "/dl/video.mkv" };
+
+    const first = await enqueueDownload(args);
+    removeDownload(first);
+    expect(abort).toHaveBeenCalledOnce();
+    expect(mocks.removeDownloadFile).not.toHaveBeenCalled();
+
+    const duringAbort = await enqueueDownload(args);
+    expect(downloadSnapshot().find((item) => item.id === duringAbort)?.path).toBe("/dl/video (2).mkv");
+    const canceled = new Error("canceled");
+    canceled.name = "AbortError";
+    settleWriter(canceled);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.removeDownloadFile).toHaveBeenCalledWith("/dl/video.mkv");
+
+    const duringRemoval = await enqueueDownload(args);
+    expect(downloadSnapshot().find((item) => item.id === duringRemoval)?.path).toBe("/dl/video (3).mkv");
+    finishRemoval();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const afterRemoval = await enqueueDownload(args);
+    expect(downloadSnapshot().find((item) => item.id === afterRemoval)?.path).toBe("/dl/video.mkv");
+  });
+
   it("survives a delete the filesystem refuses", async () => {
-    mocks.startDownload.mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
     mocks.removeDownloadFile.mockRejectedValue(new Error("permission denied"));
-    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const id = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
     expect(() => removeDownload(id)).not.toThrow();
 
     const saved = JSON.parse(store.get("harbor.downloads.v1") ?? "[]") as Array<{ id: string }>;
     expect(saved.find((d) => d.id === id)).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(warn).toHaveBeenCalledOnce();
+    mocks.removeDownloadFile.mockResolvedValue(undefined);
+    const retry = await enqueueDownload({ meta, url: "https://cdn/a.mkv" });
+    expect(downloadSnapshot().find((item) => item.id === retry)?.path).toBe("/dl/Show.mkv");
+    warn.mockRestore();
   });
 });

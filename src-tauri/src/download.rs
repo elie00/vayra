@@ -127,8 +127,13 @@ pub async fn download_remove_file(dest: String) -> Result<(), String> {
 
 /// Whether a path is already taken, so a new download can pick another name.
 #[tauri::command]
-pub async fn download_file_exists(path: String) -> bool {
-    tokio::fs::metadata(&path).await.is_ok()
+pub async fn download_file_exists(path: String) -> Result<bool, String> {
+    // A dangling symlink still owns its filename and must not be overwritten.
+    match tokio::fs::symlink_metadata(&path).await {
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(format!("Impossible de vérifier la destination du téléchargement : {}", error)),
+    }
 }
 
 /// Read-only validation before opening a completed download. Partial files are
@@ -396,6 +401,32 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("vayra-resume-{}-{}", label, std::process::id()));
         std::fs::create_dir_all(&dir).unwrap(); dir
     }
+
+    #[tokio::test]
+    async fn destination_check_distinguishes_missing_files_from_check_failures() {
+        let dir = fixture_dir("destination");
+        let path = dir.join("video.mkv");
+        let name = path.to_string_lossy().into_owned();
+        assert_eq!(download_file_exists(name.clone()).await, Ok(false));
+        tokio::fs::write(&path, b"keep me").await.unwrap();
+        assert_eq!(download_file_exists(name.clone()).await, Ok(true));
+        // An invalid path cannot be interpreted as an available destination.
+        assert!(download_file_exists(format!("{}\0invalid", name)).await.is_err());
+        tokio::fs::remove_file(path).await.unwrap();
+        std::fs::remove_dir(dir).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn destination_check_preserves_dangling_symlinks() {
+        let dir = fixture_dir("destination-symlink");
+        let path = dir.join("video.mkv");
+        std::os::unix::fs::symlink(dir.join("missing.mkv"), &path).unwrap();
+        assert_eq!(download_file_exists(path.to_string_lossy().into_owned()).await, Ok(true));
+        tokio::fs::remove_file(path).await.unwrap();
+        std::fs::remove_dir(dir).unwrap();
+    }
+
     #[tokio::test]
     async fn resumes_only_the_same_entity_and_preserves_changed_partials() {
         for (label, tag, succeeds) in [("same", "one", true), ("changed", "two", false)] {

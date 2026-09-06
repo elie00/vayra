@@ -29,11 +29,8 @@ export async function removeDownloadFile(destPath: string): Promise<void> {
 
 /** Whether something already sits at this path — same scope reason as above. */
 export async function downloadFileExists(path: string): Promise<boolean> {
-  try {
-    return await invoke<boolean>("download_file_exists", { path });
-  } catch {
-    return false;
-  }
+  // An unavailable filesystem is not proof that a destination is unoccupied.
+  return await invoke<boolean>("download_file_exists", { path });
 }
 
 export function startDownload(
