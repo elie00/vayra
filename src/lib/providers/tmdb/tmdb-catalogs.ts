@@ -1,5 +1,6 @@
 import type { Meta } from "../../cinemeta";
 import { get } from "./tmdb-client";
+import type { RequestDiagnostics } from "@/lib/request-outcome";
 import {
   movieMeta,
   seriesMeta,
@@ -13,16 +14,17 @@ export async function tmdbMovieRow(
   endpoint: "popular" | "top_rated" | "now_playing" | "upcoming",
   region = "US",
   page = 1,
+  diagnostics?: RequestDiagnostics,
 ): Promise<Meta[]> {
-  if (endpoint === "now_playing") return tmdbInCinema(key, region, page);
+  if (endpoint === "now_playing") return tmdbInCinema(key, region, page, diagnostics);
   const data = await get<Page<RawMovie>>(key, `movie/${endpoint}`, {
     region,
     page: String(page),
-  });
+  }, diagnostics);
   return (data?.results ?? []).map(movieMeta);
 }
 
-async function tmdbInCinema(key: string, region: string, page = 1): Promise<Meta[]> {
+async function tmdbInCinema(key: string, region: string, page = 1, diagnostics?: RequestDiagnostics): Promise<Meta[]> {
   const day = 24 * 60 * 60 * 1000;
   const fmt = (t: number) => new Date(t).toISOString().slice(0, 10);
   const data = await get<Page<RawMovie>>(key, "discover/movie", {
@@ -33,7 +35,7 @@ async function tmdbInCinema(key: string, region: string, page = 1): Promise<Meta
     "with_runtime.gte": "60",
     sort_by: "popularity.desc",
     page: String(page),
-  });
+  }, diagnostics);
   return (data?.results ?? []).map((m) => ({ ...movieMeta(m), inTheaters: true }));
 }
 
@@ -41,8 +43,9 @@ export async function tmdbSeriesRow(
   key: string,
   endpoint: "popular" | "top_rated" | "airing_today" | "on_the_air",
   page = 1,
+  diagnostics?: RequestDiagnostics,
 ): Promise<Meta[]> {
-  const data = await get<Page<RawSeries>>(key, `tv/${endpoint}`, { page: String(page) });
+  const data = await get<Page<RawSeries>>(key, `tv/${endpoint}`, { page: String(page) }, diagnostics);
   return (data?.results ?? []).map(seriesMeta);
 }
 
@@ -51,10 +54,11 @@ export async function tmdbTrending(
   type: "movie" | "tv",
   window: "day" | "week" = "week",
   page = 1,
+  diagnostics?: RequestDiagnostics,
 ): Promise<Meta[]> {
   const data = await get<Page<RawMovie | RawSeries>>(key, `trending/${type}/${window}`, {
     page: String(page),
-  });
+  }, diagnostics);
   const results = data?.results ?? [];
   return type === "movie"
     ? (results as RawMovie[]).map(movieMeta)

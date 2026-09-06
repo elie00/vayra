@@ -109,7 +109,7 @@ it("debounces rapid typing and starts only the latest query", async () => {
   expect(latest.status).toBe("typing");
   await tick(1);
   expect(searchAll).toHaveBeenCalledTimes(1);
-  expect(searchAll).toHaveBeenCalledWith("test-key", "dark", { excludeGenres: [] });
+  expect(searchAll).toHaveBeenCalledWith("test-key", "dark", expect.objectContaining({ excludeGenres: [] }));
   expect(latest.status).toBe("loading");
   expect(searchLiveTvChannels).not.toHaveBeenCalled();
 });
@@ -165,12 +165,13 @@ it("never replaces newer results when all the older transports resolve out of or
 
 it("clearing invalidates in-flight responses and cancels queued work", async () => {
   const old = await start("old");
+  const publications = vi.mocked(searchAddonIndex).mock.calls.length;
   await act(async () => {
     latest.clear();
     old.main.resolve(result("old"));
   });
   expect(latest).toMatchObject({ query: "", results: null, status: "idle" });
-  expect(searchAddonIndex).not.toHaveBeenCalled();
+  expect(searchAddonIndex).toHaveBeenCalledTimes(publications);
   await type("queued");
   await act(async () => latest.clear());
   await tick(1000);
@@ -181,12 +182,13 @@ it("clearing invalidates in-flight responses and cancels queued work", async () 
 it.each([false, true])("unmount cancels the debounce and blocks publications (already started: %s)", async (started) => {
   await type("unmounted");
   if (started) await tick();
+  const publications = vi.mocked(searchAddonIndex).mock.calls.length;
   await act(async () => root!.unmount());
   root = null;
   if (started) await act(async () => forQuery("unmounted").main.resolve(result("unmounted")));
   await tick(1000);
   expect(searchAll).toHaveBeenCalledTimes(started ? 1 : 0);
-  expect(searchAddonIndex).not.toHaveBeenCalled();
+  expect(searchAddonIndex).toHaveBeenCalledTimes(publications);
 });
 
 it("keeps progressive results and deduplicates secondary sources without replacing the top match", async () => {
@@ -220,9 +222,12 @@ it("keeps valid catalog results when main and anime transports fail", async () =
   expect(latest.results?.query).toBe("dark");
   expect(latest.results?.movies.map((meta) => meta.id)).toEqual(["cine"]);
   expect(latest.results?.topMatch).toBeNull();
-  expect(latest.status).toBe("done");
+  expect(latest.status).toBe("loading");
   await act(async () => current.catalogs.resolve({ movies: [movie("addon")], series: [] }));
   expect(latest.results?.movies.map((meta) => meta.id)).toEqual(["addon", "cine"]);
+  await act(async () => current.groups.resolve([]));
+  expect(latest.status).toBe("error");
+  expect(latest.sources).toMatchObject({ tmdb: "error", anime: "error", cinemeta: "ready" });
 });
 
 it("does not strand a query when batched edits return to the same text", async () => {
@@ -235,9 +240,9 @@ it("does not strand a query when batched edits return to the same text", async (
   expect(searchAll).toHaveBeenCalledTimes(2);
   await act(async () => old.main.resolve(result("dark")));
   expect(latest.results?.query).toBe("dark");
-  expect(latest.status).toBe("done");
+  expect(latest.status).toBe("loading");
   await type("dark");
   await tick();
   expect(searchAll).toHaveBeenCalledTimes(2);
-  expect(latest.status).toBe("done");
+  expect(latest.status).toBe("loading");
 });

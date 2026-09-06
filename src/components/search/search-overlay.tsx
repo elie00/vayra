@@ -23,7 +23,7 @@ import { useFocusTrap } from "@/lib/use-focus-trap";
 import "./search-field.css";
 
 export function SearchOverlay() {
-  const { open, setOpen, query, setQuery, results, status, clear, recordRecent } = useSearch();
+  const { open, setOpen, query, setQuery, results, status, clear, retry, recordRecent } = useSearch();
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   useFocusTrap(overlayRef, open);
@@ -144,7 +144,7 @@ export function SearchOverlay() {
             spellCheck={false}
             autoComplete="off"
           />
-          {status === "loading" && <Loader2 size={18} className="shrink-0 animate-spin text-ink-subtle" />}
+          {status === "loading" && <Loader2 aria-hidden="true" size={18} className="shrink-0 animate-spin text-ink-subtle" />}
           <WebSearchButton />
           {query && (
             <button
@@ -164,6 +164,24 @@ export function SearchOverlay() {
 
         <div className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!trimmed && <EmptyState onClose={close} onOpenGuide={() => setGuideOpen(true)} />}
+
+          {trimmed && !directInput && status === "error" && (
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-edge-soft bg-elevated p-4">
+              <p role="alert" className="min-w-0 flex-1 text-[14px] text-ink-muted">
+                {t(hasResults ? "Some search sources are unavailable. Available results are shown below." : "Search could not be completed. Check your connection and try again.")}
+              </p>
+              <button type="button" className="mac-secondary-button" onClick={() => { retry(); inputRef.current?.focus(); }}>
+                {t("Retry search")}
+              </button>
+            </div>
+          )}
+
+          {trimmed && !directInput && (status === "typing" || status === "loading") && (
+            <p role="status" className="mb-5 flex items-center gap-2 text-[13.5px] text-ink-muted">
+              <Loader2 aria-hidden="true" size={18} className="animate-spin" />
+              {t(hasResults ? "Searching other sources…" : "Looking…")}
+            </p>
+          )}
 
           {magnetInput && (
             <div className="mb-5">
@@ -221,7 +239,7 @@ export function SearchOverlay() {
           )}
 
           {noResults && !directInput && (
-            <div className="flex flex-col items-center gap-3 pt-16 text-center">
+            <div role="status" className="flex flex-col items-center gap-3 pt-16 text-center">
               <span className="text-[17px] font-semibold text-ink">{t("No matches for \"{query}\"", { query: trimmed })}</span>
               <span className="max-w-[44ch] text-[14px] text-ink-muted">
                 {t("Try a different spelling, a person's name, a year like \"1972\", or a genre like \"Horror\".")}
@@ -229,12 +247,6 @@ export function SearchOverlay() {
             </div>
           )}
 
-          {trimmed && !directInput && !results && status !== "done" && (
-            <div className="flex flex-col items-center gap-3 pt-16 text-ink-muted">
-              <Loader2 size={22} className="animate-spin" />
-              <span className="text-[13.5px]">{t("Looking…")}</span>
-            </div>
-          )}
         </div>
       </div>
       {guideOpen && <GuideModal onClose={() => setGuideOpen(false)} />}

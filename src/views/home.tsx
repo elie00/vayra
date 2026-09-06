@@ -79,6 +79,7 @@ import { MacPersonalSections } from "./home/mac-personal-sections";
 import { MacDiscoveryBanner } from "./home/mac-discovery-banner";
 import { MobileHome } from "@/mobile/home";
 import { LumaResumeSection } from "./home/luma-resume-section";
+import { HOME_CATALOG_TIMEOUT_MS, withRequestTimeout } from "@/lib/request-outcome";
 
 export function Home({ active = true }: { active?: boolean }) {
   const { authKey, user } = useAuth();
@@ -88,6 +89,8 @@ export function Home({ active = true }: { active?: boolean }) {
   const [editMode, setEditMode] = useState(false);
   const [isAddSourceModalOpen, setAddSourceModalOpen] = useState(false);
   const [rows, setRows] = useState<HomeRow[]>([]);
+  const [catalogStatus, setCatalogStatus] = useState<"loading" | "done" | "error">("loading");
+  const [catalogRetry, setCatalogRetry] = useState(0);
   const [animeRows, setAnimeRows] = useState<HomeRow[]>([]);
   const [arabicRows, setArabicRows] = useState<HomeRow[]>([]);
   const [traktRows, setTraktRows] = useState<HomeRow[]>([]);
@@ -155,16 +158,20 @@ export function Home({ active = true }: { active?: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const controller = new AbortController();
+    const diagnostics = { failed: false };
+    const emptyBuilt = () => { diagnostics.failed = true; return { rows: [] as HomeRow[], hero: [] as Meta[] }; };
+    setCatalogStatus("loading");
+    const request = (async () => {
       const isClassic = settings.homeMode === "classic";
 
       let built: { rows: HomeRow[]; hero: Meta[] } = { rows: [], hero: [] };
       if (!isClassic) {
         built = settings.tmdbKey
-          ? await buildTmdbRows(settings).catch(() => ({ rows: [] as HomeRow[], hero: [] as Meta[] }))
-          : await buildCinemetaRows().catch(() => ({ rows: [] as HomeRow[], hero: [] as Meta[] }));
-        if (built.rows.length === 0) {
-          built = await buildCinemetaRows().catch(() => ({ rows: [] as HomeRow[], hero: [] as Meta[] }));
+          ? await buildTmdbRows(settings, diagnostics).catch(emptyBuilt)
+          : await buildCinemetaRows(diagnostics).catch(emptyBuilt);
+        if (!cancelled && built.rows.length === 0) {
+          built = await buildCinemetaRows(diagnostics).catch(emptyBuilt);
         }
       }
       if (cancelled) return;
@@ -172,8 +179,8 @@ export function Home({ active = true }: { active?: boolean }) {
       setHeroPool(built.hero);
 
       const dedupRows = isClassic ? false : !settings.homeShowAllAddonRows;
-      const addons = await loadAddonRows(authKey, { dedup: dedupRows }).catch(
-        () => [] as AddonRow[],
+      const addons = await loadAddonRows(authKey, { dedup: dedupRows, diagnostics }).catch(
+        () => { diagnostics.failed = true; return [] as AddonRow[]; },
       );
       if (cancelled) return;
       const filtered = isClassic
@@ -186,11 +193,19 @@ export function Home({ active = true }: { active?: boolean }) {
         if (cancelled) return;
         setTmdbProvidedByAddon(hasTmdbProviderAddon(installed));
       }
-    })().catch(console.error);
+    })();
+    void withRequestTimeout(request, HOME_CATALOG_TIMEOUT_MS, controller.signal).then(() => {
+      if (!cancelled) setCatalogStatus(diagnostics.failed ? "error" : "done");
+    }, () => {
+      if (cancelled) return;
+      cancelled = true;
+      setCatalogStatus("error");
+    });
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [authKey, settings.tmdbKey, settings.tmdbLanguage, settings.region, settings.homeMode, settings.homeShowAllAddonRows, addonsTick, settings]);
+  }, [authKey, settings.tmdbKey, settings.tmdbLanguage, settings.region, settings.homeMode, settings.homeShowAllAddonRows, addonsTick, settings, catalogRetry]);
 
   useEffect(() => {
     if (settings.hideContent.anime || settings.homeMode === "classic") {
@@ -922,10 +937,7 @@ export function Home({ active = true }: { active?: boolean }) {
               onToggleHidden={() => handleToggleHidden("collections")}
             />
           )}
-          {rows.length === 0 && traktRows.length === 0 && simklRows.length === 0 && animeRows.length === 0 && arabicRows.length === 0 ? (
-            Array.from({ length: 7 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)
-          ) : (
-            <CustomizableRows
+          <CustomizableRows
               rows={(editMode ? editRows : visibleRows).filter((r) => !isMacDesktop() || r.key !== "harbor-watchlist")}
               editMode={editMode}
               customization={homeRowsCustom}
@@ -943,8 +955,19 @@ export function Home({ active = true }: { active?: boolean }) {
               localWatched={localWatched}
               stremioWatched={stremioWatchedIds}
               homeLanguages={settings.homeLanguages}
-            />
-          )}
+          />
+          {catalogStatus === "loading" && <div role="status" className="flex flex-col gap-8">
+            <p className="text-[14px] text-ink-muted">{t("Loading catalogs…")}</p>
+            {visibleRows.length === 0 && Array.from({ length: 3 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)}
+          </div>}
+          {catalogStatus === "error" && <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-elevated p-5">
+            <p role="alert" className="min-w-0 flex-1 text-[14px] text-ink-muted">{t("Some catalogs could not be loaded. Your available rows are still shown.")}</p>
+            <button type="button" className="mac-secondary-button" onClick={() => setCatalogRetry((n) => n + 1)}>{t("Retry catalogs")}</button>
+          </div>}
+          {catalogStatus === "done" && visibleRows.length === 0 && <div className="flex flex-wrap items-center gap-3">
+            <p role="status" className="text-[14px] text-ink-muted">{t("No catalogs to show yet.")}</p>
+            <button type="button" className="mac-secondary-button" onClick={() => setCatalogRetry((n) => n + 1)}>{t("Retry catalogs")}</button>
+          </div>}
         </div>
       </ScrollRootContext.Provider>
       <BackToTop scrollRef={scrollRef} />

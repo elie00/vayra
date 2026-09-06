@@ -10,28 +10,29 @@ import {
 import { tmdbMovieRow, tmdbSeriesRow, tmdbTrending } from "@/lib/providers/tmdb";
 import { type Settings } from "@/lib/settings";
 import type { HomeRow, RowSpec } from "./home-types";
+import type { RequestDiagnostics } from "@/lib/request-outcome";
 
 export const MAX_PER_ROW = 30;
 
-export function buildTmdbSpecs(settings: Settings): RowSpec[] {
+export function buildTmdbSpecs(settings: Settings, diagnostics?: RequestDiagnostics): RowSpec[] {
   const key = settings.tmdbKey;
   const region = settings.region;
   return [
-    { key: "tmdb-trending-movies", type: "movie", name: "Trending This Week", fetcher: (p) => tmdbTrending(key, "movie", "week", p) },
-    { key: "tmdb-now-playing", type: "movie", name: "In Theaters Now", noDedup: true, fetcher: (p) => tmdbMovieRow(key, "now_playing", region, p) },
-    { key: "tmdb-popular-movies", type: "movie", name: "Popular Movies", fetcher: (p) => tmdbMovieRow(key, "popular", region, p) },
-    { key: "tmdb-trending-tv", type: "series", name: "Trending Series", fetcher: (p) => tmdbTrending(key, "tv", "week", p) },
-    { key: "tmdb-on-the-air", type: "series", name: "On The Air", noDedup: true, fetcher: (p) => tmdbSeriesRow(key, "on_the_air", p) },
-    { key: "tmdb-popular-tv", type: "series", name: "Popular Series", fetcher: (p) => tmdbSeriesRow(key, "popular", p) },
-    { key: "tmdb-top-rated-tv", type: "series", name: "Top Rated Series", fetcher: (p) => tmdbSeriesRow(key, "top_rated", p) },
-    { key: "tmdb-top-rated-movies", type: "movie", name: "Top Rated Movies", fetcher: (p) => tmdbMovieRow(key, "top_rated", region, p) },
+    { key: "tmdb-trending-movies", type: "movie", name: "Trending This Week", fetcher: (p) => tmdbTrending(key, "movie", "week", p, diagnostics) },
+    { key: "tmdb-now-playing", type: "movie", name: "In Theaters Now", noDedup: true, fetcher: (p) => tmdbMovieRow(key, "now_playing", region, p, diagnostics) },
+    { key: "tmdb-popular-movies", type: "movie", name: "Popular Movies", fetcher: (p) => tmdbMovieRow(key, "popular", region, p, diagnostics) },
+    { key: "tmdb-trending-tv", type: "series", name: "Trending Series", fetcher: (p) => tmdbTrending(key, "tv", "week", p, diagnostics) },
+    { key: "tmdb-on-the-air", type: "series", name: "On The Air", noDedup: true, fetcher: (p) => tmdbSeriesRow(key, "on_the_air", p, diagnostics) },
+    { key: "tmdb-popular-tv", type: "series", name: "Popular Series", fetcher: (p) => tmdbSeriesRow(key, "popular", p, diagnostics) },
+    { key: "tmdb-top-rated-tv", type: "series", name: "Top Rated Series", fetcher: (p) => tmdbSeriesRow(key, "top_rated", p, diagnostics) },
+    { key: "tmdb-top-rated-movies", type: "movie", name: "Top Rated Movies", fetcher: (p) => tmdbMovieRow(key, "top_rated", region, p, diagnostics) },
   ];
 }
 
-export async function buildTmdbRows(settings: Settings) {
-  const specs = buildTmdbSpecs(settings);
+export async function buildTmdbRows(settings: Settings, diagnostics?: RequestDiagnostics) {
+  const specs = buildTmdbSpecs(settings, diagnostics);
   const firstPages = await Promise.all(
-    specs.map((s) => s.fetcher(1).catch(() => [] as Meta[])),
+    specs.map((s) => s.fetcher(1).catch(() => { if (diagnostics) diagnostics.failed = true; return [] as Meta[]; })),
   );
   const rows: HomeRow[] = specs
     .map((spec, i) => ({
@@ -56,7 +57,10 @@ export async function buildTmdbRows(settings: Settings) {
   return { rows, hero };
 }
 
-export async function buildCinemetaRows() {
+export async function buildCinemetaRows(diagnostics?: RequestDiagnostics) {
+  const emptyOnFailure = () => { if (diagnostics) diagnostics.failed = true; return [] as Meta[]; };
+  const movie = (genre?: string) => topMovies(genre, 0, diagnostics).catch(emptyOnFailure);
+  const seriesCatalog = (genre?: string) => topSeries(genre, 0, diagnostics).catch(emptyOnFailure);
   const [
     movies,
     series,
@@ -76,23 +80,10 @@ export async function buildCinemetaRows() {
     sComedy,
     sCrime,
   ] = await Promise.all([
-    topMovies().catch(() => [] as Meta[]),
-    topSeries().catch(() => [] as Meta[]),
-    topMovies("Drama").catch(() => [] as Meta[]),
-    topMovies("Comedy").catch(() => [] as Meta[]),
-    topMovies("Action").catch(() => [] as Meta[]),
-    topMovies("Sci-Fi").catch(() => [] as Meta[]),
-    topMovies("Thriller").catch(() => [] as Meta[]),
-    topMovies("Animation").catch(() => [] as Meta[]),
-    topMovies("Horror").catch(() => [] as Meta[]),
-    topMovies("Romance").catch(() => [] as Meta[]),
-    topMovies("Adventure").catch(() => [] as Meta[]),
-    topMovies("Documentary").catch(() => [] as Meta[]),
-    topMovies("Mystery").catch(() => [] as Meta[]),
-    topMovies("Fantasy").catch(() => [] as Meta[]),
-    topSeries("Drama").catch(() => [] as Meta[]),
-    topSeries("Comedy").catch(() => [] as Meta[]),
-    topSeries("Crime").catch(() => [] as Meta[]),
+    movie(), seriesCatalog(), movie("Drama"), movie("Comedy"), movie("Action"),
+    movie("Sci-Fi"), movie("Thriller"), movie("Animation"), movie("Horror"),
+    movie("Romance"), movie("Adventure"), movie("Documentary"), movie("Mystery"),
+    movie("Fantasy"), seriesCatalog("Drama"), seriesCatalog("Comedy"), seriesCatalog("Crime"),
   ]);
   const make = (
     key: string,
