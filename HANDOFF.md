@@ -6,8 +6,9 @@
   Windows, Linux, signature Developer ID et notarisation sont **en pause** ; les
   sections « Travaux réalisés » ci-dessous (juillet) restent comme historique.
 - **Repo** : `elie00/vayra`, remote `origin`.
-- **Branche active** : `codex/pause-resume-downloads`, poussée, **63 commits
-  d'avance sur `origin/main` (`d041edd`)**, non fusionnée. Ne pas l'assimiler à `main`.
+- **Branches** : `codex/pause-resume-downloads` (travail macOS du 04/09 au 22/09)
+  fusionnée dans `main` par pull request le 2026-09-22. `main` est de nouveau la
+  référence.
 - **App installée** : `/Applications/VAYRA.app` 0.9.42 (binaire `Contents/MacOS/vayra`,
   SHA-256 `a1b26209…`), construite le 2026-09-22 avec les quatre lots ci-dessous.
   Versions précédentes dans `~/Library/Application Support/VAYRA-backups/`
@@ -16,7 +17,9 @@
 - **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
   au dépôt, Root Directory `.` et `pnpm build:web` : il construit l'**app web**
   depuis la racine, pas seulement `site/`. Chaque push de branche crée un Preview ;
-  un push sur `main` publie en production (dernière production : `d041edd`, 31/08).
+  un push sur `main` publierait en production, mais `vercel.json` porte
+  `git.deploymentEnabled.main: false` depuis la fusion du 22/09 (web en pause) :
+  la production reste à `d041edd` (31/08). Retirer ce bloc pour republier.
 - **Trousseau** : l'app est signée ad hoc, donc chaque nouveau build redéclenche
   l'invite d'accès au trousseau (« Toujours autoriser »). Tant qu'elle est ouverte,
   l'app tourne sans ses clés et la migration des secrets attend.
