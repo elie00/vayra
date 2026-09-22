@@ -73,6 +73,8 @@ mod modal_overlay;
 mod modal_overlay;
 #[cfg(desktop)]
 mod mpv;
+#[cfg(desktop)]
+mod playback_metrics;
 #[cfg(mobile)]
 #[path = "mobile_stubs/mpv.rs"]
 mod mpv;
