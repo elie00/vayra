@@ -1,5 +1,6 @@
 import { loadStoredSettings } from "./load";
 import type { Settings } from "./types";
+import { copyVaultSecrets, pickSecrets, stashSecrets, vaultActive, vaultSecretsFor, withoutSecrets } from "./secret-vault";
 
 export const MIRROR_KEY = "harbor.settings";
 export const SHARED_KEY = "harbor.settings.shared";
@@ -28,12 +29,27 @@ export function seedSharedFromLegacy(): void {
   }
 }
 
+/** Every blob that can hold settings of its own: the shared one and each profile's. */
+export function allSourceKeys(): string[] {
+  try {
+    const raw = localStorage.getItem("harbor.profiles.v1");
+    const ids = raw ? ((JSON.parse(raw) as { profiles?: Array<{ id: string }> }).profiles ?? []).map((p) => p.id) : [];
+    return [SHARED_KEY, ...ids.map(profileKey)];
+  } catch {
+    return [SHARED_KEY];
+  }
+}
+
+function loadWithSecrets(key: string): Settings {
+  return { ...loadStoredSettings(key), ...vaultSecretsFor(key) };
+}
+
 export function loadEffective(profileId: string, linked: boolean): Settings {
   const key = sourceKeyFor(profileId, linked);
-  if (localStorage.getItem(key) != null) return loadStoredSettings(key);
-  if (localStorage.getItem(SHARED_KEY) != null) return loadStoredSettings(SHARED_KEY);
+  if (localStorage.getItem(key) != null) return loadWithSecrets(key);
+  if (localStorage.getItem(SHARED_KEY) != null) return loadWithSecrets(SHARED_KEY);
   if (localStorage.getItem(MIRROR_KEY) != null) return loadStoredSettings(MIRROR_KEY);
-  return loadStoredSettings(key);
+  return loadWithSecrets(key);
 }
 
 export function recoverableLegacyBlob(): string | null {
@@ -63,6 +79,7 @@ export function applyLegacyToActive(): boolean {
   try {
     localStorage.setItem(sourceKeyFor(profileId, linked), blob);
     localStorage.setItem(MIRROR_KEY, blob);
+    if (localStorage.getItem(SHARED_KEY) != null) copyVaultSecrets(SHARED_KEY, sourceKeyFor(profileId, linked));
     return true;
   } catch {
     return false;
@@ -70,9 +87,12 @@ export function applyLegacyToActive(): boolean {
 }
 
 export function persistEffective(settings: Settings, profileId: string, linked: boolean): string {
-  const json = serializeSettings(settings);
+  const key = sourceKeyFor(profileId, linked);
+  const secure = vaultActive();
+  const json = serializeSettings(secure ? withoutSecrets(settings) : settings);
   localStorage.setItem(MIRROR_KEY, json);
-  localStorage.setItem(sourceKeyFor(profileId, linked), json);
+  localStorage.setItem(key, json);
+  if (secure) stashSecrets(key, pickSecrets(settings));
   return json;
 }
 
@@ -80,6 +100,7 @@ export function forkToProfile(profileId: string): void {
   try {
     const shared = localStorage.getItem(SHARED_KEY) ?? localStorage.getItem(MIRROR_KEY);
     if (shared != null) localStorage.setItem(profileKey(profileId), shared);
+    if (localStorage.getItem(SHARED_KEY) != null) copyVaultSecrets(SHARED_KEY, profileKey(profileId));
   } catch {
     return;
   }

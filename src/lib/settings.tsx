@@ -8,7 +8,8 @@ import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
 import { STORAGE_KEY } from "./settings/defaults";
-import { persistSettings, readSettingsFile, readSettingsSecrets } from "./settings/file-store";
+import { persistSettings, readSettingsFile } from "./settings/file-store";
+import { hydrateSecretVault } from "./settings/secret-vault";
 import { loadFontData, saveFontData } from "./font-storage";
 import {
   syncWebUiServer,
@@ -16,6 +17,7 @@ import {
   type WebUiServerErrorDetail,
 } from "./web-ui-server";
 import {
+  allSourceKeys,
   forkToProfile,
   loadEffective,
   persistEffective,
@@ -92,13 +94,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([readSettingsFile(), readSettingsSecrets()]).then(([raw, secrets]) => {
+    void readSettingsFile().then(async (raw) => {
       if (cancelled) return;
       try {
         if (raw && !localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, raw);
         seedSharedFromLegacy();
-        const stored = loadEffective(sourceRef.current.profileId, sourceRef.current.linked);
-        setSettings(secrets ? { ...stored, ...secrets } : stored);
+        const { profileId, linked } = sourceRef.current;
+        await hydrateSecretVault(sourceKeyFor(profileId, linked), allSourceKeys(), STORAGE_KEY);
+        if (cancelled) return;
+        setSettings(loadEffective(sourceRef.current.profileId, sourceRef.current.linked));
       } catch {
         // Keep the synchronous state when native hydration fails.
       } finally {
