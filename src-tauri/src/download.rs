@@ -158,7 +158,7 @@ pub async fn download_available_space(path: String) -> Result<u64, String> {
                 return Err("Storage information unavailable".to_string());
             }
             let info = unsafe { info.assume_init() };
-            Ok((info.f_bavail as u64).saturating_mul(info.f_frsize as u64))
+            Ok((info.f_bavail as u64).saturating_mul(info.f_frsize))
         }).await.map_err(|_| "Storage information unavailable".to_string())?
     }
     #[cfg(not(target_os = "macos"))]
