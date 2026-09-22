@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { playerEscapeAction } from "../escape-action";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { writePlayerPrefs } from "@/lib/player-prefs";
 import { writePlayerVolume } from "@/lib/player-volume";
@@ -125,11 +126,16 @@ export function useKeyboardShortcuts(params: {
           return;
         }
         void (async () => {
-          if (settings.playerEscExitsFullscreen && (await isAnyFullscreen())) {
+          const action = playerEscapeAction({
+            fullscreen: settings.playerEscExitsFullscreen && (await isAnyFullscreen()),
+            escExitsFullscreen: settings.playerEscExitsFullscreen,
+            confirmLeave: settings.playerConfirmLeave,
+          });
+          if (action === "exit-fullscreen") {
             await exitAnyFullscreen();
             return;
           }
-          if (settings.playerConfirmLeave) {
+          if (action === "confirm-leave") {
             openLeaveConfirm((remember) => {
               if (remember) update({ playerConfirmLeave: false });
               closePlayer();
