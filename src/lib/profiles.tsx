@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { HiddenTabs } from "./lockable-tabs";
 import type { ContentFilters } from "./settings";
+import { dropProfileBlob } from "./settings/profile-store";
 
 export const PROFILE_COLORS = [
   "#7dd3fc",
@@ -436,7 +437,6 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(`harbor.auth.${id}`);
         localStorage.removeItem(`harbor.favorites.v1.${id}`);
         localStorage.removeItem(`harbor.localwatchlist.v1.${id}`);
-        localStorage.removeItem(`harbor.settings.${id}`);
         localStorage.removeItem(`harbor.trakt.session.v1.${id}`);
         localStorage.removeItem(`harbor.simkl.session.v1.${id}`);
         localStorage.removeItem(`harbor.anilist.session.v1.${id}`);
@@ -447,6 +447,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
+      dropProfileBlob(id);
       return { profiles, activeId };
     });
   }, []);
