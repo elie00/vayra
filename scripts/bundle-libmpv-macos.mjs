@@ -110,18 +110,33 @@ for (const f of allBinaries) {
 }
 
 // --- Re-sign after install_name_tool edits invalidate the previous signature. ---
-// Local builds stay ad-hoc. Release CI provides a Developer ID identity and gets
-// a hardened-runtime, timestamped signature that can subsequently be notarized.
-const signingIdentity = process.env.APPLE_SIGNING_IDENTITY?.trim() || "-";
-const releaseFlags =
-  signingIdentity === "-"
-    ? ["--force", "--sign", "-"]
-    : ["--force", "--options", "runtime", "--timestamp", "--sign", signingIdentity];
+// Release CI provides a Developer ID identity and gets a hardened-runtime,
+// timestamped signature that can subsequently be notarized.
+// Local builds use the Mac's own "Apple Development" identity when there is exactly
+// one valid: the signature then stays the same from build to build, so the
+// keychain keeps trusting the app instead of prompting after every install. The
+// flags match ad-hoc signing, so runtime behaviour is unchanged. Without such an
+// identity, local builds stay ad-hoc.
+function localDevelopmentIdentity() {
+  let out = "";
+  try {
+    out = execFileSync("security", ["find-identity", "-v", "-p", "codesigning"], { encoding: "utf8" });
+  } catch {
+    return null;
+  }
+  const hashes = [...out.matchAll(/^\s*\d+\) ([0-9A-F]{40}) "Apple Development: /gm)].map((m) => m[1]);
+  return hashes.length === 1 ? hashes[0] : null;
+}
+const releaseIdentity = process.env.APPLE_SIGNING_IDENTITY?.trim();
+const localIdentity = releaseIdentity ? null : localDevelopmentIdentity();
+const releaseFlags = releaseIdentity
+  ? ["--force", "--options", "runtime", "--timestamp", "--sign", releaseIdentity]
+  : ["--force", "--sign", localIdentity ?? "-"];
 const sign = (target, extra = []) =>
   execFileSync("codesign", [...releaseFlags, ...extra, target], { stdio: "inherit" });
 
 console.log(
-  `[bundle-libmpv] re-signing (${signingIdentity === "-" ? "ad-hoc" : "Developer ID"})...`,
+  `[bundle-libmpv] re-signing (${releaseIdentity ? "Developer ID" : localIdentity ? "local Apple Development" : "ad-hoc"})...`,
 );
 for (const f of dylibs) sign(join(FRAMEWORKS, f));
 sign(BIN);
