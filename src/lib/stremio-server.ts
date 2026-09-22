@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { activeVaultSecret } from "./settings/secret-vault";
 
 export const BUNDLED_SERVER_URL = "http://127.0.0.1:11470";
 const PROBE_TIMEOUT_MS = 1500;
@@ -9,9 +10,11 @@ const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window
 
 export function remoteStreamServerUrl(): string {
   try {
-    const raw = localStorage.getItem("harbor.settings");
-    if (!raw) return "";
-    const url = (JSON.parse(raw) as { remoteStreamServerUrl?: string }).remoteStreamServerUrl;
+    // A secret: once the keychain holds it, the settings mirror no longer carries it.
+    const secure = activeVaultSecret("remoteStreamServerUrl");
+    const raw = secure === undefined ? localStorage.getItem("harbor.settings") : null;
+    if (secure === undefined && !raw) return "";
+    const url = secure ?? (JSON.parse(raw as string) as { remoteStreamServerUrl?: string }).remoteStreamServerUrl;
     return typeof url === "string" ? url.trim().replace(/\/+$/, "") : "";
   } catch {
     return "";
