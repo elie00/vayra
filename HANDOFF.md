@@ -10,9 +10,9 @@
   fusionnée dans `main` par pull request le 2026-09-22. `main` est de nouveau la
   référence.
 - **App installée** : `/Applications/VAYRA.app` 0.9.42 (binaire `Contents/MacOS/vayra`,
-  SHA-256 `a1b26209…`), construite le 2026-09-22 avec les quatre lots ci-dessous.
-  Versions précédentes dans `~/Library/Application Support/VAYRA-backups/`
-  (`20260922-200326` = lots 1–3, `20260922-194342` = journal de pairs,
+  SHA-256 `a276d325…`), construite le 2026-09-22 avec les lots 1 à 6, signée
+  Apple Development. Versions précédentes dans `~/Library/Application Support/VAYRA-backups/`
+  (`20260922-211836` = lots 1–5, `20260922-200326` = lots 1–3, `20260922-194342` = journal de pairs,
   `20260922-192818` = build du 12/09).
 - **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
   au dépôt, Root Directory `.` et `pnpm build:web` : il construit l'**app web**
@@ -20,9 +20,14 @@
   un push sur `main` publierait en production, mais `vercel.json` porte
   `git.deploymentEnabled.main: false` depuis la fusion du 22/09 (web en pause) :
   la production reste à `d041edd` (31/08). Retirer ce bloc pour republier.
-- **Trousseau** : l'app est signée ad hoc, donc chaque nouveau build redéclenche
-  l'invite d'accès au trousseau (« Toujours autoriser »). Tant qu'elle est ouverte,
-  l'app tourne sans ses clés et la migration des secrets attend.
+- **Signature locale** : `scripts/bundle-libmpv-macos.mjs` signe les builds locaux
+  avec l'unique identité « Apple Development » du trousseau (sans hardened runtime
+  ni horodatage : même comportement qu'ad hoc). La règle de signature (identifiant
+  `app.vayra` + nom du certificat) reste la même d'un build à l'autre, donc
+  « Toujours autoriser » dans le trousseau n'est demandé qu'une fois. Le certificat
+  expire le **2026-10-02** : le renouveler via Xcode (même nom, même règle). Sans
+  identité valide, retour automatique à l'ad hoc (invite à chaque build). La
+  release CI (Developer ID via `APPLE_SIGNING_IDENTITY`) est inchangée.
 - **Chantier en cours** : lecture de sources torrent à pairs intermittents
   (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
@@ -109,8 +114,35 @@
 - La règle est extraite en `src/views/player/escape-action.ts` et verrouillée par
   `escape-action.test.ts` (3 cas). Suite frontend 960/960.
 
-- Pré-existant, non traité : `dropProfileBlob` n'est appelé nulle part, donc les
-  réglages (et maintenant l'entrée du trousseau) d'un profil supprimé restent en place.
+## Lot n°6 — signature stable, diagnostic, mesures (2026-09-22)
+- Signature locale stable (voir en-tête).
+- `src-tauri/src/app_log.rs` : stderr → `~/Library/Logs/VAYRA/vayra.log` via un pipe
+  qui **masque les URLs** (`schéma://hôte/…`, magnet réduit à son hash ; loopback
+  intact). Sans cela, `mpv.rs` (loadfile), les erreurs `reqwest` et les trackers
+  auraient écrit tokens debrid et passkeys sur disque. Vérifié : aucune URL distante
+  n'avait encore fuité. Hors périmètre : `harbor-mpv.log` (journal mpv, séparé).
+- `app_log::init_tracing` : avertissements de toutes les crates + niveau debug de
+  `librqbit::torrent_state::live` (erreurs de pair, backoff, pièces vérifiées), avec
+  le contexte `torrent{id}:manage_peer{peer}`. Le test Sintel l'active aussi.
+- `src-tauri/src/playback_metrics.rs` : une ligne par chargement mpv,
+  `first frame after N ms (file open after M ms), peak memory X MB`, et le pic
+  mémoire à chaque `end-file`.
+- `auto-exhausted-modal.tsx` : si la lecture automatique s'arrête parce que toutes
+  les sources sont dans d'autres langues (lot 4), le message le dit au lieu
+  d'accuser debrid ou addons (singulier/pluriel, traduit en français).
+- `deleteProfile` passe par `dropProfileBlob`, qui efface aussi l'entrée du profil
+  dans le trousseau (le blob, lui, était déjà supprimé).
+- CI : `android-actions/setup-android` v3 → v4 (action migrée vers Node 24).
+- Tests : Rust 71/71 (+1 ignoré), frontend 964/964.
+- Premier journal réel (22/09) : `librqbit_upnp` échoue à la découverte SSDP
+  (`No route to host`, os error 65) → pas de redirection de port, donc pas de
+  connexions entrantes. Piste pour les essaims pauvres : autorisation « Réseau
+  local » de VAYRA (Réglages Système → Confidentialité) ou routeur sans UPnP.
+  Le routeur DHT `router.bitcomet.com` ne résout plus (sans effet, tier 1 atteint).
+- Reste : afficher « aucun pair trouvé » / « pairs perdus » pendant le chargement,
+  une fois la recette HiggsBoson faite (il faudra exposer `seen`/`dead` dans
+  `TorrentEngineStats`) ; mesurer l'effet de l'intervalle de 2 s de
+  `use-fullscreen.ts` avec les nouvelles mesures avant d'y toucher.
 
 ## Travaux réalisés (historique, juillet 2026 — multiplateforme en pause)
 
