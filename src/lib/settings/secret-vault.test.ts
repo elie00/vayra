@@ -135,6 +135,18 @@ describe("secret vault", () => {
     expect(JSON.parse(kc.value!).sources["harbor.settings.p3"].rdKey).toBe("SHARED_RD");
   });
 
+  it("forgets a deleted profile's keys in the keychain too", async () => {
+    const kc = keychain(null);
+    const { storage, vault, store } = await load({ "harbor.profiles.v1": profiles, [SHARED]: blob({}), [P2]: blob({ rdKey: "P2_RD" }) });
+    await vault.hydrateSecretVault(SHARED, store.allSourceKeys(), MIRROR);
+
+    store.dropProfileBlob("p2");
+    await vault.flushSecretVault();
+
+    expect(storage.getItem(P2)).toBeNull();
+    expect(kc.value).not.toContain("P2_RD");
+  });
+
   it("reads back its own format on the next launch", async () => {
     const payload = JSON.stringify({ rdKey: "A", v: 2, sources: { [SHARED]: { rdKey: "A" }, [P2]: { rdKey: "B" } } });
     keychain(payload);
