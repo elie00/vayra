@@ -1,6 +1,6 @@
 import { loadStoredSettings } from "./load";
 import type { Settings } from "./types";
-import { copyVaultSecrets, pickSecrets, stashSecrets, vaultActive, vaultSecretsFor, withoutSecrets } from "./secret-vault";
+import { copyVaultSecrets, dropVaultSecrets, pickSecrets, stashSecrets, vaultActive, vaultSecretsFor, withoutSecrets } from "./secret-vault";
 
 export const MIRROR_KEY = "harbor.settings";
 export const SHARED_KEY = "harbor.settings.shared";
@@ -107,6 +107,7 @@ export function forkToProfile(profileId: string): void {
 }
 
 export function dropProfileBlob(profileId: string): void {
+  dropVaultSecrets(profileKey(profileId));
   try {
     localStorage.removeItem(profileKey(profileId));
   } catch {

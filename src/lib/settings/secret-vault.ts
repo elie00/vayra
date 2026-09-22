@@ -179,6 +179,14 @@ export function copyVaultSecrets(from: string, to: string): void {
   void flushSecretVault();
 }
 
+export function dropVaultSecrets(sourceKey: string): void {
+  if (!vault.active || !vault.sources[sourceKey]) return;
+  const { [sourceKey]: _dropped, ...rest } = vault.sources;
+  void _dropped;
+  vault.sources = rest;
+  void flushSecretVault();
+}
+
 /** Write the vault; on failure fall back to the blobs so credentials survive. */
 export async function flushSecretVault(): Promise<boolean> {
   if (!vault.active) return false;
