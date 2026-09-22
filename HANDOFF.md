@@ -6,12 +6,17 @@
   Windows, Linux, signature Developer ID et notarisation sont **en pause** ; les
   sections « Travaux réalisés » ci-dessous (juillet) restent comme historique.
 - **Repo** : `elie00/vayra`, remote `origin`.
-- **Branche active** : `codex/pause-resume-downloads`, poussée, **57 commits
+- **Branche active** : `codex/pause-resume-downloads`, poussée, **63 commits
   d'avance sur `origin/main` (`d041edd`)**, non fusionnée. Ne pas l'assimiler à `main`.
 - **App installée** : `/Applications/VAYRA.app` 0.9.42 (binaire `Contents/MacOS/vayra`,
-  SHA-256 `5534f629…`), construite le 2026-09-22 avec les trois lots ci-dessous.
+  SHA-256 `a1b26209…`), construite le 2026-09-22 avec les quatre lots ci-dessous.
   Versions précédentes dans `~/Library/Application Support/VAYRA-backups/`
-  (`20260922-194342` = build journal de pairs, `20260922-192818` = build du 12/09).
+  (`20260922-200326` = lots 1–3, `20260922-194342` = journal de pairs,
+  `20260922-192818` = build du 12/09).
+- **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
+  au dépôt, Root Directory `.` et `pnpm build:web` : il construit l'**app web**
+  depuis la racine, pas seulement `site/`. Chaque push de branche crée un Preview ;
+  un push sur `main` publie en production (dernière production : `d041edd`, 31/08).
 - **Trousseau** : l'app est signée ad hoc, donc chaque nouveau build redéclenche
   l'invite d'accès au trousseau (« Toujours autoriser »). Tant qu'elle est ouverte,
   l'app tourne sans ses clés et la migration des secrets attend.
@@ -70,6 +75,36 @@
   lockfile ; vitest 3.2.6 → 4.1.11 (traversée de chemin via `@vitest/mocker`).
   `pnpm audit` : aucune vulnérabilité. Suite inchangée : 954/954.
 - `lib.rs::redirect_stderr_to_log` (voir « Pièges »).
+
+## Lot n°4 — ne pas démarrer une source dans une autre langue (2026-09-22)
+- Cause du 12/09 (HiggsBoson → « NoTorrent Audio Latino ») : avec Lecture
+  instantanée, un échec relance `openPicker({ autoPlay, attempt: n+1 })`, qui prend
+  `autoCandidates[attempt + idx]`. La langue n'était vérifiée que sur le raccourci
+  « haute confiance » de la première tentative ; ailleurs elle n'était qu'un critère
+  de tri secondaire, derrière « en cache ». Une source debrid en cache dans une
+  autre langue passait donc devant une source P2P française.
+- `use-auto-candidates.ts` : une source qui **déclare** uniquement d'autres langues
+  audio que celles préférées n'est plus candidate au démarrage automatique (même
+  principe que `episodeConflict` : échouer plutôt que deviner). Inchangé : sources
+  sans langue ou « Multi », source mémorisée, salle (suit la source de l'hôte),
+  aucune langue préférée. Si plus rien ne convient, le sélecteur reste affiché.
+- Corps du `useMemo` extrait en `buildAutoCandidates` (fonction pure) pour le test
+  `use-auto-candidates.test.ts` (3 cas, dont celui du 12/09, échoue avant correctif).
+  Suite frontend 957/957.
+- CI du 22/09 : `frontend` vert (premier depuis le 06/09, qui échouait sur
+  `pnpm audit`) ; job Android en échec dès `android-actions/setup-android@v3`
+  (l'action cible Node 20, forcée sous Node 24, plante à l'acceptation des
+  licences SDK — outillage, avant compilation ; Android en pause). `clippy + test`
+  vert sur macOS (en échec au run précédent), Ubuntu et Windows.
+
+## Lot n°5 — Échap en plein écran (décision du 2026-09-22)
+- Règle validée par l'utilisateur : en plein écran, Échap **sort d'abord du plein
+  écran** ; un second Échap ferme la vidéo (avec confirmation si
+  `playerConfirmLeave`). C'était déjà le comportement par défaut
+  (`playerEscExitsFullscreen: true`, actif sur ce Mac) ; le raccourci global
+  Échap = retour est désactivé pendant la lecture (`App.tsx`, `enabled: !player`).
+- La règle est extraite en `src/views/player/escape-action.ts` et verrouillée par
+  `escape-action.test.ts` (3 cas). Suite frontend 960/960.
 
 - Pré-existant, non traité : `dropProfileBlob` n'est appelé nulle part, donc les
   réglages (et maintenant l'entrée du trousseau) d'un profil supprimé restent en place.
