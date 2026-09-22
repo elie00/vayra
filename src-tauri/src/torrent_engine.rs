@@ -800,6 +800,7 @@ mod tests {
     #[ignore]
     async fn real_swarm_download_makes_progress() {
         const MAGNET: &str = "magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel";
+        crate::app_log::init_tracing();
         let dir = std::env::temp_dir().join(format!("vayra-swarm-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let session = new_session(&dir, false, true, false).await.unwrap();
