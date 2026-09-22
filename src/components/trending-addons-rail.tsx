@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { Plus, Loader2, Star, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { ArrowedScrollRow } from "@/components/arrowed-scroll-row";
@@ -17,6 +18,7 @@ export function TrendingAddonsRail({
   onChange?: () => void;
   onOpen?: (manifestId: string) => void;
 }) {
+  const t = useT();
   const movers = useTopMovers(10);
   if (movers.length === 0) return null;
   const windowDays = movers[0].windowDays;
@@ -29,14 +31,15 @@ export function TrendingAddonsRail({
           </span>
           <div className="flex flex-col">
             <span className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-rose-300">
-              Trending up
+              {t("Trending up")}
             </span>
             <h3 className="text-[22px] font-medium tracking-tight text-ink">
-              Rising on stremio-addons.net
+              {t("Rising on stremio-addons.net")}
             </h3>
             <p className="text-[12.5px] text-ink-muted">
-              Most stars gained in the last {windowDays} {windowDays === 1 ? "day" : "days"}.
-              Tracked locally. Your VAYRA visits power this.
+              {windowDays === 1
+                ? t("Most stars gained in the last day. Tracked locally from your VAYRA visits.")
+                : t("Most stars gained in the last {n} days. Tracked locally from your VAYRA visits.", { n: windowDays })}
             </p>
           </div>
         </div>
@@ -64,6 +67,7 @@ function MoverCard({
   onChange?: () => void;
   onOpen?: (manifestId: string) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const c = entry.community;
 
@@ -157,7 +161,7 @@ function MoverCard({
             ) : (
               <Plus size={11} strokeWidth={2.6} />
             )}
-            Install
+            {t("Install")}
           </button>
         </div>
       </div>

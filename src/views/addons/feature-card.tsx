@@ -5,6 +5,7 @@ import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { idOf, nameOf } from "./addons-utils";
 import { InstallPill } from "./install-pill";
 import { TagRow } from "./tag-row";
+import { useRef } from "react";
 
 export function FeatureCard({
   resolved,
@@ -19,12 +20,14 @@ export function FeatureCard({
   onUninstall: () => void;
   installed: boolean;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
   return (
     <div
+      ref={cardRef}
       role="button"
       tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen()}
+      onClick={(e) => e.currentTarget.contains(e.target as Node) && onOpen()}
+      onKeyDown={(e) => e.target === e.currentTarget && (e.key === "Enter" || e.key === " ") && onOpen()}
       className="group relative flex w-full cursor-pointer items-start gap-5 overflow-hidden rounded-2xl border border-edge-soft bg-elevated p-6 text-start transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-edge hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)]"
     >
       <CardArtBackdrop
@@ -48,6 +51,7 @@ export function FeatureCard({
             installed={installed}
             onInstall={onInstall}
             onUninstall={onUninstall}
+            returnFocusRef={cardRef}
           />
         </div>
         {resolved.manifest?.description && (

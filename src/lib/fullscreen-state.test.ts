@@ -39,6 +39,17 @@ describe("entering fullscreen", () => {
 });
 
 describe("leaving fullscreen", () => {
+  it("never leaves fullscreen just because the player closed", async () => {
+    const fs = await load();
+    await fs.enterWindowFullscreen();
+    mocks.invoke.mockClear();
+
+    await fs.exitWindowFullscreenOnPlayerClose();
+
+    expect(fs.getWindowFullscreen()).toBe(true);
+    expect(mocks.invoke).not.toHaveBeenCalledWith("window_fullscreen_exit", expect.anything());
+  });
+
   it("obeys a button press during an auto-advance", async () => {
     const fs = await load();
     await fs.enterWindowFullscreen();

@@ -1,10 +1,12 @@
 import { useSettings } from "@/lib/settings";
-import { LANGUAGES, setUiLanguage, useT } from "@/lib/i18n";
+import { LANGUAGES, setUiLanguage, useT, useUiLanguage } from "@/lib/i18n";
+import { localizedLanguageName } from "@/lib/i18n/language-label";
 import { Section } from "../shared";
 
 export function DisplayLanguageSection() {
   const { settings, update } = useSettings();
   const t = useT();
+  const uiLanguage = useUiLanguage();
   return (
     <Section
       title={t("Display language")}
@@ -17,6 +19,7 @@ export function DisplayLanguageSection() {
             <button
               key={lang.code}
               type="button"
+              aria-pressed={selected}
               dir={lang.rtl ? "rtl" : "ltr"}
               onClick={() => {
                 setUiLanguage(lang.code);
@@ -37,7 +40,7 @@ export function DisplayLanguageSection() {
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-[15px] font-semibold text-ink">{lang.nativeLabel}</span>
-                <span className="text-[12.5px] leading-snug text-ink-muted">{lang.label}</span>
+                <span className="text-[12.5px] leading-snug text-ink-muted">{localizedLanguageName(lang.code, uiLanguage)}</span>
               </div>
             </button>
           );

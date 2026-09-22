@@ -2,6 +2,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { anilistRequest } from "./client";
 import { anilistMediaToMeta } from "./to-meta";
 import type { AnilistMedia } from "./types";
+import type { RequestDiagnostics } from "@/lib/request-outcome";
 
 const BROWSE_QUERY = `query ($page: Int, $perPage: Int, $sort: [MediaSort], $isAdult: Boolean) {
   Page(page: $page, perPage: $perPage) {
@@ -97,7 +98,7 @@ type SearchMedia = {
   description: string | null;
 };
 
-export async function anilistAnimeSearch(query: string, perPage = 8): Promise<AnilistSearchHit[]> {
+export async function anilistAnimeSearch(query: string, perPage = 8, diagnostics?: RequestDiagnostics): Promise<AnilistSearchHit[]> {
   const q = query.trim();
   if (q.length < 2) return [];
   try {
@@ -107,7 +108,8 @@ export async function anilistAnimeSearch(query: string, perPage = 8): Promise<An
       undefined,
       true,
     );
-    return (data?.Page?.media ?? []).map((m) => ({
+    if (!data?.Page) throw new Error("Anime source unavailable");
+    return (data.Page.media ?? []).map((m) => ({
       anilistId: m.id,
       malId: m.idMal ?? null,
       name: m.title.english?.trim() || m.title.romaji?.trim() || "Untitled",
@@ -118,6 +120,7 @@ export async function anilistAnimeSearch(query: string, perPage = 8): Promise<An
       score: m.averageScore ? m.averageScore / 10 : 0,
     }));
   } catch {
+    if (diagnostics) diagnostics.failed = true;
     return [];
   }
 }

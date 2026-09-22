@@ -9,12 +9,13 @@ const FOCUSABLE =
  * fermeture. À utiliser sur les modales/overlays pour éviter que Tab ne s'échappe
  * vers l'arrière-plan et pour ne pas perdre la position clavier.
  */
-export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean): void {
+export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean, returnFocusRef?: RefObject<HTMLElement | null>): void {
   useEffect(() => {
     if (!active) return;
     const node = ref.current;
     if (!node || typeof document === "undefined") return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const fallbackFocus = returnFocusRef?.current;
 
     const focusable = () =>
       Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
@@ -35,10 +36,13 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
       const first = els[0];
       const last = els[els.length - 1];
       const current = document.activeElement;
-      if (e.shiftKey && (current === first || !node.contains(current))) {
+      // A busy dialog focuses its container while all actions are disabled.
+      // When they become enabled again, both directions must re-enter the cycle.
+      const outsideCycle = !els.includes(current as HTMLElement);
+      if (e.shiftKey && (current === first || outsideCycle)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && current === last) {
+      } else if (!e.shiftKey && (current === last || outsideCycle)) {
         e.preventDefault();
         first.focus();
       }
@@ -47,7 +51,8 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
     node.addEventListener("keydown", onKeyDown);
     return () => {
       node.removeEventListener("keydown", onKeyDown);
-      previouslyFocused?.focus?.();
+      if (previouslyFocused?.isConnected) previouslyFocused.focus?.();
+      else if (fallbackFocus?.isConnected) fallbackFocus.focus();
     };
-  }, [ref, active]);
+  }, [ref, active, returnFocusRef]);
 }

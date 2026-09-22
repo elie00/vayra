@@ -77,7 +77,7 @@ export const TopRankCard = memo(function TopRankCard({ meta, rank }: { meta: Met
         aria-hidden
         className="pointer-events-none absolute -start-[3%] top-0 font-bold leading-[0.85] text-transparent"
         style={{
-          fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif',
+          fontFamily: "var(--font-display)",
           fontSize: "calc(100cqw * 240 / 228)",
           letterSpacing: "-0.05em",
           WebkitTextStroke: "2.4px var(--color-ink-muted)",

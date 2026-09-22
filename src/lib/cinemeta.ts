@@ -1,4 +1,5 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
+import type { RequestDiagnostics } from "@/lib/request-outcome";
 
 const CINEMETA = "https://v3-cinemeta.strem.io";
 
@@ -62,9 +63,9 @@ export function isAddonNativeMeta(meta: Meta): boolean {
   return !resolvable;
 }
 
-async function catalog(path: string): Promise<Meta[]> {
+async function catalog(path: string, diagnostics?: RequestDiagnostics): Promise<Meta[]> {
   const res = await fetch(`${CINEMETA}/catalog/${path}.json`);
-  if (!res.ok) return [];
+  if (!res.ok) { if (diagnostics) diagnostics.failed = true; return []; }
   const json = await res.json();
   return json.metas ?? [];
 }
@@ -76,11 +77,11 @@ function cinemetaTopPath(type: "movie" | "series", genre?: string, skip = 0): st
   return parts.join("/");
 }
 
-export const topMovies = (genre?: string, skip = 0) =>
-  catalog(cinemetaTopPath("movie", genre, skip));
+export const topMovies = (genre?: string, skip = 0, diagnostics?: RequestDiagnostics) =>
+  catalog(cinemetaTopPath("movie", genre, skip), diagnostics);
 
-export const topSeries = (genre?: string, skip = 0) =>
-  catalog(cinemetaTopPath("series", genre, skip));
+export const topSeries = (genre?: string, skip = 0, diagnostics?: RequestDiagnostics) =>
+  catalog(cinemetaTopPath("series", genre, skip), diagnostics);
 
 export async function meta(type: "movie" | "series", id: string): Promise<Meta | null> {
   const res = await fetch(`${CINEMETA}/meta/${type}/${id}.json`);

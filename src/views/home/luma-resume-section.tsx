@@ -14,7 +14,7 @@ function formatRemaining(ms: number): string {
   return rest ? `${hours} h ${rest} min` : `${hours} h`;
 }
 
-function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; announce: (message: string) => void }) {
+export function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; announce: (message: string) => void }) {
   const t = useT();
   const { openPicker, openPlayer } = useView();
   const progress = entry.durationMs > 0 ? Math.max(0, Math.min(1, entry.positionMs / entry.durationMs)) : 0;
@@ -61,7 +61,7 @@ function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; announce:
   );
 }
 
-export function LumaResumeSection() {
+export function LumaResumeSection({ title }: { title?: string } = {}) {
   const t = useT();
   const snapshot = useLuma();
   const [announcement, setAnnouncement] = useState("");
@@ -70,7 +70,7 @@ export function LumaResumeSection() {
   return (
     <section aria-label={t("Resume with LUMA")}>
       <Row
-        title={t("Resume with LUMA")}
+        title={title ?? t("Resume with LUMA")}
         titleExtra={<span className="inline-flex items-center gap-1.5 rounded-full border border-edge-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-subtle"><ShieldCheck size={11} />{t("Local only")}</span>}
         min={260}
         shape="landscape"

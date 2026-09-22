@@ -1,6 +1,7 @@
 import type { Addon } from "./addons";
 import type { Meta } from "./cinemeta";
 import { safeFetch } from "./safe-fetch";
+import type { RequestDiagnostics } from "./request-outcome";
 
 const CAP_PER_CATALOG = 20;
 const MAX_CATALOGS = 12;
@@ -17,6 +18,7 @@ function addonOrigin(addon: Addon) {
 export async function searchAddonCatalogs(
   addons: Addon[],
   query: string,
+  diagnostics?: RequestDiagnostics,
 ): Promise<{ movies: Meta[]; series: Meta[] }> {
   const q = query.trim();
   if (!q) return { movies: [], series: [] };
@@ -39,7 +41,7 @@ export async function searchAddonCatalogs(
       const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
       const url = `${base}/catalog/${type}/${id}/search=${encodeURIComponent(q)}.json`;
       const res = await safeFetch(url, { headers: { Accept: "application/json" } });
-      if (!res.ok) return { type, metas: [] as Meta[], origin: addonOrigin(addon) };
+      if (!res.ok) throw new Error("Addon catalog unavailable");
       const json = (await res.json()) as { metas?: Meta[] };
       return { type, metas: (json.metas ?? []).slice(0, CAP_PER_CATALOG), origin: addonOrigin(addon) };
     }),
@@ -49,7 +51,7 @@ export async function searchAddonCatalogs(
   const series: Meta[] = [];
   const seen = new Set<string>();
   for (const r of settled) {
-    if (r.status !== "fulfilled") continue;
+    if (r.status !== "fulfilled") { if (diagnostics) diagnostics.failed = true; continue; }
     for (const m of r.value.metas) {
       if (!m?.id || seen.has(m.id)) continue;
       seen.add(m.id);
@@ -82,7 +84,7 @@ export type AddonResultGroup = {
 const MAX_GROUPS = 8;
 const CAP_PER_GROUP = 14;
 
-export async function searchAddonGroups(addons: Addon[], query: string): Promise<AddonResultGroup[]> {
+export async function searchAddonGroups(addons: Addon[], query: string, diagnostics?: RequestDiagnostics): Promise<AddonResultGroup[]> {
   const q = query.trim();
   if (!q) return [];
 
@@ -109,7 +111,7 @@ export async function searchAddonGroups(addons: Addon[], query: string): Promise
         targets.map(async ({ type, id }) => {
           const url = `${base}/catalog/${type}/${id}/search=${encodeURIComponent(q)}.json`;
           const res = await safeFetch(url, { headers: { Accept: "application/json" } });
-          if (!res.ok) return [] as Meta[];
+          if (!res.ok) throw new Error("Addon catalog unavailable");
           const json = (await res.json()) as { metas?: Meta[] };
           return (json.metas ?? []).slice(0, CAP_PER_GROUP);
         }),
@@ -117,7 +119,7 @@ export async function searchAddonGroups(addons: Addon[], query: string): Promise
       const seen = new Set<string>();
       const metas: Meta[] = [];
       for (const r of settled) {
-        if (r.status !== "fulfilled") continue;
+        if (r.status !== "fulfilled") { if (diagnostics) diagnostics.failed = true; continue; }
         for (const m of r.value) {
           if (!m?.id || seen.has(m.id)) continue;
           seen.add(m.id);

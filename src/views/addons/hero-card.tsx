@@ -5,6 +5,8 @@ import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { idOf } from "./addons-utils";
 import { TorrentioHeroArt } from "./torrentio-hero-art";
+import { UninstallAddonButton } from "./uninstall-addon-button";
+import { useRef } from "react";
 
 export function HeroCard({
   resolved,
@@ -20,15 +22,17 @@ export function HeroCard({
   installed: boolean;
 }) {
   const t = useT();
+  const cardRef = useRef<HTMLDivElement>(null);
   const c = resolved.curated;
   if (!c?.hero) return null;
   const isTorrentio = idOf(resolved) === "com.stremio.torrentio.addon";
   return (
     <div
+      ref={cardRef}
       role="button"
       tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen()}
+      onClick={(e) => e.currentTarget.contains(e.target as Node) && onOpen()}
+      onKeyDown={(e) => e.target === e.currentTarget && (e.key === "Enter" || e.key === " ") && onOpen()}
       className="group relative flex min-h-[260px] w-full cursor-pointer overflow-hidden rounded-3xl border border-edge-soft bg-surface text-start transition-all hover:border-edge hover:shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
     >
       {isTorrentio ? (
@@ -67,19 +71,15 @@ export function HeroCard({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          {installed ? <UninstallAddonButton name={resolved.manifest?.name ?? c.hero.title} onUninstall={onUninstall} returnFocusRef={cardRef} /> : <button
             onClick={(e) => {
               e.stopPropagation();
-              installed ? onUninstall() : onInstall();
+              onInstall();
             }}
-            className={`h-9 rounded-full px-5 text-[13px] font-semibold transition-all ${
-              installed
-                ? "bg-elevated/70 text-ink ring-1 ring-edge-soft hover:bg-danger/15 hover:text-danger hover:ring-danger/30"
-                : "bg-ink text-canvas hover:opacity-90 active:scale-[0.97]"
-            }`}
+            className="h-9 rounded-full bg-ink px-5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
           >
-            {installed ? t("Installed") : t("Get")}
-          </button>
+            {t("Get")}
+          </button>}
           <span className="inline-flex h-9 items-center gap-1 rounded-full px-4 text-[12.5px] font-medium text-ink-muted transition-colors group-hover:text-ink">
             {t("View details")}
             <ChevronRight size={13} strokeWidth={2.4} className="transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100" />

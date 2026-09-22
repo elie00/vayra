@@ -2,7 +2,7 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 
 export type PlaybackSourceStatus = {
-  label: "Preparing download" | "Downloading" | "Download complete" | "Download failed" | "Buffering";
+  label: "Preparing download" | "Queued" | "Downloading" | "Download complete" | "Download failed" | "Buffering";
   tone: "info" | "success" | "error";
   progress?: number;
   bytesPerSecond?: number;
@@ -42,6 +42,7 @@ export function playbackSourceStatus(
   if (download?.kind === "preparing") {
     return { label: "Preparing download", tone: "info" };
   }
+  if (download?.kind === "queued") return { label: "Queued", tone: "info" };
   if (download?.kind === "downloading") {
     return {
       label: "Downloading",

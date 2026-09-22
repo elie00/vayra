@@ -332,9 +332,9 @@ function BrowserCard({
       </div>
       <div className="flex flex-col gap-3 p-4">
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-[16px] font-semibold tracking-tight text-ink">{theme.name}</span>
+          <span className="text-[16px] font-semibold tracking-tight text-ink">{theme.id.startsWith("user:") ? theme.name : t(theme.name)}</span>
           {theme.blurb && (
-            <span className="line-clamp-2 text-[12.5px] leading-relaxed text-ink-muted">{theme.blurb}</span>
+            <span className="line-clamp-2 text-[12.5px] leading-relaxed text-ink-muted">{theme.id.startsWith("user:") ? theme.blurb : t(theme.blurb)}</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">

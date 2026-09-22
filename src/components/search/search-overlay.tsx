@@ -20,9 +20,10 @@ import { AiSearchSection } from "./ai-search-section";
 import { WebSearchButton } from "./web-search-button";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 import { useFocusTrap } from "@/lib/use-focus-trap";
+import "./search-field.css";
 
 export function SearchOverlay() {
-  const { open, setOpen, query, setQuery, results, status, clear, recordRecent } = useSearch();
+  const { open, setOpen, query, setQuery, results, status, clear, retry, recordRecent } = useSearch();
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   useFocusTrap(overlayRef, open);
@@ -71,7 +72,7 @@ export function SearchOverlay() {
   const magnetInput = !!trimmed && isMagnetInput(trimmed);
   const urlInput = !!trimmed && !magnetInput && isDirectVideoUrl(trimmed);
   const directInput = magnetInput || urlInput;
-  const hasResults =
+  const hasResults = Boolean(
     results &&
     trimmed &&
     (results.topMatch ||
@@ -81,7 +82,7 @@ export function SearchOverlay() {
       results.liveTv.length ||
       results.anime.length ||
       results.addons.length ||
-      results.addonGroups.length);
+      results.addonGroups.length));
   const noResults =
     results &&
     trimmed &&
@@ -110,7 +111,7 @@ export function SearchOverlay() {
       />
 
       <div className="relative mx-auto flex h-full w-full max-w-[1080px] flex-col px-6 py-6 sm:px-10 sm:py-10">
-        <div className="modal-panel flex shrink-0 items-center gap-3 rounded-2xl border border-edge-soft/80 bg-elevated/70 px-5 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.7)]">
+        <div data-search-field="" className="modal-panel flex shrink-0 items-center gap-3 rounded-2xl border border-edge-soft/80 bg-elevated/70 px-5 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.7)]">
           <Search size={22} className="shrink-0 text-ink-muted" strokeWidth={1.9} />
           <input
             ref={inputRef}
@@ -118,6 +119,9 @@ export function SearchOverlay() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
+              // IME confirmation, held keys and system shortcuts must not open
+              // a title or trigger an AI request while the user is still typing.
+              if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229 || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
               // Shift+Enter runs the AI search on what is typed, without having
               // to reach for the button below the results.
               if (e.key === "Enter" && e.shiftKey) {
@@ -126,7 +130,7 @@ export function SearchOverlay() {
                 setAiRunSignal((n) => n + 1);
                 return;
               }
-              if (e.key === "Enter" && results?.topMatch) {
+              if (e.key === "Enter" && results?.topMatch && results.query.trim() === query.trim()) {
                 e.preventDefault();
                 recordRecent(query);
                 const meta = results.topMatch.meta;
@@ -136,17 +140,20 @@ export function SearchOverlay() {
             }}
             placeholder={t("Search movies, shows, people, genres, years...")}
             aria-label={t("Search movies, shows, people, genres, years...")}
-            className="h-16 flex-1 bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
+            className="h-16 min-w-0 flex-1 bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
             spellCheck={false}
             autoComplete="off"
           />
-          {status === "loading" && <Loader2 size={18} className="shrink-0 animate-spin text-ink-subtle" />}
+          {status === "loading" && <Loader2 aria-hidden="true" size={18} className="shrink-0 animate-spin text-ink-subtle" />}
           <WebSearchButton />
           {query && (
             <button
               type="button"
               aria-label={t("Clear")}
-              onClick={clear}
+              onClick={() => {
+                clear();
+                inputRef.current?.focus();
+              }}
               className="flex h-10 w-10 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
             >
               <X size={18} strokeWidth={2.2} />
@@ -157,6 +164,24 @@ export function SearchOverlay() {
 
         <div className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!trimmed && <EmptyState onClose={close} onOpenGuide={() => setGuideOpen(true)} />}
+
+          {trimmed && !directInput && status === "error" && (
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-edge-soft bg-elevated p-4">
+              <p role="alert" className="min-w-0 flex-1 text-[14px] text-ink-muted">
+                {t(hasResults ? "Some search sources are unavailable. Available results are shown below." : "Search could not be completed. Check your connection and try again.")}
+              </p>
+              <button type="button" className="mac-secondary-button" onClick={() => { retry(); inputRef.current?.focus(); }}>
+                {t("Retry search")}
+              </button>
+            </div>
+          )}
+
+          {trimmed && !directInput && (status === "typing" || status === "loading") && (
+            <p role="status" className="mb-5 flex items-center gap-2 text-[13.5px] text-ink-muted">
+              <Loader2 aria-hidden="true" size={18} className="animate-spin" />
+              {t(hasResults ? "Searching other sources…" : "Looking…")}
+            </p>
+          )}
 
           {magnetInput && (
             <div className="mb-5">
@@ -186,7 +211,11 @@ export function SearchOverlay() {
                 <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
                   {t("Browse")}
                 </span>
-                <span className="text-[15px] font-semibold text-ink">{results.intent.label}</span>
+                <span className="text-[15px] font-semibold text-ink">
+                  {results.intent.kind === "year"
+                    ? t("Movies from {year}", { year: results.intent.year })
+                    : t(results.intent.mediaType === "movie" ? "{genre} movies" : "{genre} shows", { genre: t(results.intent.genre) })}
+                </span>
               </span>
               <CornerDownLeft size={15} className="ms-auto text-ink-subtle" />
             </button>
@@ -210,7 +239,7 @@ export function SearchOverlay() {
           )}
 
           {noResults && !directInput && (
-            <div className="flex flex-col items-center gap-3 pt-16 text-center">
+            <div role="status" className="flex flex-col items-center gap-3 pt-16 text-center">
               <span className="text-[17px] font-semibold text-ink">{t("No matches for \"{query}\"", { query: trimmed })}</span>
               <span className="max-w-[44ch] text-[14px] text-ink-muted">
                 {t("Try a different spelling, a person's name, a year like \"1972\", or a genre like \"Horror\".")}
@@ -218,12 +247,6 @@ export function SearchOverlay() {
             </div>
           )}
 
-          {trimmed && !directInput && !results && status !== "done" && (
-            <div className="flex flex-col items-center gap-3 pt-16 text-ink-muted">
-              <Loader2 size={22} className="animate-spin" />
-              <span className="text-[13.5px]">{t("Looking…")}</span>
-            </div>
-          )}
         </div>
       </div>
       {guideOpen && <GuideModal onClose={() => setGuideOpen(false)} />}

@@ -52,7 +52,7 @@ export function CastErrorModal({
             <h2
               id="cast-error-title"
               className="text-[20px] font-semibold leading-tight text-ink"
-              style={{ fontFamily: "Fraunces, serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {t(error.title)}
             </h2>

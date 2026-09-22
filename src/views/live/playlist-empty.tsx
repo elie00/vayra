@@ -41,7 +41,7 @@ function Intro({ onContinue }: { onContinue: () => void }) {
           </span>
           <h1
             className="font-display text-[60px] font-medium leading-[1.02] tracking-tight text-ink"
-            style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             {t("Connect a playlist to get started.")}
           </h1>
@@ -217,7 +217,7 @@ function Form({
         <header className="flex flex-col gap-3">
           <h2
             className="font-display text-[38px] font-medium leading-[1.05] tracking-tight text-ink"
-            style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             {t("Connect your provider.")}
           </h2>

@@ -9,6 +9,7 @@ import { arabicAwareMatch } from "@/lib/iptv/rtl";
 import type { Settings } from "@/lib/settings";
 import { safeFetch } from "@/lib/safe-fetch";
 import { anilistAnimeSearch } from "@/lib/anilist/browse";
+import type { RequestDiagnostics } from "@/lib/request-outcome";
 
 export type SearchPerson = {
   id: number;
@@ -116,13 +117,13 @@ type JikanAnime = {
   score?: number;
 };
 
-async function jikanAnimeSearch(query: string, limit: number): Promise<AnimeHit[]> {
+async function jikanAnimeSearch(query: string, limit: number, diagnostics?: RequestDiagnostics): Promise<AnimeHit[]> {
   const q = query.trim();
   if (q.length < 2) return [];
   try {
     const url = `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&order_by=popularity&sort=asc&limit=${limit}&sfw=true`;
     const res = await safeFetch(url);
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error("Anime source unavailable");
     const data = (await res.json()) as { data?: JikanAnime[] };
     return (data.data ?? []).map((a) => {
       const year = a.year ?? (a.aired?.from ? Number(a.aired.from.slice(0, 4)) : null);
@@ -138,16 +139,17 @@ async function jikanAnimeSearch(query: string, limit: number): Promise<AnimeHit[
       };
     });
   } catch {
+    if (diagnostics) diagnostics.failed = true;
     return [];
   }
 }
 
-export async function searchAnime(query: string, limit = 8): Promise<AnimeHit[]> {
+export async function searchAnime(query: string, limit = 8, diagnostics?: RequestDiagnostics): Promise<AnimeHit[]> {
   const q = query.trim();
   if (q.length < 2) return [];
   const [anilist, jikan] = await Promise.all([
-    anilistAnimeSearch(q, limit).catch(() => []),
-    jikanAnimeSearch(q, limit).catch(() => []),
+    anilistAnimeSearch(q, limit, diagnostics).catch(() => { if (diagnostics) diagnostics.failed = true; return []; }),
+    jikanAnimeSearch(q, limit, diagnostics),
   ]);
   const out: AnimeHit[] = [];
   const seenMal = new Set<number>();
@@ -177,14 +179,15 @@ export async function searchAnime(query: string, limit = 8): Promise<AnimeHit[]>
   return out.slice(0, limit);
 }
 
-export async function searchCinemeta(query: string): Promise<{ movies: Meta[]; series: Meta[] }> {
+export async function searchCinemeta(query: string, diagnostics?: RequestDiagnostics): Promise<{ movies: Meta[]; series: Meta[] }> {
   const q = query.trim();
   if (q.length < 2) return { movies: [], series: [] };
   const fetchKind = async (type: "movie" | "series"): Promise<Meta[]> => {
     const url = `https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(q)}.json`;
     const res = await safeFetch(url, { headers: { Accept: "application/json" } }).catch(() => null);
-    if (!res || !res.ok) return [];
+    if (!res || !res.ok) { if (diagnostics) diagnostics.failed = true; return []; }
     const data = (await res.json().catch(() => null)) as { metas?: Meta[] } | null;
+    if (!data && diagnostics) diagnostics.failed = true;
     return (data?.metas ?? []).slice(0, 12);
   };
   const [movies, series] = await Promise.all([fetchKind("movie"), fetchKind("series")]);
@@ -194,7 +197,7 @@ export async function searchCinemeta(query: string): Promise<{ movies: Meta[]; s
 export async function searchAll(
   key: string,
   query: string,
-  opts: { excludeGenres?: number[] } = {},
+  opts: { excludeGenres?: number[]; diagnostics?: RequestDiagnostics } = {},
 ): Promise<SearchResults> {
   const trimmed = query.trim();
   if (!trimmed) {
@@ -208,6 +211,7 @@ export async function searchAll(
     query: trimmed,
     include_adult: "false",
   });
+  if (!data && opts.diagnostics) opts.diagnostics.failed = true;
   const exclude = new Set(opts.excludeGenres ?? []);
   const hasExcludedGenre = (gs?: number[]) => (gs ?? []).some((id) => exclude.has(id));
   const results = (data?.results ?? []).filter((r) => {
@@ -354,6 +358,16 @@ async function fuzzyPeopleFallback(
   }
 }
 
+const FRENCH_GENRES: Record<string, string> = {
+  aventure: "Adventure", comedie: "Comedy", documentaire: "Documentary", drame: "Drama",
+  famille: "Family", fantastique: "Fantasy", histoire: "History", horreur: "Horror",
+  musique: "Music", mystere: "Mystery", "science fiction": "Sci-Fi", guerre: "War",
+};
+
+function normalizeGenre(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[-–—]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export function detectIntent(query: string): SearchIntent {
   const q = query.trim();
 
@@ -363,14 +377,20 @@ export function detectIntent(query: string): SearchIntent {
     return { kind: "year", year, label: `Movies from ${year}` };
   }
 
-  const lower = q.toLowerCase();
+  const lower = normalizeGenre(q);
+  const frenchType = /^(series?)(?:\s|$)/.test(lower) ? "tv" : "movie";
+  const frenchName = lower.replace(/^(?:films?|series?)\s+(?:de\s+|d['’])?/, "");
+  const canonical = FRENCH_GENRES[frenchName];
+  if (canonical && (frenchType === "movie" ? MOVIE_GENRES : TV_GENRES)[canonical]) {
+    return { kind: "genre", genre: canonical, mediaType: frenchType, label: `${canonical} ${frenchType === "movie" ? "movies" : "shows"}` };
+  }
   for (const [name] of Object.entries(MOVIE_GENRES)) {
-    if (lower === name.toLowerCase() || lower === `${name.toLowerCase()} movies`) {
+    if (lower === normalizeGenre(name) || lower === `${normalizeGenre(name)} movies`) {
       return { kind: "genre", genre: name, mediaType: "movie", label: `${name} movies` };
     }
   }
   for (const [name] of Object.entries(TV_GENRES)) {
-    if (lower === name.toLowerCase() || lower === `${name.toLowerCase()} shows`) {
+    if (lower === normalizeGenre(name) || lower === `${normalizeGenre(name)} shows`) {
       return { kind: "genre", genre: name, mediaType: "tv", label: `${name} shows` };
     }
   }

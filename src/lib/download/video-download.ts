@@ -29,11 +29,8 @@ export async function removeDownloadFile(destPath: string): Promise<void> {
 
 /** Whether something already sits at this path — same scope reason as above. */
 export async function downloadFileExists(path: string): Promise<boolean> {
-  try {
-    return await invoke<boolean>("download_file_exists", { path });
-  } catch {
-    return false;
-  }
+  // An unavailable filesystem is not proof that a destination is unoccupied.
+  return await invoke<boolean>("download_file_exists", { path });
 }
 
 export function startDownload(
@@ -42,6 +39,7 @@ export function startDownload(
   destPath: string,
   onProgress: (p: DownloadProgress) => void,
   headers?: Record<string, string>,
+  maxBytes?: number,
 ): DownloadHandle {
   let settle = () => {};
   let fail = (_e: Error) => {};
@@ -87,6 +85,7 @@ export function startDownload(
     url,
     dest: destPath,
     headers: headers && Object.keys(headers).length > 0 ? headers : null,
+    maxBytes: maxBytes ?? null,
     onEvent: channel,
   }).catch((e: unknown) => {
     fail(e instanceof Error ? e : new Error(String(e)));

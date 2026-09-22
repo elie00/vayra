@@ -10,6 +10,7 @@ import { sanitizeSeekStep } from "@/lib/seek-step";
 import { migrateModelId } from "@/lib/ai-models";
 import { DEFAULT, STORAGE_KEY } from "./defaults";
 import type { Settings } from "./types";
+import { sanitizeMacPins } from "@/chrome/mac-navigation";
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 
@@ -66,6 +67,7 @@ export function sanitizeTheme(t: Partial<ThemeSettings> | undefined): ThemeSetti
   return {
     preset,
     fontPair: fontOk ? (t.fontPair as ThemeSettings["fontPair"]) : DEFAULT_THEME.fontPair,
+    ...(t.fontPairOverride === true ? { fontPairOverride: true } : {}),
     backgroundDim: dimOk ? (t.backgroundDim as number) : DEFAULT_THEME.backgroundDim,
     backgroundImage: imgOk ? (t.backgroundImage ?? null) : null,
     customColors,
@@ -167,6 +169,7 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
         ...DEFAULT.navCustomization,
         ...(parsed.navCustomization ?? {}),
       },
+      macPinnedViews: sanitizeMacPins(parsed.macPinnedViews),
       letterboxd: {
         ...DEFAULT.letterboxd,
         ...(parsed.letterboxd ?? {}),

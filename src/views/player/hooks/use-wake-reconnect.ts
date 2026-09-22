@@ -29,7 +29,9 @@ export function useWakeReconnect(params: {
       const s = srcRef.current;
       if (isLocalUrl(s.url)) return;
       const snap = snapRef.current;
-      if (snap.status === "ended" || snap.status === "idle") return;
+      // A paused video must stay paused after sleep; the explicit Play action
+      // checks for real progress and reconnects only if necessary.
+      if (snap.status === "paused" || snap.status === "ended" || snap.status === "idle") return;
       if (snap.durationSec <= 0 && getPlaybackPosition() <= 0) return;
       const b = bridgeRef.current;
       if (!b) return;

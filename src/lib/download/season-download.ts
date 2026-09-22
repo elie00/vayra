@@ -25,7 +25,7 @@ function hasAired(ep: PlayEpisode): boolean {
 }
 
 function alreadySaving(status: DownloadItem["status"]): boolean {
-  return status === "queued" || status === "downloading" || status === "done";
+  return status === "queued" || status === "downloading" || status === "paused" || status === "done";
 }
 
 export function seasonPackEligible(stream: ScoredStream): boolean {

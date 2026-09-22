@@ -1,4 +1,5 @@
 import { effectiveTmdbLanguage, get, IMG } from "./tmdb-client";
+import { lruSet } from "../../cache";
 
 export type TmdbLiteMeta = {
   name: string | null;
@@ -17,22 +18,52 @@ type RawLite = {
 };
 
 const overviewCache = new Map<string, string>();
-export async function tmdbMetadataOverview(key: string, metaId: string): Promise<string | undefined> {
+const overviewInflight = new Map<string, Promise<string | undefined>>();
+export async function tmdbMetadataOverview(
+  key: string,
+  metaId: string,
+  type?: string,
+  language = effectiveTmdbLanguage() || "en",
+): Promise<string | undefined> {
   if (!key) return undefined;
   const m = metaId.match(/^tmdb:(movie|tv):(\d+)$/);
-  if (!m) return undefined;
-  const metaLang = effectiveTmdbLanguage() || "en";
-  const cacheKey = `${metaId}|${metaLang}`;
+  if (!m && !/^tt\d+$/.test(metaId)) return undefined;
+  const cacheKey = `${metaId}|${type ?? ""}|${language}`;
   const hit = overviewCache.get(cacheKey);
   if (hit !== undefined) return hit || undefined;
-  try {
-    const raw = await get<{ overview?: string }>(key, `${m[1]}/${m[2]}`, { language: metaLang });
-    const ov = raw?.overview?.trim() || "";
-    overviewCache.set(cacheKey, ov);
-    return ov || undefined;
-  } catch {
-    return undefined;
-  }
+  const pending = overviewInflight.get(cacheKey);
+  if (pending) return pending;
+  const request = (async () => {
+    try {
+      let path = m ? `${m[1]}/${m[2]}` : "";
+      if (!path) {
+        const found = await get<{
+          movie_results?: { id: number }[];
+          tv_results?: { id: number }[];
+        }>(key, `find/${metaId}`, { external_source: "imdb_id", language });
+        if (!found) return undefined;
+        const movie = found.movie_results?.[0];
+        const tv = found.tv_results?.[0];
+        // Do not confuse a film with a series sharing a provider result.
+        if (type === "movie") path = movie ? `movie/${movie.id}` : "";
+        else if (type === "series") path = tv ? `tv/${tv.id}` : "";
+        else path = movie ? `movie/${movie.id}` : tv ? `tv/${tv.id}` : "";
+        if (!path) return undefined;
+      }
+      const raw = await get<{ overview?: string }>(key, path, { language });
+      // Network/key failures are retryable; never retain them as missing translations.
+      if (!raw) return undefined;
+      const ov = raw.overview?.trim() || "";
+      lruSet(overviewCache, cacheKey, ov, 300);
+      return ov || undefined;
+    } catch {
+      return undefined;
+    } finally {
+      overviewInflight.delete(cacheKey);
+    }
+  })();
+  overviewInflight.set(cacheKey, request);
+  return request;
 }
 
 export async function tmdbLiteMeta(key: string, metaId: string): Promise<TmdbLiteMeta | null> {

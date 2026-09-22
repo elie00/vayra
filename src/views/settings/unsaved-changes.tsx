@@ -5,6 +5,7 @@ import { useT } from "@/lib/i18n";
 import { setNavGuard } from "@/lib/nav-guard";
 import { useSettings, type Settings } from "@/lib/settings";
 import { changedSettingKeys } from "@/lib/settings/diff";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 /** Settings apply live so previews keep working. This snapshots them on entry
  *  and offers Save (accept the current values) or Reset (restore the snapshot),
@@ -150,6 +151,8 @@ function ConfirmDialog({
   onCancel: () => void;
   actions: Action[];
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -169,16 +172,17 @@ function ConfirmDialog({
 
   return createPortal(
     <div
-      className="animate-fade-in fixed inset-0 z-[220] flex items-center justify-center bg-canvas/80 p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
+      className="animate-fade-in fixed inset-0 z-[220] flex items-center justify-center p-4"
     >
+      <button type="button" tabIndex={-1} aria-label={actions[0]?.label} onClick={onCancel}
+        className="absolute inset-0 cursor-default bg-canvas/80 backdrop-blur-sm" />
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="animate-modal-in flex w-[min(92vw,420px)] flex-col gap-3 rounded-2xl border border-edge-soft bg-elevated p-5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+        className="animate-modal-in relative flex w-[min(92vw,420px)] flex-col gap-3 rounded-2xl border border-edge-soft bg-elevated p-5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <h2 className="font-display text-[18px] font-medium text-ink">{title}</h2>
         <p className="text-[13.5px] leading-relaxed text-ink-muted">{body}</p>

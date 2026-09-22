@@ -5,6 +5,9 @@ import { useT } from "@/lib/i18n";
 import { HoverPreviewCard } from "./setting-preview";
 
 export type SectionId =
+  | "downloads"
+  | "connections"
+  | "privacy"
   | "basics"
   | "account"
   | "cira"

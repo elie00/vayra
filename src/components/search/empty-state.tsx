@@ -267,7 +267,7 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
             {t("Browsing")}
           </span>
           <h3 className="font-display text-[22px] font-medium tracking-tight text-ink">
-            {genreBrowse}
+            {t(genreBrowse)}
           </h3>
         </div>
 
@@ -305,8 +305,9 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
           </div>
         ) : items.length === 0 ? (
           <p className="rounded-xl border border-dashed border-edge px-4 py-8 text-center text-[13px] text-ink-subtle">
-            {t("No titles found for {genre}", { genre: genreBrowse })}
-            {isServiceTab ? ` on ${SERVICES[filterTab as StreamingService].name}` : ""}.{" "}
+            {isServiceTab
+              ? t("No titles found for {genre} on {service}", { genre: t(genreBrowse), service: SERVICES[filterTab as StreamingService].name })
+              : t("No titles found for {genre}", { genre: t(genreBrowse) })}.{" "}
             {!settings.tmdbKey && isServiceTab && t("Service-specific browsing needs a TMDB key. Pick All / Movies / Shows to browse via Cinemeta.")}
           </p>
         ) : (
@@ -424,7 +425,7 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
               onClick={() => setGenreBrowse(name)}
               className="h-10 rounded-full border border-edge-soft bg-elevated/40 px-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
             >
-              {name}
+              {t(name)}
             </button>
           ))}
         </div>

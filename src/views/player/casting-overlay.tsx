@@ -54,7 +54,7 @@ export function CastingOverlay({
           <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-ink-subtle">
             {label}
           </span>
-          <span className="text-[28px] font-semibold leading-tight text-ink" style={{ fontFamily: "Fraunces, serif" }}>
+          <span className="text-[28px] font-semibold leading-tight text-ink" style={{ fontFamily: "var(--font-display)" }}>
             {device.name}
           </span>
           {title && !connecting && (

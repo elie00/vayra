@@ -41,9 +41,9 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const fullscreen = useWindowFullscreen();
   const maxed = useMaximized();
   if (chromeHidden && !connecting) return null;
-  const layout = preview ? preview.layout : activeLayout(settings.theme);
+  const layout = isMacDesktop() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
-  const sidebarHidden = connecting || view === "settings" || onLiveRoot || topKind === "picker";
+  const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !isMacDesktop()) || topKind === "picker";
   const hideSearch = view === "addons";
   // On mobile the primary nav is the bottom tab bar (MobileShell), so the header
   // reserves no rail space and shows no hamburger (the drawer is kept in the code

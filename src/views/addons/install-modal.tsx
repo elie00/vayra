@@ -6,12 +6,15 @@ import {
   isInstalled,
   manifestToConfigureUrl,
   parseAddonUrl,
+  type InstallResult,
+  type StremioSyncStatus,
 } from "@/lib/addon-store";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { isWeb } from "@/lib/platform";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useT } from "@/lib/i18n";
 import type { Addon } from "@/lib/addons";
+import { addonSyncMessage } from "./install-feedback";
 
 type Mode =
   | { kind: "install"; url: string }
@@ -37,7 +40,7 @@ export function AddonInstallModal({
   onInstall: (
     rawUrl: string,
     opts: { replaceId?: string },
-  ) => Promise<{ replaced: boolean; addon: Addon } | null>;
+  ) => Promise<InstallResult | null>;
 }) {
   const t = useT();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -47,13 +50,14 @@ export function AddonInstallModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [installStage, setInstallStage] = useState<InstallStage[] | null>(null);
-  const [done, setDone] = useState<{ replaced: boolean; manifest: Addon["manifest"] } | null>(null);
+  const [done, setDone] = useState<InstallResult | null>(null);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        if (!submittingRef.current) onClose();
       }
     };
     window.addEventListener("keydown", onKey, true);
@@ -104,28 +108,28 @@ export function AddonInstallModal({
   }, [error, loading, mode, resolved, tryResolve]);
 
   const onSubmit = async () => {
+    if (submittingRef.current) return;
     if (!resolved) {
       void tryResolve(pasted.trim());
       return;
     }
     const stages: InstallStage[] = [
       { label: resolved.matchKind === "fresh" ? t("Reading manifest") : t("Reading new manifest"), done: true },
-      { label: resolved.matchKind === "fresh" ? t("Saving to library") : t("Swapping configuration"), done: false },
-      { label: t("Syncing to Stremio"), done: false },
+      { label: t("Saving addon"), done: false },
     ];
+    submittingRef.current = true;
+    setError(null);
     setInstallStage(stages);
-    await new Promise((r) => setTimeout(r, 220));
-    setInstallStage((s) => (s ? s.map((x, i) => (i === 1 ? { ...x, done: true } : x)) : s));
     try {
       const result = await onInstall(resolved.url, {
         replaceId: resolved.replaceId ?? undefined,
       });
-      setInstallStage((s) => (s ? s.map((x, i) => (i === 2 ? { ...x, done: true } : x)) : s));
-      await new Promise((r) => setTimeout(r, 280));
-      if (result) setDone({ replaced: result.replaced, manifest: resolved.manifest });
-      else setInstallStage(null);
+      if (result) setDone(result);
+      else setError(t("Install failed."));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("Install failed."));
+    } finally {
+      submittingRef.current = false;
       setInstallStage(null);
     }
   };
@@ -188,7 +192,7 @@ export function AddonInstallModal({
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {done ? (
-            <SuccessPane manifest={done.manifest} replaced={done.replaced} onClose={onClose} />
+            <SuccessPane manifest={done.addon.manifest} replaced={done.replaced} syncStatus={done.syncStatus} onClose={onClose} />
           ) : installStage ? (
             <InstallingPane
               stages={installStage}
@@ -227,7 +231,7 @@ export function AddonInstallModal({
               />
 
               {error && (
-                <p className="mt-3 rounded-lg bg-danger/15 px-3 py-2 text-[12.5px] text-danger ring-1 ring-danger/30">
+                <p role="alert" className="mt-3 rounded-lg bg-danger/15 px-3 py-2 text-[12.5px] text-danger ring-1 ring-danger/30">
                   {error}
                 </p>
               )}
@@ -503,10 +507,12 @@ function InstallingPane({
 function SuccessPane({
   manifest,
   replaced,
+  syncStatus,
   onClose,
 }: {
   manifest: Addon["manifest"] | null;
   replaced: boolean;
+  syncStatus: StremioSyncStatus;
   onClose: () => void;
 }) {
   const t = useT();
@@ -520,7 +526,7 @@ function SuccessPane({
       </div>
       <div className="flex flex-col gap-1">
         <h3 className="text-[18px] font-semibold text-ink">
-          {replaced ? t("Updated") : t("Installed")}
+          {replaced ? t("Updated locally") : t("Installed locally")}
         </h3>
         {manifest && (
           <p className="text-[13px] text-ink-muted">
@@ -531,6 +537,10 @@ function SuccessPane({
           </p>
         )}
       </div>
+      <p role={syncStatus === "failed" ? "alert" : "status"}
+        className={`max-w-sm text-[13px] leading-relaxed ${syncStatus === "failed" ? "text-danger" : "text-ink-muted"}`}>
+        {addonSyncMessage(syncStatus, t)}
+      </p>
       <button
         type="button"
         onClick={onClose}

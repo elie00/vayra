@@ -1,4 +1,5 @@
 import { type ComponentProps, type RefObject } from "react";
+import { useT } from "@/lib/i18n";
 import { DrawCanvas, StrokesLayer, type Stroke } from "@/components/player/draw-canvas";
 import { StreamSwitcher } from "@/components/player/stream-switcher";
 import { StreamCheckPill } from "@/components/player/stream-check-pill";
@@ -182,8 +183,13 @@ export type PlayerOverlayLayersProps = {
 };
 
 export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
+  const t = useT();
   return (
     <>
+      {p.snap.resumeRecovery && !p.pipMode && <div className="absolute inset-x-4 top-24 z-[200] mx-auto flex w-fit max-w-lg flex-wrap items-center justify-center gap-3 rounded-2xl bg-black/90 px-5 py-4 text-[14px] text-white shadow-xl" onPointerDown={(e) => e.stopPropagation()}>
+        <p role="status" aria-live="polite">{t(p.snap.resumeRecovery === "reconnecting" ? "Reconnecting to your video…" : "The video is still paused. Retry or choose another source.")}</p>
+        {p.snap.resumeRecovery === "reconnecting" ? <button type="button" onClick={() => p.bridgeRef.current?.pause()} className="min-h-11 rounded-xl bg-white/15 px-4 font-medium hover:bg-white/25">{t("Cancel reconnection")}</button> : <><button type="button" onClick={() => void p.bridgeRef.current?.play()} className="min-h-11 rounded-xl bg-white px-4 font-medium text-black">{t("Retry")}</button><button type="button" onClick={p.pickAnother} className="min-h-11 rounded-xl bg-white/15 px-4">{t("Choose another source")}</button></>}
+      </div>}
       <StageOverlays
         snap={p.snap}
         engine={p.engine}

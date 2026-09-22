@@ -1,5 +1,6 @@
 import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
 import { imageRequestLang } from "./tmdb-image-lang";
+import type { RequestDiagnostics } from "@/lib/request-outcome";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -95,6 +96,7 @@ export async function get<T>(
   key: string,
   path: string,
   params: Record<string, string> = {},
+  diagnostics?: RequestDiagnostics,
 ): Promise<T | null> {
   if (!key) return null;
   const url = new URL(`${TMDB}/${path}`);
@@ -110,6 +112,7 @@ export async function get<T>(
         await new Promise((r) => setTimeout(r, Math.min(2000, 250 * 2 ** attempt)));
         continue;
       }
+      if (!data && diagnostics) diagnostics.failed = true;
       return data;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -118,8 +121,10 @@ export async function get<T>(
         continue;
       }
       console.warn(`[tmdb] network error on ${path}`, e);
+      if (diagnostics) diagnostics.failed = true;
       return null;
     }
   }
+  if (diagnostics) diagnostics.failed = true;
   return null;
 }

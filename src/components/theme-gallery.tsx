@@ -175,7 +175,7 @@ function GalleryCard({
           <span className="truncate text-[14px] font-semibold text-ink">{entry.name}</span>
           <span className="truncate text-[11.5px] text-ink-subtle">
             {t("by {name}", { name: entry.author })}
-            {entry.blurb ? ` · ${entry.blurb}` : ""}
+            {entry.blurb ? ` · ${t(entry.blurb)}` : ""}
           </span>
         </div>
         <button

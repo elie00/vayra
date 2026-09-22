@@ -1,24 +1,118 @@
 # Passation — VAYRA
 
-## État actuel (top-line)
-- **Repo** : `elie00/vayra` (autonome, détaché de `harborstremio` ; remote `origin`).
-- **Branche de référence** : `main`, poussée sur `origin`. Les anciennes branches de livraison ne doivent pas être assimilées à `main` sans comparaison Git.
-- **CI** : `ops/release-readiness` a été intégrée à `main` par `6014fed`, puis
-  la correction i18n `0e59332` a été poussée. Les placeholders de sidecars
-  servent uniquement aux contrôles statiques ; les builds de release
-  continuent de télécharger les binaires réels vérifiés. Depuis `d9f4df3`
-  (2026-07-17), les workflows tournent sur les majeures Node 24 des actions
-  (checkout v6, setup-node v6, setup-java v5, upload-artifact v6,
-  pnpm/action-setup v6) et `node-version: 24` ; les 5 workflows (frontend,
-  android-build, src-tauri, vayra-core, cira-db) sont verts sur ce commit,
-  sans plus aucun avertissement de dépréciation Node 20.
-- **Monorepo** : application à la racine, site public et fonctions Vercel sous `site/`. Vercel suit `elie00/vayra`, branche `main`, Root Directory `site`.
-- **Artefacts locaux** : `.claude/`, les assets Android générés et
-  `tauri.properties` sont ignorés. L'architecture VARA/VEYA est versionnée dans
-  `docs/vara-veya-architecture.md`.
-- **Binaires locaux livrés** : `/Applications/Harbor.app` (macOS, reconstruite à jour), `~/Desktop/harbor-android-v4.apk`.
+## État actuel (top-line) — mis à jour le 2026-09-22
+- **Périmètre** : depuis l'audit du 2026-09-05 (`docs/audit-global-2026-09-05.md`),
+  **usage personnel sur ce Mac uniquement** (voir `AGENTS.md`). Web, Android,
+  Windows, Linux, signature Developer ID et notarisation sont **en pause** ; les
+  sections « Travaux réalisés » ci-dessous (juillet) restent comme historique.
+- **Repo** : `elie00/vayra`, remote `origin`.
+- **Branches** : `codex/pause-resume-downloads` (travail macOS du 04/09 au 22/09)
+  fusionnée dans `main` par pull request le 2026-09-22. `main` est de nouveau la
+  référence.
+- **App installée** : `/Applications/VAYRA.app` 0.9.42 (binaire `Contents/MacOS/vayra`,
+  SHA-256 `a1b26209…`), construite le 2026-09-22 avec les quatre lots ci-dessous.
+  Versions précédentes dans `~/Library/Application Support/VAYRA-backups/`
+  (`20260922-200326` = lots 1–3, `20260922-194342` = journal de pairs,
+  `20260922-192818` = build du 12/09).
+- **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
+  au dépôt, Root Directory `.` et `pnpm build:web` : il construit l'**app web**
+  depuis la racine, pas seulement `site/`. Chaque push de branche crée un Preview ;
+  un push sur `main` publierait en production, mais `vercel.json` porte
+  `git.deploymentEnabled.main: false` depuis la fusion du 22/09 (web en pause) :
+  la production reste à `d041edd` (31/08). Retirer ce bloc pour republier.
+- **Trousseau** : l'app est signée ad hoc, donc chaque nouveau build redéclenche
+  l'invite d'accès au trousseau (« Toujours autoriser »). Tant qu'elle est ouverte,
+  l'app tourne sans ses clés et la migration des secrets attend.
+- **Chantier en cours** : lecture de sources torrent à pairs intermittents
+  (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
-## Travaux réalisés (par thème)
+## Lot n°1 — pairs torrent et diagnostic
+- `src-tauri/src/torrent_engine.rs` : `peer_opts()` passe `read_write_timeout`
+  10 s → 60 s et `keep_alive_interval` → 20 s (connexion TCP gardée à 7 s), et
+  s'applique aussi aux `SessionOptions`. Cause de la perte des pairs **non établie**.
+- `src-tauri/src/torrent_engine/peer_log.rs` : journal de diagnostic. Toutes les
+  10 s, pour chaque torrent actif non terminé, une ligne sur stderr **quand les
+  compteurs changent** :
+  `[torrent-engine] peers <hash8> <state> seen= queued= connecting= live= dead= not_needed= down=KiB/s progress=%`.
+  Lecture : `seen` bas → problème de découverte (trackers/DHT) ; `seen` élevé et
+  `dead` qui grimpe pendant que `live` retombe à 0 → pairs trouvés puis perdus.
+- Test réseau ignoré par défaut `real_swarm_download_makes_progress` (Sintel,
+  session jetable dans `$TMPDIR`, options de production) :
+  `cargo test --lib real_swarm_download -- --ignored --nocapture`.
+- Vérifié le 2026-09-22 : Sintel entier (129 Mo) téléchargé en < 10 s avec les
+  nouvelles options ; `cargo test --lib` 60/60 (+1 ignoré) ; clippy propre sur les
+  fichiers du lot ; frontend `tsc -b`, `pnpm lint`, `pnpm test` 947/947.
+  Sintel est un essaim sain : cela prouve l'absence de régression, pas un gain
+  sur un essaim pauvre.
+- **Reste** : recette HiggsBoson dans l'app avec le journal (voir « Pièges » pour
+  retrouver les journaux), puis décider : garder les délais, ou corriger
+  la vraie cause révélée par le journal (lignes `[torrent-engine] peers` dans
+  `~/Library/Logs/VAYRA/vayra.log`).
+- `selftest/stream_probe.rs` utilise désormais `peer_opts()` : l'auto-test
+  reflète les options de production.
+
+## Lot n°2 — secrets hors du localStorage (audit P1)
+- Constat vérifié sur ce Mac le 2026-09-22 (noms des champs seulement) :
+  `harbor.settings.shared` contenait en clair `tmdbKey`, `togetherCfToken`, `webhooks`.
+- `src/lib/settings/secret-vault.ts` : le trousseau stocke désormais
+  `{ v: 2, sources: { <clé de blob>: secrets } }` (partagé + chaque profil non lié),
+  et répète à plat les secrets du profil actif pour qu'un retour à une ancienne
+  version (sauvegarde `VAYRA-backups/`) retrouve au moins ceux-là. Une ancienne
+  version qui réécrit le trousseau efface en revanche les `sources` des autres profils.
+- Au démarrage, `hydrateSecretVault` déplace les secrets de tous les blobs vers le
+  trousseau et ne vide les blobs **qu'après une écriture réussie**. Échec de lecture
+  → rien n'est touché ; échec d'écriture ultérieur → secrets réécrits dans les blobs.
+- `stremio-server.ts::remoteStreamServerUrl` lit le trousseau : avant, il lisait le
+  miroir `harbor.settings`, déjà purgé des secrets 600 ms après chaque sauvegarde.
+- Compromis : avant l'hydratation (quelques ms, ou tant qu'une invite du trousseau
+  est ouverte), le premier rendu n'a pas les secrets.
+- Tests : `secret-vault.test.ts` (7 cas, dont la reproduction de l'audit ; vérifiés
+  par mutation). Suite frontend 954/954.
+- Vérifié sur l'app installée le 2026-09-22, après autorisation du trousseau :
+  plus aucun champ secret non vide dans `harbor.settings.shared` ni `harbor.settings`
+  (contrôle sur copie de `localstorage.sqlite3`, noms de champs seulement).
+
+## Lot n°3 — entretien (2026-09-22)
+- `download.rs:161` : cast `u64 → u64` retiré ; `cargo clippy --all-targets -- -D warnings` propre.
+- Dépendances : browserslist, js-yaml, baseline-browser-mapping mis à jour dans le
+  lockfile ; vitest 3.2.6 → 4.1.11 (traversée de chemin via `@vitest/mocker`).
+  `pnpm audit` : aucune vulnérabilité. Suite inchangée : 954/954.
+- `lib.rs::redirect_stderr_to_log` (voir « Pièges »).
+
+## Lot n°4 — ne pas démarrer une source dans une autre langue (2026-09-22)
+- Cause du 12/09 (HiggsBoson → « NoTorrent Audio Latino ») : avec Lecture
+  instantanée, un échec relance `openPicker({ autoPlay, attempt: n+1 })`, qui prend
+  `autoCandidates[attempt + idx]`. La langue n'était vérifiée que sur le raccourci
+  « haute confiance » de la première tentative ; ailleurs elle n'était qu'un critère
+  de tri secondaire, derrière « en cache ». Une source debrid en cache dans une
+  autre langue passait donc devant une source P2P française.
+- `use-auto-candidates.ts` : une source qui **déclare** uniquement d'autres langues
+  audio que celles préférées n'est plus candidate au démarrage automatique (même
+  principe que `episodeConflict` : échouer plutôt que deviner). Inchangé : sources
+  sans langue ou « Multi », source mémorisée, salle (suit la source de l'hôte),
+  aucune langue préférée. Si plus rien ne convient, le sélecteur reste affiché.
+- Corps du `useMemo` extrait en `buildAutoCandidates` (fonction pure) pour le test
+  `use-auto-candidates.test.ts` (3 cas, dont celui du 12/09, échoue avant correctif).
+  Suite frontend 957/957.
+- CI du 22/09 : `frontend` vert (premier depuis le 06/09, qui échouait sur
+  `pnpm audit`) ; job Android en échec dès `android-actions/setup-android@v3`
+  (l'action cible Node 20, forcée sous Node 24, plante à l'acceptation des
+  licences SDK — outillage, avant compilation ; Android en pause). `clippy + test`
+  vert sur macOS (en échec au run précédent), Ubuntu et Windows.
+
+## Lot n°5 — Échap en plein écran (décision du 2026-09-22)
+- Règle validée par l'utilisateur : en plein écran, Échap **sort d'abord du plein
+  écran** ; un second Échap ferme la vidéo (avec confirmation si
+  `playerConfirmLeave`). C'était déjà le comportement par défaut
+  (`playerEscExitsFullscreen: true`, actif sur ce Mac) ; le raccourci global
+  Échap = retour est désactivé pendant la lecture (`App.tsx`, `enabled: !player`).
+- La règle est extraite en `src/views/player/escape-action.ts` et verrouillée par
+  `escape-action.test.ts` (3 cas). Suite frontend 960/960.
+
+- Pré-existant, non traité : `dropProfileBlob` n'est appelé nulle part, donc les
+  réglages (et maintenant l'entrée du trousseau) d'un profil supprimé restent en place.
+
+## Travaux réalisés (historique, juillet 2026 — multiplateforme en pause)
 
 ### 1. Audit perf Cast — 6 findings prouvés corrigés + fixes matériels
 - `94f865b` fuite FFmpeg/HLS non libérée à Stop Cast → `ProxyState::release` + globale `ACTIVE_PROXY` (cast.rs).
@@ -85,6 +179,18 @@
 - `5dc996d` / `2a036da` roadmap README mise à jour (platform hardening coché ; statut réel des items ouverts).
 
 ## Pièges à connaître (récurrents)
+- **Licence Xcode** : après une mise à jour d'Xcode, tout build Rust échoue au
+  link (« You have not agreed to the Xcode license agreements »). Remède :
+  `sudo xcodebuild -license accept` (fait le 2026-09-22), ou en attendant
+  `DEVELOPER_DIR=/Library/Developer/CommandLineTools`.
+- **Journaux Rust** : lancée depuis le Finder, l'app redirige stderr (tous les
+  `eprintln!`, dont `[torrent-engine]`) vers `~/Library/Logs/VAYRA/vayra.log`
+  (une génération `.log.1` gardée au-delà de 10 Mio). Lancée depuis un terminal,
+  stderr reste dans le terminal. Les journaux internes de librqbit passent par
+  `tracing`, non collecté.
+- **Build = WASM régénéré** : `pnpm build` relance `wasm-pack`, qui réécrit
+  `vayra-core/pkg/.gitignore` en `*` et le `.wasm`. Restaurer avec
+  `git checkout -- vayra-core/pkg` si `vayra-core/` n'a pas changé.
 - **PATH rustup obligatoire pour le wasm** : avec le PATH par défaut, `pnpm
   build`/`pnpm core:wasm` utilisent le `rustc` Homebrew (`/opt/homebrew/bin`),
   qui n'a pas la cible `wasm32-unknown-unknown`. Préfixer
@@ -100,7 +206,7 @@
 - **Cross-compile impossible depuis macOS** : le code `#[cfg(windows)]`/`#[cfg(linux)]` n'est PAS vérifié par `cargo check` hôte, et cross-check bute sur `libmpv2-sys` (besoin de mpv.lib/X11). **Seule la CI valide Windows/Linux.**
 - **CI = seul juge Windows/Linux** : itérer via `gh workflow run tauri-build.yml --ref main` puis lire `gh api repos/elie00/vayra/actions/jobs/<id>/logs`.
 
-## Suivi restant (non bloquant)
+## Suivi restant (non bloquant — hors périmètre macOS, en pause)
 - **Linux** : build/packaging finis et verts ; le *polish du lecteur mpv natif* reste à valider sur une vraie machine Linux (rendu vidéo — ne pas modifier sans test de lecture sur plateforme).
 - **Windows** : multiview/DVR/vignettes utilisent le `mpv` du PATH tant qu'un `mpv.exe` **vérifié (checksum) et hébergé** n'est pas re-bundlé (ressource retirée dans `c5c7881`). Lecture cœur OK via `libmpv-2.dll` embarquée.
 - **AirPlay 2 comme cible de cast** : hors portée (protocole propriétaire SRP/FairPlay + Apple TV requis) ; actuellement détecté et grisé (`airplay2_pairing`).

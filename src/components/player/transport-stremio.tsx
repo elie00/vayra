@@ -77,7 +77,8 @@ export type TransportStremioProps = {
   onMenuOpenChange?: (open: boolean) => void;
   download?: DownloadStatus;
   onDownloadStart?: () => void;
-  onDownloadCancel?: () => void;
+  onDownloadPause?: () => void;
+  onDownloadResume?: () => void;
   onDownloadReveal?: () => void;
   onDownloadReset?: () => void;
   onOpenDvr?: () => void;
@@ -139,7 +140,8 @@ export function TransportStremio(p: TransportStremioProps) {
     onMenuOpenChange,
     download,
     onDownloadStart,
-    onDownloadCancel,
+    onDownloadPause,
+    onDownloadResume,
     onDownloadReveal,
     onDownloadReset,
     onOpenDvr,
@@ -271,7 +273,8 @@ export function TransportStremio(p: TransportStremioProps) {
     onPrevEp,
     onNextEp,
     onDownloadStart,
-    onDownloadCancel,
+    onDownloadPause,
+    onDownloadResume,
     onDownloadReveal,
     onDownloadReset,
     onOpenDvr,

@@ -95,12 +95,13 @@ async function call<T>(path: string, body: object): Promise<T | null> {
   }
 }
 
-export async function userAddons(authKey: string): Promise<Addon[]> {
+export async function userAddons(authKey: string, opts: { strict?: boolean } = {}): Promise<Addon[]> {
   const result = await call<{ addons: Addon[] }>("addonCollectionGet", {
     authKey,
     type: "user",
     update: false,
   });
+  if (opts.strict && !Array.isArray(result?.addons)) throw new Error("Addon collection unavailable");
   return result?.addons ?? [];
 }
 
@@ -121,7 +122,7 @@ export async function setUserAddons(authKey: string, addons: Addon[]): Promise<b
       };
     }),
   });
-  return result != null;
+  return result != null && result.success !== false;
 }
 
 export async function getUserAddonsRaw(authKey: string): Promise<Addon[] | null> {
@@ -141,7 +142,7 @@ export async function setUserAddonsRaw(authKey: string, addons: Addon[]): Promis
     type: "user",
     addons,
   });
-  return result != null;
+  return result != null && result.success !== false;
 }
 
 const STRIP_WORDS = ["movies", "movie", "series", "shows", "show", "tv shows", "tv"];
@@ -279,15 +280,15 @@ export function withDebridKeys(
   });
 }
 
-export async function gatherCatalogAddons(authKey: string | null): Promise<Addon[]> {
-  const stremioRaw = authKey ? await userAddons(authKey).catch(() => [] as Addon[]) : [];
+export async function gatherCatalogAddons(authKey: string | null, diagnostics?: import("./request-outcome").RequestDiagnostics): Promise<Addon[]> {
+  const stremioRaw = authKey ? await userAddons(authKey, { strict: !!diagnostics }).catch(() => { if (diagnostics) diagnostics.failed = true; return [] as Addon[]; }) : [];
   const stremio = filterEnabled(stremioRaw);
   const seen = new Set(stremio.map((a) => a.transportUrl));
   const localOnly = filterEnabled(loadInstalled()).filter((l) => !seen.has(l.transportUrl));
   const localFull = await Promise.all(
     localOnly.map(async (l): Promise<Addon | null> => {
       if (l.manifest?.catalogs?.length) return { manifest: l.manifest, transportUrl: l.transportUrl };
-      const manifest = await fetchManifestAt(l.transportUrl).catch(() => l.manifest ?? null);
+      const manifest = await fetchManifestAt(l.transportUrl).catch(() => { if (diagnostics) diagnostics.failed = true; return l.manifest ?? null; });
       return manifest ? { manifest, transportUrl: l.transportUrl } : null;
     }),
   );
@@ -318,11 +319,11 @@ function catalogRequestUrl(base: string, cat: CatalogDef): string | null {
 
 export async function loadAddonRows(
   authKey: string | null,
-  opts: { dedup?: boolean; cap?: number } = {},
+  opts: { dedup?: boolean; cap?: number; diagnostics?: import("./request-outcome").RequestDiagnostics } = {},
 ): Promise<AddonRow[]> {
   const dedup = opts.dedup ?? true;
   const cap = opts.cap ?? (dedup ? MAX_ROWS : 200);
-  const addons = await gatherCatalogAddons(authKey);
+  const addons = await gatherCatalogAddons(authKey, opts.diagnostics);
   const tasks = addons.flatMap((addon) =>
     (addon.manifest.catalogs ?? [])
       .filter((c) => c && c.name && c.type && c.id && !NON_CONTENT_TYPES.has(c.type.toLowerCase()))
@@ -331,7 +332,7 @@ export async function loadAddonRows(
         const url = catalogRequestUrl(base, cat);
         if (!url) return null;
         const res = await fetchWithTimeout(url);
-        if (!res || !res.ok) return null;
+        if (!res || !res.ok) { if (opts.diagnostics) opts.diagnostics.failed = true; return null; }
         try {
           const json = await res.json();
           const raw: Meta[] = json.metas ?? [];
@@ -351,6 +352,7 @@ export async function loadAddonRows(
             more: { base, type: cat.type, id: cat.id, extras: requiredCatalogExtras(cat) ?? undefined },
           };
         } catch {
+          if (opts.diagnostics) opts.diagnostics.failed = true;
           return null;
         }
       }),

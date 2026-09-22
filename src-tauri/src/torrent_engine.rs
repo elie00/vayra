@@ -1,6 +1,7 @@
 mod cache_sweep;
 mod dht_boot;
 mod netcheck;
+mod peer_log;
 mod selftest;
 mod stream_route;
 mod trackers;
@@ -27,6 +28,7 @@ struct EngineState {
     last_error: Option<String>,
     server: Option<tokio::task::JoinHandle<()>>,
     sweeper: Option<tokio::task::JoinHandle<()>>,
+    peer_log: Option<tokio::task::JoinHandle<()>>,
     lan_server: Option<tokio::task::JoinHandle<()>>,
     lan_port: Option<u16>,
     lan_error: Option<String>,
@@ -44,6 +46,7 @@ fn engine() -> &'static Mutex<EngineState> {
             last_error: None,
             server: None,
             sweeper: None,
+            peer_log: None,
             lan_server: None,
             lan_port: None,
             lan_error: None,
@@ -186,6 +189,7 @@ async fn new_session(
                 dump_interval: None,
             }),
             trackers: trackers::as_url_set(),
+            peer_opts: Some(peer_opts()),
             listen_port_range: if full { Some(16881..16931) } else { None },
             enable_upnp_port_forwarding: full,
             ..Default::default()
@@ -260,11 +264,15 @@ async fn init(app: AppHandle) -> Result<(), String> {
         }
     });
     let sweeper = spawn_cache_sweeper(app.clone());
+    let peer_log = peer_log::spawn(session.clone());
     let mut st = engine().lock().unwrap();
     if let Some(old) = st.server.take() {
         old.abort();
     }
     if let Some(old) = st.sweeper.take() {
+        old.abort();
+    }
+    if let Some(old) = st.peer_log.take() {
         old.abort();
     }
     st.session = Some(session);
@@ -275,6 +283,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     st.last_error = None;
     st.server = Some(server);
     st.sweeper = Some(sweeper);
+    st.peer_log = Some(peer_log);
     eprintln!("[torrent-engine] ready on 127.0.0.1:{port} (dht tier {dht_tier})");
     Ok(())
 }
@@ -306,6 +315,9 @@ pub fn stop() {
     }
     if let Some(sweeper) = st.sweeper.take() {
         sweeper.abort();
+    }
+    if let Some(peer_log) = st.peer_log.take() {
+        peer_log.abort();
     }
     st.session = None;
     st.side_dht = None;
@@ -355,8 +367,11 @@ const DHT_SEED_BUDGET: Duration = Duration::from_millis(1500);
 fn peer_opts() -> PeerConnectionOptions {
     PeerConnectionOptions {
         connect_timeout: Some(Duration::from_secs(7)),
-        read_write_timeout: Some(Duration::from_secs(10)),
-        keep_alive_interval: None,
+        // A connected peer may be temporarily choked or serving other clients.
+        // Keep the short TCP connect budget, but allow idle established peers
+        // time to contribute instead of repeatedly reconnecting after 10s.
+        read_write_timeout: Some(Duration::from_secs(60)),
+        keep_alive_interval: Some(Duration::from_secs(20)),
     }
 }
 
@@ -777,5 +792,40 @@ mod tests {
     fn saves_on_one_torrent_do_not_reach_another() {
         remember_saved("aaaa000000000000000000000000000000000005", &[1]);
         assert!(wanted_files("aaaa000000000000000000000000000000000006", None).is_empty());
+    }
+
+    /// Real swarm download with the production peer options, on a throwaway session.
+    /// Needs the network: `cargo test --lib real_swarm_download -- --ignored --nocapture`.
+    #[tokio::test]
+    #[ignore]
+    async fn real_swarm_download_makes_progress() {
+        const MAGNET: &str = "magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel";
+        let dir = std::env::temp_dir().join(format!("vayra-swarm-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let session = new_session(&dir, false, true, false).await.unwrap();
+        let log = peer_log::spawn(session.clone());
+        let handle = timeout(
+            Duration::from_secs(90),
+            session.add_torrent(AddTorrent::from_url(MAGNET), Some(add_opts(false, None, Vec::new(), Vec::new()))),
+        )
+        .await
+        .expect("metadata timed out")
+        .unwrap()
+        .into_handle()
+        .unwrap();
+        let mut progressed = 0;
+        for _ in 0..90 {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            progressed = handle.stats().progress_bytes;
+            if progressed >= 4 * 1024 * 1024 {
+                break;
+            }
+        }
+        let st = handle.stats();
+        eprintln!("[swarm-test] progress={progressed} total={} state={:?} files={:?}", st.total_bytes, st.state, st.file_progress);
+        log.abort();
+        let _ = session.delete(TorrentIdOrHash::Hash(handle.info_hash()), true).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(progressed > 0, "no bytes downloaded in 90s");
     }
 }

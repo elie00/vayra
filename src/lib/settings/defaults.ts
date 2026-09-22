@@ -306,6 +306,7 @@ export const DEFAULT: Settings = {
   blockTrackers: true,
   homeRows: { order: [], hidden: [], renamed: {}, numerals: [], heroSource: null, customSources: [], listRows: [] },
   navCustomization: { order: [], hidden: [], renamed: {} },
+  macPinnedViews: [],
   hotkeys: {},
   animeFavoriteGenres: [],
   animeExcludeOrigins: ["CN"],
