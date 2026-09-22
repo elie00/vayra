@@ -3,11 +3,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use librqbit::api::TorrentIdOrHash;
-use librqbit::{AddTorrent, AddTorrentOptions, PeerConnectionOptions, Session};
+use librqbit::{AddTorrent, AddTorrentOptions, Session};
 use tokio::time::{sleep, timeout};
 
 use super::types::{step, warn_step, SelfTestStep};
-use crate::torrent_engine::{current_port, current_side_dht, dht_boot, merge_trackers};
+use crate::torrent_engine::{current_port, current_side_dht, dht_boot, merge_trackers, peer_opts};
 
 const MAGNET: &str = "magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel";
 const META_BUDGET: Duration = Duration::from_secs(90);
@@ -27,11 +27,7 @@ pub async fn run(session: &Arc<Session>, steps: &mut Vec<SelfTestStep>) {
         overwrite: true,
         trackers: Some(merge_trackers(Vec::new())),
         initial_peers: (!seed.is_empty()).then_some(seed),
-        peer_opts: Some(PeerConnectionOptions {
-            connect_timeout: Some(Duration::from_secs(7)),
-            read_write_timeout: Some(Duration::from_secs(10)),
-            keep_alive_interval: None,
-        }),
+        peer_opts: Some(peer_opts()),
         ..Default::default()
     };
     let added = timeout(
