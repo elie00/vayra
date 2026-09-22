@@ -1,4 +1,4 @@
-import { Check, Copy, Eye, EyeOff, ExternalLink, Loader2, Settings2, Star, Trash2, TrendingUp } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, ExternalLink, Loader2, Settings2, Star, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { setActiveAddon } from "@/lib/active-addon";
@@ -21,6 +21,7 @@ import { categoryLabel } from "./addons-types";
 import { idOf, nameOf, resourceLabels } from "./addons-utils";
 import { DetailRail } from "./detail-rail";
 import { TagRow } from "./tag-row";
+import { UninstallAddonButton } from "./uninstall-addon-button";
 
 export function AddonDetail({
   resolved,
@@ -52,7 +53,7 @@ export function AddonDetail({
   const stremioShareUrl = manifestToShareUrl(resolved.transportUrl, "stremio");
 
   const [copied, setCopied] = useState<"https" | "stremio" | null>(null);
-  const [busy, setBusy] = useState<"install" | "remove" | null>(null);
+  const [busy, setBusy] = useState<"install" | null>(null);
   const [optimisticInstalled, setOptimisticInstalled] = useState<boolean | null>(null);
   const [manifestVisible, setManifestVisible] = useState(false);
   const community = useCommunity(m?.id);
@@ -114,22 +115,8 @@ export function AddonDetail({
   const handleInstall = async () => {
     if (busy) return;
     setBusy("install");
-    setOptimisticInstalled(true);
     try {
       await onInstall();
-    } catch {
-      setOptimisticInstalled(null);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleUninstall = async () => {
-    if (busy) return;
-    setBusy("remove");
-    setOptimisticInstalled(false);
-    try {
-      await onUninstall();
     } catch {
       setOptimisticInstalled(null);
     } finally {
@@ -158,6 +145,7 @@ export function AddonDetail({
   };
 
   const mainRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: "auto" });
   }, [resolved.transportUrl]);
@@ -201,7 +189,7 @@ export function AddonDetail({
             {categoryLabel(c?.category ?? categorizeAddon(resolved)) ?? t("Addon")}
             {m?.id && <> · <span className="font-mono normal-case tracking-normal">{m.id}</span></>}
           </span>
-          <h1 className="font-display text-[36px] font-medium leading-tight tracking-tight text-ink">
+          <h1 ref={titleRef} tabIndex={-1} className="font-display text-[36px] font-medium leading-tight tracking-tight text-ink">
             {nameOf(resolved)}
           </h1>
           {risingEntry && (
@@ -214,15 +202,7 @@ export function AddonDetail({
           )}
           {m?.description && <AddonDescription text={m.description} />}
           <div className="mt-3 flex flex-wrap items-center gap-2.5">
-            {busy === "remove" ? (
-              <button
-                disabled
-                className="flex h-11 items-center gap-2 rounded-full bg-elevated/60 px-5 text-[13.5px] font-semibold text-ink-muted ring-1 ring-edge-soft"
-              >
-                <Loader2 size={14} strokeWidth={2.4} className="animate-spin" />
-                {t("Removing")}
-              </button>
-            ) : busy === "install" ? (
+            {busy === "install" ? (
               <button
                 disabled
                 className="flex h-11 items-center gap-2 rounded-full bg-ink/85 px-5 text-[13.5px] font-semibold text-canvas/80"
@@ -231,15 +211,7 @@ export function AddonDetail({
                 {t("Installing")}
               </button>
             ) : installed ? (
-              <button
-                onClick={() => void handleUninstall()}
-                className="group/pill flex h-11 items-center gap-2 rounded-full bg-elevated/70 px-5 text-[13.5px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-danger/15 hover:text-danger hover:ring-danger/30"
-              >
-                <Check size={14} strokeWidth={2.4} className="block text-accent group-hover/pill:hidden" />
-                <Trash2 size={14} strokeWidth={2.2} className="hidden group-hover/pill:block" />
-                <span className="block group-hover/pill:hidden">{t("Installed")}</span>
-                <span className="hidden group-hover/pill:block">{t("Remove")}</span>
-              </button>
+              <UninstallAddonButton name={nameOf(resolved)} onUninstall={onUninstall} returnFocusRef={titleRef} />
             ) : isConfigurable ? (
               <button
                 onClick={() => openInstallerViewport(configureUrl, nameOf(resolved), resolveAddonLogo(m?.logo, resolved.transportUrl))}

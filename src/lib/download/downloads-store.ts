@@ -4,8 +4,10 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
-import { engineFileFromUrl, torrentEngineRelease } from "@/lib/torrent/local-engine";
+import { releaseTorrentForDownload, retainTorrentForDownload } from "@/lib/torrent/local-engine";
+import { isLocalEngineUrl } from "@/lib/stremio-server";
 import { buildDefaultFilename, sanitizeName } from "./filename";
+import { DEFAULT_DOWNLOAD_POLICY, remainingBudget, sanitizeDownloadPolicy, type DownloadPolicy } from "./policy";
 import {
   downloadFileExists,
   removeDownloadFile,
@@ -14,6 +16,7 @@ import {
 } from "./video-download";
 
 export type DownloadItem = {
+  priority?: number;
   id: string;
   metaId: string;
   title: string;
@@ -24,7 +27,16 @@ export type DownloadItem = {
   streamLabel: string | null;
   url: string;
   path: string;
-  status: "queued" | "downloading" | "done" | "error" | "canceled" | "interrupted";
+  status:
+    | "queued"
+    | "downloading"
+    | "paused"
+    | "done"
+    | "error"
+    | "canceled"
+    | "removing"
+    | "removal-error"
+    | "interrupted";
   receivedBytes: number;
   totalBytes: number | null;
   ratio: number;
@@ -39,12 +51,40 @@ type EnqueueArgs = {
   streamLabel?: string | null;
   url: string;
   headers?: Record<string, string> | null;
+  /** A path chosen in the save dialog; existing files still receive a suffix. */
+  destinationPath?: string;
 };
 
 const items = new Map<string, DownloadItem>();
 const handles = new Map<string, DownloadHandle>();
 const speed = new Map<string, { bytes: number; at: number }>();
 const listeners = new Set<() => void>();
+const reserved = new Map<string, number>();
+// Held before the first filesystem check so simultaneous enqueues cannot both
+// accept the same name. Once registered, the item itself owns these paths.
+const reservedPaths = new Set<string>();
+const POLICY_KEY = "vayra.download.policy.v1";
+let policy = DEFAULT_DOWNLOAD_POLICY;
+try { policy = sanitizeDownloadPolicy(JSON.parse(localStorage.getItem(POLICY_KEY) || "{}")); } catch { /* defaults */ }
+
+export function configureDownloads(next: Partial<DownloadPolicy>): void {
+  const previous = policy;
+  policy = sanitizeDownloadPolicy({ ...policy, ...next });
+  if (policy.quotaGiB && (!previous.quotaGiB || policy.quotaGiB < previous.quotaGiB)) {
+    for (const id of handles.keys()) pauseDownload(id);
+  }
+  for (const id of [...handles.keys()].slice(policy.concurrent)) pauseDownload(id);
+  try { localStorage.setItem(POLICY_KEY, JSON.stringify(policy)); } catch { /* session-only policy */ }
+  listeners.forEach((listener) => listener());
+  pump();
+}
+export function useDownloadPolicy(): DownloadPolicy { return useSyncExternalStore(subscribe, () => policy, () => policy); }
+export function prioritizeDownload(id: string): void {
+  const item = items.get(id);
+  if (item?.status !== "queued") return;
+  patch(id, { priority: Math.max(0, ...snapshot.map((d) => d.priority ?? 0)) + 1 });
+  pump();
+}
 
 /**
  * How many downloads actually run at once. A season queues every episode at
@@ -58,6 +98,11 @@ export const MAX_ACTIVE_DOWNLOADS = 3;
 // request needs once a slot frees up.
 const waiting: string[] = [];
 const waitingHeaders = new Map<string, Record<string, string> | undefined>();
+// Authorization headers are not persisted, but must survive a pause during the
+// current session so resuming the same protected source still works.
+const requestHeaders = new Map<string, Record<string, string> | undefined>();
+const resumeWhenSettled = new Set<string>();
+const removals = new Map<string, Promise<boolean>>();
 
 let snapshot: DownloadItem[] = [];
 
@@ -104,7 +149,7 @@ function hydrate() {
     if (!Array.isArray(arr)) return;
     for (const d of arr) {
       if (!d || typeof d.id !== "string" || typeof d.path !== "string") continue;
-      const status = d.status === "downloading" || d.status === "queued" ? "interrupted" : d.status;
+      const status = d.status === "removing" ? "removal-error" : d.status === "downloading" || d.status === "queued" ? "interrupted" : d.status;
       items.set(d.id, { ...d, status, bytesPerSec: 0 });
     }
     snapshot = [...items.values()].sort((a, b) => b.startedAt - a.startedAt);
@@ -114,13 +159,6 @@ function hydrate() {
 }
 
 hydrate();
-
-// A save pulled from the local engine holds its file selected for as long as it runs.
-// Hand it back once it stops, or the torrent stays pinned to the whole pack.
-function releaseEngineFile(url: string) {
-  const f = engineFileFromUrl(url);
-  if (f) void torrentEngineRelease(f.infoHash, [f.fileIdx]);
-}
 
 function patch(id: string, next: Partial<DownloadItem>) {
   const cur = items.get(id);
@@ -142,13 +180,33 @@ async function resolveDir(): Promise<string> {
   return (await systemDownloadDir().catch(() => "")) || "";
 }
 
-async function pathTaken(path: string): Promise<boolean> {
-  for (const d of items.values()) if (d.path === path) return true;
-  return await downloadFileExists(path);
+function downloadPaths(path: string): string[] {
+  return [path, `${path}.part`, `${path}.part.vayra-resume.json`];
 }
 
-async function uniquePath(path: string): Promise<string> {
-  if (!(await pathTaken(path))) return path;
+function releasePath(path: string): void {
+  for (const ownedPath of downloadPaths(path)) reservedPaths.delete(ownedPath);
+}
+
+async function reservePath(path: string): Promise<boolean> {
+  const paths = downloadPaths(path);
+  if (paths.some((candidate) => reservedPaths.has(candidate))) return false;
+  for (const item of items.values()) {
+    if (downloadPaths(item.path).some((ownedPath) => paths.includes(ownedPath))) return false;
+  }
+  for (const candidate of paths) reservedPaths.add(candidate);
+  try {
+    const exists = await Promise.all(paths.map(downloadFileExists));
+    if (!exists.some(Boolean)) return true;
+    releasePath(path);
+    return false;
+  } catch (error) {
+    releasePath(path);
+    throw new Error("Impossible de vérifier la destination du téléchargement. Vérifiez l’accès au dossier.", { cause: error });
+  }
+}
+
+async function reserveUniquePath(path: string): Promise<string> {
   const s = sep();
   const slash = path.lastIndexOf(s);
   const dir = slash >= 0 ? path.slice(0, slash + 1) : "";
@@ -156,11 +214,11 @@ async function uniquePath(path: string): Promise<string> {
   const dot = file.lastIndexOf(".");
   const stem = dot > 0 ? file.slice(0, dot) : file;
   const ext = dot > 0 ? file.slice(dot) : "";
-  for (let i = 2; i < 1000; i++) {
-    const candidate = `${dir}${stem} (${i})${ext}`;
-    if (!(await pathTaken(candidate))) return candidate;
+  for (let i = 1; i <= 1000; i++) {
+    const candidate = i === 1 ? path : `${dir}${stem} (${i})${ext}`;
+    if (await reservePath(candidate)) return candidate;
   }
-  return path;
+  throw new Error("Aucun nom de fichier disponible pour ce téléchargement. Choisissez un autre nom ou dossier.");
 }
 
 function randomId(): string {
@@ -186,98 +244,169 @@ export function activeDownloadFor(
 }
 
 export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
-  const { meta, episode, streamLabel, url, headers } = args;
-  let dir = await resolveDir();
-  try {
-    const raw = localStorage.getItem("harbor.settings");
-    const settings = raw ? (JSON.parse(raw) as { downloadCreateFolders?: boolean }) : null;
-    if (settings?.downloadCreateFolders && dir) {
-      const folderName = sanitizeName(meta.name || "download");
-      // The backend creates the folder along with the file it writes there; this
-      // path is outside what the fs plugin is scoped to, so asking it here only
-      // ever raised an error to swallow.
-      dir = `${dir}${dir.endsWith(sep()) ? "" : sep()}${folderName}`;
-    }
-  } catch {}
-  const filename = buildDefaultFilename(meta, episode, url, streamLabel);
-  const path = await uniquePath(
-    dir ? `${dir}${dir.endsWith(sep()) ? "" : sep()}${filename}` : filename,
-  );
-  const id = randomId();
-  const item: DownloadItem = {
-    id,
-    metaId: meta.id,
-    title: meta.name ?? "Download",
-    subtitle: episode
-      ? `S${episode.imdbSeason ?? episode.season} · E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}${episode.name ? ` · ${episode.name}` : ""}`
-      : (meta.releaseInfo ?? null),
-    poster: meta.poster ?? null,
-    season: episode?.season ?? null,
-    episode: episode?.episode ?? null,
-    streamLabel: streamLabel ?? null,
-    url,
-    path,
-    status: "downloading",
-    receivedBytes: 0,
-    totalBytes: null,
-    ratio: 0,
-    bytesPerSec: 0,
-    error: null,
-    startedAt: Date.now(),
-  };
-  const free = handles.size < MAX_ACTIVE_DOWNLOADS;
-  items.set(id, { ...item, status: free ? "downloading" : "queued" });
-  speed.set(id, { bytes: 0, at: Date.now() });
-  if (free) {
-    beginDownload(id, headers ?? undefined);
-  } else {
-    waiting.push(id);
-    waitingHeaders.set(id, headers ?? undefined);
+  const { meta, episode, streamLabel, url, destinationPath } = args;
+  // Snapshot protected request credentials before any asynchronous directory or
+  // path lookup. This copy stays in memory, never in the persisted item.
+  const headers = args.headers ? { ...args.headers } : undefined;
+  let requestedPath = destinationPath;
+  if (requestedPath !== undefined && !requestedPath.trim()) {
+    throw new Error("Choisissez un nom de fichier pour le téléchargement.");
   }
-  rebuild();
-  return id;
+  if (requestedPath === undefined) {
+    let dir = await resolveDir();
+    try {
+      const raw = localStorage.getItem("harbor.settings");
+      const settings = raw ? (JSON.parse(raw) as { downloadCreateFolders?: boolean }) : null;
+      if (settings?.downloadCreateFolders && dir) {
+        const folderName = sanitizeName(meta.name || "download");
+        // The backend creates the folder along with the file it writes there.
+        dir = `${dir}${dir.endsWith(sep()) ? "" : sep()}${folderName}`;
+      }
+    } catch {}
+    const filename = buildDefaultFilename(meta, episode, url, streamLabel);
+    requestedPath = dir ? `${dir}${dir.endsWith(sep()) ? "" : sep()}${filename}` : filename;
+  }
+  const path = await reserveUniquePath(requestedPath);
+  try {
+    const id = randomId();
+    const item: DownloadItem = {
+      id,
+      metaId: meta.id,
+      title: meta.name ?? "Download",
+      subtitle: episode
+        ? `S${episode.imdbSeason ?? episode.season} · E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}${episode.name ? ` · ${episode.name}` : ""}`
+        : (meta.releaseInfo ?? null),
+      poster: meta.poster ?? null,
+      season: episode?.season ?? null,
+      episode: episode?.episode ?? null,
+      streamLabel: streamLabel ?? null,
+      url,
+      path,
+      status: "downloading",
+      receivedBytes: 0,
+      totalBytes: null,
+      ratio: 0,
+      bytesPerSec: 0,
+      error: null,
+      startedAt: Date.now(),
+    };
+    items.set(id, { ...item, status: "queued" });
+    requestHeaders.set(id, headers);
+    rebuild();
+    // The player may close even while this transfer waits for a queue slot.
+    // Register ownership now, not only when its HTTP copy begins.
+    if (isLocalEngineUrl(url)) {
+      try { await retainTorrentForDownload(id, url); }
+      catch (error) {
+        if (items.get(id)?.status === "queued") patch(id, { status: "error", error: error instanceof Error ? error.message : "Download failed" });
+        return id;
+      }
+    }
+    if (items.get(id)?.status === "queued") startOrQueue(id);
+    return id;
+  } finally {
+    releasePath(path);
+  }
 }
 
 function beginDownload(id: string, headers: Record<string, string> | undefined): void {
   const item = items.get(id);
   if (!item) return;
   const { url, path } = item;
-  const handle = startDownload(id, url, path, (p) => {
-    const now = Date.now();
-    const s = speed.get(id);
-    let bps = 0;
-    if (s && now - s.at >= 500) {
-      bps = ((p.receivedBytes - s.bytes) / (now - s.at)) * 1000;
-      speed.set(id, { bytes: p.receivedBytes, at: now });
-    }
-    patch(id, {
-      receivedBytes: p.receivedBytes,
-      totalBytes: p.totalBytes,
-      ratio: p.ratio,
-      ...(bps > 0 ? { bytesPerSec: bps } : {}),
-    });
-  }, headers);
+  const available = remainingBudget(policy, [...items.values()].map((d) => d.receivedBytes), [...reserved.values()]);
+  if (available !== undefined && available <= 0) {
+    patch(id, { status: "error", error: "Download storage limit reached", bytesPerSec: 0 });
+    return;
+  }
+  const maxBytes = available === undefined ? undefined : item.receivedBytes + available;
+  if (available !== undefined) reserved.set(id, available);
+  let transport: DownloadHandle | undefined;
+  let canceled = false;
+  const handle: DownloadHandle = {
+    abort: () => { canceled = true; transport?.abort(); },
+    promise: (async () => {
+      if (isLocalEngineUrl(url)) await retainTorrentForDownload(id, url);
+      if (canceled) {
+        const error = new Error("Download canceled"); error.name = "AbortError"; throw error;
+      }
+      transport = startDownload(id, url, path, (p) => {
+        if (maxBytes !== undefined) reserved.set(id, Math.max(0, Math.min(p.totalBytes ?? maxBytes, maxBytes) - p.receivedBytes));
+        const now = Date.now();
+        const s = speed.get(id);
+        let bps = 0;
+        if (s && now - s.at >= 500) {
+          bps = ((p.receivedBytes - s.bytes) / (now - s.at)) * 1000;
+          speed.set(id, { bytes: p.receivedBytes, at: now });
+        }
+        patch(id, {
+          receivedBytes: p.receivedBytes,
+          totalBytes: p.totalBytes,
+          ratio: p.ratio,
+          ...(bps > 0 ? { bytesPerSec: bps } : {}),
+        });
+        pump();
+      }, headers, maxBytes);
+      await transport.promise;
+    })().catch((error: unknown) => {
+      // A user pause/cancel wins even if native selection rejects while stopping.
+      if (canceled) {
+        const aborted = new Error("Download canceled"); aborted.name = "AbortError"; throw aborted;
+      }
+      throw error;
+    }),
+  };
   handles.set(id, handle);
   handle.promise
-    .then(() => patch(id, { status: "done", ratio: 1, bytesPerSec: 0 }))
+    .then(() => {
+      if (items.get(id)?.status === "removing") return;
+      patch(id, { status: "done", ratio: 1, bytesPerSec: 0 });
+      requestHeaders.delete(id);
+    })
     .catch((e: unknown) => {
+      if (items.get(id)?.status === "removing") return;
       if (e instanceof Error && e.name === "AbortError") {
-        patch(id, { status: "canceled", bytesPerSec: 0 });
+        if (items.get(id)?.status !== "paused") {
+          patch(id, { status: "canceled", bytesPerSec: 0 });
+          requestHeaders.delete(id);
+        }
         return;
       }
       patch(id, { status: "error", error: e instanceof Error ? e.message : "Download failed", bytesPerSec: 0 });
     })
-    .finally(() => {
+    .finally(async () => {
+      reserved.delete(id);
       handles.delete(id);
       speed.delete(id);
-      releaseEngineFile(url);
+      const status = items.get(id)?.status;
+      if (!status || status === "done" || status === "canceled") await releaseTorrentForDownload(id);
+      if (resumeWhenSettled.delete(id) && items.get(id)?.status === "paused") {
+        startOrQueue(id);
+      }
       pump();
     });
 }
 
+function startOrQueue(id: string): void {
+  const item = items.get(id);
+  if (!item || handles.has(id)) return;
+  speed.set(id, { bytes: item.receivedBytes, at: Date.now() });
+  const budget = remainingBudget(policy, [...items.values()].map((d) => d.receivedBytes), [...reserved.values()]);
+  if (handles.size < policy.concurrent && (budget === undefined || budget > 0 || handles.size === 0)) {
+    patch(id, { status: "downloading", error: null, bytesPerSec: 0 });
+    beginDownload(id, requestHeaders.get(id));
+    return;
+  }
+  if (!waiting.includes(id)) waiting.push(id);
+  waitingHeaders.set(id, requestHeaders.get(id));
+  patch(id, { status: "queued", error: null, bytesPerSec: 0 });
+}
+
 // Hand the freed slot to the entry that has waited longest and is still wanted.
 function pump(): void {
-  while (handles.size < MAX_ACTIVE_DOWNLOADS) {
+  waiting.sort((a, b) => (items.get(b)?.priority ?? 0) - (items.get(a)?.priority ?? 0));
+  while (handles.size < policy.concurrent) {
+    const available = remainingBudget(policy, [...items.values()].map((d) => d.receivedBytes), [...reserved.values()]);
+    if (available !== undefined && available <= 0) return;
     const id = waiting.shift();
     if (id === undefined) return;
     const headers = waitingHeaders.get(id);
@@ -285,7 +414,6 @@ function pump(): void {
     if (items.get(id)?.status !== "queued") continue;
     patch(id, { status: "downloading" });
     beginDownload(id, headers);
-    return;
   }
 }
 
@@ -296,30 +424,81 @@ function dropFromQueue(id: string): void {
 }
 
 export function cancelDownload(id: string): void {
+  if (["removing", "removal-error"].includes(items.get(id)?.status ?? "")) return;
   const handle = handles.get(id);
   if (handle) {
+    resumeWhenSettled.delete(id);
+    requestHeaders.delete(id);
+    patch(id, { status: "canceled", bytesPerSec: 0 });
     handle.abort();
     return;
   }
-  // Nothing to abort: it never got a slot.
-  if (items.get(id)?.status !== "queued") return;
+  // A queued or paused transfer still owns its torrent until explicitly canceled.
+  const status = items.get(id)?.status;
+  if (!status || status === "done" || status === "canceled") return;
   dropFromQueue(id);
+  requestHeaders.delete(id);
   patch(id, { status: "canceled", bytesPerSec: 0 });
+  void releaseTorrentForDownload(id);
 }
 
-export function removeDownload(id: string): void {
+export function pauseDownload(id: string): void {
   const item = items.get(id);
+  if (!item || (item.status !== "downloading" && item.status !== "queued")) return;
+  if (item.status === "queued") dropFromQueue(id);
+  patch(id, { status: "paused", bytesPerSec: 0 });
   handles.get(id)?.abort();
-  handles.delete(id);
+  if (item.status === "queued") pump();
+}
+
+export function resumeDownload(id: string): void {
+  const status = items.get(id)?.status;
+  if (status !== "paused" && status !== "interrupted" && status !== "error") return;
+  if (handles.has(id)) {
+    resumeWhenSettled.add(id);
+    return;
+  }
+  startOrQueue(id);
+}
+
+export function removeDownload(id: string): Promise<boolean> {
+  const pending = removals.get(id);
+  if (pending) return pending;
+  const item = items.get(id);
+  if (!item) return Promise.resolve(true);
+  const handle = handles.get(id);
+  // Retain ownership while the native task stops and deletion is in flight.
+  // Otherwise a new enqueue could take the name and be deleted by this one.
+  for (const path of downloadPaths(item.path)) reservedPaths.add(path);
+  resumeWhenSettled.delete(id);
+  requestHeaders.delete(id);
+  patch(id, { status: "removing", error: null, bytesPerSec: 0 });
+  handle?.abort();
   speed.delete(id);
   dropFromQueue(id);
-  if (item) releaseEngineFile(item.url);
-  if (items.delete(id)) rebuild();
-  if (item) {
-    void removeDownloadFile(item.path).catch((e: unknown) => {
-      console.warn(`[downloads] could not delete ${item.path}`, e);
-    });
-  }
+  const removal = (async () => {
+    // Cancellation only sets a native flag; its event arrives after the writer
+    // has stopped. Never unlink a partial while that old writer can recreate it.
+    if (handle) await handle.promise.catch(() => { /* Writer stopped after cancellation or failure. */ });
+    try {
+      await removeDownloadFile(item.path);
+      items.delete(id);
+      rebuild();
+      return true;
+    } catch (error) {
+      // Keep the bytes in the quota and the item visible until native removal
+      // succeeds. A partially deleted file must not become playable/resumable.
+      patch(id, { status: "removal-error", error: error instanceof Error ? error.message : "File deletion failed" });
+      return false;
+    } finally {
+      removals.delete(id);
+      releasePath(item.path);
+      void releaseTorrentForDownload(id);
+      pump();
+    }
+  })();
+  removals.set(id, removal);
+  return removal;
 }
 
 export async function revealDownload(id: string): Promise<void> {
@@ -340,6 +519,8 @@ function subscribe(listener: () => void): () => void {
 export function useDownloads(): DownloadItem[] {
   return useSyncExternalStore(subscribe, () => snapshot, () => snapshot);
 }
+
+export function downloadSnapshot(): readonly DownloadItem[] { return snapshot; }
 
 export function useActiveDownloadCount(): number {
   const all = useDownloads();

@@ -976,6 +976,9 @@ const misc: Record<string, string> = {
     "Ajoute ta clé API TMDB dans les réglages Bibliothèque et métadonnées pour afficher ce dossier.",
   "OK": "OK",
   "Loading...": "Chargement...",
+  "Reconnecting at your paused position…": "Reconnexion à l’endroit de ta pause…",
+  "Playback could not resume. Press Play to retry or choose another source.": "La lecture n’a pas pu reprendre. Appuie sur Lecture pour réessayer ou choisis une autre source.",
+  "Could not restore the selected playback tracks.": "Impossible de restaurer les pistes sélectionnées. Vérifie l’audio et les sous-titres.",
 };
 
 export default misc;

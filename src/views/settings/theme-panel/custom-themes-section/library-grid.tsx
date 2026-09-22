@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { Check, Copy, FilePlus2, Palette, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { ThemePreset } from "@/lib/theme";
@@ -44,6 +45,7 @@ export function LibraryGrid({
 }
 
 function CreateTile({ onCreate }: { onCreate: () => void }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -53,7 +55,7 @@ function CreateTile({ onCreate }: { onCreate: () => void }) {
         background:
           "linear-gradient(160deg, var(--color-accent-soft) 0%, var(--color-surface) 60%, var(--color-surface) 100%)",
       }}
-      aria-label="Build a new theme"
+      aria-label={t("Build a new theme")}
     >
       <span
         aria-hidden
@@ -62,22 +64,22 @@ function CreateTile({ onCreate }: { onCreate: () => void }) {
       />
       <div className="relative flex flex-col gap-1.5">
         <span className="inline-flex w-fit items-center rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-canvas">
-          New
+          {t("New")}
         </span>
-        <span className="text-[18px] font-semibold tracking-tight text-ink">Build a theme</span>
+        <span className="text-[18px] font-semibold tracking-tight text-ink">{t("Build a theme")}</span>
         <span className="max-w-[24ch] text-[12.5px] leading-snug text-ink-muted">
-          Pick a layout, set colors and fonts, save it to your library. No code needed.
+          {t("Pick a layout, set colors and fonts, save it to your library. No code needed.")}
         </span>
       </div>
       <div className="relative flex items-end justify-between gap-3 self-stretch">
         <span
           className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-[0_8px_18px_-6px_var(--color-accent-soft)] transition-transform duration-300 group-hover:scale-105"
-          style={{ background: "var(--color-accent)", color: "#fff" }}
+          style={{ background: "var(--color-accent)", color: "var(--color-canvas)" }}
         >
           <Palette size={20} strokeWidth={2} />
         </span>
         <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-accent transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5">
-          Open studio →
+          {t("Open studio →")}
         </span>
       </div>
     </button>
@@ -85,6 +87,7 @@ function CreateTile({ onCreate }: { onCreate: () => void }) {
 }
 
 function ImportTile({ onUpload }: { onUpload: (file: File) => void }) {
+  const t = useT();
   const [dragOver, setDragOver] = useState(false);
   const pick = () => {
     const input = document.createElement("input");
@@ -116,17 +119,17 @@ function ImportTile({ onUpload }: { onUpload: (file: File) => void }) {
           ? "border-accent bg-accent-soft"
           : "border-edge-soft bg-canvas/40 hover:-translate-y-0.5 hover:border-edge hover:bg-canvas/55"
       }`}
-      aria-label="Import a theme file"
+      aria-label={t("Import a theme file")}
     >
       <div className="relative flex flex-col gap-1.5">
         <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-ink-subtle">
-          Have a file?
+          {t("Have a file?")}
         </span>
-        <span className="text-[18px] font-semibold tracking-tight text-ink">Import a theme</span>
+        <span className="text-[18px] font-semibold tracking-tight text-ink">{t("Import a theme")}</span>
         <span className="max-w-[24ch] text-[12.5px] leading-snug text-ink-muted">
           {dragOver
-            ? "Release to add it to your library"
-            : "Drop a theme file here or click to browse."}
+            ? t("Release to add it to your library")
+            : t("Drop a theme file here or click to browse.")}
         </span>
       </div>
       <div className="relative flex items-end justify-between gap-3 self-stretch">
@@ -140,7 +143,7 @@ function ImportTile({ onUpload }: { onUpload: (file: File) => void }) {
           <FilePlus2 size={20} strokeWidth={2} />
         </span>
         <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-ink-muted transition-colors group-hover:text-ink">
-          Browse files →
+          {t("Browse files →")}
         </span>
       </div>
     </button>
@@ -160,6 +163,7 @@ function LibraryCard({
   onExport: () => void;
   onRemove: () => void;
 }) {
+  const t = useT();
   const { theme, category, removable } = entry;
   const hasImage = !!theme.previewImage;
   const bg = theme.background?.image ?? `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
@@ -189,17 +193,17 @@ function LibraryCard({
         <CategoryBadge category={category} active={active} />
         {active && (
           <span className="absolute end-3 top-3 flex h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-[10.5px] font-bold uppercase tracking-[0.18em] text-canvas shadow-[0_4px_12px_-4px_rgba(0,0,0,0.4)]">
-            <Check size={11} strokeWidth={3} /> Active
+            <Check size={11} strokeWidth={3} /> {t("Active")}
           </span>
         )}
         <SwatchStrip swatch={theme.swatch} />
       </div>
       <div className="flex min-h-[88px] flex-1 flex-col justify-between gap-2 px-4 pb-3 pt-3">
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-[14.5px] font-semibold text-ink">{theme.name}</span>
+          <span className="truncate text-[14.5px] font-semibold text-ink">{removable ? theme.name : t(theme.name)}</span>
           {theme.blurb && (
             <span className="line-clamp-2 text-[11.5px] leading-snug text-ink-subtle">
-              {theme.blurb}
+              {removable ? theme.blurb : t(theme.blurb)}
             </span>
           )}
         </div>
@@ -213,13 +217,13 @@ function LibraryCard({
                 : "bg-ink text-canvas hover:opacity-90"
             }`}
           >
-            {active ? "Active" : "Apply"}
+            {active ? t("Active") : t("Apply")}
           </button>
-          <ActionBtn label="Copy" onClick={onExport}>
+          <ActionBtn label={t("Copy")} onClick={onExport}>
             <Copy size={12} strokeWidth={2.2} />
           </ActionBtn>
           {removable && (
-            <ActionBtn label="Remove" onClick={onRemove} danger>
+            <ActionBtn label={t("Remove")} onClick={onRemove} danger>
               <Trash2 size={12} strokeWidth={2.2} />
             </ActionBtn>
           )}
@@ -236,6 +240,7 @@ function CategoryBadge({
   category: LibraryEntry["category"];
   active: boolean;
 }) {
+  const t = useT();
   const isFeatured = category === "Featured";
   return (
     <span
@@ -245,7 +250,7 @@ function CategoryBadge({
           : "bg-canvas/65 text-ink/85 ring-1 ring-white/15"
       } ${active ? "opacity-0" : "opacity-100"}`}
     >
-      {category}
+      {t(category)}
     </span>
   );
 }

@@ -88,6 +88,7 @@ export function Flag({
   size?: FlagSize;
   showLabel?: boolean;
 }) {
+  const label = localizedLanguageName(language, useUiLanguage());
   if (language === "Multi") {
     return (
       <span
@@ -105,7 +106,7 @@ export function Flag({
   if (!src) {
     return showLabel ? (
       <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-        {language}
+        {label}
       </span>
     ) : null;
   }
@@ -114,7 +115,7 @@ export function Flag({
     <span className="inline-flex items-center gap-1.5">
       <img
         src={src}
-        alt={language}
+        alt={label}
         height={h}
         style={{
           height: h,
@@ -131,7 +132,7 @@ export function Flag({
           className="font-semibold tracking-[0.01em] text-ink-muted"
           style={{ fontSize: LABEL_SIZE[size] }}
         >
-          {language}
+          {label}
         </span>
       )}
     </span>
@@ -207,3 +208,5 @@ export function FlagStack({
     </span>
   );
 }
+import { useUiLanguage } from "@/lib/i18n";
+import { localizedLanguageName } from "@/lib/i18n/language-label";

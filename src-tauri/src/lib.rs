@@ -9,6 +9,7 @@ mod http_fetch;
 mod local_lib;
 mod power;
 mod settings_store;
+mod settings_history;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
@@ -518,7 +519,32 @@ fn ensure_window_on_screen(app: &tauri::AppHandle) {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// A Finder launch sends stderr nowhere, taking every `eprintln!` diagnostic with it.
+/// Keep them in ~/Library/Logs/VAYRA/vayra.log, unless stderr is already a terminal.
+#[cfg(target_os = "macos")]
+fn redirect_stderr_to_log() {
+    use std::os::fd::AsRawFd;
+    if unsafe { libc::isatty(libc::STDERR_FILENO) } == 1 {
+        return;
+    }
+    let Some(home) = std::env::var_os("HOME") else { return };
+    let dir = std::path::Path::new(&home).join("Library/Logs/VAYRA");
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let path = dir.join("vayra.log");
+    // One previous generation is kept, so the log cannot grow without bound.
+    if std::fs::metadata(&path).map(|m| m.len() > 10 * 1024 * 1024).unwrap_or(false) {
+        let _ = std::fs::rename(&path, dir.join("vayra.log.1"));
+    }
+    if let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+        unsafe { libc::dup2(file.as_raw_fd(), libc::STDERR_FILENO) };
+    }
+}
+
 pub fn run() {
+    #[cfg(target_os = "macos")]
+    redirect_stderr_to_log();
     #[cfg(target_os = "linux")]
     mpv_render_linux::enforce_nvidia_x11();
     let _ = rustls::crypto::ring::default_provider().install_default();
@@ -759,6 +785,8 @@ pub fn run() {
             svp::svp_apply,
             settings_store::settings_read,
             settings_store::settings_write,
+            settings_history::settings_history_record,
+            settings_history::settings_history_list,
             settings_store::settings_secrets_read,
             settings_store::settings_secrets_write,
             settings_store::auth_secret_read,
@@ -769,6 +797,8 @@ pub fn run() {
             download::download_cancel,
             download::download_remove_file,
             download::download_file_exists,
+            download::download_file_valid,
+            download::download_available_space,
             user_files::vayra_list_dir_files,
             user_files::vayra_read_text_file,
             user_files::vayra_write_text_file,

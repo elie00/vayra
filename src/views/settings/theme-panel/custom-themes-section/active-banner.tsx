@@ -73,11 +73,11 @@ export function ActiveBanner({
             className="text-[22px] font-semibold tracking-tight"
             style={{ fontFamily: "var(--font-display)", color: fg }}
           >
-            {theme.name}
+            {theme.id.startsWith("user:") ? theme.name : t(theme.name)}
           </h3>
           {theme.blurb && (
             <p className="line-clamp-2 max-w-[42rem] text-[13px]" style={{ color: fgMuted }}>
-              {theme.blurb}
+              {theme.id.startsWith("user:") ? theme.blurb : t(theme.blurb)}
             </p>
           )}
           <div className="mt-1.5 flex flex-wrap gap-1.5">

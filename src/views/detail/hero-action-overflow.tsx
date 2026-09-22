@@ -1,8 +1,13 @@
-import { ArrowDownToLine, Bookmark, Check, Layers, MoreHorizontal, RotateCw, Star, X } from "lucide-react";
+import { ArrowDownToLine, Bookmark, Check, Layers, MoreHorizontal, Pause, Play, RotateCw, Star } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
-import { activeDownloadFor, cancelDownload, useDownloads } from "@/lib/download/downloads-store";
+import {
+  activeDownloadFor,
+  pauseDownload,
+  resumeDownload,
+  useDownloads,
+} from "@/lib/download/downloads-store";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { AddToListMenu } from "@/components/lists/add-to-list-menu";
@@ -101,6 +106,7 @@ export function HeroActionOverflow({
   const nativeDownloadAvailable = canDownload && PLATFORM_CAPABILITIES.nativeDownloads;
   const dl = nativeDownloadAvailable ? activeDownloadFor(meta.id, null, null) : null;
   const downloading = dl?.status === "downloading" || dl?.status === "queued";
+  const paused = dl?.status === "paused" || dl?.status === "interrupted";
   const done = dl?.status === "done";
   const failed = dl?.status === "error";
   const pct = Math.round((dl?.ratio ?? 0) * 100);
@@ -237,7 +243,9 @@ export function HeroActionOverflow({
               <Item
                 icon={
                   downloading ? (
-                    <X size={14} strokeWidth={2.2} />
+                    <Pause size={14} strokeWidth={2.2} fill="currentColor" />
+                  ) : paused ? (
+                    <Play size={14} strokeWidth={2.2} fill="currentColor" />
                   ) : done ? (
                     <Check size={14} strokeWidth={2.4} />
                   ) : failed ? (
@@ -248,7 +256,9 @@ export function HeroActionOverflow({
                 }
                 label={
                   downloading
-                    ? t("Downloading {pct}%  ·  cancel", { pct })
+                    ? t("Downloading {pct}%  ·  pause", { pct })
+                    : paused
+                      ? t("Paused at {pct}%  ·  resume", { pct })
                     : done
                       ? t("Saved offline")
                       : failed
@@ -257,7 +267,8 @@ export function HeroActionOverflow({
                 }
                 active={done}
                 onClick={() => {
-                  if (downloading && dl) cancelDownload(dl.id);
+                  if (downloading && dl) pauseDownload(dl.id);
+                  else if ((paused || failed) && dl) resumeDownload(dl.id);
                   else openPicker(meta, undefined, { intent: "download" });
                   setMenu(null);
                 }}

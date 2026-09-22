@@ -202,6 +202,7 @@ export function parseThemeJson(text: string): { ok: true; theme: CustomTheme } |
       blurb: blurb.slice(0, 160),
       swatch: [swatch[0], swatch[1], swatch[2]],
       tokens,
+      ...(co.colorScheme === "light" || co.colorScheme === "dark" ? { colorScheme: co.colorScheme } : {}),
       ...(background ? { background } : {}),
       ...(logo ? { logo } : {}),
       ...(layout ? { layout } : {}),
@@ -278,6 +279,7 @@ export function exportThemeJson(theme: ThemePreset | CustomTheme): string {
   if (theme.cardStyle) out.cardStyle = theme.cardStyle;
   if (theme.buttonStyle) out.buttonStyle = theme.buttonStyle;
   if (theme.fontPair) out.fontPair = theme.fontPair;
+  if (theme.colorScheme) out.colorScheme = theme.colorScheme;
   if (typeof theme.bokeh === "boolean") out.bokeh = theme.bokeh;
   if (theme.chrome) out.chrome = theme.chrome;
   if (theme.navCustomization) out.navCustomization = theme.navCustomization;

@@ -1,0 +1,15 @@
+export const addonSafety: Record<string, string> = {
+  "Uninstall": "Désinstaller",
+  "Uninstall {name}": "Désinstaller {name}",
+  "Uninstall {name}?": "Désinstaller {name} ?",
+  "This removes the addon from VAYRA on this device and from the linked Stremio account, including its other devices.": "Cette action retire l’extension de VAYRA sur cet appareil et du compte Stremio lié, y compris sur ses autres appareils.",
+  "This removes the addon from VAYRA on this device only. No Stremio account is connected.": "Cette action retire l’extension de VAYRA sur cet appareil uniquement. Aucun compte Stremio n’est connecté.",
+  "Its catalogs and sources will no longer be available. Your downloaded files are kept.": "Ses catalogues et ses sources ne seront plus disponibles. Vos fichiers téléchargés sont conservés.",
+  "The Stremio connection changed. Cancel and review the removal scope again.": "La connexion Stremio a changé. Annulez et vérifiez à nouveau la portée de la désinstallation.",
+  "The addon could not be fully removed. Check your connection and try again.": "L’extension n’a pas pu être entièrement désinstallée. Vérifiez votre connexion puis réessayez.",
+  "Updated locally": "Mis à jour sur cet appareil",
+  "Saving addon": "Enregistrement de l’extension",
+  "Stremio is not connected. The addon is available on this device only.": "Stremio n’est pas connecté. L’extension est disponible sur cet appareil uniquement.",
+  "Synced to your Stremio account.": "Synchronisé avec votre compte Stremio.",
+  "Saved locally, but Stremio sync failed. Check your Stremio connection in Settings before trying again.": "Enregistré sur cet appareil, mais la synchronisation Stremio a échoué. Vérifiez votre connexion Stremio dans les paramètres avant de réessayer.",
+};

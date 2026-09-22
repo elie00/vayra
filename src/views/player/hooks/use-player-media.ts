@@ -168,7 +168,7 @@ export function usePlayerMedia(params: {
 
   useTraktScrobble({ src, snap });
   useSimklScrobble({ src, snap });
-  const download = useVideoDownload({ url: src.url, meta: src.meta, episode: src.episode });
+  const download = useVideoDownload({ url: src.url, headers: src.headers, meta: src.meta, episode: src.episode });
 
   const doDownloadSubtitle = useCallback(async () => {
     const b = bridgeRef.current;

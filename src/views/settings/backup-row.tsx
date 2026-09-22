@@ -1,8 +1,8 @@
 import { Check, Download, Upload } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
-import { createPortal } from "react-dom";
-import { applyBackup, backupKeyCount, downloadBackup, parseBackup, type Backup } from "@/lib/backup";
-import { useT } from "@/lib/i18n";
+import { applyBackup, BackupRestoreError, backupKeyCount, downloadBackup, parseBackup, type Backup } from "@/lib/backup";
+import { getUiLanguage, useT } from "@/lib/i18n";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export function BackupRow() {
   const t = useT();
@@ -11,10 +11,14 @@ export function BackupRow() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Backup | null>(null);
   const [applying, setApplying] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [restoreFailure, setRestoreFailure] = useState<BackupRestoreError | null>(null);
+  const applyingRef = useRef(false);
   const [includeLocalActivity, setIncludeLocalActivity] = useState(false);
 
   const doExport = async () => {
     setError(null);
+    setExporting(true);
     try {
       const saved = await downloadBackup({ includeLocalActivity });
       if (saved) {
@@ -22,7 +26,9 @@ export function BackupRow() {
         window.setTimeout(() => setExported(false), 1600);
       }
     } catch {
-      setError("Could not build the backup file.");
+      setError(t("Could not build the backup file."));
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -31,25 +37,50 @@ export function BackupRow() {
     e.target.value = "";
     if (!file) return;
     setError(null);
+    setRestoreFailure(null);
     const reader = new FileReader();
     reader.onload = () => {
       const res = parseBackup(typeof reader.result === "string" ? reader.result : "");
       if (!res.ok) {
-        setError(res.error);
+        setError(t(res.error));
         return;
       }
       setPending(res.backup);
     };
-    reader.onerror = () => setError("Could not read that file.");
+    reader.onerror = () => setError(t("Could not read that file."));
     reader.readAsText(file);
   };
 
-  const confirmRestore = () => {
-    if (!pending) return;
+  const recover = async () => {
+    if (!restoreFailure?.retryRecovery || applyingRef.current) return;
+    applyingRef.current = true;
     setApplying(true);
-    void applyBackup(pending).then(() => {
+    try {
+      await restoreFailure.retryRecovery();
+      setRestoreFailure(null);
+      setError(t("Your previous preferences were recovered. You can retry the restore or choose another backup."));
+    } catch (failure) {
+      setRestoreFailure(failure instanceof BackupRestoreError ? failure : restoreFailure);
+    } finally {
+      applyingRef.current = false;
+      setApplying(false);
+    }
+  };
+  const confirmRestore = async () => {
+    if (!pending || applyingRef.current) return;
+    if (restoreFailure?.retryRecovery) { await recover(); return; }
+    applyingRef.current = true;
+    setApplying(true);
+    setError(null);
+    setRestoreFailure(null);
+    try {
+      await applyBackup(pending);
       window.setTimeout(() => window.location.reload(), 280);
-    });
+    } catch (failure) {
+      setRestoreFailure(failure instanceof BackupRestoreError ? failure : new BackupRestoreError("Restore failed. No reload was performed. Please retry."));
+      applyingRef.current = false;
+      setApplying(false);
+    }
   };
 
   return (
@@ -65,19 +96,21 @@ export function BackupRow() {
       <div className="flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/40 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-2.5">
           <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-ink">{t("Export everything")}</span>
+          <span className="text-[14px] font-medium text-ink">{t("Export portable preferences")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
-            {t("Saves your VAYRA setup without sign-ins or LUMA activity by default.")}
+            {t("Saves supported playback, language, appearance and navigation preferences. Accounts, keys, profiles, configured extensions, custom code and external links are excluded.")}
           </span>
           </div>
           <label className="flex w-fit cursor-pointer items-center gap-2 text-[12px] text-ink-muted">
             <input type="checkbox" checked={includeLocalActivity} onChange={(event) => setIncludeLocalActivity(event.target.checked)} className="h-4 w-4 accent-ink" />
-            <span>{t("Include private LUMA queue and resume activity")}</span>
+            <span>{t("Include private lists, local library references, queue and viewing progress")}</span>
           </label>
+          {includeLocalActivity && <p className="text-[12px] leading-relaxed text-ink-subtle">{t("Private activity keeps its profile identifiers. Profiles and media files are not copied; use the same profiles when restoring.")}</p>}
         </div>
         <button
           type="button"
           onClick={doExport}
+          disabled={exporting || applying || !!restoreFailure?.retryRecovery}
           className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-all ${
             exported
               ? "bg-accent/15 text-accent"
@@ -85,7 +118,7 @@ export function BackupRow() {
           }`}
         >
           {exported ? <Check size={14} strokeWidth={2.6} /> : <Download size={14} strokeWidth={2.4} />}
-          {exported ? t("Saved") : t("Export")}
+          {exporting ? t("Exporting…") : exported ? t("Saved") : t("Export")}
         </button>
       </div>
 
@@ -93,12 +126,13 @@ export function BackupRow() {
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="text-[14px] font-medium text-ink">{t("Restore from a backup")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
-            {t("Loads a backup file and replaces your current setup with it. Perfect for a new computer. Your Stremio sign-in on this device stays as is.")}
+            {t("Applies the supported saved preferences. Current accounts, profiles, configured extensions and excluded settings stay unchanged, including when importing an older backup.")}
           </span>
         </div>
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
+          disabled={applying || !!restoreFailure?.retryRecovery}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[12.5px] font-semibold text-ink transition-all hover:scale-[1.02] hover:border-ink active:scale-[0.97]"
         >
           <Upload size={14} strokeWidth={2.4} />
@@ -106,12 +140,18 @@ export function BackupRow() {
         </button>
       </div>
 
-      {error && <p className="px-1 text-[12px] text-danger">{error}</p>}
+      {error && <p role="alert" className="px-1 text-[12px] text-danger">{error}</p>}
+      {!pending && restoreFailure && <div className="space-y-2">
+        <p role="alert" className="px-1 text-[12px] text-danger">{t(restoreFailure.message)}</p>
+        {restoreFailure.retryRecovery && <button type="button" disabled={applying} className="mac-secondary-button" onClick={() => void recover()}>{t("Retry recovery")}</button>}
+      </div>}
 
       {pending && (
         <RestoreConfirm
           backup={pending}
           applying={applying}
+          error={restoreFailure ? t(restoreFailure.message) : error}
+          recovering={!!restoreFailure?.retryRecovery}
           onConfirm={confirmRestore}
           onCancel={() => setPending(null)}
         />
@@ -125,56 +165,37 @@ function RestoreConfirm({
   applying,
   onConfirm,
   onCancel,
+  error,
+  recovering,
 }: {
   backup: Backup;
   applying: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  error: string | null;
+  recovering: boolean;
 }) {
   const t = useT();
-  const when = backup.exportedAt ? new Date(backup.exportedAt).toLocaleString() : t("an unknown date");
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm"
-      onPointerDown={(e) => {
-        if (e.target === e.currentTarget && !applying) onCancel();
-      }}
+  const date = new Date(backup.exportedAt);
+  const when = Number.isFinite(date.getTime()) ? date.toLocaleString(getUiLanguage()) : t("an unknown date");
+  return (
+    <ConfirmationDialog
+      title={t("Restore this backup?")}
+      confirmLabel={applying ? t("Restoring...") : recovering ? t("Retry recovery") : t("Restore and reload")}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+      busy={applying}
+      error={error}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="modal-panel w-full max-w-md rounded-2xl border border-edge-soft bg-elevated p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
-      >
-        <h2 className="text-[17px] font-semibold tracking-tight text-ink">{t("Restore this backup?")}</h2>
         <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-muted">
-          {t("This replaces your current VAYRA setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Stremio sign-in stays as is. VAYRA reloads when it finishes.", { n: String(backupKeyCount(backup)) })}
+          {t("Applies {n} supported saved entries. Current connections, profiles and configured extensions are kept. Previous values are retained for recovery; VAYRA reloads only after success.", { n: String(backupKeyCount(backup)) })}
         </p>
         <p className="mt-2 text-[12px] text-ink-subtle">
           {t("Saved {when} from VAYRA {app}.", { when, app: backup.app })}
         </p>
         <p className="mt-2 text-[12px] font-medium text-ink-muted">
-          {backup.includesLocalActivity ? t("This backup includes private LUMA activity.") : t("This backup does not include LUMA activity.")}
+          {backup.includesLocalActivity ? t("This backup includes private lists or viewing activity. Matching saved collections will be replaced. Local file references do not copy media files.") : t("This backup does not include private activity. Your current lists and viewing progress are unchanged.")}
         </p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={applying}
-            className="h-10 rounded-full px-4 text-[13px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink disabled:opacity-50"
-          >
-            {t("Cancel")}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={applying}
-            className="h-10 rounded-full bg-accent px-5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            {applying ? t("Restoring...") : t("Restore and reload")}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+    </ConfirmationDialog>
   );
 }

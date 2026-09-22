@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { FONT_PAIRS, type FontPairId } from "@/lib/theme";
 import { CustomFontTiles } from "./custom-font-tiles";
+import { useT } from "@/lib/i18n";
 
 export function FontGrid({
   pairValue,
@@ -13,6 +14,7 @@ export function FontGrid({
   onPickPair: (id: FontPairId) => void;
   onPickCustom: (id: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
       {Object.values(FONT_PAIRS).map((p) => {
@@ -26,7 +28,7 @@ export function FontGrid({
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[13.5px] font-semibold text-ink">{p.name}</span>
+              <span className="text-[13.5px] font-semibold text-ink">{t(p.name)}</span>
               {active && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-canvas">
                   <Check size={12} strokeWidth={3} />
@@ -41,10 +43,10 @@ export function FontGrid({
                 VAYRA
               </span>
               <span className="text-[13px] text-ink-muted" style={{ fontFamily: p.sans }}>
-                The quick brown fox jumps over the lazy dog
+                {t("The quick brown fox jumps over the lazy dog")}
               </span>
             </div>
-            <p className="text-[11.5px] text-ink-subtle">{p.blurb}</p>
+            <p className="text-[11.5px] text-ink-subtle">{t(p.blurb)}</p>
           </button>
         );
       })}

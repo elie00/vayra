@@ -126,7 +126,12 @@ function writeAggregateCache(set: Set<string>) {
 }
 
 export function setWatchlistAggregate(ids: Iterable<string>): void {
-  aggregateIds = new Set(ids);
+  const next = new Set(ids);
+  // WatchlistTab both publishes this aggregate and subscribes to its changes.
+  // Publishing unchanged membership must be a no-op, otherwise the subscriber
+  // rereads a fresh localEntries array and republishes it on every React commit.
+  if (next.size === aggregateIds.size && [...next].every((id) => aggregateIds.has(id))) return;
+  aggregateIds = next;
   writeAggregateCache(aggregateIds);
   for (const s of subs) s();
 }

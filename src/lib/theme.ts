@@ -1,4 +1,4 @@
-import { isMobileTauri } from "@/lib/platform";
+import { isMacDesktop, isMobileTauri } from "@/lib/platform";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
 import draculaPreview from "@/assets/theme-previews/dracula.png";
 import forestPreview from "@/assets/theme-previews/forest.png";
@@ -12,6 +12,9 @@ import { getCustomThemes } from "./custom-themes";
 
 export type ThemePresetId =
   | "cool-grey"
+  | "obsidian"
+  | "sage"
+  | "ivory"
   | "nord"
   | "stremio"
   | "crunch"
@@ -70,6 +73,7 @@ export type ThemePreset = {
   blurb: string;
   swatch: [string, string, string];
   tokens: Record<string, string>;
+  colorScheme?: "dark" | "light";
   background?: ThemeBackground;
   logo?: ThemeLogo;
   layout?: ThemeLayout;
@@ -117,6 +121,70 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
       "--color-accent": "#a8aaad",
       "--color-accent-soft": "rgb(168 170 173 / 0.16)",
       "--color-danger": "oklch(0.55 0.18 25)",
+    },
+  },
+  obsidian: {
+    id: "obsidian",
+    name: "Obsidian",
+    blurb: "Warm charcoal, brushed copper. Made for evening viewing.",
+    swatch: ["#151311", "#302923", "#d6ab82"],
+    fontPair: "system",
+    tokens: {
+      "--color-canvas": "#151311",
+      "--color-surface": "#1c1916",
+      "--color-elevated": "#25211c",
+      "--color-raised": "#302923",
+      "--color-ink": "#f4eee6",
+      "--color-ink-muted": "#c7bbae",
+      "--color-ink-subtle": "#b4a496",
+      "--color-edge": "#786553",
+      "--color-edge-soft": "#78655366",
+      "--color-accent": "#d6ab82",
+      "--color-accent-soft": "#d6ab8226",
+      "--color-danger": "#f49d95",
+    },
+  },
+  sage: {
+    id: "sage",
+    name: "Sage",
+    blurb: "Deep eucalyptus, soft sage. A calm, natural contrast.",
+    swatch: ["#111915", "#283c30", "#b2cfb3"],
+    fontPair: "system",
+    tokens: {
+      "--color-canvas": "#111915",
+      "--color-surface": "#18241c",
+      "--color-elevated": "#203027",
+      "--color-raised": "#283c30",
+      "--color-ink": "#edf3e9",
+      "--color-ink-muted": "#c1cebd",
+      "--color-ink-subtle": "#afc1ab",
+      "--color-edge": "#64806a",
+      "--color-edge-soft": "#64806a66",
+      "--color-accent": "#b2cfb3",
+      "--color-accent-soft": "#b2cfb326",
+      "--color-danger": "#ffaaa0",
+    },
+  },
+  ivory: {
+    id: "ivory",
+    name: "Ivory",
+    blurb: "Warm paper, dark ink. A clear theme for daylight.",
+    swatch: ["#f4f0e7", "#ddd5c7", "#795335"],
+    colorScheme: "light",
+    fontPair: "system",
+    tokens: {
+      "--color-canvas": "#f4f0e7",
+      "--color-surface": "#faf7f0",
+      "--color-elevated": "#eae3d7",
+      "--color-raised": "#ddd5c7",
+      "--color-ink": "#292620",
+      "--color-ink-muted": "#514b40",
+      "--color-ink-subtle": "#625b4f",
+      "--color-edge": "#918777",
+      "--color-edge-soft": "#91877766",
+      "--color-accent": "#795335",
+      "--color-accent-soft": "#7953351f",
+      "--color-danger": "#a02e2a",
     },
   },
   nord: {
@@ -1608,6 +1676,8 @@ export type ThemeSettings = {
   backgroundImage: string | null;
   backgroundDim: number;
   fontPair: FontPairId;
+  /** Explicit typography choice stays consistent when switching color palettes. */
+  fontPairOverride?: boolean;
   customFontId?: string | null;
   customColors: CustomColors | null;
 };
@@ -1688,13 +1758,20 @@ function resolveTokens(theme: ThemeSettings): Record<string, string> {
   return THEME_PRESETS["cool-grey"].tokens;
 }
 
+export function activeFontPair(theme: ThemeSettings): FontPairId {
+  if (isMacDesktop() && !theme.fontPairOverride) return "system";
+  const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
+  return theme.fontPairOverride ? theme.fontPair : preset?.fontPair ?? theme.fontPair;
+}
+
 export function applyTheme(theme: ThemeSettings): void {
   const root = document.documentElement;
   for (const [k, v] of Object.entries(resolveTokens(theme))) {
     root.style.setProperty(k, v);
   }
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
-  const fontPairId = preset?.fontPair ?? theme.fontPair;
+  root.style.colorScheme = preset?.colorScheme ?? "dark";
+  const fontPairId = activeFontPair(theme);
   const pair = FONT_PAIRS[fontPairId] ?? FONT_PAIRS["sentient-switzer"];
   if (theme.customFontId) {
     const custom = `"harbor-font-${theme.customFontId}"`;
@@ -1704,10 +1781,11 @@ export function applyTheme(theme: ThemeSettings): void {
     root.style.setProperty("--font-display", pair.display);
     root.style.setProperty("--font-sans", pair.sans);
   }
-  const layout: ThemeLayout = preset?.layout ?? "sidebar";
+  const layout = activeLayout(theme);
   const cardStyle: ThemeCardStyle = preset?.cardStyle ?? "flat";
   const buttonStyle: ThemeButtonStyle = preset?.buttonStyle ?? "flat";
   root.dataset.themeLayout = layout;
+  root.dataset.macUx = isMacDesktop() ? "true" : "false";
   root.dataset.themeCard = cardStyle;
   root.dataset.themeButton = buttonStyle;
   root.dataset.themeBokeh = preset?.bokeh ? "on" : "off";
@@ -1716,7 +1794,7 @@ export function applyTheme(theme: ThemeSettings): void {
 export function activeLayout(theme: ThemeSettings): ThemeLayout {
   // On mobile Tauri every theme uses the drawer-capable "sidebar" layout, since
   // that is the only chrome adapted for a phone (hamburger + slide-over drawer).
-  if (isMobileTauri()) return "sidebar";
+  if (isMobileTauri() || isMacDesktop()) return "sidebar";
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   return preset?.layout ?? "sidebar";
 }

@@ -20,7 +20,6 @@ import { isAddonRanked } from "@/lib/streams/addon-detect";
 import { useScrollMemory, useView, type PickerIntent, type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { prefetchSegments } from "@/lib/skip-intro";
 
-import { exitWindowFullscreen } from "@/lib/fullscreen-state";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
 import { AutoPlayTransition } from "./play-picker/auto-play-transition";
@@ -57,6 +56,9 @@ import { usePipelineResult } from "./play-picker/use-pipeline-result";
 import { useStreamIds } from "./play-picker/use-stream-ids";
 import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
+import { isMacDesktop } from "@/lib/platform";
+import { useDownloads } from "@/lib/download/downloads-store";
+import { completedDownloadFor, validatedDownloadSource } from "@/lib/download/offline-playback";
 import { LocalStreamCard } from "./play-picker/local-stream-card";
 import { SubtitleSelectStep } from "./play-picker/subtitle-select-step";
 import { SeasonDownloadOverlay } from "./play-picker/season-download-overlay";
@@ -88,7 +90,6 @@ export function PlayPicker({
   const isDownload = intent === "download" || isSeasonDownload;
   const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
   const backToDetail = () => {
-    void exitWindowFullscreen();
     exitPickerToDetail(meta);
   };
   const { settings, update } = useSettings();
@@ -97,6 +98,9 @@ export function PlayPicker({
   const debrids = useDebridClients();
   const { snapshot: roomSnapshot, sendInvite, claimHost, wasInvitedTo, clientId, hostSource, roomGuestPick, lastInviteProto } = useTogether();
   const inSession = roomSnapshot.state === "joined";
+  const downloads = useDownloads();
+  const completedDownload = completedDownloadFor(downloads, meta.id, episode);
+  const [offlineState, setOfflineState] = useState<"checking" | "stream" | "opened">(() => isMacDesktop() && autoPlay && !isDownload && !inSession && !attempt && completedDownload ? "checking" : "stream");
   const resolvedImdb = useImdbId(meta, settings.tmdbKey);
   useEffect(() => {
     prefetchSegments(meta, episode);
@@ -344,6 +348,7 @@ export function PlayPicker({
   const isLiveLikeContent =
     !!meta.type && !["movie", "series", "anime"].includes(String(meta.type).toLowerCase());
   const autoActive =
+    offlineState === "stream" &&
     !!((autoPlay && !isLiveLikeContent) || wasInvitedTo(inviteKey)) &&
     !autoCancelled &&
     !autoExhausted &&
@@ -401,6 +406,19 @@ export function PlayPicker({
   );
 
   const [seasonProgress, setSeasonProgress] = useState<SeasonDownloadProgress | null>(null);
+  useEffect(() => {
+    if (offlineState !== "checking") return;
+    if (!completedDownload) { setOfflineState("stream"); return; }
+    let alive = true;
+    const timeout = window.setTimeout(() => { if (alive) { alive = false; setOfflineState("stream"); } }, 5000);
+    void validatedDownloadSource(completedDownload, meta, episode).then((src) => {
+      if (!alive) return;
+      window.clearTimeout(timeout);
+      setOfflineState(src ? "opened" : "stream");
+      if (src) openPlayerGated(src);
+    });
+    return () => { alive = false; window.clearTimeout(timeout); };
+  }, [offlineState, completedDownload, meta, episode, openPlayerGated]);
 
   const { onPlay, onCache, queuedHash, debridDown, resetDebridDown, abortResolve, p2pConfirm, confirmP2p, cancelP2p } = usePickHandler({
     meta: metaForDisplay,
@@ -446,6 +464,7 @@ export function PlayPicker({
     !!previousMatch && (isCached(previousMatch) || !!previousMatch.url || p2pAutoConsent);
   const rememberedFiredRef = useRef(false);
   const rememberedHandledFirst =
+    offlineState === "stream" &&
     !!previousMatch &&
     settings.rememberLastStream &&
     !!resume &&
@@ -612,12 +631,16 @@ export function PlayPicker({
           setPendingPreselect(null);
           openPlayer(finalSrc);
         }}
-        onCancel={() => setPendingPreselect(null)}
+        onCancel={() => { setPendingPreselect(null); setOfflineState("stream"); setAutoCancelled(true); }}
       />
     );
   }
 
-  if (noSourcesConfigured) {
+  if (offlineState === "checking" || (offlineState === "opened" && !pendingPreselect)) {
+    return <main className="flex h-full items-center justify-center bg-canvas"><div className="flex flex-col items-center gap-5 text-ink"><p role="status">{t("Checking your downloaded copy…")}</p><button className="mac-secondary-button" onClick={() => setOfflineState("stream")}>{t("Choose another source")}</button></div></main>;
+  }
+
+  if (noSourcesConfigured && !completedDownload) {
     return <NoSourcesConfiguredModal meta={meta} />;
   }
 
@@ -701,12 +724,13 @@ export function PlayPicker({
         {!isDownload && localMatch && (
           <LocalStreamCard entry={localMatch} onPlay={() => openPlayerGated(localPlayerSrc(localMatch))} />
         )}
+        {!isDownload && completedDownload && <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-elevated p-5 text-ink"><div><h2 className="text-[17px] font-semibold">{t("Available offline")}</h2><p className="mt-1 text-[13px] text-ink-muted">{t("Your downloaded copy is checked before playback.")}</p></div><button type="button" className="mac-primary-button" onClick={() => { void validatedDownloadSource(completedDownload, meta, episode).then((src) => { if (src) { setAutoCancelled(true); openPlayerGated(src); } else setResolveError(t("This file is missing or incomplete. Download it again from the title page.")); }); }}>{t("Watch offline")}</button></section>}
 
         {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
 
         {isDownload && !isSeasonDownload && (
           <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-3.5 text-[13.5px] text-ink-muted">
-            Choose a source to save offline. You can track progress on the Downloads page.
+            {t("Choose a source to save offline. You can track progress on the Downloads page.")}
           </div>
         )}
 
@@ -740,7 +764,7 @@ export function PlayPicker({
               <span className="absolute inset-0 rounded-full border-[1.5px] border-edge" />
               <span className="absolute inset-0 animate-spin rounded-full border-[1.5px] border-transparent border-t-ink" />
             </span>
-            Still searching slower sources…
+            {t("Still searching slower sources…")}
           </div>
         )}
 

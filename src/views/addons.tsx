@@ -15,7 +15,6 @@ import { relatedAddons, recommendedAddons } from "@/lib/addons-store/recommend";
 import { loadDisplayOrder } from "@/lib/addons-store/reorder";
 import {
   fetchManifestAt,
-  installAddon,
   installFromUrl,
   loadInstalled,
   manifestRequiresConfiguration,
@@ -41,6 +40,7 @@ import { DiscoverPane } from "./addons/discover-pane";
 import { InstalledPane } from "./addons/installed-pane";
 import { SearchBar } from "./addons/search-bar";
 import { Toaster } from "./addons/toaster";
+import { addonInstallMessage } from "./addons/install-feedback";
 
 export { requestAddonsTab } from "./addons/addons-types";
 
@@ -200,14 +200,15 @@ export function AddonsView() {
         );
         return;
       }
-      const addon = await installAddon(manifest?.id ?? r.manifest?.id ?? r.curated?.id ?? "", r.transportUrl);
+      const result = await installFromUrl(r.transportUrl);
+      const addon = result.addon;
       window.dispatchEvent(
         new CustomEvent("vayra:addons-changed", {
           detail: { id: addon.manifest.id, installed: true },
         }),
       );
       refetch();
-      showToast("ok", t("Installed"), {
+      showToast(result.syncStatus === "failed" ? "error" : "ok", addonInstallMessage(result, t), {
         id: addon.manifest.id,
         name: addon.manifest.name,
         logo: addon.manifest.logo ?? r.manifest?.logo ?? null,
@@ -228,12 +229,8 @@ export function AddonsView() {
       );
       refetch();
       showToast(
-        "ok",
-        result.replaced
-          ? t("Updated")
-          : result.syncedToStremio
-            ? t("Installed")
-            : t("Installed locally"),
+        result.syncStatus === "failed" ? "error" : "ok",
+        addonInstallMessage(result, t),
         {
           id: result.addon.manifest.id,
           name: result.addon.manifest.name,
@@ -267,6 +264,7 @@ export function AddonsView() {
     } catch (e) {
       console.warn("[addons] uninstall failed", e);
       showToast("error", t("Couldn't remove. Try again."));
+      throw e;
     }
   };
 
@@ -523,15 +521,15 @@ export function AddonsView() {
               const result = await installFromUrl(rawUrl, opts);
               refetch();
               showToast(
-                "ok",
-                result.replaced ? t("Updated") : result.syncedToStremio ? t("Installed") : t("Installed locally"),
+                result.syncStatus === "failed" ? "error" : "ok",
+                addonInstallMessage(result, t),
                 {
                   id: result.addon.manifest.id,
                   name: result.addon.manifest.name,
                   logo: result.addon.manifest.logo ?? null,
                 },
               );
-              return { replaced: result.replaced, addon: result.addon };
+              return result;
             } catch (e) {
               const msg = e instanceof Error ? e.message : t("Install failed.");
               showToast("error", msg);

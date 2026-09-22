@@ -4,6 +4,7 @@ import { awardSourceMeta, findTopAward, parseAwardYear } from "@/lib/anime-award
 import type { Meta } from "@/lib/cinemeta";
 import { isSaved, toggleSaved } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { useMalRating } from "@/lib/mal-rating";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
@@ -53,6 +54,7 @@ export function AnimeHero({
   }, [slides.length, active]);
 
   const malRating = useMalRating(slides[active]);
+  const description = useLocalizedOverview(slides[active]);
   if (slides.length === 0) return null;
 
   const current = slides[active];
@@ -119,9 +121,9 @@ export function AnimeHero({
             )}
           <HeroLogo title={current.name} logo={logo} />
           <HeroTags meta={current} />
-          {current.description && (
+          {description && (
             <p className="line-clamp-3 text-[14.5px] leading-relaxed text-ink-muted">
-              {current.description}
+              {description}
             </p>
           )}
           <div className="mt-1 flex items-center gap-3">

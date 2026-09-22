@@ -1,18 +1,24 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
 import { useParental } from "@/lib/parental";
-import { searchAll, searchAnime, searchCinemeta, searchLiveTvChannels, type SearchResults } from "@/lib/search";
+import { detectIntent, searchAll, searchAnime, searchCinemeta, searchLiveTvChannels, type SearchResults } from "@/lib/search";
 import { searchAddonCatalogs, searchAddonGroups, mergeMetas } from "@/lib/search-addons";
 import { searchAddonIndex } from "@/lib/search-addon-index";
 import { gatherCatalogAddons, type Addon } from "@/lib/addons";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
+import { SEARCH_TIMEOUT_MS, withRequestTimeout, type RequestDiagnostics } from "@/lib/request-outcome";
+import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
+
+export type SearchSource = "tmdb" | "anime" | "catalogs" | "groups" | "cinemeta";
+export type SearchSourceStatus = "pending" | "ready" | "empty" | "error" | "skipped";
 
 type SearchState = {
   open: boolean;
   query: string;
   results: SearchResults | null;
-  status: "idle" | "typing" | "loading" | "done";
+  status: "idle" | "typing" | "loading" | "done" | "error";
+  sources: Partial<Record<SearchSource, SearchSourceStatus>>;
   recent: string[];
 };
 
@@ -23,6 +29,7 @@ type SearchValue = SearchState & {
   recordRecent: (q: string) => void;
   removeRecent: (q: string) => void;
   clearRecent: () => void;
+  retry: () => void;
 };
 
 const Ctx = createContext<SearchValue | null>(null);
@@ -53,17 +60,20 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const { authKey } = useAuth();
   const { hiddenTabs } = useParental();
   const [open, setOpen] = useState(false);
-  const [query, setQueryState] = useState("");
+  const [queryState, setQueryState] = useState({ query: "" });
+  const { query } = queryState;
   const [results, setResults] = useState<SearchResults | null>(null);
   const [status, setStatus] = useState<SearchState["status"]>("idle");
+  const [sources, setSources] = useState<SearchState["sources"]>({});
   const [recent, setRecent] = useState<string[]>(() => loadRecent());
   const debounceRef = useRef<number | null>(null);
   const reqIdRef = useRef(0);
+  const queryRef = useRef("");
   const addonsRef = useRef<{ key: string | null; addons: Addon[] } | null>(null);
-  const ensureAddons = useCallback(async (): Promise<Addon[]> => {
+  const ensureAddons = useCallback(async (diagnostics: RequestDiagnostics): Promise<Addon[]> => {
     if (addonsRef.current && addonsRef.current.key === authKey) return addonsRef.current.addons;
-    const a = await gatherCatalogAddons(authKey).catch(() => [] as Addon[]);
-    addonsRef.current = { key: authKey, addons: a };
+    const a = await gatherCatalogAddons(authKey, diagnostics);
+    if (!diagnostics.failed) addonsRef.current = { key: authKey, addons: a };
     return a;
   }, [authKey]);
 
@@ -82,39 +92,45 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   }, [hiddenTabs.anime]);
 
   useEffect(() => {
+    // Own the generation before the debounce starts. A replaced query or an
+    // unmounted provider must never receive a late response from this search.
+    const id = ++reqIdRef.current;
     const trimmed = query.trim();
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    setResults(null);
+    setSources({});
     if (!trimmed) {
-      setResults(null);
       setStatus("idle");
       return;
     }
     setStatus("typing");
+    const controller = new AbortController();
     const animeAllowed = !hiddenTabs.anime;
     const liveTvAllowed = !hiddenTabs.liveTv && settings.iptvPlaylists.length > 0;
-    debounceRef.current = window.setTimeout(() => {
-      const id = ++reqIdRef.current;
+    const timer = window.setTimeout(() => {
+      if (id !== reqIdRef.current) return;
+      debounceRef.current = null;
       setStatus("loading");
       const liveTv = liveTvAllowed ? searchLiveTvChannels(trimmed, settings.iptvPlaylists) : [];
-      const tmdbPromise = searchAll(settings.tmdbKey, trimmed, { excludeGenres });
-      const animePromise = animeAllowed ? searchAnime(trimmed) : Promise.resolve([]);
-      const addonsP = ensureAddons();
-      const addonPromise = addonsP
-        .then((a) => searchAddonCatalogs(a, trimmed))
-        .catch(() => ({ movies: [], series: [] }));
-      const addonGroupsPromise = addonsP
-        .then((a) => searchAddonGroups(a, trimmed))
-        .catch(() => []);
-      const cinemetaPromise = searchCinemeta(trimmed).catch(() => ({ movies: [], series: [] }));
-      let tmdbResult: Awaited<typeof tmdbPromise> | null = null;
+      const direct = isMagnetInput(trimmed) || isDirectVideoUrl(trimmed);
+      const sourceStates: Record<SearchSource, SearchSourceStatus> = {
+        tmdb: !direct && settings.tmdbKey ? "pending" : "skipped",
+        anime: !direct && animeAllowed && trimmed.length >= 2 ? "pending" : "skipped",
+        catalogs: direct ? "skipped" : "pending",
+        groups: direct ? "skipped" : "pending",
+        cinemeta: !direct && trimmed.length >= 2 ? "pending" : "skipped",
+      };
+      let tmdbResult: SearchResults = {
+        query: trimmed, topMatch: null, people: [], movies: [], series: [], liveTv: [],
+        anime: [], addonGroups: [], addons: [], intent: detectIntent(trimmed),
+      };
       const acc = {
-        anime: [] as Awaited<typeof animePromise>,
-        addon: { movies: [], series: [] } as Awaited<typeof addonPromise>,
-        cine: { movies: [], series: [] } as Awaited<typeof cinemetaPromise>,
-        groups: [] as Awaited<typeof addonGroupsPromise>,
+        anime: [] as Awaited<ReturnType<typeof searchAnime>>,
+        addon: { movies: [], series: [] } as Awaited<ReturnType<typeof searchAddonCatalogs>>,
+        cine: { movies: [], series: [] } as Awaited<ReturnType<typeof searchCinemeta>>,
+        groups: [] as Awaited<ReturnType<typeof searchAddonGroups>>,
       };
       const publish = () => {
-        if (id !== reqIdRef.current || !tmdbResult) return;
+        if (id !== reqIdRef.current || controller.signal.aborted) return;
         const mergedMovies = mergeMetas(mergeMetas(tmdbResult.movies, acc.addon.movies), acc.cine.movies);
         const mergedSeries = mergeMetas(mergeMetas(tmdbResult.series, acc.addon.series), acc.cine.series);
         const shown = new Set<string>([...mergedMovies, ...mergedSeries].map((m) => m.id));
@@ -130,34 +146,57 @@ export function SearchProvider({ children }: { children: ReactNode }) {
           addonGroups: dedupedGroups,
           addons: searchAddonIndex(trimmed),
         });
-        setStatus("done");
+        setSources({ ...sourceStates });
+        const states = Object.values(sourceStates);
+        setStatus(states.includes("pending") ? "loading" : states.includes("error") ? "error" : "done");
       };
-      tmdbPromise
-        .then((r) => {
-          tmdbResult = r;
-          publish();
-        })
-        .catch(() => {
-          if (id === reqIdRef.current) setStatus("done");
-        });
-      void animePromise.then((a) => {
-        acc.anime = a;
-        publish();
+      function run<T>(source: SearchSource, request: (diagnostics: RequestDiagnostics) => Promise<T>, accept: (value: T) => boolean) {
+        if (sourceStates[source] !== "pending") return;
+        const diagnostics = { failed: false };
+        void withRequestTimeout(Promise.resolve().then(() => request(diagnostics)), SEARCH_TIMEOUT_MS, controller.signal)
+          .then((value) => {
+            if (id !== reqIdRef.current || controller.signal.aborted) return;
+            const nonempty = accept(value);
+            sourceStates[source] = diagnostics.failed ? "error" : nonempty ? "ready" : "empty";
+            publish();
+          }, () => {
+            if (id !== reqIdRef.current || controller.signal.aborted) return;
+            sourceStates[source] = "error";
+            publish();
+          });
+      }
+      publish();
+      run("tmdb", (diagnostics) => searchAll(settings.tmdbKey, trimmed, { excludeGenres, diagnostics }), (r) => {
+        tmdbResult = r;
+        return !!(r.topMatch || r.movies.length || r.series.length || r.people.length);
       });
-      void addonPromise.then((a) => {
-        acc.addon = a;
-        publish();
-      });
-      void cinemetaPromise.then((c) => {
-        acc.cine = c;
-        publish();
-      });
-      void addonGroupsPromise.then((g) => {
-        acc.groups = g;
-        publish();
-      });
+      run("anime", (diagnostics) => searchAnime(trimmed, 8, diagnostics), (a) => { acc.anime = a; return a.length > 0; });
+      const addonDiagnostics = { failed: false };
+      // Share the lookup, but never start remote work for a pasted media URL.
+      const addonsP = direct ? Promise.resolve([]) : ensureAddons(addonDiagnostics);
+      // Attach both consumers immediately, including lookup rejection handling.
+      run("catalogs", async (diagnostics) => {
+        const addons = await addonsP;
+        diagnostics.failed = addonDiagnostics.failed;
+        return searchAddonCatalogs(addons, trimmed, diagnostics);
+      }, (a) => { acc.addon = a; return a.movies.length + a.series.length > 0; });
+      run("groups", async (diagnostics) => {
+        const addons = await addonsP;
+        diagnostics.failed = addonDiagnostics.failed;
+        return searchAddonGroups(addons, trimmed, diagnostics);
+      }, (g) => { acc.groups = g; return g.length > 0; });
+      run("cinemeta", (diagnostics) => searchCinemeta(trimmed, diagnostics), (c) => { acc.cine = c; return c.movies.length + c.series.length > 0; });
     }, 180);
-  }, [query, settings.tmdbKey, settings.iptvPlaylists, excludeGenres, hiddenTabs.anime, hiddenTabs.liveTv, authKey, ensureAddons]);
+    debounceRef.current = timer;
+    return () => {
+      // Invalidate the current generation, not a captured DOM node/reference.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      ++reqIdRef.current;
+      controller.abort();
+      window.clearTimeout(timer);
+      if (debounceRef.current === timer) debounceRef.current = null;
+    };
+  }, [queryState, query, settings.tmdbKey, settings.iptvPlaylists, excludeGenres, hiddenTabs.anime, hiddenTabs.liveTv, authKey, ensureAddons]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -170,12 +209,35 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const setQuery = useCallback((q: string) => setQueryState(q), []);
+  const setQuery = useCallback((q: string) => {
+    if (q === queryRef.current) return;
+    queryRef.current = q;
+    // Invalidate synchronously, rather than waiting for the query effect: a
+    // response can settle between the input event and React's next effect.
+    ++reqIdRef.current;
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    // Keep a new query generation even if batched edits return to the same text.
+    setQueryState({ query: q });
+    setResults(null);
+    setSources({});
+    setStatus(q.trim() ? "typing" : "idle");
+  }, []);
 
   const clear = useCallback(() => {
-    setQueryState("");
+    setQuery("");
+  }, [setQuery]);
+
+  const retry = useCallback(() => {
+    if (!queryRef.current.trim()) return;
+    ++reqIdRef.current;
+    addonsRef.current = null;
     setResults(null);
-    setStatus("idle");
+    setSources({});
+    setStatus("typing");
+    setQueryState({ query: queryRef.current });
   }, []);
 
   const recordRecent = useCallback((q: string) => {
@@ -202,8 +264,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ open, setOpen, query, setQuery, results, status, recent, clear, recordRecent, removeRecent, clearRecent }),
-    [open, query, results, status, recent, setQuery, clear, recordRecent, removeRecent, clearRecent],
+    () => ({ open, setOpen, query, setQuery, results, status, sources, recent, clear, retry, recordRecent, removeRecent, clearRecent }),
+    [open, query, results, status, sources, recent, setQuery, clear, retry, recordRecent, removeRecent, clearRecent],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

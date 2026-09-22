@@ -16,12 +16,12 @@ import { Topbar } from "@/chrome/topbar";
 import { useFirstRunLocaleDetect } from "@/lib/region/locale-cascade";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
 import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
-import { exitWindowFullscreenOnPlayerClose, startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { syncEngineCacheOptions } from "@/lib/torrent/engine-config-sync";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isMobileDevice, isWeb } from "@/lib/platform";
+import { isMacDesktop, isMobileDevice, isWeb } from "@/lib/platform";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { DevErrorTrigger } from "@/components/dev-error-trigger";
@@ -456,7 +456,7 @@ function Shell() {
   const kid = activeProfile?.kid ?? null;
   const preview = useThemePreview();
   const baseLayout = useMemo(
-    () => (preview ? preview.layout : activeLayout(settings.theme)),
+    () => (isMacDesktop() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],
   );
   const layout = kid ? "sidebar" : baseLayout;
@@ -747,9 +747,6 @@ function Shell() {
 
   const playerActive = !!player;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
-  useEffect(() => {
-    if (!playerActive) void exitWindowFullscreenOnPlayerClose();
-  }, [playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
   const collectionTop = topKind === "collection";
@@ -974,7 +971,7 @@ function Shell() {
 
   return (
     <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "sidebar" && <Sidebar />}
+      {!settingsTop && !playerActive && (!liveTop || isMacDesktop()) && !pickerTop && layout === "sidebar" && <Sidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}

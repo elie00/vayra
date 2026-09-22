@@ -1,4 +1,4 @@
-import { CircleCheck, Download, TriangleAlert, X } from "lucide-react";
+import { CircleCheck, Clock3, Download, Pause, Play, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { useT } from "@/lib/i18n";
@@ -8,7 +8,8 @@ import { Tooltip } from "./tooltip";
 type Props = {
   status: DownloadStatus;
   onStart: () => void;
-  onCancel: () => void;
+  onPause: () => void;
+  onResume: () => void;
   onReveal: () => void;
   onReset: () => void;
 };
@@ -16,18 +17,21 @@ type Props = {
 export function DownloadButton({
   status,
   onStart,
-  onCancel,
+  onPause,
+  onResume,
   onReveal,
   onReset,
 }: Props) {
   const t = useT();
-  useEffect(() => {
-    if (status.kind !== "done") return;
-    const timer = setTimeout(onReset, 12000);
-    return () => clearTimeout(timer);
-  }, [status.kind, onReset]);
-
   const speed = useDownloadSpeed(status);
+
+  if (status.kind === "queued") {
+    return (
+      <BigButton onClick={onPause} ariaLabel={t("Pause download")} tooltip={`${t("Queued")} · ${t("click to pause")}`}>
+        <Clock3 size={22} strokeWidth={1.9} />
+      </BigButton>
+    );
+  }
 
   if (status.kind === "preparing") {
     return (
@@ -45,18 +49,39 @@ export function DownloadButton({
   }
 
   if (status.kind === "downloading") {
-    const pct = Math.round(status.ratio * 100);
     const detail = formatTooltip(status, speed, t);
     return (
       <Tooltip label={detail}>
         <button
-          onClick={onCancel}
-          aria-label={t("Downloading {pct}%, click to cancel", { pct })}
+          onClick={onPause}
+          aria-label={t("Pause download")}
+          title={t("Pause download")}
           className="group relative flex h-12 w-12 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/10 hover:text-white"
         >
           <ProgressRing ratio={status.ratio} indeterminate={!status.totalBytes} />
           <Download size={20} strokeWidth={1.9} className="relative transition-opacity group-hover:opacity-0" />
-          <X size={18} strokeWidth={2.4} className="absolute opacity-0 transition-opacity group-hover:opacity-100" />
+          <Pause
+            size={18}
+            strokeWidth={2.4}
+            fill="currentColor"
+            className="absolute opacity-0 transition-opacity group-hover:opacity-100"
+          />
+        </button>
+      </Tooltip>
+    );
+  }
+
+  if (status.kind === "paused") {
+    const pct = Math.round(status.ratio * 100);
+    return (
+      <Tooltip label={`${t("Resume download")} · ${pct}%`}>
+        <button
+          onClick={onResume}
+          aria-label={t("Resume download")}
+          className="group relative flex h-12 w-12 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/10 hover:text-white"
+        >
+          <ProgressRing ratio={status.ratio} indeterminate={!status.totalBytes} />
+          <Play size={19} strokeWidth={2.2} fill="currentColor" className="relative" />
         </button>
       </Tooltip>
     );
@@ -79,7 +104,7 @@ export function DownloadButton({
     return (
       <BigButton
         onClick={onReset}
-        ariaLabel={t("Download failed")}
+        ariaLabel={t("Retry download")}
         tooltip={t("Failed: {message}", { message: status.message })}
       >
         <TriangleAlert size={22} strokeWidth={1.9} className="text-red-300" />
@@ -176,7 +201,7 @@ function formatTooltip(
   }
   if (bytesPerSec > 0) parts.push(`${formatBytes(bytesPerSec)}/s`);
   if (etaSec != null) parts.push(formatEta(etaSec, t));
-  parts.push(t("click to cancel"));
+  parts.push(t("click to pause"));
   return parts.join(" · ");
 }
 

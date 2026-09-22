@@ -1,3 +1,5 @@
+import { useT } from "@/lib/i18n";
+import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { ArrowUpRight, Bookmark, BookmarkCheck, Play, Star } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import type { PreviewData } from "@/lib/hover-preview/preview-data";
@@ -43,6 +45,7 @@ function DecisionLine({ data }: { data: PreviewData }) {
 }
 
 function WatchlistToggle({ data }: { data: PreviewData }) {
+  const t = useT();
   const meta = data.meta;
   const alt = tmdbImdbCached(meta.id);
   const altIds = useMemo(() => [alt ?? undefined], [alt]);
@@ -51,8 +54,8 @@ function WatchlistToggle({ data }: { data: PreviewData }) {
     <button
       type="button"
       tabIndex={-1}
-      title={active ? "In watchlist" : "Add to watchlist"}
-      aria-label={active ? "In watchlist" : "Add to watchlist"}
+      title={active ? t("In watchlist") : t("Add to watchlist")}
+      aria-label={active ? t("In watchlist") : t("Add to watchlist")}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -70,19 +73,21 @@ function WatchlistToggle({ data }: { data: PreviewData }) {
 }
 
 export function PreviewBlock({ data, onDetails }: { data: PreviewData; onDetails: () => void }) {
+  const t = useT();
+  const synopsis = useLocalizedOverview({ ...data.meta, description: data.synopsis ?? data.meta.description });
   const resume = data.resume;
   const inProgress = !!resume && !resume.external;
   const verb = inProgress
     ? resume.season != null && resume.episode != null
-      ? `Resume S${resume.season} E${resume.episode}`
-      : "Resume"
-    : "Details";
+      ? t("Resume S{season} E{episode}", { season: resume.season, episode: resume.episode })
+      : t("Resume")
+    : t("Details");
   return (
     <div className="flex flex-col gap-3 px-5 pb-4 pt-4">
       <DecisionLine data={data} />
-      {data.synopsis && (
+      {synopsis && (
         <p data-stagger="2" className="line-clamp-3 text-[13.5px] leading-[1.5] text-ink-muted">
-          {data.synopsis}
+          {synopsis}
         </p>
       )}
       <div data-stagger="2" className="flex h-6 items-center justify-between">
@@ -107,7 +112,7 @@ export function PreviewBlock({ data, onDetails }: { data: PreviewData; onDetails
             }}
             className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-subtle transition-colors duration-150 hover:text-ink"
           >
-            Details
+            {t("Details")}
           </button>
         ) : (
           <WatchlistToggle data={data} />

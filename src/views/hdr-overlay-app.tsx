@@ -118,6 +118,8 @@ function HdrOverlayChrome() {
   const download = {
     status: { kind: "idle" } as const,
     start: async () => {},
+    pause: () => {},
+    resume: () => {},
     cancel: () => {},
     reveal: async () => {},
     reset: () => {},

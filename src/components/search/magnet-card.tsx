@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { AlertCircle, FileVideo, Loader2, Magnet, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { awaitCastServerReady } from "@/lib/stremio-server";
@@ -13,6 +14,7 @@ import { useView, type PlayerSrc } from "@/lib/view";
 type Mode = "idle" | "starting" | "picking" | "error";
 
 export function MagnetCard({ raw, onClose }: { raw: string; onClose: () => void }) {
+  const t = useT();
   const { openPlayer } = useView();
   const parsed = useMemo(() => parseMagnet(raw), [raw]);
   const [mode, setMode] = useState<Mode>("idle");
@@ -24,13 +26,13 @@ export function MagnetCard({ raw, onClose }: { raw: string; onClose: () => void 
       <div className="flex items-center gap-3 rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-4">
         <AlertCircle size={22} className="shrink-0 text-ink-subtle" />
         <span className="text-[14px] text-ink-muted">
-          That does not look like a valid magnet link or infohash.
+          {t("That does not look like a valid magnet link or infohash.")}
         </span>
       </div>
     );
   }
 
-  const title = parsed.name ?? "Magnet stream";
+  const title = parsed.name ?? t("Magnet stream");
 
   const startPlay = (fileIdx: number | null, name?: string) => {
     const src: PlayerSrc = {
@@ -73,7 +75,7 @@ export function MagnetCard({ raw, onClose }: { raw: string; onClose: () => void 
         <div className="flex items-center gap-2 px-2 pb-1.5 pt-1">
           <FileVideo size={18} className="text-accent" />
           <span className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
-            {files.length} playable files
+            {files.length} {t("playable files")}
           </span>
         </div>
         {files.map((f) => (
@@ -98,7 +100,7 @@ export function MagnetCard({ raw, onClose }: { raw: string; onClose: () => void 
         <Magnet size={22} />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">Torrent link</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">{t("Torrent link")}</span>
         <span className="truncate text-[15px] font-semibold text-ink">{title}</span>
         <span className="text-[12.5px] text-ink-subtle">
           {error ?? "Streams directly from peers over your own connection."}
@@ -115,7 +117,7 @@ export function MagnetCard({ raw, onClose }: { raw: string; onClose: () => void 
         ) : (
           <Play size={18} fill="currentColor" />
         )}
-        {mode === "starting" ? "Starting" : "Play"}
+        {mode === "starting" ? t("Starting") : t("Play")}
       </button>
     </div>
   );

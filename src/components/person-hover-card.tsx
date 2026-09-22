@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AwardLogo, laurelColorFor } from "@/components/icons/award-logo";
@@ -26,6 +27,7 @@ export function PersonHoverCard({
   onEnter: () => void;
   onLeave: () => void;
 }) {
+  const t = useT();
   const { settings } = useSettings();
   const [person, setPerson] = useState<PersonDetail | null>(
     () => tmdbPersonCached(personId) ?? null,
@@ -99,7 +101,7 @@ export function PersonHoverCard({
       {knownFor.length > 0 && (
         <div className="flex items-baseline gap-1.5 px-4 pt-2 pb-1 text-[11.5px]">
           <span className="shrink-0 font-medium uppercase tracking-[0.14em] text-ink-subtle">
-            Known for
+            {t("Known for")}
           </span>
           <span className="truncate text-ink-muted">{knownFor.join(" · ")}</span>
         </div>

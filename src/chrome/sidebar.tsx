@@ -1,9 +1,10 @@
-import { ChevronDown, Lock } from "lucide-react";
+import { ChevronDown, Lock, Pin } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import {
   COLLECTION_NAV_ITEMS,
   PRIMARY_NAV_ITEMS,
+  NAV_ITEMS,
   type NavItem as CanonicalNavItem,
 } from "@/chrome/nav-items";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
@@ -14,7 +15,8 @@ import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useParental, type LockableTab } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
-import { isMobileTauri } from "@/lib/platform";
+import { isMacDesktop, isMobileTauri } from "@/lib/platform";
+import { isExploreView, MAC_EXPLORE_VIEWS, MAC_PRIMARY_VIEWS, sanitizeMacPins } from "./mac-navigation";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 
 export function Sidebar() {
@@ -49,6 +51,7 @@ export function Sidebar() {
         />
       )}
       <aside
+        data-mac-sidebar={isMacDesktop() ? "" : undefined}
         data-harbor-nav-drawer={mobile ? "" : undefined}
         aria-hidden={chromeHidden || (mobile && !drawerOpen)}
         className={
@@ -185,7 +188,12 @@ function ScrollableNav({
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };
-  const visiblePrimary = PRIMARY_NAV_ITEMS.filter(isItemVisible);
+  const mac = isMacDesktop();
+  const { update } = useSettings();
+  const pins = sanitizeMacPins(settings.macPinnedViews);
+  const visiblePrimary = (mac ? MAC_PRIMARY_VIEWS.map((id) => NAV_ITEMS.find((it) => it.id === id)!) : PRIMARY_NAV_ITEMS).filter(isItemVisible);
+  const categories = MAC_EXPLORE_VIEWS.map((id) => NAV_ITEMS.find((it) => it.id === id)!).filter(isItemVisible);
+  const labelFor = (item: CanonicalNavItem) => mac && item.id === "discover" ? "Explore" : mac && item.id === "library" ? "My library" : item.label;
   const ref = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ top: boolean; bottom: boolean }>({
     top: false,
@@ -229,17 +237,29 @@ function ScrollableNav({
             <NavItem
               key={item.id}
               {...item}
+              label={labelFor(item)}
               collapsed={collapsed}
-              active={view === item.view}
+              active={view === item.view || (mac && item.id === "discover" && isExploreView(view))}
               onClick={() => setView(item.view)}
             />
           ))}
         </div>
+        {mac && (isExploreView(view) || pins.length > 0) && (
+          <div className="mt-4 flex flex-col gap-1 border-t border-edge-soft pt-3">
+            {!collapsed && <p className="px-3 pb-1 text-[12px] font-medium text-ink-subtle">{t(isExploreView(view) ? "Explore categories" : "Pinned categories")}</p>}
+            {categories.filter((item) => isExploreView(view) || pins.includes(item.view)).map((item) => (
+              <div key={item.id} className="flex min-w-0 items-center gap-1">
+                <NavItem {...item} compact collapsed={collapsed} active={view === item.view} onClick={() => setView(item.view)} />
+                {!collapsed && item.id !== "discover" && <button type="button" aria-pressed={pins.includes(item.view)} aria-label={t(pins.includes(item.view) ? "Unpin {name}" : "Pin {name}", { name: t(item.label) })} onClick={() => update({ macPinnedViews: pins.includes(item.view) ? pins.filter((id) => id !== item.view) : [...pins, item.view] })} className={`flex h-11 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-elevated ${pins.includes(item.view) ? "text-accent" : "text-ink-subtle"}`}><Pin size={14} fill={pins.includes(item.view) ? "currentColor" : "none"} /></button>}
+              </div>
+            ))}
+          </div>
+        )}
         <div data-tauri-drag-region className="py-2.5">
           <div className="mx-3 h-px bg-gradient-to-r from-transparent via-edge-soft/55 to-transparent" />
         </div>
         <div className="flex flex-col gap-1.5">
-          {COLLECTION_NAV_ITEMS.filter(isItemVisible).map((item) => {
+          {COLLECTION_NAV_ITEMS.filter((item) => (!mac || item.id === "settings") && isItemVisible(item)).map((item) => {
             const gated = !!item.pinGated && locked;
             return (
               <NavItem
@@ -275,13 +295,14 @@ function ScrollableNav({
   );
 }
 
-function NavItem({
+export function NavItem({
   render,
   label,
   active,
   onClick,
   gated,
   collapsed,
+  compact = false,
   view,
 }: {
   render: (active: boolean) => ReactNode;
@@ -290,22 +311,26 @@ function NavItem({
   onClick?: () => void;
   gated?: boolean;
   collapsed?: boolean;
+  compact?: boolean;
   view: View;
 }) {
   const t = useT();
   const translatedLabel = t(label);
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={(event) => setFocused(event.currentTarget.matches(":focus-visible"))}
+      onBlur={() => setFocused(false)}
       data-vayra-nav={view}
       data-active={active ? "" : undefined}
       aria-current={active ? "page" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label: translatedLabel }) : translatedLabel}
       title={gated ? t("chrome.lockedShort", { label: translatedLabel }) : translatedLabel}
-      className={`relative flex h-14 items-center justify-center gap-4 rounded-xl text-[16px] transition-colors duration-150 ${
+      className={`relative flex items-center justify-center transition-colors duration-150 ${compact ? "min-h-11 min-w-0 flex-1 gap-3 rounded-lg text-[13px] [&_svg]:h-5 [&_svg]:w-5" : "h-14 gap-4 rounded-xl text-[16px]"} ${
         collapsed ? "" : "lg:justify-start lg:px-4"
       } ${
         collapsed
@@ -317,15 +342,15 @@ function NavItem({
             : "text-ink-muted hover:bg-elevated/50 hover:text-ink"
       }`}
     >
-      <span className={`relative ${gated ? "opacity-70" : ""}`}>
-        {render(hovered)}
+      <span data-nav-icon="" className={`relative inline-flex shrink-0 ${gated ? "opacity-70" : ""}`}>
+        {render(hovered || focused)}
         {gated && (
           <span className="absolute -bottom-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink-subtle ring-1 ring-edge">
             <Lock size={9} strokeWidth={2.4} />
           </span>
         )}
       </span>
-      {!collapsed && <span className="hidden lg:inline">{translatedLabel}</span>}
+      {!collapsed && <span className="hidden truncate lg:inline">{translatedLabel}</span>}
     </button>
   );
 }
