@@ -704,6 +704,7 @@ export function PlayPicker({
         meta={meta}
         episode={episode}
         triedCount={autoCandidates.length}
+        otherLanguageCount={hostSourceForMedia ? 0 : langHiddenCount}
         onBrowseManually={() => {
           setAutoCancelled(true);
           setAutoExhausted(false);

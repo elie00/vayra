@@ -9,11 +9,14 @@ export function AutoExhaustedModal({
   meta,
   episode,
   triedCount,
+  otherLanguageCount = 0,
   onBrowseManually,
 }: {
   meta: Meta;
   episode?: PlayEpisode;
   triedCount: number;
+  /** Sources left out of automatic play because they declare only other audio languages. */
+  otherLanguageCount?: number;
   onBrowseManually: () => void;
 }) {
   const t = useT();
@@ -24,6 +27,9 @@ export function AutoExhaustedModal({
   const epSuffix = episode
     ? ` S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
     : "";
+  // Nothing was tried because every source declares another language: say so, the
+  // usual debrid and addon causes do not apply.
+  const languageOnly = triedCount === 0 && otherLanguageCount > 0;
   const subject = "VAYRA: no working stream";
   const body =
     `Streams tried: ${triedCount}\n` +
@@ -46,16 +52,26 @@ export function AutoExhaustedModal({
           VAYRA
         </p>
         <h2 id="auto-exhausted-title" className="mt-3 text-start text-[24px] font-semibold leading-tight text-ink" dir="auto">
-          {t("We could not find a working stream")}
+          {languageOnly ? t("No source in your audio language") : t("We could not find a working stream")}
         </h2>
-        <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
-          {t("VAYRA checked every available source for {title}{epSuffix} and none of them played. The most common reasons:", { title, epSuffix })}
-        </p>
-        <ul className="mt-3 space-y-1.5 text-start text-[13.5px] leading-relaxed text-ink-muted" dir="auto">
-          <li dir="auto">{t("· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.")}</li>
-          <li dir="auto">{t("· No stream addon is installed yet (Torrentio, MediaFusion, Comet).")}</li>
-          <li dir="auto">{t("· This title is too new and no source has it cached yet.")}</li>
-        </ul>
+        {languageOnly ? (
+          <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
+            {otherLanguageCount === 1
+              ? t("1 source is available in another language for {title}{epSuffix}. VAYRA does not start it on its own; browse the sources to pick it.", { title, epSuffix })
+              : t("{count} sources are available in other languages for {title}{epSuffix}. VAYRA does not start them on its own; browse them to pick one.", { count: otherLanguageCount, title, epSuffix })}
+          </p>
+        ) : (
+          <>
+            <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
+              {t("VAYRA checked every available source for {title}{epSuffix} and none of them played. The most common reasons:", { title, epSuffix })}
+            </p>
+            <ul className="mt-3 space-y-1.5 text-start text-[13.5px] leading-relaxed text-ink-muted" dir="auto">
+              <li dir="auto">{t("· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.")}</li>
+              <li dir="auto">{t("· No stream addon is installed yet (Torrentio, MediaFusion, Comet).")}</li>
+              <li dir="auto">{t("· This title is too new and no source has it cached yet.")}</li>
+            </ul>
+          </>
+        )}
         <div className="mt-7 flex flex-col gap-2.5">
           <button
             onClick={onBrowseManually}

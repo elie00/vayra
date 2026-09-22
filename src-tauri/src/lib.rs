@@ -1,4 +1,5 @@
 // Modules multiplateformes (cœur : streaming, torrent, proxy, auth, réglages…).
+mod app_log;
 mod cast_hls;
 mod cast_subs;
 mod cf_relay;
@@ -72,6 +73,8 @@ mod modal_overlay;
 mod modal_overlay;
 #[cfg(desktop)]
 mod mpv;
+#[cfg(desktop)]
+mod playback_metrics;
 #[cfg(mobile)]
 #[path = "mobile_stubs/mpv.rs"]
 mod mpv;
@@ -519,32 +522,10 @@ fn ensure_window_on_screen(app: &tauri::AppHandle) {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-/// A Finder launch sends stderr nowhere, taking every `eprintln!` diagnostic with it.
-/// Keep them in ~/Library/Logs/VAYRA/vayra.log, unless stderr is already a terminal.
-#[cfg(target_os = "macos")]
-fn redirect_stderr_to_log() {
-    use std::os::fd::AsRawFd;
-    if unsafe { libc::isatty(libc::STDERR_FILENO) } == 1 {
-        return;
-    }
-    let Some(home) = std::env::var_os("HOME") else { return };
-    let dir = std::path::Path::new(&home).join("Library/Logs/VAYRA");
-    if std::fs::create_dir_all(&dir).is_err() {
-        return;
-    }
-    let path = dir.join("vayra.log");
-    // One previous generation is kept, so the log cannot grow without bound.
-    if std::fs::metadata(&path).map(|m| m.len() > 10 * 1024 * 1024).unwrap_or(false) {
-        let _ = std::fs::rename(&path, dir.join("vayra.log.1"));
-    }
-    if let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
-        unsafe { libc::dup2(file.as_raw_fd(), libc::STDERR_FILENO) };
-    }
-}
-
 pub fn run() {
     #[cfg(target_os = "macos")]
-    redirect_stderr_to_log();
+    app_log::redirect_stderr_to_log();
+    app_log::init_tracing();
     #[cfg(target_os = "linux")]
     mpv_render_linux::enforce_nvidia_x11();
     let _ = rustls::crypto::ring::default_provider().install_default();
