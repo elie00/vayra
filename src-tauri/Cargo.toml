@@ -38,6 +38,7 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 vayra-core = { path = "../vayra-core" }
 librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
 url = "2"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "registry"] }
 
 # Dépendances desktop-only (mpv, cast, discord, plugins fenêtre/tray/updater) et TLS natif.
 [target.'cfg(not(target_os = "android"))'.dependencies]
