@@ -687,6 +687,7 @@ fn spawn_event_loop(
 ) {
     std::thread::spawn(move || {
         let mut last_timepos: Option<std::time::Instant> = None;
+        let mut load_timer = crate::playback_metrics::LoadTimer::default();
         #[cfg(windows)]
         let reassert_gen = Arc::new(std::sync::atomic::AtomicU64::new(0));
         #[cfg(not(windows))]
@@ -702,7 +703,19 @@ fn spawn_event_loop(
                         shutdown = true;
                     }
                     if let Event::EndFile(reason) = &event {
-                        eprintln!("[harbor::mpv] end-file reason={:?}", reason);
+                        let peak = crate::playback_metrics::peak_memory_mb()
+                            .map_or("?".to_string(), |mb| mb.to_string());
+                        eprintln!("[harbor::mpv] end-file reason={:?}, peak memory {} MB", reason, peak);
+                    }
+                    match &event {
+                        Event::StartFile => load_timer.on_start(std::time::Instant::now()),
+                        Event::FileLoaded => load_timer.on_loaded(std::time::Instant::now()),
+                        Event::PlaybackRestart => {
+                            if let Some(line) = load_timer.on_restart(std::time::Instant::now()) {
+                                eprintln!("{line}");
+                            }
+                        }
+                        _ => {}
                     }
                     if let Event::PropertyChange { name, .. } = &event {
                         if *name == "time-pos" {
