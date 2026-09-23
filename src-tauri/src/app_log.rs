@@ -58,10 +58,22 @@ pub fn init_tracing() {
     let _ = tracing_subscriber::registry().with(layer).try_init();
 }
 
+/// A whole log with every line redacted, for logs written outside `vayra.log`.
+#[cfg(any(desktop, test))]
+pub fn redact_text(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for line in text.split_inclusive('\n') {
+        let (body, end) = line.strip_suffix('\n').map_or((line, ""), |b| (b, "\n"));
+        out.push_str(&redact_urls(body));
+        out.push_str(end);
+    }
+    out
+}
+
 /// Cut every remote URL down to its scheme and host, and every magnet down to its
 /// info hash, so the log never keeps debrid tokens, tracker passkeys or file paths.
 /// Loopback URLs stay whole: they only carry the engine's own stream ids.
-#[cfg(any(target_os = "macos", test))]
+#[cfg(any(desktop, test))]
 pub fn redact_urls(line: &str) -> String {
     let mut out = String::with_capacity(line.len());
     let mut rest = line;
@@ -89,7 +101,7 @@ pub fn redact_urls(line: &str) -> String {
 }
 
 /// Length of the scheme just before "://", or 0 when there is none.
-#[cfg(any(target_os = "macos", test))]
+#[cfg(any(desktop, test))]
 fn scheme_len(before: &str) -> usize {
     before
         .chars()
@@ -99,12 +111,12 @@ fn scheme_len(before: &str) -> usize {
         .sum()
 }
 
-#[cfg(any(target_os = "macos", test))]
+#[cfg(any(desktop, test))]
 fn is_url_end(c: char) -> bool {
     c.is_whitespace() || matches!(c, '"' | '\'' | ')' | '(' | '<' | '>' | '[' | ']' | ',')
 }
 
-#[cfg(any(target_os = "macos", test))]
+#[cfg(any(desktop, test))]
 fn redact_url(url: &str) -> String {
     let Some(sep) = url.find("://") else { return url.to_string() };
     let after = &url[sep + 3..];
@@ -120,7 +132,7 @@ fn redact_url(url: &str) -> String {
     format!("{}{}{}", &url[..sep + 3], host, tail)
 }
 
-#[cfg(any(target_os = "macos", test))]
+#[cfg(any(desktop, test))]
 fn redact_magnet(magnet: &str) -> String {
     let params = &magnet["magnet:?".len()..];
     let xt = params.split('&').find(|p| p.starts_with("xt="));
@@ -177,6 +189,15 @@ mod tests {
             redact_urls("adding magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=http%3A%2F%2Fpriv.invalid%2FKEY now"),
             "adding magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&… now"
         );
+    }
+
+    #[test]
+    fn redacts_every_line_of_an_exported_mpv_log() {
+        let log = "[27160.319][d][cplayer] Run command: loadfile, args=[url=\"https://cdn.debrid.invalid/dl/TOKEN/ep.mkv\"]\n[27160.320][v][cplayer] Opening https://cdn.debrid.invalid/dl/TOKEN/ep.mkv\n";
+        let out = super::redact_text(log);
+        assert!(!out.contains("TOKEN"), "{out}");
+        assert_eq!(out.lines().count(), 2);
+        assert!(out.ends_with('\n'));
     }
 
     #[test]
