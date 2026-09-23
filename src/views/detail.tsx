@@ -14,6 +14,8 @@ import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import { meta as fetchCinemetaMeta, narrowMediaType, isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
 import { fetchAddonMeta } from "@/lib/addons";
+import { hasProgrammeGuide, programmesOf } from "@/lib/addon-epg";
+import { ProgrammeSchedule } from "./detail/programme-schedule";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
@@ -1463,7 +1465,9 @@ export function DetailView({
           (addonNative
             ? cinemetaFull.videos.length > 0
             : cinemetaFull.videos.some((v) => v.season != null && v.season > 0 && v.episode != null)) && (
-            <FadeInUp><CinemetaEpisodes meta={playMeta} videos={cinemetaFull.videos} /></FadeInUp>
+            hasProgrammeGuide(cinemetaFull)
+              ? <FadeInUp><ProgrammeSchedule programmes={programmesOf(cinemetaFull.videos)} /></FadeInUp>
+              : <FadeInUp><CinemetaEpisodes meta={playMeta} videos={cinemetaFull.videos} /></FadeInUp>
           )}
 
         {(() => {

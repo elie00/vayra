@@ -34,7 +34,7 @@ export type Meta = {
   trailerStreams?: Array<{ ytId?: string; title?: string }>;
   links?: Array<{ name: string; category: string; url: string }>;
   addonOrigin?: { id: string; name: string; logo?: string; base?: string };
-  behaviorHints?: { defaultVideoId?: string | null };
+  behaviorHints?: { defaultVideoId?: string | null; hasScheduledVideos?: boolean; isLive?: boolean };
   videos?: Array<{
     id?: string;
     season?: number;
@@ -48,6 +48,9 @@ export type Meta = {
     description?: string;
     thumbnail?: string;
     streams?: Array<Record<string, unknown>>;
+    /** Stremio native EPG: a video with both times is a scheduled programme. */
+    startTime?: string;
+    endTime?: string;
   }>;
 };
 
