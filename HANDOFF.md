@@ -144,6 +144,24 @@
   `TorrentEngineStats`) ; mesurer l'effet de l'intervalle de 2 s de
   `use-fullscreen.ts` avec les nouvelles mesures avant d'y toucher.
 
+## Lot n°7 — le nettoyeur de cache supprimait des torrents en cours (2026-09-23)
+- Cause trouvée grâce au journal : `error dumping DHT: error renaming dht.json.tmp.<pid>
+  … No such file or directory`. `cache_sweep::run` lit `now` au début du balayage ; une
+  entrée modifiée ensuite a un âge négatif, `duration_since` échoue et
+  `unwrap_or(true)` la classait **expirée** → supprimée. Touchait le fichier temporaire
+  du DHT (réécrit toutes les 3 s) mais aussi **tout torrent en cours d'écriture** :
+  fichier, ou dossier entier (`remove_dir_all`) quand un fichier y était créé.
+  Explication probable des disparitions de la recette du 12/09 (HiggsBoson absent du
+  cache, marqué indisponible), non prouvée faute de journal à l'époque.
+- Correctif : âge négatif = récent ; date illisible = entrée conservée.
+- Rétention « Off » (décision utilisateur du 23/09) : supprimait tout toutes les 30 s,
+  lecture en cours comprise. Elle garde désormais ce qui a été écrit depuis moins de
+  10 min. librqbit lit par ses fichiers ouverts : une vidéo terminée retirée du cache
+  continue de jouer, l'espace est libéré à la fermeture du torrent.
+- `dht_boot.rs` : `router.bitcomet.com` retiré (NXDOMAIN) ; il produisait ~3 500
+  avertissements par jour dans `vayra.log`.
+- Tests : `cache_sweep` 3 cas (défaut reproduit avant correctif). Rust 74/74.
+
 ## Travaux réalisés (historique, juillet 2026 — multiplateforme en pause)
 
 ### 1. Audit perf Cast — 6 findings prouvés corrigés + fixes matériels
