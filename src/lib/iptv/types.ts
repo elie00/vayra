@@ -25,7 +25,9 @@ export type IptvPlaylistSource = {
   name: string;
   url: string;
   epgUrl?: string;
-  kind?: "m3u" | "xtream" | "epg";
+  kind?: "m3u" | "xtream" | "epg" | "addon";
+  /** A Stremio addon offering a native EPG (`behaviorHints.epgProvider`), never user-edited. */
+  addon?: { base: string; catalogId: string; type: string };
   xtream?: {
     server: string;
     username: string;

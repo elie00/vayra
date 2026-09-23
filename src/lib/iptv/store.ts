@@ -1,10 +1,14 @@
 import { filterChannelsForDisplay } from "./divider-filter";
+import { loadAddonGuide } from "./addon-guide";
+import { setCachedEpg } from "./epg-store";
 import { loadFromShape } from "./ingest/load";
 import { detectProviderShape } from "./ingest/detect";
 import type { IptvChannel, IptvPlaylist, IptvPlaylistSource } from "./types";
 import { clearSeriesInfoCache } from "./xtream-vod";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+// Programme data goes stale quickly; Stremio refreshes its guide every 15 minutes.
+const ADDON_GUIDE_TTL_MS = 15 * 60 * 1000;
 
 const cache = new Map<string, IptvPlaylist>();
 const inflight = new Map<string, Promise<IptvPlaylist>>();
@@ -52,12 +56,19 @@ export async function loadPlaylist(
   opts?: { force?: boolean },
 ): Promise<IptvPlaylist> {
   const existing = cache.get(src.id);
-  if (!opts?.force && existing && Date.now() - existing.fetchedAt < CACHE_TTL_MS) {
+  const ttl = src.kind === "addon" ? ADDON_GUIDE_TTL_MS : CACHE_TTL_MS;
+  if (!opts?.force && existing && Date.now() - existing.fetchedAt < ttl) {
     return existing;
   }
   const pending = inflight.get(src.id);
   if (pending && !opts?.force) return pending;
-  const promise = loadFromShape(src, detectProviderShape(src));
+  const promise =
+    src.kind === "addon"
+      ? loadAddonGuide(src).then(({ playlist, epg }) => {
+          setCachedEpg(src.id, epg);
+          return playlist;
+        })
+      : loadFromShape(src, detectProviderShape(src));
   inflight.set(src.id, promise);
   try {
     const result = await promise;

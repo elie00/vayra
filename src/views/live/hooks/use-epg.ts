@@ -24,6 +24,14 @@ export function useEpg(
       setIndex(null);
       return;
     }
+    if (source.kind === "addon") {
+      // An addon guide carries its own programmes, loaded with its channels.
+      const addonId = source.id;
+      setIndex(getCachedEpg(addonId));
+      setLoading(false);
+      setError(null);
+      return subscribeEpg(() => setIndex(getCachedEpg(addonId)));
+    }
     const own = source.epgUrl ? [source.epgUrl] : deriveEpgUrls(source.url);
     const urls = [...new Set([...own, ...extraUrls.filter(Boolean)])];
     if (urls.length === 0) {
@@ -54,7 +62,7 @@ export function useEpg(
       unsub();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source?.id, source?.url, source?.epgUrl, extraKey]);
+  }, [source?.id, source?.url, source?.epgUrl, source?.kind, extraKey]);
 
   return { index, loading, error };
 }
