@@ -400,6 +400,8 @@ const misc: Record<string, string> = {
   "This source": "Cette source",
   "We could not find a working stream": "On n'a pas trouvé de stream qui fonctionne",
   "No source in your audio language": "Aucune source dans votre langue audio",
+  "Programme guide": "Programme TV",
+  "No programme information right now": "Aucune information de programme pour le moment",
   "1 source is available in another language for {title}{epSuffix}. VAYRA does not start it on its own; browse the sources to pick it.": "1 source est disponible dans une autre langue pour {title}{epSuffix}. VAYRA ne la lance pas d'elle-même : parcourez les sources pour la choisir.",
   "{count} sources are available in other languages for {title}{epSuffix}. VAYRA does not start them on its own; browse them to pick one.": "{count} sources sont disponibles dans d'autres langues pour {title}{epSuffix}. VAYRA ne les lance pas d'elle-même : parcourez-les pour en choisir une.",
   "· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.": "· Une clé debrid (TorBox, Real-Debrid, etc.) est manquante ou expirée.",
