@@ -10,6 +10,9 @@ import type { EpgIndex, EpgProgram, IptvChannel, IptvPlaylist } from "@/lib/iptv
 import type { Meta } from "@/lib/cinemeta";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
+import { emitAppFeedback } from "@/lib/app-feedback";
+import { useT } from "@/lib/i18n";
+import { fetchAddonJson, isAddonChannel, resolveAddonChannelStream } from "@/lib/iptv/addon-guide";
 
 export function synthChannelMeta(ch: IptvChannel): Meta {
   return {
@@ -32,24 +35,35 @@ export function useLiveActions(params: {
   const { epg, activeId, playlist } = params;
   const { openPlayer } = useView();
   const { settings } = useSettings();
+  const t = useT();
 
   const handlePlay = useCallback(
     (ch: IptvChannel) => {
       recordChannelPlay(ch);
       const programs = ch.tvgId ? epg?.byChannel.get(ch.tvgId) : undefined;
       const liveProgram = findCurrent(programs, Date.now()).current?.title ?? undefined;
-      openPlayer({
-        meta: synthChannelMeta(ch),
-        url: ch.url,
-        title: ch.name,
-        subtitle: ch.group ?? "Live",
-        notWebReady: true,
-        isLive: true,
-        headers: headersFromChannel(ch),
-        liveProgram,
+      const open = (url: string, headers: Record<string, string> | undefined) =>
+        openPlayer({
+          meta: synthChannelMeta(ch),
+          url,
+          title: ch.name,
+          subtitle: ch.group ?? "Live",
+          notWebReady: true,
+          isLive: true,
+          headers,
+          liveProgram,
+        });
+      if (!isAddonChannel(ch)) {
+        open(ch.url, headersFromChannel(ch));
+        return;
+      }
+      // An addon channel has no fixed URL: its addon resolves the stream by channel id.
+      void resolveAddonChannelStream(fetchAddonJson, ch).then((stream) => {
+        if (stream) open(stream.url, stream.headers);
+        else emitAppFeedback({ kind: "error", text: t("{name} has no stream right now.", { name: ch.name }) });
       });
     },
-    [openPlayer, epg],
+    [openPlayer, epg, t],
   );
 
   const handlePlayCatchup = useCallback(
