@@ -35,6 +35,7 @@ export type Addon = {
       p2p?: boolean;
       configurable?: boolean;
       configurationRequired?: boolean;
+      epgProvider?: boolean;
     };
   };
   transportUrl: string;

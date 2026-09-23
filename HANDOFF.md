@@ -171,6 +171,28 @@
   fichier brut reste dans le dossier de données de l'app (réécrit à chaque
   démarrage de mpv, seule la dernière session y figure).
 
+## Lot n°8 — EPG natif des addons Stremio (2026-09-23)
+- Spécification : `stremio-addon-sdk/docs/epg.md` (Stremio Tech Update #85, 23/09).
+  Pas de nouvelle ressource : un catalogue `tv` avec l'extra `date`,
+  `manifest.behaviorHints.epgProvider`, `{ metasDetailed }` par jour UTC (pagination
+  `skip` jusqu'à une page vide), programmes dans `meta.videos` (`startTime`/`endTime`),
+  streams demandés par identifiant de **chaîne**.
+- Étape 1 (PR #112) : `src/lib/addon-epg.ts` ; la page détail d'une chaîne affiche
+  « Programme TV » (en ce moment + à suivre) au lieu de lister les programmes comme
+  des épisodes, dont la lecture demandait un stream par identifiant de programme.
+- Étape 2 : `src/lib/iptv/addon-guide.ts` + type de source Live `kind: "addon"`,
+  découvert automatiquement (`use-epg-addon-sources.ts`), jamais enregistré dans les
+  réglages. `loadPlaylist` charge les jours UTC couverts par [maintenant − 2 h,
+  maintenant + 24 h] (cache 15 min), alimente le cache EPG (`setCachedEpg`) ;
+  `useEpg` le lit. Lecture et zapping résolvent le stream auprès de l'addon
+  (`resolveAddonChannelStream`), message d'erreur si aucun flux. Sélecteur de source :
+  section « Depuis les addons », lecture seule.
+- Vérifié contre `examples/epg-livetv.js` du SDK lancé en local : découverte,
+  2 chaînes, programmes fusionnés sur 2 jours UTC, stream résolu. Non vérifié :
+  rendu dans l'app (aucun addon EPG public installé sur ce Mac).
+- Hors périmètre : la recherche Live et le guide de la recherche ne parcourent que
+  les playlists IPTV ; les chaînes d'addons n'y apparaissent pas.
+
 ## Travaux réalisés (historique, juillet 2026 — multiplateforme en pause)
 
 ### 1. Audit perf Cast — 6 findings prouvés corrigés + fixes matériels
