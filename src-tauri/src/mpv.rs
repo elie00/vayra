@@ -1021,7 +1021,11 @@ pub fn mpv_export_log(app: AppHandle) -> Result<String, String> {
     }
     let dl = app.path().download_dir().map_err(|e| e.to_string())?;
     let dst = dl.join("harbor-mpv-log.txt");
-    std::fs::copy(&src, &dst).map_err(|e| format!("copy: {}", e))?;
+    // mpv logs every loadfile URL in full; a debrid link carries its token, and this
+    // export is meant to be attached to bug reports.
+    let raw = std::fs::read(&src).map_err(|e| format!("read: {}", e))?;
+    let text = crate::app_log::redact_text(&String::from_utf8_lossy(&raw));
+    std::fs::write(&dst, text).map_err(|e| format!("write: {}", e))?;
     Ok(dst.to_string_lossy().into_owned())
 }
 
