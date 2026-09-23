@@ -18,6 +18,7 @@ import { LiveHome } from "./live/live-home";
 import { TopNetworksRows } from "./live/top-networks-rows";
 import { GuideView } from "./live/guide/guide-view";
 import { useAllPlaylists } from "./live/hooks/use-all-playlists";
+import { useEpgAddonSources } from "./live/hooks/use-epg-addon-sources";
 import { useChannelPipeline } from "./live/hooks/use-channel-pipeline";
 import { useEpg, useNowTick } from "./live/hooks/use-epg";
 import { useXtreamEpgFallback } from "./live/hooks/use-xtream-epg-fallback";
@@ -67,7 +68,11 @@ export function LiveView({ active }: { active: boolean }) {
   const t = useT();
   const { settings } = useSettings();
   const { openMeta, setView } = useView();
-  const sources = settings.iptvPlaylists;
+  const addonSources = useEpgAddonSources(active);
+  const sources = useMemo<IptvPlaylistSource[]>(
+    () => [...settings.iptvPlaylists, ...addonSources],
+    [settings.iptvPlaylists, addonSources],
+  );
 
   const [activeId, setActiveId] = useState<string | null>(() => readActiveId());
   useEffect(() => {
@@ -89,7 +94,7 @@ export function LiveView({ active }: { active: boolean }) {
     if (!activeId) return null;
     const found = sources.find((s) => s.id === activeId);
     return found
-      ? { id: found.id, name: found.name, url: found.url, epgUrl: found.epgUrl, kind: found.kind, xtream: found.xtream }
+      ? { id: found.id, name: found.name, url: found.url, epgUrl: found.epgUrl, kind: found.kind, xtream: found.xtream, addon: found.addon }
       : null;
   }, [activeId, sources]);
 
@@ -165,15 +170,16 @@ export function LiveView({ active }: { active: boolean }) {
     () =>
       settings.iptvPlaylists
         .filter((p) => (p.kind ?? "m3u") !== "epg")
-        .map((p) => ({
+        .map((p): IptvPlaylistSource => ({
           id: p.id,
           name: p.name,
           url: p.url,
           epgUrl: p.epgUrl,
           kind: p.kind,
           xtream: p.xtream,
-        })),
-    [settings.iptvPlaylists],
+        }))
+        .concat(addonSources),
+    [settings.iptvPlaylists, addonSources],
   );
   const managedSources = useMemo<IptvPlaylistSource[]>(
     () =>
@@ -271,6 +277,7 @@ export function LiveView({ active }: { active: boolean }) {
         >
           <SourcePicker
             sources={managedSources}
+            addonSources={addonSources}
             activeId={activeId}
             exportEnabled={!!playlist?.channels.length}
             onSelect={(id) => {

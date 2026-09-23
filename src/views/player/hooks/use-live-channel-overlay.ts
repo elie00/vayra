@@ -4,12 +4,16 @@ import { headersFromChannel } from "@/lib/iptv/channel-headers";
 import type { IptvChannel, IptvPlaylistSource } from "@/lib/iptv/types";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayerSrc } from "@/lib/view";
+import { emitAppFeedback } from "@/lib/app-feedback";
+import { useT } from "@/lib/i18n";
+import { fetchAddonJson, isAddonChannel, resolveAddonChannelStream } from "@/lib/iptv/addon-guide";
 
 export function useLiveChannelOverlay(params: {
   src: PlayerSrc;
   replacePlayerSrc: (src: PlayerSrc) => void;
 }) {
   const { src, replacePlayerSrc } = params;
+  const t = useT();
   const { settings } = useSettings();
   const [open, setOpen] = useState(false);
   const [group, setGroup] = useState<string | null>(null);
@@ -112,20 +116,29 @@ export function useLiveChannelOverlay(params: {
         description: channel.group ? `Live channel: ${channel.group}` : "Live channel",
         releaseInfo: "Live",
       };
-      const newSrc: PlayerSrc = {
-        meta: newMeta,
-        url: channel.url,
-        title: channel.name,
-        subtitle: channel.group ?? "Live",
-        notWebReady: true,
-        isLive: true,
-        headers: headersFromChannel(channel),
-        liveProgram: program,
-      };
-      replacePlayerSrc(newSrc);
+      const play = (url: string, headers: Record<string, string> | undefined) =>
+        replacePlayerSrc({
+          meta: newMeta,
+          url,
+          title: channel.name,
+          subtitle: channel.group ?? "Live",
+          notWebReady: true,
+          isLive: true,
+          headers,
+          liveProgram: program,
+        } satisfies PlayerSrc);
       setOpen(false);
+      if (!isAddonChannel(channel)) {
+        play(channel.url, headersFromChannel(channel));
+        return;
+      }
+      // An addon channel has no fixed URL: its addon resolves the stream by channel id.
+      void resolveAddonChannelStream(fetchAddonJson, channel).then((stream) => {
+        if (stream) play(stream.url, stream.headers);
+        else emitAppFeedback({ kind: "error", text: t("{name} has no stream right now.", { name: channel.name }) });
+      });
     },
-    [replacePlayerSrc],
+    [replacePlayerSrc, t],
   );
 
   return {

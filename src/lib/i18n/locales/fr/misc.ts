@@ -401,6 +401,8 @@ const misc: Record<string, string> = {
   "We could not find a working stream": "On n'a pas trouvé de stream qui fonctionne",
   "No source in your audio language": "Aucune source dans votre langue audio",
   "Programme guide": "Programme TV",
+  "{name} has no stream right now.": "{name} n'a pas de flux disponible pour le moment.",
+  "From addons": "Depuis les addons",
   "No programme information right now": "Aucune information de programme pour le moment",
   "1 source is available in another language for {title}{epSuffix}. VAYRA does not start it on its own; browse the sources to pick it.": "1 source est disponible dans une autre langue pour {title}{epSuffix}. VAYRA ne la lance pas d'elle-même : parcourez les sources pour la choisir.",
   "{count} sources are available in other languages for {title}{epSuffix}. VAYRA does not start them on its own; browse them to pick one.": "{count} sources sont disponibles dans d'autres langues pour {title}{epSuffix}. VAYRA ne les lance pas d'elle-même : parcourez-les pour en choisir une.",

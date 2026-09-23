@@ -28,6 +28,12 @@ export function getCachedEpg(playlistId: string): EpgIndex | null {
   return cache.get(playlistId) ?? null;
 }
 
+/** An index built elsewhere (an addon guide comes with its programmes). */
+export function setCachedEpg(playlistId: string, index: EpgIndex): void {
+  cache.set(playlistId, index);
+  notify();
+}
+
 export function clearEpg(playlistId?: string) {
   if (playlistId) {
     cache.delete(playlistId);

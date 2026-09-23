@@ -11,6 +11,7 @@ type ActionsState = { id: string; copied: boolean };
 
 export function SourcePicker({
   sources,
+  addonSources = [],
   activeId,
   exportEnabled,
   onSelect,
@@ -26,6 +27,8 @@ export function SourcePicker({
   loading,
 }: {
   sources: IptvPlaylistSource[];
+  /** Addons with a native EPG: selectable, never edited or removed here. */
+  addonSources?: IptvPlaylistSource[];
   activeId: string | null;
   exportEnabled: boolean;
   onSelect: (id: string) => void;
@@ -75,7 +78,7 @@ export function SourcePicker({
   };
 
   const editing = editingId ? sources.find((s) => s.id === editingId) ?? null : null;
-  const active = sources.find((s) => s.id === activeId);
+  const active = sources.find((s) => s.id === activeId) ?? addonSources.find((s) => s.id === activeId);
   const ago = fetchedAt ? formatAgo(Date.now() - fetchedAt, t) : null;
 
   const copyUrl = async (url: string, id: string) => {
@@ -154,6 +157,28 @@ export function SourcePicker({
                     );
                   })}
                 </div>
+                {addonSources.length > 0 && (
+                  <div className="border-t border-edge-soft/55 py-1.5">
+                    <p className="px-3.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+                      {t("From addons")}
+                    </p>
+                    {addonSources.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          onSelect(s.id);
+                          close();
+                        }}
+                        className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-start text-[13.5px] transition-colors ${
+                          s.id === activeId ? "bg-raised text-ink" : "text-ink-muted hover:bg-raised hover:text-ink"
+                        }`}
+                      >
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${s.id === activeId ? "bg-danger" : "bg-ink-subtle/45"}`} />
+                        <span className="truncate">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="border-t border-edge-soft/55 p-1.5">
                   <button
                     onClick={() => setMode("add")}
@@ -176,7 +201,7 @@ export function SourcePicker({
                 }}
               />
             )}
-            {mode === "edit" && editing && (
+            {mode === "edit" && editing && editing.kind !== "addon" && (
               <PlaylistForm
                 initial={{
                   name: editing.name,
