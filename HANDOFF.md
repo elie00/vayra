@@ -165,6 +165,11 @@
 - Signature stable **vérifiée** le 23/09 : installation d'un nouveau build sans
   aucune invite du trousseau.
 - Tests : `cache_sweep` 3 cas (défaut reproduit avant correctif). Rust 74/74.
+- Export du journal mpv (panneau « Signaler un bug », `mpv_export_log`) : mpv écrit
+  chaque `loadfile` et `Opening <url>` en entier dans `harbor-mpv.log` ; la copie
+  exportée dans Téléchargements passe désormais par `app_log::redact_text`. Le
+  fichier brut reste dans le dossier de données de l'app (réécrit à chaque
+  démarrage de mpv, seule la dernière session y figure).
 
 ## Travaux réalisés (historique, juillet 2026 — multiplateforme en pause)
 
