@@ -10,9 +10,10 @@
   fusionnée dans `main` par pull request le 2026-09-22. `main` est de nouveau la
   référence.
 - **App installée** : `/Applications/VAYRA.app` 0.9.42 (binaire `Contents/MacOS/vayra`,
-  SHA-256 `a276d325…`), construite le 2026-09-22 avec les lots 1 à 6, signée
-  Apple Development. Versions précédentes dans `~/Library/Application Support/VAYRA-backups/`
-  (`20260922-211836` = lots 1–5, `20260922-200326` = lots 1–3, `20260922-194342` = journal de pairs,
+  SHA-256 `d4f7c3c6…`), construite le 2026-09-23 avec les lots 1 à 7 (sauf le
+  retrait de `router.silotis.us`), signée Apple Development. Versions précédentes
+  dans `~/Library/Application Support/VAYRA-backups/` (`20260923-182551` = lots 1–6,
+  `20260922-211836` = lots 1–5, `20260922-200326` = lots 1–3, `20260922-194342` = journal de pairs,
   `20260922-192818` = build du 12/09).
 - **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
   au dépôt, Root Directory `.` et `pnpm build:web` : il construit l'**app web**
@@ -158,8 +159,11 @@
   lecture en cours comprise. Elle garde désormais ce qui a été écrit depuis moins de
   10 min. librqbit lit par ses fichiers ouverts : une vidéo terminée retirée du cache
   continue de jouer, l'espace est libéré à la fermeture du torrent.
-- `dht_boot.rs` : `router.bitcomet.com` retiré (NXDOMAIN) ; il produisait ~3 500
-  avertissements par jour dans `vayra.log`.
+- `dht_boot.rs` : `router.bitcomet.com` retiré (NXDOMAIN ; ~3 500 avertissements
+  par jour dans `vayra.log`) et `router.silotis.us` retiré (IPv6 seulement, alors que
+  le DHT de librqbit n'ouvre qu'un socket IPv4 `0.0.0.0:0` : amorçage toujours en échec).
+- Signature stable **vérifiée** le 23/09 : installation d'un nouveau build sans
+  aucune invite du trousseau.
 - Tests : `cache_sweep` 3 cas (défaut reproduit avant correctif). Rust 74/74.
 
 ## Travaux réalisés (historique, juillet 2026 — multiplateforme en pause)
