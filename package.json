@@ -42,7 +42,7 @@
     "@tauri-apps/plugin-opener": "^2.5.3",
     "@tauri-apps/plugin-process": "^2",
     "@tauri-apps/plugin-updater": "^2",
-    "dompurify": "^3.4.14",
+    "dompurify": "^3.4.16",
     "gifenc": "^1.0.3",
     "hls.js": "^1.6.16",
     "jsqr": "^1.4.0",
@@ -85,11 +85,13 @@
     ],
     "overrides": {
       "@babel/core@<8": "7.29.6",
-      "brace-expansion@<2": "1.1.18",
+      "brace-expansion@<2": "1.1.21",
       "esbuild@<0.28.1": "0.28.2",
       "nanoid@<4": "3.3.18",
       "postcss@<8.5.23": "8.5.26",
-      "undici@<8": "7.29.0"
+      "undici@<8": "7.29.1",
+      "brace-expansion@>=4 <5.0.12": "5.0.12",
+      "source-map-js@<1.2.2": "1.2.2"
     }
   },
   "packageManager": "pnpm@10.27.0+sha512.72d699da16b1179c14ba9e64dc71c9a40988cbdc65c264cb0e489db7de917f20dcf4d64d8723625f2969ba52d4b7e2a1170682d9ac2a5dcaeaab732b7e16f04a"
