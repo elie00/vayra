@@ -249,6 +249,26 @@ describe("engine file release", () => {
     expect(mocks.releaseTorrentForDownload).toHaveBeenCalledWith(id);
   });
 
+  it("keeps the engine's refusal message when queuing", async () => {
+    // Tauri rejects commands with a plain string, not an Error.
+    mocks.retainTorrentForDownload.mockRejectedValueOnce("no torrent");
+    const id = await enqueueDownload({ meta, url: engineUrl });
+    const item = downloadSnapshot().find((d) => d.id === id);
+    expect(item?.status).toBe("error");
+    expect(item?.error).toBe("no torrent");
+  });
+
+  it("keeps the engine's refusal message when starting", async () => {
+    mocks.retainTorrentForDownload
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce("can't update initializing torrent");
+    const id = await enqueueDownload({ meta, url: engineUrl });
+    await vi.advanceTimersByTimeAsync(0);
+    const item = downloadSnapshot().find((d) => d.id === id);
+    expect(item?.status).toBe("error");
+    expect(item?.error).toBe("can't update initializing torrent");
+  });
+
   it("leaves a plain HTTP download alone", async () => {
     const id = await enqueueDownload({ meta, url: "https://cdn.example/video.mkv" });
     removeDownload(id);
