@@ -614,7 +614,11 @@ pub async fn torrent_engine_select_many(
         return Err("no file selected".to_string());
     }
     remember_saved(&info_hash, &file_idxs);
-    apply_selection(&info_hash, wanted_files(&info_hash, None)).await
+    let result = apply_selection(&info_hash, wanted_files(&info_hash, None)).await;
+    if let Err(e) = &result {
+        eprintln!("[torrent-engine] download selection {} refused: {e}", info_hash.get(..8).unwrap_or(&info_hash));
+    }
+    result
 }
 
 /// Release files a save no longer needs, so a later stream can narrow the torrent back
