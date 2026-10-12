@@ -2,6 +2,8 @@ import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
 import { pathSeparator } from "@/lib/platform";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSyncExternalStore } from "react";
+import { emitAppFeedback } from "@/lib/app-feedback";
+import { t } from "@/lib/i18n";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
 import { releaseTorrentForDownload, retainTorrentForDownload } from "@/lib/torrent/local-engine";
@@ -513,7 +515,7 @@ export async function revealDownload(id: string): Promise<void> {
   try {
     await revealItemInDir(d.path);
   } catch {
-    /* opener unavailable */
+    emitAppFeedback({ kind: "error", text: t("The folder could not be opened. Your download has not been changed. Try again from Downloads.") });
   }
 }
 

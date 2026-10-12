@@ -1,4 +1,5 @@
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ViewLoading } from "@/components/view-loading";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
@@ -857,112 +858,112 @@ function Shell() {
     ),
     settings: settingsAlive ? (
       <div className={layer(settingsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <Settings active={settingsTop} />
         </Suspense>
       </div>
     ) : null,
     anime: animeAlive ? (
       <div className={layer(animeTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <AnimeView active={animeTop} />
         </Suspense>
       </div>
     ) : null,
     discover: discoverAlive ? (
       <div className={layer(discoverTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <Discover active={discoverTop} />
         </Suspense>
       </div>
     ) : null,
     catalogs: catalogsAlive ? (
       <div className={layer(catalogsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <Catalogs active={catalogsTop} />
         </Suspense>
       </div>
     ) : null,
     addons: addonsAlive ? (
       <div className={layer(addonsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <AddonsView />
         </Suspense>
       </div>
     ) : null,
     calendar: calendarAlive ? (
       <div className={layer(calendarTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <CalendarView />
         </Suspense>
       </div>
     ) : null,
     wrapped: wrappedAlive ? (
       <div className={layer(wrappedTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <WrappedView active={wrappedTop} />
         </Suspense>
       </div>
     ) : null,
     stats: statsAlive ? (
       <div className={layer(statsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <StatsView active={statsTop} />
         </Suspense>
       </div>
     ) : null,
     sports: sportsAlive ? (
       <div className={layer(sportsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <SportsHome active={sportsTop} />
         </Suspense>
       </div>
     ) : null,
     movies: moviesAlive ? (
       <div className={layer(moviesTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <Movies active={moviesTop} />
         </Suspense>
       </div>
     ) : null,
     kids: kidsAlive ? (
       <div className={layer(kidsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <Kids active={kidsTop} />
         </Suspense>
       </div>
     ) : null,
     shows: showsAlive ? (
       <div className={layer(showsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <Shows active={showsTop} />
         </Suspense>
       </div>
     ) : null,
     library: libraryAlive ? (
       <div className={layer(libraryTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <LibraryView active={libraryTop} />
         </Suspense>
       </div>
     ) : null,
     live: liveAlive ? (
       <div className={layer(liveTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <LiveView active={liveTop} />
         </Suspense>
       </div>
     ) : null,
     vod: vodAlive ? (
       <div className={layer(vodTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <PlaylistVodView active={vodTop} />
         </Suspense>
       </div>
     ) : null,
     downloads: downloadsAlive ? (
       <div className={layer(downloadsTop)}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<ViewLoading />}>
           <DownloadsView />
         </Suspense>
       </div>
