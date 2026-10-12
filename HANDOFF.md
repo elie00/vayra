@@ -193,6 +193,28 @@
 - Hors périmètre : la recherche Live et le guide de la recherche ne parcourent que
   les playlists IPTV ; les chaînes d'addons n'y apparaissent pas.
 
+## Lot n°9 — Android : aperçu en panneau inspiré de stremio-web (2026-09-23)
+- Demande utilisateur : reprendre les motifs mobiles de Stremio (Tech Update #85)
+  dans l'app Android. `stremio-web` est **GPL-2.0**, VAYRA est **MIT** : seuls les
+  comportements ont été relevés, le code est réécrit (aucune copie).
+- `src/mobile/sheet-drag.ts` + `use-sheet-drag.ts` : fermer un panneau en le tirant
+  vers le bas n'importe où (démarre après 8 px vers le bas ; un geste horizontal est
+  laissé au contenu ; une liste déjà défilée défile d'abord ; les curseurs sont
+  ignorés ; seuil `max(100 px, 12 % de la hauteur)`, sinon retour en place).
+- `src/mobile/meta-preview-sheet.tsx` : sur Android, toucher une affiche (`PickCard`)
+  ouvre un aperçu (affiche, année · durée · IMDb, genres, résumé, Lecture pour un
+  film, Détails) au lieu de la fiche. Monté depuis `MobileIntegration`, qui gère
+  aussi le bouton Retour (ferme l'aperçu en priorité). Mac inchangé.
+- Vérifié dans l'émulateur `harbor_pixel6` (APK release aarch64) : aperçu affiché,
+  glisser vers le bas qui ferme (3/3 après un premier essai non reproduit), Retour
+  qui ferme, Détails qui ouvre la fiche. Lecture non testée sur l'émulateur.
+- Code mort constaté, non supprimé : `MobileShell` (`src/mobile/shell.tsx`, seules
+  `getPlusOpen`/`setPlusOpen` servent), `MobilePlayPicker` (`src/mobile/play-picker.tsx`)
+  et `MobileTogetherSheet` ne sont montés nulle part.
+- Build Android : `pnpm tauri android build --target aarch64` régénère
+  `gen/android/app/src/main/AndroidManifest.xml` (espace en fin de ligne) et le WASM
+  de `vayra-core/pkg` : les restaurer avant commit.
+
 ## Travaux réalisés (historique, juillet 2026 — multiplateforme en pause)
 
 ### 1. Audit perf Cast — 6 findings prouvés corrigés + fixes matériels
