@@ -109,7 +109,7 @@ export function MobilePlayPicker({
   addons: Addon[] | null;
   pipelineDone: boolean;
   loadingAddonCount: number;
-  failedStreams: Set<ScoredStream>;
+  failedStreams: Map<ScoredStream, string>;
   preserveOrder: boolean;
   matchFor?: (s: ScoredStream) => "same" | "close" | null;
   onPlay: (stream: ScoredStream) => void;

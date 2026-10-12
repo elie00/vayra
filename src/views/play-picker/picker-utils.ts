@@ -449,6 +449,10 @@ export function humanError(code: string): string {
       return t("Remote streaming server unreachable. Check the address in Settings > P2P & servers and that the server machine is online.");
     case "engine-no-peers":
       return t("Couldn't reach any peers for this torrent. If this keeps happening, your network or ISP is likely blocking torrents (the local port doesn't matter) - use a debrid service or a VPN.");
+    case "engine-no-metadata":
+      return t("No peer sent this torrent's details in time: it is most likely dead. Pick another source.");
+    case "engine-error":
+      return t("The torrent engine couldn't open this torrent. Pick another source.");
     case "engine-not-ready":
       return ENGINE_WARMING_MESSAGE;
     case "direct-torrent-disabled":

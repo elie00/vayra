@@ -94,6 +94,10 @@ const downloads: Record<string, string> = {
   Failed: "Échec",
   Interrupted: "Interrompu",
   Remove: "Retirer",
+  "In the cache, click to keep this file": "Dans le cache, clique pour garder ce fichier",
+  "In the cache  ·  click to keep this file": "Dans le cache  ·  clique pour garder ce fichier",
+  "{title} leaves the cache in {minutes} min": "{title} quitte le cache dans {minutes} min",
+  Keep: "Garder",
 };
 
 export default downloads;
