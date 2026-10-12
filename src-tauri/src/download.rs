@@ -193,6 +193,10 @@ async fn run_download(
         }
     }
 
+    if let Some(cached) = crate::torrent_engine::cached_file_for_stream_url(url) {
+        return copy_from_cache(&cached, dest, on_event, max_bytes).await;
+    }
+
     let start_byte = match tokio::fs::metadata(&part).await {
         Ok(meta) => meta.len(),
         Err(_) => 0,
@@ -368,6 +372,43 @@ async fn run_download(
     Ok(())
 }
 
+/// Save a file the torrent engine already finished by copying it out of its cache
+/// instead of streaming it again. On APFS the copy is a clone: instant, and the two
+/// files share their space until one of them changes.
+async fn copy_from_cache(
+    src: &std::path::Path,
+    dest: &str,
+    on_event: &Channel<DownloadEvent>,
+    max_bytes: Option<u64>,
+) -> Result<(), DownloadEnd> {
+    let total = tokio::fs::metadata(src)
+        .await
+        .map_err(|e| DownloadEnd::Failed(format!("cache: {}", e)))?
+        .len();
+    if max_bytes.is_some_and(|limit| total > limit) {
+        return Err(DownloadEnd::Failed("Download storage limit reached".to_string()));
+    }
+    let part = format!("{}.part", dest);
+    // The copy replaces an earlier partial transfer, and a clone needs a free name.
+    let _ = tokio::fs::remove_file(&part).await;
+    let _ = tokio::fs::remove_file(format!("{}.vayra-resume.json", part)).await;
+    let _ = on_event.send(DownloadEvent::Started { total: Some(total), resumed: 0 });
+    let copied = tokio::fs::copy(src, &part)
+        .await
+        .map_err(|e| DownloadEnd::Failed(format!("copy: {}", e)))?;
+    if copied != total {
+        let _ = tokio::fs::remove_file(&part).await;
+        return Err(DownloadEnd::Failed("The cached copy changed while it was saved".to_string()));
+    }
+    tokio::fs::rename(&part, dest)
+        .await
+        .map_err(|e| DownloadEnd::Failed(format!("rename: {}", e)))?;
+    eprintln!("[harbor::download] copied {} bytes from the engine cache -> {}", total, dest);
+    let _ = on_event.send(DownloadEvent::Progress { received: total, total: Some(total) });
+    let _ = on_event.send(DownloadEvent::Done { received: total });
+    Ok(())
+}
+
 async fn wait_cancelled(cancel: &Arc<AtomicBool>) {
     while !cancel.load(Ordering::Relaxed) {
         tokio::time::sleep(Duration::from_millis(150)).await;
@@ -464,6 +505,34 @@ mod tests {
         tokio::fs::remove_file(format!("{dest}.part")).await.unwrap();
         tokio::fs::remove_file(format!("{dest}.part.vayra-resume.json")).await.unwrap();
         std::fs::remove_dir(dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn saves_a_cached_file_by_copying_it_and_drops_a_stale_partial() {
+        let dir = fixture_dir("cache-copy");
+        let src = dir.join("cached.mkv");
+        tokio::fs::write(&src, b"complete video").await.unwrap();
+        let dest = dir.join("saved.mkv").to_string_lossy().into_owned();
+        tokio::fs::write(format!("{dest}.part"), b"half").await.unwrap();
+        tokio::fs::write(format!("{dest}.part.vayra-resume.json"), b"{}").await.unwrap();
+        copy_from_cache(&src, &dest, &Channel::new(|_| Ok(())), None).await.ok().unwrap();
+        assert_eq!(tokio::fs::read(&dest).await.unwrap(), b"complete video");
+        assert!(!std::path::Path::new(&format!("{dest}.part")).exists());
+        assert!(!std::path::Path::new(&format!("{dest}.part.vayra-resume.json")).exists());
+        assert!(src.exists());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn a_cached_copy_respects_the_storage_budget() {
+        let dir = fixture_dir("cache-budget");
+        let src = dir.join("cached.mkv");
+        tokio::fs::write(&src, b"complete video").await.unwrap();
+        let dest = dir.join("saved.mkv").to_string_lossy().into_owned();
+        let result = copy_from_cache(&src, &dest, &Channel::new(|_| Ok(())), Some(4)).await;
+        assert!(matches!(result, Err(DownloadEnd::Failed(message)) if message.contains("storage limit")));
+        assert!(!std::path::Path::new(&dest).exists());
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

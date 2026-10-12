@@ -56,6 +56,7 @@ import { TogetherInviteToast } from "@/components/together-invite-toast";
 import { TogetherSummonToast } from "@/components/together-summon-toast";
 import { TogetherParticipantLeftToast } from "@/components/together-participant-left-toast";
 import { AnilistSyncToast } from "@/components/anilist/anilist-sync-toast";
+import { CacheExpiryToast } from "@/components/cache-expiry-toast";
 import { AnilistAvatarSync } from "@/components/anilist/anilist-avatar-sync";
 import { MalAvatarSync } from "@/components/mal/mal-avatar-sync";
 import { MalSyncToast } from "@/components/mal/mal-sync-toast";
@@ -292,6 +293,7 @@ export function App() {
                       <TogetherParticipantLeftToast />
                       <AnilistSyncToast />
                       <MalSyncToast />
+                      <CacheExpiryToast />
                       <AppFeedbackHost />
                       <TogetherLeaveForLiveModal />
                       <TogetherLocationPublisher />

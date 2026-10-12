@@ -1,3 +1,4 @@
+mod cache_index;
 mod cache_sweep;
 mod dht_boot;
 mod netcheck;
@@ -8,8 +9,9 @@ mod trackers;
 
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 
 use librqbit::api::TorrentIdOrHash;
 use librqbit::dht::{Dht, PersistentDhtConfig};
@@ -21,6 +23,7 @@ use tokio::time::timeout;
 
 struct EngineState {
     session: Option<Arc<Session>>,
+    dir: Option<PathBuf>,
     side_dht: Option<Dht>,
     port: Option<u16>,
     dht_tier: u8,
@@ -39,6 +42,7 @@ fn engine() -> &'static Mutex<EngineState> {
     S.get_or_init(|| {
         Mutex::new(EngineState {
             session: None,
+            dir: None,
             side_dht: None,
             port: None,
             dht_tier: 0,
@@ -111,13 +115,93 @@ fn spawn_cache_sweeper(app: AppHandle) -> tokio::task::JoinHandle<()> {
             let Ok(dir) = engine_dir(&app, &cfg) else { continue };
             let retention = cfg.retention_hours.unwrap_or(24);
             let max_gb = cfg.max_gb.unwrap_or(0);
-            let _ = tokio::task::spawn_blocking(move || cache_sweep::run(&dir, retention, max_gb)).await;
+            let _ = tokio::task::spawn_blocking(move || {
+                // Record what finished before the sweep can take it, then forget what it took.
+                let complete = current_session().map(|s| complete_files(&s)).unwrap_or_default();
+                cache_index::update(&dir, complete);
+                cache_sweep::run(&dir, retention, max_gb);
+                cache_index::update(&dir, Vec::new());
+            })
+            .await;
         }
     })
 }
 
 fn current_session() -> Option<Arc<Session>> {
     engine().lock().unwrap().session.clone()
+}
+
+fn current_dir() -> Option<PathBuf> {
+    engine().lock().unwrap().dir.clone()
+}
+
+/// The files of a torrent that are complete on disk, as the cache index records them.
+fn complete_files_of(handle: &librqbit::ManagedTorrent) -> Vec<cache_index::CachedFile> {
+    let progress = handle.stats().file_progress;
+    let info_hash = handle.info_hash().as_string();
+    handle
+        .with_metadata(|m| {
+            // librqbit saves a multi-file torrent in a folder named after it.
+            let folder = match (m.file_infos.len() > 1, &m.info.name) {
+                (false, _) => PathBuf::new(),
+                (true, Some(name)) => PathBuf::from(String::from_utf8_lossy(name.as_ref()).as_ref()),
+                (true, None) => return Vec::new(),
+            };
+            m.file_infos
+                .iter()
+                .enumerate()
+                .filter(|(i, fi)| !fi.attrs.padding && fi.len > 0 && progress.get(*i) == Some(&fi.len))
+                .map(|(i, fi)| cache_index::CachedFile {
+                    info_hash: info_hash.clone(),
+                    file_idx: i,
+                    path: folder.join(&fi.relative_filename),
+                    len: fi.len,
+                    inode: 0,
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn complete_files(session: &Session) -> Vec<cache_index::CachedFile> {
+    session.with_torrents(|torrents| torrents.flat_map(|(_, h)| complete_files_of(h)).collect())
+}
+
+/// Bring the index up to date with the running torrents and return the cache's files.
+fn refresh_cache_index() -> Option<(PathBuf, Vec<cache_index::CachedFile>)> {
+    let dir = current_dir()?;
+    let complete = current_session().map(|s| complete_files(&s)).unwrap_or_default();
+    let files = cache_index::update(&dir, complete);
+    Some((dir, files))
+}
+
+fn cached_file(info_hash: &str, file_idx: usize) -> Option<PathBuf> {
+    let (dir, files) = refresh_cache_index()?;
+    cache_index::lookup(&dir, &files, info_hash, file_idx)
+}
+
+/// The torrent file a local engine stream URL serves.
+fn parse_stream_url(url: &str) -> Option<(String, usize)> {
+    let rest = url
+        .strip_prefix("http://127.0.0.1:")
+        .or_else(|| url.strip_prefix("http://localhost:"))?;
+    let (port, path) = rest.split_once("/stream/")?;
+    if port.is_empty() || !port.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let path = path.split(['?', '#']).next()?;
+    let (hash, idx) = path.split_once('/')?;
+    if hash.len() != 40 || !hash.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    Some((hash.to_ascii_lowercase(), idx.parse().ok()?))
+}
+
+/// The complete copy in the cache of the file a local engine stream URL serves, so a
+/// save can copy it instead of streaming it all over again.
+pub fn cached_file_for_stream_url(url: &str) -> Option<PathBuf> {
+    let (info_hash, file_idx) = parse_stream_url(url)?;
+    cached_file(&info_hash, file_idx)
 }
 
 fn current_side_dht() -> Option<Dht> {
@@ -233,6 +317,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     let dir = engine_dir(&app, &cfg)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     cache_sweep::run(&dir, cfg.retention_hours.unwrap_or(24), cfg.max_gb.unwrap_or(0));
+    cache_index::update(&dir, Vec::new());
     let (session, dht_tier) = match new_session(&dir, true, true, true).await {
         Ok(s) => (s, 1u8),
         Err(e1) => {
@@ -276,6 +361,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
         old.abort();
     }
     st.session = Some(session);
+    st.dir = Some(dir);
     st.side_dht = side_dht;
     st.port = Some(port);
     st.dht_tier = dht_tier;
@@ -320,6 +406,7 @@ pub fn stop() {
         peer_log.abort();
     }
     st.session = None;
+    st.dir = None;
     st.side_dht = None;
     st.port = None;
     st.dht_tier = 0;
@@ -614,6 +701,11 @@ pub async fn torrent_engine_select_many(
         return Err("no file selected".to_string());
     }
     remember_saved(&info_hash, &file_idxs);
+    // A file already complete in the cache is copied from there: its torrent, which
+    // the player may have closed since, does not need to download anything.
+    if file_idxs.iter().all(|&i| cached_file(&info_hash, i).is_some()) {
+        return Ok(());
+    }
     let result = apply_selection(&info_hash, wanted_files(&info_hash, None)).await;
     if let Err(e) = &result {
         eprintln!("[torrent-engine] download selection {} refused: {e}", info_hash.get(..8).unwrap_or(&info_hash));
@@ -698,11 +790,50 @@ pub async fn torrent_engine_stats(
 pub async fn torrent_engine_remove(info_hash: String, delete_files: bool) -> Result<(), String> {
     let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
     let id = TorrentIdOrHash::parse(&info_hash).map_err(|e| e.to_string())?;
+    // librqbit forgets the torrent's metadata with it: note its finished files first.
+    if let (false, Some(handle), Some(dir)) = (delete_files, session.get(id), current_dir()) {
+        cache_index::update(&dir, complete_files_of(&handle));
+    }
     session
         .delete(id, delete_files)
         .await
         .map_err(|e| format!("{e:#}"))?;
     Ok(())
+}
+
+#[derive(Serialize)]
+pub struct CachedFileDto {
+    info_hash: String,
+    file_idx: usize,
+    name: String,
+    size: u64,
+    /// When the cache sweep will remove it, in Unix milliseconds.
+    expires_at_ms: Option<u64>,
+}
+
+/// The complete files the engine's cache holds, whether or not their torrent is open.
+#[tauri::command]
+pub async fn torrent_engine_cached_files(app: AppHandle) -> Vec<CachedFileDto> {
+    let Some((dir, files)) = refresh_cache_index() else { return Vec::new() };
+    let retention = read_config(&app).retention_hours.unwrap_or(24);
+    files
+        .into_iter()
+        .map(|f| {
+            // The sweep removes whole top-level entries: a pack goes with its folder.
+            let entry = f.path.components().next().map(|c| dir.join(c));
+            let expires_at_ms = entry
+                .and_then(|e| cache_sweep::expires_at(&e, retention))
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_millis() as u64);
+            CachedFileDto {
+                name: f.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
+                info_hash: f.info_hash,
+                file_idx: f.file_idx,
+                size: f.len,
+                expires_at_ms,
+            }
+        })
+        .collect()
 }
 
 #[tauri::command]
@@ -769,6 +900,21 @@ pub async fn torrent_engine_selftest(app: AppHandle) -> selftest::SelfTestResult
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_the_torrent_file_of_a_local_stream_url() {
+        let hash = "9D2B067152F824489BE057651EDFC8E9654857CF";
+        assert_eq!(
+            parse_stream_url(&format!("http://127.0.0.1:59366/stream/{hash}/3?t=1")),
+            Some((hash.to_ascii_lowercase(), 3))
+        );
+        assert_eq!(parse_stream_url(&format!("http://localhost:11470/stream/{hash}/0")).map(|f| f.1), Some(0));
+        // A Stremio server route, a remote host or a malformed hash is not the engine's.
+        assert_eq!(parse_stream_url(&format!("http://127.0.0.1:11470/{hash}/0")), None);
+        assert_eq!(parse_stream_url(&format!("http://example.com:80/stream/{hash}/0")), None);
+        assert_eq!(parse_stream_url("http://127.0.0.1:59366/stream/abc/0"), None);
+        assert_eq!(parse_stream_url(&format!("http://127.0.0.1:59366/stream/{hash}/x")), None);
+    }
 
     // The registry is process-wide, so each test works on its own info hash.
     #[test]
