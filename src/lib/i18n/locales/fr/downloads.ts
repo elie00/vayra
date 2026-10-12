@@ -1,4 +1,7 @@
 const downloads: Record<string, string> = {
+  "Download folder is unavailable. Choose a folder.": "Le dossier de téléchargement est indisponible. Choisis un dossier.",
+  "The folder chooser could not be opened. Try again.": "Impossible d’ouvrir le sélecteur de dossier. Réessaie.",
+  "The folder could not be opened. Your download has not been changed. Try again from Downloads.": "Impossible d’ouvrir le dossier. Ton téléchargement reste inchangé. Réessaie depuis Téléchargements.",
   Downloads: "Téléchargements",
   "Saved movies and episodes for offline watching": "Films et épisodes enregistrés pour le visionnage hors ligne",
   "1 item": "1 élément",

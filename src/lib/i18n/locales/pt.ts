@@ -3,6 +3,10 @@ import { lumaPt } from "./luma";
 import { privateBetaPt } from "./private-beta";
 
 const pt: Record<string, string> = {
+  "Download folder is unavailable. Choose a folder.": "A pasta de downloads está indisponível. Escolha uma pasta.",
+  "The folder chooser could not be opened. Try again.": "Não foi possível abrir o seletor de pastas. Tente novamente.",
+  "The folder could not be opened. Your download has not been changed. Try again from Downloads.": "Não foi possível abrir a pasta. Seu download não foi alterado. Tente novamente em Downloads.",
+  "Secure storage is unavailable. Your keys are kept in local settings. Restart VAYRA after unlocking the keychain to restore protection.": "O armazenamento seguro está indisponível. Suas chaves ficam nas configurações locais. Desbloqueie o chaveiro e reinicie o VAYRA para restaurar a proteção.",
   "Delete VAYRA account": "Excluir conta VAYRA",
   "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Exclua permanentemente sua conta VAYRA e todos os dados CIRA/VARA na nuvem. LUMA, histórico local e Stremio não são excluídos.",
   "Delete account": "Excluir conta",

@@ -7,10 +7,14 @@ const mocks = vi.hoisted(() => ({
   releaseTorrentForDownload: vi.fn(),
   removeDownloadFile: vi.fn(),
   downloadFileExists: vi.fn(),
+  reveal: vi.fn(),
+  feedback: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/api/path", () => ({ downloadDir: mocks.downloadDir }));
-vi.mock("@tauri-apps/plugin-opener", () => ({ revealItemInDir: vi.fn() }));
+vi.mock("@tauri-apps/plugin-opener", () => ({ revealItemInDir: mocks.reveal }));
+vi.mock("@/lib/app-feedback", () => ({ emitAppFeedback: mocks.feedback }));
+vi.mock("@/lib/i18n", () => ({ t: (key: string) => key }));
 vi.mock("./video-download", () => ({
   startDownload: mocks.startDownload,
   removeDownloadFile: mocks.removeDownloadFile,
@@ -33,6 +37,7 @@ import {
   pauseDownload,
   removeDownload,
   resumeDownload,
+  revealDownload,
 } from "./downloads-store";
 
 const meta = { id: "tt1", name: "Show" } as unknown as Meta;
@@ -96,6 +101,20 @@ afterEach(async () => {
 });
 
 describe("download destination ownership", () => {
+  it("reports folder-opening failure without changing or exposing the download", async () => {
+    const id = await enqueueDownload({ meta, url: "https://example.invalid/fixture.mkv", destinationPath: "/fixtures/video.mkv" });
+    const before = downloadSnapshot().find((item) => item.id === id);
+    mocks.feedback.mockClear();
+    mocks.reveal.mockRejectedValueOnce(new Error("private path and credentials"));
+    await revealDownload(id);
+    expect(mocks.reveal).toHaveBeenCalledWith("/fixtures/video.mkv");
+    expect(mocks.feedback).toHaveBeenCalledWith({ kind: "error", text: "The folder could not be opened. Your download has not been changed. Try again from Downloads." });
+    expect(downloadSnapshot().find((item) => item.id === id)).toEqual(before);
+    mocks.feedback.mockClear();
+    mocks.reveal.mockResolvedValueOnce(undefined);
+    await revealDownload(id);
+    expect(mocks.feedback).not.toHaveBeenCalled();
+  });
   it("reserves names before delayed filesystem checks for concurrent enqueues", async () => {
     const checks: Array<{ path: string; finish: (exists: boolean) => void }> = [];
     mocks.downloadFileExists.mockImplementation((path: string) => new Promise<boolean>((finish) => {

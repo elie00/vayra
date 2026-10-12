@@ -1,4 +1,5 @@
 const misc: Record<string, string> = {
+  "Secure storage is unavailable. Your keys are kept in local settings. Restart VAYRA after unlocking the keychain to restore protection.": "Le stockage sécurisé est indisponible. Tes clés sont conservées dans les réglages locaux. Déverrouille le trousseau puis redémarre VAYRA pour rétablir leur protection.",
   "VAYRA account": "Compte VAYRA",
   "Local profile": "Profil local",
   "Stremio integration": "Intégration Stremio",

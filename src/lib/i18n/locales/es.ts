@@ -3,6 +3,10 @@ import { lumaEs } from "./luma";
 import { privateBetaEs } from "./private-beta";
 
 const es: Record<string, string> = {
+  "Download folder is unavailable. Choose a folder.": "La carpeta de descargas no está disponible. Elige una carpeta.",
+  "The folder chooser could not be opened. Try again.": "No se pudo abrir el selector de carpetas. Vuelve a intentarlo.",
+  "The folder could not be opened. Your download has not been changed. Try again from Downloads.": "No se pudo abrir la carpeta. Tu descarga no ha cambiado. Vuelve a intentarlo desde Descargas.",
+  "Secure storage is unavailable. Your keys are kept in local settings. Restart VAYRA after unlocking the keychain to restore protection.": "El almacenamiento seguro no está disponible. Tus claves se guardan en los ajustes locales. Desbloquea el llavero y reinicia VAYRA para restablecer la protección.",
   "Delete VAYRA account": "Eliminar la cuenta VAYRA",
   "Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.": "Elimina permanentemente tu cuenta VAYRA y todos los datos de CIRA/VARA en la nube. LUMA, el historial local y Stremio no se eliminan.",
   "Delete account": "Eliminar cuenta",

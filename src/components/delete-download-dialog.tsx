@@ -1,4 +1,4 @@
-import { useState, type RefObject } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { ConfirmationDialog } from "./confirmation-dialog";
 import { removeDownload, type DownloadItem } from "@/lib/download/downloads-store";
 import { useT } from "@/lib/i18n";
@@ -6,14 +6,23 @@ import { useT } from "@/lib/i18n";
 export function DeleteDownloadDialog({ item, onClose, returnFocusRef }: { item: DownloadItem; onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null> }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [failed, setFailed] = useState(false);
   const confirm = async () => {
-    if (busy) return;
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setFailed(false);
-    const removed = await removeDownload(item.id);
-    if (removed) onClose();
-    else { setBusy(false); setFailed(true); }
+    try {
+      const removed = await removeDownload(item.id);
+      if (removed) onClose();
+      else setFailed(true);
+    } catch {
+      setFailed(true);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
   return <ConfirmationDialog title={t("Delete this download?")} confirmLabel={t(busy ? "Deleting file…" : "Delete download and file")}
     onConfirm={() => void confirm()} onCancel={onClose} busy={busy} danger returnFocusRef={returnFocusRef}

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Check, Download as DownloadIcon, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { DeleteDownloadDialog } from "@/components/delete-download-dialog";
@@ -86,6 +86,8 @@ export function DownloadsView() {
   const items = useDownloads();
   const [pendingRemoval, setPendingRemoval] = useState<DownloadItem | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const activeFilterRef = useRef<HTMLButtonElement>(null);
+  const focusedRef = useRef<HTMLElement | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "ready" | "attention">("all");
   const active = items.filter((d) => d.status === "downloading").length;
   const queued = items.filter((d) => d.status === "queued").length;
@@ -96,8 +98,16 @@ export function DownloadsView() {
   );
   const groups = useMemo(() => buildGroups(items.filter((d) => filter === "all" || (filter === "ready" ? d.status === "done" : filter === "active" ? ["downloading", "queued", "removing"].includes(d.status) : ["paused", "error", "interrupted", "removal-error"].includes(d.status)))), [items, filter]);
 
+  useLayoutEffect(() => {
+    if (focusedRef.current && !focusedRef.current.isConnected && document.activeElement === document.body) {
+      (activeFilterRef.current ?? headingRef.current)?.focus();
+    }
+  }, [groups]);
+
   return (
-    <main className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
+    <main onFocusCapture={(event) => { focusedRef.current = event.target; }}
+      onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedRef.current = null; }}
+      className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-8">
           <h1 ref={headingRef} tabIndex={-1} className="text-[28px] font-semibold tracking-tight text-ink">{t("Downloads")}</h1>
@@ -117,7 +127,7 @@ export function DownloadsView() {
         </header>
 
         <DownloadDirBar />
-        {items.length > 0 && <div aria-label={t("Filter downloads")} className="mb-5 flex flex-wrap gap-2">{(["all", "active", "ready", "attention"] as const).map((id) => <button type="button" key={id} aria-pressed={filter === id} onClick={() => setFilter(id)} className={`mac-secondary-button ${filter === id ? "bg-raised text-ink" : "text-ink-muted"}`}>{t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs attention")}</button>)}</div>}
+        {items.length > 0 && <div aria-label={t("Filter downloads")} className="mb-5 flex flex-wrap gap-2">{(["all", "active", "ready", "attention"] as const).map((id) => <button type="button" key={id} ref={filter === id ? activeFilterRef : undefined} aria-pressed={filter === id} onClick={() => setFilter(id)} className={`mac-secondary-button ${filter === id ? "bg-raised text-ink" : "text-ink-muted"}`}>{t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs attention")}</button>)}</div>}
         {items.length > 0 && groups.length === 0 && <p role="status" className="py-8 text-[14px] text-ink-muted">{t("No downloads in this category")}</p>}
 
         {items.length === 0 ? (
