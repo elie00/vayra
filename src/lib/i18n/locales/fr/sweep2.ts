@@ -858,6 +858,7 @@ const sweep2: Record<string, string> = {
   "· Install a stream addon (Torrentio, Comet, MediaFusion).": "· Installez un addon de flux (Torrentio, Comet, MediaFusion).",
   "· No stream addon is installed yet (Torrentio, MediaFusion, Comet).": "· Aucun addon de flux n'est encore installé (Torrentio, MediaFusion, Comet).",
   "· This title is too new and no source has it cached yet.": "· Ce titre est trop récent et aucune source ne l'a encore en cache.",
+  "Why this score?": "Pourquoi ce score ?",
   "Cached on your debrid service": "En cache chez ton service debrid",
   "Easynews direct link": "Lien direct Easynews",
   "Direct link, no torrent to start": "Lien direct, aucun torrent à démarrer",

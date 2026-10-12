@@ -1,4 +1,5 @@
-import { ArrowDownToLine, Play } from "lucide-react";
+import { ArrowDownToLine, ChevronDown, Play } from "lucide-react";
+import { useState } from "react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
@@ -6,6 +7,7 @@ import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
+import { explainScore } from "@/lib/streams/score-reasons";
 import type { ScoredStream } from "@/lib/streams/types";
 import { EditionChip } from "./edition-chip";
 
@@ -37,6 +39,8 @@ export function StremioRow({
   const badges = settings.showQualityBadge ? streamBadges(stream) : [];
   const dubSub = settings.showDubBadge ? streamDubSub(stream.audioLanguages, isAnime) : null;
   const link = resolveStreamLink(stream);
+  const [whyOpen, setWhyOpen] = useState(false);
+  const why = explainScore(stream.reasons ?? []);
   return (
     <div
       className={`flex items-stretch gap-5 rounded-2xl bg-elevated/40 p-5 ring-1 transition-colors ${
@@ -68,6 +72,33 @@ export function StremioRow({
               <FormatBadge key={k} kind={k} size="sm" />
             ))}
             <EditionChip stream={stream} />
+          </div>
+        )}
+        {why.length > 0 && (
+          <div className="flex flex-col items-start gap-1.5">
+            <button
+              type="button"
+              onClick={() => setWhyOpen((open) => !open)}
+              aria-expanded={whyOpen}
+              className="flex items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+            >
+              {t("Why this score?")}
+              <ChevronDown size={13} className={`transition-transform duration-150 ${whyOpen ? "rotate-180" : ""}`} />
+            </button>
+            {whyOpen && (
+              <ul className="flex flex-wrap gap-1.5">
+                {why.map((line) => (
+                  <li
+                    key={line.label}
+                    className={`rounded-full px-2 py-0.5 text-[12px] font-medium ring-1 ${
+                      line.delta > 0 ? "bg-success/10 text-success ring-success/25" : "bg-danger/10 text-danger ring-danger/25"
+                    }`}
+                  >
+                    <span className="tabular-nums">{line.delta > 0 ? `+${line.delta}` : `−${-line.delta}`}</span> {line.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
         {failure != null && (
