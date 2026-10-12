@@ -5,12 +5,13 @@ const mocks = vi.hoisted(() => ({
   torrentEngineSelect: vi.fn(),
   localTorrentAllowed: vi.fn(),
   fullDownloadEnabled: vi.fn(),
+  lastEngineAddError: vi.fn(),
 }));
 
 vi.mock("@/lib/safe-fetch", () => ({ safeFetch: vi.fn() }));
 vi.mock("@/lib/debug", () => ({ dwarn: vi.fn() }));
 vi.mock("@/lib/torrent/local-engine", () => ({
-  lastEngineAddError: () => null,
+  lastEngineAddError: mocks.lastEngineAddError,
   torrentEngineAdd: mocks.torrentEngineAdd,
   torrentEngineSelect: mocks.torrentEngineSelect,
 }));
@@ -39,6 +40,28 @@ beforeEach(() => {
   mocks.localTorrentAllowed.mockReturnValue(true);
   mocks.fullDownloadEnabled.mockReturnValue(false);
   mocks.torrentEngineSelect.mockResolvedValue(undefined);
+  mocks.lastEngineAddError.mockReturnValue(null);
+});
+
+describe("resolveStream when the local engine cannot open a torrent", () => {
+  async function failWith(error: string | null) {
+    mocks.torrentEngineAdd.mockResolvedValue(null);
+    mocks.lastEngineAddError.mockReturnValue(error);
+    const r = await resolveStream(batch, [], new AbortController().signal, true, true);
+    return r.ok ? null : r.code;
+  }
+
+  it("tells a torrent nobody describes apart from an engine still starting", async () => {
+    expect(await failWith("metadata timed out after retry: metadata timed out")).toBe("engine-no-metadata");
+    expect(await failWith("engine not ready")).toBe("engine-not-ready");
+    expect(await failWith(null)).toBe("engine-not-ready");
+  });
+
+  it("keeps the engine's other refusals distinct from a missing peer swarm", async () => {
+    expect(await failWith("no peers")).toBe("engine-no-peers");
+    expect(await failWith("torrent init timed out")).toBe("engine-error");
+    expect(await failWith("error reading torrent: invalid bencode")).toBe("engine-error");
+  });
 });
 
 describe("resolveStream over the local engine", () => {
