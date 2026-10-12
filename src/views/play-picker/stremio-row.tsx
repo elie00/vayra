@@ -11,7 +11,7 @@ import { EditionChip } from "./edition-chip";
 
 export function StremioRow({
   stream,
-  failed,
+  failure,
   addonLogo,
   match = null,
   onPlay,
@@ -19,7 +19,8 @@ export function StremioRow({
   isAnime = false,
 }: {
   stream: ScoredStream;
-  failed: boolean;
+  /** Why this source failed in this picker, or null while it has not. */
+  failure: string | null;
   addonLogo: string | null;
   match?: "same" | "close" | null;
   onPlay: () => void;
@@ -39,7 +40,7 @@ export function StremioRow({
   return (
     <div
       className={`flex items-stretch gap-5 rounded-2xl bg-elevated/40 p-5 ring-1 transition-colors ${
-        failed ? "ring-danger/40 bg-danger/5" : "ring-edge-soft/50"
+        failure != null ? "ring-danger/40 bg-danger/5" : "ring-edge-soft/50"
       }`}
     >
       <div className="flex w-[68px] shrink-0 flex-col items-center justify-center">
@@ -69,8 +70,8 @@ export function StremioRow({
             <EditionChip stream={stream} />
           </div>
         )}
-        {failed && (
-          <p className="text-[13px] font-medium text-danger">{t("Unavailable, try another.")}</p>
+        {failure != null && (
+          <p className="text-[13px] font-medium text-danger">{failure || t("Unavailable, try another.")}</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2 self-center">

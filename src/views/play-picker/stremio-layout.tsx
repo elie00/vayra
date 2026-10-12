@@ -28,7 +28,7 @@ export function StremioLayout({
   addons: Addon[] | null;
   pipelineDone: boolean;
   loadingAddonCount: number;
-  failedStreams: Set<ScoredStream>;
+  failedStreams: Map<ScoredStream, string>;
   preserveOrder?: boolean;
   matchFor?: (s: ScoredStream) => "same" | "close" | null;
   onPlay: (stream: ScoredStream) => void;
@@ -198,7 +198,7 @@ export function StremioLayout({
           <StremioRow
             key={`${s.url ?? s.infoHash ?? s.title}-${i}`}
             stream={s}
-            failed={failedStreams.has(s)}
+            failure={failedStreams.get(s) ?? null}
             addonLogo={addonLogoMap.get(s.addonUrl ?? "") ?? addonLogoMap.get(s.addonId) ?? null}
             match={matchFor ? matchFor(s) : null}
             onPlay={() => onPlay(s)}

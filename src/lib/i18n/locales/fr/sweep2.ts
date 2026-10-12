@@ -148,6 +148,8 @@ const sweep2: Record<string, string> = {
   "Couldn't load streams. Check your addons and connection.": "Impossible de charger les flux. Vérifiez vos addons et votre connexion.",
   "Couldn't play this stream ({code}).": "Impossible de lire ce flux ({code}).",
   "Couldn't reach any peers for this torrent. If this keeps happening, your network or ISP is likely blocking torrents (the local port doesn't matter) - use a debrid service or a VPN.": "Impossible d'atteindre le moindre pair pour ce torrent. Si cela persiste, votre réseau ou FAI bloque probablement les torrents (le port local n'a pas d'importance) - utilisez un service debrid ou un VPN.",
+  "No peer sent this torrent's details in time: it is most likely dead. Pick another source.": "Aucun pair n’a envoyé les informations de ce torrent à temps : il est très probablement mort. Choisis une autre source.",
+  "The torrent engine couldn't open this torrent. Pick another source.": "Le moteur torrent n’a pas pu ouvrir ce torrent. Choisis une autre source.",
   "Couldn't reach this Roku": "Impossible de joindre ce Roku",
   "Couldn't read that image. Try a PNG, JPEG, or WebP.": "Impossible de lire cette image. Essayez un PNG, JPEG ou WebP.",
   "Couldn't read that image. Try a different file.": "Impossible de lire cette image. Essayez un autre fichier.",
