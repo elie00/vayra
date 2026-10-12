@@ -15,6 +15,7 @@ import { isLocalEngineUrl } from "@/lib/stremio-server";
 import { useSimklScrobble } from "@/lib/simkl/scrobble-hook";
 import { useTraktScrobble } from "@/lib/trakt/scrobble-hook";
 import { cancelTorrentRemoval, scheduleTorrentRemoval, torrentEngineRemove } from "@/lib/torrent/local-engine";
+import { markCachedFileWatched } from "@/lib/torrent/engine-cache";
 import type { PlayerSrc } from "@/lib/view";
 import { useExitSnapshot } from "./use-exit-snapshot";
 import { usePowerInhibit } from "./use-power-inhibit";
@@ -70,6 +71,7 @@ export function usePlayerMedia(params: {
   const prevEngineHashRef = useRef<string | null>(null);
   useEffect(() => {
     const hash = isLocalEngineUrl(src.url) ? src.streamRef?.infoHash ?? null : null;
+    const fileIdx = src.streamRef?.fileIdx ?? null;
     const prev = prevEngineHashRef.current;
     const purge = () =>
       settings.streamCacheRetentionHours === 0 ||
@@ -81,9 +83,12 @@ export function usePlayerMedia(params: {
     if (hash) cancelTorrentRemoval(hash);
     prevEngineHashRef.current = hash;
     return () => {
-      if (hash) scheduleTorrentRemoval(hash, purge());
+      if (!hash) return;
+      // A file played to its end needs no warning before the cache lets it go.
+      if (fileIdx != null && progressRef.current >= 0.9) markCachedFileWatched(hash, fileIdx);
+      scheduleTorrentRemoval(hash, purge());
     };
-  }, [src.url, src.streamRef?.infoHash, settings.streamCacheRetentionHours, settings.deleteWatchedDownloads]);
+  }, [src.url, src.streamRef?.infoHash, src.streamRef?.fileIdx, settings.streamCacheRetentionHours, settings.deleteWatchedDownloads]);
 
   const volumeRestoredRef = useRef(false);
   useEffect(() => {

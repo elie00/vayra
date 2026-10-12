@@ -177,6 +177,23 @@ export function playbackEntries(): Array<{ metaId: string; savedAt: number; titl
   return out;
 }
 
+/** The title or episode whose last playback used this torrent file. */
+export function playbackForFile(
+  infoHash: string,
+  fileIdx: number,
+): { metaId: string; season?: number; episode?: number; entry: PlaybackEntry } | null {
+  const hash = infoHash.toLowerCase();
+  let best: { metaId: string; season?: number; episode?: number; entry: PlaybackEntry } | null = null;
+  for (const [key, entry] of Object.entries(readAll())) {
+    if (entry.infoHash?.toLowerCase() !== hash) continue;
+    if (entry.fileIdx != null && entry.fileIdx !== fileIdx) continue;
+    if (best && best.entry.savedAt >= entry.savedAt) continue;
+    const ep = /^(.*)\|s(\d+)e(\d+)$/.exec(key);
+    best = ep ? { metaId: ep[1], season: Number(ep[2]), episode: Number(ep[3]), entry } : { metaId: key, entry };
+  }
+  return best;
+}
+
 export function readLastSeriesPlayback(metaId: string): PlaybackEntry | null {
   const all = readAll();
   const prefix = `${metaId}|`;
