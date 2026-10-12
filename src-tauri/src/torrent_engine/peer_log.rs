@@ -21,8 +21,8 @@ struct PeerSnapshot {
 }
 
 /// Logs peer counters whenever they change, to tell a swarm that never yields peers
-/// (`seen` stays low) from one whose peers are found and then lost (`dead` climbs).
-/// librqbit's own connection logs go through `tracing`, which the app does not collect.
+/// (`seen` stays low) from one whose peers are found and then lost (`dead` climbs),
+/// and why peer connections failed since the previous tick, for all torrents.
 pub fn spawn(session: Arc<Session>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut last: HashMap<String, PeerSnapshot> = HashMap::new();
@@ -72,6 +72,11 @@ pub fn spawn(session: Arc<Session>) -> tokio::task::JoinHandle<()> {
                 current.insert(hash, snap);
             }
             last = current;
+            let errors = crate::app_log::take_peer_errors();
+            if !errors.is_empty() {
+                let causes: Vec<String> = errors.iter().map(|(cause, n)| format!("{cause}={n}")).collect();
+                eprintln!("[torrent-engine] peer errors {}s {}", INTERVAL.as_secs(), causes.join(" "));
+            }
         }
     })
 }

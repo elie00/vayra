@@ -41,23 +41,81 @@ pub fn redirect_stderr_to_log() {
     });
 }
 
-/// librqbit tells why a peer connection ends only through `tracing`, at debug level.
-/// Keep warnings from every crate plus librqbit's peer life cycle (connection errors,
-/// backoff, drops) on stderr, next to the engine's own `[torrent-engine] peers` lines,
-/// and the UPnP forwarder's info line saying the router opened the torrent port.
+const PEER_EVENTS: &str = "librqbit::torrent_state::live";
+
+/// librqbit tells why a peer connection ends only through `tracing`, at debug level,
+/// one line per peer: tens of thousands of lines a day that buried everything else.
+/// Count those causes instead, for the engine's `[torrent-engine] peer errors` line,
+/// and keep warnings from every crate plus the UPnP forwarder's info line saying the
+/// router opened the torrent port.
 pub fn init_tracing() {
     use tracing_subscriber::filter::{filter_fn, LevelFilter};
     use tracing_subscriber::prelude::*;
     let filter = filter_fn(|meta| {
         LevelFilter::WARN >= *meta.level()
-            || (meta.target() == "librqbit::torrent_state::live" && LevelFilter::DEBUG >= *meta.level())
+            || (meta.target() == PEER_EVENTS && LevelFilter::INFO >= *meta.level())
             || (meta.target() == "librqbit_upnp" && LevelFilter::INFO >= *meta.level())
     });
     let layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
         .with_writer(std::io::stderr)
         .with_filter(filter);
-    let _ = tracing_subscriber::registry().with(layer).try_init();
+    let counter = PeerErrorCounter
+        .with_filter(filter_fn(|meta| meta.target() == PEER_EVENTS && *meta.level() == tracing::Level::DEBUG));
+    let _ = tracing_subscriber::registry().with(layer).with(counter).try_init();
+}
+
+static PEER_ERRORS: std::sync::Mutex<std::collections::BTreeMap<&'static str, u64>> =
+    std::sync::Mutex::new(std::collections::BTreeMap::new());
+
+/// Peer connection failures by cause since the previous call.
+pub fn take_peer_errors() -> Vec<(&'static str, u64)> {
+    let mut errors = PEER_ERRORS.lock().unwrap_or_else(|e| e.into_inner());
+    std::mem::take(&mut *errors).into_iter().collect()
+}
+
+/// Why a peer connection ended, from librqbit's "error managing peer" event.
+fn peer_error_cause(message: &str) -> Option<&'static str> {
+    let cause = message.strip_prefix("error managing peer: ")?;
+    Some(if cause.contains("Too many open files") {
+        "too-many-open-files"
+    } else if cause.contains("Connection refused") {
+        "refused"
+    } else if cause.starts_with("error connecting: timeout") {
+        "connect-timeout"
+    } else if cause.contains("timeout") {
+        "read-timeout"
+    } else if cause.contains("Connection reset") {
+        "reset"
+    } else if cause.contains("disconnected") {
+        "disconnected"
+    } else if ["No route to host", "unreachable", "Can't assign requested address"].iter().any(|s| cause.contains(s)) {
+        "unreachable"
+    } else {
+        "other"
+    })
+}
+
+struct PeerErrorCounter;
+
+impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for PeerErrorCounter {
+    fn on_event(&self, event: &tracing::Event<'_>, _: tracing_subscriber::layer::Context<'_, S>) {
+        let mut message = MessageText(String::new());
+        event.record(&mut message);
+        if let Some(cause) = peer_error_cause(&message.0) {
+            *PEER_ERRORS.lock().unwrap_or_else(|e| e.into_inner()).entry(cause).or_default() += 1;
+        }
+    }
+}
+
+struct MessageText(String);
+
+impl tracing_subscriber::field::Visit for MessageText {
+    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+        if field.name() == "message" {
+            self.0 = format!("{value:?}");
+        }
+    }
 }
 
 /// A whole log with every line redacted, for logs written outside `vayra.log`.
@@ -148,7 +206,7 @@ fn redact_magnet(magnet: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::redact_urls;
+    use super::{peer_error_cause, redact_urls, take_peer_errors, PeerErrorCounter, PEER_EVENTS};
 
     #[test]
     fn keeps_only_the_host_of_a_remote_url() {
@@ -156,6 +214,44 @@ mod tests {
             redact_urls("[harbor::mpv] loadfile https://x1.download.real-debrid.com/d/TOKEN123/Movie.mkv?key=abc"),
             "[harbor::mpv] loadfile https://x1.download.real-debrid.com/…"
         );
+    }
+
+    #[test]
+    fn names_why_a_peer_connection_ended() {
+        let cause = |m: &str| peer_error_cause(m);
+        assert_eq!(cause("error managing peer: error connecting: timeout at 10s"), Some("connect-timeout"));
+        assert_eq!(
+            cause("error managing peer: error connecting: error connecting: Connection refused (os error 61)"),
+            Some("refused"),
+        );
+        assert_eq!(
+            cause("error managing peer: error connecting: error connecting: Too many open files (os error 24)"),
+            Some("too-many-open-files"),
+        );
+        assert_eq!(
+            cause("error managing peer: error reading message: error reading from peer: timeout at 60s"),
+            Some("read-timeout"),
+        );
+        assert_eq!(
+            cause("error managing peer: error reading message: disconnected while reading, read so far: 0"),
+            Some("disconnected"),
+        );
+        assert_eq!(cause("error managing peer: something new"), Some("other"));
+        assert_eq!(cause("in-flight piece 12 not found. it was probably completed by someone else"), None);
+    }
+
+    #[test]
+    fn counts_librqbit_peer_errors_by_cause() {
+        use tracing_subscriber::prelude::*;
+        let subscriber = tracing_subscriber::registry().with(PeerErrorCounter);
+        tracing::subscriber::with_default(subscriber, || {
+            let e = "error connecting: timeout at 10s";
+            tracing::debug!(target: PEER_EVENTS, "error managing peer: {:#}", e);
+            tracing::debug!(target: PEER_EVENTS, "error managing peer: {:#}", e);
+            tracing::debug!(target: PEER_EVENTS, "torrent finished, not re-queueing");
+        });
+        assert_eq!(take_peer_errors(), vec![("connect-timeout", 2)]);
+        assert!(take_peer_errors().is_empty());
     }
 
     #[test]

@@ -22,7 +22,7 @@ import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { syncEngineCacheOptions } from "@/lib/torrent/engine-config-sync";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isMacDesktop, isMobileDevice, isWeb } from "@/lib/platform";
+import { isMacDesktop, isMobileDevice, isMobileTauri, isWeb } from "@/lib/platform";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { DevErrorTrigger } from "@/components/dev-error-trigger";
@@ -83,6 +83,7 @@ import { SearchHotkey } from "@/components/search/search-hotkey";
 import { CommandPalette } from "@/components/command-palette";
 import { RoomHotkeys } from "@/components/room-hotkeys";
 import { MobileIntegration } from "@/components/mobile-integration";
+import { MobileShell } from "@/mobile/shell";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
@@ -279,6 +280,7 @@ export function App() {
                       <AccessibilityNavigation />
                       <WatchlistSync />
                       <MobileIntegration />
+                      {isMobileTauri() && <MobileShell />}
                       <Shell />
                       <Suspense fallback={null}>
                         <OnboardingModal />
