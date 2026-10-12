@@ -4,6 +4,7 @@ mod cast_hls;
 mod cast_subs;
 mod cf_relay;
 mod download;
+mod fd_limit;
 mod user_files;
 mod fonts;
 mod http_fetch;
@@ -526,6 +527,7 @@ pub fn run() {
     #[cfg(target_os = "macos")]
     app_log::redirect_stderr_to_log();
     app_log::init_tracing();
+    fd_limit::raise();
     #[cfg(target_os = "linux")]
     mpv_render_linux::enforce_nvidia_x11();
     let _ = rustls::crypto::ring::default_provider().install_default();
