@@ -1,4 +1,6 @@
 import { Bookmark, Check, Popcorn, RefreshCcw } from "lucide-react";
+import { isMobileTauri } from "@/lib/platform";
+import { previewMeta } from "@/mobile/meta-preview";
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { animeHasDub, dubSetReady, ensureDubSet, subscribeDubSet } from "@/lib/providers/anime-dub-sub";
 import { awardSourceMeta, findTopAward, parseAwardYear, type AwardWin } from "@/lib/anime-awards";
@@ -458,7 +460,7 @@ export const PickCard = memo(function PickCard({
   return (
     <button
       ref={ref}
-      onClick={() => openMeta(meta)}
+      onClick={() => (isMobileTauri() ? previewMeta(meta) : openMeta(meta))}
       onContextMenu={(e) => openContextMenu(e, { kind: "meta", meta })}
       onFocus={(e) => hoverPreviewFocus(meta, e.currentTarget)}
       onBlur={(e) => hoverPreviewBlur(e.currentTarget)}
