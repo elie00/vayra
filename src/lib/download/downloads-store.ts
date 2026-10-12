@@ -298,7 +298,7 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
     if (isLocalEngineUrl(url)) {
       try { await retainTorrentForDownload(id, url); }
       catch (error) {
-        if (items.get(id)?.status === "queued") patch(id, { status: "error", error: error instanceof Error ? error.message : "Download failed" });
+        if (items.get(id)?.status === "queued") patch(id, { status: "error", error: failureMessage(error) });
         return id;
       }
     }
@@ -307,6 +307,12 @@ export async function enqueueDownload(args: EnqueueArgs): Promise<string> {
   } finally {
     releasePath(path);
   }
+}
+
+// Tauri rejects commands with a plain string; keep it rather than a generic label.
+function failureMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return typeof error === "string" && error.trim() ? error : "Download failed";
 }
 
 function beginDownload(id: string, headers: Record<string, string> | undefined): void {
@@ -371,7 +377,7 @@ function beginDownload(id: string, headers: Record<string, string> | undefined):
         }
         return;
       }
-      patch(id, { status: "error", error: e instanceof Error ? e.message : "Download failed", bytesPerSec: 0 });
+      patch(id, { status: "error", error: failureMessage(e), bytesPerSec: 0 });
     })
     .finally(async () => {
       reserved.delete(id);
