@@ -211,6 +211,10 @@
 - Code mort constaté, non supprimé : `MobileShell` (`src/mobile/shell.tsx`, seules
   `getPlusOpen`/`setPlusOpen` servent), `MobilePlayPicker` (`src/mobile/play-picker.tsx`)
   et `MobileTogetherSheet` ne sont montés nulle part.
+  - 2026-10-12 : cause trouvée, les fusions de la PR 744 du 2026-07-11 (`ece70bfe`,
+    `82b8fc40`) avaient retiré ces montages. `MobileShell` est remonté dans `App.tsx`
+    (barre d'onglets, écran Plus, panneau Watch Together) ; `MobileDetail` et
+    `MobilePlayPicker` restent démontés (en retard sur les versions bureau).
 - Build Android : `pnpm tauri android build --target aarch64` régénère
   `gen/android/app/src/main/AndroidManifest.xml` (espace en fin de ligne) et le WASM
   de `vayra-core/pkg` : les restaurer avant commit.
