@@ -3,6 +3,10 @@ import { lumaEn } from "./luma";
 import { privateBetaEn } from "./private-beta";
 
 const en: Record<string, string> = {
+  "Download folder is unavailable. Choose a folder.": "Download folder is unavailable. Choose a folder.",
+  "The folder chooser could not be opened. Try again.": "The folder chooser could not be opened. Try again.",
+  "The folder could not be opened. Your download has not been changed. Try again from Downloads.": "The folder could not be opened. Your download has not been changed. Try again from Downloads.",
+  "Secure storage is unavailable. Your keys are kept in local settings. Restart VAYRA after unlocking the keychain to restore protection.": "Secure storage is unavailable. Your keys are kept in local settings. Restart VAYRA after unlocking the keychain to restore protection.",
   ...ciraEn,
   ...lumaEn,
   ...privateBetaEn,

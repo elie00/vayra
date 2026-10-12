@@ -1,6 +1,6 @@
 import { Download, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { downloadStatusLabel } from "@/lib/download/presentation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { DeleteDownloadDialog } from "./delete-download-dialog";
 import type { Meta } from "@/lib/cinemeta";
 import {
@@ -25,11 +25,18 @@ export function DownloadsButton() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const focusedRef = useRef<HTMLElement | null>(null);
   const activeCount = downloads.filter((d) => d.status === "downloading").length;
+
+  useLayoutEffect(() => {
+    if (open && !pendingRemoval && focusedRef.current && !focusedRef.current.isConnected && document.activeElement === document.body) {
+      triggerRef.current?.focus();
+    }
+  }, [downloads, open, pendingRemoval]);
 
   useEffect(() => {
     if (!open || pendingRemoval) return;
-    const onDown = (e: MouseEvent) => {
+    const onDown = (e: Event) => {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -40,9 +47,11 @@ export function DownloadsButton() {
       }
     };
     document.addEventListener("mousedown", onDown);
+    document.addEventListener("focusin", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("focusin", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open, pendingRemoval]);
@@ -59,7 +68,8 @@ export function DownloadsButton() {
   };
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} onFocusCapture={(event) => { focusedRef.current = event.target; }}
+      onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedRef.current = null; }} className="relative">
       <button
         type="button"
         ref={triggerRef}

@@ -5,7 +5,7 @@ import { extname, join } from "node:path";
 // Historical debt is intentionally ratcheted: existing best-effort calls can be
 // reviewed incrementally, but a change may not increase the number of promises
 // whose rejection is discarded without logging, feedback or a comment.
-const MAX_EMPTY_PROMISE_CATCHES = 271;
+const MAX_EMPTY_PROMISE_CATCHES = 269;
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx"]);
 const EMPTY_PROMISE_CATCH = /\.catch\s*\(\s*\(\s*\)\s*=>\s*\{\s*\}\s*\)/g;
 

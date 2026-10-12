@@ -53,3 +53,39 @@ it("keeps confirmation mounted when a ready-filtered row disappears during remov
   await click(byText("Cancel", document.querySelector('[role="dialog"]')!));
   expect(document.activeElement).toBe(host.querySelector("h1"));
 });
+
+it("keeps focus on pause/resume across state changes", async () => {
+  mocks.items = [{ ...mocks.items[0], status: "downloading" }];
+  await act(async () => root.render(<DownloadsView />));
+  host.querySelector<HTMLButtonElement>('[aria-label="Pause download"]')!.focus();
+  mocks.items = [{ ...mocks.items[0], status: "paused" }];
+  await act(async () => root.render(<DownloadsView />));
+  expect(document.activeElement).toBe(host.querySelector('[aria-label="Resume download"]'));
+  mocks.items = [{ ...mocks.items[0], status: "downloading" }];
+  await act(async () => root.render(<DownloadsView />));
+  expect(document.activeElement).toBe(host.querySelector('[aria-label="Pause download"]'));
+});
+
+it("restores focus to the active filter when its focused row leaves that category", async () => {
+  mocks.items = [{ ...mocks.items[0], status: "downloading" }];
+  await act(async () => root.render(<DownloadsView />));
+  await click(byText("Downloading"));
+  host.querySelector<HTMLButtonElement>('[aria-label="Pause download"]')!.focus();
+  mocks.items = [{ ...mocks.items[0], status: "paused" }];
+  await act(async () => root.render(<DownloadsView />));
+  expect(document.activeElement).toBe(byText("Downloading"));
+});
+
+it("does not steal focus from another control when a download changes category", async () => {
+  mocks.items = [{ ...mocks.items[0], status: "downloading" }];
+  await act(async () => root.render(<DownloadsView />));
+  await click(byText("Downloading"));
+  host.querySelector<HTMLButtonElement>('[aria-label="Pause download"]')!.focus();
+  const outside = document.createElement("button"); document.body.append(outside);
+  try {
+    outside.focus();
+    mocks.items = [{ ...mocks.items[0], status: "paused" }];
+    await act(async () => root.render(<DownloadsView />));
+    expect(document.activeElement).toBe(outside);
+  } finally { outside.remove(); }
+});

@@ -326,6 +326,9 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
         return;
       }
 
+      // Overlays with their own back/close flow must receive Escape themselves.
+      if (isBackKey(e) && target?.closest("[data-local-back]")) return;
+
       if (isBackKey(e)) {
         if (activeModal) return;
         e.preventDefault();

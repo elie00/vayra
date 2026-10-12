@@ -21,6 +21,7 @@ export function useStudioPreview(layout: ThemeLayout, bokeh: boolean) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.repeat) return;
       if ((e.metaKey || e.ctrlKey) && (e.key ?? "").toLowerCase() === "p") {
         e.preventDefault();
         setInspectorHidden((v) => !v);

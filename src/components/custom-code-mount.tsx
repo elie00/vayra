@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import DOMPurify from "dompurify";
+import { useEffect, useMemo, useRef } from "react";
+import { bindThemeNavigation, sanitizeThemeHtml } from "@/lib/theme-html";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
 import { useView } from "@/lib/view";
@@ -23,6 +23,8 @@ function runThemeCleanup(key: "__harborCustomCleanup" | "__harborThemeCleanup") 
 }
 
 export function CustomCodeMount() {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (overlayRef.current) return bindThemeNavigation(overlayRef.current); }, []);
   const { settings } = useSettings();
   const { player } = useView();
 
@@ -80,17 +82,14 @@ export function CustomCodeMount() {
   // l'utilisateur reste tel quel.
   const themeHtml = useMemo(
     () =>
-      DOMPurify.sanitize(themeExt?.html ?? "", {
-        FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "base"],
-        FORBID_ATTR: ["srcdoc"],
-      }),
+      sanitizeThemeHtml(themeExt?.html ?? ""),
     [themeExt?.html],
   );
   const html = `${settings.customHtml ?? ""}${themeHtml}`;
   return (
     <div
+      ref={overlayRef}
       id={OVERLAY_ID}
-      aria-hidden
       className={`pointer-events-none fixed inset-0 z-[100] ${player ? "hidden" : ""}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />

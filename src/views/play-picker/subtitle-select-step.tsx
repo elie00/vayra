@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Captions, CaptionsOff, Check, Languages, Loader2, Play } from "lucide-react";
 import { Flag } from "@/components/flag";
 import { languageName } from "@/lib/subtitles/language";
@@ -39,15 +39,7 @@ export function SubtitleSelectStep({
     }
   }, [loading, bestId, groups]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
-
-  const start = () => {
+  const start = useCallback(() => {
     if (selected === "off") {
       onStart({ ...src, subtitlePreselect: { off: true } });
       return;
@@ -61,7 +53,22 @@ export function SubtitleSelectStep({
       return;
     }
     onStart(src);
-  };
+  }, [onStart, results, selected, src]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229 || e.repeat) return;
+      if (e.key === "Escape") onCancel();
+      if (e.key !== "Enter" || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || loading) return;
+      const target = e.target;
+      // Preserve editable fields and explicit Back/Skip/Start button actions.
+      if (target instanceof HTMLElement && target.closest("input, textarea, select, [contenteditable=true], [data-enter-action]")) return;
+      e.preventDefault();
+      start();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [loading, onCancel, start]);
 
   const visible =
     activeLang === "all" ? results ?? [] : groups.find((g) => g.langKey === activeLang)?.items ?? [];
@@ -78,6 +85,7 @@ export function SubtitleSelectStep({
           <button
             type="button"
             onClick={onCancel}
+            data-enter-action
             aria-label={t("Back")}
             className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated/70 text-ink-muted ring-1 ring-edge-soft backdrop-blur transition-colors hover:bg-raised hover:text-ink"
           >
@@ -161,6 +169,7 @@ export function SubtitleSelectStep({
           <button
             type="button"
             onClick={() => onStart(src)}
+            data-enter-action
             className="h-12 rounded-full px-6 text-[15px] font-semibold text-ink-muted transition-colors hover:text-ink"
           >
             {t("Skip, let VAYRA choose")}
@@ -168,6 +177,7 @@ export function SubtitleSelectStep({
           <button
             type="button"
             onClick={start}
+            data-enter-action
             disabled={loading}
             className="flex h-12 items-center gap-2.5 rounded-full bg-accent px-8 text-[16px] font-bold text-canvas shadow-[0_16px_40px_-12px_var(--color-accent)] transition-transform duration-150 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50"
           >

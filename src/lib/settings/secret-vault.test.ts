@@ -52,6 +52,20 @@ afterEach(() => {
 });
 
 describe("secret vault", () => {
+  it("notifies observers of degraded storage and clears the warning after recovery", async () => {
+    const kc = keychain(null, { failWrites: true });
+    const { vault, store } = await load({ [SHARED]: blob({ rdKey: "FIXTURE_KEY" }) });
+    const listener = vi.fn();
+    const unsubscribe = vault.subscribeSecretStorage(listener);
+    await vault.hydrateSecretVault(SHARED, store.allSourceKeys(), MIRROR);
+    expect(vault.secretStorageDegraded()).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
+    kc.failWrites = false;
+    await vault.hydrateSecretVault(SHARED, store.allSourceKeys(), MIRROR);
+    expect(vault.secretStorageDegraded()).toBe(false);
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
   it("moves every profile's secrets out of local storage into the keychain", async () => {
     const kc = keychain(JSON.stringify({ rdKey: "KEYCHAIN_RD" }));
     const { storage, vault, store } = await load({
@@ -82,6 +96,7 @@ describe("secret vault", () => {
     await expect(vault.hydrateSecretVault(SHARED, store.allSourceKeys(), MIRROR)).resolves.toBe(false);
 
     expect(storage.dump()).toContain("P2_RD");
+    expect(vault.secretStorageDegraded()).toBe(true);
     expect(store.loadEffective("p2", false).rdKey).toBe("P2_RD");
   });
 
@@ -92,6 +107,7 @@ describe("secret vault", () => {
     await expect(vault.hydrateSecretVault(SHARED, store.allSourceKeys(), MIRROR)).resolves.toBe(false);
 
     expect(storage.dump()).toContain("SHARED_RD");
+    expect(vault.secretStorageDegraded()).toBe(true);
     expect(mocks.invoke).not.toHaveBeenCalledWith("settings_secrets_write", expect.anything());
   });
 
@@ -119,6 +135,7 @@ describe("secret vault", () => {
     await expect(vault.flushSecretVault()).resolves.toBe(false);
 
     expect(vault.vaultActive()).toBe(false);
+    expect(vault.secretStorageDegraded()).toBe(true);
     expect(storage.dump()).toContain("P2_RD");
     expect(store.loadEffective("p2", false).rdKey).toBe("P2_RD");
   });

@@ -267,12 +267,14 @@ export function LanguagesPicker({
   const label = (name: string) => localizedLanguageName(name, uiLanguage);
   const resolvedPlaceholder = placeholder ?? t("Search languages (Tamil, Telugu, ...)");
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const selected = new Set(value);
   const toggle = (lang: string) => {
     const next = new Set(selected);
     if (next.has(lang)) next.delete(lang);
     else next.add(lang);
     onChange([...next]);
+    searchRef.current?.focus();
   };
   const q = query.trim().toLowerCase();
   const available = options.filter((l) => !selected.has(l));
@@ -288,6 +290,8 @@ export function LanguagesPicker({
           {value.map((lang) => (
             <button
               key={lang}
+              type="button"
+              aria-label={`${t("common.remove")} ${label(lang)}`}
               onClick={() => toggle(lang)}
               className="group inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/15 px-3 py-1.5 text-[12.5px] font-semibold text-accent transition-colors hover:bg-accent/25"
             >
@@ -305,6 +309,9 @@ export function LanguagesPicker({
           className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-subtle"
         />
         <input
+          ref={searchRef}
+          type="search"
+          aria-label={resolvedPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={resolvedPlaceholder}
@@ -316,6 +323,7 @@ export function LanguagesPicker({
         {shown.map((lang) => (
           <button
             key={lang}
+            type="button"
             onClick={() => toggle(lang)}
             className="inline-flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/30 px-2.5 py-1.5 text-[12px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
