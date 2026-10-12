@@ -4,9 +4,11 @@
 //! failed with "Too many open files". Raise the soft limit the way torrent clients do.
 
 /// Enough for several packs and hundreds of peers; also macOS's per-process OPEN_MAX.
+#[cfg(unix)]
 const TARGET: u64 = 10_240;
 
 /// The soft limit to set, or None when the current one is already high enough.
+#[cfg(unix)]
 fn raised_soft_limit(soft: u64, hard: u64) -> Option<u64> {
     let target = TARGET.min(hard);
     (target > soft).then_some(target)
@@ -34,7 +36,7 @@ pub fn raise() {
 #[cfg(not(unix))]
 pub fn raise() {}
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests {
     use super::*;
 
