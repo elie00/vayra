@@ -43,13 +43,15 @@ pub fn redirect_stderr_to_log() {
 
 /// librqbit tells why a peer connection ends only through `tracing`, at debug level.
 /// Keep warnings from every crate plus librqbit's peer life cycle (connection errors,
-/// backoff, drops) on stderr, next to the engine's own `[torrent-engine] peers` lines.
+/// backoff, drops) on stderr, next to the engine's own `[torrent-engine] peers` lines,
+/// and the UPnP forwarder's info line saying the router opened the torrent port.
 pub fn init_tracing() {
     use tracing_subscriber::filter::{filter_fn, LevelFilter};
     use tracing_subscriber::prelude::*;
     let filter = filter_fn(|meta| {
         LevelFilter::WARN >= *meta.level()
             || (meta.target() == "librqbit::torrent_state::live" && LevelFilter::DEBUG >= *meta.level())
+            || (meta.target() == "librqbit_upnp" && LevelFilter::INFO >= *meta.level())
     });
     let layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
