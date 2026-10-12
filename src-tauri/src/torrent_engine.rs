@@ -614,7 +614,11 @@ pub async fn torrent_engine_select_many(
         return Err("no file selected".to_string());
     }
     remember_saved(&info_hash, &file_idxs);
-    apply_selection(&info_hash, wanted_files(&info_hash, None)).await
+    let result = apply_selection(&info_hash, wanted_files(&info_hash, None)).await;
+    if let Err(e) = &result {
+        eprintln!("[torrent-engine] download selection {} refused: {e}", info_hash.get(..8).unwrap_or(&info_hash));
+    }
+    result
 }
 
 /// Release files a save no longer needs, so a later stream can narrow the torrent back
@@ -632,8 +636,19 @@ async fn apply_selection(info_hash: &str, only: HashSet<usize>) -> Result<(), St
     let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
     let id = TorrentIdOrHash::parse(info_hash).map_err(|e| e.to_string())?;
     let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
-    session.update_only_files(&handle, &only).await.map_err(|e| format!("{e:#}"))?;
-    session.unpause(&handle).await.map_err(|e| format!("{e:#}"))?;
+    select_files(&session, &handle, &only).await
+}
+
+async fn select_files(
+    session: &Arc<Session>,
+    handle: &Arc<librqbit::ManagedTorrent>,
+    only: &HashSet<usize>,
+) -> Result<(), String> {
+    session.update_only_files(handle, only).await.map_err(|e| format!("{e:#}"))?;
+    // A running stream already started the torrent; librqbit refuses to start it twice.
+    if handle.live().is_none() {
+        session.unpause(handle).await.map_err(|e| format!("{e:#}"))?;
+    }
     Ok(())
 }
 
@@ -792,6 +807,36 @@ mod tests {
     fn saves_on_one_torrent_do_not_reach_another() {
         remember_saved("aaaa000000000000000000000000000000000005", &[1]);
         assert!(wanted_files("aaaa000000000000000000000000000000000006", None).is_empty());
+    }
+
+    /// A stream already started the torrent; widening it for a save must not fail.
+    #[tokio::test]
+    async fn selecting_files_on_a_live_torrent_succeeds() {
+        let dir = std::env::temp_dir().join(format!("vayra-select-{}", std::process::id()));
+        let content = dir.join("pack");
+        std::fs::create_dir_all(&content).unwrap();
+        std::fs::write(content.join("e01.mkv"), vec![1u8; 64 * 1024]).unwrap();
+        std::fs::write(content.join("e02.mkv"), vec![2u8; 64 * 1024]).unwrap();
+        let torrent = librqbit::create_torrent(&content, librqbit::CreateTorrentOptions { name: None, piece_length: Some(16 * 1024) })
+            .await
+            .unwrap()
+            .as_bytes()
+            .unwrap();
+        let session = new_session(&dir, false, false, false).await.unwrap();
+        let handle = session
+            .add_torrent(AddTorrent::from_bytes(torrent), Some(add_opts(false, Some(vec![0]), Vec::new(), Vec::new())))
+            .await
+            .unwrap()
+            .into_handle()
+            .unwrap();
+        timeout(Duration::from_secs(10), handle.wait_until_initialized()).await.unwrap().unwrap();
+        assert!(handle.live().is_some(), "the torrent should be live before selecting");
+
+        let result = select_files(&session, &handle, &HashSet::from([0, 1])).await;
+
+        let _ = session.delete(TorrentIdOrHash::Hash(handle.info_hash()), false).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(result, Ok(()));
     }
 
     /// Real swarm download with the production peer options, on a throwaway session.
