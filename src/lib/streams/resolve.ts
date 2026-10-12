@@ -364,8 +364,11 @@ async function tryTorrentEngine(
 function engineFailureCode(): string {
   if (!localTorrentAllowed()) return "direct-torrent-disabled";
   const err = lastEngineAddError();
-  if (err && /timed out|no peers/i.test(err)) return "engine-no-peers";
-  return "engine-not-ready";
+  if (!err || /engine not ready|failed to initialize/i.test(err)) return "engine-not-ready";
+  // Nobody sent the torrent's description in two attempts: the torrent is most likely dead.
+  if (/metadata timed out/i.test(err)) return "engine-no-metadata";
+  if (/no peers/i.test(err)) return "engine-no-peers";
+  return "engine-error";
 }
 
 function selectEngineFileIdx(files: TorrentFile[], hint: EpisodeHint): number {

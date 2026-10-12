@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Check, Pause, Play, RotateCw } from "lucide-react";
+import { ArrowDownToLine, Check, HardDrive, Pause, Play, RotateCw } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
 import {
   activeDownloadFor,
@@ -7,6 +7,13 @@ import {
   useDownloads,
 } from "@/lib/download/downloads-store";
 import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
+import { readPlayback } from "@/lib/playback-history";
+import {
+  cachedFileForPlayback,
+  keepCachedFile,
+  playbackStreamLabel,
+  useCachedEngineFiles,
+} from "@/lib/torrent/engine-cache";
 import { useView, type PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
@@ -27,6 +34,7 @@ export function EpisodeDownloadButton({
   const t = useT();
   const { openPicker } = useView();
   useDownloads();
+  const cachedFiles = useCachedEngineFiles();
   if (!PLATFORM_CAPABILITIES.nativeDownloads) return null;
   const tmdbMatch = meta.id.match(/^tmdb:(?:movie|tv):(\d+)$/);
   const tmdbId = tmdbMatch ? parseInt(tmdbMatch[1], 10) : null;
@@ -44,7 +52,10 @@ export function EpisodeDownloadButton({
   const paused = status === "paused" || status === "interrupted";
   const done = status === "done";
   const failed = status === "error";
-  const persistent = downloading || paused || done || failed;
+  // An earlier playback left this file complete in the engine's cache: keeping it is a copy.
+  const playback = dl ? null : readPlayback(meta.id, episode?.season, episode?.episode);
+  const cached = cachedFileForPlayback(cachedFiles, playback);
+  const persistent = downloading || paused || done || failed || cached != null;
   const ratio = dl?.ratio ?? 0;
   const pct = Math.round(ratio * 100);
   const isBar = variant === "bar";
@@ -60,6 +71,13 @@ export function EpisodeDownloadButton({
       resumeDownload(dl.id);
       return;
     }
+    if (cached) {
+      const pick = () => openPicker(meta, episode, { intent: "download" });
+      void keepCachedFile(cached, meta, episode, playbackStreamLabel(playback))
+        .then((kept) => kept || pick())
+        .catch(pick);
+      return;
+    }
     openPicker(meta, episode, { intent: "download" });
   };
 
@@ -69,6 +87,10 @@ export function EpisodeDownloadButton({
 
   const stateTone = done
     ? "text-emerald-300"
+    : cached
+      ? isBar
+        ? "text-accent"
+        : "text-accent hover:bg-elevated"
     : failed
       ? isBar
         ? "text-danger"
@@ -95,7 +117,9 @@ export function EpisodeDownloadButton({
             ? t("Saved offline")
             : failed
               ? t("Download failed, click to retry")
-              : t("Download for offline")
+              : cached
+                ? t("In the cache, click to keep this file")
+                : t("Download for offline")
       }
       title={
         downloading
@@ -106,7 +130,9 @@ export function EpisodeDownloadButton({
             ? t("Saved offline")
             : failed
               ? t("Download failed  ·  click to retry")
-              : t("Download for offline")
+              : cached
+                ? t("In the cache  ·  click to keep this file")
+                : t("Download for offline")
       }
       className={wrapperClass}
       style={{ width: dim, height: dim }}
@@ -158,6 +184,8 @@ export function EpisodeDownloadButton({
         <Check size={dim * 0.46} strokeWidth={2.6} />
       ) : failed ? (
         <RotateCw size={dim * 0.42} strokeWidth={2.2} />
+      ) : cached ? (
+        <HardDrive size={dim * 0.42} strokeWidth={2} />
       ) : (
         <ArrowDownToLine size={dim * 0.46} strokeWidth={2} />
       )}

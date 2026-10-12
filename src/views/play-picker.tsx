@@ -138,7 +138,8 @@ export function PlayPicker({
     [meta, seasonLogo],
   );
   const [resolving, setResolving] = useState<{ stream: ScoredStream } | null>(null);
-  const [failedStreams, setFailedStreams] = useState<Set<ScoredStream>>(new Set());
+  // Each source that failed in this picker, with the reason to show on its row.
+  const [failedStreams, setFailedStreams] = useState<Map<ScoredStream, string>>(new Map());
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [strictMode, setStrictMode] = useState(settings.streamFilterLevel === "strict");

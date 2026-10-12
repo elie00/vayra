@@ -3,7 +3,7 @@ import type { Meta } from "@/lib/cinemeta";
 import type { DebridStore } from "@/lib/debrid/types";
 import { savePlayback } from "@/lib/playback-history";
 import { saveSeasonLock } from "@/lib/season-lock";
-import { markStreamDead, recordStubEvent } from "@/lib/dead-streams";
+import { DEAD_TORRENT_TTL_MS, markStreamDead, recordStubEvent } from "@/lib/dead-streams";
 
 const PREFLIGHT_STUB_TTL_MS = 15 * 60 * 1000;
 const SAME_SOURCE_MAX_RETRIES = 4;
@@ -80,7 +80,7 @@ export function usePickHandler({
   autoFiredRef: React.MutableRefObject<boolean>;
   setAutoAttemptIdx: Dispatch<SetStateAction<number>>;
   setAutoExhausted: Dispatch<SetStateAction<boolean>>;
-  setFailedStreams: Dispatch<SetStateAction<Set<ScoredStream>>>;
+  setFailedStreams: Dispatch<SetStateAction<Map<ScoredStream, string>>>;
   setResolveError: (msg: string | null) => void;
   setResolving: Dispatch<SetStateAction<{ stream: ScoredStream } | null>>;
 }) {
@@ -143,7 +143,9 @@ export function usePickHandler({
           setResolving(null);
           return;
         }
-        setFailedStreams((prev) => new Set(prev).add(stream));
+        setFailedStreams((prev) => new Map(prev).set(stream, humanError(r.code)));
+        // A torrent nobody could describe is skipped by autoplay for a while.
+        if (r.code === "engine-no-metadata") markStreamDead(stream, r.code, DEAD_TORRENT_TTL_MS);
         const isDebridSide = isDebridFailure(r.code, r.tried);
         if (isDebridSide && scheduleSameSourceRetry(stream, userCommitted, forceP2p)) return;
         if (isDebridSide && debrids.length > 0) {
@@ -173,9 +175,10 @@ export function usePickHandler({
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;
         } catch (e) {
-          setFailedStreams((prev) => new Set(prev).add(stream));
+          const message = t("Could not start the local stream proxy. Pick another stream.");
+          setFailedStreams((prev) => new Map(prev).set(stream, message));
           const willRetry = autoActive && autoAttemptIdx + 1 < autoCandidatesLength;
-          if (!willRetry) setResolveError(t("Could not start the local stream proxy. Pick another stream."));
+          if (!willRetry) setResolveError(message);
           advanceAuto();
           return;
         }
@@ -186,7 +189,7 @@ export function usePickHandler({
           : await preflightCheck(playUrl, ac.signal);
       if (ac.signal.aborted) return;
       if (!preflight.ok && preflight.reason === "stub") {
-        setFailedStreams((prev) => new Set(prev).add(stream));
+        setFailedStreams((prev) => new Map(prev).set(stream, humanError("stub-or-error-video")));
         const reasonStr = `preflight_stub_${preflight.sizeBytes ?? 0}b`;
         markStreamDead({ url: r.data.url }, reasonStr, PREFLIGHT_STUB_TTL_MS);
         console.warn(
