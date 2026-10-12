@@ -122,6 +122,19 @@ mod tests {
         path
     }
 
+    fn set_dir_modified(dir: &Path, modified: SystemTime) {
+        #[cfg(windows)]
+        let handle = {
+            use std::os::windows::fs::OpenOptionsExt;
+            // A directory opens only with FILE_FLAG_BACKUP_SEMANTICS, and setting its
+            // time needs FILE_WRITE_ATTRIBUTES.
+            fs::OpenOptions::new().access_mode(0x100).custom_flags(0x0200_0000).open(dir)
+        };
+        #[cfg(not(windows))]
+        let handle = fs::File::open(dir);
+        handle.unwrap().set_modified(modified).unwrap();
+    }
+
     #[test]
     fn keeps_an_entry_written_while_the_sweep_runs() {
         // A torrent being downloaded, or the DHT's temporary dump, is modified after
@@ -153,7 +166,7 @@ mod tests {
         fs::create_dir_all(&pack).unwrap();
         file_modified(&pack, "Show.S01E01.mkv", SystemTime::now() - Duration::from_secs(48 * 3600));
         let fresh = file_modified(&pack, "Show.S01E02.mkv", SystemTime::now() - Duration::from_secs(60));
-        fs::File::open(&pack).unwrap().set_modified(SystemTime::now() - Duration::from_secs(48 * 3600)).unwrap();
+        set_dir_modified(&pack, SystemTime::now() - Duration::from_secs(48 * 3600));
         run(&dir, 24, 0);
         assert!(fresh.exists());
         let _ = fs::remove_dir_all(&dir);
@@ -165,7 +178,7 @@ mod tests {
         let pack = dir.join("Show.S02");
         fs::create_dir_all(&pack).unwrap();
         file_modified(&pack, "Show.S02E01.mkv", SystemTime::now() - Duration::from_secs(48 * 3600));
-        fs::File::open(&pack).unwrap().set_modified(SystemTime::now() - Duration::from_secs(48 * 3600)).unwrap();
+        set_dir_modified(&pack, SystemTime::now() - Duration::from_secs(48 * 3600));
         run(&dir, 24, 0);
         assert!(!pack.exists());
         let _ = fs::remove_dir_all(&dir);
@@ -188,7 +201,7 @@ mod tests {
         let newest = SystemTime::now() - Duration::from_secs(3600);
         file_modified(&pack, "Show.S03E01.mkv", SystemTime::now() - Duration::from_secs(5 * 3600));
         file_modified(&pack, "Show.S03E02.mkv", newest);
-        fs::File::open(&pack).unwrap().set_modified(SystemTime::now() - Duration::from_secs(5 * 3600)).unwrap();
+        set_dir_modified(&pack, SystemTime::now() - Duration::from_secs(5 * 3600));
         let expires = expires_at(&pack, 24).unwrap();
         let expected = newest + Duration::from_secs(24 * 3600);
         let gap = expires.duration_since(expected).unwrap_or_else(|e| e.duration());
