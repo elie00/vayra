@@ -4,10 +4,11 @@ import { useT } from "@/lib/i18n";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
 /** Safe default for irreversible actions: cancellation receives initial focus. */
-export function ConfirmationDialog({ title, children, confirmLabel, onConfirm, onCancel, busy = false, error, danger = false, returnFocusRef }: {
+export function ConfirmationDialog({ title, children, confirmLabel, cancelLabel, onConfirm, onCancel, busy = false, error, danger = false, returnFocusRef }: {
   title: string;
   children: ReactNode;
   confirmLabel: string;
+  cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
   busy?: boolean;
@@ -50,7 +51,7 @@ export function ConfirmationDialog({ title, children, confirmLabel, onConfirm, o
         <div id={descriptionId} className="mt-3 space-y-2 break-words text-sm leading-relaxed text-ink-muted">{children}</div>
         {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button ref={cancelRef} type="button" disabled={busy} onClick={onCancel} className="mac-secondary-button disabled:opacity-50">{t("Cancel")}</button>
+          <button ref={cancelRef} type="button" disabled={busy} onClick={onCancel} className="mac-secondary-button disabled:opacity-50">{cancelLabel ?? t("Cancel")}</button>
           <button type="button" disabled={busy} onClick={onConfirm}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${danger ? "bg-danger/15 text-danger hover:bg-danger/25" : "bg-accent text-canvas hover:opacity-90"}`}>
             {confirmLabel}

@@ -43,6 +43,19 @@ const vault: { active: boolean; activeKey: string; sources: Record<string, Setti
   sources: {},
 };
 
+let storageDegraded = false;
+const storageListeners = new Set<() => void>();
+export const secretStorageDegraded = () => storageDegraded;
+export function subscribeSecretStorage(listener: () => void): () => void {
+  storageListeners.add(listener);
+  return () => storageListeners.delete(listener);
+}
+function setStorageDegraded(value: boolean): void {
+  if (storageDegraded === value) return;
+  storageDegraded = value;
+  for (const listener of storageListeners) listener();
+}
+
 export function pickSecrets(value: Partial<Settings> | Record<string, unknown>): SettingsSecrets {
   const out: Record<string, unknown> = {};
   for (const key of SECRET_KEYS) {
@@ -126,6 +139,7 @@ export async function hydrateSecretVault(activeKey: string, sourceKeys: string[]
     const raw = await invoke<string | null>("settings_secrets_read");
     stored = raw ? (JSON.parse(raw) as VaultPayload) : null;
   } catch {
+    setStorageDegraded(true);
     return false;
   }
   const sources: Record<string, SettingsSecrets> = {};
@@ -148,9 +162,11 @@ export async function hydrateSecretVault(activeKey: string, sourceKeys: string[]
     await writeVault();
   } catch {
     vault.sources = {};
+    setStorageDegraded(true);
     return false;
   }
   vault.active = true;
+  setStorageDegraded(false);
   for (const key of blobs) {
     const blob = readBlob(key);
     if (!blob) continue;
@@ -193,9 +209,11 @@ export async function flushSecretVault(): Promise<boolean> {
   try {
     await writeVault();
     return true;
-  } catch (error) {
-    console.warn("[settings] secure credential storage unavailable; using legacy storage", error);
+  } catch {
+    // Native error messages can contain credential details; never log their payload.
+    console.warn("[settings] secure credential storage unavailable; using legacy storage");
     disable();
+    setStorageDegraded(true);
     return false;
   }
 }
@@ -205,4 +223,5 @@ export function resetSecretVaultForTests(): void {
   vault.activeKey = "";
   vault.sources = {};
   writes = Promise.resolve();
+  setStorageDegraded(false);
 }

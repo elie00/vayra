@@ -2,7 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { ManualAddonCard, RecommendedAddonCard } from "./streaming-panel";
+import { LanguagesPicker, ManualAddonCard, RecommendedAddonCard } from "./streaming-panel";
 import type { Settings } from "@/lib/settings";
 
 const mocks = vi.hoisted(() => ({ uninstall: vi.fn(), install: vi.fn(), installed: true }));
@@ -32,6 +32,19 @@ beforeEach(() => {
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
+
+it("names language search and keeps focus usable after removing a selected language", async () => {
+  const onChange = vi.fn();
+  await act(async () => root.render(<LanguagesPicker value={["French", "English"]} options={["French", "English", "Spanish"]} placeholder="Find a language" onChange={onChange} />));
+  const search = host.querySelector<HTMLInputElement>('input[type="search"]')!;
+  expect(search.getAttribute("aria-label")).toBe("Find a language");
+  const remove = host.querySelector<HTMLButtonElement>('button[aria-label="common.remove French"]')!;
+  remove.focus();
+  await act(async () => remove.click());
+  expect(onChange).toHaveBeenCalledWith(["English"]);
+  expect(document.activeElement).toBe(search);
+  expect(remove.type).toBe("button");
+});
 
 it("requires confirmation before a recommended addon removes its exact installed transport", async () => {
   await act(async () => root.render(<RecommendedAddonCard id="fixture.real-id" title="Fixture addon" blurb="Fixture" urlBuilder={() => "https://example.invalid/manifest.json"} settings={{} as Settings} />));

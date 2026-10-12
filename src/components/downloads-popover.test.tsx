@@ -92,3 +92,36 @@ it("keeps a failed deletion actionable in the dialog and does not dismiss while 
   expect(mocks.remove).toHaveBeenCalledTimes(2);
   expect(document.querySelector('[role="dialog"]')).toBeNull();
 });
+
+it("recovers from a rejected deletion and allows retry without a stuck busy dialog", async () => {
+  mocks.remove.mockRejectedValueOnce(new Error("fixture native failure"));
+  await click(button("Downloads"));
+  await click(button("Delete download and file"));
+  const confirm = () => Array.from(document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')).at(-1)!;
+  await click(confirm());
+  expect(document.querySelector('[role="dialog"]')?.getAttribute("aria-busy")).toBe("false");
+  expect(document.querySelector('[role="alert"]')?.textContent).toContain("Check folder permissions");
+  expect(confirm().disabled).toBe(false);
+  await click(confirm());
+  expect(mocks.remove).toHaveBeenCalledTimes(2);
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+});
+
+it("closes when keyboard focus leaves without pulling focus back", async () => {
+  await click(button("Downloads"));
+  const outside = document.createElement("button"); document.body.append(outside);
+  try {
+    await act(async () => outside.focus());
+    expect(button("Downloads").getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(outside);
+  } finally { outside.remove(); }
+});
+
+it("returns focus to its trigger when the focused row disappears", async () => {
+  await click(button("Downloads"));
+  button("Show in folder").focus();
+  mocks.items = [];
+  await act(async () => root.render(<DownloadsButton />));
+  expect(document.activeElement).toBe(button("Downloads"));
+  expect(button("Downloads").getAttribute("aria-expanded")).toBe("true");
+});

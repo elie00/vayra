@@ -2,7 +2,7 @@ import { downloadDir as systemDownloadDir } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { FolderOpen, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { ToggleRow } from "@/views/settings/shared";
@@ -15,14 +15,18 @@ export function DownloadDirBar() {
   const t = useT();
   const { settings, update } = useSettings();
   const [systemDefault, setSystemDefault] = useState("");
+  const [defaultFailed, setDefaultFailed] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [choosing, setChoosing] = useState(false);
+  const choosingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     systemDownloadDir()
       .then((d) => {
-        if (!cancelled) setSystemDefault(d);
+        if (!cancelled) { setSystemDefault(d); setDefaultFailed(!d); }
       })
-      .catch(() => {});
+      .catch(() => { if (!cancelled) setDefaultFailed(true); });
     return () => {
       cancelled = true;
     };
@@ -31,23 +35,44 @@ export function DownloadDirBar() {
   const current = settings.downloadDir || systemDefault;
   const isCustom = !!settings.downloadDir;
   const [freeBytes, setFreeBytes] = useState<number | null>(null);
+  const [spaceLoading, setSpaceLoading] = useState(false);
   useEffect(() => {
-    if (!isMacDesktop() || !current) return;
+    if (!isMacDesktop() || !current) { setFreeBytes(null); setSpaceLoading(false); return; }
     let alive = true;
     setFreeBytes(null);
-    const refresh = () => { void invoke<number>("download_available_space", { path: current }).then((n) => { if (alive) setFreeBytes(n); }).catch(() => { if (alive) setFreeBytes(null); }); };
+    setSpaceLoading(true);
+    const refresh = () => {
+      void invoke<number>("download_available_space", { path: current })
+        .then((n) => { if (alive) setFreeBytes(Number.isFinite(n) && n >= 0 ? n : null); })
+        .catch(() => { if (alive) setFreeBytes(null); })
+        .finally(() => { if (alive) setSpaceLoading(false); });
+    };
     refresh();
     const timer = window.setInterval(refresh, 30_000);
     return () => { alive = false; window.clearInterval(timer); };
   }, [current]);
 
   const pick = async () => {
+    if (choosingRef.current) return;
+    choosingRef.current = true;
+    setChoosing(true);
+    setActionError(null);
     try {
       const picked = await open({ directory: true, defaultPath: current || undefined });
       if (typeof picked === "string") update({ downloadDir: picked });
     } catch {
-      return;
+      setActionError(t("The folder chooser could not be opened. Try again."));
+    } finally {
+      choosingRef.current = false;
+      setChoosing(false);
     }
+  };
+
+  const reveal = async () => {
+    if (!current) return;
+    setActionError(null);
+    try { await revealItemInDir(current); }
+    catch { setActionError(t("The folder could not be opened. Your download has not been changed. Try again from Downloads.")); }
   };
 
   return (
@@ -60,24 +85,28 @@ export function DownloadDirBar() {
           </span>
           <button
             type="button"
-            onClick={() => current && void revealItemInDir(current)}
+            disabled={!current}
+            onClick={() => void reveal()}
             title={current ? t("{path} (open folder)", { path: current }) : undefined}
             className="truncate text-start font-mono text-[12.5px] text-ink-muted transition-colors hover:text-ink"
           >
-            {current || t("Detecting...")}
+            {current || t(defaultFailed ? "Download folder is unavailable. Choose a folder." : "Detecting...")}
           </button>
         </div>
         <button
           type="button"
           onClick={pick}
+          disabled={choosing}
+          aria-busy={choosing}
           className="shrink-0 rounded-lg border border-edge-soft px-3.5 py-2 text-[12.5px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
         >
-          {t("Change")}
+          {t(choosing ? "Loading…" : "Change")}
         </button>
         {isCustom && (
           <button
             type="button"
-            onClick={() => update({ downloadDir: "" })}
+            disabled={choosing}
+            onClick={() => { setActionError(null); update({ downloadDir: "" }); }}
             aria-label={t("Reset to default folder")}
             title={t("Reset to default")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-ink/10 hover:text-ink"
@@ -86,13 +115,15 @@ export function DownloadDirBar() {
           </button>
         )}
       </div>
+      {actionError && <p role="alert" className="text-sm text-danger">{actionError}</p>}
+      {!current && defaultFailed && <p role="alert" className="text-sm text-danger">{t("Download folder is unavailable. Choose a folder.")}</p>}
       <ToggleRow
         label={t("Organize downloads into folders")}
         note={t("Create a folder by movie or series name")}
         value={settings.downloadCreateFolders}
         onChange={(v) => update({ downloadCreateFolders: v })}
       />
-      {isMacDesktop() && <p role="status" className="text-[13px] tabular-nums text-ink-muted">{freeBytes == null ? t("Available space could not be determined") : t("{size} GB available", { size: (freeBytes / 1024 ** 3).toLocaleString(getUiLanguage(), { maximumFractionDigits: 1 }) })}</p>}
+      {isMacDesktop() && current && <p role="status" className="text-[13px] tabular-nums text-ink-muted">{spaceLoading ? t("Loading…") : freeBytes == null ? t("Available space could not be determined") : t("{size} GB available", { size: (freeBytes / 1024 ** 3).toLocaleString(getUiLanguage(), { maximumFractionDigits: 1 }) })}</p>}
       {isMacDesktop() && <DownloadPolicyControls />}
     </div>
   );

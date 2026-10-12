@@ -5,6 +5,8 @@ import { useSearch } from "@/lib/search-context";
 import { useTogether } from "@/lib/together/provider";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 import { getPlusOpen, setPlusOpen } from "@/mobile/shell";
+import { closeMetaPreview, isMetaPreviewOpen } from "@/mobile/meta-preview";
+import { MetaPreviewSheet } from "@/mobile/meta-preview-sheet";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 
 declare global {
@@ -51,6 +53,10 @@ export function MobileIntegration() {
         a.closeTogether();
         return "handled";
       }
+      if (isMetaPreviewOpen()) {
+        closeMetaPreview();
+        return "handled";
+      }
       if (getPlusOpen()) {
         setPlusOpen(false);
         return "handled";
@@ -92,5 +98,5 @@ export function MobileIntegration() {
     };
   }, []);
 
-  return null;
+  return isMobileTauri() ? <MetaPreviewSheet /> : null;
 }

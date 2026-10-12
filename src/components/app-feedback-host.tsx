@@ -6,6 +6,7 @@ import {
   type AppFeedback,
 } from "@/lib/app-feedback";
 import { useT } from "@/lib/i18n";
+import { SecretStorageWarning } from "./secret-storage-warning";
 
 export function AppFeedbackHost() {
   const [feedback, setFeedback] = useState<AppFeedback | null>(null);
@@ -32,12 +33,13 @@ export function AppFeedbackHost() {
     [],
   );
 
-  if (!feedback) return null;
-  const error = feedback.kind === "error";
-  const success = feedback.kind === "success";
+  const error = feedback?.kind === "error";
+  const success = feedback?.kind === "success";
 
   return createPortal(
-    <div
+    <>
+      <SecretStorageWarning />
+      {feedback && <div
       className="pointer-events-none fixed inset-x-4 bottom-6 z-[240] flex justify-center"
       role={error ? "alert" : "status"}
       aria-live={error ? "assertive" : "polite"}
@@ -77,7 +79,8 @@ export function AppFeedbackHost() {
           <X size={14} strokeWidth={2.2} />
         </button>
       </div>
-    </div>,
+      </div>}
+    </>,
     document.body,
   );
 }
