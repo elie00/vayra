@@ -1,5 +1,7 @@
 import { SlidersHorizontal } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { bindThemeNavigation, sanitizeThemeHtml } from "@/lib/theme-html";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Inspector } from "./theme-studio/inspector";
 import { StudioHeader } from "./theme-studio/studio-header";
@@ -115,6 +117,14 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
   const [popoutTab, setPopoutTab] = useState<CodeLang | null>(null);
   const { inspectorHidden, setInspectorHidden } = useStudioPreview(draft.layout, draft.bokeh);
   const [initialJson] = useState(() => JSON.stringify(emptyDraft(seed)));
+  const inspectorRef = useRef<HTMLDivElement>(null);
+  const reopenRef = useRef<HTMLButtonElement>(null);
+  const wasHiddenRef = useRef(false);
+  useLayoutEffect(() => {
+    if (inspectorHidden) reopenRef.current?.focus();
+    else if (wasHiddenRef.current) inspectorRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    wasHiddenRef.current = inspectorHidden;
+  }, [inspectorHidden]);
   const [confirmClose, setConfirmClose] = useState(false);
   const dirty = useMemo(() => JSON.stringify(draft) !== initialJson, [draft, initialJson]);
   const requestClose = useCallback(() => {
@@ -166,7 +176,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
     root.dataset.themeCard = draft.cardStyle;
     root.dataset.themeButton = draft.buttonStyle;
     root.dataset.themeBokeh = draft.bokeh ? "on" : "off";
-  }, [draft]);
+  }, [draft.colors, draft.fontPair, draft.customFontId, draft.layout, draft.cardStyle, draft.buttonStyle, draft.bokeh]);
 
   useEffect(() => {
     let style = document.getElementById(STUDIO_STYLE_ID) as HTMLStyleElement | null;
@@ -199,7 +209,8 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
       overlay.style.cssText = "position:fixed;inset:0;z-index:59;pointer-events:none;";
       document.body.appendChild(overlay);
     }
-    overlay.innerHTML = draft.layout === "custom" ? draft.html : "";
+    overlay.innerHTML = draft.layout === "custom" ? sanitizeThemeHtml(draft.html) : "";
+    return bindThemeNavigation(overlay);
   }, [draft.html, draft.layout]);
 
   useEffect(() => {
@@ -213,7 +224,10 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.repeat) return;
       if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
         if (confirmClose) setConfirmClose(false);
         else if (popoutTab) setPopoutTab(null);
         else if (inspectorHidden) setInspectorHidden(false);
@@ -326,11 +340,13 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
   };
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-[210]">
+    <div data-local-back className="pointer-events-none fixed inset-0 z-[210]">
       <div
+        ref={inspectorRef}
+        inert={inspectorHidden}
         style={STABLE_CHROME}
         className={`pointer-events-auto absolute end-0 top-0 flex h-full w-[440px] max-w-full flex-col border-s border-edge bg-canvas shadow-[-24px_0_60px_-20px_rgba(0,0,0,0.6)] transition-transform duration-300 ${
-          inspectorHidden ? "translate-x-full rtl:-translate-x-full" : "translate-x-0"
+          inspectorHidden ? "invisible translate-x-full rtl:-translate-x-full" : "translate-x-0"
         }`}
       >
         <StudioHeader
@@ -374,6 +390,7 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
       {inspectorHidden && (
         <button
           type="button"
+          ref={reopenRef}
           onClick={() => setInspectorHidden(false)}
           style={STABLE_CHROME}
           className="pointer-events-auto fixed bottom-6 end-6 z-[211] flex h-12 items-center gap-2 rounded-full border border-edge bg-elevated px-5 text-[13px] font-semibold text-ink shadow-[0_18px_40px_-16px_rgba(0,0,0,0.7)] transition-transform hover:-translate-y-0.5"
@@ -401,46 +418,10 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
       )}
 
       {confirmClose && (
-        <div
-          className="animate-in fade-in pointer-events-auto fixed inset-0 z-[230] flex items-center justify-center bg-black/55 px-4 backdrop-blur-[2px] duration-150"
-          onClick={() => setConfirmClose(false)}
-        >
-          <div
-            style={STABLE_CHROME}
-            onClick={(e) => e.stopPropagation()}
-            className="animate-in zoom-in-95 fade-in w-[340px] max-w-full overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_30px_80px_-24px_rgba(0,0,0,0.8)] duration-150"
-          >
-            <div className="flex flex-col px-6 pb-6 pt-5">
-              <h2 className="text-[17px] font-semibold tracking-tight text-ink">
-                {t("Leave without saving?")}
-              </h2>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">
-                {t("Your changes to this theme aren't saved yet. They'll be lost if you leave now.")}
-              </p>
-              <div className="mt-5 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirmClose(false);
-                    onClose();
-                  }}
-                  className="h-10 rounded-lg px-4 text-[13.5px] font-semibold text-ink-subtle transition-colors hover:bg-danger/12 hover:text-danger"
-                >
-                  {t("Discard")}
-                </button>
-                <button
-                  type="button"
-                  autoFocus
-                  onClick={() => setConfirmClose(false)}
-                  className="h-10 rounded-lg px-5 text-[13.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
-                  style={{ background: "var(--color-accent)" }}
-                >
-                  {t("Keep editing")}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ConfirmationDialog title={t("Leave without saving?")} confirmLabel={t("Discard")} cancelLabel={t("Keep editing")} danger
+          onConfirm={() => { setConfirmClose(false); onClose(); }} onCancel={() => setConfirmClose(false)}>
+          <p>{t("Your changes to this theme aren't saved yet. They'll be lost if you leave now.")}</p>
+        </ConfirmationDialog>
       )}
     </div>,
     document.body,
