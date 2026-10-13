@@ -51,6 +51,25 @@ export function isWindowsDesktop(): boolean {
   return (navigator.userAgent || "").toLowerCase().includes("windows");
 }
 
+export type DesktopUx = "mac" | "windows";
+
+/**
+ * The desktops that get the full VAYRA desktop experience: grouped settings,
+ * the personal home, download tools and local resume. Each keeps its own skin
+ * through `data-desktop-ux`; anything truly Apple-only (⌘ shortcuts, the
+ * embedded mpv renderer, updater channels) stays on `isMacDesktop()`. Linux
+ * keeps the classic layout until it is qualified.
+ */
+export function desktopUx(): DesktopUx | null {
+  if (isMacDesktop()) return "mac";
+  if (isWindowsDesktop()) return "windows";
+  return null;
+}
+
+export function hasNativeDesktopUx(): boolean {
+  return desktopUx() !== null;
+}
+
 export function isMobileDevice(): boolean {
   if (typeof navigator === "undefined" || typeof window === "undefined") return false;
   const ua = navigator.userAgent || "";
