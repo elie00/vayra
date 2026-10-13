@@ -9,7 +9,7 @@ import {
 import { useView } from "@/lib/view";
 import { settingsAnchor, type SectionId } from "./shared";
 import { markSectionSeen, useSettingsNew } from "./settings-new";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 
 type IconProps = { size?: number; strokeWidth?: number };
 
@@ -572,7 +572,7 @@ const AVAILABLE_SECTION_IDS = new Set<SectionId>(
 );
 
 export function isSettingsSectionAvailable(section: SectionId): boolean {
-  return AVAILABLE_SECTION_IDS.has(section) || (isMacDesktop() && ["downloads", "connections", "privacy"].includes(section));
+  return AVAILABLE_SECTION_IDS.has(section) || (hasNativeDesktopUx() && ["downloads", "connections", "privacy"].includes(section));
 }
 
 type SettingsOption = { label: string; section: SectionId; anchorTitle?: string; keywords?: string[] };
