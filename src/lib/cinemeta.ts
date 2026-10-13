@@ -67,7 +67,14 @@ export function isAddonNativeMeta(meta: Meta): boolean {
 }
 
 async function catalog(path: string, diagnostics?: RequestDiagnostics): Promise<Meta[]> {
-  const res = await fetch(`${CINEMETA}/catalog/${path}.json`);
+  let res: Response;
+  try {
+    res = await fetch(`${CINEMETA}/catalog/${path}.json`);
+  } catch {
+    // Unreachable (offline, filtered network) reads like any other failed catalog.
+    if (diagnostics) diagnostics.failed = true;
+    return [];
+  }
   if (!res.ok) { if (diagnostics) diagnostics.failed = true; return []; }
   const json = await res.json();
   return json.metas ?? [];

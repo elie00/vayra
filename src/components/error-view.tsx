@@ -19,9 +19,9 @@ export function showHarborError(error: HarborError): void {
 
 const APP_VERSION = __APP_VERSION__;
 
-function isNoisyError(reason: unknown, message?: string): boolean {
+export function isNoisyError(reason: unknown, message?: string): boolean {
   const r = reason as { name?: string; message?: string } | undefined;
-  const m = ((message || r?.message) ?? "").toLowerCase();
+  const m = ((message || r?.message || (typeof reason === "string" ? reason : "")) ?? "").toLowerCase();
   if (m.includes("resizeobserver loop")) return true;
   if (m.includes("non-error promise rejection")) return true;
   if (m.includes("the resource id") && m.includes("is invalid")) return true;
@@ -29,6 +29,9 @@ function isNoisyError(reason: unknown, message?: string): boolean {
   if (m.includes("the message port closed before a response was received")) return true;
   if (m.includes("script error")) return true;
   if (m.includes("network request failed")) return true;
+  // Connectivity, not a bug: the views report unreachable sources inline.
+  if (m.includes("error sending request for url")) return true;
+  if (m.includes("failed to fetch")) return true;
   if (m.includes("load failed") && m.length < 30) return true;
   if (r?.name === "AbortError") return true;
   if (r?.name === "NetworkError") return true;
