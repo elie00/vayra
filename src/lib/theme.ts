@@ -1,4 +1,4 @@
-import { isMacDesktop, isMobileTauri } from "@/lib/platform";
+import { desktopUx, hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
 import draculaPreview from "@/assets/theme-previews/dracula.png";
 import forestPreview from "@/assets/theme-previews/forest.png";
@@ -1653,8 +1653,11 @@ export const FONT_PAIRS: Record<FontPairId, FontPair> = {
     id: "system",
     name: "System UI",
     blurb: "Whatever your OS uses.",
-    display: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-    sans: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+    // Each OS resolves the first family it ships: San Francisco on macOS, the
+    // Windows 11 variable Segoe faces (with their display/text optical sizes),
+    // then system-ui on Linux.
+    display: '-apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif',
+    sans: '-apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif',
   },
 };
 
@@ -1759,7 +1762,7 @@ function resolveTokens(theme: ThemeSettings): Record<string, string> {
 }
 
 export function activeFontPair(theme: ThemeSettings): FontPairId {
-  if (isMacDesktop() && !theme.fontPairOverride) return "system";
+  if (hasNativeDesktopUx() && !theme.fontPairOverride) return "system";
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   return theme.fontPairOverride ? theme.fontPair : preset?.fontPair ?? theme.fontPair;
 }
@@ -1785,7 +1788,7 @@ export function applyTheme(theme: ThemeSettings): void {
   const cardStyle: ThemeCardStyle = preset?.cardStyle ?? "flat";
   const buttonStyle: ThemeButtonStyle = preset?.buttonStyle ?? "flat";
   root.dataset.themeLayout = layout;
-  root.dataset.macUx = isMacDesktop() ? "true" : "false";
+  root.dataset.desktopUx = desktopUx() ?? "none";
   root.dataset.themeCard = cardStyle;
   root.dataset.themeButton = buttonStyle;
   root.dataset.themeBokeh = preset?.bokeh ? "on" : "off";
@@ -1794,7 +1797,7 @@ export function applyTheme(theme: ThemeSettings): void {
 export function activeLayout(theme: ThemeSettings): ThemeLayout {
   // On mobile Tauri every theme uses the drawer-capable "sidebar" layout, since
   // that is the only chrome adapted for a phone (hamburger + slide-over drawer).
-  if (isMobileTauri() || isMacDesktop()) return "sidebar";
+  if (isMobileTauri() || hasNativeDesktopUx()) return "sidebar";
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   return preset?.layout ?? "sidebar";
 }

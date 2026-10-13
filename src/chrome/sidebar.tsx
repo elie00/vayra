@@ -15,7 +15,7 @@ import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useParental, type LockableTab } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
-import { isMacDesktop, isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { isExploreView, MAC_EXPLORE_VIEWS, MAC_PRIMARY_VIEWS, sanitizeMacPins } from "./mac-navigation";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 
@@ -51,7 +51,7 @@ export function Sidebar() {
         />
       )}
       <aside
-        data-mac-sidebar={isMacDesktop() ? "" : undefined}
+        data-desktop-sidebar={hasNativeDesktopUx() ? "" : undefined}
         data-harbor-nav-drawer={mobile ? "" : undefined}
         aria-hidden={chromeHidden || (mobile && !drawerOpen)}
         className={
@@ -188,7 +188,7 @@ function ScrollableNav({
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };
-  const mac = isMacDesktop();
+  const mac = hasNativeDesktopUx();
   const { update } = useSettings();
   const pins = sanitizeMacPins(settings.macPinnedViews);
   const visiblePrimary = (mac ? MAC_PRIMARY_VIEWS.map((id) => NAV_ITEMS.find((it) => it.id === id)!) : PRIMARY_NAV_ITEMS).filter(isItemVisible);

@@ -27,7 +27,7 @@ import {
   windowControlShortcut,
   windowZoomLabel,
 } from "@/lib/window";
-import { isMacDesktop, isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMacDesktop, isMobileTauri } from "@/lib/platform";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
 
@@ -41,9 +41,9 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const fullscreen = useWindowFullscreen();
   const maxed = useMaximized();
   if (chromeHidden && !connecting) return null;
-  const layout = isMacDesktop() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
+  const layout = hasNativeDesktopUx() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
-  const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !isMacDesktop()) || topKind === "picker";
+  const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !hasNativeDesktopUx()) || topKind === "picker";
   const hideSearch = view === "addons";
   // On mobile the primary nav is the bottom tab bar (MobileShell), so the header
   // reserves no rail space and shows no hamburger (the drawer is kept in the code
