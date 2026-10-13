@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
 import { SHORT_PLAYBACK_SEC } from "@/lib/dead-streams";
+import { isLocalUrl } from "@/lib/player/local-url";
 
 export function useStubDetection(params: {
   src: PlayerSrc;
@@ -15,6 +16,8 @@ export function useStubDetection(params: {
     if (!instantPlay) return;
     if (stubCheckedRef.current === src.url) return;
     if (src.meta.id?.startsWith("iptv:")) return;
+    // A file chosen from disk is never an addon's placeholder stub.
+    if (isLocalUrl(src.url)) return;
     const metaType = String(src.meta.type ?? "").toLowerCase();
     if (metaType && !["movie", "series", "anime"].includes(metaType)) return;
     if (/\.m3u8(\?|#|$)/i.test(src.url)) return;
