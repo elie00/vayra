@@ -414,6 +414,13 @@ VAYRA is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the
 > npm config set script-shell "C:\Program Files\Git\bin\bash.exe"
 > pnpm config set script-shell "C:\Program Files\Git\bin\bash.exe" --location=global
 > ```
+>
+> Without administrator rights, [portable-msvc](https://gist.github.com/mmozeiko/7f3162ec2988e81e56d5c4e22cde9977) unpacks the official MSVC and Windows SDK packages into your profile; put its `bin`, `INCLUDE` and `LIB` paths in your user environment. Git Bash ships a `/usr/bin/link` that shadows `link.exe`, so also pin the linker in `~/.cargo/config.toml`:
+>
+> ```toml
+> [target.x86_64-pc-windows-msvc]
+> linker = "C:/path/to/msvc/VC/Tools/MSVC/<version>/bin/Hostx64/x64/link.exe"
+> ```
 
 <details>
 <summary><b>Run in development</b></summary>
