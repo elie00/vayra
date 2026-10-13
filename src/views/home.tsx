@@ -800,6 +800,8 @@ export function Home({ active = true }: { active?: boolean }) {
       />
     );
 
+  const tmdbNudge = <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />;
+
   return (
     <main
       ref={scrollCb}
@@ -807,12 +809,15 @@ export function Home({ active = true }: { active?: boolean }) {
     >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="relative flex flex-col gap-12">
-          {hasNativeDesktopUx() && <MacPersonalSections items={cwItems} libraryItems={items} onDismiss={onDismissCw} />}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
-            <div className="pointer-events-auto">
-              <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />
+          {hasNativeDesktopUx() ? (
+            // The desktop home opens on its title, so the nudge sits below it
+            // instead of floating over it like it floats over the classic hero.
+            <MacPersonalSections items={cwItems} libraryItems={items} onDismiss={onDismissCw} notice={tmdbNudge} />
+          ) : (
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
+              <div className="pointer-events-auto">{tmdbNudge}</div>
             </div>
-          </div>
+          )}
           {editMode && (
             <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
               <div className="pointer-events-auto rounded-xl border border-edge-soft bg-canvas/95 px-3 py-2 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)] backdrop-blur-md">
