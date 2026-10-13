@@ -148,7 +148,7 @@ pub async fn download_file_valid(path: String, expected_bytes: u64) -> bool {
 
 #[tauri::command]
 pub async fn download_available_space(path: String) -> Result<u64, String> {
-    #[cfg(target_os = "macos")]
+    #[cfg(unix)]
     {
         tokio::task::spawn_blocking(move || {
             let path = std::ffi::CString::new(path).map_err(|_| "Invalid path".to_string())?;
@@ -158,10 +158,23 @@ pub async fn download_available_space(path: String) -> Result<u64, String> {
                 return Err("Storage information unavailable".to_string());
             }
             let info = unsafe { info.assume_init() };
-            Ok((info.f_bavail as u64).saturating_mul(info.f_frsize))
+            Ok((info.f_bavail as u64).saturating_mul(info.f_frsize as u64))
         }).await.map_err(|_| "Storage information unavailable".to_string())?
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(windows)]
+    {
+        tokio::task::spawn_blocking(move || {
+            use windows::core::PCWSTR;
+            use windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
+            let wide: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
+            let mut available = 0u64;
+            // Counts the space the current user may use, honouring disk quotas.
+            unsafe { GetDiskFreeSpaceExW(PCWSTR(wide.as_ptr()), Some(&mut available), None, None) }
+                .map_err(|_| "Storage information unavailable".to_string())?;
+            Ok(available)
+        }).await.map_err(|_| "Storage information unavailable".to_string())?
+    }
+    #[cfg(not(any(unix, windows)))]
     { let _ = path; Err("Storage information unavailable".to_string()) }
 }
 
@@ -454,6 +467,14 @@ mod tests {
         // An invalid path cannot be interpreted as an available destination.
         assert!(download_file_exists(format!("{}\0invalid", name)).await.is_err());
         tokio::fs::remove_file(path).await.unwrap();
+        std::fs::remove_dir(dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn available_space_reads_the_volume_and_rejects_missing_folders() {
+        let dir = fixture_dir("space");
+        assert!(download_available_space(dir.to_string_lossy().into_owned()).await.unwrap() > 0);
+        assert!(download_available_space(dir.join("absent").to_string_lossy().into_owned()).await.is_err());
         std::fs::remove_dir(dir).unwrap();
     }
 
