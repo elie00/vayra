@@ -5,11 +5,8 @@
 //! and every value on platforms without the limit, are stored as before.
 
 const MANIFEST_PREFIX: &str = "vayra-chunked:v1:";
-// Below the 1280-unit hard limit, with room to spare.
-#[cfg(windows)]
-const MAX_UTF16_UNITS: usize = 1200;
-#[cfg(not(windows))]
-const MAX_UTF16_UNITS: usize = usize::MAX;
+// Below the 1280-unit hard limit, with room to spare. Other stores have no limit.
+const MAX_UTF16_UNITS: Option<usize> = if cfg!(windows) { Some(1200) } else { None };
 
 fn chunk_user(user: &str, index: usize) -> String {
     format!("{user}#{index}")
@@ -76,10 +73,9 @@ pub fn get(service: &str, user: &str) -> keyring::Result<String> {
 
 pub fn set(service: &str, user: &str, value: &str) -> keyring::Result<()> {
     let previous = stored_chunks(service, user)?;
-    let parts = if value.encode_utf16().count() > MAX_UTF16_UNITS {
-        split_utf16(value, MAX_UTF16_UNITS)
-    } else {
-        Vec::new()
+    let parts = match MAX_UTF16_UNITS {
+        Some(max) if value.encode_utf16().count() > max => split_utf16(value, max),
+        _ => Vec::new(),
     };
     // Chunks go first so the manifest never points at parts that are not written yet.
     for (i, part) in parts.iter().enumerate() {
