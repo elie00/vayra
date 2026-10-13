@@ -26,6 +26,7 @@ import {
 } from "./settings/profile-store";
 import type { Settings, StreamingService } from "./settings/types";
 import { applyLiteRuntimeSettings } from "./lite/runtime-settings";
+import { reloadApp } from "./app-reload";
 
 export type {
   ContentCategory,
@@ -147,9 +148,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (tmdbLangRef.current === eff) return;
+    // Until storage is ready nothing is persisted, so reloading now would drop
+    // the change (the first-run locale cascade) and loop. The persist effect
+    // above runs first in the commit that flips storageReady.
+    if (!storageReady) return;
     tmdbLangRef.current = eff;
-    window.location.reload();
-  }, [settings.tmdbLanguage, settings.uiLanguage]);
+    reloadApp();
+  }, [settings.tmdbLanguage, settings.uiLanguage, storageReady]);
 
   const imgLangRef = useRef<string | null>(null);
   useEffect(() => {
