@@ -146,21 +146,14 @@ export function ErrorView() {
     >
       <div
         data-tauri-drag-region
-        className="pointer-events-none absolute start-5 top-4 z-10 flex select-none items-center gap-1 text-ink sm:start-7 sm:top-5"
+        className="pointer-events-none absolute start-5 top-4 z-10 flex select-none items-center gap-2.5 text-ink sm:start-7 sm:top-5"
       >
         <HarborMark className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
         <span
-          className="font-display text-[24px] font-medium leading-none tracking-tight sm:text-[28px]"
-          style={{ transform: "translateY(1px)" }}
+          className="whitespace-nowrap text-[19px] font-semibold leading-none tracking-[0.16em] sm:text-[21px]"
+          style={{ fontFamily: "var(--font-sans)", transform: "translateY(1px)" }}
         >
-          Harb
-          <span
-            className="inline-block"
-            style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-          >
-            o
-          </span>
-          r
+          VAYRA
         </span>
       </div>
 
