@@ -23,7 +23,13 @@ export function parseVayraAuthCallback(rawUrl: string): string | null {
   }
 }
 
+// The same callback can arrive through both the deep-link plugin and the native
+// single-instance event; its code exchanges only once, so a repeat would fail.
+const emittedVayraAuthUrls = new Set<string>();
+
 export function emitVayraAuthCallback(rawUrl: string): void {
+  if (emittedVayraAuthUrls.has(rawUrl)) return;
+  emittedVayraAuthUrls.add(rawUrl);
   pendingVayraAuthUrl = rawUrl;
   window.dispatchEvent(
     new CustomEvent<{ rawUrl: string }>(VAYRA_AUTH_EVENT, { detail: { rawUrl } }),
