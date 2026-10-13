@@ -2,22 +2,19 @@ import { useEffect } from "react";
 import { effectiveBinding, eventToBinding, isTypingTarget } from "@/lib/hotkeys";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
-import { isMacDesktop } from "@/lib/platform";
+import { desktopUx, type DesktopUx } from "@/lib/platform";
 
+/** The system Find shortcut each desktop expects: ⌘F on macOS, Ctrl+F on Windows. */
 export function matchesAppSearchShortcut(
   event: KeyboardEvent,
   binding: string,
-  mac = isMacDesktop(),
+  os: DesktopUx | null = desktopUx(),
 ): boolean {
   if (eventToBinding(event) === binding) return true;
-  return (
-    mac &&
-    event.metaKey &&
-    !event.ctrlKey &&
-    !event.altKey &&
-    !event.shiftKey &&
-    event.key.toLowerCase() === "f"
-  );
+  if (event.altKey || event.shiftKey || event.key.toLowerCase() !== "f") return false;
+  if (os === "mac") return event.metaKey && !event.ctrlKey;
+  if (os === "windows") return event.ctrlKey && !event.metaKey;
+  return false;
 }
 
 export function SearchHotkey() {
