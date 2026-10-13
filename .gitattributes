@@ -1,2 +1,6 @@
 # Shell scripts must keep LF on Windows checkouts (core.autocrlf=true) or bash rejects them.
 *.sh text eol=lf
+# The Tauri CLI and cargo rewrite these in LF; a CRLF checkout makes every run
+# dirty the tree and restarts `tauri dev` through its file watcher.
+Cargo.toml text eol=lf
+Cargo.lock text eol=lf
