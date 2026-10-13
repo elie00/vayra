@@ -407,6 +407,14 @@ VAYRA is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the
 > [!IMPORTANT]
 > Before your first build, run `pnpm run setup`. It fetches the native sidecars (libmpv, yt-dlp, ffmpeg, ffprobe) and the bundled fonts into `src-tauri/`. These are platform specific and not committed, so a fresh clone will not build without this step. On Linux, extracting the ffmpeg static build needs `tar` and `xz`.
 
+> [!NOTE]
+> **Windows.** Build with the `x86_64-pc-windows-msvc` target, as CI does: install the Visual Studio "Desktop development with C++" workload (MSVC build tools and a Windows 11 SDK) and add the wasm target with `rustup target add wasm32-unknown-unknown`. WebView2 ships with Windows 11. On managed machines where AppLocker blocks `.cmd` files in the user profile (`This program is blocked by group policy` from `pnpm test` or `pnpm dev`), make npm and pnpm run scripts through Git Bash, whose `node_modules/.bin` shims are plain shell scripts:
+>
+> ```bash
+> npm config set script-shell "C:\Program Files\Git\bin\bash.exe"
+> pnpm config set script-shell "C:\Program Files\Git\bin\bash.exe" --location=global
+> ```
+
 <details>
 <summary><b>Run in development</b></summary>
 
