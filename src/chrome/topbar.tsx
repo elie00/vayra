@@ -139,7 +139,8 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
               </span>
             </div>
           )}
-          {!onLiveRoot && !connecting && <BackChrome />}
+          {/* The desktop settings navigation carries its own Back button. */}
+          {!onLiveRoot && !connecting && !(view === "settings" && hasNativeDesktopUx()) && <BackChrome />}
         </div>
         <div
           {...dragProps}
