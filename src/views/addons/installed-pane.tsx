@@ -11,7 +11,7 @@ import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, subtitleFromManifest } from "./addons-utils";
 import { AddonDiagnosticButton } from "./diagnostic-button";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { UninstallAddonButton } from "./uninstall-addon-button";
 
 export function InstalledPane({
@@ -134,7 +134,7 @@ function InstalledRow({
         <span className="truncate text-[11.5px] text-ink-subtle">
           {enabled ? subtitleFromManifest(r) : t("Off · catalogs and streams hidden")}
         </span>
-        {isMacDesktop() && transportUrl && <AddonDiagnosticButton url={transportUrl} />}
+        {hasNativeDesktopUx() && transportUrl && <AddonDiagnosticButton url={transportUrl} />}
       </div>
       <HoverTooltip
           side="top"
