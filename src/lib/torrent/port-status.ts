@@ -5,7 +5,7 @@ import { t } from "@/lib/i18n";
 /** What the engine knows about peers reaching its listening port (torrent_engine_port_status). */
 export type PortStatus = {
   port: number | null;
-  upnp: "pending" | "forwarded" | "failed" | "no-service";
+  forwarding: "pending" | "forwarded" | "failed" | "no-service";
   incoming: number;
   incoming_ipv6: number;
   last_incoming_ms: number | null;
@@ -23,13 +23,13 @@ export function portStatusLine(s: PortStatus): PortStatusLine {
       : t("Port {port} open: {count} peers connected to VAYRA", { port, count: s.incoming });
     return { tone: "ok", text };
   }
-  switch (s.upnp) {
+  switch (s.forwarding) {
     case "forwarded":
       return { tone: "pending", text: t("Port {port} forwarded by your router; no peer has connected yet", { port }) };
     case "failed":
       return { tone: "bad", text: t("Your router refused to forward port {port}: peers cannot reach VAYRA", { port }) };
     case "no-service":
-      return { tone: "bad", text: t("Your router offers no UPnP forwarding: open port {port} by hand in its settings", { port }) };
+      return { tone: "bad", text: t("Your router offers no automatic forwarding (UPnP, NAT-PMP): open port {port} by hand in its settings", { port }) };
     default:
       return { tone: "pending", text: t("Port {port}: waiting for the router and for peers", { port }) };
   }

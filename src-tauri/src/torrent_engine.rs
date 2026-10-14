@@ -1,6 +1,7 @@
 mod cache_index;
 mod cache_sweep;
 mod dht_boot;
+mod nat_pmp;
 mod netcheck;
 mod peer_log;
 pub mod port_status;
@@ -36,6 +37,7 @@ struct EngineState {
     server: Option<tokio::task::JoinHandle<()>>,
     sweeper: Option<tokio::task::JoinHandle<()>>,
     peer_log: Option<tokio::task::JoinHandle<()>>,
+    nat_pmp: Option<tokio::task::JoinHandle<()>>,
     lan_server: Option<tokio::task::JoinHandle<()>>,
     lan_port: Option<u16>,
     lan_error: Option<String>,
@@ -55,6 +57,7 @@ fn engine() -> &'static Mutex<EngineState> {
             server: None,
             sweeper: None,
             peer_log: None,
+            nat_pmp: None,
             lan_server: None,
             lan_port: None,
             lan_error: None,
@@ -359,6 +362,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     });
     let sweeper = spawn_cache_sweeper(app.clone());
     let peer_log = peer_log::spawn(session.clone());
+    let nat_pmp = session.announce_port().map(nat_pmp::spawn);
     let mut st = engine().lock().unwrap();
     if let Some(old) = st.server.take() {
         old.abort();
@@ -367,6 +371,9 @@ async fn init(app: AppHandle) -> Result<(), String> {
         old.abort();
     }
     if let Some(old) = st.peer_log.take() {
+        old.abort();
+    }
+    if let Some(old) = st.nat_pmp.take() {
         old.abort();
     }
     st.session = Some(session);
@@ -379,6 +386,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     st.server = Some(server);
     st.sweeper = Some(sweeper);
     st.peer_log = Some(peer_log);
+    st.nat_pmp = nat_pmp;
     eprintln!("[torrent-engine] ready on 127.0.0.1:{port} (dht tier {dht_tier})");
     Ok(())
 }
@@ -413,6 +421,9 @@ pub fn stop() {
     }
     if let Some(peer_log) = st.peer_log.take() {
         peer_log.abort();
+    }
+    if let Some(nat_pmp) = st.nat_pmp.take() {
+        nat_pmp.abort();
     }
     st.session = None;
     st.dir = None;
@@ -835,7 +846,7 @@ pub struct CachedFileDto {
 pub struct PortStatusDto {
     /// The port peers are told to connect to, or None while the engine does not listen.
     port: Option<u16>,
-    upnp: port_status::Upnp,
+    forwarding: port_status::Forwarding,
     incoming: u64,
     incoming_ipv6: u64,
     last_incoming_ms: Option<u64>,
@@ -847,7 +858,7 @@ pub fn torrent_engine_port_status() -> PortStatusDto {
     let a = port_status::activity();
     PortStatusDto {
         port: current_session().and_then(|s| s.announce_port()),
-        upnp: a.upnp,
+        forwarding: a.forwarding,
         incoming: a.incoming,
         incoming_ipv6: a.incoming_ipv6,
         last_incoming_ms: a.last_incoming_ms,
