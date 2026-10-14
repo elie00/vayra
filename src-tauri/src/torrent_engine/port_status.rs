@@ -1,13 +1,13 @@
 //! Whether peers can reach the engine's listening port, from what librqbit reports
 //! through `tracing`: incoming connections it accepted, and how the UPnP forwarder
-//! fared with the router. No outside service is asked.
+//! fared with the router (or PCP/NAT-PMP, see `nat_pmp`). No outside service is asked.
 
 use std::sync::Mutex;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum Upnp {
-    /// Nothing heard from the forwarder yet.
+pub enum Forwarding {
+    /// Nothing heard from UPnP (or PCP/NAT-PMP) yet.
     #[default]
     Pending,
     Forwarded,
@@ -20,18 +20,23 @@ pub struct PortActivity {
     pub incoming: u64,
     pub incoming_ipv6: u64,
     pub last_incoming_ms: Option<u64>,
-    pub upnp: Upnp,
+    pub forwarding: Forwarding,
 }
 
 static ACTIVITY: Mutex<PortActivity> = Mutex::new(PortActivity {
     incoming: 0,
     incoming_ipv6: 0,
     last_incoming_ms: None,
-    upnp: Upnp::Pending,
+    forwarding: Forwarding::Pending,
 });
 
 pub fn activity() -> PortActivity {
     *ACTIVITY.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// PCP or NAT-PMP mapped the port where UPnP did not.
+pub fn set_forwarded() {
+    ACTIVITY.lock().unwrap_or_else(|e| e.into_inner()).forwarding = Forwarding::Forwarded;
 }
 
 /// librqbit's listener: one trace event per accepted incoming connection.
@@ -50,11 +55,11 @@ fn note(activity: &mut PortActivity, target: &str, message: &str, now_ms: u64) {
         }
     } else if target == UPNP_EVENTS {
         if message.starts_with("port forwarded") {
-            activity.upnp = Upnp::Forwarded;
+            activity.forwarding = Forwarding::Forwarded;
         } else if message.starts_with("failed to forward port") {
-            activity.upnp = Upnp::Failed;
+            activity.forwarding = Forwarding::Failed;
         } else if message.starts_with("no supported WANIPConnection service") {
-            activity.upnp = Upnp::NoService;
+            activity.forwarding = Forwarding::NoService;
         }
     }
 }
@@ -98,15 +103,15 @@ mod tests {
 
     #[test]
     fn follows_the_router_forwarding() {
-        assert_eq!(fold(&[("librqbit_upnp", "port forwarded")]).upnp, Upnp::Forwarded);
+        assert_eq!(fold(&[("librqbit_upnp", "port forwarded")]).forwarding, Forwarding::Forwarded);
         assert_eq!(
-            fold(&[("librqbit_upnp", "port forwarded"), ("librqbit_upnp", "failed to forward port: 500")]).upnp,
-            Upnp::Failed,
+            fold(&[("librqbit_upnp", "port forwarded"), ("librqbit_upnp", "failed to forward port: 500")]).forwarding,
+            Forwarding::Failed,
         );
         assert_eq!(
-            fold(&[("librqbit_upnp", "no supported WANIPConnection service at http://192.168.1.254/")]).upnp,
-            Upnp::NoService,
+            fold(&[("librqbit_upnp", "no supported WANIPConnection service at http://192.168.1.254/")]).forwarding,
+            Forwarding::NoService,
         );
-        assert_eq!(fold(&[("librqbit::session", "port forwarded")]).upnp, Upnp::Pending);
+        assert_eq!(fold(&[("librqbit::session", "port forwarded")]).forwarding, Forwarding::Pending);
     }
 }

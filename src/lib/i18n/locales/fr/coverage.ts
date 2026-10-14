@@ -347,7 +347,7 @@ const coverage: Record<string, string> = {
   "Port {port} open: {count} peers connected to VAYRA, {ipv6} over IPv6": "Port {port} ouvert : {count} pairs se sont connectés à VAYRA, dont {ipv6} en IPv6",
   "Port {port}: waiting for the router and for peers": "Port {port} : en attente de la box et des pairs",
   "The torrent engine is not listening yet": "Le moteur torrent n’écoute pas encore",
-  "Your router offers no UPnP forwarding: open port {port} by hand in its settings": "Ta box ne propose pas de redirection UPnP : ouvre le port {port} à la main dans ses réglages",
+  "Your router offers no automatic forwarding (UPnP, NAT-PMP): open port {port} by hand in its settings": "Ta box ne propose aucune redirection automatique (UPnP, NAT-PMP) : ouvre le port {port} à la main dans ses réglages",
   "Your router refused to forward port {port}: peers cannot reach VAYRA": "Ta box a refusé de rediriger le port {port} : les pairs ne peuvent pas joindre VAYRA",
   "Copy diagnostics grabs the engine status and your P2P settings as JSON, handy to paste into a bug report. The engine folder holds the DHT cache (dht.json) and active torrent data.": "Copier les diagnostics récupère l'état du moteur et vos réglages P2P au format JSON, pratique à coller dans un rapport de bug. Le dossier du moteur contient le cache DHT (dht.json) et les données des torrents actifs.",
   "Copy session key": "Copier la clé de session",
