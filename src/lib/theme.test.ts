@@ -30,7 +30,10 @@ describe("theme decisions", () => {
     for (const preset of ["obsidian", "sage", "ivory"] as const) {
       expect(activeFontPair({ ...DEFAULT_THEME, preset })).toBe("system");
     }
-    expect(FONT_PAIRS.system.display).toBe(FONT_PAIRS.system.sans);
+    // Same family; only Windows 11's Segoe UI Variable picks a display or text optical size.
+    expect(FONT_PAIRS.system.display.replace("Segoe UI Variable Display", "Segoe UI Variable Text")).toBe(
+      FONT_PAIRS.system.sans,
+    );
   });
 
   it("keeps an explicit font choice when switching palettes", () => {
