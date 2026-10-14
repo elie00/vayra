@@ -192,6 +192,8 @@ type ViewValue = {
   cancelLeavePartyForLive: () => void;
   addonDetailId: string | null;
   openAddonDetail: (id: string) => void;
+  /** Downloads above the current page, which Back then returns to. */
+  openDownloads: () => void;
   canGoBack: boolean;
   goBack: () => void;
   canGoForward: boolean;
@@ -217,6 +219,14 @@ function pushFrame(cur: Frame[], next: Frame): Frame[] {
   const out = [...cur, next];
   if (out.length <= STACK_MAX) return out;
   return [out[0], ...out.slice(out.length - STACK_MAX + 1)];
+}
+
+/** Downloads opened above the page that started a download, so Back returns to the
+ * series or film; the picker that started it is not worth going back to. */
+export function downloadsOver(cur: Frame[]): Frame[] {
+  const base = cur[cur.length - 1]?.kind === "picker" && cur.length > 1 ? cur.slice(0, -1) : cur;
+  if (base[base.length - 1]?.kind === "downloads") return base === cur ? cur : base;
+  return pushFrame(base, { kind: "downloads" });
 }
 
 function frameKey(f: Frame): string {
@@ -702,6 +712,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     });
   }, [setNavStack]);
 
+  const openDownloads = useCallback(() => {
+    if (!PLATFORM_CAPABILITIES.nativeDownloads) return;
+    setNavStack(downloadsOver);
+  }, [setNavStack]);
+
   const openStats = useCallback(() => {
     setNavStack((cur) => {
       const t = cur[cur.length - 1];
@@ -899,6 +914,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       cancelLeavePartyForLive,
       addonDetailId,
       openAddonDetail,
+      openDownloads,
       canGoBack,
       goBack: pop,
       canGoForward,
@@ -914,7 +930,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       setChromeHidden,
       setNavStack,
     }),
-    [view, setView, openSettings, sectionReq, top, topPath, service, openService, meta, metaLiveContext, metaEpisodeHint, metaSeasonEntryId, openMeta, promoteMetaToRoot, personId, openPerson, collectionId, openCollection, episodeDetail, openEpisodeDetail, matchDetailGame, openMatchDetail, openStats, openQueue, filter, openFilter, grid, openGrid, openCollections, stackKinds, awardType, openAward, openAnimeAward, homeResetTick, picker, openPicker, player, openPlayer, replacePlayerSrc, pendingLiveSrc, confirmLeavePartyForLive, cancelLeavePartyForLive, addonDetailId, openAddonDetail, canGoBack, pop, canGoForward, goForward, exitPlayback, exitPickerToDetail, exitPlayer, rememberScroll, recallScroll, rememberRowScroll, recallRowScroll, chromeHidden, setNavStack],
+    [view, setView, openSettings, sectionReq, top, topPath, service, openService, meta, metaLiveContext, metaEpisodeHint, metaSeasonEntryId, openMeta, promoteMetaToRoot, personId, openPerson, collectionId, openCollection, episodeDetail, openEpisodeDetail, matchDetailGame, openMatchDetail, openStats, openQueue, filter, openFilter, grid, openGrid, openCollections, stackKinds, awardType, openAward, openAnimeAward, homeResetTick, picker, openPicker, player, openPlayer, replacePlayerSrc, pendingLiveSrc, confirmLeavePartyForLive, cancelLeavePartyForLive, addonDetailId, openAddonDetail, openDownloads, canGoBack, pop, canGoForward, goForward, exitPlayback, exitPickerToDetail, exitPlayer, rememberScroll, recallScroll, rememberRowScroll, recallRowScroll, chromeHidden, setNavStack],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
