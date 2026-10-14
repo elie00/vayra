@@ -24,6 +24,11 @@ const SERVER_PORT: u16 = 5351;
 const LIFETIME_SECS: u32 = 7200;
 /// UPnP usually forwards within seconds; only after this does PCP/NAT-PMP step in.
 const UPNP_GRACE: Duration = Duration::from_secs(45);
+/// Bound on one PCP/NAT-PMP attempt, whatever the network does with the packets.
+const ATTEMPT_TIMEOUT: Duration = Duration::from_secs(10);
+/// After a failed attempt, try again later: the router may come back, or macOS may
+/// only now let the app reach the local network.
+const RETRY_AFTER: Duration = Duration::from_secs(5 * 60);
 
 /// The default IPv4 gateway in `route -n get default` output (macOS, BSD).
 #[cfg(any(target_os = "macos", target_os = "ios", test))]
@@ -170,35 +175,48 @@ async fn map(gateway: SocketAddr, port: u16, lifetime: u32) -> Result<Mapping, S
     parse_natpmp(&exchange(&socket, &natpmp_request(port, lifetime)).await?)
 }
 
-/// Keep the listening port mapped through PCP/NAT-PMP if UPnP has not forwarded it.
+/// One mapping request to the router, bounded in time.
+async fn attempt(gateway: SocketAddr, port: u16) -> Result<Mapping, String> {
+    tokio::time::timeout(ATTEMPT_TIMEOUT, map(gateway, port, LIFETIME_SECS))
+        .await
+        .unwrap_or_else(|_| Err("no answer in time".into()))
+}
+
+/// Keep the listening port mapped through PCP/NAT-PMP while UPnP has not forwarded it.
 pub fn spawn(port: u16) -> tokio::task::JoinHandle<()> {
+    use super::port_status::{activity, set_forwarded, Forwarding};
     tokio::spawn(async move {
         tokio::time::sleep(UPNP_GRACE).await;
-        if super::port_status::activity().forwarding == super::port_status::Forwarding::Forwarded {
+        if activity().forwarding == Forwarding::Forwarded {
             return;
         }
         let Some(gateway) = tokio::task::spawn_blocking(default_gateway).await.ok().flatten() else {
             eprintln!("[torrent-engine] no default gateway for PCP/NAT-PMP");
             return;
         };
-        let mut mapped = false;
+        eprintln!("[torrent-engine] UPnP has not forwarded port {port}; asking {gateway} through PCP/NAT-PMP");
+        let router = SocketAddr::from((gateway, SERVER_PORT));
+        // Logged on changes only: a router without PCP/NAT-PMP is retried quietly.
+        let mut mapped: Option<bool> = None;
         loop {
-            match map(SocketAddr::from((gateway, SERVER_PORT)), port, LIFETIME_SECS).await {
+            match attempt(router, port).await {
                 Ok(m) => {
-                    if !mapped {
+                    if mapped != Some(true) {
                         eprintln!("[torrent-engine] port {port} forwarded through {:?} (external {})", m.method, m.external_port);
-                        mapped = true;
                     }
-                    super::port_status::set_forwarded();
+                    mapped = Some(true);
+                    set_forwarded();
                     tokio::time::sleep((m.lifetime / 2).max(Duration::from_secs(60))).await;
                 }
-                Err(e) if !mapped => {
-                    eprintln!("[torrent-engine] PCP/NAT-PMP unavailable at {gateway}: {e}");
-                    return;
-                }
                 Err(e) => {
-                    eprintln!("[torrent-engine] PCP/NAT-PMP renewal failed: {e}");
-                    tokio::time::sleep(Duration::from_secs(60)).await;
+                    if mapped != Some(false) {
+                        eprintln!("[torrent-engine] PCP/NAT-PMP failed at {gateway}: {e}; retrying every 5 min");
+                    }
+                    mapped = Some(false);
+                    tokio::time::sleep(RETRY_AFTER).await;
+                    if activity().forwarding == Forwarding::Forwarded {
+                        return;
+                    }
                 }
             }
         }
@@ -260,6 +278,16 @@ mod tests {
             mapping,
             Mapping { method: Method::NatPmp, external_port: 16882, lifetime: Duration::from_secs(7200) }
         );
+    }
+
+    /// A router that never answers fails the attempt within seconds instead of hanging.
+    #[tokio::test]
+    async fn gives_up_on_a_silent_router() {
+        let router = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let started = std::time::Instant::now();
+        let result = attempt(router.local_addr().unwrap(), 16881).await;
+        assert!(result.is_err());
+        assert!(started.elapsed() < ATTEMPT_TIMEOUT + Duration::from_secs(1));
     }
 
     /// A PCP router maps the port at once.
