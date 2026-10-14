@@ -10,6 +10,7 @@ import { runPipeline, type PipelineResult } from "@/lib/streams/pipeline";
 import type { Stream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
 import { parseRuntimeMinutes, stampAddonOrder } from "./picker-utils";
+import { readSwarmPeers } from "@/lib/torrent/swarm-health";
 
 type Settings = ReturnType<typeof useSettings>["settings"];
 
@@ -158,6 +159,7 @@ export function usePipelineResult({
           preferAddonId: meta.addonOrigin?.id,
           preferredReleaseGroup: prevGroup,
           respectAddonOrder: settings.streamSort === "addon",
+          swarmPeers: readSwarmPeers(),
         },
       },
       ac.signal,
