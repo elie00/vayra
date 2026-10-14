@@ -56,7 +56,7 @@ import { usePipelineResult } from "./play-picker/use-pipeline-result";
 import { useStreamIds } from "./play-picker/use-stream-ids";
 import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { useDownloads } from "@/lib/download/downloads-store";
 import { completedDownloadFor, validatedDownloadSource } from "@/lib/download/offline-playback";
 import { LocalStreamCard } from "./play-picker/local-stream-card";
@@ -100,7 +100,7 @@ export function PlayPicker({
   const inSession = roomSnapshot.state === "joined";
   const downloads = useDownloads();
   const completedDownload = completedDownloadFor(downloads, meta.id, episode);
-  const [offlineState, setOfflineState] = useState<"checking" | "stream" | "opened">(() => isMacDesktop() && autoPlay && !isDownload && !inSession && !attempt && completedDownload ? "checking" : "stream");
+  const [offlineState, setOfflineState] = useState<"checking" | "stream" | "opened">(() => hasNativeDesktopUx() && autoPlay && !isDownload && !inSession && !attempt && completedDownload ? "checking" : "stream");
   const resolvedImdb = useImdbId(meta, settings.tmdbKey);
   useEffect(() => {
     prefetchSegments(meta, episode);

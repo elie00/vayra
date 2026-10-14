@@ -125,14 +125,18 @@ export function isPlaceholderName(name: string | null | undefined): boolean {
   return /^Guest \d+$/.test(trimmed);
 }
 
-function defaultPrimaryName(): string {
+/** The name chosen for watch parties, when the viewer picked a real one. */
+function chosenTogetherName(): string | null {
   try {
     const existing = localStorage.getItem(TOGETHER_NAME_KEY)?.trim();
-    if (existing && !isPlaceholderName(existing)) return existing;
+    return existing && !isPlaceholderName(existing) ? existing : null;
   } catch {
-    return generateGuestName();
+    return null;
   }
-  return generateGuestName();
+}
+
+function defaultPrimaryName(): string {
+  return chosenTogetherName() ?? generateGuestName();
 }
 
 function readSettingsIdentity(): { color: string | null; avatar: string | null } {
@@ -228,7 +232,7 @@ function readState(): ProfilesState {
     }
     const primary = parsed.profiles.find((p) => p.isPrimary);
     const primaryId = primary?.id ?? null;
-    const fallbackName = defaultPrimaryName();
+    const chosenName = chosenTogetherName();
     const identity = readSettingsIdentity();
     const legacyParental = readLegacyParental();
     const migrated = parsed.profiles.map((p) => {
@@ -255,7 +259,11 @@ function readState(): ProfilesState {
         };
       }
       if (p.isPrimary) {
-        if (isPlaceholderName(p.name)) next.name = fallbackName;
+        // A guest name stays put: drawing a new one on every launch renamed
+        // the profile each time the app opened.
+        if (isPlaceholderName(p.name)) {
+          next.name = chosenName ?? (/^Guest \d+$/.test(p.name?.trim() ?? "") ? p.name : generateGuestName());
+        }
         if (identity.color) next.color = identity.color;
         if (identity.avatar != null && !identity.avatar.startsWith("/kids/avatars/")) {
           next.avatar = identity.avatar;

@@ -7,7 +7,7 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { ToggleRow } from "@/views/settings/shared";
 import { invoke } from "@tauri-apps/api/core";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { getUiLanguage } from "@/lib/i18n";
 import { DownloadPolicyControls } from "./policy-controls";
 
@@ -37,7 +37,7 @@ export function DownloadDirBar() {
   const [freeBytes, setFreeBytes] = useState<number | null>(null);
   const [spaceLoading, setSpaceLoading] = useState(false);
   useEffect(() => {
-    if (!isMacDesktop() || !current) { setFreeBytes(null); setSpaceLoading(false); return; }
+    if (!hasNativeDesktopUx() || !current) { setFreeBytes(null); setSpaceLoading(false); return; }
     let alive = true;
     setFreeBytes(null);
     setSpaceLoading(true);
@@ -123,8 +123,8 @@ export function DownloadDirBar() {
         value={settings.downloadCreateFolders}
         onChange={(v) => update({ downloadCreateFolders: v })}
       />
-      {isMacDesktop() && current && <p role="status" className="text-[13px] tabular-nums text-ink-muted">{spaceLoading ? t("Loading…") : freeBytes == null ? t("Available space could not be determined") : t("{size} GB available", { size: (freeBytes / 1024 ** 3).toLocaleString(getUiLanguage(), { maximumFractionDigits: 1 }) })}</p>}
-      {isMacDesktop() && <DownloadPolicyControls />}
+      {hasNativeDesktopUx() && current && <p role="status" className="text-[13px] tabular-nums text-ink-muted">{spaceLoading ? t("Loading…") : freeBytes == null ? t("Available space could not be determined") : t("{size} GB available", { size: (freeBytes / 1024 ** 3).toLocaleString(getUiLanguage(), { maximumFractionDigits: 1 }) })}</p>}
+      {hasNativeDesktopUx() && <DownloadPolicyControls />}
     </div>
   );
 }

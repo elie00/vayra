@@ -22,7 +22,7 @@ import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { syncEngineCacheOptions } from "@/lib/torrent/engine-config-sync";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isMacDesktop, isMobileDevice, isMobileTauri, isWeb } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileDevice, isMobileTauri, isWeb } from "@/lib/platform";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { DevErrorTrigger } from "@/components/dev-error-trigger";
@@ -461,7 +461,7 @@ function Shell() {
   const kid = activeProfile?.kid ?? null;
   const preview = useThemePreview();
   const baseLayout = useMemo(
-    () => (isMacDesktop() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme)),
+    () => (hasNativeDesktopUx() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],
   );
   const layout = kid ? "sidebar" : baseLayout;
@@ -976,7 +976,7 @@ function Shell() {
 
   return (
     <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
-      {!settingsTop && !playerActive && (!liveTop || isMacDesktop()) && !pickerTop && layout === "sidebar" && <Sidebar />}
+      {!settingsTop && !playerActive && (!liveTop || hasNativeDesktopUx()) && !pickerTop && layout === "sidebar" && <Sidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
       {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}

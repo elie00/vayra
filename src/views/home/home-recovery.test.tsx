@@ -37,7 +37,7 @@ vi.mock("@/lib/anime-detect", () => ({ useDetectedAnimeVersion: () => 0, detectA
 vi.mock("@/lib/cw-dismiss", () => ({ useCwDismissVersion: () => 0, isCwDismissed: () => false, dismissCw: vi.fn() }));
 vi.mock("@/lib/hover-preview/store", () => ({ publishResumeStates: vi.fn() }));
 vi.mock("@/lib/view", () => ({ useScrollMemory: vi.fn(), useView: () => ({ homeResetTick: 0 }) }));
-vi.mock("@/lib/platform", async (original) => ({ ...await original<typeof import("@/lib/platform")>(), isMacDesktop: () => true, isMobileTauri: () => false }));
+vi.mock("@/lib/platform", async (original) => ({ ...await original<typeof import("@/lib/platform")>(), isMacDesktop: () => true, hasNativeDesktopUx: () => true, isMobileTauri: () => false }));
 vi.mock("@/views/anime", () => ({ isAnimeRow: () => false }));
 vi.mock("./hooks/use-cw-advance", () => ({ useCwAdvance: () => fixture.empty }));
 vi.mock("./hooks/use-pinned-rows", () => ({ usePinnedRows: () => fixture.empty }));

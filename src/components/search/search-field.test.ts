@@ -4,8 +4,8 @@ import { afterEach, expect, it } from "vitest";
 
 afterEach(() => { document.head.innerHTML = ""; document.body.innerHTML = ""; delete document.documentElement.dataset.os; });
 
-it("moves Mac search focus to the rounded wrapper without removing other focus indicators", () => {
-  document.documentElement.dataset.os = "macos";
+it.each(["macos", "windows"])("moves %s search focus to the rounded wrapper without removing other focus indicators", (os) => {
+  document.documentElement.dataset.os = os;
   const style = document.createElement("style");
   // jsdom does not resolve selector specificity like a browser, so test the
   // focused states with the base rule first; native WebKit QA checks the cascade.

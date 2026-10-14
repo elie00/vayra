@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Film } from "lucide-react";
 import { Row } from "@/components/row";
 import { PickCard } from "@/components/pick-card";
@@ -18,7 +18,7 @@ import type { TraktItem } from "@/lib/trakt/types";
 import { LumaResumeCard } from "./luma-resume-section";
 import { unifiedResumes } from "@/lib/unified-resumes";
 
-export function MacPersonalSections({ items, libraryItems, onDismiss }: { items: LibraryItem[]; libraryItems: LibraryItem[]; onDismiss: (item: LibraryItem) => void }) {
+export function MacPersonalSections({ items, libraryItems, onDismiss, notice }: { items: LibraryItem[]; libraryItems: LibraryItem[]; onDismiss: (item: LibraryItem) => void; notice?: ReactNode }) {
   const t = useT();
   const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
@@ -45,6 +45,7 @@ export function MacPersonalSections({ items, libraryItems, onDismiss }: { items:
   const [error, setError] = useState("");
   return <section aria-label={t("Your viewing")} className="flex flex-col gap-8">
     <header><h1 className="mac-page-title">{t("Home")}</h1><p className="mt-2 text-[14px] text-ink-muted">{t("Your next viewing, right where you left it.")}</p></header>
+    {notice}
     {resumes.length > 0 && <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="home:mac:resume">{resumes.map((resume) => resume.kind === "local" ? <LumaResumeCard key={`local:${resume.entry.id}`} entry={resume.entry} announce={setError} /> : <ContinueCard key={`connected:${resume.item._id}`} item={resume.item} onDismiss={onDismiss} />)}</Row>}
     {!resumes.length && <p className="rounded-2xl bg-elevated p-5 text-[14px] text-ink-muted">{t("Start a video and find your progress here next time.")}</p>}
     <Row title={t("My Watchlist")} min={150} scrollKey="home:mac:watchlist" headerRight={<button className="mac-secondary-button" onClick={() => setView("library")}>{t("My library")}</button>}>

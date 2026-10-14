@@ -1,6 +1,6 @@
 import { Github } from "lucide-react";
 import { LanguagePreferencesSummary } from "./language-panel/preferences-summary";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { useState } from "react";
 import { Dropdown, type DropdownOption } from "@/components/dropdown";
 import { useSettings } from "@/lib/settings";
@@ -41,7 +41,7 @@ export function LanguagePanel() {
   const [blockDraft, setBlockDraft] = useState(settings.trackBlockWords.join(", "));
   return (
     <>
-    {isMacDesktop() && <LanguagePreferencesSummary />}
+    {hasNativeDesktopUx() && <LanguagePreferencesSummary />}
     <DisplayLanguageSection />
     <Section
       title={t("Subtitle languages")}

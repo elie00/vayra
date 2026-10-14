@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { STORAGE_KEY } from "./defaults";
 import type { Settings } from "./types";
 import { recordSettingsCheckpoint } from "./history";
-import { isMacDesktop } from "../platform";
+import { hasNativeDesktopUx } from "../platform";
 import { flushSecretVault, vaultActive, withoutSecrets } from "./secret-vault";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -27,7 +27,7 @@ export async function writeSettingsFile(content: string): Promise<boolean> {
 }
 
 export async function persistSettings(settings: Settings): Promise<void> {
-  if (isMacDesktop()) await recordSettingsCheckpoint(settings);
+  if (hasNativeDesktopUx()) await recordSettingsCheckpoint(settings);
   const { backgroundImage: _drop, ...themeRest } = settings.theme;
   void _drop;
   const serializable = { ...settings, theme: themeRest } as Settings;
