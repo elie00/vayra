@@ -1,6 +1,9 @@
 use tauri::Manager;
 
 #[cfg(desktop)]
+use crate::credential_chunks;
+
+#[cfg(desktop)]
 const KEYRING_SERVICE: &str = "app.vayra";
 const KEYRING_USER: &str = "settings-secrets-v1";
 #[cfg(desktop)]
@@ -76,17 +79,15 @@ fn migrate_legacy_settings(app: &tauri::AppHandle, new_path: &std::path::Path) {
     }
 }
 
-/// Read a secret from the legacy Harbor keyring service and copy it forward into
+/// Read a secret from a legacy Harbor keyring service and copy it forward into
 /// the new app.vayra entry. Called only when the new entry is absent, so the
 /// copy-forward is idempotent. Returns the migrated value, or None when the
 /// legacy entry is also absent. Writing the new entry is best-effort.
 #[cfg(desktop)]
-fn migrate_secret(user: &str, new_entry: &keyring::Entry) -> Result<Option<String>, String> {
-    let legacy = keyring::Entry::new(LEGACY_KEYRING_SERVICE, user)
-        .map_err(|e| format!("credential entry: {e}"))?;
-    match legacy.get_password() {
+fn migrate_secret(legacy_service: &str, service: &str, user: &str) -> Result<Option<String>, String> {
+    match credential_chunks::get(legacy_service, user) {
         Ok(value) => {
-            let _ = new_entry.set_password(&value);
+            let _ = credential_chunks::set(service, user, &value);
             Ok(Some(value))
         }
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -94,20 +95,12 @@ fn migrate_secret(user: &str, new_entry: &keyring::Entry) -> Result<Option<Strin
     }
 }
 
-/// Same as [`migrate_secret`] for the per-account auth keyring service.
+/// Reads a secret, carrying it forward from the legacy service when absent.
 #[cfg(desktop)]
-fn migrate_auth_secret(
-    account: &str,
-    new_entry: &keyring::Entry,
-) -> Result<Option<String>, String> {
-    let legacy = keyring::Entry::new(LEGACY_AUTH_KEYRING_SERVICE, account)
-        .map_err(|e| format!("credential entry: {e}"))?;
-    match legacy.get_password() {
-        Ok(value) => {
-            let _ = new_entry.set_password(&value);
-            Ok(Some(value))
-        }
-        Err(keyring::Error::NoEntry) => Ok(None),
+fn read_secret(legacy_service: &str, service: &str, user: &str) -> Result<Option<String>, String> {
+    match credential_chunks::get(service, user) {
+        Ok(value) => Ok(Some(value)),
+        Err(keyring::Error::NoEntry) => migrate_secret(legacy_service, service, user),
         Err(e) => Err(format!("credential read: {e}")),
     }
 }
@@ -141,13 +134,7 @@ pub fn settings_write(app: tauri::AppHandle, content: String) -> Result<(), Stri
 pub fn settings_secrets_read() -> Result<Option<String>, String> {
     #[cfg(desktop)]
     {
-        let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
-            .map_err(|e| format!("credential entry: {e}"))?;
-        match entry.get_password() {
-            Ok(value) => Ok(Some(value)),
-            Err(keyring::Error::NoEntry) => migrate_secret(KEYRING_USER, &entry),
-            Err(e) => Err(format!("credential read: {e}")),
-        }
+        read_secret(LEGACY_KEYRING_SERVICE, KEYRING_SERVICE, KEYRING_USER)
     }
     #[cfg(target_os = "android")]
     {
@@ -163,10 +150,7 @@ pub fn settings_secrets_read() -> Result<Option<String>, String> {
 pub fn settings_secrets_write(content: String) -> Result<(), String> {
     #[cfg(desktop)]
     {
-        let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
-            .map_err(|e| format!("credential entry: {e}"))?;
-        entry
-            .set_password(&content)
+        credential_chunks::set(KEYRING_SERVICE, KEYRING_USER, &content)
             .map_err(|e| format!("credential write: {e}"))
     }
     #[cfg(target_os = "android")]
@@ -185,13 +169,7 @@ pub fn auth_secret_read(account: String) -> Result<Option<String>, String> {
     let account = credential_account(&account)?;
     #[cfg(desktop)]
     {
-        let entry = keyring::Entry::new(AUTH_KEYRING_SERVICE, account)
-            .map_err(|e| format!("credential entry: {e}"))?;
-        match entry.get_password() {
-            Ok(value) => Ok(Some(value)),
-            Err(keyring::Error::NoEntry) => migrate_auth_secret(account, &entry),
-            Err(e) => Err(format!("credential read: {e}")),
-        }
+        read_secret(LEGACY_AUTH_KEYRING_SERVICE, AUTH_KEYRING_SERVICE, account)
     }
     #[cfg(target_os = "android")]
     {
@@ -209,13 +187,10 @@ pub fn auth_secret_write(account: String, content: Option<String>) -> Result<(),
     let account = credential_account(&account)?;
     #[cfg(desktop)]
     {
-        let entry = keyring::Entry::new(AUTH_KEYRING_SERVICE, account)
-            .map_err(|e| format!("credential entry: {e}"))?;
         match content {
-            Some(value) => entry
-                .set_password(&value)
+            Some(value) => credential_chunks::set(AUTH_KEYRING_SERVICE, account, &value)
                 .map_err(|e| format!("credential write: {e}")),
-            None => match entry.delete_credential() {
+            None => match credential_chunks::delete(AUTH_KEYRING_SERVICE, account) {
                 Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
                 Err(e) => Err(format!("credential delete: {e}")),
             },

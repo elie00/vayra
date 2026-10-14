@@ -132,6 +132,25 @@ body {
   background: var(--color-raised);
 }
 
+/* Windows 11 scrollbars: a thin rail that thickens under the pointer. */
+html[data-os="windows"] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+html[data-os="windows"] ::-webkit-scrollbar-thumb {
+  border: 4px solid transparent;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--color-ink) 26%, transparent);
+  background-clip: padding-box;
+}
+html[data-os="windows"] ::-webkit-scrollbar-thumb:hover {
+  border-width: 2px;
+  background-color: color-mix(in srgb, var(--color-ink) 45%, transparent);
+}
+html[data-os="windows"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @keyframes harbor-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }

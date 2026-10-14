@@ -96,7 +96,7 @@ check(
 );
 check(
   "macOS app search convention",
-  /event\.metaKey/.test(searchHotkey) && /event\.key\.toLowerCase\(\) === "f"/.test(searchHotkey),
+  /os === "mac"\) return event\.metaKey/.test(searchHotkey) && /event\.key\.toLowerCase\(\) [!=]== "f"/.test(searchHotkey),
   "src/components/search/search-hotkey.tsx",
   /matchesAppSearchShortcut/,
   "macOS needs Command+F as an app-search shortcut",

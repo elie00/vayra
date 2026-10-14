@@ -13,9 +13,9 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 it("keeps one canvas without a divider or selected tile while retaining motion", () => {
   const css = readFileSync("src/styles/mac-ux.css", "utf8");
-  expect(css).toContain("[data-mac-sidebar] { border-inline-end: 0; background: var(--color-canvas); }");
+  expect(css).toContain("[data-desktop-sidebar] { border-inline-end: 0; background: var(--color-canvas); }");
   expect(css).toContain("[data-vayra-nav][data-active] { background: transparent;");
-  expect(css).not.toContain("[data-mac-sidebar]::after");
+  expect(css).not.toContain("[data-desktop-sidebar]::after");
   expect(css).toContain(":hover [data-nav-icon]");
   expect(css).toContain(":focus-visible [data-nav-icon]");
   expect(css).toContain("prefers-reduced-motion: reduce");

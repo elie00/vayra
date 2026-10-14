@@ -39,6 +39,8 @@ mod cast;
 mod cast;
 #[cfg(desktop)]
 mod cast_server;
+#[cfg(desktop)]
+mod credential_chunks;
 #[cfg(mobile)]
 #[path = "mobile_stubs/cast_server.rs"]
 mod cast_server;

@@ -31,7 +31,7 @@ import { resetOmdbBudget } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { MacSettingsNav } from "./settings/mac-settings-nav";
 import { MacConnectionsPanel, MacDownloadsPanel, MacPrivacyPanel } from "./settings/mac-panels";
 
@@ -158,7 +158,7 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   const [active, setActive] = useState<SectionId>(
     requestedInitialSection && isSettingsSectionAvailable(requestedInitialSection)
       ? requestedInitialSection
-      : isMacDesktop() ? "basics" : "account",
+      : hasNativeDesktopUx() ? "basics" : "account",
   );
   const [relayMode, setRelayMode] = useState<RelayMode>("panel");
   const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
@@ -253,7 +253,7 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   return (
     <SettingsActiveContext.Provider value={{ setActive }}>
     <div className="flex h-full bg-canvas max-sm:flex-col">
-      {isMacDesktop() ? <MacSettingsNav active={active} onChange={handleNav} /> : <SettingsNav active={active} onChange={handleNav} />}
+      {hasNativeDesktopUx() ? <MacSettingsNav active={active} onChange={handleNav} /> : <SettingsNav active={active} onChange={handleNav} />}
       <div className="hidden shrink-0 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] max-sm:block">
         <SettingsTabs active={active} onChange={handleNav} />
       </div>
@@ -264,8 +264,8 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
         <div data-tauri-drag-region className="mx-auto flex max-w-3xl flex-col gap-10 px-12 max-sm:px-4 max-sm:gap-6">
           {!(active === "relay" && relayMode !== "panel") && (
             <header className="flex flex-col gap-2">
-              <h1 className={isMacDesktop() ? "mac-page-title" : "font-display text-[44px] font-medium leading-[1.05] tracking-tight text-ink"}>
-                {t(isMacDesktop() && active === "basics" ? "Overview" : SECTION_META[active].label)}
+              <h1 className={hasNativeDesktopUx() ? "mac-page-title" : "font-display text-[44px] font-medium leading-[1.05] tracking-tight text-ink"}>
+                {t(hasNativeDesktopUx() && active === "basics" ? "Overview" : SECTION_META[active].label)}
               </h1>
               <p className="text-[15px] text-ink-muted">{t(SECTION_META[active].sub)}</p>
             </header>

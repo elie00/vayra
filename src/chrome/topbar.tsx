@@ -27,7 +27,7 @@ import {
   windowControlShortcut,
   windowZoomLabel,
 } from "@/lib/window";
-import { isMacDesktop, isMobileTauri } from "@/lib/platform";
+import { desktopUx, hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
 
@@ -41,9 +41,9 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const fullscreen = useWindowFullscreen();
   const maxed = useMaximized();
   if (chromeHidden && !connecting) return null;
-  const layout = isMacDesktop() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
+  const layout = hasNativeDesktopUx() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
-  const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !isMacDesktop()) || topKind === "picker";
+  const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !hasNativeDesktopUx()) || topKind === "picker";
   const hideSearch = view === "addons";
   // On mobile the primary nav is the bottom tab bar (MobileShell), so the header
   // reserves no rail space and shows no hamburger (the drawer is kept in the code
@@ -139,7 +139,8 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
               </span>
             </div>
           )}
-          {!onLiveRoot && !connecting && <BackChrome />}
+          {/* The desktop settings navigation carries its own Back button. */}
+          {!onLiveRoot && !connecting && !(view === "settings" && hasNativeDesktopUx()) && <BackChrome />}
         </div>
         <div
           {...dragProps}
@@ -340,20 +341,20 @@ function SearchPill() {
   const { settings } = useSettings();
   const t = useT();
   const binding = effectiveBinding("globalSearchFocus", settings.hotkeys ?? {});
-  const mac = isMacDesktop();
+  const os = desktopUx();
 
   return (
     <button
       type="button"
       data-tauri-drag-region="false"
-      aria-keyshortcuts={mac ? "Meta+F" : undefined}
+      aria-keyshortcuts={os === "mac" ? "Meta+F" : os === "windows" ? "Control+F" : undefined}
       onClick={() => setOpen(true)}
       className="flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/60 bg-elevated/80 px-5 text-start opacity-80 transition-[opacity,background-color] duration-200 hover:bg-elevated hover:opacity-100"
     >
       <Search size={16} strokeWidth={1.75} className="text-ink-subtle" />
       <span className="flex-1 truncate text-[14px] text-ink-subtle">{t("search.placeholder")}</span>
       <kbd className="hidden shrink-0 rounded-md border border-edge-soft bg-canvas/50 px-1.5 py-0.5 font-mono text-[10.5px] font-medium text-ink-subtle sm:inline">
-        {mac ? "⌘ F" : formatBindingForDisplay(binding)}
+        {os === "mac" ? "⌘ F" : os === "windows" ? "Ctrl F" : formatBindingForDisplay(binding)}
       </kbd>
     </button>
   );

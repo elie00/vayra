@@ -17,7 +17,7 @@ vi.mock("@/components/card-art-backdrop", () => ({ CardArtBackdrop: () => null }
 vi.mock("@/components/hover-tooltip", () => ({ HoverTooltip: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("./diagnostic-button", () => ({ AddonDiagnosticButton: () => null }));
 vi.mock("./tag-row", () => ({ TagRow: () => null }));
-vi.mock("@/lib/platform", () => ({ isMacDesktop: () => false }));
+vi.mock("@/lib/platform", () => ({ isMacDesktop: () => false, hasNativeDesktopUx: () => false }));
 
 const fixture = { installed: true, transportUrl: "https://example.invalid/manifest.json", manifest: { id: "fixture", name: "Fixture addon", resources: [], types: [] } } as unknown as ResolvedAddon;
 let host: HTMLDivElement;
