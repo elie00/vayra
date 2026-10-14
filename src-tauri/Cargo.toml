@@ -83,3 +83,4 @@ core-foundation = "0.10"
 
 [patch.crates-io]
 librqbit-upnp = { path = "vendor/librqbit-upnp" }
+librqbit-dualstack-sockets = { path = "vendor/librqbit-dualstack-sockets" }
