@@ -3811,19 +3811,6 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/librqbit-dualstack-sockets/librqbit-dualstack-sockets-0.7.0.crate",
-        "sha256": "f7189f1ff66ca75055137a38b062ba7df9691d071b7172e5090997c62eb4b4de",
-        "dest": "cargo/vendor/librqbit-dualstack-sockets-0.7.0"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": \"f7189f1ff66ca75055137a38b062ba7df9691d071b7172e5090997c62eb4b4de\", \"files\": {}}",
-        "dest": "cargo/vendor/librqbit-dualstack-sockets-0.7.0",
-        "dest-filename": ".cargo-checksum.json"
-    },
-    {
-        "type": "archive",
-        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/librqbit-lsd/librqbit-lsd-9.0.1.crate",
         "sha256": "6d1d2699a46a9dc83693c5fbbf288a17b77a24b9924815a69bfc97853a47af42",
         "dest": "cargo/vendor/librqbit-lsd-9.0.1"
