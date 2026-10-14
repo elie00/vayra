@@ -4,6 +4,7 @@ import type { DebridStore } from "@/lib/debrid/types";
 import { savePlayback } from "@/lib/playback-history";
 import { saveSeasonLock } from "@/lib/season-lock";
 import { DEAD_TORRENT_TTL_MS, markStreamDead, recordStubEvent } from "@/lib/dead-streams";
+import { noteSwarmPeers } from "@/lib/torrent/swarm-health";
 
 const PREFLIGHT_STUB_TTL_MS = 15 * 60 * 1000;
 const SAME_SOURCE_MAX_RETRIES = 4;
@@ -146,6 +147,8 @@ export function usePickHandler({
         setFailedStreams((prev) => new Map(prev).set(stream, humanError(r.code)));
         // A torrent nobody could describe is skipped by autoplay for a while.
         if (r.code === "engine-no-metadata") markStreamDead(stream, r.code, DEAD_TORRENT_TTL_MS);
+        // One whose peers could not be reached ranks lower next time.
+        if (r.code === "engine-no-peers" && stream.infoHash) noteSwarmPeers(stream.infoHash, 0);
         const isDebridSide = isDebridFailure(r.code, r.tried);
         if (isDebridSide && scheduleSameSourceRetry(stream, userCommitted, forceP2p)) return;
         if (isDebridSide && debrids.length > 0) {
