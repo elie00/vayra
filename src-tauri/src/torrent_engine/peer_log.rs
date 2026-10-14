@@ -12,12 +12,12 @@ const INTERVAL: Duration = Duration::from_secs(10);
 struct PeerSnapshot {
     state: String,
     error: Option<String>,
-    seen: usize,
-    queued: usize,
-    connecting: usize,
-    live: usize,
-    dead: usize,
-    not_needed: usize,
+    seen: u32,
+    queued: u32,
+    connecting: u32,
+    live: u32,
+    dead: u32,
+    not_needed: u32,
 }
 
 /// Logs peer counters whenever they change, to tell a swarm that never yields peers

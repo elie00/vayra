@@ -1,16 +1,17 @@
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use bstr::BStr;
-use futures::{stream::FuturesUnordered, StreamExt, TryFutureExt};
-use network_interface::NetworkInterfaceConfig;
+use futures::{StreamExt, TryFutureExt, stream::FuturesUnordered};
+use librqbit_dualstack_sockets::{BindDevice, UdpSocket};
+use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use reqwest::Client;
-use serde::Deserialize;
+use serde_derive::Deserialize;
 use std::{
     collections::HashSet,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4},
     time::Duration,
 };
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
-use tracing::{debug, error_span, info, trace, warn, Instrument, Span};
+use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
+use tracing::{Instrument, Span, debug, debug_span, info, trace, warn};
 use url::Url;
 
 // IGDv2 routers (e.g. MiniUPnPd) answer the v1 SSDP search but only declare v2.
@@ -34,37 +35,20 @@ pub fn make_ssdp_search_request(kind: &str) -> String {
     )
 }
 
-// .to_bits() isn't yet available on min rust version we support (1.75 at the time of writing this)
-const fn ip_bits_v6(addr: Ipv6Addr) -> u128 {
-    u128::from_be_bytes(addr.octets())
-}
-
-pub fn ipv6_is_link_local(ip: Ipv6Addr) -> bool {
-    const LL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 0);
-    const MASK: Ipv6Addr = Ipv6Addr::new(0xffff, 0xffff, 0xffff, 0xffff, 0, 0, 0, 0);
-
-    ip_bits_v6(ip) & ip_bits_v6(MASK) == ip_bits_v6(LL) & ip_bits_v6(MASK)
-}
-
-pub fn get_local_ip_relative_to(local_dest: SocketAddr) -> anyhow::Result<IpAddr> {
-    fn ip_bits_v4(addr: Ipv4Addr) -> u32 {
-        u32::from_be_bytes(addr.octets())
-    }
-
+pub fn get_local_ip_relative_to(
+    local_dest: SocketAddr,
+    interfaces: &[NetworkInterface],
+) -> anyhow::Result<IpAddr> {
     fn masked_v4(ip: Ipv4Addr, mask: Ipv4Addr) -> u32 {
-        ip_bits_v4(ip) & ip_bits_v4(mask)
+        ip.to_bits() & mask.to_bits()
     }
 
     fn masked_v6(ip: Ipv6Addr, mask: Ipv6Addr) -> u128 {
-        ip_bits_v6(ip) & ip_bits_v6(mask)
+        ip.to_bits() & mask.to_bits()
     }
 
-    let interfaces =
-        network_interface::NetworkInterface::show().context("error listing network interfaces")?;
-
     for i in interfaces {
-        for addr in i.addr {
-            trace!(%local_dest, nic=i.index, ip=?addr.ip(), nm=?addr.netmask(), "dbg");
+        for addr in i.addr.iter() {
             match (local_dest, addr.ip(), addr.netmask()) {
                 // We are connecting to ourselves, return itself.
                 (l, a, _) if l.ip() == a => return Ok(addr.ip()),
@@ -72,13 +56,13 @@ pub fn get_local_ip_relative_to(local_dest: SocketAddr) -> anyhow::Result<IpAddr
                 (SocketAddr::V4(l), IpAddr::V4(a), Some(IpAddr::V4(m)))
                     if masked_v4(*l.ip(), m) == masked_v4(a, m) =>
                 {
-                    return Ok(addr.ip())
+                    return Ok(addr.ip());
                 }
                 // Return IPv6 link-local addresses when source is link-local address and there's a scope_id set.
                 (SocketAddr::V6(l), IpAddr::V6(a), _)
-                    if ipv6_is_link_local(*l.ip()) && l.scope_id() > 0 =>
+                    if l.ip().is_unicast_link_local() && l.scope_id() > 0 =>
                 {
-                    if ipv6_is_link_local(a) && l.scope_id() == i.index {
+                    if a.is_unicast_link_local() && l.scope_id() == i.index {
                         return Ok(addr.ip());
                     }
                 }
@@ -86,7 +70,7 @@ pub fn get_local_ip_relative_to(local_dest: SocketAddr) -> anyhow::Result<IpAddr
                 (SocketAddr::V6(l), IpAddr::V6(a), Some(IpAddr::V6(m)))
                     if masked_v6(*l.ip(), m) == masked_v6(a, m) =>
                 {
-                    return Ok(addr.ip())
+                    return Ok(addr.ip());
                 }
                 // For IPv6 fallback to returning a random (first encountered) IPv6 address.
                 (SocketAddr::V6(_), IpAddr::V6(_), None) => return Ok(addr.ip()),
@@ -197,7 +181,7 @@ impl Device {
     }
 
     pub fn span(&self, parent: tracing::Span) -> tracing::Span {
-        error_span!(parent: parent, "device", device = self.name())
+        debug_span!(parent: parent, "device", device = self.name())
     }
 }
 
@@ -230,7 +214,7 @@ pub struct Service {
 
 impl Service {
     pub fn span(&self, parent: tracing::Span) -> tracing::Span {
-        error_span!(parent: parent, "service", url = self.control_url)
+        debug_span!(parent: parent, "service", url = self.control_url)
     }
 }
 
@@ -238,6 +222,7 @@ impl Service {
 struct UpnpEndpoint {
     discover_response: UpnpDiscoverResponse,
     data: RootDesc,
+    nics: Vec<NetworkInterface>,
 }
 
 impl UpnpEndpoint {
@@ -246,7 +231,7 @@ impl UpnpEndpoint {
     }
 
     fn span(&self) -> tracing::Span {
-        error_span!("upnp_endpoint", location = %self.location())
+        debug_span!("upnp_endpoint", location = %self.location())
     }
 
     fn iter_services(&self) -> impl Iterator<Item = (tracing::Span, &Service)> + '_ {
@@ -259,7 +244,7 @@ impl UpnpEndpoint {
 
     fn my_local_ip(&self) -> anyhow::Result<IpAddr> {
         let received_from = self.discover_response.received_from;
-        let local_ip = get_local_ip_relative_to(received_from)
+        let local_ip = get_local_ip_relative_to(received_from, &self.nics)
             .with_context(|| format!("can't determine local IP relative to {received_from}"))?;
         Ok(local_ip)
     }
@@ -342,15 +327,22 @@ pub async fn discover_once(
     tx: &UnboundedSender<UpnpDiscoverResponse>,
     kind: &str,
     timeout: Duration,
+    bind_device: Option<&BindDevice>,
 ) -> anyhow::Result<()> {
-    let socket = tokio::net::UdpSocket::bind("0.0.0.0:0")
-        .await
-        .context("failed to bind UDP socket")?;
+    // TODO: do we need IPv6 support here? I can't test it, don't have the hardware for it (router / IPv6 provider).
+    let socket = UdpSocket::bind_udp(
+        (Ipv4Addr::UNSPECIFIED, 0).into(),
+        librqbit_dualstack_sockets::BindOpts {
+            device: bind_device,
+            ..Default::default()
+        },
+    )?;
+
     let message = make_ssdp_search_request(kind);
     socket
         .send_to(message.as_bytes(), SSDP_MULTICAST_IP)
         .await
-        .context("failed to send SSDP search request")?;
+        .with_context(|| format!("failed to send SSDP search request to {SSDP_MULTICAST_IP}"))?;
 
     let mut buffer = [0; 2048];
 
@@ -372,7 +364,7 @@ pub async fn discover_once(
                         tx.send(r)?;
                         discovered += 1;
                     },
-                    Err(e) => warn!(error=?e, response=?BStr::new(response), "failed to parse SSDP response"),
+                    Err(e) => warn!(response=?BStr::new(response), "failed to parse SSDP response: {e:#}"),
                 };
             },
         }
@@ -401,16 +393,22 @@ impl Default for UpnpPortForwarderOptions {
 pub struct UpnpPortForwarder {
     ports: Vec<u16>,
     opts: UpnpPortForwarderOptions,
+    bind_device: Option<BindDevice>,
 }
 
 impl UpnpPortForwarder {
-    pub fn new(ports: Vec<u16>, opts: Option<UpnpPortForwarderOptions>) -> anyhow::Result<Self> {
+    pub fn new(
+        ports: Vec<u16>,
+        opts: Option<UpnpPortForwarderOptions>,
+        bind_device: Option<BindDevice>,
+    ) -> anyhow::Result<Self> {
         if ports.is_empty() {
             bail!("empty ports")
         }
         Ok(Self {
             ports,
             opts: opts.unwrap_or_default(),
+            bind_device,
         })
     }
 
@@ -419,9 +417,12 @@ impl UpnpPortForwarder {
         discover_response: UpnpDiscoverResponse,
     ) -> anyhow::Result<UpnpEndpoint> {
         let services = discover_services(discover_response.location.clone()).await?;
+        let nics = network_interface::NetworkInterface::show()
+            .context("error listing network interfaces")?;
         Ok(UpnpEndpoint {
             discover_response,
             data: services,
+            nics,
         })
     }
 
@@ -433,6 +434,7 @@ impl UpnpPortForwarder {
             tx,
             SSDP_SEARCH_WAN_IPCONNECTION_ST,
             self.opts.discover_timeout,
+            self.bind_device.as_ref(),
         )
         .await
     }
@@ -444,7 +446,7 @@ impl UpnpPortForwarder {
         loop {
             discover_interval.tick().await;
             if let Err(e) = self.discover_once(&tx).await {
-                warn!("failed to run discovery: {e:#}");
+                warn!("failed to run SSDP/UPNP discovery: {e:#}");
             }
         }
     }
@@ -488,7 +490,7 @@ impl UpnpPortForwarder {
     ) -> anyhow::Result<()> {
         futures::future::join_all(self.ports.iter().cloned().map(|port| {
             self.manage_port(control_url.clone(), &service_type, local_ip, port)
-                .instrument(error_span!("manage_port", port = port))
+                .instrument(debug_span!("manage_port", port = port))
         }))
         .await;
         Ok(())
@@ -515,7 +517,7 @@ impl UpnpPortForwarder {
                     endpoints.push(self.parse_endpoint(r).map_err(|e| {
                         debug!("error parsing endpoint: {e:#}");
                         e
-                    }).instrument(error_span!("parse endpoint", location=location.to_string())));
+                    }).instrument(debug_span!("parse endpoint", location=location.to_string())));
                 },
                 Some(Ok(endpoint)) = endpoints.next(), if !endpoints.is_empty() => {
                     let mut local_ip = None;
@@ -629,6 +631,7 @@ mod tests {
                 location: "http://192.168.1.254:45049/rootDesc.xml".parse().unwrap(),
             },
             data: from_str(include_str!("resources/test/devices-igd2.xml")).unwrap(),
+            nics: Vec::new(),
         }
     }
 
