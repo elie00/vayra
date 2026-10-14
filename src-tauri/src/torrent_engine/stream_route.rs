@@ -163,7 +163,7 @@ async fn stream_file(
         .flatten()
         .unwrap_or("application/octet-stream");
     let info_hash = handle.info_hash().as_string();
-    let mut stream = match handle.stream(file_id) {
+    let mut stream = match handle.stream(file_id).await {
         Ok(s) => s,
         Err(e) => return (StatusCode::NOT_FOUND, format!("{e:#}")).into_response(),
     };

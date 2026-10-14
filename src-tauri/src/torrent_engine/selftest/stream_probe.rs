@@ -92,9 +92,9 @@ pub async fn run(session: &Arc<Session>, steps: &mut Vec<SelfTestStep>) {
         .unwrap_or(0);
 
     let peers_started = Instant::now();
-    let mut live_peers = 0usize;
-    let mut seen = 0usize;
-    let mut connecting = 0usize;
+    let mut live_peers = 0u32;
+    let mut seen = 0u32;
+    let mut connecting = 0u32;
     while peers_started.elapsed() < PEER_BUDGET {
         if let Some(live) = handle.stats().live {
             let ps = &live.snapshot.peer_stats;
@@ -128,7 +128,7 @@ pub async fn run(session: &Arc<Session>, steps: &mut Vec<SelfTestStep>) {
     finalize(session, steps, &hash).await;
 }
 
-fn warm_metadata_step(seeded: usize, snap: Option<(usize, usize)>) -> SelfTestStep {
+fn warm_metadata_step(seeded: usize, snap: Option<(u32, u32)>) -> SelfTestStep {
     if let Some((seen, connecting)) = snap {
         if seen > 0 {
             return step(
@@ -154,7 +154,7 @@ fn warm_metadata_step(seeded: usize, snap: Option<(usize, usize)>) -> SelfTestSt
     }
 }
 
-fn no_live_peers_step(seen: usize, connecting: usize) -> SelfTestStep {
+fn no_live_peers_step(seen: u32, connecting: u32) -> SelfTestStep {
     if seen > 0 {
         step(
             "peers",
