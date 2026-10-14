@@ -4,7 +4,7 @@ import { useActiveKid } from "@/lib/profiles";
 import { useView } from "@/lib/view";
 
 export function BackChrome() {
-  const { canGoBack, goBack, topKind, chromeHidden } = useView();
+  const { canGoBack, goBack, topKind, chromeHidden, meta } = useView();
   const kid = useActiveKid();
   const t = useT();
   if (!canGoBack || chromeHidden) return null;
@@ -20,13 +20,15 @@ export function BackChrome() {
       </button>
     );
   }
+  // Downloads opened from a title's picker name the title Back returns to.
+  const label = topKind === "downloads" && meta ? t("Back to {title}", { title: meta.name }) : t("common.back");
   return (
     <button
       onClick={goBack}
-      className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-edge-soft/60 bg-canvas/85 ps-3 pe-5 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
+      className="flex h-10 min-w-0 max-w-[20rem] shrink-0 items-center gap-2 rounded-full border border-edge-soft/60 bg-canvas/85 ps-3 pe-5 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
     >
-      <ArrowLeft size={15} className="dir-icon" />
-      {t("common.back")}
+      <ArrowLeft size={15} className="dir-icon shrink-0" />
+      <span className="truncate">{label}</span>
     </button>
   );
 }

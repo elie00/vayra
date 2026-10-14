@@ -79,6 +79,17 @@ export function scoreStream(
     reasons.push({ signal: "zero-seeders-soft", delta: -8 });
   }
 
+  // What the engine actually reached outranks the seeders an add-on announces.
+  const reached = s.infoHash && !s.url && !cached ? opts.swarmPeers?.[s.infoHash.toLowerCase()] : undefined;
+  if (reached === 0) {
+    score -= 25;
+    reasons.push({ signal: "swarm-unreachable", delta: -25 });
+  } else if (reached != null && reached >= 4) {
+    const delta = Math.min(10, Math.floor(reached / 2));
+    score += delta;
+    reasons.push({ signal: `swarm-peers=${reached}`, delta });
+  }
+
   const expectedYear = opts.releaseDate
     ? parseInt(opts.releaseDate.slice(0, 4), 10)
     : null;

@@ -11,6 +11,7 @@ import {
   torrentEngineSetOptions,
   torrentEngineStatus,
 } from "@/lib/torrent/local-engine";
+import { portStatusLine, usePortStatus } from "@/lib/torrent/port-status";
 import { Section, ToggleRow } from "../shared";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -40,6 +41,8 @@ export function P2PAdvancedSection() {
   const [defaultPath, setDefaultPath] = useState("");
   const [clearing, setClearing] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const portStatus = usePortStatus();
+  const portLine = portStatus ? portStatusLine(portStatus) : null;
 
   useEffect(() => {
     if (!isTauri) return;
@@ -245,6 +248,23 @@ export function P2PAdvancedSection() {
           value={settings.p2pAutoConsent}
           onChange={(v) => update({ p2pAutoConsent: v })}
         />
+
+        {portLine && (
+          <div className="flex flex-col gap-1 pt-1">
+            <span className="text-[13.5px] font-semibold text-ink">{t("Incoming connections")}</span>
+            <p
+              role="status"
+              className={`text-[12.5px] leading-relaxed ${
+                portLine.tone === "ok" ? "text-success" : portLine.tone === "bad" ? "text-danger" : "text-ink-subtle"
+              }`}
+            >
+              {portLine.text}
+            </p>
+            <p className="text-[12px] leading-relaxed text-ink-subtle">
+              {t("Peers that can connect to VAYRA, and not only the reverse, make torrents start faster and find more sources.")}
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button

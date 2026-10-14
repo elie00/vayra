@@ -1,5 +1,6 @@
 import { engineBaseFor, getStremioServerUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 import { torrentEngineStats } from "@/lib/torrent/local-engine";
+import { noteSwarmPeers } from "@/lib/torrent/swarm-health";
 
 export type EngineStats = {
   peers: number;
@@ -88,7 +89,10 @@ export async function fetchEngineStats(
     try {
       const raw = await torrentEngineStats(infoHash, fileIdx < 0 ? null : fileIdx);
       if (!raw) return { kind: "down" };
-      return { kind: "ok", stats: parseEngineStats(raw, prev) };
+      const stats = parseEngineStats(raw, prev);
+      // No peers yet early in a stream proves nothing; a failure records the zero.
+      if (stats.peers > 0) noteSwarmPeers(infoHash, stats.peers);
+      return { kind: "ok", stats };
     } catch {
       return { kind: "down" };
     }
