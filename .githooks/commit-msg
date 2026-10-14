@@ -1,0 +1,3 @@
+#!/bin/sh
+# Commits in this repository credit no AI assistant: drop such lines.
+exec node "$(git rev-parse --show-toplevel)/scripts/attribution.mjs" strip "$1"

@@ -4,3 +4,5 @@
 # dirty the tree and restarts `tauri dev` through its file watcher.
 Cargo.toml text eol=lf
 Cargo.lock text eol=lf
+# Git runs the versioned hooks with sh, on Windows too.
+.githooks/* text eol=lf

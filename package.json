@@ -24,6 +24,7 @@
     "audit:deps": "pnpm audit --audit-level=moderate",
     "tauri": "tauri",
     "tauri:build:linux-system": "tauri build --config src-tauri/tauri.linux-system.conf.json",
+    "prepare": "node scripts/attribution.mjs install",
     "setup": "pnpm setup:libmpv && pnpm setup:binaries && pnpm setup:fonts",
     "setup:libmpv": "node scripts/fetch-libmpv.mjs",
     "setup:binaries": "node scripts/fetch-binaries.mjs",
