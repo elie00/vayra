@@ -86,6 +86,8 @@ function labelFor(signal: string): string {
       return t("Size doesn't match the stated quality");
     case "title-says-hires-filename-says-cam":
       return t("File name says it was filmed in a theater");
+    case "swarm-unreachable":
+      return t("No peer could be reached last time");
     case "fresh-theater-cinema-window":
     case "fresh-theater-mild-boost":
       return t("Still in theaters: a theater copy is expected");
@@ -98,6 +100,8 @@ function labelFor(signal: string): string {
     case "fresh-soft-flag":
       return t("Quality too good this soon after release");
   }
+  const reached = /^swarm-peers=(\d+)$/.exec(signal);
+  if (reached) return t("{count} peers reached last time", { count: reached[1] });
   const seeders = /^seeders=(\d+)$/.exec(signal);
   if (seeders) return t("{count} seeders", { count: seeders[1] });
   const year = /^year-(?:off-by-1|mismatch):(\d+)vs(\d+)/.exec(signal);

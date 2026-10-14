@@ -1,8 +1,10 @@
 mod cache_index;
 mod cache_sweep;
 mod dht_boot;
+mod nat_pmp;
 mod netcheck;
 mod peer_log;
+pub mod port_status;
 mod selftest;
 mod stream_route;
 mod trackers;
@@ -14,8 +16,11 @@ use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, UNIX_EPOCH};
 
 use librqbit::api::TorrentIdOrHash;
-use librqbit::dht::{Dht, PersistentDhtConfig};
-use librqbit::{AddTorrent, AddTorrentOptions, PeerConnectionOptions, Session, SessionOptions, SessionPersistenceConfig};
+use librqbit::dht::{Dht, DhtPersistenceConfig};
+use librqbit::{
+    AddTorrent, AddTorrentOptions, ConnectionOptions, DhtSessionConfig, ListenerOptions, PeerConnectionOptions, Session,
+    SessionOptions, SessionPersistenceConfig,
+};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 use tokio::net::TcpListener;
@@ -32,6 +37,7 @@ struct EngineState {
     server: Option<tokio::task::JoinHandle<()>>,
     sweeper: Option<tokio::task::JoinHandle<()>>,
     peer_log: Option<tokio::task::JoinHandle<()>>,
+    nat_pmp: Option<tokio::task::JoinHandle<()>>,
     lan_server: Option<tokio::task::JoinHandle<()>>,
     lan_port: Option<u16>,
     lan_error: Option<String>,
@@ -51,6 +57,7 @@ fn engine() -> &'static Mutex<EngineState> {
             server: None,
             sweeper: None,
             peer_log: None,
+            nat_pmp: None,
             lan_server: None,
             lan_port: None,
             lan_error: None,
@@ -142,10 +149,10 @@ fn complete_files_of(handle: &librqbit::ManagedTorrent) -> Vec<cache_index::Cach
     handle
         .with_metadata(|m| {
             // librqbit saves a multi-file torrent in a folder named after it.
-            let folder = match (m.file_infos.len() > 1, &m.info.name) {
+            let folder = match (m.file_infos.len() > 1, m.info.name()) {
                 (false, _) => PathBuf::new(),
-                (true, Some(name)) => PathBuf::from(String::from_utf8_lossy(name.as_ref()).as_ref()),
-                (true, None) => return Vec::new(),
+                (true, Some(name)) if !name.is_empty() => PathBuf::from(name.as_ref()),
+                (true, _) => return Vec::new(),
             };
             m.file_infos
                 .iter()
@@ -266,16 +273,21 @@ async fn new_session(
             persistence: Some(SessionPersistenceConfig::Json {
                 folder: Some(dir.to_path_buf()),
             }),
-            disable_dht: !dht,
-            disable_dht_persistence: !persist_dht,
-            dht_config: persist_dht.then(|| PersistentDhtConfig {
-                config_filename: Some(dir.join("dht.json")),
-                dump_interval: None,
+            dht: dht.then(|| DhtSessionConfig {
+                persistence: persist_dht.then(|| DhtPersistenceConfig {
+                    config_filename: Some(dir.join("dht.json")),
+                    dump_interval: None,
+                }),
+                ..Default::default()
             }),
             trackers: trackers::as_url_set(),
-            peer_opts: Some(peer_opts()),
-            listen_port_range: if full { Some(16881..16931) } else { None },
-            enable_upnp_port_forwarding: full,
+            connect: Some(ConnectionOptions { peer_opts: Some(peer_opts()), ..Default::default() }),
+            // `[::]` takes IPv6 peers as well as IPv4 ones on a dual-stack socket.
+            listen: full.then(|| ListenerOptions {
+                listen_addr: (std::net::Ipv6Addr::UNSPECIFIED, free_listen_port()).into(),
+                enable_upnp_port_forwarding: true,
+                ..Default::default()
+            }),
             ..Default::default()
         },
     )
@@ -350,6 +362,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     });
     let sweeper = spawn_cache_sweeper(app.clone());
     let peer_log = peer_log::spawn(session.clone());
+    let nat_pmp = session.announce_port().map(nat_pmp::spawn);
     let mut st = engine().lock().unwrap();
     if let Some(old) = st.server.take() {
         old.abort();
@@ -358,6 +371,9 @@ async fn init(app: AppHandle) -> Result<(), String> {
         old.abort();
     }
     if let Some(old) = st.peer_log.take() {
+        old.abort();
+    }
+    if let Some(old) = st.nat_pmp.take() {
         old.abort();
     }
     st.session = Some(session);
@@ -370,6 +386,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
     st.server = Some(server);
     st.sweeper = Some(sweeper);
     st.peer_log = Some(peer_log);
+    st.nat_pmp = nat_pmp;
     eprintln!("[torrent-engine] ready on 127.0.0.1:{port} (dht tier {dht_tier})");
     Ok(())
 }
@@ -404,6 +421,9 @@ pub fn stop() {
     }
     if let Some(peer_log) = st.peer_log.take() {
         peer_log.abort();
+    }
+    if let Some(nat_pmp) = st.nat_pmp.take() {
+        nat_pmp.abort();
     }
     st.session = None;
     st.dir = None;
@@ -450,6 +470,17 @@ const INIT_TIMEOUT: Duration = Duration::from_secs(25);
 /// tax before add; now the lookup races the metadata fetch instead of blocking
 /// it, and librqbit's own tracker+DHT discovery proceeds in parallel.
 const DHT_SEED_BUDGET: Duration = Duration::from_millis(1500);
+
+/// Incoming peer connections use the first free port of the range the router
+/// forwards; librqbit 9 binds one exact port where 8 took a range.
+const LISTEN_PORTS: std::ops::Range<u16> = 16881..16931;
+
+fn free_listen_port() -> u16 {
+    LISTEN_PORTS
+        .clone()
+        .find(|p| std::net::TcpListener::bind((std::net::Ipv6Addr::UNSPECIFIED, *p)).is_ok())
+        .unwrap_or(0)
+}
 
 fn peer_opts() -> PeerConnectionOptions {
     PeerConnectionOptions {
@@ -755,7 +786,7 @@ pub async fn torrent_engine_stats(
     let s = handle.stats();
     let (peers, download_speed, peer_search_running) = match &s.live {
         Some(live) => (
-            live.snapshot.peer_stats.live,
+            live.snapshot.peer_stats.live as usize,
             (live.download_speed.mbps * 1024.0 * 1024.0) as u64,
             true,
         ),
@@ -809,6 +840,29 @@ pub struct CachedFileDto {
     size: u64,
     /// When the cache sweep will remove it, in Unix milliseconds.
     expires_at_ms: Option<u64>,
+}
+
+#[derive(Serialize)]
+pub struct PortStatusDto {
+    /// The port peers are told to connect to, or None while the engine does not listen.
+    port: Option<u16>,
+    forwarding: port_status::Forwarding,
+    incoming: u64,
+    incoming_ipv6: u64,
+    last_incoming_ms: Option<u64>,
+}
+
+/// Whether peers reach the engine: its port, the router forwarding, incoming peers.
+#[tauri::command]
+pub fn torrent_engine_port_status() -> PortStatusDto {
+    let a = port_status::activity();
+    PortStatusDto {
+        port: current_session().and_then(|s| s.announce_port()),
+        forwarding: a.forwarding,
+        incoming: a.incoming,
+        incoming_ipv6: a.incoming_ipv6,
+        last_incoming_ms: a.last_incoming_ms,
+    }
 }
 
 /// The complete files the engine's cache holds, whether or not their torrent is open.
@@ -963,7 +1017,8 @@ mod tests {
         std::fs::create_dir_all(&content).unwrap();
         std::fs::write(content.join("e01.mkv"), vec![1u8; 64 * 1024]).unwrap();
         std::fs::write(content.join("e02.mkv"), vec![2u8; 64 * 1024]).unwrap();
-        let torrent = librqbit::create_torrent(&content, librqbit::CreateTorrentOptions { name: None, piece_length: Some(16 * 1024) })
+        let options = librqbit::CreateTorrentOptions { name: None, trackers: Vec::new(), piece_length: Some(16 * 1024) };
+        let torrent = librqbit::create_torrent(&content, options, &librqbit::spawn_utils::BlockingSpawner::new(1))
             .await
             .unwrap()
             .as_bytes()

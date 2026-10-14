@@ -883,6 +883,7 @@ pub fn run() {
             torrent_engine::torrent_engine_stats,
             torrent_engine::torrent_engine_remove,
             torrent_engine::torrent_engine_cached_files,
+            torrent_engine::torrent_engine_port_status,
             torrent_engine::torrent_engine_selftest,
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,

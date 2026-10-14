@@ -15,3 +15,11 @@ Une demande d’audit autorise l’analyse et un rapport, pas la correction
 automatique des fonctions du produit. Distinguer validation des sources, tests
 automatiques et essais dans `/Applications/VAYRA.app`. Ne pas supprimer de
 téléchargements, modifier des comptes ou exposer des secrets pour une recette.
+
+## Commits et pull requests
+
+Les commits et les descriptions de PR ne créditent aucun assistant IA : pas de
+ligne `Co-Authored-By: Claude…` ni de mention « Generated with Claude Code », sur
+macOS comme sur Windows. `.claude/settings.json` coupe cette attribution dans
+Claude Code, le hook `.githooks/commit-msg` (activé par `pnpm install`) retire ces
+lignes, et le contrôle CI `commit-policy` refuse une PR qui en contient encore.

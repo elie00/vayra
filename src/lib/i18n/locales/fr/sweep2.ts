@@ -896,6 +896,8 @@ const sweep2: Record<string, string> = {
   "High in your add-on order": "Haut dans l’ordre de tes addons",
   "Too small for its resolution": "Trop petit pour sa résolution",
   "Too small for a new release": "Trop petit pour une sortie récente",
+  "No peer could be reached last time": "Aucun pair joint la dernière fois",
+  "{count} peers reached last time": "{count} pairs joints la dernière fois",
 };
 
 export default sweep2;

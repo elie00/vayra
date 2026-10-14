@@ -46,7 +46,8 @@ pnpm-debug.log*
 /src-tauri/fonts/*.ttf
 local_docs/
 .vercel
-.claude/
+.claude/*
+!.claude/settings.json
 /supabase/.temp/
 /.flatpak-work/
 /src-tauri/gen/android/buildSrc/.kotlin/

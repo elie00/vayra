@@ -88,7 +88,7 @@ export function PlayPicker({
   const t = useT();
   const isSeasonDownload = intent === "download-season";
   const isDownload = intent === "download" || isSeasonDownload;
-  const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
+  const { openPlayer, openSettings, exitPickerToDetail, openDownloads } = useView();
   const backToDetail = () => {
     exitPickerToDetail(meta);
   };
@@ -439,7 +439,7 @@ export function PlayPicker({
     claimHost,
     openPlayer: openPlayerGated,
     intent,
-    onDownloadStarted: () => setView("downloads"),
+    onDownloadStarted: openDownloads,
     seasonEpisodes,
     onSeasonProgress: setSeasonProgress,
     autoActive,

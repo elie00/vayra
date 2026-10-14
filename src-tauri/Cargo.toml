@@ -36,7 +36,7 @@ base64 = "0.22"
 png = "0.17"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 vayra-core = { path = "../vayra-core" }
-librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
+librqbit = { version = "=9.0.1", default-features = false, features = ["rust-tls"] }
 url = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "registry"] }

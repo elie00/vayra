@@ -62,7 +62,12 @@ pub fn init_tracing() {
         .with_filter(filter);
     let counter = PeerErrorCounter
         .with_filter(filter_fn(|meta| meta.target() == PEER_EVENTS && *meta.level() == tracing::Level::DEBUG));
-    let _ = tracing_subscriber::registry().with(layer).with(counter).try_init();
+    // Accepted incoming connections are trace events; the router's answer is info or warn.
+    let port = crate::torrent_engine::port_status::Layer.with_filter(filter_fn(|meta| {
+        use crate::torrent_engine::port_status::{SESSION_EVENTS, UPNP_EVENTS};
+        meta.target() == SESSION_EVENTS || (meta.target() == UPNP_EVENTS && LevelFilter::INFO >= *meta.level())
+    }));
+    let _ = tracing_subscriber::registry().with(layer).with(counter).with(port).try_init();
 }
 
 static PEER_ERRORS: std::sync::Mutex<std::collections::BTreeMap<&'static str, u64>> =
@@ -100,12 +105,17 @@ struct PeerErrorCounter;
 
 impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for PeerErrorCounter {
     fn on_event(&self, event: &tracing::Event<'_>, _: tracing_subscriber::layer::Context<'_, S>) {
-        let mut message = MessageText(String::new());
-        event.record(&mut message);
-        if let Some(cause) = peer_error_cause(&message.0) {
+        if let Some(cause) = peer_error_cause(&message_of(event)) {
             *PEER_ERRORS.lock().unwrap_or_else(|e| e.into_inner()).entry(cause).or_default() += 1;
         }
     }
+}
+
+/// The formatted message of a tracing event.
+pub fn message_of(event: &tracing::Event<'_>) -> String {
+    let mut message = MessageText(String::new());
+    event.record(&mut message);
+    message.0
 }
 
 struct MessageText(String);
