@@ -113,30 +113,37 @@ for (const f of allBinaries) {
 // Release CI provides a Developer ID identity and gets a hardened-runtime,
 // timestamped signature that can subsequently be notarized.
 // Local builds use the Mac's own "Apple Development" identity when there is exactly
-// one valid: the signature then stays the same from build to build, so the
-// keychain keeps trusting the app instead of prompting after every install. The
-// flags match ad-hoc signing, so runtime behaviour is unchanged. Without such an
-// identity, local builds stay ad-hoc.
+// one valid, or else a self-signed "VAYRA Local Signing" one: the signature then
+// stays the same from build to build, so the keychain keeps trusting the app and
+// macOS keeps its Local Network permission instead of asking after every install.
+// The flags match ad-hoc signing, so runtime behaviour is unchanged. Without such
+// an identity, local builds stay ad-hoc.
 function localDevelopmentIdentity() {
-  let out = "";
-  try {
-    out = execFileSync("security", ["find-identity", "-v", "-p", "codesigning"], { encoding: "utf8" });
-  } catch {
-    return null;
-  }
-  const hashes = [...out.matchAll(/^\s*\d+\) ([0-9A-F]{40}) "Apple Development: /gm)].map((m) => m[1]);
-  return hashes.length === 1 ? hashes[0] : null;
+  const identities = (validOnly) => {
+    try {
+      const args = ["find-identity", ...(validOnly ? ["-v"] : []), "-p", "codesigning"];
+      return execFileSync("security", args, { encoding: "utf8" });
+    } catch {
+      return "";
+    }
+  };
+  const hashes = (out, name) => [...out.matchAll(new RegExp(`^\\s*\\d+\\) ([0-9A-F]{40}) "${name}`, "gm"))].map((m) => m[1]);
+  const apple = hashes(identities(true), "Apple Development: ");
+  if (apple.length === 1) return { hash: apple[0], label: "local Apple Development" };
+  // A self-signed identity is never "valid" (not trusted), but codesign uses it all the same.
+  const local = hashes(identities(false), "VAYRA Local Signing\"");
+  return local.length === 1 ? { hash: local[0], label: "VAYRA Local Signing" } : null;
 }
 const releaseIdentity = process.env.APPLE_SIGNING_IDENTITY?.trim();
 const localIdentity = releaseIdentity ? null : localDevelopmentIdentity();
 const releaseFlags = releaseIdentity
   ? ["--force", "--options", "runtime", "--timestamp", "--sign", releaseIdentity]
-  : ["--force", "--sign", localIdentity ?? "-"];
+  : ["--force", "--sign", localIdentity?.hash ?? "-"];
 const sign = (target, extra = []) =>
   execFileSync("codesign", [...releaseFlags, ...extra, target], { stdio: "inherit" });
 
 console.log(
-  `[bundle-libmpv] re-signing (${releaseIdentity ? "Developer ID" : localIdentity ? "local Apple Development" : "ad-hoc"})...`,
+  `[bundle-libmpv] re-signing (${releaseIdentity ? "Developer ID" : localIdentity?.label ?? "ad-hoc"})...`,
 );
 for (const f of dylibs) sign(join(FRAMEWORKS, f));
 sign(BIN);

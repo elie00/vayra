@@ -32,6 +32,19 @@
 - **Chantier en cours** : lecture de sources torrent à pairs intermittents
   (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
+## Signature locale stable (2026-10-14)
+- Le certificat « Apple Development » de ce Mac a expiré : les builds repassaient en
+  signature ad hoc, et macOS redemandait l'autorisation « Réseau local » (UPnP) à
+  chaque installation.
+- Identité auto-signée « VAYRA Local Signing » (10 ans) dans le trousseau de
+  session, utilisée par `scripts/bundle-libmpv-macos.mjs` quand aucun certificat
+  Apple Development valide n'existe. L'exigence désignée devient
+  `identifier "app.vayra" and certificate leaf = H"…"`, identique d'un build à l'autre.
+- La recréer sur une autre machine :
+  `openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 3650 -subj "/CN=VAYRA Local Signing" -addext "basicConstraints=critical,CA:false" -addext "keyUsage=critical,digitalSignature" -addext "extendedKeyUsage=critical,codeSigning"`,
+  puis `openssl pkcs12 -export -legacy -inkey key.pem -in cert.pem -name "VAYRA Local Signing" -out id.p12 -passout pass:<mot>`
+  et `security import id.p12 -k ~/Library/Keychains/login.keychain-db -P <mot> -T /usr/bin/codesign` ; supprimer `key.pem` et `id.p12`.
+
 ## Lot n°1 — pairs torrent et diagnostic
 - `src-tauri/src/torrent_engine.rs` : `peer_opts()` passe `read_write_timeout`
   10 s → 60 s et `keep_alive_interval` → 20 s (connexion TCP gardée à 7 s), et
