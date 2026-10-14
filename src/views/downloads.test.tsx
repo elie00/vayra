@@ -89,3 +89,31 @@ it("does not steal focus from another control when a download changes category",
     expect(document.activeElement).toBe(outside);
   } finally { outside.remove(); }
 });
+
+it("deletes several episodes of a show together after one confirmation", async () => {
+  const episode = (n: number) => ({ id: `ep${n}`, metaId: "show", title: "Fixture show", subtitle: `S01E0${n}`, season: 1, episode: n, status: "done", receivedBytes: 42, path: `/fixtures/e${n}.mkv`, startedAt: n } as DownloadItem);
+  mocks.items = [episode(1), episode(2), episode(3)];
+  mocks.remove.mockResolvedValue(true);
+  await act(async () => root.render(<DownloadsView />));
+  await click(byText("Select"));
+  const box = (n: number) => host.querySelector<HTMLInputElement>(`input[type="checkbox"][aria-label="S01E0${n}"]`)!;
+  await act(async () => { box(1).click(); box(3).click(); });
+  await click(byText("Delete selected ({n})"));
+  expect(mocks.remove).not.toHaveBeenCalled();
+  const dialog = document.querySelector('[role="dialog"]')!;
+  expect(dialog.textContent).toContain("S01E01");
+  expect(dialog.textContent).toContain("S01E03");
+  expect(dialog.textContent).not.toContain("S01E02");
+  await click(byText("Delete {n} downloads and files", dialog));
+  expect(mocks.remove.mock.calls.map(([id]) => id).sort()).toEqual(["ep1", "ep3"]);
+});
+
+it("selects every episode of a show at once", async () => {
+  mocks.items = [1, 2].map((n) => ({ id: `ep${n}`, metaId: "show", title: "Fixture show", subtitle: `S01E0${n}`, season: 1, episode: n, status: "done", receivedBytes: 42, path: `/fixtures/e${n}.mkv`, startedAt: n } as DownloadItem));
+  await act(async () => root.render(<DownloadsView />));
+  await click(byText("Select"));
+  await click(byText("Select all"));
+  expect(Array.from(host.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')).every((b) => b.checked)).toBe(true);
+  await click(byText("Cancel"));
+  expect(host.querySelector('input[type="checkbox"]')).toBeNull();
+});

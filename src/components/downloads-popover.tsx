@@ -108,7 +108,7 @@ export function DownloadsButton() {
           </div>
         </div>
       )}
-      {pendingRemoval && <DeleteDownloadDialog item={pendingRemoval} returnFocusRef={triggerRef} onClose={() => setPendingRemoval(null)} />}
+      {pendingRemoval && <DeleteDownloadDialog items={[pendingRemoval]} returnFocusRef={triggerRef} onClose={() => setPendingRemoval(null)} />}
     </div>
   );
 }
