@@ -54,6 +54,7 @@ const macUx: Record<string, string> = {
   "Optional connections": "Connexions facultatives",
   "Your VAYRA account is independent. Connect only the services you use.": "Votre compte VAYRA est indépendant. Connectez uniquement les services que vous utilisez.",
   "Open downloads": "Ouvrir les téléchargements",
+  "Back to {title}": "Retour à {title}",
   "Your offline videos, storage folder and available space.": "Vos vidéos hors connexion, leur dossier et l’espace disponible.",
   "Content sources and optional connected services.": "Sources de contenu et services connectés facultatifs.",
   "Control your local data and keep a recoverable copy of your setup.": "Gardez le contrôle de vos données locales et une copie restaurable de vos réglages.",
