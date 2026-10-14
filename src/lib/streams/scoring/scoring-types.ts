@@ -12,6 +12,8 @@ export type ScoreOptions = {
   preferAddonId?: string;
   preferredReleaseGroup?: string;
   respectAddonOrder?: boolean;
+  /** Peers the local engine reached per lower-case info hash (see torrent/swarm-health). */
+  swarmPeers?: Record<string, number>;
 };
 
 export type CorpusStats = {

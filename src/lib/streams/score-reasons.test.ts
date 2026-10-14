@@ -27,6 +27,11 @@ describe("explainScore", () => {
     );
   });
 
+  it("tells what the engine reached last time", () => {
+    expect(explainScore([{ signal: "swarm-unreachable", delta: -25 }])[0].label).toBe("No peer could be reached last time");
+    expect(explainScore([{ signal: "swarm-peers=14", delta: 7 }])[0].label).toBe("14 peers reached last time");
+  });
+
   it("merges signals that say the same thing", () => {
     expect(
       explainScore([

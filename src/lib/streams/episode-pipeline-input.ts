@@ -6,6 +6,7 @@ import type { Settings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
 import type { PipelineInput } from "./pipeline";
 import type { Stream } from "./types";
+import { readSwarmPeers } from "@/lib/torrent/swarm-health";
 
 function runtimeMinutes(runtime: string | number | undefined): number | undefined {
   if (runtime == null) return undefined;
@@ -116,6 +117,7 @@ export function buildEpisodePipelineInput(params: {
       preferAddonId: meta.addonOrigin?.id,
       preferredReleaseGroup: prevGroup,
       respectAddonOrder: settings.streamSort === "addon",
+      swarmPeers: readSwarmPeers(),
     },
   };
 }
