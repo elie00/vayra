@@ -3,6 +3,7 @@ mod cache_sweep;
 mod dht_boot;
 mod netcheck;
 mod peer_log;
+pub mod port_status;
 mod selftest;
 mod stream_route;
 mod trackers;
@@ -828,6 +829,29 @@ pub struct CachedFileDto {
     size: u64,
     /// When the cache sweep will remove it, in Unix milliseconds.
     expires_at_ms: Option<u64>,
+}
+
+#[derive(Serialize)]
+pub struct PortStatusDto {
+    /// The port peers are told to connect to, or None while the engine does not listen.
+    port: Option<u16>,
+    upnp: port_status::Upnp,
+    incoming: u64,
+    incoming_ipv6: u64,
+    last_incoming_ms: Option<u64>,
+}
+
+/// Whether peers reach the engine: its port, the router forwarding, incoming peers.
+#[tauri::command]
+pub fn torrent_engine_port_status() -> PortStatusDto {
+    let a = port_status::activity();
+    PortStatusDto {
+        port: current_session().and_then(|s| s.announce_port()),
+        upnp: a.upnp,
+        incoming: a.incoming,
+        incoming_ipv6: a.incoming_ipv6,
+        last_incoming_ms: a.last_incoming_ms,
+    }
 }
 
 /// The complete files the engine's cache holds, whether or not their torrent is open.
