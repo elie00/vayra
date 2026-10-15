@@ -2,6 +2,8 @@
 //! hears from the router; on Windows the firewall drops incoming connections first
 //! unless a rule lets VAYRA in, so a forwarded port can still be unreachable.
 
+// Only Windows reads a firewall; elsewhere the verdict is always None.
+#[cfg_attr(not(windows), allow(dead_code))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Firewall {
@@ -19,6 +21,7 @@ pub enum Firewall {
 }
 
 /// One active network profile, as the firewall reports it.
+#[cfg(any(windows, test))]
 #[derive(Clone, Copy, Debug)]
 pub struct Profile {
     pub enabled: bool,
@@ -27,6 +30,7 @@ pub struct Profile {
 }
 
 /// What an enabled inbound rule for VAYRA's executable does.
+#[cfg(any(windows, test))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuleAction {
     Allow,
@@ -35,6 +39,7 @@ pub enum RuleAction {
 
 /// The firewall's answer for VAYRA, from the active profiles and the rules naming its
 /// executable. A block rule wins over an allow rule, as in Windows Firewall itself.
+#[cfg(any(windows, test))]
 pub fn verdict(profiles: &[Profile], group_policy: bool, rules: &[RuleAction]) -> Firewall {
     let enabled: Vec<&Profile> = profiles.iter().filter(|p| p.enabled).collect();
     if enabled.is_empty() {
