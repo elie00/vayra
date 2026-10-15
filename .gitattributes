@@ -6,3 +6,6 @@ Cargo.toml text eol=lf
 Cargo.lock text eol=lf
 # Git runs the versioned hooks with sh, on Windows too.
 .githooks/* text eol=lf
+# Node scripts start with a shebang; a CRLF checkout leaves "\r" after it, which
+# Vitest rejects when a test imports one (src/lib/attribution-policy.test.ts).
+scripts/**/*.mjs text eol=lf
