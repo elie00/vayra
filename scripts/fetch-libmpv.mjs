@@ -4,10 +4,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SHA256 = "e9c87d19055bc5a82771b2b48e9fbae047bd5180603f5a1aaae10c90ca690467";
-const TAG = process.env.HARBOR_LIBMPV_TAG ?? "mpvdll";
+// Hosted on this repository since harborstremio/harbor, its first home, went away.
+const TAG = process.env.HARBOR_LIBMPV_TAG ?? "libmpv-windows";
 const url =
   process.env.HARBOR_LIBMPV_URL ??
-  `https://github.com/harborstremio/harbor/releases/download/${TAG}/libmpv-2.dll`;
+  `https://github.com/elie00/vayra/releases/download/${TAG}/libmpv-2.dll`;
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dest = join(root, "src-tauri", "libmpv", "libmpv-2.dll");
