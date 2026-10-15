@@ -9,11 +9,32 @@ export type PortStatus = {
   incoming: number;
   incoming_ipv6: number;
   last_incoming_ms: number | null;
+  /** What Windows Firewall does to incoming peers; null on other systems. */
+  firewall?: "open" | "blocks-all" | "blocked" | "managed" | "no-rule" | null;
 };
 
 export type PortStatusLine = { tone: "ok" | "pending" | "bad"; text: string };
 
-/** An incoming peer proves the port open; until one comes, the router's answer is all there is. */
+/** Why Windows Firewall stops peers before they reach the port, or null when it lets them in. */
+function firewallLine(s: PortStatus, port: number): PortStatusLine | null {
+  switch (s.firewall) {
+    case "managed":
+      return { tone: "bad", text: t("Windows Firewall is managed by your organization and blocks incoming connections: peers cannot reach VAYRA on this network") };
+    case "no-rule":
+      return { tone: "bad", text: t("Windows Firewall does not let VAYRA in yet: allow VAYRA in Windows Security, Firewall & network protection, Allow an app through firewall") };
+    case "blocked":
+      return { tone: "bad", text: t("A Windows Firewall rule blocks VAYRA: peers cannot reach port {port}", { port }) };
+    case "blocks-all":
+      return { tone: "bad", text: t("Windows Firewall blocks every incoming connection: peers cannot reach VAYRA") };
+    default:
+      return null;
+  }
+}
+
+/**
+ * An incoming peer proves the port open. Until one comes, the Windows firewall is
+ * checked first, since it drops peers even on a forwarded port, then the router.
+ */
 export function portStatusLine(s: PortStatus): PortStatusLine {
   if (s.port == null) return { tone: "pending", text: t("The torrent engine is not listening yet") };
   const port = s.port;
@@ -23,6 +44,8 @@ export function portStatusLine(s: PortStatus): PortStatusLine {
       : t("Port {port} open: {count} peers connected to VAYRA", { port, count: s.incoming });
     return { tone: "ok", text };
   }
+  const blocked = firewallLine(s, port);
+  if (blocked) return blocked;
   switch (s.forwarding) {
     case "forwarded":
       return { tone: "pending", text: t("Port {port} forwarded by your router; no peer has connected yet", { port }) };
