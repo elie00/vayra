@@ -526,7 +526,7 @@ fn ensure_window_on_screen(app: &tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", windows))]
     app_log::redirect_stderr_to_log();
     app_log::init_tracing();
     fd_limit::raise();
