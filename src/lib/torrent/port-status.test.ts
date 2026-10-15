@@ -24,6 +24,28 @@ describe("portStatusLine", () => {
     expect(portStatusLine(base).tone).toBe("pending");
   });
 
+  it("blames the Windows firewall before the router while no peer has come in", () => {
+    const forwarded = { ...base, forwarding: "forwarded" as const };
+    expect(portStatusLine({ ...forwarded, firewall: "managed" })).toEqual({
+      tone: "bad",
+      text: "Windows Firewall is managed by your organization and blocks incoming connections: peers cannot reach VAYRA on this network",
+    });
+    expect(portStatusLine({ ...forwarded, firewall: "no-rule" })).toEqual({
+      tone: "bad",
+      text: "Windows Firewall does not let VAYRA in yet: allow VAYRA in Windows Security, Firewall & network protection, Allow an app through firewall",
+    });
+    expect(portStatusLine({ ...forwarded, firewall: "blocked" }).tone).toBe("bad");
+    expect(portStatusLine({ ...forwarded, firewall: "blocks-all" }).tone).toBe("bad");
+    expect(portStatusLine({ ...forwarded, firewall: "open" }).text).toBe(
+      "Port 16881 forwarded by your router; no peer has connected yet",
+    );
+    expect(portStatusLine({ ...forwarded, firewall: null }).tone).toBe("pending");
+  });
+
+  it("trusts an incoming peer over the firewall reading", () => {
+    expect(portStatusLine({ ...base, incoming: 2, firewall: "managed" }).tone).toBe("ok");
+  });
+
   it("says when the engine does not listen", () => {
     expect(portStatusLine({ ...base, port: null })).toEqual({
       tone: "pending",

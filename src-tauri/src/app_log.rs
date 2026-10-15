@@ -1,24 +1,39 @@
+/// Opens `vayra.log` in `dir`, keeping one previous generation so the log
+/// cannot grow without bound.
+#[cfg(any(target_os = "macos", windows))]
+fn open_log(dir: &std::path::Path) -> Option<std::fs::File> {
+    std::fs::create_dir_all(dir).ok()?;
+    let path = dir.join("vayra.log");
+    if std::fs::metadata(&path).map(|m| m.len() > 10 * 1024 * 1024).unwrap_or(false) {
+        let _ = std::fs::rename(&path, dir.join("vayra.log.1"));
+    }
+    std::fs::OpenOptions::new().create(true).append(true).open(&path).ok()
+}
+
+/// Copies what reaches the pipe into the log, redacting URLs on the way.
+#[cfg(any(target_os = "macos", windows))]
+fn drain_into_log(reader: impl std::io::Read + Send + 'static, mut file: std::fs::File) {
+    use std::io::{BufRead, Write};
+    // The thread must keep draining the pipe whatever happens, or a full pipe would
+    // block every later write to stderr; write errors are therefore ignored.
+    let _ = std::thread::Builder::new().name("app-log".into()).spawn(move || {
+        for line in std::io::BufReader::new(reader).split(b'\n').map_while(Result::ok) {
+            let _ = writeln!(file, "{}", redact_urls(&String::from_utf8_lossy(&line)));
+        }
+    });
+}
+
 /// A Finder launch sends stderr nowhere, taking every `eprintln!` diagnostic with it.
 /// Keep them in ~/Library/Logs/VAYRA/vayra.log, unless stderr is already a terminal.
 /// Lines reach the file through a pipe so that URLs are redacted on the way.
 #[cfg(target_os = "macos")]
 pub fn redirect_stderr_to_log() {
-    use std::io::{BufRead, Write};
     use std::os::fd::FromRawFd;
     if unsafe { libc::isatty(libc::STDERR_FILENO) } == 1 {
         return;
     }
     let Some(home) = std::env::var_os("HOME") else { return };
-    let dir = std::path::Path::new(&home).join("Library/Logs/VAYRA");
-    if std::fs::create_dir_all(&dir).is_err() {
-        return;
-    }
-    let path = dir.join("vayra.log");
-    // One previous generation is kept, so the log cannot grow without bound.
-    if std::fs::metadata(&path).map(|m| m.len() > 10 * 1024 * 1024).unwrap_or(false) {
-        let _ = std::fs::rename(&path, dir.join("vayra.log.1"));
-    }
-    let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&path) else { return };
+    let Some(file) = open_log(&std::path::Path::new(&home).join("Library/Logs/VAYRA")) else { return };
     let mut fds = [0; 2];
     if unsafe { libc::pipe(fds.as_mut_ptr()) } != 0 {
         return;
@@ -31,14 +46,31 @@ pub fn redirect_stderr_to_log() {
         return;
     }
     unsafe { libc::close(fds[1]) };
-    let reader = unsafe { std::fs::File::from_raw_fd(fds[0]) };
-    // The thread must keep draining the pipe whatever happens, or a full pipe would
-    // block every later write to stderr; write errors are therefore ignored.
-    let _ = std::thread::Builder::new().name("app-log".into()).spawn(move || {
-        for line in std::io::BufReader::new(reader).split(b'\n').map_while(Result::ok) {
-            let _ = writeln!(file, "{}", redact_urls(&String::from_utf8_lossy(&line)));
-        }
-    });
+    drain_into_log(unsafe { std::fs::File::from_raw_fd(fds[0]) }, file);
+}
+
+/// A GUI-subsystem launch from Explorer or the Start menu has no stderr at all.
+/// Keep diagnostics in %LOCALAPPDATA%\app.vayra\logs\vayra.log (Tauri's log
+/// folder for this identifier), unless stderr already goes to a console or a
+/// pipe such as `tauri dev`.
+#[cfg(windows)]
+pub fn redirect_stderr_to_log() {
+    use std::os::windows::io::IntoRawHandle;
+    use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::System::Console::{GetStdHandle, SetStdHandle, STD_ERROR_HANDLE};
+    if unsafe { GetStdHandle(STD_ERROR_HANDLE) }.is_ok_and(|h| !h.is_invalid() && !h.0.is_null()) {
+        return;
+    }
+    let Some(base) = std::env::var_os("LOCALAPPDATA") else { return };
+    let Some(file) = open_log(&std::path::Path::new(&base).join("app.vayra").join("logs")) else { return };
+    let Ok((reader, writer)) = std::io::pipe() else { return };
+    // Rust's stderr looks the handle up on every write, so this reroutes eprintln!.
+    // The write end now belongs to the process standard error and is never closed.
+    let handle = HANDLE(writer.into_raw_handle());
+    if unsafe { SetStdHandle(STD_ERROR_HANDLE, handle) }.is_err() {
+        return;
+    }
+    drain_into_log(reader, file);
 }
 
 const PEER_EVENTS: &str = "librqbit::torrent_state::live";

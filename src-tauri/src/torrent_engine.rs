@@ -1,6 +1,7 @@
 mod cache_index;
 mod cache_sweep;
 mod dht_boot;
+mod firewall;
 mod nat_pmp;
 mod netcheck;
 mod peer_log;
@@ -850,18 +851,24 @@ pub struct PortStatusDto {
     incoming: u64,
     incoming_ipv6: u64,
     last_incoming_ms: Option<u64>,
+    /// What Windows Firewall does to incoming peers; None elsewhere.
+    firewall: Option<firewall::Firewall>,
 }
 
-/// Whether peers reach the engine: its port, the router forwarding, incoming peers.
+/// Whether peers reach the engine: its port, the router forwarding, the firewall,
+/// incoming peers.
 #[tauri::command]
-pub fn torrent_engine_port_status() -> PortStatusDto {
+pub async fn torrent_engine_port_status() -> PortStatusDto {
     let a = port_status::activity();
+    // The firewall is read through COM, kept off the main thread.
+    let firewall = tokio::task::spawn_blocking(firewall::read).await.ok().flatten();
     PortStatusDto {
         port: current_session().and_then(|s| s.announce_port()),
         forwarding: a.forwarding,
         incoming: a.incoming,
         incoming_ipv6: a.incoming_ipv6,
         last_incoming_ms: a.last_incoming_ms,
+        firewall,
     }
 }
 

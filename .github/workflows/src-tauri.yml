@@ -5,10 +5,14 @@ on:
     paths:
       - "src-tauri/**"
       - ".github/workflows/src-tauri.yml"
+      # The Windows job downloads libmpv with it before building.
+      - "scripts/fetch-libmpv.mjs"
   pull_request:
     paths:
       - "src-tauri/**"
       - ".github/workflows/src-tauri.yml"
+      # The Windows job downloads libmpv with it before building.
+      - "scripts/fetch-libmpv.mjs"
 
 jobs:
   lint-test:
