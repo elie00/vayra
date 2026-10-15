@@ -3,8 +3,10 @@
 ## État actuel (top-line) — mis à jour le 2026-09-22
 - **Périmètre** : depuis l'audit du 2026-09-05 (`docs/audit-global-2026-09-05.md`),
   **usage personnel sur ce Mac uniquement** (voir `AGENTS.md`). Web, Android,
-  Windows, Linux, signature Developer ID et notarisation sont **en pause** ; les
+  Linux, signature Developer ID et notarisation sont **en pause** ; les
   sections « Travaux réalisés » ci-dessous (juillet) restent comme historique.
+  **Windows** est repris depuis le 2026-10-13 : portage à parité avec le Mac
+  (section « Windows » ci-dessous).
 - **Repo** : `elie00/vayra`, remote `origin`.
 - **Branches** : `codex/pause-resume-downloads` (travail macOS du 04/09 au 22/09)
   fusionnée dans `main` par pull request le 2026-09-22. `main` est de nouveau la
@@ -44,6 +46,38 @@
   `openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 3650 -subj "/CN=VAYRA Local Signing" -addext "basicConstraints=critical,CA:false" -addext "keyUsage=critical,digitalSignature" -addext "extendedKeyUsage=critical,codeSigning"`,
   puis `openssl pkcs12 -export -legacy -inkey key.pem -in cert.pem -name "VAYRA Local Signing" -out id.p12 -passout pass:<mot>`
   et `security import id.p12 -k ~/Library/Keychains/login.keychain-db -P <mot> -T /usr/bin/codesign` ; supprimer `key.pem` et `id.p12`.
+
+## Windows — portage à parité avec le Mac (2026-10-13 → 15)
+- Fusionné (PR #120) : barre latérale, Réglages groupés, accueil personnel et police
+  Segoe UI Variable via `desktopUx()` (`src/lib/platform.ts`) ; espace disque et limites
+  de téléchargement, reprise locale et lecture hors ligne, écran gardé allumé pendant
+  la lecture, Ctrl+F, barres de défilement Fluent. Ce qui reste propre au Mac
+  (raccourcis ⌘, plein écran au lieu d'agrandir, repli de la bande-annonce, arrondi
+  de fenêtre) est voulu.
+- PR ouvertes au 2026-10-15 :
+  - #126 : stderr → `%LOCALAPPDATA%\app.vayra\logs\vayra.log` (URLs masquées), comme
+    `~/Library/Logs/VAYRA` sur le Mac, quand l'app est lancée sans console.
+  - #127 : pic mémoire des mesures de lecture (`PeakWorkingSetSize`), qui valait `?`.
+  - #128 (empilée sur #126) : verdict du pare-feu Windows dans la ligne « Connexions
+    entrantes » (`torrent_engine/firewall.rs`, `INetFwPolicy2`). Ne pas utiliser
+    `INetFwMgr::IsPortAllowed` : il répondait « autorisé » sur un PC qui bloque l'entrant.
+  - #129 : scripts Node de `scripts/` en LF, sinon `attribution-policy.test.ts` ne se
+    charge pas sur un checkout Windows (`core.autocrlf=true`).
+- Build Windows : MSVC (README) puis
+  `pnpm tauri build --bundles nsis --config src-tauri/tauri.windows.conf.json` ;
+  l'installeur s'installe par utilisateur dans `%LOCALAPPDATA%\VAYRA`, sans admin
+  (`VAYRA_0.9.42_x64-setup.exe /S`). Remettre `vayra-core/pkg` après le build.
+- Clippy Windows = drapeaux de la CI (`needless_return`, `type_complexity` tolérés
+  dans le chemin mpv/HDR). Le binaire est en sous-système GUI même en debug : lancer
+  `target\debug\vayra.exe` sans console reproduit un lancement depuis l'Explorateur.
+- La machine Windows actuelle est un **PC professionnel** : le filtrage web bloque
+  tous les domaines Stremio (`api.strem.io`, Cinemeta, Torrentio : page « Accès à un
+  site interdit », connexion coupée en TLS), le DHT n'amorce pas, la box ne répond pas
+  en PCP (VPN prioritaire) et le pare-feu est géré par stratégie (règles locales
+  ignorées). La connexion Stremio, les flux et les pairs ne s'y recettent pas.
+- Reste à recetter sur un PC Windows personnel : connexion et lecture, ouverture de
+  port PCP/NAT-PMP, verdicts pare-feu « aucune règle » / « règle qui bloque » /
+  « ouvert », image dans l'image, liens `stremio://`, choix du mode HDR.
 
 ## Lot n°1 — pairs torrent et diagnostic
 - `src-tauri/src/torrent_engine.rs` : `peer_opts()` passe `read_write_timeout`
