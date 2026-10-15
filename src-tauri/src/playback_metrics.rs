@@ -47,7 +47,21 @@ pub fn peak_memory_mb() -> Option<u64> {
     Some(bytes / (1024 * 1024))
 }
 
-#[cfg(not(unix))]
+/// The process's peak working set since launch, Windows' counterpart of `ru_maxrss`.
+#[cfg(windows)]
+pub fn peak_memory_mb() -> Option<u64> {
+    use windows::Win32::System::ProcessStatus::{K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
+    use windows::Win32::System::Threading::GetCurrentProcess;
+    let mut counters = PROCESS_MEMORY_COUNTERS::default();
+    let size = std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+    // The current-process pseudo handle needs no closing.
+    if !unsafe { K32GetProcessMemoryInfo(GetCurrentProcess(), &mut counters, size) }.as_bool() {
+        return None;
+    }
+    Some(counters.PeakWorkingSetSize as u64 / (1024 * 1024))
+}
+
+#[cfg(not(any(unix, windows)))]
 pub fn peak_memory_mb() -> Option<u64> {
     None
 }
@@ -81,7 +95,7 @@ mod tests {
         assert!(LoadTimer::default().on_restart(Instant::now()).is_none());
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn measures_some_peak_memory() {
         assert!(peak_memory_mb().unwrap() > 0);
