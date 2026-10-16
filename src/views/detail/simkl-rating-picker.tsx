@@ -101,18 +101,20 @@ export function SimklRatingPicker({
                 </div>
               )}
 
-              <div
-                className="absolute left-0 top-0 h-full w-1/2 cursor-pointer"
-                onMouseEnter={() => setHoverRating(2 * n - 1)}
-                onMouseLeave={() => setHoverRating(0)}
-                onClick={() => handleRatingClick(2 * n - 1)}
-              />
-              <div
-                className="absolute right-0 top-0 h-full w-1/2 cursor-pointer"
-                onMouseEnter={() => setHoverRating(2 * n)}
-                onMouseLeave={() => setHoverRating(0)}
-                onClick={() => handleRatingClick(2 * n)}
-              />
+              {[2 * n - 1, 2 * n].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-label={t("Rate {n}/10", { n: value })}
+                  aria-pressed={currentRating === value}
+                  className={`absolute top-0 h-full w-1/2 cursor-pointer ${value % 2 ? "left-0" : "right-0"}`}
+                  onMouseEnter={() => setHoverRating(value)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  onFocus={() => setHoverRating(value)}
+                  onBlur={() => setHoverRating(0)}
+                  onClick={() => void handleRatingClick(value)}
+                />
+              ))}
             </div>
           );
         })}

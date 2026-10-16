@@ -58,7 +58,8 @@ function UserAvatar({ username, size = "sm" }: { username?: string | null; size?
   );
 }
 
-function StarRow({ value, interactive, onRate, onHover }: { value: number; interactive: boolean; onRate?: (v: number) => void; onHover?: (v: number) => void }) {
+export function StarRow({ value, interactive, onRate, onHover }: { value: number; interactive: boolean; onRate?: (v: number) => void; onHover?: (v: number) => void }) {
+  const t = useT();
   const [localHover, setLocalHover] = useState(0);
   const display = interactive ? (localHover || value) : value;
   const starPath = "M8 .2a.9.9 0 0 0-.8.6L5.4 5.2.6 5.9a.9.9 0 0 0-.5 1.5l3.5 3.4-1 4.8a.9.9 0 0 0 1.3 1l4.1-2.6 4 2.6a.9.9 0 0 0 1.4-1l-1-4.8 3.4-3.4a.9.9 0 0 0-.5-1.5l-4.8-.7L8.8.8A.9.9 0 0 0 8 .2z";
@@ -95,24 +96,21 @@ function StarRow({ value, interactive, onRate, onHover }: { value: number; inter
               />
             </svg>
             {interactive && (
-              <span
-                className="absolute inset-0 z-10 flex cursor-pointer"
-                onClick={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - r.left;
-                  onRate?.(x < r.width / 2 ? odd : even);
-                }}
-                onMouseEnter={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - r.left;
-                  const v = x < r.width / 2 ? odd : even;
-                  setLocalHover(v);
-                  onHover?.(v);
-                }}
-                onMouseLeave={() => { setLocalHover(0); onHover?.(0); }}
-              >
-                <span className="h-full w-1/2" />
-                <span className="h-full w-1/2" />
+              <span className="absolute inset-0 z-10 flex">
+                {[odd, even].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-label={t("Rate {n}/10", { n: v })}
+                    aria-pressed={value === v}
+                    className="h-full w-1/2 cursor-pointer"
+                    onClick={() => onRate?.(v)}
+                    onMouseEnter={() => { setLocalHover(v); onHover?.(v); }}
+                    onMouseLeave={() => { setLocalHover(0); onHover?.(0); }}
+                    onFocus={() => { setLocalHover(v); onHover?.(v); }}
+                    onBlur={() => { setLocalHover(0); onHover?.(0); }}
+                  />
+                ))}
               </span>
             )}
           </span>

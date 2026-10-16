@@ -198,6 +198,7 @@ const sweep: Record<string, string> = {
   "Restart to update": "Redémarrer pour mettre à jour",
   "Retry": "Réessayer",
   "SIMKL rating picker": "Sélecteur de note SIMKL",
+  "Rate {n}/10": "Noter {n}/10",
   "SVP active": "SVP actif",
   "Save": "Enregistrer",
   "Saved": "Enregistré",
