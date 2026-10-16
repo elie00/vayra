@@ -77,7 +77,7 @@ pub fn spawn(session: Arc<Session>) -> tokio::task::JoinHandle<()> {
                 current.insert(hash, snap);
             }
             last = current;
-            if tick % ERRORS_EVERY_TICKS != 0 {
+            if !tick.is_multiple_of(ERRORS_EVERY_TICKS) {
                 continue;
             }
             let errors = crate::app_log::take_peer_errors();
