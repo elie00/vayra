@@ -1,27 +1,60 @@
-/// Opens `vayra.log` in `dir`, keeping one previous generation so the log
-/// cannot grow without bound.
+/// `vayra.log` in a folder, with one previous generation, so the log cannot grow
+/// without bound. The size is checked on every line: a session left running for
+/// days used to grow it far past the limit, which was only checked at launch.
 #[cfg(any(target_os = "macos", windows))]
-fn open_log(dir: &std::path::Path) -> Option<std::fs::File> {
-    std::fs::create_dir_all(dir).ok()?;
-    let path = dir.join("vayra.log");
-    if std::fs::metadata(&path).map(|m| m.len() > 10 * 1024 * 1024).unwrap_or(false) {
-        let _ = std::fs::rename(&path, dir.join("vayra.log.1"));
+struct Log {
+    path: std::path::PathBuf,
+    file: std::fs::File,
+    len: u64,
+    max: u64,
+}
+
+#[cfg(any(target_os = "macos", windows))]
+impl Log {
+    fn open(dir: &std::path::Path, max: u64) -> Option<Self> {
+        std::fs::create_dir_all(dir).ok()?;
+        let path = dir.join("vayra.log");
+        let file = Self::append(&path)?;
+        let len = file.metadata().map(|m| m.len()).unwrap_or(0);
+        Some(Self { path, file, len, max })
     }
-    std::fs::OpenOptions::new().create(true).append(true).open(&path).ok()
+
+    fn append(path: &std::path::Path) -> Option<std::fs::File> {
+        std::fs::OpenOptions::new().create(true).append(true).open(path).ok()
+    }
+
+    /// Write errors are ignored: the caller must keep draining whatever happens.
+    fn write_line(&mut self, line: &str) {
+        use std::io::Write;
+        let size = line.len() as u64 + 1;
+        if self.len > 0 && self.len + size > self.max {
+            let _ = std::fs::rename(&self.path, self.path.with_extension("log.1"));
+            if let Some(file) = Self::append(&self.path) {
+                self.file = file;
+                self.len = 0;
+            }
+        }
+        if writeln!(self.file, "{line}").is_ok() {
+            self.len += size;
+        }
+    }
 }
 
 /// Copies what reaches the pipe into the log, redacting URLs on the way.
 #[cfg(any(target_os = "macos", windows))]
-fn drain_into_log(reader: impl std::io::Read + Send + 'static, mut file: std::fs::File) {
-    use std::io::{BufRead, Write};
+fn drain_into_log(reader: impl std::io::Read + Send + 'static, mut log: Log) {
+    use std::io::BufRead;
     // The thread must keep draining the pipe whatever happens, or a full pipe would
-    // block every later write to stderr; write errors are therefore ignored.
+    // block every later write to stderr.
     let _ = std::thread::Builder::new().name("app-log".into()).spawn(move || {
         for line in std::io::BufReader::new(reader).split(b'\n').map_while(Result::ok) {
-            let _ = writeln!(file, "{}", redact_urls(&String::from_utf8_lossy(&line)));
+            log.write_line(&redact_urls(&String::from_utf8_lossy(&line)));
         }
     });
 }
+
+#[cfg(any(target_os = "macos", windows))]
+const MAX_LOG_BYTES: u64 = 10 * 1024 * 1024;
 
 /// A Finder launch sends stderr nowhere, taking every `eprintln!` diagnostic with it.
 /// Keep them in ~/Library/Logs/VAYRA/vayra.log, unless stderr is already a terminal.
@@ -33,7 +66,7 @@ pub fn redirect_stderr_to_log() {
         return;
     }
     let Some(home) = std::env::var_os("HOME") else { return };
-    let Some(file) = open_log(&std::path::Path::new(&home).join("Library/Logs/VAYRA")) else { return };
+    let Some(log) = Log::open(&std::path::Path::new(&home).join("Library/Logs/VAYRA"), MAX_LOG_BYTES) else { return };
     let mut fds = [0; 2];
     if unsafe { libc::pipe(fds.as_mut_ptr()) } != 0 {
         return;
@@ -46,7 +79,7 @@ pub fn redirect_stderr_to_log() {
         return;
     }
     unsafe { libc::close(fds[1]) };
-    drain_into_log(unsafe { std::fs::File::from_raw_fd(fds[0]) }, file);
+    drain_into_log(unsafe { std::fs::File::from_raw_fd(fds[0]) }, log);
 }
 
 /// A GUI-subsystem launch from Explorer or the Start menu has no stderr at all.
@@ -62,7 +95,7 @@ pub fn redirect_stderr_to_log() {
         return;
     }
     let Some(base) = std::env::var_os("LOCALAPPDATA") else { return };
-    let Some(file) = open_log(&std::path::Path::new(&base).join("app.vayra").join("logs")) else { return };
+    let Some(log) = Log::open(&std::path::Path::new(&base).join("app.vayra").join("logs"), MAX_LOG_BYTES) else { return };
     let Ok((reader, writer)) = std::io::pipe() else { return };
     // Rust's stderr looks the handle up on every write, so this reroutes eprintln!.
     // The write end now belongs to the process standard error and is never closed.
@@ -70,7 +103,7 @@ pub fn redirect_stderr_to_log() {
     if unsafe { SetStdHandle(STD_ERROR_HANDLE, handle) }.is_err() {
         return;
     }
-    drain_into_log(reader, file);
+    drain_into_log(reader, log);
 }
 
 const PEER_EVENTS: &str = "librqbit::torrent_state::live";
@@ -338,6 +371,22 @@ mod tests {
         assert!(!out.contains("TOKEN"), "{out}");
         assert_eq!(out.lines().count(), 2);
         assert!(out.ends_with('\n'));
+    }
+
+    #[cfg(any(target_os = "macos", windows))]
+    #[test]
+    fn rotates_the_log_while_the_app_runs() {
+        let dir = std::env::temp_dir().join(format!("vayra-log-{}", uuid::Uuid::new_v4()));
+        let mut log = super::Log::open(&dir, 100).unwrap();
+        for i in 0..30 {
+            log.write_line(&format!("line {i:02}"));
+        }
+        let current = std::fs::read_to_string(dir.join("vayra.log")).unwrap();
+        let previous = std::fs::read_to_string(dir.join("vayra.log.1")).unwrap();
+        assert!(current.len() <= 100, "{current}");
+        assert!(previous.len() <= 100, "{previous}");
+        assert!(current.ends_with("line 29\n"), "{current}");
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

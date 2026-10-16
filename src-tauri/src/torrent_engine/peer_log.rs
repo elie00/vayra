@@ -5,6 +5,9 @@ use std::time::Duration;
 use librqbit::Session;
 
 const INTERVAL: Duration = Duration::from_secs(10);
+/// Failure causes are summed over a minute: printed every tick while any torrent
+/// ran, they made up 70% of the log.
+const ERRORS_EVERY_TICKS: u64 = 6;
 
 /// Peer counters of one active torrent. Speed and progress move on every tick, so
 /// they are printed but left out of the comparison that decides whether to log.
@@ -22,12 +25,14 @@ struct PeerSnapshot {
 
 /// Logs peer counters whenever they change, to tell a swarm that never yields peers
 /// (`seen` stays low) from one whose peers are found and then lost (`dead` climbs),
-/// and why peer connections failed since the previous tick, for all torrents.
+/// and why peer connections failed in the last minute, for all torrents.
 pub fn spawn(session: Arc<Session>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut last: HashMap<String, PeerSnapshot> = HashMap::new();
+        let mut tick = 0u64;
         loop {
             tokio::time::sleep(INTERVAL).await;
+            tick += 1;
             let handles = session.with_torrents(|it| it.map(|(_, h)| h.clone()).collect::<Vec<_>>());
             let mut current = HashMap::new();
             for handle in handles {
@@ -72,10 +77,13 @@ pub fn spawn(session: Arc<Session>) -> tokio::task::JoinHandle<()> {
                 current.insert(hash, snap);
             }
             last = current;
+            if !tick.is_multiple_of(ERRORS_EVERY_TICKS) {
+                continue;
+            }
             let errors = crate::app_log::take_peer_errors();
             if !errors.is_empty() {
                 let causes: Vec<String> = errors.iter().map(|(cause, n)| format!("{cause}={n}")).collect();
-                eprintln!("[torrent-engine] peer errors {}s {}", INTERVAL.as_secs(), causes.join(" "));
+                eprintln!("[torrent-engine] peer errors {}s {}", INTERVAL.as_secs() * ERRORS_EVERY_TICKS, causes.join(" "));
             }
         }
     })
