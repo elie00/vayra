@@ -29,8 +29,10 @@ struct PeerSnapshot {
 pub fn spawn(session: Arc<Session>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut last: HashMap<String, PeerSnapshot> = HashMap::new();
-        for tick in 1u64.. {
+        let mut tick = 0u64;
+        loop {
             tokio::time::sleep(INTERVAL).await;
+            tick += 1;
             let handles = session.with_torrents(|it| it.map(|(_, h)| h.clone()).collect::<Vec<_>>());
             let mut current = HashMap::new();
             for handle in handles {
