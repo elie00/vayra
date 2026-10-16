@@ -155,18 +155,27 @@ async fn exchange(socket: &tokio::net::UdpSocket, request: &[u8]) -> Result<Vec<
     Err("no answer from the router".into())
 }
 
+/// The PCP nonce of this run. A renewal must carry the nonce of the mapping it renews
+/// (RFC 6887 §11.2): a fresh nonce on every renewal made the router treat it as a
+/// second client and map another external port.
+fn nonce() -> [u8; 12] {
+    static NONCE: std::sync::OnceLock<[u8; 12]> = std::sync::OnceLock::new();
+    *NONCE.get_or_init(|| {
+        let seed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        let mut nonce = [0u8; 12];
+        nonce.copy_from_slice(&seed.to_be_bytes()[4..16]);
+        nonce
+    })
+}
+
 /// Ask the router for the port, through PCP first and NAT-PMP when it only speaks that.
-async fn map(gateway: SocketAddr, port: u16, lifetime: u32) -> Result<Mapping, String> {
+async fn map(gateway: SocketAddr, port: u16, lifetime: u32, nonce: [u8; 12]) -> Result<Mapping, String> {
     let socket = tokio::net::UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).await.map_err(|e| e.to_string())?;
     socket.connect(gateway).await.map_err(|e| e.to_string())?;
     let client = match socket.local_addr().map_err(|e| e.to_string())?.ip() {
         std::net::IpAddr::V4(ip) => ip,
         std::net::IpAddr::V6(_) => return Err("no IPv4 route to the router".into()),
     };
-    // The nonce only has to tell this client's mappings apart.
-    let seed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&seed.to_be_bytes()[4..16]);
     let reply = exchange(&socket, &pcp_request(client, port, lifetime, nonce)).await?;
     // A NAT-PMP-only router answers PCP's version 2 with its own version 0.
     if reply.first() == Some(&2) {
@@ -175,11 +184,16 @@ async fn map(gateway: SocketAddr, port: u16, lifetime: u32) -> Result<Mapping, S
     parse_natpmp(&exchange(&socket, &natpmp_request(port, lifetime)).await?)
 }
 
-/// One mapping request to the router, bounded in time.
+/// One mapping request to the router, bounded in time. Peers are told the listening
+/// port, so a mapping on another external port counts as a failure.
 async fn attempt(gateway: SocketAddr, port: u16) -> Result<Mapping, String> {
-    tokio::time::timeout(ATTEMPT_TIMEOUT, map(gateway, port, LIFETIME_SECS))
+    let mapping = tokio::time::timeout(ATTEMPT_TIMEOUT, map(gateway, port, LIFETIME_SECS, nonce()))
         .await
-        .unwrap_or_else(|_| Err("no answer in time".into()))
+        .unwrap_or_else(|_| Err("no answer in time".into()))?;
+    if mapping.external_port != port {
+        return Err(format!("the router mapped external port {} instead", mapping.external_port));
+    }
+    Ok(mapping)
 }
 
 /// Keep the listening port mapped through PCP/NAT-PMP while UPnP has not forwarded it.
@@ -273,7 +287,7 @@ mod tests {
                 router.send_to(&reply, from).await.unwrap();
             }
         });
-        let mapping = map(gateway, 16881, 7200).await.unwrap();
+        let mapping = map(gateway, 16881, 7200, [7; 12]).await.unwrap();
         assert_eq!(
             mapping,
             Mapping { method: Method::NatPmp, external_port: 16882, lifetime: Duration::from_secs(7200) }
@@ -288,6 +302,48 @@ mod tests {
         let result = attempt(router.local_addr().unwrap(), 16881).await;
         assert!(result.is_err());
         assert!(started.elapsed() < ATTEMPT_TIMEOUT + Duration::from_secs(1));
+    }
+
+    /// A fake PCP router that, like the one seen in the logs, keeps 16881 for the
+    /// first client nonce it hears and hands any other nonce the next free port.
+    async fn pcp_router_keeping_the_first_nonce() -> SocketAddr {
+        let router = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let gateway = router.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1100];
+            let mut owner: Option<Vec<u8>> = None;
+            loop {
+                let (_, from) = router.recv_from(&mut buf).await.unwrap();
+                let nonce = buf[24..36].to_vec();
+                let external: u16 = if owner.get_or_insert_with(|| nonce.clone()) == &nonce { 16881 } else { 16883 };
+                let mut r = vec![2, 0x81, 0, 0, 0, 0, 0x1C, 0x20, 0, 0, 0, 1];
+                r.extend_from_slice(&[0; 12]);
+                r.extend_from_slice(&buf[24..42]);
+                r.extend_from_slice(&external.to_be_bytes());
+                r.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 203, 0, 113, 7]);
+                router.send_to(&r, from).await.unwrap();
+            }
+        });
+        gateway
+    }
+
+    /// A renewal is the same mapping to the router, so it keeps the external port.
+    #[tokio::test]
+    async fn renews_the_mapping_it_already_holds() {
+        let gateway = pcp_router_keeping_the_first_nonce().await;
+        for _ in 0..3 {
+            assert_eq!(attempt(gateway, 16881).await.map(|m| m.external_port), Ok(16881));
+        }
+    }
+
+    /// Peers are told the listening port, so another external port reaches nobody.
+    #[tokio::test]
+    async fn refuses_a_mapping_on_another_external_port() {
+        let gateway = pcp_router_keeping_the_first_nonce().await;
+        // Another client, with its own nonce, holds 16881 already.
+        assert!(map(gateway, 16881, 7200, [9; 12]).await.is_ok());
+        let result = attempt(gateway, 16881).await;
+        assert!(result.as_ref().is_err_and(|e| e.contains("16883")), "{result:?}");
     }
 
     /// A PCP router maps the port at once.
@@ -306,7 +362,7 @@ mod tests {
             r.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 203, 0, 113, 7]);
             router.send_to(&r, from).await.unwrap();
         });
-        let mapping = map(gateway, 16881, 7200).await.unwrap();
+        let mapping = map(gateway, 16881, 7200, [7; 12]).await.unwrap();
         assert_eq!(
             mapping,
             Mapping { method: Method::Pcp, external_port: 16881, lifetime: Duration::from_secs(3600) }
