@@ -10,6 +10,7 @@ mod fonts;
 mod http_fetch;
 mod local_lib;
 mod power;
+mod credential_queue;
 mod settings_store;
 mod settings_history;
 mod stream_proxy;

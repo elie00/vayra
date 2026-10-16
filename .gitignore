@@ -54,3 +54,5 @@ local_docs/
 
 # Le gitignore global de la machine ignore *.sql — ré-inclure les fichiers SQL Supabase (migrations + tests)
 !/supabase/**/*.sql
+# Source folders named downloads are part of the app, whatever a global gitignore says.
+!src/**/downloads/

@@ -37,7 +37,7 @@ export function DeleteDownloadDialog({ items, onClose, returnFocusRef }: { items
     {single ? (
       <>
         <p className="font-medium text-ink">{single.title}{single.subtitle ? ` · ${single.subtitle}` : ""}</p>
-        <p>{t("The video file and any partial download will be permanently deleted from this Mac. This cannot be undone.")}</p>
+        <p>{t("The video file and any partial download will be permanently deleted from this computer. This cannot be undone.")}</p>
         <p className="break-all text-xs">{single.path}</p>
       </>
     ) : (

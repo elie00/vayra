@@ -130,8 +130,13 @@ pub fn settings_write(app: tauri::AppHandle, content: String) -> Result<(), Stri
 /// Reads the sensitive settings blob from the operating system credential store.
 /// Desktop uses the native keyring and Android uses an AES-GCM key held by the
 /// Android Keystore through the JNI helper below.
+/// Runs off the main thread: a keychain prompt must not freeze the window.
 #[tauri::command]
-pub fn settings_secrets_read() -> Result<Option<String>, String> {
+pub async fn settings_secrets_read() -> Result<Option<String>, String> {
+    crate::credential_queue::run(settings_secrets_read_blocking).await?
+}
+
+fn settings_secrets_read_blocking() -> Result<Option<String>, String> {
     #[cfg(desktop)]
     {
         read_secret(LEGACY_KEYRING_SERVICE, KEYRING_SERVICE, KEYRING_USER)
@@ -146,8 +151,13 @@ pub fn settings_secrets_read() -> Result<Option<String>, String> {
     }
 }
 
+/// Runs off the main thread: a keychain prompt must not freeze the window.
 #[tauri::command]
-pub fn settings_secrets_write(content: String) -> Result<(), String> {
+pub async fn settings_secrets_write(content: String) -> Result<(), String> {
+    crate::credential_queue::run(move || settings_secrets_write_blocking(content)).await?
+}
+
+fn settings_secrets_write_blocking(content: String) -> Result<(), String> {
     #[cfg(desktop)]
     {
         credential_chunks::set(KEYRING_SERVICE, KEYRING_USER, &content)
@@ -164,8 +174,13 @@ pub fn settings_secrets_write(content: String) -> Result<(), String> {
     }
 }
 
+/// Runs off the main thread: a keychain prompt must not freeze the window.
 #[tauri::command]
-pub fn auth_secret_read(account: String) -> Result<Option<String>, String> {
+pub async fn auth_secret_read(account: String) -> Result<Option<String>, String> {
+    crate::credential_queue::run(move || auth_secret_read_blocking(account)).await?
+}
+
+fn auth_secret_read_blocking(account: String) -> Result<Option<String>, String> {
     let account = credential_account(&account)?;
     #[cfg(desktop)]
     {
@@ -182,8 +197,13 @@ pub fn auth_secret_read(account: String) -> Result<Option<String>, String> {
     }
 }
 
+/// Runs off the main thread: a keychain prompt must not freeze the window.
 #[tauri::command]
-pub fn auth_secret_write(account: String, content: Option<String>) -> Result<(), String> {
+pub async fn auth_secret_write(account: String, content: Option<String>) -> Result<(), String> {
+    crate::credential_queue::run(move || auth_secret_write_blocking(account, content)).await?
+}
+
+fn auth_secret_write_blocking(account: String, content: Option<String>) -> Result<(), String> {
     let account = credential_account(&account)?;
     #[cfg(desktop)]
     {
