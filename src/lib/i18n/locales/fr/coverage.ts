@@ -1414,6 +1414,7 @@ const coverage: Record<string, string> = {
   "The lighter fill showing how much is buffered or downloaded ahead. It hides automatically once a stream is fully cached (green dot).": "Le remplissage plus clair indiquant la quantité mise en tampon ou téléchargée d'avance. Il se masque automatiquement une fois le flux entièrement en cache (point vert).",
   "The little 4K · HDR · codec · audio chips that ride along each stream in the play picker.": "Les petites puces 4K · HDR · codec · audio qui accompagnent chaque flux dans le sélecteur de lecture.",
   "The most-watched movies and series on {name} right now in {region}.": "Les films et séries les plus regardés sur {name} en ce moment dans {region}.",
+  "{name} is not offered in {region}: this is its {home} catalog.": "{name} n’est pas proposé en {region} : voici son catalogue {home}.",
   "The picker tags each stream with resolution, HDR flavor, codec, and audio format. Off hides them all.": "Le sélecteur étiquette chaque flux avec la résolution, le type de HDR, le codec et le format audio. Désactivé les masque tous.",
   "The test calls": "Le test appelle",
   "The yellow chip in the poster corner.": "La pastille jaune dans le coin de l'affiche.",

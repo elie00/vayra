@@ -6,7 +6,7 @@ import { Row } from "@/components/row";
 import { ServiceLogo } from "@/components/service-logo";
 import { TopRankCard } from "@/components/top-rank-card";
 import type { Meta } from "@/lib/cinemeta";
-import { SERVICES, providerIdsFor } from "@/lib/providers/streaming";
+import { SERVICES, catalogRegion, providerIdsFor } from "@/lib/providers/streaming";
 import { safeFetch } from "@/lib/safe-fetch";
 import { useSettings, type StreamingService } from "@/lib/settings";
 import { useScrollMemory } from "@/lib/view";
@@ -54,18 +54,34 @@ export function ServiceView({ service }: { service: StreamingService }) {
   const [hasMore, setHasMore] = useState(true);
   const scrollRef = useRef<HTMLElement>(null);
   useScrollMemory(`service:${service}`, scrollRef);
+  // The region to browse in: the user's, or the service's home one when not offered there.
+  const [region, setRegion] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setRegion(null);
+    catalogRegion(settings.tmdbKey, service, settings.region)
+      .then((r) => alive && setRegion(r))
+      .catch((e) => {
+        console.warn("[service] region lookup failed", e);
+        if (alive) setRegion(settings.region);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [service, settings.tmdbKey, settings.region]);
 
   useEffect(() => {
     setBucket({ movies: [], series: [] });
     setBatch(0);
     setLoading(true);
     setHasMore(true);
-  }, [service, category.id, settings.tmdbKey, settings.region]);
+  }, [service, category.id, settings.tmdbKey, region]);
 
   useEffect(() => {
+    if (region == null) return;
     let cancelled = false;
     setFetching(true);
-    fetchCategoryBatch(settings.tmdbKey, providerIdsFor(meta), settings.region, category, batch)
+    fetchCategoryBatch(settings.tmdbKey, providerIdsFor(meta), region, category, batch)
       .then((b) => {
         if (cancelled) return;
         if (b.movies.length === 0 && b.series.length === 0) setHasMore(false);
@@ -92,7 +108,7 @@ export function ServiceView({ service }: { service: StreamingService }) {
     return () => {
       cancelled = true;
     };
-  }, [batch, service, category.id, settings.tmdbKey, settings.region, meta, category]);
+  }, [batch, service, category.id, settings.tmdbKey, region, meta, category]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -132,8 +148,13 @@ export function ServiceView({ service }: { service: StreamingService }) {
               <ServiceLogo service={service} height={56} />
             </div>
             <p className="max-w-xl text-[14.5px] leading-relaxed text-ink-muted">
-              {t("The most-watched movies and series on {name} right now in {region}.", { name: meta.name, region: settings.region })}
+              {t("The most-watched movies and series on {name} right now in {region}.", { name: meta.name, region: region ?? settings.region })}
             </p>
+            {region != null && region !== settings.region && (
+              <p className="max-w-xl text-[13px] leading-relaxed text-ink-subtle">
+                {t("{name} is not offered in {region}: this is its {home} catalog.", { name: meta.name, region: settings.region, home: region })}
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -132,9 +132,10 @@ export async function streamingRows(settings: Settings): Promise<ServiceRow[]> {
   const tasks = enabled.map(async (svc): Promise<ServiceRow> => {
     const { name } = SERVICES[svc];
     const providers = providerIdsFor(SERVICES[svc]);
+    const region = await catalogRegion(settings.tmdbKey, svc, settings.region);
     const [movies, series] = await Promise.all([
-      discover<RawMovie>(settings.tmdbKey, "movie", providers, settings.region),
-      discover<RawSeries>(settings.tmdbKey, "tv", providers, settings.region),
+      discover<RawMovie>(settings.tmdbKey, "movie", providers, region),
+      discover<RawSeries>(settings.tmdbKey, "tv", providers, region),
     ]);
     const movieMetas: Meta[] = movies.slice(0, 12).map((m) => ({
       id: `tmdb:movie:${m.id}`,
