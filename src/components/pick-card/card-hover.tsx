@@ -2,6 +2,7 @@ import { Play, Star } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { ElegantHoverActions } from "./elegant-hover";
+import { HoverAction } from "./hover-action";
 
 export type CardHoverStyle = "none" | "default" | "elegant" | "frosted" | "cinema" | "spotlight" | "custom";
 
@@ -66,17 +67,8 @@ function ratingLine(meta: Meta) {
   );
 }
 
-function playHandler(onPlay: () => void) {
-  return (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onPlay();
-  };
-}
-
 function FrostedOverlay({ meta, onPlay, preview }: { meta: Meta; onPlay: () => void; preview?: boolean }) {
   const t = useT();
-  const btn = preview ? "pointer-events-none" : "pointer-events-auto";
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 overflow-hidden rounded-b-[var(--poster-radius,12px)]">
       <div
@@ -89,16 +81,15 @@ function FrostedOverlay({ meta, onPlay, preview }: { meta: Meta; onPlay: () => v
         <span className="line-clamp-1 text-[13px] font-semibold text-white">{meta.name}</span>
         <div className="flex items-center justify-between gap-2">
           {ratingLine(meta)}
-          <span
-            role="button"
-            aria-label={t("Play")}
-            title={t("Play")}
-            onClick={playHandler(onPlay)}
-            className={`${btn} flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-bold text-black transition-transform hover:scale-105`}
+          <HoverAction
+            label={t("Play")}
+            onActivate={onPlay}
+            preview={preview}
+            className={`flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-bold text-black transition-transform hover:scale-105`}
           >
             <Play size={12} fill="currentColor" strokeWidth={0} />
             {t("Play")}
-          </span>
+          </HoverAction>
         </div>
       </div>
     </div>
@@ -107,7 +98,6 @@ function FrostedOverlay({ meta, onPlay, preview }: { meta: Meta; onPlay: () => v
 
 function CinemaOverlay({ onPlay, preview }: { onPlay: () => void; preview?: boolean }) {
   const t = useT();
-  const btn = preview ? "pointer-events-none" : "pointer-events-auto";
   const vis = preview ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100";
   const pop = preview
     ? "scale-100 opacity-100"
@@ -120,15 +110,14 @@ function CinemaOverlay({ onPlay, preview }: { onPlay: () => void; preview?: bool
       <div
         className={`pointer-events-none absolute inset-x-0 top-0 h-[14%] bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-300 ${vis}`}
       />
-      <span
-        role="button"
-        aria-label={t("Play")}
-        title={t("Play")}
-        onClick={playHandler(onPlay)}
-        className={`${btn} relative flex h-12 w-12 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/40 backdrop-blur-md transition-[transform,opacity] duration-300 ${EASE} hover:bg-white/20 ${pop}`}
+      <HoverAction
+        label={t("Play")}
+        onActivate={onPlay}
+        preview={preview}
+        className={`relative flex h-12 w-12 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/40 backdrop-blur-md transition-[transform,opacity] duration-300 ${EASE} hover:bg-white/20 ${pop}`}
       >
         <Play size={19} fill="currentColor" strokeWidth={0} className="translate-x-[1px]" />
-      </span>
+      </HoverAction>
     </div>
   );
 }
