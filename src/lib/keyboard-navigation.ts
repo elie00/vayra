@@ -111,8 +111,11 @@ function getSoundType(el: HTMLElement): 'light' | 'movie' {
   return 'light';
 }
 
+// Arrows move between cards; a card's hover actions are reached with Tab.
 function getFocusable(root: ParentNode = document): HTMLElement[] {
-  const all = Array.from(root.querySelectorAll<HTMLElement>(SELECTOR)).filter(isVisible);
+  const all = Array.from(root.querySelectorAll<HTMLElement>(SELECTOR)).filter(
+    (el) => !el.hasAttribute('data-spatial-skip') && isVisible(el),
+  );
   return all.filter((el) => !all.some((other) => other !== el && other.contains(el)));
 }
 

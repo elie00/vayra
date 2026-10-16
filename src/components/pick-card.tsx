@@ -51,6 +51,10 @@ import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import traktLogo from "@/assets/trakt.svg";
 import simklLogo from "@/assets/simkl.png";
 
+/** The poster rises on hover; the hover actions above it rise with it. */
+const LIFT =
+  "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] will-change-transform group-hover:[-webkit-transform:translate3d(0,-0.5rem,0)] group-hover:[transform:translate3d(0,-0.5rem,0)]";
+
 const WATCHLIST_POS: Record<string, string> = {
   topStart: "top-1.5 start-1.5",
   topEnd: "top-1.5 end-1.5",
@@ -457,119 +461,131 @@ export const PickCard = memo(function PickCard({
     return () => off?.();
   }, [meta.id, isAnimeCardId]);
 
+  const hoverActions = activeCustom ? (
+    <CustomHoverOverlay
+      config={activeCustom}
+      meta={meta}
+      onPlay={() => {
+        if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
+        else openMeta(meta);
+      }}
+    />
+  ) : inCardHover !== "none" ? (
+    <CardHoverOverlay
+      meta={meta}
+      style={inCardHover}
+      onPlay={() => {
+        if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
+        else openMeta(meta);
+      }}
+    />
+  ) : null;
+
+  // The hover actions sit beside the card's button, over its poster: a button
+  // inside a button cannot take focus. The wrapper is a group too, so hovering
+  // or focusing an action keeps the card in its hover state.
   return (
-    <button
-      ref={ref}
-      onClick={() => (isMobileTauri() ? previewMeta(meta) : openMeta(meta))}
-      onContextMenu={(e) => openContextMenu(e, { kind: "meta", meta })}
-      onFocus={(e) => hoverPreviewFocus(meta, e.currentTarget)}
-      onBlur={(e) => hoverPreviewBlur(e.currentTarget)}
-      data-no-card-ring={inCardHover !== "none" || activeCustom ? "" : undefined}
-      className="group flex w-full min-w-0 flex-col gap-2.5 text-start"
-    >
-      <div
-        data-preview-anchor
-        onPointerEnter={(e) => hoverPreviewEnter(meta, e.currentTarget, e.buttons)}
-        onPointerLeave={(e) => hoverPreviewLeave(e.currentTarget)}
-        style={customProps?.style}
-        className="relative w-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] will-change-transform group-hover:[-webkit-transform:translate3d(0,-0.5rem,0)] group-hover:[transform:translate3d(0,-0.5rem,0)]"
+    <div className="group relative w-full min-w-0">
+      <button
+        ref={ref}
+        onClick={() => (isMobileTauri() ? previewMeta(meta) : openMeta(meta))}
+        onContextMenu={(e) => openContextMenu(e, { kind: "meta", meta })}
+        onFocus={(e) => hoverPreviewFocus(meta, e.currentTarget)}
+        onBlur={(e) => hoverPreviewBlur(e.currentTarget)}
+        data-no-card-ring={inCardHover !== "none" || activeCustom ? "" : undefined}
+        className="group flex w-full min-w-0 flex-col gap-2.5 text-start"
       >
-        <Poster
-          src={posterSrc}
-          seed={meta.id}
-          lowResImdb={imdbId}
-          ratio="portrait"
-          onError={() => setImgIdx((i) => i + 1)}
-          className={`harbor-card-ring rounded-[var(--poster-radius,12px)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)] ${
-            customProps ? customProps.className : cardHoverPosterClass(inCardHover)
-          }`}
-        />
-        {activeCustom ? (
-          <CustomHoverOverlay
-            config={activeCustom}
-            meta={meta}
-            onPlay={() => {
-              if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
-              else openMeta(meta);
-            }}
-          />
-        ) : inCardHover !== "none" ? (
-          <CardHoverOverlay
-            meta={meta}
-            style={inCardHover}
-            onPlay={() => {
-              if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
-              else openMeta(meta);
-            }}
-          />
-        ) : null}
-        <div className={badgeFade}>
-        {hasDub && (
-          <span className="pointer-events-none absolute start-2 top-2 z-10 rounded-md bg-accent/90 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-canvas ring-1 ring-black/10">
-            DUB
-          </span>
-        )}
-        {settings.showCardBadges && (
-          <>
-            {rerun && <RerunBadge year={meta.releaseInfo} dubShift={hasDub} />}
-            {showCinema && <CinemaBadge dubShift={hasDub} />}
-            {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} kids={kids} dubShift={hasDub} />}
-            <AnimeAwardBadge
-              name={awardLookupName ?? meta.name}
-              fallbackName={meta.name}
-              year={parseAwardYear(meta.releaseInfo)}
-              stacked={rerun || showCinema || !!newBadge}
-              dubShift={hasDub}
-            />
-          </>
-        )}
-        {inWatchlist && settings.watchlistBadge !== "off" && (
-          <span
-            className={`pointer-events-none absolute flex h-6 w-6 items-center justify-center rounded-full bg-canvas/85 text-ink ring-1 ring-edge-soft/70 backdrop-blur-sm ${WATCHLIST_POS[settings.watchlistBadge]}`}
-            title={t("In your watchlist")}
-            aria-label={t("In watchlist")}
-          >
-            <Bookmark size={11} strokeWidth={2.6} fill="currentColor" />
-          </span>
-        )}
-        {watched && (
-          <span
-            className="pointer-events-none absolute bottom-1.5 start-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 text-white ring-1 ring-emerald-300/40 backdrop-blur-sm"
-            title={t("Watched")}
-            aria-label={t("Watched")}
-          >
-            <Check size={12} strokeWidth={3} />
-          </span>
-        )}
-        {settings.showLocalLibraryBadge && inLocalLibrary && (
-          <LocalDot
-            title={t("In your local library")}
-            className={`bottom-1.5 ${settings.watchlistBadge === "bottomStart" ? "start-9" : "start-1.5"}`}
-          />
-        )}
-        {kids ? (
-          cardRating && <KidsStarBadge value={cardRating} placement={settings.badgePlacement} />
-        ) : (
-          <ScoreStack
-            badges={cardBadges}
-            limit={settings.cardBadgeLimit}
-            placement={settings.badgePlacement}
-          />
-        )}
-        </div>
-      </div>
-      {!settings.hidePosterTitles && (
-        <p
-          className={
-            kids
-              ? "line-clamp-2 min-h-9 text-[15px] font-bold leading-snug text-[#0e3a43]"
-              : "line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink"
-          }
+        <div
+          data-preview-anchor
+          onPointerEnter={(e) => hoverPreviewEnter(meta, e.currentTarget, e.buttons)}
+          onPointerLeave={(e) => hoverPreviewLeave(e.currentTarget)}
+          style={customProps?.style}
+          className={`relative w-full ${LIFT}`}
         >
-          {translatedTitle || meta.name}
-        </p>
+          <Poster
+            src={posterSrc}
+            seed={meta.id}
+            lowResImdb={imdbId}
+            ratio="portrait"
+            onError={() => setImgIdx((i) => i + 1)}
+            className={`harbor-card-ring rounded-[var(--poster-radius,12px)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)] ${
+              customProps ? customProps.className : cardHoverPosterClass(inCardHover)
+            }`}
+          />
+          <div className={badgeFade}>
+          {hasDub && (
+            <span className="pointer-events-none absolute start-2 top-2 z-10 rounded-md bg-accent/90 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-canvas ring-1 ring-black/10">
+              DUB
+            </span>
+          )}
+          {settings.showCardBadges && (
+            <>
+              {rerun && <RerunBadge year={meta.releaseInfo} dubShift={hasDub} />}
+              {showCinema && <CinemaBadge dubShift={hasDub} />}
+              {newBadge && <Badge label={t(newBadge.label)} tone={newBadge.tone} kids={kids} dubShift={hasDub} />}
+              <AnimeAwardBadge
+                name={awardLookupName ?? meta.name}
+                fallbackName={meta.name}
+                year={parseAwardYear(meta.releaseInfo)}
+                stacked={rerun || showCinema || !!newBadge}
+                dubShift={hasDub}
+              />
+            </>
+          )}
+          {inWatchlist && settings.watchlistBadge !== "off" && (
+            <span
+              className={`pointer-events-none absolute flex h-6 w-6 items-center justify-center rounded-full bg-canvas/85 text-ink ring-1 ring-edge-soft/70 backdrop-blur-sm ${WATCHLIST_POS[settings.watchlistBadge]}`}
+              title={t("In your watchlist")}
+              aria-label={t("In watchlist")}
+            >
+              <Bookmark size={11} strokeWidth={2.6} fill="currentColor" />
+            </span>
+          )}
+          {watched && (
+            <span
+              className="pointer-events-none absolute bottom-1.5 start-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 text-white ring-1 ring-emerald-300/40 backdrop-blur-sm"
+              title={t("Watched")}
+              aria-label={t("Watched")}
+            >
+              <Check size={12} strokeWidth={3} />
+            </span>
+          )}
+          {settings.showLocalLibraryBadge && inLocalLibrary && (
+            <LocalDot
+              title={t("In your local library")}
+              className={`bottom-1.5 ${settings.watchlistBadge === "bottomStart" ? "start-9" : "start-1.5"}`}
+            />
+          )}
+          {kids ? (
+            cardRating && <KidsStarBadge value={cardRating} placement={settings.badgePlacement} />
+          ) : (
+            <ScoreStack
+              badges={cardBadges}
+              limit={settings.cardBadgeLimit}
+              placement={settings.badgePlacement}
+            />
+          )}
+          </div>
+        </div>
+        {!settings.hidePosterTitles && (
+          <p
+            className={
+              kids
+                ? "line-clamp-2 min-h-9 text-[15px] font-bold leading-snug text-[#0e3a43]"
+                : "line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink"
+            }
+          >
+            {translatedTitle || meta.name}
+          </p>
+        )}
+      </button>
+      {hoverActions && (
+        <div className={`pointer-events-none absolute inset-x-0 top-0 ${LIFT}`}>
+          <div aria-hidden style={{ paddingTop: "150%" }} />
+          {hoverActions}
+        </div>
       )}
-    </button>
+    </div>
   );
 });
 

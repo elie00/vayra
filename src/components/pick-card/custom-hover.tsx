@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { CustomHoverConfig } from "@/lib/custom-hover";
 import { useT } from "@/lib/i18n";
+import { HoverAction } from "./hover-action";
 
 export function customHoverPosterProps(
   config: CustomHoverConfig,
@@ -31,7 +32,6 @@ export function CustomHoverOverlay({
   preview?: boolean;
 }) {
   const t = useT();
-  const btn = preview ? "pointer-events-none" : "pointer-events-auto";
   const vis = preview ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100";
 
   const info = (config.showTitle || config.showMeta) && (
@@ -52,18 +52,14 @@ export function CustomHoverOverlay({
   );
 
   const playDisc = config.showPlay && (
-    <span
-      role="button"
-      aria-label={t("Play")}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onPlay();
-      }}
-      className={`${btn} flex h-10 w-10 items-center justify-center rounded-full bg-[#22a45d] text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.7)] transition-transform hover:scale-110`}
+    <HoverAction
+      label={t("Play")}
+      onActivate={onPlay}
+      preview={preview}
+      className={`flex h-10 w-10 items-center justify-center rounded-full bg-[#22a45d] text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.7)] transition-transform hover:scale-110`}
     >
       <Play size={16} fill="currentColor" strokeWidth={0} className="translate-x-[1px]" />
-    </span>
+    </HoverAction>
   );
 
   if (config.overlay === "panel") {
