@@ -5,21 +5,11 @@ use futures_util::StreamExt;
 use librqbit::dht::{Dht, DhtBuilder, DhtConfig, Id20};
 use tokio::time::{timeout_at, Instant};
 
-const BOOTSTRAP: &[&str] = &[
-    "router.bittorrent.com:6881",
-    "router.utorrent.com:6881",
-    "dht.transmissionbt.com:6881",
-    "dht.libtorrent.org:25401",
-    "dht.aelitis.com:6881",
-];
-
+/// librqbit's own bootstrap nodes. router.bittorrent.com, router.utorrent.com and
+/// dht.aelitis.com no longer answer, and librqbit retried each of them every
+/// minute or two for a whole day, logging a warning every time.
 pub async fn build() -> Option<Dht> {
-    let boot = BOOTSTRAP.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-    match DhtBuilder::with_config(DhtConfig {
-        bootstrap_addrs: Some(boot),
-        ..Default::default()
-    })
-    .await
+    match DhtBuilder::with_config(DhtConfig::default()).await
     {
         Ok(d) => Some(d),
         Err(e) => {
