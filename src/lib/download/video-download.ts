@@ -94,7 +94,7 @@ export function startDownload(
   return {
     promise,
     abort: () => {
-      void invoke("download_cancel", { id }).catch(() => {});
+      void invoke("download_cancel", { id }).catch((e) => console.warn("[download] cancel failed", e));
     },
   };
 }

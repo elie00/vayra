@@ -18,7 +18,7 @@ export function DownloadsSection() {
       .then((d) => {
         if (!cancelled) setSystemDefault(d);
       })
-      .catch(() => {});
+      .catch((e) => console.warn("[downloads] default folder unavailable", e));
     return () => {
       cancelled = true;
     };
