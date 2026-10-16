@@ -15,7 +15,7 @@ Base `27dc1c83`, branche `fix/a11y-click-targets`. Skill checklist-design : Butt
 | Commande doublée par un bouton (multivue « Activer le son », carrousel « Lecture »/« Épisodes »/points) | 2 | Couvert | Équivalent clavier existant |
 | Note SIMKL (10 demi-étoiles) | 2 | **Corrigé** | Notation impossible au clavier |
 | Note Trakt au-dessus des commentaires | 1 | **Corrigé** | Notation impossible au clavier |
-| Boutons de survol des cartes (`pick-card/*-hover.tsx`) | 6 | Partiel | `role="button"` sans focus, mais imbriqués dans le `<button>` de la carte : un bouton focalisable n'y est pas permis. La carte reste ouvrable au clavier et la fiche propose Lecture, Vu et Liste de suivi |
+| Boutons de survol des cartes (`pick-card/*-hover.tsx`) | 6 | **Corrigé** (second lot) | Imbriqués dans le `<button>` de la carte, ils ne pouvaient pas prendre le focus |
 | Toast d'identification musicale | 2 | Partiel | Toast transitoire du lecteur ; ouverture YouTube à la souris seulement |
 
 ## Corrections
@@ -32,6 +32,11 @@ Les 35 `autoFocus` apparaissent dans une modale ou après une action (recherche,
 
 Tests `simkl-rating-picker.test.tsx` et `trakt-star-row.test.tsx` (échec avant correction : aucun bouton), couverture fr, `tsc`, `pnpm test:design`. Le parcours Tab natif et VoiceOver dans l'app installée : non vérifiés.
 
-## Lot suivant proposé
+## Second lot : actions de survol des cartes
 
-Restructurer la carte (`pick-card.tsx`) pour que la zone d'ouverture et les actions de survol soient des boutons frères, puis rendre les actions focalisables. Critère : Tab atteint Lecture, Vu et Liste de suivi d'une carte, sans perdre l'anneau de focus ni le gabarit de la carte.
+- `HoverAction` : vrai `<button>` sur une carte ; simple dessin `aria-hidden` dans les aperçus des Réglages, qui sont eux-mêmes des commandes.
+- `PickCard` : un conteneur `group` réunit le bouton de la carte et les actions, posées au-dessus de l'affiche et soulevées avec elle au survol. Les sélecteurs `button.group` du thème Stremio restent valables.
+- Navigation aux flèches : les actions portent `data-spatial-skip` et sont ignorées, pour passer de carte en carte ; Tab les atteint, et le focus rend les actions visibles (`group-focus-within`).
+- Budget `nonSemanticClick` abaissé à 111.
+
+Preuves : test `pick-card.test.tsx` sur la vraie carte (échec avant correction : actions dans le bouton de la carte) et `hover-actions.test.tsx` pour les styles élégant, givré, cinéma et personnalisé. Rendu non observé : hors de Tauri, le serveur de développement n'affiche aucun catalogue ; alignement au survol, anneau de focus et VoiceOver restent **non vérifiés** dans l'app installée.
