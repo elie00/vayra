@@ -159,7 +159,7 @@ for (const absolute of sourceFiles(sourceRoot)) {
 }
 
 const debtBudgets = {
-  nonSemanticClick: 120,
+  nonSemanticClick: 117,
   autoFocus: 35,
   transitionAll: 167,
 };
