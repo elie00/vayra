@@ -84,7 +84,8 @@ function buildGroups(items: DownloadItem[]): DownloadGroup[] {
 export function DownloadsView() {
   const t = useT();
   const items = useDownloads();
-  const [pendingRemoval, setPendingRemoval] = useState<DownloadItem | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<DownloadItem[] | null>(null);
+  const removeOne = (item: DownloadItem) => setPendingRemoval([item]);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const activeFilterRef = useRef<HTMLButtonElement>(null);
   const focusedRef = useRef<HTMLElement | null>(null);
@@ -137,16 +138,16 @@ export function DownloadsView() {
             {groups.map((g) =>
               g.kind === "movie" ? (
                 <ul key={g.item.id} className="contents">
-                  <DownloadRow d={g.item} onRemove={setPendingRemoval} />
+                  <DownloadRow d={g.item} onRemove={removeOne} />
                 </ul>
               ) : (
-                <ShowGroup key={g.metaId} group={g} onRemove={setPendingRemoval} />
+                <ShowGroup key={g.metaId} group={g} onRemove={removeOne} onRemoveMany={setPendingRemoval} />
               ),
             )}
           </div>
         )}
       </div>
-      {pendingRemoval && <DeleteDownloadDialog item={pendingRemoval} returnFocusRef={headingRef} onClose={() => setPendingRemoval(null)} />}
+      {pendingRemoval && <DeleteDownloadDialog items={pendingRemoval} returnFocusRef={headingRef} onClose={() => setPendingRemoval(null)} />}
     </main>
   );
 }
@@ -170,7 +171,7 @@ function EmptyState() {
   );
 }
 
-function ShowGroup({ group, onRemove }: { group: Extract<DownloadGroup, { kind: "show" }>; onRemove: (item: DownloadItem) => void }) {
+function ShowGroup({ group, onRemove, onRemoveMany }: { group: Extract<DownloadGroup, { kind: "show" }>; onRemove: (item: DownloadItem) => void; onRemoveMany: (items: DownloadItem[]) => void }) {
   const t = useT();
   const { settings } = useSettings();
   const poster = usePosterChain(settings.rpdbKey, group.metaId, group.poster ?? undefined, "series");
@@ -181,6 +182,18 @@ function ShowGroup({ group, onRemove }: { group: Extract<DownloadGroup, { kind: 
       ),
     [group.items],
   );
+  // Episodes picked for deleting together; ids of episodes since removed are ignored.
+  const [selected, setSelected] = useState<Set<string> | null>(null);
+  const selectable = episodes.filter((d) => d.status !== "removing");
+  const picked = selectable.filter((d) => selected?.has(d.id));
+  const toggle = (id: string) =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const allPicked = selectable.length > 0 && picked.length === selectable.length;
   const totalBytes = episodes.reduce(
     (sum, d) => (d.status === "done" ? sum + (d.totalBytes ?? d.receivedBytes) : sum),
     0,
@@ -198,17 +211,46 @@ function ShowGroup({ group, onRemove }: { group: Extract<DownloadGroup, { kind: 
             {totalBytes > 0 ? `  ·  ${fmtBytes(totalBytes)}` : ""}
           </span>
         </div>
+        {episodes.length > 1 && (
+          <div className="ms-auto flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+            {selected == null ? (
+              <button type="button" className="mac-secondary-button" onClick={() => setSelected(new Set())}>{t("Select")}</button>
+            ) : (
+              <>
+                <button type="button" className="mac-secondary-button" onClick={() => setSelected(allPicked ? new Set() : new Set(selectable.map((d) => d.id)))}>
+                  {allPicked ? t("Deselect all") : t("Select all")}
+                </button>
+                <button type="button" className="mac-secondary-button text-danger disabled:opacity-50" disabled={picked.length === 0} onClick={() => onRemoveMany(picked)}>
+                  {t("Delete selected ({n})", { n: picked.length })}
+                </button>
+                <button type="button" className="mac-secondary-button" onClick={() => setSelected(null)}>{t("Cancel")}</button>
+              </>
+            )}
+          </div>
+        )}
       </div>
       <ul className="flex flex-col gap-1.5 border-t border-edge-soft/50 px-2 pb-2 pt-2">
         {episodes.map((d) => (
-          <DownloadRow key={d.id} d={d} compact onRemove={onRemove} />
+          <DownloadRow
+            key={d.id}
+            d={d}
+            compact
+            onRemove={onRemove}
+            selection={selected == null ? undefined : { checked: selected.has(d.id), disabled: d.status === "removing", onToggle: () => toggle(d.id) }}
+          />
         ))}
       </ul>
     </div>
   );
 }
 
-function DownloadRow({ d, compact = false, onRemove }: { d: DownloadItem; compact?: boolean; onRemove: (item: DownloadItem) => void }) {
+function DownloadRow({ d, compact = false, onRemove, selection }: {
+  d: DownloadItem;
+  compact?: boolean;
+  onRemove: (item: DownloadItem) => void;
+  /** Shown while the show's episodes are being picked for deleting together. */
+  selection?: { checked: boolean; disabled: boolean; onToggle: () => void };
+}) {
   const t = useT();
   const { openPlayer } = useView();
   const [localError, setLocalError] = useState(false);
@@ -231,6 +273,16 @@ function DownloadRow({ d, compact = false, onRemove }: { d: DownloadItem; compac
   };
   return (
     <li className="group flex items-center gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-3 transition-colors hover:bg-elevated/70">
+      {selection && (
+        <input
+          type="checkbox"
+          aria-label={d.subtitle ?? d.title}
+          checked={selection.checked}
+          disabled={selection.disabled}
+          onChange={selection.onToggle}
+          className="h-5 w-5 shrink-0 accent-[var(--color-accent)]"
+        />
+      )}
       <div
         className={`${compact ? "h-[44px] w-[30px]" : "h-[68px] w-[46px]"} shrink-0 overflow-hidden rounded-lg`}
       >
