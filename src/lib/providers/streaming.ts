@@ -46,6 +46,38 @@ export function providerIdsFor(svc: Service): string {
   return ids.join("|");
 }
 
+/** Where a service's catalog comes from when the user's region does not offer it. */
+const HOME_REGION = "US";
+const regionProviders = new Map<string, Promise<Set<number> | null>>();
+
+/** Provider ids TMDB lists for a region, or null when the list could not be fetched. */
+function providersIn(key: string, region: string): Promise<Set<number> | null> {
+  const cached = regionProviders.get(region);
+  if (cached) return cached;
+  const pending = Promise.all(
+    (["movie", "tv"] as const).map((kind) =>
+      get<{ results?: { provider_id: number }[] }>(key, `watch/providers/${kind}`, { watch_region: region }),
+    ),
+  ).then((lists) => {
+    if (lists.every((l) => !l?.results)) {
+      regionProviders.delete(region);
+      return null;
+    }
+    return new Set(lists.flatMap((l) => l?.results ?? []).map((p) => p.provider_id));
+  });
+  regionProviders.set(region, pending);
+  return pending;
+}
+
+/** The region to browse a service's catalog in: the user's own, or the service's home
+ * region when it is not offered there (Hulu or Peacock outside the US showed nothing). */
+export async function catalogRegion(key: string, svc: StreamingService, region: string): Promise<string> {
+  const user = region || HOME_REGION;
+  const offered = await providersIn(key, user);
+  const ids = SERVICES[svc].providerIds ?? [SERVICES[svc].id];
+  return !offered || ids.some((id) => offered.has(id)) ? user : HOME_REGION;
+}
+
 export function serviceBadge(svc: StreamingService): { name: string; logo: string; tint: string } {
   const s = SERVICES[svc];
   return { name: s.name, logo: s.logo, tint: s.tint };
