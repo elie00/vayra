@@ -34,13 +34,15 @@ export function useExitSnapshot(params: {
   src: PlayerSrc;
   engine: "html5" | "mpv" | "exo";
   status: PlayerStatus;
+  /** mpv's first frame is on screen: "playing" comes before it, and capturing then fails. */
+  rendered?: boolean;
   durationSec: number;
   videoMountRef: RefObject<HTMLDivElement | null>;
   resolvedImdbId: string | null;
   resolvedImdbVerified: boolean;
   seekPreviewEnabled: boolean;
 }) {
-  const { src, engine, status, durationSec, videoMountRef, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled } = params;
+  const { src, engine, status, rendered, durationSec, videoMountRef, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled } = params;
   const { settings } = useSettings();
   const fullQuality = settings.cwSnapshotFullQuality;
   const latest = useRef({ src, engine, durationSec, resolvedImdbId, resolvedImdbVerified, seekPreviewEnabled, fullQuality });
@@ -97,6 +99,7 @@ export function useExitSnapshot(params: {
 
   useEffect(() => {
     if (status !== "playing") return;
+    if (engine === "mpv" && !rendered) return;
     const tick = async () => {
       const { src: s, durationSec: dur, resolvedImdbId: resolved, resolvedImdbVerified: verified } = latest.current;
       const id = snapshotId(s, resolved, verified);
@@ -117,7 +120,7 @@ export function useExitSnapshot(params: {
       window.clearTimeout(warm);
       window.clearInterval(id);
     };
-  }, [status, grabFrame]);
+  }, [status, engine, rendered, grabFrame]);
 
   useEffect(() => {
     const flush = () => persist(lastGoodRef.current);
