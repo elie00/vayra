@@ -129,7 +129,12 @@ export function buildAutoCandidates(args: AutoCandidateArgs): ScoredStream[] {
     if (!isCached(s) && !s.url && !engineP2pEligible(s)) return;
     const k = key(s);
     if (seen.has(k)) return;
+    // The same torrent offered by two add-ons is one swarm: a retry after it stalled
+    // must move to another source, not play it again. A debrid-cached link stays apart.
+    const swarm = !isCached(s) && s.infoHash ? `swarm:${s.infoHash.toLowerCase()}` : null;
+    if (swarm && seen.has(swarm)) return;
     seen.add(k);
+    if (swarm) seen.add(swarm);
     out.push(s);
   };
    const sourceMatch =

@@ -88,6 +88,7 @@ export function useAutoRetry(params: {
   const transcodeRescueRef = useRef(false);
   const debridFailoverTriedRef = useRef(false);
   const slowStartRef = useRef<{ bytes: number; at: number } | null>(null);
+  const slowFlowRef = useRef<{ bytes: number; at: number } | null>(null);
   const slowSwitchTriedRef = useRef(false);
   const liveRetryCountRef = useRef(0);
   const livePlayedRef = useRef(false);
@@ -102,6 +103,7 @@ export function useAutoRetry(params: {
     transcodeRescueRef.current = false;
     debridFailoverTriedRef.current = false;
     slowStartRef.current = null;
+    slowFlowRef.current = null;
     slowSwitchTriedRef.current = false;
     liveRetryCountRef.current = 0;
     livePlayedRef.current = false;
@@ -425,15 +427,22 @@ export function useAutoRetry(params: {
       const st = engineStatsRef.current;
       if (!st || snapRef.current.rendered || slowSwitchTriedRef.current) return;
       if (snapRef.current.status === "paused") return;
-      let start = (slowStartRef.current ??= { bytes: st.downloaded, at: Date.now() });
+      const now = Date.now();
+      let start = (slowStartRef.current ??= { bytes: st.downloaded, at: now });
       // Counters from the previous source, or a re-added torrent, start over.
-      if (st.downloaded < start.bytes) start = slowStartRef.current = { bytes: st.downloaded, at: Date.now() };
+      if (st.downloaded < start.bytes) {
+        start = slowStartRef.current = { bytes: st.downloaded, at: now };
+        slowFlowRef.current = null;
+      }
+      if (!slowFlowRef.current && st.downloaded > start.bytes) slowFlowRef.current = { bytes: start.bytes, at: now };
+      const flow = slowFlowRef.current;
       const slow = torrentTooSlow({
         fileBytes: st.streamLen,
         runtimeMin: parseRuntimeMinutes(src.meta.runtime),
         type: src.meta.type === "movie" ? "movie" : "series",
-        ageMs: Date.now() - start.at,
-        bytesSinceStart: st.downloaded - start.bytes,
+        ageMs: now - start.at,
+        flowingMs: flow ? now - flow.at : null,
+        bytesSinceFlow: flow ? st.downloaded - flow.bytes : 0,
       });
       if (!slow) return;
       slowSwitchTriedRef.current = true;
