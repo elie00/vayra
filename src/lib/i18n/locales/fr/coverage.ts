@@ -1444,6 +1444,7 @@ const coverage: Record<string, string> = {
   "Tools": "Outils",
   "Top": "Haut",
   "Top 10 Movies on {name}": "Top 10 des films sur {name}",
+  "New on {name}": "Nouveautés sur {name}",
   "Top 10 Series on {name}": "Top 10 des séries sur {name}",
   "Top genres": "Genres favoris",
   "Top left": "En haut à gauche",

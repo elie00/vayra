@@ -11,6 +11,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { useSettings, type StreamingService } from "@/lib/settings";
 import { useScrollMemory } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { fetchNewReleases } from "./service/new-releases";
 
 type Category = {
   id: string;
@@ -69,6 +70,17 @@ export function ServiceView({ service }: { service: StreamingService }) {
       alive = false;
     };
   }, [service, settings.tmdbKey, settings.region]);
+
+  const [newReleases, setNewReleases] = useState<Meta[]>([]);
+  useEffect(() => {
+    setNewReleases([]);
+    if (region == null) return;
+    let alive = true;
+    void fetchNewReleases(settings.tmdbKey, providerIdsFor(meta), region).then((m) => alive && setNewReleases(m));
+    return () => {
+      alive = false;
+    };
+  }, [service, settings.tmdbKey, region, meta]);
 
   useEffect(() => {
     setBucket({ movies: [], series: [] });
@@ -177,6 +189,13 @@ export function ServiceView({ service }: { service: StreamingService }) {
               <EmptyState hasKey={!!settings.tmdbKey} />
             ) : (
               <>
+                {newReleases.length > 0 && (
+                  <Row title={t("New on {name}", { name: meta.name })}>
+                    {newReleases.map((m) => (
+                      <PickCard key={m.id} meta={m} />
+                    ))}
+                  </Row>
+                )}
                 {bucket.movies.length >= 10 ? (
                   <>
                     <Row title={t("Top 10 Movies on {name}", { name: meta.name })} min={180} shape="rank">
