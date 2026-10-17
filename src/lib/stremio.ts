@@ -95,12 +95,20 @@ export function isCwMember(i: LibraryItem): boolean {
   return true;
 }
 
+/** The request never reached Stremio, unlike an error Stremio answered with. */
+class StremioUnreachable extends Error {}
+
 async function call<T>(path: string, body: object): Promise<T> {
-  const res = await fetch(`${API}/${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API}/${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new StremioUnreachable(e instanceof Error ? e.message : String(e), { cause: e });
+  }
   const json = await res.json();
   if (json.error) throw new Error(json.error.message ?? "Request failed");
   return json.result as T;
@@ -146,12 +154,24 @@ export async function libraryGetOne(authKey: string, id: string): Promise<Librar
   return items?.find((it) => it._id === id) ?? null;
 }
 
-export async function libraryPut(authKey: string, item: LibraryItem): Promise<void> {
-  await call<unknown>("datastorePut", {
-    authKey,
-    collection: "libraryItem",
-    changes: [item],
-  });
+/** Waits before sending an item again: the put on leaving the player has no next tick. */
+const PUT_RETRY_MS = [2000, 5000];
+
+export async function libraryPut(
+  authKey: string,
+  item: LibraryItem,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<void> {
+  // Putting the same item again only writes it again, unchanged.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await call<unknown>("datastorePut", { authKey, collection: "libraryItem", changes: [item] });
+      return;
+    } catch (e) {
+      if (!(e instanceof StremioUnreachable) || attempt >= PUT_RETRY_MS.length) throw e;
+      await wait(PUT_RETRY_MS[attempt]);
+    }
+  }
 }
 
 export async function removeStremioLibraryItem(authKey: string, id: string): Promise<void> {
