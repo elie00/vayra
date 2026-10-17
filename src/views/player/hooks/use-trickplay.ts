@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { isBundledEngineUrl } from "@/lib/stremio-server";
+import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 import { setTrickplayState, trickplaySetUrl, trickplaySpawnEager, trickplayStop } from "@/lib/trickplay";
 
 export function useTrickplay({ url, enabled, isLive }: { url: string; enabled: boolean; isLive?: boolean }) {
@@ -8,7 +8,9 @@ export function useTrickplay({ url, enabled, isLive }: { url: string; enabled: b
       setTrickplayState({ active: false, bufferedOnly: false });
       return;
     }
-    const isTorrent = isBundledEngineUrl(url);
+    // VAYRA's own engine as well as the bundled Stremio server: previews of parts
+    // not downloaded yet would have the engine fetch them before the playing ones.
+    const isTorrent = isBundledEngineUrl(url) || isLocalEngineUrl(url);
     setTrickplayState({ active: true, bufferedOnly: isTorrent });
     let alive = true;
     void trickplaySetUrl(url).then(() => {
