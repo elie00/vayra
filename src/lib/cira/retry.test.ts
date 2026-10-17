@@ -6,7 +6,7 @@ const expired = () => toCiraError({ name: "PostgrestError", code: "PGRST303", me
 const offline = () => new TypeError("Load failed");
 
 function deps() {
-  return { renewSession: vi.fn(async () => undefined), wait: vi.fn(async () => undefined) };
+  return { renewSession: vi.fn(async () => undefined), wait: vi.fn(async (_ms: number) => undefined) };
 }
 
 it("renews an expired session once, then tries again", async () => {
