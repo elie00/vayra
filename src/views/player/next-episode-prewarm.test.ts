@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import type { ScoredStream } from "@/lib/streams/types";
 import { torrentsToPrewarm, nearEnd } from "./next-episode-prewarm";
 
-const torrent = (hash: string, extra: Partial<ScoredStream> = {}) =>
+const torrent = (hash: string, extra: Record<string, unknown> = {}) =>
   ({ infoHash: hash, url: undefined, cached: {}, ...extra }) as unknown as ScoredStream;
 
 it("warms the first torrents the engine would download itself", () => {
