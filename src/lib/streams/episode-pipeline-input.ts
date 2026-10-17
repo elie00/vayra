@@ -7,6 +7,7 @@ import type { PlayEpisode } from "@/lib/view";
 import type { PipelineInput } from "./pipeline";
 import type { Stream } from "./types";
 import { readSwarmPeers } from "@/lib/torrent/swarm-health";
+import { readP2pBandwidthMbps } from "@/lib/torrent/p2p-throughput";
 
 function runtimeMinutes(runtime: string | number | undefined): number | undefined {
   if (runtime == null) return undefined;
@@ -118,6 +119,7 @@ export function buildEpisodePipelineInput(params: {
       preferredReleaseGroup: prevGroup,
       respectAddonOrder: settings.streamSort === "addon",
       swarmPeers: readSwarmPeers(),
+      p2pBandwidthMbps: readP2pBandwidthMbps(),
     },
   };
 }

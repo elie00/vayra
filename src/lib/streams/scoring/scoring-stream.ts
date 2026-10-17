@@ -221,7 +221,11 @@ export function scoreStream(
     reasons.push({ signal: "webview2-unfriendly", delta: playabilityDelta });
   }
 
-  const bitratePenalty = bitrateBudgetPenalty(s, opts, cached);
+  // Without a budget set by the user, a torrent the engine would download itself is
+  // held to the speed the engine reached lately.
+  const p2p = !!s.infoHash && !s.url && !cached;
+  const budget = opts.bandwidthMbps ?? (p2p ? opts.p2pBandwidthMbps : undefined);
+  const bitratePenalty = bitrateBudgetPenalty(s, { ...opts, bandwidthMbps: budget }, cached);
   if (bitratePenalty.delta < 0) {
     score += bitratePenalty.delta;
     reasons.push(bitratePenalty);

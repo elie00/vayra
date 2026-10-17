@@ -11,6 +11,7 @@ import type { Stream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
 import { parseRuntimeMinutes, stampAddonOrder } from "./picker-utils";
 import { readSwarmPeers } from "@/lib/torrent/swarm-health";
+import { readP2pBandwidthMbps } from "@/lib/torrent/p2p-throughput";
 
 type Settings = ReturnType<typeof useSettings>["settings"];
 
@@ -160,6 +161,7 @@ export function usePipelineResult({
           preferredReleaseGroup: prevGroup,
           respectAddonOrder: settings.streamSort === "addon",
           swarmPeers: readSwarmPeers(),
+          p2pBandwidthMbps: readP2pBandwidthMbps(),
         },
       },
       ac.signal,
