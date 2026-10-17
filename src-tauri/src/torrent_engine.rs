@@ -829,6 +829,40 @@ async fn apply_selection(info_hash: &str, only: HashSet<usize>) -> Result<(), St
     select_files(&session, &handle, &only).await
 }
 
+/// Torrents whose next-episode start is being read ahead. Once read, one is paused
+/// again unless a stream reached it meanwhile, so it does not take the bandwidth of
+/// the episode playing.
+static PRELOADING: Mutex<std::collections::BTreeSet<String>> = Mutex::new(std::collections::BTreeSet::new());
+
+fn mark_preloading(hash: &str) {
+    PRELOADING.lock().unwrap_or_else(|e| e.into_inner()).insert(hash.to_ascii_lowercase());
+}
+
+/// A stream reads this torrent: it plays now, its preload must not pause it.
+pub(crate) fn note_streamed(hash: &str) {
+    PRELOADING.lock().unwrap_or_else(|e| e.into_inner()).remove(&hash.to_ascii_lowercase());
+}
+
+/// Select the next episode's file, read its start and end, then pause it again
+/// unless it is playing by then.
+async fn preload(session: Arc<Session>, handle: Arc<librqbit::ManagedTorrent>, file_idx: usize) {
+    let hash = handle.info_hash().as_string();
+    let short = hash[..8.min(hash.len())].to_string();
+    let len = handle.with_metadata(|m| m.file_infos.get(file_idx).map(|f| f.len)).ok().flatten();
+    let selected = select_files(&session, &handle, &wanted_files(&hash, Some(file_idx))).await;
+    if let (Ok(()), Some(len)) = (&selected, len) {
+        prefetch::read_all(handle.clone(), file_idx, prefetch::head_ranges(len)).await;
+    } else if let Err(e) = selected {
+        eprintln!("[torrent-engine] could not preload {short}: {e}");
+    }
+    if PRELOADING.lock().unwrap_or_else(|e| e.into_inner()).remove(&hash) {
+        if let Err(e) = session.pause(&handle).await {
+            eprintln!("[torrent-engine] could not pause preloaded {short}: {e:#}");
+        }
+        eprintln!("[torrent-engine] preloaded the start of {short}");
+    }
+}
+
 async fn select_files(
     session: &Arc<Session>,
     handle: &Arc<librqbit::ManagedTorrent>,
@@ -896,6 +930,18 @@ pub async fn torrent_engine_remove(info_hash: String, delete_files: bool) -> Res
         .delete(id, delete_files)
         .await
         .map_err(|e| format!("{e:#}"))?;
+    Ok(())
+}
+
+/// The next episode, prepared halfway through this one: read its start and end now,
+/// then leave its torrent paused until it plays.
+#[tauri::command]
+pub async fn torrent_engine_preload(info_hash: String, file_idx: usize) -> Result<(), String> {
+    let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
+    let id = TorrentIdOrHash::parse(&info_hash).map_err(|e| e.to_string())?;
+    let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
+    mark_preloading(&handle.info_hash().as_string());
+    tokio::spawn(preload(session, handle, file_idx));
     Ok(())
 }
 
@@ -1186,6 +1232,60 @@ mod tests {
         let _ = session.delete(TorrentIdOrHash::Hash(handle.info_hash()), false).await;
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(result, Ok(()));
+    }
+
+    async fn local_torrent(name: &str) -> (std::path::PathBuf, Arc<Session>, Arc<librqbit::ManagedTorrent>) {
+        let dir = std::env::temp_dir().join(format!("vayra-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // A one-file torrent is named after its file, which then sits in the session folder.
+        let episode = dir.join("e04.mkv");
+        // Content of its own per test: tests run at once and share the preload list by hash.
+        std::fs::write(&episode, name.repeat(64 * 1024 / name.len() + 1).into_bytes()).unwrap();
+        let options = librqbit::CreateTorrentOptions { name: None, trackers: Vec::new(), piece_length: Some(16 * 1024) };
+        let torrent = librqbit::create_torrent(&episode, options, &librqbit::spawn_utils::BlockingSpawner::new(1))
+            .await
+            .unwrap()
+            .as_bytes()
+            .unwrap();
+        let session = new_session(&dir, false, false, false).await.unwrap();
+        let handle = session
+            .add_torrent(AddTorrent::from_bytes(torrent), Some(add_opts(false, Some(vec![0]), Vec::new(), Vec::new())))
+            .await
+            .unwrap()
+            .into_handle()
+            .unwrap();
+        timeout(Duration::from_secs(10), handle.wait_until_initialized()).await.unwrap().unwrap();
+        // Checked against the files on disk, then paused as a prepared torrent waits.
+        session.pause(&handle).await.unwrap();
+        (dir, session, handle)
+    }
+
+    /// The next episode's start is read ahead, then its torrent waits paused again so
+    /// it does not take the bandwidth of the episode playing.
+    #[tokio::test]
+    async fn preloads_the_next_episode_then_pauses_it() {
+        let (dir, session, handle) = local_torrent("preload").await;
+        let hash = handle.info_hash().as_string();
+        mark_preloading(&hash);
+        timeout(Duration::from_secs(10), preload(session.clone(), handle.clone(), 0)).await.unwrap();
+        let paused = handle.is_paused();
+        let _ = session.delete(TorrentIdOrHash::Hash(handle.info_hash()), false).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(paused);
+    }
+
+    /// Going on to the next episode while it preloads must not pause it under the player.
+    #[tokio::test]
+    async fn leaves_a_preloaded_episode_running_once_it_plays() {
+        let (dir, session, handle) = local_torrent("preload-play").await;
+        let hash = handle.info_hash().as_string();
+        mark_preloading(&hash);
+        note_streamed(&hash.to_ascii_uppercase());
+        timeout(Duration::from_secs(10), preload(session.clone(), handle.clone(), 0)).await.unwrap();
+        let running = !handle.is_paused();
+        let _ = session.delete(TorrentIdOrHash::Hash(handle.info_hash()), false).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(running);
     }
 
     /// Real swarm download with the production peer options, on a throwaway session.

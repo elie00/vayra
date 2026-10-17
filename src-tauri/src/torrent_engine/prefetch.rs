@@ -12,6 +12,8 @@ use tokio::io::{AsyncReadExt, AsyncSeekExt};
 const MIB: u64 = 1024 * 1024;
 /// Where MKV cues and an MP4 moov written last sit.
 const TAIL: u64 = 8 * MIB;
+/// The start of the next episode: enough for its header and its first minute.
+const HEAD: u64 = 32 * MIB;
 /// Around the resume point: its position in bytes is only estimated from the time.
 const WINDOW: u64 = 16 * MIB;
 /// A reader gives up after this, so a dead swarm does not keep it alive.
@@ -35,34 +37,50 @@ pub fn ranges(file_len: u64, start_sec: f64, duration_sec: f64) -> Vec<(u64, u64
     out
 }
 
+/// The start of a file and its end, for an episode prepared before it plays.
+pub fn head_ranges(file_len: u64) -> Vec<(u64, u64)> {
+    let head = HEAD.min(file_len);
+    let mut out = vec![(0, head)];
+    let tail = file_len.saturating_sub(TAIL).max(head);
+    if tail < file_len {
+        out.push((tail, file_len - tail));
+    }
+    out.retain(|&(_, len)| len > 0);
+    out
+}
+
 /// Read those ranges in the background, so librqbit fetches their pieces now.
 pub fn start(handle: Arc<librqbit::ManagedTorrent>, file_idx: usize, ranges: Vec<(u64, u64)>) {
-    for (from, len) in ranges {
-        let handle = handle.clone();
-        tokio::spawn(async move {
-            let Ok(mut stream) = handle.stream(file_idx).await else { return };
-            if stream.seek(SeekFrom::Start(from)).await.is_err() {
-                return;
-            }
-            let mut buf = vec![0u8; 256 * 1024];
-            let mut left = len;
-            let _ = tokio::time::timeout(READ_FOR, async {
-                while left > 0 {
-                    let want = left.min(buf.len() as u64) as usize;
-                    match stream.read(&mut buf[..want]).await {
-                        Ok(0) | Err(_) => break,
-                        Ok(n) => left -= n as u64,
-                    }
-                }
-            })
-            .await;
-        });
+    tokio::spawn(read_all(handle, file_idx, ranges));
+}
+
+/// Read those ranges at once and return when all are read, or have given up.
+pub async fn read_all(handle: Arc<librqbit::ManagedTorrent>, file_idx: usize, ranges: Vec<(u64, u64)>) {
+    futures_util::future::join_all(ranges.into_iter().map(|(from, len)| read_range(handle.clone(), file_idx, from, len))).await;
+}
+
+async fn read_range(handle: Arc<librqbit::ManagedTorrent>, file_idx: usize, from: u64, len: u64) {
+    let Ok(mut stream) = handle.stream(file_idx).await else { return };
+    if stream.seek(SeekFrom::Start(from)).await.is_err() {
+        return;
     }
+    let mut buf = vec![0u8; 256 * 1024];
+    let mut left = len;
+    let _ = tokio::time::timeout(READ_FOR, async {
+        while left > 0 {
+            let want = left.min(buf.len() as u64) as usize;
+            match stream.read(&mut buf[..want]).await {
+                Ok(0) | Err(_) => break,
+                Ok(n) => left -= n as u64,
+            }
+        }
+    })
+    .await;
 }
 
 #[cfg(test)]
 mod tests {
-    use super::ranges;
+    use super::{head_ranges, ranges};
 
     const MIB: u64 = 1024 * 1024;
 
@@ -89,5 +107,14 @@ mod tests {
     fn does_not_read_the_end_twice_near_it() {
         let len = 100 * MIB;
         assert_eq!(ranges(len, 3290.0, 3300.0), vec![(92 * MIB, 8 * MIB)]);
+    }
+
+    #[test]
+    fn reads_the_start_and_the_end_of_the_next_episode() {
+        let len = 1_500 * MIB;
+        assert_eq!(head_ranges(len), vec![(0, 32 * MIB), (len - 8 * MIB, 8 * MIB)]);
+        assert_eq!(head_ranges(20 * MIB), vec![(0, 20 * MIB)]);
+        assert_eq!(head_ranges(36 * MIB), vec![(0, 32 * MIB), (32 * MIB, 4 * MIB)]);
+        assert!(head_ranges(0).is_empty());
     }
 }
