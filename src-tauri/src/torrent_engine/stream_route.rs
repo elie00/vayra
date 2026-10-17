@@ -159,6 +159,7 @@ async fn stream_file(
     };
     super::claim_torrent(hash);
     super::note_streamed(hash);
+    super::resume_for_stream(session, &handle).await;
     let ct = handle
         .with_metadata(|m| m.file_infos.get(file_id).map(|fi| ct_for(&fi.relative_filename)))
         .ok()

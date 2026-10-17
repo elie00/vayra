@@ -164,6 +164,7 @@ export function usePlayerMedia(params: {
     src,
     engine,
     status: snap.status,
+    rendered: snap.rendered,
     durationSec: snap.durationSec,
     videoMountRef,
     resolvedImdbId,

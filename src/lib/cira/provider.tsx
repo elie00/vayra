@@ -18,6 +18,7 @@ import {
   type PendingCiraInvite,
 } from "./pending-invite";
 import { createCiraRepository } from "./repository";
+import { CiraError } from "./errors";
 import type {
   CiraInvitation,
   CiraGroup,
@@ -157,7 +158,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       }
       setStatus("ready");
     } catch (err) {
-      console.warn("[cira] refresh failed", err);
+      console.warn("[cira] refresh failed", err, err instanceof CiraError && err.hint ? `(${err.hint})` : "");
       setStatus("error");
     }
   }, [repo]);
