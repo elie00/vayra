@@ -21,6 +21,9 @@ import { startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscr
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { syncEngineCacheOptions } from "@/lib/torrent/engine-config-sync";
+import { forgetUnusedTorrents } from "@/lib/torrent/local-engine";
+import { downloadSnapshot } from "@/lib/download/downloads-store";
+import { torrentsKeptByDownloads } from "@/lib/download/kept-torrents";
 import { useOverlayPinned } from "@/lib/overlay-pin";
 import { hasNativeDesktopUx, isMobileDevice, isMobileTauri, isWeb } from "@/lib/platform";
 import { activeLayout } from "@/lib/theme";
@@ -503,6 +506,10 @@ function Shell() {
   }, [settings.soundTheme]);
   useEffect(() => startMaintenance(), []);
   useEffect(() => startWindowFullscreenSync(), []);
+  // Once per launch: torrents left by earlier playback would download for ever.
+  useEffect(() => {
+    void forgetUnusedTorrents(torrentsKeptByDownloads(downloadSnapshot()));
+  }, []);
   // The engine reads its cache settings from its own config file at startup, so
   // settings that arrived any other way — a restored backup, a second machine —
   // would otherwise show in the panel without the engine ever seeing them.

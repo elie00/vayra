@@ -246,6 +246,18 @@ export function cancelTorrentRemoval(infoHash: string): void {
   }
 }
 
+/**
+ * A player closed with the app, or a crash, leaves its torrent in the engine, which
+ * then downloads it at every launch. Stop the torrents restored at launch that no
+ * save keeps; their files stay in the cache for the sweep.
+ */
+export async function forgetUnusedTorrents(keep: string[]): Promise<void> {
+  if (!isTauri) return;
+  await invoke("torrent_engine_forget_unused", { keep }).catch((e) =>
+    console.warn("[engine] forget unused failed", e),
+  );
+}
+
 export async function torrentEngineSelfTest(): Promise<SelfTestResult | null> {
   if (!isTauri) return null;
   try {
