@@ -43,6 +43,36 @@ struct EngineState {
     lan_server: Option<tokio::task::JoinHandle<()>>,
     lan_port: Option<u16>,
     lan_error: Option<String>,
+    restored: Restored,
+}
+
+/// The torrents librqbit restored at start that nothing has asked for since. A
+/// player closed with the app, or a crash, leaves its torrent in librqbit's list,
+/// and it then downloads at every launch for ever.
+#[derive(Default)]
+struct Restored(HashSet<String>);
+
+impl Restored {
+    fn new(hashes: impl IntoIterator<Item = String>) -> Self {
+        Self(hashes.into_iter().map(|h| h.to_ascii_lowercase()).collect())
+    }
+
+    /// A player, a save or a stream wants this torrent now.
+    fn claim(&mut self, hash: &str) {
+        self.0.remove(&hash.to_ascii_lowercase());
+    }
+
+    /// The restored torrents neither claimed nor kept, once: later calls find none.
+    fn unused(&mut self, keep: &[String]) -> Vec<String> {
+        let keep: HashSet<String> = keep.iter().map(|h| h.to_ascii_lowercase()).collect();
+        let mut unused: Vec<String> = std::mem::take(&mut self.0).into_iter().filter(|h| !keep.contains(h)).collect();
+        unused.sort();
+        unused
+    }
+}
+
+pub(crate) fn claim_torrent(hash: &str) {
+    engine().lock().unwrap().restored.claim(hash);
 }
 
 fn engine() -> &'static Mutex<EngineState> {
@@ -63,6 +93,7 @@ fn engine() -> &'static Mutex<EngineState> {
             lan_server: None,
             lan_port: None,
             lan_error: None,
+            restored: Restored::default(),
         })
     })
 }
@@ -411,6 +442,7 @@ async fn init_unlocked(app: AppHandle) -> Result<(), String> {
     if let Some(old) = st.nat_pmp.take() {
         old.abort();
     }
+    st.restored = Restored::new(session.with_torrents(|it| it.map(|(_, h)| h.info_hash().as_string()).collect::<Vec<_>>()));
     st.session = Some(session);
     st.dir = Some(dir);
     st.side_dht = side_dht;
@@ -466,6 +498,7 @@ pub fn stop() {
     st.port = None;
     st.dht_tier = 0;
     st.ready = false;
+    st.restored = Restored::default();
 }
 
 #[tauri::command]
@@ -623,6 +656,7 @@ pub async fn torrent_engine_add(
     )
     .await?;
     let info_hash = format!("{:?}", handle.info_hash());
+    claim_torrent(&info_hash);
     let files = handle
         .with_metadata(|m| {
             m.file_infos
@@ -668,6 +702,7 @@ pub(crate) async fn ensure_added(
 ) -> Result<(String, Vec<EngineFile>), String> {
     let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
     let id = TorrentIdOrHash::parse(hash).map_err(|e| e.to_string())?;
+    claim_torrent(hash);
     let handle = match session.get(id) {
         Some(h) => h,
         None => {
@@ -793,6 +828,7 @@ async fn apply_selection(info_hash: &str, only: HashSet<usize>) -> Result<(), St
     }
     let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
     let id = TorrentIdOrHash::parse(info_hash).map_err(|e| e.to_string())?;
+    claim_torrent(info_hash);
     let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
     select_files(&session, &handle, &only).await
 }
@@ -865,6 +901,24 @@ pub async fn torrent_engine_remove(info_hash: String, delete_files: bool) -> Res
         .await
         .map_err(|e| format!("{e:#}"))?;
     Ok(())
+}
+
+/// Stop the torrents restored at start that no save keeps and nothing has asked for
+/// since. Their files stay in the cache, for the sweep to expire as usual.
+#[tauri::command]
+pub async fn torrent_engine_forget_unused(app: AppHandle, keep: Vec<String>) -> Result<Vec<String>, String> {
+    ensure_session(&app).await?;
+    let unused = engine().lock().unwrap().restored.unused(&keep);
+    for hash in &unused {
+        if let Err(e) = torrent_engine_remove(hash.clone(), false).await {
+            eprintln!("[torrent-engine] could not stop {}: {e}", &hash[..8.min(hash.len())]);
+        }
+    }
+    if !unused.is_empty() {
+        let short: Vec<&str> = unused.iter().map(|h| &h[..8.min(h.len())]).collect();
+        eprintln!("[torrent-engine] stopped {} torrents left from earlier playback: {}", unused.len(), short.join(" "));
+    }
+    Ok(unused)
 }
 
 #[derive(Serialize)]
@@ -995,6 +1049,19 @@ pub async fn torrent_engine_selftest(app: AppHandle) -> selftest::SelfTestResult
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stops_the_restored_torrents_nothing_wants_once() {
+        let a = "80f2b1db98b1e4dcff3cd2bb42a1715425ac6a83";
+        let b = "2a28c5c6a8687e4a1a4d074cbb157cc576af0386";
+        let c = "5f863d1e32a312e6cc6d44a5a4ac2c5a97ea3cd3";
+        let d = "83753820aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let mut restored = super::Restored::new([a, b, c, d].map(String::from));
+        // A player resumed this one, a save keeps that one.
+        restored.claim(&b.to_ascii_uppercase());
+        assert_eq!(restored.unused(&[c.to_string()]), vec![a.to_string(), d.to_string()]);
+        assert!(restored.unused(&[]).is_empty(), "only the torrents restored at start");
+    }
 
     /// Commands asking for the engine while it is still starting used to start a
     /// second one, which could not bind the DHT port the first one held.
