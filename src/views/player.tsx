@@ -481,6 +481,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   useNextEpisodePrewarm({
     meta: src.meta,
     nextEp: adjacent.next,
+    playing: src.streamRef,
     imdbId: resolvedImdbId ?? null,
     durationSec: snap.durationSec,
     enabled: canChangeEpisode && !!src.episode && !src.isLive,
