@@ -5,6 +5,7 @@ mod firewall;
 mod nat_pmp;
 mod netcheck;
 mod peer_log;
+mod persistence;
 pub mod port_status;
 mod selftest;
 mod stream_route;
@@ -360,6 +361,9 @@ async fn init_unlocked(app: AppHandle) -> Result<(), String> {
     let dir = engine_dir(&app, &cfg)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     cache_sweep::run(&dir, cfg.retention_hours.unwrap_or(24), cfg.max_gb.unwrap_or(0));
+    for hash in persistence::drop_torrents_without_metadata(&dir) {
+        eprintln!("[torrent-engine] not restoring {}: its .torrent file is gone", hash.get(..8).unwrap_or(&hash));
+    }
     cache_index::update(&dir, Vec::new());
     let (session, dht_tier) = match new_session(&dir, true, true, true).await {
         Ok(s) => (s, 1u8),
