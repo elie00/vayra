@@ -37,3 +37,20 @@ describe("reachable peers in the score", () => {
     expect(signal({ ...torrent, url: "https://cdn/a.mkv" } as ParsedStream, { [HASH]: 0 })).toBeUndefined();
   });
 });
+
+describe("the speed the engine reached in the score", () => {
+  const uhd = { ...torrent, title: "Show.S01E01.2160p", resolution: "4K", size: 8.3e9 } as unknown as ParsedStream;
+  const penalty = (s: ParsedStream, opts: { p2pBandwidthMbps?: number; bandwidthMbps?: number }) =>
+    scoreStream(s, { activeDebrids: [], runtimeMinutes: 55, ...opts }).reasons.find((r) => r.signal.startsWith("bitrate-") || r.signal.startsWith("low-bandwidth"));
+
+  it("demotes a torrent whose file needs more than the engine has managed lately", () => {
+    // 8.3 GB over 55 minutes needs about 20 Mbps; the engine reached 5.
+    expect(penalty(uhd, { p2pBandwidthMbps: 5 })?.delta).toBeLessThan(-40);
+  });
+
+  it("leaves it alone on a fast connection, for ready links, and when the user set a budget", () => {
+    expect(penalty(uhd, { p2pBandwidthMbps: 300 })).toBeUndefined();
+    expect(penalty({ ...uhd, url: "https://cdn/a.mkv" } as ParsedStream, { p2pBandwidthMbps: 5 })).toBeUndefined();
+    expect(penalty(uhd, { p2pBandwidthMbps: 5, bandwidthMbps: 500 })).toBeUndefined();
+  });
+});

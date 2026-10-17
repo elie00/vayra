@@ -1,6 +1,7 @@
 import { engineBaseFor, getStremioServerUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 import { torrentEngineStats } from "@/lib/torrent/local-engine";
 import { noteSwarmPeers } from "@/lib/torrent/swarm-health";
+import { noteP2pThroughput } from "@/lib/torrent/p2p-throughput";
 
 export type EngineStats = {
   peers: number;
@@ -92,6 +93,7 @@ export async function fetchEngineStats(
       const stats = parseEngineStats(raw, prev);
       // No peers yet early in a stream proves nothing; a failure records the zero.
       if (stats.peers > 0) noteSwarmPeers(infoHash, stats.peers);
+      noteP2pThroughput(stats.downloadSpeed);
       return { kind: "ok", stats };
     } catch {
       return { kind: "down" };

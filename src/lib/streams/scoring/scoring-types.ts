@@ -14,6 +14,8 @@ export type ScoreOptions = {
   respectAddonOrder?: boolean;
   /** Peers the local engine reached per lower-case info hash (see torrent/swarm-health). */
   swarmPeers?: Record<string, number>;
+  /** The fastest the local engine downloaded lately, in Mbps (see torrent/p2p-throughput). */
+  p2pBandwidthMbps?: number;
 };
 
 export type CorpusStats = {
