@@ -8,9 +8,10 @@ import { useSwitcherRefresh } from "@/components/player/stream-switcher/use-swit
 import { prewarmDue, torrentToPrewarm } from "../next-episode-prewarm";
 
 /**
- * Halfway through an episode, look up the next one's sources and add the torrent
- * from the source this one plays from to the engine, paused. Going on then finds
- * the list ready and the metadata fetched, instead of starting both from scratch.
+ * Halfway through an episode, look up the next one's sources and have the engine
+ * preload the start of the torrent from the source this one plays from. Going on
+ * then finds the list ready and the first minute there, instead of starting both
+ * from scratch.
  */
 export function useNextEpisodePrewarm(params: {
   meta: Meta;
@@ -36,6 +37,6 @@ export function useNextEpisodePrewarm(params: {
     if (warmedRef.current === key) return;
     warmedRef.current = key;
     const stream = torrentToPrewarm(entry.result.picker.all, playing);
-    if (stream) void prewarmLocalEngine(stream);
+    if (stream) void prewarmLocalEngine(stream, { season: nextEp.season, episode: nextEp.episode, absolute: nextEp.absoluteEpisode ?? null });
   }, [active, entry, meta.id, nextEp, playing]);
 }

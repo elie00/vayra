@@ -17,8 +17,8 @@ function sameSource(s: ScoredStream, playing: PlayerStreamRef): boolean {
 
 /**
  * The next episode's torrent from the source this one plays from, preferring the
- * same release group, for the engine to add ahead, paused: its metadata is then
- * there when it plays. Nothing when no source matches, rather than one at random;
+ * same release group, for the engine to preload: its metadata and first minute
+ * are then there when it plays. Nothing when no source matches, rather than one at random;
  * nothing either for a season pack (already in the engine), a debrid-cached or a
  * direct link (the engine would not download them).
  */
