@@ -380,11 +380,6 @@ async fn start(app: AppHandle) -> Result<(), String> {
     start_once(&INIT, || current_session().is_some(), || init_unlocked(app)).await
 }
 
-/// Start the engine afresh, after `stop`.
-async fn init(app: AppHandle) -> Result<(), String> {
-    let _one_at_a_time = INIT.lock().await;
-    init_unlocked(app).await
-}
 
 async fn init_unlocked(app: AppHandle) -> Result<(), String> {
     std::env::set_var("DHT_QUERIES_PER_SECOND", "100");
@@ -987,14 +982,18 @@ pub async fn torrent_engine_cached_files(app: AppHandle) -> Vec<CachedFileDto> {
 
 #[tauri::command]
 pub async fn torrent_engine_restart(app: AppHandle) -> Result<EngineStatusDto, String> {
+    // Stopping inside the start lock: a start in progress would otherwise finish
+    // after `stop` and leave its session holding the DHT port the new one needs.
+    let _one_at_a_time = INIT.lock().await;
     stop();
     tokio::time::sleep(Duration::from_millis(600)).await;
-    init(app).await?;
+    init_unlocked(app).await?;
     Ok(torrent_engine_status())
 }
 
 #[tauri::command]
 pub async fn torrent_engine_hard_reset(app: AppHandle) -> Result<EngineStatusDto, String> {
+    let _one_at_a_time = INIT.lock().await;
     stop();
     tokio::time::sleep(Duration::from_millis(800)).await;
     let cfg = read_config(&app);
@@ -1002,7 +1001,7 @@ pub async fn torrent_engine_hard_reset(app: AppHandle) -> Result<EngineStatusDto
         let _ = std::fs::remove_dir_all(&dir);
     }
     engine().lock().unwrap().last_error = None;
-    init(app).await?;
+    init_unlocked(app).await?;
     Ok(torrent_engine_status())
 }
 
@@ -1034,9 +1033,10 @@ pub async fn torrent_engine_set_options(
             .map_err(|e| e.to_string())?;
     }
     if restart {
+        let _one_at_a_time = INIT.lock().await;
         stop();
         tokio::time::sleep(Duration::from_millis(600)).await;
-        init(app).await?;
+        init_unlocked(app).await?;
     }
     Ok(torrent_engine_status())
 }
