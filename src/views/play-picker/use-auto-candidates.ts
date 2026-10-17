@@ -26,18 +26,20 @@ type AutoCandidateArgs = {
   preferPacks?: boolean;
   season?: number | null;
   episode?: number | null;
+  /** P2P may start without asking: a torrent source can then lead like a cached one. */
+  p2pAutoConsent?: boolean;
 };
 
 export function useAutoCandidates(args: AutoCandidateArgs): ScoredStream[] {
-  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode } = args;
+  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode, p2pAutoConsent } = args;
   return useMemo(
-    () => buildAutoCandidates({ filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode }),
-    [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode],
+    () => buildAutoCandidates({ filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode, p2pAutoConsent }),
+    [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode, p2pAutoConsent],
   );
 }
 
 export function buildAutoCandidates(args: AutoCandidateArgs): ScoredStream[] {
-  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode } = args;
+  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode, p2pAutoConsent } = args;
   const hostFallback = (): ScoredStream[] => {
     if (!hostSource) return [];
     const hs = hostSourceStream(hostSource);
@@ -133,8 +135,11 @@ export function buildAutoCandidates(args: AutoCandidateArgs): ScoredStream[] {
    const sourceMatch =
     sourceEntry ? filteredPicker.all.find((s) => streamMatchesSource(s, sourceEntry)) ?? null : null;
   const instantPlayable = (s: ScoredStream | null) => !!s && (isCached(s) || !!s.url);
+  // The series' source leads the next episode, a plain torrent too when P2P may
+  // start on its own: otherwise a cached link of another source played instead.
+  const sourcePlayable = (s: ScoredStream | null) => instantPlayable(s) || (!!s && !!p2pAutoConsent && engineP2pEligible(s));
   if (!matchScores) {
-    if (instantPlayable(sourceMatch)) push(sourceMatch);
+    if (sourcePlayable(sourceMatch)) push(sourceMatch);
     if (instantPlayable(previousMatch)) push(previousMatch);
   }
   // Fail rather than guess: a source that declares only other audio languages is

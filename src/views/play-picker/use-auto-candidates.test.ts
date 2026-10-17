@@ -51,3 +51,32 @@ describe("automatic source candidates", () => {
     expect(candidates([latino, french], [])).toContain("NoTorrent Audio Latino");
   });
 });
+
+describe("the next episode keeps its source", () => {
+  // Episode 3 played from this torrent source; episode 4 offers it again, after a
+  // debrid-cached link that would otherwise come first.
+  const entry = { addonId: "torrentio", resolution: "1080p", source: "WEB-DL", savedAt: 0 };
+  const cached = stream("Show S01E04 720p RD+", [], { url: "https://debrid.invalid/e04-720", resolution: "720p", addonId: "comet" });
+  cachedUrls.add(cached.url!);
+  const sameTorrent = stream("Show S01E04 1080p WEB-DL", [], { infoHash: "d".repeat(40), addonId: "torrentio", source: "WEB-DL", seeders: 80 });
+  const run = (p2pAutoConsent: boolean) =>
+    buildAutoCandidates({
+      filteredPicker: { all: [cached, sameTorrent], primary: cached },
+      previousPlayback: null,
+      sourceEntry: entry,
+      isCached,
+      addons: null,
+      hasStrongAddon: false,
+      isTorrentioStream: () => false,
+      preferredLangs: [],
+      p2pAutoConsent,
+    }).map((s) => s.title);
+
+  it("plays the same torrent source first when P2P may start on its own", () => {
+    expect(run(true)).toEqual(["Show S01E04 1080p WEB-DL", "Show S01E04 720p RD+"]);
+  });
+
+  it("keeps the cached link first when P2P needs the user's consent", () => {
+    expect(run(false)[0]).toBe("Show S01E04 720p RD+");
+  });
+});

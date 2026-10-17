@@ -339,6 +339,7 @@ export function PlayPicker({
     preferPacks: seasonLock,
     season: !isAnimeMetaId ? episode?.season ?? null : null,
     episode: !isAnimeMetaId ? episode?.episode ?? null : null,
+    p2pAutoConsent,
   });
 
   const autoFiredRef = useRef(false);
