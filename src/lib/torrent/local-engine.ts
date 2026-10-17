@@ -246,6 +246,14 @@ export function cancelTorrentRemoval(infoHash: string): void {
   }
 }
 
+/** Have the engine read the start of the next episode's file ahead, then wait paused. */
+export async function torrentEnginePreload(infoHash: string, fileIdx: number): Promise<void> {
+  if (!isTauri) return;
+  await invoke("torrent_engine_preload", { infoHash, fileIdx }).catch((e) =>
+    console.warn("[engine] preload failed", e),
+  );
+}
+
 /**
  * Resuming mid-file, have the engine read the end of the file and around the resume
  * point ahead, so their pieces come alongside the header the player reads first.

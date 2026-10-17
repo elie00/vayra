@@ -2,7 +2,7 @@ import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dwarn } from "@/lib/debug";
 import { hasUncachedMarker } from "./cached";
 import { magnetFromHash, type DebridStore, type DirectLink } from "@/lib/debrid/types";
-import { lastEngineAddError, torrentEngineAdd, torrentEngineSelect } from "@/lib/torrent/local-engine";
+import { lastEngineAddError, torrentEngineAdd, torrentEngineSelect, torrentEnginePreload } from "@/lib/torrent/local-engine";
 import { fullDownloadEnabled, startFullDownload } from "@/lib/torrent/full-download";
 import {
   directTorrentEnabled,
@@ -322,13 +322,23 @@ export async function resolveViaDebrids(
 
 
 /**
- * Add a torrent to the local engine ahead of play, without choosing a file: the
- * engine adds it paused and fetches its metadata, the wait a torrent stream
- * otherwise starts with. Playing it later goes through tryLocalEngine as usual.
+ * Prepare a torrent ahead of play: the engine adds it paused (fetching its
+ * metadata), then reads the start and end of the episode's file and waits paused
+ * again. Playing it later goes through tryLocalEngine as usual.
  */
-export async function prewarmLocalEngine(stream: ParsedStream | ScoredStream): Promise<void> {
+export async function prewarmLocalEngine(stream: ParsedStream | ScoredStream, hint?: EpisodeHint): Promise<void> {
   if (!stream.infoHash || !localTorrentAllowed()) return;
-  await torrentEngineAdd(magnetFromHash(stream.infoHash), trackersFromSources(stream.sources));
+  const added = await torrentEngineAdd(magnetFromHash(stream.infoHash), trackersFromSources(stream.sources));
+  if (!added || added.files.length === 0) return;
+  const fileIdx =
+    typeof stream.fileIdx === "number" && stream.fileIdx >= 0
+      ? stream.fileIdx
+      : selectEngineFileIdx(added.files, {
+          season: hint?.season ?? stream.season ?? null,
+          episode: hint?.episode ?? stream.episode ?? null,
+          absolute: hint?.absolute ?? null,
+        });
+  await torrentEnginePreload(added.info_hash, fileIdx);
 }
 
 async function tryLocalEngine(
