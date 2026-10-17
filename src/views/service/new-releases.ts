@@ -182,6 +182,9 @@ async function tmdbNew(key: string, providerIds: string, region: string, now: Da
     .map((r) => r.meta);
 }
 
+/** A day's answer per service, region and language: a page visit costs 15 requests. */
+const today = new Map<string, Meta[]>();
+
 /** What is new on the service in the region: JustWatch's arrivals, else TMDB's releases. */
 export async function fetchNewReleases(
   key: string,
@@ -190,7 +193,11 @@ export async function fetchNewReleases(
   language: string,
   now = new Date(),
 ): Promise<Meta[]> {
+  const cacheKey = [day(now), providerIds, region, language].join(" ");
+  const known = today.get(cacheKey);
+  if (known) return known;
   const arrivals = await justWatchNew(providerIds, region, language, now);
-  if (arrivals && arrivals.length > 0) return arrivals;
-  return tmdbNew(key, providerIds, region, now);
+  const metas = arrivals && arrivals.length > 0 ? arrivals : await tmdbNew(key, providerIds, region, now);
+  if (metas.length > 0) today.set(cacheKey, metas);
+  return metas;
 }

@@ -95,3 +95,17 @@ it("needs no TMDB key for JustWatch, and fetches nothing without either", async 
   expect(await fetchNewReleases("", "8", "IT", "fr", now)).toEqual([]);
   expect(safeFetch.mock.calls.every(([url]) => String(url).includes("justwatch"))).toBe(true);
 });
+
+it("asks again only the next day once a service page has its arrivals", async () => {
+  safeFetch.mockImplementation(async (_url: string, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body ?? "{}"));
+    if (body.query?.includes("packages")) return json(packages);
+    return json({ data: { newTitles: { edges: [movie("77338", "Intouchables")] } } });
+  });
+  expect(await fetchNewReleases("k", "8", "BE", "fr", now)).toHaveLength(1);
+  const calls = safeFetch.mock.calls.length;
+  expect(await fetchNewReleases("k", "8", "BE", "fr", new Date("2026-10-17T22:00:00Z"))).toHaveLength(1);
+  expect(safeFetch.mock.calls.length).toBe(calls);
+  await fetchNewReleases("k", "8", "BE", "fr", new Date("2026-10-18T08:00:00Z"));
+  expect(safeFetch.mock.calls.length).toBeGreaterThan(calls);
+});
