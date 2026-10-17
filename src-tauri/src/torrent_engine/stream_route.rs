@@ -157,6 +157,7 @@ async fn stream_file(
     let Some(handle) = session.get(id) else {
         return (StatusCode::NOT_FOUND, "no torrent").into_response();
     };
+    super::claim_torrent(hash);
     let ct = handle
         .with_metadata(|m| m.file_infos.get(file_id).map(|fi| ct_for(&fi.relative_filename)))
         .ok()
