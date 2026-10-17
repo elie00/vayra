@@ -805,6 +805,7 @@ pub fn run() {
             mpv::mpv_set_geometry,
             mpv::mpv_force_below,
             mpv::mpv_export_log,
+            app_log::app_log_web,
             mpv::mpv_set_hdr_stage,
             mpv::display_hdr_active,
             webview_helpers::webview_reapply_transparency,
