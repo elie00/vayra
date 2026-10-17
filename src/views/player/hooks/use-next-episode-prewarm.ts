@@ -5,10 +5,10 @@ import { getPlaybackPosition, usePlaybackFlag } from "@/lib/player/playback-cloc
 import { prewarmLocalEngine } from "@/lib/streams/resolve";
 import type { PlayEpisode } from "@/lib/view";
 import { useSwitcherRefresh } from "@/components/player/stream-switcher/use-switcher-refresh";
-import { nearEnd, torrentsToPrewarm } from "../next-episode-prewarm";
+import { prewarmDue, torrentsToPrewarm } from "../next-episode-prewarm";
 
 /**
- * Near the end of an episode, look up the next one's sources and add its first
+ * Halfway through an episode, look up the next one's sources and add its first
  * torrents to the engine, paused. Going on then finds the list ready and the
  * metadata fetched, instead of starting both from scratch.
  */
@@ -20,8 +20,8 @@ export function useNextEpisodePrewarm(params: {
   enabled: boolean;
 }) {
   const { meta, nextEp, imdbId, durationSec, enabled } = params;
-  const near = usePlaybackFlag(() => nearEnd(getPlaybackPosition(), durationSec));
-  const active = enabled && !!nextEp && near;
+  const due = usePlaybackFlag(() => prewarmDue(getPlaybackPosition(), durationSec));
+  const active = enabled && !!nextEp && due;
   useSwitcherRefresh({ meta, episode: nextEp ?? undefined, imdbId, active });
 
   const entry = useSyncExternalStore(subscribePickerCache, () =>
