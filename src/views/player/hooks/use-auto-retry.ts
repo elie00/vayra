@@ -11,6 +11,8 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PlayerSrc, PlayEpisode } from "@/lib/view";
 import { BLACK_SCREEN_GRACE_MS, MAX_AUTORETRY_ATTEMPTS, ROOM_STALL_MS, SLOW_LOAD_MS, STUCK_AUTORETRY_MS } from "../player-utils";
 import { GENUINE_FAILURE_WINDOW_MS, type EngineStats } from "@/lib/torrent/engine-stats";
+import { parseRuntimeMinutes } from "@/views/play-picker/picker-utils";
+import { torrentTooSlow } from "../slow-torrent";
 
 type OpenPicker = (
   meta: Meta,
@@ -85,6 +87,8 @@ export function useAutoRetry(params: {
   const proxyRetriedRef = useRef(false);
   const transcodeRescueRef = useRef(false);
   const debridFailoverTriedRef = useRef(false);
+  const slowStartRef = useRef<{ bytes: number; at: number } | null>(null);
+  const slowSwitchTriedRef = useRef(false);
   const liveRetryCountRef = useRef(0);
   const livePlayedRef = useRef(false);
   const [transcodedUrl, setTranscodedUrl] = useState<string | null>(null);
@@ -97,6 +101,8 @@ export function useAutoRetry(params: {
     proxyRetriedRef.current = false;
     transcodeRescueRef.current = false;
     debridFailoverTriedRef.current = false;
+    slowStartRef.current = null;
+    slowSwitchTriedRef.current = false;
     liveRetryCountRef.current = 0;
     livePlayedRef.current = false;
     dlRef.current = { bytes: 0, at: Date.now() };
@@ -170,17 +176,14 @@ export function useAutoRetry(params: {
     [isLocal, isLive, src.attempt, src.url, src.meta, src.episode, src.headers, bridgeRef, instantPlay, inRoom, openPicker],
   );
 
-  useEffect(() => {
-    if (snap.errorCode == null) return;
-    if (snap.status === "ended") return;
-    if (isLive) {
-      console.warn(`[player] live channel: ignoring "${snap.errorCode}", mpv handles reconnection`);
-      return;
-    }
-    if (getPlaybackPosition() > 5) return;
-    if (isP2pEngine && !engineFailure && Date.now() - urlAtRef.current < ENGINE_FIRST_FRAME_GRACE_MS) return;
-    const failoverHash = src.streamRef?.infoHash;
-    if (failoverHash && debrids.length > 0 && !debridFailoverTriedRef.current) {
+  /**
+   * Play the same torrent through a debrid instead, once per source. Returns the
+   * abort for the lookup in flight, or null when no debrid can be tried.
+   */
+  const failoverToDebrid = useCallback(
+    (reason: string): (() => void) | null => {
+      const failoverHash = src.streamRef?.infoHash;
+      if (!failoverHash || debrids.length === 0 || debridFailoverTriedRef.current) return null;
       debridFailoverTriedRef.current = true;
       const cached = Object.fromEntries((src.streamRef?.cachedSlugs ?? []).map((s) => [s, true]));
       const ac = new AbortController();
@@ -211,7 +214,7 @@ export function useAutoRetry(params: {
               headers: r.data.headers,
             });
           } else {
-            triggerAutoRetry(`playback error "${snap.errorCode}"`);
+            triggerAutoRetry(reason);
           }
         },
       ).catch(() => {
@@ -220,7 +223,21 @@ export function useAutoRetry(params: {
       // Annule la résolution debrid en vol si l'effet se relance / le player se démonte
       // (évite un b.load() tardif sur un bridge périmé).
       return () => ac.abort();
+    },
+    [src.streamRef?.infoHash, src.streamRef?.cachedSlugs, src.streamRef?.fileIdx, src.episode, src.subtitles, src.notWebReady, debrids, bridgeRef, triggerAutoRetry],
+  );
+
+  useEffect(() => {
+    if (snap.errorCode == null) return;
+    if (snap.status === "ended") return;
+    if (isLive) {
+      console.warn(`[player] live channel: ignoring "${snap.errorCode}", mpv handles reconnection`);
+      return;
     }
+    if (getPlaybackPosition() > 5) return;
+    if (isP2pEngine && !engineFailure && Date.now() - urlAtRef.current < ENGINE_FIRST_FRAME_GRACE_MS) return;
+    const abortFailover = failoverToDebrid(`playback error "${snap.errorCode}"`);
+    if (abortFailover) return abortFailover;
     if (!sameUrlRetriedRef.current) {
       sameUrlRetriedRef.current = true;
       const b = bridgeRef.current;
@@ -301,7 +318,7 @@ export function useAutoRetry(params: {
       return;
     }
     triggerAutoRetry(`playback error "${snap.errorCode}"`);
-  }, [snap.errorCode, snap.status, triggerAutoRetry, stremioServerTranscode, transcodedUrl, src.url, src.subtitles, src.notWebReady, bridgeRef, isP2pEngine, engineFailure, isLive, src.streamRef?.infoHash, src.streamRef?.cachedSlugs, src.streamRef?.fileIdx, src.headers, debrids, src.episode, isLocal]);
+  }, [snap.errorCode, snap.status, triggerAutoRetry, stremioServerTranscode, transcodedUrl, src.url, src.subtitles, src.notWebReady, bridgeRef, isP2pEngine, engineFailure, isLive, src.headers, failoverToDebrid, isLocal]);
 
   const lastPosRef = useRef({ pos: 0, at: 0, started: false, urlAt: 0 });
   useEffect(() => {
@@ -396,6 +413,36 @@ export function useAutoRetry(params: {
     }, ROOM_STALL_MS);
     return () => window.clearTimeout(t);
   }, [inRoom, isLocal, isLive, snap.status, snap.videoWidth, snap.videoHeight, triggerAutoRetry, src.url, selfFrameReadyRef, isP2pEngine, engineFailure]);
+
+  // A torrent crawling far below what its file needs only counts as "progressing"
+  // for the checks below, which then wait on it for minutes: hand the same title
+  // to a debrid, else to the next candidate, once it shows no picture after 20 s.
+  const slowFailoverAbortRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => slowFailoverAbortRef.current?.(), [src.url]);
+  useEffect(() => {
+    if (!isP2pEngine || snap.status === "ended") return;
+    const id = window.setInterval(() => {
+      const st = engineStatsRef.current;
+      if (!st || snapRef.current.rendered || slowSwitchTriedRef.current) return;
+      if (snapRef.current.status === "paused") return;
+      let start = (slowStartRef.current ??= { bytes: st.downloaded, at: Date.now() });
+      // Counters from the previous source, or a re-added torrent, start over.
+      if (st.downloaded < start.bytes) start = slowStartRef.current = { bytes: st.downloaded, at: Date.now() };
+      const slow = torrentTooSlow({
+        fileBytes: st.streamLen,
+        runtimeMin: parseRuntimeMinutes(src.meta.runtime),
+        type: src.meta.type === "movie" ? "movie" : "series",
+        ageMs: Date.now() - start.at,
+        bytesSinceStart: st.downloaded - start.bytes,
+      });
+      if (!slow) return;
+      slowSwitchTriedRef.current = true;
+      const reason = "torrent too slow for its file";
+      slowFailoverAbortRef.current = failoverToDebrid(reason);
+      if (!slowFailoverAbortRef.current) triggerAutoRetry(reason);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [isP2pEngine, snap.status, src.meta.runtime, src.meta.type, failoverToDebrid, triggerAutoRetry]);
 
   useEffect(() => {
     if (!isP2pEngine || snap.status === "ended") return;
