@@ -5,6 +5,7 @@ mod firewall;
 mod nat_pmp;
 mod netcheck;
 mod peer_log;
+mod persistence;
 pub mod port_status;
 mod selftest;
 mod stream_route;
@@ -324,12 +325,45 @@ fn engine_dir(app: &AppHandle, cfg: &EngineConfig) -> Result<std::path::PathBuf,
         .map(|d| d.join("engine"))
 }
 
+/// One engine start at a time. Restoring the previous torrents can take minutes;
+/// commands asking for the engine meanwhile used to start a second session, which
+/// could not bind the DHT port the first one held and fell back to a cold DHT.
+static INIT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+/// Run `start` unless `started` says it has already run, waiting for a start in
+/// progress instead of beginning another.
+async fn start_once<Fut: std::future::Future<Output = Result<(), String>>>(
+    lock: &tokio::sync::Mutex<()>,
+    started: impl Fn() -> bool,
+    start: impl FnOnce() -> Fut,
+) -> Result<(), String> {
+    let _one_at_a_time = lock.lock().await;
+    if started() {
+        return Ok(());
+    }
+    start().await
+}
+
+/// Start the engine if it is not running yet.
+async fn start(app: AppHandle) -> Result<(), String> {
+    start_once(&INIT, || current_session().is_some(), || init_unlocked(app)).await
+}
+
+/// Start the engine afresh, after `stop`.
 async fn init(app: AppHandle) -> Result<(), String> {
+    let _one_at_a_time = INIT.lock().await;
+    init_unlocked(app).await
+}
+
+async fn init_unlocked(app: AppHandle) -> Result<(), String> {
     std::env::set_var("DHT_QUERIES_PER_SECOND", "100");
     let cfg = read_config(&app);
     let dir = engine_dir(&app, &cfg)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     cache_sweep::run(&dir, cfg.retention_hours.unwrap_or(24), cfg.max_gb.unwrap_or(0));
+    for hash in persistence::drop_torrents_without_metadata(&dir) {
+        eprintln!("[torrent-engine] not restoring {}: its .torrent file is gone", hash.get(..8).unwrap_or(&hash));
+    }
     cache_index::update(&dir, Vec::new());
     let (session, dht_tier) = match new_session(&dir, true, true, true).await {
         Ok(s) => (s, 1u8),
@@ -396,14 +430,14 @@ async fn ensure_session(app: &AppHandle) -> Result<Arc<Session>, String> {
     if let Some(s) = current_session() {
         return Ok(s);
     }
-    init(app.clone()).await?;
+    start(app.clone()).await?;
     current_session().ok_or_else(|| "engine failed to initialize".to_string())
 }
 
 pub fn ensure_started_on_setup(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
-        if let Err(e) = init(app).await {
+        if let Err(e) = start(app).await {
             eprintln!("[torrent-engine] init failed: {e}");
             let mut st = engine().lock().unwrap();
             st.ready = false;
@@ -961,6 +995,25 @@ pub async fn torrent_engine_selftest(app: AppHandle) -> selftest::SelfTestResult
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Commands asking for the engine while it is still starting used to start a
+    /// second one, which could not bind the DHT port the first one held.
+    #[tokio::test]
+    async fn starts_the_engine_once_however_many_callers_ask() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let lock = tokio::sync::Mutex::new(());
+        let started = AtomicUsize::new(0);
+        let start = || async {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            started.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        };
+        let callers = (0..4).map(|_| super::start_once(&lock, || started.load(Ordering::SeqCst) > 0, start));
+        for result in futures_util::future::join_all(callers).await {
+            assert!(result.is_ok());
+        }
+        assert_eq!(started.load(Ordering::SeqCst), 1);
+    }
 
     #[test]
     fn reads_the_torrent_file_of_a_local_stream_url() {
