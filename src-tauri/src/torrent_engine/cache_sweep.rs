@@ -21,17 +21,39 @@ pub fn expires_at(entry: &Path, retention_hours: u64) -> Option<SystemTime> {
     newest_modified(entry).map(|m| m + max_age(retention_hours))
 }
 
+/// librqbit's list of the torrents it restores at start, and for each its metadata
+/// and its resume state. They are written once, so they look old; without its
+/// .torrent, restoring a torrent waits on the network for its metadata, and the
+/// engine with it.
+const SESSION: &str = "session.json";
+
+fn persistence_files(dir: &Path) -> Vec<String> {
+    let listed = fs::read(dir.join(SESSION))
+        .ok()
+        .and_then(|raw| serde_json::from_slice::<serde_json::Value>(&raw).ok())
+        .and_then(|v| v.get("torrents").and_then(|t| t.as_object()).cloned())
+        .unwrap_or_default();
+    let hashes = listed.values().filter_map(|t| t.get("info_hash").and_then(|h| h.as_str()));
+    let mut names = vec![SESSION.to_string()];
+    for hash in hashes {
+        names.push(format!("{hash}.torrent"));
+        names.push(format!("{hash}.bitv"));
+    }
+    names
+}
+
 pub fn run(dir: &Path, retention_hours: u64, max_gb: u64) {
     let Ok(entries) = fs::read_dir(dir) else { return };
     let now = SystemTime::now();
     let max_age = max_age(retention_hours);
+    let persisted = persistence_files(dir);
     let mut kept: Vec<(PathBuf, SystemTime, u64)> = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
         let keep_name = path
             .file_name()
             .and_then(|n| n.to_str())
-            .map(|n| KEEP.contains(&n))
+            .map(|n| KEEP.contains(&n) || persisted.iter().any(|p| p == n))
             .unwrap_or(false);
         if keep_name {
             continue;
@@ -181,6 +203,25 @@ mod tests {
         set_dir_modified(&pack, SystemTime::now() - Duration::from_secs(48 * 3600));
         run(&dir, 24, 0);
         assert!(!pack.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn keeps_what_librqbit_needs_to_restore_its_torrents() {
+        // Without its .torrent, restoring a torrent waits on the network for its
+        // metadata, and the whole engine with it.
+        let dir = scratch("persistence");
+        let old = SystemTime::now() - Duration::from_secs(48 * 3600);
+        let listed = "80f2b1db98b1e4dcff3cd2bb42a1715425ac6a83";
+        let session = dir.join("session.json");
+        fs::write(&session, format!(r#"{{"torrents":{{"9":{{"info_hash":"{listed}","only_files":[0]}}}}}}"#)).unwrap();
+        fs::File::open(&session).unwrap().set_modified(old).unwrap();
+        let torrent = file_modified(&dir, &format!("{listed}.torrent"), old);
+        let bitv = file_modified(&dir, &format!("{listed}.bitv"), old);
+        let forgotten = file_modified(&dir, "0483e2eb7eff301f82752932ac7a48dc0203e4a1.torrent", old);
+        run(&dir, 24, 0);
+        assert!(session.exists() && torrent.exists() && bitv.exists());
+        assert!(!forgotten.exists(), "a torrent the session no longer lists still expires");
         let _ = fs::remove_dir_all(&dir);
     }
 
