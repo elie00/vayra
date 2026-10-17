@@ -829,6 +829,20 @@ async fn apply_selection(info_hash: &str, only: HashSet<usize>) -> Result<(), St
     select_files(&session, &handle, &only).await
 }
 
+/// Torrents are added paused and resumed by a file selection. A stream reaching one
+/// some other way read from a torrent that downloaded nothing: on 17 October a
+/// stream sat at 0 KiB/s with nine peers until a retry selected its file.
+pub(crate) async fn resume_for_stream(session: &Arc<Session>, handle: &Arc<librqbit::ManagedTorrent>) {
+    if !handle.is_paused() {
+        return;
+    }
+    let hash = handle.info_hash().as_string();
+    eprintln!("[torrent-engine] resuming paused {} for a stream", &hash[..8.min(hash.len())]);
+    if let Err(e) = session.unpause(handle).await {
+        eprintln!("[torrent-engine] could not resume {}: {e:#}", &hash[..8.min(hash.len())]);
+    }
+}
+
 async fn select_files(
     session: &Arc<Session>,
     handle: &Arc<librqbit::ManagedTorrent>,
@@ -1186,6 +1200,38 @@ mod tests {
         let _ = session.delete(TorrentIdOrHash::Hash(handle.info_hash()), false).await;
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(result, Ok(()));
+    }
+
+    /// Torrents are added paused and resumed by a file selection; a stream reaching one
+    /// some other way must resume it too, or it reads from a torrent that downloads nothing.
+    #[tokio::test]
+    async fn a_stream_resumes_a_paused_torrent() {
+        let dir = std::env::temp_dir().join(format!("vayra-unpause-{}", std::process::id()));
+        let content = dir.join("pack");
+        std::fs::create_dir_all(&content).unwrap();
+        std::fs::write(content.join("e01.mkv"), vec![1u8; 64 * 1024]).unwrap();
+        let options = librqbit::CreateTorrentOptions { name: None, trackers: Vec::new(), piece_length: Some(16 * 1024) };
+        let torrent = librqbit::create_torrent(&content, options, &librqbit::spawn_utils::BlockingSpawner::new(1))
+            .await
+            .unwrap()
+            .as_bytes()
+            .unwrap();
+        let session = new_session(&dir, false, false, false).await.unwrap();
+        let handle = session
+            .add_torrent(AddTorrent::from_bytes(torrent), Some(add_opts(true, Some(vec![0]), Vec::new(), Vec::new())))
+            .await
+            .unwrap()
+            .into_handle()
+            .unwrap();
+        timeout(Duration::from_secs(10), handle.wait_until_initialized()).await.unwrap().unwrap();
+        assert!(handle.is_paused(), "added paused");
+
+        resume_for_stream(&session, &handle).await;
+        let resumed = !handle.is_paused();
+
+        let _ = session.delete(TorrentIdOrHash::Hash(handle.info_hash()), false).await;
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(resumed);
     }
 
     /// Real swarm download with the production peer options, on a throwaway session.
