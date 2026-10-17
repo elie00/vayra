@@ -106,6 +106,15 @@ pub fn redirect_stderr_to_log() {
     drain_into_log(reader, log);
 }
 
+/// A warning or error from the web view, which has no stderr of its own. It goes
+/// through stderr like every other line, so its URLs are redacted on the way.
+#[tauri::command]
+pub fn app_log_web(level: String, message: String) {
+    let level = if level == "error" { "error" } else { "warn" };
+    let message: String = message.chars().take(2000).collect();
+    eprintln!("[web] {level} {}", message.replace('\n', " "));
+}
+
 const PEER_EVENTS: &str = "librqbit::torrent_state::live";
 
 /// librqbit tells why a peer connection ends only through `tracing`, at debug level,

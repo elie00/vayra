@@ -7,6 +7,14 @@ import { ModalOverlayApp } from "@/views/modal-overlay-app";
 import { HdrOverlayApp } from "@/views/hdr-overlay-app";
 import { PipApp } from "@/views/pip";
 import "@/index.css";
+import { invoke } from "@tauri-apps/api/core";
+import { forwardConsoleToLog } from "@/lib/web-log";
+
+if ("__TAURI_INTERNALS__" in window) {
+  forwardConsoleToLog((level, message) => {
+    void invoke("app_log_web", { level, message }).catch(() => { /* the log itself is out of reach */ });
+  });
+}
 
 function detectPipMode(): boolean {
   if (new URLSearchParams(window.location.search).get("pip") === "1") return true;
