@@ -76,11 +76,13 @@ export function ServiceView({ service }: { service: StreamingService }) {
     setNewReleases([]);
     if (region == null) return;
     let alive = true;
-    void fetchNewReleases(settings.tmdbKey, providerIdsFor(meta), region).then((m) => alive && setNewReleases(m));
+    // JustWatch takes a two-letter language; the app's own locales fall back to English.
+    const language = /^[a-z]{2}$/.test(settings.uiLanguage) ? settings.uiLanguage : "en";
+    void fetchNewReleases(settings.tmdbKey, providerIdsFor(meta), region, language).then((m) => alive && setNewReleases(m));
     return () => {
       alive = false;
     };
-  }, [service, settings.tmdbKey, region, meta]);
+  }, [service, settings.tmdbKey, settings.uiLanguage, region, meta]);
 
   useEffect(() => {
     setBucket({ movies: [], series: [] });
