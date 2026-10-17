@@ -34,12 +34,27 @@ const SQL_ERROR_CODES = [
 // (donc jamais de token/code d'invitation) ne peut s'y retrouver.
 export class CiraError extends Error {
   readonly code: CiraErrorCode;
+  /** For the log: the failing error's name, short code and HTTP status, never its message. */
+  readonly hint?: string;
 
-  constructor(code: CiraErrorCode) {
+  constructor(code: CiraErrorCode, hint?: string) {
     super(code);
     this.name = "CiraError";
     this.code = code;
+    this.hint = hint;
   }
+}
+
+/** What kind of error it was, from fields that cannot carry a token or an invite code. */
+function safeHint(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const e = error as { name?: unknown; code?: unknown; status?: unknown };
+  const parts = [
+    typeof e.name === "string" && /^[A-Za-z]{1,40}$/.test(e.name) ? e.name : null,
+    typeof e.code === "string" && /^[A-Za-z0-9_]{1,16}$/.test(e.code) ? e.code : null,
+    typeof e.status === "number" && Number.isInteger(e.status) ? String(e.status) : null,
+  ].filter((p): p is string => p !== null);
+  return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
 function isSqlErrorCode(message: string): message is (typeof SQL_ERROR_CODES)[number] {
@@ -59,5 +74,5 @@ export function toCiraError(error: unknown): CiraError {
       : "";
   if (isSqlErrorCode(message)) return new CiraError(message);
   if (NETWORK_MESSAGE.test(message)) return new CiraError("NETWORK");
-  return new CiraError("UNKNOWN");
+  return new CiraError("UNKNOWN", safeHint(error));
 }
