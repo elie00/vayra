@@ -215,7 +215,7 @@ mod tests {
         let listed = "80f2b1db98b1e4dcff3cd2bb42a1715425ac6a83";
         let session = dir.join("session.json");
         fs::write(&session, format!(r#"{{"torrents":{{"9":{{"info_hash":"{listed}","only_files":[0]}}}}}}"#)).unwrap();
-        fs::File::open(&session).unwrap().set_modified(old).unwrap();
+        fs::OpenOptions::new().write(true).open(&session).unwrap().set_modified(old).unwrap();
         let torrent = file_modified(&dir, &format!("{listed}.torrent"), old);
         let bitv = file_modified(&dir, &format!("{listed}.bitv"), old);
         let forgotten = file_modified(&dir, "0483e2eb7eff301f82752932ac7a48dc0203e4a1.torrent", old);
