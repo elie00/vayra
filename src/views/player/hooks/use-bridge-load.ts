@@ -8,6 +8,9 @@ import { useSettings } from "@/lib/settings";
 import { downloadSnapshot } from "@/lib/download/downloads-store";
 import { validatedDownloadSource } from "@/lib/download/offline-playback";
 import { hasNativeDesktopUx } from "@/lib/platform";
+import { isLocalEngineUrl } from "@/lib/stremio-server";
+import { torrentEnginePrefetch } from "@/lib/torrent/local-engine";
+import { parseRuntimeMinutes } from "@/views/play-picker/picker-utils";
 
 const RESUME_PROMPT_MIN_SEC = 30;
 const RESTART_THRESHOLD = 0.8;
@@ -99,6 +102,13 @@ export function useBridgeLoad(params: {
         resumePromptRef.current &&
         startSec > RESUME_PROMPT_MIN_SEC &&
         !guestInRoom;
+      // The engine reads the end of the file and the resume point while mpv reads
+      // the header, instead of after it.
+      const engineFile = isLocalEngineUrl(playUrl) ? src.streamRef : undefined;
+      if (engineFile?.infoHash && engineFile.fileIdx != null && !guestInRoom) {
+        const minutes = runtimeMin ?? parseRuntimeMinutes(src.meta.runtime) ?? 0;
+        void torrentEnginePrefetch(engineFile.infoHash, engineFile.fileIdx, startSec > 5 ? startSec : 0, minutes * 60);
+      }
       try {
         await bridge.load({
           resolveLocalResume: hasNativeDesktopUx() && !isLive && !inRoomRef.current ? async () => {

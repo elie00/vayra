@@ -247,6 +247,22 @@ export function cancelTorrentRemoval(infoHash: string): void {
 }
 
 /**
+ * Resuming mid-file, have the engine read the end of the file and around the resume
+ * point ahead, so their pieces come alongside the header the player reads first.
+ */
+export async function torrentEnginePrefetch(
+  infoHash: string,
+  fileIdx: number,
+  startSec: number,
+  durationSec: number,
+): Promise<void> {
+  if (!isTauri) return;
+  await invoke("torrent_engine_prefetch", { infoHash, fileIdx, startSec, durationSec }).catch((e) =>
+    console.warn("[engine] prefetch failed", e),
+  );
+}
+
+/**
  * A player closed with the app, or a crash, leaves its torrent in the engine, which
  * then downloads it at every launch. Stop the torrents restored at launch that no
  * save keeps; their files stay in the cache for the sweep.

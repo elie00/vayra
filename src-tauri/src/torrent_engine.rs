@@ -6,6 +6,7 @@ mod nat_pmp;
 mod netcheck;
 mod peer_log;
 mod persistence;
+mod prefetch;
 pub mod port_status;
 mod selftest;
 mod stream_route;
@@ -895,6 +896,26 @@ pub async fn torrent_engine_remove(info_hash: String, delete_files: bool) -> Res
         .delete(id, delete_files)
         .await
         .map_err(|e| format!("{e:#}"))?;
+    Ok(())
+}
+
+/// Resuming mid-file: read the end of the file and around the resume point ahead,
+/// so their pieces come alongside the header mpv reads first.
+#[tauri::command]
+pub async fn torrent_engine_prefetch(
+    info_hash: String,
+    file_idx: usize,
+    start_sec: f64,
+    duration_sec: f64,
+) -> Result<(), String> {
+    let session = current_session().ok_or_else(|| "engine not ready".to_string())?;
+    let id = TorrentIdOrHash::parse(&info_hash).map_err(|e| e.to_string())?;
+    let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
+    let len = handle
+        .with_metadata(|m| m.file_infos.get(file_idx).map(|f| f.len))
+        .map_err(|e| format!("{e:#}"))?
+        .ok_or_else(|| "no such file".to_string())?;
+    prefetch::start(handle, file_idx, prefetch::ranges(len, start_sec, duration_sec));
     Ok(())
 }
 
