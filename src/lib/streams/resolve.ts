@@ -321,6 +321,16 @@ export async function resolveViaDebrids(
 }
 
 
+/**
+ * Add a torrent to the local engine ahead of play, without choosing a file: the
+ * engine adds it paused and fetches its metadata, the wait a torrent stream
+ * otherwise starts with. Playing it later goes through tryLocalEngine as usual.
+ */
+export async function prewarmLocalEngine(stream: ParsedStream | ScoredStream): Promise<void> {
+  if (!stream.infoHash || !localTorrentAllowed()) return;
+  await torrentEngineAdd(magnetFromHash(stream.infoHash), trackersFromSources(stream.sources));
+}
+
 async function tryLocalEngine(
   stream: ParsedStream | ScoredStream,
   hint?: EpisodeHint,

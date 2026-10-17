@@ -47,6 +47,7 @@ import { usePlayerBridge } from "./player/hooks/use-player-bridge";
 import { useTextSync } from "./player/hooks/use-text-sync";
 import { useT } from "@/lib/i18n";
 import { useEpisodeNavigation } from "./player/hooks/use-episode-navigation";
+import { useNextEpisodePrewarm } from "./player/hooks/use-next-episode-prewarm";
 import { useAbLoop } from "./player/hooks/use-ab-loop";
 import { useAutoNextEpisode } from "./player/hooks/use-auto-next-episode";
 import { useStartedNearEnd } from "./player/hooks/use-started-near-end";
@@ -477,6 +478,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     isNextUp: true,
   });
   const isSeriesPlayback = !!src.episode && src.meta.type === "series";
+  useNextEpisodePrewarm({
+    meta: src.meta,
+    nextEp: adjacent.next,
+    imdbId: resolvedImdbId ?? null,
+    durationSec: snap.durationSec,
+    enabled: canChangeEpisode && !!src.episode && !src.isLive,
+  });
 
   const showHeaderWarning =
     src.notWebReady === true && engine === "html5" && (snap.status === "error" || snap.status === "loading");
