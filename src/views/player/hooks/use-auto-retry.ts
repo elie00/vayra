@@ -485,5 +485,18 @@ export function useAutoRetry(params: {
     return () => window.clearInterval(id);
   }, [isP2pEngine, snap.status, engineFailure, triggerAutoRetry, src.attempt]);
 
-  return { slowLoad, transcodedUrl, sourceError, clearSourceError: () => setSourceError(null) };
+  /** Asked from the loading screen: play the next candidate at once. */
+  const nextSource = useCallback(() => {
+    if (isLocal || isLive) return;
+    autoRetriedRef.current = true;
+    if (bridgeRef.current) {
+      bridgeRef.current.destroy();
+      bridgeRef.current = null;
+    }
+    const nextAttempt = (src.attempt ?? 0) + 1;
+    if (nextAttempt >= 2) clearOnePickerCache(src.meta, src.episode);
+    openPicker(src.meta, src.episode, { autoPlay: true, attempt: nextAttempt });
+  }, [isLocal, isLive, bridgeRef, src.attempt, src.meta, src.episode, openPicker]);
+
+  return { slowLoad, transcodedUrl, sourceError, clearSourceError: () => setSourceError(null), nextSource };
 }

@@ -11,6 +11,7 @@ export function LoaderLayer({
   isLocalSrc,
   forceShow,
   onCancel,
+  onNextSource,
   engineStats,
   onShowingChange,
   onRetry,
@@ -21,6 +22,7 @@ export function LoaderLayer({
   isLocalSrc: boolean;
   forceShow: boolean;
   onCancel: () => void;
+  onNextSource?: () => void;
   engineStats: ComponentProps<typeof CinematicPlayerLoader>["engineStats"];
   onShowingChange: (showing: boolean) => void;
   onRetry: () => void;
@@ -35,6 +37,7 @@ export function LoaderLayer({
           snap={snap}
           forceShow={forceShow}
           onCancel={onCancel}
+          onNextSource={isLocalSrc || isLiveSrc ? undefined : onNextSource}
           engineStats={engineStats}
           onShowingChange={onShowingChange}
         />
