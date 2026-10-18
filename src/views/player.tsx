@@ -184,7 +184,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const cast = usePlayerCast({ src, debrids, snapRef, bridgeRef, settings });
   const [now, setNow] = useState(() => Date.now());
   const { pipMode, togglePipMode, exitPip } = usePipMode({ bridgeRef, setChromeHidden });
-  const { slowLoad, transcodedUrl, sourceError, clearSourceError } = useAutoRetry({
+  const { slowLoad, transcodedUrl, sourceError, clearSourceError, nextSource } = useAutoRetry({
     bridgeRef,
     src,
     snap,
@@ -908,6 +908,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     swapResolvingKey,
     closePlayer,
     cancelToPicker,
+    nextSource,
     engineStats,
     isP2pEngine,
     setLoaderShowing,
