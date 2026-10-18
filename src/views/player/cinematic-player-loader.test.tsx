@@ -51,3 +51,20 @@ it("has no next source for a file on this computer", () => {
   expect(button("Cancel")).not.toBeNull();
   unmount();
 });
+
+it("points to the next source once a torrent has loaded for 20 seconds", () => {
+  // The player's own "stalled" notice came only after 50 s.
+  vi.useFakeTimers();
+  try {
+    const { button, unmount } = render(torrent, vi.fn(), vi.fn());
+    expect(button("Next source")!.dataset.emphasis).toBeUndefined();
+    act(() => vi.advanceTimersByTime(19_000));
+    expect(button("Next source")!.dataset.emphasis).toBeUndefined();
+    act(() => vi.advanceTimersByTime(1_500));
+    expect(button("Next source")!.dataset.emphasis).toBe("on");
+    expect(button("Next source")!.closest("div")!.parentElement!.textContent).toContain("This source is taking a while.");
+    unmount();
+  } finally {
+    vi.useRealTimers();
+  }
+});
