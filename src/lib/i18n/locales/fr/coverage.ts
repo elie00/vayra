@@ -263,6 +263,8 @@ const coverage: Record<string, string> = {
   "Choose an avatar": "Choisissez un avatar",
   "Choose another source": "Choisir une autre source",
   "Next source": "Source suivante",
+  "This source is taking a while.": "Cette source tarde.",
+  "You can try the next one.": "Tu peux essayer la suivante.",
   "Choose how far the keyboard arrows and player seek buttons jump.": "Choisissez de combien avancent les flèches du clavier et les boutons de déplacement du lecteur.",
   "Choose subtitles": "Choisir les sous-titres",
   "Choose subtitles before playback": "Choisir les sous-titres avant la lecture",
