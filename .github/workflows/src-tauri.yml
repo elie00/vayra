@@ -91,6 +91,11 @@ jobs:
           for binary in yt-dlp ffmpeg ffprobe; do
             : > "src-tauri/binaries/${binary}-${TARGET}${EXT}"
           done
+          # tauri-build merges tauri.windows.conf.json on Windows and checks its
+          # resources too; the mpv-cli step below builds the real mpv.exe.
+          if [[ "$TARGET" == *"windows"* ]]; then
+            : > "src-tauri/binaries/mpv-${TARGET}${EXT}"
+          fi
 
       # tauri's generate_context! embeds ../dist at compile time, so the frontend
       # must be built before cargo can check/clippy/test the src-tauri crate.
