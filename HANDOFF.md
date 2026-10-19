@@ -54,15 +54,18 @@
   la lecture, Ctrl+F, barres de défilement Fluent. Ce qui reste propre au Mac
   (raccourcis ⌘, plein écran au lieu d'agrandir, repli de la bande-annonce, arrondi
   de fenêtre) est voulu.
-- PR ouvertes au 2026-10-15 :
+- Fusionné le 2026-10-15 (#126 à #131) :
   - #126 : stderr → `%LOCALAPPDATA%\app.vayra\logs\vayra.log` (URLs masquées), comme
     `~/Library/Logs/VAYRA` sur le Mac, quand l'app est lancée sans console.
   - #127 : pic mémoire des mesures de lecture (`PeakWorkingSetSize`), qui valait `?`.
-  - #128 (empilée sur #126) : verdict du pare-feu Windows dans la ligne « Connexions
-    entrantes » (`torrent_engine/firewall.rs`, `INetFwPolicy2`). Ne pas utiliser
+  - #128 : verdict du pare-feu Windows dans la ligne « Connexions entrantes »
+    (`torrent_engine/firewall.rs`, `INetFwPolicy2`). Ne pas utiliser
     `INetFwMgr::IsPortAllowed` : il répondait « autorisé » sur un PC qui bloque l'entrant.
   - #129 : scripts Node de `scripts/` en LF, sinon `attribution-policy.test.ts` ne se
-    charge pas sur un checkout Windows (`core.autocrlf=true`).
+    charge pas sur un checkout Windows (`core.autocrlf=true`). Un checkout antérieur
+    garde ses fichiers en CRLF : les réécrire une fois (voir « Pièges »).
+  - #131 : `libmpv-2.dll` téléchargée depuis la pré-release `libmpv-windows` de ce
+    dépôt (même SHA-256), l'ancien dépôt source ayant disparu.
 - Build Windows : MSVC (README) puis
   `pnpm tauri build --bundles nsis --config src-tauri/tauri.windows.conf.json` ;
   l'installeur s'installe par utilisateur dans `%LOCALAPPDATA%\VAYRA`, sans admin
@@ -74,7 +77,10 @@
   tous les domaines Stremio (`api.strem.io`, Cinemeta, Torrentio : page « Accès à un
   site interdit », connexion coupée en TLS), le DHT n'amorce pas, la box ne répond pas
   en PCP (VPN prioritaire) et le pare-feu est géré par stratégie (règles locales
-  ignorées). La connexion Stremio, les flux et les pairs ne s'y recettent pas.
+  ignorées). La connexion Stremio, les flux et les pairs ne s'y recettent pas. La
+  stratégie y bloque aussi les raccourcis `.cmd` de `node_modules/.bin` (`pnpm exec
+  tsc`, `pnpm test`) : lancer `node node_modules/typescript/bin/tsc -b`,
+  `node node_modules/eslint/bin/eslint.js .` et `node node_modules/vitest/vitest.mjs run`.
 - Reste à recetter sur un PC Windows personnel : connexion et lecture, ouverture de
   port PCP/NAT-PMP, verdicts pare-feu « aucune règle » / « règle qui bloque » /
   « ouvert », image dans l'image, liens `stremio://`, choix du mode HDR.
@@ -355,6 +361,10 @@
   échouer le build local (« failed to read plugin permissions …/harbor/… »)
   alors que la CI est verte. Remède :
   `cargo clean --manifest-path src-tauri/Cargo.toml`.
+- **Fins de ligne d'un checkout Windows antérieur** : une règle `eol=lf` ajoutée à
+  `.gitattributes` ne réécrit pas les fichiers déjà extraits, qui restent en CRLF.
+  Lister avec `git ls-files --eol | grep w/crlf | grep eol=lf`, puis supprimer ces
+  fichiers et les restaurer par `git checkout -- <fichiers>`.
 - **Parité stubs mobiles** : toute commande de `generate_handler!` doit avoir un stub `mobile_stubs/<module>.rs`, sinon build Android `E0433`. Vérif rapide : `cargo check --target aarch64-linux-android --lib` (env NDK/CC requis).
 - **`.gitignore` global `lib/`** : masquait les nouveaux fichiers sous `src/lib/`. Résolu par `!/src/lib/` dans le `.gitignore` du repo (sinon `git add -f`).
 - **Cross-compile impossible depuis macOS** : le code `#[cfg(windows)]`/`#[cfg(linux)]` n'est PAS vérifié par `cargo check` hôte, et cross-check bute sur `libmpv2-sys` (besoin de mpv.lib/X11). **Seule la CI valide Windows/Linux.**
