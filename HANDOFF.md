@@ -376,8 +376,8 @@
   Depuis le 2026-10-19, le bundle embarque celui de `src-tauri/mpv-cli` (140 Ko, ligne de
   commande mpv construite sur la `libmpv-2.dll` embarquée, `pnpm setup:mpv-cli`) ; le `mpv`
   du PATH ne sert plus que de repli. La multivue n'utilise pas mpv : ses tuiles sont des
-  `<video>` (hls.js / mpegts.js) ; le chemin mpv de `multiview.rs` (`mvOpen`) n'a plus
-  d'appelant côté interface. Vignettes : un flux servi sans `Range` n'est pas seekable,
+  `<video>` (hls.js / mpegts.js) ; l'ancien chemin mpv (`multiview.rs`, une fenêtre mpv
+  par tuile) a été supprimé le 2026-10-19. Vignettes : un flux servi sans `Range` n'est pas seekable,
   mpv ne peut alors pas les produire (le moteur torrent sert bien les `Range`).
 - **AirPlay 2 comme cible de cast** : hors portée (protocole propriétaire SRP/FairPlay + Apple TV requis) ; actuellement détecté et grisé (`airplay2_pairing`).
 - **More translations** : ouvert (ajouter d'autres langues au besoin).
