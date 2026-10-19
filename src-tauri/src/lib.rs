@@ -83,11 +83,6 @@ mod playback_metrics;
 #[path = "mobile_stubs/mpv.rs"]
 mod mpv;
 #[cfg(desktop)]
-mod multiview;
-#[cfg(mobile)]
-#[path = "mobile_stubs/multiview.rs"]
-mod multiview;
-#[cfg(desktop)]
 mod proc_mem;
 #[cfg(mobile)]
 #[path = "mobile_stubs/proc_mem.rs"]
@@ -545,7 +540,6 @@ pub fn run() {
     let fullscreen_state = fullscreen::FullscreenState::new();
     let thumbs_state = thumbs::ThumbsState::new();
     let dvr_state = dvr::DvrState::new();
-    let multiview_state = multiview::MultiviewState::new();
     let vara_client_state = vara_client::VaraClientState::new();
     let modal_overlay_state = modal_overlay::ModalOverlayState::new();
     let app_builder = tauri::Builder::default();
@@ -618,7 +612,6 @@ pub fn run() {
         .manage(fullscreen_state)
         .manage(thumbs_state)
         .manage(dvr_state)
-        .manage(multiview_state)
         .manage(vara_client_state)
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
@@ -850,13 +843,6 @@ pub fn run() {
             dvr::dvr_list,
             dvr::dvr_default_dir,
             dvr::dvr_reveal,
-            multiview::multiview_open,
-            multiview::multiview_prespawn,
-            multiview::multiview_geometry,
-            multiview::multiview_audio_focus,
-            multiview::multiview_close,
-            multiview::multiview_visibility,
-            multiview::multiview_stop_all,
             vara_client::vayra_sync_join,
             vara_client::vayra_sync_leave,
             vara_client::vayra_sync_send,
