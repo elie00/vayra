@@ -62,32 +62,6 @@ impl DvrState {
     }
 }
 
-pub(crate) fn locate_mpv() -> Option<PathBuf> {
-    let candidates = if cfg!(windows) {
-        vec!["mpv.exe", "mpv"]
-    } else if cfg!(target_os = "macos") {
-        vec!["/opt/homebrew/bin/mpv", "/usr/local/bin/mpv", "mpv"]
-    } else {
-        vec!["mpv", "/usr/bin/mpv"]
-    };
-    for c in candidates {
-        let p = PathBuf::from(c);
-        let mut cmd = std::process::Command::new(&p);
-        cmd.arg("--version");
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            cmd.creation_flags(CREATE_NO_WINDOW);
-        }
-        if let Ok(out) = cmd.output() {
-            if out.status.success() {
-                return Some(p);
-            }
-        }
-    }
-    None
-}
-
 fn sanitize_filename(raw: &str) -> String {
     let mut out = String::with_capacity(raw.len());
     for ch in raw.chars() {
@@ -115,7 +89,8 @@ pub async fn dvr_start(
     state: State<'_, DvrState>,
     args: DvrStartArgs,
 ) -> Result<String, String> {
-    let mpv_bin = locate_mpv().ok_or_else(|| "mpv binary not found on system".to_string())?;
+    // Same lookup as thumbnails: the mpv.exe shipped beside the app comes first.
+    let mpv_bin = crate::thumbs::locate_mpv().ok_or_else(|| "mpv binary not found on system".to_string())?;
     let out_dir = PathBuf::from(&args.output_dir);
     if !out_dir.exists() {
         std::fs::create_dir_all(&out_dir).map_err(|e| format!("create dir: {}", e))?;
