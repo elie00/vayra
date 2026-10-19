@@ -138,6 +138,15 @@ jobs:
           cargo clippy --all-targets -- -D warnings
           cargo test
 
+      # The vendored socket crate turns off SIO_UDP_CONNRESET on Windows
+      # (see its VAYRA_PATCH.md); this test fails with os error 10054 without it.
+      - name: Vendored UDP sockets test (Windows)
+        if: contains(matrix.os, 'windows')
+        shell: bash
+        run: >
+          cargo test --manifest-path src-tauri/vendor/librqbit-dualstack-sockets/Cargo.toml
+          --target-dir src-tauri/target --lib -- test_udp_recv_survives_an_unreachable_peer
+
   android-check:
     name: Android debug build (arm64)
     runs-on: ubuntu-22.04
