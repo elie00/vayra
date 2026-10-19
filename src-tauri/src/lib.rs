@@ -352,6 +352,58 @@ fn install_maximize_guard(app: &tauri::AppHandle) {
     eprintln!("[harbor::maxguard] WM_GETMINMAXINFO work-area guard installed");
 }
 
+// The single-instance plugin's hidden window is WS_VISIBLE, so Windows takes it
+// for the process's main window: a polite close request (taskkill without /F,
+// tools that end apps cleanly) reaches it rather than VAYRA's window. It used to
+// destroy itself, which left VAYRA open but no longer single-instance: the next
+// launch found the mutex, not the window, and started a second copy. The request
+// now goes to the main window, which closes the app the usual way.
+#[cfg(windows)]
+const VAYRA_SIW_SUBCLASS_ID: usize = 0x5653_4957;
+
+#[cfg(windows)]
+unsafe extern "system" fn siw_subclass_proc(
+    hwnd: windows::Win32::Foundation::HWND,
+    msg: u32,
+    wparam: windows::Win32::Foundation::WPARAM,
+    lparam: windows::Win32::Foundation::LPARAM,
+    _id: usize,
+    main: usize,
+) -> windows::Win32::Foundation::LRESULT {
+    use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+    use windows::Win32::UI::Shell::DefSubclassProc;
+    use windows::Win32::UI::WindowsAndMessaging::{PostMessageW, WM_CLOSE};
+    if msg == WM_CLOSE {
+        let _ = PostMessageW(Some(HWND(main as *mut _)), WM_CLOSE, WPARAM(0), LPARAM(0));
+        return LRESULT(0);
+    }
+    DefSubclassProc(hwnd, msg, wparam, lparam)
+}
+
+#[cfg(windows)]
+fn install_single_instance_close_guard(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    use windows::core::HSTRING;
+    use windows::Win32::UI::Shell::SetWindowSubclass;
+    use windows::Win32::UI::WindowsAndMessaging::FindWindowW;
+    let Some(main) = app.get_webview_window("main").and_then(|w| w.hwnd().ok()) else {
+        eprintln!("[harbor::siw] main window missing");
+        return;
+    };
+    // Names built by tauri-plugin-single-instance (without its `semver` feature).
+    let id = &app.config().identifier;
+    let class = HSTRING::from(format!("{id}-sic"));
+    let title = HSTRING::from(format!("{id}-siw"));
+    let Ok(siw) = (unsafe { FindWindowW(&class, &title) }) else {
+        eprintln!("[harbor::siw] single-instance window not found");
+        return;
+    };
+    unsafe {
+        let _ = SetWindowSubclass(siw, Some(siw_subclass_proc), VAYRA_SIW_SUBCLASS_ID, main.0 as usize);
+    }
+    eprintln!("[harbor::siw] close requests forwarded to the main window");
+}
+
 // Bring the main window to the foreground on Windows (e.g. restoring from the
 // tray). `set_focus()` alone doesn't reliably raise a window the OS considers
 // background, so restore-if-minimized then explicitly foreground the HWND.
@@ -643,6 +695,8 @@ pub fn run() {
             make_main_transparent(app.handle());
             #[cfg(windows)]
             install_maximize_guard(app.handle());
+            #[cfg(windows)]
+            install_single_instance_close_guard(app.handle());
             #[cfg(windows)]
             {
                 use tauri::Manager;
