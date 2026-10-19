@@ -91,6 +91,11 @@ jobs:
           for binary in yt-dlp ffmpeg ffprobe; do
             : > "src-tauri/binaries/${binary}-${TARGET}${EXT}"
           done
+          # tauri-build merges tauri.windows.conf.json on Windows and checks its
+          # resources too; the mpv-cli step below builds the real mpv.exe.
+          if [[ "$TARGET" == *"windows"* ]]; then
+            : > "src-tauri/binaries/mpv-${TARGET}${EXT}"
+          fi
 
       # tauri's generate_context! embeds ../dist at compile time, so the frontend
       # must be built before cargo can check/clippy/test the src-tauri crate.
@@ -123,6 +128,15 @@ jobs:
             cargo clippy --all-targets -- -D warnings
           fi
           cargo test --all-targets
+
+      # The bundle's mpv.exe, built over the same libmpv-2.dll (Windows only).
+      - name: mpv-cli clippy + test (Windows)
+        if: contains(matrix.os, 'windows')
+        shell: bash
+        working-directory: src-tauri/mpv-cli
+        run: |
+          cargo clippy --all-targets -- -D warnings
+          cargo test
 
   android-check:
     name: Android debug build (arm64)

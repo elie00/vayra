@@ -438,7 +438,7 @@ fn spawn_mpv(
     pipe: &str,
     user_agent: Option<&str>,
 ) -> Result<Child, String> {
-    let mpv = crate::dvr::locate_mpv()
+    let mpv = crate::thumbs::locate_mpv()
         .ok_or_else(|| "mpv not found. Multiview needs mpv installed (same as DVR).".to_string())?;
     let ua = user_agent.unwrap_or("VLC/3.0.20 LibVLC/3.0.20");
     let mut cmd = Command::new(&mpv);

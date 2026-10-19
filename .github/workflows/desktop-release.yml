@@ -137,6 +137,9 @@ jobs:
       - name: Fetch Windows libmpv
         if: matrix.os == 'windows'
         run: pnpm setup:libmpv
+      - name: Build Windows mpv.exe
+        if: matrix.os == 'windows'
+        run: pnpm setup:mpv-cli
       - name: Fetch and verify release sidecars
         shell: bash
         env:

@@ -78,6 +78,11 @@ jobs:
         if: contains(matrix.platform.runner, 'windows')
         run: pnpm run setup:libmpv
 
+      # Multiview, DVR, scrub thumbnails and clip export run mpv.exe over that DLL.
+      - name: Build mpv.exe (Windows)
+        if: contains(matrix.platform.runner, 'windows')
+        run: pnpm run setup:mpv-cli
+
       - name: Fetch external binaries
         shell: bash
         env:
@@ -196,6 +201,7 @@ jobs:
           $required = @(
             "VAYRA.exe",
             "libmpv-2.dll",
+            "mpv.exe",
             "yt-dlp.exe",
             "ffmpeg.exe",
             "ffprobe.exe"
