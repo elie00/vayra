@@ -121,19 +121,15 @@ const PEER_EVENTS: &str = "librqbit::torrent_state::live";
 /// one line per peer: tens of thousands of lines a day that buried everything else.
 /// Count those causes instead, for the engine's `[torrent-engine] peer errors` line,
 /// and keep warnings from every crate plus the UPnP forwarder's info line saying the
-/// router opened the torrent port.
+/// router opened the torrent port. Warnings repeated on every network retry are
+/// written once an hour (`REPEATING_TARGETS`).
 pub fn init_tracing() {
     use tracing_subscriber::filter::{filter_fn, LevelFilter};
     use tracing_subscriber::prelude::*;
-    let filter = filter_fn(|meta| {
-        LevelFilter::WARN >= *meta.level()
-            || (meta.target() == PEER_EVENTS && LevelFilter::INFO >= *meta.level())
-            || (meta.target() == "librqbit_upnp" && LevelFilter::INFO >= *meta.level())
-    });
     let layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
         .with_writer(std::io::stderr)
-        .with_filter(filter);
+        .with_filter(LogFilter);
     let counter = PeerErrorCounter
         .with_filter(filter_fn(|meta| meta.target() == PEER_EVENTS && *meta.level() == tracing::Level::DEBUG));
     // Accepted incoming connections are trace events; the router's answer is info or warn.
@@ -142,6 +138,87 @@ pub fn init_tracing() {
         meta.target() == SESSION_EVENTS || (meta.target() == UPNP_EVENTS && LevelFilter::INFO >= *meta.level())
     }));
     let _ = tracing_subscriber::registry().with(layer).with(counter).with(port).try_init();
+}
+
+/// What reaches `vayra.log` from `tracing`: see `init_tracing`, and `REPEATING_TARGETS`.
+struct LogFilter;
+
+impl<S> tracing_subscriber::layer::Filter<S> for LogFilter {
+    fn enabled(&self, meta: &tracing::Metadata<'_>, _: &tracing_subscriber::layer::Context<'_, S>) -> bool {
+        use tracing_subscriber::filter::LevelFilter;
+        LevelFilter::WARN >= *meta.level()
+            || (meta.target() == PEER_EVENTS && LevelFilter::INFO >= *meta.level())
+            || (meta.target() == "librqbit_upnp" && LevelFilter::INFO >= *meta.level())
+    }
+
+    fn event_enabled(&self, event: &tracing::Event<'_>, _: &tracing_subscriber::layer::Context<'_, S>) -> bool {
+        let meta = event.metadata();
+        if *meta.level() != tracing::Level::WARN || !REPEATING_TARGETS.iter().any(|t| meta.target().starts_with(t)) {
+            return true;
+        }
+        let mut repeats = REPEATS.lock().unwrap_or_else(|e| e.into_inner());
+        match admit(&mut repeats, repeat_key(event), std::time::Instant::now()) {
+            None => false,
+            Some(0) => true,
+            Some(hidden) => {
+                eprintln!("[log] {hidden} more like the next line in the last hour");
+                true
+            }
+        }
+    }
+}
+
+/// Crates that warn again on every retry for as long as the network refuses them
+/// (a router without UPnP, a network that blocks the DHT): on such a network they
+/// were 99 % of the log. Each distinct warning is written once an hour, with the
+/// number of copies left out.
+const REPEATING_TARGETS: [&str; 2] = ["librqbit_upnp", "librqbit_dht"];
+const REPEAT_WINDOW: std::time::Duration = std::time::Duration::from_secs(3600);
+
+struct Repeat {
+    written: std::time::Instant,
+    hidden: u64,
+}
+
+static REPEATS: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<String, Repeat>>> =
+    std::sync::LazyLock::new(Default::default);
+
+/// `Some(hidden)` to write this occurrence (`hidden` copies were left out since the
+/// last one written), `None` to leave it out.
+fn admit(
+    repeats: &mut std::collections::HashMap<String, Repeat>,
+    key: String,
+    now: std::time::Instant,
+) -> Option<u64> {
+    match repeats.get_mut(&key) {
+        Some(r) if now.duration_since(r.written) < REPEAT_WINDOW => {
+            r.hidden += 1;
+            None
+        }
+        Some(r) => {
+            r.written = now;
+            Some(std::mem::take(&mut r.hidden))
+        }
+        None => {
+            repeats.insert(key, Repeat { written: now, hidden: 0 });
+            Some(0)
+        }
+    }
+}
+
+/// The event's target and fields, without the retry delay that changes every time.
+fn repeat_key(event: &tracing::Event<'_>) -> String {
+    struct Fields(String);
+    impl tracing_subscriber::field::Visit for Fields {
+        fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+            if field.name() != "retry_in" {
+                self.0.push_str(&format!(" {}={value:?}", field.name()));
+            }
+        }
+    }
+    let mut fields = Fields(event.metadata().target().to_string());
+    event.record(&mut fields);
+    fields.0
 }
 
 static PEER_ERRORS: std::sync::Mutex<std::collections::BTreeMap<&'static str, u64>> =
@@ -290,7 +367,10 @@ fn redact_magnet(magnet: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{peer_error_cause, redact_urls, take_peer_errors, PeerErrorCounter, PEER_EVENTS};
+    use super::{
+        admit, peer_error_cause, redact_urls, repeat_key, take_peer_errors, PeerErrorCounter, PEER_EVENTS,
+        REPEAT_WINDOW,
+    };
 
     #[test]
     fn keeps_only_the_host_of_a_remote_url() {
@@ -336,6 +416,43 @@ mod tests {
         });
         assert_eq!(take_peer_errors(), vec![("connect-timeout", 2)]);
         assert!(take_peer_errors().is_empty());
+    }
+
+    #[test]
+    fn writes_a_repeated_warning_once_an_hour_with_the_count_left_out() {
+        let mut repeats = std::collections::HashMap::new();
+        let t0 = std::time::Instant::now();
+        let key = || "librqbit_upnp message=failed to forward port".to_string();
+        assert_eq!(admit(&mut repeats, key(), t0), Some(0));
+        assert_eq!(admit(&mut repeats, key(), t0 + std::time::Duration::from_secs(30)), None);
+        assert_eq!(admit(&mut repeats, key(), t0 + std::time::Duration::from_secs(60)), None);
+        assert_eq!(admit(&mut repeats, "librqbit_upnp message=other".into(), t0), Some(0));
+        let later = t0 + REPEAT_WINDOW;
+        assert_eq!(admit(&mut repeats, key(), later), Some(2));
+        assert_eq!(admit(&mut repeats, key(), later + std::time::Duration::from_secs(30)), None);
+    }
+
+    #[test]
+    fn a_repeat_key_ignores_the_retry_delay_only() {
+        use tracing_subscriber::prelude::*;
+        struct Keys(std::sync::Arc<std::sync::Mutex<Vec<String>>>);
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for Keys {
+            fn on_event(&self, event: &tracing::Event<'_>, _: tracing_subscriber::layer::Context<'_, S>) {
+                self.0.lock().unwrap().push(repeat_key(event));
+            }
+        }
+        let keys = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let subscriber = tracing_subscriber::registry().with(Keys(keys.clone()));
+        tracing::subscriber::with_default(subscriber, || {
+            let addr = "dht.libtorrent.org:25401";
+            tracing::warn!(target: "librqbit_dht::dht", retry_in = 23.4, addr, "error in bootstrap");
+            tracing::warn!(target: "librqbit_dht::dht", retry_in = 58.7, addr, "error in bootstrap");
+            tracing::warn!(target: "librqbit_dht::dht", retry_in = 9.1, addr = "router.utorrent.com:6881", "error in bootstrap");
+        });
+        let keys = keys.lock().unwrap();
+        assert_eq!(keys[0], keys[1]);
+        assert_ne!(keys[0], keys[2]);
+        assert!(!keys[0].contains("retry_in"), "{}", keys[0]);
     }
 
     #[test]
