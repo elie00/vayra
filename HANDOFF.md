@@ -66,6 +66,16 @@
     garde ses fichiers en CRLF : les réécrire une fois (voir « Pièges »).
   - #131 : `libmpv-2.dll` téléchargée depuis la pré-release `libmpv-windows` de ce
     dépôt (même SHA-256), l'ancien dépôt source ayant disparu.
+- 2026-10-19 :
+  - #161 : la fenêtre cachée du plugin single-instance (`app.vayra-siw`) est visible
+    pour Windows ; une demande de fermeture (`taskkill` sans `/F`) la détruisait,
+    VAYRA restait ouverte et le lancement suivant démarrait une 2e instance (2e moteur
+    torrent, port DHT pris). Elle transmet maintenant `WM_CLOSE` à la fenêtre principale.
+  - #162 : avertissements `librqbit_dht` / `librqbit_upnp` répétés à chaque nouvelle
+    tentative écrits une fois par heure, avec le nombre de copies omises.
+  - #163 : `SIO_UDP_CONNRESET` coupé sur les sockets UDP (crate vendorisé
+    `librqbit-dualstack-sockets`) : un pair injoignable (ICMP) remontait en
+    `os error 10054` au `recv_from` suivant et arrêtait le DHT jusqu'au redémarrage.
 - Build Windows : MSVC (README) puis
   `pnpm tauri build --bundles nsis --config src-tauri/tauri.windows.conf.json` ;
   l'installeur s'installe par utilisateur dans `%LOCALAPPDATA%\VAYRA`, sans admin
