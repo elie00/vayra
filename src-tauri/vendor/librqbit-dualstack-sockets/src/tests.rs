@@ -487,3 +487,31 @@ async fn test_accept_skips_a_connection_reset_before_accept() {
         .expect("accept failed on the reset connection");
     assert_eq!(addr.ip(), IpAddr::V4(Ipv4Addr::LOCALHOST));
 }
+
+/// Windows reports an ICMP "port unreachable" for an earlier send_to as
+/// WSAECONNRESET on the next recv_from. librqbit's DHT and uTP tasks stop on
+/// any recv error, so one peer that has gone away killed both until restart.
+#[tokio::test]
+async fn test_udp_recv_survives_an_unreachable_peer() {
+    for addr in [ipv4_localhost(), ipv6_unspecified()] {
+        let socket = UdpSocket::bind_udp(addr, Default::default()).unwrap();
+        let port = socket.bind_addr().port();
+
+        let gone = std::net::UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let gone_addr = gone.local_addr().unwrap();
+        drop(gone);
+        socket.send_to(b"ping", gone_addr).await.unwrap();
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        let peer = std::net::UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        peer.send_to(b"pong", (Ipv4Addr::LOCALHOST, port)).unwrap();
+
+        let mut buf = [0u8; 16];
+        let (len, from) = timeout(Duration::from_secs(5), socket.recv_from(&mut buf))
+            .await
+            .expect("recv_from timed out")
+            .unwrap_or_else(|e| panic!("recv_from failed after an unreachable peer ({addr}): {e}"));
+        assert_eq!(&buf[..len], b"pong");
+        assert_eq!(from, peer.local_addr().unwrap());
+    }
+}
