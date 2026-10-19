@@ -124,6 +124,15 @@ jobs:
           fi
           cargo test --all-targets
 
+      # The bundle's mpv.exe, built over the same libmpv-2.dll (Windows only).
+      - name: mpv-cli clippy + test (Windows)
+        if: contains(matrix.os, 'windows')
+        shell: bash
+        working-directory: src-tauri/mpv-cli
+        run: |
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+
   android-check:
     name: Android debug build (arm64)
     runs-on: ubuntu-22.04
