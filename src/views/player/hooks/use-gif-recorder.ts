@@ -9,6 +9,7 @@ import {
 } from "@/lib/player/capture-path";
 import type { FrameGrabToast } from "./use-frame-grab";
 import type { PlayerSrc } from "@/lib/view";
+import { t } from "@/lib/i18n";
 
 export type GifState = "idle" | "recording" | "encoding";
 
@@ -55,11 +56,11 @@ export function useGifRecorder(params: { src: PlayerSrc }): {
       setToast({
         id: Date.now(),
         kind: "ok",
-        text: `GIF saved to ${dir ? "the app Pictures folder" : "downloads"}`,
+        text: dir ? t("GIF saved to the app Pictures folder") : t("GIF saved to downloads"),
         path: result.path,
       });
     } catch (e) {
-      setToast({ id: Date.now(), kind: "error", text: typeof e === "string" ? e : "GIF export failed" });
+      setToast({ id: Date.now(), kind: "error", text: typeof e === "string" ? e : t("GIF export failed") });
     } finally {
       setPhase("idle");
       setElapsedSec(0);
