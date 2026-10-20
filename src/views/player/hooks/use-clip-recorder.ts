@@ -9,6 +9,7 @@ import {
 } from "@/lib/player/capture-path";
 import type { FrameGrabToast } from "./use-frame-grab";
 import type { PlayerSrc } from "@/lib/view";
+import { t } from "@/lib/i18n";
 
 const CLIP_SECONDS = 30;
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -41,7 +42,7 @@ export function useClipRecorder(params: { src: PlayerSrc }): {
       busyRef.current = true;
       setSaving(true);
       if (dismissRef.current) window.clearTimeout(dismissRef.current);
-      setToast({ id: Date.now(), kind: "ok", text: "Saving clip…" });
+      setToast({ id: Date.now(), kind: "ok", text: t("Saving clip…") });
       try {
         const filename = `${safeName(captureBaseTitle(src))} - ${formatStamp(new Date())}.mp4`;
         const dir = await captureDir();
@@ -54,14 +55,14 @@ export function useClipRecorder(params: { src: PlayerSrc }): {
         setToast({
           id: Date.now(),
           kind: "ok",
-          text: `Clip saved to ${dir ? "the app Pictures folder" : "downloads"}`,
+          text: dir ? t("Clip saved to the app Pictures folder") : t("Clip saved to downloads"),
           path: result.path,
         });
       } catch (e) {
         setToast({
           id: Date.now(),
           kind: "error",
-          text: typeof e === "string" ? e : "Clip save failed",
+          text: typeof e === "string" ? e : t("Clip save failed"),
         });
       } finally {
         setSaving(false);
