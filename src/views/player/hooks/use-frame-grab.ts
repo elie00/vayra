@@ -11,6 +11,7 @@ import {
 } from "@/lib/player/capture-path";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayerSrc } from "@/lib/view";
+import { t } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -57,15 +58,19 @@ export function useFrameGrab(params: {
           id: Date.now(),
           kind: "ok",
           text: copied
-            ? `Screenshot copied to clipboard · saved to ${dir ? "the app Pictures folder" : "downloads"}`
-            : `Screenshot saved to ${dir ? "the app Pictures folder" : "downloads"}`,
+            ? dir
+              ? t("Screenshot copied to clipboard · saved to the app Pictures folder")
+              : t("Screenshot copied to clipboard · saved to downloads")
+            : dir
+              ? t("Screenshot saved to the app Pictures folder")
+              : t("Screenshot saved to downloads"),
           path: result.path,
         });
       } else {
         setToast({
           id: Date.now(),
           kind: "error",
-          text: result.error || "Frame grab failed",
+          text: result.error || t("Frame grab failed"),
         });
       }
       dismissTimer.current = window.setTimeout(() => setToast(null), 5200);
