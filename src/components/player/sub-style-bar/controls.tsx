@@ -173,14 +173,24 @@ export function BoldToggle({ on, onToggle }: { on: boolean; onToggle: () => void
   );
 }
 
-export function ColorRow({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+export function ColorRow({
+  value,
+  onChange,
+  swatches = SWATCHES,
+  swatchLabel,
+}: {
+  value: string;
+  onChange: (c: string) => void;
+  swatches?: readonly string[];
+  swatchLabel?: (color: string) => string;
+}) {
   const t = useT();
   return (
     <div className="flex h-11 shrink-0 items-center gap-1 px-2">
-      {SWATCHES.map((c) => (
+      {swatches.map((c) => (
         <button
           key={c}
-          aria-label={t("Subtitle color {color}", { color: c })}
+          aria-label={swatchLabel ? swatchLabel(c) : t("Subtitle color {color}", { color: c })}
           onClick={() => onChange(c)}
           className={`h-6 w-6 rounded-full transition-transform hover:scale-110 ${
             value.toUpperCase() === c ? "ring-2 ring-ink" : "ring-1 ring-edge-soft"

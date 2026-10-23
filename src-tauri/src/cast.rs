@@ -90,6 +90,8 @@ enum ActiveSession {
     },
     Dlna {
         control_url: String,
+        // DLNA TVs report positions relative to the stream they were given.
+        seek_start_sec: f64,
     },
     Roku {
         ecp_base: String,
@@ -620,6 +622,7 @@ pub async fn cast_load(
     if let Some((prev_proxy, prev_id)) = swap_active_proxy(&proxy_state, &proxied.session_id) {
         prev_proxy.release(&prev_id).await;
     }
+    let starts_at_sec = proxied.starts_at_sec;
     let cast_url = proxied.url;
     if kind_str == "dlna" {
         let cu = control_url.ok_or_else(|| "DLNA device missing control_url".to_string())?;
@@ -628,9 +631,11 @@ pub async fn cast_load(
         } else {
             content_type.clone()
         };
-        dlna::load(cu.clone(), cast_url, title, start_time_sec, ct, do_transcode).await?;
+        // A stream already cut at the start must not be seeked again on the TV.
+        let tv_start = if starts_at_sec > 0.0 { None } else { start_time_sec };
+        dlna::load(cu.clone(), cast_url, title, tv_start, ct, do_transcode).await?;
         let mut active = ACTIVE.lock().map_err(|e| format!("lock: {e}"))?;
-        *active = Some(ActiveSession::Dlna { control_url: cu });
+        *active = Some(ActiveSession::Dlna { control_url: cu, seek_start_sec: starts_at_sec });
         return Ok(());
     }
     if kind_str == "roku" {
@@ -843,9 +848,13 @@ fn snapshot_chromecast() -> Result<(String, u16, String, Option<i32>, f64), Stri
 }
 
 fn snapshot_dlna() -> Option<String> {
+    snapshot_dlna_with_start().map(|(control_url, _)| control_url)
+}
+
+fn snapshot_dlna_with_start() -> Option<(String, f64)> {
     let active = ACTIVE.lock().ok()?;
-    if let Some(ActiveSession::Dlna { control_url }) = active.as_ref() {
-        Some(control_url.clone())
+    if let Some(ActiveSession::Dlna { control_url, seek_start_sec }) = active.as_ref() {
+        Some((control_url.clone(), *seek_start_sec))
     } else {
         None
     }
@@ -926,8 +935,8 @@ pub async fn cast_pause() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn cast_seek(sec: f64) -> Result<(), String> {
-    if let Some(cu) = snapshot_dlna() {
-        return dlna::seek(cu, sec).await;
+    if let Some((cu, seek_start)) = snapshot_dlna_with_start() {
+        return dlna::seek(cu, (sec - seek_start).max(0.0)).await;
     }
     if let Some((ecp, url, title, ct)) = snapshot_roku_ctx() {
         return roku::seek(ecp, url, title, ct, sec).await;
@@ -1019,7 +1028,7 @@ pub async fn cast_stop() -> Result<(), String> {
     drop_status_conn();
     cast_subs::cleanup();
     match session {
-        Some(ActiveSession::Dlna { control_url }) => dlna::stop(control_url).await,
+        Some(ActiveSession::Dlna { control_url, .. }) => dlna::stop(control_url).await,
         Some(ActiveSession::Roku { ecp_base, .. }) => roku::stop(ecp_base).await,
         Some(ActiveSession::AirPlay { host, port }) => airplay::stop(host, port).await,
         Some(ActiveSession::Chromecast { host, port, session_id, .. }) => {
@@ -1038,10 +1047,10 @@ pub async fn cast_stop() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn cast_status() -> Result<Option<CastStatus>, String> {
-    if let Some(cu) = snapshot_dlna() {
+    if let Some((cu, seek_start)) = snapshot_dlna_with_start() {
         let s = dlna::status(cu).await.ok();
         return Ok(s.map(|x| CastStatus {
-            position_sec: x.position_sec,
+            position_sec: x.position_sec + seek_start,
             player_state: normalize_player_state(&x.player_state),
             connected: true,
         }));

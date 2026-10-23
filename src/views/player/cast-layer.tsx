@@ -21,6 +21,7 @@ function LiveCastSessionBar({
   onStop,
   onSeek,
   transcoding,
+  subtitles,
 }: {
   device: CastDeviceInfo;
   playing: boolean;
@@ -29,6 +30,7 @@ function LiveCastSessionBar({
   onStop: () => void | Promise<void>;
   onSeek: (sec: number) => void | Promise<void>;
   transcoding?: boolean;
+  subtitles?: { applying: boolean; pending: boolean };
 }) {
   // Subscribe to the floored second only to drive a ~1 Hz re-render (cheap), but
   // pass the *precise* float position downstream so the ±15 s seek buttons don't
@@ -47,6 +49,7 @@ function LiveCastSessionBar({
       onStop={onStop}
       onSeek={onSeek}
       transcoding={transcoding}
+      subtitles={subtitles}
     />
   );
 }
@@ -104,6 +107,11 @@ export function CastLayer({
             }}
             onSeek={cast.seekCast}
             transcoding={cast.castTranscoding}
+            subtitles={
+              cast.castSubStyleKey != null
+                ? { applying: cast.castRestyling, pending: cast.castSubStylePending }
+                : undefined
+            }
           />
         </>
       )}

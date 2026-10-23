@@ -1,5 +1,6 @@
 import type { CastDeviceInfo } from "@/lib/cast";
 import { useT } from "@/lib/i18n";
+import { CastSubStyleMenu } from "./cast-sub-style-menu";
 
 export function CastSessionBar({
   device,
@@ -10,6 +11,7 @@ export function CastSessionBar({
   onStop,
   onSeek,
   transcoding,
+  subtitles,
 }: {
   device: CastDeviceInfo;
   playing: boolean;
@@ -19,6 +21,8 @@ export function CastSessionBar({
   onStop: () => void | Promise<void>;
   onSeek: (sec: number) => void | Promise<void>;
   transcoding?: boolean;
+  /** Set while subtitles are burned into the cast. */
+  subtitles?: { applying: boolean; pending: boolean };
 }) {
   const t = useT();
   return (
@@ -71,6 +75,7 @@ export function CastSessionBar({
         >
           +15s
         </button>
+        {subtitles && <CastSubStyleMenu applying={subtitles.applying} pending={subtitles.pending} />}
         <button
           onClick={() => void onStop()}
           className="rounded-full bg-rose-400/20 px-3 py-1 text-[11px] font-semibold text-rose-100 transition-colors hover:bg-rose-400/30"

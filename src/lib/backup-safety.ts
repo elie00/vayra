@@ -59,6 +59,7 @@ const numberPreferences = [
   "cardBadgeLimit", "posterScale", "posterRadius", "rowTitleScale", "playerTitleScale", "uiScale", "heroShadow", "subFontSize",
   "subBorderSize", "subMarginY", "subBoxOpacity", "subOpacity", "subLineSpacing", "skipButtonHideSec", "seekBackStepSec",
   "seekForwardStepSec", "bandwidthMbps", "nextEpisodeLeadSec", "cwSnapshotRetentionDays", "seekBarHeight", "seekBarFillOpacity", "seekDotSize",
+  "castSubFontSize", "castSubBorderSize", "castSubMarginY",
 ] as const;
 const textPreferences = [
   "soundTheme", "region", "animeCardRating", "posterEffect", "trailerQuality", "playerVolumeHudPosition", "badgePlacement",
@@ -68,6 +69,7 @@ const textPreferences = [
   "nfoBackdropSize", "nfoLogoSize", "localPlaybackMode", "hoverPreviewPlacement", "cardHoverStyle", "mpvQuality", "mpvHwdec",
   "playerHdrStage", "audioProfile", "songCardStyle", "homeMode", "librarySort", "streamFilterLevel", "pickerLayout", "streamSort",
   "seekBarStyle", "seekBarColor", "seekDotShape", "uiLanguage", "cropMode", "harborColor",
+  "castSubFontColor", "castSubBorderColor",
 ] as const;
 const textListPreferences = ["preferredLanguages", "homeLanguages", "preferredSubLangs", "preferredAudioLangs", "tmdbImageLangs", "trackBlockWords", "animeExcludeOrigins", "macPinnedViews"] as const;
 const color = (value: unknown) => typeof value === "string" && /^#[\da-f]{3,8}$/i.test(value) ? value : undefined;
