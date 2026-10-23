@@ -384,6 +384,13 @@ const player: Record<string, string> = {
   "{word} {n} seconds": "{word} {n} secondes",
   "{word} {n} seconds. Hold for options": "{word} {n} secondes. Maintiens pour les options",
   "{word} {n}s · hold for options": "{word} {n} s · maintiens pour les options",
+  "TV subtitles": "Sous-titres sur la TV",
+  "Applying on the TV…": "Application sur la TV…",
+  "Sent to the TV in a moment": "Envoi à la TV dans un instant",
+  "Each change briefly restarts the video on the TV.": "Chaque changement relance brièvement la vidéo sur la TV.",
+  "Height on screen": "Hauteur à l’écran",
+  "{n}%": "{n}\u202f%",
+  "Outline color {color}": "Couleur du contour {color}",
 };
 
 export default player;

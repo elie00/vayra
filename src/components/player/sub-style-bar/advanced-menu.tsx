@@ -149,7 +149,7 @@ export function AdvancedMenu() {
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+export function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-[10px] px-2 py-1.5">
       <span className="text-[13.5px] font-medium text-ink-muted">{label}</span>
@@ -184,26 +184,53 @@ function Segmented({
   );
 }
 
-function Stepper({ value, onDec, onInc }: { value: number; onDec: () => void; onInc: () => void }) {
+export function Stepper({
+  value,
+  onDec,
+  onInc,
+  decLabel = "−",
+  incLabel = "+",
+  decDisabled,
+  incDisabled,
+}: {
+  value: number | string;
+  onDec: () => void;
+  onInc: () => void;
+  decLabel?: string;
+  incLabel?: string;
+  decDisabled?: boolean;
+  incDisabled?: boolean;
+}) {
   return (
     <div className="flex items-center rounded-[9px] bg-raised">
-      <IconBtn label="−" onClick={onDec}>
+      <IconBtn label={decLabel} onClick={onDec} disabled={decDisabled}>
         <Minus size={14} />
       </IconBtn>
       <span className="min-w-[28px] text-center font-mono text-[13px] tabular-nums text-ink">{value}</span>
-      <IconBtn label="+" onClick={onInc}>
+      <IconBtn label={incLabel} onClick={onInc} disabled={incDisabled}>
         <Plus size={14} />
       </IconBtn>
     </div>
   );
 }
 
-function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+function IconBtn({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <button
       aria-label={label}
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-[8px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
+      disabled={disabled}
+      className="flex h-8 w-8 items-center justify-center rounded-[8px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:pointer-events-none disabled:opacity-35"
     >
       {children}
     </button>
