@@ -103,14 +103,25 @@ fn ass_alignment(align_x: &str) -> u32 {
     }
 }
 
+// ffmpeg turns text subtitles into ASS with PlayResY 288, and libass sizes
+// Fontsize, Outline and MarginV against it. VAYRA's sizes are pixels at a 720p
+// height, like mpv's, and the margin is a percentage of the picture height.
+const ASS_PLAY_RES_Y: f64 = 288.0;
+
 pub fn build_force_style(style: &CastSubStyle) -> String {
+    let scale = ASS_PLAY_RES_Y / 720.0;
     let primary = hex_to_ass_bgr(&style.font_color);
     let outline_color = hex_to_ass_bgr(&style.border_color);
-    let outline = if style.border_size == 0 { 2 } else { style.border_size };
     let alignment = ass_alignment(&style.align_x);
+    let margin = (f64::from(style.margin_y) * ASS_PLAY_RES_Y / 100.0).round();
     format!(
-        "Fontsize={},PrimaryColour={},OutlineColour={},BorderStyle=1,Outline={},Shadow=0,Alignment={},MarginV={}",
-        style.font_size, primary, outline_color, outline, alignment, style.margin_y,
+        "Fontsize={:.1},PrimaryColour={},OutlineColour={},BorderStyle=1,Outline={:.1},Shadow=0,Alignment={},MarginV={}",
+        f64::from(style.font_size) * scale,
+        primary,
+        outline_color,
+        f64::from(style.border_size) * scale,
+        alignment,
+        margin,
     )
 }
 
@@ -367,4 +378,31 @@ async fn shift_subtitle(input: &Path, seek_start: f64, dir: &Path) -> Option<Pat
 
 pub fn cleanup() {
     let _ = std::fs::remove_dir_all(castsubs_dir());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{build_force_style, CastSubStyle};
+
+    #[test]
+    fn force_style_maps_720p_sizes_and_margin_percent_to_ffmpeg_play_res() {
+        let style = CastSubStyle {
+            font_size: 45,
+            font_color: "#FFE45E".into(),
+            border_color: "#000000".into(),
+            border_size: 3,
+            margin_y: 8,
+            align_x: "center".into(),
+        };
+        assert_eq!(
+            build_force_style(&style),
+            "Fontsize=18.0,PrimaryColour=&H005EE4FF,OutlineColour=&H00000000,BorderStyle=1,Outline=1.2,Shadow=0,Alignment=2,MarginV=23",
+        );
+    }
+
+    #[test]
+    fn zero_border_means_no_outline() {
+        let style = CastSubStyle { border_size: 0, ..CastSubStyle::default() };
+        assert!(build_force_style(&style).contains(",Outline=0.0,"));
+    }
 }
