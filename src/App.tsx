@@ -695,14 +695,6 @@ function Shell() {
   }, [setView, goBack, setSearchOpen]);
 
   useEffect(() => {
-    if (topKind !== "live") {
-      void import("@/lib/multiview/bridge").then(({ mvStopAll }) =>
-        mvStopAll().catch(() => {}),
-      );
-    }
-  }, [topKind]);
-
-  useEffect(() => {
     void import("@/lib/addon-store").then(({ seedDefaultAddonsIfFirstRun }) =>
       seedDefaultAddonsIfFirstRun(),
     );

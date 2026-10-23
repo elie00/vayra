@@ -10,6 +10,8 @@ pub enum Error {
     OnlyV6 { value: bool, source: std::io::Error },
     #[error("error setting SO_REUSEADDR: {0}")]
     ReuseAddress(std::io::Error),
+    #[error("error turning off SIO_UDP_CONNRESET: {0}")]
+    UdpConnReset(std::io::Error),
     #[error("error getting local_addr(): {0}")]
     LocalAddr(std::io::Error),
     #[error("as_socket() returned None")]
