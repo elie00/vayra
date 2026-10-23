@@ -155,6 +155,33 @@ pub fn ffmpeg_present() -> bool {
     locate_ffmpeg().is_some()
 }
 
+/// ffmpeg able to burn subtitles in. Homebrew's `ffmpeg` formula ships without
+/// libass (no `subtitles` filter); its keg-only `ffmpeg-full` has it.
+pub fn locate_subtitles_ffmpeg() -> Option<std::path::PathBuf> {
+    let mut candidates: Vec<std::path::PathBuf> = Vec::new();
+    if cfg!(target_os = "macos") {
+        candidates.push("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg".into());
+        candidates.push("/usr/local/opt/ffmpeg-full/bin/ffmpeg".into());
+    }
+    candidates.extend(locate_ffmpeg());
+    candidates.into_iter().find(|p| {
+        let mut cmd = std::process::Command::new(p);
+        cmd.arg("-hide_banner").arg("-filters");
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x0800_0000);
+        }
+        cmd.output()
+            .map(|out| lists_subtitles_filter(&String::from_utf8_lossy(&out.stdout)))
+            .unwrap_or(false)
+    })
+}
+
+fn lists_subtitles_filter(filters: &str) -> bool {
+    filters.lines().any(|l| l.split_whitespace().nth(1) == Some("subtitles"))
+}
+
 pub fn locate_ffprobe() -> Option<std::path::PathBuf> {
     let name = if cfg!(windows) { "ffprobe.exe" } else { "ffprobe" };
     if let Some(ffmpeg) = locate_ffmpeg() {
@@ -290,7 +317,8 @@ pub async fn handle_transcode(
     profile: &TranscodeProfile,
     burn_sub: Option<&(String, String)>,
 ) -> Response {
-    let ffmpeg = match locate_ffmpeg() {
+    let located = if burn_sub.is_some() { locate_subtitles_ffmpeg() } else { locate_ffmpeg() };
+    let ffmpeg = match located {
         Some(p) => p,
         None => {
             return (
@@ -500,4 +528,17 @@ pub async fn handle_transcode(
 #[tauri::command]
 pub fn cast_ffmpeg_present() -> bool {
     ffmpeg_present()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::lists_subtitles_filter;
+
+    #[test]
+    fn subtitles_filter_is_detected_only_when_listed() {
+        let slim = "Filters:\n  T.. = Timeline support\n .. scale             V->V       Scale the input video size.\n";
+        let full = format!("{slim} .. subtitles         V->V       Render text subtitles onto input video using the libass library.\n");
+        assert!(!lists_subtitles_filter(slim));
+        assert!(lists_subtitles_filter(&full));
+    }
 }

@@ -301,6 +301,12 @@ pub async fn prepare(
     if sub.off {
         return None;
     }
+    // Without libass the burn-in filter breaks the whole transcode and the
+    // device gets an empty stream: cast without subtitles instead.
+    if crate::transcode::locate_subtitles_ffmpeg().is_none() {
+        eprintln!("[harbor::cast] no ffmpeg with the libass `subtitles` filter (brew install ffmpeg-full) — casting without subtitles");
+        return None;
+    }
     let dir = castsubs_dir();
     let base = match sub.kind.as_str() {
         "external" => {
