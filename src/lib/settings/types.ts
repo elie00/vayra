@@ -204,6 +204,13 @@ export type Settings = {
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
   castAlwaysTranscode: boolean;
+  // Subtitles burned into a cast, set apart from the Mac player's: sizes are
+  // pixels at a 720p height, the margin a percentage of the picture height.
+  castSubFontSize: number;
+  castSubFontColor: string;
+  castSubBorderColor: string;
+  castSubBorderSize: number;
+  castSubMarginY: number;
   playerAnime4kShaders: string[];
   playerAnime4kMode: string;
   playerAnime4kTier: string;

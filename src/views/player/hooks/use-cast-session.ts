@@ -121,9 +121,15 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
   const castEngagedRef = useRef<boolean>(false);
   castEngagedRef.current = castDevice != null || pendingCastDevice != null;
   const castPlayingRef = useRef<boolean>(true);
+  // Load sent to the device, replayed with a new style when the TV subtitles change.
+  const lastLoadRef = useRef<{ device: CastDeviceInfo; params: Omit<LoadParams, "host" | "port"> } | null>(null);
+  // Style of the subtitles burned into the cast, null when none are.
+  const [castSubStyleKey, setCastSubStyleKey] = useState<string | null>(null);
+  const [castRestyling, setCastRestyling] = useState(false);
 
   useEffect(() => {
     return () => {
+      lastLoadRef.current = null;
       if (castDeviceRef.current) void castStop();
     };
   }, []);
@@ -153,6 +159,8 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
         ...params,
       });
       if (res.ok) {
+        lastLoadRef.current = { device, params };
+        setCastSubStyleKey(params.subtitle && params.subStyle ? JSON.stringify(params.subStyle) : null);
         setCastDevice(device);
         setPendingCastDevice(null);
       } else {
@@ -252,6 +260,8 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
 
   const stopCast = useCallback(async () => {
     const finalPos = lastCastPositionRef.current;
+    lastLoadRef.current = null;
+    setCastSubStyleKey(null);
     await castStop();
     setCastDevice(null);
     const bridge = bridgeRef?.current;
@@ -267,6 +277,40 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
     // Explicit user seek: allow the displayed second to move backwards.
     setCastCorrection(sec, castPlayingRef.current, true);
     await castSeek(sec);
+  }, []);
+
+  // Burned-in subtitles can't change on a running stream: reload the cast from
+  // where the TV is, with the new style.
+  const restyleCast = useCallback(async (subStyle: CastSubStyle) => {
+    const last = lastLoadRef.current;
+    if (!last?.params.subtitle) return;
+    const key = JSON.stringify(subStyle);
+    if (key === JSON.stringify(last.params.subStyle)) return;
+    const startTimeSec = lastCastPositionRef.current;
+    const params = { ...last.params, subStyle, startTimeSec };
+    // Recorded before the load, so a failed reload isn't retried in a loop.
+    lastLoadRef.current = { device: last.device, params };
+    setCastSubStyleKey(key);
+    castStartTargetRef.current = startTimeSec;
+    castSeekConfirmedRef.current = startTimeSec <= 1;
+    setCastRestyling(true);
+    const res = await castLoad({
+      host: last.device.host,
+      port: last.device.port,
+      kind: last.device.kind,
+      controlUrl: last.device.control_url,
+      ...params,
+    });
+    setCastRestyling(false);
+    // Stopped while reloading: don't leave the reloaded stream playing.
+    if (lastLoadRef.current == null) {
+      void castStop();
+      return;
+    }
+    if (!res.ok) {
+      setCastError(res.error ?? `Could not cast to ${last.device.name}.`);
+      setTimeout(() => setCastError(null), 8000);
+    }
   }, []);
 
   const dismissCastErrorInfo = useCallback(() => {
@@ -286,6 +330,9 @@ export function useCastSession(bridgeRef?: RefObject<PlayerBridge | null>) {
     castPlaying,
     burnSubsOnTv,
     setBurnSubsOnTv,
+    castSubStyleKey,
+    castRestyling,
+    restyleCast,
     openCastMenu,
     closeCastMenu,
     pickCastDevice,

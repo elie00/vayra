@@ -3,6 +3,7 @@ import {
   getCastPositionPrecise,
   subscribeCastPosition,
 } from "@/lib/player/cast-interp";
+import type { CastSubStyle } from "@/lib/cast";
 import { useDebridClients } from "@/lib/debrid/registry";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import {
@@ -12,8 +13,11 @@ import {
 } from "@/lib/player/playback-clock";
 import type { Settings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
-import { useCastPick } from "./use-cast-pick";
+import { buildCastSubStyle, useCastPick } from "./use-cast-pick";
 import { useCastSession } from "./use-cast-session";
+
+// Each TV subtitle change reloads the cast: wait for the user to settle on a value.
+const CAST_RESTYLE_DELAY_MS = 1200;
 
 export function usePlayerCast(params: {
   src: PlayerSrc;
@@ -54,6 +58,18 @@ export function usePlayerCast(params: {
     return subscribeCastPosition(push);
   }, [castActive]);
 
+  const { castDevice, castSubStyleKey, castRestyling, restyleCast } = session;
+  const wantedSubStyleKey = JSON.stringify(buildCastSubStyle(settings));
+  const castSubStylePending = castSubStyleKey != null && castSubStyleKey !== wantedSubStyleKey;
+  useEffect(() => {
+    if (!castDevice || !castSubStylePending || castRestyling) return;
+    const timer = window.setTimeout(
+      () => void restyleCast(JSON.parse(wantedSubStyleKey) as CastSubStyle),
+      CAST_RESTYLE_DELAY_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [castDevice, castSubStylePending, castRestyling, wantedSubStyleKey, restyleCast]);
+
   const sync = useMemo(
     () => ({
       activeRef: session.castActiveRef,
@@ -67,7 +83,7 @@ export function usePlayerCast(params: {
     [session.castActiveRef, session.castEngagedRef, session.playCast, session.pauseCast, session.seekCast, session.getCastPosition, session.isCastPlaying],
   );
 
-  return { ...session, ...pick, sync };
+  return { ...session, ...pick, castSubStylePending, sync };
 }
 
 export type PlayerCastController = ReturnType<typeof usePlayerCast>;
