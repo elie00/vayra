@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use uuid::Uuid;
 
@@ -139,6 +140,11 @@ pub fn escape_subtitles_path(path: &Path) -> String {
         raw
     };
     drive_fixed.replace('\'', "\\'")
+}
+
+fn prepared_cache() -> &'static Mutex<HashMap<String, PathBuf>> {
+    static CACHE: OnceLock<Mutex<HashMap<String, PathBuf>>> = OnceLock::new();
+    CACHE.get_or_init(Default::default)
 }
 
 fn castsubs_dir() -> PathBuf {
@@ -319,20 +325,37 @@ pub async fn prepare(
         return None;
     }
     let dir = castsubs_dir();
-    let base = match sub.kind.as_str() {
-        "external" => {
-            let url = sub.url.as_deref()?;
-            if is_http_url(url) {
-                download_remote(url, sub.format.as_deref(), &dir).await?
-            } else {
-                prepare_local(url, sub.format.as_deref(), &dir).await?
+    // Restyling a cast reloads it: reuse the prepared file instead of reading
+    // the whole video again to extract an embedded track.
+    let key = format!("{}|{:?}|{:?}|{}", sub.kind, sub.url, sub.src_index, source_url);
+    let cached = prepared_cache()
+        .lock()
+        .ok()
+        .and_then(|c| c.get(&key).cloned())
+        .filter(|p| p.is_file());
+    let base = match cached {
+        Some(path) => path,
+        None => {
+            let fresh = match sub.kind.as_str() {
+                "external" => {
+                    let url = sub.url.as_deref()?;
+                    if is_http_url(url) {
+                        download_remote(url, sub.format.as_deref(), &dir).await?
+                    } else {
+                        prepare_local(url, sub.format.as_deref(), &dir).await?
+                    }
+                }
+                "embedded" => {
+                    let idx = sub.src_index?;
+                    extract_embedded(source_url, idx, headers, &dir).await?
+                }
+                _ => return None,
+            };
+            if let Ok(mut c) = prepared_cache().lock() {
+                c.insert(key, fresh.clone());
             }
+            fresh
         }
-        "embedded" => {
-            let idx = sub.src_index?;
-            extract_embedded(source_url, idx, headers, &dir).await?
-        }
-        _ => return None,
     };
     let path = if seek_start > 1.0 {
         let shifted = shift_subtitle(&base, seek_start, &dir).await;
