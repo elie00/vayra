@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
   setUserAddons: vi.fn(),
   userAddons: vi.fn(),
+  consent: vi.fn(async () => true),
 }));
 
 vi.mock("@/lib/safe-fetch", () => ({ safeFetch: mocks.fetch }));
@@ -12,6 +13,10 @@ vi.mock("./auth", () => ({ readActiveStremioAuthKey: () => mocks.authKey }));
 vi.mock("./addons", () => ({
   setUserAddons: mocks.setUserAddons,
   userAddons: mocks.userAddons,
+}));
+vi.mock("./watch-activity-consent", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./watch-activity-consent")>()),
+  confirmWatchActivityAddon: mocks.consent,
 }));
 
 import { installFromUrl, loadInstalled, manifestRequiresConfiguration, uninstallAddon } from "./addon-store";
@@ -24,6 +29,8 @@ beforeEach(() => {
   mocks.fetch.mockReset();
   mocks.setUserAddons.mockReset();
   mocks.userAddons.mockReset();
+  mocks.consent.mockReset();
+  mocks.consent.mockResolvedValue(true);
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => storage.get(key) ?? null,
     setItem: (key: string, value: string) => storage.set(key, value),
@@ -36,6 +43,35 @@ function manifestResponse(id: string, name = id) {
     json: async () => ({ id, name, version: "1.0.0" }),
   };
 }
+
+function scrobblerResponse(version: string) {
+  return {
+    ok: true,
+    json: async () => ({ id: "org.scrobbler", name: "Scrobbler", version, resources: ["player"], types: ["movie"] }),
+  };
+}
+
+describe("addons that receive watch activity", () => {
+  it("are not installed when the user declines", async () => {
+    mocks.consent.mockResolvedValueOnce(false);
+    mocks.fetch.mockResolvedValueOnce(scrobblerResponse("1.0.0"));
+
+    await expect(installFromUrl("https://scrobbler.example/manifest.json")).rejects.toThrow("Installation cancelled.");
+
+    expect(mocks.consent).toHaveBeenCalledWith("Scrobbler");
+    expect(loadInstalled()).toEqual([]);
+  });
+
+  it("are asked once, not again when updated", async () => {
+    mocks.fetch.mockResolvedValueOnce(scrobblerResponse("1.0.0")).mockResolvedValueOnce(scrobblerResponse("1.1.0"));
+
+    await installFromUrl("https://scrobbler.example/manifest.json");
+    await installFromUrl("https://scrobbler.example/manifest.json");
+
+    expect(mocks.consent).toHaveBeenCalledTimes(1);
+    expect(loadInstalled()).toMatchObject([{ id: "org.scrobbler", manifest: { version: "1.1.0" } }]);
+  });
+});
 
 describe("addon installation", () => {
   it("installs locally without treating Stremio as a requirement", async () => {
