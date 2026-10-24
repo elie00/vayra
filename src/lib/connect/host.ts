@@ -77,12 +77,12 @@ export function createConnectPublisher(
         if (Math.abs(state.positionSec - expected) <= DRIFT_SEC) return;
       }
       sent = state;
-      void send(state).catch(() => {});
+      void send(state).catch(() => { /* Server stopped: no phone left to tell. */ });
     },
     clear() {
       if (!sent) return;
       sent = null;
-      void send(null).catch(() => {});
+      void send(null).catch(() => { /* Server stopped: no phone left to tell. */ });
     },
   };
 }

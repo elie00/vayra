@@ -81,7 +81,7 @@ export function useConnectHost(params: Controls & { enabled: boolean; src: Playe
         if (cancelled) unlisten();
         else stop = unlisten;
       })
-      .catch(() => {});
+      .catch(() => { /* Outside Tauri no phone can send commands. */ });
     return () => {
       cancelled = true;
       stop?.();

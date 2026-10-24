@@ -32,6 +32,7 @@ import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
 import { TorrentLinksRow } from "./torrent-links-row";
+import { ConnectRow } from "./connect-row";
 import { Section } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
@@ -103,6 +104,15 @@ export function AdvancedPanel() {
           subtitle={t("VAYRA catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.")}
         >
           <StremioDeeplinkRow />
+        </Section>
+      )}
+
+      {desktopOnly && (
+        <Section
+          title={t("VAYRA Connect")}
+          subtitle={t("Drive this player from your Android phone on the same Wi-Fi, like Spotify between your devices.")}
+        >
+          <ConnectRow />
         </Section>
       )}
 
