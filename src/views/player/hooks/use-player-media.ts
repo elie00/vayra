@@ -17,6 +17,7 @@ import { useTraktScrobble } from "@/lib/trakt/scrobble-hook";
 import { cancelTorrentRemoval, scheduleTorrentRemoval, torrentEngineRemove } from "@/lib/torrent/local-engine";
 import { markCachedFileWatched } from "@/lib/torrent/engine-cache";
 import type { PlayerSrc } from "@/lib/view";
+import { useAddonPlayerEvents } from "./use-addon-player-events";
 import { useExitSnapshot } from "./use-exit-snapshot";
 import { usePowerInhibit } from "./use-power-inhibit";
 import { useResumeAutosave } from "./use-resume-autosave";
@@ -203,6 +204,7 @@ export function usePlayerMedia(params: {
 
   useResumeAutosave({ src, snap, season, episode });
   useStremioSync({ src, snap, authKey, resolvedImdbId, resolvedImdbVerified, resolutionSettled, castActiveRef });
+  useAddonPlayerEvents({ src, snap, resolvedImdbId, resolvedImdbVerified, castActiveRef });
   usePowerInhibit(snap);
   const subDropToast = useSubDrop(bridgeRef, src.meta.id);
 
