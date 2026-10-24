@@ -16,6 +16,7 @@ mod settings_history;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
+mod now_playing;
 mod torrent_engine;
 mod torrent_links;
 mod trailer;
@@ -949,6 +950,8 @@ pub fn run() {
             stremio_auth::stremio_auth_take_key,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
+            now_playing::now_playing_update,
+            now_playing::now_playing_clear,
             torrent_links::torrent_file_magnet,
             torrent_links::torrent_links_default,
             torrent_links::torrent_links_make_default,

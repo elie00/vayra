@@ -1,8 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { createNowPlaying } from "./now-playing";
 import { createResumeRecovery } from "./resume-recovery";
 import { localResumeWithin, watchPlaybackWake } from "./wake-monitor";
 import { emitAppFeedback } from "@/lib/app-feedback";
+import { isMacDesktop } from "@/lib/platform";
 import { t } from "@/lib/i18n";
 import {
   emptySnapshot,
@@ -109,6 +111,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     invoke("mpv_command", { cmd: ["af", "set", parts.join(",")] }).catch(() => {});
   };
   const listeners = new Set<(s: PlayerSnapshot) => void>();
+  // mpv draws natively, so the WebView's Media Session never reaches macOS.
+  const nowPlaying = isMacDesktop() ? createNowPlaying() : null;
   let unlistenEvent: UnlistenFn | null = null;
   let unlistenLog: UnlistenFn | null = null;
   let pendingTracks: Record<string, unknown[]> = {};
@@ -140,6 +144,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   const emit = () => {
     const next: PlayerSnapshot = { ...snap };
     listeners.forEach((l) => l(next));
+    nowPlaying?.update(next);
   };
 
   const resumeRecovery = createResumeRecovery({
@@ -710,6 +715,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     },
     setMediaInfo(info) {
       invoke("mpv_set_property", { name: "force-media-title", value: info.title }).catch(() => {});
+      nowPlaying?.setTitle(info.title);
     },
     async screenshot(path) {
       try {
@@ -748,6 +754,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       };
     },
     destroy() {
+      nowPlaying?.clear();
       stopWakeMonitor?.();
       stopWakeMonitor = undefined;
       playbackGeneration++;

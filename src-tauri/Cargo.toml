@@ -76,9 +76,11 @@ debug = "line-tables-only"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", features = ["NSGeometry", "NSThread", "NSValue", "NSDictionary", "NSString"] }
+objc2-foundation = { version = "0.3", features = ["NSGeometry", "NSThread", "NSValue", "NSDictionary", "NSString", "NSArray"] }
 objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSView", "NSOpenGL", "NSOpenGLView", "NSResponder"] }
 objc2-web-kit = { version = "0.3", features = ["WKWebView"] }
+objc2-media-player = { version = "0.3", features = ["MPNowPlayingInfoCenter", "MPRemoteCommandCenter", "MPRemoteCommand", "MPRemoteCommandEvent", "MPMediaItem", "block2"] }
+block2 = "0.6"
 core-foundation = "0.10"
 
 [patch.crates-io]
