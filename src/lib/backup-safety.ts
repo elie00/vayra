@@ -54,6 +54,7 @@ const booleanPreferences = [
   "trayAlwaysOnTop", "pauseMinimized", "pauseUnfocused", "cwSnapshotFullQuality", "blockTrackers", "animeHideWatchedPicks",
   "fullStreamDescription", "pickerShowFilename", "pickerRefreshNextToBack", "seekBarFill", "weekStartsMonday", "downloadCreateFolders",
   "sidebarCollapsed", "translateTitles", "translateDescriptions", "feedLocaleBias", "adSkipEnabled", "adReportAlwaysShow", "adReportFirstSeen",
+  "connectEnabled",
 ] as const;
 const numberPreferences = [
   "cardBadgeLimit", "posterScale", "posterRadius", "rowTitleScale", "playerTitleScale", "uiScale", "heroShadow", "subFontSize",

@@ -430,6 +430,8 @@ export type Settings = {
   downloadDir: string;
   downloadCreateFolders: boolean;
   stremioDeeplinkInstall: boolean;
+  // VAYRA Connect: paired phones on the local network drive this app's player.
+  connectEnabled: boolean;
   iptvPlaylists: Array<{
     id: string;
     name: string;

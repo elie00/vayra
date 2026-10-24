@@ -458,7 +458,7 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 }
 
 function Shell() {
-  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openPlayer, stackKinds, chromeHidden } = useView();
+  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openPlayer, openPicker, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
   const { setOpen: setSearchOpen, setQuery: setSearchQuery } = useSearch();
   const uiScaleRef = useRef(settings.uiScale);
@@ -735,6 +735,33 @@ function Shell() {
       dispose?.();
     };
   }, [setView, openMeta, openPlayer, setSearchOpen, setSearchQuery]);
+
+  // VAYRA Connect: a paired phone asks this Mac to play a title.
+  useEffect(() => {
+    if (!settings.connectEnabled) return;
+    let cancelled = false;
+    let stop: (() => void) | null = null;
+    void import("@/lib/connect/host")
+      .then(({ onConnectCommand }) =>
+        onConnectCommand((command) => {
+          if (command.type !== "load") return;
+          const { meta, episode } = command;
+          openPicker({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster }, episode, {
+            autoPlay: true,
+            resume: true,
+          });
+        }),
+      )
+      .then((unlisten) => {
+        if (cancelled) unlisten();
+        else stop = unlisten;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [settings.connectEnabled, openPicker]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
