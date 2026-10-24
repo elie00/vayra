@@ -16,6 +16,7 @@ mod settings_history;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
+mod now_playing;
 mod torrent_engine;
 mod trailer;
 mod transcode;
@@ -948,6 +949,8 @@ pub fn run() {
             stremio_auth::stremio_auth_take_key,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
+            now_playing::now_playing_update,
+            now_playing::now_playing_clear,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
