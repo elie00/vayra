@@ -15,6 +15,7 @@ import { SettingsIcon } from "@/components/icons/settings-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { MobileTogetherSheet } from "@/mobile/together-sheet";
+import { MacNowPlayingBar, MacRemoteSheet } from "@/mobile/mac-now-playing";
 import { useT } from "@/lib/i18n";
 import { useView, type View } from "@/lib/view";
 
@@ -62,6 +63,8 @@ export function MobileShell() {
     <>
       {open && <PlusScreen />}
       <MobileTogetherSheet />
+      {!hidden && !open && <MacNowPlayingBar />}
+      <MacRemoteSheet />
       {!hidden && (
         <nav
           data-vayra-tabbar

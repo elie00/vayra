@@ -105,6 +105,7 @@ import { Synopsis } from "./detail/synopsis";
 import { CastCard } from "./detail/cast-card";
 import { PreviewIcon } from "./detail/preview-icon";
 import { HeroActionOverflow, useHeroActionOverflow } from "./detail/hero-action-overflow";
+import { PlayOnMacButton } from "./detail/play-on-mac-button";
 import { HeroRatings } from "./detail/hero-ratings";
 import { TrailerOverlay } from "./detail/trailer-overlay";
 import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
@@ -1204,6 +1205,12 @@ export function DetailView({
                     {smartPlayLabel}
                   </button>
                   </PlayModeHint>
+                )}
+                {!upcoming && !isAnime && (
+                  <PlayOnMacButton
+                    meta={playMeta}
+                    episode={isSeries ? (lastPlay ?? { season: 1, episode: 1 }) : undefined}
+                  />
                 )}
                 {hasNativeDesktopUx() && actionStage < 2 && (
                   <button type="button" className="mac-secondary-button" onClick={() => void smartPlay(true)}>{t("Choose another source")}</button>

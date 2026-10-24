@@ -1450,3 +1450,7 @@ html[data-os="android"] {
 html[data-os="android"] .flex-1.overflow-y-auto {
   padding-bottom: var(--harbor-tabbar);
 }
+/* VAYRA Connect mini player (MacNowPlayingBar) sits above the tab bar. */
+html[data-os="android"][data-mac-bar] {
+  --harbor-tabbar: calc(8.5rem + env(safe-area-inset-bottom));
+}

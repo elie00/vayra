@@ -1,33 +1,14 @@
 import { Laptop } from "lucide-react";
-import { useEffect, useState } from "react";
 import { fmtTime } from "@/components/player/transport/transport-utils";
 import { emitAppFeedback } from "@/lib/app-feedback";
-import type { ConnectState } from "@/lib/connect/host";
-import { forgetMac, macPosition, useLinkStatus } from "@/lib/connect/link";
+import { forgetMac, macStatusLabel, useLinkStatus, useMacPosition } from "@/lib/connect/link";
 import { useT } from "@/lib/i18n";
-
-const TICK_MS = 1000;
-
-function statusLabel(status: ConnectState["status"], t: ReturnType<typeof useT>): string {
-  if (status === "playing") return t("Playing");
-  if (status === "paused") return t("Paused");
-  if (status === "ended") return t("Ended");
-  if (status === "error") return t("Playback error");
-  return t("Loading…");
-}
 
 /** VAYRA Connect on the phone: the paired Mac, and what it plays. */
 export function MacLinkRow() {
   const t = useT();
   const { mac, connected, state } = useLinkStatus();
-  const [now, setNow] = useState(() => Date.now());
-  const playing = state?.status === "playing";
-
-  useEffect(() => {
-    if (!playing) return;
-    const id = window.setInterval(() => setNow(Date.now()), TICK_MS);
-    return () => window.clearInterval(id);
-  }, [playing]);
+  const position = useMacPosition(state);
 
   if (!mac) {
     return (
@@ -65,7 +46,7 @@ export function MacLinkRow() {
             <>
               <span className="truncate text-[13px] font-medium text-ink">{state.title}</span>
               <span className="text-[12px] tabular-nums text-ink-subtle">
-                {statusLabel(state.status, t)} · {fmtTime(macPosition(state, now))} / {fmtTime(state.durationSec)}
+                {macStatusLabel(state.status, t)} · {fmtTime(position)} / {fmtTime(state.durationSec)}
               </span>
             </>
           ) : (
