@@ -9,7 +9,13 @@ vi.mock("@/lib/addon-store", () => ({
 vi.mock("@/lib/auth", () => ({ readActiveStremioAuthKey: () => null }));
 vi.mock("@/lib/safe-fetch", () => ({ safeFetch: fetchMock }));
 
-import { addonEventUrl, receivesWatchActivity, sendLibraryEvent, sendPlayerEvent } from "./addon-events";
+import {
+  addonEventUrl,
+  receivesWatchActivity,
+  sendEpisodesWatchedEvent,
+  sendLibraryEvent,
+  sendPlayerEvent,
+} from "./addon-events";
 
 const scrobbler = {
   id: "org.scrobbler",
@@ -68,4 +74,12 @@ it("builds the URL from a transport URL with or without manifest.json", () => {
   expect(addonEventUrl("https://a.example/x/", "library", "movie", "tt1", [["action", "watched"]])).toBe(
     "https://a.example/x/library/movie/tt1/action=watched.json",
   );
+});
+
+it("sends marked episodes as Cinemeta video ids, and nothing for other ids", async () => {
+  await sendEpisodesWatchedEvent("tt0903747", [{ season: 2, episode: 3 }, { season: 2, episode: 4 }], false);
+  await sendEpisodesWatchedEvent("kitsu:7442", [{ season: 1, episode: 1 }], true);
+  expect(urls()).toEqual([
+    `https://scrobbler.example/abc/library/series/tt0903747/action=unwatched&videoId=${encodeURIComponent("tt0903747:2:3,tt0903747:2:4")}.json`,
+  ]);
 });

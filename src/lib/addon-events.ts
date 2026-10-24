@@ -108,3 +108,14 @@ export function sendLibraryEvent(
   }
   return send("library", type, id, extras);
 }
+
+/** Episodes the user marked; only Cinemeta video ids (`tt…:season:episode`) are unambiguous. */
+export function sendEpisodesWatchedEvent(
+  seriesId: string,
+  episodes: Array<{ season: number; episode: number }>,
+  watched: boolean,
+): Promise<void> {
+  if (!seriesId.startsWith("tt") || episodes.length === 0) return Promise.resolve();
+  const videoIds = episodes.map(({ season, episode }) => `${seriesId}:${season}:${episode}`);
+  return sendLibraryEvent("series", seriesId, watched ? "watched" : "unwatched", videoIds);
+}

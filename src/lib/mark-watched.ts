@@ -1,3 +1,4 @@
+import { sendLibraryEvent } from "@/lib/addon-events";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
 import { savePlayback } from "@/lib/playback-history";
 import { pushWatched } from "@/lib/trakt/history";
@@ -19,9 +20,10 @@ export async function markMovieWatched(
   const imdb = imdbId ?? (meta.id.startsWith("tt") ? meta.id : undefined);
   const tmdb = typeof tmdbId === "string" ? Number(tmdbId) || undefined : tmdbId ?? undefined;
   const authKey = readActiveStremioAuthKey();
-  const cid = authKey ? cloudWriteId(meta.id, imdb ?? null, !!imdb) : null;
+  const cid = cloudWriteId(meta.id, imdb ?? null, !!imdb);
   const writes: Promise<unknown>[] = [];
   if (authKey && cid) writes.push(markMovieWatchedStremio(authKey, meta, cid, true));
+  if (cid) writes.push(sendLibraryEvent("movie", cid, "watched"));
   if (imdb || tmdb) {
     const ids = { ...(imdb ? { imdb } : {}), ...(tmdb ? { tmdb } : {}) };
     writes.push(pushWatched({ kind: "movie", ids }), simklAddToHistory({ kind: "movie", ids }));
@@ -68,6 +70,8 @@ export async function markMetaWatched(
   if (eps.length > 0) setManualWatchedMany(meta.id, eps, true);
   const isAnime = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const imdb = imdbId ?? (meta.id.startsWith("tt") ? meta.id : undefined);
+  const cid = cloudWriteId(meta.id, imdb ?? null, !!imdb);
+  if (cid) void sendLibraryEvent("series", cid, "watched");
   const tmdb = typeof tmdbId === "string" ? Number(tmdbId) || undefined : tmdbId ?? undefined;
   if (!isAnime && (imdb || tmdb)) {
     const ids = { ...(imdb ? { imdb } : {}), ...(tmdb ? { tmdb } : {}) };
@@ -80,10 +84,13 @@ export async function markMetaWatched(
 
 export async function unmarkMetaWatched(meta: Meta): Promise<void> {
   setWatchedFlag(meta.id, false);
+  const cid = cloudWriteId(meta.id, null, false);
   if (narrowMediaType(meta.type) === "movie") {
     setMovieWatchedLocal(meta.id, false);
+    if (cid) void sendLibraryEvent("movie", cid, "unwatched");
     return;
   }
+  if (cid) void sendLibraryEvent("series", cid, "unwatched");
   const eps = await releasedEpisodes(meta);
   if (eps.length > 0) setManualWatchedMany(meta.id, eps, false);
 }
