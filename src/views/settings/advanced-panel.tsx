@@ -33,11 +33,12 @@ import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
 import { TorrentLinksRow } from "./torrent-links-row";
 import { ConnectRow } from "./connect-row";
+import { MacLinkRow } from "./mac-link-row";
 import { Section } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
-import { hasDesktopFeatures, isMacDesktop } from "@/lib/platform";
+import { hasDesktopFeatures, isMacDesktop, isMobileTauri } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -51,6 +52,16 @@ export function AdvancedPanel() {
   const t = useT();
   return (
     <>
+      {/* First on the phone: pairing a Mac lands here. */}
+      {isMobileTauri() && (
+        <Section
+          title={t("VAYRA Connect")}
+          subtitle={t("See and drive what plays on your Mac from this phone, like Spotify between your devices.")}
+        >
+          <MacLinkRow />
+        </Section>
+      )}
+
       {!desktopOnly && <WebBuildBanner />}
 
       {desktopOnly && (

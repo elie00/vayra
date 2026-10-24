@@ -51,6 +51,7 @@ import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
 import { PrivateBetaLaunchModal } from "@/components/private-beta-launch-modal";
 import { VaraInviteBridge } from "@/components/vara-invite-bridge";
+import { MacLinkBridge } from "@/components/mac-link-bridge";
 import { WatchActivityConsent } from "@/components/watch-activity-consent";
 import { CiraProvider } from "@/lib/cira/provider";
 import { VaraProvider } from "@/lib/vara/provider";
@@ -293,6 +294,7 @@ export function App() {
                       <CiraInviteBridge />
                       <PrivateBetaLaunchModal />
                       <VaraInviteBridge />
+                      {isMobileTauri() && <MacLinkBridge />}
                       <WatchActivityConsent />
                       <TogetherFloater />
                       <TogetherHostLeavingPrompt />
