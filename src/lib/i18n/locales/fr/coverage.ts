@@ -267,7 +267,7 @@ const coverage: Record<string, string> = {
   "Forget this Mac": "Oublier ce Mac",
   "This Mac couldn't be forgotten. Try again.": "Ce Mac n’a pas pu être oublié. Réessayez.",
   "This code doesn't pair with a Mac on your Wi-Fi.": "Ce code ne permet pas d’appairer un Mac de votre Wi-Fi.",
-  "Pair with {name}?": "Appairer avec {name} ?",
+  "Pair with {name}?": "Appairer avec {name} ?",
   "Pair": "Appairer",
   "Pairing failed. Scan the code again.": "L’appairage a échoué. Scannez à nouveau le code.",
   "This phone will see what plays on {name} ({address}) and control it.": "Ce téléphone verra ce qui joue sur {name} ({address}) et pourra le piloter.",

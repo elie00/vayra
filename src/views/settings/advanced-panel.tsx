@@ -52,6 +52,16 @@ export function AdvancedPanel() {
   const t = useT();
   return (
     <>
+      {/* First on the phone: pairing a Mac lands here. */}
+      {isMobileTauri() && (
+        <Section
+          title={t("VAYRA Connect")}
+          subtitle={t("See and drive what plays on your Mac from this phone, like Spotify between your devices.")}
+        >
+          <MacLinkRow />
+        </Section>
+      )}
+
       {!desktopOnly && <WebBuildBanner />}
 
       {desktopOnly && (
@@ -114,15 +124,6 @@ export function AdvancedPanel() {
           subtitle={t("Drive this player from your Android phone on the same Wi-Fi, like Spotify between your devices.")}
         >
           <ConnectRow />
-        </Section>
-      )}
-
-      {isMobileTauri() && (
-        <Section
-          title={t("VAYRA Connect")}
-          subtitle={t("See and drive what plays on your Mac from this phone, like Spotify between your devices.")}
-        >
-          <MacLinkRow />
         </Section>
       )}
 
