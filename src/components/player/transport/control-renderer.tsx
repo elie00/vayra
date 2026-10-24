@@ -265,6 +265,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       return (
         <TimeEnd
           durationSec={ctx.snap.durationSec}
+          rate={ctx.snap.rate}
           timeFormat={ctx.timeFormat}
           isLiveChannel={ctx.isLiveChannel}
           tight={ctx.tight}

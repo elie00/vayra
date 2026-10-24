@@ -391,6 +391,7 @@ const player: Record<string, string> = {
   "Height on screen": "Hauteur à l’écran",
   "{n}%": "{n}\u202f%",
   "Outline color {color}": "Couleur du contour {color}",
+  "Ends at {time}": "Fin à {time}",
 };
 
 export default player;
