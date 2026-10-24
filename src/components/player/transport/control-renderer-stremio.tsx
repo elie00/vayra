@@ -274,6 +274,7 @@ export function RenderedStremioControl({
         <TimeStart
           stremio
           durationSec={ctx.snap.durationSec}
+          rate={ctx.snap.rate}
           timeFormat={ctx.timeFormat}
           isLiveChannel={ctx.isLiveChannel}
           active={ctx.active}

@@ -31,11 +31,12 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
+import { TorrentLinksRow } from "./torrent-links-row";
 import { Section } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
-import { hasDesktopFeatures } from "@/lib/platform";
+import { hasDesktopFeatures, isMacDesktop } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -102,6 +103,15 @@ export function AdvancedPanel() {
           subtitle={t("VAYRA catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.")}
         >
           <StremioDeeplinkRow />
+        </Section>
+      )}
+
+      {isMacDesktop() && (
+        <Section
+          title={t("Torrent links")}
+          subtitle={t("Play a magnet link from your browser or a .torrent file from the Finder straight in VAYRA.")}
+        >
+          <TorrentLinksRow />
         </Section>
       )}
 

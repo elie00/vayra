@@ -225,6 +225,56 @@ export function onOpenLocalFile(handler: (path: string) => void): () => void {
   return () => window.removeEventListener(OPEN_FILE_EVENT, listener);
 }
 
+// magnet: links and .torrent files opened from macOS. A website can fire a
+// magnet link, so it opens the torrent card for the user to start playback.
+const OPEN_MAGNET_EVENT = "vayra:open-magnet";
+let pendingMagnet: string | null = null;
+
+export function isMagnetLink(rawUrl: string): boolean {
+  return /^magnet:\?/i.test(rawUrl);
+}
+
+/** A .torrent file opened from the Finder arrives as a file:// URL. */
+export function parseTorrentFileUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "file:" || !/\.torrent$/i.test(url.pathname)) return null;
+    return decodeURIComponent(url.pathname);
+  } catch {
+    return null;
+  }
+}
+
+export function emitOpenMagnet(magnet: string): void {
+  pendingMagnet = magnet;
+  window.dispatchEvent(new CustomEvent<{ magnet: string }>(OPEN_MAGNET_EVENT, { detail: { magnet } }));
+}
+
+export function onOpenMagnet(handler: (magnet: string) => void): () => void {
+  if (pendingMagnet) {
+    const magnet = pendingMagnet;
+    pendingMagnet = null;
+    handler(magnet);
+  }
+  const listener = (e: Event) => {
+    const ev = e as CustomEvent<{ magnet: string }>;
+    if (!ev.detail?.magnet) return;
+    pendingMagnet = null;
+    handler(ev.detail.magnet);
+  };
+  window.addEventListener(OPEN_MAGNET_EVENT, listener);
+  return () => window.removeEventListener(OPEN_MAGNET_EVENT, listener);
+}
+
+async function openTorrentFile(path: string): Promise<void> {
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    emitOpenMagnet(await invoke<string>("torrent_file_magnet", { path }));
+  } catch (e) {
+    console.warn("[harbor] .torrent file could not be opened", e);
+  }
+}
+
 // Jumelage : harbor://stremio-auth?key=<authKey> (QR affiché par le desktop,
 // scanné par l'appareil photo du téléphone). Le lien peut arriver avant que
 // l'AuthProvider soit monté (démarrage à froid) → clé mise en attente.
@@ -336,6 +386,15 @@ export async function startDeepLinkBridge(): Promise<() => void> {
         const open = parseStremioOpen(u);
         if (open) {
           emitDeepLinkOpen(open);
+          continue;
+        }
+        if (isMagnetLink(u)) {
+          emitOpenMagnet(u);
+          continue;
+        }
+        const torrentFile = parseTorrentFileUrl(u);
+        if (torrentFile) {
+          void openTorrentFile(torrentFile);
           continue;
         }
         if (shouldForward(u)) emitDeepLinkInstall(u);

@@ -460,7 +460,7 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 function Shell() {
   const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openPlayer, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
-  const { setOpen: setSearchOpen } = useSearch();
+  const { setOpen: setSearchOpen, setQuery: setSearchQuery } = useSearch();
   const uiScaleRef = useRef(settings.uiScale);
   const { activeProfile } = useProfiles();
   const kid = activeProfile?.kid ?? null;
@@ -704,7 +704,7 @@ function Shell() {
 
   useEffect(() => {
     let dispose: (() => void) | null = null;
-    void import("@/lib/deep-link").then(({ startDeepLinkBridge, onDeepLinkInstall, onDeepLinkOpen, onOpenLocalFile }) => {
+    void import("@/lib/deep-link").then(({ startDeepLinkBridge, onDeepLinkInstall, onDeepLinkOpen, onOpenLocalFile, onOpenMagnet }) => {
       void startDeepLinkBridge().then((stopBridge) => {
         const stopListener = onDeepLinkInstall(() => {
           if (window.__harborInstallerOpen) return;
@@ -718,18 +718,23 @@ function Shell() {
           const name = (path.replace(/\\/g, "/").split("/").pop() || "Video").replace(/\.[^.]+$/, "");
           openPlayer({ meta: { id: `local:${path}`, type: "movie", name }, url: path, title: name, notWebReady: true });
         });
+        const stopMagnet = onOpenMagnet((magnet) => {
+          setSearchQuery(magnet);
+          setSearchOpen(true);
+        });
         dispose = () => {
           stopBridge();
           stopListener();
           stopOpen();
           stopFile();
+          stopMagnet();
         };
       });
     });
     return () => {
       dispose?.();
     };
-  }, [setView, openMeta, openPlayer]);
+  }, [setView, openMeta, openPlayer, setSearchOpen, setSearchQuery]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
