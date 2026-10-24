@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tokio::sync::Notify;
+use tokio::sync::{mpsc, Notify};
 use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -115,10 +115,15 @@ impl Reporter {
     }
 }
 
+// Messages for the Mac go out only while a session is open: a pause queued
+// while away must not play out minutes later.
+type Outbox = Arc<Mutex<Option<mpsc::UnboundedSender<String>>>>;
+
 /// Keeps one paired Mac connected, reconnecting until dropped.
 pub struct Link {
     status: Arc<Mutex<LinkStatus>>,
     retry: Arc<Notify>,
+    outbox: Outbox,
     task: tokio::task::JoinHandle<()>,
 }
 
@@ -130,9 +135,10 @@ impl Link {
             state: None,
         }));
         let retry = Arc::new(Notify::new());
+        let outbox: Outbox = Arc::default();
         let reporter = Reporter { status: status.clone(), on_status };
-        let task = tokio::spawn(run(pairing, me, reporter, retry.clone()));
-        Self { status, retry, task }
+        let task = tokio::spawn(run(pairing, me, reporter, retry.clone(), outbox.clone()));
+        Self { status, retry, outbox, task }
     }
 
     pub fn status(&self) -> LinkStatus {
@@ -142,6 +148,17 @@ impl Link {
     /// Skips the wait before the next attempt, e.g. when the app comes back.
     pub fn retry_now(&self) {
         self.retry.notify_one();
+    }
+
+    /// Sends a `command`, `load` or `requestState` to the Mac, if connected.
+    pub fn send(&self, message: &Value) -> Result<(), String> {
+        if !matches!(message["type"].as_str(), Some("command" | "load" | "requestState")) {
+            return Err("Not a VAYRA Connect message".into());
+        }
+        lock(&self.outbox)
+            .as_ref()
+            .and_then(|tx| tx.send(message.to_string()).ok())
+            .ok_or_else(|| "The Mac is not connected".into())
     }
 }
 
@@ -155,12 +172,13 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-async fn run(pairing: Pairing, me: Me, reporter: Reporter, retry: Arc<Notify>) {
+async fn run(pairing: Pairing, me: Me, reporter: Reporter, retry: Arc<Notify>, outbox: Outbox) {
     let mut delay = Duration::from_secs(1);
     loop {
-        if session(&pairing, &me, &reporter).await {
+        if session(&pairing, &me, &reporter, &outbox).await {
             delay = Duration::from_secs(1);
         }
+        lock(&outbox).take();
         reporter.update(|s| {
             s.connected = false;
             s.state = None;
@@ -174,7 +192,7 @@ async fn run(pairing: Pairing, me: Me, reporter: Reporter, retry: Arc<Notify>) {
 }
 
 /// One connection to the Mac; true once the Mac accepted this phone.
-async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter) -> bool {
+async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter, outbox: &Outbox) -> bool {
     let url = format!("ws://{}/connect/v1?k={}", pairing.address, pairing.secret);
     let config = WebSocketConfig::default().max_message_size(Some(MAX_MESSAGE_BYTES));
     let connecting = tokio_tungstenite::connect_async_with_config(url, Some(config), true);
@@ -191,6 +209,7 @@ async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter) -> bool {
     if ws.send(Message::Text(hello.to_string().into())).await.is_err() {
         return false;
     }
+    let (tx, mut outgoing) = mpsc::unbounded_channel::<String>();
     let mut accepted = false;
     let mut last_heard = Instant::now();
     let mut ping = tokio::time::interval(PING_EVERY);
@@ -200,11 +219,19 @@ async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter) -> bool {
             frame = ws.next() => match frame {
                 Some(Ok(Message::Text(text))) => {
                     last_heard = Instant::now();
-                    accepted |= receive(reporter, text.as_str());
+                    if receive(reporter, text.as_str()) && !accepted {
+                        accepted = true;
+                        *lock(outbox) = Some(tx.clone());
+                    }
                 }
                 Some(Ok(Message::Close(_)) | Err(_)) | None => break,
                 Some(Ok(_)) => last_heard = Instant::now(),
             },
+            Some(text) = outgoing.recv() => {
+                if ws.send(Message::Text(text.into())).await.is_err() {
+                    break;
+                }
+            }
             _ = ping.tick() => {
                 if last_heard.elapsed() > SILENCE_LIMIT || ws.send(Message::Ping(Default::default())).await.is_err() {
                     break;
@@ -350,6 +377,12 @@ pub async fn connect_link_start(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Sends a phone message (`command`, `load`, `requestState`) to the paired Mac.
+#[tauri::command]
+pub fn connect_link_send(message: Value) -> Result<(), String> {
+    lock(link_slot()).as_ref().ok_or("No Mac is paired")?.send(&message)
+}
+
 #[tauri::command]
 pub async fn connect_link_forget(app: tauri::AppHandle) -> Result<(), String> {
     lock(link_slot()).take();
@@ -393,7 +426,10 @@ mod tests {
         use crate::connect::Server;
         let port = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
         let addr: SocketAddr = format!("127.0.0.1:{port}").parse().unwrap();
-        let start_mac = || Server::start(addr, SECRET.into(), "mac-1".into(), "MacBook".into(), Arc::new(|_| {}));
+        let commands = Arc::new(Mutex::new(Vec::<Value>::new()));
+        let sink = commands.clone();
+        let on_command: crate::connect::OnCommand = Arc::new(move |c| lock(&sink).push(c));
+        let start_mac = || Server::start(addr, SECRET.into(), "mac-1".into(), "MacBook".into(), on_command.clone());
         let mut mac = start_mac().await.unwrap();
 
         let (tx, mut statuses) = tokio::sync::mpsc::unbounded_channel::<LinkStatus>();
@@ -414,8 +450,18 @@ mod tests {
         mac.publish(Some(json!({ "status": "playing", "positionSec": 12.0 })));
         assert_eq!(until(&|s| s.state.is_some()).await.state.unwrap()["positionSec"], 12.0);
 
+        let pause = json!({ "type": "command", "action": "pause" });
+        link.send(&pause).unwrap();
+        assert!(link.send(&json!({ "type": "hello" })).is_err());
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while lock(&commands).is_empty() && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(*lock(&commands), vec![pause]);
+
         mac.stop();
         assert!(until(&|s| !s.connected).await.state.is_none());
+        assert!(link.send(&json!({ "type": "command", "action": "play" })).is_err());
         mac = start_mac().await.unwrap();
         link.retry_now();
         until(&|s| s.connected).await;
