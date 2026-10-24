@@ -169,6 +169,36 @@ export function onVaraInvite(handler: (code: string) => void): () => void {
   return () => window.removeEventListener(VARA_INVITE_EVENT, listener);
 }
 
+// vayra://connect/pair#h=…&k=…&n=… from the Mac's VAYRA Connect code. Rust
+// checks it; the phone asks before pairing since any page can open the link.
+const CONNECT_PAIR_EVENT = "vayra:deeplink-connect-pair";
+let pendingConnectPair: string | null = null;
+
+export function isConnectPairLink(rawUrl: string): boolean {
+  return /^vayra:\/\/connect\/pair#/i.test(rawUrl);
+}
+
+export function emitConnectPair(rawUrl: string): void {
+  pendingConnectPair = rawUrl;
+  window.dispatchEvent(new CustomEvent<{ rawUrl: string }>(CONNECT_PAIR_EVENT, { detail: { rawUrl } }));
+}
+
+export function onConnectPair(handler: (rawUrl: string) => void): () => void {
+  if (pendingConnectPair) {
+    const rawUrl = pendingConnectPair;
+    pendingConnectPair = null;
+    handler(rawUrl);
+  }
+  const listener = (event: Event) => {
+    const detail = (event as CustomEvent<{ rawUrl: string }>).detail;
+    if (!detail?.rawUrl) return;
+    pendingConnectPair = null;
+    handler(detail.rawUrl);
+  };
+  window.addEventListener(CONNECT_PAIR_EVENT, listener);
+  return () => window.removeEventListener(CONNECT_PAIR_EVENT, listener);
+}
+
 export function emitDeepLinkInstall(rawUrl: string): void {
   pendingUrl = rawUrl;
   window.dispatchEvent(new CustomEvent<DeepLinkDetail>(EVENT, { detail: { rawUrl } }));
@@ -378,6 +408,10 @@ export async function startDeepLinkBridge(): Promise<() => void> {
           emitVaraInvite(varaInvite);
           continue;
         }
+        if (isConnectPairLink(u)) {
+          emitConnectPair(u);
+          continue;
+        }
         const authKey = parseStremioAuthKey(u);
         if (authKey) {
           emitStremioAuthKey(authKey);
@@ -423,6 +457,10 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       const varaInvite = parseVaraInviteCode(u);
       if (varaInvite) {
         emitVaraInvite(varaInvite);
+        return;
+      }
+      if (isConnectPairLink(u)) {
+        emitConnectPair(u);
         return;
       }
       const open = parseStremioOpen(u);

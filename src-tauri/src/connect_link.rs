@@ -300,16 +300,17 @@ fn link_slot() -> &'static Mutex<Option<Link>> {
     SLOT.get_or_init(|| Mutex::new(None))
 }
 
-fn start_link(app: &tauri::AppHandle, stored: &Stored, pairing: Pairing) -> LinkStatus {
+fn emit_status(app: &tauri::AppHandle, status: LinkStatus) {
     use tauri::Emitter;
+    let _ = app.emit(STATUS_EVENT, status);
+}
+
+fn start_link(app: &tauri::AppHandle, stored: &Stored, pairing: Pairing) {
     let emitter = app.clone();
     let me = Me { device_id: stored.device_id.clone(), name: phone_name() };
-    let link = Link::start(pairing, me, Arc::new(move |status| {
-        let _ = emitter.emit(STATUS_EVENT, status);
-    }));
-    let status = link.status();
+    let link = Link::start(pairing, me, Arc::new(move |status| emit_status(&emitter, status)));
+    emit_status(app, link.status());
     *lock(link_slot()) = Some(link);
-    status
 }
 
 /// The Mac a pairing link points to, to confirm before pairing.
@@ -319,28 +320,34 @@ pub fn connect_link_read(url: String) -> Result<PairedMac, String> {
     Ok(PairedMac { name: pairing.name, address: pairing.address.to_string() })
 }
 
+// The commands below report through STATUS_EVENT only, so the front never
+// applies a reply older than an event it already got.
+
 /// Pairs with the Mac in the link, replacing any previous one.
 #[tauri::command]
-pub async fn connect_link_pair(app: tauri::AppHandle, url: String) -> Result<LinkStatus, String> {
+pub async fn connect_link_pair(app: tauri::AppHandle, url: String) -> Result<(), String> {
     let pairing = parse_pairing(&url).ok_or("Not a VAYRA Connect pairing code")?;
     let mut stored = load(&app)?;
     stored.pairing = Some(pairing.clone());
     save(&app, &stored)?;
-    Ok(start_link(&app, &stored, pairing))
+    start_link(&app, &stored, pairing);
+    Ok(())
 }
 
 /// Connects to the paired Mac if not already, or retries right away.
 #[tauri::command]
-pub async fn connect_link_start(app: tauri::AppHandle) -> Result<LinkStatus, String> {
+pub async fn connect_link_start(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(link) = lock(link_slot()).as_ref() {
+        emit_status(&app, link.status());
         link.retry_now();
-        return Ok(link.status());
+        return Ok(());
     }
     let stored = load(&app)?;
-    Ok(match stored.pairing.clone() {
+    match stored.pairing.clone() {
         Some(pairing) => start_link(&app, &stored, pairing),
-        None => LinkStatus::default(),
-    })
+        None => emit_status(&app, LinkStatus::default()),
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -348,7 +355,9 @@ pub async fn connect_link_forget(app: tauri::AppHandle) -> Result<(), String> {
     lock(link_slot()).take();
     let mut stored = load(&app)?;
     stored.pairing = None;
-    save(&app, &stored)
+    save(&app, &stored)?;
+    emit_status(&app, LinkStatus::default());
+    Ok(())
 }
 
 #[cfg(test)]
