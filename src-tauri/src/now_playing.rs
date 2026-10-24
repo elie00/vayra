@@ -1,10 +1,15 @@
 //! System media controls for the mpv player on macOS: Control Center, media keys
 //! and headphones. HTML5 playback gets them from the WebView's Media Session.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+#[cfg(target_os = "macos")]
+use serde::Serialize;
 
+#[cfg(target_os = "macos")]
 pub const COMMAND_EVENT: &str = "vayra:now-playing-command";
 
+// Only the macOS backend reads it; elsewhere the commands do nothing.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 #[derive(Deserialize)]
 pub struct NowPlayingInfo {
     title: String,
@@ -14,6 +19,7 @@ pub struct NowPlayingInfo {
     playing: bool,
 }
 
+#[cfg(target_os = "macos")]
 #[derive(Clone, Serialize)]
 #[serde(tag = "action", rename_all = "camelCase")]
 pub enum Command {
