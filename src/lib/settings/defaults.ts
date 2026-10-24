@@ -371,6 +371,7 @@ export const DEFAULT: Settings = {
   downloadDir: "",
   downloadCreateFolders: false,
   stremioDeeplinkInstall: true,
+  connectEnabled: false,
   iptvPlaylists: [],
   iptvLiveContainer: "ts",
   iptvForceProxy: false,

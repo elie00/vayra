@@ -65,6 +65,7 @@ import { usePlaybackPresence } from "./player/hooks/use-playback-presence";
 import { usePlayerExit } from "./player/hooks/use-player-exit";
 import { usePendingSeekApply } from "./player/hooks/use-pending-seek-apply";
 import { usePlayerHotkeys } from "./player/hooks/use-player-hotkeys";
+import { useConnectHost } from "./player/hooks/use-connect-host";
 import { usePlayerMedia } from "./player/hooks/use-player-media";
 import { useTrickplay } from "./player/hooks/use-trickplay";
 import { useStreamPill } from "./player/hooks/use-stream-pill";
@@ -683,6 +684,16 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     clip,
     videoFill,
     onVolumeFeedback: showVolumeFeedback,
+  });
+  useConnectHost({
+    enabled: settings.connectEnabled,
+    src,
+    snap,
+    bridgeRef,
+    playPauseToggle,
+    seekStep,
+    seekTo,
+    closePlayer: () => void closePlayer(),
   });
 
   const { pendingResumeSec, acknowledgeResume, pendingSeekSec, clearPendingSeek } = useBridgeLoad({

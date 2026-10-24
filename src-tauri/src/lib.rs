@@ -48,6 +48,11 @@ mod credential_chunks;
 #[path = "mobile_stubs/cast_server.rs"]
 mod cast_server;
 #[cfg(desktop)]
+mod connect;
+#[cfg(mobile)]
+#[path = "mobile_stubs/connect.rs"]
+mod connect;
+#[cfg(desktop)]
 mod discord_rp;
 #[cfg(mobile)]
 #[path = "mobile_stubs/discord_rp.rs"]
@@ -952,6 +957,11 @@ pub fn run() {
             deeplink_is_stremio_registered,
             now_playing::now_playing_update,
             now_playing::now_playing_clear,
+            connect::connect_start,
+            connect::connect_stop,
+            connect::connect_rotate,
+            connect::connect_status,
+            connect::connect_publish,
             torrent_links::torrent_file_magnet,
             torrent_links::torrent_links_default,
             torrent_links::torrent_links_make_default,
