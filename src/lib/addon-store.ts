@@ -2,6 +2,7 @@ import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { readActiveStremioAuthKey } from "./auth";
 import { setUserAddons, userAddons, type Addon } from "./addons";
 import { applyOrderToItems } from "./addons-store/reorder";
+import { confirmWatchActivityAddon, receivesWatchActivity } from "./watch-activity-consent";
 
 const STORAGE_KEY = "harbor.installed-addons";
 const SEEDED_KEY = "harbor.addons.seeded.v1";
@@ -294,6 +295,10 @@ export async function installFromUrl(
   const manifest = await fetchManifestAt(parsed.url);
   const id = manifest.id;
   const before = loadInstalled();
+  const alreadyAllowed = before.some((a) => a.id === id && !!a.manifest && receivesWatchActivity(a.manifest));
+  if (receivesWatchActivity(manifest) && !alreadyAllowed && !(await confirmWatchActivityAddon(manifest.name))) {
+    throw new Error("Installation cancelled.");
+  }
   const replaceId = options.replaceId && options.replaceId !== id ? options.replaceId : null;
   const replacedById = before.some((a) => a.id === id);
   const replacedByOld = replaceId != null && before.some((a) => a.id === replaceId);

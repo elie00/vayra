@@ -11,16 +11,8 @@ import { safeFetch as fetch } from "@/lib/safe-fetch";
 export type PlayerEventAction = "start" | "pause" | "stop";
 export type LibraryEventAction = "libraryAdd" | "libraryRemove" | "watched" | "unwatched";
 
-const WATCH_ACTIVITY_RESOURCES = ["player", "library"];
 const VIDEOS_PER_EVENT = 100;
 const ACCOUNT_ADDONS_TTL_MS = 5 * 60_000;
-
-/** Whether installing this addon hands it the user's watch activity. */
-export function receivesWatchActivity(manifest: Pick<Addon["manifest"], "resources">): boolean {
-  return (manifest.resources ?? []).some((r) =>
-    WATCH_ACTIVITY_RESOURCES.includes(typeof r === "string" ? r : r.name),
-  );
-}
 
 export function addonEventUrl(
   transportUrl: string,

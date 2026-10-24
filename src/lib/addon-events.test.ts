@@ -11,11 +11,11 @@ vi.mock("@/lib/safe-fetch", () => ({ safeFetch: fetchMock }));
 
 import {
   addonEventUrl,
-  receivesWatchActivity,
   sendEpisodesWatchedEvent,
   sendLibraryEvent,
   sendPlayerEvent,
 } from "./addon-events";
+import { receivesWatchActivity } from "./watch-activity-consent";
 
 const scrobbler = {
   id: "org.scrobbler",

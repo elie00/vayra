@@ -51,6 +51,7 @@ import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
 import { PrivateBetaLaunchModal } from "@/components/private-beta-launch-modal";
 import { VaraInviteBridge } from "@/components/vara-invite-bridge";
+import { WatchActivityConsent } from "@/components/watch-activity-consent";
 import { CiraProvider } from "@/lib/cira/provider";
 import { VaraProvider } from "@/lib/vara/provider";
 import { TogetherCursors } from "@/components/together-cursors";
@@ -292,6 +293,7 @@ export function App() {
                       <CiraInviteBridge />
                       <PrivateBetaLaunchModal />
                       <VaraInviteBridge />
+                      <WatchActivityConsent />
                       <TogetherFloater />
                       <TogetherHostLeavingPrompt />
                       <TogetherSummonToast />
