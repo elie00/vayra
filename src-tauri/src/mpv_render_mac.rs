@@ -5,12 +5,12 @@
 #![allow(clippy::arc_with_non_send_sync)]
 
 use std::ffi::{c_char, c_void, CString};
-use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
-use libmpv2::render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamApiType};
-use libmpv2_sys::mpv_handle;
+use crate::mpv_renderer::Renderer;
+use libmpv2::render::{OpenGLInitParams, RenderParam, RenderParamApiType};
+use libmpv2::Mpv;
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2::{msg_send, AnyThread, ClassType, MainThreadOnly, Message};
@@ -61,7 +61,7 @@ pub struct Embed {
     web_view_was_opaque: bool,
     ns_window: Retained<NSWindow>,
     edr: bool,
-    render: Arc<Mutex<RenderContext>>,
+    render: Arc<Mutex<Renderer>>,
 }
 
 unsafe impl Send for Embed {}
@@ -73,7 +73,7 @@ fn slot() -> &'static Mutex<Option<Embed>> {
     EMBED.get_or_init(|| Mutex::new(None))
 }
 
-pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64, edr: bool) -> Result<(), String> {
+pub fn install(mpv: Arc<Mpv>, ns_window_ptr: i64, edr: bool) -> Result<(), String> {
     let mtm = MainThreadMarker::new()
         .ok_or_else(|| "mpv_render_mac::install must run on main thread".to_string())?;
     if ns_window_ptr == 0 {
@@ -82,9 +82,10 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64, edr: bool) -> R
 
     {
         let mut existing = slot().lock().map_err(|e| format!("slot lock: {}", e))?;
-        if let Some(stale) = existing.take() {
-            eprintln!("[harbor::mpv_mac] WARNING: stale embed present at install; leaking RenderContext to avoid use-after-free");
-            std::mem::forget(stale);
+        if existing.take().is_some() {
+            // Its render context keeps its own player alive, so it can be freed
+            // safely; leaking it would leave that player running.
+            eprintln!("[harbor::mpv_mac] WARNING: stale embed present at install; freeing it");
         }
     }
 
@@ -216,9 +217,7 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64, edr: bool) -> R
             RenderParam::ApiType(RenderParamApiType::OpenGl),
             RenderParam::InitParams(init_params),
         ];
-        let mpv_handle_ref: &mut mpv_handle = &mut *mpv_ctx.as_ptr();
-        let mut render = RenderContext::new(mpv_handle_ref, params)
-            .map_err(|e| format!("render init: {:?}", e))?;
+        let mut render = Renderer::new(mpv, params)?;
 
         render.set_update_callback(|| {
             schedule_redraw();

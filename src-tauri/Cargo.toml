@@ -48,7 +48,7 @@ tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 keyring = "4.1"
-libmpv2 = "4"
+libmpv2 = "6"
 libmpv2-sys = "4"
 discord-rich-presence = "1.1"
 rust_cast = { path = "vendor/rust_cast", version = "0.20" }

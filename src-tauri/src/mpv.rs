@@ -4,8 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use libmpv2::events::{Event, EventContext, PropertyData};
-use libmpv2::mpv_node::MpvNode;
+use libmpv2::events::{Event, PropertyData};
 use libmpv2::{Format, Mpv, MpvInitializer};
 
 fn mpv_argv_command(mpv: &Mpv, argv: &[&str]) -> Result<(), String> {
@@ -150,7 +149,8 @@ impl PropertyKind {
             PropertyKind::Flag => Format::Flag,
             PropertyKind::Int64 => Format::Int64,
             PropertyKind::String => Format::String,
-            PropertyKind::Node => Format::Node,
+            // libmpv2 6 has no node support: mpv sends nodes as JSON strings.
+            PropertyKind::Node => Format::String,
         }
     }
 }
@@ -197,30 +197,26 @@ pub struct AudioDevice {
 }
 
 fn read_audio_devices(mpv: &Mpv) -> Vec<AudioDevice> {
-    let node = match mpv.get_property::<MpvNode>("audio-device-list") {
-        Ok(n) => n,
-        Err(_) => return Vec::new(),
+    mpv.get_property::<String>("audio-device-list")
+        .map(|json| parse_audio_devices(&json))
+        .unwrap_or_default()
+}
+
+fn parse_audio_devices(json: &str) -> Vec<AudioDevice> {
+    let Ok(Value::Array(items)) = serde_json::from_str::<Value>(json) else {
+        return Vec::new();
     };
-    let mut out = Vec::new();
-    if let Some(arr) = node.array() {
-        for item in arr {
-            let mut name = String::new();
-            let mut description = String::new();
-            if let Some(map) = item.map() {
-                for (k, v) in map {
-                    match k.as_str() {
-                        "name" => name = v.str().unwrap_or_default().to_string(),
-                        "description" => description = v.str().unwrap_or_default().to_string(),
-                        _ => {}
-                    }
-                }
+    items
+        .iter()
+        .filter_map(|item| {
+            let name = item.get("name")?.as_str()?;
+            if name.is_empty() || name == "auto" {
+                return None;
             }
-            if !name.is_empty() && name != "auto" {
-                out.push(AudioDevice { name, description });
-            }
-        }
-    }
-    out
+            let description = item.get("description").and_then(Value::as_str).unwrap_or_default();
+            Some(AudioDevice { name: name.to_string(), description: description.to_string() })
+        })
+        .collect()
 }
 
 #[tauri::command]
@@ -452,6 +448,7 @@ pub async fn mpv_start(
         eprintln!("[harbor::mpv] init error: {}", msg);
         msg
     })?;
+    let mpv = Arc::new(mpv);
 
     unsafe {
         let level = std::ffi::CString::new("warn").unwrap();
@@ -485,15 +482,11 @@ pub async fn mpv_start(
         let ns_window_ptr = window
             .ns_window()
             .map_err(|e| format!("ns_window: {:?}", e))? as i64;
-        let mpv_ctx_addr: usize = mpv.ctx.as_ptr() as usize;
+        let render_mpv = mpv.clone();
         let mac_edr = args.mac_edr.unwrap_or(false);
         let (tx, rx) = std::sync::mpsc::sync_channel::<Result<(), String>>(1);
         let _ = app.run_on_main_thread(move || {
-            let res = match std::ptr::NonNull::new(mpv_ctx_addr as *mut libmpv2_sys::mpv_handle) {
-                Some(p) => crate::mpv_render_mac::install(p, ns_window_ptr, mac_edr),
-                None => Err("null mpv ctx".into()),
-            };
-            let _ = tx.send(res);
+            let _ = tx.send(crate::mpv_render_mac::install(render_mpv, ns_window_ptr, mac_edr));
         });
         match rx.recv_timeout(std::time::Duration::from_millis(3000)) {
             Ok(Ok(())) => eprintln!("[harbor::mpv_mac] install OK"),
@@ -513,13 +506,11 @@ pub async fn mpv_start(
         let window = app
             .get_webview_window("main")
             .ok_or_else(|| "main window missing for render API install".to_string())?;
-        let mpv_ctx_addr: usize = mpv.ctx.as_ptr() as usize;
+        let render_mpv = mpv.clone();
         let (tx, rx) = std::sync::mpsc::sync_channel::<Result<(), String>>(1);
         let _ = app.run_on_main_thread(move || {
             let res = (|| {
-                let p = std::ptr::NonNull::new(mpv_ctx_addr as *mut libmpv2_sys::mpv_handle)
-                    .ok_or_else(|| "null mpv ctx".to_string())?;
-                crate::mpv_render_linux::prepare(p)?;
+                crate::mpv_render_linux::prepare(render_mpv)?;
                 let gtk_window = window.gtk_window().map_err(|e| format!("gtk_window: {:?}", e))?;
                 let vbox = window.default_vbox().map_err(|e| format!("default_vbox: {:?}", e))?;
                 crate::mpv_render_linux::install(&gtk_window, &vbox)
@@ -619,15 +610,14 @@ pub async fn mpv_start(
         }
     }
 
-    let mpv_arc = Arc::new(mpv);
+    let mpv_arc = mpv;
 
-    let event_ctx = EventContext::new(mpv_arc.ctx);
     for (name, id, kind) in OBSERVED_PROPS {
-        if let Err(e) = event_ctx.observe_property(name, kind.fmt(), *id) {
+        if let Err(e) = mpv_arc.observe_property(name, kind.fmt(), *id) {
             eprintln!("[mpv] observe {} failed: {}", name, e);
         }
     }
-    spawn_event_loop(app.clone(), mpv_arc.clone(), event_ctx, want_embed, args.mac_edr.unwrap_or(false));
+    spawn_event_loop(app.clone(), mpv_arc.clone(), want_embed, args.mac_edr.unwrap_or(false));
 
     eprintln!("[harbor::mpv] loadfile {}", args.url);
     mpv_argv_command(&mpv_arc, &["loadfile", &args.url, "replace"]).map_err(|e| {
@@ -681,7 +671,6 @@ fn apply_mac_edr(app: &AppHandle, mpv: &Arc<Mpv>, active: bool) {
 fn spawn_event_loop(
     app: AppHandle,
     mpv_keepalive: Arc<Mpv>,
-    mut ctx: EventContext,
     embedded: bool,
     mac_edr: bool,
 ) {
@@ -695,7 +684,7 @@ fn spawn_event_loop(
         #[cfg(not(target_os = "macos"))]
         let _ = mac_edr;
         loop {
-            let res = ctx.wait_event(0.5);
+            let res = mpv_keepalive.wait_event(0.5);
             match res {
                 Some(Ok(event)) => {
                     let mut shutdown = false;
@@ -798,12 +787,12 @@ fn event_to_payload(event: Event) -> Option<Value> {
     match event {
         Event::PropertyChange { name, change, .. } => {
             let data = match change {
+                PropertyData::Str(s) if is_node_property(name) => serde_json::from_str(s).unwrap_or(Value::Null),
                 PropertyData::Str(s) => Value::String(s.to_string()),
                 PropertyData::OsdStr(s) => Value::String(s.to_string()),
                 PropertyData::Flag(b) => Value::Bool(b),
                 PropertyData::Int64(i) => json!(i),
                 PropertyData::Double(f) => json!(f),
-                PropertyData::Node(n) => mpv_node_to_json(n),
             };
             Some(json!({ "event": "property-change", "name": name, "data": data }))
         }
@@ -829,22 +818,10 @@ fn event_to_payload(event: Event) -> Option<Value> {
     }
 }
 
-fn mpv_node_to_json(node: MpvNode) -> Value {
-    match node {
-        MpvNode::None => Value::Null,
-        MpvNode::String(s) => Value::String(s),
-        MpvNode::Flag(b) => Value::Bool(b),
-        MpvNode::Int64(i) => json!(i),
-        MpvNode::Double(f) => json!(f),
-        MpvNode::ArrayIter(it) => Value::Array(it.map(mpv_node_to_json).collect()),
-        MpvNode::MapIter(it) => {
-            let mut obj = serde_json::Map::new();
-            for (k, v) in it {
-                obj.insert(k, mpv_node_to_json(v));
-            }
-            Value::Object(obj)
-        }
-    }
+fn is_node_property(name: &str) -> bool {
+    OBSERVED_PROPS
+        .iter()
+        .any(|(n, _, kind)| *n == name && matches!(kind, PropertyKind::Node))
 }
 
 #[tauri::command]
@@ -1962,4 +1939,55 @@ fn position_embedded_mpv_child(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{event_to_payload, parse_audio_devices, PropertyKind};
+    use libmpv2::events::Event;
+    use libmpv2::{Format, Mpv};
+
+    #[test]
+    fn audio_devices_come_from_mpv_json_without_auto() {
+        let json = r#"[{"name":"auto","description":"Autoselect device"},
+            {"name":"coreaudio/BuiltInSpeakerDevice","description":"MacBook Pro Speakers"},
+            {"name":"coreaudio/AirPods"}]"#;
+        let devices = parse_audio_devices(json);
+        assert_eq!(devices.len(), 2);
+        assert_eq!(devices[0].name, "coreaudio/BuiltInSpeakerDevice");
+        assert_eq!(devices[0].description, "MacBook Pro Speakers");
+        assert_eq!(devices[1].description, "");
+        assert!(parse_audio_devices("not json").is_empty());
+    }
+
+    // Runs against the real libmpv: `cargo test --lib -- --ignored node_properties`.
+    #[test]
+    #[ignore]
+    fn node_properties_reach_the_ui_as_json() {
+        let mpv = Mpv::with_initializer(|init| {
+            init.set_property("vo", "null")?;
+            init.set_property("ao", "null")?;
+            Ok(())
+        })
+        .unwrap();
+        assert!(matches!(super::OBSERVED_PROPS.iter().find(|p| p.0 == "track-list"), Some((_, _, PropertyKind::Node))));
+        mpv.observe_property("track-list", Format::String, 5).unwrap();
+        mpv.command("loadfile", &["av://lavfi:testsrc=duration=5"]).unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while std::time::Instant::now() < deadline {
+            if let Some(Ok(event)) = mpv.wait_event(0.5) {
+                if !matches!(&event, Event::PropertyChange { name, .. } if *name == "track-list") {
+                    continue;
+                }
+                let payload = event_to_payload(event).unwrap();
+                let tracks = payload["data"].as_array().expect("track-list as a JSON array");
+                if tracks.is_empty() {
+                    continue;
+                }
+                assert_eq!(tracks[0]["type"], "video");
+                return;
+            }
+        }
+        panic!("no track-list with a video track");
+    }
 }

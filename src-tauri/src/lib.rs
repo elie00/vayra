@@ -129,6 +129,8 @@ mod roku;
 mod airplay;
 
 // Rendu mpv natif par plateforme.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod mpv_renderer;
 #[cfg(target_os = "macos")]
 mod mpv_render_mac;
 #[cfg(target_os = "linux")]
