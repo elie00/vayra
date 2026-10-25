@@ -3,16 +3,17 @@
 use std::cell::RefCell;
 use std::ffi::{c_void, CString};
 use std::os::raw::{c_char, c_int};
-use std::ptr::NonNull;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 
 use gtk::gdk;
 use gtk::glib;
 use gtk::glib::translate::{Stash, ToGlibPtr};
 use gtk::prelude::*;
+use crate::mpv_renderer::Renderer;
 use libmpv2::render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamApiType};
-use libmpv2_sys::mpv_handle;
+use libmpv2::Mpv;
 
 const GL_FRAMEBUFFER_BINDING: u32 = 0x8CA6;
 const GL_FRAMEBUFFER: u32 = 0x8D40;
@@ -36,12 +37,8 @@ enum Backend {
     Wayland,
 }
 
-#[derive(Copy, Clone)]
-struct MpvHandlePtr(NonNull<mpv_handle>);
-unsafe impl Send for MpvHandlePtr {}
-
 struct Pending {
-    mpv: MpvHandlePtr,
+    mpv: Arc<Mpv>,
     backend: Backend,
     display_native: u64,
 }
@@ -225,13 +222,13 @@ pub fn enforce_nvidia_x11() {
     std::env::set_var("GDK_BACKEND", "x11");
 }
 
-pub fn prepare(mpv_ctx: NonNull<mpv_handle>) -> Result<(), String> {
+pub fn prepare(mpv: Arc<Mpv>) -> Result<(), String> {
     let backend = detect_backend();
     PROC_WAYLAND.store(backend == Backend::Wayland, Ordering::Relaxed);
     let display_native = native_display(backend);
     PENDING.with(|slot| {
         *slot.borrow_mut() = Some(Pending {
-            mpv: MpvHandlePtr(mpv_ctx),
+            mpv,
             backend,
             display_native,
         })
@@ -277,14 +274,14 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
     set_webview_transparent(&web_view);
     overlay.show_all();
 
-    let render_cell: Rc<RefCell<Option<RenderContext>>> = Rc::new(RefCell::new(None));
+    let render_cell: Rc<RefCell<Option<Renderer>>> = Rc::new(RefCell::new(None));
     let mpv = pending.mpv;
     let backend = pending.backend;
     let display_native = pending.display_native;
     area.connect_render(move |area, _ctx| {
         let mut slot = render_cell.borrow_mut();
         if slot.is_none() {
-            match build_render_context(mpv, backend, display_native) {
+            match build_render_context(mpv.clone(), backend, display_native) {
                 Ok(mut rc) => {
                     rc.set_update_callback(|| schedule_redraw());
                     *slot = Some(rc);
@@ -317,10 +314,10 @@ pub fn install(gtk_window: &gtk::ApplicationWindow, vbox: &gtk::Box) -> Result<(
 }
 
 fn build_render_context(
-    mpv: MpvHandlePtr,
+    mpv: Arc<Mpv>,
     backend: Backend,
     display_native: u64,
-) -> Result<RenderContext, String> {
+) -> Result<Renderer, String> {
     let init_params = OpenGLInitParams::<()> {
         get_proc_address,
         ctx: (),
@@ -336,8 +333,7 @@ fn build_render_context(
             Backend::Wayland => params.push(RenderParam::WaylandDisplay(ptr)),
         }
     }
-    let mpv_ref: &mut mpv_handle = unsafe { &mut *mpv.0.as_ptr() };
-    RenderContext::new(mpv_ref, params).map_err(|e| format!("render init: {:?}", e))
+    Renderer::new(mpv, params)
 }
 
 fn do_render(rc: &RenderContext, area: &gtk::GLArea) {
