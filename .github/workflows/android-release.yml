@@ -79,6 +79,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm release:check
+          pnpm setup:ui-fonts
 
       - name: Materialize the ignored Android keystore
         shell: bash

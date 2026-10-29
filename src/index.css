@@ -1,6 +1,24 @@
 @import "tailwindcss";
 @import "./styles/mac-ux.css";
 
+/* Sentient and Switzer, fetched by `pnpm setup:ui-fonts` (see scripts/fetch-ui-fonts.mjs):
+   the CSP blocks the Fontshare stylesheet in the app, where each platform fell back
+   to its own fonts. Without the files the fallbacks in --font-display/--font-sans apply. */
+@font-face {
+  font-family: "Sentient";
+  src: url("/fonts/fontshare/Sentient-Variable.woff2") format("woff2");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/fontshare/Switzer-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: "WonderfulFontyCure";
   src: url("./assets/fonts/WonderfulFontyCure-4nnoD.ttf") format("truetype");

@@ -44,6 +44,8 @@ pnpm-debug.log*
 /src-tauri/libmpv/libmpv-2.dll
 /src-tauri/fonts/*.otf
 /src-tauri/fonts/*.ttf
+# Fontshare UI fonts: embedded in the app, not redistributable from the repo (scripts/fetch-ui-fonts.mjs).
+/public/fonts/fontshare/
 local_docs/
 .vercel
 .claude/*
