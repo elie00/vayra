@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Check, ChevronRight, Info, Play, Plus, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useSearch } from "@/lib/search-context";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import { closeMetaPreview, useMetaPreview } from "./meta-preview";
@@ -16,6 +17,8 @@ export function MetaPreviewSheet() {
   const meta = useMetaPreview();
   const t = useT();
   const { openMeta, openPicker } = useView();
+  // Opened from search, the sheet sits over it; leaving for the title closes both.
+  const { setOpen: setSearchOpen } = useSearch();
   const inWatchlist = useInWatchlist(meta?.id ?? "");
   const sheetRef = useRef<HTMLElement>(null);
   const drag = useSheetDrag(sheetRef, closeMetaPreview, meta !== null);
@@ -32,13 +35,17 @@ export function MetaPreviewSheet() {
   if (!meta) return null;
   const facts = [meta.releaseInfo, meta.runtime, meta.imdbRating && `IMDb ${meta.imdbRating}`].filter(Boolean);
   const genres = (meta.genres ?? []).slice(0, 3).map((g) => t(g));
-  const details = () => {
+  const leave = () => {
     closeMetaPreview();
+    setSearchOpen(false);
+  };
+  const details = () => {
+    leave();
     openMeta(meta);
   };
 
   return (
-    <div className="fixed inset-0 z-[130]">
+    <div className="fixed inset-0 z-[210]">
       <button
         type="button"
         aria-label={t("common.close")}
@@ -95,7 +102,7 @@ export function MetaPreviewSheet() {
                 label={t("Play")}
                 primary
                 onClick={() => {
-                  closeMetaPreview();
+                  leave();
                   openPicker(meta, undefined, { autoPlay: true, resume: true });
                 }}
               >

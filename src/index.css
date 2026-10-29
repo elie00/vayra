@@ -1537,6 +1537,23 @@ html[data-os="android"] {
     }
   }
 }
+/* The phone search page settles in rather than popping. */
+.vayra-search {
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+@starting-style {
+  .vayra-search {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    .vayra-search {
+      transform: none;
+    }
+  }
+}
 /* VAYRA Connect mini player (MacNowPlayingBar) sits above the tab bar. */
 html[data-os="android"][data-mac-bar] {
   --harbor-tabbar: calc(8.5rem + var(--vayra-safe-bottom));

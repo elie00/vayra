@@ -11,6 +11,8 @@ vi.mock("@/lib/view", () => ({ useView: () => view }));
 vi.mock("@/lib/i18n", () => ({ useT: () => (key: string) => key }));
 const watchlist = vi.hoisted(() => ({ toggleWatchlist: vi.fn(), useInWatchlist: vi.fn(() => false) }));
 vi.mock("@/lib/watchlist", () => watchlist);
+const search = vi.hoisted(() => ({ setOpen: vi.fn() }));
+vi.mock("@/lib/search-context", () => ({ useSearch: () => search }));
 
 afterEach(() => {
   act(() => closeMetaPreview());
@@ -51,6 +53,7 @@ it("opens the page from the sheet and closes it", () => {
   act(() => previewMeta(film));
   act(() => button(host, "Details & more").click());
   expect(view.openMeta).toHaveBeenCalledWith(film);
+  expect(search.setOpen).toHaveBeenCalledWith(false);
   expect(host.textContent).toBe("");
   act(() => root.unmount());
 });

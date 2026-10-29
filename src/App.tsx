@@ -84,6 +84,7 @@ import { RankingsProvider } from "@/lib/rankings";
 import { SettingsProvider } from "@/lib/settings";
 import { SearchProvider, useSearch } from "@/lib/search-context";
 import { SearchOverlay } from "@/components/search/search-overlay";
+import { MobileSearch } from "@/mobile/search";
 import { SearchHotkey } from "@/components/search/search-hotkey";
 import { CommandPalette } from "@/components/command-palette";
 import { RoomHotkeys } from "@/components/room-hotkeys";
@@ -315,7 +316,7 @@ export function App() {
                       <TopRankModal />
                       <ProfilePickerModal />
                       <CurfewGuard />
-                      <SearchOverlay />
+                      {isMobileTauri() ? <MobileSearch /> : <SearchOverlay />}
                       <SearchHotkey />
                       <CommandPalette />
                       <RoomHotkeys />
