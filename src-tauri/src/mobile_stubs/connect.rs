@@ -14,3 +14,5 @@ pub fn connect_rotate() -> Result<(), String> {
 pub fn connect_status() {}
 #[tauri::command]
 pub fn connect_publish() {}
+#[tauri::command]
+pub fn connect_publish_addons() {}

@@ -13,6 +13,8 @@ use tokio::sync::{mpsc, Notify};
 use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::tungstenite::Message;
 
+use crate::connect_seal;
+
 pub const STATUS_EVENT: &str = "vayra:connect-link";
 const PROTOCOL: u64 = 1;
 const MAX_MESSAGE_BYTES: usize = 64 * 1024;
@@ -83,6 +85,8 @@ pub struct LinkStatus {
     pub connected: bool,
     /// What the Mac plays (protocol `state`), `None` while it is idle.
     pub state: Option<Value>,
+    /// The Mac's addons (`name`, `transportUrl`), once it has sent them.
+    pub addons: Option<Vec<Value>>,
 }
 
 pub type OnStatus = Arc<dyn Fn(LinkStatus) + Send + Sync>;
@@ -133,6 +137,7 @@ impl Link {
             mac: Some(PairedMac { name: pairing.name.clone(), address: pairing.address.to_string() }),
             connected: false,
             state: None,
+            addons: None,
         }));
         let retry = Arc::new(Notify::new());
         let outbox: Outbox = Arc::default();
@@ -219,7 +224,7 @@ async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter, outbox: &Outbo
             frame = ws.next() => match frame {
                 Some(Ok(Message::Text(text))) => {
                     last_heard = Instant::now();
-                    if receive(reporter, text.as_str()) && !accepted {
+                    if receive(reporter, &pairing.secret, text.as_str()) && !accepted {
                         accepted = true;
                         *lock(outbox) = Some(tx.clone());
                     }
@@ -243,7 +248,7 @@ async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter, outbox: &Outbo
 }
 
 /// Applies a Mac message to the status; true for the Mac's hello.
-fn receive(reporter: &Reporter, text: &str) -> bool {
+fn receive(reporter: &Reporter, secret: &str, text: &str) -> bool {
     let Ok(message) = serde_json::from_str::<Value>(text) else {
         return false;
     };
@@ -264,6 +269,17 @@ fn receive(reporter: &Reporter, text: &str) -> bool {
         }
         Some("idle") => {
             reporter.update(|s| s.state = None);
+            false
+        }
+        // Sealed with the pairing secret: the addresses often carry a debrid key.
+        Some("addons") => {
+            let opened = message["sealed"]
+                .as_str()
+                .and_then(|sealed| connect_seal::open(secret, sealed))
+                .and_then(|plain| serde_json::from_slice::<Value>(&plain).ok());
+            if let Some(addons) = opened {
+                reporter.update(|s| s.addons = Some(connect_seal::clean_addons(&addons)));
+            }
             false
         }
         _ => false,
@@ -449,6 +465,10 @@ mod tests {
 
         mac.publish(Some(json!({ "status": "playing", "positionSec": 12.0 })));
         assert_eq!(until(&|s| s.state.is_some()).await.state.unwrap()["positionSec"], 12.0);
+
+        let addons = json!([{ "name": "Torrentio", "transportUrl": "https://torrentio.example/debrid=KEY/manifest.json" }]);
+        mac.publish_addons(&addons);
+        assert_eq!(json!(until(&|s| s.addons.is_some()).await.addons.unwrap()), addons);
 
         let pause = json!({ "type": "command", "action": "pause" });
         link.send(&pause).unwrap();

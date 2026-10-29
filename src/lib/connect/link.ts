@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import type { ConnectCommand, ConnectState } from "./host";
+import type { ConnectAddon, ConnectCommand, ConnectState } from "./host";
 
 // VAYRA Connect, phone side: the Rust link (src-tauri/src/connect_link.rs)
 // holds the socket to the paired Mac and reports its status here.
@@ -8,9 +8,15 @@ import type { ConnectCommand, ConnectState } from "./host";
 export const LINK_STATUS_EVENT = "vayra:connect-link";
 
 export type PairedMac = { name: string; address: string };
-export type LinkStatus = { mac: PairedMac | null; connected: boolean; state: ConnectState | null };
+export type LinkStatus = {
+  mac: PairedMac | null;
+  connected: boolean;
+  state: ConnectState | null;
+  /** The Mac's addons, once it has sent them (VAYRA Connect seals them in transit). */
+  addons?: ConnectAddon[] | null;
+};
 
-export const NO_LINK: LinkStatus = { mac: null, connected: false, state: null };
+export const NO_LINK: LinkStatus = { mac: null, connected: false, state: null, addons: null };
 
 export const readPairing = (url: string) => invoke<PairedMac>("connect_link_read", { url });
 // These report through LINK_STATUS_EVENT, which must be listened to first.

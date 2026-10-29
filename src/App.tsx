@@ -766,6 +766,26 @@ function Shell() {
     };
   }, [settings.connectEnabled, openPicker]);
 
+  // VAYRA Connect: paired phones can import this Mac's addons.
+  useEffect(() => {
+    if (!settings.connectEnabled || isMobileTauri() || isWeb()) return;
+    let cancelled = false;
+    let off: (() => void) | null = null;
+    void import("@/lib/connect/host")
+      .then(({ publishInstalledAddons }) => {
+        if (cancelled) return;
+        const publish = () => void publishInstalledAddons().catch(() => { /* Connect stopped: nobody to tell. */ });
+        publish();
+        window.addEventListener("vayra:addons-changed", publish);
+        off = () => window.removeEventListener("vayra:addons-changed", publish);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  }, [settings.connectEnabled]);
+
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
   }, [topKind, settings.hideContent.anime, setView]);

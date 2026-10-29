@@ -15,6 +15,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::sync::{broadcast, oneshot, watch};
 
+use crate::connect_seal;
+
 pub const PORT: u16 = 11472;
 pub const PROTOCOL: u64 = 1;
 pub const COMMAND_EVENT: &str = "vayra:connect-command";
@@ -44,6 +46,8 @@ struct Shared {
     phones: Mutex<HashMap<u64, Phone>>,
     next_conn: AtomicU64,
     on_command: OnCommand,
+    // The addons phones may import, once the front has published them.
+    addons: Mutex<Option<Vec<Value>>>,
 }
 
 pub struct Server {
@@ -72,6 +76,7 @@ impl Server {
             phones: Mutex::new(HashMap::new()),
             next_conn: AtomicU64::new(0),
             on_command,
+            addons: Mutex::new(None),
         });
         let router = axum::Router::new()
             .route("/connect/v1", get(upgrade))
@@ -95,6 +100,15 @@ impl Server {
         };
         *lock(&self.shared.last_state) = message.clone();
         let _ = self.shared.states.send(message);
+    }
+
+    /// This Mac's addons, for phones to import; sent sealed, as their addresses
+    /// often carry a debrid key.
+    pub fn publish_addons(&self, addons: &Value) {
+        *lock(&self.shared.addons) = Some(connect_seal::clean_addons(addons));
+        if let Some(message) = addons_message(&self.shared) {
+            let _ = self.shared.states.send(message);
+        }
     }
 
     /// New secret: every paired phone is dropped and has to pair again.
@@ -121,6 +135,13 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 
 fn idle() -> String {
     json!({ "type": "idle" }).to_string()
+}
+
+fn addons_message(shared: &Shared) -> Option<String> {
+    let addons = lock(&shared.addons).clone()?;
+    let plain = serde_json::to_vec(&addons).ok()?;
+    let sealed = connect_seal::seal(&lock(&shared.secret), &plain)?;
+    Some(json!({ "type": "addons", "sealed": sealed }).to_string())
 }
 
 fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
@@ -168,7 +189,14 @@ async fn session(shared: Arc<Shared>, mut socket: WebSocket) {
     })
     .to_string();
     let current = lock(&shared.last_state).clone();
-    if send(&mut socket, hello).await && send(&mut socket, current).await {
+    let addons = addons_message(&shared);
+    let introduced = send(&mut socket, hello).await
+        && send(&mut socket, current).await
+        && match addons {
+            Some(addons) => send(&mut socket, addons).await,
+            None => true,
+        };
+    if introduced {
         loop {
             tokio::select! {
                 incoming = socket.recv() => match incoming {
@@ -387,6 +415,12 @@ fn info(stored: &Stored, name: &str, port: u16) -> ConnectInfo {
     }
 }
 
+// The addons the front last published, kept for a server started afterwards.
+fn addons_slot() -> &'static Mutex<Option<Value>> {
+    static SLOT: std::sync::OnceLock<Mutex<Option<Value>>> = std::sync::OnceLock::new();
+    SLOT.get_or_init(|| Mutex::new(None))
+}
+
 fn server_slot() -> &'static tokio::sync::Mutex<Option<(Server, ConnectInfo)>> {
     static SLOT: std::sync::OnceLock<tokio::sync::Mutex<Option<(Server, ConnectInfo)>>> = std::sync::OnceLock::new();
     SLOT.get_or_init(|| tokio::sync::Mutex::new(None))
@@ -414,6 +448,9 @@ pub async fn connect_start(app: tauri::AppHandle) -> Result<ConnectInfo, String>
     )
     .await
     .map_err(|e| format!("connect: port {PORT}: {e}"))?;
+    if let Some(addons) = lock(addons_slot()).as_ref() {
+        server.publish_addons(addons);
+    }
     let info = info(&stored, &name, server.addr.port());
     *slot = Some((server, info.clone()));
     Ok(info)
@@ -457,6 +494,15 @@ pub async fn connect_status() -> ConnectStatus {
 pub async fn connect_publish(state: Option<Value>) {
     if let Some((server, _)) = server_slot().lock().await.as_ref() {
         server.publish(state);
+    }
+}
+
+/// This Mac's installed addons (`name`, `transportUrl`), for paired phones.
+#[tauri::command]
+pub async fn connect_publish_addons(addons: Value) {
+    *lock(addons_slot()) = Some(addons.clone());
+    if let Some((server, _)) = server_slot().lock().await.as_ref() {
+        server.publish_addons(&addons);
     }
 }
 
@@ -513,6 +559,38 @@ mod tests {
                 Ok(_) => {}
             }
         }
+    }
+
+    #[tokio::test]
+    async fn a_paired_phone_gets_the_addons_sealed() {
+        let server = Server::start(
+            "127.0.0.1:0".parse().unwrap(),
+            "s3cret".into(),
+            "mac-1".into(),
+            "MacBook".into(),
+            Arc::new(|_| {}),
+        )
+        .await
+        .unwrap();
+        let torrentio = json!([{ "name": "Torrentio", "transportUrl": "https://torrentio.example/debrid=KEY/manifest.json" }]);
+        server.publish_addons(&torrentio);
+        let (mut phone, _) =
+            tokio_tungstenite::connect_async(format!("ws://{}/connect/v1?k=s3cret", server.addr)).await.unwrap();
+        let hello = json!({ "type": "hello", "deviceId": "pixel", "name": "Pixel 6", "platform": "android", "protocol": 1 });
+        phone.send(WsMessage::Text(hello.to_string().into())).await.unwrap();
+        assert_eq!(next_text(&mut phone).await.unwrap()["type"], "hello");
+        assert_eq!(next_text(&mut phone).await.unwrap()["type"], "idle");
+        let sealed = next_text(&mut phone).await.unwrap();
+        assert_eq!(sealed["type"], "addons");
+        assert!(!sealed.to_string().contains("KEY"));
+        let plain = connect_seal::open("s3cret", sealed["sealed"].as_str().unwrap()).unwrap();
+        assert_eq!(serde_json::from_slice::<Value>(&plain).unwrap(), torrentio);
+
+        server.publish_addons(&json!([]));
+        let sealed = next_text(&mut phone).await.unwrap();
+        let plain = connect_seal::open("s3cret", sealed["sealed"].as_str().unwrap()).unwrap();
+        assert_eq!(serde_json::from_slice::<Value>(&plain).unwrap(), json!([]));
+        server.stop();
     }
 
     #[tokio::test]

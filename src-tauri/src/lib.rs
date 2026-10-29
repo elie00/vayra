@@ -18,6 +18,7 @@ mod streams;
 mod stremio_auth;
 mod now_playing;
 mod connect_link;
+mod connect_seal;
 mod torrent_engine;
 mod torrent_links;
 mod trailer;
@@ -963,6 +964,7 @@ pub fn run() {
             connect::connect_rotate,
             connect::connect_status,
             connect::connect_publish,
+            connect::connect_publish_addons,
             connect_link::connect_link_read,
             connect_link::connect_link_pair,
             connect_link::connect_link_start,
