@@ -48,7 +48,6 @@ type NavIcon = (props: { active?: boolean }) => ReactElement;
 const TABS: { view: View; label: string; Icon: NavIcon }[] = [
   { view: "home", label: "nav.home", Icon: HomeIcon },
   { view: "discover", label: "nav.discover", Icon: DiscoverIcon },
-  { view: "live", label: "nav.live", Icon: LiveTvIcon },
   { view: "library", label: "nav.library", Icon: LibraryIcon },
 ];
 
@@ -134,6 +133,8 @@ function PlusScreen() {
     { label: "nav.shows", icon: <TvIcon />, onGo: () => view.setView("shows") },
     { label: "nav.anime", icon: <AnimeIcon />, onGo: () => view.setView("anime") },
     { label: "nav.sports", icon: <SportsIcon />, onGo: () => view.setView("sports") },
+    // Live TV needs a playlist set up first, so it lives here rather than in the tab bar.
+    { label: "nav.live", icon: <LiveTvIcon />, onGo: () => view.setView("live") },
     { label: "nav.playlists", icon: <PlaylistVodIcon />, onGo: () => view.setView("vod") },
     { label: "nav.calendar", icon: <CalendarIcon />, onGo: () => view.setView("calendar") },
     { label: "Collections", icon: <Layers size={24} strokeWidth={1.8} />, onGo: () => view.openCollections() },
