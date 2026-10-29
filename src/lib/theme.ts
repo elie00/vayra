@@ -1750,7 +1750,29 @@ export function nextColorTheme(current: string): ThemePresetId {
   return CYCLE_THEME_IDS[(i + 1) % CYCLE_THEME_IDS.length];
 }
 
+/**
+ * "Mineral Night", the VAYRA default on phones: the mineral palette moved off
+ * neutral grey onto a deep night blue, with a champagne accent for the mark,
+ * progress and the active tab. Ivory text and the semantic colours stay. The
+ * desktop default keeps Mineral Monochrome (docs/vayra-visual-identity.md).
+ */
+export const MINERAL_NIGHT_TOKENS: Record<string, string> = {
+  "--color-canvas": "#0a0d14",
+  "--color-surface": "#10141d",
+  "--color-elevated": "#161b27",
+  "--color-raised": "#1f2533",
+  "--color-ink": "#f4f2ed",
+  "--color-ink-muted": "#abb2c3",
+  "--color-ink-subtle": "#707a90",
+  "--color-edge": "rgb(78 88 112 / 0.62)",
+  "--color-edge-soft": "rgb(78 88 112 / 0.32)",
+  "--color-accent": "#e2b977",
+  "--color-accent-soft": "rgb(226 185 119 / 0.16)",
+  "--color-danger": "oklch(0.55 0.18 25)",
+};
+
 function resolveTokens(theme: ThemeSettings): Record<string, string> {
+  if (theme.preset === "cool-grey" && isMobileTauri()) return MINERAL_NIGHT_TOKENS;
   if (theme.preset === "custom" && theme.customColors) {
     return customColorsToTokens(theme.customColors);
   }

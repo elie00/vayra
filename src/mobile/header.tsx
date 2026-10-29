@@ -45,8 +45,9 @@ export function MobileHeader({ search = true, raised = false }: { search?: boole
           aria-label={t("chrome.harborHome")}
           className="me-auto flex items-center gap-2 text-ink"
         >
-          <HarborMark className="h-6 w-6 shrink-0" />
-          <span className="font-display text-[22px] font-medium leading-none tracking-tight">VAYRA</span>
+          <HarborMark className="h-6 w-6 shrink-0 text-accent" />
+          {/* The Mac sets its wordmark in the system sans (San Francisco); Switzer is its match here. */}
+          <span className="font-sans text-[22px] font-medium leading-none tracking-tight">VAYRA</span>
         </button>
         {search && (
           <button
