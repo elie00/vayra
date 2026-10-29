@@ -14,6 +14,8 @@ import { listPager } from "@/lib/list-pager";
 import { hasPageRowChanges, resetPageRows, usePageRows } from "@/lib/page-rows";
 import { useSettings } from "@/lib/settings";
 import { useScrollMemory, useView } from "@/lib/view";
+import { isMobileTauri } from "@/lib/platform";
+import { heroSlides, MobileHeroRow, MobileRail } from "@/mobile/home";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
 import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
@@ -228,6 +230,42 @@ export function Movies({ active = true }: { active?: boolean }) {
       })
       .filter((r) => r.metas.length >= 4);
   }, [rows, hero, top10]);
+
+  if (isMobileTauri()) {
+    return (
+      <main
+        ref={scrollCb}
+        className="relative h-full overflow-y-auto bg-canvas px-4 pb-[var(--harbor-tabbar,0px)] pt-[calc(6.5rem+var(--harbor-status-bar,1.75rem))]"
+      >
+        <ScrollRootContext.Provider value={scrollEl}>
+          <div className="flex flex-col gap-8 pt-2">
+            {hero.length > 0 && <MobileHeroRow slides={heroSlides(hero)} />}
+            {top10.length >= 10 && (
+              <Row title={t("Top 10 Movies Today")} min={112} shape="rank" scrollKey="movies:mobile:top10">
+                {top10.map((m, i) => (
+                  <TopRankCard key={m.id} meta={m} rank={i + 1} />
+                ))}
+              </Row>
+            )}
+            {letterboxdRows.map((row) => (
+              <MobileRail key={row.key} row={row} onLoadMore={() => undefined} scrollPrefix="movies:mobile" />
+            ))}
+            <CatalogRows
+              rows={restRows}
+              editMode={false}
+              custom={pageRows.custom}
+              onPersist={pageRows.persist}
+              scrollPrefix="movies:mobile"
+              onLoadMore={loadMore}
+              flagRerunKeys={["coming-soon"]}
+              min={112}
+            />
+            {!settings.tmdbKey && <TmdbNudge />}
+          </div>
+        </ScrollRootContext.Provider>
+      </main>
+    );
+  }
 
   return (
     <main ref={scrollCb} className="relative h-full overflow-y-auto bg-canvas">

@@ -93,6 +93,11 @@ export function MobileHome({
   );
 }
 
+/** Hero slides for a catalog page, where the page already says what they are. */
+export function heroSlides(metas: Meta[]): Slide[] {
+  return metas.map((meta, i) => ({ meta, rank: { label: "", position: i + 1 } }));
+}
+
 // A single full-width hero card. Exported so MobileDiscover can reuse it for its
 // featured item. Reuses the same actions as the desktop Hero (openMeta on tap /
 // Play, toggleWatchlist for the watchlist button).
@@ -162,7 +167,7 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
   );
 }
 
-function MobileHeroRow({ slides }: { slides: Slide[] }) {
+export function MobileHeroRow({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -203,7 +208,7 @@ function MobileHeroRow({ slides }: { slides: Slide[] }) {
   );
 }
 
-function MobileContinueWatching({
+export function MobileContinueWatching({
   items,
   signedIn,
   onDismiss,
@@ -290,12 +295,14 @@ function MobileCwCard({
   );
 }
 
-function MobileRail({
+export function MobileRail({
   row,
   onLoadMore,
+  scrollPrefix = "home:mobile",
 }: {
   row: HomeRow;
   onLoadMore: (rowKey: string) => void;
+  scrollPrefix?: string;
 }) {
   const t = useT();
   const { openGrid } = useView();
@@ -308,7 +315,7 @@ function MobileRail({
     <Row
       title={t(row.name)}
       min={112}
-      scrollKey={`home:mobile:${row.key}`}
+      scrollKey={`${scrollPrefix}:${row.key}`}
       onViewAll={viewAll}
       onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
     >

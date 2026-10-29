@@ -25,6 +25,8 @@ import {
 } from "@/lib/manual-watched";
 import { useCwAdvance } from "./home/hooks/use-cw-advance";
 import { useScrollMemory, useView } from "@/lib/view";
+import { isMobileTauri } from "@/lib/platform";
+import { heroSlides, MobileContinueWatching, MobileHeroRow } from "@/mobile/home";
 import { buildShowHero, bucketCopy } from "./shows/hero-curation";
 import { showSpecs } from "./shows/show-specs";
 
@@ -237,6 +239,46 @@ export function Shows({ active = true }: { active?: boolean }) {
       .filter((r) => r.metas.length >= 4);
   }, [rows, hero, top10.length]);
 
+  const onDismissCw = (item: (typeof cwItems)[number]) =>
+    item.manualWatched
+      ? dismissManualWatched(item._id)
+      : item.local
+        ? clearLocalCw(item._id)
+        : dismissCw(item, authKey);
+
+  if (isMobileTauri()) {
+    return (
+      <main
+        ref={scrollCb}
+        className="relative h-full overflow-y-auto bg-canvas px-4 pb-[var(--harbor-tabbar,0px)] pt-[calc(6.5rem+var(--harbor-status-bar,1.75rem))]"
+      >
+        <ScrollRootContext.Provider value={scrollEl}>
+          <div className="flex flex-col gap-8 pt-2">
+            {hero.length > 0 && <MobileHeroRow slides={heroSlides(hero)} />}
+            <MobileContinueWatching items={cwItems} signedIn={!!authKey} onDismiss={onDismissCw} />
+            {top10.length >= 10 && (
+              <Row title={t("Top 10 Series Today")} min={112} shape="rank" scrollKey="shows:mobile:top10">
+                {top10.map((m, i) => (
+                  <TopRankCard key={m.id} meta={m} rank={i + 1} />
+                ))}
+              </Row>
+            )}
+            <CatalogRows
+              rows={restRows}
+              editMode={false}
+              custom={pageRows.custom}
+              onPersist={pageRows.persist}
+              scrollPrefix="shows:mobile"
+              onLoadMore={loadMore}
+              min={112}
+            />
+            {!settings.tmdbKey && <TmdbNudge />}
+          </div>
+        </ScrollRootContext.Provider>
+      </main>
+    );
+  }
+
   return (
     <main ref={scrollCb} className="relative h-full overflow-y-auto bg-canvas">
       <ScrollRootContext.Provider value={scrollEl}>
@@ -257,17 +299,7 @@ export function Shows({ active = true }: { active?: boolean }) {
           {cwItems.length > 0 && (
             <Row title={t("Pick up where you left off")} min={260} shape="landscape" scrollKey="shows:cw">
               {cwItems.map((it) => (
-                <ContinueCard
-                  key={it._id}
-                  item={it}
-                  onDismiss={(item) =>
-                    item.manualWatched
-                      ? dismissManualWatched(item._id)
-                      : item.local
-                        ? clearLocalCw(item._id)
-                        : dismissCw(item, authKey)
-                  }
-                />
+                <ContinueCard key={it._id} item={it} onDismiss={onDismissCw} />
               ))}
             </Row>
           )}
