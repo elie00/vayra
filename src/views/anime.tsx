@@ -59,6 +59,8 @@ import { loadSimklWatchedMap, loadSimklStatusMap, type WatchlistStatus } from "@
 import { loadAnilistWatchedMap } from "@/lib/anilist/watched-map";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
+import { isMobileTauri } from "@/lib/platform";
+import { heroSlides, MobileContinueWatching, MobileHeroRow } from "@/mobile/home";
 
 export { isAnimeRow } from "./anime/anime-rows";
 
@@ -596,14 +598,45 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     return () => window.removeEventListener("vayra:anime-focus-row", handler as EventListener);
   }, []);
 
+  const mobile = isMobileTauri();
+  const onDismissCw = (it: (typeof cwItems)[number]) =>
+    it.manualWatched
+      ? dismissManualWatched(it._id)
+      : it.local
+        ? clearLocalCw(it._id)
+        : dismissCw(it, authKey);
+
   return (
     <main
       ref={scrollCb}
-      className="flex-1 overflow-y-auto overflow-x-hidden px-12 pt-28 pb-14"
+      className={`flex-1 overflow-y-auto overflow-x-hidden ${
+        mobile ? "px-4 pt-[calc(6.5rem+var(--harbor-status-bar,1.75rem))]" : "px-12 pt-28 pb-14"
+      }`}
     >
       <ScrollRootContext.Provider value={scrollEl}>
-        <div data-tauri-drag-region className="flex flex-col gap-12">
-          {heroMetas.length > 0 ? (
+        <div data-tauri-drag-region className={`flex flex-col ${mobile ? "gap-8 pt-2" : "gap-12"}`}>
+          {mobile ? (
+            <div data-scroll-anchor="hero" className="flex flex-col gap-3">
+              {heroMetas.length > 0 ? (
+                <MobileHeroRow slides={heroSlides(heroMetas)} />
+              ) : (
+                <div className="aspect-[4/5] w-full animate-pulse rounded-3xl bg-elevated" />
+              )}
+              <button
+                type="button"
+                onClick={() => setShowPicker(true)}
+                className="flex h-9 items-center gap-2 self-start rounded-full border border-edge px-4 text-[13.5px] font-medium text-ink-muted transition-transform active:scale-95"
+              >
+                <SlidersHorizontal size={15} strokeWidth={2} />
+                {t("Tune anime")}
+                {favoriteGenres.length > 0 && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent/20 px-1 text-[9px] font-bold leading-none text-accent">
+                    {favoriteGenres.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          ) : heroMetas.length > 0 ? (
             <div data-scroll-anchor="hero" className="relative harbor-anime-hero">
               <AnimeHero slides={heroMetas} topPicks={topPicks} trendingByMetaId={heroTrending} />
               <button
@@ -633,22 +666,16 @@ export function AnimeView({ active = true }: { active?: boolean }) {
               <AnimeHeroSkeleton />
             </div>
           )}
-          {cwItems.length > 0 && (
-            <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="anime:cw">
-              {cwItems.map((item) => (
-                <ContinueCard
-                  key={item._id}
-                  item={item}
-                  onDismiss={(it) =>
-                    it.manualWatched
-                      ? dismissManualWatched(it._id)
-                      : it.local
-                        ? clearLocalCw(it._id)
-                        : dismissCw(it, authKey)
-                  }
-                />
-              ))}
-            </Row>
+          {mobile ? (
+            <MobileContinueWatching items={cwItems} signedIn={!!authKey} onDismiss={onDismissCw} />
+          ) : (
+            cwItems.length > 0 && (
+              <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="anime:cw">
+                {cwItems.map((item) => (
+                  <ContinueCard key={item._id} item={item} onDismiss={onDismissCw} />
+                ))}
+              </Row>
+            )
           )}
           {!malRowsHidden.includes("yourMalLists") && <MalRows />}
           {!anilistHidden.includes("yourLists") && <AnilistRows />}
@@ -690,7 +717,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
                 ) : spec.rank && r.metas.length >= 10 ? (
                   <Row
                     title={t("Top 10 {name}", { name: t(spec.title).replace(/^Top\s*/i, "") })}
-                    min={180}
+                    min={mobile ? 112 : 180}
                     shape="rank"
                     scrollKey={`anime:${spec.key}`}
                     onViewAll={viewAll}
