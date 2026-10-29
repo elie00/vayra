@@ -67,7 +67,7 @@ export function MobileHome({
     : t("Top 10");
 
   return (
-    <main className="flex-1 overflow-y-auto px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]">
+    <main className="flex-1 overflow-y-auto px-4 pt-[calc(6.5rem+var(--harbor-status-bar,1.75rem))]">
       <div className="flex flex-col gap-8 pt-2">
         <TmdbNudge suppress={nudgeSuppress} />
 
