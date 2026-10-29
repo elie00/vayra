@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Play, Plus } from "lucide-react";
 import { Poster } from "@/components/poster";
 import { PickCard } from "@/components/pick-card";
-import { Row } from "@/components/row";
+import { MOBILE_POSTER_MIN, Row } from "@/components/row";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
 import { useT } from "@/lib/i18n";
@@ -235,14 +235,14 @@ export function MobileDetail({
 
           {/* Related rails */}
           {recommendations.length > 0 && (
-            <Row title={t("More Like This")} min={112}>
+            <Row title={t("More Like This")} min={MOBILE_POSTER_MIN}>
               {recommendations.map((r) => (
                 <PickCard key={r.id} meta={r} />
               ))}
             </Row>
           )}
           {similar.length > 0 && (
-            <Row title={t("You Might Also Like")} min={112}>
+            <Row title={t("You Might Also Like")} min={MOBILE_POSTER_MIN}>
               {similar.map((r) => (
                 <PickCard key={`s-${r.id}`} meta={r} />
               ))}

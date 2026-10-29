@@ -3,7 +3,7 @@ import { Check, Play, Plus, X } from "lucide-react";
 import type { Slide } from "@/components/hero-carousel";
 import { PickCard } from "@/components/pick-card";
 import { TopRankCard } from "@/components/top-rank-card";
-import { Row } from "@/components/row";
+import { MOBILE_POSTER_MIN, Row } from "@/components/row";
 import { TmdbNudge } from "@/components/nudge";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
@@ -314,7 +314,7 @@ export function MobileRail({
   return (
     <Row
       title={t(row.name)}
-      min={112}
+      min={MOBILE_POSTER_MIN}
       scrollKey={`${scrollPrefix}:${row.key}`}
       onViewAll={viewAll}
       onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}

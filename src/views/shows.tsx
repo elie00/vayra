@@ -5,7 +5,7 @@ import { CatalogCustomizeBar } from "@/components/catalog/customize-bar";
 import { ContinueCard } from "@/components/continue-card";
 import { dismissCw, isCwDismissed, useCwDismissVersion } from "@/lib/cw-dismiss";
 import { PeekHero } from "@/components/peek-hero";
-import { Row, ScrollRootContext } from "@/components/row";
+import { MOBILE_POSTER_MIN, Row, ScrollRootContext } from "@/components/row";
 import { TmdbNudge } from "@/components/nudge";
 import { TopRankCard } from "@/components/top-rank-card";
 import { useAuth } from "@/lib/auth";
@@ -270,7 +270,7 @@ export function Shows({ active = true }: { active?: boolean }) {
               onPersist={pageRows.persist}
               scrollPrefix="shows:mobile"
               onLoadMore={loadMore}
-              min={112}
+              min={MOBILE_POSTER_MIN}
             />
             {!settings.tmdbKey && <TmdbNudge />}
           </div>

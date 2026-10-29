@@ -12,6 +12,7 @@ import {
 } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { isMobileTauri } from "@/lib/platform";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 
@@ -111,11 +112,14 @@ function Skeleton({ shape }: { shape: RowShape }) {
   );
 }
 
+/** Phone poster rails: three posters across, as in streaming apps. */
+export const MOBILE_POSTER_MIN = 100;
+
 export function Row({
   title,
   titleExtra,
   className = "",
-  min = 144,
+  min = isMobileTauri() ? MOBILE_POSTER_MIN : 144,
   shape = "portrait",
   scrollKey,
   arrowsAlways = false,

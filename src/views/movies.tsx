@@ -3,7 +3,7 @@ import { BackToTop } from "@/components/back-to-top";
 import { CatalogRows } from "@/components/catalog/catalog-rows";
 import { CatalogCustomizeBar } from "@/components/catalog/customize-bar";
 import { CinemaHero } from "@/components/cinema-hero";
-import { Row, ScrollRootContext } from "@/components/row";
+import { MOBILE_POSTER_MIN, Row, ScrollRootContext } from "@/components/row";
 import { TopRankCard } from "@/components/top-rank-card";
 import { PickCard } from "@/components/pick-card";
 import { TmdbNudge } from "@/components/nudge";
@@ -258,7 +258,7 @@ export function Movies({ active = true }: { active?: boolean }) {
               scrollPrefix="movies:mobile"
               onLoadMore={loadMore}
               flagRerunKeys={["coming-soon"]}
-              min={112}
+              min={MOBILE_POSTER_MIN}
             />
             {!settings.tmdbKey && <TmdbNudge />}
           </div>
