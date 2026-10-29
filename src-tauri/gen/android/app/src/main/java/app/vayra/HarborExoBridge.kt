@@ -373,6 +373,9 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         pendingSubSelectId = null
         abLoopA = -1.0
         abLoopB = -1.0
+        // A released player has no error: kept, the next player's first state
+        // reported it, and the page took a fresh start for a failed one.
+        lastError = null
         webView.setBackgroundColor(Color.BLACK)
         activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         stateJson = emptyState()
@@ -391,6 +394,7 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
 
     private fun ensurePlayer() {
         if (player != null) return
+        lastError = null
 
         val factory = DefaultHttpDataSource.Factory()
             .setUserAgent(defaultUserAgent)
