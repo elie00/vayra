@@ -112,8 +112,9 @@ function Skeleton({ shape }: { shape: RowShape }) {
   );
 }
 
-/** Phone poster rails: three posters across, as in streaming apps. */
-export const MOBILE_POSTER_MIN = 100;
+/** Phone poster rails: three posters across, as in streaming apps, down to a
+ *  384px-wide phone (Galaxy S24 Ultra) once the page and row insets are taken. */
+export const MOBILE_POSTER_MIN = 92;
 
 export function Row({
   title,
