@@ -16,8 +16,10 @@ export function useStubDetection(params: {
     if (!instantPlay) return;
     if (stubCheckedRef.current === src.url) return;
     if (src.meta.id?.startsWith("iptv:")) return;
-    // A file chosen from disk is never an addon's placeholder stub.
+    // A file chosen from disk, or a link the user pasted, is never an addon's
+    // placeholder stub; a direct link has no other source to fall back to anyway.
     if (isLocalUrl(src.url)) return;
+    if (src.meta.id?.startsWith("url:")) return;
     const metaType = String(src.meta.type ?? "").toLowerCase();
     if (metaType && !["movie", "series", "anime"].includes(metaType)) return;
     if (/\.m3u8(\?|#|$)/i.test(src.url)) return;
