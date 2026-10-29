@@ -228,7 +228,7 @@ export function MobileHeroRow({ slides }: { slides: Slide[] }) {
             <span
               key={i}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === active ? "w-6 bg-accent" : "w-1.5 bg-ink-muted/60"
+                i === active ? "w-6 bg-ink" : "w-1.5 bg-ink-muted/60"
               }`}
             />
           ))}

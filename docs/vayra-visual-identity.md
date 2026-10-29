@@ -16,26 +16,13 @@ high-chroma brand accent.
 Supporting surfaces stay neutral: `#111214` for surfaces, `#18191C` for
 elevated content, `#242529` for raised controls, and `#737579` for subtle text.
 
-## Mineral Night (phones)
+## Phones
 
-Since 29 October 2026 the Android app opens on **Mineral Night**, the mineral
-palette moved off neutral grey onto a deep night blue, with a champagne accent.
-It is the phone's reading of the `VAYRA default` theme (`MINERAL_NIGHT_TOKENS`
-in `src/lib/theme.ts`); every other theme, and the desktop default, are
-unchanged until the palette is approved for the Mac.
-
-| Role | Value | Usage |
-| --- | --- | --- |
-| Night canvas | `#0A0D14` | App canvas |
-| Night surfaces | `#10141D`, `#161B27`, `#1F2533` | Surfaces, elevated content, raised controls |
-| Ivory | `#F4F2ED` | Primary text and primary buttons |
-| Mist | `#ABB2C3` / `#707A90` | Secondary and subtle text |
-| Champagne | `#E2B977` | The mark in the header, the active tab, progress, carousel position |
-
-The page itself takes colour from the content: the current hero artwork is
-blurred into the top of the home under the header, as streaming apps do. The
-brand UI still uses no decorative gradient or neon; champagne stays an
-emphasis on a solid layer, never a wash.
+The Android app keeps Mineral Monochrome. A phone briefly tried a night-blue
+palette with a champagne accent (October 2026); it was withdrawn to keep one
+VAYRA identity across devices. What colours a phone's home is the content: the
+current hero artwork is blurred into the top of the page under the header, as
+streaming apps do, without any brand gradient.
 
 The interface type is Sentient (display) and Switzer (text), embedded through
 `pnpm setup:ui-fonts`. The Mac keeps the system font by default, so the phone's
