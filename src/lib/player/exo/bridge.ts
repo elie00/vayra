@@ -128,7 +128,9 @@ export function createExoBridge(): PlayerBridge {
     const fn = api?.[name];
     if (typeof fn !== "function") return "error:HarborExo." + String(name) + " unavailable";
     try {
-      return (arg === undefined ? (fn as () => string)() : (fn as (a: string) => string)(arg)) ?? "ok";
+      // Called on HarborExo itself: Android's Java bridge throws "can't be invoked
+      // on a non-injected object" for a method detached from it.
+      return (arg === undefined ? (fn as () => string).call(api) : (fn as (a: string) => string).call(api, arg)) ?? "ok";
     } catch (e) {
       return "error:" + (e instanceof Error ? e.message : String(e));
     }
