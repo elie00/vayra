@@ -45,7 +45,7 @@ export function MacNowPlayingBar() {
   const progress = state.durationSec > 0 ? Math.min(1, position / state.durationSec) : 0;
 
   return (
-    <div className="fixed inset-x-2 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[89] overflow-hidden rounded-2xl border border-edge-soft/60 bg-elevated/95 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl">
+    <div className="fixed inset-x-2 bottom-[calc(4.5rem+var(--vayra-safe-bottom))] z-[89] overflow-hidden rounded-2xl border border-edge-soft/60 bg-elevated/95 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl">
       <div className="flex items-center gap-1 p-2">
         <button
           type="button"
@@ -176,7 +176,7 @@ export function MacRemoteSheet() {
         <div aria-hidden className="flex shrink-0 justify-center pb-1 pt-3">
           <span className="h-1.5 w-11 rounded-full bg-ink-subtle/40" />
         </div>
-        <div className="flex flex-col gap-6 overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2">
+        <div className="flex flex-col gap-6 overflow-y-auto px-5 pb-[calc(1.5rem+var(--vayra-safe-bottom))] pt-2">
           <div className="flex items-center gap-4">
             {state.meta.poster && (
               <img src={state.meta.poster} alt="" className="aspect-[2/3] w-16 shrink-0 rounded-xl object-cover" />

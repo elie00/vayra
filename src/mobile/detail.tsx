@@ -121,7 +121,7 @@ export function MobileDetail({
 
   return (
     <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
-      <div className="pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+      <div className="pb-[calc(4.5rem+var(--vayra-safe-bottom))]">
         {/* Hero backdrop */}
         <div className="relative">
           <div className="relative aspect-[3/4] w-full overflow-hidden bg-elevated">

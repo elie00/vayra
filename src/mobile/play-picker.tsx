@@ -212,7 +212,7 @@ export function MobilePlayPicker({
         </header>
 
         {/* Scrollable sources */}
-        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-1">
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1.5rem+var(--vayra-safe-bottom))] pt-1">
           <div className="flex flex-col gap-4">
             {hostSource && <HostSourceBanner source={hostSource} />}
 

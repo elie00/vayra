@@ -2,6 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
+import { installAndroidInsets } from "@/lib/android-insets";
 import { isAndroidTauri, isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { ModalOverlayApp } from "@/views/modal-overlay-app";
 import { HdrOverlayApp } from "@/views/hdr-overlay-app";
@@ -66,6 +67,7 @@ if (!isPip && !isModal && !isHdrOverlay) {
         : isWindowsDesktop()
           ? "windows"
           : "web";
+  if (isAndroidTauri()) installAndroidInsets();
 }
 if (import.meta.env.DEV) console.log("[harbor] entry: pip =", isPip, "modal =", isModal, "hdr =", isHdrOverlay, "label =", (() => { try { return getCurrentWindow().label; } catch { return "?"; } })());
 if (import.meta.env.DEV && !isPip && !isModal && !isHdrOverlay) {

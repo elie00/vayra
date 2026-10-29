@@ -42,7 +42,7 @@ export function MetaPreviewSheet() {
         <div aria-hidden className="flex shrink-0 justify-center pb-1 pt-3">
           <span className="h-1.5 w-11 rounded-full bg-ink-subtle/40" />
         </div>
-        <div className="flex-1 overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2">
+        <div className="flex-1 overflow-y-auto px-5 pb-[calc(1.5rem+var(--vayra-safe-bottom))] pt-2">
           <div className="flex gap-4">
             {meta.poster && (
               <img src={meta.poster} alt="" className="aspect-[2/3] w-24 shrink-0 rounded-xl object-cover" />

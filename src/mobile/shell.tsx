@@ -69,7 +69,7 @@ export function MobileShell() {
         <nav
           data-vayra-tabbar
           aria-label={t("Primary")}
-          className="fixed inset-x-0 bottom-0 z-[90] flex items-stretch justify-around border-t border-edge-soft/60 bg-canvas/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
+          className="fixed inset-x-0 bottom-0 z-[90] flex items-stretch justify-around border-t border-edge-soft/60 bg-canvas/90 pb-[var(--vayra-safe-bottom)] backdrop-blur-xl"
         >
           {TABS.map((tab) => (
             <TabButton
@@ -151,7 +151,7 @@ function PlusScreen() {
       data-vayra-plus
       className="fixed inset-0 z-[80] isolate transform-gpu bg-canvas"
     >
-      <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+var(--vayra-safe-bottom))]">
         <ProfileChip menuPlacement="below" />
         <div className="mt-5 grid grid-cols-3 gap-3">
           {dests.map((d) => (

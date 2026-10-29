@@ -63,7 +63,7 @@ export function MobileSports({
   const chipLeagues = LEAGUES.filter((l) => selectedLeagues.includes(l.key));
 
   return (
-    <main className="flex-1 overflow-y-auto px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
+    <main className="flex-1 overflow-y-auto px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+var(--vayra-safe-bottom))]">
       <div className="flex flex-col gap-6 pt-2">
         {/* League chips (horizontal scroll) + customize gear (pinned) */}
         <div className="flex items-center gap-2">
