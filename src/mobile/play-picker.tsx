@@ -174,8 +174,9 @@ export function MobilePlayPicker({
 
       {/* Bottom sheet */}
       <section
+        data-dragging={drag > 0 ? "" : undefined}
         style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
-        className="absolute inset-x-0 bottom-0 top-[16vh] flex flex-col rounded-t-3xl bg-canvas ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
+        className="vayra-sheet absolute inset-x-0 bottom-0 top-[16vh] flex flex-col rounded-t-3xl bg-canvas ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >
         {/* Drag handle */}
         <div
@@ -212,7 +213,8 @@ export function MobilePlayPicker({
         </header>
 
         {/* Scrollable sources */}
-        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1.5rem+var(--vayra-safe-bottom))] pt-1">
+        {/* grow + basis-0 rather than flex-1, which the Android tab-bar padding rule targets. */}
+        <div className="min-h-0 grow basis-0 overflow-y-auto px-4 pb-[calc(1.5rem+var(--vayra-safe-bottom))] pt-1">
           <div className="flex flex-col gap-4">
             {hostSource && <HostSourceBanner source={hostSource} />}
 

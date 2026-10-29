@@ -112,7 +112,7 @@ export function MobileTogetherSheet() {
         type="button"
         aria-label={t("common.close")}
         onClick={closeModal}
-        className="absolute inset-0 bg-black/50"
+        className="vayra-scrim absolute inset-0 bg-black/50"
       />
 
       <section
@@ -120,8 +120,9 @@ export function MobileTogetherSheet() {
         role="dialog"
         aria-modal="true"
         aria-label={t("VARA")}
+        data-dragging={drag > 0 ? "" : undefined}
         style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
-        className="harbor-together-surface absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-3rem)] min-h-[55dvh] flex-col rounded-t-3xl ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
+        className="vayra-sheet harbor-together-surface absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-3rem)] min-h-[55dvh] flex-col rounded-t-3xl ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >
         {/* Drag handle */}
         <div

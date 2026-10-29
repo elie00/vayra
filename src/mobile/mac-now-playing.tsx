@@ -164,14 +164,15 @@ export function MacRemoteSheet() {
 
   return (
     <div className="fixed inset-0 z-[130]">
-      <button type="button" aria-label={t("common.close")} onClick={closeMacRemote} className="absolute inset-0 bg-black/55" />
+      <button type="button" aria-label={t("common.close")} onClick={closeMacRemote} className="vayra-scrim absolute inset-0 bg-black/55" />
       <section
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("Remote for {name}", { name: mac.name })}
+        data-dragging={drag > 0 ? "" : undefined}
         style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
-        className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-3xl bg-canvas ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
+        className="vayra-sheet absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-3xl bg-canvas ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >
         <div aria-hidden className="flex shrink-0 justify-center pb-1 pt-3">
           <span className="h-1.5 w-11 rounded-full bg-ink-subtle/40" />
