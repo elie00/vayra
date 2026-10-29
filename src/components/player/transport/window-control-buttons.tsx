@@ -1,11 +1,13 @@
 import { Copy, Minus, Square, X } from "lucide-react";
+import { hasDesktopFeatures } from "@/lib/platform";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export function WindowControlButtons({ t }: { t: (key: string) => string }) {
   const maxed = useMaximized();
-  if (!IS_TAURI) return null;
+  // A phone has no window to minimise, zoom or close: these sat on its status bar.
+  if (!IS_TAURI || !hasDesktopFeatures()) return null;
   return (
     <div className="pointer-events-auto flex items-center gap-1">
       <button
