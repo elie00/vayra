@@ -231,7 +231,8 @@ function InstallerViewport({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[240] flex flex-col bg-black/82 backdrop-blur-md">
+    // Clear of a phone's status bar and gesture handle (0 elsewhere).
+    <div className="fixed inset-0 z-[240] flex flex-col bg-black/82 pt-[var(--harbor-status-bar,0px)] pb-[var(--vayra-safe-bottom,0px)] backdrop-blur-md">
       <header
         data-tauri-drag-region
         className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-canvas/60 px-5 text-ink backdrop-blur-md"
@@ -269,15 +270,16 @@ function InstallerViewport({
                 transition: "transform 0.6s cubic-bezier(0.22,0.61,0.36,1)",
               }}
             />
-            {t("Reload")}
+            <span className="max-sm:sr-only">{t("Reload")}</span>
           </button>
           <button
             type="button"
             onClick={() => openUrl(url)}
+            aria-label={t("Open in browser")}
             className="flex h-9 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[12px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
           >
             <ExternalLink size={12} strokeWidth={2.4} />
-            {t("Open in browser")}
+            <span className="max-sm:sr-only">{t("Open in browser")}</span>
           </button>
           <button
             type="button"
@@ -368,7 +370,7 @@ function InstallerViewport({
             className="flex h-10 items-center gap-1.5 rounded-full border border-edge-soft px-3.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink disabled:opacity-40"
           >
             <ClipboardCopy size={13} strokeWidth={2.2} />
-            {t("From clipboard")}
+            <span className="max-sm:sr-only">{t("From clipboard")}</span>
           </button>
           <button
             type="submit"
