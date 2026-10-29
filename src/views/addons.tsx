@@ -4,7 +4,7 @@ import { AgeGateModal } from "@/components/age-gate-modal";
 import { HarborLoader } from "@/components/harbor-loader";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { isMobileTauri } from "@/lib/platform";
-import { MacAddonsImport } from "@/mobile/mac-addons-import";
+import { MobileAddons } from "@/mobile/addons";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -289,6 +289,87 @@ export function AddonsView() {
     );
   }
 
+  const overlays = (
+    <>
+      <Toaster toast={toast} />
+      {installModal && (
+        <AddonInstallModal
+          mode={installModal}
+          onClose={() => setInstallModal(null)}
+          onInstall={async (rawUrl, opts) => {
+            try {
+              const result = await installFromUrl(rawUrl, opts);
+              refetch();
+              showToast(
+                result.syncStatus === "failed" ? "error" : "ok",
+                addonInstallMessage(result, t),
+                {
+                  id: result.addon.manifest.id,
+                  name: result.addon.manifest.name,
+                  logo: result.addon.manifest.logo ?? null,
+                },
+              );
+              return result;
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : t("Install failed.");
+              showToast("error", msg);
+              return null;
+            }
+          }}
+        />
+      )}
+      {reorderOpen && (
+        <OrganizeAddonsPage
+          authKey={authKey}
+          onClose={() => setReorderOpen(false)}
+          onSaved={(scope) => {
+            setReorderOpen(false);
+            window.dispatchEvent(
+              new CustomEvent("vayra:addons-changed", { detail: { reordered: true } }),
+            );
+            showToast(
+              "ok",
+              scope === "cloud"
+                ? t("Addon order synced to your Stremio account")
+                : t("Addon order saved on this device"),
+            );
+          }}
+        />
+      )}
+    </>
+  );
+
+  const onManage = (r: ResolvedAddon) => {
+    const id = r.manifest?.id ?? r.curated?.id;
+    if (!id) return;
+    setInstallModal({
+      kind: "manage",
+      existing: {
+        id,
+        name: r.manifest?.name ?? id,
+        logo: r.manifest?.logo ?? null,
+        transportUrl: r.transportUrl,
+      },
+    });
+  };
+
+  if (isMobileTauri()) {
+    return (
+      <main className="relative flex h-full flex-col overflow-hidden">
+        <MobileAddons
+          allAddons={allAddons}
+          installed={installed}
+          loading={loading}
+          onOpen={openAddonDetail}
+          onInstall={onInstall}
+          onInstallUrl={onInstallUrl}
+          onManage={onManage}
+        />
+        {overlays}
+      </main>
+    );
+  }
+
   return (
     <main className="relative flex h-full flex-col overflow-hidden">
       {tab === "discover" && <AddonsMosaicBackdrop />}
@@ -463,12 +544,6 @@ export function AddonsView() {
         )}
       </header>
 
-      {isMobileTauri() && (
-        <div className="shrink-0 px-4 pt-3">
-          <MacAddonsImport />
-        </div>
-      )}
-
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 pb-20 pt-6">
         {loading && allAddons.length === 0 ? (
           <div className="flex h-full items-center justify-center py-24">
@@ -503,67 +578,11 @@ export function AddonsView() {
             onOpen={openAddonDetail}
             onUninstall={onUninstall}
             onReorder={() => setReorderOpen(true)}
-            onManage={(r) => {
-              const id = r.manifest?.id ?? r.curated?.id;
-              if (!id) return;
-              setInstallModal({
-                kind: "manage",
-                existing: {
-                  id,
-                  name: r.manifest?.name ?? id,
-                  logo: r.manifest?.logo ?? null,
-                  transportUrl: r.transportUrl,
-                },
-              });
-            }}
+            onManage={onManage}
           />
         )}
       </div>
-      <Toaster toast={toast} />
-      {installModal && (
-        <AddonInstallModal
-          mode={installModal}
-          onClose={() => setInstallModal(null)}
-          onInstall={async (rawUrl, opts) => {
-            try {
-              const result = await installFromUrl(rawUrl, opts);
-              refetch();
-              showToast(
-                result.syncStatus === "failed" ? "error" : "ok",
-                addonInstallMessage(result, t),
-                {
-                  id: result.addon.manifest.id,
-                  name: result.addon.manifest.name,
-                  logo: result.addon.manifest.logo ?? null,
-                },
-              );
-              return result;
-            } catch (e) {
-              const msg = e instanceof Error ? e.message : t("Install failed.");
-              showToast("error", msg);
-              return null;
-            }
-          }}
-        />
-      )}
-      {reorderOpen && (
-        <OrganizeAddonsPage
-          authKey={authKey}
-          onClose={() => setReorderOpen(false)}
-          onSaved={(scope) => {
-            setReorderOpen(false);
-            window.dispatchEvent(
-              new CustomEvent("vayra:addons-changed", { detail: { reordered: true } }),
-            );
-            showToast(
-              "ok",
-              scope === "cloud"
-                ? t("Addon order synced to your Stremio account")
-                : t("Addon order saved on this device"),
-            );
-          }}
-        />
-      )}
+      {overlays}
     </main>
   );
 }
