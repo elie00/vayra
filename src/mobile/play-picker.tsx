@@ -1,67 +1,25 @@
-import { useRef, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
-import { HostSourceBanner } from "@/components/host-source-banner";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { Download, Loader2, Play, RefreshCw } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
-import type { Addon } from "@/lib/addons";
+import { getUiLanguage, useT } from "@/lib/i18n";
 import type { ScoredStream } from "@/lib/streams/types";
-import type { SourceDescriptor } from "@/lib/together/protocol";
-import { useT } from "@/lib/i18n";
 import type { PlayEpisode } from "@/lib/view";
 import { BackdropLayer } from "@/views/play-picker/backdrop-layer";
-import { CinematicLoader } from "@/views/play-picker/cinematic-loader";
-import { PickerEmptyLadder } from "@/views/play-picker/picker-empty-ladder";
-import { StremioLayout } from "@/views/play-picker/stremio-layout";
-import type { usePipelineResult } from "@/views/play-picker/use-pipeline-result";
+import { QUALITY_ORDER, sourceFacts, sourceFeatures, sourceQuality, type SourceQuality } from "./source-summary";
 
-type PipelineResult = ReturnType<typeof usePipelineResult>["result"];
+// The phone's source picker, as a sheet: the best source first with one Play
+// button, quality filters, then the other sources in plain words — quality,
+// picture and sound, size, cached or peers, addon — instead of release names.
+// Rendered from PlayPicker, which keeps the pipeline, auto-play, the pick
+// handler and every modal; this only shows what it computed.
 
-// Mobile-first play picker (Apple pulled-up SHEET). Rendered from `PlayPicker`
-// in src/views/play-picker.tsx when isMobileTauri(), right before its main
-// desktop return — the auto-play flow, pick handler and every error/option modal
-// stay as early returns in PlayPicker (they are already fixed-inset centered
-// cards that fit mobile), so this component only re-skins the main "browse
-// sources" screen as a bottom sheet. Every value below is computed in PlayPicker
-// and passed through; no pick logic is re-implemented here.
-//
-// Usage (inside PlayPicker, right before the desktop return):
-//   if (isMobileTauri())
-//     return (
-//       <MobilePlayPicker
-//         meta={meta}
-//         episode={episode}
-//         onBack={backToDetail}
-//         onRefresh={refresh}
-//         refreshing={loading}
-//         backdropSrc={backdropSrc}
-//         addonsSettled={addonsSettled}
-//         hasStreams={!!filteredPicker && filteredPicker.all.length > 0}
-//         streams={displayStreams}
-//         addons={addons}
-//         pipelineDone={pipelineDone}
-//         loadingAddonCount={Math.max(0, (addons?.length ?? 0) - addonCount)}
-//         failedStreams={failedStreams}
-//         preserveOrder={addonOrderMode || !!hostMatch}
-//         matchFor={hostMatch ? matchFor : undefined}
-//         onPlay={playManually}
-//         hostSource={hostSourceForMedia}
-//         isDownload={isDownload}
-//         stubBanner={stubBanner}
-//         resolveError={resolveError}
-//         engineWarming={engineWarming}
-//         result={result}
-//         streamIds={streamIds}
-//         debridCount={debrids.length}
-//         addonCount={addonCount}
-//         allCount={allCount}
-//         rawCount={rawCount}
-//         strictMode={strictMode}
-//         forceShowAll={forceShowAll}
-//         onOpenLibrarySettings={() => openSettings("library")}
-//         onOpenStreamingSettings={() => openSettings("streaming")}
-//         onShowAll={() => setForceShowAll(true)}
-//         onSearchWider={() => { if (strictMode) setStrictMode(false); else setForceShowAll(true); }}
-//       />
-//     );
+type Filters = {
+  cachedOnly: boolean;
+  onToggleCached?: () => void;
+  langOn: boolean;
+  onToggleLang?: () => void;
+};
+
 export function MobilePlayPicker({
   meta,
   episode,
@@ -69,33 +27,19 @@ export function MobilePlayPicker({
   onRefresh,
   refreshing,
   backdropSrc,
-  addonsSettled,
-  hasStreams,
+  best,
   streams,
-  addons,
-  pipelineDone,
-  loadingAddonCount,
+  searching,
+  stillSearching,
   failedStreams,
-  preserveOrder,
-  matchFor,
+  resolving,
   onPlay,
-  hostSource,
   isDownload,
-  stubBanner,
+  notices,
+  empty,
   resolveError,
   engineWarming,
-  result,
-  streamIds,
-  debridCount,
-  addonCount,
-  allCount,
-  rawCount,
-  strictMode,
-  forceShowAll,
-  onOpenLibrarySettings,
-  onOpenStreamingSettings,
-  onShowAll,
-  onSearchWider,
+  filters,
 }: {
   meta: Meta;
   episode?: PlayEpisode;
@@ -103,180 +47,267 @@ export function MobilePlayPicker({
   onRefresh: () => void;
   refreshing: boolean;
   backdropSrc?: string;
-  addonsSettled: boolean;
-  hasStreams: boolean;
+  best: ScoredStream | null;
   streams: ScoredStream[];
-  addons: Addon[] | null;
-  pipelineDone: boolean;
-  loadingAddonCount: number;
+  /** Nothing found yet and the pipeline is still running. */
+  searching: boolean;
+  /** Addons that have not answered yet. */
+  stillSearching: number;
   failedStreams: Map<ScoredStream, string>;
-  preserveOrder: boolean;
-  matchFor?: (s: ScoredStream) => "same" | "close" | null;
+  resolving: ScoredStream | null;
   onPlay: (stream: ScoredStream) => void;
-  hostSource: SourceDescriptor | null;
   isDownload: boolean;
-  stubBanner: string | null;
+  notices: ReactNode;
+  empty: ReactNode;
   resolveError: string | null;
   engineWarming: boolean;
-  result: PipelineResult;
-  streamIds: string[] | null;
-  debridCount: number;
-  addonCount: number;
-  allCount: number;
-  rawCount: number;
-  strictMode: boolean;
-  forceShowAll: boolean;
-  onOpenLibrarySettings: () => void;
-  onOpenStreamingSettings: () => void;
-  onShowAll: () => void;
-  onSearchWider: () => void;
+  filters: Filters;
 }) {
   const t = useT();
-  const title = episode
-    ? episode.name || t("Episode {n}", { n: episode.episode })
-    : meta.name;
-  const subtitle = episode
-    ? `${meta.name} · S${episode.imdbSeason ?? episode.season}E${String(
-        episode.imdbEpisode ?? episode.episode,
-      ).padStart(2, "0")}`
+  const locale = getUiLanguage();
+  const [quality, setQuality] = useState<SourceQuality | "all">("all");
+  const title = episode ? episode.name || t("Episode {n}", { n: episode.episode }) : meta.name;
+  const eyebrow = episode
+    ? `${meta.name} · S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
     : meta.releaseInfo || "";
 
-  // Drag-down-to-close on the sheet handle.
-  const [drag, setDrag] = useState(0);
-  const startY = useRef<number | null>(null);
-  const onPointerDown = (e: React.PointerEvent) => {
-    startY.current = e.clientY;
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (startY.current == null) return;
-    setDrag(Math.max(0, e.clientY - startY.current));
-  };
-  const onPointerUp = () => {
-    if (drag > 90) onBack();
-    startY.current = null;
-    setDrag(0);
-  };
-
-  const showLoader = !addonsSettled && !hasStreams;
+  const counts = useMemo(() => {
+    const out = new Map<SourceQuality, number>();
+    for (const s of streams) out.set(sourceQuality(s), (out.get(sourceQuality(s)) ?? 0) + 1);
+    return out;
+  }, [streams]);
+  const shown = streams.filter((s) => (quality === "all" ? s !== best : sourceQuality(s) === quality));
+  const drag = useHandleDrag(onBack);
+  const bestFailure = best ? failedStreams.get(best) : undefined;
 
   return (
     <main className="absolute inset-0 z-50 overflow-hidden bg-black/40">
       <BackdropLayer src={backdropSrc} />
+      <button type="button" aria-label={t("common.back")} onClick={onBack} className="absolute inset-x-0 top-0 h-[12vh] w-full" />
 
-      {/* Exposed backdrop area — tap to dismiss. */}
-      <button
-        type="button"
-        aria-label={t("common.back")}
-        onClick={onBack}
-        className="absolute inset-x-0 top-0 h-[18vh] w-full"
-      />
-
-      {/* Bottom sheet */}
       <section
-        data-dragging={drag > 0 ? "" : undefined}
-        style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
-        className="vayra-sheet absolute inset-x-0 bottom-0 top-[16vh] flex flex-col rounded-t-3xl bg-canvas ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
+        data-dragging={drag.offset > 0 ? "" : undefined}
+        style={drag.offset > 0 ? { transform: `translateY(${drag.offset}px)` } : undefined}
+        className="vayra-sheet absolute inset-x-0 bottom-0 top-[10vh] flex flex-col rounded-t-[1.75rem] bg-canvas shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgb(255_255_255/0.06)]"
       >
-        {/* Drag handle */}
-        <div
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          className="flex shrink-0 cursor-grab touch-none justify-center pb-1 pt-3 active:cursor-grabbing"
-        >
-          <span className="h-1.5 w-11 rounded-full bg-ink-subtle/40" />
+        <div {...drag.handlers} className="flex shrink-0 touch-none justify-center pb-1 pt-2.5">
+          <span className="h-1 w-10 rounded-full bg-ink-subtle/40" />
         </div>
 
-        {/* Header */}
-        <header className="flex shrink-0 items-start justify-between gap-3 px-4 pb-3 pt-1">
-          <div className="min-w-0">
-            {subtitle && (
-              <p className="truncate type-micro font-semibold uppercase tracking-[0.22em] text-ink-subtle">
-                {subtitle}
-              </p>
-            )}
-            <h1 className="truncate type-title-2 font-semibold leading-tight tracking-tight text-ink">
-              {title}
-            </h1>
+        <header className="flex shrink-0 items-start gap-3 px-4 pb-3 pt-1">
+          <div className="min-w-0 flex-1">
+            {eyebrow && <p className="truncate type-caption font-semibold uppercase tracking-[0.18em] text-ink-subtle">{eyebrow}</p>}
+            <h1 className="truncate type-title-2 font-semibold text-ink" dir="auto">{title}</h1>
           </div>
           <button
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
             aria-label={t("Refresh sources")}
-            className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-edge-soft bg-elevated/70 ps-3 pe-4 type-footnote font-semibold text-ink-muted transition-colors active:bg-elevated disabled:opacity-60"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated text-ink-muted transition-transform active:scale-95 disabled:opacity-60"
           >
-            <RefreshCw size={15} strokeWidth={2.4} className={refreshing ? "animate-spin" : ""} />
-            {t("Refresh")}
+            <RefreshCw size={17} strokeWidth={2.2} className={refreshing ? "animate-spin" : ""} />
           </button>
         </header>
 
-        {/* Scrollable sources */}
         {/* grow + basis-0 rather than flex-1, which the Android tab-bar padding rule targets. */}
-        <div className="min-h-0 grow basis-0 overflow-y-auto px-4 pb-[calc(1.5rem+var(--vayra-safe-bottom))] pt-1">
+        <div className="min-h-0 grow basis-0 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+var(--vayra-safe-bottom))]">
           <div className="flex flex-col gap-4">
-            {hostSource && <HostSourceBanner source={hostSource} />}
+            {notices}
 
-            {isDownload && (
-              <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-4 py-3 type-footnote text-ink-muted">
-                {t("Choose a source to save offline. You can track progress on the Downloads page.")}
+            {searching && <Searching />}
+
+            {best && (
+              <section className="flex flex-col gap-3 rounded-2xl bg-elevated p-4 ring-1 ring-edge-soft/50">
+                <p className="type-caption font-semibold uppercase tracking-[0.18em] text-ink-subtle">{t("Best source")}</p>
+                <div className="flex items-center gap-3">
+                  <QualityBadge quality={sourceQuality(best)} large />
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 type-title-3 font-semibold text-ink">{headline(best, t, locale).join(" · ")}</p>
+                    <p className="truncate type-footnote text-ink-muted">{sourceFacts(best, t, locale).join(" · ")}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onPlay(best)}
+                  disabled={resolving === best}
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-ink type-callout font-semibold text-canvas transition-transform active:scale-[0.98] disabled:opacity-70"
+                >
+                  {resolving === best ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : isDownload ? (
+                    <Download size={18} strokeWidth={2.2} />
+                  ) : (
+                    <Play size={18} fill="currentColor" />
+                  )}
+                  {isDownload ? t("Download") : t("Play")}
+                </button>
+                {bestFailure && <p className="type-caption text-danger">{t("Didn't play: {reason}", { reason: bestFailure })}</p>}
+              </section>
+            )}
+
+            {streams.length > 1 && (
+              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <Chip on={quality === "all"} onClick={() => setQuality("all")} label={t("All")} count={streams.length} />
+                {QUALITY_ORDER.filter((q) => counts.get(q)).map((q) => (
+                  <Chip key={q} on={quality === q} onClick={() => setQuality(q)} label={q} count={counts.get(q)} />
+                ))}
+                {filters.onToggleCached && <Chip on={filters.cachedOnly} onClick={filters.onToggleCached} label={t("Cached only")} />}
+                {filters.onToggleLang && <Chip on={filters.langOn} onClick={filters.onToggleLang} label={t("My languages")} />}
               </div>
             )}
 
-            {stubBanner && (
-              <div className="rounded-2xl border border-info/30 bg-info/10 px-4 py-3 type-footnote text-info">
-                {stubBanner}
-              </div>
+            {shown.length > 0 && (
+              <section className="flex flex-col gap-2">
+                {quality === "all" && <h2 className="type-title-3 font-semibold text-ink">{t("Other sources")}</h2>}
+                <div className="flex flex-col divide-y divide-white/6 overflow-hidden rounded-2xl bg-elevated">
+                  {shown.map((s, i) => (
+                    <SourceRow
+                      key={`${s.url ?? s.infoHash ?? ""}-${i}`}
+                      stream={s}
+                      failure={failedStreams.get(s) ?? null}
+                      resolving={resolving === s}
+                      onPlay={() => onPlay(s)}
+                      locale={locale}
+                    />
+                  ))}
+                </div>
+              </section>
             )}
 
-            {showLoader && <CinematicLoader meta={meta} />}
-
-            <PickerEmptyLadder
-              meta={meta}
-              result={result}
-              addonsSettled={addonsSettled}
-              pipelineDone={pipelineDone}
-              streamIds={streamIds}
-              debridCount={debridCount}
-              addonCount={addonCount}
-              allCount={allCount}
-              rawCount={rawCount}
-              strictMode={strictMode}
-              forceShowAll={forceShowAll}
-              onOpenLibrarySettings={onOpenLibrarySettings}
-              onOpenStreamingSettings={onOpenStreamingSettings}
-              onShowAll={onShowAll}
-              onSearchWider={onSearchWider}
-            />
-
-            {hasStreams && (
-              <StremioLayout
-                streams={streams}
-                addons={addons}
-                pipelineDone={pipelineDone}
-                loadingAddonCount={loadingAddonCount}
-                failedStreams={failedStreams}
-                preserveOrder={preserveOrder}
-                matchFor={matchFor}
-                onPlay={onPlay}
-              />
+            {stillSearching > 0 && streams.length > 0 && (
+              <p className="flex items-center gap-2 type-footnote text-ink-subtle">
+                <Loader2 size={14} className="animate-spin" />
+                {t("Still asking {n} addons…", { n: stillSearching })}
+              </p>
             )}
 
-            {resolveError && engineWarming && (
-              <div className="flex items-center gap-3 rounded-2xl border border-edge-soft/60 bg-elevated/40 px-4 py-3.5 type-footnote text-ink-muted">
-                <Loader2 size={16} className="shrink-0 animate-spin text-ink-subtle" />
-                <span>{resolveError}</span>
-              </div>
-            )}
-            {resolveError && !engineWarming && (
-              <div className="rounded-2xl border border-danger/30 bg-danger/15 px-4 py-3.5 type-footnote text-ink">
+            {empty}
+
+            {resolveError && (
+              <p
+                role="alert"
+                className={`flex items-center gap-2.5 rounded-2xl px-4 py-3 type-footnote ${engineWarming ? "bg-elevated text-ink-muted" : "bg-danger/15 text-ink"}`}
+              >
+                {engineWarming && <Loader2 size={15} className="shrink-0 animate-spin" />}
                 {resolveError}
-              </div>
+              </p>
             )}
           </div>
         </div>
       </section>
     </main>
   );
+}
+
+type T = ReturnType<typeof useT>;
+
+/** Release kind (WEB-DL, BluRay…) then picture, sound and languages. */
+function headline(s: ScoredStream, t: T, locale: string): string[] {
+  const kind = s.source && s.source !== "Other" ? [s.source] : [];
+  const parts = [...kind, ...sourceFeatures(s, t, locale)];
+  return parts.length > 0 ? parts : [t("Standard")];
+}
+
+function SourceRow({
+  stream,
+  failure,
+  resolving,
+  onPlay,
+  locale,
+}: {
+  stream: ScoredStream;
+  failure: string | null;
+  resolving: boolean;
+  onPlay: () => void;
+  locale: string;
+}) {
+  const t = useT();
+  return (
+    <button
+      type="button"
+      onClick={onPlay}
+      disabled={resolving}
+      className={`flex w-full items-center gap-3 px-3 py-3 text-start transition-colors active:bg-raised/70 ${failure ? "bg-danger/5" : ""}`}
+    >
+      <QualityBadge quality={sourceQuality(stream)} />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate type-callout font-semibold text-ink">{headline(stream, t, locale).join(" · ")}</span>
+        <span className="truncate type-footnote text-ink-subtle">{sourceFacts(stream, t, locale).join(" · ")}</span>
+        {failure && <span className="type-caption text-danger">{t("Didn't play: {reason}", { reason: failure })}</span>}
+      </span>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink/20 text-ink">
+        {resolving ? <Loader2 size={15} className="animate-spin" /> : <Play size={14} fill="currentColor" className="ms-0.5" />}
+      </span>
+    </button>
+  );
+}
+
+function QualityBadge({ quality, large = false }: { quality: SourceQuality; large?: boolean }) {
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center rounded-lg font-bold tracking-tight ${
+        large ? "h-12 w-14 bg-ink type-callout text-canvas" : "h-10 w-12 bg-raised type-footnote text-ink"
+      }`}
+    >
+      {quality}
+    </span>
+  );
+}
+
+function Chip({ on, onClick, label, count }: { on: boolean; onClick: () => void; label: string; count?: number }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 type-footnote font-semibold transition-colors active:scale-95 ${
+        on ? "bg-ink text-canvas" : "border border-ink/20 text-ink"
+      }`}
+    >
+      {label}
+      {count != null && <span className="tabular-nums opacity-60">{count}</span>}
+    </button>
+  );
+}
+
+function Searching() {
+  const t = useT();
+  return (
+    <div className="flex flex-col gap-3" role="status">
+      <p className="flex items-center gap-2 type-footnote text-ink-muted">
+        <Loader2 size={15} className="animate-spin" />
+        {t("Looking for sources…")}
+      </p>
+      {[0, 1, 2].map((i) => (
+        <span key={i} className="h-16 animate-pulse rounded-2xl bg-elevated" />
+      ))}
+    </div>
+  );
+}
+
+// Pull the handle down to close: a long pull or a flick, like the other sheets.
+function useHandleDrag(onClose: () => void) {
+  const [offset, setOffset] = useState(0);
+  const start = useRef<{ y: number; at: number } | null>(null);
+  return {
+    offset,
+    handlers: {
+      onPointerDown: (e: React.PointerEvent) => {
+        start.current = { y: e.clientY, at: e.timeStamp };
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      },
+      onPointerMove: (e: React.PointerEvent) => {
+        if (start.current) setOffset(Math.max(0, e.clientY - start.current.y));
+      },
+      onPointerUp: (e: React.PointerEvent) => {
+        const s = start.current;
+        start.current = null;
+        const pulled = s ? e.clientY - s.y : 0;
+        const flick = s ? pulled / Math.max(1, e.timeStamp - s.at) > 0.4 : false;
+        setOffset(0);
+        if (pulled > 90 || (pulled > 8 && flick)) onClose();
+      },
+    },
+  };
 }
