@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { isMobileTauri } from "@/lib/platform";
 import { getSeekHovering, subscribeSeekHovering } from "@/lib/player/playback-clock";
 import { CHROME_HIDE_MS_PAUSED, CHROME_HIDE_MS_PLAYING, CHROME_HIDE_MS_RESUME } from "../player-utils";
 
@@ -43,6 +44,23 @@ export function useChromeVisibility(params: {
     }, wait);
   }, [playing, drawMode, pipMode, setChromeHidden]);
 
+  const hideChrome = useCallback(() => {
+    if (hideTimer.current) window.clearTimeout(hideTimer.current);
+    setChromeVisible(false);
+    setChromeHidden(true);
+  }, [setChromeHidden]);
+
+  // A phone tap toggles the controls; the touch itself wakes them first, so the
+  // toggle reads what was on screen when the finger landed.
+  const visibleAtTapRef = useRef(false);
+  const tapStart = useCallback(() => {
+    visibleAtTapRef.current = chromeVisibleRef.current;
+  }, []);
+  const tapEnd = useCallback(() => {
+    if (visibleAtTapRef.current) hideChrome();
+    else wakeChrome();
+  }, [hideChrome, wakeChrome]);
+
   const hideForResume = useCallback(() => {
     resumeHideRef.current = true;
   }, []);
@@ -67,7 +85,9 @@ export function useChromeVisibility(params: {
     const onKeyDown = () => {
       lastInputKeyboardRef.current = true;
     };
-    window.addEventListener("mousemove", onMove);
+    // Phones have no hover; the mouse moves a tap synthesises would undo its toggle.
+    const hover = !isMobileTauri();
+    if (hover) window.addEventListener("mousemove", onMove);
     window.addEventListener("touchstart", onMove);
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
@@ -157,6 +177,9 @@ export function useChromeVisibility(params: {
   return {
     chromeVisible,
     wakeChrome,
+    hideChrome,
+    tapStart,
+    tapEnd,
     hideForResume,
     anyMenuOpen,
     setAnyMenuOpen,

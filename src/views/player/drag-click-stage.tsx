@@ -6,11 +6,23 @@ export function DragClickStage(props: {
   onClick: () => void;
   onDoubleClick: () => void;
   onWheelVolume?: (deltaY: number) => void;
+  /** Phones: a tap shows or hides the controls instead of the click's play/pause. */
+  touchTap?: { start: () => void; end: () => void };
 }) {
-  const { drawMode, pipMode, onClick, onDoubleClick, onWheelVolume } = props;
+  const { drawMode, pipMode, onClick, onDoubleClick, onWheelVolume, touchTap } = props;
+  const onTouchTap = touchTap?.end;
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-[3]"
+      onPointerDown={(e) => {
+        if (!touchTap || e.pointerType !== "touch" || e.target !== e.currentTarget) return;
+        touchTap.start();
+      }}
+      onPointerUp={(e) => {
+        if (!onTouchTap || e.pointerType !== "touch" || e.target !== e.currentTarget) return;
+        if (drawMode || pipMode) return;
+        onTouchTap();
+      }}
       onWheel={(e) => {
         if (drawMode || pipMode) return;
         if (e.ctrlKey || e.metaKey) return;
@@ -19,6 +31,8 @@ export function DragClickStage(props: {
       onMouseDown={(e) => {
         if (e.target !== e.currentTarget) return;
         if (drawMode || pipMode) return;
+        // The mouse events a tap synthesises would play/pause on top of onTouchTap.
+        if (onTouchTap) return;
         if (e.button !== 0) return;
         const startX = e.clientX;
         const startY = e.clientY;
@@ -53,6 +67,7 @@ export function DragClickStage(props: {
       onDoubleClick={(e) => {
         if (e.target !== e.currentTarget) return;
         if (drawMode || pipMode) return;
+        if (onTouchTap) return;
         onDoubleClick();
       }}
     />

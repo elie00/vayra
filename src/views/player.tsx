@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveChromeTheme } from "@/lib/theme";
 import { useActiveKid } from "@/lib/profiles";
+import { isMobileTauri } from "@/lib/platform";
 import { type PlayerBridge } from "@/lib/player/bridge";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
@@ -266,7 +267,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     sendDraw,
   });
 
-  const { chromeVisible, wakeChrome, hideForResume, setAnyMenuOpen, cursorStyle } = useChromeVisibility({
+  const { chromeVisible, wakeChrome, tapStart, tapEnd, hideForResume, setAnyMenuOpen, cursorStyle } = useChromeVisibility({
     playing,
     drawMode,
     pipMode,
@@ -971,6 +972,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     togglePipMode,
     setDrawMode,
     wakeChrome,
+    // A phone has no hover: a tap on the picture toggles the controls, not playback.
+    touchTap: isMobileTauri() ? { start: tapStart, end: tapEnd } : undefined,
     setHideOthersDrawings,
     canPickAnother: !liveOverlay.isLive || !inRoom || isHost,
     resolvedImdbId,
@@ -1048,8 +1051,9 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       dir="ltr"
       className={`fixed inset-0 z-[100] overflow-hidden ${stageBg}`}
       style={cursorStyle}
-      onMouseMove={wakeChrome}
-      onMouseEnter={wakeChrome}
+      // A tap synthesises mouse moves, which would bring back controls the tap just hid.
+      onMouseMove={isMobileTauri() ? undefined : wakeChrome}
+      onMouseEnter={isMobileTauri() ? undefined : wakeChrome}
     >
       <div
         ref={videoMountRef}
