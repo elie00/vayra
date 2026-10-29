@@ -456,15 +456,18 @@ export function Row({
     }
   };
 
+  // The 9px start inset leaves room for the desktop focus ring; on a phone it
+  // pushed rails off the page's 16px gutters, so they sat off-centre.
+  const mobile = isMobileTauri();
   return (
-    <div className={`flex min-w-0 flex-col gap-5 ps-[9px] ${className}`}>
+    <div className={`flex min-w-0 flex-col ${mobile ? "gap-3" : "gap-5 ps-[9px]"} ${className}`}>
       {(title || onViewAll || headerRight) && (
         <div className="flex items-baseline justify-between gap-4 pe-1">
           {title && (
             <div className="flex min-w-0 items-center gap-2">
               <h3
                 className={`truncate font-medium tracking-tight ${titleClassName}`}
-                style={{ fontSize: `${Math.round(17 * settings.rowTitleScale * titleScale)}px` }}
+                style={{ fontSize: `${Math.round((mobile ? 18 : 17) * settings.rowTitleScale * titleScale)}px` }}
               >
                 {title}
               </h3>
