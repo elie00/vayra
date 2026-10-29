@@ -45,7 +45,7 @@ export function MobileHeader({ search = true, raised = false }: { search?: boole
           aria-label={t("chrome.harborHome")}
           className="me-auto flex items-center gap-2 text-ink"
         >
-          <HarborMark className="h-6 w-6 shrink-0 text-accent" />
+          <HarborMark className="h-6 w-6 shrink-0" />
           {/* The Mac sets its wordmark in the system sans (San Francisco); Switzer is its match here. */}
           <span className="font-sans text-[22px] font-medium leading-none tracking-tight">VAYRA</span>
         </button>
@@ -71,7 +71,7 @@ export function MobileHeader({ search = true, raised = false }: { search?: boole
               type="button"
               onClick={() => setView("home")}
               aria-label={t("Clear filter")}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-edge text-ink transition-transform active:scale-95"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink/25 text-ink transition-transform active:scale-95"
             >
               <X size={16} strokeWidth={2.2} />
             </button>
@@ -85,7 +85,7 @@ export function MobileHeader({ search = true, raised = false }: { search?: boole
                 onClick={() => setView(f.view)}
                 aria-current={on ? "page" : undefined}
                 className={`flex h-9 shrink-0 items-center rounded-full px-4 text-[14px] font-medium transition-[background-color,color,transform] active:scale-95 ${
-                  on ? "bg-ink text-canvas" : "border border-edge text-ink"
+                  on ? "bg-ink text-canvas" : "border border-ink/25 text-ink"
                 }`}
               >
                 {t(f.label)}
