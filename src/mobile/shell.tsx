@@ -57,6 +57,8 @@ export function MobileShell() {
   const open = usePlusOpen();
   // The tab bar shows everywhere except the fullscreen playback contexts.
   const hidden = !!player || topKind === "picker";
+  const tabCount = TABS.length + 1;
+  const activeIndex = open ? TABS.length : TABS.findIndex((tab) => tab.view === topKind);
 
   return (
     <>
@@ -68,26 +70,40 @@ export function MobileShell() {
         <nav
           data-vayra-tabbar
           aria-label={t("Primary")}
-          className="fixed inset-x-0 bottom-0 z-[90] flex items-stretch justify-around border-t border-edge-soft/60 bg-canvas/90 pb-[var(--vayra-safe-bottom)] backdrop-blur-xl"
+          className="vayra-tabbar fixed inset-x-0 bottom-0 z-[90] pb-[var(--vayra-safe-bottom)]"
         >
-          {TABS.map((tab) => (
-            <TabButton
-              key={tab.view}
-              label={tab.label}
-              active={!open && topKind === tab.view}
-              icon={<tab.Icon active={!open && topKind === tab.view} />}
-              onClick={() => {
-                setPlusOpen(false);
-                setView(tab.view);
+          <div className="relative flex items-stretch">
+            {/* One indicator slides between the tabs instead of each tab lighting up. */}
+            <span
+              aria-hidden
+              className="vayra-tab-indicator pointer-events-none absolute inset-y-0 start-0 flex justify-center"
+              style={{
+                width: `${100 / tabCount}%`,
+                transform: `translateX(${Math.max(0, activeIndex) * 100}%)`,
+                opacity: activeIndex < 0 ? 0 : 1,
               }}
+            >
+              <span className="h-[3px] w-7 rounded-b-full bg-accent" />
+            </span>
+            {TABS.map((tab, i) => (
+              <TabButton
+                key={tab.view}
+                label={tab.label}
+                active={activeIndex === i}
+                icon={<tab.Icon active={activeIndex === i} />}
+                onClick={() => {
+                  setPlusOpen(false);
+                  setView(tab.view);
+                }}
+              />
+            ))}
+            <TabButton
+              label="More"
+              active={open}
+              icon={<LayoutGrid size={24} strokeWidth={open ? 2.4 : 1.9} />}
+              onClick={() => setPlusOpen(!open)}
             />
-          ))}
-          <TabButton
-            label="More"
-            active={open}
-            icon={<LayoutGrid size={24} strokeWidth={open ? 2.4 : 1.9} />}
-            onClick={() => setPlusOpen(!open)}
-          />
+          </div>
         </nav>
       )}
     </>
@@ -111,12 +127,12 @@ function TabButton({
       type="button"
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 transition-colors ${
-        active ? "text-accent" : "text-ink-subtle hover:text-ink-muted"
+      className={`group flex h-16 flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 ${
+        active ? "text-ink" : "text-ink-subtle"
       }`}
     >
-      {icon}
-      <span className="text-[10.5px] font-medium leading-none">{t(label)}</span>
+      <span className="transition-transform duration-150 ease-out group-active:scale-90">{icon}</span>
+      <span className={`text-[10.5px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{t(label)}</span>
     </button>
   );
 }

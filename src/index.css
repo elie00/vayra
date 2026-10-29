@@ -1460,6 +1460,34 @@ html[data-os="android"] {
 html[data-os="android"] .flex-1.overflow-y-auto {
   padding-bottom: var(--harbor-tabbar);
 }
+/* Phone polish, after Emil Kowalski's mobile-native and design-engineering
+   notes. Clickable cards are divs too, so the tap flash goes everywhere. */
+html[data-os="android"] {
+  -webkit-tap-highlight-color: transparent;
+}
+/* The tab bar is a translucent material the content scrolls under, lit along
+   its top edge, with one indicator sliding between the tabs. */
+.vayra-tabbar {
+  background: color-mix(in srgb, var(--color-canvas) 76%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07);
+}
+.vayra-tab-indicator {
+  transition: transform 320ms var(--ease-out), opacity 150ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vayra-tab-indicator {
+    transition: opacity 150ms ease;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .vayra-tabbar {
+    background: var(--color-canvas);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 /* VAYRA Connect mini player (MacNowPlayingBar) sits above the tab bar. */
 html[data-os="android"][data-mac-bar] {
   --harbor-tabbar: calc(8.5rem + var(--vayra-safe-bottom));
