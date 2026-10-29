@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dismissThreshold, nextDragPhase } from "./sheet-drag";
+import { dismissThreshold, nextDragPhase, shouldDismiss } from "./sheet-drag";
 
 describe("nextDragPhase", () => {
   it("waits for a clear downward pull before dragging the sheet", () => {
@@ -29,5 +29,20 @@ describe("dismissThreshold", () => {
   it("is 100 px, or 12 % of a tall sheet", () => {
     expect(dismissThreshold(500)).toBe(100);
     expect(dismissThreshold(1000)).toBe(120);
+  });
+});
+
+describe("shouldDismiss", () => {
+  it("closes on a pull past the threshold, however slow", () => {
+    expect(shouldDismiss(130, 600, 2000)).toBe(true);
+    expect(shouldDismiss(60, 600, 2000)).toBe(false);
+  });
+
+  it("closes on a quick flick shorter than the threshold", () => {
+    expect(shouldDismiss(60, 600, 100)).toBe(true);
+  });
+
+  it("ignores a twitch, even a fast one", () => {
+    expect(shouldDismiss(6, 600, 5)).toBe(false);
   });
 });
