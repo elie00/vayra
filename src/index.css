@@ -1537,6 +1537,23 @@ html[data-os="android"] {
     }
   }
 }
+/* The hero's ambient glow: its artwork, blurred and saturated, fading in on each slide. */
+.vayra-ambient {
+  opacity: 0.85;
+  filter: blur(32px) saturate(1.4);
+  transform: scale(1.15);
+  transition: opacity 500ms ease;
+}
+@starting-style {
+  .vayra-ambient {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .vayra-ambient {
+    display: none;
+  }
+}
 /* The phone search page settles in rather than popping. */
 .vayra-search {
   transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);

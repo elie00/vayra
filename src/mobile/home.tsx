@@ -197,12 +197,23 @@ export function MobileHeroRow({ slides }: { slides: Slide[] }) {
     setActive(Math.max(0, Math.min(slides.length - 1, Math.round(el.scrollLeft / per))));
   };
 
+  const glow = slides[active]?.meta;
+  const glowSrc = glow ? downscaleTmdb(glow.background || glow.poster) : undefined;
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="relative flex flex-col gap-3">
+      {/* The current artwork's colours, blurred into the top of the page as streaming
+          apps tint their home; it runs up under the header and fades into the canvas. */}
+      {glowSrc && (
+        <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-56 -bottom-32 overflow-hidden">
+          <img key={glowSrc} src={glowSrc} alt="" decoding="async" className="vayra-ambient absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-canvas/25 to-canvas" />
+        </div>
+      )}
       <div
         ref={ref}
         onScroll={onScroll}
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative flex snap-x snap-mandatory gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {slides.map((s) => (
           <div key={s.meta.id} className="w-full shrink-0 snap-center">
@@ -211,12 +222,12 @@ export function MobileHeroRow({ slides }: { slides: Slide[] }) {
         ))}
       </div>
       {slides.length > 1 && (
-        <div className="flex justify-center gap-2">
+        <div className="relative flex justify-center gap-2">
           {slides.map((_, i) => (
             <span
               key={i}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === active ? "w-6 bg-ink" : "w-1.5 bg-ink-muted/60"
+                i === active ? "w-6 bg-accent" : "w-1.5 bg-ink-muted/60"
               }`}
             />
           ))}
