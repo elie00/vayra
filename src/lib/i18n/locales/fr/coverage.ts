@@ -280,6 +280,7 @@ const coverage: Record<string, string> = {
   "Play on Mac": "Lire sur le Mac",
   "Starting on {name}…": "Lancement sur {name}…",
   "Categories": "Catégories",
+  "To watch": "À voir",
   "Play a magnet link from your browser or a .torrent file from the Finder straight in VAYRA.": "Lisez directement dans VAYRA un lien magnet depuis votre navigateur ou un fichier .torrent depuis le Finder.",
   "Open magnet links and .torrent files": "Ouvrir les liens magnet et les fichiers .torrent",
   "A magnet link or a .torrent file opens VAYRA's torrent card, where you pick the file to play. A torrent client installed before VAYRA keeps them until you hand them over.": "Un lien magnet ou un fichier .torrent ouvre la carte torrent de VAYRA, où vous choisissez le fichier à lire. Un client torrent installé avant VAYRA les garde tant que vous ne les confiez pas à VAYRA.",

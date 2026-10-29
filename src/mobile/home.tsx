@@ -1,6 +1,7 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { Check, Play, Plus, X } from "lucide-react";
 import type { Slide } from "@/components/hero-carousel";
+import { HarborMark } from "@/components/icons/harbor-mark";
 import { PickCard } from "@/components/pick-card";
 import { TopRankCard } from "@/components/top-rank-card";
 import { MOBILE_POSTER_MIN, Row } from "@/components/row";
@@ -19,7 +20,7 @@ import type { HomeRow } from "@/views/home/home-types";
 import { RowSkeleton } from "@/views/home/row-skeleton";
 import { LumaResumeSection } from "@/views/home/luma-resume-section";
 
-// Mobile-first Home (Apple Sports card model). Rendered from `Home` in
+// Mobile-first Home (streaming-app model: hero, Continue Watching, poster rails). Rendered from `Home` in
 // src/views/home.tsx when isMobileTauri(); every data hook still runs in the
 // original component and its already-computed values are passed as props here.
 //
@@ -69,8 +70,6 @@ export function MobileHome({
   return (
     <main className="flex-1 overflow-y-auto px-4 pt-[calc(6.5rem+var(--harbor-status-bar,1.75rem))]">
       <div className="flex flex-col gap-8 pt-2">
-        <TmdbNudge suppress={nudgeSuppress} />
-
         {heroSlides.length > 0 && <MobileHeroRow slides={heroSlides} />}
 
         <LumaResumeSection />
@@ -85,6 +84,8 @@ export function MobileHome({
           </Row>
         )}
 
+        <TmdbNudge suppress={nudgeSuppress} />
+
         {rows.length === 0
           ? Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)
           : rows.map((row) => <MobileRail key={row.key} row={row} onLoadMore={loadMore} />)}
@@ -98,49 +99,64 @@ export function heroSlides(metas: Meta[]): Slide[] {
   return metas.map((meta, i) => ({ meta, rank: { label: "", position: i + 1 } }));
 }
 
-// A single full-width hero card. Exported so MobileDiscover can reuse it for its
-// featured item. Reuses the same actions as the desktop Hero (openMeta on tap /
-// Play, toggleWatchlist for the watchlist button).
+// A single full-width hero card, as streaming apps open their home: the title
+// centred over the artwork, a line of genres, then Play and the watchlist side
+// by side. Exported so MobileDiscover can reuse it for its featured item. Play
+// starts a movie (like the preview sheet) and opens a series to pick an episode.
 export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) {
   const t = useT();
-  const { openMeta } = useView();
+  const { openMeta, openPicker } = useView();
   const inWatchlist = useInWatchlist(meta.id);
   const bg = meta.background || meta.poster;
+  const tags = [meta.releaseInfo, ...(meta.genres ?? []).slice(0, 3).map((g) => t(g))].filter(Boolean);
 
   return (
     <div
       onClick={() => openMeta(meta)}
-      className="relative aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-3xl bg-elevated"
+      className="relative aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-3xl bg-elevated ring-1 ring-edge-soft/40 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]"
     >
       {bg && (
         <img src={bg} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/45 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-4 p-5">
-        <div className="flex flex-wrap gap-2">
-          {label && <Chip>{t(label)}</Chip>}
-          {meta.releaseInfo && <Chip>{meta.releaseInfo}</Chip>}
-        </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/40 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-5 pb-5 text-center">
+        {label && (
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-muted">
+            <HarborMark className="h-3.5 w-3.5" />
+            {t(label)}
+          </span>
+        )}
         {meta.logo ? (
           <img
             src={meta.logo}
             alt={meta.name}
             decoding="async"
-            className="max-h-16 w-auto max-w-[72%] object-contain object-left drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)]"
+            className="max-h-20 w-auto max-w-[78%] object-contain drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)]"
           />
         ) : (
-          <h2 className="text-[28px] font-semibold leading-[1.05] tracking-tight text-ink">
+          <h2 className="font-display text-[30px] font-medium leading-[1.05] tracking-tight text-ink" dir="auto">
             {meta.name}
           </h2>
         )}
-        <div className="flex gap-2.5">
+        {tags.length > 0 && (
+          <p className="flex flex-wrap items-center justify-center gap-x-2 text-[13px] text-ink-muted">
+            {tags.map((tag, i) => (
+              <span key={`${tag}-${i}`} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden className="h-1 w-1 rounded-full bg-ink-subtle" />}
+                {tag}
+              </span>
+            ))}
+          </p>
+        )}
+        <div className="mt-1 flex w-full gap-2.5">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              openMeta(meta);
+              if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
+              else openMeta(meta);
             }}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-ink text-[15px] font-semibold text-canvas transition-transform active:scale-95"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-ink text-[15px] font-semibold text-canvas transition-transform active:scale-95"
           >
             <Play size={18} fill="currentColor" />
             {t("Play")}
@@ -157,9 +173,11 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
               });
             }}
             aria-label={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-edge bg-canvas/60 text-ink transition-transform active:scale-95"
+            aria-pressed={inWatchlist}
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-edge-soft/70 bg-elevated/75 text-[15px] font-semibold text-ink backdrop-blur-md transition-transform active:scale-95"
           >
-            {inWatchlist ? <Check size={18} strokeWidth={2.4} /> : <Plus size={18} strokeWidth={2} />}
+            {inWatchlist ? <Check size={18} strokeWidth={2.4} /> : <Plus size={18} strokeWidth={2.2} />}
+            {t("To watch")}
           </button>
         </div>
       </div>
@@ -223,19 +241,16 @@ export function MobileContinueWatching({
     return null;
   }
   return (
-    <section className="flex flex-col gap-3">
-      <h3 className="px-1 text-[19px] font-semibold tracking-tight text-ink">
-        {t("Continue Watching")}
-      </h3>
-      <div className="flex flex-col gap-2.5">
-        {items.slice(0, 12).map((item) => (
-          <MobileCwCard key={item._id} item={item} onDismiss={onDismiss} />
-        ))}
-      </div>
-    </section>
+    <Row title={t("Continue Watching")} min={168} shape="landscape" scrollKey="mobile:cw">
+      {items.slice(0, 12).map((item) => (
+        <MobileCwCard key={item._id} item={item} onDismiss={onDismiss} />
+      ))}
+    </Row>
   );
 }
 
+// A landscape still with the progress along its bottom edge, then the title and
+// episode. Like the desktop card, a tap opens the title at that episode.
 function MobileCwCard({
   item,
   onDismiss,
@@ -264,33 +279,34 @@ function MobileCwCard({
   const thumb = downscaleTmdb(item.background || item.poster);
 
   return (
-    <div className="group relative flex items-center gap-3.5 rounded-2xl bg-elevated/50 p-2.5">
+    <div className="flex w-full min-w-0 flex-col gap-2">
       <button
         type="button"
-        onClick={() => openMeta(meta)}
-        className="flex min-w-0 flex-1 items-center gap-3.5 text-start"
+        onClick={() => openMeta(meta, ep ? { episodeHint: ep } : undefined)}
+        aria-label={label ? `${item.name} · ${label}` : item.name}
+        className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-elevated transition-transform active:scale-[0.97]"
       >
-        <div className="relative aspect-[16/9] w-28 shrink-0 overflow-hidden rounded-xl bg-elevated">
-          {thumb && (
-            <img src={thumb} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-          )}
-          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-canvas/40">
-            <div className="h-full bg-accent" style={{ width: `${progress * 100}%` }} />
-          </div>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="truncate text-[15px] font-medium text-ink">{item.name}</p>
-          {label && <p className="text-[12.5px] text-ink-subtle">{label}</p>}
-        </div>
+        {thumb && (
+          <img src={thumb} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+        <span className="absolute inset-x-0 bottom-0 h-[3px] bg-ink/20">
+          <span className="block h-full bg-accent" style={{ width: `${progress * 100}%` }} />
+        </span>
       </button>
-      <button
-        type="button"
-        onClick={() => onDismiss(item)}
-        aria-label={t("Remove from Continue Watching")}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors active:bg-canvas/60 active:text-ink"
-      >
-        <X size={18} strokeWidth={2.2} />
-      </button>
+      <div className="flex min-w-0 items-start gap-1">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13.5px] font-medium text-ink">{item.name}</p>
+          {label && <p className="text-[12px] text-ink-subtle">{label}</p>}
+        </div>
+        <button
+          type="button"
+          onClick={() => onDismiss(item)}
+          aria-label={t("Remove from Continue Watching")}
+          className="-me-2 -mt-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors active:bg-elevated active:text-ink"
+        >
+          <X size={16} strokeWidth={2.2} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -323,14 +339,6 @@ export function MobileRail({
         <PickCard key={`${m.id}-${i}`} meta={m} />
       ))}
     </Row>
-  );
-}
-
-function Chip({ children }: { children: ReactNode }) {
-  return (
-    <span className="rounded-full bg-canvas/70 px-3 py-1 text-[12px] font-medium text-ink backdrop-blur-sm">
-      {children}
-    </span>
   );
 }
 
