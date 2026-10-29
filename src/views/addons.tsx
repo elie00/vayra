@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AgeGateModal } from "@/components/age-gate-modal";
 import { HarborLoader } from "@/components/harbor-loader";
 import { openInstallerViewport } from "@/components/installer-viewport";
+import { isMobileTauri } from "@/lib/platform";
+import { MacAddonsImport } from "@/mobile/mac-addons-import";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -460,6 +462,12 @@ export function AddonsView() {
           </div>
         )}
       </header>
+
+      {isMobileTauri() && (
+        <div className="shrink-0 px-4 pt-3">
+          <MacAddonsImport />
+        </div>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 pb-20 pt-6">
         {loading && allAddons.length === 0 ? (
