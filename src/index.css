@@ -41,6 +41,7 @@
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 400ms;
@@ -1486,6 +1487,36 @@ html[data-os="android"] {
     background: var(--color-canvas);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+}
+/* Bottom sheets rise on the drawer curve over a fading scrim, and track the
+   finger 1:1 while it pulls them down. */
+.vayra-sheet {
+  transition: transform 420ms var(--ease-drawer);
+}
+.vayra-sheet[data-dragging] {
+  transition: none;
+}
+.vayra-scrim {
+  transition: opacity 300ms ease;
+}
+@starting-style {
+  .vayra-sheet {
+    transform: translateY(100%);
+  }
+  .vayra-scrim {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vayra-sheet {
+    transition: opacity 200ms ease;
+  }
+  @starting-style {
+    .vayra-sheet {
+      transform: none;
+      opacity: 0;
+    }
   }
 }
 /* VAYRA Connect mini player (MacNowPlayingBar) sits above the tab bar. */

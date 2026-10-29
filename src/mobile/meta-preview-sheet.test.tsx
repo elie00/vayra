@@ -9,6 +9,8 @@ import { closeMetaPreview, previewMeta } from "./meta-preview";
 const view = { openMeta: vi.fn(), openPicker: vi.fn() };
 vi.mock("@/lib/view", () => ({ useView: () => view }));
 vi.mock("@/lib/i18n", () => ({ useT: () => (key: string) => key }));
+const watchlist = vi.hoisted(() => ({ toggleWatchlist: vi.fn(), useInWatchlist: vi.fn(() => false) }));
+vi.mock("@/lib/watchlist", () => watchlist);
 
 afterEach(() => {
   act(() => closeMetaPreview());
@@ -47,7 +49,7 @@ it("previews a title in a sheet instead of opening its page", () => {
 it("opens the page from the sheet and closes it", () => {
   const { host, root } = mount();
   act(() => previewMeta(film));
-  act(() => button(host, "Details").click());
+  act(() => button(host, "Details & more").click());
   expect(view.openMeta).toHaveBeenCalledWith(film);
   expect(host.textContent).toBe("");
   act(() => root.unmount());
@@ -65,5 +67,14 @@ it("offers no direct play for a series, whose episode is picked on its page", ()
   const { host, root } = mount();
   act(() => previewMeta({ ...film, id: "tt2", type: "series", name: "Hijack" }));
   expect([...host.querySelectorAll("button")].some((b) => b.textContent === "Play")).toBe(false);
+  act(() => root.unmount());
+});
+
+it("adds the title to the watchlist without leaving the sheet", () => {
+  const { host, root } = mount();
+  act(() => previewMeta(film));
+  act(() => button(host, "To watch").click());
+  expect(watchlist.toggleWatchlist).toHaveBeenCalledWith({ id: "tt1", type: "movie", name: "Heat", poster: undefined });
+  expect(host.textContent).toContain("Heat");
   act(() => root.unmount());
 });
