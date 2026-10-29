@@ -203,9 +203,10 @@ export function MobileHeroRow({ slides }: { slides: Slide[] }) {
   return (
     <div className="relative flex flex-col gap-3">
       {/* The current artwork's colours, blurred into the top of the page as streaming
-          apps tint their home; it runs up under the header and fades into the canvas. */}
+          apps tint their home; it runs up under the header and fades into the canvas by
+          the hero's foot, as a positioned layer would paint over the rows below. */}
       {glowSrc && (
-        <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-56 -bottom-32 overflow-hidden">
+        <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-56 bottom-0 overflow-hidden">
           <img key={glowSrc} src={glowSrc} alt="" decoding="async" className="vayra-ambient absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-canvas/25 to-canvas" />
         </div>
@@ -252,7 +253,7 @@ export function MobileContinueWatching({
     return null;
   }
   return (
-    <Row title={t("Continue Watching")} min={168} shape="landscape" scrollKey="mobile:cw">
+    <Row title={t("Continue Watching")} min={150} shape="landscape" scrollKey="mobile:cw">
       {items.slice(0, 12).map((item) => (
         <MobileCwCard key={item._id} item={item} onDismiss={onDismiss} />
       ))}
@@ -297,8 +298,12 @@ function MobileCwCard({
         aria-label={label ? `${item.name} · ${label}` : item.name}
         className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-elevated transition-transform active:scale-[0.97]"
       >
-        {thumb && (
+        {thumb ? (
           <img src={thumb} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <span aria-hidden className="absolute inset-0 flex items-center justify-center text-ink-subtle">
+            <Play size={22} fill="currentColor" />
+          </span>
         )}
         <span className="absolute inset-x-0 bottom-0 h-[3px] bg-ink/20">
           <span className="block h-full bg-accent" style={{ width: `${progress * 100}%` }} />
