@@ -83,8 +83,8 @@ export function MobileAddons({
     <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]">
       <div className="flex flex-col gap-5 pb-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-ink">{t("nav.addons")}</h1>
-          <p className="text-[14px] leading-snug text-ink-muted">{t("Addons tell VAYRA where to find what you play, subtitles and catalogs.")}</p>
+          <h1 className="type-title-1 font-semibold leading-tight tracking-[-0.02em] text-ink">{t("nav.addons")}</h1>
+          <p className="type-callout leading-snug text-ink-muted">{t("Addons tell VAYRA where to find what you play, subtitles and catalogs.")}</p>
         </div>
 
         <div role="tablist" className="flex gap-1 rounded-full bg-elevated p-1">
@@ -95,7 +95,7 @@ export function MobileAddons({
               role="tab"
               aria-selected={tab === id}
               onClick={() => setTab(id)}
-              className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors ${
+              className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full type-callout font-semibold transition-colors ${
                 tab === id ? "bg-ink text-canvas" : "text-ink-muted"
               }`}
             >
@@ -121,7 +121,7 @@ export function MobileAddons({
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck={false}
-            className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-subtle [&::-webkit-search-cancel-button]:hidden"
+            className="h-full min-w-0 flex-1 bg-transparent type-body text-ink outline-none placeholder:text-ink-subtle [&::-webkit-search-cancel-button]:hidden"
           />
           {query && (
             <button
@@ -152,9 +152,9 @@ export function MobileAddons({
           </>
         ) : installed.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl bg-elevated px-5 py-8 text-center">
-            <p className="text-[16px] font-semibold text-ink">{t("No addons installed yet")}</p>
-            <p className="text-[13.5px] text-ink-muted">{t("Start with a playback source from the recommendations.")}</p>
-            <button type="button" onClick={() => setTab("recommended")} className="mt-1 h-10 rounded-full bg-ink px-5 text-[14px] font-semibold text-canvas">
+            <p className="type-body font-semibold text-ink">{t("No addons installed yet")}</p>
+            <p className="type-footnote text-ink-muted">{t("Start with a playback source from the recommendations.")}</p>
+            <button type="button" onClick={() => setTab("recommended")} className="mt-1 h-10 rounded-full bg-ink px-5 type-callout font-semibold text-canvas">
               {t("See recommendations")}
             </button>
           </div>
@@ -174,7 +174,7 @@ function ReadyCard({ sources, loading }: { sources: number; loading: boolean }) 
   if (loading) return null;
   if (sources > 0) {
     return (
-      <p className="flex items-center gap-2 text-[13.5px] font-medium text-ink-muted">
+      <p className="flex items-center gap-2 type-footnote font-medium text-ink-muted">
         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/20 text-success">
           <Check size={12} strokeWidth={3} />
         </span>
@@ -184,8 +184,8 @@ function ReadyCard({ sources, loading }: { sources: number; loading: boolean }) 
   }
   return (
     <div className="flex flex-col gap-1 rounded-2xl bg-accent-soft p-4 ring-1 ring-accent/30">
-      <p className="text-[15px] font-semibold text-ink">{t("Install a playback source to play")}</p>
-      <p className="text-[13px] leading-snug text-ink-muted">
+      <p className="type-callout font-semibold text-ink">{t("Install a playback source to play")}</p>
+      <p className="type-footnote leading-snug text-ink-muted">
         {t("Without one, VAYRA can show titles but has nothing to play. Torrentio with a debrid key, or a free source below.")}
       </p>
     </div>
@@ -210,8 +210,8 @@ function RecommendedSection({
   return (
     <section className="flex flex-col gap-2">
       <div className="flex flex-col gap-0.5">
-        <h2 className="text-[17px] font-semibold tracking-[-0.01em] text-ink">{t(section.title)}</h2>
-        <p className="text-[12.5px] text-ink-subtle">{t(section.blurb)}</p>
+        <h2 className="type-title-3 font-semibold tracking-[-0.01em] text-ink">{t(section.title)}</h2>
+        <p className="type-footnote text-ink-subtle">{t(section.blurb)}</p>
       </div>
       <div className="flex flex-col divide-y divide-white/6 rounded-2xl bg-elevated">
         {shown.map((r) => (
@@ -219,7 +219,7 @@ function RecommendedSection({
         ))}
       </div>
       {items.length > SECTION_PREVIEW && (
-        <button type="button" onClick={() => setAll(!all)} className="self-start text-[13px] font-medium text-ink-muted active:text-ink">
+        <button type="button" onClick={() => setAll(!all)} className="self-start type-footnote font-medium text-ink-muted active:text-ink">
           {all ? t("Show less") : t("Show all {count}", { count: items.length })}
         </button>
       )}
@@ -228,7 +228,7 @@ function RecommendedSection({
 }
 
 function List({ items, render, empty }: { items: ResolvedAddon[]; render: (r: ResolvedAddon) => ReactNode; empty?: string }) {
-  if (items.length === 0) return empty ? <p className="py-6 text-center text-[14px] text-ink-muted">{empty}</p> : null;
+  if (items.length === 0) return empty ? <p className="py-6 text-center type-callout text-ink-muted">{empty}</p> : null;
   return <div className="flex flex-col divide-y divide-white/6 rounded-2xl bg-elevated">{items.map(render)}</div>;
 }
 
@@ -243,17 +243,17 @@ function AddonRow({ r, onOpen, action }: { r: ResolvedAddon; onOpen: (id: string
           <AddonLogo addonId={idOf(r)} addonName={nameOf(r)} manifestLogo={r.manifest?.logo} size="lg" />
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="truncate text-[15px] font-semibold text-ink">{nameOf(r)}</span>
+          <span className="truncate type-callout font-semibold text-ink">{nameOf(r)}</span>
           {tags.length > 0 && (
             <span className="flex flex-wrap gap-1">
               {tags.map((tag) => (
-                <span key={tag} className="rounded-full bg-raised px-2 py-0.5 text-[10.5px] font-semibold text-ink-muted">
+                <span key={tag} className="rounded-full bg-raised px-2 py-0.5 type-micro font-semibold text-ink-muted">
                   {t(tag)}
                 </span>
               ))}
             </span>
           )}
-          {line && <span className="line-clamp-2 text-[12.5px] leading-snug text-ink-subtle">{t(line)}</span>}
+          {line && <span className="line-clamp-2 type-footnote leading-snug text-ink-subtle">{t(line)}</span>}
         </span>
       </button>
       {action}
@@ -283,7 +283,7 @@ function InstallAction({ r, onInstall }: { r: ResolvedAddon; onInstall: (r: Reso
           setBusy(false);
         }
       }}
-      className="flex h-9 shrink-0 items-center justify-center rounded-full bg-ink px-4 text-[13.5px] font-semibold text-canvas transition-transform active:scale-95 disabled:opacity-60"
+      className="flex h-9 shrink-0 items-center justify-center rounded-full bg-ink px-4 type-footnote font-semibold text-canvas transition-transform active:scale-95 disabled:opacity-60"
     >
       {busy ? <Loader2 size={15} className="animate-spin" /> : t("Install")}
     </button>
@@ -348,8 +348,8 @@ function InstallFromLink({ url, onInstallUrl, onDone }: { url: string; onInstall
         {busy ? <Loader2 size={18} className="animate-spin" /> : <Link2 size={18} />}
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[15px] font-semibold text-ink">{t("Install from this link")}</span>
-        <span className="truncate text-[12.5px] text-ink-subtle">{url}</span>
+        <span className="type-callout font-semibold text-ink">{t("Install from this link")}</span>
+        <span className="truncate type-footnote text-ink-subtle">{url}</span>
       </span>
       <ChevronRight size={18} className="dir-icon shrink-0 text-ink-subtle" />
     </button>

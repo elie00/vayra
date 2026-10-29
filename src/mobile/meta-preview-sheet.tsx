@@ -76,11 +76,11 @@ export function MetaPreviewSheet() {
               />
             )}
             <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
-              <h2 className="pe-9 text-[19px] font-semibold leading-tight tracking-[-0.01em] text-ink" dir="auto">
+              <h2 className="pe-9 type-title-3 font-semibold leading-tight tracking-[-0.01em] text-ink" dir="auto">
                 {meta.name}
               </h2>
-              {facts.length > 0 && <p className="text-[12.5px] text-ink-subtle">{facts.join(" · ")}</p>}
-              {genres.length > 0 && <p className="text-[12.5px] text-ink-muted">{genres.join(" • ")}</p>}
+              {facts.length > 0 && <p className="type-footnote text-ink-subtle">{facts.join(" · ")}</p>}
+              {genres.length > 0 && <p className="type-footnote text-ink-muted">{genres.join(" • ")}</p>}
             </div>
             <button
               type="button"
@@ -92,7 +92,7 @@ export function MetaPreviewSheet() {
             </button>
           </div>
           {meta.description && (
-            <p className="mt-4 line-clamp-4 text-[14px] leading-relaxed text-ink-muted" dir="auto">
+            <p className="mt-4 line-clamp-4 type-callout leading-relaxed text-ink-muted" dir="auto">
               {meta.description}
             </p>
           )}
@@ -121,7 +121,7 @@ export function MetaPreviewSheet() {
           <button
             type="button"
             onClick={details}
-            className="mt-5 flex w-full items-center gap-3 border-t border-white/8 py-3.5 text-start text-[14px] font-medium text-ink transition-opacity active:opacity-60"
+            className="mt-5 flex w-full items-center gap-3 border-t border-white/8 py-3.5 text-start type-callout font-medium text-ink transition-opacity active:opacity-60"
           >
             <Info size={18} strokeWidth={2} className="text-ink-muted" />
             <span className="flex-1">{t("Details & more")}</span>
@@ -154,7 +154,7 @@ function RoundAction({
       onClick={onClick}
       aria-label={ariaLabel}
       aria-pressed={pressed}
-      className="group flex w-14 flex-col items-center gap-2 text-[12px] font-medium text-ink-muted"
+      className="group flex w-14 flex-col items-center gap-2 type-caption font-medium text-ink-muted"
     >
       <span
         className={`flex h-12 w-12 items-center justify-center rounded-full transition-transform duration-150 ease-out group-active:scale-90 ${

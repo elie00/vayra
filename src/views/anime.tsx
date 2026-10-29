@@ -625,7 +625,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
               <button
                 type="button"
                 onClick={() => setShowPicker(true)}
-                className="flex h-9 items-center gap-2 self-start rounded-full border border-edge px-4 text-[13.5px] font-medium text-ink-muted transition-transform active:scale-95"
+                className="flex h-9 items-center gap-2 self-start rounded-full border border-edge px-4 type-footnote font-medium text-ink-muted transition-transform active:scale-95"
               >
                 <SlidersHorizontal size={15} strokeWidth={2} />
                 {t("Tune anime")}

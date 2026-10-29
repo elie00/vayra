@@ -29,7 +29,7 @@ export function MobileTogetherButton() {
     >
       <Users size={17} strokeWidth={1.9} />
       {live && snapshot.participants.length > 0 && (
-        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9.5px] font-bold leading-none text-canvas">
+        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 type-micro font-bold leading-none text-canvas">
           {snapshot.participants.length}
         </span>
       )}

@@ -121,7 +121,7 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
       <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/40 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-5 pb-5 text-center">
         {label && (
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-muted">
+          <span className="flex items-center gap-1.5 type-micro font-semibold uppercase tracking-[0.28em] text-ink-muted">
             <HarborMark className="h-3.5 w-3.5" />
             {t(label)}
           </span>
@@ -134,12 +134,12 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
             className="max-h-20 w-auto max-w-[78%] object-contain drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)]"
           />
         ) : (
-          <h2 className="font-display text-[30px] font-medium leading-[1.05] tracking-tight text-ink" dir="auto">
+          <h2 className="font-display type-display font-medium leading-[1.05] tracking-tight text-ink" dir="auto">
             {meta.name}
           </h2>
         )}
         {tags.length > 0 && (
-          <p className="flex flex-wrap items-center justify-center gap-x-2 text-[13px] text-ink-muted">
+          <p className="flex flex-wrap items-center justify-center gap-x-2 type-footnote text-ink-muted">
             {tags.map((tag, i) => (
               <span key={`${tag}-${i}`} className="flex items-center gap-2">
                 {i > 0 && <span aria-hidden className="h-1 w-1 rounded-full bg-ink-subtle" />}
@@ -156,7 +156,7 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
               if (meta.type === "movie") openPicker(meta, undefined, { autoPlay: true, resume: true });
               else openMeta(meta);
             }}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-ink text-[15px] font-semibold text-canvas transition-transform active:scale-95"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-ink type-callout font-semibold text-canvas transition-transform active:scale-95"
           >
             <Play size={18} fill="currentColor" />
             {t("Play")}
@@ -174,7 +174,7 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
             }}
             aria-label={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
             aria-pressed={inWatchlist}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-edge-soft/70 bg-elevated/75 text-[15px] font-semibold text-ink backdrop-blur-md transition-transform active:scale-95"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-edge-soft/70 bg-elevated/75 type-callout font-semibold text-ink backdrop-blur-md transition-transform active:scale-95"
           >
             {inWatchlist ? <Check size={18} strokeWidth={2.4} /> : <Plus size={18} strokeWidth={2.2} />}
             {t("To watch")}
@@ -311,8 +311,8 @@ function MobileCwCard({
       </button>
       <div className="flex min-w-0 items-start gap-1">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13.5px] font-medium text-ink">{item.name}</p>
-          {label && <p className="text-[12px] text-ink-subtle">{label}</p>}
+          <p className="truncate type-footnote font-medium text-ink">{item.name}</p>
+          {label && <p className="type-caption text-ink-subtle">{label}</p>}
         </div>
         <button
           type="button"

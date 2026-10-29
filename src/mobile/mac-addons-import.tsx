@@ -59,8 +59,8 @@ export function MacAddonsImport() {
           <Laptop size={19} strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold text-ink">{t("Addons from {name}", { name: mac.name })}</p>
-          <p className="text-[13px] text-ink-muted">
+          <p className="type-callout font-semibold text-ink">{t("Addons from {name}", { name: mac.name })}</p>
+          <p className="type-footnote text-ink-muted">
             {done
               ? done.failed > 0
                 ? t("{ok} imported, {failed} could not be installed.", { ok: done.ok, failed: done.failed })
@@ -71,12 +71,12 @@ export function MacAddonsImport() {
       </div>
       {missing.length > 0 && (
         <>
-          <p className="line-clamp-2 text-[12.5px] text-ink-subtle">{missing.map((a) => a.name || a.transportUrl).join(" · ")}</p>
+          <p className="line-clamp-2 type-footnote text-ink-subtle">{missing.map((a) => a.name || a.transportUrl).join(" · ")}</p>
           <button
             type="button"
             onClick={() => void importAll()}
             disabled={busy}
-            className="flex h-11 items-center justify-center rounded-full bg-ink text-[14.5px] font-semibold text-canvas transition-transform active:scale-[0.97] disabled:opacity-60"
+            className="flex h-11 items-center justify-center rounded-full bg-ink type-callout font-semibold text-canvas transition-transform active:scale-[0.97] disabled:opacity-60"
           >
             {busy ? t("Importing…") : t("Import {count} addons", { count: missing.length })}
           </button>

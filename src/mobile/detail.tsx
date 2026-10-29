@@ -145,12 +145,12 @@ export function MobileDetail({
                 className="max-h-24 w-auto max-w-[80%] object-contain object-left drop-shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
               />
             ) : (
-              <h1 className="text-[28px] font-semibold leading-[1.05] tracking-tight text-ink">
+              <h1 className="type-title-1 font-semibold leading-[1.05] tracking-tight text-ink">
                 {title}
               </h1>
             )}
             {metaBits.length > 0 && (
-              <p className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-ink-muted">
+              <p className="flex flex-wrap items-center gap-2 type-footnote font-medium text-ink-muted">
                 {metaBits.map((b, i) => (
                   <span key={i} className="flex items-center gap-2">
                     {i > 0 && <span className="text-ink-subtle">·</span>}
@@ -168,7 +168,7 @@ export function MobileDetail({
             <button
               type="button"
               onClick={onPlay}
-              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-ink text-[15px] font-semibold text-canvas transition-transform active:scale-95"
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-ink type-callout font-semibold text-canvas transition-transform active:scale-95"
             >
               <Play size={18} fill="currentColor" />
               {playLabel}
@@ -297,7 +297,7 @@ function MobileEpisodes({
 
   return (
     <section data-episodes className="flex scroll-mt-24 flex-col gap-4">
-      <h3 className="text-[19px] font-semibold tracking-tight text-ink">{t("Episodes")}</h3>
+      <h3 className="type-title-3 font-semibold tracking-tight text-ink">{t("Episodes")}</h3>
       {realSeasons.length > 1 && (
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {realSeasons.map((s) => {
@@ -308,7 +308,7 @@ function MobileEpisodes({
                 type="button"
                 onClick={() => setActive(s.seasonNumber)}
                 aria-pressed={on}
-                className={`shrink-0 rounded-full px-4 py-2 text-[13.5px] font-medium transition-colors ${
+                className={`shrink-0 rounded-full px-4 py-2 type-footnote font-medium transition-colors ${
                   on ? "bg-ink text-canvas" : "bg-elevated/60 text-ink-muted"
                 }`}
               >
@@ -331,7 +331,7 @@ function MobileEpisodes({
           ))}
         </div>
       ) : episodes.length === 0 ? (
-        <p className="text-[14px] text-ink-subtle">
+        <p className="type-callout text-ink-subtle">
           {t("No episodes available for this season.")}
         </p>
       ) : (
@@ -410,7 +410,7 @@ function MobileEpisodeRow({
           lazy
           onError={() => setImgIdx((i) => i + 1)}
         />
-        <span className="absolute start-1.5 top-1.5 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink">
+        <span className="absolute start-1.5 top-1.5 rounded-md bg-canvas/95 px-1.5 py-0.5 type-micro font-semibold text-ink">
           {ep.episodeNumber}
         </span>
         {progress.watched && (
@@ -428,10 +428,10 @@ function MobileEpisodeRow({
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="truncate text-[14.5px] font-medium text-ink">
+        <p className="truncate type-callout font-medium text-ink">
           {ep.name || t("Episode {n}", { n: ep.episodeNumber })}
         </p>
-        <p className="text-[12px] text-ink-subtle">
+        <p className="type-caption text-ink-subtle">
           {[
             `S${ep.seasonNumber} E${ep.episodeNumber}`,
             ep.runtime ? t("{n} min", { n: ep.runtime }) : null,

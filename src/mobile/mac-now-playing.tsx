@@ -61,8 +61,8 @@ export function MacNowPlayingBar() {
             </span>
           )}
           <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-[13.5px] font-medium text-ink" dir="auto">{state.title}</span>
-            <span className="flex min-w-0 items-center gap-1 text-[11.5px] text-ink-subtle">
+            <span className="truncate type-footnote font-medium text-ink" dir="auto">{state.title}</span>
+            <span className="flex min-w-0 items-center gap-1 type-caption text-ink-subtle">
               <Laptop size={11} strokeWidth={2.4} className="shrink-0" />
               <span className="truncate">{mac.name}</span>
             </span>
@@ -183,8 +183,8 @@ export function MacRemoteSheet() {
               <img src={state.meta.poster} alt="" className="aspect-[2/3] w-16 shrink-0 rounded-xl object-cover" />
             )}
             <div className="flex min-w-0 flex-col gap-1">
-              <h2 className="text-[18px] font-semibold leading-tight text-ink" dir="auto">{state.title}</h2>
-              <p className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-ink-subtle">
+              <h2 className="type-title-3 font-semibold leading-tight text-ink" dir="auto">{state.title}</h2>
+              <p className="flex min-w-0 items-center gap-1.5 type-footnote text-ink-subtle">
                 <Laptop size={13} strokeWidth={2.2} className="shrink-0" />
                 <span className="truncate">
                   {macStatusLabel(state.status, t)} · {mac.name}
@@ -203,7 +203,7 @@ export function MacRemoteSheet() {
               onMove={(value) => setScrub({ value, at: state.at })}
               onCommit={(value) => send({ type: "command", action: "seek", position: value })}
             />
-            <div className="flex justify-between text-[12px] tabular-nums text-ink-subtle">
+            <div className="flex justify-between type-caption tabular-nums text-ink-subtle">
               <span>{fmtTime(shownPosition)}</span>
               <span>{fmtTime(duration)}</span>
             </div>
@@ -251,7 +251,7 @@ export function MacRemoteSheet() {
               onMove={(value) => setVolume({ value, at: state.at })}
               onCommit={(value) => send({ type: "command", action: "volume", level: value })}
             />
-            <span className="w-10 shrink-0 text-end text-[12px] tabular-nums text-ink-subtle">
+            <span className="w-10 shrink-0 text-end type-caption tabular-nums text-ink-subtle">
               {Math.round(shownVolume * 100)}%
             </span>
           </div>
@@ -262,7 +262,7 @@ export function MacRemoteSheet() {
               send({ type: "command", action: "stop" });
               closeMacRemote();
             }}
-            className="flex h-11 items-center justify-center gap-2 rounded-full bg-danger/15 text-[14px] font-semibold text-danger transition-colors hover:bg-danger/25"
+            className="flex h-11 items-center justify-center gap-2 rounded-full bg-danger/15 type-callout font-semibold text-danger transition-colors hover:bg-danger/25"
           >
             <Square size={14} fill="currentColor" />
             {t("Stop on the Mac")}

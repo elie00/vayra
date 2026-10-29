@@ -81,7 +81,7 @@ export function MobileDiscover({
                   type="button"
                   onClick={() => setSelected(r.key)}
                   aria-pressed={on}
-                  className={`shrink-0 rounded-full px-4 py-2 text-[13.5px] font-medium transition-colors ${
+                  className={`shrink-0 rounded-full px-4 py-2 type-footnote font-medium transition-colors ${
                     on ? "bg-ink text-canvas" : "bg-elevated/60 text-ink-muted"
                   }`}
                 >

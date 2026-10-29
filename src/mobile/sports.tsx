@@ -91,8 +91,8 @@ export function MobileSports({
 
         {games.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 py-24 text-center">
-            <p className="text-[15px] font-semibold text-ink">{t("No games")}</p>
-            <p className="text-[13px] text-ink-subtle">{t("No live or upcoming games right now.")}</p>
+            <p className="type-callout font-semibold text-ink">{t("No games")}</p>
+            <p className="type-footnote text-ink-subtle">{t("No live or upcoming games right now.")}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-7">
@@ -100,7 +100,7 @@ export function MobileSports({
               <Section
                 heading={t("Live")}
                 pill={
-                  <span className="flex h-[18px] items-center gap-1 rounded bg-danger px-1.5 text-[10px] font-bold tracking-[0.06em] text-white">
+                  <span className="flex h-[18px] items-center gap-1 rounded bg-danger px-1.5 type-micro font-bold tracking-[0.06em] text-white">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                     {t("{n} LIVE", { n: liveN })}
                   </span>
@@ -152,7 +152,7 @@ function Section({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2.5 ps-1">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+        <h2 className="type-caption font-semibold uppercase tracking-[0.18em] text-ink-subtle">
           {heading}
         </h2>
         {pill}
@@ -186,7 +186,7 @@ function MatchCard({ game, onSelect }: { game: SportsGame; onSelect: (g: SportsG
 
       <div className="mb-3 flex items-center justify-between gap-2">
         <StatusBadge game={game} />
-        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">
+        <span className="shrink-0 type-micro font-semibold uppercase tracking-[0.08em] text-ink-subtle">
           {game.league}
         </span>
       </div>
@@ -240,14 +240,14 @@ function TeamRow({
       <TeamLogo src={side.logo} />
       <div className="flex min-w-0 flex-1 flex-col leading-tight">
         <span
-          className={`truncate text-[15px] font-bold uppercase tracking-[0.01em] ${
+          className={`truncate type-callout font-bold uppercase tracking-[0.01em] ${
             dim ? "text-ink-subtle" : "text-ink"
           }`}
         >
           {side.abbr || side.name}
         </span>
         {side.name && side.name !== side.abbr && (
-          <span className={`truncate text-[12px] ${dim ? "text-ink-subtle/70" : "text-ink-muted"}`}>
+          <span className={`truncate type-caption ${dim ? "text-ink-subtle/70" : "text-ink-muted"}`}>
             {side.name}
           </span>
         )}
@@ -274,7 +274,7 @@ function Score({
 
   if (winIndicator && winner && !hasScore) {
     return (
-      <span className="flex h-6 shrink-0 items-center rounded bg-success/20 px-2 text-[11px] font-bold uppercase tracking-wider text-success">
+      <span className="flex h-6 shrink-0 items-center rounded bg-success/20 px-2 type-micro font-bold uppercase tracking-wider text-success">
         {t("WIN")}
       </span>
     );
@@ -283,7 +283,7 @@ function Score({
   return (
     <span
       className={`shrink-0 text-end tabular-nums ${
-        isPosition ? "text-[16px] font-bold" : "text-[30px] leading-none"
+        isPosition ? "type-body font-bold" : "type-display leading-none"
       } ${winner ? "font-black" : "font-bold"} ${dim ? "text-ink-subtle" : "text-ink"}`}
     >
       {hasScore ? value : "0"}
@@ -298,7 +298,7 @@ function StartTime({ ms, detail }: { ms: number; detail: string }) {
 
   if (!ms || isNaN(ms)) {
     return (
-      <span className="shrink-0 text-[13px] font-medium text-ink-subtle">{detail || t("TBD")}</span>
+      <span className="shrink-0 type-footnote font-medium text-ink-subtle">{detail || t("TBD")}</span>
     );
   }
 
@@ -311,8 +311,8 @@ function StartTime({ ms, detail }: { ms: number; detail: string }) {
 
   return (
     <div className="flex shrink-0 flex-col items-end leading-tight">
-      <span className="text-[11px] font-medium uppercase tracking-wide text-ink-subtle">{dateStr}</span>
-      <span className="text-[22px] font-bold tabular-nums text-ink">{fmtClock(ms)}</span>
+      <span className="type-micro font-medium uppercase tracking-wide text-ink-subtle">{dateStr}</span>
+      <span className="type-title-2 font-bold tabular-nums text-ink">{fmtClock(ms)}</span>
     </div>
   );
 }
@@ -322,7 +322,7 @@ function StatusBadge({ game }: { game: SportsGame }) {
 
   if (game.state === "in") {
     return (
-      <span className="flex h-[18px] items-center gap-1 rounded bg-danger px-1.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-white">
+      <span className="flex h-[18px] items-center gap-1 rounded bg-danger px-1.5 type-micro font-bold uppercase tracking-[0.06em] text-white">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
         {game.detail || t("Live")}
       </span>
@@ -331,14 +331,14 @@ function StatusBadge({ game }: { game: SportsGame }) {
 
   if (game.state === "post") {
     return (
-      <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+      <span className="type-micro font-semibold uppercase tracking-[0.06em] text-ink-muted">
         {game.detail || t("Final")}
       </span>
     );
   }
 
   return (
-    <span className="flex h-[18px] items-center gap-1.5 rounded border border-edge-soft/60 px-1.5 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
+    <span className="flex h-[18px] items-center gap-1.5 rounded border border-edge-soft/60 px-1.5 type-micro font-semibold uppercase tracking-[0.06em] text-ink-subtle">
       <span className="h-1.5 w-1.5 rounded-full bg-ink-subtle/60" />
       {t("Upcoming")}
     </span>
@@ -377,7 +377,7 @@ function LeagueChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border ps-1.5 pe-3.5 text-[12.5px] font-medium transition-colors ${
+      className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border ps-1.5 pe-3.5 type-footnote font-medium transition-colors ${
         active
           ? "border-transparent bg-ink text-canvas"
           : "border-edge-soft/60 bg-elevated text-ink-muted"

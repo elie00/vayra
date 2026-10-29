@@ -192,11 +192,11 @@ export function MobilePlayPicker({
         <header className="flex shrink-0 items-start justify-between gap-3 px-4 pb-3 pt-1">
           <div className="min-w-0">
             {subtitle && (
-              <p className="truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-subtle">
+              <p className="truncate type-micro font-semibold uppercase tracking-[0.22em] text-ink-subtle">
                 {subtitle}
               </p>
             )}
-            <h1 className="truncate text-[22px] font-semibold leading-tight tracking-tight text-ink">
+            <h1 className="truncate type-title-2 font-semibold leading-tight tracking-tight text-ink">
               {title}
             </h1>
           </div>
@@ -205,7 +205,7 @@ export function MobilePlayPicker({
             onClick={onRefresh}
             disabled={refreshing}
             aria-label={t("Refresh sources")}
-            className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-edge-soft bg-elevated/70 ps-3 pe-4 text-[13px] font-semibold text-ink-muted transition-colors active:bg-elevated disabled:opacity-60"
+            className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-edge-soft bg-elevated/70 ps-3 pe-4 type-footnote font-semibold text-ink-muted transition-colors active:bg-elevated disabled:opacity-60"
           >
             <RefreshCw size={15} strokeWidth={2.4} className={refreshing ? "animate-spin" : ""} />
             {t("Refresh")}
@@ -219,13 +219,13 @@ export function MobilePlayPicker({
             {hostSource && <HostSourceBanner source={hostSource} />}
 
             {isDownload && (
-              <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-4 py-3 text-[13px] text-ink-muted">
+              <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-4 py-3 type-footnote text-ink-muted">
                 {t("Choose a source to save offline. You can track progress on the Downloads page.")}
               </div>
             )}
 
             {stubBanner && (
-              <div className="rounded-2xl border border-info/30 bg-info/10 px-4 py-3 text-[13px] text-info">
+              <div className="rounded-2xl border border-info/30 bg-info/10 px-4 py-3 type-footnote text-info">
                 {stubBanner}
               </div>
             )}
@@ -264,13 +264,13 @@ export function MobilePlayPicker({
             )}
 
             {resolveError && engineWarming && (
-              <div className="flex items-center gap-3 rounded-2xl border border-edge-soft/60 bg-elevated/40 px-4 py-3.5 text-[13px] text-ink-muted">
+              <div className="flex items-center gap-3 rounded-2xl border border-edge-soft/60 bg-elevated/40 px-4 py-3.5 type-footnote text-ink-muted">
                 <Loader2 size={16} className="shrink-0 animate-spin text-ink-subtle" />
                 <span>{resolveError}</span>
               </div>
             )}
             {resolveError && !engineWarming && (
-              <div className="rounded-2xl border border-danger/30 bg-danger/15 px-4 py-3.5 text-[13px] text-ink">
+              <div className="rounded-2xl border border-danger/30 bg-danger/15 px-4 py-3.5 type-footnote text-ink">
                 {resolveError}
               </div>
             )}

@@ -47,7 +47,7 @@ export function MobileHeader({ search = true, raised = false }: { search?: boole
         >
           <HarborMark className="h-6 w-6 shrink-0" />
           {/* The Mac sets its wordmark in the system sans (San Francisco); Switzer is its match here. */}
-          <span className="font-sans text-[22px] font-medium leading-none tracking-tight">VAYRA</span>
+          <span className="font-sans type-title-2 font-medium leading-none tracking-tight">VAYRA</span>
         </button>
         {search && (
           <button
@@ -84,7 +84,7 @@ export function MobileHeader({ search = true, raised = false }: { search?: boole
                 type="button"
                 onClick={() => setView(f.view)}
                 aria-current={on ? "page" : undefined}
-                className={`flex h-9 shrink-0 items-center rounded-full px-4 text-[14px] font-medium transition-[background-color,color,transform] active:scale-95 ${
+                className={`flex h-9 shrink-0 items-center rounded-full px-4 type-callout font-medium transition-[background-color,color,transform] active:scale-95 ${
                   on ? "bg-ink text-canvas" : "border border-ink/25 text-ink"
                 }`}
               >

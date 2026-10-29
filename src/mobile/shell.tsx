@@ -132,7 +132,7 @@ function TabButton({
       }`}
     >
       <span className="transition-transform duration-150 ease-out group-active:scale-90">{icon}</span>
-      <span className={`text-[10.5px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{t(label)}</span>
+      <span className={`type-micro leading-none ${active ? "font-semibold" : "font-medium"}`}>{t(label)}</span>
     </button>
   );
 }
@@ -179,7 +179,7 @@ function PlusScreen() {
               className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-edge-soft/60 bg-elevated px-2 py-5 text-ink-muted transition-transform active:scale-95"
             >
               {d.icon}
-              <span className="text-[12px] font-medium text-ink">{t(d.label)}</span>
+              <span className="type-caption font-medium text-ink">{t(d.label)}</span>
             </button>
           ))}
         </div>

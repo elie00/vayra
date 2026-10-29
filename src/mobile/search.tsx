@@ -85,7 +85,7 @@ export function MobileSearch() {
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
-              className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-subtle focus:outline-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+              className="h-full min-w-0 flex-1 bg-transparent type-body text-ink outline-none placeholder:text-ink-subtle focus:outline-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
             />
             {searching && <Loader2 aria-hidden size={16} className="shrink-0 animate-spin text-ink-subtle" />}
             {query && (
@@ -112,7 +112,7 @@ export function MobileSearch() {
               <section className="flex flex-col gap-1">
                 <SectionTitle
                   action={
-                    <button type="button" onClick={clearRecent} className="text-[13px] font-medium text-ink-subtle active:text-ink">
+                    <button type="button" onClick={clearRecent} className="type-footnote font-medium text-ink-subtle active:text-ink">
                       {t("Clear history")}
                     </button>
                   }
@@ -124,7 +124,7 @@ export function MobileSearch() {
                     <button
                       type="button"
                       onClick={() => setQuery(q)}
-                      className="flex min-w-0 flex-1 items-center gap-3 py-2.5 text-start text-[15px] text-ink active:opacity-60"
+                      className="flex min-w-0 flex-1 items-center gap-3 py-2.5 text-start type-callout text-ink active:opacity-60"
                     >
                       <Clock size={17} strokeWidth={2} className="shrink-0 text-ink-subtle" />
                       <span className="truncate">{q}</span>
@@ -153,7 +153,7 @@ export function MobileSearch() {
                       setOpen(false);
                       openFilter({ kind: "genre", mediaType: "movie", name, id });
                     }}
-                    className="h-9 rounded-full border border-edge px-4 text-[13.5px] font-medium text-ink transition-transform active:scale-95"
+                    className="h-9 rounded-full border border-edge px-4 type-footnote font-medium text-ink transition-transform active:scale-95"
                   >
                     {t(name)}
                   </button>
@@ -177,7 +177,7 @@ export function MobileSearch() {
         {trimmed && !magnet && !directUrl && (
           <div className="flex flex-col gap-7 pt-2">
             {status === "error" && titles.length === 0 && (
-              <p role="alert" className="text-[14px] text-ink-muted">
+              <p role="alert" className="type-callout text-ink-muted">
                 {t("Search could not be completed. Check your connection and try again.")}
               </p>
             )}
@@ -202,8 +202,8 @@ export function MobileSearch() {
             {nothing && (
               <div role="status" className="flex flex-col gap-8">
                 <div className="flex flex-col gap-1.5 pt-4 text-center">
-                  <span className="text-[16px] font-semibold text-ink">{t("No matches for \"{query}\"", { query: trimmed })}</span>
-                  <span className="text-[13.5px] text-ink-muted">{t("Try another spelling, a person or a genre.")}</span>
+                  <span className="type-body font-semibold text-ink">{t("No matches for \"{query}\"", { query: trimmed })}</span>
+                  <span className="type-footnote text-ink-muted">{t("Try another spelling, a person or a genre.")}</span>
                 </div>
                 <TrendingList items={trending} onPick={pick} />
               </div>
@@ -275,7 +275,7 @@ function TrendingList({ items, onPick }: { items: Meta[]; onPick: (meta: Meta) =
               <img src={downscaleTmdb(m.background || m.poster)} alt="" decoding="async" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
             )}
           </span>
-          <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium text-ink" dir="auto">
+          <span className="min-w-0 flex-1 truncate type-callout font-medium text-ink" dir="auto">
             {m.name}
           </span>
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-edge text-ink">
@@ -294,10 +294,10 @@ function PosterTile({ meta, onPick }: { meta: Meta; onPick: (meta: Meta) => void
         {meta.poster ? (
           <img src={meta.poster} alt="" decoding="async" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
-          <span className="absolute inset-0 flex items-center p-2 text-center text-[12px] font-medium text-ink-muted">{meta.name}</span>
+          <span className="absolute inset-0 flex items-center p-2 text-center type-caption font-medium text-ink-muted">{meta.name}</span>
         )}
       </span>
-      <span className="line-clamp-2 text-[12.5px] font-medium leading-snug text-ink" dir="auto">
+      <span className="line-clamp-2 type-footnote font-medium leading-snug text-ink" dir="auto">
         {meta.name}
       </span>
     </button>
@@ -307,7 +307,7 @@ function PosterTile({ meta, onPick }: { meta: Meta; onPick: (meta: Meta) => void
 function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <h2 className="text-[17px] font-semibold tracking-[-0.01em] text-ink">{children}</h2>
+      <h2 className="type-title-3 font-semibold tracking-[-0.01em] text-ink">{children}</h2>
       {action}
     </div>
   );
