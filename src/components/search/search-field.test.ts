@@ -4,7 +4,7 @@ import { afterEach, expect, it } from "vitest";
 
 afterEach(() => { document.head.innerHTML = ""; document.body.innerHTML = ""; delete document.documentElement.dataset.os; });
 
-it.each(["macos", "windows"])("moves %s search focus to the rounded wrapper without removing other focus indicators", (os) => {
+it.each(["macos", "windows", "android"])("shows no %s search focus ring and keeps the other focus indicators", (os) => {
   document.documentElement.dataset.os = os;
   const style = document.createElement("style");
   // jsdom does not resolve selector specificity like a browser, so test the
@@ -26,7 +26,7 @@ it.each(["macos", "windows"])("moves %s search focus to the rounded wrapper with
   expect(focusRule.style.getPropertyPriority("outline")).toBe("important");
   expect(getComputedStyle(input).outline).toBe("none");
   expect(field.matches(":has(> input:focus-visible)")).toBe(true);
-  expect(getComputedStyle(field).boxShadow).toContain("inset");
+  expect(getComputedStyle(field).boxShadow).not.toContain("inset");
   expect(getComputedStyle(field).borderRadius).toBe("28px");
   clear.focus();
   expect(getComputedStyle(clear).outline).toContain("2px");
