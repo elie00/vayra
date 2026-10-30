@@ -7,7 +7,7 @@ const sweep: Record<string, string> = {
   "About a minute. Free for personal use.": "Environ une minute. Gratuit pour un usage personnel.",
   "Add": "Ajouter",
   "Add a channel": "Ajouter une chaîne",
-  "Add an M3U or Xtream playlist in Settings → Live TV to use the guide.": "Ajoutez une playlist M3U ou Xtream dans Réglages → TV en direct pour utiliser le guide.",
+  "Add an M3U or Xtream playlist in Settings → Live TV to use the guide.": "Ajoutez une playlist M3U ou Xtream dans Paramètres → TV en direct pour utiliser le guide.",
   "Add preset": "Ajouter un préréglage",
   "Add screenshot": "Ajouter une capture d'écran",
   "Add to my list": "Ajouter à ma liste",

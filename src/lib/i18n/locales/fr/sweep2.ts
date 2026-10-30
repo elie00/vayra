@@ -31,7 +31,7 @@ const sweep2: Record<string, string> = {
   "Active": "Actif",
   "Add a cover image": "Ajouter une image de couverture",
   "Add a debrid provider in Settings first.": "Ajoutez d'abord un fournisseur debrid dans les Paramètres.",
-  "Add an OpenRouter API key in Settings": "Ajoutez une clé API OpenRouter dans les Réglages",
+  "Add an OpenRouter API key in Settings": "Ajoutez une clé API OpenRouter dans les Paramètres",
   "Add at least one item below.": "Ajoutez au moins un élément ci-dessous.",
   "Add image": "Ajouter une image",
   "Add people in the Custom calendar manager first, then come back here.": "Ajoutez d'abord des personnes dans le gestionnaire de calendrier personnalisé, puis revenez ici.",
