@@ -11,6 +11,7 @@ import {
 } from "@/lib/modal-overlay";
 import { AudioModal, type AudioModalState } from "@/components/popups/audio-modal";
 import { SubtitleModal, type SubtitleModalState } from "@/components/popups/subtitle-modal";
+import { t } from "@/lib/i18n";
 
 export function ModalOverlayApp() {
   useEffect(() => {
@@ -92,7 +93,7 @@ function ModalRouter() {
   return (
     <button
       type="button"
-      aria-label="Close modal"
+      aria-label={t("Close modal")}
       className="fixed inset-0 cursor-default"
       style={{ background: "transparent" }}
       onClick={close}

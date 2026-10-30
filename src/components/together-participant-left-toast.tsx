@@ -1,13 +1,15 @@
+import { useT } from "@/lib/i18n";
 import { useEffect } from "react";
 import { useTogether } from "@/lib/together/provider";
 
 export function TogetherParticipantLeftToast() {
+  const t = useT();
   const { incomingParticipantLeft, dismissParticipantLeft, snapshot } = useTogether();
 
   useEffect(() => {
     if (!incomingParticipantLeft) return;
-    const t = window.setTimeout(dismissParticipantLeft, 4000);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(dismissParticipantLeft, 4000);
+    return () => window.clearTimeout(timer);
   }, [incomingParticipantLeft, dismissParticipantLeft]);
 
   if (!incomingParticipantLeft || snapshot.state !== "joined") return null;
@@ -25,7 +27,7 @@ export function TogetherParticipantLeftToast() {
         >
           {initial}
         </span>
-        <span className="text-[13.5px] font-semibold text-ink">{name} left the room</span>
+        <span className="text-[13.5px] font-semibold text-ink">{t("{name} left the room", { name })}</span>
       </div>
     </div>
   );

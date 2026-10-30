@@ -300,6 +300,7 @@ export function SubtitleStylePanel() {
 }
 
 function SubtitlePreview() {
+  const t = useT();
   const { settings } = useSettings();
   const fontSize = Math.max(16, Math.min(120, settings.subFontSize));
   const previewSize = Math.round(fontSize * 0.55);
@@ -363,7 +364,7 @@ function SubtitlePreview() {
               textAlign: align as "left" | "center" | "right",
             }}
           >
-                  I&apos;m gonna make him an offer he can&apos;t refuse.
+                  {t("I'm gonna make him an offer he can't refuse.")}
           </div>
         </div>
       </div>

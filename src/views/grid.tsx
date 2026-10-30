@@ -120,7 +120,7 @@ export function GridView({ grid }: { grid: GridSpec }) {
             {!layoutHasGlobalBack() && (
               <button
                 onClick={goBack}
-                aria-label="Back"
+                aria-label={t("Back")}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-elevated text-ink-muted transition-colors hover:text-ink"
               >
                 <ArrowLeft size={18} strokeWidth={2.2} />

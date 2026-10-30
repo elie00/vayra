@@ -20,7 +20,7 @@ export function IdentityRow({
           label={t("Name")}
           value={name}
           onChange={(v) => onChange({ name: v })}
-          placeholder="My VAYRA"
+          placeholder={t("My VAYRA")}
           required
         />
         <FieldInput

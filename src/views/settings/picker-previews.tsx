@@ -47,7 +47,7 @@ function CondensedMock() {
               </div>
               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.04em] text-ink-muted">
                 <Zap size={12} fill="currentColor" strokeWidth={0} />
-                Cached on Real-Debrid
+                {t("Cached on Real-Debrid")}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -170,12 +170,13 @@ function SourceRow({ src, filename }: { src: (typeof SOURCES)[number]; filename?
 }
 
 function StremioMock() {
+  const t = useT();
   return (
     <>
       <div className="flex items-center justify-between gap-3 rounded-2xl bg-elevated/60 px-4 py-2.5 text-[14px] font-medium text-ink ring-1 ring-edge-soft">
         <div className="flex items-center gap-3">
           <GridIcon />
-          <span>All</span>
+          <span>{t("All")}</span>
         </div>
         <ChevronDown size={18} strokeWidth={2.2} className="text-ink-muted" />
       </div>

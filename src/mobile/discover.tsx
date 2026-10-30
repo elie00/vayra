@@ -92,7 +92,7 @@ export function MobileDiscover({
           </div>
         )}
 
-        {featuredItem && <MobileHeroCard meta={featuredItem} label="Featured" />}
+        {featuredItem && <MobileHeroCard meta={featuredItem} label={t("Featured")} />}
 
         {items === null ? (
           <div className="grid grid-cols-3 gap-2.5">

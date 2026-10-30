@@ -34,6 +34,7 @@ const TYPE_TITLE: Record<AwardType, string> = {
 };
 
 export function AwardsBlock({ awards }: { awards: AwardEntry[] }) {
+  const t = useT();
   if (awards.length === 0) return null;
 
   const groups = new Map<AwardType, AwardEntry[]>();
@@ -50,7 +51,7 @@ export function AwardsBlock({ awards }: { awards: AwardEntry[] }) {
 
   return (
     <div id="awards-section" className="scroll-mt-24 border-t border-edge-soft pt-14">
-      <h3 className="mb-10 text-[24px] font-medium tracking-tight text-ink">Awards & Recognition</h3>
+      <h3 className="mb-10 text-[24px] font-medium tracking-tight text-ink">{t("Awards & Recognition")}</h3>
       <div className="flex flex-col gap-14">
         {sorted.map(([type, entries]) => (
           <AwardGroup key={type} type={type} entries={entries} />

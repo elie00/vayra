@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+
 export function AdSkipIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -9,7 +11,7 @@ export function AdSkipIcon({ className }: { className?: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       role="img"
-      aria-label="Injected ad"
+      aria-label={t("Injected ad")}
     >
       <circle cx="12" cy="12" r="9" />
       <line x1="5.5" y1="5.5" x2="18.5" y2="18.5" />

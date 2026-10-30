@@ -1,9 +1,11 @@
+import { t } from "@/lib/i18n";
+
 export function RtRotten({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 32 32"
       className={className}
-      aria-label="Rotten Tomatoes Rotten"
+      aria-label={t("Rotten Tomatoes Rotten")}
       role="img"
     >
       <path
