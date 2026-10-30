@@ -429,7 +429,7 @@ export function Transport({
       <SongIdToast />
       <div
         data-tauri-drag-region={fullscreen ? undefined : ""}
-        className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent px-7 pt-4 pb-8 transition-opacity duration-300 ${
+        className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent px-7 pt-4 pb-8 max-sm:px-4 max-sm:pt-[calc(var(--harbor-status-bar,0px)+0.5rem)] transition-opacity duration-300 ${
           visible ? "opacity-100" : "opacity-0"
         }`}
       >
@@ -451,7 +451,7 @@ export function Transport({
         ref={controlsRef}
         dir="ltr"
         className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2.5 bg-gradient-to-t from-black/70 via-black/25 to-transparent ${
-          tight ? "px-3 pt-6 pb-3" : "px-7 pt-10 pb-5"
+          tight ? "px-3 pt-6 pb-[calc(0.75rem+var(--vayra-safe-bottom,0px))]" : "px-7 pt-10 pb-[calc(1.25rem+var(--vayra-safe-bottom,0px))]"
         } transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
       >
         <div dir="ltr" className="pointer-events-auto flex items-center gap-3">
