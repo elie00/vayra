@@ -28,7 +28,7 @@ import {
   windowZoomLabel,
 } from "@/lib/window";
 import { desktopUx, hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
-import { MobileHeader } from "@/mobile/header";
+import { MobileBackBar, MobileHeader } from "@/mobile/header";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -62,29 +62,26 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
     : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
   const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
 
-  // Mobile: the streaming-app header on tab-level views (MobileHeader), or the
-  // contextual Back chrome on stacked views — never both, and none of the
-  // desktop right-cluster (recording/downloads) or window controls.
+  // Mobile: the streaming-app header on tab-level views (MobileHeader), a Back
+  // top bar on stacked views (MobileBackBar), never the desktop right-cluster
+  // (recording/downloads) or window controls.
   if (mobile) {
     if (!onLiveRoot && !(canGoBack && !connecting)) {
       return <MobileHeader raised={topKind === "picker" || connecting} />;
     }
+    if (!onLiveRoot) return <MobileBackBar />;
     return (
       <header
         data-vayra-topbar
-        className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}
+        className={`fixed inset-x-0 top-0 ${connecting ? "z-[130]" : "z-[55]"} h-20`}
       >
         <div className="flex h-full items-center gap-2 px-4">
-          {onLiveRoot ? (
-            <div className="flex items-center gap-1.5 text-ink">
-              <HarborMark className="h-7 w-7" />
-              <span className="font-display text-[18px] font-semibold leading-none tracking-tight">
-                {t("Live")}
-              </span>
-            </div>
-          ) : (
-            <BackChrome />
-          )}
+          <div className="flex items-center gap-1.5 text-ink">
+            <HarborMark className="h-7 w-7" />
+            <span className="font-display text-[18px] font-semibold leading-none tracking-tight">
+              {t("Live")}
+            </span>
+          </div>
         </div>
       </header>
     );

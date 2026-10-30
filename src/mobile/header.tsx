@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Menu } from "lucide-react";
+import { ArrowLeft, Menu } from "lucide-react";
+import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { ProfileAvatar } from "@/chrome/sidebar/profile-chip";
 import { useT } from "@/lib/i18n";
-import { useProfiles } from "@/lib/profiles";
+import { useActiveKid, useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
@@ -57,6 +58,48 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
           <span className="scale-[0.8]">
             <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact />
           </span>
+        </button>
+      </div>
+    </header>
+  );
+}
+
+/**
+ * The top bar of a stacked page (a title, a person, a list) on a phone, as a
+ * Material 3 top app bar: a 48dp round Back button over the artwork, and a bar
+ * that turns solid once the page scrolls under it, instead of a floating
+ * "Back" pill that ran over the content.
+ */
+export function MobileBackBar() {
+  const t = useT();
+  const { goBack, topKind, meta } = useView();
+  const kid = useActiveKid();
+  const scrolled = useScrolledPast(48, topKind);
+  if (kid) {
+    return (
+      <header data-vayra-topbar className="fixed inset-x-0 top-0 z-[55]">
+        <div className="flex h-16 items-center px-4">
+          <BackChrome />
+        </div>
+      </header>
+    );
+  }
+  const label = topKind === "downloads" && meta ? t("Back to {title}", { title: meta.name }) : t("common.back");
+  return (
+    <header
+      data-vayra-topbar
+      className={`pointer-events-none fixed inset-x-0 top-0 z-[55] transition-[background-color] duration-300 ${scrolled ? "bg-canvas/92 backdrop-blur-xl" : ""}`}
+    >
+      <div className="flex h-16 items-center px-2">
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label={label}
+          className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full text-ink transition-[transform,background-color] active:scale-90 ${
+            scrolled ? "" : "bg-black/45 backdrop-blur-md"
+          }`}
+        >
+          <ArrowLeft size={22} strokeWidth={2.2} className="dir-icon" />
         </button>
       </div>
     </header>
