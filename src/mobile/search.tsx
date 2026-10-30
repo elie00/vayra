@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Clock, Loader2, Play, Search, X } from "lucide-react";
+import { Clock, Loader2, Search, X } from "lucide-react";
 import { topMovies, topSeries, type Meta } from "@/lib/cinemeta";
-import { MOVIE_GENRES } from "@/lib/feed/tags";
 import { useT } from "@/lib/i18n";
 import { useSearch } from "@/lib/search-context";
 import { isDirectVideoUrl, isMagnetInput } from "@/lib/torrent/magnet";
-import { useView } from "@/lib/view";
 import { animeHitMeta } from "@/components/search/anime-row";
 import { MagnetCard } from "@/components/search/magnet-card";
 import { PeopleRow } from "@/components/search/people-row";
@@ -25,7 +23,6 @@ import "@/components/search/search-field.css";
 export function MobileSearch() {
   const { open, setOpen, query, setQuery, results, status, clear, recent, recordRecent, removeRecent, clearRecent } = useSearch();
   const t = useT();
-  const { openFilter } = useView();
   const inputRef = useRef<HTMLInputElement>(null);
   const trending = useTrending(open);
 
@@ -134,25 +131,7 @@ export function MobileSearch() {
                 ))}
               </section>
             )}
-            <TrendingList items={trending} onPick={pick} />
-            <section className="flex flex-col gap-3">
-              <SectionTitle>{t("Try a genre")}</SectionTitle>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(MOVIE_GENRES).map(([name, id]) => (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      openFilter({ kind: "genre", mediaType: "movie", name, id });
-                    }}
-                    className="h-9 rounded-full border border-edge px-4 type-footnote font-medium text-ink transition-transform active:scale-95"
-                  >
-                    {t(name)}
-                  </button>
-                ))}
-              </div>
-            </section>
+            <TrendingRails trending={trending} onPick={pick} />
           </div>
         )}
 
@@ -198,7 +177,7 @@ export function MobileSearch() {
                   <span className="type-body font-semibold text-ink">{t("No matches for \"{query}\"", { query: trimmed })}</span>
                   <span className="type-footnote text-ink-muted">{t("Try another spelling, a person or a genre.")}</span>
                 </div>
-                <TrendingList items={trending} onPick={pick} />
+                <TrendingRails trending={trending} onPick={pick} />
               </div>
             )}
           </div>
@@ -225,22 +204,20 @@ export function resultTitles(results: SearchResults): Meta[] {
 }
 
 // What's trending, as streaming apps fill their search page before a query:
-// Cinemeta's top movies and shows, alternated. Loaded on first open.
-function useTrending(open: boolean): Meta[] {
-  const [items, setItems] = useState<Meta[]>([]);
-  const loaded = items.length > 0;
+// Cinemeta's top shows and movies, each its own rail. Loaded on first open.
+type Trending = { series: Meta[]; movies: Meta[] };
+
+function useTrending(open: boolean): Trending {
+  const [items, setItems] = useState<Trending>({ series: [], movies: [] });
+  const loaded = items.series.length + items.movies.length > 0;
   useEffect(() => {
     if (!open || loaded) return;
     let cancelled = false;
-    Promise.all([topMovies(), topSeries()])
-      .then(([movies, series]) => {
+    Promise.all([topSeries(), topMovies()])
+      .then(([series, movies]) => {
         if (cancelled) return;
-        const mixed: Meta[] = [];
-        for (let i = 0; i < Math.max(movies.length, series.length); i++) {
-          if (movies[i]) mixed.push(movies[i]);
-          if (series[i]) mixed.push(series[i]);
-        }
-        setItems(mixed.filter((m) => m.background || m.poster).slice(0, 10));
+        const usable = (list: Meta[]) => list.filter((m) => m.poster).slice(0, 16);
+        setItems({ series: usable(series), movies: usable(movies) });
       })
       .catch(() => {});
     return () => {
@@ -250,32 +227,35 @@ function useTrending(open: boolean): Meta[] {
   return items;
 }
 
-function TrendingList({ items, onPick }: { items: Meta[]; onPick: (meta: Meta) => void }) {
+function TrendingRails({ trending, onPick }: { trending: Trending; onPick: (meta: Meta) => void }) {
   const t = useT();
+  return (
+    <>
+      <PosterRail title={t("Trending shows")} items={trending.series} onPick={onPick} />
+      <PosterRail title={t("Trending movies")} items={trending.movies} onPick={onPick} />
+    </>
+  );
+}
+
+// Large posters, a little over two across, as HBO Max lays out its search page.
+function PosterRail({ title, items, onPick }: { title: string; items: Meta[]; onPick: (meta: Meta) => void }) {
   if (items.length === 0) return null;
   return (
-    <section className="flex flex-col gap-2">
-      <SectionTitle>{t("Trending")}</SectionTitle>
-      {items.map((m) => (
-        <button
-          key={m.id}
-          type="button"
-          onClick={() => onPick(m)}
-          className="flex items-center gap-3 rounded-xl text-start transition-transform active:scale-[0.98]"
-        >
-          <span className="relative aspect-[16/9] w-32 shrink-0 overflow-hidden rounded-lg bg-elevated">
-            {(m.background || m.poster) && (
-              <img src={downscaleTmdb(m.background || m.poster)} alt="" decoding="async" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-            )}
-          </span>
-          <span className="min-w-0 flex-1 truncate type-callout font-medium text-ink" dir="auto">
-            {m.name}
-          </span>
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-edge text-ink">
-            <Play size={14} fill="currentColor" className="ms-0.5" />
-          </span>
-        </button>
-      ))}
+    <section className="flex flex-col gap-3">
+      <SectionTitle>{title}</SectionTitle>
+      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 [scroll-padding-inline:1rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => onPick(m)}
+            aria-label={m.name}
+            className="relative aspect-[2/3] w-[44%] shrink-0 snap-start overflow-hidden rounded-lg bg-elevated transition-transform active:scale-[0.97]"
+          >
+            <img src={m.poster} alt="" decoding="async" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          </button>
+        ))}
+      </div>
     </section>
   );
 }
@@ -304,9 +284,4 @@ function SectionTitle({ children, action }: { children: React.ReactNode; action?
       {action}
     </div>
   );
-}
-
-function downscaleTmdb(url?: string): string | undefined {
-  if (!url) return url;
-  return url.replace(/\/t\/p\/(original|w1280|w780|w500)\//, "/t/p/w300/");
 }
