@@ -325,6 +325,7 @@ const coverage: Record<string, string> = {
   "Similar titles": "Titres similaires",
   "Cast list": "Distribution",
   "Menu": "Menu",
+  "More options": "Plus d’options",
   "Play {title}": "Lire {title}",
   "Nothing saved yet": "Rien d’enregistré pour l’instant",
   "Tap + on a title to keep it here.": "Touchez + sur un titre pour le garder ici.",

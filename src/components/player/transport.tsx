@@ -1,4 +1,4 @@
-import { Settings2 } from "lucide-react";
+import { MoreHorizontal, Settings2 } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
@@ -18,12 +18,15 @@ import { fmtTime } from "./transport/transport-utils";
 import {
   controlsInSlot,
   PLAYER_CHROME_CHANGED_EVENT,
+  MOBILE_MORE_CONTROLS,
+  MOBILE_PLAYER_CONFIG,
   readPlayerChromeConfig,
   writePlayerChromeConfig,
   type PlayerChromeConfig,
   type TimeFormat,
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
+import { isMobileTauri } from "@/lib/platform";
 import { SongIdToast } from "@/components/song-id-toast";
 import { useCastModalPlay } from "./use-cast-modal-play";
 import { LUMA_OPEN_EVENT } from "@/lib/luma";
@@ -170,9 +173,13 @@ export function Transport({
   const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
   const [castModalOpen, setCastModalOpen] = useState(false);
   const [castModalInitialView, setCastModalInitialView] = useState<"title" | "queue">("title");
-  const [chromeConfig, setChromeConfig] = useState<PlayerChromeConfig>(() =>
+  const [savedChromeConfig, setChromeConfig] = useState<PlayerChromeConfig>(() =>
     readPlayerChromeConfig("default"),
   );
+  // A phone gets its own lean layout; the desktop layout stays customisable.
+  const mobile = isMobileTauri();
+  const chromeConfig = mobile ? MOBILE_PLAYER_CONFIG : savedChromeConfig;
+  const [moreOpen, setMoreOpen] = useState(false);
   const isLiveChannel = !!meta?.id?.startsWith("iptv:");
   const titleClickable = !!meta && !isLiveChannel;
   const { openMeta, exitPlayer } = useView();
@@ -477,8 +484,16 @@ export function Transport({
             </>
           )}
         </div>
+        {mobile && moreOpen && (
+          <div className="pointer-events-auto -mx-1 flex items-center gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {MOBILE_MORE_CONTROLS.map((id) => (
+              <Fragment key={id}>{renderControl(id, ctx)}</Fragment>
+            ))}
+          </div>
+        )}
         <div className={`pointer-events-auto grid items-center ${
-          compact ? "grid-cols-[auto_1fr_auto] gap-2" : "grid-cols-[1fr_auto_1fr] gap-4"
+          // A phone keeps the playback buttons centred however narrow the bar.
+          compact && !mobile ? "grid-cols-[auto_1fr_auto] gap-2" : "grid-cols-[1fr_auto_1fr] gap-4"
         }`}>
           <div className="flex min-w-0 items-center gap-2 justify-self-start">
             {controlsInSlot(chromeConfig, "bottom-left").map((c) => (
@@ -494,6 +509,17 @@ export function Transport({
             {controlsInSlot(chromeConfig, "bottom-right").map((c) => (
               <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
             ))}
+            {mobile && (
+              <button
+                type="button"
+                onClick={() => setMoreOpen((v) => !v)}
+                aria-label={t("More options")}
+                aria-expanded={moreOpen}
+                className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-colors ${moreOpen ? "bg-white/20" : "active:bg-white/15"}`}
+              >
+                <MoreHorizontal size={22} />
+              </button>
+            )}
           </div>
         </div>
       </div>
