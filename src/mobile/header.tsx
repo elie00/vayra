@@ -1,44 +1,36 @@
 import { useEffect, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { useT } from "@/lib/i18n";
-import { useSearch } from "@/lib/search-context";
-import { useView, type View } from "@/lib/view";
+import { useView } from "@/lib/view";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
+import { setPlusOpen } from "@/mobile/shell";
 
-// Streaming-app header for the mobile tab-level views: the VAYRA mark, then
-// search and Watch Together. Home and its Shows / Movies / Anime filters add a
-// row of filter pills, as streaming apps do; the header turns solid once the
+// Streaming-app header for the mobile tab-level views, after HBO Max: the menu
+// (shows, movies, anime, sports, categories…) and the VAYRA mark on the left,
+// Watch Together on the right. Search is a tab; the header turns solid once the
 // page scrolls under it.
-
-const FILTERS: { view: View; label: string }[] = [
-  { view: "shows", label: "nav.shows" },
-  { view: "movies", label: "nav.movies" },
-  { view: "anime", label: "nav.anime" },
-];
-
-/** The views whose header carries the filter pills (and is taller for it). */
-export function hasFilterPills(topKind: string): boolean {
-  return topKind === "home" || FILTERS.some((f) => f.view === topKind);
-}
-
-export function MobileHeader({ search = true, raised = false }: { search?: boolean; raised?: boolean }) {
+export function MobileHeader({ raised = false }: { raised?: boolean }) {
   const t = useT();
   const { topKind, setView } = useView();
-  const { setOpen } = useSearch();
   const scrolled = useScrolledPast(8, topKind);
-  const pills = hasFilterPills(topKind);
-  const filtered = FILTERS.some((f) => f.view === topKind);
 
   return (
     <header
       data-vayra-topbar
-      data-pills={pills ? "" : undefined}
       className={`fixed inset-x-0 top-0 ${raised ? "z-[130]" : "z-[55]"} transition-[background-color,backdrop-filter] duration-300 ${
         scrolled ? "bg-canvas/92 backdrop-blur-xl" : "bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
       }`}
     >
-      <div className="flex h-14 items-center gap-1 ps-4 pe-2">
+      <div className="flex h-14 items-center gap-1 ps-2 pe-2">
+        <button
+          type="button"
+          onClick={() => setPlusOpen(true)}
+          aria-label={t("Open menu")}
+          className="flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors active:bg-elevated"
+        >
+          <Menu size={24} strokeWidth={1.9} />
+        </button>
         <button
           type="button"
           onClick={() => setView("home")}
@@ -47,53 +39,10 @@ export function MobileHeader({ search = true, raised = false }: { search?: boole
         >
           <HarborMark className="h-6 w-6 shrink-0" />
           {/* The Mac sets its wordmark in the system sans (San Francisco); Switzer is its match here. */}
-          <span className="font-sans type-title-2 font-medium leading-none tracking-tight">VAYRA</span>
+          <span className="font-sans text-[22px] font-medium leading-none tracking-tight">VAYRA</span>
         </button>
-        {search && (
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label={t("Search")}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors active:bg-elevated"
-          >
-            <Search size={22} strokeWidth={1.9} />
-          </button>
-        )}
         <MobileTogetherButton />
       </div>
-      {pills && (
-        <nav
-          aria-label={t("Categories")}
-          className="flex h-12 items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {filtered && (
-            <button
-              type="button"
-              onClick={() => setView("home")}
-              aria-label={t("Clear filter")}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink/25 text-ink transition-transform active:scale-95"
-            >
-              <X size={16} strokeWidth={2.2} />
-            </button>
-          )}
-          {FILTERS.map((f) => {
-            const on = f.view === topKind;
-            return (
-              <button
-                key={f.view}
-                type="button"
-                onClick={() => setView(f.view)}
-                aria-current={on ? "page" : undefined}
-                className={`flex h-9 shrink-0 items-center rounded-full px-4 type-callout font-medium transition-[background-color,color,transform] active:scale-95 ${
-                  on ? "bg-ink text-canvas" : "border border-ink/25 text-ink"
-                }`}
-              >
-                {t(f.label)}
-              </button>
-            );
-          })}
-        </nav>
-      )}
     </header>
   );
 }

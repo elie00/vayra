@@ -1454,10 +1454,6 @@ html[data-os="android"] [data-vayra-topbar] {
   height: calc(5rem + var(--harbor-status-bar));
   padding-top: var(--harbor-status-bar);
 }
-/* MobileHeader adds a row of filter pills on Home, Shows, Movies and Anime. */
-html[data-os="android"] [data-vayra-topbar][data-pills] {
-  height: calc(6.5rem + var(--harbor-status-bar));
-}
 /* The mobile nav drawer is fixed full-height; keep its logo clear of the bar. */
 html[data-os="android"] [data-harbor-nav-drawer] {
   padding-top: var(--harbor-status-bar);

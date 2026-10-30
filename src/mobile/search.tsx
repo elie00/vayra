@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Clock, Loader2, Play, Search, X } from "lucide-react";
+import { Clock, Loader2, Play, Search, X } from "lucide-react";
 import { topMovies, topSeries, type Meta } from "@/lib/cinemeta";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
 import { useT } from "@/lib/i18n";
@@ -16,7 +16,7 @@ import "@/components/search/search-field.css";
 
 /**
  * Search on a phone, as streaming apps do it rather than the Mac's floating
- * field: a full page with Back beside a compact field and the keyboard up.
+ * field: the Search tab, a full page with a compact field and the keyboard up.
  * Before typing it offers recent searches, what's trending and genres; from
  * the first letter, people and a poster grid. A title opens its quick look over
  * the results, so dismissing it lands back on them. The query, history and
@@ -57,15 +57,7 @@ export function MobileSearch() {
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={t("Search")} className="vayra-search fixed inset-0 z-[200] flex flex-col bg-canvas">
       <div className="shrink-0 pt-[var(--harbor-status-bar,1.75rem)]">
-        <div className="flex h-16 items-center gap-1 ps-1 pe-4">
-          <button
-            type="button"
-            onClick={close}
-            aria-label={t("common.back")}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition-colors active:bg-elevated"
-          >
-            <ArrowLeft size={22} strokeWidth={2} className="dir-icon" />
-          </button>
+        <div className="flex h-16 items-center px-4">
           <label data-search-field className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-raised ps-4 pe-1.5">
             <Search size={18} strokeWidth={2} className="shrink-0 text-ink-subtle" />
             <input
@@ -105,7 +97,8 @@ export function MobileSearch() {
         </div>
       </div>
 
-      <div className="min-h-0 grow basis-0 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+var(--vayra-safe-bottom))]">
+      {/* Search is a tab: the tab bar stays over the bottom of the page. */}
+      <div className="min-h-0 grow basis-0 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+var(--harbor-tabbar,0px))]">
         {!trimmed && (
           <div className="flex flex-col gap-8 pt-2">
             {recent.length > 0 && (

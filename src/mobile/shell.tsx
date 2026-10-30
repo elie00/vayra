@@ -1,25 +1,18 @@
-import { useSyncExternalStore, type ReactElement, type ReactNode } from "react";
-import { BarChart3, Layers, LayoutGrid } from "lucide-react";
-import { HomeIcon } from "@/components/icons/home-icon";
-import { DiscoverIcon } from "@/components/icons/discover-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
-import { LibraryIcon } from "@/components/icons/library-icon";
-import { MoviesIcon } from "@/components/icons/movies-icon";
-import { TvIcon } from "@/components/icons/tv-icon";
-import { AnimeIcon } from "@/components/icons/anime-icon";
-import { SportsIcon } from "@/components/icons/sports-icon";
-import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
-import { CalendarIcon } from "@/components/icons/calendar-icon";
-import { AddonsIcon } from "@/components/icons/addons-icon";
-import { SettingsIcon } from "@/components/icons/settings-icon";
-import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
+import { useSyncExternalStore, type ReactNode } from "react";
+import { Bookmark, Home, Search, X } from "lucide-react";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
-import { MobileTogetherSheet } from "@/mobile/together-sheet";
-import { MacNowPlayingBar, MacRemoteSheet } from "@/mobile/mac-now-playing";
+import { MOVIE_GENRES } from "@/lib/feed/tags";
 import { useT } from "@/lib/i18n";
+import { useSearch } from "@/lib/search-context";
 import { useView, type View } from "@/lib/view";
+import { MacNowPlayingBar, MacRemoteSheet } from "@/mobile/mac-now-playing";
+import { MobileTogetherSheet } from "@/mobile/together-sheet";
 
-// ── Plus overlay open/close store (shared with the Back handler) ──────────────
+// The phone's navigation, after HBO Max: three icon tabs — Home, My list and
+// Search — and a menu behind the header's ☰ for everything else: shows,
+// movies, anime, sports, live TV, genres, then downloads, addons and settings.
+
+// ── Menu open/close store (shared with the Back handler) ──────────────────────
 let plusOpen = false;
 const subs = new Set<() => void>();
 export function setPlusOpen(v: boolean): void {
@@ -43,66 +36,62 @@ export function usePlusOpen(): boolean {
   );
 }
 
-type NavIcon = (props: { active?: boolean }) => ReactElement;
-
-const TABS: { view: View; label: string; Icon: NavIcon }[] = [
-  { view: "home", label: "nav.home", Icon: HomeIcon },
-  { view: "discover", label: "nav.discover", Icon: DiscoverIcon },
-  { view: "library", label: "nav.library", Icon: LibraryIcon },
-];
+type TabId = "home" | "mylist" | "search";
 
 export function MobileShell() {
   const t = useT();
   const { topKind, setView, player } = useView();
-  const open = usePlusOpen();
+  const { open: searchOpen, setOpen: setSearchOpen } = useSearch();
+  const menuOpen = usePlusOpen();
   // The tab bar shows everywhere except the fullscreen playback contexts.
   const hidden = !!player || topKind === "picker";
-  const tabCount = TABS.length + 1;
-  const activeIndex = open ? TABS.length : TABS.findIndex((tab) => tab.view === topKind);
+  const active: TabId | null = searchOpen ? "search" : topKind === "library" ? "mylist" : topKind === "home" ? "home" : null;
+
+  const go = (tab: TabId) => {
+    setPlusOpen(false);
+    if (tab === "search") {
+      setSearchOpen(true);
+      return;
+    }
+    setSearchOpen(false);
+    setView(tab === "home" ? "home" : "library");
+  };
+
+  const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
+    { id: "home", label: t("nav.home"), icon: <Home size={25} strokeWidth={active === "home" ? 2.4 : 1.8} fill={active === "home" ? "currentColor" : "none"} /> },
+    { id: "mylist", label: t("My list"), icon: <Bookmark size={24} strokeWidth={active === "mylist" ? 2.4 : 1.8} fill={active === "mylist" ? "currentColor" : "none"} /> },
+    { id: "search", label: t("Search"), icon: <Search size={25} strokeWidth={active === "search" ? 2.6 : 1.8} /> },
+  ];
 
   return (
     <>
-      {open && <PlusScreen />}
+      {menuOpen && <MenuScreen />}
       <MobileTogetherSheet />
-      {!hidden && !open && <MacNowPlayingBar />}
+      {!hidden && !menuOpen && <MacNowPlayingBar />}
       <MacRemoteSheet />
       {!hidden && (
         <nav
           data-vayra-tabbar
           aria-label={t("Primary")}
-          className="vayra-tabbar fixed inset-x-0 bottom-0 z-[90] pb-[var(--vayra-safe-bottom)]"
+          // Above the search page while it is open (search is a tab); below the
+          // bottom sheets otherwise.
+          className={`vayra-tabbar fixed inset-x-0 bottom-0 ${searchOpen ? "z-[205]" : "z-[90]"} pb-[var(--vayra-safe-bottom)]`}
         >
-          <div className="relative flex items-stretch">
-            {/* One indicator slides between the tabs instead of each tab lighting up. */}
-            <span
-              aria-hidden
-              className="vayra-tab-indicator pointer-events-none absolute inset-y-0 start-0 flex justify-center"
-              style={{
-                width: `${100 / tabCount}%`,
-                transform: `translateX(${Math.max(0, activeIndex) * 100}%)`,
-                opacity: activeIndex < 0 ? 0 : 1,
-              }}
-            >
-              <span className="h-[3px] w-7 rounded-b-full bg-accent" />
-            </span>
-            {TABS.map((tab, i) => (
-              <TabButton
-                key={tab.view}
-                label={tab.label}
-                active={activeIndex === i}
-                icon={<tab.Icon active={activeIndex === i} />}
-                onClick={() => {
-                  setPlusOpen(false);
-                  setView(tab.view);
-                }}
-              />
+          <div className="flex items-stretch">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => go(tab.id)}
+                aria-label={tab.label}
+                aria-current={active === tab.id ? "page" : undefined}
+                className={`group flex h-16 flex-1 items-center justify-center transition-colors duration-150 ${
+                  active === tab.id ? "text-ink" : "text-ink-subtle"
+                }`}
+              >
+                <span className="transition-transform duration-150 ease-out group-active:scale-90">{tab.icon}</span>
+              </button>
             ))}
-            <TabButton
-              label="More"
-              active={open}
-              icon={<LayoutGrid size={24} strokeWidth={open ? 2.4 : 1.9} />}
-              onClick={() => setPlusOpen(!open)}
-            />
           </div>
         </nav>
       )}
@@ -110,80 +99,91 @@ export function MobileShell() {
   );
 }
 
-function TabButton({
-  label,
-  active,
-  icon,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  icon: ReactNode;
-  onClick: () => void;
-}) {
-  const t = useT();
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={`group flex h-16 flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 ${
-        active ? "text-ink" : "text-ink-subtle"
-      }`}
-    >
-      <span className="transition-transform duration-150 ease-out group-active:scale-90">{icon}</span>
-      <span className={`type-micro leading-none ${active ? "font-semibold" : "font-medium"}`}>{t(label)}</span>
-    </button>
-  );
-}
-
-function PlusScreen() {
+function MenuScreen() {
   const t = useT();
   const view = useView();
   const go = (fn: () => void) => {
     fn();
     setPlusOpen(false);
   };
-  const dests: { label: string; icon: ReactNode; onGo: () => void }[] = [
-    { label: "nav.movies", icon: <MoviesIcon />, onGo: () => view.setView("movies") },
-    { label: "nav.shows", icon: <TvIcon />, onGo: () => view.setView("shows") },
-    { label: "nav.anime", icon: <AnimeIcon />, onGo: () => view.setView("anime") },
-    { label: "nav.sports", icon: <SportsIcon />, onGo: () => view.setView("sports") },
-    // Live TV needs a playlist set up first, so it lives here rather than in the tab bar.
-    { label: "nav.live", icon: <LiveTvIcon />, onGo: () => view.setView("live") },
-    { label: "nav.playlists", icon: <PlaylistVodIcon />, onGo: () => view.setView("vod") },
-    { label: "nav.calendar", icon: <CalendarIcon />, onGo: () => view.setView("calendar") },
-    { label: "Collections", icon: <Layers size={24} strokeWidth={1.8} />, onGo: () => view.openCollections() },
-    { label: "nav.downloads", icon: <DownloadsNavIcon active={false} />, onGo: () => view.setView("downloads") },
-    { label: "Stats", icon: <BarChart3 size={24} strokeWidth={1.8} />, onGo: () => view.openStats() },
-    { label: "nav.addons", icon: <AddonsIcon />, onGo: () => view.setView("addons") },
-    { label: "nav.settings", icon: <SettingsIcon />, onGo: () => view.openSettings() },
+  const to = (v: View) => () => view.setView(v);
+  const sections: { label: string; onGo: () => void }[] = [
+    { label: "nav.shows", onGo: to("shows") },
+    { label: "nav.movies", onGo: to("movies") },
+    { label: "nav.anime", onGo: to("anime") },
+    { label: "nav.sports", onGo: to("sports") },
+    // Live TV needs a playlist set up first, so it sits here rather than in the tab bar.
+    { label: "nav.live", onGo: to("live") },
+    { label: "nav.discover", onGo: to("discover") },
+  ];
+  const more: { label: string; onGo: () => void }[] = [
+    { label: "nav.downloads", onGo: to("downloads") },
+    { label: "Collections", onGo: () => view.openCollections() },
+    { label: "nav.calendar", onGo: to("calendar") },
+    { label: "nav.playlists", onGo: to("vod") },
+    { label: "Stats", onGo: () => view.openStats() },
+    { label: "nav.addons", onGo: to("addons") },
+    { label: "nav.settings", onGo: () => view.openSettings() },
   ];
   // The fixed layer must NOT scroll itself: Android WebView leaves a stale ghost
   // copy of a scrolled position:fixed+overflow element (the "two offset grids /
   // white bands" bug). So the fixed element is a stable opaque compositing layer
   // (transform-gpu + isolate) and the scroll lives on a normal in-flow child.
   return (
-    <div
-      data-vayra-plus
-      className="fixed inset-0 z-[80] isolate transform-gpu bg-canvas"
-    >
-      <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] pb-[calc(5rem+var(--vayra-safe-bottom))]">
-        <ProfileChip menuPlacement="below" />
-        <div className="mt-5 grid grid-cols-3 gap-3">
-          {dests.map((d) => (
-            <button
-              key={d.label}
-              type="button"
-              onClick={() => go(d.onGo)}
-              className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-edge-soft/60 bg-elevated px-2 py-5 text-ink-muted transition-transform active:scale-95"
-            >
-              {d.icon}
-              <span className="type-caption font-medium text-ink">{t(d.label)}</span>
-            </button>
-          ))}
+    <div data-vayra-plus role="dialog" aria-modal="true" aria-label={t("Menu")} className="fixed inset-0 z-[200] isolate transform-gpu bg-canvas/90 backdrop-blur-2xl">
+      <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-[calc(5rem+var(--vayra-safe-bottom))] pt-[var(--harbor-status-bar,1.75rem)]">
+        <div className="-ms-3 flex h-14 shrink-0 items-center">
+          <button
+            type="button"
+            onClick={() => setPlusOpen(false)}
+            aria-label={t("common.close")}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink active:bg-elevated"
+          >
+            <X size={26} strokeWidth={1.9} />
+          </button>
         </div>
+        <div className="mt-2">
+          <ProfileChip menuPlacement="below" />
+        </div>
+        <nav className="mt-4 flex flex-col">
+          {sections.map((s) => (
+            <MenuLink key={s.label} big onClick={() => go(s.onGo)}>
+              {t(s.label)}
+            </MenuLink>
+          ))}
+        </nav>
+        <hr className="my-4 w-2/3 border-white/15" />
+        <p className="pb-1 type-caption font-semibold uppercase tracking-[0.18em] text-ink-subtle">{t("Categories")}</p>
+        <nav className="flex flex-col">
+          {Object.entries(MOVIE_GENRES).map(([name, id]) => (
+            <MenuLink key={name} onClick={() => go(() => view.openFilter({ kind: "genre", mediaType: "movie", name, id }))}>
+              {t(name)}
+            </MenuLink>
+          ))}
+        </nav>
+        <hr className="my-4 w-2/3 border-white/15" />
+        <nav className="flex flex-col">
+          {more.map((s) => (
+            <MenuLink key={s.label} muted onClick={() => go(s.onGo)}>
+              {t(s.label)}
+            </MenuLink>
+          ))}
+        </nav>
       </div>
     </div>
+  );
+}
+
+function MenuLink({ big = false, muted = false, onClick, children }: { big?: boolean; muted?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`self-start py-2.5 text-start transition-opacity active:opacity-60 ${
+        big ? "type-title-1 font-semibold text-ink" : muted ? "type-callout text-ink-muted" : "type-body text-ink"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

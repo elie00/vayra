@@ -250,7 +250,7 @@ export function Shows({ active = true }: { active?: boolean }) {
     return (
       <main
         ref={scrollCb}
-        className="relative h-full overflow-y-auto bg-canvas px-4 pb-[var(--harbor-tabbar,0px)] pt-[calc(6.5rem+var(--harbor-status-bar,1.75rem))]"
+        className="relative h-full overflow-y-auto bg-canvas px-4 pb-[var(--harbor-tabbar,0px)] pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]"
       >
         <ScrollRootContext.Provider value={scrollEl}>
           <div className="flex flex-col gap-8 pt-2">

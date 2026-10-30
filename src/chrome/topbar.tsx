@@ -67,7 +67,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   // desktop right-cluster (recording/downloads) or window controls.
   if (mobile) {
     if (!onLiveRoot && !(canGoBack && !connecting)) {
-      return <MobileHeader search={!hideSearch} raised={topKind === "picker" || connecting} />;
+      return <MobileHeader raised={topKind === "picker" || connecting} />;
     }
     return (
       <header
