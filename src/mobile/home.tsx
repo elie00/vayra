@@ -68,7 +68,7 @@ export function MobileHome({
     : t("Top 10");
 
   return (
-    <main className="flex-1 overflow-y-auto px-4 pt-[calc(6.5rem+var(--harbor-status-bar,1.75rem))]">
+    <main className="flex-1 overflow-y-auto px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]">
       <div className="flex flex-col gap-8 pt-2">
         {heroSlides.length > 0 && <MobileHeroRow slides={heroSlides} />}
 
@@ -185,6 +185,10 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
   );
 }
 
+// The home carousel, after HBO Max: each slide's artwork runs edge to edge and
+// up under the transparent header, with the title, a line of genres, then Play
+// on the left and the watchlist on the right. It cancels the page's gutters and
+// header offset (5rem + status bar, plus the 0.5rem the pages add) to bleed.
 export function MobileHeroRow({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -197,43 +201,81 @@ export function MobileHeroRow({ slides }: { slides: Slide[] }) {
     setActive(Math.max(0, Math.min(slides.length - 1, Math.round(el.scrollLeft / per))));
   };
 
-  const glow = slides[active]?.meta;
-  const glowSrc = glow ? downscaleTmdb(glow.background || glow.poster) : undefined;
-
   return (
-    <div className="relative flex flex-col gap-3">
-      {/* The current artwork's colours, blurred into the top of the page as streaming
-          apps tint their home; it runs up under the header and fades into the canvas by
-          the hero's foot, as a positioned layer would paint over the rows below. */}
-      {glowSrc && (
-        <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-56 bottom-0 overflow-hidden">
-          <img key={glowSrc} src={glowSrc} alt="" decoding="async" className="vayra-ambient absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-canvas/25 to-canvas" />
-        </div>
-      )}
+    <div className="-mx-4 -mt-[calc(5.5rem+var(--harbor-status-bar,1.75rem))] flex flex-col gap-4">
       <div
         ref={ref}
         onScroll={onScroll}
-        className="relative flex snap-x snap-mandatory gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {slides.map((s) => (
           <div key={s.meta.id} className="w-full shrink-0 snap-center">
-            <MobileHeroCard meta={s.meta} label={s.rank.label} />
+            <HeroSlide meta={s.meta} label={s.rank.label} />
           </div>
         ))}
       </div>
       {slides.length > 1 && (
-        <div className="relative flex justify-center gap-2">
+        <div className="flex justify-center gap-2.5">
           {slides.map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === active ? "w-6 bg-ink" : "w-1.5 bg-ink-muted/60"
-              }`}
+              className={`h-2 w-2 rounded-full transition-colors duration-300 ${i === active ? "bg-ink" : "bg-ink-muted/40"}`}
             />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function HeroSlide({ meta, label }: { meta: Meta; label?: string }) {
+  const t = useT();
+  const { openMeta, openPicker } = useView();
+  const inWatchlist = useInWatchlist(meta.id);
+  const bg = meta.background || meta.poster;
+  const tags = [meta.releaseInfo, ...(meta.genres ?? []).slice(0, 2).map((g) => t(g))].filter(Boolean);
+
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => openMeta(meta)} aria-label={meta.name} className="relative block aspect-[3/4] w-full overflow-hidden bg-elevated">
+        {bg && <img src={bg} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />}
+        <span aria-hidden className="absolute inset-0 bg-gradient-to-b from-canvas/50 via-transparent via-40% to-canvas" />
+      </button>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-2 px-4">
+        {label && (
+          <span className="flex items-center gap-1.5 type-caption font-semibold uppercase tracking-[0.24em] text-ink-muted">
+            <HarborMark className="h-3.5 w-3.5" />
+            {t(label)}
+          </span>
+        )}
+        {meta.logo ? (
+          <img src={meta.logo} alt={meta.name} decoding="async" className="max-h-20 w-auto max-w-[75%] object-contain object-left drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)]" />
+        ) : (
+          <h2 className="font-display text-[34px] font-medium leading-[1.02] tracking-tight text-ink" dir="auto">
+            {meta.name}
+          </h2>
+        )}
+        {tags.length > 0 && <p className="type-footnote text-ink-muted">{tags.join("  ·  ")}</p>}
+        <div className="pointer-events-auto -ms-1 mt-1 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => (meta.type === "movie" ? openPicker(meta, undefined, { autoPlay: true, resume: true }) : openMeta(meta))}
+            className="flex h-12 items-center gap-2.5 rounded-full ps-1 pe-4 type-title-3 font-semibold text-ink transition-transform active:scale-95"
+          >
+            <Play size={24} fill="currentColor" />
+            {t("Play")}
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster })}
+            aria-label={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
+            aria-pressed={inWatchlist}
+            className="flex h-12 w-12 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
+          >
+            {inWatchlist ? <Check size={28} strokeWidth={2.2} /> : <Plus size={30} strokeWidth={1.8} />}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
