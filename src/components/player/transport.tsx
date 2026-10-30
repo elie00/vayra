@@ -18,7 +18,6 @@ import { fmtTime } from "./transport/transport-utils";
 import {
   controlsInSlot,
   PLAYER_CHROME_CHANGED_EVENT,
-  MOBILE_MORE_CONTROLS,
   MOBILE_PLAYER_CONFIG,
   readPlayerChromeConfig,
   writePlayerChromeConfig,
@@ -27,6 +26,7 @@ import {
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 import { isMobileTauri } from "@/lib/platform";
+import { MobileMoreSheet } from "./mobile-more-sheet";
 import { SongIdToast } from "@/components/song-id-toast";
 import { useCastModalPlay } from "./use-cast-modal-play";
 import { LUMA_OPEN_EVENT } from "@/lib/luma";
@@ -197,8 +197,8 @@ export function Transport({
   const [compact, setCompact] = useState(false);
   const [tight, setTight] = useState(false);
   useEffect(() => {
-    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen || anime4kMenuOpen);
-  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, aspectMenuOpen, anime4kMenuOpen, onMenuOpenChange]);
+    onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen || anime4kMenuOpen || moreOpen);
+  }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, aspectMenuOpen, anime4kMenuOpen, moreOpen, onMenuOpenChange]);
   useEffect(() => {
     const refresh = () => setChromeConfig(readPlayerChromeConfig("default"));
     const onStorage = (e: StorageEvent) => {
@@ -484,13 +484,6 @@ export function Transport({
             </>
           )}
         </div>
-        {mobile && moreOpen && (
-          <div className="pointer-events-auto -mx-1 flex items-center gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {MOBILE_MORE_CONTROLS.map((id) => (
-              <Fragment key={id}>{renderControl(id, ctx)}</Fragment>
-            ))}
-          </div>
-        )}
         <div className={`pointer-events-auto grid items-center ${
           // A phone keeps the playback buttons centred however narrow the bar.
           compact && !mobile ? "grid-cols-[auto_1fr_auto] gap-2" : "grid-cols-[1fr_auto_1fr] gap-4"
@@ -523,6 +516,8 @@ export function Transport({
           </div>
         </div>
       </div>
+
+      {mobile && moreOpen && <MobileMoreSheet ctx={ctx} onClose={() => setMoreOpen(false)} />}
 
       {meta && !isLiveChannel && (
         <CastModal

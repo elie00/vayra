@@ -205,8 +205,9 @@ export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
 /**
  * The phone player, as streaming apps lay it out: back and title on top, the
  * time and seek bar, then subtitles and audio, the three playback buttons and
- * next episode with fullscreen. No volume: a phone has volume keys. Everything
- * else sits behind the "more" button (MOBILE_MORE_CONTROLS).
+ * next episode with fullscreen. No volume slider: a phone has volume keys and a
+ * swipe on the right of the picture. Everything else sits behind the "more"
+ * button (MobileMoreSheet).
  */
 export const MOBILE_PLAYER_CONFIG: PlayerChromeConfig = {
   controls: [
@@ -227,20 +228,6 @@ export const MOBILE_PLAYER_CONFIG: PlayerChromeConfig = {
     timeFormat: "start-end",
   },
 };
-
-/** What the phone player's "more" row holds, in order. */
-export const MOBILE_MORE_CONTROLS: PlayerControlId[] = [
-  "speed-menu",
-  "pick-another",
-  "aspect-menu",
-  "prev-episode",
-  "download",
-  "pip",
-  "cast",
-  "luma",
-  "song-id",
-  "anime4k-menu",
-];
 
 export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
   controls: [
