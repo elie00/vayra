@@ -18,7 +18,9 @@ import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import type { HomeRow } from "@/views/home/home-types";
 import { RowSkeleton } from "@/views/home/row-skeleton";
-import { LumaResumeSection } from "@/views/home/luma-resume-section";
+import { lumaStore, useLuma, type LumaResumeEntry } from "@/lib/luma";
+import { OfflineMark, useOfflineIds } from "@/mobile/offline-mark";
+import { lumaResumeEpisode, resolveLumaResumeTarget } from "@/lib/luma/resume-target";
 
 // Mobile-first Home (streaming-app model: hero, Continue Watching, poster rails). Rendered from `Home` in
 // src/views/home.tsx when isMobileTauri(); every data hook still runs in the
@@ -72,9 +74,7 @@ export function MobileHome({
       <div className="flex flex-col gap-8 pt-2">
         {heroSlides.length > 0 && <MobileHeroRow slides={heroSlides} />}
 
-        <LumaResumeSection />
-
-        <MobileContinueWatching items={cwItems} signedIn={signedIn} onDismiss={onDismissCw} />
+        <MobileContinueWatching items={cwItems} signedIn={signedIn} onDismiss={onDismissCw} withLuma />
 
         {top10.length >= 10 && (
           <Row title={top10RailTitle} min={112} shape="rank" scrollKey="home:mobile:top10">
@@ -280,43 +280,80 @@ function HeroSlide({ meta, label }: { meta: Meta; label?: string }) {
   );
 }
 
+/**
+ * One Continue Watching rail. With `withLuma` (Home), titles LUMA resumes on this
+ * device come first, at their exact position, then library items it does not
+ * already hold; the separate "Resume with LUMA" rail made them look doubled.
+ */
 export function MobileContinueWatching({
   items,
   signedIn,
   onDismiss,
+  withLuma = false,
 }: {
   items: LibraryItem[];
   signedIn: boolean;
   onDismiss: (item: LibraryItem) => void;
+  withLuma?: boolean;
 }) {
   const t = useT();
-  if (items.length === 0) {
-    if (!signedIn) return null;
-    return null;
-  }
+  const luma = useLuma();
+  const offline = useOfflineIds();
+  const { openPicker, openPlayer } = useView();
+  void signedIn;
+  const resumes =
+    withLuma && luma.document.preferences.rememberActivity
+      ? [...luma.document.resumes].sort((a, b) => b.updatedAt - a.updatedAt)
+      : [];
+  const lumaIds = new Set(resumes.map((r) => (r.ref.kind === "catalog" ? r.ref.metaId : null)).filter(Boolean));
+  const rest = items.filter((i) => !lumaIds.has(i._id)).slice(0, Math.max(0, 12 - resumes.length));
+  if (resumes.length === 0 && rest.length === 0) return null;
+
+  const resumeLuma = (entry: LumaResumeEntry) => {
+    const target = resolveLumaResumeTarget(entry);
+    if (target.kind === "missing-local") lumaStore().clearResume(entry.id);
+    else if (target.kind === "local") openPlayer(target.player);
+    else openPicker(target.meta, target.episode, { autoPlay: true, resume: true });
+  };
+
   return (
     <Row title={t("Continue Watching")} min={150} shape="landscape" scrollKey="mobile:cw">
-      {items.slice(0, 12).map((item) => (
-        <MobileCwCard key={item._id} item={item} onDismiss={onDismiss} />
+      {resumes.map((entry) => {
+        const ep = lumaResumeEpisode(entry);
+        return (
+          <ResumeCard
+            key={`luma-${entry.id}`}
+            still={downscaleTmdb(entry.presentation.artwork)}
+            title={entry.presentation.title}
+            label={ep ? `S${ep.season}E${ep.episode}` : ""}
+            progress={entry.durationMs > 0 ? Math.min(1, entry.positionMs / entry.durationMs) : 0}
+            onOpen={() => resumeLuma(entry)}
+            onDismiss={() => lumaStore().clearResume(entry.id)}
+            offline={entry.ref.kind === "local-library" || offline.has(entry.ref.metaId)}
+          />
+        );
+      })}
+      {rest.map((item) => (
+        <MobileCwCard key={item._id} item={item} onDismiss={onDismiss} offline={offline.has(item._id)} />
       ))}
     </Row>
   );
 }
 
-// A landscape still with the progress along its bottom edge, then the title and
-// episode. Like the desktop card, a tap opens the title at that episode.
+// A library item's resume card. Like the desktop card, a tap opens the title at
+// that episode.
 function MobileCwCard({
   item,
   onDismiss,
+  offline,
 }: {
   item: LibraryItem;
   onDismiss: (item: LibraryItem) => void;
+  offline: boolean;
 }) {
-  const t = useT();
   const { openMeta } = useView();
   const dur = item.state?.duration ?? 0;
   const off = item.state?.timeOffset ?? 0;
-  const progress = dur > 0 ? Math.min(1, off / dur) : 0;
   const ep =
     item.state?.season && item.state?.episode
       ? { season: item.state.season, episode: item.state.episode }
@@ -330,18 +367,50 @@ function MobileCwCard({
     poster: item.poster,
     background: item.background,
   };
-  const thumb = downscaleTmdb(item.background || item.poster);
+  return (
+    <ResumeCard
+      still={downscaleTmdb(item.background || item.poster)}
+      title={item.name}
+      label={label}
+      progress={dur > 0 ? Math.min(1, off / dur) : 0}
+      onOpen={() => openMeta(meta, ep ? { episodeHint: ep } : undefined)}
+      onDismiss={() => onDismiss(item)}
+      offline={offline}
+    />
+  );
+}
 
+// A landscape still with the progress along its bottom edge, then the title and
+// episode, and a button to drop it from the rail.
+function ResumeCard({
+  still,
+  title,
+  label,
+  progress,
+  onOpen,
+  onDismiss,
+  offline,
+}: {
+  still?: string;
+  title: string;
+  label: string;
+  progress: number;
+  onOpen: () => void;
+  onDismiss: () => void;
+  /** Downloaded or in the local library: a small mark, not a label. */
+  offline: boolean;
+}) {
+  const t = useT();
   return (
     <div className="flex w-full min-w-0 flex-col gap-2">
       <button
         type="button"
-        onClick={() => openMeta(meta, ep ? { episodeHint: ep } : undefined)}
-        aria-label={label ? `${item.name} · ${label}` : item.name}
+        onClick={onOpen}
+        aria-label={label ? `${title} · ${label}` : title}
         className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-elevated transition-transform active:scale-[0.97]"
       >
-        {thumb ? (
-          <img src={thumb} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+        {still ? (
+          <img src={still} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <span aria-hidden className="absolute inset-0 flex items-center justify-center text-ink-subtle">
             <Play size={22} fill="currentColor" />
@@ -350,15 +419,16 @@ function MobileCwCard({
         <span className="absolute inset-x-0 bottom-0 h-[3px] bg-ink/20">
           <span className="block h-full bg-accent" style={{ width: `${progress * 100}%` }} />
         </span>
+        {offline && <OfflineMark />}
       </button>
       <div className="flex min-w-0 items-start gap-1">
         <div className="min-w-0 flex-1">
-          <p className="truncate type-footnote font-medium text-ink">{item.name}</p>
+          <p className="truncate type-footnote font-medium text-ink">{title}</p>
           {label && <p className="type-caption text-ink-subtle">{label}</p>}
         </div>
         <button
           type="button"
-          onClick={() => onDismiss(item)}
+          onClick={onDismiss}
           aria-label={t("Remove from Continue Watching")}
           className="-me-2 -mt-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors active:bg-elevated active:text-ink"
         >
