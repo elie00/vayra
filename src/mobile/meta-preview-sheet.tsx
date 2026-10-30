@@ -62,7 +62,7 @@ export function MetaPreviewSheet() {
         className="vayra-sheet absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col rounded-t-[1.75rem] bg-elevated shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgb(255_255_255/0.06)]"
       >
         <div aria-hidden className="flex shrink-0 justify-center pb-1 pt-2.5">
-          <span className="h-1 w-10 rounded-full bg-ink-subtle/40" />
+          <span className="h-1 w-8 rounded-full bg-ink-subtle/40" />
         </div>
         {/* min-h-0, not flex-1: the Android rule that pads `.flex-1.overflow-y-auto`
             scrollers for the tab bar would otherwise pad this sheet too. */}

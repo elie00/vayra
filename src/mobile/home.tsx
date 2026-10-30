@@ -430,7 +430,7 @@ function ResumeCard({
           type="button"
           onClick={onDismiss}
           aria-label={t("Remove from Continue Watching")}
-          className="-me-2 -mt-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors active:bg-elevated active:text-ink"
+          className="-me-3 -mt-3 flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors active:bg-elevated active:text-ink"
         >
           <X size={16} strokeWidth={2.2} />
         </button>

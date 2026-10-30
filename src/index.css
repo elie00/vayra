@@ -1475,18 +1475,19 @@ html[data-os="android"] {
 html[data-os="android"] .flex-1.overflow-y-auto {
   padding-bottom: var(--harbor-tabbar);
 }
-/* Phone type scale (checklist-design, Typography): styles named by role on a
-   ~1.2 scale, line height per role, 11px the smallest size (tab labels and tiny
-   badges), 16px for fields so typing never zooms. A leading-* utility still wins. */
-@utility type-micro { font-size: 11px; line-height: var(--tw-leading, 1.2); }
-@utility type-caption { font-size: 12px; line-height: var(--tw-leading, 1.35); }
-@utility type-footnote { font-size: 13px; line-height: var(--tw-leading, 1.4); }
-@utility type-callout { font-size: 15px; line-height: var(--tw-leading, 1.35); }
-@utility type-body { font-size: 16px; line-height: var(--tw-leading, 1.5); }
-@utility type-title-3 { font-size: 18px; line-height: var(--tw-leading, 1.3); letter-spacing: -0.01em; }
-@utility type-title-2 { font-size: 22px; line-height: var(--tw-leading, 1.25); letter-spacing: -0.015em; }
-@utility type-title-1 { font-size: 28px; line-height: var(--tw-leading, 1.15); letter-spacing: -0.02em; }
-@utility type-display { font-size: 32px; line-height: var(--tw-leading, 1.08); letter-spacing: -0.02em; }
+/* Phone type scale, from the Material 3 type scale (docs/mobile-design-spec.md):
+   styles named by role, each with its line height and tracking. 11sp is for
+   labels only, reading text is 14sp on 20 at least, fields stay at 16sp so
+   typing never zooms. A leading-* utility still wins. */
+@utility type-micro { font-size: 11px; line-height: var(--tw-leading, 16px); letter-spacing: 0.03em; }
+@utility type-caption { font-size: 12px; line-height: var(--tw-leading, 16px); letter-spacing: 0.02em; }
+@utility type-footnote { font-size: 14px; line-height: var(--tw-leading, 20px); letter-spacing: 0.01em; }
+@utility type-callout { font-size: 16px; line-height: var(--tw-leading, 24px); letter-spacing: 0.01em; }
+@utility type-body { font-size: 16px; line-height: var(--tw-leading, 24px); }
+@utility type-title-3 { font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
+@utility type-title-2 { font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
+@utility type-title-1 { font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.015em; }
+@utility type-display { font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.02em; }
 
 /* Phone polish, after Emil Kowalski's mobile-native and design-engineering
    notes. Clickable cards are divs too, so the tap flash goes everywhere. */

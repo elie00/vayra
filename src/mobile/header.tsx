@@ -27,12 +27,12 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
         scrolled ? "bg-canvas/92 backdrop-blur-xl" : "bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
       }`}
     >
-      <div className="flex h-14 items-center gap-1 ps-2 pe-2">
+      <div className="flex h-16 items-center gap-1 ps-2 pe-2">
         <button
           type="button"
           onClick={() => setPlusOpen(true)}
           aria-label={t("Open menu")}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors active:bg-elevated"
+          className="flex h-12 w-12 items-center justify-center rounded-full text-ink transition-colors active:bg-elevated"
         >
           <Menu size={24} strokeWidth={1.9} />
         </button>
@@ -52,7 +52,7 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
           type="button"
           onClick={() => openSettings()}
           aria-label={t("nav.settings")}
-          className="ms-1 flex h-11 w-11 items-center justify-center rounded-full transition-transform active:scale-90"
+          className="flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-90"
         >
           <span className="scale-[0.8]">
             <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact />

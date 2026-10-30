@@ -72,7 +72,7 @@ export function MacNowPlayingBar() {
           type="button"
           onClick={() => send({ type: "command", action: playing ? "pause" : "play" })}
           aria-label={playing ? t("Pause") : t("Play")}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
         >
           {playing ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
         </button>

@@ -301,7 +301,7 @@ function InstalledActions({ r, onManage }: { r: ResolvedAddon; onManage: (r: Res
           type="button"
           onClick={() => onManage(r)}
           aria-label={t("Configure {name}", { name })}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted active:bg-raised"
+          className="flex h-12 w-12 items-center justify-center rounded-full text-ink-muted active:bg-raised"
         >
           <Settings2 size={17} strokeWidth={2} />
         </button>

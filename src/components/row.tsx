@@ -467,7 +467,7 @@ export function Row({
             <div className="flex min-w-0 items-center gap-2">
               <h3
                 className={`truncate font-medium tracking-tight ${titleClassName}`}
-                style={{ fontSize: `${Math.round((mobile ? 18 : 17) * settings.rowTitleScale * titleScale)}px` }}
+                style={{ fontSize: `${Math.round((mobile ? 20 : 17) * settings.rowTitleScale * titleScale)}px` }}
               >
                 {title}
               </h3>

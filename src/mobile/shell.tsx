@@ -137,7 +137,7 @@ function MenuScreen() {
             type="button"
             onClick={() => setPlusOpen(false)}
             aria-label={t("common.close")}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink active:bg-elevated"
+            className="flex h-12 w-12 items-center justify-center rounded-full text-ink active:bg-elevated"
           >
             <X size={26} strokeWidth={1.9} />
           </button>

@@ -91,7 +91,7 @@ export function MobilePlayPicker({
         className="vayra-sheet absolute inset-x-0 bottom-0 top-[10vh] flex flex-col rounded-t-[1.75rem] bg-canvas shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgb(255_255_255/0.06)]"
       >
         <div {...drag.handlers} className="flex shrink-0 touch-none justify-center pb-1 pt-2.5">
-          <span className="h-1 w-10 rounded-full bg-ink-subtle/40" />
+          <span className="h-1 w-8 rounded-full bg-ink-subtle/40" />
         </div>
 
         <header className="flex shrink-0 items-start gap-3 px-4 pb-3 pt-1">
@@ -104,7 +104,7 @@ export function MobilePlayPicker({
             onClick={onRefresh}
             disabled={refreshing}
             aria-label={t("Refresh sources")}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated text-ink-muted transition-transform active:scale-95 disabled:opacity-60"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-elevated text-ink-muted transition-transform active:scale-95 disabled:opacity-60"
           >
             <RefreshCw size={17} strokeWidth={2.2} className={refreshing ? "animate-spin" : ""} />
           </button>

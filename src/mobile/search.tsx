@@ -54,8 +54,8 @@ export function MobileSearch() {
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={t("Search")} className="vayra-search fixed inset-0 z-[200] flex flex-col bg-canvas">
       <div className="shrink-0 pt-[var(--harbor-status-bar,1.75rem)]">
-        <div className="flex h-16 items-center px-4">
-          <label data-search-field className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-raised ps-4 pe-1.5">
+        <div className="flex h-[72px] items-center px-4">
+          <label data-search-field className="flex h-14 min-w-0 flex-1 items-center gap-3 rounded-full bg-raised ps-4 pe-2">
             <Search size={18} strokeWidth={2} className="shrink-0 text-ink-subtle" />
             <input
               ref={inputRef}
@@ -123,7 +123,7 @@ export function MobileSearch() {
                       type="button"
                       onClick={() => removeRecent(q)}
                       aria-label={t("Remove {name}", { name: q })}
-                      className="-me-2 flex h-9 w-9 items-center justify-center rounded-full text-ink-subtle active:bg-elevated"
+                      className="-me-3 flex h-12 w-12 items-center justify-center rounded-full text-ink-subtle active:bg-elevated"
                     >
                       <X size={16} strokeWidth={2.2} />
                     </button>

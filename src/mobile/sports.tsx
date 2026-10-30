@@ -83,7 +83,7 @@ export function MobileSports({
             type="button"
             onClick={() => setShowCustomize(true)}
             aria-label={t("sports.customize")}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-edge-soft/60 bg-elevated text-ink-muted transition-colors active:text-ink"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-edge-soft/60 bg-elevated text-ink-muted transition-colors active:text-ink"
           >
             <Settings2 size={16} />
           </button>
