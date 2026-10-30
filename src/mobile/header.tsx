@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { HarborMark } from "@/components/icons/harbor-mark";
+import { ProfileAvatar } from "@/chrome/sidebar/profile-chip";
 import { useT } from "@/lib/i18n";
+import { useProfiles } from "@/lib/profiles";
+import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
 import { setPlusOpen } from "@/mobile/shell";
 
 // Streaming-app header for the mobile tab-level views, after HBO Max: the menu
-// (shows, movies, anime, sports, categories…) and the VAYRA mark on the left,
-// Watch Together on the right. Search is a tab; the header turns solid once the
-// page scrolls under it.
+// (shows, movies, anime, sports, categories…) and a small VAYRA mark on the left,
+// Watch Together and the profile, which opens the settings, on the right. Search
+// is a tab; the header turns solid once the page scrolls under it.
 export function MobileHeader({ raised = false }: { raised?: boolean }) {
   const t = useT();
-  const { topKind, setView } = useView();
+  const { topKind, setView, openSettings } = useView();
+  const { activeProfile } = useProfiles();
+  const { settings } = useSettings();
   const scrolled = useScrolledPast(8, topKind);
 
   return (
@@ -35,13 +40,24 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
           type="button"
           onClick={() => setView("home")}
           aria-label={t("chrome.harborHome")}
-          className="me-auto flex items-center gap-2 text-ink"
+          className="me-auto flex items-center gap-1.5 text-ink"
         >
-          <HarborMark className="h-6 w-6 shrink-0" />
+          <HarborMark className="h-[18px] w-[18px] shrink-0" />
           {/* The Mac sets its wordmark in the system sans (San Francisco); Switzer is its match here. */}
-          <span className="font-sans text-[22px] font-medium leading-none tracking-tight">VAYRA</span>
+          <span className="font-sans text-[17px] font-semibold leading-none tracking-tight">VAYRA</span>
         </button>
         <MobileTogetherButton />
+        {/* The profile, far right as in streaming apps; it opens the settings. */}
+        <button
+          type="button"
+          onClick={() => openSettings()}
+          aria-label={t("nav.settings")}
+          className="ms-1 flex h-11 w-11 items-center justify-center rounded-full transition-transform active:scale-90"
+        >
+          <span className="scale-[0.8]">
+            <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact />
+          </span>
+        </button>
       </div>
     </header>
   );

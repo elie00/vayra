@@ -164,7 +164,7 @@ export function ProfileChip({
   );
 }
 
-function ProfileAvatar({
+export function ProfileAvatar({
   profile,
   fallbackAvatar,
   compact,
