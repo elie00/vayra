@@ -31,7 +31,9 @@ import { resetOmdbBudget } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
-import { hasNativeDesktopUx } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
+import { setSettingsBack } from "@/mobile/settings-back";
+import { MobileSettingsBar, MobileSettingsList } from "@/mobile/settings-list";
 import { MacSettingsNav } from "./settings/mac-settings-nav";
 import { MacConnectionsPanel, MacDownloadsPanel, MacPrivacyPanel } from "./settings/mac-panels";
 
@@ -153,7 +155,13 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   const [pmDraft, setPmDraft] = useState(settings.pmKey);
   const [dlDraft, setDlDraft] = useState(settings.dlKey);
   const [savedKey, setSavedKey] = useState<SavedKey | null>(null);
-  const { settingsSectionRequest } = useView();
+  const { settingsSectionRequest, goBack } = useView();
+  const mobile = isMobileTauri();
+  // On a phone the settings open on the list of sections, or straight on the
+  // section asked for; Back from a section returns to the list.
+  const [mobilePage, setMobilePage] = useState<"list" | "section">(() =>
+    settingsSectionRequest.section ? "section" : "list",
+  );
   const requestedInitialSection = settingsSectionRequest.section as SectionId | null;
   const [active, setActive] = useState<SectionId>(
     requestedInitialSection && isSettingsSectionAvailable(requestedInitialSection)
@@ -167,11 +175,21 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   const handleNav = (id: SectionId, anchor?: string) => {
     setActive(id);
     setPendingAnchor(anchor ?? null);
+    setMobilePage("section");
   };
 
   useEffect(() => {
+    if (!mobile || !activeView || mobilePage !== "section") return;
+    setSettingsBack(() => setMobilePage("list"));
+    return () => setSettingsBack(null);
+  }, [mobile, activeView, mobilePage]);
+
+  useEffect(() => {
     const requested = settingsSectionRequest.section as SectionId | null;
-    if (requested && isSettingsSectionAvailable(requested)) setActive(requested);
+    if (requested && isSettingsSectionAvailable(requested)) {
+      setActive(requested);
+      setMobilePage("section");
+    }
   }, [settingsSectionRequest]);
 
   useEffect(() => {
@@ -184,7 +202,7 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   useEffect(() => {
     if (pendingAnchorRef.current) return;
     scrollRef.current?.scrollTo({ top: 0 });
-  }, [active]);
+  }, [active, mobilePage]);
 
   useEffect(() => {
     if (!pendingAnchor) return;
@@ -250,6 +268,116 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
     setTimeout(() => setSavedKey((s) => (s === which ? null : s)), 1400);
   };
 
+  const panels = (
+    <>
+      {active === "basics" && <BasicsPanel />}
+      {active === "connections" && <MacConnectionsPanel />}
+      {active === "privacy" && <MacPrivacyPanel />}
+      {active === "downloads" && <MacDownloadsPanel />}
+
+      {active === "account" && <AccountStub />}
+
+      {active === "cira" && <CiraPanel />}
+
+      {active === "library" && (
+        <LibraryPanel
+          tmdbDraft={tmdbDraft}
+          omdbDraft={omdbDraft}
+          rpdbDraft={rpdbDraft}
+          fanartDraft={fanartDraft}
+          tvdbDraft={tvdbDraft}
+          setTmdbDraft={setTmdbDraft}
+          setOmdbDraft={setOmdbDraft}
+          setRpdbDraft={setRpdbDraft}
+          setFanartDraft={setFanartDraft}
+          setTvdbDraft={setTvdbDraft}
+          savedKey={savedKey}
+          saveKey={saveKey}
+        />
+      )}
+
+      {active === "relay" && (
+        <RelaySection mode={relayMode} onModeChange={setRelayMode} />
+      )}
+
+      {active === "streaming" && (
+        <StreamingSourcesPanel
+          rdDraft={rdDraft}
+          tbDraft={tbDraft}
+          adDraft={adDraft}
+          pmDraft={pmDraft}
+          dlDraft={dlDraft}
+          setRdDraft={setRdDraft}
+          setTbDraft={setTbDraft}
+          setAdDraft={setAdDraft}
+          setPmDraft={setPmDraft}
+          setDlDraft={setDlDraft}
+          savedKey={savedKey}
+          saveKey={saveKey}
+        />
+      )}
+
+      {active === "streamFilters" && <StreamFiltersPanel />}
+
+      {active === "p2p" && <P2PPanel />}
+
+      {active === "language" && <LanguagePanel />}
+
+      {active === "player" && <QualityPanel />}
+
+      {active === "mpv" && <MpvPanel />}
+
+      {active === "anime" && <AnimePanel />}
+
+      {active === "playerLayout" && <PlayerLayoutPanel />}
+
+      {active === "hotkeys" && <HotkeysPanel />}
+
+      {active === "trakt" && <TraktPanel />}
+
+      {active === "anilist" && <AnilistPanel />}
+
+      {active === "mal" && <MalPanel />}
+
+      {active === "simkl" && <SimklPanel />}
+
+      {active === "letterboxd" && <LetterboxdPanel />}
+
+      {active === "theme" && <ThemePanel />}
+
+      {active === "webhooks" && <WebhooksPanel />}
+
+      {active === "bug" && <BugReportPanel />}
+
+      {active === "advanced" && <AdvancedPanel />}
+    </>
+  );
+
+  if (mobile) {
+    const inSection = mobilePage === "section";
+    return (
+      <SettingsActiveContext.Provider value={{ setActive }}>
+        <div className="flex h-full flex-col bg-canvas">
+          <MobileSettingsBar
+            title={inSection ? t(SECTION_META[active].label) : t("nav.settings")}
+            onBack={inSection ? () => setMobilePage("list") : goBack}
+          />
+          <main data-mobile-settings ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-[calc(4.5rem+var(--harbor-status-bar,1.75rem))]">
+            {inSection ? (
+              <div className="flex flex-col gap-6 pb-6">
+                <p className="type-footnote text-ink-muted">{t(SECTION_META[active].sub)}</p>
+                {panels}
+              </div>
+            ) : (
+              <MobileSettingsList onPick={(id) => handleNav(id)} />
+            )}
+          </main>
+          <SettingsUnsavedChanges active={activeView} />
+        </div>
+      </SettingsActiveContext.Provider>
+    );
+  }
+
   return (
     <SettingsActiveContext.Provider value={{ setActive }}>
     <div className="flex h-full bg-canvas max-sm:flex-col">
@@ -271,86 +399,7 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
             </header>
           )}
 
-          {active === "basics" && <BasicsPanel />}
-          {active === "connections" && <MacConnectionsPanel />}
-          {active === "privacy" && <MacPrivacyPanel />}
-          {active === "downloads" && <MacDownloadsPanel />}
-
-          {active === "account" && <AccountStub />}
-
-          {active === "cira" && <CiraPanel />}
-
-          {active === "library" && (
-            <LibraryPanel
-              tmdbDraft={tmdbDraft}
-              omdbDraft={omdbDraft}
-              rpdbDraft={rpdbDraft}
-              fanartDraft={fanartDraft}
-              tvdbDraft={tvdbDraft}
-              setTmdbDraft={setTmdbDraft}
-              setOmdbDraft={setOmdbDraft}
-              setRpdbDraft={setRpdbDraft}
-              setFanartDraft={setFanartDraft}
-              setTvdbDraft={setTvdbDraft}
-              savedKey={savedKey}
-              saveKey={saveKey}
-            />
-          )}
-
-          {active === "relay" && (
-            <RelaySection mode={relayMode} onModeChange={setRelayMode} />
-          )}
-
-          {active === "streaming" && (
-            <StreamingSourcesPanel
-              rdDraft={rdDraft}
-              tbDraft={tbDraft}
-              adDraft={adDraft}
-              pmDraft={pmDraft}
-              dlDraft={dlDraft}
-              setRdDraft={setRdDraft}
-              setTbDraft={setTbDraft}
-              setAdDraft={setAdDraft}
-              setPmDraft={setPmDraft}
-              setDlDraft={setDlDraft}
-              savedKey={savedKey}
-              saveKey={saveKey}
-            />
-          )}
-
-          {active === "streamFilters" && <StreamFiltersPanel />}
-
-          {active === "p2p" && <P2PPanel />}
-
-          {active === "language" && <LanguagePanel />}
-
-          {active === "player" && <QualityPanel />}
-
-          {active === "mpv" && <MpvPanel />}
-
-          {active === "anime" && <AnimePanel />}
-
-          {active === "playerLayout" && <PlayerLayoutPanel />}
-
-          {active === "hotkeys" && <HotkeysPanel />}
-
-          {active === "trakt" && <TraktPanel />}
-
-          {active === "anilist" && <AnilistPanel />}
-
-          {active === "mal" && <MalPanel />}
-
-          {active === "simkl" && <SimklPanel />}
-
-          {active === "letterboxd" && <LetterboxdPanel />}
-
-          {active === "theme" && <ThemePanel />}
-
-          {active === "webhooks" && <WebhooksPanel />}
-
-          {active === "bug" && <BugReportPanel />}
-
-          {active === "advanced" && <AdvancedPanel />}
+          {panels}
         </div>
       </main>
       <BackToTop scrollRef={scrollRef} />

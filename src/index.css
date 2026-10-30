@@ -1553,6 +1553,11 @@ html[data-os="android"] {
     }
   }
 }
+/* The phone settings reuse the desktop panels: their cards drop the desktop's
+   28-40px padding for the 16px a phone can spare. */
+[data-mobile-settings] :is(.p-7, .p-8, .p-10) {
+  padding: 1rem;
+}
 /* A double-tap skip mark rises in place and fades out. */
 .vayra-skip {
   animation: vayra-skip 650ms var(--ease-out) forwards;
