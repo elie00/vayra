@@ -1,4 +1,4 @@
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Bookmark, Home, Search, X } from "lucide-react";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
@@ -38,6 +38,31 @@ export function usePlusOpen(): boolean {
 
 type TabId = "home" | "mylist" | "search";
 
+// Material 3 hides the navigation bar while content scrolls down and brings it
+// back on the way up, so the screen stays free. Scroll events don't bubble, so
+// this listens in the capture phase; horizontal rails are ignored, and a new
+// view starts with the bar shown.
+function useHideOnScroll(viewKey: string): boolean {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    setHidden(false);
+    const last = new WeakMap<Element, number>();
+    const onScroll = (e: Event) => {
+      const el = e.target;
+      if (!(el instanceof HTMLElement) || el.scrollHeight <= el.clientHeight + 1) return;
+      const top = el.scrollTop;
+      const prev = last.get(el) ?? top;
+      last.set(el, top);
+      if (top < 64) setHidden(false);
+      else if (top - prev > 6) setHidden(true);
+      else if (prev - top > 6) setHidden(false);
+    };
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true });
+  }, [viewKey]);
+  return hidden;
+}
+
 export function MobileShell() {
   const t = useT();
   const { topKind, setView, player } = useView();
@@ -46,6 +71,7 @@ export function MobileShell() {
   // The tab bar shows everywhere except the fullscreen playback contexts.
   const hidden = !!player || topKind === "picker";
   const active: TabId | null = searchOpen ? "search" : topKind === "library" ? "mylist" : topKind === "home" ? "home" : null;
+  const scrolledAway = useHideOnScroll(`${topKind}:${searchOpen}`) && !menuOpen;
 
   const go = (tab: TabId) => {
     setPlusOpen(false);
@@ -75,6 +101,7 @@ export function MobileShell() {
           aria-label={t("Primary")}
           // Above the search page while it is open (search is a tab); below the
           // bottom sheets otherwise.
+          data-hidden={scrolledAway ? "" : undefined}
           className={`vayra-tabbar fixed inset-x-0 bottom-0 ${searchOpen ? "z-[205]" : "z-[90]"} pb-[var(--vayra-safe-bottom)]`}
         >
           <div className="flex items-stretch">
