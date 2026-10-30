@@ -26,6 +26,8 @@ import { WatchlistTab } from "./library/watchlist-tab";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 import { tabAvailable } from "./library/tab-availability";
+import { isMobileTauri } from "@/lib/platform";
+import { MobileMyList } from "@/mobile/my-list";
 
 const LIBRARY_TAB_KEY = "harbor.library.tab";
 
@@ -50,7 +52,12 @@ function readSavedTab(): Tab {
   return "watchlist";
 }
 
+/** On a phone, the My list tab (watchlist and Continue watching); elsewhere, the full library. */
 export function LibraryView({ active }: { active: boolean }) {
+  return isMobileTauri() ? <MobileMyList /> : <DesktopLibraryView active={active} />;
+}
+
+function DesktopLibraryView({ active }: { active: boolean }) {
   const [tab, setTab] = useState<Tab>(readSavedTab);
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
