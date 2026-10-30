@@ -1,6 +1,7 @@
 import { Bookmark, Check, Popcorn, RefreshCcw } from "lucide-react";
 import { isMobileTauri } from "@/lib/platform";
 import { previewMeta } from "@/mobile/meta-preview";
+import { OfflineMark, useOfflineIds } from "@/mobile/offline-mark";
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { animeHasDub, dubSetReady, ensureDubSet, subscribeDubSet } from "@/lib/providers/anime-dub-sub";
 import { awardSourceMeta, findTopAward, parseAwardYear, type AwardWin } from "@/lib/anime-awards";
@@ -90,6 +91,7 @@ export const PickCard = memo(function PickCard({
   const { openMeta, openPicker } = useView();
   const { open: openContextMenu } = useContextMenu();
   const { settings } = useSettings();
+  const offline = useOfflineIds().has(meta.id) && isMobileTauri();
   const cardStyle: CardHoverStyle = kids || !settings.hoverPreviewEnabled ? "none" : settings.cardHoverStyle;
   const activeCustom = cardStyle === "custom" ? getCustomHover(settings.customHoverId) : null;
   const inCardHover: CardHoverStyle = cardStyle === "default" || cardStyle === "custom" ? "none" : cardStyle;
@@ -513,6 +515,7 @@ export const PickCard = memo(function PickCard({
             }`}
           />
           <div className={badgeFade}>
+          {offline && <OfflineMark />}
           {hasDub && (
             <span className="pointer-events-none absolute start-2 top-2 z-10 rounded-md bg-accent/90 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-canvas ring-1 ring-black/10">
               DUB
