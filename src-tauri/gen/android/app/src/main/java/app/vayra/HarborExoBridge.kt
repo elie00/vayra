@@ -2,7 +2,9 @@ package app.vayra
 
 import android.app.Activity
 import android.app.PictureInPictureParams
+import android.content.Context
 import android.content.pm.ActivityInfo
+import android.media.AudioManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
@@ -359,6 +361,25 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
 
     @JavascriptInterface
     fun getState(): String = stateJson
+
+    private val audio: AudioManager
+        get() = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+    /** The phone's media volume, 0 to 1: a swipe on the picture moves it, as the volume keys do. */
+    @JavascriptInterface
+    fun getSystemVolume(): String {
+        val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        return if (max > 0) (audio.getStreamVolume(AudioManager.STREAM_MUSIC).toDouble() / max).toString() else "0"
+    }
+
+    /** Sets the media volume without the system panel: the player shows its own level. */
+    @JavascriptInterface
+    fun setSystemVolume(level: String): String {
+        val v = level.toDoubleOrNull() ?: return "error:bad volume"
+        val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, Math.round(v.coerceIn(0.0, 1.0) * max).toInt(), 0)
+        return "ok"
+    }
 
     /** Landscape for watching (either way up, following the sensor), or back to free rotation. */
     @JavascriptInterface

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveChromeTheme } from "@/lib/theme";
 import { useActiveKid } from "@/lib/profiles";
 import { isMobileTauri } from "@/lib/platform";
+import { setSystemVolume, systemVolume } from "@/lib/player/exo/bridge";
 import { type PlayerBridge } from "@/lib/player/bridge";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
@@ -974,6 +975,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     wakeChrome,
     // A phone has no hover: a tap on the picture toggles the controls, not playback.
     touchTap: isMobileTauri() ? { start: tapStart, end: tapEnd, seek: seekStep } : undefined,
+    swipeVolume: isMobileTauri() ? { read: systemVolume, write: setSystemVolume } : undefined,
     setHideOthersDrawings,
     canPickAnother: !liveOverlay.isLive || !inRoom || isHost,
     resolvedImdbId,

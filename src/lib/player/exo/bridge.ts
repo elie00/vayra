@@ -64,6 +64,8 @@ type HarborExoApi = {
   setSubStyle(json: string): string;
   enterPip(): string;
   setLandscape(on: string): string;
+  getSystemVolume(): string;
+  setSystemVolume(level: string): string;
   getState(): string;
   destroy(): string;
 };
@@ -77,6 +79,17 @@ declare global {
       active?: boolean;
     }) => void;
   }
+}
+
+/** The phone's media volume (0–1), or null outside the Android app. */
+export function systemVolume(): number | null {
+  const raw = window.HarborExo?.getSystemVolume?.();
+  const v = raw == null ? NaN : Number(raw);
+  return Number.isFinite(v) ? v : null;
+}
+
+export function setSystemVolume(level: number): void {
+  window.HarborExo?.setSystemVolume?.(String(Math.max(0, Math.min(1, level))));
 }
 
 export function hasHarborExo(): boolean {
