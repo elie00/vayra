@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { isMobileTauri } from "@/lib/platform";
 import {
   getWindowFullscreen,
   setWindowFullscreen,
@@ -7,7 +8,26 @@ import {
   toggleWindowFullscreen,
 } from "@/lib/fullscreen-state";
 
+// A phone has no window to fill: watching means landscape, as in video apps.
+// The player opens in landscape and the fullscreen button flips to portrait
+// and back; leaving the player frees the rotation.
+function useMobileLandscape() {
+  const [landscape, setLandscape] = useState(true);
+  useEffect(() => {
+    window.HarborExo?.setLandscape?.(landscape ? "true" : "false");
+  }, [landscape]);
+  useEffect(() => () => void window.HarborExo?.setLandscape?.("false"), []);
+  const toggle = useCallback(() => setLandscape((v) => !v), []);
+  return { fullscreen: landscape, toggleFullscreen: toggle };
+}
+
 export function useFullscreen() {
+  const mobile = useMobileLandscape();
+  const desktop = useDesktopFullscreen();
+  return isMobileTauri() ? mobile : desktop;
+}
+
+function useDesktopFullscreen() {
   const [fullscreen, setFullscreen] = useState(getWindowFullscreen);
 
   useEffect(() => startWindowFullscreenSync(), []);

@@ -2,6 +2,7 @@ package app.vayra
 
 import android.app.Activity
 import android.app.PictureInPictureParams
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
@@ -18,6 +19,9 @@ import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.OptIn
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -356,6 +360,14 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
     @JavascriptInterface
     fun getState(): String = stateJson
 
+    /** Landscape for watching (either way up, following the sensor), or back to free rotation. */
+    @JavascriptInterface
+    fun setLandscape(on: String): String = post {
+        activity.requestedOrientation =
+            if (on == "true") ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    }
+
     @JavascriptInterface
     fun destroy(): String = post {
         stopTicker()
@@ -376,6 +388,8 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         // A released player has no error: kept, the next player's first state
         // reported it, and the page took a fresh start for a failed one.
         lastError = null
+        setImmersive(false)
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         webView.setBackgroundColor(Color.BLACK)
         activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         stateJson = emptyState()
@@ -441,8 +455,21 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         playerView = pv
     }
 
+    // Playback fills the screen: the status and navigation bars hide while the
+    // video shows and come back with a swipe from an edge, as in video apps.
+    private fun setImmersive(on: Boolean) {
+        val bars = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+        if (on) {
+            bars.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            bars.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            bars.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
     private fun setVisibleInternal(show: Boolean) {
         visible = show
+        setImmersive(show)
         playerView?.visibility = if (show) View.VISIBLE else View.GONE
         webView.setBackgroundColor(if (show) Color.TRANSPARENT else Color.BLACK)
         if (!show) {

@@ -63,6 +63,7 @@ type HarborExoApi = {
   addSubtitle(json: string): string;
   setSubStyle(json: string): string;
   enterPip(): string;
+  setLandscape(on: string): string;
   getState(): string;
   destroy(): string;
 };
