@@ -2,6 +2,7 @@ import { AlertTriangle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
+import { isMobileTauri } from "@/lib/platform";
 import { setNavGuard } from "@/lib/nav-guard";
 import { useSettings, type Settings } from "@/lib/settings";
 import { changedSettingKeys } from "@/lib/settings/diff";
@@ -77,7 +78,9 @@ export function SettingsUnsavedChanges({ active }: { active: boolean }) {
     <>
       {/* The bar is centered on the content column and lifted clear of
           SettingsJumpBar, which is fixed at bottom-5 with the same nav offset. */}
-      {dirty && !pendingLeave && (
+      {/* A phone applies changes as they are made, like any app; it only asks
+          on the way out of Settings. */}
+      {dirty && !pendingLeave && !isMobileTauri() && (
         <div className="pointer-events-none fixed bottom-[88px] left-[calc(50%+144px)] z-[190] flex w-full max-w-2xl -translate-x-1/2 justify-center px-4 rtl:left-[calc(50%-144px)]">
           <div className="animate-modal-in pointer-events-auto flex w-full items-center gap-3 rounded-xl border border-edge-soft bg-elevated/95 px-4 py-3 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-sm">
             <AlertTriangle size={17} className="shrink-0 text-info" strokeWidth={2.2} />
@@ -192,7 +195,7 @@ function ConfirmDialog({
               key={a.label}
               type="button"
               onClick={a.onClick}
-              className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${tone[a.tone]}`}
+              className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors max-sm:min-h-12 max-sm:text-[15px] ${tone[a.tone]}`}
             >
               {a.label}
             </button>

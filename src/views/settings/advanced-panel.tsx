@@ -62,7 +62,7 @@ export function AdvancedPanel() {
         </Section>
       )}
 
-      {!desktopOnly && <WebBuildBanner />}
+      {!desktopOnly && (isMobileTauri() ? <PhoneDataNote /> : <WebBuildBanner />)}
 
       {desktopOnly && (
         <Section
@@ -204,6 +204,20 @@ function LegalDisclaimer() {
       </p>
       <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
         {t("VAYRA itself does not host, distribute, or index any media. All streams come from third-party addons, debrid services, or your own Stremio account that you configure yourself. You are responsible for what you choose to play and for complying with the laws of your jurisdiction.")}
+      </p>
+    </section>
+  );
+}
+
+// The phone app is no web build: its data stays on the phone, and it has
+// nothing to sell about the desktop app.
+function PhoneDataNote() {
+  const t = useT();
+  return (
+    <section className="flex flex-col gap-2 rounded-2xl bg-elevated p-4">
+      <h2 className="type-callout font-semibold text-ink">{t("Where your data lives")}</h2>
+      <p className="type-footnote text-ink-muted">
+        {t("Everything you save stays on this phone: your Stremio login, API keys, watch progress and preferences. VAYRA servers never see any of it.")}
       </p>
     </section>
   );
@@ -616,7 +630,7 @@ function AboutRow() {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5 text-[13px] text-ink-muted">
       <InfoLine label={t("Version")} value={`${__APP_VERSION__}${IS_BETA_BUILD ? " (Beta)" : ""}`} />
-      <InfoLine label={t("Build")} value={isTauri ? t("Desktop (Tauri 2 / WebView2)") : t("Web")} />
+      <InfoLine label={t("Build")} value={isTauri ? (isMobileTauri() ? "Android (Tauri 2)" : t("Desktop (Tauri 2 / WebView2)")) : t("Web")} />
       <InfoLine label={t("Bug reports")} value="github.com/elie00/vayra/issues" />
     </div>
   );
@@ -628,7 +642,7 @@ function InfoLine({ label, value }: { label: string; value: string }) {
       <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
         {label}
       </span>
-      <span className="text-[13.5px] tabular-nums text-ink">{value}</span>
+      <span className="min-w-0 break-all text-end text-[13.5px] tabular-nums text-ink">{value}</span>
     </div>
   );
 }
