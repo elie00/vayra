@@ -19,7 +19,8 @@ import { ProgrammeSchedule } from "./detail/programme-schedule";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
-import { hasNativeDesktopUx } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
+import { MobileDetail } from "@/mobile/detail";
 import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
@@ -1125,6 +1126,45 @@ export function DetailView({
       )}
     </>
   );
+
+  if (isMobileTauri()) {
+    return (
+      <MobileDetail
+        meta={meta}
+        playMeta={playMeta}
+        title={title}
+        logo={logo}
+        backdrop={backdrop}
+        year={year}
+        rating={rating}
+        runtime={runtime}
+        overview={overview}
+        isSeries={isSeries}
+        isAnime={isAnime}
+        detail={detail}
+        recommendations={recommendations}
+        similar={similar}
+        cinemetaVideos={cinemetaFull?.videos}
+        stremioWatched={stremioWatched}
+        animeEpisodes={animeEpisodes}
+        franchise={franchise}
+        animeCanonicalId={animeCanonicalId}
+        inWatchlist={inWatchlist}
+        onToggleWatchlist={() =>
+          toggleWatchlist({
+            id: meta.id,
+            type: meta.type,
+            name: title || meta.name,
+            poster: meta.poster ?? detail?.poster,
+            imdbId: detail?.imdbId,
+          })
+        }
+        onPlay={() => void smartPlay(false)}
+        playLabel={smartPlayLabel}
+        trailerCandidate={trailerCandidate}
+      />
+    );
+  }
 
   return (
     <main

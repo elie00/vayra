@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Play, Plus } from "lucide-react";
 import { Poster } from "@/components/poster";
 import { PickCard } from "@/components/pick-card";
-import { MOBILE_POSTER_MIN, Row } from "@/components/row";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
 import { useT } from "@/lib/i18n";
@@ -18,7 +17,8 @@ import { CinemetaEpisodes } from "@/views/detail/cinemeta-episodes";
 import { PreviewIcon } from "@/views/detail/preview-icon";
 import { Synopsis } from "@/views/detail/synopsis";
 
-// Mobile-first Detail (Apple "pulled-up content" model). Rendered from
+// Mobile-first Detail (streaming-app model: artwork, full-width Play, round
+// actions, then Episodes / Similar titles / Cast list tabs). Rendered from
 // `DetailView` in src/views/detail.tsx when isMobileTauri(); every data hook /
 // effect / memo still runs in the original component and its already-computed
 // values arrive here as props (no re-fetching). Single column: backdrop hero →
@@ -119,138 +119,202 @@ export function MobileDetail({
   const showCinemetaSeries =
     !isAnime && isSeries && !showTmdbSeries && cinemetaHasEpisodes;
 
+  const related = dedupeById([...recommendations, ...similar]);
+  const cast = detail?.cast ?? [];
+  const tabs = ([
+    (showTmdbSeries || showAnime || showCinemetaSeries) && "episodes",
+    related.length > 0 && "related",
+    cast.length > 0 && "cast",
+  ].filter(Boolean) as DetailTab[]);
+  const [picked, setPicked] = useState<DetailTab | null>(null);
+  const tab = picked && tabs.includes(picked) ? picked : tabs[0] ?? null;
+
   return (
     <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
-      <div className="pb-[calc(4.5rem+var(--vayra-safe-bottom))]">
-        {/* Hero backdrop */}
-        <div className="relative">
-          <div className="relative aspect-[3/4] w-full overflow-hidden bg-elevated">
-            {backdrop && (
-              <img
-                src={backdrop}
-                alt=""
-                decoding="async"
-                fetchPriority="high"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/35 to-transparent" />
-          </div>
-          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 px-4 pb-2">
+      <div className="pb-[calc(2rem+var(--vayra-safe-bottom))]">
+        {/* The artwork across the top, as streaming apps open a title; it dims
+            under the status bar and the Back button, and fades into the page. */}
+        <div className="relative aspect-video w-full overflow-hidden bg-elevated">
+          {backdrop && (
+            <img
+              src={backdrop}
+              alt=""
+              decoding="async"
+              fetchPriority="high"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-b from-canvas/60 via-transparent to-canvas" />
+        </div>
+
+        <div className="flex flex-col gap-4 px-4 pt-2">
+          <div className="flex flex-col gap-2">
             {logo ? (
               <img
                 src={logo}
                 alt={title}
                 decoding="async"
-                className="max-h-24 w-auto max-w-[80%] object-contain object-left drop-shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
+                className="max-h-16 w-auto max-w-[70%] object-contain object-left drop-shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
               />
             ) : (
-              <h1 className="type-title-1 font-semibold leading-[1.05] tracking-tight text-ink">
-                {title}
-              </h1>
+              <h1 className="type-title-1 font-semibold text-ink" dir="auto">{title}</h1>
             )}
             {metaBits.length > 0 && (
               <p className="flex flex-wrap items-center gap-2 type-footnote font-medium text-ink-muted">
                 {metaBits.map((b, i) => (
                   <span key={i} className="flex items-center gap-2">
-                    {i > 0 && <span className="text-ink-subtle">·</span>}
+                    {i > 0 && <span aria-hidden className="h-1 w-1 rounded-full bg-ink-subtle" />}
                     {b}
                   </span>
                 ))}
               </p>
             )}
           </div>
-        </div>
 
-        <div className="flex flex-col gap-8 px-4 pt-4">
-          {/* Action row */}
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={onPlay}
-              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-ink type-callout font-semibold text-canvas transition-transform active:scale-95"
-            >
-              <Play size={18} fill="currentColor" />
-              {playLabel}
-            </button>
-            <button
-              type="button"
-              onClick={onToggleWatchlist}
-              aria-label={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-transform active:scale-95 ${
-                inWatchlist
-                  ? "border-ink bg-ink/10 text-ink"
-                  : "border-edge bg-canvas/60 text-ink"
-              }`}
-            >
-              {inWatchlist ? <Check size={19} strokeWidth={2.4} /> : <Plus size={19} strokeWidth={2} />}
-            </button>
-            {trailerCandidate && (
-              <button
-                type="button"
-                onClick={() => openUrl(`https://www.youtube.com/watch?v=${trailerCandidate}`)}
-                aria-label={t("Watch trailer")}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-edge bg-canvas/60 text-ink transition-transform active:scale-95"
-              >
-                <PreviewIcon size={20} />
-              </button>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={onPlay}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink type-callout font-semibold text-canvas transition-transform active:scale-[0.98]"
+          >
+            <Play size={18} fill="currentColor" />
+            {playLabel}
+          </button>
 
-          {/* Synopsis (clamp-4 + Show more/less, reused from desktop) */}
           {overview && <Synopsis text={overview} />}
 
-          {/* Episodes */}
-          {showTmdbSeries && detail && (
-            <MobileEpisodes
-              meta={playMeta}
-              tvId={detail.id}
-              seasons={detail.seasons}
-              stremioWatched={stremioWatched}
-              cinemetaVideos={cinemetaVideos}
-            />
-          )}
-          {showAnime && (
-            <AnimeEpisodes
-              meta={playMeta}
-              episodes={animeEpisodes}
-              franchise={franchise}
-              currentId={animeCanonicalId ?? meta.id}
-              scrollRef={scrollRef}
-              trackId={animeCanonicalId ?? undefined}
-            />
-          )}
-          {showCinemetaSeries && cinemetaVideos && (
-            <CinemetaEpisodes meta={playMeta} videos={cinemetaVideos} />
+          {cast.length > 0 && (
+            <p className="line-clamp-1 type-footnote text-ink-subtle">
+              {t("With: {names}", { names: cast.slice(0, 3).map((c) => c.name).join(", ") })}
+            </p>
           )}
 
-          {/* Cast rail */}
-          {detail && detail.cast.length > 0 && (
-            <Row title={t("Cast · {n}", { n: detail.cast.length })} min={104}>
-              {detail.cast.map((c, i) => (
-                <CastCard key={`${c.id}-${i}`} cast={c} />
-              ))}
-            </Row>
-          )}
-
-          {/* Related rails */}
-          {recommendations.length > 0 && (
-            <Row title={t("More Like This")} min={MOBILE_POSTER_MIN}>
-              {recommendations.map((r) => (
-                <PickCard key={r.id} meta={r} />
-              ))}
-            </Row>
-          )}
-          {similar.length > 0 && (
-            <Row title={t("You Might Also Like")} min={MOBILE_POSTER_MIN}>
-              {similar.map((r) => (
-                <PickCard key={`s-${r.id}`} meta={r} />
-              ))}
-            </Row>
-          )}
+          <div className="flex gap-7 px-1">
+            <RoundAction
+              label={t("To watch")}
+              ariaLabel={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
+              pressed={inWatchlist}
+              onClick={onToggleWatchlist}
+            >
+              {inWatchlist ? <Check size={20} strokeWidth={2.4} /> : <Plus size={20} strokeWidth={2.2} />}
+            </RoundAction>
+            {trailerCandidate && (
+              <RoundAction
+                label={t("Trailer")}
+                onClick={() => openUrl(`https://www.youtube.com/watch?v=${trailerCandidate}`)}
+              >
+                <PreviewIcon size={20} />
+              </RoundAction>
+            )}
+          </div>
         </div>
+
+        {tab && (
+          <>
+            <div role="tablist" className="mt-6 flex gap-6 overflow-x-auto border-b border-white/8 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {tabs.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === id}
+                  onClick={() => setPicked(id)}
+                  className={`relative shrink-0 py-3 type-callout font-semibold transition-colors ${tab === id ? "text-ink" : "text-ink-subtle"}`}
+                >
+                  {/* Like streaming apps, the active tab is marked along its top edge. */}
+                  {tab === id && <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] rounded-b-full bg-ink" />}
+                  {t(TAB_LABELS[id])}
+                </button>
+              ))}
+            </div>
+
+            <div className="px-4 pt-4">
+              {tab === "episodes" && (
+                <>
+                  {showTmdbSeries && detail && (
+                    <MobileEpisodes
+                      meta={playMeta}
+                      tvId={detail.id}
+                      seasons={detail.seasons}
+                      stremioWatched={stremioWatched}
+                      cinemetaVideos={cinemetaVideos}
+                    />
+                  )}
+                  {showAnime && (
+                    <AnimeEpisodes
+                      meta={playMeta}
+                      episodes={animeEpisodes}
+                      franchise={franchise}
+                      currentId={animeCanonicalId ?? meta.id}
+                      scrollRef={scrollRef}
+                      trackId={animeCanonicalId ?? undefined}
+                    />
+                  )}
+                  {showCinemetaSeries && cinemetaVideos && (
+                    <CinemetaEpisodes meta={playMeta} videos={cinemetaVideos} />
+                  )}
+                </>
+              )}
+              {tab === "related" && (
+                <div className="grid grid-cols-3 gap-x-3 gap-y-5">
+                  {related.map((r) => (
+                    <PickCard key={r.id} meta={r} />
+                  ))}
+                </div>
+              )}
+              {tab === "cast" && (
+                <div className="grid grid-cols-3 gap-x-3 gap-y-5">
+                  {cast.map((c, i) => (
+                    <CastCard key={`${c.id}-${i}`} cast={c} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </main>
+  );
+}
+
+type DetailTab = "episodes" | "related" | "cast";
+
+const TAB_LABELS: Record<DetailTab, string> = {
+  episodes: "Episodes",
+  related: "Similar titles",
+  cast: "Cast list",
+};
+
+function dedupeById(metas: Meta[]): Meta[] {
+  const seen = new Set<string>();
+  return metas.filter((m) => typeof m.id === "string" && !seen.has(m.id) && (seen.add(m.id), true));
+}
+
+function RoundAction({
+  label,
+  ariaLabel,
+  pressed,
+  onClick,
+  children,
+}: {
+  label: string;
+  ariaLabel?: string;
+  pressed?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      aria-pressed={pressed}
+      className="group flex w-16 flex-col items-center gap-1.5 type-caption font-medium text-ink-muted"
+    >
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-elevated text-ink transition-transform duration-150 ease-out group-active:scale-90">
+        {children}
+      </span>
+      {label}
+    </button>
   );
 }
 
