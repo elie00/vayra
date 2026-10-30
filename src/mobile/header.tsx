@@ -55,8 +55,9 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
           aria-label={t("nav.settings")}
           className="flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-90"
         >
-          <span className="scale-[0.8]">
-            <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact />
+          {/* No profile-colour ring: a coloured circle round the icon read as Stremio. */}
+          <span className="scale-[0.8] rounded-full ring-1 ring-white/15">
+            <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact ring={false} />
           </span>
         </button>
       </div>

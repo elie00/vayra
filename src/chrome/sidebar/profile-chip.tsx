@@ -168,14 +168,17 @@ export function ProfileAvatar({
   profile,
   fallbackAvatar,
   compact,
+  ring = true,
 }: {
   profile: Profile | null;
   fallbackAvatar: string | null;
   compact?: boolean;
+  /** The profile colour around the picture; off where it should stay neutral. */
+  ring?: boolean;
 }) {
   const dim = compact ? "h-9 w-9" : "h-12 w-12";
   const src = profile?.avatar ?? fallbackAvatar ?? null;
-  const ringStyle = profile?.color ? { boxShadow: `0 0 0 2px ${profile.color}` } : undefined;
+  const ringStyle = ring && profile?.color ? { boxShadow: `0 0 0 2px ${profile.color}` } : undefined;
   return (
     <div
       className={`${dim} shrink-0 overflow-hidden rounded-full bg-elevated`}
