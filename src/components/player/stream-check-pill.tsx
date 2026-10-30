@@ -42,7 +42,7 @@ export function StreamCheckPill({
       // On a phone it spans the width below the status bar with its actions on a
       // second row: centred from the middle it was capped at half the screen and
       // wrapped one word per line.
-      className={`pointer-events-auto absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/12 bg-black/85 py-2.5 ps-3.5 pe-2.5 shadow-[0_18px_48px_-18px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-300 max-sm:inset-x-3 max-sm:translate-x-0 max-sm:flex-wrap max-sm:gap-y-2 ${compact ? "top-2" : "top-7"} max-sm:top-[calc(var(--harbor-status-bar,0px)+0.5rem)]`}
+      className={`pointer-events-auto absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/12 bg-black/85 py-2.5 ps-3.5 pe-2.5 shadow-[0_18px_48px_-18px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-300 sm:w-max sm:max-w-[calc(100%-2rem)] max-sm:inset-x-3 max-sm:translate-x-0 max-sm:flex-wrap max-sm:gap-y-2 ${compact ? "top-2" : "top-7"} max-sm:top-[calc(var(--harbor-status-bar,0px)+0.5rem)]`}
       role="status"
     >
       <span
@@ -51,7 +51,7 @@ export function StreamCheckPill({
       >
         <Icon size={14} strokeWidth={2.4} style={{ color: copy.accent }} />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col leading-tight">
+      <div className="flex min-w-0 flex-col leading-tight max-sm:flex-1">
         <span className="text-[13px] font-semibold text-white">{copy.title}</span>
         <span className="text-[11px] text-white/55">{copy.sub}</span>
       </div>
