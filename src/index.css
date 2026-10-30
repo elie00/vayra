@@ -1560,7 +1560,7 @@ html[data-os="android"] {
 }
 /* Fields shrink with their row instead of pushing its button out, and no
    text in the phone settings is smaller than a label (12px). */
-[data-mobile-settings] input {
+[data-mobile-settings] input:not([type="checkbox"], [type="radio"]) {
   min-width: 0;
 }
 [data-mobile-settings] :is(.text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\], .text-\[11\.5px\]) {

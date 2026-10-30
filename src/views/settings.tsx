@@ -40,6 +40,8 @@ import { MacConnectionsPanel, MacDownloadsPanel, MacPrivacyPanel } from "./setti
 const IS_WEB = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
 
 const mobileSectionAnchor = (id: SectionId) => `mobile-settings-${id}`;
+// Panels that open on a card titled like the section itself: no heading above them.
+const OWN_TITLE = new Set<SectionId>(["letterboxd", "relay"]);
 
 const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   downloads: { label: "Downloads", sub: "Your offline videos, storage folder and available space." },
@@ -381,7 +383,9 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
               <div className="flex flex-col gap-8 pb-8">
                 {sections.map((id) => (
                   <div key={id} id={mobileSectionAnchor(id)} className="flex scroll-mt-24 flex-col gap-4">
-                    {sections.length > 1 && <h2 className="type-title-3 font-semibold text-ink">{t(SECTION_META[id].label)}</h2>}
+                    {sections.length > 1 && t(SECTION_META[id].label) !== t(mobileEntry.label) && !OWN_TITLE.has(id) && (
+                      <h2 className="type-title-3 font-semibold text-ink">{t(SECTION_META[id].label)}</h2>
+                    )}
                     {renderPanel(id)}
                   </div>
                 ))}

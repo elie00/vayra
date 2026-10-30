@@ -301,6 +301,8 @@ const sweep3: Record<string, string> = {
   "{n} win": "{n} prix",
   "· {n} nom": "· {n} nomination",
   "· {n} noms": "· {n} nominations",
+  "Previous episodes": "Épisodes précédents",
+  "More episodes": "Plus d'épisodes",
 };
 
 export default sweep3;

@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDragScroll } from "@/lib/use-drag-scroll";
@@ -123,7 +124,7 @@ function StripArrow({
       type="button"
       onClick={onClick}
       onPointerDown={(e) => e.stopPropagation()}
-      aria-label={dir === -1 ? "Previous episodes" : "More episodes"}
+      aria-label={t(dir === -1 ? "Previous episodes" : "More episodes")}
       className={`absolute ${offset} z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-canvas/85 text-ink opacity-0 shadow-[0_4px_18px_-4px_rgba(0,0,0,0.55)] backdrop-blur-md transition-opacity duration-200 group-hover/eps:opacity-100 ${
         dir === -1 ? "start-1.5" : "end-1.5"
       }`}
