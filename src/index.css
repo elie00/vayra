@@ -1558,6 +1558,14 @@ html[data-os="android"] {
 [data-mobile-settings] :is(.p-7, .p-8, .p-10) {
   padding: 1rem;
 }
+/* Fields shrink with their row instead of pushing its button out, and no
+   text in the phone settings is smaller than a label (12px). */
+[data-mobile-settings] input {
+  min-width: 0;
+}
+[data-mobile-settings] :is(.text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\], .text-\[11\.5px\]) {
+  font-size: 12px;
+}
 /* A double-tap skip mark rises in place and fades out. */
 .vayra-skip {
   animation: vayra-skip 650ms var(--ease-out) forwards;

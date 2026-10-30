@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Pencil } from "lucide-react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
 import { AuthModal, StremioAuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/lib/auth";
@@ -6,6 +7,7 @@ import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
 import { useT } from "@/lib/i18n";
+import { isMobileTauri } from "@/lib/platform";
 import { useVayraAccount } from "@/lib/vayra-account";
 import { ColorPicker } from "./color-picker";
 import { Section } from "./shared";
@@ -85,6 +87,209 @@ export function AccountStub() {
     const visible = local.slice(0, 1);
     return `${visible}${"*".repeat(Math.max(local.length - 1, 4))}@${domain}`;
   }, [user]);
+
+  const deleteConfirm = (
+    <div className="flex flex-col gap-3">
+      <p className="text-[12.5px] leading-relaxed text-ink-muted">
+        {t("This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.")}
+      </p>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+          {t("Type DELETE VAYRA to confirm")}
+        </span>
+        <input
+          value={deletePhrase}
+          onChange={(event) => setDeletePhrase(event.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          className="h-10 rounded-xl border border-danger/30 bg-canvas px-3 font-mono text-[13px] text-ink outline-none focus:border-danger"
+        />
+      </label>
+      {deleteError && <p role="alert" className="text-[12px] text-danger">{deleteError}</p>}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setDeleteOpen(false);
+            setDeletePhrase("");
+            setDeleteError(null);
+          }}
+          disabled={deletePending}
+          className="h-10 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-muted"
+        >
+          {t("Cancel")}
+        </button>
+        <button
+          type="button"
+          disabled={deletePhrase !== "DELETE VAYRA" || deletePending}
+          onClick={() => {
+            setDeletePending(true);
+            setDeleteError(null);
+            void deleteVayraAccount()
+              .then(() => {
+                setDeleteOpen(false);
+                setDeletePhrase("");
+              })
+              .catch(() => setDeleteError(t("Account deletion failed. Please retry.")))
+              .finally(() => setDeletePending(false));
+          }}
+          className="h-10 rounded-xl bg-danger px-4 text-[12.5px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {deletePending ? t("Deleting…") : t("Permanently delete")}
+        </button>
+      </div>
+    </div>
+  );
+
+  const modals = (
+    <>
+      {showVayraAuth && <AuthModal onClose={() => setShowVayraAuth(false)} />}
+      {showStremioAuth && <StremioAuthModal onClose={() => setShowStremioAuth(false)} />}
+      {avatarPickerOpen && (
+        <AvatarCatalogModal
+          current={effectiveAvatar}
+          onPick={(id) => {
+            pushIdentity({ harborAvatar: avatarUrl(id) });
+            setAvatarPickerOpen(false);
+          }}
+          onClose={() => setAvatarPickerOpen(false)}
+        />
+      )}
+    </>
+  );
+
+  // On a phone, who you are and the VAYRA account behind it are one card,
+  // then profiles, Stremio, and deleting the account last. The add-ons synced
+  // from Stremio are managed on the Add-ons page.
+  if (isMobileTauri()) {
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col items-center gap-4 rounded-2xl bg-elevated px-4 py-6">
+          <AvatarRing src={effectiveAvatar} size={96} onClick={() => setAvatarPickerOpen(true)} />
+          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={onPickFile} className="hidden" />
+          {editingName ? (
+            <div className="flex w-full items-center gap-2">
+              <input
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    pushDisplayName(nameDraft.trim() || displayName);
+                    setEditingName(false);
+                  }
+                }}
+                className="h-12 min-w-0 flex-1 rounded-xl border border-edge bg-canvas px-3 type-body font-semibold text-ink outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  pushDisplayName(nameDraft.trim() || displayName);
+                  setEditingName(false);
+                }}
+                className="h-12 shrink-0 rounded-xl bg-ink px-4 type-callout font-semibold text-canvas"
+              >
+                {t("Save")}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              className="-my-2 flex min-h-12 max-w-full items-center gap-2 rounded-xl px-3 active:bg-raised"
+            >
+              <span className="truncate type-title-2 font-semibold text-ink">{displayName}</span>
+              <Pencil size={16} className="shrink-0 text-ink-subtle" />
+            </button>
+          )}
+          <p className="-mt-2 max-w-full truncate type-footnote text-ink-muted">
+            {vayraAccountLoading ? t("Checking account…") : vayraUser?.email ?? t("Local profile")}
+          </p>
+          <div className="grid w-full grid-cols-2 gap-2">
+            <button type="button" onClick={() => setAvatarPickerOpen(true)} className="h-11 rounded-full bg-raised px-3 type-footnote font-medium text-ink">
+              {t("Choose avatar")}
+            </button>
+            <button type="button" onClick={() => fileRef.current?.click()} className="h-11 rounded-full bg-raised px-3 type-footnote font-medium text-ink">
+              {t("Upload photo")}
+            </button>
+          </div>
+          <div className="w-full">
+            <ColorPicker value={settings.harborColor} onChange={(c) => pushIdentity({ harborColor: c })} />
+          </div>
+          <div className="flex w-full flex-col gap-2 border-t border-edge-soft/60 pt-4">
+            {vayraUser ? (
+              <button type="button" onClick={() => void signOutVayra()} className="h-12 rounded-full border border-edge-soft type-callout font-medium text-ink-muted">
+                {t("Sign out")}
+              </button>
+            ) : (
+              <>
+                <p className="text-center type-footnote text-ink-muted">
+                  {vayraAccountConfigured
+                    ? t("Sign in or create an account with your email address.")
+                    : t("Email sign-in is not configured in this build yet.")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowVayraAuth(true)}
+                  disabled={!vayraAccountConfigured || vayraAccountLoading}
+                  className="h-12 rounded-full bg-ink type-callout font-semibold text-canvas disabled:opacity-45"
+                >
+                  {t("Continue with email")}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <section className="flex flex-col gap-3">
+          <h3 className="type-title-3 font-semibold text-ink">{t("Profiles")}</h3>
+          <ProfilesStrip />
+          <StartupDefaults />
+          <SettingsScopeCard />
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h3 className="type-title-3 font-semibold text-ink">Stremio</h3>
+          <div className="flex flex-col gap-3 rounded-2xl bg-elevated p-4">
+            <p className="break-words type-footnote text-ink-muted">
+              {user ? maskedEmail : t("Connect it only if you want to import or export your library, watch progress, and addons.")}
+            </p>
+            {user ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setShowStremioAuth(true)} className="h-11 rounded-full bg-raised px-3 type-footnote font-medium text-ink">
+                  {t("Re-authenticate")}
+                </button>
+                <button type="button" onClick={signOut} className="h-11 rounded-full bg-raised px-3 type-footnote font-medium text-ink-muted">
+                  {t("Disconnect Stremio")}
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setShowStremioAuth(true)} className="h-12 rounded-full bg-raised type-callout font-semibold text-ink">
+                {t("Connect Stremio")}
+              </button>
+            )}
+          </div>
+        </section>
+
+        {vayraUser &&
+          (deleteOpen ? (
+            <div className="rounded-2xl border border-danger/30 bg-danger/5 p-4">{deleteConfirm}</div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteOpen(true);
+              }}
+              className="h-12 self-center px-4 type-footnote font-medium text-danger"
+            >
+              {t("Delete VAYRA account")}
+            </button>
+          ))}
+        {modals}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -247,56 +452,7 @@ export function AccountStub() {
                 {t("Delete account")}
               </button>
             ) : (
-              <div className="flex flex-col gap-3">
-                <p className="text-[12.5px] leading-relaxed text-ink-muted">
-                  {t("This cannot be undone. Type DELETE VAYRA to confirm the permanent deletion of your remote account.")}
-                </p>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-                    {t("Type DELETE VAYRA to confirm")}
-                  </span>
-                  <input
-                    value={deletePhrase}
-                    onChange={(event) => setDeletePhrase(event.target.value)}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="h-10 rounded-xl border border-danger/30 bg-canvas px-3 font-mono text-[13px] text-ink outline-none focus:border-danger"
-                  />
-                </label>
-                {deleteError && <p role="alert" className="text-[12px] text-danger">{deleteError}</p>}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDeleteOpen(false);
-                      setDeletePhrase("");
-                      setDeleteError(null);
-                    }}
-                    disabled={deletePending}
-                    className="h-10 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-muted"
-                  >
-                    {t("Cancel")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={deletePhrase !== "DELETE VAYRA" || deletePending}
-                    onClick={() => {
-                      setDeletePending(true);
-                      setDeleteError(null);
-                      void deleteVayraAccount()
-                        .then(() => {
-                          setDeleteOpen(false);
-                          setDeletePhrase("");
-                        })
-                        .catch(() => setDeleteError(t("Account deletion failed. Please retry.")))
-                        .finally(() => setDeletePending(false));
-                    }}
-                    className="h-10 rounded-xl bg-danger px-4 text-[12.5px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {deletePending ? t("Deleting…") : t("Permanently delete")}
-                  </button>
-                </div>
-              </div>
+              deleteConfirm
             )}
           </div>
         </Section>
@@ -391,18 +547,7 @@ export function AccountStub() {
         <SyncedAddonsCard />
       </Section>
 
-      {showVayraAuth && <AuthModal onClose={() => setShowVayraAuth(false)} />}
-      {showStremioAuth && <StremioAuthModal onClose={() => setShowStremioAuth(false)} />}
-      {avatarPickerOpen && (
-        <AvatarCatalogModal
-          current={effectiveAvatar}
-          onPick={(id) => {
-            pushIdentity({ harborAvatar: avatarUrl(id) });
-            setAvatarPickerOpen(false);
-          }}
-          onClose={() => setAvatarPickerOpen(false)}
-        />
-      )}
+      {modals}
     </div>
   );
 }

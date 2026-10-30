@@ -33,11 +33,13 @@ import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { setSettingsBack } from "@/mobile/settings-back";
-import { MobileSettingsBar, MobileSettingsList } from "@/mobile/settings-list";
+import { mobileEntryFor, MobileSettingsBar, MobileSettingsList, type MobileSettingsEntry } from "@/mobile/settings-list";
 import { MacSettingsNav } from "./settings/mac-settings-nav";
 import { MacConnectionsPanel, MacDownloadsPanel, MacPrivacyPanel } from "./settings/mac-panels";
 
 const IS_WEB = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
+
+const mobileSectionAnchor = (id: SectionId) => `mobile-settings-${id}`;
 
 const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   downloads: { label: "Downloads", sub: "Your offline videos, storage folder and available space." },
@@ -157,10 +159,10 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   const [savedKey, setSavedKey] = useState<SavedKey | null>(null);
   const { settingsSectionRequest, goBack } = useView();
   const mobile = isMobileTauri();
-  // On a phone the settings open on the list of sections, or straight on the
-  // section asked for; Back from a section returns to the list.
-  const [mobilePage, setMobilePage] = useState<"list" | "section">(() =>
-    settingsSectionRequest.section ? "section" : "list",
+  // On a phone the settings open on the list of pages, or straight on the page
+  // holding the section asked for; Back from a page returns to the list.
+  const [mobileEntry, setMobileEntry] = useState<MobileSettingsEntry | null>(() =>
+    settingsSectionRequest.section ? mobileEntryFor(settingsSectionRequest.section as SectionId) : null,
   );
   const requestedInitialSection = settingsSectionRequest.section as SectionId | null;
   const [active, setActive] = useState<SectionId>(
@@ -175,21 +177,30 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   const handleNav = (id: SectionId, anchor?: string) => {
     setActive(id);
     setPendingAnchor(anchor ?? null);
-    setMobilePage("section");
+  };
+
+  // A phone page can hold several sections: opening one lands on its page,
+  // scrolled to it when it is not the first.
+  const openMobileSection = (id: SectionId) => {
+    const entry = mobileEntryFor(id);
+    if (!entry) return;
+    setMobileEntry(entry);
+    setActive(id);
+    setPendingAnchor(id === entry.sections[0] ? null : mobileSectionAnchor(id));
   };
 
   useEffect(() => {
-    if (!mobile || !activeView || mobilePage !== "section") return;
-    setSettingsBack(() => setMobilePage("list"));
+    if (!mobile || !activeView || !mobileEntry) return;
+    setSettingsBack(() => setMobileEntry(null));
     return () => setSettingsBack(null);
-  }, [mobile, activeView, mobilePage]);
+  }, [mobile, activeView, mobileEntry]);
 
   useEffect(() => {
     const requested = settingsSectionRequest.section as SectionId | null;
-    if (requested && isSettingsSectionAvailable(requested)) {
-      setActive(requested);
-      setMobilePage("section");
-    }
+    if (!requested || !isSettingsSectionAvailable(requested)) return;
+    if (mobile) openMobileSection(requested);
+    else setActive(requested);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsSectionRequest]);
 
   useEffect(() => {
@@ -202,7 +213,7 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
   useEffect(() => {
     if (pendingAnchorRef.current) return;
     scrollRef.current?.scrollTo({ top: 0 });
-  }, [active, mobilePage]);
+  }, [active, mobileEntry]);
 
   useEffect(() => {
     if (!pendingAnchor) return;
@@ -268,18 +279,19 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
     setTimeout(() => setSavedKey((s) => (s === which ? null : s)), 1400);
   };
 
-  const panels = (
+  // The panel for one section; the phone can stack several on one page.
+  const renderPanel = (id: SectionId) => (
     <>
-      {active === "basics" && <BasicsPanel />}
-      {active === "connections" && <MacConnectionsPanel />}
-      {active === "privacy" && <MacPrivacyPanel />}
-      {active === "downloads" && <MacDownloadsPanel />}
+      {id === "basics" && <BasicsPanel />}
+      {id === "connections" && <MacConnectionsPanel />}
+      {id === "privacy" && <MacPrivacyPanel />}
+      {id === "downloads" && <MacDownloadsPanel />}
 
-      {active === "account" && <AccountStub />}
+      {id === "account" && <AccountStub />}
 
-      {active === "cira" && <CiraPanel />}
+      {id === "cira" && <CiraPanel />}
 
-      {active === "library" && (
+      {id === "library" && (
         <LibraryPanel
           tmdbDraft={tmdbDraft}
           omdbDraft={omdbDraft}
@@ -296,11 +308,11 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
         />
       )}
 
-      {active === "relay" && (
+      {id === "relay" && (
         <RelaySection mode={relayMode} onModeChange={setRelayMode} />
       )}
 
-      {active === "streaming" && (
+      {id === "streaming" && (
         <StreamingSourcesPanel
           rdDraft={rdDraft}
           tbDraft={tbDraft}
@@ -317,59 +329,65 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
         />
       )}
 
-      {active === "streamFilters" && <StreamFiltersPanel />}
+      {id === "streamFilters" && <StreamFiltersPanel />}
 
-      {active === "p2p" && <P2PPanel />}
+      {id === "p2p" && <P2PPanel />}
 
-      {active === "language" && <LanguagePanel />}
+      {id === "language" && <LanguagePanel />}
 
-      {active === "player" && <QualityPanel />}
+      {id === "player" && <QualityPanel />}
 
-      {active === "mpv" && <MpvPanel />}
+      {id === "mpv" && <MpvPanel />}
 
-      {active === "anime" && <AnimePanel />}
+      {id === "anime" && <AnimePanel />}
 
-      {active === "playerLayout" && <PlayerLayoutPanel />}
+      {id === "playerLayout" && <PlayerLayoutPanel />}
 
-      {active === "hotkeys" && <HotkeysPanel />}
+      {id === "hotkeys" && <HotkeysPanel />}
 
-      {active === "trakt" && <TraktPanel />}
+      {id === "trakt" && <TraktPanel />}
 
-      {active === "anilist" && <AnilistPanel />}
+      {id === "anilist" && <AnilistPanel />}
 
-      {active === "mal" && <MalPanel />}
+      {id === "mal" && <MalPanel />}
 
-      {active === "simkl" && <SimklPanel />}
+      {id === "simkl" && <SimklPanel />}
 
-      {active === "letterboxd" && <LetterboxdPanel />}
+      {id === "letterboxd" && <LetterboxdPanel />}
 
-      {active === "theme" && <ThemePanel />}
+      {id === "theme" && <ThemePanel />}
 
-      {active === "webhooks" && <WebhooksPanel />}
+      {id === "webhooks" && <WebhooksPanel />}
 
-      {active === "bug" && <BugReportPanel />}
+      {id === "bug" && <BugReportPanel />}
 
-      {active === "advanced" && <AdvancedPanel />}
+      {id === "advanced" && <AdvancedPanel />}
     </>
   );
+  const panels = renderPanel(active);
 
   if (mobile) {
-    const inSection = mobilePage === "section";
+    // The relay's guide takes the whole page while it is open.
+    const sections = mobileEntry && relayMode !== "panel" ? (["relay"] as SectionId[]) : mobileEntry?.sections ?? [];
     return (
-      <SettingsActiveContext.Provider value={{ setActive }}>
+      <SettingsActiveContext.Provider value={{ setActive: openMobileSection }}>
         <div className="flex h-full flex-col bg-canvas">
           <MobileSettingsBar
-            title={inSection ? t(SECTION_META[active].label) : t("nav.settings")}
-            onBack={inSection ? () => setMobilePage("list") : goBack}
+            title={mobileEntry ? t(mobileEntry.label) : t("nav.settings")}
+            onBack={mobileEntry ? () => setMobileEntry(null) : goBack}
           />
           <main data-mobile-settings ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-[calc(4.5rem+var(--harbor-status-bar,1.75rem))]">
-            {inSection ? (
-              <div className="flex flex-col gap-6 pb-6">
-                <p className="type-footnote text-ink-muted">{t(SECTION_META[active].sub)}</p>
-                {panels}
+            {mobileEntry ? (
+              <div className="flex flex-col gap-8 pb-8">
+                {sections.map((id) => (
+                  <div key={id} id={mobileSectionAnchor(id)} className="flex scroll-mt-24 flex-col gap-4">
+                    {sections.length > 1 && <h2 className="type-title-3 font-semibold text-ink">{t(SECTION_META[id].label)}</h2>}
+                    {renderPanel(id)}
+                  </div>
+                ))}
               </div>
             ) : (
-              <MobileSettingsList onPick={(id) => handleNav(id)} />
+              <MobileSettingsList onPick={(entry) => openMobileSection(entry.sections[0])} />
             )}
           </main>
           <SettingsUnsavedChanges active={activeView} />

@@ -38,7 +38,7 @@ export function ColorPicker({
               type="button"
               onClick={() => onChange(hex)}
               aria-label={hex}
-              className={`relative h-7 w-7 rounded-full transition-transform ${
+              className={`relative h-7 w-7 rounded-full transition-transform max-sm:h-9 max-sm:w-9 ${
                 selected ? "scale-110 ring-2 ring-ink ring-offset-2 ring-offset-canvas" : "hover:scale-105"
               }`}
               style={{ background: hex }}

@@ -1892,6 +1892,11 @@ const coverage: Record<string, string> = {
   "✓ Watched": "✓ Vu",
   "Ask AI to find titles for \"{query}\"": "Demander à l'IA de trouver des titres pour \"{query}\"",
   "No matches for \"{query}\"": "Aucun résultat pour \"{query}\"",
+  "Viewing": "Lecture",
+  "Languages & subtitles": "Langues et sous-titres",
+  "Sources": "Sources",
+  "Connected accounts": "Comptes connectés",
+  "Profile & account": "Profil et compte",
 };
 
 export default coverage;
