@@ -1567,6 +1567,18 @@ html[data-os="android"] {
     display: none;
   }
 }
+/* A double-tap skip mark rises in place and fades out. */
+.vayra-skip {
+  animation: vayra-skip 650ms var(--ease-out) forwards;
+}
+@keyframes vayra-skip {
+  0% { opacity: 0; scale: 0.9; }
+  20% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vayra-skip { animation-duration: 400ms; }
+}
 /* The phone search page settles in rather than popping. */
 .vayra-search {
   transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);

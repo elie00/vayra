@@ -114,7 +114,7 @@ export type PlayerOverlayLayersProps = {
   setDrawMode: (fn: (d: boolean) => boolean) => void;
   wakeChrome: () => void;
   /** Phones only: what a tap on the picture does (show or hide the controls). */
-  touchTap?: { start: () => void; end: () => void };
+  touchTap?: { start: () => void; end: () => void; seek?: (delta: number) => void };
   setHideOthersDrawings: (fn: (h: boolean) => boolean) => void;
   canPickAnother: boolean;
   resolvedImdbId: string | null;

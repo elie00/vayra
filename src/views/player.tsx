@@ -973,7 +973,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     setDrawMode,
     wakeChrome,
     // A phone has no hover: a tap on the picture toggles the controls, not playback.
-    touchTap: isMobileTauri() ? { start: tapStart, end: tapEnd } : undefined,
+    touchTap: isMobileTauri() ? { start: tapStart, end: tapEnd, seek: seekStep } : undefined,
     setHideOthersDrawings,
     canPickAnother: !liveOverlay.isLive || !inRoom || isHost,
     resolvedImdbId,

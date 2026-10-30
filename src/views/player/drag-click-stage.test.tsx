@@ -6,8 +6,8 @@ import { DragClickStage } from "./drag-click-stage";
 
 afterEach(() => vi.unstubAllGlobals());
 
-function mount(onTouchTap?: () => void) {
-  const touchTap = onTouchTap ? { start: vi.fn(), end: onTouchTap } : undefined;
+function mount(onTouchTap?: () => void, seek?: (delta: number) => void) {
+  const touchTap = onTouchTap ? { start: vi.fn(), end: onTouchTap, seek } : undefined;
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const onClick = vi.fn();
   const host = document.createElement("div");
@@ -18,9 +18,11 @@ function mount(onTouchTap?: () => void) {
   return { stage, onClick, root };
 }
 
-function tap(stage: HTMLElement) {
+function tap(stage: HTMLElement, x = 50, at = 0) {
   const up = new Event("pointerup", { bubbles: true });
   Object.defineProperty(up, "pointerType", { value: "touch" });
+  Object.defineProperty(up, "clientX", { value: x });
+  Object.defineProperty(up, "timeStamp", { value: at });
   stage.dispatchEvent(up);
   // What the browser synthesises after the touch.
   stage.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }));
@@ -43,5 +45,24 @@ it("keeps click to play or pause with a mouse", () => {
     window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
   });
   expect(onClick).toHaveBeenCalledTimes(1);
+  act(() => root.unmount());
+});
+
+it("skips 10 seconds on a double tap on either side", () => {
+  const onTouchTap = vi.fn();
+  const seek = vi.fn();
+  const { stage, root } = mount(onTouchTap, seek);
+  stage.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 100, right: 100, bottom: 100, x: 0, y: 0, toJSON: () => ({}) });
+  act(() => tap(stage, 90, 1000));
+  act(() => tap(stage, 88, 1200));
+  expect(seek).toHaveBeenCalledWith(10);
+  act(() => tap(stage, 10, 3000));
+  act(() => tap(stage, 12, 3150));
+  expect(seek).toHaveBeenCalledWith(-10);
+  // The first tap of each pair still shows or hides the controls; the second only skips.
+  expect(onTouchTap).toHaveBeenCalledTimes(2);
+  act(() => tap(stage, 50, 5000));
+  act(() => tap(stage, 50, 5100));
+  expect(seek).toHaveBeenCalledTimes(2);
   act(() => root.unmount());
 });
