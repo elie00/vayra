@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Play, Plus } from "lucide-react";
-import { Poster } from "@/components/poster";
 import { PickCard } from "@/components/pick-card";
 import type { Meta } from "@/lib/cinemeta";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
@@ -13,9 +12,11 @@ import { useView } from "@/lib/view";
 import { openUrl } from "@/lib/window";
 import { AnimeEpisodes } from "@/views/detail/anime-episodes";
 import { CastCard } from "@/views/detail/cast-card";
-import { CinemetaEpisodes } from "@/views/detail/cinemeta-episodes";
 import { PreviewIcon } from "@/views/detail/preview-icon";
 import { Synopsis } from "@/views/detail/synopsis";
+import { EpisodeDownloadButton } from "@/views/detail/episode-download-button";
+import { MobileCinemetaEpisodes } from "./cinemeta-episodes";
+import { MobileEpisodeItem } from "./episode-item";
 
 // Mobile-first Detail (streaming-app model: artwork, full-width Play, round
 // actions, then Episodes / Similar titles / Cast list tabs). Rendered from
@@ -250,7 +251,7 @@ export function MobileDetail({
                     />
                   )}
                   {showCinemetaSeries && cinemetaVideos && (
-                    <CinemetaEpisodes meta={playMeta} videos={cinemetaVideos} />
+                    <MobileCinemetaEpisodes meta={playMeta} videos={cinemetaVideos} />
                   )}
                 </>
               )}
@@ -399,7 +400,7 @@ function MobileEpisodes({
           {t("No episodes available for this season.")}
         </p>
       ) : (
-        <div className="flex flex-col gap-1">
+        <ul className="flex flex-col divide-y divide-white/6">
           {episodes.map((ep) => (
             <MobileEpisodeRow
               key={ep.id}
@@ -409,7 +410,7 @@ function MobileEpisodes({
               cinemetaVideos={cinemetaVideos}
             />
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );
@@ -461,52 +462,24 @@ function MobileEpisodeRow({
     );
 
   return (
-    <button
-      type="button"
-      onClick={play}
-      className="flex items-center gap-3 rounded-2xl p-2 text-start transition-colors active:bg-elevated/40"
-    >
-      <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-xl">
-        <Poster
-          src={still}
-          seed={String(ep.id)}
-          ratio="landscape"
-          lazy
-          onError={() => setImgIdx((i) => i + 1)}
-        />
-        <span className="absolute start-1.5 top-1.5 rounded-md bg-canvas/95 px-1.5 py-0.5 type-micro font-semibold text-ink">
-          {ep.episodeNumber}
-        </span>
-        {progress.watched && (
-          <span className="absolute end-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400/25 text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm">
-            <Check size={11} strokeWidth={3} />
-          </span>
-        )}
-        {progress.ratio > 0.01 && (
-          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-black/55">
-            <div
-              className="h-full bg-accent"
-              style={{ width: `${Math.max(2, progress.ratio * 100)}%` }}
-            />
-          </div>
-        )}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="truncate type-callout font-medium text-ink">
-          {ep.name || t("Episode {n}", { n: ep.episodeNumber })}
-        </p>
-        <p className="type-caption text-ink-subtle">
-          {[
-            `S${ep.seasonNumber} E${ep.episodeNumber}`,
-            ep.runtime ? t("{n} min", { n: ep.runtime }) : null,
-          ]
-            .filter(Boolean)
-            .join("  ·  ")}
-        </p>
-      </div>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-subtle">
-        <Play size={16} fill="currentColor" />
-      </span>
-    </button>
+    <MobileEpisodeItem
+      number={ep.episodeNumber}
+      title={ep.name || t("Episode {n}", { n: ep.episodeNumber })}
+      facts={[ep.runtime ? t("{n} min", { n: ep.runtime }) : null, formatAirDate(ep.airDate)].filter((f): f is string => !!f)}
+      synopsis={ep.overview || undefined}
+      still={still}
+      seed={String(ep.id)}
+      progress={progress.ratio}
+      watched={progress.watched}
+      onPlay={play}
+      onStillError={() => setImgIdx((i) => i + 1)}
+      trailing={<EpisodeDownloadButton meta={meta} episode={{ season: ep.seasonNumber, episode: ep.episodeNumber, name: ep.name || undefined, still }} size={36} />}
+    />
   );
+}
+
+function formatAirDate(date?: string | null): string | null {
+  if (!date) return null;
+  const d = new Date(date);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
