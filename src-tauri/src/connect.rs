@@ -48,6 +48,8 @@ struct Shared {
     on_command: OnCommand,
     // The addons phones may import, once the front has published them.
     addons: Mutex<Option<Vec<Value>>>,
+    // Where this Mac left off, for phones to pick up, once published.
+    history: Mutex<Option<Vec<Value>>>,
 }
 
 pub struct Server {
@@ -77,6 +79,7 @@ impl Server {
             next_conn: AtomicU64::new(0),
             on_command,
             addons: Mutex::new(None),
+            history: Mutex::new(None),
         });
         let router = axum::Router::new()
             .route("/connect/v1", get(upgrade))
@@ -107,6 +110,15 @@ impl Server {
     pub fn publish_addons(&self, addons: &Value) {
         *lock(&self.shared.addons) = Some(connect_seal::clean_addons(addons));
         if let Some(message) = addons_message(&self.shared) {
+            let _ = self.shared.states.send(message);
+        }
+    }
+
+    /// Where this Mac left off, for phones to continue; sealed too, as it is
+    /// what someone watches.
+    pub fn publish_history(&self, history: &Value) {
+        *lock(&self.shared.history) = Some(connect_seal::clean_history(history));
+        if let Some(message) = history_message(&self.shared) {
             let _ = self.shared.states.send(message);
         }
     }
@@ -142,6 +154,13 @@ fn addons_message(shared: &Shared) -> Option<String> {
     let plain = serde_json::to_vec(&addons).ok()?;
     let sealed = connect_seal::seal(&lock(&shared.secret), &plain)?;
     Some(json!({ "type": "addons", "sealed": sealed }).to_string())
+}
+
+fn history_message(shared: &Shared) -> Option<String> {
+    let history = lock(&shared.history).clone()?;
+    let plain = serde_json::to_vec(&history).ok()?;
+    let sealed = connect_seal::seal(&lock(&shared.secret), &plain)?;
+    Some(json!({ "type": "history", "sealed": sealed }).to_string())
 }
 
 fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
@@ -190,10 +209,15 @@ async fn session(shared: Arc<Shared>, mut socket: WebSocket) {
     .to_string();
     let current = lock(&shared.last_state).clone();
     let addons = addons_message(&shared);
+    let history = history_message(&shared);
     let introduced = send(&mut socket, hello).await
         && send(&mut socket, current).await
         && match addons {
             Some(addons) => send(&mut socket, addons).await,
+            None => true,
+        }
+        && match history {
+            Some(history) => send(&mut socket, history).await,
             None => true,
         };
     if introduced {
@@ -421,6 +445,12 @@ fn addons_slot() -> &'static Mutex<Option<Value>> {
     SLOT.get_or_init(|| Mutex::new(None))
 }
 
+// Where the Mac left off, as the front last published it.
+fn history_slot() -> &'static Mutex<Option<Value>> {
+    static SLOT: std::sync::OnceLock<Mutex<Option<Value>>> = std::sync::OnceLock::new();
+    SLOT.get_or_init(|| Mutex::new(None))
+}
+
 fn server_slot() -> &'static tokio::sync::Mutex<Option<(Server, ConnectInfo)>> {
     static SLOT: std::sync::OnceLock<tokio::sync::Mutex<Option<(Server, ConnectInfo)>>> = std::sync::OnceLock::new();
     SLOT.get_or_init(|| tokio::sync::Mutex::new(None))
@@ -450,6 +480,9 @@ pub async fn connect_start(app: tauri::AppHandle) -> Result<ConnectInfo, String>
     .map_err(|e| format!("connect: port {PORT}: {e}"))?;
     if let Some(addons) = lock(addons_slot()).as_ref() {
         server.publish_addons(addons);
+    }
+    if let Some(history) = lock(history_slot()).as_ref() {
+        server.publish_history(history);
     }
     let info = info(&stored, &name, server.addr.port());
     *slot = Some((server, info.clone()));
@@ -503,6 +536,14 @@ pub async fn connect_publish_addons(addons: Value) {
     *lock(addons_slot()) = Some(addons.clone());
     if let Some((server, _)) = server_slot().lock().await.as_ref() {
         server.publish_addons(&addons);
+    }
+}
+
+#[tauri::command]
+pub async fn connect_publish_history(history: Value) {
+    *lock(history_slot()) = Some(history.clone());
+    if let Some((server, _)) = server_slot().lock().await.as_ref() {
+        server.publish_history(&history);
     }
 }
 
@@ -590,6 +631,34 @@ mod tests {
         let sealed = next_text(&mut phone).await.unwrap();
         let plain = connect_seal::open("s3cret", sealed["sealed"].as_str().unwrap()).unwrap();
         assert_eq!(serde_json::from_slice::<Value>(&plain).unwrap(), json!([]));
+        server.stop();
+    }
+
+    #[tokio::test]
+    async fn a_paired_phone_gets_the_history_sealed() {
+        let server = Server::start(
+            "127.0.0.1:0".parse().unwrap(),
+            "s3cret".into(),
+            "mac-1".into(),
+            "MacBook".into(),
+            Arc::new(|_| {}),
+        )
+        .await
+        .unwrap();
+        let history = json!([{ "metaId": "tt1375666", "mediaType": "movie", "title": "Inception",
+                               "positionMs": 60000, "durationMs": 8880000, "updatedAt": 1793400000000_i64 }]);
+        server.publish_history(&history);
+        let (mut phone, _) =
+            tokio_tungstenite::connect_async(format!("ws://{}/connect/v1?k=s3cret", server.addr)).await.unwrap();
+        let hello = json!({ "type": "hello", "deviceId": "s24", "name": "Galaxy S24 Ultra", "platform": "android", "protocol": 1 });
+        phone.send(WsMessage::Text(hello.to_string().into())).await.unwrap();
+        assert_eq!(next_text(&mut phone).await.unwrap()["type"], "hello");
+        assert_eq!(next_text(&mut phone).await.unwrap()["type"], "idle");
+        let sealed = next_text(&mut phone).await.unwrap();
+        assert_eq!(sealed["type"], "history");
+        assert!(!sealed.to_string().contains("Inception"));
+        let plain = connect_seal::open("s3cret", sealed["sealed"].as_str().unwrap()).unwrap();
+        assert_eq!(serde_json::from_slice::<Value>(&plain).unwrap(), history);
         server.stop();
     }
 

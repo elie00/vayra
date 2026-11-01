@@ -14,6 +14,8 @@ const INFO: &[u8] = b"vayra-connect-seal-v1";
 const MAX_ADDONS: usize = 64;
 const MAX_NAME_CHARS: usize = 80;
 const MAX_URL_CHARS: usize = 2048;
+const MAX_RESUMES: usize = 60;
+const MAX_TEXT_CHARS: usize = 200;
 
 fn key(secret: &str) -> LessSafeKey {
     let prk = Salt::new(HKDF_SHA256, SALT).extract(secret.as_bytes());
@@ -69,6 +71,56 @@ pub fn clean_addons(value: &Value) -> Vec<Value> {
         .unwrap_or_default()
 }
 
+/// The Mac's resume points as phones may merge them: catalog titles with a
+/// position, their known fields bounded, anything else dropped.
+pub fn clean_history(value: &Value) -> Vec<Value> {
+    value
+        .as_array()
+        .map(|list| list.iter().filter_map(clean_resume).take(MAX_RESUMES).collect())
+        .unwrap_or_default()
+}
+
+fn clean_resume(resume: &Value) -> Option<Value> {
+    let meta_id = text(&resume["metaId"])?;
+    let media_type = match resume["mediaType"].as_str()? {
+        "movie" => "movie",
+        "series" => "series",
+        _ => return None,
+    };
+    let millis = |field: &str, positive: bool| {
+        resume[field].as_f64().filter(|v| v.is_finite() && (*v > 0.0 || (!positive && *v == 0.0))).map(|v| v.round() as i64)
+    };
+    let mut out = json!({
+        "metaId": meta_id,
+        "mediaType": media_type,
+        "title": text(&resume["title"]).unwrap_or_default(),
+        "positionMs": millis("positionMs", false)?,
+        "durationMs": millis("durationMs", true)?,
+        "updatedAt": millis("updatedAt", true)?,
+    });
+    let small = |field: &str| resume[field].as_u64().filter(|n| *n <= 10_000);
+    if let (Some(season), Some(episode)) = (small("season"), small("episode")) {
+        out["season"] = json!(season);
+        out["episode"] = json!(episode);
+    }
+    for field in ["videoId", "episodeTitle"] {
+        if let Some(value) = text(&resume[field]) {
+            out[field] = json!(value);
+        }
+    }
+    if let Some(url) = resume["artwork"].as_str().map(str::trim) {
+        if (url.starts_with("https://") || url.starts_with("http://")) && url.chars().count() <= MAX_URL_CHARS {
+            out["artwork"] = json!(url);
+        }
+    }
+    Some(out)
+}
+
+fn text(value: &Value) -> Option<String> {
+    let text: String = value.as_str()?.trim().chars().filter(|c| !c.is_control()).take(MAX_TEXT_CHARS).collect();
+    (!text.is_empty()).then_some(text)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,6 +134,35 @@ mod tests {
         *tampered.last_mut().unwrap() ^= 1;
         assert!(open("pairing-secret", &STANDARD.encode(tampered)).is_none());
         assert!(open("pairing-secret", "not base64 !").is_none());
+    }
+
+    #[test]
+    fn keeps_known_resume_fields_only() {
+        let history = clean_history(&json!([
+            {
+                "metaId": "tt0903747", "mediaType": "series", "season": 2, "episode": 5, "videoId": "tt0903747:2:5",
+                "title": "Breaking Bad", "episodeTitle": "Breakage", "artwork": "https://img.example/bb.jpg",
+                "positionMs": 1234567.4, "durationMs": 2820000, "updatedAt": 1793500000000_i64, "secret": "drop me"
+            },
+            { "metaId": "tt1375666", "mediaType": "movie", "title": "Inception", "artwork": "file:///etc/passwd",
+              "positionMs": 60000, "durationMs": 8880000, "updatedAt": 1793400000000_i64 },
+            { "metaId": "", "mediaType": "movie", "positionMs": 1, "durationMs": 2, "updatedAt": 3 },
+            { "metaId": "tt1", "mediaType": "album", "positionMs": 1, "durationMs": 2, "updatedAt": 3 },
+            { "metaId": "tt2", "mediaType": "movie", "positionMs": -5, "durationMs": 2, "updatedAt": 3 },
+            "not a resume",
+        ]));
+        assert_eq!(
+            history,
+            vec![
+                json!({
+                    "metaId": "tt0903747", "mediaType": "series", "season": 2, "episode": 5, "videoId": "tt0903747:2:5",
+                    "title": "Breaking Bad", "episodeTitle": "Breakage", "artwork": "https://img.example/bb.jpg",
+                    "positionMs": 1234567, "durationMs": 2820000, "updatedAt": 1793500000000_i64
+                }),
+                json!({ "metaId": "tt1375666", "mediaType": "movie", "title": "Inception",
+                        "positionMs": 60000, "durationMs": 8880000, "updatedAt": 1793400000000_i64 }),
+            ]
+        );
     }
 
     #[test]

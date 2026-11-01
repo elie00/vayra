@@ -167,3 +167,43 @@ describe("LUMA local store", () => {
     expect(persisted.resumes[0]?.positionMs).toBe(90_000);
   });
 });
+
+describe("resume points from the paired Mac", () => {
+  const now = Date.now();
+  const fromMac = (metaId: string, updatedAt: number, positionMs = 600_000) => ({
+    ref: { kind: "catalog" as const, metaId, mediaType: "movie" as const },
+    presentation: { title: metaId },
+    positionMs,
+    durationMs: 6_000_000,
+    updatedAt,
+  });
+
+  it("adds what this phone lacks and keeps its own newer spot", () => {
+    const store = new LumaStore("alice");
+    store.recordProgress({ meta: movie, positionMs: 300_000, durationMs: 6_000_000, updatedAt: now });
+    const result = store.importResumes([
+      fromMac("tt0133093", now - 60_000, 900_000),
+      fromMac("tt1375666", now - 120_000),
+    ]);
+    expect(result).toEqual({ ok: true, value: 1 });
+    const resumes = store.getSnapshot().document.resumes;
+    expect(resumes.map((r) => r.ref.kind === "catalog" && r.ref.metaId)).toEqual(["tt0133093", "tt1375666"]);
+    expect(resumes[0].positionMs).toBe(300_000);
+  });
+
+  it("takes the Mac's spot when it is the newer one", () => {
+    const store = new LumaStore("alice");
+    store.recordProgress({ meta: movie, positionMs: 300_000, durationMs: 6_000_000, updatedAt: now - 60_000 });
+    expect(store.importResumes([fromMac("tt0133093", now, 900_000)])).toEqual({ ok: true, value: 1 });
+    expect(store.getSnapshot().document.resumes).toHaveLength(1);
+    expect(store.getSnapshot().document.resumes[0].positionMs).toBe(900_000);
+  });
+
+  it("keeps nothing when this phone does not remember activity, or when it is too old", () => {
+    const store = new LumaStore("alice");
+    expect(store.importResumes([fromMac("tt1375666", now - 200 * 24 * 60 * 60 * 1_000)])).toEqual({ ok: true, value: 0 });
+    store.setRememberActivity(false);
+    expect(store.importResumes([fromMac("tt1375666", now)])).toEqual({ ok: true, value: 0 });
+    expect(store.getSnapshot().document.resumes).toEqual([]);
+  });
+});

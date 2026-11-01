@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { emitAppFeedback } from "@/lib/app-feedback";
-import { onLinkStatus, pairWithMac, readPairing, setLinkStatus, startLink, type PairedMac } from "@/lib/connect/link";
+import { lumaResumesFromMac } from "@/lib/connect/history";
+import { onLinkStatus, pairWithMac, readPairing, setLinkStatus, startLink, useLinkStatus, type PairedMac } from "@/lib/connect/link";
+import { lumaStore } from "@/lib/luma";
 import { onConnectPair } from "@/lib/deep-link";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -16,6 +18,17 @@ export function MacLinkBridge() {
   const [offer, setOffer] = useState<{ url: string; mac: PairedMac } | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  // Where the Mac left off joins this phone's Continue Watching.
+  const { history } = useLinkStatus();
+  const imported = useRef("");
+  useEffect(() => {
+    if (!history?.length) return;
+    const key = JSON.stringify(history);
+    if (key === imported.current) return;
+    imported.current = key;
+    lumaStore().importResumes(lumaResumesFromMac(history));
+  }, [history]);
 
   useEffect(() => {
     let cancelled = false;

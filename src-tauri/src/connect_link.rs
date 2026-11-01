@@ -87,6 +87,8 @@ pub struct LinkStatus {
     pub state: Option<Value>,
     /// The Mac's addons (`name`, `transportUrl`), once it has sent them.
     pub addons: Option<Vec<Value>>,
+    /// Where the Mac left off, once it has sent it.
+    pub history: Option<Vec<Value>>,
 }
 
 pub type OnStatus = Arc<dyn Fn(LinkStatus) + Send + Sync>;
@@ -138,6 +140,7 @@ impl Link {
             connected: false,
             state: None,
             addons: None,
+            history: None,
         }));
         let retry = Arc::new(Notify::new());
         let outbox: Outbox = Arc::default();
@@ -279,6 +282,17 @@ fn receive(reporter: &Reporter, secret: &str, text: &str) -> bool {
                 .and_then(|plain| serde_json::from_slice::<Value>(&plain).ok());
             if let Some(addons) = opened {
                 reporter.update(|s| s.addons = Some(connect_seal::clean_addons(&addons)));
+            }
+            false
+        }
+        // Sealed too: it is what someone watches.
+        Some("history") => {
+            let opened = message["sealed"]
+                .as_str()
+                .and_then(|sealed| connect_seal::open(secret, sealed))
+                .and_then(|plain| serde_json::from_slice::<Value>(&plain).ok());
+            if let Some(history) = opened {
+                reporter.update(|s| s.history = Some(connect_seal::clean_history(&history)));
             }
             false
         }
@@ -469,6 +483,11 @@ mod tests {
         let addons = json!([{ "name": "Torrentio", "transportUrl": "https://torrentio.example/debrid=KEY/manifest.json" }]);
         mac.publish_addons(&addons);
         assert_eq!(json!(until(&|s| s.addons.is_some()).await.addons.unwrap()), addons);
+
+        let history = json!([{ "metaId": "tt1375666", "mediaType": "movie", "title": "Inception",
+                               "positionMs": 60000, "durationMs": 8880000, "updatedAt": 1793400000000_i64 }]);
+        mac.publish_history(&history);
+        assert_eq!(json!(until(&|s| s.history.is_some()).await.history.unwrap()), history);
 
         let pause = json!({ "type": "command", "action": "pause" });
         link.send(&pause).unwrap();

@@ -17,6 +17,7 @@ import { fetchWatchlist } from "@/lib/trakt/watchlist";
 import type { TraktItem } from "@/lib/trakt/types";
 import { LumaResumeCard } from "./luma-resume-section";
 import { unifiedResumes } from "@/lib/unified-resumes";
+import { connectResumes, publishHistory } from "@/lib/connect/history";
 
 export function MacPersonalSections({ items, libraryItems, onDismiss, notice }: { items: LibraryItem[]; libraryItems: LibraryItem[]; onDismiss: (item: LibraryItem) => void; notice?: ReactNode }) {
   const t = useT();
@@ -41,6 +42,12 @@ export function MacPersonalSections({ items, libraryItems, onDismiss, notice }: 
   const { openPlayer, setView } = useView();
   const luma = useLuma();
   const resumes = unifiedResumes(luma.document.preferences.rememberActivity ? luma.document.resumes : [], items);
+  // VAYRA Connect: paired phones pick up where this Mac left off.
+  const history = JSON.stringify(connectResumes(resumes));
+  useEffect(() => {
+    if (!settings.connectEnabled) return;
+    void publishHistory(JSON.parse(history)).catch(() => { /* Connect stopped: nobody to tell. */ });
+  }, [history, settings.connectEnabled]);
   const downloads = useDownloads().filter((d) => d.status === "done").slice(0, 12);
   const [error, setError] = useState("");
   return <section aria-label={t("Your viewing")} className="flex flex-col gap-8">

@@ -14,6 +14,7 @@ import {
   type LumaProgressInput,
   type LumaQueueItem,
   type LumaResult,
+  type LumaResumeEntry,
   type LumaSnapshot,
 } from "./types";
 import { loadLumaDocument, lumaInput, lumaStorageKey, parseLumaStorageEvent, saveLumaDocument } from "./storage";
@@ -260,6 +261,30 @@ export class LumaStore {
     };
     this.emit();
     return false;
+  }
+
+  /** Resume points from the paired Mac: each is kept unless this device has
+   *  the same title or episode, newer. Returns how many changed. */
+  importResumes(entries: Omit<LumaResumeEntry, "id">[]): LumaResult<number> {
+    const blocked = this.blocked();
+    if (blocked) return blocked;
+    const document = this.snapshot.document;
+    if (!document.preferences.rememberActivity) return { ok: true, value: 0 };
+    const now = Date.now();
+    const byKey = new Map(document.resumes.map((entry) => [lumaRefKey(entry.ref), entry]));
+    let changed = 0;
+    for (const entry of entries) {
+      if (now - entry.updatedAt > LUMA_RESUME_RETENTION_MS) continue;
+      const key = lumaRefKey(entry.ref);
+      const mine = byKey.get(key);
+      if (mine && mine.updatedAt >= entry.updatedAt) continue;
+      byKey.set(key, { ...entry, id: mine?.id ?? rid() });
+      changed++;
+    }
+    if (changed === 0) return { ok: true, value: 0 };
+    const resumes = [...byKey.values()].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, LUMA_RESUME_LIMIT);
+    this.commit({ ...document, resumes });
+    return { ok: true, value: changed };
   }
 
   clearResume(id: string): LumaResult<undefined> {
