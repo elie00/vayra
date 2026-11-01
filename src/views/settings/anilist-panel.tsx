@@ -26,17 +26,17 @@ export function AnilistPanel() {
               {t("Show your AniList lists as rails on the Anime page, keep your watch progress in sync as you finish episodes, and use your AniList avatar as your VAYRA photo. Free at anilist.co.")}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setModalOpen(true)}
-              className="flex h-11 items-center gap-2.5 rounded-xl bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
+              className="flex h-11 items-center whitespace-nowrap gap-2.5 rounded-xl bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
             >
               <Link2 size={15} strokeWidth={2.2} />
               {t("Connect AniList")}
             </button>
             <button
               onClick={() => openUrl("https://anilist.co")}
-              className="flex h-11 items-center gap-2 rounded-xl border border-edge-soft px-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+              className="flex h-11 items-center whitespace-nowrap gap-2 rounded-xl border border-edge-soft px-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
             >
               {t("About AniList")}
               <ExternalLink size={13} strokeWidth={2.2} />

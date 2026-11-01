@@ -30,7 +30,7 @@ const GROUPS: { heading: string; entries: MobileSettingsEntry[] }[] = [
     heading: "App",
     entries: [
       { id: "appearance", label: "Appearance", Icon: Palette, sections: ["theme"] },
-      { id: "library", label: "Library & metadata", Icon: Bookmark, sections: ["library"] },
+      { id: "library", label: "Library", Icon: Bookmark, sections: ["library"] },
       { id: "services", label: "Connected accounts", Icon: Radio, sections: ["trakt", "anilist", "mal", "simkl", "letterboxd"] },
       { id: "notifications", label: "Notifications", Icon: Bell, sections: ["webhooks"] },
     ],

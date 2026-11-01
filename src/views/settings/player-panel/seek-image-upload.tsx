@@ -86,7 +86,7 @@ export function SeekImageUpload({
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="text-[12.5px] font-medium text-ink">
             {value ? t("Custom image loaded") : emptyTitle}
           </p>
