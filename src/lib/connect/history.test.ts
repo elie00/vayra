@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LumaResumeEntry } from "@/lib/luma/types";
 import type { LibraryItem } from "@/lib/stremio";
-import { connectResumes, lumaResumesFromMac } from "./history";
+import { connectResumes, lumaResumesFromConnect, ownResumes } from "./history";
 
 const luma = (ref: LumaResumeEntry["ref"]): LumaResumeEntry => ({
   id: "r1",
@@ -57,7 +57,7 @@ describe("the Mac's Continue Watching over VAYRA Connect", () => {
   });
 
   it("turns them back into resume points this phone's LUMA keeps", () => {
-    const [entry] = lumaResumesFromMac([
+    const [entry] = lumaResumesFromConnect([
       { metaId: "tt0903747", mediaType: "series", season: 2, episode: 5, videoId: "tt0903747:2:5", title: "Breaking Bad", positionMs: 1, durationMs: 2, updatedAt: 3 },
     ]);
     expect(entry).toEqual({
@@ -67,5 +67,19 @@ describe("the Mac's Continue Watching over VAYRA Connect", () => {
       durationMs: 2,
       updatedAt: 3,
     });
+  });
+});
+
+describe("the phone's history over VAYRA Connect", () => {
+  const spot = (metaId: string, updatedAt: number, episode?: number) => ({
+    metaId, mediaType: "series" as const, ...(episode ? { season: 1, episode } : {}),
+    title: metaId, positionMs: 1, durationMs: 2, updatedAt,
+  });
+
+  it("sends only what was watched on the phone, not what the Mac just sent", () => {
+    const fromMac = [spot("tt1", 100, 1), spot("tt2", 200)];
+    const onPhone = [spot("tt1", 100, 1), spot("tt1", 300, 2), spot("tt2", 250), spot("tt3", 50)];
+    expect(ownResumes(onPhone, fromMac)).toEqual([spot("tt1", 300, 2), spot("tt2", 250), spot("tt3", 50)]);
+    expect(ownResumes(onPhone, null)).toEqual(onPhone);
   });
 });

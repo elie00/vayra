@@ -3,8 +3,8 @@ import type { LumaResumeEntry } from "@/lib/luma/types";
 import { episodeFromVideoId, type LibraryItem } from "@/lib/stremio";
 import type { UnifiedResume } from "@/lib/unified-resumes";
 
-// VAYRA Connect carries the Mac's Continue Watching to paired phones, so the
-// phone picks up where the Mac left off. The Rust server seals it in transit.
+// VAYRA Connect carries Continue Watching both ways: the Mac's to paired
+// phones, and each phone's own back to the Mac, sealed in transit by Rust.
 
 /** One place the Mac left off, as VAYRA Connect carries it. */
 export type ConnectResume = {
@@ -75,8 +75,8 @@ function fromLibrary(item: LibraryItem): ConnectResume | null {
   };
 }
 
-/** The Mac's resume points as entries this phone's LUMA keeps. */
-export function lumaResumesFromMac(resumes: ConnectResume[]): Omit<LumaResumeEntry, "id">[] {
+/** Resume points from the other device, as entries this device's LUMA keeps. */
+export function lumaResumesFromConnect(resumes: ConnectResume[]): Omit<LumaResumeEntry, "id">[] {
   return resumes.map((resume) => ({
     ref: {
       kind: "catalog",
@@ -99,3 +99,14 @@ export function lumaResumesFromMac(resumes: ConnectResume[]): Omit<LumaResumeEnt
 
 /** Hands the Mac's resume points to paired phones. */
 export const publishHistory = (history: ConnectResume[]) => invoke("connect_publish_history", { history });
+
+/** The phone's resume points minus those it just took from the Mac, so a spot
+ *  never travels back to where it came from. */
+export function ownResumes(mine: ConnectResume[], fromMac: ConnectResume[] | null | undefined): ConnectResume[] {
+  const spot = (r: ConnectResume) => `${r.metaId}:${r.season ?? ""}:${r.episode ?? ""}:${r.updatedAt}`;
+  const received = new Set((fromMac ?? []).map(spot));
+  return mine.filter((resume) => !received.has(spot(resume)));
+}
+
+/** Hands this phone's own resume points to the paired Mac; rejects while it is away. */
+export const sendHistoryToMac = (history: ConnectResume[]) => invoke("connect_link_send_history", { history });

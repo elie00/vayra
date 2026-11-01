@@ -970,6 +970,7 @@ pub fn run() {
             connect_link::connect_link_pair,
             connect_link::connect_link_start,
             connect_link::connect_link_send,
+            connect_link::connect_link_send_history,
             connect_link::connect_link_forget,
             torrent_links::torrent_file_magnet,
             torrent_links::torrent_links_default,

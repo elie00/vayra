@@ -128,6 +128,8 @@ type Outbox = Arc<Mutex<Option<mpsc::UnboundedSender<String>>>>;
 /// Keeps one paired Mac connected, reconnecting until dropped.
 pub struct Link {
     status: Arc<Mutex<LinkStatus>>,
+    // To seal what the phone hands over, as the Mac seals what it sends.
+    secret: String,
     retry: Arc<Notify>,
     outbox: Outbox,
     task: tokio::task::JoinHandle<()>,
@@ -145,8 +147,9 @@ impl Link {
         let retry = Arc::new(Notify::new());
         let outbox: Outbox = Arc::default();
         let reporter = Reporter { status: status.clone(), on_status };
+        let secret = pairing.secret.clone();
         let task = tokio::spawn(run(pairing, me, reporter, retry.clone(), outbox.clone()));
-        Self { status, retry, outbox, task }
+        Self { status, secret, retry, outbox, task }
     }
 
     pub fn status(&self) -> LinkStatus {
@@ -156,6 +159,16 @@ impl Link {
     /// Skips the wait before the next attempt, e.g. when the app comes back.
     pub fn retry_now(&self) {
         self.retry.notify_one();
+    }
+
+    /// Hands this phone's own resume points to the Mac, sealed, if connected.
+    pub fn send_history(&self, history: &Value) -> Result<(), String> {
+        let plain = serde_json::to_vec(&connect_seal::clean_history(history)).map_err(|e| e.to_string())?;
+        let sealed = connect_seal::seal(&self.secret, &plain).ok_or("Could not seal the history")?;
+        lock(&self.outbox)
+            .as_ref()
+            .and_then(|tx| tx.send(json!({ "type": "history", "sealed": sealed }).to_string()).ok())
+            .ok_or_else(|| "The Mac is not connected".into())
     }
 
     /// Sends a `command`, `load` or `requestState` to the Mac, if connected.
@@ -414,6 +427,11 @@ pub fn connect_link_send(message: Value) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn connect_link_send_history(history: Value) -> Result<(), String> {
+    lock(link_slot()).as_ref().ok_or("No Mac is paired")?.send_history(&history)
+}
+
+#[tauri::command]
 pub async fn connect_link_forget(app: tauri::AppHandle) -> Result<(), String> {
     lock(link_slot()).take();
     let mut stored = load(&app)?;
@@ -497,6 +515,17 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
         assert_eq!(*lock(&commands), vec![pause]);
+
+        // The other way: the phone's own resume points reach the Mac, sealed.
+        let watched_here = json!([{ "metaId": "tt0903747", "mediaType": "series", "season": 1, "episode": 2,
+                                    "title": "Breaking Bad", "positionMs": 120000, "durationMs": 2820000,
+                                    "updatedAt": 1793600000000_i64 }]);
+        link.send_history(&watched_here).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while lock(&commands).len() < 2 && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(lock(&commands)[1], json!({ "type": "history", "history": watched_here }));
 
         mac.stop();
         assert!(until(&|s| !s.connected).await.state.is_none());

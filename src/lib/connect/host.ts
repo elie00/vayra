@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { loadInstalled } from "@/lib/addon-store";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
+import type { ConnectResume } from "./history";
 
 // VAYRA Connect, Mac side: the Rust server (src-tauri/src/connect.rs) holds the
 // phones' sockets; the front publishes the player's state and runs the commands.
@@ -20,7 +21,8 @@ export type ConnectCommand =
   | { type: "command"; action: "seek"; position: number }
   | { type: "command"; action: "skip"; seconds: number }
   | { type: "command"; action: "volume"; level: number }
-  | { type: "load"; meta: ConnectMeta; episode?: ConnectEpisode; startSec?: number };
+  | { type: "load"; meta: ConnectMeta; episode?: ConnectEpisode; startSec?: number }
+  | { type: "history"; history: ConnectResume[] };
 
 export type ConnectState = {
   status: PlayerSnapshot["status"];

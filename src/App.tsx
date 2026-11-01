@@ -747,6 +747,13 @@ function Shell() {
     void import("@/lib/connect/host")
       .then(({ onConnectCommand }) =>
         onConnectCommand((command) => {
+          // Where a paired phone left off joins this Mac's Continue Watching.
+          if (command.type === "history") {
+            void Promise.all([import("@/lib/connect/history"), import("@/lib/luma")]).then(([{ lumaResumesFromConnect }, { lumaStore }]) =>
+              lumaStore().importResumes(lumaResumesFromConnect(command.history)),
+            );
+            return;
+          }
           if (command.type !== "load") return;
           const { meta, episode } = command;
           openPicker({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster }, episode, {

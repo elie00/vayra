@@ -289,6 +289,18 @@ fn handle(shared: &Shared, text: &str) -> Reply {
             }
             None => Reply::Close,
         },
+        // Where the phone left off, sealed with the pairing secret.
+        Some("history") => match message["sealed"]
+            .as_str()
+            .and_then(|sealed| connect_seal::open(&lock(&shared.secret), sealed))
+            .and_then(|plain| serde_json::from_slice::<Value>(&plain).ok())
+        {
+            Some(history) => {
+                (shared.on_command)(json!({ "type": "history", "history": connect_seal::clean_history(&history) }));
+                Reply::Nothing
+            }
+            None => Reply::Close,
+        },
         _ => Reply::Close,
     }
 }
@@ -659,6 +671,48 @@ mod tests {
         assert!(!sealed.to_string().contains("Inception"));
         let plain = connect_seal::open("s3cret", sealed["sealed"].as_str().unwrap()).unwrap();
         assert_eq!(serde_json::from_slice::<Value>(&plain).unwrap(), history);
+        server.stop();
+    }
+
+    #[tokio::test]
+    async fn a_paired_phone_hands_over_its_history_only_sealed() {
+        let received = Arc::new(Mutex::new(Vec::<Value>::new()));
+        let sink = received.clone();
+        let server = Server::start(
+            "127.0.0.1:0".parse().unwrap(),
+            "s3cret".into(),
+            "mac-1".into(),
+            "MacBook".into(),
+            Arc::new(move |command| lock(&sink).push(command)),
+        )
+        .await
+        .unwrap();
+        let (mut phone, _) =
+            tokio_tungstenite::connect_async(format!("ws://{}/connect/v1?k=s3cret", server.addr)).await.unwrap();
+        let hello = json!({ "type": "hello", "deviceId": "s24", "name": "Galaxy S24 Ultra", "platform": "android", "protocol": 1 });
+        phone.send(WsMessage::Text(hello.to_string().into())).await.unwrap();
+        assert_eq!(next_text(&mut phone).await.unwrap()["type"], "hello");
+        assert_eq!(next_text(&mut phone).await.unwrap()["type"], "idle");
+
+        let history = json!([{ "metaId": "tt1375666", "mediaType": "movie", "title": "Inception",
+                               "positionMs": 60000, "durationMs": 8880000, "updatedAt": 1793400000000_i64, "extra": true }]);
+        let sealed = connect_seal::seal("s3cret", history.to_string().as_bytes()).unwrap();
+        phone.send(WsMessage::Text(json!({ "type": "history", "sealed": sealed }).to_string().into())).await.unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while lock(&received).is_empty() && std::time::Instant::now() < deadline {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        assert_eq!(
+            *lock(&received),
+            vec![json!({ "type": "history", "history": [{ "metaId": "tt1375666", "mediaType": "movie", "title": "Inception",
+                                                           "positionMs": 60000, "durationMs": 8880000, "updatedAt": 1793400000000_i64 }] })]
+        );
+
+        // Sealed with another secret: the phone is dropped, nothing reaches the front.
+        let forged = connect_seal::seal("not-the-secret", history.to_string().as_bytes()).unwrap();
+        phone.send(WsMessage::Text(json!({ "type": "history", "sealed": forged }).to_string().into())).await.unwrap();
+        assert!(next_text(&mut phone).await.is_none());
+        assert_eq!(lock(&received).len(), 1);
         server.stop();
     }
 
