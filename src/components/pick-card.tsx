@@ -1,5 +1,5 @@
 import { Bookmark, Check, Popcorn, RefreshCcw } from "lucide-react";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { previewMeta } from "@/mobile/meta-preview";
 import { OfflineMark, useOfflineIds } from "@/mobile/offline-mark";
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -91,7 +91,8 @@ export const PickCard = memo(function PickCard({
   const { openMeta, openPicker } = useView();
   const { open: openContextMenu } = useContextMenu();
   const { settings } = useSettings();
-  const offline = useOfflineIds().has(meta.id) && isMobileTauri();
+  // The same small offline mark on the phone and the Mac.
+  const offline = useOfflineIds().has(meta.id) && (isMobileTauri() || hasNativeDesktopUx());
   const cardStyle: CardHoverStyle = kids || !settings.hoverPreviewEnabled ? "none" : settings.cardHoverStyle;
   const activeCustom = cardStyle === "custom" ? getCustomHover(settings.customHoverId) : null;
   const inCardHover: CardHoverStyle = cardStyle === "default" || cardStyle === "custom" ? "none" : cardStyle;

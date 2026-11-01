@@ -319,6 +319,7 @@ const sweep3: Record<string, string> = {
   "October": "Octobre",
   "November": "Novembre",
   "December": "Décembre",
+  "How you appear in VARA, sessions and chat, and the VAYRA account behind it.": "Comment vous apparaissez dans VARA, les sessions et le chat, et le compte VAYRA qui va avec.",
 };
 
 export default sweep3;

@@ -294,8 +294,8 @@ export function AccountStub() {
   return (
     <div className="flex flex-col gap-5">
       <Section
-        title={t("VAYRA identity")}
-        subtitle={t("How you appear in VARA, sessions, and chat across VAYRA and connected services.")}
+        title={t("Profile & account")}
+        subtitle={t("How you appear in VARA, sessions and chat, and the VAYRA account behind it.")}
       >
         <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
           <div className="flex items-center gap-5">
@@ -393,70 +393,40 @@ export function AccountStub() {
               />
             </div>
           </div>
-        </div>
-      </Section>
-
-      <Section
-        title={t("VAYRA account")}
-        subtitle={t("Your private VAYRA identity, connected with a passwordless email link.")}
-      >
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-[14px] font-medium text-ink">
-              {vayraAccountLoading
-                ? t("Checking account…")
-                : vayraUser?.email ?? t("No VAYRA account connected")}
-            </span>
-            <span className="text-[12.5px] text-ink-subtle">
-              {vayraUser
-                ? t("Connected by email. Stremio remains a separate service.")
-                : vayraAccountConfigured
-                  ? t("Sign in or create an account with your email address.")
-                  : t("Email sign-in is not configured in this build yet.")}
-            </span>
-          </div>
-          {vayraUser ? (
-            <button
-              onClick={() => void signOutVayra()}
-              className="flex h-10 shrink-0 items-center rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
-            >
-              {t("Sign out")}
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowVayraAuth(true)}
-              disabled={!vayraAccountConfigured || vayraAccountLoading}
-              className="flex h-10 shrink-0 items-center rounded-xl bg-accent px-4 text-[13px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {t("Continue with email")}
-            </button>
-          )}
-        </div>
-      </Section>
-
-      {vayraUser && (
-        <Section
-          title={t("Delete VAYRA account")}
-          subtitle={t("Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.")}
-        >
-          <div className="flex flex-col gap-3 rounded-2xl border border-danger/30 bg-danger/5 p-5">
-            {!deleteOpen ? (
+          <div className="flex items-center justify-between gap-4 border-t border-edge-soft/60 pt-4">
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-[14px] font-medium text-ink">
+                {vayraAccountLoading
+                  ? t("Checking account…")
+                  : vayraUser?.email ?? t("No VAYRA account connected")}
+              </span>
+              <span className="text-[12.5px] text-ink-subtle">
+                {vayraUser
+                  ? t("Connected by email. Stremio remains a separate service.")
+                  : vayraAccountConfigured
+                    ? t("Sign in or create an account with your email address.")
+                    : t("Email sign-in is not configured in this build yet.")}
+              </span>
+            </div>
+            {vayraUser ? (
               <button
-                type="button"
-                onClick={() => {
-                  setDeleteError(null);
-                  setDeleteOpen(true);
-                }}
-                className="flex h-10 self-start items-center rounded-xl border border-danger/35 px-4 text-[12.5px] font-semibold text-danger transition-colors hover:bg-danger/10"
+                onClick={() => void signOutVayra()}
+                className="flex h-10 shrink-0 items-center rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
               >
-                {t("Delete account")}
+                {t("Sign out")}
               </button>
             ) : (
-              deleteConfirm
+              <button
+                onClick={() => setShowVayraAuth(true)}
+                disabled={!vayraAccountConfigured || vayraAccountLoading}
+                className="flex h-10 shrink-0 items-center rounded-xl bg-ink px-4 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {t("Continue with email")}
+              </button>
             )}
           </div>
-        </Section>
-      )}
+        </div>
+      </Section>
 
       <Section
         title={t("Profiles")}
@@ -546,6 +516,30 @@ export function AccountStub() {
       >
         <SyncedAddonsCard />
       </Section>
+
+      {vayraUser && (
+        <Section
+          title={t("Delete VAYRA account")}
+          subtitle={t("Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.")}
+        >
+          <div className="flex flex-col gap-3 rounded-2xl border border-danger/30 bg-danger/5 p-5">
+            {!deleteOpen ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteOpen(true);
+                }}
+                className="flex h-10 self-start items-center rounded-xl border border-danger/35 px-4 text-[12.5px] font-semibold text-danger transition-colors hover:bg-danger/10"
+              >
+                {t("Delete account")}
+              </button>
+            ) : (
+              deleteConfirm
+            )}
+          </div>
+        </Section>
+      )}
 
       {modals}
     </div>
