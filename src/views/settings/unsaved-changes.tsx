@@ -1,21 +1,18 @@
-import { AlertTriangle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
-import { isMobileTauri } from "@/lib/platform";
 import { setNavGuard } from "@/lib/nav-guard";
 import { useSettings, type Settings } from "@/lib/settings";
 import { changedSettingKeys } from "@/lib/settings/diff";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
 /** Settings apply live so previews keep working. This snapshots them on entry
- *  and offers Save (accept the current values) or Reset (restore the snapshot),
- *  and blocks navigation away while the two differ. */
+ *  and, when leaving with changes, asks whether to apply them or restore the
+ *  snapshot. No floating bar: changes take effect as they are made. */
 export function SettingsUnsavedChanges({ active }: { active: boolean }) {
   const t = useT();
   const { settings, update } = useSettings();
   const [snapshot, setSnapshot] = useState<Settings | null>(null);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [pendingLeave, setPendingLeave] = useState<{ proceed: () => void } | null>(null);
 
   const settingsRef = useRef(settings);
@@ -27,7 +24,6 @@ export function SettingsUnsavedChanges({ active }: { active: boolean }) {
     if (active) setSnapshot((cur) => cur ?? settingsRef.current);
     else {
       setSnapshot(null);
-      setConfirmReset(false);
       setPendingLeave(null);
     }
   }, [active]);
@@ -37,15 +33,6 @@ export function SettingsUnsavedChanges({ active }: { active: boolean }) {
     [settings, snapshot],
   );
   const dirty = changed.length > 0;
-
-  const save = useCallback(() => {
-    setSnapshot(settingsRef.current);
-  }, []);
-
-  const reset = useCallback(() => {
-    if (snapshot) update(snapshot);
-    setConfirmReset(false);
-  }, [snapshot, update]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -76,55 +63,6 @@ export function SettingsUnsavedChanges({ active }: { active: boolean }) {
 
   return (
     <>
-      {/* The bar is centered on the content column and lifted clear of
-          SettingsJumpBar, which is fixed at bottom-5 with the same nav offset. */}
-      {/* A phone applies changes as they are made, like any app; it only asks
-          on the way out of Settings. */}
-      {dirty && !pendingLeave && !isMobileTauri() && (
-        <div className="pointer-events-none fixed bottom-[88px] left-[calc(50%+144px)] z-[190] flex w-full max-w-2xl -translate-x-1/2 justify-center px-4 rtl:left-[calc(50%-144px)]">
-          <div className="animate-modal-in pointer-events-auto flex w-full items-center gap-3 rounded-xl border border-edge-soft bg-elevated/95 px-4 py-3 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-sm">
-            <AlertTriangle size={17} className="shrink-0 text-info" strokeWidth={2.2} />
-            <span className="flex-1 truncate text-[13.5px] text-ink">
-              {changed.length === 1
-                ? t("Careful — you have 1 unsaved change.")
-                : t("Careful — you have {n} unsaved changes.", { n: changed.length })}
-            </span>
-            <button
-              type="button"
-              onClick={() => setConfirmReset(true)}
-              className="shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-ink-muted transition-colors hover:text-ink"
-            >
-              {t("Reset")}
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              className="shrink-0 rounded-full bg-accent px-4 py-1.5 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
-            >
-              {t("Save Changes")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {confirmReset && (
-        <ConfirmDialog
-          title={t("Discard your changes?")}
-          body={
-            changed.length === 1
-              ? t("1 setting will be restored to what it was when you opened Settings.")
-              : t("{n} settings will be restored to what they were when you opened Settings.", {
-                  n: changed.length,
-                })
-          }
-          onCancel={() => setConfirmReset(false)}
-          actions={[
-            { label: t("Keep editing"), onClick: () => setConfirmReset(false), tone: "ghost" },
-            { label: t("Discard changes"), onClick: reset, tone: "danger" },
-          ]}
-        />
-      )}
-
       {pendingLeave && (
         <ConfirmDialog
           title={t("You have unsaved changes")}

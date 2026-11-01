@@ -7,7 +7,6 @@ import { BugReportPanel } from "./settings/bug-report-panel";
 import { LibraryPanel, type LibraryKey } from "./settings/library-panel";
 import { LanguagePanel } from "./settings/language-panel";
 import { isSettingsSectionAvailable, SettingsNav, SettingsTabs } from "./settings/nav";
-import { SettingsJumpBar } from "./settings/jump-bar";
 import { SettingsUnsavedChanges } from "./settings/unsaved-changes";
 import { HotkeysPanel } from "./settings/hotkeys-panel";
 import { PlayerLayoutPanel } from "./settings/player-layout-panel";
@@ -425,7 +424,6 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
         </div>
       </main>
       <BackToTop scrollRef={scrollRef} />
-      <SettingsJumpBar scrollRef={scrollRef} activeSection={active} />
       <SettingsUnsavedChanges active={activeView} />
     </div>
     </SettingsActiveContext.Provider>
