@@ -59,7 +59,7 @@ export function StatsView({ active }: { active: boolean }) {
         <header className="flex flex-col gap-5">
           <button
             onClick={goBack}
-            className="flex w-fit items-center gap-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:text-ink"
+            className="flex w-fit items-center gap-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:text-ink max-sm:hidden"
           >
             <ArrowLeft size={15} strokeWidth={2.2} />
             {t("common.back")}

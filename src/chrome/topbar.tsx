@@ -64,27 +64,13 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
 
   // Mobile: the streaming-app header on tab-level views (MobileHeader), a Back
   // top bar on stacked views (MobileBackBar), never the desktop right-cluster
-  // (recording/downloads) or window controls.
+  // (recording/downloads) or window controls. Live TV, opened from the menu,
+  // gets the same header as every other page.
   if (mobile) {
-    if (!onLiveRoot && !(canGoBack && !connecting)) {
+    if (!(canGoBack && !connecting)) {
       return <MobileHeader raised={topKind === "picker" || connecting} />;
     }
-    if (!onLiveRoot) return <MobileBackBar />;
-    return (
-      <header
-        data-vayra-topbar
-        className={`fixed inset-x-0 top-0 ${connecting ? "z-[130]" : "z-[55]"} h-20`}
-      >
-        <div className="flex h-full items-center gap-2 px-4">
-          <div className="flex items-center gap-1.5 text-ink">
-            <HarborMark className="h-7 w-7" />
-            <span className="font-display text-[18px] font-semibold leading-none tracking-tight">
-              {t("Live")}
-            </span>
-          </div>
-        </div>
-      </header>
-    );
+    return <MobileBackBar />;
   }
 
   return (

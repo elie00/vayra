@@ -33,19 +33,19 @@ export function PlaylistEmpty({
 function Intro({ onContinue }: { onContinue: () => void }) {
   const t = useT();
   return (
-    <div className="relative flex min-h-full flex-col px-12 py-20">
-      <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col justify-center gap-14">
-        <header className="flex flex-col gap-6">
+    <div className="relative flex min-h-full flex-col px-12 py-20 max-sm:px-4 max-sm:pb-10 max-sm:pt-[calc(5.5rem+var(--harbor-status-bar,1.75rem))]">
+      <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col justify-center gap-14 max-sm:justify-start max-sm:gap-8">
+        <header className="flex flex-col gap-6 max-sm:gap-4">
           <span className="text-[11px] font-bold uppercase tracking-[0.42em] text-ink-subtle">
             {t("Live TV")}
           </span>
           <h1
-            className="font-display text-[60px] font-medium leading-[1.02] tracking-tight text-ink"
+            className="font-display text-[60px] font-medium leading-[1.02] tracking-tight text-ink max-sm:text-[28px] max-sm:leading-9"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {t("Connect a playlist to get started.")}
           </h1>
-          <p className="max-w-[560px] text-[16.5px] leading-relaxed text-ink-muted">
+          <p className="max-w-[560px] text-[16.5px] leading-relaxed text-ink-muted max-sm:type-body">
             {t(
               "Connect any IPTV provider. Channels are sorted by category, EPG is pulled automatically when your provider supplies it, and playback runs through native libmpv.",
             )}
@@ -65,7 +65,7 @@ function Intro({ onContinue }: { onContinue: () => void }) {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-x-12 gap-y-7 border-t border-edge-soft/40 pt-10 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-12 gap-y-7 border-t border-edge-soft/40 pt-10 md:grid-cols-2 max-sm:gap-y-5 max-sm:pt-6">
           <Feature
             icon={<Grid2x2 size={17} strokeWidth={1.9} />}
             title={t("Multi-view")}
@@ -201,8 +201,8 @@ function Form({
   };
 
   return (
-    <div className="relative flex min-h-full flex-col px-12 py-20">
-      <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col justify-center gap-8">
+    <div className="relative flex min-h-full flex-col px-12 py-20 max-sm:px-4 max-sm:pb-10 max-sm:pt-[calc(5.5rem+var(--harbor-status-bar,1.75rem))]">
+      <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col justify-center gap-8 max-sm:justify-start max-sm:gap-6">
         <button
           onClick={onBack}
           className="group inline-flex h-11 items-center gap-2 self-start rounded-full border border-edge-soft bg-elevated/60 ps-3.5 pe-5 text-[14px] font-semibold text-ink-muted transition-all duration-150 ease-out hover:border-edge hover:bg-elevated hover:text-ink active:scale-[0.97]"
@@ -216,7 +216,7 @@ function Form({
         </button>
         <header className="flex flex-col gap-3">
           <h2
-            className="font-display text-[38px] font-medium leading-[1.05] tracking-tight text-ink"
+            className="font-display text-[38px] font-medium leading-[1.05] tracking-tight text-ink max-sm:text-[28px] max-sm:leading-9"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {t("Connect your provider.")}

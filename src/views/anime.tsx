@@ -679,7 +679,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
           )}
           {!malRowsHidden.includes("yourMalLists") && <MalRows />}
           {!anilistHidden.includes("yourLists") && <AnilistRows />}
-          <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5">
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5 max-sm:flex-col max-sm:items-stretch">
             <AnilistRowControls />
             <MalRowControls />
           </div>

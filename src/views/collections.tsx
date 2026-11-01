@@ -126,29 +126,29 @@ export function CollectionsView() {
 
   return (
     <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
-      <div className="mx-auto flex w-full max-w-[1700px] flex-col px-12 pb-24">
-        <div className="flex items-center gap-5 pt-24">
+      <div className="mx-auto flex w-full max-w-[1700px] flex-col px-12 pb-24 max-sm:px-4">
+        <div className="flex items-center gap-5 pt-24 max-sm:pt-[calc(4.5rem+var(--harbor-status-bar,1.75rem))]">
           {!layoutHasGlobalBack() && (
             <button
               onClick={goBack}
               aria-label={t("Back")}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-edge-soft bg-elevated/60 text-ink transition-colors hover:bg-raised"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-edge-soft bg-elevated/60 text-ink transition-colors hover:bg-raised max-sm:hidden"
             >
               <ArrowLeft size={19} strokeWidth={2.2} className="dir-icon" />
             </button>
           )}
           <div className="flex flex-col">
-            <h1 className="font-display text-[44px] font-medium leading-[1.02] tracking-tight text-ink">
+            <h1 className="font-display text-[44px] font-medium leading-[1.02] tracking-tight text-ink max-sm:type-title-1">
               {t("Collections")}
             </h1>
-            <p className="mt-1 text-[13.5px] text-ink-muted">
+            <p className="mt-1 text-[13.5px] text-ink-muted max-sm:type-footnote">
               {t("Every saga in one place. Search anything: if it exists, it's here.")}
             </p>
           </div>
         </div>
 
         <div ref={stickySentinelRef} aria-hidden className="h-px" />
-        <div className="sticky top-24 z-40 mt-8">
+        <div className="sticky top-24 z-40 mt-8 max-sm:top-[calc(4rem+var(--harbor-status-bar,1.75rem))] max-sm:mt-5">
           <div
             className={`flex flex-wrap items-center gap-3 transition-all duration-300 ${
               stuck
@@ -173,7 +173,7 @@ export function CollectionsView() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("Search every collection on TMDB...")}
                 spellCheck={false}
-                className="h-11 w-full rounded-full border border-edge bg-elevated/50 ps-11 pe-10 text-[14px] text-ink placeholder:text-ink-subtle transition-colors focus:border-ink-subtle focus:outline-none"
+                className="h-11 w-full rounded-full border border-edge bg-elevated/50 ps-11 pe-10 text-[14px] text-ink max-sm:h-12 max-sm:text-[16px] placeholder:text-ink-subtle transition-colors focus:border-ink-subtle focus:outline-none"
               />
               {query && (
                 <button
@@ -187,13 +187,14 @@ export function CollectionsView() {
               )}
             </div>
             {!searchActive && (
-              <div className="flex flex-wrap items-center gap-1.5">
+              // One row of chips scrolling sideways on a phone.
+              <div className="flex flex-wrap items-center gap-1.5 max-sm:-mx-4 max-sm:w-[calc(100%+2rem)] max-sm:flex-nowrap max-sm:gap-2 max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
                 {["All", ...COLLECTION_CATEGORIES].map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setCategory(c)}
-                    className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                    className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors max-sm:h-8 max-sm:shrink-0 max-sm:whitespace-nowrap max-sm:py-0 max-sm:text-[14px] ${
                       category === c
                         ? "bg-ink text-canvas"
                         : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft hover:bg-raised hover:text-ink"
@@ -221,7 +222,7 @@ export function CollectionsView() {
                       n: curated.length,
                     })}
               </p>
-              <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-5 max-sm:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
                 {curated.map((c) => (
                   <div
                     key={`${c.id}-${c.name}`}
@@ -238,7 +239,7 @@ export function CollectionsView() {
             <section className="flex flex-col gap-5">
               <p className="text-[13px] text-ink-subtle">{t("More {category}", { category: t(category) })}</p>
               {catFeed.hits.length > 0 && (
-                <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-5 max-sm:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
                   {catFeed.hits.map((h) => (
                     <div
                       key={h.id}
@@ -279,7 +280,7 @@ export function CollectionsView() {
                     : t('Results for "{query}"', { query: query.trim() })
                   : t("Every collection")}
               </p>
-              <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-5 max-sm:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
                 {hits.map((h) => (
                   <div
                     key={h.id}

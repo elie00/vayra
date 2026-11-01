@@ -260,7 +260,7 @@ function HeroSlide({ meta, label }: { meta: Meta; label?: string }) {
           <button
             type="button"
             onClick={() => (meta.type === "movie" ? openPicker(meta, undefined, { autoPlay: true, resume: true }) : openMeta(meta))}
-            className="flex h-12 items-center gap-2.5 rounded-full ps-1 pe-4 type-title-3 font-semibold text-ink transition-transform active:scale-95"
+            className="flex h-12 items-center gap-2.5 rounded-full ps-1 pe-4 text-[20px] leading-7 font-semibold text-ink transition-transform active:scale-95"
           >
             <Play size={24} fill="currentColor" />
             {t("Play")}

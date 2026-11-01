@@ -294,7 +294,8 @@ function Score({
 function StartTime({ ms, detail }: { ms: number; detail: string }) {
   const t = useT();
   const lang = useUiLanguage();
-  const locale = lang === "ar" ? "ar-SA" : "en-US";
+  // The interface language sets the date and clock format (17:30 in French).
+  const locale = lang === "ar" ? "ar-SA" : lang;
 
   if (!ms || isNaN(ms)) {
     return (
