@@ -57,7 +57,7 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
         >
           {/* No profile-colour ring: a coloured circle round the icon read as Stremio. */}
           <span className="scale-[0.8] rounded-full ring-1 ring-white/15">
-            <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact ring={false} />
+            <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact />
           </span>
         </button>
       </div>

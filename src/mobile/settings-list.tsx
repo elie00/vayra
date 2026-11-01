@@ -71,7 +71,7 @@ export function MobileSettingsList({ onPick }: { onPick: (entry: MobileSettingsE
         onClick={() => onPick(MOBILE_ACCOUNT_ENTRY)}
         className="flex items-center gap-4 rounded-2xl bg-elevated p-4 text-start active:bg-raised"
       >
-        <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} ring={false} />
+        <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate type-title-3 font-semibold text-ink">{activeProfile?.name ?? t("Profile")}</span>
           <span className="truncate type-footnote text-ink-muted">{user?.email ?? t("Local profile")}</span>
