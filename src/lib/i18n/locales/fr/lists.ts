@@ -8,15 +8,15 @@ const lists: Record<string, string> = {
   "Remove list \"{name}\"?": "Retirer la liste « {name} » ?",
   "{source} list detected": "Liste {source} détectée",
   "We'll name it from the URL.": "On la nommera d'après l'URL.",
-  "Keep typing, or paste the full list URL.": "Continue à taper, ou colle l'URL complète de la liste.",
+  "Keep typing, or paste the full list URL.": "Continuez à taper, ou collez l'URL complète de la liste.",
   "Paste a Trakt, MDBList, TMDB, Letterboxd, IMDb, or MAL list URL":
-    "Colle l'URL d'une liste Trakt, MDBList, TMDB, Letterboxd, IMDb ou MAL",
+    "Collez l'URL d'une liste Trakt, MDBList, TMDB, Letterboxd, IMDb ou MAL",
   "Paste a public list from Trakt, MDBList, TMDB, Letterboxd, IMDb, or MyAnimeList. VAYRA pulls the titles in and keeps the artwork sharp.":
-    "Colle une liste publique depuis Trakt, MDBList, TMDB, Letterboxd, IMDb ou MyAnimeList. VAYRA récupère les titres et garde des visuels impeccables.",
+    "Collez une liste publique depuis Trakt, MDBList, TMDB, Letterboxd, IMDb ou MyAnimeList. VAYRA récupère les titres et garde des visuels impeccables.",
 
   "Every collection": "Toutes les collections",
   "Every saga in one place. Search anything: if it exists, it's here.":
-    "Toutes les sagas au même endroit. Cherche n'importe quoi : si ça existe, c'est ici.",
+    "Toutes les sagas au même endroit. Cherchez n'importe quoi : si cela existe, c'est ici.",
   "Search every collection on TMDB...": "Rechercher dans toutes les collections TMDB...",
   "That's every collection TMDB knows about.": "C'est toutes les collections que TMDB connaît.",
   "That's every {category} collection we could find.":
@@ -30,7 +30,7 @@ const lists: Record<string, string> = {
   "Custom length": "Durée personnalisée",
   "Around {min} min": "Environ {min} min",
   "{media} between {lo}-{hi} minutes. Pick a length, not a wall of options.":
-    "{media} entre {lo} et {hi} minutes. Choisis une durée, pas un mur d'options.",
+    "{media} entre {lo} et {hi} minutes. Choisissez une durée, pas un mur d'options.",
 
   "Everything from {year}, sorted across trending, top rated, and hidden gems.":
     "Tout ce qui date de {year}, réparti entre tendances, mieux notés et pépites cachées.",

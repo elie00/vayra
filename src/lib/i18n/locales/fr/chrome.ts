@@ -38,7 +38,7 @@ const chrome: Record<string, string> = {
   "chrome.maximize": "Agrandir",
   "chrome.restore": "Restaurer",
   "chrome.watchTogether": "VARA",
-  "chrome.scrollForMore": "Fais défiler pour voir plus",
+  "chrome.scrollForMore": "Faites défiler pour voir plus",
   "chrome.locked": "Verrouillé",
   "chrome.parentalOn": "Contrôle parental activé",
   "chrome.lockedRequiresPin": "{label} (verrouillé, PIN requis)",
@@ -57,7 +57,7 @@ const chrome: Record<string, string> = {
   "profile.fallback": "Profil",
 
   "welcome.title": "Bienvenue dans VAYRA",
-  "welcome.subtitle": "L'interface est maintenant en français. Tu peux revenir en arrière à tout moment depuis les Paramètres.",
+  "welcome.subtitle": "L'interface est maintenant en français. Vous pouvez revenir en arrière à tout moment depuis les Paramètres.",
   "welcome.dismiss": "Commencer",
 
   "arabic.hub.title": "Arabe",
@@ -78,38 +78,38 @@ const chrome: Record<string, string> = {
   "Settings": "Paramètres",
 
   "Who's watching?": "Qui regarde ?",
-  "Pick a profile to continue.": "Choisis un profil pour continuer.",
+  "Pick a profile to continue.": "Choisissez un profil pour continuer.",
   "Add profile": "Ajouter un profil",
   "Profile not found.": "Profil introuvable.",
   "Switch to {name}": "Passer à {name}",
   "Edit {name}": "Modifier {name}",
 
-  "Enter {name}'s PIN": "Saisis le PIN de {name}",
+  "Enter {name}'s PIN": "Saisissez le PIN de {name}",
   "Profile is locked. Enter the 4-digit PIN to continue.":
-    "Ce profil est verrouillé. Saisis le PIN à 4 chiffres pour continuer.",
-  "Type the same 4-digit PIN again.": "Saisis à nouveau le même PIN à 4 chiffres.",
+    "Ce profil est verrouillé. Saisissez le PIN à 4 chiffres pour continuer.",
+  "Type the same 4-digit PIN again.": "Saisissez à nouveau le même PIN à 4 chiffres.",
   "Profile PIN": "PIN du profil",
 
   "Couldn't find a Trakt avatar on your account.":
-    "Aucun avatar Trakt trouvé sur ton compte.",
+    "Aucun avatar Trakt trouvé sur votre compte.",
   "Couldn't reach Trakt.": "Impossible de joindre Trakt.",
   "Couldn't find an AniList avatar on your account.":
-    "Aucun avatar AniList trouvé sur ton compte.",
+    "Aucun avatar AniList trouvé sur votre compte.",
   "Couldn't reach AniList.": "Impossible de joindre AniList.",
   "Couldn't reach MyAnimeList. Try refreshing.":
-    "Impossible de joindre MyAnimeList. Essaie d'actualiser.",
+    "Impossible de joindre MyAnimeList. Essayez d'actualiser.",
   "Couldn't find a Simkl avatar on your account.":
-    "Aucun avatar Simkl trouvé sur ton compte.",
+    "Aucun avatar Simkl trouvé sur votre compte.",
   "Couldn't reach Simkl.": "Impossible de joindre Simkl.",
 
   "Set a PIN for {name}": "Définir un PIN pour {name}",
   "Set a PIN": "Définir un PIN",
   "Pick a 4-digit PIN. You'll be asked for it before this profile opens.":
-    "Choisis un PIN à 4 chiffres. Il te sera demandé avant l'ouverture de ce profil.",
-  "Enter current PIN": "Saisis le PIN actuel",
+    "Choisissez un PIN à 4 chiffres. Il vous sera demandé avant l'ouverture de ce profil.",
+  "Enter current PIN": "Saisissez le PIN actuel",
   "Confirm your current PIN, then pick a new one.":
-    "Confirme ton PIN actuel, puis choisis-en un nouveau.",
-  "Confirm your current PIN to remove the lock.": "Confirme ton PIN actuel pour retirer le verrou.",
+    "Confirmez votre PIN actuel, puis choisissez-en un nouveau.",
+  "Confirm your current PIN to remove the lock.": "Confirmez votre PIN actuel pour retirer le verrou.",
 
   "Use Trakt avatar": "Utiliser l'avatar Trakt",
   "Use AniList avatar": "Utiliser l'avatar AniList",
@@ -120,7 +120,7 @@ const chrome: Record<string, string> = {
     "Utiliser la bibliothèque Stremio, la watchlist et les addons du profil principal.",
   "Use a separate Stremio account": "Utiliser un compte Stremio distinct",
   "Sign in from the sidebar after saving. Library and addons stay separate.":
-    "Connecte-toi depuis la barre latérale après l'enregistrement. La bibliothèque et les addons restent séparés.",
+    "Connectez-vous depuis la barre latérale après l'enregistrement. La bibliothèque et les addons restent séparés.",
 
   "Delete profile": "Supprimer le profil",
   "Delete this profile?": "Supprimer ce profil ?",
@@ -137,7 +137,7 @@ const chrome: Record<string, string> = {
   "Profile security": "Sécurité du profil",
   "PIN & sidebar locks": "PIN et verrous de la barre latérale",
   "Pick a PIN and which sidebar tabs require it.":
-    "Choisis un PIN et les onglets de la barre latérale qui le demandent.",
+    "Choisissez un PIN et les onglets de la barre latérale qui le demandent.",
   "4-digit PIN is set.": "Un PIN à 4 chiffres est défini.",
   "No PIN set.": "Aucun PIN défini.",
   "Set PIN": "Définir le PIN",

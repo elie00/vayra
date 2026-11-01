@@ -20,7 +20,7 @@ const catalog: Record<string, string> = {
   Featured: "En vedette",
   "Featured hero": "Mise en avant",
   "Featured tonight": "En vedette ce soir",
-  "Pick up where you left off": "Reprends là où tu t'étais arrêté",
+  "Pick up where you left off": "Reprenez là où vous vous étiez arrêté",
   Upcoming: "À venir",
   "Up next": "À suivre",
   "Up Next": "À suivre",
@@ -38,7 +38,7 @@ const catalog: Record<string, string> = {
   "More {category}": "Plus de {category}",
   "More for {name}": "Plus pour {name}",
   "More Like This": "Titres similaires",
-  "You Might Also Like": "Tu pourrais aussi aimer",
+  "You Might Also Like": "Vous pourriez aussi aimer",
   "Top {n}": "Top {n}",
   "Top 10 {name}": "Top 10 {name}",
   "Top 10 Movies Today": "Top 10 des films aujourd'hui",
@@ -64,21 +64,21 @@ const catalog: Record<string, string> = {
   "Card overlays": "Superpositions des cartes",
   "Hover preview": "Aperçu au survol",
   "Rest the cursor on a poster to peek at the rating, runtime, and story without opening it.":
-    "Laisse le curseur sur une affiche pour voir la note, la durée et le résumé sans l'ouvrir.",
+    "Laissez le curseur sur une affiche pour voir la note, la durée et le résumé sans l'ouvrir.",
   "Cleaner grid when your poster service already prints the title on the artwork.":
-    "Grille plus épurée quand ton service d'affiches imprime déjà le titre sur le visuel.",
+    "Grille plus épurée quand votre service d'affiches imprime déjà le titre sur le visuel.",
   "Hide titles under posters": "Masquer les titres sous les affiches",
 
   "No matches for these filters.": "Aucun résultat pour ces filtres.",
   "No more found for this category.": "Rien de plus pour cette catégorie.",
   "Cinemeta didn't return anything for {genre}. Try a different genre or add a TMDB key.":
-    "Cinemeta n'a rien renvoyé pour {genre}. Essaie un autre genre ou ajoute une clé TMDB.",
+    "Cinemeta n'a rien renvoyé pour {genre}. Essayez un autre genre ou ajoutez une clé TMDB.",
   "That's everything Cinemeta has for {genre}. Add a TMDB key for deeper rails.":
-    "C'est tout ce que Cinemeta propose pour {genre}. Ajoute une clé TMDB pour des rangées plus fournies.",
+    "C'est tout ce que Cinemeta propose pour {genre}. Ajoutez une clé TMDB pour des rangées plus fournies.",
   "Year, runtime, language, and country filters need TMDB. Genre browsing falls back to Cinemeta automatically.":
     "Les filtres d'année, de durée, de langue et de pays nécessitent TMDB. La navigation par genre bascule automatiquement sur Cinemeta.",
   "The best {genre} {media}, layered by mood. Browse trending, dive into a director's run, sort by decade, find quiet gems.":
-    "Les meilleurs {media} {genre}, classés par ambiance. Parcours les tendances, plonge dans la filmographie d'un réalisateur, trie par décennie, déniche des pépites discrètes.",
+    "Les meilleurs {media} {genre}, classés par ambiance. Parcourez les tendances, plongez dans la filmographie d'un réalisateur, triez par décennie, dénichez des pépites discrètes.",
 };
 
 export default catalog;
