@@ -291,109 +291,124 @@ export function AccountStub() {
     );
   }
 
+  // Three sections, each named once: the people on this VAYRA and how the
+  // active one looks, the VAYRA account, and Stremio.
   return (
     <div className="flex flex-col gap-5">
       <Section
-        title={t("Profile & account")}
-        subtitle={t("How you appear in VARA, sessions and chat, and the VAYRA account behind it.")}
+        title={t("Profiles")}
+        subtitle={t("Everyone who uses this VAYRA gets their own watch history, avatar, color, and optional PIN. Switch anytime.")}
       >
-        <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-          <div className="flex items-center gap-5">
-            <AvatarRing
-              src={effectiveAvatar}
-              size={88}
-              onClick={() => fileRef.current?.click()}
-            />
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              onChange={onPickFile}
-              className="hidden"
-            />
-            <div className="flex min-w-0 flex-1 flex-col gap-3">
-              {editingName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    autoFocus
-                    value={nameDraft}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+        <div className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+          <ProfilesStrip />
+          <div className="border-t border-edge-soft/60 pt-5">
+            <div className="flex items-center gap-5">
+              <AvatarRing
+                src={effectiveAvatar}
+                size={88}
+                onClick={() => fileRef.current?.click()}
+              />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={onPickFile}
+                className="hidden"
+              />
+              <div className="flex min-w-0 flex-1 flex-col gap-3">
+                {editingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      value={nameDraft}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          pushDisplayName(nameDraft.trim() || displayName);
+                          setEditingName(false);
+                        }
+                        if (e.key === "Escape") {
+                          setNameDraft(displayName);
+                          setEditingName(false);
+                        }
+                      }}
+                      className="h-10 flex-1 rounded-xl border border-ink bg-elevated px-3 text-[15px] font-semibold text-ink outline-none"
+                    />
+                    <button
+                      onClick={() => {
                         pushDisplayName(nameDraft.trim() || displayName);
                         setEditingName(false);
-                      }
-                      if (e.key === "Escape") {
-                        setNameDraft(displayName);
-                        setEditingName(false);
-                      }
-                    }}
-                    className="h-10 flex-1 rounded-xl border border-ink bg-elevated px-3 text-[15px] font-semibold text-ink outline-none"
-                  />
+                      }}
+                      className="h-10 rounded-xl bg-ink px-4 text-[12.5px] font-semibold text-canvas"
+                    >
+                      {t("Save")}
+                    </button>
+                  </div>
+                ) : (
                   <button
-                    onClick={() => {
-                      pushDisplayName(nameDraft.trim() || displayName);
-                      setEditingName(false);
-                    }}
-                    className="h-10 rounded-xl bg-ink px-4 text-[12.5px] font-semibold text-canvas"
+                    onClick={() => setEditingName(true)}
+                    className="flex flex-wrap items-baseline gap-x-2 gap-y-0 self-start rounded-lg px-1 py-0.5 text-start transition-colors hover:bg-canvas/50"
                   >
-                    {t("Save")}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setEditingName(true)}
-                  className="flex flex-wrap items-baseline gap-x-2 gap-y-0 self-start rounded-lg px-1 py-0.5 text-start transition-colors hover:bg-canvas/50"
-                >
-                  <span className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
-                    {displayName}
-                  </span>
-                  {vayraUser?.email && (
-                    <span className="text-[13px] text-ink-subtle">
-                      ({vayraUser.email.split("@")[0]})
+                    <span className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
+                      {displayName}
                     </span>
-                  )}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden className="text-ink-subtle">
-                    <path
-                      d="M16.5 4.5l3 3-11 11H5.5v-3l11-11z"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                  {t("Upload photo")}
-                </button>
-                {customAvatar && (
-                  <button
-                    onClick={() => pushIdentity({ harborAvatar: null })}
-                    className="flex h-9 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
-                  >
-                    {t("Reset to default")}
+                    {vayraUser?.email && (
+                      <span className="text-[13px] text-ink-subtle">
+                        ({vayraUser.email.split("@")[0]})
+                      </span>
+                    )}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden className="text-ink-subtle">
+                      <path
+                        d="M16.5 4.5l3 3-11 11H5.5v-3l11-11z"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </button>
                 )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="flex h-9 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                    {t("Upload photo")}
+                  </button>
+                  {customAvatar && (
+                    <button
+                      onClick={() => pushIdentity({ harborAvatar: null })}
+                      className="flex h-9 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
+                    >
+                      {t("Reset to default")}
+                    </button>
+                  )}
+                </div>
+                <AvatarFan
+                  onClick={() => setAvatarPickerOpen(true)}
+                  onRandomize={(id) => pushIdentity({ harborAvatar: avatarUrl(id) })}
+                />
+                <ColorPicker
+                  value={settings.harborColor}
+                  onChange={(c) => pushIdentity({ harborColor: c })}
+                />
               </div>
-              <AvatarFan
-                onClick={() => setAvatarPickerOpen(true)}
-                onRandomize={(id) => pushIdentity({ harborAvatar: avatarUrl(id) })}
-              />
-              <ColorPicker
-                value={settings.harborColor}
-                onChange={(c) => pushIdentity({ harborColor: c })}
-              />
             </div>
           </div>
-          <div className="flex items-center justify-between gap-4 border-t border-edge-soft/60 pt-4">
+          <StartupDefaults />
+          <SettingsScopeCard />
+        </div>
+      </Section>
+
+      <Section
+        title={t("VAYRA account")}
+        subtitle={t("Your private VAYRA identity, connected with a passwordless email link.")}
+      >
+        <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 flex-col gap-1">
               <span className="text-[14px] font-medium text-ink">
                 {vayraAccountLoading
@@ -425,22 +440,26 @@ export function AccountStub() {
               </button>
             )}
           </div>
+          {vayraUser &&
+            (deleteOpen ? (
+              <div className="rounded-xl border border-danger/30 bg-danger/5 p-4">{deleteConfirm}</div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteOpen(true);
+                }}
+                className="self-start text-[12.5px] font-medium text-danger/80 transition-colors hover:text-danger"
+              >
+                {t("Delete VAYRA account")}
+              </button>
+            ))}
         </div>
       </Section>
 
       <Section
-        title={t("Profiles")}
-        subtitle={t("Everyone who uses this VAYRA gets their own watch history, avatar, color, and optional PIN. Switch anytime.")}
-      >
-        <div className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-          <ProfilesStrip />
-          <StartupDefaults />
-          <SettingsScopeCard />
-        </div>
-      </Section>
-
-      <Section
-        title={t("Stremio integration")}
+        title="Stremio"
         subtitle={t("Optional. Import or export your Stremio library, watch progress, and addon collection.")}
       >
         {user ? (
@@ -508,38 +527,8 @@ export function AccountStub() {
             </button>
           </div>
         )}
-      </Section>
-
-      <Section
-        title={t("Synced addons")}
-        subtitle={t("VAYRA pulls your addon collection from Stremio. Manage individual addons in Streaming sources.")}
-      >
         <SyncedAddonsCard />
       </Section>
-
-      {vayraUser && (
-        <Section
-          title={t("Delete VAYRA account")}
-          subtitle={t("Permanently delete your VAYRA account and all CIRA/VARA cloud data. Local LUMA, history and Stremio are not deleted.")}
-        >
-          <div className="flex flex-col gap-3 rounded-2xl border border-danger/30 bg-danger/5 p-5">
-            {!deleteOpen ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setDeleteError(null);
-                  setDeleteOpen(true);
-                }}
-                className="flex h-10 self-start items-center rounded-xl border border-danger/35 px-4 text-[12.5px] font-semibold text-danger transition-colors hover:bg-danger/10"
-              >
-                {t("Delete account")}
-              </button>
-            ) : (
-              deleteConfirm
-            )}
-          </div>
-        </Section>
-      )}
 
       {modals}
     </div>
