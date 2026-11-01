@@ -53,7 +53,7 @@ export function StatsView({ active }: { active: boolean }) {
   return (
     <main
       ref={scrollRef}
-      className="flex-1 overflow-y-auto px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
+      className="flex-1 overflow-y-auto px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28 max-sm:px-4 max-sm:pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]"
     >
       <div data-tauri-drag-region className="flex flex-col gap-7">
         <header className="flex flex-col gap-5">
@@ -68,7 +68,7 @@ export function StatsView({ active }: { active: boolean }) {
             <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
               {t("My library")}
             </span>
-            <h1 className="font-display text-[44px] font-medium leading-[1.05] text-ink">
+            <h1 className="font-display text-[44px] font-medium leading-[1.05] text-ink max-sm:type-title-1">
               {t("Stats")}
             </h1>
             <p className="text-[14px] leading-snug text-ink-muted">
