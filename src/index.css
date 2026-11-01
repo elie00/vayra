@@ -19,6 +19,36 @@
   font-display: swap;
 }
 
+/* Geist (Vercel, SIL OFL 1.1): Geist Serif for titles, Geist Sans for the rest.
+   The serif ships in one weight only; declaring it over the whole weight range
+   makes a bold title use that cut as is instead of a smeared synthetic bold. */
+@font-face {
+  font-family: "Geist Serif";
+  src: url("./assets/fonts/geist/GeistSerif-Regular.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist/Geist-Italic-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Those alternates suit the other pairs; Geist keeps its own letters. */
+:root[data-font-pair="geist"] {
+  font-feature-settings: normal;
+}
+
 @font-face {
   font-family: "WonderfulFontyCure";
   src: url("./assets/fonts/WonderfulFontyCure-4nnoD.ttf") format("truetype");
@@ -50,10 +80,10 @@
   --radius-xl: 20px;
   --radius-2xl: 28px;
 
-  --font-display: "Sentient", "Iowan Old Style", "Georgia", serif;
-  --font-sans: "Switzer", "Inter", system-ui, sans-serif;
+  --font-display: "Geist Serif", "Iowan Old Style", "Georgia", serif;
+  --font-sans: "Geist", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-channel: "General Sans", "Switzer", "Inter", system-ui, sans-serif;
+  --font-channel: "Geist", "Inter", system-ui, sans-serif;
   --font-anime: "WonderfulFontyCure", "Sentient", "Georgia", serif;
   --font-arabic: "Geeza Pro", "SF Arabic", "Segoe UI", "Tahoma", "Noto Naskh Arabic", serif;
 
@@ -1478,16 +1508,17 @@ html[data-os="android"] .flex-1.overflow-y-auto {
 /* Phone type scale, from the Material 3 type scale (docs/mobile-design-spec.md):
    styles named by role, each with its line height and tracking. 11sp is for
    labels only, reading text is 14sp on 20 at least, fields stay at 16sp so
-   typing never zooms. A leading-* utility still wins. */
+   typing never zooms. A leading-* utility still wins. Titles from 20sp up are
+   set in the display serif. */
 @utility type-micro { font-size: 11px; line-height: var(--tw-leading, 16px); letter-spacing: 0.03em; }
 @utility type-caption { font-size: 12px; line-height: var(--tw-leading, 16px); letter-spacing: 0.02em; }
 @utility type-footnote { font-size: 14px; line-height: var(--tw-leading, 20px); letter-spacing: 0.01em; }
 @utility type-callout { font-size: 16px; line-height: var(--tw-leading, 24px); letter-spacing: 0.01em; }
 @utility type-body { font-size: 16px; line-height: var(--tw-leading, 24px); }
-@utility type-title-3 { font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
-@utility type-title-2 { font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
-@utility type-title-1 { font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.015em; }
-@utility type-display { font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.02em; }
+@utility type-title-3 { font-family: var(--font-display); font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
+@utility type-title-2 { font-family: var(--font-display); font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
+@utility type-title-1 { font-family: var(--font-display); font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.015em; }
+@utility type-display { font-family: var(--font-display); font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.02em; }
 
 /* Phone polish, after Emil Kowalski's mobile-native and design-engineering
    notes. Clickable cards are divs too, so the tap flash goes everywhere. */

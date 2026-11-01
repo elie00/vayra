@@ -56,7 +56,7 @@ function emptyDraft(seed?: ThemePreset): Draft {
       layout: "sidebar",
       cardStyle: "flat",
       buttonStyle: "flat",
-      fontPair: "sentient-switzer",
+      fontPair: "geist",
       customFontId: null,
       bokeh: false,
       colors: { ...DEFAULT_CUSTOM_COLORS },
@@ -80,7 +80,7 @@ function emptyDraft(seed?: ThemePreset): Draft {
     layout: seed.layout ?? "sidebar",
     cardStyle: seed.cardStyle ?? "flat",
     buttonStyle: seed.buttonStyle ?? "flat",
-    fontPair: seed.fontPair ?? "sentient-switzer",
+    fontPair: seed.fontPair ?? "geist",
     customFontId: ext.customFontId ?? null,
     bokeh: !!seed.bokeh,
     colors: {

@@ -1252,7 +1252,7 @@ export function SettingsNav({
     mpv: (settings.mpvQuality ?? "balanced") === "balanced" ? null : settings.mpvQuality === "performance" ? "lite" : "max",
     anime: settings.playerAnime4k ? "on" : null,
     playerLayout: null,
-    theme: settings.theme.preset === "cool-grey" && settings.theme.fontPair === "sentient-switzer" ? null : "•",
+    theme: settings.theme.preset === "cool-grey" && settings.theme.fontPair === "geist" ? null : "•",
     webhooks: webhookActive ? "live" : null,
     hotkeys: null,
     bug: null,

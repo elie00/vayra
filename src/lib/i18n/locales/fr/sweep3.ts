@@ -303,6 +303,9 @@ const sweep3: Record<string, string> = {
   "· {n} noms": "· {n} nominations",
   "Previous episodes": "Épisodes précédents",
   "More episodes": "Plus d'épisodes",
+  // Font pairs
+  "Default. Serif titles, Geist for everything else.": "Par défaut. Titres en serif, Geist pour tout le reste.",
+  "Humanist serif, warm sans.": "Serif humaniste, sans chaleureuse.",
 };
 
 export default sweep3;
