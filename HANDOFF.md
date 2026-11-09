@@ -35,16 +35,14 @@
   (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
 ## Point au 2026-11-09
-- **`main`** = `fcc3c6bb` (24/10), 0.9.42 : VAYRA Connect côté Mac (hôte, appairage),
-  sous-titres au cast, liens magnet et Centre de contrôle sur macOS.
-- **À fusionner, dans cet ordre** (les branches sont empilées) : #182 (audit `minimatch`,
-  qui bloquait le typecheck, le lint et les tests de la CI), #183 (liens magnet et
-  `.torrent` sur Windows), #184 (touches multimédia Windows), #185 (avertissement pare-feu
-  de Connect), #187 (le mpv des vignettes meurt avec VAYRA), #186 (sous-titres incrustés
-  au cast depuis un chemin `C:\`). Puis #152 (Cira), à jour de `main`.
-- **Branche mobile** `feat/mobile-streaming-ui` : interface Android refaite et suite de
-  Connect (télécommande, reprise). Le périmètre « Android en pause » ci-dessous ne
-  reflète plus ce travail : à trancher avant de la fusionner.
+- **`main`** = `ebe099d5`, 0.9.42. Fusionnés le 09/11 : #182 (audit `minimatch`, qui
+  bloquait le typecheck, le lint et les tests de la CI), #183 (liens magnet et `.torrent`
+  sur Windows), #184 (touches multimédia Windows), #185 (avertissement pare-feu de
+  Connect), #187 (le mpv des vignettes meurt avec VAYRA), #186 (sous-titres incrustés au
+  cast depuis un chemin `C:\`), #152 (Cira), #188 (interface Android refaite et suite de
+  Connect : télécommande, reprise).
+- **Appli Windows** réinstallée depuis `ebe099d5` le 09/11.
+- **Périmètre** : le « Android en pause » ci-dessous date d'avant #188.
 - **Windows, encore à vérifier à la main** : les vraies touches multimédia du clavier (la
   session système a été pilotée par un autre programme), un téléphone réel sur Connect,
   une diffusion vers une vraie télé avec sous-titres.
