@@ -1,7 +1,15 @@
 import { MonitorSmartphone, RotateCw, Smartphone } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
-import { connectStatus, rotateConnect, startConnect, type ConnectInfo, type ConnectedPhone } from "@/lib/connect/host";
+import {
+  connectFirewall,
+  connectStatus,
+  rotateConnect,
+  startConnect,
+  type ConnectFirewall,
+  type ConnectInfo,
+  type ConnectedPhone,
+} from "@/lib/connect/host";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 
@@ -16,6 +24,7 @@ export function ConnectRow() {
   const [qr, setQr] = useState<string | null>(null);
   const [phones, setPhones] = useState<ConnectedPhone[]>([]);
   const [error, setError] = useState(false);
+  const [firewall, setFirewall] = useState<ConnectFirewall>(null);
 
   useEffect(() => {
     if (!on) {
@@ -31,6 +40,9 @@ export function ConnectRow() {
         setError(false);
       })
       .catch(() => alive && setError(true));
+    connectFirewall()
+      .then((verdict) => alive && setFirewall(verdict))
+      .catch(() => { /* No verdict, no warning. */ });
     const poll = () =>
       connectStatus()
         .then((status) => alive && setPhones(status.phones))
@@ -103,6 +115,14 @@ export function ConnectRow() {
       {on && error && (
         <p role="alert" className="px-1 text-[12.5px] text-danger">
           {t("VAYRA Connect could not start. Another app may be using port 11472.")}
+        </p>
+      )}
+
+      {on && info && firewall && firewall !== "open" && (
+        <p role="status" className="px-1 text-[12.5px] leading-relaxed text-ink-muted">
+          {firewall === "managed"
+            ? t("Your organization manages Windows Firewall, so a phone may not be able to reach VAYRA on this computer.")
+            : t("Windows Firewall stops phones from reaching VAYRA. Allow VAYRA on private networks in Windows Security, under Firewall & network protection.")}
         </p>
       )}
 

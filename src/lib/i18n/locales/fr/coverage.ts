@@ -278,6 +278,8 @@ const coverage: Record<string, string> = {
   "VAYRA opens them.": "VAYRA les ouvre.",
   "Another app opens them.": "Une autre app les ouvre.",
   "macOS did not answer. Try again.": "macOS n’a pas répondu. Réessayez.",
+  "Your organization manages Windows Firewall, so a phone may not be able to reach VAYRA on this computer.": "Votre organisation gère le pare-feu Windows : un téléphone pourrait ne pas joindre VAYRA sur cet ordinateur.",
+  "Windows Firewall stops phones from reaching VAYRA. Allow VAYRA on private networks in Windows Security, under Firewall & network protection.": "Le pare-feu Windows empêche les téléphones de joindre VAYRA. Autorisez VAYRA sur les réseaux privés dans Sécurité Windows, rubrique Pare-feu et protection du réseau.",
   "Use VAYRA": "Utiliser VAYRA",
   "Catch stremio:// install links inside VAYRA": "Capter les liens d'installation stremio:// dans VAYRA",
   "Change": "Modifier",
