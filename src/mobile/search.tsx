@@ -219,7 +219,7 @@ function useTrending(open: boolean): Trending {
         const usable = (list: Meta[]) => list.filter((m) => m.poster).slice(0, 16);
         setItems({ series: usable(series), movies: usable(movies) });
       })
-      .catch(() => {});
+      .catch(() => { /* No poster rails; the search field still works. */ });
     return () => {
       cancelled = true;
     };
