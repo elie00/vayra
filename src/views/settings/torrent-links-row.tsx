@@ -2,13 +2,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { Check, Loader2, Magnet } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { isWindowsDesktop } from "@/lib/platform";
 
 type Handler = "checking" | "vayra" | "other" | "error";
 
-/** macOS only: hand magnet links and .torrent files to VAYRA. */
+/** macOS and Windows: hand magnet links and .torrent files to VAYRA. */
 export function TorrentLinksRow() {
   const t = useT();
   const [handler, setHandler] = useState<Handler>("checking");
+  const [asked, setAsked] = useState(false);
+  const windows = isWindowsDesktop();
 
   const refresh = useCallback(() => {
     invoke<boolean>("torrent_links_default")
@@ -20,6 +23,7 @@ export function TorrentLinksRow() {
 
   const makeDefault = () => {
     setHandler("checking");
+    setAsked(true);
     invoke("torrent_links_make_default")
       .then(refresh)
       .catch(() => setHandler("error"));
@@ -46,8 +50,12 @@ export function TorrentLinksRow() {
             : own
               ? t("VAYRA opens them.")
               : handler === "other"
-                ? t("Another app opens them.")
-                : t("macOS did not answer. Try again.")}
+                ? windows && asked
+                  ? t("Windows keeps your earlier choice. In Default apps, pick VAYRA for magnet links and .torrent files.")
+                  : t("Another app opens them.")
+                : windows
+                  ? t("Windows did not answer. Try again.")
+                  : t("macOS did not answer. Try again.")}
         </p>
       </div>
       {handler === "checking" ? (
