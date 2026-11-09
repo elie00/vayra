@@ -28,9 +28,8 @@ fn hash_from_ends(size: u64, head: &[u8], tail: &[u8]) -> String {
 }
 
 fn local_path(url: &str) -> Option<std::path::PathBuf> {
-    if let Some(rest) = url.strip_prefix("file://") {
-        let trimmed = rest.trim_start_matches('/');
-        return Some(std::path::PathBuf::from(trimmed));
+    if url.starts_with("file://") {
+        return url::Url::parse(url).ok()?.to_file_path().ok();
     }
     if url.starts_with("http://") || url.starts_with("https://") {
         return None;
@@ -142,6 +141,15 @@ pub async fn compute_moviehash(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn file_urls_become_decoded_windows_paths() {
+        assert_eq!(
+            local_path("file:///C:/Films/Mon%20film.mkv"),
+            Some(std::path::PathBuf::from(r"C:\Films\Mon film.mkv")),
+        );
+    }
 
     #[test]
     fn zero_ends_hash_equals_size() {
