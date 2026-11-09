@@ -1,8 +1,44 @@
-//! Magnet links and .torrent files opened from the system (macOS).
+//! Magnet links and .torrent files opened from the system (macOS and Windows).
 
 const MAX_TORRENT_FILE_BYTES: u64 = 10 * 1024 * 1024;
 
-/// Magnet link for a .torrent file opened from the Finder, so it plays through the
+/// Sent to the frontend when a running VAYRA is handed a link by a second launch.
+#[cfg(windows)]
+pub const LINK_EVENT: &str = "vayra:system-link";
+
+/// The magnet link or .torrent file Windows passes as the only argument, in the
+/// form the frontend's deep-link handler reads.
+#[cfg(windows)]
+pub fn link_from_args<S: AsRef<str>>(args: &[S]) -> Option<String> {
+    let [_, arg] = args else { return None };
+    let arg = arg.as_ref();
+    if arg.get(..7).is_some_and(|scheme| scheme.eq_ignore_ascii_case("magnet:")) {
+        return Some(arg.to_string());
+    }
+    let path = std::path::Path::new(arg);
+    if !path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("torrent")) {
+        return None;
+    }
+    url::Url::from_file_path(path).ok().map(String::from)
+}
+
+/// The link VAYRA was launched with. Answers once, so reloading the interface
+/// does not open it again.
+#[tauri::command]
+pub fn torrent_links_launch_link() -> Option<String> {
+    #[cfg(windows)]
+    {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        static TAKEN: AtomicBool = AtomicBool::new(false);
+        if !TAKEN.swap(true, Ordering::Relaxed) {
+            let args: Vec<String> = std::env::args_os().map(|a| a.to_string_lossy().into_owned()).collect();
+            return link_from_args(&args);
+        }
+    }
+    None
+}
+
+/// Magnet link for a .torrent file opened from the system, so it plays through the
 /// same path as a magnet link.
 #[tauri::command]
 pub fn torrent_file_magnet(path: String) -> Result<String, String> {
@@ -42,7 +78,12 @@ pub fn torrent_links_default(app: tauri::AppHandle) -> bool {
     {
         launch_services::is_default(&app.config().identifier)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(windows)]
+    {
+        let _ = app;
+        windows_default::is_default()
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
     {
         let _ = app;
         false
@@ -55,7 +96,11 @@ pub fn torrent_links_make_default(app: tauri::AppHandle) -> Result<(), String> {
     {
         launch_services::make_default(&app.config().identifier)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(windows)]
+    {
+        windows_default::make_default(&app)
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
     {
         let _ = app;
         Err("unsupported platform".into())
@@ -121,6 +166,77 @@ mod launch_services {
     }
 }
 
+#[cfg(windows)]
+mod windows_default {
+    use tauri_plugin_deep_link::DeepLinkExt;
+    use tauri_plugin_opener::OpenerExt;
+    use windows::core::{HSTRING, PCWSTR, PWSTR};
+    use windows::Win32::UI::Shell::{
+        AssocQueryStringW, SHChangeNotify, ASSOCF, ASSOCF_IS_PROTOCOL, ASSOCF_NONE, ASSOCSTR_EXECUTABLE,
+        SHCNE_ASSOCCHANGED, SHCNF_IDLIST,
+    };
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+
+    const MAGNET_SCHEME: &str = "magnet";
+    const TORRENT_EXTENSION: &str = ".torrent";
+    const TORRENT_PROG_ID: &str = "VAYRA.torrent";
+    const DEFAULT_APPS_PAGE: &str = "ms-settings:defaultapps";
+
+    /// The program Windows would really start, a choice made in Settings included.
+    fn handler(flags: ASSOCF, target: &str) -> Option<String> {
+        let target = HSTRING::from(target);
+        let verb = HSTRING::from("open");
+        let mut len = 0u32;
+        unsafe {
+            let _ = AssocQueryStringW(flags, ASSOCSTR_EXECUTABLE, &target, &verb, None, &mut len);
+            if len == 0 {
+                return None;
+            }
+            let mut buf = vec![0u16; len as usize];
+            AssocQueryStringW(flags, ASSOCSTR_EXECUTABLE, &target, &verb, Some(PWSTR(buf.as_mut_ptr())), &mut len)
+                .ok()
+                .ok()?;
+            PCWSTR(buf.as_ptr()).to_string().ok()
+        }
+    }
+
+    pub fn is_default() -> bool {
+        let Ok(exe) = std::env::current_exe() else { return false };
+        let exe = exe.to_string_lossy().to_string();
+        [handler(ASSOCF_IS_PROTOCOL, MAGNET_SCHEME), handler(ASSOCF_NONE, TORRENT_EXTENSION)]
+            .iter()
+            .all(|found| found.as_deref().is_some_and(|f| f.eq_ignore_ascii_case(&exe)))
+    }
+
+    fn register_torrent_files() -> std::io::Result<()> {
+        let exe = std::env::current_exe()?.to_string_lossy().to_string();
+        let classes = RegKey::predef(HKEY_CURRENT_USER).create_subkey(r"Software\Classes")?.0;
+
+        let (prog_id, _) = classes.create_subkey(TORRENT_PROG_ID)?;
+        prog_id.set_value("", &"BitTorrent file")?;
+        prog_id.create_subkey("DefaultIcon")?.0.set_value("", &format!("\"{exe}\",0"))?;
+        prog_id.create_subkey(r"shell\open\command")?.0.set_value("", &format!("\"{exe}\" \"%1\""))?;
+
+        let (extension, _) = classes.create_subkey(TORRENT_EXTENSION)?;
+        extension.set_value("", &TORRENT_PROG_ID)?;
+        extension.create_subkey("OpenWithProgids")?.0.set_value(TORRENT_PROG_ID, &"")?;
+        Ok(())
+    }
+
+    /// Only ever called from the user's click. A default chosen in Windows Settings
+    /// is protected from programs, so that case opens the page where it is changed.
+    pub fn make_default(app: &tauri::AppHandle) -> Result<(), String> {
+        app.deep_link().register(MAGNET_SCHEME).map_err(|e| format!("magnet links: {e}"))?;
+        register_torrent_files().map_err(|e| format!(".torrent files: {e}"))?;
+        unsafe { SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, None, None) };
+        if !is_default() {
+            app.opener().open_url(DEFAULT_APPS_PAGE, None::<&str>).map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::magnet_from_torrent;
@@ -152,6 +268,22 @@ mod tests {
             let scheme = scheme.as_str().unwrap();
             assert!(plist.contains(&format!("<string>{scheme}</string>")), "{scheme} missing from Info.plist");
         }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_arguments_become_links_the_frontend_reads() {
+        use super::link_from_args;
+        let magnet = "magnet:?xt=urn:btih:de89f34ab990f4431cfb91329b7ab4190807bb08";
+        assert_eq!(link_from_args(&["vayra.exe", magnet]).as_deref(), Some(magnet));
+        assert_eq!(
+            link_from_args(&["vayra.exe", r"C:\Users\me\Mon film.TORRENT"]).as_deref(),
+            Some("file:///C:/Users/me/Mon%20film.TORRENT"),
+        );
+        assert_eq!(link_from_args(&["vayra.exe", r"C:\Users\me\film.mkv"]), None);
+        assert_eq!(link_from_args(&["vayra.exe", "relative.torrent"]), None);
+        assert_eq!(link_from_args(&["vayra.exe", magnet, "--flag"]), None);
+        assert_eq!(link_from_args(&["vayra.exe"]), None);
     }
 
     #[test]
