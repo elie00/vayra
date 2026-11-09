@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - "src/**"
+      - "api/**"
+      - "site/**"
       - "index.html"
       - "vayra-core/**"
       - "package.json"
@@ -18,6 +20,8 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "api/**"
+      - "site/**"
       - "index.html"
       - "vayra-core/**"
       - "package.json"
