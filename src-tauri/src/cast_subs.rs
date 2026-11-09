@@ -131,15 +131,23 @@ pub fn burn_filter(path: &str, force_style: &str) -> String {
     format!("subtitles={}:force_style='{}'", escaped, force_style)
 }
 
+/// ffmpeg unescapes a filter argument twice: once for the filtergraph and once for
+/// the option value. One level is not enough for the colon of `C:/`, which then
+/// ends the path and makes the rest read as the next option.
 pub fn escape_subtitles_path(path: &Path) -> String {
+    fn escape(text: &str, special: &[char]) -> String {
+        let mut out = String::with_capacity(text.len());
+        for c in text.chars() {
+            if special.contains(&c) {
+                out.push('\\');
+            }
+            out.push(c);
+        }
+        out
+    }
     let raw = path.to_string_lossy().replace('\\', "/");
-    let drive_fixed = if raw.len() >= 2 && raw.as_bytes()[1] == b':' {
-        let (drive, rest) = raw.split_at(1);
-        format!("{}\\:{}", drive, &rest[1..])
-    } else {
-        raw
-    };
-    drive_fixed.replace('\'', "\\'")
+    let option_value = escape(&raw, &['\\', '\'', ':']);
+    escape(&option_value, &['\\', '\'', '[', ']', ',', ';'])
 }
 
 fn prepared_cache() -> &'static Mutex<HashMap<String, PathBuf>> {
@@ -405,6 +413,8 @@ pub fn cleanup() {
 
 #[cfg(test)]
 mod tests {
+    use super::{burn_filter, escape_subtitles_path};
+    use std::path::Path;
     use super::{build_force_style, CastSubStyle};
 
     #[test]
@@ -421,6 +431,36 @@ mod tests {
             build_force_style(&style),
             "Fontsize=18.0,PrimaryColour=&H005EE4FF,OutlineColour=&H00000000,BorderStyle=1,Outline=1.2,Shadow=0,Alignment=2,MarginV=23",
         );
+    }
+
+    #[test]
+    fn paths_are_escaped_for_both_levels_of_the_filter_parser() {
+        assert_eq!(escape_subtitles_path(Path::new("/tmp/subs/a.srt")), "/tmp/subs/a.srt");
+        assert_eq!(
+            escape_subtitles_path(Path::new(r"C:\Users\me\a.srt")),
+            r"C\\:/Users/me/a.srt",
+        );
+        assert_eq!(
+            escape_subtitles_path(Path::new(r"C:\Users\O'Neil\a,b [1].srt")),
+            r"C\\:/Users/O\\\'Neil/a\,b \[1\].srt",
+        );
+    }
+
+    #[test]
+    #[ignore = "needs an ffmpeg built with libass: cargo test --lib ffmpeg_reads -- --ignored"]
+    fn ffmpeg_reads_the_escaped_path() {
+        let dir = std::env::temp_dir().join(format!("vayra sub's, [{}]", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let srt = dir.join("a.srt");
+        std::fs::write(&srt, "1\n00:00:00,000 --> 00:00:01,000\nBonjour\n").unwrap();
+        let output = std::process::Command::new(crate::transcode::locate_ffmpeg().unwrap())
+            .args(["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=size=320x180:duration=1", "-vf"])
+            .arg(burn_filter(srt.to_str().unwrap(), "FontSize=20"))
+            .args(["-f", "null", "-"])
+            .output()
+            .unwrap();
+        std::fs::remove_dir_all(&dir).unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     }
 
     #[test]
