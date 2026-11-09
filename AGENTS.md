@@ -1,7 +1,7 @@
 # VAYRA — travail dans ce dépôt
 
-La priorité actuelle est l’application macOS personnelle installée sur le Mac
-de l’utilisateur. La version web et la diffusion publique restent hors périmètre
+Le périmètre couvre les applications personnelles de l’utilisateur : macOS,
+Windows et Android. La version web et la diffusion publique restent hors périmètre
 sauf demande explicite. Préserver les changements locaux étrangers au lot.
 
 ## Design et audit UI/UX
@@ -13,8 +13,8 @@ autonome : aucun fichier du projet Pilot ni dossier Claude global n’est requis
 
 Une demande d’audit autorise l’analyse et un rapport, pas la correction
 automatique des fonctions du produit. Distinguer validation des sources, tests
-automatiques et essais dans `/Applications/VAYRA.app`. Ne pas supprimer de
-téléchargements, modifier des comptes ou exposer des secrets pour une recette.
+automatiques et essais dans l’application installée (`/Applications/VAYRA.app` sur
+macOS, `%LOCALAPPDATA%\VAYRA` sur Windows). Ne pas supprimer de téléchargements, modifier des comptes ou exposer des secrets pour une recette.
 
 ## Commits et pull requests
 
