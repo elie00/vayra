@@ -9,7 +9,7 @@ const number: Rule = (value) => typeof value === "number" && Number.isFinite(val
 const boolean: Rule = (value) => typeof value === "boolean" ? value : undefined;
 const text: Rule = (value) => typeof value === "string" && value.length <= 1000 && !/(?:[a-z][a-z\d+.-]*:\/\/|data:|magnet:|bearer\s)/i.test(value) ? value : undefined;
 const id: Rule = (value) => typeof value === "string" && /^[\w:|.%-]+$/.test(value) && value.length <= 512 && !/%(?:2f|3a|40)/i.test(value) ? value : undefined;
-const localPath: Rule = (value) => typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !/[?\x00]/.test(value) ? value : undefined;
+const localPath: Rule = (value) => typeof value === "string" && (/^[a-z]:[\\/]/i.test(value) || (value.startsWith("/") && !value.startsWith("//"))) && !/[?\x00]/.test(value) ? value : undefined;
 const choice = (...values: unknown[]): Rule => (value) => values.includes(value) ? value : undefined;
 const nullable = (rule: Rule): Rule => (value) => value === null ? null : rule(value);
 const list = (rule: Rule): Rule => (value) => Array.isArray(value) ? value.map(rule).filter((item) => item !== undefined) : undefined;
