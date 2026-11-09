@@ -327,6 +327,9 @@ export function useAutoRetry(params: {
     lastPosRef.current = { pos: 0, at: 0, started: false, urlAt: Date.now() };
   }, [src.url]);
   useEffect(() => {
+    // A file on this computer is never retried: watching it only logged, every
+    // second, that it "did not start" once it had stopped.
+    if (isLocal) return;
     if (snap.status !== "playing") {
       lastPosRef.current.at = Date.now();
       lastPosRef.current.pos = getPlaybackPosition();
@@ -357,7 +360,7 @@ export function useAutoRetry(params: {
       }
     }, 1000);
     return () => window.clearInterval(id);
-  }, [snap.status, triggerAutoRetry, src.url, isP2pEngine, engineFailure]);
+  }, [snap.status, triggerAutoRetry, src.url, isP2pEngine, engineFailure, isLocal]);
 
   const noVideoSinceRef = useRef<number | null>(null);
   const videoSeenRef = useRef(false);
@@ -485,5 +488,18 @@ export function useAutoRetry(params: {
     return () => window.clearInterval(id);
   }, [isP2pEngine, snap.status, engineFailure, triggerAutoRetry, src.attempt]);
 
-  return { slowLoad, transcodedUrl, sourceError, clearSourceError: () => setSourceError(null) };
+  /** Asked from the loading screen: play the next candidate at once. */
+  const nextSource = useCallback(() => {
+    if (isLocal || isLive) return;
+    autoRetriedRef.current = true;
+    if (bridgeRef.current) {
+      bridgeRef.current.destroy();
+      bridgeRef.current = null;
+    }
+    const nextAttempt = (src.attempt ?? 0) + 1;
+    if (nextAttempt >= 2) clearOnePickerCache(src.meta, src.episode);
+    openPicker(src.meta, src.episode, { autoPlay: true, attempt: nextAttempt });
+  }, [isLocal, isLive, bridgeRef, src.attempt, src.meta, src.episode, openPicker]);
+
+  return { slowLoad, transcodedUrl, sourceError, clearSourceError: () => setSourceError(null), nextSource };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { MAX_SLOTS } from "./bridge";
+
+export const MAX_SLOTS = 4;
 
 export type Layout = "1" | "2" | "3" | "2x2";
 

@@ -404,7 +404,12 @@ async fn spawn_continuous_ffmpeg(
     kill: Arc<KillHandle>,
     burn_sub: Option<(String, String)>,
 ) -> Result<(), String> {
-    let ffmpeg = crate::transcode::locate_ffmpeg().ok_or_else(|| "ffmpeg not found".to_string())?;
+    let ffmpeg = if burn_sub.is_some() {
+        crate::transcode::locate_subtitles_ffmpeg()
+    } else {
+        crate::transcode::locate_ffmpeg()
+    }
+    .ok_or_else(|| "ffmpeg not found".to_string())?;
     let temp_dir = &kill.temp_dir;
     let segment_pattern = temp_dir.join("seg%05d.ts");
     let playlist_path = temp_dir.join("playlist.m3u8");

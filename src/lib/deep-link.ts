@@ -169,6 +169,36 @@ export function onVaraInvite(handler: (code: string) => void): () => void {
   return () => window.removeEventListener(VARA_INVITE_EVENT, listener);
 }
 
+// vayra://connect/pair#h=…&k=…&n=… from the Mac's VAYRA Connect code. Rust
+// checks it; the phone asks before pairing since any page can open the link.
+const CONNECT_PAIR_EVENT = "vayra:deeplink-connect-pair";
+let pendingConnectPair: string | null = null;
+
+export function isConnectPairLink(rawUrl: string): boolean {
+  return /^vayra:\/\/connect\/pair#/i.test(rawUrl);
+}
+
+export function emitConnectPair(rawUrl: string): void {
+  pendingConnectPair = rawUrl;
+  window.dispatchEvent(new CustomEvent<{ rawUrl: string }>(CONNECT_PAIR_EVENT, { detail: { rawUrl } }));
+}
+
+export function onConnectPair(handler: (rawUrl: string) => void): () => void {
+  if (pendingConnectPair) {
+    const rawUrl = pendingConnectPair;
+    pendingConnectPair = null;
+    handler(rawUrl);
+  }
+  const listener = (event: Event) => {
+    const detail = (event as CustomEvent<{ rawUrl: string }>).detail;
+    if (!detail?.rawUrl) return;
+    pendingConnectPair = null;
+    handler(detail.rawUrl);
+  };
+  window.addEventListener(CONNECT_PAIR_EVENT, listener);
+  return () => window.removeEventListener(CONNECT_PAIR_EVENT, listener);
+}
+
 export function emitDeepLinkInstall(rawUrl: string): void {
   pendingUrl = rawUrl;
   window.dispatchEvent(new CustomEvent<DeepLinkDetail>(EVENT, { detail: { rawUrl } }));
@@ -223,6 +253,56 @@ export function onOpenLocalFile(handler: (path: string) => void): () => void {
   };
   window.addEventListener(OPEN_FILE_EVENT, listener);
   return () => window.removeEventListener(OPEN_FILE_EVENT, listener);
+}
+
+// magnet: links and .torrent files opened from macOS. A website can fire a
+// magnet link, so it opens the torrent card for the user to start playback.
+const OPEN_MAGNET_EVENT = "vayra:open-magnet";
+let pendingMagnet: string | null = null;
+
+export function isMagnetLink(rawUrl: string): boolean {
+  return /^magnet:\?/i.test(rawUrl);
+}
+
+/** A .torrent file opened from the Finder arrives as a file:// URL. */
+export function parseTorrentFileUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "file:" || !/\.torrent$/i.test(url.pathname)) return null;
+    return decodeURIComponent(url.pathname);
+  } catch {
+    return null;
+  }
+}
+
+export function emitOpenMagnet(magnet: string): void {
+  pendingMagnet = magnet;
+  window.dispatchEvent(new CustomEvent<{ magnet: string }>(OPEN_MAGNET_EVENT, { detail: { magnet } }));
+}
+
+export function onOpenMagnet(handler: (magnet: string) => void): () => void {
+  if (pendingMagnet) {
+    const magnet = pendingMagnet;
+    pendingMagnet = null;
+    handler(magnet);
+  }
+  const listener = (e: Event) => {
+    const ev = e as CustomEvent<{ magnet: string }>;
+    if (!ev.detail?.magnet) return;
+    pendingMagnet = null;
+    handler(ev.detail.magnet);
+  };
+  window.addEventListener(OPEN_MAGNET_EVENT, listener);
+  return () => window.removeEventListener(OPEN_MAGNET_EVENT, listener);
+}
+
+async function openTorrentFile(path: string): Promise<void> {
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    emitOpenMagnet(await invoke<string>("torrent_file_magnet", { path }));
+  } catch (e) {
+    console.warn("[harbor] .torrent file could not be opened", e);
+  }
 }
 
 // Jumelage : harbor://stremio-auth?key=<authKey> (QR affiché par le desktop,
@@ -328,6 +408,10 @@ export async function startDeepLinkBridge(): Promise<() => void> {
           emitVaraInvite(varaInvite);
           continue;
         }
+        if (isConnectPairLink(u)) {
+          emitConnectPair(u);
+          continue;
+        }
         const authKey = parseStremioAuthKey(u);
         if (authKey) {
           emitStremioAuthKey(authKey);
@@ -336,6 +420,15 @@ export async function startDeepLinkBridge(): Promise<() => void> {
         const open = parseStremioOpen(u);
         if (open) {
           emitDeepLinkOpen(open);
+          continue;
+        }
+        if (isMagnetLink(u)) {
+          emitOpenMagnet(u);
+          continue;
+        }
+        const torrentFile = parseTorrentFileUrl(u);
+        if (torrentFile) {
+          void openTorrentFile(torrentFile);
           continue;
         }
         if (shouldForward(u)) emitDeepLinkInstall(u);
@@ -364,6 +457,10 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       const varaInvite = parseVaraInviteCode(u);
       if (varaInvite) {
         emitVaraInvite(varaInvite);
+        return;
+      }
+      if (isConnectPairLink(u)) {
+        emitConnectPair(u);
         return;
       }
       const open = parseStremioOpen(u);

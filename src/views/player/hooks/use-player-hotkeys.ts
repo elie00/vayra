@@ -6,6 +6,7 @@ import { useFrameGrab } from "./use-frame-grab";
 import { useGifRecorder } from "./use-gif-recorder";
 import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
 import { useLiveChannelOverlay } from "./use-live-channel-overlay";
+import { useNowPlayingCommands } from "./use-now-playing-commands";
 import { useSleepTimer } from "./use-sleep-timer";
 import { useVideoFill } from "./use-video-fill";
 
@@ -77,6 +78,7 @@ export function usePlayerHotkeys(params: {
   } = params;
 
   const [showStats, setShowStats] = useState(false);
+  useNowPlayingCommands({ snap, playPauseToggle, seekStep, seekTo });
   const { holdSpeedActive } = useKeyboardShortcuts({
     bridgeRef,
     snap,

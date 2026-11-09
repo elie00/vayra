@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { usePlaybackDownloadedGated, usePlaybackPositionGated } from "@/lib/player/playback-clock";
 import { useT } from "@/lib/i18n";
-import { fmtTime } from "./transport-utils";
+import { endsAtMs, fmtClock, fmtTime } from "./transport-utils";
 import type { TimeFormat } from "@/lib/player-chrome";
 
 function CachedDot({ active }: { active: boolean }): ReactNode {
@@ -20,8 +20,21 @@ function cycleTitle(fmt: TimeFormat, t: ReturnType<typeof useT>): string {
   return fmt === "remaining" ? t("Show total length") : t("Show time left");
 }
 
+function EndsAt({ positionSec, durationSec, rate, className }: {
+  positionSec: number;
+  durationSec: number;
+  rate: number;
+  className: string;
+}): ReactNode {
+  const t = useT();
+  const ends = endsAtMs(positionSec, durationSec, rate, Date.now());
+  if (ends == null) return null;
+  return <span className={className}>{t("Ends at {time}", { time: fmtClock(ends) })}</span>;
+}
+
 export function TimeStart({
   durationSec,
+  rate = 1,
   timeFormat,
   isLiveChannel,
   tight,
@@ -30,6 +43,7 @@ export function TimeStart({
   onCycle,
 }: {
   durationSec: number;
+  rate?: number;
   timeFormat?: TimeFormat;
   isLiveChannel: boolean;
   tight?: boolean;
@@ -58,6 +72,7 @@ export function TimeStart({
             ? `-${fmtTime(Math.max(0, (durationSec ?? 0) - positionSec))}`
             : fmtTime(durationSec ?? 0)}
           <CachedDot active={active} />
+          <EndsAt positionSec={positionSec} durationSec={durationSec} rate={rate} className="ms-2 text-white/55" />
         </>
       );
     if (onCycle) {
@@ -84,6 +99,7 @@ export function TimeStart({
 
 export function TimeEnd({
   durationSec,
+  rate = 1,
   timeFormat,
   isLiveChannel,
   tight,
@@ -91,6 +107,7 @@ export function TimeEnd({
   onCycle,
 }: {
   durationSec: number;
+  rate?: number;
   timeFormat?: TimeFormat;
   isLiveChannel: boolean;
   tight?: boolean;
@@ -117,6 +134,7 @@ export function TimeEnd({
       >
         {text}
         <CachedDot active={active} />
+        <EndsAt positionSec={positionSec} durationSec={duration} rate={rate} className="ms-2 text-white/45" />
       </button>
     );
   }
@@ -124,6 +142,7 @@ export function TimeEnd({
     <span className={cls}>
       {text}
       <CachedDot active={active} />
+      <EndsAt positionSec={positionSec} durationSec={duration} rate={rate} className="ms-2 text-white/45" />
     </span>
   );
 }

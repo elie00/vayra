@@ -12,7 +12,17 @@ after any accept error, so on a busy torrent port nearly every incoming peer was
 lost ("error accepting TCP: invalid input parameter" every 10 s in vayra.log).
 
 `test_accept_skips_a_connection_reset_before_accept` in `src/tests.rs` reproduces
-it. Test from the repository root with
+it.
+
+On Windows, UDP sockets are bound with `SIO_UDP_CONNRESET` turned off. Windows
+otherwise reports an ICMP "port unreachable" for an earlier `send_to` as
+WSAECONNRESET (os error 10054) on the next `recv_from`, and librqbit's DHT and uTP
+tasks stop on any receive error: one peer that had gone away ended the DHT until
+restart ("dht finished with error: framer failed: Recv(... 10054 ...)" in
+vayra.log). `test_udp_recv_survives_an_unreachable_peer` reproduces it on Windows.
+
+Test both from the repository root with
 `cargo test --manifest-path src-tauri/vendor/librqbit-dualstack-sockets/Cargo.toml --target-dir src-tauri/target --lib -- --skip test_v4_received --skip test_v6_received --skip bind_multiple_same_port`
 (those three multicast tests time out on this Mac with or without the patch).
-Remove this patch when upstream skips reset connections in `accept`.
+Remove this patch when upstream skips reset connections in `accept` and turns
+off `SIO_UDP_CONNRESET`.

@@ -182,9 +182,11 @@ pub async fn window_pip_enter(
         .ok_or_else(|| "main window missing".to_string())?;
 
     let scale = main.scale_factor().unwrap_or(1.0);
+    // set_size restores the client area, so save the client area: outer_size also
+    // counts the Windows resize borders and grew the window on every round trip.
     let size = main
-        .outer_size()
-        .map_err(|e| format!("outer_size: {}", e))?
+        .inner_size()
+        .map_err(|e| format!("inner_size: {}", e))?
         .to_logical::<f64>(scale);
     let pos = main
         .outer_position()

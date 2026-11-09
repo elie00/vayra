@@ -61,6 +61,7 @@ export type PlayerOverlayLayersProps = {
   swapResolvingKey: string | null;
   closePlayer: () => void;
   cancelToPicker: () => void;
+  nextSource: () => void;
   engineStats: Loader["engineStats"];
   isP2pEngine: boolean;
   setLoaderShowing: (v: boolean) => void;
@@ -228,6 +229,7 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         isLocalSrc={p.isLocalSrc}
         forceShow={p.swappingEp || p.swapResolvingKey != null}
         onCancel={p.cancelToPicker}
+        onNextSource={p.nextSource}
         engineStats={p.engineStats}
         onShowingChange={p.setLoaderShowing}
         onRetry={p.onLoaderRetry}

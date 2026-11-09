@@ -8,6 +8,7 @@ import {
   setManualWatchedUpTo,
   type ManualWatchedMeta,
 } from "@/lib/manual-watched";
+import { sendEpisodesWatchedEvent } from "@/lib/addon-events";
 import { markEpisodesWatched, unmarkEpisodeWatched } from "@/lib/simkl/history";
 import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { useSimkl } from "@/lib/simkl/provider";
@@ -78,6 +79,7 @@ export function EpisodeWatchedMenu({
           label={t("Mark as unwatched")}
           onClick={() => {
             setManualWatched(metaId, target.season, target.episode, false);
+            void sendEpisodesWatchedEvent(metaId, [target], false);
             if (showIds) void unmarkEpisodeWatched(showIds, target.season, target.episode);
             onClose();
           }}
@@ -90,6 +92,7 @@ export function EpisodeWatchedMenu({
             onClick={() => {
               recordManualWatchedMeta(metaId, meta);
               setManualWatched(metaId, target.season, target.episode, true);
+              void sendEpisodesWatchedEvent(metaId, [target], true);
               if (showIds) void markEpisodesWatched(showIds, target.season, [target.episode]);
               onClose();
             }}
@@ -106,8 +109,11 @@ export function EpisodeWatchedMenu({
                     (e.season === target.season && e.episode <= target.episode),
                 );
                 setManualWatchedMany(metaId, upTo, true);
+                void sendEpisodesWatchedEvent(metaId, upTo, true);
               } else {
                 setManualWatchedUpTo(metaId, target.season, target.episode, true);
+                const upTo = Array.from({ length: target.episode }, (_, i) => ({ season: target.season, episode: i + 1 }));
+                void sendEpisodesWatchedEvent(metaId, upTo, true);
               }
               if (showIds) {
                 const eps = Array.from({ length: target.episode }, (_, i) => i + 1);

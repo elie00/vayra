@@ -83,6 +83,36 @@ impl<S> MaybeDualstackSocket<S> {
     }
 }
 
+/// Windows reports an ICMP "port unreachable" for an earlier send_to as
+/// WSAECONNRESET on the next recv_from (VAYRA patch, see VAYRA_PATCH.md).
+#[cfg(windows)]
+fn disable_udp_connreset(socket: &Socket) -> std::io::Result<()> {
+    use std::os::windows::io::AsRawSocket;
+    use windows_sys::Win32::Networking::WinSock::{
+        SIO_UDP_CONNRESET, SOCKET, SOCKET_ERROR, WSAGetLastError, WSAIoctl,
+    };
+
+    let report: i32 = 0; // FALSE
+    let mut returned = 0u32;
+    let rc = unsafe {
+        WSAIoctl(
+            socket.as_raw_socket() as SOCKET,
+            SIO_UDP_CONNRESET,
+            (&report as *const i32).cast(),
+            std::mem::size_of::<i32>() as u32,
+            std::ptr::null_mut(),
+            0,
+            &mut returned,
+            std::ptr::null_mut(),
+            None,
+        )
+    };
+    if rc == SOCKET_ERROR {
+        return Err(std::io::Error::from_raw_os_error(unsafe { WSAGetLastError() }));
+    }
+    Ok(())
+}
+
 impl MaybeDualstackSocket<Socket> {
     fn bind(addr: SocketAddr, opts: BindOpts, is_udp: bool) -> crate::Result<Self> {
         let socket = Socket::new(
@@ -149,6 +179,11 @@ impl MaybeDualstackSocket<Socket> {
             socket
                 .set_reuse_address(true)
                 .map_err(Error::ReuseAddress)?;
+        }
+
+        #[cfg(windows)]
+        if is_udp {
+            disable_udp_connreset(&socket).map_err(Error::UdpConnReset)?;
         }
 
         #[cfg(not(windows))]

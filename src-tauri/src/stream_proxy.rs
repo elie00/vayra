@@ -39,6 +39,10 @@ pub struct ProxyState {
 pub struct RegisterResult {
     pub session_id: String,
     pub url: String,
+    /// Where the served stream starts in the source: the cast HLS transcode is
+    /// already cut at the requested start, every other session starts at 0.
+    #[serde(skip)]
+    pub starts_at_sec: f64,
 }
 
 #[derive(Deserialize)]
@@ -119,7 +123,7 @@ impl ProxyState {
                 self.sessions.write().await.insert(id.clone(), session);
                 let qs = query.map(|q| format!("?{}", q)).unwrap_or_default();
                 let url = format!("http://127.0.0.1:{}/p/{}/{}{}", self.port, id, last_seg, qs);
-                return RegisterResult { session_id: id, url };
+                return RegisterResult { session_id: id, url, starts_at_sec: 0.0 };
             }
         }
         let session = Session {
@@ -134,7 +138,7 @@ impl ProxyState {
         self.sessions.write().await.insert(id.clone(), session);
         let suffix = if args.transcode { ".ts" } else { "" };
         let url = format!("http://127.0.0.1:{}/s/{}{}", self.port, id, suffix);
-        RegisterResult { session_id: id, url }
+        RegisterResult { session_id: id, url, starts_at_sec: 0.0 }
     }
 
     pub async fn register_cast(&self, args: RegisterArgs) -> RegisterResult {
@@ -165,7 +169,7 @@ impl ProxyState {
                 Ok(hid) => {
                     let url = format!("http://{}:{}/cast/hls/{}/master.m3u8", host, self.port, hid);
                     eprintln!("[harbor::proxy] cast HLS session: {} (seek={:.1}s)", url, seek);
-                    return RegisterResult { session_id: hid, url };
+                    return RegisterResult { session_id: hid, url, starts_at_sec: seek };
                 }
                 Err(e) => {
                     eprintln!("[harbor::proxy] HLS register failed ({}); falling back to direct transcode", e);
@@ -190,7 +194,7 @@ impl ProxyState {
             self.sessions.write().await.insert(id.clone(), session);
             let qs = query.map(|q| format!("?{}", q)).unwrap_or_default();
             let url = format!("http://{}:{}/p/{}/{}{}", host, self.port, id, last_seg, qs);
-            return RegisterResult { session_id: id, url };
+            return RegisterResult { session_id: id, url, starts_at_sec: 0.0 };
         }
         let session = Session {
             url: args.url.clone(),
@@ -204,7 +208,7 @@ impl ProxyState {
         self.sessions.write().await.insert(id.clone(), session);
         let suffix = if args.transcode { ".ts" } else { "" };
         let url = format!("http://{}:{}/s/{}{}", host, self.port, id, suffix);
-        RegisterResult { session_id: id, url }
+        RegisterResult { session_id: id, url, starts_at_sec: 0.0 }
     }
 
     /// Release a cast session by id, whichever kind it is: a direct proxy entry

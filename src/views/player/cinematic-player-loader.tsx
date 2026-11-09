@@ -13,6 +13,7 @@ import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 import { StreamLoadingBar } from "./stream-loading-bar";
 
 const LOADER_BUBBLES = [8, 20, 33, 47, 60, 72, 85, 94];
+const SLOW_SOURCE_HINT_MS = 20_000;
 
 function fmtSpeed(bps: number): string {
   if (bps >= 1024 ** 2) return `${(bps / 1024 ** 2).toFixed(1)} MB/s`;
@@ -25,6 +26,7 @@ export function CinematicPlayerLoader({
   snap,
   forceShow,
   onCancel,
+  onNextSource,
   engineStats,
   onShowingChange,
 }: {
@@ -32,6 +34,8 @@ export function CinematicPlayerLoader({
   snap: PlayerSnapshot;
   forceShow?: boolean;
   onCancel: () => void;
+  /** Play the next candidate source at once, without going back to the list. */
+  onNextSource?: () => void;
   engineStats?: EngineStats | null;
   onShowingChange?: (showing: boolean) => void;
 }) {
@@ -72,6 +76,15 @@ export function CinematicPlayerLoader({
     (!everPlayedRef.current && snap.errorCode == null && snap.status !== "ended");
   const done = !showing && snap.errorCode == null;
   const [mounted, setMounted] = useState(showing);
+  // A torrent still loading after 20 s: say so and point to the next source,
+  // rather than wait for the player's own notice at 50 s.
+  const [lagging, setLagging] = useState(false);
+  useEffect(() => {
+    setLagging(false);
+    if (!showing || isLocal || !isInfoHash) return;
+    const t = window.setTimeout(() => setLagging(true), SLOW_SOURCE_HINT_MS);
+    return () => window.clearTimeout(t);
+  }, [showing, isLocal, isInfoHash, src.url]);
   useEffect(() => {
     onShowingChange?.(showing);
   }, [showing, onShowingChange]);
@@ -184,20 +197,37 @@ export function CinematicPlayerLoader({
           </p>
         )}
       </div>
-      <button
-        onClick={onCancel}
-        className="absolute bottom-10 left-1/2 z-10 flex h-11 -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-          <path
-            d="M3.5 3.5l7 7M10.5 3.5l-7 7"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-          />
-        </svg>
-        {t("Cancel")}
-      </button>
+      {lagging && onNextSource && (
+        <p className="absolute bottom-24 left-1/2 z-10 w-max max-w-[90%] -translate-x-1/2 text-center text-[13px] font-medium text-white/80">
+          {t("This source is taking a while.")} {t("You can try the next one.")}
+        </p>
+      )}
+      {/* A stream that takes long can be swapped right here: the screen used to
+          advise another source while offering only "Cancel". */}
+      <div className="absolute bottom-10 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3">
+        <button onClick={onCancel} className="flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white">
+          {isLocal ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+              <path
+                d="M3.5 3.5l7 7M10.5 3.5l-7 7"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+          ) : null}
+          {isLocal ? t("Cancel") : t("Choose another source")}
+        </button>
+        {!isLocal && onNextSource && (
+          <button
+            onClick={onNextSource}
+            data-emphasis={lagging ? "on" : undefined}
+            className={lagging ? "flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white bg-white px-6 text-[13.5px] font-semibold text-black transition-colors hover:bg-white/90" : "flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white"}
+          >
+            {t("Next source")}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

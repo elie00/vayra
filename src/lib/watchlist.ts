@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { sendLibraryEvent } from "@/lib/addon-events";
 import { addToWatchlist as traktAdd, removeFromWatchlist as traktRemove } from "@/lib/trakt/watchlist";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import { addToWatchlist as simklAdd, removeFromWatchlist as simklRemove } from "@/lib/simkl/watchlist";
@@ -176,7 +177,17 @@ export function toggleWatchlist(input: string | WatchlistInput): boolean {
   void syncWithTrakt(id, !has);
   void syncWithSimkl(id, !has);
   void syncWithStremio(input, !has);
+  sendWatchlistAddonEvent(input, !has);
   return !has;
+}
+
+function sendWatchlistAddonEvent(input: string | WatchlistInput, added: boolean): void {
+  const id = typeof input === "string" ? input : input.id;
+  const imdb = typeof input === "string" ? null : input.imdbId ?? null;
+  const writeId = cloudWriteId(id, imdb, !!imdb);
+  if (!writeId) return;
+  const type = normalizeType(typeof input === "string" ? undefined : input.type, id);
+  void sendLibraryEvent(type, writeId, added ? "libraryAdd" : "libraryRemove");
 }
 
 async function syncWithTrakt(metaId: string, added: boolean): Promise<void> {

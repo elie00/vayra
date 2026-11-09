@@ -17,6 +17,21 @@ describe("snapChangedIgnoringClock", () => {
     expect(snapChangedIgnoringClock(pausedWhileDownloading, pausedAfterDownload)).toBe(true);
   });
 
+  // The loader waits for the first frame. mpv often reports duration, size and
+  // gamma before it, so the first frame used to be the only change and the
+  // loader stayed over the playing video.
+  it("publishes the first rendered frame on its own", () => {
+    const playing = { ...emptySnapshot, status: "playing" as const, durationSec: 120, rendered: false };
+    expect(snapChangedIgnoringClock(playing, { ...playing, rendered: true })).toBe(true);
+  });
+
+  it("publishes reconnection, missing audio and picture-in-picture changes", () => {
+    const playing = { ...emptySnapshot, status: "playing" as const };
+    expect(snapChangedIgnoringClock(playing, { ...playing, resumeRecovery: "reconnecting" })).toBe(true);
+    expect(snapChangedIgnoringClock(playing, { ...playing, noAudio: true })).toBe(true);
+    expect(snapChangedIgnoringClock(playing, { ...playing, pip: true })).toBe(true);
+  });
+
   it("still ignores clock-only progress", () => {
     expect(
       snapChangedIgnoringClock(

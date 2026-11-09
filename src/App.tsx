@@ -51,6 +51,8 @@ import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
 import { PrivateBetaLaunchModal } from "@/components/private-beta-launch-modal";
 import { VaraInviteBridge } from "@/components/vara-invite-bridge";
+import { MacLinkBridge } from "@/components/mac-link-bridge";
+import { WatchActivityConsent } from "@/components/watch-activity-consent";
 import { CiraProvider } from "@/lib/cira/provider";
 import { VaraProvider } from "@/lib/vara/provider";
 import { TogetherCursors } from "@/components/together-cursors";
@@ -292,6 +294,8 @@ export function App() {
                       <CiraInviteBridge />
                       <PrivateBetaLaunchModal />
                       <VaraInviteBridge />
+                      {isMobileTauri() && <MacLinkBridge />}
+                      <WatchActivityConsent />
                       <TogetherFloater />
                       <TogetherHostLeavingPrompt />
                       <TogetherSummonToast />
@@ -456,9 +460,9 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 }
 
 function Shell() {
-  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openPlayer, stackKinds, chromeHidden } = useView();
+  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openPlayer, openPicker, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
-  const { setOpen: setSearchOpen } = useSearch();
+  const { setOpen: setSearchOpen, setQuery: setSearchQuery } = useSearch();
   const uiScaleRef = useRef(settings.uiScale);
   const { activeProfile } = useProfiles();
   const kid = activeProfile?.kid ?? null;
@@ -695,14 +699,6 @@ function Shell() {
   }, [setView, goBack, setSearchOpen]);
 
   useEffect(() => {
-    if (topKind !== "live") {
-      void import("@/lib/multiview/bridge").then(({ mvStopAll }) =>
-        mvStopAll().catch(() => {}),
-      );
-    }
-  }, [topKind]);
-
-  useEffect(() => {
     void import("@/lib/addon-store").then(({ seedDefaultAddonsIfFirstRun }) =>
       seedDefaultAddonsIfFirstRun(),
     );
@@ -710,7 +706,7 @@ function Shell() {
 
   useEffect(() => {
     let dispose: (() => void) | null = null;
-    void import("@/lib/deep-link").then(({ startDeepLinkBridge, onDeepLinkInstall, onDeepLinkOpen, onOpenLocalFile }) => {
+    void import("@/lib/deep-link").then(({ startDeepLinkBridge, onDeepLinkInstall, onDeepLinkOpen, onOpenLocalFile, onOpenMagnet }) => {
       void startDeepLinkBridge().then((stopBridge) => {
         const stopListener = onDeepLinkInstall(() => {
           if (window.__harborInstallerOpen) return;
@@ -724,18 +720,50 @@ function Shell() {
           const name = (path.replace(/\\/g, "/").split("/").pop() || "Video").replace(/\.[^.]+$/, "");
           openPlayer({ meta: { id: `local:${path}`, type: "movie", name }, url: path, title: name, notWebReady: true });
         });
+        const stopMagnet = onOpenMagnet((magnet) => {
+          setSearchQuery(magnet);
+          setSearchOpen(true);
+        });
         dispose = () => {
           stopBridge();
           stopListener();
           stopOpen();
           stopFile();
+          stopMagnet();
         };
       });
     });
     return () => {
       dispose?.();
     };
-  }, [setView, openMeta, openPlayer]);
+  }, [setView, openMeta, openPlayer, setSearchOpen, setSearchQuery]);
+
+  // VAYRA Connect: a paired phone asks this Mac to play a title.
+  useEffect(() => {
+    if (!settings.connectEnabled) return;
+    let cancelled = false;
+    let stop: (() => void) | null = null;
+    void import("@/lib/connect/host")
+      .then(({ onConnectCommand }) =>
+        onConnectCommand((command) => {
+          if (command.type !== "load") return;
+          const { meta, episode } = command;
+          openPicker({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster }, episode, {
+            autoPlay: true,
+            resume: true,
+          });
+        }),
+      )
+      .then((unlisten) => {
+        if (cancelled) unlisten();
+        else stop = unlisten;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [settings.connectEnabled, openPicker]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");

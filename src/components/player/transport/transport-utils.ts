@@ -8,6 +8,16 @@ export function fmtTime(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** Clock time the video ends at the current speed, or null when it can't be known. */
+export function endsAtMs(positionSec: number, durationSec: number, rate: number, nowMs: number): number | null {
+  if (!(durationSec > 0) || !(rate > 0) || positionSec >= durationSec) return null;
+  return nowMs + ((durationSec - positionSec) / rate) * 1000;
+}
+
+export function fmtClock(ms: number): string {
+  return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export const VOL_MAX = 6;
 export const NORMAL_FRACTION = 0.6;
 export const TRACK_WIDTH = 120;

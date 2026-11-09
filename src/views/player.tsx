@@ -65,6 +65,7 @@ import { usePlaybackPresence } from "./player/hooks/use-playback-presence";
 import { usePlayerExit } from "./player/hooks/use-player-exit";
 import { usePendingSeekApply } from "./player/hooks/use-pending-seek-apply";
 import { usePlayerHotkeys } from "./player/hooks/use-player-hotkeys";
+import { useConnectHost } from "./player/hooks/use-connect-host";
 import { usePlayerMedia } from "./player/hooks/use-player-media";
 import { useTrickplay } from "./player/hooks/use-trickplay";
 import { useStreamPill } from "./player/hooks/use-stream-pill";
@@ -184,7 +185,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const cast = usePlayerCast({ src, debrids, snapRef, bridgeRef, settings });
   const [now, setNow] = useState(() => Date.now());
   const { pipMode, togglePipMode, exitPip } = usePipMode({ bridgeRef, setChromeHidden });
-  const { slowLoad, transcodedUrl, sourceError, clearSourceError } = useAutoRetry({
+  const { slowLoad, transcodedUrl, sourceError, clearSourceError, nextSource } = useAutoRetry({
     bridgeRef,
     src,
     snap,
@@ -684,6 +685,16 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     videoFill,
     onVolumeFeedback: showVolumeFeedback,
   });
+  useConnectHost({
+    enabled: settings.connectEnabled,
+    src,
+    snap,
+    bridgeRef,
+    playPauseToggle,
+    seekStep,
+    seekTo,
+    closePlayer: () => void closePlayer(),
+  });
 
   const { pendingResumeSec, acknowledgeResume, pendingSeekSec, clearPendingSeek } = useBridgeLoad({
     bridgeRef,
@@ -908,6 +919,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     swapResolvingKey,
     closePlayer,
     cancelToPicker,
+    nextSource,
     engineStats,
     isP2pEngine,
     setLoaderShowing,

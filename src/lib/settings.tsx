@@ -7,6 +7,7 @@ import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmd
 import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
+import { hasDesktopFeatures } from "@/lib/platform";
 import { STORAGE_KEY } from "./settings/defaults";
 import { persistSettings, readSettingsFile } from "./settings/file-store";
 import { hydrateSecretVault } from "./settings/secret-vault";
@@ -284,6 +285,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setSnapshotRetentionDays(settings.cwSnapshotRetentionDays);
     });
   }, [settings.cwSnapshotRetentionDays]);
+
+  useEffect(() => {
+    if (!hasDesktopFeatures()) return;
+    void import("@tauri-apps/api/core").then(({ invoke }) => {
+      void invoke(settings.connectEnabled ? "connect_start" : "connect_stop").catch((e) =>
+        console.warn("[connect] could not switch hosting", e),
+      );
+    });
+  }, [settings.connectEnabled]);
 
   useEffect(() => {
     window.__harborStremioDeeplink = settings.stremioDeeplinkInstall;

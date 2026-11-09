@@ -11,9 +11,9 @@
 // The wire NEVER carries a URL / file / media bytes — only playback INTENT
 // (play / pause / seek / position) and membership metadata.
 //
-// Socket/retry patterns mirror src-tauri/src/multiview.rs. Transport is a Unix
-// socket (macOS/Linux) or named pipe (Windows), JSONL framed (one JSON object
-// per '\n' line, buffered line reader tolerant of partial reads).
+// Transport is a Unix socket (macOS/Linux) or named pipe (Windows), JSONL
+// framed (one JSON object per '\n' line, buffered line reader tolerant of
+// partial reads).
 //
 // SOLO PLAYBACK IS UNAFFECTED: none of this runs unless the frontend calls
 // `vayra_sync_join`. With no room, zero `vayra_sync_*` is invoked.
@@ -287,7 +287,7 @@ async fn ensure_connected(app: &AppHandle, state: &VaraClientState) -> Result<()
     let path = socket_path();
 
     // Try connect; if unreachable spawn the broker detached then retry with
-    // backoff (mirrors multiview.rs' bounded retry loop).
+    // bounded backoff.
     let mut stream = None;
     let mut spawned = false;
     for attempt in 0..20u32 {

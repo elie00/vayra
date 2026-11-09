@@ -31,11 +31,14 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
+import { TorrentLinksRow } from "./torrent-links-row";
+import { ConnectRow } from "./connect-row";
+import { MacLinkRow } from "./mac-link-row";
 import { Section } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
-import { hasDesktopFeatures } from "@/lib/platform";
+import { hasDesktopFeatures, isMacDesktop, isMobileTauri } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -49,6 +52,16 @@ export function AdvancedPanel() {
   const t = useT();
   return (
     <>
+      {/* First on the phone: pairing a Mac lands here. */}
+      {isMobileTauri() && (
+        <Section
+          title={t("VAYRA Connect")}
+          subtitle={t("See and drive what plays on your Mac from this phone, like Spotify between your devices.")}
+        >
+          <MacLinkRow />
+        </Section>
+      )}
+
       {!desktopOnly && <WebBuildBanner />}
 
       {desktopOnly && (
@@ -102,6 +115,24 @@ export function AdvancedPanel() {
           subtitle={t("VAYRA catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.")}
         >
           <StremioDeeplinkRow />
+        </Section>
+      )}
+
+      {desktopOnly && (
+        <Section
+          title={t("VAYRA Connect")}
+          subtitle={t("Drive this player from your Android phone on the same Wi-Fi, like Spotify between your devices.")}
+        >
+          <ConnectRow />
+        </Section>
+      )}
+
+      {isMacDesktop() && (
+        <Section
+          title={t("Torrent links")}
+          subtitle={t("Play a magnet link from your browser or a .torrent file from the Finder straight in VAYRA.")}
+        >
+          <TorrentLinksRow />
         </Section>
       )}
 

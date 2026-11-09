@@ -969,7 +969,7 @@ export const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Zoom in", section: "hotkeys", anchorTitle: "Player", keywords: ["panscan in", "crop black bars", "equals key", "zoom mode"] },
   { label: "Screenshot", section: "hotkeys", anchorTitle: "Player", keywords: ["capture frame", "png screenshot", "snapshot", "p key", "pictures folder"] },
   { label: "Record GIF", section: "hotkeys", anchorTitle: "Player", keywords: ["gif recording", "capture gif", "o key", "animated gif"] },
-  { label: "Save video clip", section: "hotkeys", anchorTitle: "Player", keywords: ["clip last 30 seconds", "save clip", "video capture", "c key", "clip with audio"] },
+  { label: "Save video clip", section: "hotkeys", anchorTitle: "Player", keywords: ["clip last 30 seconds", "save clip", "video capture", "t key", "clip with audio"] },
   { label: "Toggle Anime4K", section: "hotkeys", anchorTitle: "Player", keywords: ["anime4k hotkey", "a key", "upscale toggle", "shader toggle"] },
   { label: "Anime4K on", section: "hotkeys", anchorTitle: "Player", keywords: ["anime4k enable key", "ctrl 1", "upscaling on", "force anime4k"] },
   { label: "Anime4K off", section: "hotkeys", anchorTitle: "Player", keywords: ["anime4k disable key", "ctrl 0", "upscaling off", "stop shaders"] },

@@ -40,13 +40,13 @@ function buildCastSub(tracks: TrackInfo[]): CastSubInfo | null {
   return { kind: "embedded", src_index: embeddedIndex, off: false };
 }
 
-function buildCastSubStyle(s: Settings): CastSubStyle {
+export function buildCastSubStyle(s: Settings): CastSubStyle {
   return {
-    font_size: s.subFontSize,
-    font_color: s.subFontColor,
-    border_color: s.subBorderColor,
-    border_size: s.subBorderSize,
-    margin_y: s.subMarginY,
+    font_size: s.castSubFontSize,
+    font_color: s.castSubFontColor,
+    border_color: s.castSubBorderColor,
+    border_size: s.castSubBorderSize,
+    margin_y: s.castSubMarginY,
     align_x: s.subAlignX,
   };
 }

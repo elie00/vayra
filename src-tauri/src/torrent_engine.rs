@@ -529,6 +529,22 @@ fn merge_trackers(trackers: Vec<String>) -> Vec<String> {
 /// instead of dying after a single dead-ended wait.
 const META_TIMEOUT_FIRST: Duration = Duration::from_secs(30);
 const META_TIMEOUT_RETRY: Duration = Duration::from_secs(20);
+/// First wait for a torrent the DHT knows no peer of: trackers answer in seconds.
+const META_TIMEOUT_NO_PEERS: Duration = Duration::from_secs(15);
+
+/// How long to wait for a torrent's metadata the first time, by the peers the DHT found.
+fn first_metadata_wait(dht_peers: usize) -> Duration {
+    if dht_peers == 0 {
+        META_TIMEOUT_NO_PEERS
+    } else {
+        META_TIMEOUT_FIRST
+    }
+}
+
+/// A second wait is worth it unless both DHT lookups found nobody.
+fn metadata_retry_worth(first_peers: usize, fresh_peers: usize) -> bool {
+    first_peers > 0 || fresh_peers > 0
+}
 const INIT_TIMEOUT: Duration = Duration::from_secs(25);
 /// Short budget for the concurrent side-DHT peer lookup (B7). Was a serial 3s
 /// tax before add; now the lookup races the metadata fetch instead of blocking
@@ -613,20 +629,30 @@ async fn acquire_handle(
         }
     };
 
-    let handle = match attempt(seed, META_TIMEOUT_FIRST).await {
+    let started = std::time::Instant::now();
+    let first_peers = seed.len();
+    let handle = match attempt(seed, first_metadata_wait(first_peers)).await {
         Ok(h) => h,
         Err(e) if e == "metadata timed out" => {
-            eprintln!("[torrent-engine] metadata timed out, retrying with fresh peers");
             let fresh = match &dht {
                 Some(d) => dht_boot::seed_peers(d, magnet, 40, DHT_SEED_BUDGET).await,
                 None => Vec::new(),
             };
+            if !metadata_retry_worth(first_peers, fresh.len()) {
+                eprintln!("[torrent-engine] metadata timed out, no DHT peer in two lookups: giving up");
+                return Err("metadata timed out after retry: no peers found".to_string());
+            }
+            eprintln!("[torrent-engine] metadata timed out, retrying with {} fresh peers", fresh.len());
             attempt(fresh, META_TIMEOUT_RETRY)
                 .await
                 .map_err(|e| format!("metadata timed out after retry: {e}"))?
         }
         Err(e) => return Err(e),
     };
+    eprintln!(
+        "[torrent-engine] metadata in {:.1}s ({first_peers} DHT peers)",
+        started.elapsed().as_secs_f64()
+    );
 
     timeout(INIT_TIMEOUT, handle.wait_until_initialized())
         .await
@@ -1142,6 +1168,18 @@ mod tests {
         restored.claim(&b.to_ascii_uppercase());
         assert_eq!(restored.unused(&[c.to_string()]), vec![a.to_string(), d.to_string()]);
         assert!(restored.unused(&[]).is_empty(), "only the torrents restored at start");
+    }
+
+    /// A torrent the DHT knows no peer of gets a shorter wait, and no second one
+    /// unless a fresh lookup finds some: 8 dead torrents on 17-18 October each cost
+    /// 30 + 20 s before the next source.
+    #[test]
+    fn waits_less_for_the_metadata_of_a_torrent_nobody_seeds() {
+        assert_eq!(first_metadata_wait(0), Duration::from_secs(15));
+        assert_eq!(first_metadata_wait(3), Duration::from_secs(30));
+        assert!(!metadata_retry_worth(0, 0));
+        assert!(metadata_retry_worth(0, 2));
+        assert!(metadata_retry_worth(5, 0));
     }
 
     /// Commands asking for the engine while it is still starting used to start a

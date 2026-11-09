@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { sendEpisodesWatchedEvent } from "@/lib/addon-events";
 import type { Meta } from "@/lib/cinemeta";
 import { recordManualWatchedMeta, setManualWatchedMany } from "@/lib/manual-watched";
 import type { Episode } from "@/lib/providers/tmdb";
@@ -26,11 +27,9 @@ export function useMarkSeason({
           poster: meta.poster,
           background: meta.background,
         });
-      setManualWatchedMany(
-        meta.id,
-        enrichedEpisodes.map((ep) => ({ season: ep.seasonNumber, episode: ep.episodeNumber })),
-        watched,
-      );
+      const episodes = enrichedEpisodes.map((ep) => ({ season: ep.seasonNumber, episode: ep.episodeNumber }));
+      setManualWatchedMany(meta.id, episodes, watched);
+      void sendEpisodesWatchedEvent(meta.id, episodes, watched);
       if (!simklConnected) return;
       const r = stremioIdToSimklTarget(meta.id, { season: active, episode: 1 });
       const showIds =

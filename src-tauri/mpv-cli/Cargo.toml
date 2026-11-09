@@ -1,0 +1,19 @@
+[package]
+name = "mpv-cli"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# The `mpv.exe` of the Windows bundle (see src/main.rs). A package of its own
+# rather than a bin of `vayra`, so the Tauri bundler does not ship it on macOS
+# and Linux, where mpv comes from the system.
+[[bin]]
+name = "mpv"
+path = "src/main.rs"
+
+[dependencies]
+libmpv2-sys = "4"
+
+[profile.release]
+strip = true
+lto = true

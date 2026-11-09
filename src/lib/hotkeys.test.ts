@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effectiveBinding, eventToBinding, isTypingTarget } from "./hotkeys";
+import { HOTKEYS, effectiveBinding, eventToBinding, isTypingTarget } from "./hotkeys";
 
 function key(p: Partial<KeyboardEvent>): KeyboardEvent {
   return {
@@ -76,5 +76,27 @@ describe("effectiveBinding", () => {
 
   it("préfère l'override quand présent", () => {
     expect(effectiveBinding("globalSearchFocus", { globalSearchFocus: "k" })).toBe("k");
+  });
+});
+
+describe("HOTKEYS", () => {
+  // Le lecteur traite les raccourcis dans l'ordre et s'arrête au premier : une
+  // touche partagée n'atteint jamais la seconde action (« c » ouvrait les
+  // sous-titres et jamais l'export de clip).
+  it("n'attribue pas la même touche par défaut à deux actions d'un même contexte", () => {
+    const seen = new Map<string, string>();
+    const doublons: string[] = [];
+    for (const h of HOTKEYS) {
+      const k = `${h.scope}:${h.defaultBinding}`;
+      const autre = seen.get(k);
+      if (autre) doublons.push(`${k} → ${autre} et ${h.id}`);
+      else seen.set(k, h.id);
+    }
+    expect(doublons).toEqual([]);
+  });
+
+  it("garde « c » pour les sous-titres et « t » pour l'export de clip", () => {
+    expect(effectiveBinding("playerSubtitleCycleAlt", {})).toBe("c");
+    expect(effectiveBinding("playerClipRecord", {})).toBe("t");
   });
 });

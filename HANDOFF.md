@@ -54,15 +54,28 @@
   la lecture, Ctrl+F, barres de défilement Fluent. Ce qui reste propre au Mac
   (raccourcis ⌘, plein écran au lieu d'agrandir, repli de la bande-annonce, arrondi
   de fenêtre) est voulu.
-- PR ouvertes au 2026-10-15 :
+- Fusionné le 2026-10-15 (#126 à #131) :
   - #126 : stderr → `%LOCALAPPDATA%\app.vayra\logs\vayra.log` (URLs masquées), comme
     `~/Library/Logs/VAYRA` sur le Mac, quand l'app est lancée sans console.
   - #127 : pic mémoire des mesures de lecture (`PeakWorkingSetSize`), qui valait `?`.
-  - #128 (empilée sur #126) : verdict du pare-feu Windows dans la ligne « Connexions
-    entrantes » (`torrent_engine/firewall.rs`, `INetFwPolicy2`). Ne pas utiliser
+  - #128 : verdict du pare-feu Windows dans la ligne « Connexions entrantes »
+    (`torrent_engine/firewall.rs`, `INetFwPolicy2`). Ne pas utiliser
     `INetFwMgr::IsPortAllowed` : il répondait « autorisé » sur un PC qui bloque l'entrant.
   - #129 : scripts Node de `scripts/` en LF, sinon `attribution-policy.test.ts` ne se
-    charge pas sur un checkout Windows (`core.autocrlf=true`).
+    charge pas sur un checkout Windows (`core.autocrlf=true`). Un checkout antérieur
+    garde ses fichiers en CRLF : les réécrire une fois (voir « Pièges »).
+  - #131 : `libmpv-2.dll` téléchargée depuis la pré-release `libmpv-windows` de ce
+    dépôt (même SHA-256), l'ancien dépôt source ayant disparu.
+- 2026-10-19 :
+  - #161 : la fenêtre cachée du plugin single-instance (`app.vayra-siw`) est visible
+    pour Windows ; une demande de fermeture (`taskkill` sans `/F`) la détruisait,
+    VAYRA restait ouverte et le lancement suivant démarrait une 2e instance (2e moteur
+    torrent, port DHT pris). Elle transmet maintenant `WM_CLOSE` à la fenêtre principale.
+  - #162 : avertissements `librqbit_dht` / `librqbit_upnp` répétés à chaque nouvelle
+    tentative écrits une fois par heure, avec le nombre de copies omises.
+  - #163 : `SIO_UDP_CONNRESET` coupé sur les sockets UDP (crate vendorisé
+    `librqbit-dualstack-sockets`) : un pair injoignable (ICMP) remontait en
+    `os error 10054` au `recv_from` suivant et arrêtait le DHT jusqu'au redémarrage.
 - Build Windows : MSVC (README) puis
   `pnpm tauri build --bundles nsis --config src-tauri/tauri.windows.conf.json` ;
   l'installeur s'installe par utilisateur dans `%LOCALAPPDATA%\VAYRA`, sans admin
@@ -74,7 +87,10 @@
   tous les domaines Stremio (`api.strem.io`, Cinemeta, Torrentio : page « Accès à un
   site interdit », connexion coupée en TLS), le DHT n'amorce pas, la box ne répond pas
   en PCP (VPN prioritaire) et le pare-feu est géré par stratégie (règles locales
-  ignorées). La connexion Stremio, les flux et les pairs ne s'y recettent pas.
+  ignorées). La connexion Stremio, les flux et les pairs ne s'y recettent pas. La
+  stratégie y bloque aussi les raccourcis `.cmd` de `node_modules/.bin` (`pnpm exec
+  tsc`, `pnpm test`) : lancer `node node_modules/typescript/bin/tsc -b`,
+  `node node_modules/eslint/bin/eslint.js .` et `node node_modules/vitest/vitest.mjs run`.
 - Reste à recetter sur un PC Windows personnel : connexion et lecture, ouverture de
   port PCP/NAT-PMP, verdicts pare-feu « aucune règle » / « règle qui bloque » /
   « ouvert », image dans l'image, liens `stremio://`, choix du mode HDR.
@@ -355,6 +371,10 @@
   échouer le build local (« failed to read plugin permissions …/harbor/… »)
   alors que la CI est verte. Remède :
   `cargo clean --manifest-path src-tauri/Cargo.toml`.
+- **Fins de ligne d'un checkout Windows antérieur** : une règle `eol=lf` ajoutée à
+  `.gitattributes` ne réécrit pas les fichiers déjà extraits, qui restent en CRLF.
+  Lister avec `git ls-files --eol | grep w/crlf | grep eol=lf`, puis supprimer ces
+  fichiers et les restaurer par `git checkout -- <fichiers>`.
 - **Parité stubs mobiles** : toute commande de `generate_handler!` doit avoir un stub `mobile_stubs/<module>.rs`, sinon build Android `E0433`. Vérif rapide : `cargo check --target aarch64-linux-android --lib` (env NDK/CC requis).
 - **`.gitignore` global `lib/`** : masquait les nouveaux fichiers sous `src/lib/`. Résolu par `!/src/lib/` dans le `.gitignore` du repo (sinon `git add -f`).
 - **Cross-compile impossible depuis macOS** : le code `#[cfg(windows)]`/`#[cfg(linux)]` n'est PAS vérifié par `cargo check` hôte, et cross-check bute sur `libmpv2-sys` (besoin de mpv.lib/X11). **Seule la CI valide Windows/Linux.**
@@ -362,7 +382,13 @@
 
 ## Suivi restant (non bloquant — hors périmètre macOS, en pause)
 - **Linux** : build/packaging finis et verts ; le *polish du lecteur mpv natif* reste à valider sur une vraie machine Linux (rendu vidéo — ne pas modifier sans test de lecture sur plateforme).
-- **Windows** : multiview/DVR/vignettes utilisent le `mpv` du PATH tant qu'un `mpv.exe` **vérifié (checksum) et hébergé** n'est pas re-bundlé (ressource retirée dans `c5c7881`). Lecture cœur OK via `libmpv-2.dll` embarquée.
+- **Windows** : DVR, vignettes de la barre de lecture et export de clip lancent `mpv.exe`.
+  Depuis le 2026-10-19, le bundle embarque celui de `src-tauri/mpv-cli` (140 Ko, ligne de
+  commande mpv construite sur la `libmpv-2.dll` embarquée, `pnpm setup:mpv-cli`) ; le `mpv`
+  du PATH ne sert plus que de repli. La multivue n'utilise pas mpv : ses tuiles sont des
+  `<video>` (hls.js / mpegts.js) ; l'ancien chemin mpv (`multiview.rs`, une fenêtre mpv
+  par tuile) a été supprimé le 2026-10-19. Vignettes : un flux servi sans `Range` n'est pas seekable,
+  mpv ne peut alors pas les produire (le moteur torrent sert bien les `Range`).
 - **AirPlay 2 comme cible de cast** : hors portée (protocole propriétaire SRP/FairPlay + Apple TV requis) ; actuellement détecté et grisé (`airplay2_pairing`).
 - **More translations** : ouvert (ajouter d'autres langues au besoin).
 

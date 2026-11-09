@@ -6,7 +6,9 @@ import { writePlayerVolume } from "@/lib/player-volume";
 import { effectiveBinding, eventToBinding, isTypingTarget, type HotkeyId } from "@/lib/hotkeys";
 import { useSettings } from "@/lib/settings";
 import { isAnyFullscreen, exitAnyFullscreen } from "@/lib/fullscreen-state";
+import { createHoldSeek } from "@/lib/player/hold-seek";
 import { getLeaveConfirm, openLeaveConfirm } from "@/lib/player/leave-confirm";
+import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { round2 } from "../player-utils";
 
 export function useKeyboardShortcuts(params: {
@@ -95,8 +97,23 @@ export function useKeyboardShortcuts(params: {
     baseRate: number;
   }>({ key: null, timer: null, engaged: false, baseRate: 1 });
   const [holdSpeedActive, setHoldSpeedActive] = useState(false);
+  const seekToRef = useRef(seekTo);
+  seekToRef.current = seekTo;
+  const holdSeekRef = useRef<ReturnType<typeof createHoldSeek> | null>(null);
+  holdSeekRef.current ??= createHoldSeek((sec) => seekToRef.current(sec));
 
   useEffect(() => {
+    const holdSeek = holdSeekRef.current!;
+    // A tap takes one step; holding the key keeps seeking, faster and faster.
+    const seekKey = (e: KeyboardEvent, deltaSec: number) => {
+      e.preventDefault();
+      if (e.repeat) {
+        holdSeek.repeat(e.key, performance.now(), snap.durationSec);
+        return;
+      }
+      seekStep(deltaSec);
+      holdSeek.press(e.key, deltaSec, Math.max(0, getPlaybackPosition() + deltaSec), performance.now());
+    };
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e)) return;
 
@@ -166,23 +183,19 @@ export function useKeyboardShortcuts(params: {
         return;
       }
       if (match("playerSeekBack10")) {
-        e.preventDefault();
-        seekStep(-seekBackStepSec);
+        seekKey(e, -seekBackStepSec);
         return;
       }
       if (match("playerSeekForward10")) {
-        e.preventDefault();
-        seekStep(seekForwardStepSec);
+        seekKey(e, seekForwardStepSec);
         return;
       }
       if (match("playerSeekBack30")) {
-        e.preventDefault();
-        seekStep(-30);
+        seekKey(e, -30);
         return;
       }
       if (match("playerSeekForward30")) {
-        e.preventDefault();
-        seekStep(30);
+        seekKey(e, 30);
         return;
       }
       if (match("playerFrameForward") && onFrameStep) {
@@ -405,11 +418,13 @@ export function useKeyboardShortcuts(params: {
       return "held" as const;
     };
     const onKeyUp = (e: KeyboardEvent) => {
+      holdSeek.release(e.key, performance.now());
       const h = holdRef.current;
       if (h.key == null || e.key !== h.key) return;
       if (releaseHold() === "tap") playPauseToggle();
     };
     const onBlur = () => {
+      holdSeek.release(undefined, performance.now());
       if (holdRef.current.key != null) releaseHold();
     };
     window.addEventListener("keydown", onKey);
