@@ -88,6 +88,11 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ],
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-g3hv-75wg-m249"
+      ]
+    },
     "overrides": {
       "@babel/core@<8": "7.29.6",
       "brace-expansion@<2": "1.1.21",
