@@ -269,7 +269,8 @@ export function parseTorrentFileUrl(rawUrl: string): string | null {
   try {
     const url = new URL(rawUrl);
     if (url.protocol !== "file:" || !/\.torrent$/i.test(url.pathname)) return null;
-    return decodeURIComponent(url.pathname);
+    // A Windows file URL reads /C:/…, and only C:/… is a path there.
+    return decodeURIComponent(url.pathname).replace(/^\/(?=[a-z]:\/)/i, "");
   } catch {
     return null;
   }
@@ -470,6 +471,7 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       }
       if (shouldForward(u)) emitDeepLinkInstall(u);
     });
+    const unlistenSystemLink = await listen<string>("vayra:system-link", (e) => handle([e.payload]));
     let lastCap = "";
     let lastCapAt = 0;
     const forwardLinuxBrowserInstall = async (e: { payload: string }) => {
@@ -496,6 +498,11 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       const initial = await mod.getCurrent();
       if (initial && initial.length > 0) handle(initial);
     } catch {}
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const launchLink = await invoke<string | null>("torrent_links_launch_link");
+      if (launchLink) handle([launchLink]);
+    } catch {}
     return () => {
       try {
         unlisten();
@@ -505,6 +512,9 @@ export async function startDeepLinkBridge(): Promise<() => void> {
       } catch {}
       try {
         unlistenBrowserCap();
+      } catch {}
+      try {
+        unlistenSystemLink();
       } catch {}
     };
   } catch (e) {
