@@ -12,6 +12,7 @@ import {
 } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { isMobileTauri } from "@/lib/platform";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 
@@ -111,11 +112,15 @@ function Skeleton({ shape }: { shape: RowShape }) {
   );
 }
 
+/** Phone poster rails: three posters across, as in streaming apps, down to a
+ *  384px-wide phone (Galaxy S24 Ultra) once the page and row insets are taken. */
+export const MOBILE_POSTER_MIN = 92;
+
 export function Row({
   title,
   titleExtra,
   className = "",
-  min = 144,
+  min = isMobileTauri() ? MOBILE_POSTER_MIN : 144,
   shape = "portrait",
   scrollKey,
   arrowsAlways = false,
@@ -451,15 +456,18 @@ export function Row({
     }
   };
 
+  // The 9px start inset leaves room for the desktop focus ring; on a phone it
+  // pushed rails off the page's 16px gutters, so they sat off-centre.
+  const mobile = isMobileTauri();
   return (
-    <div className={`flex min-w-0 flex-col gap-5 ps-[9px] ${className}`}>
+    <div className={`flex min-w-0 flex-col ${mobile ? "gap-3" : "gap-5 ps-[9px]"} ${className}`}>
       {(title || onViewAll || headerRight) && (
         <div className="flex items-baseline justify-between gap-4 pe-1">
           {title && (
             <div className="flex min-w-0 items-center gap-2">
               <h3
-                className={`truncate font-medium tracking-tight ${titleClassName}`}
-                style={{ fontSize: `${Math.round(17 * settings.rowTitleScale * titleScale)}px` }}
+                className={`truncate font-medium tracking-tight ${mobile ? "font-display" : ""} ${titleClassName}`}
+                style={{ fontSize: `${Math.round((mobile ? 20 : 17) * settings.rowTitleScale * titleScale)}px` }}
               >
                 {title}
               </h3>

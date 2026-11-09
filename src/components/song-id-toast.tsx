@@ -3,10 +3,12 @@ import { ArrowUpRight, Music } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useSettings } from "@/lib/settings";
 import { onSongIdToast, type SongIdToastMsg } from "@/lib/song-id";
+import { useT } from "@/lib/i18n";
 
 type SongCardStyle = "compact" | "cinematic";
 
 export function SongIdToast() {
+  const t = useT();
   const { settings } = useSettings();
   const style = (settings.songCardStyle ?? "cinematic") as SongCardStyle;
   const showDetails = settings.songCardDetails ?? true;
@@ -77,7 +79,7 @@ export function SongIdToast() {
             {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
             {isResult ? (
               <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-white/85 transition-colors group-hover:bg-white/16 group-hover:text-white">
-                Open on YouTube
+                {t("Open on YouTube")}
                 <ArrowUpRight size={13} strokeWidth={2.4} />
               </span>
             ) : null}
@@ -99,7 +101,7 @@ export function SongIdToast() {
             {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
             {isResult ? (
               <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-[13px] font-semibold text-white/85 transition-colors group-hover:bg-white/16 group-hover:text-white">
-                Open on YouTube
+                {t("Open on YouTube")}
                 <ArrowUpRight size={15} strokeWidth={2.4} />
               </span>
             ) : null}

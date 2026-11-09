@@ -15,7 +15,8 @@ export function MalRowControls() {
     update({ animeMalRowsHidden: next });
   };
   return (
-    <div className="flex items-center gap-2 ps-[9px]">
+    // On a phone the chips scroll sideways on one line, under the full width.
+    <div className="flex items-center gap-2 ps-[9px] max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden max-sm:[&>*]:shrink-0 max-sm:[&>*]:whitespace-nowrap">
       <span className="me-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
         <MalLogo className="h-[11px] w-auto text-[#2e51a2]" />
         {t("MAL rows")}

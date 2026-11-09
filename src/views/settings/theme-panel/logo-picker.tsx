@@ -2,6 +2,7 @@ import { ImageDown, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { processLogoImage } from "./image-utils";
+import { useT } from "@/lib/i18n";
 
 function LogoSlot({
   label,
@@ -18,6 +19,7 @@ function LogoSlot({
   maxDim: number;
   onChange: (v: string) => void;
 }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const onFile = async (file: File | null) => {
@@ -66,7 +68,7 @@ function LogoSlot({
       {value && !busy && (
         <button
           onClick={() => onChange("")}
-          aria-label="Remove"
+          aria-label={t("Remove")}
           className="shrink-0 rounded-full border border-edge-soft p-2 text-ink-muted transition-colors hover:border-edge hover:text-ink"
         >
           <Trash2 size={13} strokeWidth={2.2} />
@@ -77,27 +79,28 @@ function LogoSlot({
 }
 
 export function LogoPicker() {
+  const t = useT();
   const { settings, update } = useSettings();
   return (
     <div className="flex flex-col gap-4">
       <LogoSlot
-        label="App logo"
-        hint="Square mark in the sidebar. Transparent PNG or SVG works best."
+        label={t("App logo")}
+        hint={t("Square mark in the sidebar. Transparent PNG or SVG works best.")}
         value={settings.customLogoMark}
         square
         maxDim={256}
         onChange={(v) => update({ customLogoMark: v })}
       />
       <LogoSlot
-        label="Wordmark"
-        hint="Wide logo shown beside the mark when the sidebar is expanded."
+        label={t("Wordmark")}
+        hint={t("Wide logo shown beside the mark when the sidebar is expanded.")}
         value={settings.customLogoWordmark}
         maxDim={512}
         onChange={(v) => update({ customLogoWordmark: v })}
       />
       <LogoSlot
-        label="App icon"
-        hint="Window and taskbar icon while VAYRA runs. Takes effect after the next update. The file's icon in Explorer stays the built-in one."
+        label={t("App icon")}
+        hint={t("Window and taskbar icon while VAYRA runs. Takes effect after the next update. The file's icon in Explorer stays the built-in one.")}
         value={settings.customAppIcon}
         square
         maxDim={256}

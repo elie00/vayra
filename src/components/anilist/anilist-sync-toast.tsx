@@ -1,8 +1,10 @@
+import { useT } from "@/lib/i18n";
 import { Check, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { subscribeSync, type SyncEvent } from "@/lib/anilist/sync";
 
 export function AnilistSyncToast() {
+  const t = useT();
   const [event, setEvent] = useState<SyncEvent | null>(null);
   const timerRef = useRef<number | undefined>(undefined);
 
@@ -49,12 +51,12 @@ export function AnilistSyncToast() {
         <div className="flex min-w-0 flex-col">
           <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
             {syncing
-              ? "Syncing to AniList"
+              ? t("Syncing to AniList")
               : watching
-                ? "Now watching on AniList"
+                ? t("Now watching on AniList")
                 : ok
-                  ? "Synced to AniList"
-                  : "AniList sync"}
+                  ? t("Synced to AniList")
+                  : t("AniList sync")}
           </span>
           <span className="max-w-[300px] truncate text-[12.5px] font-semibold text-ink">
             {event.kind === "error"

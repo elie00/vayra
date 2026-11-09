@@ -8,6 +8,7 @@ import { beginMarathonAdvance } from "./fullscreen-state";
 import { franchiseRoot, franchiseRootSync } from "./providers/anime-franchise-root";
 import { currentPlatformCapabilities } from "./platform-capabilities";
 import { playbackReturnStack } from "./navigation-return";
+import { runNavGuard } from "./nav-guard";
 
 const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
@@ -428,24 +429,32 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const pop = useCallback(() => {
     const cur = stackRef.current;
     if (cur.length <= 1) return;
-    const nextStack = cur.slice(0, -1);
-    const nextForwardStack = pushFrame(forwardStackRef.current, cur[cur.length - 1]);
-    stackRef.current = nextStack;
-    forwardStackRef.current = nextForwardStack;
-    setStack(nextStack);
-    setForwardStack(nextForwardStack);
+    const commit = () => {
+      const nextStack = cur.slice(0, -1);
+      const nextForwardStack = pushFrame(forwardStackRef.current, cur[cur.length - 1]);
+      stackRef.current = nextStack;
+      forwardStackRef.current = nextForwardStack;
+      setStack(nextStack);
+      setForwardStack(nextForwardStack);
+    };
+    if (runNavGuard(commit)) return;
+    commit();
   }, []);
 
   const goForward = useCallback(() => {
     const curForward = forwardStackRef.current;
     const nextFrame = curForward[curForward.length - 1];
     if (!nextFrame) return;
-    const nextForwardStack = curForward.slice(0, -1);
-    const nextStack = pushFrame(stackRef.current, nextFrame);
-    stackRef.current = nextStack;
-    forwardStackRef.current = nextForwardStack;
-    setStack(nextStack);
-    setForwardStack(nextForwardStack);
+    const commit = () => {
+      const nextForwardStack = curForward.slice(0, -1);
+      const nextStack = pushFrame(stackRef.current, nextFrame);
+      stackRef.current = nextStack;
+      forwardStackRef.current = nextForwardStack;
+      setStack(nextStack);
+      setForwardStack(nextForwardStack);
+    };
+    if (runNavGuard(commit)) return;
+    commit();
   }, []);
 
   const clearForwardStack = useCallback(() => {
@@ -492,7 +501,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     nonce: 0,
   });
 
-  const setView = useCallback((requestedView: View) => {
+  const setViewNow = useCallback((requestedView: View) => {
     const v = requestedView === "downloads" && !PLATFORM_CAPABILITIES.nativeDownloads
       ? "home"
       : requestedView;
@@ -591,6 +600,15 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       return pushFrame(s, { kind: "settings" });
     });
   }, [setNavStack]);
+
+  const setView = useCallback(
+    (v: View) => {
+      // Navigating deeper into Settings is not "leaving", so it bypasses the guard.
+      if (v !== "settings" && runNavGuard(() => setViewNow(v))) return;
+      setViewNow(v);
+    },
+    [setViewNow],
+  );
 
   const openSettings = useCallback((section?: SettingsSection) => {
     setSectionReq((r) => ({ section: section ?? null, nonce: r.nonce + 1 }));

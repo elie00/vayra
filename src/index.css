@@ -1,6 +1,54 @@
 @import "tailwindcss";
 @import "./styles/mac-ux.css";
 
+/* Sentient and Switzer, fetched by `pnpm setup:ui-fonts` (see scripts/fetch-ui-fonts.mjs):
+   the CSP blocks the Fontshare stylesheet in the app, where each platform fell back
+   to its own fonts. Without the files the fallbacks in --font-display/--font-sans apply. */
+@font-face {
+  font-family: "Sentient";
+  src: url("/fonts/fontshare/Sentient-Variable.woff2") format("woff2");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/fontshare/Switzer-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Geist (Vercel, SIL OFL 1.1): Geist Serif for titles, Geist Sans for the rest.
+   The serif ships in one weight only; declaring it over the whole weight range
+   makes a bold title use that cut as is instead of a smeared synthetic bold. */
+@font-face {
+  font-family: "Geist Serif";
+  src: url("./assets/fonts/geist/GeistSerif-Regular.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist/Geist-Italic-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Those alternates suit the other pairs; Geist keeps its own letters. */
+:root[data-font-pair="geist"] {
+  font-feature-settings: normal;
+}
+
 @font-face {
   font-family: "WonderfulFontyCure";
   src: url("./assets/fonts/WonderfulFontyCure-4nnoD.ttf") format("truetype");
@@ -32,15 +80,16 @@
   --radius-xl: 20px;
   --radius-2xl: 28px;
 
-  --font-display: "Sentient", "Iowan Old Style", "Georgia", serif;
-  --font-sans: "Switzer", "Inter", system-ui, sans-serif;
+  --font-display: "Geist Serif", "Iowan Old Style", "Georgia", serif;
+  --font-sans: "Geist", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-channel: "General Sans", "Switzer", "Inter", system-ui, sans-serif;
+  --font-channel: "Geist", "Inter", system-ui, sans-serif;
   --font-anime: "WonderfulFontyCure", "Sentient", "Georgia", serif;
   --font-arabic: "Geeza Pro", "SF Arabic", "Segoe UI", "Tahoma", "Noto Naskh Arabic", serif;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 400ms;
@@ -411,8 +460,10 @@ html[data-os="windows"] ::-webkit-scrollbar-corner {
   transition: transform 420ms var(--ease-out);
 }
 
-.group:hover .harbor-key {
-  transform: rotate(18deg);
+@media (hover: hover) {
+  .group:hover .harbor-key {
+    transform: rotate(18deg);
+  }
 }
 
 @keyframes harbor-clap-snap {
@@ -637,10 +688,12 @@ html[data-theme-layout="minui"] .harbor-service-tile {
   transition: box-shadow 180ms ease, background-color 180ms ease;
 }
 
-html[data-theme-card="minui"] .harbor-service-tile:hover,
-html[data-theme-layout="minui"] .harbor-service-tile:hover {
-  background-color: color-mix(in srgb, var(--color-canvas) 4%, transparent) !important;
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-canvas) 42%, transparent);
+@media (hover: hover) {
+  html[data-theme-card="minui"] .harbor-service-tile:hover,
+  html[data-theme-layout="minui"] .harbor-service-tile:hover {
+    background-color: color-mix(in srgb, var(--color-canvas) 4%, transparent) !important;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-canvas) 42%, transparent);
+  }
 }
 
 html[data-theme-card="minui"] .harbor-service-tile img,
@@ -650,9 +703,11 @@ html[data-theme-layout="minui"] .harbor-service-tile img {
   transition: opacity 180ms ease;
 }
 
-html[data-theme-card="minui"] .harbor-service-tile:hover img,
-html[data-theme-layout="minui"] .harbor-service-tile:hover img {
-  opacity: 1;
+@media (hover: hover) {
+  html[data-theme-card="minui"] .harbor-service-tile:hover img,
+  html[data-theme-layout="minui"] .harbor-service-tile:hover img {
+    opacity: 1;
+  }
 }
 
 html[data-theme-layout="rail"] main.pt-20:not([data-rail-flush]),
@@ -746,40 +801,50 @@ html[data-theme-layout="stremio"] .harbor-cinema-badge {
   border-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
 }
 
-button.group:not([data-no-card-ring]):hover .harbor-card-ring::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 60%, transparent);
-  pointer-events: none;
+@media (hover: hover) {
+  button.group:not([data-no-card-ring]):hover .harbor-card-ring::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 60%, transparent);
+    pointer-events: none;
+  }
 }
 
-html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover > .relative {
-  transform: none;
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover > .relative {
+    transform: none;
+  }
 }
 
-html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster {
-  box-shadow: none !important;
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster {
+    box-shadow: none !important;
+  }
 }
 
-html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow:
-    inset 0 0 0 3px rgb(255 255 255 / 1),
-    inset 0 0 16px color-mix(in srgb, var(--color-accent) 30%, transparent);
-  pointer-events: none;
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 0 3px rgb(255 255 255 / 1),
+      inset 0 0 16px color-mix(in srgb, var(--color-accent) 30%, transparent);
+    pointer-events: none;
+  }
 }
 
 html[data-theme-card="stremio"] button.group:not([data-no-card-ring]) .rounded-xl > img {
   transition: transform 280ms var(--ease-out);
 }
 
-html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .rounded-xl > img {
-  transform: scale(1.05);
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .rounded-xl > img {
+    transform: scale(1.05);
+  }
 }
 
 html[data-theme-card="stremio"] .modal-panel {
@@ -886,8 +951,10 @@ html[data-theme-layout="minui"] .harbor-service-tile {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-ink) 6%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-canvas) 18%, transparent);
 }
 
-html[data-theme-layout="minui"] .harbor-service-tile:hover {
-  background: var(--color-elevated);
+@media (hover: hover) {
+  html[data-theme-layout="minui"] .harbor-service-tile:hover {
+    background: var(--color-elevated);
+  }
 }
 
 html[data-theme-layout="minui"] [data-vayra-player] {
@@ -969,8 +1036,10 @@ html[data-theme-button="crunch"] .bg-accent {
   text-transform: uppercase;
 }
 
-html[data-theme-button="crunch"] .bg-accent:hover {
-  filter: brightness(1.12);
+@media (hover: hover) {
+  html[data-theme-button="crunch"] .bg-accent:hover {
+    filter: brightness(1.12);
+  }
 }
 
 html[data-theme-button="crunch"] .bg-ink {
@@ -1412,8 +1481,14 @@ html[data-theme-card="crunch"][dir="rtl"] .harbor-profile-dropdown {
 /* Android (Tauri): keep the app clear of the status bar and gesture insets.
    Android WebView often reports env(safe-area-inset-top) as 0 even under the
    status bar, so the top inset falls back to a fixed ~28px. */
+:root {
+  --vayra-safe-bottom: env(safe-area-inset-bottom);
+}
+/* MainActivity hands the real bar heights over as --vayra-inset-* (see
+   src/lib/android-insets.ts); 28px stands in until they arrive. */
 html[data-os="android"] {
-  --harbor-status-bar: max(env(safe-area-inset-top), 28px);
+  --harbor-status-bar: max(env(safe-area-inset-top), var(--vayra-inset-top, 28px));
+  --vayra-safe-bottom: max(env(safe-area-inset-bottom), var(--vayra-inset-bottom, 0px));
 }
 html[data-os="android"] #root {
   box-sizing: border-box;
@@ -1445,8 +1520,147 @@ html[data-os="android"][data-exo-active="1"] #root {
    views don't hide their last items behind it. Targets the primary content
    scrollers (flex-1 + overflow-y-auto); centered modal panels don't match. */
 html[data-os="android"] {
-  --harbor-tabbar: calc(4rem + env(safe-area-inset-bottom));
+  --harbor-tabbar: calc(4rem + var(--vayra-safe-bottom));
 }
 html[data-os="android"] .flex-1.overflow-y-auto {
   padding-bottom: var(--harbor-tabbar);
+}
+/* Phone type scale, from the Material 3 type scale (docs/mobile-design-spec.md):
+   styles named by role, each with its line height and tracking. 11sp is for
+   labels only, reading text is 14sp on 20 at least, fields stay at 16sp so
+   typing never zooms. A leading-* utility still wins. Titles from 20sp up are
+   set in the display serif. */
+@utility type-micro { font-size: 11px; line-height: var(--tw-leading, 16px); letter-spacing: 0.03em; }
+@utility type-caption { font-size: 12px; line-height: var(--tw-leading, 16px); letter-spacing: 0.02em; }
+@utility type-footnote { font-size: 14px; line-height: var(--tw-leading, 20px); letter-spacing: 0.01em; }
+@utility type-callout { font-size: 16px; line-height: var(--tw-leading, 24px); letter-spacing: 0.01em; }
+@utility type-body { font-size: 16px; line-height: var(--tw-leading, 24px); }
+@utility type-title-3 { font-family: var(--font-display); font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
+@utility type-title-2 { font-family: var(--font-display); font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
+@utility type-title-1 { font-family: var(--font-display); font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.015em; }
+@utility type-display { font-family: var(--font-display); font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.02em; }
+
+/* Phone polish, after Emil Kowalski's mobile-native baseline and
+   design-engineering notes. Clickable cards are divs too, so the tap flash
+   goes everywhere. Hand-written :hover rules sit under (hover: hover), like
+   Tailwind's hover: variant, so a tap never leaves them stuck on. */
+html[data-os="android"] {
+  -webkit-tap-highlight-color: transparent;
+  /* No font inflation in landscape, and the app shell never rubber-bands. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+/* Controls react on the first tap, without waiting for a double-tap zoom, and
+   a long press on them does not select their label. Zero specificity, so a
+   control that sets its own touch-action or selection keeps it. */
+:where(html[data-os="android"]) :where(button, a, [role="button"]) {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* The tab bar is a translucent material the content scrolls under, lit along
+   its top edge. It slides away while the page scrolls down (Material 3). */
+.vayra-tabbar {
+  background: color-mix(in srgb, var(--color-canvas) 76%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  transition: transform 260ms var(--ease-out);
+}
+.vayra-tabbar[data-hidden] {
+  transform: translateY(100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .vayra-tabbar {
+    transition: opacity 150ms ease;
+  }
+  .vayra-tabbar[data-hidden] {
+    transform: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .vayra-tabbar {
+    background: var(--color-canvas);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+/* Bottom sheets rise on the drawer curve over a fading scrim, and track the
+   finger 1:1 while it pulls them down. */
+.vayra-sheet {
+  transition: transform 420ms var(--ease-drawer);
+}
+.vayra-sheet[data-dragging] {
+  transition: none;
+}
+.vayra-scrim {
+  transition: opacity 300ms ease;
+}
+@starting-style {
+  .vayra-sheet {
+    transform: translateY(100%);
+  }
+  .vayra-scrim {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vayra-sheet {
+    transition: opacity 200ms ease;
+  }
+  @starting-style {
+    .vayra-sheet {
+      transform: none;
+      opacity: 0;
+    }
+  }
+}
+/* The phone settings reuse the desktop panels: their cards drop the desktop's
+   28-40px padding for the 16px a phone can spare. */
+[data-mobile-settings] :is(.p-7, .p-8, .p-10) {
+  padding: 1rem;
+}
+/* Fields shrink with their row instead of pushing its button out, and no
+   text in the phone settings is smaller than a label (12px). */
+[data-mobile-settings] input:not([type="checkbox"], [type="radio"]) {
+  min-width: 0;
+}
+[data-mobile-settings] :is(.text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\], .text-\[11\.5px\]) {
+  font-size: 12px;
+}
+/* A double-tap skip mark rises in place and fades out. */
+.vayra-skip {
+  animation: vayra-skip 650ms var(--ease-out) forwards;
+}
+@keyframes vayra-skip {
+  0% { opacity: 0; scale: 0.9; }
+  20% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vayra-skip { animation-duration: 400ms; }
+}
+/* The phone search page settles in rather than popping. */
+.vayra-search {
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+@starting-style {
+  .vayra-search {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    .vayra-search {
+      transform: none;
+    }
+  }
+}
+/* VAYRA Connect mini player (MacNowPlayingBar) sits above the tab bar. */
+html[data-os="android"][data-mac-bar] {
+  --harbor-tabbar: calc(8.5rem + var(--vayra-safe-bottom));
 }

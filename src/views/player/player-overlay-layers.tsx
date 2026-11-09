@@ -113,6 +113,10 @@ export type PlayerOverlayLayersProps = {
   togglePipMode: () => void;
   setDrawMode: (fn: (d: boolean) => boolean) => void;
   wakeChrome: () => void;
+  /** Phones only: what a tap on the picture does (show or hide the controls). */
+  touchTap?: { start: () => void; end: () => void; seek?: (delta: number) => void };
+  /** Phones only: the media volume a swipe on the right of the picture moves. */
+  swipeVolume?: { read: () => number | null; write: (level: number) => void };
   setHideOthersDrawings: (fn: (h: boolean) => boolean) => void;
   canPickAnother: boolean;
   resolvedImdbId: string | null;
@@ -221,6 +225,8 @@ export function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
         onClick={p.playPauseToggle}
         onDoubleClick={p.toggleFullscreen}
         onWheelVolume={p.onVolumeWheel}
+        touchTap={p.touchTap}
+        volume={p.swipeVolume}
       />
 
       <LoaderLayer

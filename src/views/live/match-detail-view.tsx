@@ -396,11 +396,11 @@ function MmaProfileTab({ detail }: { detail: SportsMatchDetail }) {
 
       {/* Tale of the Tape */}
       <div className="flex flex-col gap-1 rounded-2xl bg-elevated/20 p-4 ring-1 ring-edge-soft/50 shadow-sm">
-        <StatRow label="Height" hVal={hP.height} aVal={aP.height} />
-        <StatRow label="Weight" hVal={hP.weight} aVal={aP.weight} />
-        <StatRow label="Age" hVal={hP.age} aVal={aP.age} />
-        <StatRow label="Reach" hVal={hP.reach} aVal={aP.reach} />
-        <StatRow label="Stance" hVal={t(hP.stance)} aVal={t(aP.stance)} />
+        <StatRow label={t("Height")} hVal={hP.height} aVal={aP.height} />
+        <StatRow label={t("Weight")} hVal={hP.weight} aVal={aP.weight} />
+        <StatRow label={t("Age")} hVal={hP.age} aVal={aP.age} />
+        <StatRow label={t("Reach")} hVal={hP.reach} aVal={aP.reach} />
+        <StatRow label={t("Stance")} hVal={t(hP.stance)} aVal={t(aP.stance)} />
       </div>
     </div>
   );

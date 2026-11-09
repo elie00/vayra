@@ -29,7 +29,7 @@ export function MobileTogetherButton() {
     >
       <Users size={17} strokeWidth={1.9} />
       {live && snapshot.participants.length > 0 && (
-        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9.5px] font-bold leading-none text-canvas">
+        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 type-micro font-bold leading-none text-canvas">
           {snapshot.participants.length}
         </span>
       )}
@@ -112,7 +112,7 @@ export function MobileTogetherSheet() {
         type="button"
         aria-label={t("common.close")}
         onClick={closeModal}
-        className="absolute inset-0 bg-black/50"
+        className="vayra-scrim absolute inset-0 bg-black/50"
       />
 
       <section
@@ -120,8 +120,9 @@ export function MobileTogetherSheet() {
         role="dialog"
         aria-modal="true"
         aria-label={t("VARA")}
+        data-dragging={drag > 0 ? "" : undefined}
         style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
-        className="harbor-together-surface absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-3rem)] min-h-[55dvh] flex-col rounded-t-3xl ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
+        className="vayra-sheet harbor-together-surface absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-3rem)] min-h-[55dvh] flex-col rounded-t-3xl ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >
         {/* Drag handle */}
         <div

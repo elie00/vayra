@@ -1,7 +1,7 @@
 const downloads: Record<string, string> = {
-  "Download folder is unavailable. Choose a folder.": "Le dossier de téléchargement est indisponible. Choisis un dossier.",
-  "The folder chooser could not be opened. Try again.": "Impossible d’ouvrir le sélecteur de dossier. Réessaie.",
-  "The folder could not be opened. Your download has not been changed. Try again from Downloads.": "Impossible d’ouvrir le dossier. Ton téléchargement reste inchangé. Réessaie depuis Téléchargements.",
+  "Download folder is unavailable. Choose a folder.": "Le dossier de téléchargement est indisponible. Choisissez un dossier.",
+  "The folder chooser could not be opened. Try again.": "Impossible d’ouvrir le sélecteur de dossier. Réessayez.",
+  "The folder could not be opened. Your download has not been changed. Try again from Downloads.": "Impossible d’ouvrir le dossier. Votre téléchargement reste inchangé. Réessayez depuis Téléchargements.",
   Downloads: "Téléchargements",
   "Saved movies and episodes for offline watching": "Films et épisodes enregistrés pour le visionnage hors ligne",
   "1 item": "1 élément",
@@ -9,7 +9,7 @@ const downloads: Record<string, string> = {
   "{count} downloading": "{count} en téléchargement",
   "{size} saved": "{size} enregistrés",
   "No downloads yet": "Aucun téléchargement pour l'instant",
-  "Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.": "Ouvre un film ou une série, survole un épisode et clique sur l'icône de téléchargement. Choisis exactement la source que tu veux et elle s'enregistre ici pour le visionnage hors ligne.",
+  "Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.": "Ouvrez un film ou une série, survolez un épisode et cliquez sur l'icône de téléchargement. Choisissez exactement la source que vous voulez et elle s'enregistre ici pour le visionnage hors ligne.",
   "Failed: {error}": "Échec : {error}",
   Canceled: "Annulé",
   "Interrupted: re-download to finish": "Interrompu : relance le téléchargement pour terminer",
@@ -46,9 +46,9 @@ const downloads: Record<string, string> = {
   "Always keep on this device": "Toujours garder sur cet appareil",
 
   "Add folder": "Ajouter un dossier",
-  "Add files from your computer": "Ajouter des fichiers depuis ton ordinateur",
+  "Add files from your computer": "Ajouter des fichiers depuis votre ordinateur",
   "Choose folder": "Choisir un dossier",
-  "Choose a folder...": "Choisis un dossier...",
+  "Choose a folder...": "Choisissez un dossier...",
   "Save to": "Enregistrer dans",
   "Saving to": "Enregistrement dans",
   "Saving to system default": "Enregistrement dans le dossier système par défaut",
@@ -57,20 +57,20 @@ const downloads: Record<string, string> = {
   Filename: "Nom du fichier",
   File: "Fichier",
   "Same file": "Même fichier",
-  "{shown} of {total} file from your computer": "{shown} sur {total} fichier de ton ordinateur",
-  "{shown} of {total} files from your computer": "{shown} sur {total} fichiers de ton ordinateur",
+  "{shown} of {total} file from your computer": "{shown} sur {total} fichier de votre ordinateur",
+  "{shown} of {total} files from your computer": "{shown} sur {total} fichiers de votre ordinateur",
 
   "Point VAYRA at a folder. We scan it for movies and shows, parse titles from filenames, and enrich them with TMDB so they look the same as everything else here. We just remember the path; nothing is copied or moved.":
-    "Indique un dossier à VAYRA. On y cherche films et séries, on extrait les titres des noms de fichiers et on les enrichit via TMDB pour qu'ils ressemblent à tout le reste ici. On mémorise juste le chemin ; rien n'est copié ni déplacé.",
+    "Indiquez un dossier à VAYRA. On y cherche films et séries, on extrait les titres des noms de fichiers et on les enrichit via TMDB pour qu'ils ressemblent à tout le reste ici. On mémorise juste le chemin ; rien n'est copié ni déplacé.",
   "No video files found in that folder.": "Aucun fichier vidéo trouvé dans ce dossier.",
   "Couldn't scan that folder.": "Impossible d'analyser ce dossier.",
   "Couldn't open this file": "Impossible d'ouvrir ce fichier",
   "This file is in OneDrive. If \"Files On-Demand\" is on, the file is a cloud placeholder until it's downloaded. Right-click it in Explorer and pick":
-    "Ce fichier est dans OneDrive. Si « Fichiers à la demande » est activé, le fichier n'est qu'un espace réservé cloud tant qu'il n'est pas téléchargé. Fais un clic droit dessus dans l'Explorateur et choisis",
+    "Ce fichier est dans OneDrive. Si « Fichiers à la demande » est activé, le fichier n'est qu'un espace réservé cloud tant qu'il n'est pas téléchargé. Faites un clic droit dessus dans l'Explorateur et choisissez",
   ", then try again.": ", puis réessaie.",
 
-  "You're offline": "Tu es hors ligne",
-  "You're offline. Your downloads still play.": "Tu es hors ligne. Tes téléchargements se lisent quand même.",
+  "You're offline": "Vous êtes hors ligne",
+  "You're offline. Your downloads still play.": "Vous êtes hors ligne. Vos téléchargements se lisent quand même.",
 
   "Saving GIF…": "Enregistrement du GIF…",
   "Continue Watching screenshots": "Captures de Reprendre la lecture",
@@ -83,11 +83,11 @@ const downloads: Record<string, string> = {
   "{n} not in this pack": "{n} absents de ce pack",
   Stop: "Arrêter",
   "Only multi-episode torrents are listed: every episode of this season is pulled from the one source you pick.":
-    "Seuls les torrents multi-épisodes sont listés : chaque épisode de cette saison est extrait de la source que tu choisis.",
+    "Seuls les torrents multi-épisodes sont listés : chaque épisode de cette saison est extrait de la source que vous choisissez.",
   "No season pack found for this season. Download episodes one by one instead.":
-    "Aucun pack de saison trouvé pour cette saison. Télécharge les épisodes un par un.",
+    "Aucun pack de saison trouvé pour cette saison. Téléchargez les épisodes un par un.",
   "Couldn't pull any episode out of this source. Pick another pack.":
-    "Impossible d'extraire un épisode de cette source. Choisis un autre pack.",
+    "Impossible d'extraire un épisode de cette source. Choisissez un autre pack.",
   "None of this season's episodes have aired yet.":
     "Aucun épisode de cette saison n'est encore sorti.",
   "No episode list reached the picker. Reopen the season and try again.":

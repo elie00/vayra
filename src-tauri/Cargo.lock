@@ -7294,6 +7294,7 @@ dependencies = [
  "objc2-web-kit",
  "png 0.17.16",
  "reqwest 0.12.28",
+ "ring",
  "rust_cast",
  "rustls",
  "serde",

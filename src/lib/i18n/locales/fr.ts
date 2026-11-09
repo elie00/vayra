@@ -22,6 +22,7 @@ import { privateBetaFr } from "./private-beta";
 import coverage from "./fr/coverage";
 import sweep from "./fr/sweep";
 import sweep2 from "./fr/sweep2";
+import sweep3 from "./fr/sweep3";
 import desktop from "./fr/desktop";
 import appearance from "./fr/appearance";
 import settingsNavigation from "./fr/settings-navigation";
@@ -38,6 +39,7 @@ const fr: Record<string, string> = {
   ...coverage,
   ...sweep,
   ...sweep2,
+  ...sweep3,
   ...chrome,
   ...common,
   ...catalog,

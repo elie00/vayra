@@ -204,8 +204,10 @@ export function CinematicPlayerLoader({
       )}
       {/* A stream that takes long can be swapped right here: the screen used to
           advise another source while offering only "Cancel". */}
-      <div className="absolute bottom-10 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3">
-        <button onClick={onCancel} className="flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white">
+      {/* Centred between the edges rather than from the middle, which capped the
+          row at half the width and wrapped the labels on a phone. */}
+      <div className="absolute inset-x-4 bottom-[calc(2.5rem+var(--vayra-safe-bottom,0px))] z-10 flex flex-wrap items-center justify-center gap-3">
+        <button onClick={onCancel} className="flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white">
           {isLocal ? (
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
               <path
@@ -222,7 +224,7 @@ export function CinematicPlayerLoader({
           <button
             onClick={onNextSource}
             data-emphasis={lagging ? "on" : undefined}
-            className={lagging ? "flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white bg-white px-6 text-[13.5px] font-semibold text-black transition-colors hover:bg-white/90" : "flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white"}
+            className={lagging ? "flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white bg-white px-6 text-[13.5px] font-semibold text-black transition-colors hover:bg-white/90" : "flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white"}
           >
             {t("Next source")}
           </button>

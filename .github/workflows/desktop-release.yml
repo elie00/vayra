@@ -134,6 +134,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm release:check
+          pnpm setup:ui-fonts
       - name: Fetch Windows libmpv
         if: matrix.os == 'windows'
         run: pnpm setup:libmpv

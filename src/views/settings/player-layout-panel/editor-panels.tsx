@@ -172,15 +172,15 @@ function ChatPanelBody() {
       <div className="flex flex-col gap-1.5 text-[12.5px] leading-snug">
         <p>
           <span className="font-semibold text-info">Alex</span>
-          <span className="ms-1.5 text-white/90">this scene is wild</span>
+          <span className="ms-1.5 text-white/90">{t("this scene is wild")}</span>
         </p>
         <p>
           <span className="font-semibold text-cyan-300">Jamie</span>
-          <span className="ms-1.5 text-white/90">no way 😂</span>
+          <span className="ms-1.5 text-white/90">{t("no way 😂")}</span>
         </p>
         <p>
-          <span className="font-semibold text-violet-300">You</span>
-          <span className="ms-1.5 text-white/90">didn't see that coming</span>
+          <span className="font-semibold text-violet-300">{t("You")}</span>
+          <span className="ms-1.5 text-white/90">{t("didn't see that coming")}</span>
         </p>
       </div>
       <div className="mt-1 rounded-xl border border-white/10 bg-white/4 px-2.5 py-1.5 text-[12px] text-white/40">

@@ -87,7 +87,8 @@ function SideRow({ side, active, dim, showWinner }: { side: SportsSide; active: 
 function Status({ game }: { game: SportsGame }) {
   const t = useT();
   const lang = useUiLanguage();
-  const locale = lang === "ar" ? "ar-SA" : "en-US";
+  // The interface language sets the date and clock format (17:30 in French).
+  const locale = lang === "ar" ? "ar-SA" : lang;
 
   if (game.state === "in") {
     return (

@@ -9,9 +9,11 @@ use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tokio::sync::Notify;
+use tokio::sync::{mpsc, Notify};
 use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::tungstenite::Message;
+
+use crate::connect_seal;
 
 pub const STATUS_EVENT: &str = "vayra:connect-link";
 const PROTOCOL: u64 = 1;
@@ -83,6 +85,10 @@ pub struct LinkStatus {
     pub connected: bool,
     /// What the Mac plays (protocol `state`), `None` while it is idle.
     pub state: Option<Value>,
+    /// The Mac's addons (`name`, `transportUrl`), once it has sent them.
+    pub addons: Option<Vec<Value>>,
+    /// Where the Mac left off, once it has sent it.
+    pub history: Option<Vec<Value>>,
 }
 
 pub type OnStatus = Arc<dyn Fn(LinkStatus) + Send + Sync>;
@@ -115,10 +121,17 @@ impl Reporter {
     }
 }
 
+// Messages for the Mac go out only while a session is open: a pause queued
+// while away must not play out minutes later.
+type Outbox = Arc<Mutex<Option<mpsc::UnboundedSender<String>>>>;
+
 /// Keeps one paired Mac connected, reconnecting until dropped.
 pub struct Link {
     status: Arc<Mutex<LinkStatus>>,
+    // To seal what the phone hands over, as the Mac seals what it sends.
+    secret: String,
     retry: Arc<Notify>,
+    outbox: Outbox,
     task: tokio::task::JoinHandle<()>,
 }
 
@@ -128,11 +141,15 @@ impl Link {
             mac: Some(PairedMac { name: pairing.name.clone(), address: pairing.address.to_string() }),
             connected: false,
             state: None,
+            addons: None,
+            history: None,
         }));
         let retry = Arc::new(Notify::new());
+        let outbox: Outbox = Arc::default();
         let reporter = Reporter { status: status.clone(), on_status };
-        let task = tokio::spawn(run(pairing, me, reporter, retry.clone()));
-        Self { status, retry, task }
+        let secret = pairing.secret.clone();
+        let task = tokio::spawn(run(pairing, me, reporter, retry.clone(), outbox.clone()));
+        Self { status, secret, retry, outbox, task }
     }
 
     pub fn status(&self) -> LinkStatus {
@@ -142,6 +159,27 @@ impl Link {
     /// Skips the wait before the next attempt, e.g. when the app comes back.
     pub fn retry_now(&self) {
         self.retry.notify_one();
+    }
+
+    /// Hands this phone's own resume points to the Mac, sealed, if connected.
+    pub fn send_history(&self, history: &Value) -> Result<(), String> {
+        let plain = serde_json::to_vec(&connect_seal::clean_history(history)).map_err(|e| e.to_string())?;
+        let sealed = connect_seal::seal(&self.secret, &plain).ok_or("Could not seal the history")?;
+        lock(&self.outbox)
+            .as_ref()
+            .and_then(|tx| tx.send(json!({ "type": "history", "sealed": sealed }).to_string()).ok())
+            .ok_or_else(|| "The Mac is not connected".into())
+    }
+
+    /// Sends a `command`, `load` or `requestState` to the Mac, if connected.
+    pub fn send(&self, message: &Value) -> Result<(), String> {
+        if !matches!(message["type"].as_str(), Some("command" | "load" | "requestState")) {
+            return Err("Not a VAYRA Connect message".into());
+        }
+        lock(&self.outbox)
+            .as_ref()
+            .and_then(|tx| tx.send(message.to_string()).ok())
+            .ok_or_else(|| "The Mac is not connected".into())
     }
 }
 
@@ -155,12 +193,13 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
-async fn run(pairing: Pairing, me: Me, reporter: Reporter, retry: Arc<Notify>) {
+async fn run(pairing: Pairing, me: Me, reporter: Reporter, retry: Arc<Notify>, outbox: Outbox) {
     let mut delay = Duration::from_secs(1);
     loop {
-        if session(&pairing, &me, &reporter).await {
+        if session(&pairing, &me, &reporter, &outbox).await {
             delay = Duration::from_secs(1);
         }
+        lock(&outbox).take();
         reporter.update(|s| {
             s.connected = false;
             s.state = None;
@@ -174,7 +213,7 @@ async fn run(pairing: Pairing, me: Me, reporter: Reporter, retry: Arc<Notify>) {
 }
 
 /// One connection to the Mac; true once the Mac accepted this phone.
-async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter) -> bool {
+async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter, outbox: &Outbox) -> bool {
     let url = format!("ws://{}/connect/v1?k={}", pairing.address, pairing.secret);
     let config = WebSocketConfig::default().max_message_size(Some(MAX_MESSAGE_BYTES));
     let connecting = tokio_tungstenite::connect_async_with_config(url, Some(config), true);
@@ -191,6 +230,7 @@ async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter) -> bool {
     if ws.send(Message::Text(hello.to_string().into())).await.is_err() {
         return false;
     }
+    let (tx, mut outgoing) = mpsc::unbounded_channel::<String>();
     let mut accepted = false;
     let mut last_heard = Instant::now();
     let mut ping = tokio::time::interval(PING_EVERY);
@@ -200,11 +240,19 @@ async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter) -> bool {
             frame = ws.next() => match frame {
                 Some(Ok(Message::Text(text))) => {
                     last_heard = Instant::now();
-                    accepted |= receive(reporter, text.as_str());
+                    if receive(reporter, &pairing.secret, text.as_str()) && !accepted {
+                        accepted = true;
+                        *lock(outbox) = Some(tx.clone());
+                    }
                 }
                 Some(Ok(Message::Close(_)) | Err(_)) | None => break,
                 Some(Ok(_)) => last_heard = Instant::now(),
             },
+            Some(text) = outgoing.recv() => {
+                if ws.send(Message::Text(text.into())).await.is_err() {
+                    break;
+                }
+            }
             _ = ping.tick() => {
                 if last_heard.elapsed() > SILENCE_LIMIT || ws.send(Message::Ping(Default::default())).await.is_err() {
                     break;
@@ -216,7 +264,7 @@ async fn session(pairing: &Pairing, me: &Me, reporter: &Reporter) -> bool {
 }
 
 /// Applies a Mac message to the status; true for the Mac's hello.
-fn receive(reporter: &Reporter, text: &str) -> bool {
+fn receive(reporter: &Reporter, secret: &str, text: &str) -> bool {
     let Ok(message) = serde_json::from_str::<Value>(text) else {
         return false;
     };
@@ -237,6 +285,28 @@ fn receive(reporter: &Reporter, text: &str) -> bool {
         }
         Some("idle") => {
             reporter.update(|s| s.state = None);
+            false
+        }
+        // Sealed with the pairing secret: the addresses often carry a debrid key.
+        Some("addons") => {
+            let opened = message["sealed"]
+                .as_str()
+                .and_then(|sealed| connect_seal::open(secret, sealed))
+                .and_then(|plain| serde_json::from_slice::<Value>(&plain).ok());
+            if let Some(addons) = opened {
+                reporter.update(|s| s.addons = Some(connect_seal::clean_addons(&addons)));
+            }
+            false
+        }
+        // Sealed too: it is what someone watches.
+        Some("history") => {
+            let opened = message["sealed"]
+                .as_str()
+                .and_then(|sealed| connect_seal::open(secret, sealed))
+                .and_then(|plain| serde_json::from_slice::<Value>(&plain).ok());
+            if let Some(history) = opened {
+                reporter.update(|s| s.history = Some(connect_seal::clean_history(&history)));
+            }
             false
         }
         _ => false,
@@ -350,6 +420,17 @@ pub async fn connect_link_start(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Sends a phone message (`command`, `load`, `requestState`) to the paired Mac.
+#[tauri::command]
+pub fn connect_link_send(message: Value) -> Result<(), String> {
+    lock(link_slot()).as_ref().ok_or("No Mac is paired")?.send(&message)
+}
+
+#[tauri::command]
+pub fn connect_link_send_history(history: Value) -> Result<(), String> {
+    lock(link_slot()).as_ref().ok_or("No Mac is paired")?.send_history(&history)
+}
+
 #[tauri::command]
 pub async fn connect_link_forget(app: tauri::AppHandle) -> Result<(), String> {
     lock(link_slot()).take();
@@ -393,7 +474,10 @@ mod tests {
         use crate::connect::Server;
         let port = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
         let addr: SocketAddr = format!("127.0.0.1:{port}").parse().unwrap();
-        let start_mac = || Server::start(addr, SECRET.into(), "mac-1".into(), "MacBook".into(), Arc::new(|_| {}));
+        let commands = Arc::new(Mutex::new(Vec::<Value>::new()));
+        let sink = commands.clone();
+        let on_command: crate::connect::OnCommand = Arc::new(move |c| lock(&sink).push(c));
+        let start_mac = || Server::start(addr, SECRET.into(), "mac-1".into(), "MacBook".into(), on_command.clone());
         let mut mac = start_mac().await.unwrap();
 
         let (tx, mut statuses) = tokio::sync::mpsc::unbounded_channel::<LinkStatus>();
@@ -414,8 +498,38 @@ mod tests {
         mac.publish(Some(json!({ "status": "playing", "positionSec": 12.0 })));
         assert_eq!(until(&|s| s.state.is_some()).await.state.unwrap()["positionSec"], 12.0);
 
+        let addons = json!([{ "name": "Torrentio", "transportUrl": "https://torrentio.example/debrid=KEY/manifest.json" }]);
+        mac.publish_addons(&addons);
+        assert_eq!(json!(until(&|s| s.addons.is_some()).await.addons.unwrap()), addons);
+
+        let history = json!([{ "metaId": "tt1375666", "mediaType": "movie", "title": "Inception",
+                               "positionMs": 60000, "durationMs": 8880000, "updatedAt": 1793400000000_i64 }]);
+        mac.publish_history(&history);
+        assert_eq!(json!(until(&|s| s.history.is_some()).await.history.unwrap()), history);
+
+        let pause = json!({ "type": "command", "action": "pause" });
+        link.send(&pause).unwrap();
+        assert!(link.send(&json!({ "type": "hello" })).is_err());
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while lock(&commands).is_empty() && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(*lock(&commands), vec![pause]);
+
+        // The other way: the phone's own resume points reach the Mac, sealed.
+        let watched_here = json!([{ "metaId": "tt0903747", "mediaType": "series", "season": 1, "episode": 2,
+                                    "title": "Breaking Bad", "positionMs": 120000, "durationMs": 2820000,
+                                    "updatedAt": 1793600000000_i64 }]);
+        link.send_history(&watched_here).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while lock(&commands).len() < 2 && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(lock(&commands)[1], json!({ "type": "history", "history": watched_here }));
+
         mac.stop();
         assert!(until(&|s| !s.connected).await.state.is_none());
+        assert!(link.send(&json!({ "type": "command", "action": "play" })).is_err());
         mac = start_mac().await.unwrap();
         link.retry_now();
         until(&|s| s.connected).await;

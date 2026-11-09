@@ -155,7 +155,7 @@ export function LocalEngineSection() {
         onChange={(v) => update({ torrentFullDownload: v })}
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => void runTest()}
@@ -238,10 +238,10 @@ export function LocalEngineSection() {
                     <X size={13} strokeWidth={2.8} />
                   )}
                 </span>
-                <span className="font-medium text-ink">{step.label}</span>
+                <span className="font-medium text-ink">{t(step.label)}</span>
                 {step.detail && (
                   <span className="ms-auto truncate ps-3 text-end font-mono text-[11.5px] text-ink-subtle">
-                    {step.detail}
+                    {t(step.detail)}
                   </span>
                 )}
               </li>

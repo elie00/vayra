@@ -42,11 +42,11 @@ const discover: Record<string, string> = {
   "Lost worlds rediscovered": "Mondes perdus redécouverts",
 
   "More from a Favorite Director": "Plus d'un réalisateur favori",
-  "A name you keep watching": "Un nom que tu regardes encore et encore",
-  "Starring a Favorite": "Avec un de tes favoris",
-  "An actor you keep watching": "Un acteur que tu regardes encore et encore",
+  "A name you keep watching": "Un nom que vous regardez encore et encore",
+  "Starring a Favorite": "Avec un de vos favoris",
+  "An actor you keep watching": "Un acteur que vous regardez encore et encore",
   "More stories like these": "Plus d'histoires comme celles-ci",
-  "Themes you keep returning to": "Des thèmes vers lesquels tu reviens toujours",
+  "Themes you keep returning to": "Des thèmes vers lesquels vous revenez toujours",
 
   "Collections": "Collections",
   "Collection": "Collection",
@@ -55,7 +55,7 @@ const discover: Record<string, string> = {
   "Featured": "En vedette",
   "All": "Tout",
   "Every saga in one place. Search anything: if it exists, it's here.":
-    "Toutes les sagas au même endroit. Cherche n'importe quoi : si ça existe, c'est ici.",
+    "Toutes les sagas au même endroit. Cherchez n'importe quoi : si cela existe, c'est ici.",
   "Search every collection on TMDB...": "Rechercher dans toutes les collections TMDB...",
   "{label} · {n} collection": "{label} · {n} collection",
   "{label} · {n} collections": "{label} · {n} collections",
@@ -64,11 +64,11 @@ const discover: Record<string, string> = {
     "C'est toutes les collections {category} qu'on a pu trouver.",
   "No more found for this category.": "Rien de plus pour cette catégorie.",
   "Nothing matched. Try the franchise's first film name.":
-    "Aucun résultat. Essaie le nom du premier film de la franchise.",
+    "Aucun résultat. Essayez le nom du premier film de la franchise.",
   'Results for "{query}"': "Résultats pour « {query} »",
   "That's every collection TMDB knows about.": "C'est toutes les collections que TMDB connaît.",
   "Add a TMDB key in Settings to browse collections.":
-    "Ajoute une clé TMDB dans les Paramètres pour parcourir les collections.",
+    "Ajoutez une clé TMDB dans les Paramètres pour parcourir les collections.",
   "No films found in this collection.": "Aucun film trouvé dans cette collection.",
 
   "Sagas": "Sagas",

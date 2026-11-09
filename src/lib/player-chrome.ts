@@ -202,6 +202,33 @@ export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
   },
 };
 
+/**
+ * The phone player, as streaming apps lay it out: back and title on top, the
+ * time and seek bar, then subtitles and audio, the three playback buttons and
+ * next episode with fullscreen. No volume slider: a phone has volume keys and a
+ * swipe on the right of the picture. Everything else sits behind the "more"
+ * button (MobileMoreSheet).
+ */
+export const MOBILE_PLAYER_CONFIG: PlayerChromeConfig = {
+  controls: [
+    { id: "back", slot: "top-left", order: 0 },
+    { id: "title-info", slot: "top-left", order: 10 },
+    { id: "time-start", slot: "seek-leading", order: 0 },
+    { id: "time-end", slot: "seek-trailing", order: 0 },
+    { id: "subtitle-menu", slot: "bottom-left", order: 0 },
+    { id: "audio-menu", slot: "bottom-left", order: 10 },
+    { id: "seek-back", slot: "bottom-center", order: 0 },
+    { id: "play-pause", slot: "bottom-center", order: 10 },
+    { id: "seek-forward", slot: "bottom-center", order: 20 },
+    { id: "next-episode", slot: "bottom-right", order: 0 },
+    { id: "fullscreen", slot: "bottom-right", order: 10 },
+  ],
+  options: {
+    volumeStyle: "slider",
+    timeFormat: "start-end",
+  },
+};
+
 export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
   controls: [
     { id: "back", slot: "top-left", order: 0 },

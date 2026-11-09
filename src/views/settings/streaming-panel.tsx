@@ -215,8 +215,8 @@ export function ManualAddonCard({
       </div>
       {!installedId && (
         <div className="flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2.5 rounded-lg border border-edge bg-canvas px-3.5 transition-colors focus-within:border-ink-subtle">
-            <Key size={15} className="text-ink-subtle" />
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-edge bg-canvas px-3.5 transition-colors focus-within:border-ink-subtle">
+            <Key size={15} className="shrink-0 text-ink-subtle" />
             <input
               type="text"
               value={draft}
@@ -231,13 +231,13 @@ export function ManualAddonCard({
               placeholder={t("Paste the manifest URL the configure page gave you")}
               spellCheck={false}
               autoComplete="off"
-              className="h-11 flex-1 bg-transparent text-[14.5px] text-ink placeholder:text-ink-subtle/60 outline-none"
+              className="h-11 min-w-0 flex-1 bg-transparent text-[14.5px] text-ink placeholder:text-ink-subtle/60 outline-none"
             />
           </div>
           <button
             onClick={onInstall}
             disabled={!draft.trim() || busy}
-            className="flex h-11 items-center gap-1.5 rounded-lg bg-ink px-5 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-ink px-5 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} strokeWidth={2.2} />}
             {t("Install")}

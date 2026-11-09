@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { createConnectPublisher, onConnectCommand, type ConnectCommand } from "@/lib/connect/host";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
+import { getPlaybackPosition, subscribePlaybackClock } from "@/lib/player/playback-clock";
 import type { PlayerSrc } from "@/lib/view";
 import { runNowPlayingCommand } from "./use-now-playing-commands";
 
@@ -65,9 +66,16 @@ export function useConnectHost(params: Controls & { enabled: boolean; src: Playe
   const controlsRef = useRef<Controls>(params);
   controlsRef.current = params;
 
+  // `snap` ignores the clock (it would re-render the player on every tick), so
+  // the position comes from the playback clock: that is how seeks reach phones.
   useEffect(() => {
-    if (enabled) publisher.update(snap, media);
-    else publisher.clear();
+    if (!enabled) {
+      publisher.clear();
+      return;
+    }
+    const publish = () => publisher.update({ ...snap, positionSec: getPlaybackPosition() }, media);
+    publish();
+    return subscribePlaybackClock(publish);
   }, [enabled, publisher, snap, media]);
 
   useEffect(() => () => publisher.clear(), [publisher]);

@@ -2,6 +2,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 
+// useT() is bound to t, and in a few components to tr or tt.
+const TRANSLATORS = new Set(["t", "tr", "tt"]);
+
 /** Literal translation calls in app code, including keys absent from the English catalog. */
 export function collectTranslationKeys(directory) {
   const keys = new Set();
@@ -15,7 +18,7 @@ export function collectTranslationKeys(directory) {
       if (!/\.tsx?$/.test(path) || /\.(test|spec)\./.test(path)) continue;
       const source = ts.createSourceFile(path, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true);
       function visit(node) {
-        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "t") {
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && TRANSLATORS.has(node.expression.text)) {
           const key = node.arguments[0];
           if (key && (ts.isStringLiteral(key) || ts.isNoSubstitutionTemplateLiteral(key))) keys.add(key.text);
         }

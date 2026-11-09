@@ -16,10 +16,10 @@ vi.mock("@/lib/dead-streams", () => ({
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
-async function stubCalls(url: string): Promise<number> {
+async function stubCalls(url: string, id = "tt0000001"): Promise<number> {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const onStub = vi.fn();
-  const src = { url, meta: { id: "tt0000001", type: "movie", name: "Short clip" }, title: "Short clip" } as PlayerSrc;
+  const src = { url, meta: { id, type: "movie", name: "Short clip" }, title: "Short clip" } as PlayerSrc;
   const snap = { status: "playing", durationSec: 10 } as PlayerSnapshot;
   function Probe() {
     useStubDetection({ src, snap, onStub, instantPlay: true });
@@ -39,4 +39,9 @@ it("returns a short addon stream to the picker", async () => {
 it("plays a short file the user opened from disk", async () => {
   expect(await stubCalls("C:\\Users\\viewer\\Videos\\clip.mp4")).toBe(0);
   expect(await stubCalls("/Users/viewer/Movies/clip.mp4")).toBe(0);
+});
+
+it("plays a short clip from a link the user pasted", async () => {
+  const url = "https://media.example.invalid/clip.mp4";
+  expect(await stubCalls(url, `url:${url}`)).toBe(0);
 });

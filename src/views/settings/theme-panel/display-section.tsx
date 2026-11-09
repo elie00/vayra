@@ -319,6 +319,7 @@ function PxField({
   max: number;
   onCommit: (v: number) => void;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
   useEffect(() => {
@@ -351,7 +352,7 @@ function PxField({
     <button
       type="button"
       onClick={() => setEditing(true)}
-      title="Click to edit"
+      title={t("Click to edit")}
       className="rounded px-1 py-0.5 tabular-nums text-ink-muted transition-colors hover:bg-raised hover:text-ink"
     >
       {value}px

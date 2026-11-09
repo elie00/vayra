@@ -39,7 +39,10 @@ export function ProfileChip({
           collapsed ? "" : "lg:justify-start lg:px-3"
         }`}
       >
-        <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} />
+        {/* No profile-colour ring, as on the phone: a coloured circle round the picture read as Stremio. */}
+        <span className="shrink-0 rounded-full ring-1 ring-white/15">
+          <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} />
+        </span>
         <div className={`hidden min-w-0 flex-1 ${collapsed ? "" : "lg:block"}`}>
           <div className="truncate text-[14.5px] font-medium tracking-tight text-ink">
             {activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback")}
@@ -75,7 +78,9 @@ export function ProfileChip({
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-raised"
                 >
                   <span className="relative inline-flex shrink-0">
-                    <ProfileAvatar profile={p} fallbackAvatar={null} compact />
+                    <span className="rounded-full ring-1 ring-white/15">
+                      <ProfileAvatar profile={p} fallbackAvatar={null} compact />
+                    </span>
                     {p.passwordHash && (
                       <span className="absolute -bottom-0.5 -end-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink shadow-sm ring-1 ring-edge">
                         <Lock size={8} strokeWidth={2.6} />
@@ -164,7 +169,7 @@ export function ProfileChip({
   );
 }
 
-function ProfileAvatar({
+export function ProfileAvatar({
   profile,
   fallbackAvatar,
   compact,
@@ -175,12 +180,8 @@ function ProfileAvatar({
 }) {
   const dim = compact ? "h-9 w-9" : "h-12 w-12";
   const src = profile?.avatar ?? fallbackAvatar ?? null;
-  const ringStyle = profile?.color ? { boxShadow: `0 0 0 2px ${profile.color}` } : undefined;
   return (
-    <div
-      className={`${dim} shrink-0 overflow-hidden rounded-full bg-elevated`}
-      style={ringStyle}
-    >
+    <div className={`${dim} shrink-0 overflow-hidden rounded-full bg-elevated`}>
       {src ? (
         <img src={src} alt="" className="h-full w-full object-cover" draggable={false} />
       ) : (

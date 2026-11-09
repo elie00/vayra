@@ -118,7 +118,7 @@ const rails: Record<string, string> = {
   "Cult Classics": "Classiques cultes",
 
   "New Year, New Stories": "Nouvelle année, nouvelles histoires",
-  "Be My Valentine": "Sois ma Valentine",
+  "Be My Valentine": "Soyez ma Valentine",
   "Spooky Season": "Saison des frissons",
   "Holiday Warmth": "Chaleur des fêtes",
   "Summer Blockbusters": "Blockbusters de l'été",
@@ -133,9 +133,9 @@ const rails: Record<string, string> = {
   Skip: "Passer",
   "Not interested": "Pas intéressé",
 
-  "Show me more like this": "Montre-m'en plus comme ça",
-  "Show me less like this": "Montre-m'en moins comme ça",
-  "Tune your recommendations": "Ajuste tes recommandations",
+  "Show me more like this": "Montrez-m'en plus comme ça",
+  "Show me less like this": "Montrez-m'en moins comme ça",
+  "Tune your recommendations": "Ajustez vos recommandations",
   "Thumbs down hides this title from Featured. Thumbs up helps surface similar picks.":
     "Le pouce en bas masque ce titre des vedettes. Le pouce en haut fait remonter des choix similaires.",
 };

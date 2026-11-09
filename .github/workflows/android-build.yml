@@ -57,7 +57,9 @@ jobs:
           cache: pnpm
 
       - name: Install JS deps
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm setup:ui-fonts
 
       - name: Build Android (debug)
         env:

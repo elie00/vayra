@@ -2,8 +2,10 @@ import { useEffect, useRef } from "react";
 import { Tv } from "lucide-react";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useView } from "@/lib/view";
+import { useT } from "@/lib/i18n";
 
 export function TogetherLeaveForLiveModal() {
+  const t = useT();
   const { pendingLiveSrc, confirmLeavePartyForLive, cancelLeavePartyForLive } = useView();
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, Boolean(pendingLiveSrc));
@@ -19,7 +21,7 @@ export function TogetherLeaveForLiveModal() {
   }, [pendingLiveSrc, cancelLeavePartyForLive, confirmLeavePartyForLive]);
 
   if (!pendingLiveSrc) return null;
-  const name = pendingLiveSrc.title || "this channel";
+  const name = pendingLiveSrc.title || t("this channel");
 
   return (
     <div
@@ -39,9 +41,9 @@ export function TogetherLeaveForLiveModal() {
             <Tv size={20} strokeWidth={2} />
           </span>
           <div className="flex flex-col gap-1.5">
-            <h2 id="leave-for-live-title" className="text-[17px] font-semibold text-ink">Watch Live TV?</h2>
+            <h2 id="leave-for-live-title" className="text-[17px] font-semibold text-ink">{t("Watch Live TV?")}</h2>
             <p className="text-[14px] leading-relaxed text-ink-muted">
-              Live TV can't be synced in a watch party, so playing {name} will leave your party. Everyone else can keep watching together.
+              {t("Live TV can't be synced in a watch party, so playing {name} will leave your party. Everyone else can keep watching together.", { name })}
             </p>
           </div>
         </div>
@@ -51,14 +53,14 @@ export function TogetherLeaveForLiveModal() {
             onClick={cancelLeavePartyForLive}
             className="inline-flex h-11 items-center rounded-xl border border-edge px-5 text-[14px] font-semibold text-ink-muted transition-colors hover:text-ink"
           >
-            Stay in party
+            {t("Stay in party")}
           </button>
           <button
             type="button"
             onClick={confirmLeavePartyForLive}
             className="inline-flex h-11 items-center rounded-xl bg-ink px-5 text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            Leave & watch live
+            {t("Leave & watch live")}
           </button>
         </div>
       </div>

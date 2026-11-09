@@ -313,7 +313,7 @@ export function getStarterTemplate(): string {
       layout: "sidebar",
       cardStyle: "flat",
       buttonStyle: "flat",
-      fontPair: "sentient-switzer",
+      fontPair: "geist",
       bokeh: false,
       background: {
         image: "linear-gradient(180deg, #0a0b0d 0%, #18191c 100%)",

@@ -1,6 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.vayra" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+    <!-- VAYRA is always dark: a fixed dark theme in Mineral Monochrome, so the
+         launch, the recents card and system widgets never flash white or use
+         the Material template purple. -->
+    <style name="Theme.vayra" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/vayra_titanium</item>
+        <item name="colorPrimaryVariant">@color/vayra_graphite</item>
+        <item name="colorOnPrimary">@color/vayra_canvas</item>
+        <item name="colorSecondary">@color/vayra_titanium</item>
+        <item name="colorOnSecondary">@color/vayra_canvas</item>
+        <item name="android:windowBackground">@color/vayra_canvas</item>
     </style>
 </resources>

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 type PipSubtitle = {
   url: string;
@@ -22,6 +23,7 @@ type PipSession = {
 const STATE_PUBLISH_INTERVAL_MS = 1500;
 
 export function PipApp() {
+  const t = useT();
   useEffect(() => {
     if (import.meta.env.DEV) console.log("[pip] PipApp mounted");
   }, []);
@@ -300,7 +302,7 @@ export function PipApp() {
               <path d="M3 15v4a2 2 0 0 0 2 2h4" />
               <path d="M21 15v4a2 2 0 0 1-2 2h-4" />
             </svg>
-            Exit PiP
+            {t("Exit PiP")}
           </button>
           {session?.title && (
             <span className="pointer-events-none truncate text-[12px] font-medium text-white/75">
@@ -325,7 +327,7 @@ export function PipApp() {
           </div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
-              <PipBtn label="Back 30 seconds" onClick={back30}>
+              <PipBtn label={t("Back 30 seconds")} onClick={back30}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 12a9 9 0 1 0 3-6.7" />
                   <polyline points="3 4 3 10 9 10" />
@@ -335,7 +337,7 @@ export function PipApp() {
               <button
                 type="button"
                 onClick={playPause}
-                aria-label="Play / Pause"
+                aria-label={t("Play / Pause")}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white transition-[background-color,transform] hover:bg-white/22 active:scale-95"
               >
                 {playing ? (
@@ -349,7 +351,7 @@ export function PipApp() {
                   </svg>
                 )}
               </button>
-              <PipBtn label="Forward 30 seconds" onClick={fwd30}>
+              <PipBtn label={t("Forward 30 seconds")} onClick={fwd30}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12a9 9 0 1 1-3-6.7" />
                   <polyline points="21 4 21 10 15 10" />
@@ -361,7 +363,7 @@ export function PipApp() {
               {formatTime(position)} / {formatTime(duration)}
             </span>
             <div className="flex items-center gap-1.5">
-              <PipBtn label="Mute / Unmute" onClick={toggleMute}>
+              <PipBtn label={t("Mute / Unmute")} onClick={toggleMute}>
                 {muted || vol === 0 ? (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
@@ -383,7 +385,7 @@ export function PipApp() {
                 value={muted ? 0 : vol}
                 onChange={onVol}
                 className="h-1 w-16 cursor-pointer appearance-none rounded-full bg-white/20"
-                aria-label="Volume"
+                aria-label={t("Volume")}
               />
             </div>
           </div>

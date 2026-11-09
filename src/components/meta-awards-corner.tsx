@@ -5,6 +5,7 @@ import { awardSourceMeta, findAnyAwardWins, parseAwardYear } from "@/lib/anime-a
 import type { Meta } from "@/lib/cinemeta";
 import { awardSummary, useAwards, type AwardType } from "@/lib/providers/wikidata";
 import { mergeBundledAwards } from "@/lib/awards-history";
+import { useT } from "@/lib/i18n";
 
 const HEADLINE_FOR: Record<string, string> = {
   oscar: "Academy Award",
@@ -60,6 +61,7 @@ function useHostTier() {
 }
 
 function AnimeCorner({ name, year }: { name: string; year?: number }) {
+  const t = useT();
   const { ref, tier } = useHostTier();
   const wins = findAnyAwardWins(name, year);
   if (wins.length === 0 || tier === "hidden") return null;
@@ -80,12 +82,12 @@ function AnimeCorner({ name, year }: { name: string; year?: number }) {
         <span
           className={`truncate font-bold uppercase tracking-[0.18em] text-ink/55 ${compact ? "text-[9.5px]" : "text-[10.5px]"}`}
         >
-          {compact ? "Award Winner" : `${src.name} Winner`}
+          {compact ? t("Award Winner") : t("{name} Winner", { name: src.name })}
         </span>
         {!compact && <span className="truncate text-[13px] font-semibold text-ink/85">{subline}</span>}
         {!compact && otherWins > 0 && (
           <span className="truncate text-[11px] text-ink-subtle">
-            +{otherWins} more award{otherWins === 1 ? "" : "s"}
+            {t(otherWins === 1 ? "+{n} more award" : "+{n} more awards", { n: otherWins })}
           </span>
         )}
       </div>

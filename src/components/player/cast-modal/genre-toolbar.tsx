@@ -178,43 +178,43 @@ export function GenreToolbar({
           {t("Refine")}
         </span>
         <GenreSelect
-          label="From"
+          label={t("From")}
           value={filters.yearFrom}
           options={YEAR_OPTIONS}
           onChange={(v) => onFilters({ yearFrom: v })}
         />
         <GenreSelect
-          label="To"
+          label={t("To")}
           value={filters.yearTo}
           options={YEAR_OPTIONS}
           onChange={(v) => onFilters({ yearTo: v })}
         />
         <GenreSelect
-          label="Rating"
+          label={t("Rating")}
           value={filters.minRating}
           options={RATING_OPTIONS}
           onChange={(v) => onFilters({ minRating: v })}
         />
         <GenreSelect
-          label="Votes"
+          label={t("Votes")}
           value={filters.minVotes}
           options={VOTES_OPTIONS}
           onChange={(v) => onFilters({ minVotes: v })}
         />
         <GenreSelect
-          label="Language"
+          label={t("Language")}
           value={filters.language}
           options={LANGUAGE_OPTIONS}
           onChange={(v) => onFilters({ language: v })}
         />
         <GenreSelect
-          label="Country"
+          label={t("Country")}
           value={filters.country}
           options={COUNTRY_OPTIONS}
           onChange={(v) => onFilters({ country: v })}
         />
         <GenreSelect
-          label="Sort"
+          label={t("Sort")}
           value={filters.sort}
           options={SORT_OPTIONS}
           onChange={(v) => onFilters({ sort: v })}

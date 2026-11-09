@@ -63,7 +63,8 @@ import { LocalStreamCard } from "./play-picker/local-stream-card";
 import { SubtitleSelectStep } from "./play-picker/subtitle-select-step";
 import { SeasonDownloadOverlay } from "./play-picker/season-download-overlay";
 import type { SeasonDownloadProgress } from "@/lib/download/season-download";
-import { isWeb } from "@/lib/platform";
+import { isMobileTauri, isWeb } from "@/lib/platform";
+import { MobilePlayPicker } from "@/mobile/play-picker";
 import { shouldRevealLiteSourceFallback } from "@/lib/lite/runtime-settings";
 
 const TIER_ORDER: Tier[] = ["4K_DV", "4K_HDR", "4K", "1080p_HDR", "1080p", "720p", "SD", "ROUGH"];
@@ -715,6 +716,74 @@ export function PlayPicker({
     );
   }
 
+  const emptyLadder = (
+    <PickerEmptyLadder
+      meta={meta}
+      result={result}
+      addonsSettled={addonsSettled}
+      pipelineDone={pipelineDone}
+      streamIds={streamIds}
+      debridCount={debrids.length}
+      addonCount={addons?.length ?? 0}
+      allCount={allCount}
+      rawCount={rawCount}
+      strictMode={strictMode}
+      forceShowAll={forceShowAll}
+      onOpenLibrarySettings={() => openSettings("library")}
+      onOpenStreamingSettings={() => openSettings("streaming")}
+      onShowAll={() => setForceShowAll(true)}
+      onSearchWider={() => {
+        if (strictMode) setStrictMode(false);
+        else setForceShowAll(true);
+      }}
+    />
+  );
+
+  if (isMobileTauri()) {
+    const listed = filteredPicker && filteredPicker.all.length > 0 ? displayStreams : [];
+    return (
+      <MobilePlayPicker
+        meta={metaForDisplay}
+        episode={episode}
+        onBack={backToDetail}
+        onRefresh={refresh}
+        refreshing={loading}
+        backdropSrc={backdropSrc}
+        best={listed.length > 0 ? (currentPick && listed.includes(currentPick) ? currentPick : listed[0]) : null}
+        streams={listed}
+        searching={!pipelineDone && !maxWaitElapsed && listed.length === 0}
+        stillSearching={stillDiscovering ? Math.max(0, (addons?.length ?? 0) - addonCount) : 0}
+        failedStreams={failedStreams}
+        resolving={resolving?.stream ?? null}
+        onPlay={playManually}
+        isDownload={isDownload}
+        notices={
+          <>
+            {!isDownload && localMatch && (
+              <LocalStreamCard entry={localMatch} onPlay={() => openPlayerGated(localPlayerSrc(localMatch))} />
+            )}
+            {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
+            {isDownload && (
+              <p className="rounded-2xl bg-elevated px-4 py-3 type-footnote text-ink-muted">
+                {t("Choose a source to save offline. You can track progress on the Downloads page.")}
+              </p>
+            )}
+            {stubBanner && <p className="rounded-2xl bg-info/10 px-4 py-3 type-footnote text-info">{stubBanner}</p>}
+          </>
+        }
+        empty={emptyLadder}
+        resolveError={resolveError}
+        engineWarming={engineWarming}
+        filters={{
+          cachedOnly,
+          onToggleCached: uncachedHiddenCount > 0 || cachedOnly ? () => setCachedOnly((v) => !v) : undefined,
+          langOn: langFilter,
+          onToggleLang: preferredLangs.length > 0 && (langHiddenCount > 0 || langFilter) ? () => setLangFilter((v) => !v) : undefined,
+        }}
+      />
+    );
+  }
+
   return (
     <main ref={mainRef} className="absolute inset-0 z-50 overflow-y-auto bg-canvas">
       <BackdropLayer src={backdropSrc} />
@@ -771,26 +840,7 @@ export function PlayPicker({
           </div>
         )}
 
-        <PickerEmptyLadder
-          meta={meta}
-          result={result}
-          addonsSettled={addonsSettled}
-          pipelineDone={pipelineDone}
-          streamIds={streamIds}
-          debridCount={debrids.length}
-          addonCount={addons?.length ?? 0}
-          allCount={allCount}
-          rawCount={rawCount}
-          strictMode={strictMode}
-          forceShowAll={forceShowAll}
-          onOpenLibrarySettings={() => openSettings("library")}
-          onOpenStreamingSettings={() => openSettings("streaming")}
-          onShowAll={() => setForceShowAll(true)}
-          onSearchWider={() => {
-            if (strictMode) setStrictMode(false);
-            else setForceShowAll(true);
-          }}
-        />
+        {emptyLadder}
 
         {debrids.length > 0 && filteredPicker && filteredPicker.all.length > 0 && <CachedTip />}
 

@@ -30,6 +30,7 @@ export type ThemeButtonStyle = "flat" | "glossy" | "minui" | "crunch" | "noir" |
 export type ActiveThemeId = ThemePresetId | "custom" | `user:${string}`;
 
 export type FontPairId =
+  | "geist"
   | "sentient-switzer"
   | "fraunces-inter"
   | "general-sans"
@@ -1607,10 +1608,17 @@ export const TEMPLATE_THEMES: ThemePreset[] = [
 ];
 
 export const FONT_PAIRS: Record<FontPairId, FontPair> = {
+  geist: {
+    id: "geist",
+    name: "Geist Serif + Geist",
+    blurb: "Default. Serif titles, Geist for everything else.",
+    display: '"Geist Serif", "Iowan Old Style", "Georgia", serif',
+    sans: '"Geist", "Inter", system-ui, sans-serif',
+  },
   "sentient-switzer": {
     id: "sentient-switzer",
     name: "Sentient + Switzer",
-    blurb: "Default. Humanist serif, warm sans.",
+    blurb: "Humanist serif, warm sans.",
     display: '"Sentient", "Iowan Old Style", "Georgia", serif',
     sans: '"Switzer", "Inter", system-ui, sans-serif',
   },
@@ -1702,7 +1710,7 @@ export const DEFAULT_THEME: ThemeSettings = {
   preset: "cool-grey",
   backgroundImage: null,
   backgroundDim: 0.65,
-  fontPair: "sentient-switzer",
+  fontPair: "geist",
   customColors: null,
 };
 
@@ -1761,10 +1769,9 @@ function resolveTokens(theme: ThemeSettings): Record<string, string> {
   return THEME_PRESETS["cool-grey"].tokens;
 }
 
+// Geist on every theme and platform, unless a pair was picked in Appearance.
 export function activeFontPair(theme: ThemeSettings): FontPairId {
-  if (hasNativeDesktopUx() && !theme.fontPairOverride) return "system";
-  const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
-  return theme.fontPairOverride ? theme.fontPair : preset?.fontPair ?? theme.fontPair;
+  return theme.fontPairOverride ? theme.fontPair : "geist";
 }
 
 export function applyTheme(theme: ThemeSettings): void {
@@ -1775,7 +1782,8 @@ export function applyTheme(theme: ThemeSettings): void {
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   root.style.colorScheme = preset?.colorScheme ?? "dark";
   const fontPairId = activeFontPair(theme);
-  const pair = FONT_PAIRS[fontPairId] ?? FONT_PAIRS["sentient-switzer"];
+  const pair = FONT_PAIRS[fontPairId] ?? FONT_PAIRS.geist;
+  root.dataset.fontPair = theme.customFontId ? "custom" : pair.id;
   if (theme.customFontId) {
     const custom = `"harbor-font-${theme.customFontId}"`;
     root.style.setProperty("--font-display", `${custom}, ${pair.display}`);

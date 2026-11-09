@@ -21,15 +21,23 @@ describe("theme decisions", () => {
     vi.stubGlobal("navigator", { userAgent: "Macintosh", platform: "MacIntel" });
     for (const preset of Object.values(THEME_PRESETS)) {
       expect(activeLayout({ ...DEFAULT_THEME, preset: preset.id })).toBe("sidebar");
-      expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id })).toBe("system");
+      expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id })).toBe("geist");
       expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id, fontPairOverride: true, fontPair: "general-sans" })).toBe("general-sans");
     }
   });
 
-  it("uses one native font family across all three new palettes", () => {
+  it("sets every palette in Geist, phone included", () => {
     for (const preset of ["obsidian", "sage", "ivory"] as const) {
-      expect(activeFontPair({ ...DEFAULT_THEME, preset })).toBe("system");
+      expect(activeFontPair({ ...DEFAULT_THEME, preset })).toBe("geist");
     }
+    vi.stubGlobal("window", { __TAURI_INTERNALS__: {} });
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Linux; Android 15) wv", platform: "Linux aarch64" });
+    expect(activeFontPair({ ...DEFAULT_THEME, preset: "obsidian" })).toBe("geist");
+    expect(FONT_PAIRS.geist.display).toMatch(/^"Geist Serif"/);
+    expect(FONT_PAIRS.geist.sans).toMatch(/^"Geist"/);
+  });
+
+  it("keeps the native system pair one family across sizes", () => {
     // Same family; only Windows 11's Segoe UI Variable picks a display or text optical size.
     expect(FONT_PAIRS.system.display.replace("Segoe UI Variable Display", "Segoe UI Variable Text")).toBe(
       FONT_PAIRS.system.sans,

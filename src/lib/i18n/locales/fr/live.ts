@@ -19,9 +19,9 @@ const live: Record<string, string> = {
   "Wrong channel or source?": "Mauvaise chaîne ou mauvaise source ?",
   "Wrong episode or quality?": "Mauvais épisode ou mauvaise qualité ?",
   "No channels match. Try a different category or clear the search.":
-    "Aucune chaîne ne correspond. Essaie une autre catégorie ou efface la recherche.",
+    "Aucune chaîne ne correspond. Essayez une autre catégorie ou effacez la recherche.",
   "No favorites yet. Star a channel to pin it here.":
-    "Aucun favori pour l'instant. Mets une étoile à une chaîne pour l'épingler ici.",
+    "Aucun favori pour l'instant. Mettez une étoile à une chaîne pour l'épingler ici.",
   "Search {n} channels": "Rechercher parmi {n} chaînes",
   "Search {n} favorite": "Rechercher parmi {n} favori",
   "Search {n} favorites": "Rechercher parmi {n} favoris",
@@ -47,11 +47,11 @@ const live: Record<string, string> = {
   "Saved as .ts (works in mpv, VLC, ffmpeg)":
     "Enregistré en .ts (compatible mpv, VLC, ffmpeg)",
   "mpv is required for recording. Install mpv and restart VAYRA.":
-    "mpv est requis pour l'enregistrement. Installe mpv et redémarre VAYRA.",
+    "mpv est requis pour l'enregistrement. Installez mpv et redémarrez VAYRA.",
 
   // New Additions:
   "Loading more channels ({n1} of {n2})": "Chargement d'autres chaînes ({n1} sur {n2})",
-  "Showing first {n1} of {n2} channels. Use search or a category to narrow down.": "Affichage des {n1} premières chaînes sur {n2}. Utilise la recherche ou une catégorie pour affiner.",
+  "Showing first {n1} of {n2} channels. Use search or a category to narrow down.": "Affichage des {n1} premières chaînes sur {n2}. Utilisez la recherche ou une catégorie pour affiner.",
   "All {n} channels loaded": "Les {n} chaînes sont toutes chargées",
   "Try again": "Réessayer",
   "Copy error": "Copier l'erreur",
@@ -60,35 +60,35 @@ const live: Record<string, string> = {
   "Copy URL": "Copier l'URL",
   "Technical details": "Détails techniques",
   "Provider returned a webpage, not a playlist": "Le fournisseur a renvoyé une page web, pas une playlist",
-  "Credentials are likely expired or the subscription is inactive. Edit the playlist URL above, or contact your provider.": "Les identifiants ont probablement expiré ou l'abonnement est inactif. Modifie l'URL de la playlist ci-dessus, ou contacte ton fournisseur.",
+  "Credentials are likely expired or the subscription is inactive. Edit the playlist URL above, or contact your provider.": "Les identifiants ont probablement expiré ou l'abonnement est inactif. Modifiez l'URL de la playlist ci-dessus, ou contactez votre fournisseur.",
   "Account is not active": "Le compte n'est pas actif",
-  "This Xtream account is expired, banned, or disabled on the provider side. Renew or confirm with your provider.": "Ce compte Xtream est expiré, banni ou désactivé côté fournisseur. Renouvelle-le ou vérifie avec ton fournisseur.",
+  "This Xtream account is expired, banned, or disabled on the provider side. Renew or confirm with your provider.": "Ce compte Xtream est expiré, banni ou désactivé côté fournisseur. Renouvelez-le ou vérifiez avec votre fournisseur.",
   "Xtream login was rejected": "La connexion Xtream a été refusée",
-  "The server URL, username, or password is wrong. Edit the playlist and re-check the credentials your provider sent.": "L'URL du serveur, le nom d'utilisateur ou le mot de passe est erroné. Modifie la playlist et revérifie les identifiants envoyés par ton fournisseur.",
+  "The server URL, username, or password is wrong. Edit the playlist and re-check the credentials your provider sent.": "L'URL du serveur, le nom d'utilisateur ou le mot de passe est erroné. Modifiez la playlist et revérifiez les identifiants envoyés par votre fournisseur.",
   "Provider did not return valid data": "Le fournisseur n'a pas renvoyé de données valides",
   "The server replied with a webpage instead of Xtream data. The account may be expired, or the server URL is not an Xtream panel.": "Le serveur a répondu avec une page web au lieu de données Xtream. Le compte est peut-être expiré, ou l'URL du serveur n'est pas un panneau Xtream.",
   "Bad username or password": "Nom d'utilisateur ou mot de passe incorrect",
-  "The credentials in the URL are wrong. Edit the playlist and double check the username and password against what your provider sent.": "Les identifiants dans l'URL sont erronés. Modifie la playlist et revérifie le nom d'utilisateur et le mot de passe par rapport à ce que ton fournisseur a envoyé.",
+  "The credentials in the URL are wrong. Edit the playlist and double check the username and password against what your provider sent.": "Les identifiants dans l'URL sont erronés. Modifiez la playlist et revérifiez le nom d'utilisateur et le mot de passe par rapport à ce que votre fournisseur a envoyé.",
   "Provider blocked the request": "Le fournisseur a bloqué la requête",
-  "Your IP or device is blocked. Some providers geo restrict or limit how many devices can connect at once.": "Ton IP ou ton appareil est bloqué. Certains fournisseurs restreignent par zone géographique ou limitent le nombre d'appareils connectés en même temps.",
+  "Your IP or device is blocked. Some providers geo restrict or limit how many devices can connect at once.": "Votre IP ou votre appareil est bloqué. Certains fournisseurs restreignent par zone géographique ou limitent le nombre d'appareils connectés en même temps.",
   "Playlist URL not found": "URL de playlist introuvable",
-  "The server responded but the playlist is not at that URL. Check for typos and verify with your provider.": "Le serveur a répondu mais la playlist n'est pas à cette URL. Vérifie les fautes de frappe et confirme avec ton fournisseur.",
+  "The server responded but the playlist is not at that URL. Check for typos and verify with your provider.": "Le serveur a répondu mais la playlist n'est pas à cette URL. Vérifiez les fautes de frappe et confirmez avec votre fournisseur.",
   "Provider is rate limiting": "Le fournisseur limite les requêtes",
-  "Too many requests from your IP. Wait a minute and try again.": "Trop de requêtes depuis ton IP. Attends une minute et réessaie.",
+  "Too many requests from your IP. Wait a minute and try again.": "Trop de requêtes depuis votre IP. Attendez une minute et réessayez.",
   "Provider refused service": "Le fournisseur a refusé le service",
-  "Most common cause: this account is at its max simultaneous connections. Close other devices and players using these credentials.": "Cause la plus fréquente : ce compte a atteint son maximum de connexions simultanées. Ferme les autres appareils et lecteurs qui utilisent ces identifiants.",
+  "Most common cause: this account is at its max simultaneous connections. Close other devices and players using these credentials.": "Cause la plus fréquente : ce compte a atteint son maximum de connexions simultanées. Fermez les autres appareils et lecteurs qui utilisent ces identifiants.",
   "Server did not respond": "Le serveur n'a pas répondu",
-  "The playlist server is down or your network is blocking it. Try again in a few minutes.": "Le serveur de la playlist est hors service ou ton réseau le bloque. Réessaie dans quelques minutes.",
+  "The playlist server is down or your network is blocking it. Try again in a few minutes.": "Le serveur de la playlist est hors service ou votre réseau le bloque. Réessayez dans quelques minutes.",
   "Could not resolve hostname": "Impossible de résoudre le nom d'hôte",
-  "The URL hostname is wrong or no longer exists. Many providers rotate domains; ask your provider for an updated playlist URL.": "Le nom d'hôte de l'URL est erroné ou n'existe plus. Beaucoup de fournisseurs changent régulièrement de domaine ; demande à ton fournisseur une URL de playlist à jour.",
+  "The URL hostname is wrong or no longer exists. Many providers rotate domains; ask your provider for an updated playlist URL.": "Le nom d'hôte de l'URL est erroné ou n'existe plus. Beaucoup de fournisseurs changent régulièrement de domaine ; demandez à votre fournisseur une URL de playlist à jour.",
   "Connection refused": "Connexion refusée",
   "The playlist server actively refused the connection.": "Le serveur de la playlist a activement refusé la connexion.",
   "Connection reset by server": "Connexion réinitialisée par le serveur",
   "The server rejected the request. Some providers block generic clients; verify the credentials work in their official app first.": "Le serveur a rejeté la requête. Certains fournisseurs bloquent les clients génériques ; vérifie d'abord que les identifiants fonctionnent dans leur application officielle.",
   "Could not reach playlist server": "Impossible de joindre le serveur de la playlist",
-  "The host did not respond. The URL may have expired (many providers rotate domains), the server is down, or your network is blocking it. Contact your provider for an updated URL.": "L'hôte n'a pas répondu. L'URL a peut-être expiré (beaucoup de fournisseurs changent de domaine), le serveur est hors service, ou ton réseau le bloque. Contacte ton fournisseur pour une URL à jour.",
+  "The host did not respond. The URL may have expired (many providers rotate domains), the server is down, or your network is blocking it. Contact your provider for an updated URL.": "L'hôte n'a pas répondu. L'URL a peut-être expiré (beaucoup de fournisseurs changent de domaine), le serveur est hors service, ou votre réseau le bloque. Contactez votre fournisseur pour une URL à jour.",
   "Server returned an empty response": "Le serveur a renvoyé une réponse vide",
-  "The server is reachable but is not sending any data. Check the URL or contact your provider.": "Le serveur est joignable mais n'envoie aucune donnée. Vérifie l'URL ou contacte ton fournisseur.",
+  "The server is reachable but is not sending any data. Check the URL or contact your provider.": "Le serveur est joignable mais n'envoie aucune donnée. Vérifiez l'URL ou contactez votre fournisseur.",
   "Playlist contained no channels": "La playlist ne contenait aucune chaîne",
   "The URL is valid but the playlist is empty. The provider may be in maintenance, or the URL is misconfigured.": "L'URL est valide mais la playlist est vide. Le fournisseur est peut-être en maintenance, ou l'URL est mal configurée.",
   "Playlist is too large": "La playlist est trop volumineuse",
@@ -101,13 +101,13 @@ const live: Record<string, string> = {
   "Loading more channels ({shown} of {total})":
     "Chargement d'autres chaînes ({shown} sur {total})",
   "Showing first {shown} of {total} channels. Use search or a category to narrow down.":
-    "Affichage des {shown} premières chaînes sur {total}. Utilise la recherche ou une catégorie pour affiner.",
+    "Affichage des {shown} premières chaînes sur {total}. Utilisez la recherche ou une catégorie pour affiner.",
   "All {total} channels loaded": "Les {total} chaînes sont toutes chargées",
   "Loading program listings… channels are ready to play in the meantime.":
     "Chargement des programmes… les chaînes sont déjà lisibles en attendant.",
   "Loading playlist...": "Chargement de la playlist...",
   "Try a different category or clear your filters.":
-    "Essaie une autre catégorie ou efface tes filtres.",
+    "Essayez une autre catégorie ou effacez vos filtres.",
 
   "Channel categories": "Catégories de chaînes",
   "Filter categories": "Filtrer les catégories",
@@ -125,7 +125,7 @@ const live: Record<string, string> = {
   "No EPG channels match. This playlist's EPG source may be empty.":
     "Aucune chaîne EPG ne correspond. La source EPG de cette playlist est peut-être vide.",
   "Search {n} EPG channels": "Rechercher parmi {n} chaînes EPG",
-  "Drag to resize the channel column": "Fais glisser pour redimensionner la colonne des chaînes",
+  "Drag to resize the channel column": "Faites glisser pour redimensionner la colonne des chaînes",
 
   "Live & Upcoming": "En direct et à venir",
   "{n} LIVE": "{n} EN DIRECT",
@@ -148,29 +148,29 @@ const live: Record<string, string> = {
   "Yellow Cards": "Cartons jaunes",
   "Red Cards": "Cartons rouges",
 
-  "Connect a playlist to get started.": "Connecte une playlist pour commencer.",
+  "Connect a playlist to get started.": "Connectez une playlist pour commencer.",
   "Connect any IPTV provider. Channels are sorted by category, EPG is pulled automatically when your provider supplies it, and playback runs through native libmpv.":
-    "Connecte n'importe quel fournisseur IPTV. Les chaînes sont triées par catégorie, l'EPG est récupéré automatiquement quand ton fournisseur le propose, et la lecture passe par libmpv natif.",
+    "Connectez n'importe quel fournisseur IPTV. Les chaînes sont triées par catégorie, l'EPG est récupéré automatiquement quand votre fournisseur le propose, et la lecture passe par libmpv natif.",
   "Connect a provider": "Connecter un fournisseur",
   "Multi-view": "Multi-vue",
   "Four channels at once, pre-spawned and swap-ready.":
     "Quatre chaînes à la fois, pré-lancées et prêtes à permuter.",
   "Live EPG": "EPG en direct",
   "Now-playing and a seven-day guide when your provider supplies it.":
-    "Programme en cours et guide sur sept jours quand ton fournisseur le propose.",
+    "Programme en cours et guide sur sept jours quand votre fournisseur le propose.",
   "Native libmpv": "libmpv natif",
   "HEVC, HDR, TrueHD, plus real subtitle and audio menus.":
     "HEVC, HDR, TrueHD, plus de vrais menus de sous-titres et d'audio.",
   "Local only": "Local uniquement",
-  "Credentials stored on this device. Nothing leaves your machine.": "Les identifiants sont stockés sur cet appareil. Rien ne quitte ta machine.",
+  "Credentials stored on this device. Nothing leaves your machine.": "Les identifiants sont stockés sur cet appareil. Rien ne quitte votre machine.",
   "M3U playlist": "Playlist M3U",
   "Direct .m3u or get.php URL with credentials baked in.": "URL .m3u directe ou get.php avec identifiants intégrés.",
   "Xtream codes": "Codes Xtream",
   "Server URL plus username and password.": "URL du serveur avec nom d'utilisateur et mot de passe.",
   "EPG / XMLTV only": "EPG / XMLTV uniquement",
   "Standalone guide source to attach to existing playlists.": "Source de guide autonome à rattacher aux playlists existantes.",
-  "Connect your provider.": "Connecte ton fournisseur.",
-  "Pick how you authenticate. Everything is stored locally.": "Choisis ton mode d'authentification. Tout est stocké en local.",
+  "Connect your provider.": "Connectez votre fournisseur.",
+  "Pick how you authenticate. Everything is stored locally.": "Choisissez votre mode d'authentification. Tout est stocké en local.",
   "Display name": "Nom d'affichage",
   "Optional": "Facultatif",
   "Playlist URL": "URL de la playlist",
@@ -181,12 +181,12 @@ const live: Record<string, string> = {
   "EPG / XMLTV URL": "URL EPG / XMLTV",
   "Cancel": "Annuler",
   "Save and continue": "Enregistrer et continuer",
-  "Stored locally on this device. Credentials never leave your machine. If a channel fails to play, your provider may rate-limit shared accounts: refresh the playlist or check with them.": "Stocké en local sur cet appareil. Les identifiants ne quittent jamais ta machine. Si une chaîne ne se lance pas, ton fournisseur limite peut-être les comptes partagés : actualise la playlist ou vérifie avec lui.",
+  "Stored locally on this device. Credentials never leave your machine. If a channel fails to play, your provider may rate-limit shared accounts: refresh the playlist or check with them.": "Stocké en local sur cet appareil. Les identifiants ne quittent jamais votre machine. Si une chaîne ne se lance pas, votre fournisseur limite peut-être les comptes partagés : actualisez la playlist ou vérifiez avec lui.",
   "Xtream provider": "Fournisseur Xtream",
   "EPG source": "Source EPG",
   "My playlist": "Ma playlist",
 
-  "Your TV": "Ta TV",
+  "Your TV": "Votre TV",
   "at {n}": "à {n}",
 
   "Pick channels into the grid below. Audio follows the highlighted tile.": "Place des chaînes dans la grille ci-dessous. Le son suit la tuile en surbrillance.",
@@ -202,7 +202,7 @@ const live: Record<string, string> = {
   "Delete": "Supprimer",
   "URL + EPG saved": "URL + EPG enregistrés",
   "URL saved": "URL enregistrée",
-  "Switch to this playlist first": "Passe d'abord à cette playlist",
+  "Switch to this playlist first": "Passez d'abord à cette playlist",
 
   "Type": "Type",
   "M3U URL": "URL M3U",
@@ -320,9 +320,9 @@ const live: Record<string, string> = {
     "Cette playlist ne contient pas de séries. Elle ne propose peut-être que des chaînes en direct, ou un compte Xtream qui expose les séries séparément.",
   "No shows here.": "Aucune série ici.",
   "Showing {shown} of {total} movies. Search to find the rest.":
-    "Affichage de {shown} films sur {total}. Fais une recherche pour trouver le reste.",
+    "Affichage de {shown} films sur {total}. Faites une recherche pour trouver le reste.",
   "Showing {shown} of {total} shows. Search to find the rest.":
-    "Affichage de {shown} séries sur {total}. Fais une recherche pour trouver le reste.",
+    "Affichage de {shown} séries sur {total}. Faites une recherche pour trouver le reste.",
 };
 
 export default live;

@@ -10,7 +10,7 @@ import { STARTER_GALLERY_THEMES } from "../../../components/theme-gallery-data";
 describe("French application coverage", () => {
   const keys: string[] = [
     ...collectTranslationKeys(fileURLToPath(new URL("../../../", import.meta.url))),
-    ...collectDisplayKeys(["../../../views/settings.tsx", "../../../views/settings/nav.tsx"].map((path) => fileURLToPath(new URL(path, import.meta.url)))),
+    ...collectDisplayKeys(["../../../views/settings.tsx", "../../../views/settings/nav.tsx", "../../../mobile/settings-list.tsx"].map((path) => fileURLToPath(new URL(path, import.meta.url)))),
     ...[...Object.values(THEME_PRESETS), ...BETA_THEMES, ...FEATURED_CUSTOM_THEMES, ...TEMPLATE_THEMES,
       ...Object.values(FONT_PAIRS), ...STARTER_GALLERY_THEMES].map((entry) => entry.blurb),
     "VAYRA default", "Obsidian", "Sage", "Ivory", "System UI",

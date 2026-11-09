@@ -5,13 +5,15 @@ import { useView } from "@/lib/view";
 import { NAV_GROUPS, SETTINGS_OPTIONS } from "./nav";
 import { settingsAnchor, type SectionId } from "./shared";
 
+// The account comes first, on its own, as on the phone.
 export const MAC_SETTINGS_GROUPS: { id: SectionId; label: string; children: SectionId[] }[] = [
+  { id: "account", label: "Account", children: [] },
   { id: "basics", label: "Overview", children: [] },
   { id: "player", label: "Playback", children: ["mpv", "anime", "playerLayout", "hotkeys"] },
   { id: "language", label: "Languages", children: [] },
   { id: "theme", label: "Appearance", children: [] },
   { id: "downloads", label: "Downloads", children: [] },
-  { id: "connections", label: "Extensions and connections", children: ["account", "library", "streaming", "trakt", "anilist", "mal", "simkl", "letterboxd", "cira"] },
+  { id: "connections", label: "Extensions and connections", children: ["library", "streaming", "trakt", "anilist", "mal", "simkl", "letterboxd", "cira"] },
   { id: "privacy", label: "Privacy and backups", children: [] },
   { id: "advanced", label: "Advanced", children: ["streamFilters", "p2p", "relay", "webhooks", "bug"] },
 ];

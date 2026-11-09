@@ -16,6 +16,18 @@ high-chroma brand accent.
 Supporting surfaces stay neutral: `#111214` for surfaces, `#18191C` for
 elevated content, `#242529` for raised controls, and `#737579` for subtle text.
 
+## Phones
+
+The Android app keeps Mineral Monochrome. A phone briefly tried a night-blue
+palette with a champagne accent (October 2026); it was withdrawn to keep one
+VAYRA identity across devices. What colours a phone's home is the content: the
+current hero artwork is blurred into the top of the page under the header, as
+streaming apps do, without any brand gradient.
+
+The interface type is Sentient (display) and Switzer (text), embedded through
+`pnpm setup:ui-fonts`. The Mac keeps the system font by default, so the phone's
+header wordmark is set in Switzer to match the Mac's San Francisco wordmark.
+
 ## Rules
 
 - The VAYRA mark keeps the approved two-ribbon geometry unchanged.

@@ -19,7 +19,8 @@ import { ProgrammeSchedule } from "./detail/programme-schedule";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
-import { hasNativeDesktopUx } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
+import { MobileDetail } from "@/mobile/detail";
 import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
@@ -105,6 +106,7 @@ import { Synopsis } from "./detail/synopsis";
 import { CastCard } from "./detail/cast-card";
 import { PreviewIcon } from "./detail/preview-icon";
 import { HeroActionOverflow, useHeroActionOverflow } from "./detail/hero-action-overflow";
+import { PlayOnMacButton } from "./detail/play-on-mac-button";
 import { HeroRatings } from "./detail/hero-ratings";
 import { TrailerOverlay } from "./detail/trailer-overlay";
 import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
@@ -1125,6 +1127,45 @@ export function DetailView({
     </>
   );
 
+  if (isMobileTauri()) {
+    return (
+      <MobileDetail
+        meta={meta}
+        playMeta={playMeta}
+        title={title}
+        logo={logo}
+        backdrop={backdrop}
+        year={year}
+        rating={rating}
+        runtime={runtime}
+        overview={overview}
+        isSeries={isSeries}
+        isAnime={isAnime}
+        detail={detail}
+        recommendations={recommendations}
+        similar={similar}
+        cinemetaVideos={cinemetaFull?.videos}
+        stremioWatched={stremioWatched}
+        animeEpisodes={animeEpisodes}
+        franchise={franchise}
+        animeCanonicalId={animeCanonicalId}
+        inWatchlist={inWatchlist}
+        onToggleWatchlist={() =>
+          toggleWatchlist({
+            id: meta.id,
+            type: meta.type,
+            name: title || meta.name,
+            poster: meta.poster ?? detail?.poster,
+            imdbId: detail?.imdbId,
+          })
+        }
+        onPlay={() => void smartPlay(false)}
+        playLabel={smartPlayLabel}
+        trailerCandidate={trailerCandidate}
+      />
+    );
+  }
+
   return (
     <main
       ref={scrollRef}
@@ -1204,6 +1245,12 @@ export function DetailView({
                     {smartPlayLabel}
                   </button>
                   </PlayModeHint>
+                )}
+                {!upcoming && !isAnime && (
+                  <PlayOnMacButton
+                    meta={playMeta}
+                    episode={isSeries ? (lastPlay ?? { season: 1, episode: 1 }) : undefined}
+                  />
                 )}
                 {hasNativeDesktopUx() && actionStage < 2 && (
                   <button type="button" className="mac-secondary-button" onClick={() => void smartPlay(true)}>{t("Choose another source")}</button>

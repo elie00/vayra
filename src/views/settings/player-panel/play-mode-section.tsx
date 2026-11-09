@@ -1,11 +1,13 @@
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { isWeb } from "@/lib/platform";
+import { isMobileTauri, isWeb } from "@/lib/platform";
 
 export function PlayModePanel() {
   const { settings, update } = useSettings();
   const t = useT();
   const lite = isWeb();
+  // A phone has no window to restore and shows its own volume level on swipe.
+  const phone = isMobileTauri();
 
   const mode = settings.seasonSourceLock ? "season" : settings.instantPlay ? "instant" : "manual";
   const selectMode = (id: "instant" | "manual" | "season") => {
@@ -151,77 +153,82 @@ export function PlayModePanel() {
           </span>
         </div>
       </button>
-      <button
-        type="button"
-        onClick={() => update({ fullscreenRestorePosition: !settings.fullscreenRestorePosition })}
-        className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
-      >
-        <span
-          className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
-            settings.fullscreenRestorePosition ? "justify-end bg-accent" : "justify-start bg-edge"
-          }`}
-        >
-          <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-[15px] font-semibold text-ink">{t("Restore window position after fullscreen")}</span>
-          <span className="text-[12.5px] leading-snug text-ink-muted">
-            {t("When you exit fullscreen, return the window to exactly where it was. Turn off to center it on screen instead.")}
-          </span>
-        </div>
-      </button>
-      <button
-        type="button"
-        onClick={() => update({ playerVolumeHud: !settings.playerVolumeHud })}
-        className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
-      >
-        <span
-          className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
-            settings.playerVolumeHud ? "justify-end bg-accent" : "justify-start bg-edge"
-          }`}
-        >
-          <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-[15px] font-semibold text-ink">{t("Volume pop-up while watching")}</span>
-          <span className="text-[12.5px] leading-snug text-ink-muted">
-            {t("Show a quick volume overlay when you change volume with the player controls hidden, so keyboard and scroll wheel changes are always visible.")}
-          </span>
-        </div>
-      </button>
-      {settings.playerVolumeHud && (
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4">
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-[15px] font-semibold text-ink">{t("Pop-up position")}</span>
-            <span className="text-[12.5px] leading-snug text-ink-muted">
-              {t("Where the volume overlay appears on the video.")}
+      {!phone && (
+        <>
+          <button
+            type="button"
+            onClick={() => update({ fullscreenRestorePosition: !settings.fullscreenRestorePosition })}
+            className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
+          >
+            <span
+              className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                settings.fullscreenRestorePosition ? "justify-end bg-accent" : "justify-start bg-edge"
+              }`}
+            >
+              <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
             </span>
-          </div>
-          <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
-            {(
-              [
-                { id: "center", label: t("Center") },
-                { id: "top", label: t("Top") },
-                { id: "top-left", label: t("Top left") },
-                { id: "top-right", label: t("Top right") },
-              ] as const
-            ).map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => update({ playerVolumeHudPosition: p.id })}
-                aria-pressed={settings.playerVolumeHudPosition === p.id}
-                className={`rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                  settings.playerVolumeHudPosition === p.id
-                    ? "bg-ink text-canvas"
-                    : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated hover:text-ink"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="text-[15px] font-semibold text-ink">{t("Restore window position after fullscreen")}</span>
+              <span className="text-[12.5px] leading-snug text-ink-muted">
+                {t("When you exit fullscreen, return the window to exactly where it was. Turn off to center it on screen instead.")}
+              </span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => update({ playerVolumeHud: !settings.playerVolumeHud })}
+            className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
+          >
+            <span
+              className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                settings.playerVolumeHud ? "justify-end bg-accent" : "justify-start bg-edge"
+              }`}
+            >
+              <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="text-[15px] font-semibold text-ink">{t("Volume pop-up while watching")}</span>
+              <span className="text-[12.5px] leading-snug text-ink-muted">
+                {t("Show a quick volume overlay when you change volume with the player controls hidden, so keyboard and scroll wheel changes are always visible.")}
+              </span>
+            </div>
+          </button>
+          {settings.playerVolumeHud && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-[15px] font-semibold text-ink">{t("Pop-up position")}</span>
+                <span className="text-[13px] leading-snug text-ink-muted">
+                  {t("Where the volume overlay appears on the video.")}
+                </span>
+              </div>
+              {/* Under the text, scrolling sideways inside the card when narrow. */}
+              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {(
+                  [
+                    { id: "center", label: t("Center") },
+                    { id: "top", label: t("Top") },
+                    { id: "top-left", label: t("Top left") },
+                    { id: "top-right", label: t("Top right") },
+                  ] as const
+                ).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => update({ playerVolumeHudPosition: p.id })}
+                    aria-pressed={settings.playerVolumeHudPosition === p.id}
+                    className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold transition-colors ${
+                      settings.playerVolumeHudPosition === p.id
+                        ? "bg-ink text-canvas"
+                        : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated hover:text-ink"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

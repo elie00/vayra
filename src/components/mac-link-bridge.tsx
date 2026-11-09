@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { emitAppFeedback } from "@/lib/app-feedback";
-import { onLinkStatus, pairWithMac, readPairing, setLinkStatus, startLink, type PairedMac } from "@/lib/connect/link";
+import { connectResumes, lumaResumesFromConnect, ownResumes, sendHistoryToMac } from "@/lib/connect/history";
+import { onLinkStatus, pairWithMac, readPairing, setLinkStatus, startLink, useLinkStatus, type PairedMac } from "@/lib/connect/link";
+import { lumaStore, useLuma } from "@/lib/luma";
 import { onConnectPair } from "@/lib/deep-link";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -16,6 +18,41 @@ export function MacLinkBridge() {
   const [offer, setOffer] = useState<{ url: string; mac: PairedMac } | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  // Where the Mac left off joins this phone's Continue Watching.
+  const { connected, history } = useLinkStatus();
+  const imported = useRef("");
+  useEffect(() => {
+    if (!history?.length) return;
+    const key = JSON.stringify(history);
+    if (key === imported.current) return;
+    imported.current = key;
+    lumaStore().importResumes(lumaResumesFromConnect(history));
+  }, [history]);
+
+  // And where this phone left off goes to the Mac, at most every 15 seconds
+  // while it plays.
+  const luma = useLuma();
+  const mine = JSON.stringify(
+    ownResumes(
+      connectResumes(
+        luma.document.preferences.rememberActivity
+          ? luma.document.resumes.map((entry) => ({ kind: "local" as const, entry, at: entry.updatedAt }))
+          : [],
+      ),
+      history,
+    ),
+  );
+  const lastSent = useRef(0);
+  useEffect(() => {
+    if (!connected) return;
+    const wait = Math.max(0, lastSent.current + 15_000 - Date.now());
+    const timer = window.setTimeout(() => {
+      lastSent.current = Date.now();
+      void sendHistoryToMac(JSON.parse(mine)).catch(() => { /* The Mac went away: sent on the next connection. */ });
+    }, wait);
+    return () => window.clearTimeout(timer);
+  }, [mine, connected]);
 
   useEffect(() => {
     let cancelled = false;

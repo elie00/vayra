@@ -2,10 +2,12 @@ import { useEffect, useRef } from "react";
 import { isMobileTauri } from "@/lib/platform";
 import { useView } from "@/lib/view";
 import { useSearch } from "@/lib/search-context";
+import { consumeSettingsBack } from "@/mobile/settings-back";
 import { useTogether } from "@/lib/together/provider";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 import { getPlusOpen, setPlusOpen } from "@/mobile/shell";
 import { closeMetaPreview, isMetaPreviewOpen } from "@/mobile/meta-preview";
+import { closeMacRemote, isMacRemoteOpen } from "@/mobile/mac-remote";
 import { MetaPreviewSheet } from "@/mobile/meta-preview-sheet";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 
@@ -57,6 +59,10 @@ export function MobileIntegration() {
         closeMetaPreview();
         return "handled";
       }
+      if (isMacRemoteOpen()) {
+        closeMacRemote();
+        return "handled";
+      }
       if (getPlusOpen()) {
         setPlusOpen(false);
         return "handled";
@@ -69,6 +75,7 @@ export function MobileIntegration() {
         a.setSearchOpen(false);
         return "handled";
       }
+      if (consumeSettingsBack()) return "handled";
       if (s.player || s.canGoBack) {
         a.goBack();
         return "handled";

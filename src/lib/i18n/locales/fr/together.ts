@@ -2,8 +2,8 @@ const together: Record<string, string> = {
   "Play Together": "Regarder ensemble",
   Host: "Hôte",
   " · host": " · hôte",
-  " · you": " · toi",
-  " (you)": " (toi)",
+  " · you": " · vous",
+  " (you)": " (vous)",
   " · away": " · absent",
   " · paused": " · en pause",
   " · still loading": " · charge encore",
@@ -11,12 +11,12 @@ const together: Record<string, string> = {
   "The host starts playback for the whole room.": "L'hôte lance la lecture pour toute la salle.",
   "Waiting for the host to start": "En attente du lancement par l'hôte",
   "Everyone is loaded in. Press play to start watching.":
-    "Tout le monde est prêt. Lance la lecture pour commencer.",
-  "Ready when you are": "Prêt quand tu l'es",
+    "Tout le monde est prêt. Lancez la lecture pour commencer.",
+  "Ready when you are": "Prêt quand vous l'êtes",
   "Sharing {name}'s Stremio": "Partage du Stremio de {name}",
   "Your copy runs {guest}, host's runs {host}. Sync may drift.":
-    "Ta copie dure {guest}, celle de l'hôte {host}. La synchronisation peut dériver.",
-  "Say something…": "Dis quelque chose…",
+    "Votre copie dure {guest}, celle de l'hôte {host}. La synchronisation peut dériver.",
+  "Say something…": "Dites quelque chose…",
 
   "Start anyway ({n} still loading)": "Démarrer quand même ({n} chargent encore)",
   " · {n} instant": " · {n} instantané",
@@ -24,10 +24,10 @@ const together: Record<string, string> = {
   "Cached only ({n})": "En cache uniquement ({n})",
   "No sources cached": "Aucune source en cache",
   "Sources are not cached for this title. Open the picker page to refresh.":
-    "Les sources ne sont pas en cache pour ce titre. Ouvre la page du sélecteur pour actualiser.",
+    "Les sources ne sont pas en cache pour ce titre. Ouvrez la page du sélecteur pour actualiser.",
   "Probably not cached. Pick another?": "Probablement pas en cache. En choisir une autre ?",
-  "Click any source to swap in place": "Clique sur une source pour la remplacer sur place",
-  "Does this stream look right?": "Ce stream te semble-t-il correct ?",
+  "Click any source to swap in place": "Cliquez sur une source pour la remplacer sur place",
+  "Does this stream look right?": "Ce stream vous semble-t-il correct ?",
 
   "Resume from {time}": "Reprendre à {time}",
   "Resume S{s}:E{e}": "Reprendre S{s}:E{e}",
@@ -35,12 +35,12 @@ const together: Record<string, string> = {
 
   "Find closer match": "Chercher une correspondance plus proche",
   "Close match": "Correspondance proche",
-  "Pick another": "Choisis-en une autre",
+  "Pick another": "Choisissez-en une autre",
   "Something else": "Autre chose",
   "Nothing matched. Try the franchise's first film name.":
-    "Aucun résultat. Essaie le nom du premier film de la franchise.",
+    "Aucun résultat. Essayez le nom du premier film de la franchise.",
   "Not officially released yet. Click to search anyway in case of an early release.":
-    "Pas encore sorti officiellement. Clique pour chercher quand même, au cas où il y aurait une sortie anticipée.",
+    "Pas encore sorti officiellement. Cliquez pour chercher quand même, au cas où il y aurait une sortie anticipée.",
 
   "Hide streams": "Masquer les streams",
   "Show streams": "Afficher les streams",
@@ -54,7 +54,7 @@ const together: Record<string, string> = {
   "Show elapsed time": "Afficher le temps écoulé",
   "Show remaining time": "Afficher le temps restant",
   "{word} {n} seconds": "{word} {n} secondes",
-  "{word} {n} seconds. Hold for options": "{word} {n} secondes. Maintiens pour les options",
+  "{word} {n} seconds. Hold for options": "{word} {n} secondes. Maintenez pour les options",
   "{word} {n}s · hold for options": "{word} {n} s · maintiens pour les options",
   "Cast to a device": "Diffuser vers un appareil",
   "Dismiss episode panel": "Fermer le panneau des épisodes",
@@ -64,10 +64,10 @@ const together: Record<string, string> = {
   "VARA": "VARA",
   "Back": "Retour",
   "Invite": "Inviter",
-  "Paste invite link": "Colle le lien d'invitation",
+  "Paste invite link": "Collez le lien d'invitation",
   "Join": "Rejoindre",
   "Open Settings": "Ouvrir les Paramètres",
-  "Your name": "Ton nom",
+  "Your name": "Votre nom",
   "Starting…": "Démarrage…",
   "Start a new room": "Créer une nouvelle salle",
   "or join": "ou rejoins",
@@ -81,7 +81,7 @@ const together: Record<string, string> = {
   "VEYA synchronizes playback between participants in the same VARA room.":
     "VEYA synchronise la lecture entre les participants d’une même room VARA.",
   "Play without VEYA": "Lire sans VEYA",
-  "A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.": "Un relais est un minuscule Cloudflare Worker qui transmet les messages lecture/pause/avance entre toi et tes amis. Aucune donnée vidéo n'y transite. Déploie le tien en un clic (l'offre gratuite suffit largement), ou colle le lien d'invitation d'un ami pour utiliser le sien.",
+  "A relay is a tiny Cloudflare Worker that passes play/pause/seek messages between you and your friends. No video data ever touches it. Deploy your own in one click (free tier is plenty), or paste a friend's invite link to use theirs.": "Un relais est un minuscule Cloudflare Worker qui transmet les messages lecture/pause/avance entre vous et vos amis. Aucune donnée vidéo n'y transite. Déployez le vôtre en un clic (l'offre gratuite suffit largement), ou collez le lien d'invitation d'un ami pour utiliser le sien.",
 };
 
 export default together;

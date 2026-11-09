@@ -1,10 +1,8 @@
-export function fmtClock(ms: number): string {
-  const d = new Date(ms);
-  let h = d.getHours();
-  const m = d.getMinutes();
-  const ap = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
-  return `${h}:${m.toString().padStart(2, "0")} ${ap}`;
+import { getUiLanguage } from "@/lib/i18n";
+
+// The interface language sets the clock: 5:30 PM in English, 17:30 in French.
+export function fmtClock(ms: number, lang: string = getUiLanguage()): string {
+  return new Date(ms).toLocaleTimeString(lang === "ar" ? "ar-SA" : lang, { hour: "numeric", minute: "2-digit" });
 }
 
 export function fmtLeft(

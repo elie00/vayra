@@ -118,7 +118,7 @@ export function TogetherPopover({
       aria-label={t("VARA")}
       className={
         variant === "sheet"
-          ? "flex min-h-0 w-full flex-col gap-4 overflow-y-auto p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+          ? "flex min-h-0 w-full flex-col gap-4 overflow-y-auto p-5 pb-[calc(1.5rem+var(--vayra-safe-bottom))]"
           : `harbor-together-surface flex max-h-[80vh] w-[400px] max-sm:w-[calc(100vw-1.5rem)] flex-col gap-4 overflow-y-auto border border-edge p-5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)] animate-popover-in ${
               connectStyle === "tab"
                 ? placement === "above-left"

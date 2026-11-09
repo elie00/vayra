@@ -1,8 +1,15 @@
+// @vitest-environment jsdom
+import { invoke } from "@tauri-apps/api/core";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { emptySnapshot, type PlayerBridge } from "@/lib/player/bridge";
-import { runConnectCommand } from "./use-connect-host";
+import { setPlaybackClock } from "@/lib/player/playback-clock";
+import type { PlayerSrc } from "@/lib/view";
+import { runConnectCommand, useConnectHost } from "./use-connect-host";
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn(async () => {}) }));
+vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(async () => () => {}) }));
 
 function controls(muted = false) {
   const bridge = { setVolume: vi.fn(), setMuted: vi.fn() } as unknown as PlayerBridge;
@@ -41,4 +48,23 @@ it("leaves requests to play a title to the app", () => {
   runConnectCommand({ type: "load", meta: { id: "tt1", type: "movie", name: "Film" } }, c);
   expect(c.playPauseToggle).not.toHaveBeenCalled();
   expect(c.seekTo).not.toHaveBeenCalled();
+});
+
+it("tells phones about a seek, which only moves the playback clock", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const c = controls();
+  const src = { meta: { id: "tt1", type: "movie", name: "Film" }, url: "http://x/film.mp4", title: "Film" } as PlayerSrc;
+  const snap = { ...c.snap, positionSec: 100, durationSec: 5000, rate: 1 };
+  function Host() {
+    useConnectHost({ ...c, snap, enabled: true, src });
+    return null;
+  }
+  setPlaybackClock(100, 0);
+  const root = createRoot(document.createElement("div"));
+  await act(async () => root.render(<Host />));
+  act(() => setPlaybackClock(1300, 0));
+  const published = vi.mocked(invoke).mock.calls.filter(([cmd]) => cmd === "connect_publish");
+  expect(published.at(-1)?.[1]).toMatchObject({ state: { positionSec: 1300 } });
+  act(() => root.unmount());
+  vi.unstubAllGlobals();
 });

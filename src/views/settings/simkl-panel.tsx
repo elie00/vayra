@@ -69,17 +69,17 @@ export function SimklPanel() {
               {t("Sync and track movies, shows, and anime across everything you use. VAYRA marks what you finish as watched on Simkl and keeps your plan-to-watch list in step. Free at simkl.com.")}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setModalOpen(true)}
-              className="flex h-11 items-center gap-2.5 rounded-xl bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
+              className="flex h-11 items-center whitespace-nowrap gap-2.5 rounded-xl bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
             >
               <Link2 size={15} strokeWidth={2.2} />
               {t("Connect Simkl")}
             </button>
             <button
               onClick={() => openUrl("https://simkl.com")}
-              className="flex h-11 items-center gap-2 rounded-xl border border-edge-soft px-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+              className="flex h-11 items-center whitespace-nowrap gap-2 rounded-xl border border-edge-soft px-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
             >
               {t("About Simkl")}
               <ExternalLink size={13} strokeWidth={2.2} />

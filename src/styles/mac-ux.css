@@ -1,6 +1,6 @@
 /* Stable visual contract shared by the macOS and Windows desktop apps. */
 @layer components {
-  .mac-page-title { @apply text-[32px] font-semibold leading-tight tracking-tight text-ink; font-family: var(--font-sans); }
+  .mac-page-title { @apply text-[32px] font-semibold leading-tight tracking-tight text-ink; font-family: var(--font-display); }
   .mac-primary-button { @apply inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2 text-[14px] font-semibold text-canvas; }
   .mac-primary-button:hover { opacity: .88; }
   .mac-secondary-button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-edge-soft px-4 py-2 text-[13px] font-medium text-ink-muted; }
@@ -10,6 +10,9 @@
 [data-desktop-ux]:not([data-desktop-ux="none"]) .mac-home-discovery :is(.h-\[560px\], .min-h-\[560px\]) { height: 360px; min-height: 360px; }
 [data-desktop-ux]:not([data-desktop-ux="none"]) .mac-home-discovery { margin-top: 0; }
 [data-desktop-ux]:not([data-desktop-ux="none"]) .mac-home-discovery h1 { font-size: 32px; }
+/* On the Mac every heading, page titles down to the deepest settings card, is
+   set in the display serif; labels, buttons and body text stay in Geist. */
+html[data-desktop-ux="mac"] :is(h1, h2, h3, h4) { font-family: var(--font-display); }
 /* One continuous canvas: no divider, fade, or selected navigation tile. */
 [data-desktop-sidebar] { border-inline-end: 0; background: var(--color-canvas); }
 [data-desktop-sidebar] [data-vayra-nav][data-active] { background: transparent; color: var(--color-ink); }

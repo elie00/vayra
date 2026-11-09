@@ -9,7 +9,7 @@ import { lastPlayedEpisode } from "@/lib/resume";
 import { Poster } from "@/components/poster";
 import { useSettings } from "@/lib/settings";
 import { useLocalAwareSeriesPlay } from "@/lib/local-library/use-series-play";
-import { useT } from "@/lib/i18n";
+import { useT, getUiLanguage } from "@/lib/i18n";
 import { EpisodeDownloadButton } from "./episode-download-button";
 
 type Translator = (key: string, vars?: Record<string, string | number>) => string;
@@ -338,5 +338,5 @@ function formatAired(date: string | null | undefined): string | null {
   if (!date) return null;
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(getUiLanguage(), { month: "short", day: "numeric", year: "numeric" });
 }

@@ -13,24 +13,28 @@ function animeHitMetaId(hit: AnimeHit): string {
   return `mal:${hit.malId}`;
 }
 
+/** The title an anime search hit opens. */
+export function animeHitMeta(hit: AnimeHit): Meta {
+  return {
+    id: animeHitMetaId(hit),
+    type: "anime",
+    name: hit.name,
+    poster: hit.poster ?? undefined,
+    background: hit.background ?? hit.poster ?? undefined,
+    description: hit.overview,
+    releaseInfo: hit.year ?? undefined,
+    imdbRating: hit.score > 0 ? hit.score.toFixed(1) : undefined,
+  } as Meta;
+}
+
 export function AnimeRow({ items, onClose }: { items: AnimeHit[]; onClose: () => void }) {
   const { openMeta } = useView();
   const t = useT();
   if (items.length === 0) return null;
 
   const open = (hit: AnimeHit) => {
-    const meta: Meta = {
-      id: animeHitMetaId(hit),
-      type: "anime",
-      name: hit.name,
-      poster: hit.poster ?? undefined,
-      background: hit.background ?? hit.poster ?? undefined,
-      description: hit.overview,
-      releaseInfo: hit.year ?? undefined,
-      imdbRating: hit.score > 0 ? hit.score.toFixed(1) : undefined,
-    } as Meta;
     onClose();
-    openMeta(meta);
+    openMeta(animeHitMeta(hit));
   };
 
   return (

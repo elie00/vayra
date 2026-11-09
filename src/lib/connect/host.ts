@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import { loadInstalled } from "@/lib/addon-store";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
+import type { ConnectResume } from "./history";
 
 // VAYRA Connect, Mac side: the Rust server (src-tauri/src/connect.rs) holds the
 // phones' sockets; the front publishes the player's state and runs the commands.
@@ -20,7 +22,8 @@ export type ConnectCommand =
   | { type: "command"; action: "seek"; position: number }
   | { type: "command"; action: "skip"; seconds: number }
   | { type: "command"; action: "volume"; level: number }
-  | { type: "load"; meta: ConnectMeta; episode?: ConnectEpisode; startSec?: number };
+  | { type: "load"; meta: ConnectMeta; episode?: ConnectEpisode; startSec?: number }
+  | { type: "history"; history: ConnectResume[] };
 
 export type ConnectState = {
   status: PlayerSnapshot["status"];
@@ -35,6 +38,18 @@ export type ConnectState = {
   /** When `positionSec` was read, so phones can extrapolate while it plays. */
   at: number;
 };
+
+/** An addon a paired phone may import: its name and install address. */
+export type ConnectAddon = { name: string; transportUrl: string };
+
+/**
+ * Hands this Mac's installed addons to paired phones. The server seals them
+ * with the pairing secret, as their addresses often carry a debrid key.
+ */
+export function publishInstalledAddons(): Promise<unknown> {
+  const addons: ConnectAddon[] = loadInstalled().map((a) => ({ name: a.manifest?.name ?? a.id, transportUrl: a.transportUrl }));
+  return invoke("connect_publish_addons", { addons });
+}
 
 export const startConnect = () => invoke<ConnectInfo>("connect_start");
 export const rotateConnect = () => invoke<ConnectInfo>("connect_rotate");

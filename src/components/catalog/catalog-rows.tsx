@@ -55,6 +55,7 @@ export function CatalogRows({
   kids = false,
   injectAfter = -1,
   injectNode,
+  min = 148,
 }: {
   rows: CatalogRow[];
   editMode: boolean;
@@ -66,6 +67,8 @@ export function CatalogRows({
   kids?: boolean;
   injectAfter?: number;
   injectNode?: React.ReactNode;
+  /** Narrowest poster width, before the poster-size setting. */
+  min?: number;
 }) {
   const allKeys = useMemo(() => rows.map((r) => r.key), [rows]);
   const display = useMemo(() => applyPageRows(rows, custom, editMode), [rows, custom, editMode]);
@@ -82,7 +85,7 @@ export function CatalogRows({
             title={<RowTitle row={row} kids={kids} />}
             titleClassName={kids ? "text-[#0e3a43]" : "text-ink"}
             titleScale={kids ? 1.28 : 1}
-            min={148}
+            min={min}
             shape="portrait"
             scrollKey={`${scrollPrefix}:${row.key}`}
             onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}

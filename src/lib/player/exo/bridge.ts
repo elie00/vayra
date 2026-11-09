@@ -63,6 +63,9 @@ type HarborExoApi = {
   addSubtitle(json: string): string;
   setSubStyle(json: string): string;
   enterPip(): string;
+  setLandscape(on: string): string;
+  getSystemVolume(): string;
+  setSystemVolume(level: string): string;
   getState(): string;
   destroy(): string;
 };
@@ -76,6 +79,17 @@ declare global {
       active?: boolean;
     }) => void;
   }
+}
+
+/** The phone's media volume (0–1), or null outside the Android app. */
+export function systemVolume(): number | null {
+  const raw = window.HarborExo?.getSystemVolume?.();
+  const v = raw == null ? NaN : Number(raw);
+  return Number.isFinite(v) ? v : null;
+}
+
+export function setSystemVolume(level: number): void {
+  window.HarborExo?.setSystemVolume?.(String(Math.max(0, Math.min(1, level))));
 }
 
 export function hasHarborExo(): boolean {
@@ -128,7 +142,9 @@ export function createExoBridge(): PlayerBridge {
     const fn = api?.[name];
     if (typeof fn !== "function") return "error:HarborExo." + String(name) + " unavailable";
     try {
-      return (arg === undefined ? (fn as () => string)() : (fn as (a: string) => string)(arg)) ?? "ok";
+      // Called on HarborExo itself: Android's Java bridge throws "can't be invoked
+      // on a non-injected object" for a method detached from it.
+      return (arg === undefined ? (fn as () => string).call(api) : (fn as (a: string) => string).call(api, arg)) ?? "ok";
     } catch (e) {
       return "error:" + (e instanceof Error ? e.message : String(e));
     }

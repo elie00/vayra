@@ -140,6 +140,7 @@ const importDownloads = () => import("@/views/downloads");
 const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importOnboarding = () => import("@/components/onboarding");
 
+const MobileSearch = lazy(() => import("@/mobile/search").then((m) => ({ default: m.MobileSearch })));
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
@@ -315,7 +316,13 @@ export function App() {
                       <TopRankModal />
                       <ProfilePickerModal />
                       <CurfewGuard />
-                      <SearchOverlay />
+                      {isMobileTauri() ? (
+                        <Suspense fallback={null}>
+                          <MobileSearch />
+                        </Suspense>
+                      ) : (
+                        <SearchOverlay />
+                      )}
                       <SearchHotkey />
                       <CommandPalette />
                       <RoomHotkeys />
@@ -746,6 +753,13 @@ function Shell() {
     void import("@/lib/connect/host")
       .then(({ onConnectCommand }) =>
         onConnectCommand((command) => {
+          // Where a paired phone left off joins this Mac's Continue Watching.
+          if (command.type === "history") {
+            void Promise.all([import("@/lib/connect/history"), import("@/lib/luma")]).then(([{ lumaResumesFromConnect }, { lumaStore }]) =>
+              lumaStore().importResumes(lumaResumesFromConnect(command.history)),
+            );
+            return;
+          }
           if (command.type !== "load") return;
           const { meta, episode } = command;
           openPicker({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster }, episode, {
@@ -764,6 +778,26 @@ function Shell() {
       stop?.();
     };
   }, [settings.connectEnabled, openPicker]);
+
+  // VAYRA Connect: paired phones can import this Mac's addons.
+  useEffect(() => {
+    if (!settings.connectEnabled || isMobileTauri() || isWeb()) return;
+    let cancelled = false;
+    let off: (() => void) | null = null;
+    void import("@/lib/connect/host")
+      .then(({ publishInstalledAddons }) => {
+        if (cancelled) return;
+        const publish = () => void publishInstalledAddons().catch(() => { /* Connect stopped: nobody to tell. */ });
+        publish();
+        window.addEventListener("vayra:addons-changed", publish);
+        off = () => window.removeEventListener("vayra:addons-changed", publish);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  }, [settings.connectEnabled]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
