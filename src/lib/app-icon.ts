@@ -21,6 +21,6 @@ export async function applyAppIcon(dataUrl: string): Promise<void> {
     const { getCurrentWindow } = await import("@tauri-apps/api/window");
     await getCurrentWindow().setIcon(bytes);
   } catch {
-    /* set-icon capability ships in the next build */
+    /* The icon is cosmetic: a refused one leaves the default in place. */
   }
 }
