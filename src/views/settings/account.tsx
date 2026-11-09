@@ -169,15 +169,16 @@ export function AccountStub() {
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={onPickFile} className="hidden" />
           {editingName ? (
             <div className="flex w-full items-center gap-2">
-              <input
-                autoFocus
+              <NameDraftInput
                 value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    pushDisplayName(nameDraft.trim() || displayName);
-                    setEditingName(false);
-                  }
+                onChange={setNameDraft}
+                onSave={() => {
+                  pushDisplayName(nameDraft.trim() || displayName);
+                  setEditingName(false);
+                }}
+                onCancel={() => {
+                  setNameDraft(displayName);
+                  setEditingName(false);
                 }}
                 className="h-12 min-w-0 flex-1 rounded-xl border border-edge bg-canvas px-3 type-body font-semibold text-ink outline-none"
               />
@@ -318,19 +319,16 @@ export function AccountStub() {
               <div className="flex min-w-0 flex-1 flex-col gap-3">
                 {editingName ? (
                   <div className="flex items-center gap-2">
-                    <input
-                      autoFocus
+                    <NameDraftInput
                       value={nameDraft}
-                      onChange={(e) => setNameDraft(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          pushDisplayName(nameDraft.trim() || displayName);
-                          setEditingName(false);
-                        }
-                        if (e.key === "Escape") {
-                          setNameDraft(displayName);
-                          setEditingName(false);
-                        }
+                      onChange={setNameDraft}
+                      onSave={() => {
+                        pushDisplayName(nameDraft.trim() || displayName);
+                        setEditingName(false);
+                      }}
+                      onCancel={() => {
+                        setNameDraft(displayName);
+                        setEditingName(false);
                       }}
                       className="h-10 flex-1 rounded-xl border border-ink bg-elevated px-3 text-[15px] font-semibold text-ink outline-none"
                     />
@@ -532,5 +530,33 @@ export function AccountStub() {
 
       {modals}
     </div>
+  );
+}
+
+/** The profile name being edited; it takes focus because the user just asked to edit it. */
+function NameDraftInput({
+  value,
+  onChange,
+  onSave,
+  onCancel,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  className: string;
+}) {
+  return (
+    <input
+      autoFocus
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onSave();
+        if (e.key === "Escape") onCancel();
+      }}
+      className={className}
+    />
   );
 }
