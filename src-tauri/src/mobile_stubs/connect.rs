@@ -7,6 +7,8 @@ pub fn connect_start() -> Result<(), String> {
 #[tauri::command]
 pub fn connect_stop() {}
 #[tauri::command]
+pub fn connect_firewall() {}
+#[tauri::command]
 pub fn connect_rotate() -> Result<(), String> {
     Err("VAYRA Connect is hosted on desktop only".into())
 }

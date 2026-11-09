@@ -8,6 +8,7 @@ const host = vi.hoisted(() => ({
   startConnect: vi.fn(),
   rotateConnect: vi.fn(),
   connectStatus: vi.fn(),
+  connectFirewall: vi.fn(async (): Promise<string | null> => null),
 }));
 vi.mock("@/lib/connect/host", () => host);
 vi.mock("qrcode", () => ({ default: { toDataURL: vi.fn(async (text: string) => `data:qr,${text}`) } }));
@@ -18,6 +19,18 @@ import { ConnectRow } from "./connect-row";
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
+});
+
+it("says when Windows Firewall keeps phones out", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  host.startConnect.mockResolvedValue({ pairingUrl: "vayra://connect/pair#k=one", address: "192.168.1.85:11472", name: "PC" });
+  host.connectStatus.mockResolvedValue({ running: true, phones: [] });
+  host.connectFirewall.mockResolvedValueOnce("no-rule");
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  await act(async () => root.render(<ConnectRow />));
+  expect(container.textContent).toContain("Windows Firewall stops phones from reaching VAYRA");
+  act(() => root.unmount());
 });
 
 it("shows the pairing code and paired phones, and unpairs them all", async () => {

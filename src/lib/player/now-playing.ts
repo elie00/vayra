@@ -1,14 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { PlayerSnapshot } from "./bridge";
 
-// macOS extrapolates the elapsed time from the rate, so the system only needs
+// The system extrapolates the elapsed time from the rate, so it only needs
 // the state again when playback starts, stops, seeks or changes speed.
 const DRIFT_SEC = 1.5;
 
 type Send = (cmd: "now_playing_update" | "now_playing_clear", args?: Record<string, unknown>) => Promise<unknown>;
 type Sent = { at: number; playing: boolean; position: number; duration: number; rate: number };
 
-/** Publishes mpv playback to macOS Now Playing (Control Center, media keys). */
+/** Publishes mpv playback to the system's media controls on macOS and Windows. */
 export function createNowPlaying(send: Send = invoke) {
   let title: string | null = null;
   let last: PlayerSnapshot | null = null;

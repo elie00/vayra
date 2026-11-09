@@ -122,6 +122,40 @@ pub(crate) fn locate_mpv() -> Option<PathBuf> {
     None
 }
 
+/// Puts the thumbnail mpv in a job Windows closes when VAYRA ends, however it ends.
+/// Left alone it idles on forever and keeps its executable locked.
+#[cfg(windows)]
+fn end_with_vayra(child: &tokio::process::Child) {
+    use std::sync::OnceLock;
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::System::JobObjects::{
+        AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation, SetInformationJobObject,
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+    };
+
+    static JOB: OnceLock<Option<isize>> = OnceLock::new();
+    let job = JOB.get_or_init(|| unsafe {
+        let job = CreateJobObjectW(None, PCWSTR::null()).ok()?;
+        let mut limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+        limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            std::ptr::from_ref(&limits).cast(),
+            std::mem::size_of_val(&limits) as u32,
+        )
+        .ok()?;
+        Some(job.0 as isize)
+    });
+    if let (Some(job), Some(process)) = (job, child.raw_handle()) {
+        let assigned = unsafe { AssignProcessToJobObject(HANDLE(*job as *mut _), HANDLE(process as *mut _)) };
+        if let Err(e) = assigned {
+            eprintln!("[thumbs] job assignment failed: {e}");
+        }
+    }
+}
+
 fn shadow_pipe(session: &str) -> String {
     if cfg!(windows) {
         format!("\\\\.\\pipe\\harbor-thumbs-{}", session)
@@ -365,6 +399,8 @@ async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shad
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
     let child = cmd.spawn().map_err(|e| format!("spawn shadow: {}", e))?;
+    #[cfg(windows)]
+    end_with_vayra(&child);
 
     tokio::time::sleep(Duration::from_millis(400)).await;
 

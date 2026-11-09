@@ -4,13 +4,32 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
 const invoke = vi.hoisted(() => vi.fn());
+const windows = vi.hoisted(() => ({ value: false }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
+vi.mock("@/lib/platform", () => ({ isWindowsDesktop: () => windows.value }));
 
 import { TorrentLinksRow } from "./torrent-links-row";
 
 afterEach(() => {
   vi.unstubAllGlobals();
   invoke.mockReset();
+  windows.value = false;
+});
+
+it("sends Windows users to Default apps when their earlier choice stands", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  windows.value = true;
+  invoke.mockImplementation(async (cmd: string) => (cmd === "torrent_links_default" ? false : undefined));
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  await act(async () => root.render(<TorrentLinksRow />));
+  expect(host.textContent).toContain("Another app opens them.");
+
+  const useVayra = [...host.querySelectorAll("button")].find((b) => b.textContent === "Use VAYRA")!;
+  await act(async () => useVayra.click());
+
+  expect(host.textContent).toContain("In Default apps, pick VAYRA");
+  act(() => root.unmount());
 });
 
 it("hands magnet links and .torrent files to VAYRA when another app opens them", async () => {

@@ -508,6 +508,12 @@ pub async fn connect_stop() {
     }
 }
 
+/// What Windows Firewall does to a phone reaching for this computer; None elsewhere.
+#[tauri::command]
+pub async fn connect_firewall() -> Option<crate::torrent_engine::firewall::Firewall> {
+    tokio::task::spawn_blocking(crate::torrent_engine::firewall::read).await.ok().flatten()
+}
+
 /// Unpairs every phone: they need the new QR code to connect again.
 #[tauri::command]
 pub async fn connect_rotate(app: tauri::AppHandle) -> Result<ConnectInfo, String> {

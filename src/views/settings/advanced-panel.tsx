@@ -38,7 +38,7 @@ import { Section } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
-import { hasDesktopFeatures, isMacDesktop, isMobileTauri } from "@/lib/platform";
+import { hasDesktopFeatures, hasNativeDesktopUx, isMacDesktop, isMobileTauri } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -127,10 +127,14 @@ export function AdvancedPanel() {
         </Section>
       )}
 
-      {isMacDesktop() && (
+      {hasNativeDesktopUx() && (
         <Section
           title={t("Torrent links")}
-          subtitle={t("Play a magnet link from your browser or a .torrent file from the Finder straight in VAYRA.")}
+          subtitle={
+            isMacDesktop()
+              ? t("Play a magnet link from your browser or a .torrent file from the Finder straight in VAYRA.")
+              : t("Play a magnet link from your browser or a .torrent file from File Explorer straight in VAYRA.")
+          }
         >
           <TorrentLinksRow />
         </Section>

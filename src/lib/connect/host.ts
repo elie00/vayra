@@ -11,6 +11,7 @@ export const CONNECT_COMMAND_EVENT = "vayra:connect-command";
 export type ConnectInfo = { pairingUrl: string; address: string; name: string };
 export type ConnectedPhone = { deviceId: string; name: string; platform: string };
 export type ConnectStatus = { running: boolean; phones: ConnectedPhone[] };
+export type ConnectFirewall = "open" | "blocks-all" | "blocked" | "managed" | "no-rule" | null;
 
 export type ConnectMeta = { id: string; type: "movie" | "series"; name: string; poster?: string };
 export type ConnectEpisode = { season: number; episode: number };
@@ -53,6 +54,7 @@ export function publishInstalledAddons(): Promise<unknown> {
 export const startConnect = () => invoke<ConnectInfo>("connect_start");
 export const rotateConnect = () => invoke<ConnectInfo>("connect_rotate");
 export const connectStatus = () => invoke<ConnectStatus>("connect_status");
+export const connectFirewall = () => invoke<ConnectFirewall>("connect_firewall");
 
 export async function onConnectCommand(handler: (command: ConnectCommand) => void): Promise<() => void> {
   const { listen } = await import("@tauri-apps/api/event");

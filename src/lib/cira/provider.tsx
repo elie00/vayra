@@ -19,6 +19,7 @@ import {
 } from "./pending-invite";
 import { createCiraRepository } from "./repository";
 import { CiraError } from "./errors";
+import { withCiraRetry } from "./retry";
 import type {
   CiraInvitation,
   CiraGroup,
@@ -126,9 +127,11 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     };
   }, [userId, betaAccess]);
 
+  const repoRef = useRef(repo);
+  repoRef.current = repo;
   const refresh = useCallback(async () => {
     if (!repo) return;
-    try {
+    const load = async () => {
       const profile = await repo.getMe();
       setMe(profile);
       if (profile) {
@@ -156,8 +159,20 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
         setGroupInvitations([]);
         setInbox(null);
       }
-      setStatus("ready");
+    };
+    try {
+      await withCiraRetry(load, {
+        renewSession: async () => {
+          const client = await getVayraSupabaseClient();
+          await client?.auth.refreshSession();
+        },
+        wait: (ms) => new Promise((resolve) => window.setTimeout(resolve, ms)),
+        alive: () => repoRef.current === repo,
+      });
+      if (repoRef.current === repo) setStatus("ready");
     } catch (err) {
+      // An attempt for an account signed out meanwhile must not mark the next one.
+      if (repoRef.current !== repo) return;
       console.warn("[cira] refresh failed", err, err instanceof CiraError && err.hint ? `(${err.hint})` : "");
       setStatus("error");
     }

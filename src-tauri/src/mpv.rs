@@ -298,7 +298,9 @@ fn apply_pre_init(
     set("volume-max", "600")?;
     let _ = init.set_property("background-color", "#000000");
     let _ = init.set_property("background", "color");
-    let _ = init.set_property("media-controls", "yes");
+    // Windows gets one session from now_playing.rs, whose commands go through the
+    // player's own controls so casts and watch rooms follow. mpv's would be a second.
+    let _ = init.set_property("media-controls", if cfg!(windows) { "no" } else { "yes" });
 
     if let Some(hwnd) = embed_hwnd {
         #[cfg(windows)]

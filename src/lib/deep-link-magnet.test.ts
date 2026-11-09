@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { emitOpenMagnet, isMagnetLink, onOpenMagnet, parseTorrentFileUrl } from "./deep-link";
 
-describe("magnet links and .torrent files opened from macOS", () => {
+describe("magnet links and .torrent files opened from the system", () => {
   it("recognises magnet links only", () => {
     expect(isMagnetLink("magnet:?xt=urn:btih:de89f34ab990f4431cfb91329b7ab4190807bb08")).toBe(true);
     expect(isMagnetLink("MAGNET:?xt=urn:btih:de89f34ab990f4431cfb91329b7ab4190807bb08")).toBe(true);
@@ -11,6 +11,7 @@ describe("magnet links and .torrent files opened from macOS", () => {
 
   it("reads the path of a .torrent file and nothing else", () => {
     expect(parseTorrentFileUrl("file:///Users/me/Downloads/Mon%20film.torrent")).toBe("/Users/me/Downloads/Mon film.torrent");
+    expect(parseTorrentFileUrl("file:///C:/Users/me/Mon%20film.torrent")).toBe("C:/Users/me/Mon film.torrent");
     expect(parseTorrentFileUrl("file:///Users/me/Downloads/film.mkv")).toBeNull();
     expect(parseTorrentFileUrl("https://example.com/film.torrent")).toBeNull();
   });
