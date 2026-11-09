@@ -96,8 +96,8 @@ fn pcm_to_wav(pcm: &[u8], sample_rate: u32, channels: u16, bits: u16) -> Result<
     let mut cursor = Cursor::new(Vec::<u8>::new());
     {
         let mut writer = WavWriter::new(&mut cursor, spec).map_err(|e| e.to_string())?;
-        for chunk in pcm.chunks_exact(2) {
-            let s = i16::from_le_bytes([chunk[0], chunk[1]]);
+        for &bytes in pcm.as_chunks::<2>().0 {
+            let s = i16::from_le_bytes(bytes);
             writer.write_sample(s).map_err(|e| e.to_string())?;
         }
         writer.finalize().map_err(|e| e.to_string())?;

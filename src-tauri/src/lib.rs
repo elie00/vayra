@@ -28,6 +28,21 @@ mod web_server;
 // Modules desktop-only : mpv, cast, fenêtres/overlays… stubbés sur Android
 // pour garder la liste generate_handler! identique.
 #[cfg(desktop)]
+mod song_id;
+#[cfg(mobile)]
+#[path = "mobile_stubs/song_id.rs"]
+mod song_id;
+#[cfg(desktop)]
+mod sub_extract;
+#[cfg(mobile)]
+#[path = "mobile_stubs/sub_extract.rs"]
+mod sub_extract;
+#[cfg(desktop)]
+mod subsync;
+#[cfg(mobile)]
+#[path = "mobile_stubs/subsync.rs"]
+mod subsync;
+#[cfg(desktop)]
 mod anime4k;
 #[cfg(mobile)]
 #[path = "mobile_stubs/anime4k.rs"]
@@ -818,6 +833,10 @@ pub fn run() {
             vayra_try_suspend_webview,
             vayra_resume_webview,
             write_subtitle_temp_file,
+            song_id::recognize_now_playing,
+            sub_extract::subtitle_extract,
+            subsync::sync_subtitle,
+            subsync::moviehash::compute_moviehash,
             cast_server::stop_stremio_sidecar,
             cast_server::cast_server_stop,
             web_server::web_serve_start,
