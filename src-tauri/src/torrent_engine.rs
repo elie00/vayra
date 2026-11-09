@@ -1,7 +1,7 @@
 mod cache_index;
 mod cache_sweep;
 mod dht_boot;
-mod firewall;
+pub(crate) mod firewall;
 mod nat_pmp;
 mod netcheck;
 mod peer_log;
