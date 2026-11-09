@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 
 export type NowPlayingCommand =
   | { action: "play" }
@@ -37,14 +37,14 @@ export function runNowPlayingCommand(command: NowPlayingCommand, controls: Contr
 }
 
 /**
- * Control Center, media keys and headphones drive the player through the same
+ * Control Center, the Windows media flyout, media keys and headphones drive the player through the same
  * controls as its keyboard shortcuts, so casts and watch rooms follow.
  */
 export function useNowPlayingCommands(controls: Controls): void {
   const ref = useRef(controls);
   ref.current = controls;
   useEffect(() => {
-    if (!isMacDesktop()) return;
+    if (!hasNativeDesktopUx()) return;
     let cancelled = false;
     let unlisten: (() => void) | null = null;
     void import("@tauri-apps/api/event")
