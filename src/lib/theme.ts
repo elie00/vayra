@@ -364,8 +364,7 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
   },
 };
 
-const elegantFinCss = `@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
-
+const elegantFinCss = `
 /* ==========================================================================
    ElegantFin for VAYRA  (after lscambo13's ElegantFin Jellyfin theme)
    Dark navy glass, one purple accent, 1em rounded cards, white shine-sweep,

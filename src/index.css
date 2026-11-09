@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/mac-ux.css";
+@import "./styles/fonts-embedded.css";
 
 /* Sentient and Switzer, fetched by `pnpm setup:ui-fonts` (see scripts/fetch-ui-fonts.mjs):
    the CSP blocks the Fontshare stylesheet in the app, where each platform fell back
