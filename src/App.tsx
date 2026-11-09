@@ -84,7 +84,6 @@ import { RankingsProvider } from "@/lib/rankings";
 import { SettingsProvider } from "@/lib/settings";
 import { SearchProvider, useSearch } from "@/lib/search-context";
 import { SearchOverlay } from "@/components/search/search-overlay";
-import { MobileSearch } from "@/mobile/search";
 import { SearchHotkey } from "@/components/search/search-hotkey";
 import { CommandPalette } from "@/components/command-palette";
 import { RoomHotkeys } from "@/components/room-hotkeys";
@@ -141,6 +140,7 @@ const importDownloads = () => import("@/views/downloads");
 const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importOnboarding = () => import("@/components/onboarding");
 
+const MobileSearch = lazy(() => import("@/mobile/search").then((m) => ({ default: m.MobileSearch })));
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
@@ -316,7 +316,13 @@ export function App() {
                       <TopRankModal />
                       <ProfilePickerModal />
                       <CurfewGuard />
-                      {isMobileTauri() ? <MobileSearch /> : <SearchOverlay />}
+                      {isMobileTauri() ? (
+                        <Suspense fallback={null}>
+                          <MobileSearch />
+                        </Suspense>
+                      ) : (
+                        <SearchOverlay />
+                      )}
                       <SearchHotkey />
                       <CommandPalette />
                       <RoomHotkeys />
