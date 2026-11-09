@@ -35,17 +35,51 @@
   (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
 ## Point au 2026-11-09
-- **`main`** = `ebe099d5`, 0.9.42. Fusionnés le 09/11 : #182 (audit `minimatch`, qui
-  bloquait le typecheck, le lint et les tests de la CI), #183 (liens magnet et `.torrent`
-  sur Windows), #184 (touches multimédia Windows), #185 (avertissement pare-feu de
-  Connect), #187 (le mpv des vignettes meurt avec VAYRA), #186 (sous-titres incrustés au
-  cast depuis un chemin `C:\`), #152 (Cira), #188 (interface Android refaite et suite de
-  Connect : télécommande, reprise).
-- **Appli Windows** réinstallée depuis `ebe099d5` le 09/11.
-- **Périmètre** : le « Android en pause » ci-dessous date d'avant #188.
-- **Windows, encore à vérifier à la main** : les vraies touches multimédia du clavier (la
-  session système a été pilotée par un autre programme), un téléphone réel sur Connect,
-  une diffusion vers une vraie télé avec sous-titres.
+- **Priorité** : Windows sur PC, objectif appli 100 % fonctionnelle. Le travail sur Mac
+  et Android est remis à plus tard. Le « Android en pause » ci-dessus date d'avant #188.
+- **`main`** = `f3bdffcc`, 0.9.42, CI verte. Appli Windows réinstallée depuis ce commit.
+- **Fusionné le 09/11** :
+  - CI : #182 (audit `minimatch` ignoré, il bloquait typecheck, lint et tests).
+  - Windows : #183 (liens magnet et `.torrent`), #184 (touches multimédia et panneau
+    système), #185 (avertissement pare-feu de Connect), #187 (le mpv des vignettes meurt
+    avec VAYRA), #186 (sous-titres incrustés au cast depuis `C:\`), #194 (noms de fichiers
+    refusés par Windows, chemins de la bibliothèque dans les sauvegardes).
+  - Toutes plateformes : #192 (styles créés par l'app, thèmes compris, bloqués par la
+    CSP), #193 (polices des thèmes embarquées), #195 (synchro auto et extraction des
+    sous-titres, hachage vidéo, reconnaissance de musique, jamais compilés jusque-là),
+    #196 (icône personnalisée), #152 (Cira), #188 (interface Android et suite de Connect).
+
+### À reprendre sur le PC pro (réseau filtré)
+- Chasse aux bugs, restent : textes non traduits, réglages un par un.
+- Ctrl+0 a deux usages selon l'écran : zoom de l'interface, et Anime4K désactivé dans le
+  lecteur.
+- Les erreurs Rust de `mpv_clip_save` restent en anglais.
+- Au tout premier lancement après une installation, `document.fonts.load` n'a renvoyé
+  aucune police ; aux lancements suivants elles se chargent toutes. Cause non établie :
+  effet du test (qui recharge la page) ou vrai retard au démarrage.
+- **Ne pas lancer `recognize_now_playing` sur ce PC** : la commande enregistre le son du
+  poste et l'envoie à AudD. Elle reste donc non testée, et demande une clé AudD.
+
+### À faire sur un PC Windows personnel
+- Connexion Stremio et lecture de vraies sources, torrents réels, ouverture de port PCP
+  ou NAT-PMP, verdicts du pare-feu, mode HDR, liens `stremio://`.
+- Vraies touches multimédia (la session système a été pilotée par un autre programme),
+  téléphone sur Connect, diffusion vers une vraie télé avec sous-titres.
+- Liens magnet quand un autre logiciel est déjà choisi dans les Paramètres Windows : VAYRA
+  doit ouvrir « Applications par défaut ».
+- Rendu à l'œil : un thème personnalisé, les polices de chaque thème, l'icône personnalisée
+  dans la barre des tâches.
+
+### Plus tard
+- Android : lecture à confirmer sur le S24 Ultra, recette sur émulateur et revue design.
+- Mac : #176 (libmpv2 6, en brouillon), à essayer en lecture.
+
+### À surveiller
+- Le bundle initial est à 839,3 Kio pour une limite de 840 : le prochain ajout au
+  chargement initial risque de bloquer la CI et le déploiement Vercel.
+- General Sans, Cabinet Grotesk, Sentient et Switzer sont hors du dépôt (licence
+  Fontshare) : lancer `pnpm setup:ui-fonts` avant un build, sinon les polices de secours
+  s'appliquent.
 
 ## Signature locale stable (2026-10-14)
 - Le certificat « Apple Development » de ce Mac a expiré : les builds repassaient en
