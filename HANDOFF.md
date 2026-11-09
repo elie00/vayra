@@ -34,6 +34,21 @@
 - **Chantier en cours** : lecture de sources torrent à pairs intermittents
   (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
+## Point au 2026-11-09
+- **`main`** = `fcc3c6bb` (24/10), 0.9.42 : VAYRA Connect côté Mac (hôte, appairage),
+  sous-titres au cast, liens magnet et Centre de contrôle sur macOS.
+- **À fusionner, dans cet ordre** (les branches sont empilées) : #182 (audit `minimatch`,
+  qui bloquait le typecheck, le lint et les tests de la CI), #183 (liens magnet et
+  `.torrent` sur Windows), #184 (touches multimédia Windows), #185 (avertissement pare-feu
+  de Connect), #187 (le mpv des vignettes meurt avec VAYRA), #186 (sous-titres incrustés
+  au cast depuis un chemin `C:\`). Puis #152 (Cira), à jour de `main`.
+- **Branche mobile** `feat/mobile-streaming-ui` : interface Android refaite et suite de
+  Connect (télécommande, reprise). Le périmètre « Android en pause » ci-dessous ne
+  reflète plus ce travail : à trancher avant de la fusionner.
+- **Windows, encore à vérifier à la main** : les vraies touches multimédia du clavier (la
+  session système a été pilotée par un autre programme), un téléphone réel sur Connect,
+  une diffusion vers une vraie télé avec sous-titres.
+
 ## Signature locale stable (2026-10-14)
 - Le certificat « Apple Development » de ce Mac a expiré : les builds repassaient en
   signature ad hoc, et macOS redemandait l'autorisation « Réseau local » (UPnP) à
@@ -375,6 +390,13 @@
   `.gitattributes` ne réécrit pas les fichiers déjà extraits, qui restent en CRLF.
   Lister avec `git ls-files --eol | grep w/crlf | grep eol=lf`, puis supprimer ces
   fichiers et les restaurer par `git checkout -- <fichiers>`.
+- **Build Windows sans `pnpm` dans le PATH de Git Bash** : `tauri build` lance `pnpm` par
+  `npm run build`. Mettre devant le PATH un script `pnpm` qui appelle
+  `node %LOCALAPPDATA%/node/corepack/v1/pnpm/10.27.0/bin/pnpm.cjs "$@"`.
+- **`os error 32` au build Windows** : un programme garde un fichier de `target/debug`
+  ouvert (VAYRA ou `mpv.exe` encore en vie). Fermer le processus avant de relancer.
+- **Médias système sur Windows** : `now_playing.rs` publie la seule session ; mpv a
+  `media-controls=no` sur Windows, sinon le panneau liste VAYRA deux fois.
 - **Parité stubs mobiles** : toute commande de `generate_handler!` doit avoir un stub `mobile_stubs/<module>.rs`, sinon build Android `E0433`. Vérif rapide : `cargo check --target aarch64-linux-android --lib` (env NDK/CC requis).
 - **`.gitignore` global `lib/`** : masquait les nouveaux fichiers sous `src/lib/`. Résolu par `!/src/lib/` dans le `.gitignore` du repo (sinon `git add -f`).
 - **Cross-compile impossible depuis macOS** : le code `#[cfg(windows)]`/`#[cfg(linux)]` n'est PAS vérifié par `cargo check` hôte, et cross-check bute sur `libmpv2-sys` (besoin de mpv.lib/X11). **Seule la CI valide Windows/Linux.**
