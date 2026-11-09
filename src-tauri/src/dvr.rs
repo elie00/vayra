@@ -71,8 +71,32 @@ fn sanitize_filename(raw: &str) -> String {
             c => out.push(c),
         }
     }
-    let trimmed = out.trim().trim_end_matches('.').to_string();
-    if trimmed.is_empty() { "recording".into() } else { trimmed }
+    let trimmed = out.trim().trim_end_matches(['.', ' ']).to_string();
+    if trimmed.is_empty() {
+        return "recording".into();
+    }
+    // Windows refuses these names, even with an extension after them.
+    let stem = trimmed.split('.').next().unwrap_or_default().to_ascii_uppercase();
+    let reserved = matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || (stem.len() == 4
+            && (stem.starts_with("COM") || stem.starts_with("LPT"))
+            && matches!(stem.as_bytes()[3], b'1'..=b'9'));
+    if reserved { format!("_{trimmed}") } else { trimmed }
+}
+
+#[cfg(test)]
+mod filename_tests {
+    use super::sanitize_filename;
+
+    #[test]
+    fn names_are_valid_on_windows() {
+        assert_eq!(sanitize_filename("Match: A/B?"), "Match_ A_B_");
+        assert_eq!(sanitize_filename("Soir ."), "Soir");
+        assert_eq!(sanitize_filename("con"), "_con");
+        assert_eq!(sanitize_filename("LPT1.direct"), "_LPT1.direct");
+        assert_eq!(sanitize_filename("Console"), "Console");
+        assert_eq!(sanitize_filename("..."), "recording");
+    }
 }
 
 fn now_ms() -> i64 {

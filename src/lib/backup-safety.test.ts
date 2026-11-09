@@ -46,6 +46,13 @@ describe("portable backup privacy", () => {
     expect(JSON.parse((await buildBackup()).data["harbor.settings"])).toEqual({ uiLanguage: "fr", theme: { preset: "sage" }, homeRows: { order: ["movies"] }, preferredSubLangs: ["French"] });
     expect(json(await buildBackup())).not.toContain("FIXTURE_SECRET");
   });
+  it("keeps a Windows library path and refuses a network share", async () => {
+    values.set("harbor.settings", "{}");
+    const entry = { id: "local-1", filename: "film.mkv", title: "Fixture film", type: "movie", addedAt: 1 };
+    values.set("harbor.library.local.v1", json([{ ...entry, path: "C:\\Films\\film.mkv" }, { ...entry, id: "local-2", path: "\\\\nas\\film.mkv" }]));
+    const complete = await buildBackup({ includeLocalActivity: true });
+    expect(JSON.parse(complete.data["harbor.library.local.v1"]).map((e: { path: string }) => e.path)).toEqual(["C:\\Films\\film.mkv"]);
+  });
   it("keeps supported private library, list and progress metadata only on opt-in", async () => {
     values.set("harbor.settings", "{}");
     values.set("vayra.luma.v1.default", json(luma()));
