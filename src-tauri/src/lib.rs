@@ -966,6 +966,7 @@ pub fn run() {
             connect::connect_stop,
             connect::connect_rotate,
             connect::connect_status,
+            connect::connect_firewall,
             connect::connect_publish,
             connect_link::connect_link_read,
             connect_link::connect_link_pair,
