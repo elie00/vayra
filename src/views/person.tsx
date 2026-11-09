@@ -9,7 +9,7 @@ import {
 } from "@/lib/providers/tmdb";
 import { AwardDetailModal } from "@/components/award-detail-modal";
 import { awardSummary, type AwardType, useAwards } from "@/lib/providers/wikidata";
-import { mergeBundledPersonAwards } from "@/lib/awards-history";
+import { useMergedPersonAwards } from "@/lib/awards-history";
 import { useRankings } from "@/lib/rankings";
 import { useSettings } from "@/lib/settings";
 import { useTopRankModal, type TopRankDept } from "@/lib/top-rank-modal";
@@ -43,10 +43,7 @@ export function PersonView({ personId }: { personId: number }) {
   const scrollRef = useRef<HTMLElement>(null);
   const personRank = rank(personId, person?.knownForDepartment ?? "Acting");
   const liveAwards = useAwards(person?.imdbId ?? undefined);
-  const awardEntries = useMemo(
-    () => mergeBundledPersonAwards(liveAwards, person?.name),
-    [liveAwards, person?.name],
-  );
+  const awardEntries = useMergedPersonAwards(liveAwards, person?.name);
   const awardChips = useMemo(() => awardSummary(awardEntries), [awardEntries]);
   const [openAward, setOpenAward] = useState<{ type: AwardType; anchor: DOMRect } | null>(null);
   const openAwardEntries = useMemo(

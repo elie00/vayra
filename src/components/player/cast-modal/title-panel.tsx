@@ -1,5 +1,5 @@
 import { ArrowRight, Loader2, Play } from "lucide-react";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { Check, Plus } from "lucide-react";
@@ -11,7 +11,7 @@ import { HeroAwardsCorner } from "@/views/detail/hero-awards";
 import { isTitleUpcoming } from "@/views/detail/helpers";
 import { UpcomingCta } from "@/views/detail/upcoming-cta";
 import { awardSummary, useAwards } from "@/lib/providers/wikidata";
-import { mergeBundledAwards } from "@/lib/awards-history";
+import { useMergedAwards } from "@/lib/awards-history";
 import { IMG } from "@/lib/providers/tmdb/tmdb-client";
 import type { PersonRef } from "@/lib/providers/tmdb/tmdb-people";
 import { PeopleRail, PosterRail, RailSection, RailSkeleton, type Person } from "./rails";
@@ -76,10 +76,7 @@ export function TitlePanel({
   const tmdbRating = !anime && detail?.rating ? detail.rating : null;
 
   const liveAwards = useAwards(imdbId ?? undefined);
-  const awards = useMemo(
-    () => mergeBundledAwards(liveAwards, title, year ? Number(year) : undefined),
-    [liveAwards, title, year],
-  );
+  const awards = useMergedAwards(liveAwards, title, year ? Number(year) : undefined);
   const awardSummaryItems = awardSummary(awards).slice(0, 3);
 
   const cast: Person[] = (detail?.cast ?? []).slice(0, 30).map((c) => ({

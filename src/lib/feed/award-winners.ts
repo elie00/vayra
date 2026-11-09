@@ -1,6 +1,6 @@
 import type { Meta } from "@/lib/cinemeta";
 import type { AwardCategory } from "@/lib/awards-catalog";
-import { readAwardHistory } from "@/lib/awards-history";
+import { loadAwardsData, readAwardHistory } from "@/lib/awards-history";
 import { tmdbSearchMovie } from "@/lib/providers/tmdb";
 import type { AwardType } from "@/lib/providers/wikidata";
 
@@ -73,6 +73,7 @@ async function resolveAll(tmdbKey: string): Promise<Meta[]> {
   }
   if (inflight) return inflight;
   inflight = (async () => {
+    await loadAwardsData();
     const titles = winnerTitles();
     const hits = await mapLimit(titles, BATCH, (t) => tmdbSearchMovie(tmdbKey, t.title, t.year));
     const seen = new Set<string>();

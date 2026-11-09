@@ -25,7 +25,7 @@ import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
 import { awardSummary, useAwards } from "@/lib/providers/wikidata";
-import { mergeBundledAwards } from "@/lib/awards-history";
+import { useMergedAwards } from "@/lib/awards-history";
 import {
   tmdbDetails,
   tmdbImdbId,
@@ -720,10 +720,7 @@ export function DetailView({
   const recommendations = detail?.recommendations ?? [];
   const similar = detail?.similar ?? [];
   const liveAwards = useAwards(detail?.imdbId ?? undefined);
-  const awards = useMemo(
-    () => mergeBundledAwards(liveAwards, meta.name, releaseYearNum ?? undefined),
-    [liveAwards, meta.name, releaseYearNum],
-  );
+  const awards = useMergedAwards(liveAwards, meta.name, releaseYearNum ?? undefined);
   const heroAwardSummary = awardSummary(awards).slice(0, 2);
   const awardsInDescription = (settings.theme.preset as string) === "elegantfin";
   const renderHeroAwards = () => {
