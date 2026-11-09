@@ -8,6 +8,12 @@ const RATE_LIMIT = 120;
 const RATE_WINDOW_MS = 60_000;
 const MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
 const MAX_REQUEST_BYTES = 1024 * 1024;
+const UPSTREAM_DEADLINE_MS = 25_000;
+const MAX_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+const TIMED_OUT = Symbol("timed out");
+
+class UpstreamRefused extends Error {}
 
 function rateLimitStore() {
   if (!globalThis[RATE_LIMIT_STORE]) globalThis[RATE_LIMIT_STORE] = new Map();
@@ -47,6 +53,64 @@ function requestBody(req) {
   if (Buffer.isBuffer(req.body)) return req.body;
   if (typeof req.body === "string") return req.body;
   return JSON.stringify(req.body);
+}
+
+function redirectTarget(location, from) {
+  try {
+    return webProxyTarget(new URL(location, from).href);
+  } catch {
+    return null;
+  }
+}
+
+/** Follows redirects by hand: each hop passes the same policy as the first
+ * address, and the credentials never leave the host they were meant for. */
+async function fetchWithinPolicy(target, { method, headers, body }, signal) {
+  let url = target;
+  let request = { method, headers: { ...headers }, body };
+  for (let hop = 0; ; hop += 1) {
+    const upstream = await fetch(url, { ...request, redirect: "manual", signal });
+    const location = REDIRECT_STATUSES.has(upstream.status) ? upstream.headers.get("location") : null;
+    if (!location) return upstream;
+    if (hop >= MAX_REDIRECTS) throw new UpstreamRefused("too many upstream redirects");
+    const next = redirectTarget(location, url);
+    if (!next) throw new UpstreamRefused("upstream redirect not allowed");
+    await upstream.body?.cancel();
+
+    const nextHeaders = { ...request.headers };
+    if (next.origin !== url.origin) delete nextHeaders.authorization;
+    const becomesGet = upstream.status === 303
+      ? request.method !== "HEAD"
+      : upstream.status !== 307 && upstream.status !== 308 && request.method === "POST";
+    if (becomesGet) {
+      delete nextHeaders["content-type"];
+      request = { method: "GET", headers: nextHeaders, body: undefined };
+    } else {
+      request = { ...request, headers: nextHeaders };
+    }
+    url = next;
+  }
+}
+
+/** Reads the body chunk by chunk so an upstream that hides its length, or
+ * stalls halfway, is cut off at the limit or at the deadline. */
+async function readWithinLimit(upstream, signal) {
+  if (!upstream.body) return Buffer.alloc(0);
+  const timedOut = new Promise((resolve) => {
+    if (signal.aborted) resolve(TIMED_OUT);
+    else signal.addEventListener("abort", () => resolve(TIMED_OUT), { once: true });
+  });
+  const reader = upstream.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const step = await Promise.race([reader.read(), timedOut]);
+    if (step === TIMED_OUT) throw Object.assign(new Error("upstream timeout"), { name: "AbortError" });
+    if (step.done) return Buffer.concat(chunks, size);
+    size += step.value.byteLength;
+    if (size > MAX_RESPONSE_BYTES) throw new UpstreamRefused("upstream response too large");
+    chunks.push(step.value);
+  }
 }
 
 export default async function handler(req, res) {
@@ -89,32 +153,25 @@ export default async function handler(req, res) {
   if (authorization) headers.authorization = authorization;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25_000);
+  const timer = setTimeout(() => controller.abort(), UPSTREAM_DEADLINE_MS);
   let upstream;
+  let payload;
   try {
-    upstream = await fetch(target, {
-      method: req.method,
-      headers,
-      body,
-      redirect: "follow",
-      signal: controller.signal,
-    });
+    upstream = await fetchWithinPolicy(target, { method: req.method, headers, body }, controller.signal);
+    const declaredLength = Number(upstream.headers.get("content-length") || 0);
+    if (declaredLength > MAX_RESPONSE_BYTES) throw new UpstreamRefused("upstream response too large");
+    payload = await readWithinLimit(upstream, controller.signal);
   } catch (error) {
+    if (error instanceof UpstreamRefused) {
+      controller.abort();
+      return res.status(502).json({ error: error.message });
+    }
     const timedOut = error?.name === "AbortError";
     return res.status(timedOut ? 504 : 502).json({
       error: timedOut ? "upstream timeout" : "upstream failed",
     });
   } finally {
     clearTimeout(timer);
-  }
-
-  const declaredLength = Number(upstream.headers.get("content-length") || 0);
-  if (declaredLength > MAX_RESPONSE_BYTES) {
-    return res.status(502).json({ error: "upstream response too large" });
-  }
-  const payload = Buffer.from(await upstream.arrayBuffer());
-  if (payload.byteLength > MAX_RESPONSE_BYTES) {
-    return res.status(502).json({ error: "upstream response too large" });
   }
 
   const responseType = upstream.headers.get("content-type");
