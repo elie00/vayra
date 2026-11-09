@@ -4,7 +4,7 @@ import { createNowPlaying } from "./now-playing";
 import { createResumeRecovery } from "./resume-recovery";
 import { localResumeWithin, watchPlaybackWake } from "./wake-monitor";
 import { emitAppFeedback } from "@/lib/app-feedback";
-import { isMacDesktop } from "@/lib/platform";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { t } from "@/lib/i18n";
 import {
   emptySnapshot,
@@ -112,7 +112,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   };
   const listeners = new Set<(s: PlayerSnapshot) => void>();
   // mpv draws natively, so the WebView's Media Session never reaches macOS.
-  const nowPlaying = isMacDesktop() ? createNowPlaying() : null;
+  const nowPlaying = hasNativeDesktopUx() ? createNowPlaying() : null;
   let unlistenEvent: UnlistenFn | null = null;
   let unlistenLog: UnlistenFn | null = null;
   let pendingTracks: Record<string, unknown[]> = {};

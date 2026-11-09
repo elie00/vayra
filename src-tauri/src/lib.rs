@@ -625,6 +625,10 @@ pub fn run() {
             {
                 let _ = app.emit("vayra:stremio-deeplink", url.clone());
             }
+            #[cfg(windows)]
+            if let Some(link) = torrent_links::link_from_args(&args) {
+                let _ = app.emit(torrent_links::LINK_EVENT, link);
+            }
         }))
     } else {
         app_builder
@@ -971,6 +975,7 @@ pub fn run() {
             torrent_links::torrent_file_magnet,
             torrent_links::torrent_links_default,
             torrent_links::torrent_links_make_default,
+            torrent_links::torrent_links_launch_link,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
