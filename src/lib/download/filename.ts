@@ -3,9 +3,13 @@ import type { PlayEpisode } from "@/lib/view";
 
 const ILLEGAL = /[<>:"/\\|?*\x00-\x1F]/g;
 const TRAILING = /[. ]+$/g;
+// Windows refuses these as a file or folder name, with or without an extension.
+const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
 export function sanitizeName(name: string): string {
-  return name.replace(ILLEGAL, "").replace(TRAILING, "").trim().slice(0, 180);
+  const clean = name.replace(ILLEGAL, "").trim().slice(0, 180).replace(TRAILING, "");
+  if (!clean) return "video";
+  return RESERVED.test(clean) ? `_${clean}` : clean;
 }
 
 export function extensionFromUrl(url: string): string {
