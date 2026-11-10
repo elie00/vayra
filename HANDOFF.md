@@ -1,11 +1,11 @@
 # Passation — VAYRA
 
-## État actuel (top-line) — mis à jour le 2026-11-09
+## État actuel (top-line) — mis à jour le 2026-11-10
 - **Périmètre** : les applications personnelles de l'utilisateur, **macOS, Windows et
   Android** (voir `AGENTS.md`). Le web, Linux, la signature Developer ID et la
   notarisation restent **en pause** depuis l'audit du 2026-09-05
   (`docs/audit-global-2026-09-05.md`). La priorité du moment est dans « Point au
-  2026-11-09 » ; les sections « Travaux réalisés » (juillet) restent comme historique.
+  2026-11-10 » ; les sections « Travaux réalisés » (juillet) restent comme historique.
 - **Repo** : `elie00/vayra`, remote `origin`. `main` est la référence, tout y entre par
   pull request.
 - **App installée sur le Mac** : `/Applications/VAYRA.app` 0.9.42, construite le
@@ -23,10 +23,11 @@
 - **Chantier en cours** : lecture de sources torrent à pairs intermittents
   (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
-## Point au 2026-11-09
+## Point au 2026-11-10
 - **Priorité** : Windows sur PC, objectif appli 100 % fonctionnelle. Le travail sur Mac
   et Android est remis à plus tard.
-- **`main`** = `f3bdffcc`, 0.9.42, CI verte. Appli Windows réinstallée depuis ce commit.
+- **`main`** = `adaae10b`, 0.9.42. Appli Windows réinstallée depuis ce commit le 10/11
+  (ancien exécutable dans `%LOCALAPPDATA%\VAYRA-backups\20261110-pre-french`).
 - **Fusionné le 09/11** :
   - CI : #182 (audit `minimatch` ignoré, il bloquait typecheck, lint et tests).
   - Windows : #183 (liens magnet et `.torrent`), #184 (touches multimédia et panneau
@@ -37,27 +38,30 @@
     CSP), #193 (polices des thèmes embarquées), #195 (synchro auto et extraction des
     sous-titres, hachage vidéo, reconnaissance de musique, jamais compilés jusque-là),
     #196 (icône personnalisée), #152 (Cira), #188 (interface Android et suite de Connect).
+- **Fusionné le 10/11** :
+  - Français : #201 (messages d'erreur et descriptions de raccourcis), #202 (titres de
+    rangées, noms de pays selon la langue), #203 (échec de clip ou de GIF).
+  - #198 (le relais web revérifie chaque redirection et coupe une réponse trop grosse ou
+    trop lente), #199 (workflow `vara-broker`, `frontend` déclenché aussi par `api/**`
+    et `site/**`), #200 (tables de prix chargées à la demande).
 
-### Fait sur le Mac le soir du 09/11
-- Appli Mac reconstruite depuis `f3bdffcc` et réinstallée : elle a maintenant #192, #193,
-  #195 et #196. Rien n'y a été vérifié à l'œil.
-- Pull requests ouvertes, à relire et fusionner :
-  - #198 : le relais web de Lite revérifie chaque redirection et coupe une réponse trop
-    grosse ou trop lente pendant qu'elle arrive (deux constats P1 de l'audit du 05/09).
-  - #199 : workflow `vara-broker` (tests et clippy), et `frontend` se déclenche aussi
-    sur `api/**` et `site/**`.
-  - #200 : les tables de prix (`src/data/awards.json`) se chargent à la première
-    demande. Chargement initial 839,4 → 793,7 Kio, script d'entrée 645,3 → 599,6 Kio.
-    À vérifier à l'œil : badges de prix sur une fiche, une personne, la page d'un prix.
+### Appli Mac
+- Reconstruite le 09/11 depuis `f3bdffcc` : elle a #192, #193, #195 et #196, mais pas les
+  fusions du 10/11. Rien n'y a été vérifié à l'œil.
 
 ### À reprendre sur le PC pro (réseau filtré)
-- Chasse aux bugs, restent : textes non traduits, réglages un par un.
-- Ctrl+0 a deux usages selon l'écran : zoom de l'interface, et Anime4K désactivé dans le
-  lecteur.
-- Les erreurs Rust de `mpv_clip_save` restent en anglais.
-- Au tout premier lancement après une installation, `document.fonts.load` n'a renvoyé
-  aucune police ; aux lancements suivants elles se chargent toutes. Cause non établie :
-  effet du test (qui recharge la page) ou vrai retard au démarrage.
+- Fait le 10/11 : recherche des textes en anglais. Le scan de l'accueil, d'Explorer, de la
+  bibliothèque, des téléchargements et des réglages n'en trouve plus ; il lit les écrans
+  ouverts, pas les messages d'erreur ni le lecteur.
+- Réglages un par un : les 11 interrupteurs (`role=switch`) testés répondent, ceux qui
+  agissent hors de l'app sont exclus. Restent les listes, boutons et champs.
+- **`VAYRA_DATA_DIR` n'isole pas le `localStorage` de la WebView**, seulement le fichier de
+  réglages : un test lancé ainsi modifie le vrai profil.
+- Ctrl+0 n'est pas un conflit : le lecteur le garde pour Anime4K, le zoom ne s'applique
+  qu'ailleurs (`App.tsx`).
+- Au premier lancement après deux des installations, `document.fonts.load` n'a renvoyé
+  aucune police ; aux lancements suivants elles se chargent. Cause non établie : effet du
+  test (qui recharge la page) ou vrai retard au démarrage.
 - **Ne pas lancer `recognize_now_playing` sur ce PC** : la commande enregistre le son du
   poste et l'envoie à AudD. Elle reste donc non testée, et demande une clé AudD.
 
@@ -69,16 +73,15 @@
 - Liens magnet quand un autre logiciel est déjà choisi dans les Paramètres Windows : VAYRA
   doit ouvrir « Applications par défaut ».
 - Rendu à l'œil : un thème personnalisé, les polices de chaque thème, l'icône personnalisée
-  dans la barre des tâches.
+  dans la barre des tâches, les badges de prix (#200) sur une fiche, une personne et la
+  page d'un prix.
 
 ### Plus tard
 - Android : lecture à confirmer sur le S24 Ultra, recette sur émulateur et revue design.
 - Mac : #176 (libmpv2 6, en brouillon), à essayer en lecture.
 
 ### À surveiller
-- Le bundle initial est à 839,4 Kio pour une limite de 840 tant que #200 n'est pas
-  fusionnée : d'ici là, le prochain ajout au chargement initial bloque la CI et le
-  déploiement Vercel.
+- Le bundle initial est à 793,8 Kio pour une limite de 840 depuis #200.
 - General Sans, Cabinet Grotesk, Sentient et Switzer sont hors du dépôt (licence
   Fontshare) : lancer `pnpm setup:ui-fonts` avant un build, sinon les polices de secours
   s'appliquent.
