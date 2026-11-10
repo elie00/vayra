@@ -1,51 +1,87 @@
 # Passation — VAYRA
 
-## État actuel (top-line) — mis à jour le 2026-09-22
-- **Périmètre** : depuis l'audit du 2026-09-05 (`docs/audit-global-2026-09-05.md`),
-  **usage personnel sur ce Mac uniquement** (voir `AGENTS.md`). Web, Android,
-  Linux, signature Developer ID et notarisation sont **en pause** ; les
-  sections « Travaux réalisés » ci-dessous (juillet) restent comme historique.
-  **Windows** est repris depuis le 2026-10-13 : portage à parité avec le Mac
-  (section « Windows » ci-dessous).
-- **Repo** : `elie00/vayra`, remote `origin`.
-- **Branches** : `codex/pause-resume-downloads` (travail macOS du 04/09 au 22/09)
-  fusionnée dans `main` par pull request le 2026-09-22. `main` est de nouveau la
-  référence.
-- **App installée** : `/Applications/VAYRA.app` 0.9.42 (binaire `Contents/MacOS/vayra`,
-  SHA-256 `d4f7c3c6…`), construite le 2026-09-23 avec les lots 1 à 7 (sauf le
-  retrait de `router.silotis.us`), signée Apple Development. Versions précédentes
-  dans `~/Library/Application Support/VAYRA-backups/` (`20260923-182551` = lots 1–6,
-  `20260922-211836` = lots 1–5, `20260922-200326` = lots 1–3, `20260922-194342` = journal de pairs,
-  `20260922-192818` = build du 12/09).
+## État actuel (top-line) — mis à jour le 2026-11-09
+- **Périmètre** : les applications personnelles de l'utilisateur, **macOS, Windows et
+  Android** (voir `AGENTS.md`). Le web, Linux, la signature Developer ID et la
+  notarisation restent **en pause** depuis l'audit du 2026-09-05
+  (`docs/audit-global-2026-09-05.md`). La priorité du moment est dans « Point au
+  2026-11-09 » ; les sections « Travaux réalisés » (juillet) restent comme historique.
+- **Repo** : `elie00/vayra`, remote `origin`. `main` est la référence, tout y entre par
+  pull request.
+- **App installée sur le Mac** : `/Applications/VAYRA.app` 0.9.42, construite le
+  2026-11-09 depuis `main` (`f3bdffcc`), signée « VAYRA Local Signing ». L'ancienne
+  version est supprimée à chaque installation, sans copie de secours. Des copies de
+  septembre restent dans `~/Library/Application Support/VAYRA-backups/`.
 - **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
   au dépôt, Root Directory `.` et `pnpm build:web` : il construit l'**app web**
   depuis la racine, pas seulement `site/`. Chaque push de branche crée un Preview ;
   un push sur `main` publierait en production, mais `vercel.json` porte
   `git.deploymentEnabled.main: false` depuis la fusion du 22/09 (web en pause) :
   la production reste à `d041edd` (31/08). Retirer ce bloc pour republier.
-- **Signature locale** : `scripts/bundle-libmpv-macos.mjs` signe les builds locaux
-  avec l'unique identité « Apple Development » du trousseau (sans hardened runtime
-  ni horodatage : même comportement qu'ad hoc). La règle de signature (identifiant
-  `app.vayra` + nom du certificat) reste la même d'un build à l'autre, donc
-  « Toujours autoriser » dans le trousseau n'est demandé qu'une fois. Le certificat
-  expire le **2026-10-02** : le renouveler via Xcode (même nom, même règle). Sans
-  identité valide, retour automatique à l'ad hoc (invite à chaque build). La
-  release CI (Developer ID via `APPLE_SIGNING_IDENTITY`) est inchangée.
+- **Signature locale** : voir « Signature locale stable (2026-10-14) ». La release CI
+  (Developer ID via `APPLE_SIGNING_IDENTITY`) est inchangée.
 - **Chantier en cours** : lecture de sources torrent à pairs intermittents
   (cas Hijack S2E01 / HiggsBoson, `docs/design-reviews/2026-09-12-hijack-peer-loading.md`).
 
 ## Point au 2026-11-09
-- **`main`** = `ebe099d5`, 0.9.42. Fusionnés le 09/11 : #182 (audit `minimatch`, qui
-  bloquait le typecheck, le lint et les tests de la CI), #183 (liens magnet et `.torrent`
-  sur Windows), #184 (touches multimédia Windows), #185 (avertissement pare-feu de
-  Connect), #187 (le mpv des vignettes meurt avec VAYRA), #186 (sous-titres incrustés au
-  cast depuis un chemin `C:\`), #152 (Cira), #188 (interface Android refaite et suite de
-  Connect : télécommande, reprise).
-- **Appli Windows** réinstallée depuis `ebe099d5` le 09/11.
-- **Périmètre** : le « Android en pause » ci-dessous date d'avant #188.
-- **Windows, encore à vérifier à la main** : les vraies touches multimédia du clavier (la
-  session système a été pilotée par un autre programme), un téléphone réel sur Connect,
-  une diffusion vers une vraie télé avec sous-titres.
+- **Priorité** : Windows sur PC, objectif appli 100 % fonctionnelle. Le travail sur Mac
+  et Android est remis à plus tard.
+- **`main`** = `f3bdffcc`, 0.9.42, CI verte. Appli Windows réinstallée depuis ce commit.
+- **Fusionné le 09/11** :
+  - CI : #182 (audit `minimatch` ignoré, il bloquait typecheck, lint et tests).
+  - Windows : #183 (liens magnet et `.torrent`), #184 (touches multimédia et panneau
+    système), #185 (avertissement pare-feu de Connect), #187 (le mpv des vignettes meurt
+    avec VAYRA), #186 (sous-titres incrustés au cast depuis `C:\`), #194 (noms de fichiers
+    refusés par Windows, chemins de la bibliothèque dans les sauvegardes).
+  - Toutes plateformes : #192 (styles créés par l'app, thèmes compris, bloqués par la
+    CSP), #193 (polices des thèmes embarquées), #195 (synchro auto et extraction des
+    sous-titres, hachage vidéo, reconnaissance de musique, jamais compilés jusque-là),
+    #196 (icône personnalisée), #152 (Cira), #188 (interface Android et suite de Connect).
+
+### Fait sur le Mac le soir du 09/11
+- Appli Mac reconstruite depuis `f3bdffcc` et réinstallée : elle a maintenant #192, #193,
+  #195 et #196. Rien n'y a été vérifié à l'œil.
+- Pull requests ouvertes, à relire et fusionner :
+  - #198 : le relais web de Lite revérifie chaque redirection et coupe une réponse trop
+    grosse ou trop lente pendant qu'elle arrive (deux constats P1 de l'audit du 05/09).
+  - #199 : workflow `vara-broker` (tests et clippy), et `frontend` se déclenche aussi
+    sur `api/**` et `site/**`.
+  - #200 : les tables de prix (`src/data/awards.json`) se chargent à la première
+    demande. Chargement initial 839,4 → 793,7 Kio, script d'entrée 645,3 → 599,6 Kio.
+    À vérifier à l'œil : badges de prix sur une fiche, une personne, la page d'un prix.
+
+### À reprendre sur le PC pro (réseau filtré)
+- Chasse aux bugs, restent : textes non traduits, réglages un par un.
+- Ctrl+0 a deux usages selon l'écran : zoom de l'interface, et Anime4K désactivé dans le
+  lecteur.
+- Les erreurs Rust de `mpv_clip_save` restent en anglais.
+- Au tout premier lancement après une installation, `document.fonts.load` n'a renvoyé
+  aucune police ; aux lancements suivants elles se chargent toutes. Cause non établie :
+  effet du test (qui recharge la page) ou vrai retard au démarrage.
+- **Ne pas lancer `recognize_now_playing` sur ce PC** : la commande enregistre le son du
+  poste et l'envoie à AudD. Elle reste donc non testée, et demande une clé AudD.
+
+### À faire sur un PC Windows personnel
+- Connexion Stremio et lecture de vraies sources, torrents réels, ouverture de port PCP
+  ou NAT-PMP, verdicts du pare-feu, mode HDR, liens `stremio://`.
+- Vraies touches multimédia (la session système a été pilotée par un autre programme),
+  téléphone sur Connect, diffusion vers une vraie télé avec sous-titres.
+- Liens magnet quand un autre logiciel est déjà choisi dans les Paramètres Windows : VAYRA
+  doit ouvrir « Applications par défaut ».
+- Rendu à l'œil : un thème personnalisé, les polices de chaque thème, l'icône personnalisée
+  dans la barre des tâches.
+
+### Plus tard
+- Android : lecture à confirmer sur le S24 Ultra, recette sur émulateur et revue design.
+- Mac : #176 (libmpv2 6, en brouillon), à essayer en lecture.
+
+### À surveiller
+- Le bundle initial est à 839,4 Kio pour une limite de 840 tant que #200 n'est pas
+  fusionnée : d'ici là, le prochain ajout au chargement initial bloque la CI et le
+  déploiement Vercel.
+- General Sans, Cabinet Grotesk, Sentient et Switzer sont hors du dépôt (licence
+  Fontshare) : lancer `pnpm setup:ui-fonts` avant un build, sinon les polices de secours
+  s'appliquent.
 
 ## Signature locale stable (2026-10-14)
 - Le certificat « Apple Development » de ce Mac a expiré : les builds repassaient en
