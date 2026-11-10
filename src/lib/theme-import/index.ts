@@ -4,6 +4,7 @@ import { looksLikeBase16, parseBase16 } from "./parse-base16";
 import { looksLikeKodi, parseKodi } from "./parse-kodi";
 import { looksLikeSpicetify, parseSpicetify } from "./parse-spicetify";
 import { projectPalette, type PaletteBucket } from "./project-palette";
+import { t as tr } from "@/lib/i18n";
 
 export type ForeignImport =
   | { ok: true; themes: CustomTheme[]; format: string }
@@ -48,7 +49,7 @@ export function importForeignTheme(text: string, filename?: string): ForeignImpo
 
   if (looksLikeBase16(text, filename)) {
     const bucket = parseBase16(text);
-    if (!bucket) return { ok: false, error: "This looks like a Base16 scheme but its colors couldn't be read." };
+    if (!bucket) return { ok: false, error: tr("This looks like a Base16 scheme but its colors couldn't be read.") };
     if (label) bucket.name = label;
     return { ok: true, themes: [toTheme(bucket)], format: "Base16" };
   }
@@ -56,16 +57,16 @@ export function importForeignTheme(text: string, filename?: string): ForeignImpo
   if (looksLikeSpicetify(text, filename)) {
     const buckets = parseSpicetify(text, label || "Spicetify");
     if (buckets.length === 0) {
-      return { ok: false, error: "This looks like a Spicetify color.ini but no readable schemes were found." };
+      return { ok: false, error: tr("This looks like a Spicetify color.ini but no readable schemes were found.") };
     }
     return { ok: true, themes: buckets.map(toTheme), format: "Spicetify" };
   }
 
   if (looksLikeKodi(text, filename)) {
     const bucket = parseKodi(text, label || "Kodi skin");
-    if (!bucket) return { ok: false, error: "This looks like a Kodi colors file but no <color> entries parsed." };
+    if (!bucket) return { ok: false, error: tr("This looks like a Kodi colors file but no <color> entries parsed.") };
     return { ok: true, themes: [toTheme(bucket)], format: "Kodi" };
   }
 
-  return { ok: false, error: "Unrecognized theme format. VAYRA imports its own themes plus Base16, Spicetify, and Kodi color files." };
+  return { ok: false, error: tr("Unrecognized theme format. VAYRA imports its own themes plus Base16, Spicetify, and Kodi color files.") };
 }

@@ -2,7 +2,7 @@ import { Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import godfatherStill from "@/assets/godfather-offer.svg";
 import { useSettings } from "@/lib/settings";
-import { useT } from "@/lib/i18n";
+import { t as tr, useT } from "@/lib/i18n";
 import { ColorPopoverTrigger } from "../color-picker";
 import { ToggleRow } from "../shared";
 import { Label, SubField, previewFamily } from "./internals";
@@ -400,7 +400,7 @@ function FontPicker() {
   const onFile = async (file: File) => {
     setError(null);
     if (file.size > MAX_FONT_BYTES) {
-      setError(`That font is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Max is 4 MB.`);
+      setError(tr("That font is {size} MB. Max is 4 MB.", { size: (file.size / (1024 * 1024)).toFixed(1) }));
       return;
     }
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -411,7 +411,7 @@ function FontPicker() {
       woff2: "woff2",
     };
     if (!formatMap[ext]) {
-      setError(`Unsupported font type ".${ext}". Use TTF, OTF, WOFF, or WOFF2.`);
+      setError(tr('Unsupported font type ".{ext}". Use TTF, OTF, WOFF, or WOFF2.', { ext }));
       return;
     }
     try {

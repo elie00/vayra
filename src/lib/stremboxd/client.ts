@@ -19,6 +19,7 @@ import type {
   StremboxdMeta,
   StremboxdMetaResponse,
 } from "./types";
+import { t as tr } from "@/lib/i18n";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stremboxd API client.
@@ -471,17 +472,17 @@ export async function validateStremboxdConfig(
   try {
     const manifest = await asJson<StremboxdManifest>(await fetch(manifestUrl(configSegment)));
     if (manifest.id !== "community.stremboxd") {
-      return { ok: false, reason: "invalid", message: "Unexpected manifest from Stremboxd." };
+      return { ok: false, reason: "invalid", message: tr("Unexpected manifest from Stremboxd.") };
     }
     if (!Array.isArray(manifest.catalogs) || manifest.catalogs.length === 0) {
-      return { ok: false, reason: "no-catalogs", message: "No catalogs returned for this configuration." };
+      return { ok: false, reason: "no-catalogs", message: tr("No catalogs returned for this configuration.") };
     }
     const hasWatchlist = manifest.catalogs.some((c) => c.id === "letterboxd-watchlist");
     if (expectWatchlist && !hasWatchlist) {
       return {
         ok: false,
         reason: "invalid",
-        message: "Letterboxd did not return a watchlist for this username. Check the username is correct and public.",
+        message: tr("Letterboxd did not return a watchlist for this username. Check the username is correct and public."),
       };
     }
     return { ok: true, catalogs: manifest.catalogs.length, hasWatchlist };
@@ -489,7 +490,7 @@ export async function validateStremboxdConfig(
     if (e instanceof StremboxdApiError) {
       return { ok: false, reason: "invalid", message: e.status === 400 ? "Invalid configuration." : `Stremboxd error (${e.status}).` };
     }
-    return { ok: false, reason: "network", message: "Could not reach Stremboxd. Check your connection." };
+    return { ok: false, reason: "network", message: tr("Could not reach Stremboxd. Check your connection.") };
   }
 }
 
@@ -520,7 +521,7 @@ export async function loginLetterboxd(
       const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
       res = await tauriFetch(url, { method: "POST", headers, body });
     } catch {
-      throw new StremboxdLoginError(0, "Could not reach Stremboxd. Check your connection.", undefined);
+      throw new StremboxdLoginError(0, tr("Could not reach Stremboxd. Check your connection."), undefined);
     }
   }
 

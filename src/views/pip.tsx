@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { t as tr, useT } from "@/lib/i18n";
 
 type PipSubtitle = {
   url: string;
@@ -63,7 +63,7 @@ export function PipApp() {
         const s = await invoke<PipSession | null>("pip_get_session");
         if (cancelled) return;
         if (!s) {
-          setError("No PiP session. Closing.");
+          setError(tr("No PiP session. Closing."));
           closeTimer = window.setTimeout(() => closeWithState(), 800);
           return;
         }
@@ -72,7 +72,7 @@ export function PipApp() {
         setVol(s.volume);
         setPlaying(s.playing);
       } catch (e) {
-        if (!cancelled) setError(`Failed to read session: ${e instanceof Error ? e.message : String(e)}`);
+        if (!cancelled) setError(tr("Failed to read session: {error}", { error: e instanceof Error ? e.message : String(e) }));
       }
     })();
     listen("pip://session-replaced", () => {
