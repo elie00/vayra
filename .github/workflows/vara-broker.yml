@@ -1,0 +1,29 @@
+name: vara-broker
+
+on:
+  push:
+    paths:
+      - "vara-broker/**"
+      - ".github/workflows/vara-broker.yml"
+  pull_request:
+    paths:
+      - "vara-broker/**"
+      - ".github/workflows/vara-broker.yml"
+
+jobs:
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vara-broker
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: vara-broker
+      - run: cargo test --locked --all-targets
+      - run: cargo clippy --locked --all-targets -- -D warnings
