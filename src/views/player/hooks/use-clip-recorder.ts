@@ -59,11 +59,8 @@ export function useClipRecorder(params: { src: PlayerSrc }): {
           path: result.path,
         });
       } catch (e) {
-        setToast({
-          id: Date.now(),
-          kind: "error",
-          text: typeof e === "string" ? e : t("Clip save failed"),
-        });
+        console.warn("[clip] save failed", e);
+        setToast({ id: Date.now(), kind: "error", text: t("Clip save failed") });
       } finally {
         setSaving(false);
         busyRef.current = false;
