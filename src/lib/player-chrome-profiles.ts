@@ -15,6 +15,7 @@ import {
   type PlayerControlId,
   type ThemeId,
 } from "./player-chrome";
+import { t as tr } from "@/lib/i18n";
 
 export type LayoutProfile = {
   id: string;
@@ -141,14 +142,14 @@ function writeDb(db: ProfileDb): SaveResult {
   try {
     json = JSON.stringify(db);
   } catch (err) {
-    return { ok: false, error: "Could not serialize profile (a value may be circular)." };
+    return { ok: false, error: tr("Could not serialize profile (a value may be circular).") };
   }
   const bytes = json.length * 2;
   if (bytes > SAFE_PAYLOAD_BYTES) {
     const mb = (bytes / 1024 / 1024).toFixed(2);
     return {
       ok: false,
-      error: `Profile data is too large (${mb} MB). Remove unused custom icons or delete an old profile, then try again.`,
+      error: tr("Profile data is too large ({size} MB). Remove unused custom icons or delete an old profile, then try again.", { size: mb }),
     };
   }
   try {
@@ -159,7 +160,7 @@ function writeDb(db: ProfileDb): SaveResult {
     if (name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED") {
       return {
         ok: false,
-        error: "Your browser's storage is full. Remove custom icons or delete profiles to free up space, then try again.",
+        error: tr("Your browser's storage is full. Remove custom icons or delete profiles to free up space, then try again."),
       };
     }
     return {
@@ -329,20 +330,20 @@ export function importProfileJson(
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { ok: false, error: "Not valid JSON. The file may be corrupted." };
+    return { ok: false, error: tr("Not valid JSON. The file may be corrupted.") };
   }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return { ok: false, error: "File is not a VAYRA layout profile." };
+    return { ok: false, error: tr("File is not a VAYRA layout profile.") };
   }
   const obj = parsed as Record<string, unknown>;
   if (obj.harborProfileVersion !== undefined && obj.harborProfileVersion !== 1) {
     return {
       ok: false,
-      error: `Unsupported profile version (${String(obj.harborProfileVersion)}). Update VAYRA or use an older profile.`,
+      error: tr("Unsupported profile version ({version}). Update VAYRA or use an older profile.", { version: String(obj.harborProfileVersion) }),
     };
   }
   if (!obj.config || typeof obj.config !== "object") {
-    return { ok: false, error: "Profile file has no chrome config." };
+    return { ok: false, error: tr("Profile file has no chrome config.") };
   }
   const theme: ThemeId = obj.themeId === "stremio" ? "stremio" : "default";
   const name = typeof obj.name === "string" && obj.name.trim() ? obj.name : "Imported";

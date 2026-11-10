@@ -1,6 +1,7 @@
 import type { IptvPlaylistSource } from "../types";
 import type { XtreamCreds } from "../xtream";
 import { credsFromSource } from "./xtream-creds";
+import { t as tr } from "@/lib/i18n";
 
 export type ProviderShape =
   | { kind: "xtream"; creds: XtreamCreds }
@@ -23,16 +24,16 @@ export function detectProviderShape(src: IptvPlaylistSource): ProviderShape {
     if (creds) return { kind: "xtream", creds };
     return {
       kind: "invalid",
-      reason: "Xtream credentials are incomplete. Check the server URL, username, and password.",
+      reason: tr("Xtream credentials are incomplete. Check the server URL, username, and password."),
     };
   }
 
   const url = (src.url || "").trim();
-  if (!url) return { kind: "invalid", reason: "Playlist source has no URL." };
+  if (!url) return { kind: "invalid", reason: tr("Playlist source has no URL.") };
   if (!/^https?:\/\//i.test(url)) {
     return {
       kind: "invalid",
-      reason: "That does not look like a playlist URL. Use an http(s) M3U link or Xtream server.",
+      reason: tr("That does not look like a playlist URL. Use an http(s) M3U link or Xtream server."),
     };
   }
 

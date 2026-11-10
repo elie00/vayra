@@ -10,7 +10,7 @@ import { openUrl } from "@/lib/window";
 import { normalizeInstallUrl, trustedInstallerMessage } from "@/lib/installer-message";
 import { HarborLoader } from "@/components/harbor-loader";
 import { InstallOverlay } from "./installer-viewport/install-overlay";
-import { useT } from "@/lib/i18n";
+import { t as tr, useT } from "@/lib/i18n";
 
 const EVENT = "vayra:open-installer";
 
@@ -144,7 +144,7 @@ function InstallerViewport({
       if (!normalized) {
         setPhase({
           kind: "error",
-          message: "Paste a stremio:// link or an https://…/manifest.json URL.",
+          message: tr("Paste a stremio:// link or an https://…/manifest.json URL."),
         });
         return;
       }
@@ -162,7 +162,7 @@ function InstallerViewport({
           onClose();
         }, 2000);
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Install failed.";
+        const msg = e instanceof Error ? e.message : tr("Install failed.");
         setPhase({ kind: "error", message: msg });
       }
     },
@@ -218,7 +218,7 @@ function InstallerViewport({
     } catch {
       setPhase({
         kind: "error",
-        message: "Clipboard access was blocked. Paste the link manually.",
+        message: tr("Clipboard access was blocked. Paste the link manually."),
       });
     }
   };

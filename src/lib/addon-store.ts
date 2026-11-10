@@ -3,6 +3,7 @@ import { readActiveStremioAuthKey } from "./auth";
 import { setUserAddons, userAddons, type Addon } from "./addons";
 import { applyOrderToItems } from "./addons-store/reorder";
 import { confirmWatchActivityAddon, receivesWatchActivity } from "./watch-activity-consent";
+import { t as tr } from "@/lib/i18n";
 
 const STORAGE_KEY = "harbor.installed-addons";
 const SEEDED_KEY = "harbor.addons.seeded.v1";
@@ -234,7 +235,7 @@ export type AddonUrlParse =
 
 export function parseAddonUrl(input: string): AddonUrlParse {
   let raw = input.trim();
-  if (!raw) return { kind: "error", message: "Paste a manifest URL or stremio:// link." };
+  if (!raw) return { kind: "error", message: tr("Paste a manifest URL or stremio:// link.") };
   if (raw.startsWith("stremio://")) raw = "https://" + raw.slice("stremio://".length);
   raw = raw.replace(/\/#\/configure\/?$/, "");
   raw = raw.replace(/\/configure\/?$/, "");
@@ -248,16 +249,16 @@ export function parseAddonUrl(input: string): AddonUrlParse {
   try {
     new URL(raw);
   } catch {
-    return { kind: "error", message: "That doesn't look like a valid URL." };
+    return { kind: "error", message: tr("That doesn't look like a valid URL.") };
   }
   return { kind: "ok", url: raw };
 }
 
 function validateManifest(m: unknown): { ok: true; manifest: Addon["manifest"] } | { ok: false; error: string } {
-  if (!m || typeof m !== "object") return { ok: false, error: "Manifest is not a JSON object." };
+  if (!m || typeof m !== "object") return { ok: false, error: tr("Manifest is not a JSON object.") };
   const obj = m as Record<string, unknown>;
-  if (typeof obj.id !== "string" || obj.id.length === 0) return { ok: false, error: "Manifest is missing an `id`." };
-  if (typeof obj.name !== "string" || obj.name.length === 0) return { ok: false, error: "Manifest is missing a `name`." };
+  if (typeof obj.id !== "string" || obj.id.length === 0) return { ok: false, error: tr("Manifest is missing an `id`.") };
+  if (typeof obj.name !== "string" || obj.name.length === 0) return { ok: false, error: tr("Manifest is missing a `name`.") };
   return { ok: true, manifest: obj as Addon["manifest"] };
 }
 

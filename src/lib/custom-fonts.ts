@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSettings } from "./settings";
 import { deleteFontData, saveFontData } from "./font-storage";
 import { randomUuid } from "./uuid";
+import { t as tr } from "@/lib/i18n";
 
 const EXT_FORMAT: Record<string, string> = {
   ttf: "truetype",
@@ -23,11 +24,11 @@ export function useCustomFonts() {
     const ext = (file.name.split(".").pop() ?? "").toLowerCase();
     const format = EXT_FORMAT[ext];
     if (!format) {
-      setError("Use a TTF, OTF, WOFF or WOFF2 file.");
+      setError(tr("Use a TTF, OTF, WOFF or WOFF2 file."));
       return null;
     }
     if (file.size > MAX_BYTES) {
-      setError("That font is over 32 MB. Try a lighter file.");
+      setError(tr("That font is over 32 MB. Try a lighter file."));
       return null;
     }
     setBusy(true);
@@ -41,7 +42,7 @@ export function useCustomFonts() {
       update({ customFonts: [...fonts, { id, name: prettyName(file.name), format }] });
       return id;
     } catch {
-      setError("That file is not a valid font.");
+      setError(tr("That file is not a valid font."));
       return null;
     } finally {
       setBusy(false);

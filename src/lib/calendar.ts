@@ -1,6 +1,7 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { setItemWithRecovery } from "@/lib/storage-recovery";
 import { tmdbImdbId } from "./providers/tmdb";
+import { t as tr } from "@/lib/i18n";
 
 const TMDB = "https://api.themoviedb.org/3";
 const IMG = "https://image.tmdb.org/t/p";
@@ -482,7 +483,7 @@ export async function fireWebhook(
   url: string,
   payload: WebhookPayload,
 ): Promise<{ ok: boolean; status: number; error: string | null }> {
-  if (!url) return { ok: false, status: 0, error: "No URL configured" };
+  if (!url) return { ok: false, status: 0, error: tr("No URL configured") };
   try {
     if (kind === "discord") {
       const embeds = payload.items.slice(0, 10).map((i) => ({
@@ -535,7 +536,7 @@ export async function fireWebhook(
       });
       return { ok: res.ok, status: res.status, error: res.ok ? null : `HTTP ${res.status}` };
     }
-    return { ok: false, status: 0, error: "Unknown webhook kind" };
+    return { ok: false, status: 0, error: tr("Unknown webhook kind") };
   } catch (e) {
     return { ok: false, status: 0, error: e instanceof Error ? e.message : String(e) };
   }

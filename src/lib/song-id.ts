@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { t as tr } from "@/lib/i18n";
 
 export type SongResult = {
   title: string;
@@ -45,20 +46,20 @@ export async function identifyNowPlaying(apiToken: string): Promise<void> {
   if (!token) {
     toast({
       kind: "error",
-      title: "Missing AudD key",
-      body: "Add it in Settings → Library & metadata",
+      title: tr("Missing AudD key"),
+      body: tr("Add it in Settings → Library & metadata"),
     });
     return;
   }
   busy = true;
-  toast({ kind: "info", title: "Listening…" });
+  toast({ kind: "info", title: tr("Listening…") });
   try {
     const res = await invoke<SongResult>("recognize_now_playing", {
       apiToken: token,
       seconds: 7,
     });
     if (!res) {
-      toast({ kind: "error", title: "Couldn't identify the song" });
+      toast({ kind: "error", title: tr("Couldn't identify the song") });
       return;
     }
     toast({
@@ -70,7 +71,7 @@ export async function identifyNowPlaying(apiToken: string): Promise<void> {
     });
   } catch (e) {
     console.error("song-id failed", e);
-    toast({ kind: "error", title: "Song identification failed" });
+    toast({ kind: "error", title: tr("Song identification failed") });
   } finally {
     busy = false;
   }

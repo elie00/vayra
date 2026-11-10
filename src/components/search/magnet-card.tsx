@@ -1,4 +1,4 @@
-import { useT } from "@/lib/i18n";
+import { t as tr, useT } from "@/lib/i18n";
 import { AlertCircle, FileVideo, Loader2, Magnet, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { awaitCastServerReady } from "@/lib/stremio-server";
@@ -56,7 +56,7 @@ export function MagnetCard({ raw, onClose }: { raw: string; onClose: () => void 
     const ready = await awaitCastServerReady(8000);
     if (!ready) {
       setMode("error");
-      setError("The bundled streaming engine is not running. Direct torrent play needs the desktop app.");
+      setError(tr("The bundled streaming engine is not running. Direct torrent play needs the desktop app."));
       return;
     }
     const created = await createAndListFiles(parsed.infoHash, parsed.trackers);

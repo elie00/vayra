@@ -11,7 +11,7 @@ import {
 } from "@/lib/trakt";
 import { setSession } from "@/lib/trakt/session";
 import { openUrl } from "@/lib/window";
-import { useT } from "@/lib/i18n";
+import { t as tr, useT } from "@/lib/i18n";
 import { DocsCode } from "../relay-docs";
 import { ExtLink } from "../shared";
 
@@ -64,7 +64,7 @@ export function TraktConnectCard() {
     const tick = async () => {
       if (cancelled) return;
       if (Date.now() > deadline) {
-        setError("Code expired. Try again.");
+        setError(tr("Code expired. Try again."));
         setPhase("error");
         return;
       }
@@ -95,12 +95,12 @@ export function TraktConnectCard() {
         return;
       }
       if (r.status === "expired") {
-        setError("Code expired. Try again.");
+        setError(tr("Code expired. Try again."));
         setPhase("error");
         return;
       }
       if (r.status === "denied") {
-        setError("Authorization denied.");
+        setError(tr("Authorization denied."));
         setPhase("error");
         return;
       }
