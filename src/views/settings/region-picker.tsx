@@ -1,6 +1,7 @@
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useUiLanguage } from "@/lib/i18n";
+import { regionName } from "@/lib/region/region-name";
 import flagAe from "@/assets/regions/ae.svg";
 import flagAr from "@/assets/regions/ar.svg";
 import flagAu from "@/assets/regions/au.svg";
@@ -159,7 +160,9 @@ export function RegionPicker({
   const t = useT();
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const current = REGIONS.find((r) => r.code === value) ?? { code: value, label: value };
+  const lang = useUiLanguage();
+  const regions = useMemo(() => REGIONS.map((r) => ({ code: r.code, label: regionName(r.code, r.label, lang), english: r.label })), [lang]);
+  const current = regions.find((r) => r.code === value) ?? { code: value, label: value };
 
   useEffect(() => {
     if (!open) return;
@@ -188,11 +191,11 @@ export function RegionPicker({
 
   const filtered: Array<{ code: string; label: string }> = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return REGIONS;
-    return REGIONS.filter(
-      (r) => r.label.toLowerCase().includes(q) || r.code.toLowerCase().includes(q),
+    if (!q) return regions;
+    return regions.filter(
+      (r) => r.label.toLowerCase().includes(q) || r.english.toLowerCase().includes(q) || r.code.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, regions]);
 
   return (
     <div ref={wrapRef} className="relative">
