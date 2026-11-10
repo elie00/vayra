@@ -1,5 +1,6 @@
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ViewLoading } from "@/components/view-loading";
+import { loadAwardsData } from "@/lib/awards-history";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
@@ -118,7 +119,8 @@ const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
 const importCatalogs = () => import("@/views/catalogs");
-const importAward = () => import("@/views/award");
+// The award page reads the bundled award tables as soon as it renders.
+const importAward = () => Promise.all([import("@/views/award"), loadAwardsData()]).then(([view]) => view);
 const importAnimeAward = () => import("@/views/anime-award");
 const importFilter = () => import("@/views/filter");
 const importGrid = () => import("@/views/grid");

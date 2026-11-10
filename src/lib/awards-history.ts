@@ -1,4 +1,4 @@
-import awardsData from "@/data/awards.json";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import type { AwardCategory } from "./awards-catalog";
 import type { AwardEntry, AwardType } from "./providers/wikidata";
 
@@ -21,7 +21,42 @@ type RawEntry = {
 
 type RawData = Record<string, Record<string, { name: string; entries: RawEntry[] }>>;
 
-const data = awardsData as RawData;
+let data: RawData = {};
+let loaded = false;
+let loading: Promise<void> | null = null;
+const listeners = new Set<() => void>();
+
+/** The award tables weigh over 200 KiB, so they are fetched on first need
+ * instead of with the app. Until then every lookup answers "no award". Never
+ * rejects: a failed load is logged and tried again on the next call. */
+export function loadAwardsData(): Promise<void> {
+  loading ??= import("@/data/awards.json")
+    .then((module) => {
+      data = module.default as RawData;
+      loaded = true;
+      titleIndex = null;
+      personIndex = null;
+      for (const listener of listeners) listener();
+    })
+    .catch((error) => {
+      loading = null;
+      console.error("[awards] bundled history failed to load", error);
+    });
+  return loading;
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** Asks for the award tables and tells when they are there. */
+function useAwardsData(): boolean {
+  useEffect(() => {
+    void loadAwardsData();
+  }, []);
+  return useSyncExternalStore(subscribe, () => loaded);
+}
 
 export function readAwardHistory(
   awardType: AwardType,
@@ -209,4 +244,27 @@ export function mergeBundledPersonAwards(
   const bundledKeys = new Set(bundled.map(k3));
   const liveExtra = liveList.filter((e) => !bundledKeys.has(k3(e)));
   return dedupePersonAwards([...enriched, ...liveExtra]);
+}
+
+/** `mergeBundledAwards` for a component: the bundled awards join the live
+ * ones as soon as the tables are loaded. */
+export function useMergedAwards(
+  live: AwardEntry[] | null | undefined,
+  title: string | undefined,
+  year?: number,
+): AwardEntry[] {
+  const ready = useAwardsData();
+  return useMemo(() => (ready ? mergeBundledAwards(live, title, year) : live ?? []), [ready, live, title, year]);
+}
+
+/** `mergeBundledPersonAwards` for a component. */
+export function useMergedPersonAwards(
+  live: AwardEntry[] | null | undefined,
+  name: string | undefined,
+): AwardEntry[] {
+  const ready = useAwardsData();
+  return useMemo(
+    () => (ready ? mergeBundledPersonAwards(live, name) : dedupePersonAwards(live ?? [])),
+    [ready, live, name],
+  );
 }
