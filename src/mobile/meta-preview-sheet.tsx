@@ -82,13 +82,16 @@ export function MetaPreviewSheet() {
               {facts.length > 0 && <p className="type-footnote text-ink-subtle">{facts.join(" · ")}</p>}
               {genres.length > 0 && <p className="type-footnote text-ink-muted">{genres.join(" • ")}</p>}
             </div>
+            {/* A 48 px touch target around the 32 px disc, which stays where it was. */}
             <button
               type="button"
               onClick={closeMetaPreview}
               aria-label={t("common.close")}
-              className="absolute end-4 top-5 flex h-8 w-8 items-center justify-center rounded-full bg-raised text-ink-muted transition-transform duration-150 active:scale-90"
+              className="group absolute end-2 top-3 flex h-12 w-12 items-center justify-center"
             >
-              <X size={16} strokeWidth={2.4} />
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-raised text-ink-muted transition-transform duration-150 group-active:scale-90">
+                <X size={16} strokeWidth={2.4} />
+              </span>
             </button>
           </div>
           {meta.description && (

@@ -86,7 +86,7 @@ export function MobileSearch() {
                   inputRef.current?.focus();
                 }}
                 aria-label={t("Clear")}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors active:bg-elevated active:text-ink"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors active:bg-elevated active:text-ink"
               >
                 <X size={16} strokeWidth={2.4} />
               </button>
