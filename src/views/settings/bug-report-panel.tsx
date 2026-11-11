@@ -224,7 +224,7 @@ export function BugReportPanel() {
         </div>
       )}
 
-      <div className="sticky bottom-3 z-10 flex items-center justify-end gap-3 rounded-2xl border border-edge-soft bg-elevated/85 px-5 py-3 backdrop-blur">
+      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-edge-soft bg-elevated/85 px-5 py-3 backdrop-blur">
         <span className="me-auto text-[11.5px] text-ink-subtle">
           {canSubmit ? t("Ready to send") : summary.trim().length < 6 ? t("Summary needs at least 6 characters") : files.length > 0 && !filesReviewed ? t("Review attached files before sending") : t("Preparing…")}
         </span>
@@ -232,7 +232,7 @@ export function BugReportPanel() {
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="h-11 rounded-xl bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="h-11 whitespace-nowrap rounded-xl bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {submitting ? t("Sending…") : t("Submit bug report")}
         </button>
