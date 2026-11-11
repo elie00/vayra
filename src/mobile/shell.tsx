@@ -156,10 +156,12 @@ function MenuScreen() {
   // copy of a scrolled position:fixed+overflow element (the "two offset grids /
   // white bands" bug). So the fixed element is a stable opaque compositing layer
   // (transform-gpu + isolate) and the scroll lives on a normal in-flow child.
+  // Close and the status bar's band stay above that child, so the list never
+  // scrolls Close away or slides under the clock.
   return (
-    <div data-vayra-plus role="dialog" aria-modal="true" aria-label={t("Menu")} className="fixed inset-0 z-[200] isolate transform-gpu bg-canvas/90 backdrop-blur-2xl">
-      <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-6 pb-[calc(5rem+var(--vayra-safe-bottom))] pt-[var(--harbor-status-bar,1.75rem)]">
-        <div className="-ms-3 flex h-14 shrink-0 items-center">
+    <div data-vayra-plus role="dialog" aria-modal="true" aria-label={t("Menu")} className="fixed inset-0 z-[200] isolate flex transform-gpu flex-col bg-canvas/90 backdrop-blur-2xl">
+      <div className="shrink-0 px-6 pt-[var(--harbor-status-bar,1.75rem)]">
+        <div className="-ms-3 flex h-14 items-center">
           <button
             type="button"
             onClick={() => setPlusOpen(false)}
@@ -169,6 +171,8 @@ function MenuScreen() {
             <X size={26} strokeWidth={1.9} />
           </button>
         </div>
+      </div>
+      <div className="flex min-h-0 grow basis-0 flex-col overflow-y-auto overscroll-contain px-6 pb-[calc(5rem+var(--vayra-safe-bottom))]">
         <div className="mt-2">
           <ProfileChip menuPlacement="below" />
         </div>
