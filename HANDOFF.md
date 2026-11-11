@@ -9,7 +9,7 @@
 - **Repo** : `elie00/vayra`, remote `origin`. `main` est la référence, tout y entre par
   pull request.
 - **App installée sur le Mac** : `/Applications/VAYRA.app` 0.9.42, construite le
-  2026-11-09 depuis `main` (`f3bdffcc`), signée « VAYRA Local Signing ». L'ancienne
+  2026-11-11 depuis `main` (`a2ed8375`), signée « VAYRA Local Signing ». L'ancienne
   version est supprimée à chaque installation, sans copie de secours. Des copies de
   septembre restent dans `~/Library/Application Support/VAYRA-backups/`.
 - **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
@@ -46,8 +46,8 @@
     et `site/**`), #200 (tables de prix chargées à la demande).
 
 ### Appli Mac
-- Reconstruite le 09/11 depuis `f3bdffcc` : elle a #192, #193, #195 et #196, mais pas les
-  fusions du 10/11. Rien n'y a été vérifié à l'œil.
+- Reconstruite le 11/11 depuis `a2ed8375` : elle a toutes les fusions du 09 et du 10/11.
+  Rien n'y a été vérifié à l'œil.
 
 ### À reprendre sur le PC pro (réseau filtré)
 - Fait le 10/11 : recherche des textes en anglais. Le scan de l'accueil, d'Explorer, de la
@@ -80,7 +80,10 @@
   page d'un prix.
 
 ### Plus tard
-- Android : lecture à confirmer sur le S24 Ultra, recette sur émulateur et revue design.
+- Android : lecture à confirmer sur le S24 Ultra. Recette sur émulateur et revue design
+  faites le 11/11 (`docs/design-reviews/2026-11-11-android-emulateur.md`) : 7 écarts, dont
+  une recherche sans résultat qui accuse la connexion dès qu'une source tombe, et
+  l'historique qui garde les URL et magnets collés. Rien n'est corrigé.
 - Mac : #176 (libmpv2 6, en brouillon), à essayer en lecture.
 
 ### À surveiller
