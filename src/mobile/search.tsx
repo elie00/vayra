@@ -103,7 +103,7 @@ export function MobileSearch() {
               <section className="flex flex-col gap-1">
                 <SectionTitle
                   action={
-                    <button type="button" onClick={clearRecent} className="type-footnote font-medium text-ink-subtle active:text-ink">
+                    <button type="button" onClick={clearRecent} className="shrink-0 whitespace-nowrap type-footnote font-medium text-ink-subtle active:text-ink">
                       {t("Clear history")}
                     </button>
                   }
