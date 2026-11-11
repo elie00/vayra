@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Clock, Loader2, Search, X } from "lucide-react";
 import { topMovies, topSeries, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
-import { useSearch } from "@/lib/search-context";
+import { emptySearchOutcome, useSearch } from "@/lib/search-context";
 import { isDirectVideoUrl, isMagnetInput } from "@/lib/torrent/magnet";
 import { animeHitMeta } from "@/components/search/anime-row";
 import { MagnetCard } from "@/components/search/magnet-card";
@@ -21,7 +21,7 @@ import "@/components/search/search-field.css";
  * sources are the desktop search's (SearchProvider).
  */
 export function MobileSearch() {
-  const { open, setOpen, query, setQuery, results, status, clear, recent, recordRecent, removeRecent, clearRecent } = useSearch();
+  const { open, setOpen, query, setQuery, results, status, sources, clear, retry, recent, recordRecent, removeRecent, clearRecent } = useSearch();
   const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const trending = useTrending(open);
@@ -49,7 +49,8 @@ export function MobileSearch() {
   const titles = results && trimmed ? resultTitles(results) : [];
   const people = results && trimmed ? results.people : [];
   const searching = !!trimmed && (status === "typing" || status === "loading");
-  const nothing = !!trimmed && !magnet && !directUrl && status === "done" && titles.length === 0 && people.length === 0;
+  const outcome = emptySearchOutcome(status, sources);
+  const nothing = !!trimmed && !magnet && !directUrl && outcome === "no-match" && titles.length === 0 && people.length === 0;
 
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={t("Search")} className="vayra-search fixed inset-0 z-[200] flex flex-col bg-canvas">
@@ -149,9 +150,21 @@ export function MobileSearch() {
         {trimmed && !magnet && !directUrl && (
           <div className="flex flex-col gap-7 pt-2">
             {status === "error" && titles.length === 0 && (
-              <p role="alert" className="type-callout text-ink-muted">
-                {t("Search could not be completed. Check your connection and try again.")}
-              </p>
+              <div role="alert" className="flex flex-col items-start gap-3">
+                <p className="type-callout text-ink-muted">
+                  {t(outcome === "unavailable" ? "Search could not be completed. Check your connection and try again." : "Some sources did not respond, so a match may be missing.")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    retry();
+                    inputRef.current?.focus();
+                  }}
+                  className="h-12 rounded-full bg-raised px-5 type-callout font-medium text-ink active:bg-elevated"
+                >
+                  {t("Retry search")}
+                </button>
+              </div>
             )}
             {people.length > 0 && <PeopleRow people={people} onClose={close} />}
             {titles.length > 0 && (

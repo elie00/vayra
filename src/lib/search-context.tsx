@@ -32,6 +32,17 @@ type SearchValue = SearchState & {
   retry: () => void;
 };
 
+/**
+ * What a search that found nothing means once its sources have settled: no
+ * match when at least one source answered, even if another failed; an outage
+ * only when none did. Null while a source is still pending.
+ */
+export function emptySearchOutcome(status: SearchState["status"], sources: SearchState["sources"]): "no-match" | "unavailable" | null {
+  if (status === "done") return "no-match";
+  if (status !== "error") return null;
+  return Object.values(sources).some((s) => s === "ready" || s === "empty") ? "no-match" : "unavailable";
+}
+
 const Ctx = createContext<SearchValue | null>(null);
 const RECENT_KEY = "harbor.search.recent";
 const MAX_RECENT = 8;

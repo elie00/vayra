@@ -2,7 +2,7 @@
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { SearchProvider, useSearch } from "./search-context";
+import { emptySearchOutcome, SearchProvider, useSearch } from "./search-context";
 import { searchAll, searchAnime, searchCinemeta, searchLiveTvChannels } from "./search";
 import { searchAddonCatalogs, searchAddonGroups } from "./search-addons";
 import { searchAddonIndex } from "./search-addon-index";
@@ -245,4 +245,39 @@ it("does not strand a query when batched edits return to the same text", async (
   await tick();
   expect(searchAll).toHaveBeenCalledTimes(2);
   expect(latest.status).toBe("loading");
+});
+
+const empty = (query: string): SearchResults => ({
+  query, topMatch: null, movies: [], series: [], people: [], liveTv: [], anime: [], addonGroups: [], addons: [], intent: null,
+});
+
+it("reads an empty search as no match when one source is down but the others answered", async () => {
+  const current = await start("zzqxwvkj");
+  await act(async () => {
+    current.main.resolve(empty("zzqxwvkj"));
+    current.anime.reject(new Error("Anime unavailable"));
+    current.cine.resolve({ movies: [], series: [] });
+    current.catalogs.resolve({ movies: [], series: [] });
+    current.groups.resolve([]);
+  });
+  expect(latest.status).toBe("error");
+  expect(emptySearchOutcome(latest.status, latest.sources)).toBe("no-match");
+});
+
+it("reads an empty search as unavailable only when no source answered", async () => {
+  const current = await start("dark");
+  await act(async () => {
+    current.main.reject(new Error("TMDB unavailable"));
+    current.anime.reject(new Error("Anime unavailable"));
+    current.cine.reject(new Error("Cinemeta unavailable"));
+    current.catalogs.reject(new Error("Addons unavailable"));
+    current.groups.reject(new Error("Addons unavailable"));
+  });
+  expect(latest.status).toBe("error");
+  expect(emptySearchOutcome(latest.status, latest.sources)).toBe("unavailable");
+});
+
+it("has no empty-search outcome while sources are still pending", () => {
+  expect(emptySearchOutcome("loading", { tmdb: "empty", anime: "pending" })).toBeNull();
+  expect(emptySearchOutcome("done", { tmdb: "empty" })).toBe("no-match");
 });
