@@ -121,3 +121,23 @@ Preuve : **obs.** = observé sur l'émulateur, **src.** = lu dans le code.
   configurée sur l'émulateur. À faire sur le S24 Ultra réel.
 - Pages de détail des Paramètres, Connect, cast, téléchargements.
 - Aucun plantage pendant la recette : même processus du lancement à la fin.
+
+## Suivi du 11 novembre
+
+Écarts corrigés sur la branche `fix/android-review`, puis vérifiés sur le même
+émulateur avec un APK reconstruit (Jikan toujours en panne) :
+
+1. « zzqxwvkj » affiche « Certaines sources n’ont pas répondu : un résultat peut
+   manquer. », « Réessayer la recherche », puis « Aucun résultat ». Le message réseau
+   reste réservé au cas où aucune source n’a répondu (`emptySearchOutcome`, testé).
+   Même logique sur le Mac.
+2. Les URL de test ont disparu de l’historique : les liens et magnets ne sont plus
+   enregistrés, et ceux déjà enregistrés sont retirés au chargement (testé).
+3. « Envoyer le rapport de bug » tient sur une ligne, sous le texte d’état.
+4. Effacement de la recherche et croix de l’aperçu : zone de 48 px, la croix reste
+   au même endroit et ferme l’aperçu.
+5. « VISIONNAGE » pour le groupe ; gravités « Faible », « Normale », « Élevée »,
+   « Critique » (clés propres, traduites aussi en allemand, espagnol et italien).
+6. La croix du menu reste en haut, la liste ne passe plus sous l’heure.
+7. « Effacer l’historique » tient sur une ligne ; le titre « Recherches récentes »
+   passe encore sur deux lignes à 1080 px (non traité).
