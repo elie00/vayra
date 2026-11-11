@@ -34,6 +34,11 @@ const settingsNavigation: Record<string, string> = {
   Advanced: "Avancé",
   "Diagnostics, manual overrides, things most users never need.": "Diagnostics et réglages avancés rarement nécessaires.",
   Playback: "Lecture",
+  // Agreed with « gravité » in the bug report, unlike the shared "Normal" / "High".
+  "bugReport.severity.low": "Faible",
+  "bugReport.severity.normal": "Normale",
+  "bugReport.severity.high": "Élevée",
+  "bugReport.severity.critical": "Critique",
   Appearance: "Apparence",
   Notifications: "Notifications",
   Help: "Aide",

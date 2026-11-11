@@ -2,10 +2,10 @@ import type { Severity } from "@/lib/bug-report";
 import { useT } from "@/lib/i18n";
 
 const OPTIONS: Array<{ id: Severity; label: string; sub: string }> = [
-  { id: "low", label: "Low", sub: "cosmetic, minor" },
-  { id: "normal", label: "Normal", sub: "annoying" },
-  { id: "high", label: "High", sub: "feature broken" },
-  { id: "critical", label: "Critical", sub: "app unusable" },
+  { id: "low", label: "bugReport.severity.low", sub: "cosmetic, minor" },
+  { id: "normal", label: "bugReport.severity.normal", sub: "annoying" },
+  { id: "high", label: "bugReport.severity.high", sub: "feature broken" },
+  { id: "critical", label: "bugReport.severity.critical", sub: "app unusable" },
 ];
 
 const TONE: Record<Severity, string> = {
