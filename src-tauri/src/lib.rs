@@ -627,6 +627,19 @@ pub fn run() {
     // -for-byte identical to before.
     #[cfg(desktop)]
     let vayra_dev_data_dir = std::env::var_os("VAYRA_DATA_DIR").filter(|v| !v.is_empty());
+    // Tauri ignores an absolute `dataDirectory`, so without this a dev instance
+    // shares the real profile's WebView2 storage (localStorage included).
+    // WebView2 reads this variable when it creates its environment and lets it
+    // replace the folder wry passes. An explicit value set by the caller wins.
+    #[cfg(windows)]
+    if let Some(dir) = &vayra_dev_data_dir {
+        if std::env::var_os("WEBVIEW2_USER_DATA_FOLDER").is_none() {
+            std::env::set_var(
+                "WEBVIEW2_USER_DATA_FOLDER",
+                std::path::Path::new(dir).join("webview"),
+            );
+        }
+    }
     #[cfg(desktop)]
     let app_builder = if vayra_dev_data_dir.is_none() {
         app_builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
