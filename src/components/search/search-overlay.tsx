@@ -2,7 +2,7 @@ import { Search, X, Loader2, CornerDownLeft, CalendarRange, Tag } from "lucide-r
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
-import { useSearch } from "@/lib/search-context";
+import { emptySearchOutcome, useSearch } from "@/lib/search-context";
 import { useView } from "@/lib/view";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { AnimeRow } from "./anime-row";
@@ -23,7 +23,7 @@ import { useFocusTrap } from "@/lib/use-focus-trap";
 import "./search-field.css";
 
 export function SearchOverlay() {
-  const { open, setOpen, query, setQuery, results, status, clear, retry, recordRecent } = useSearch();
+  const { open, setOpen, query, setQuery, results, status, sources, clear, retry, recordRecent } = useSearch();
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   useFocusTrap(overlayRef, open);
@@ -86,7 +86,7 @@ export function SearchOverlay() {
   const noResults =
     results &&
     trimmed &&
-    status === "done" &&
+    emptySearchOutcome(status, sources) === "no-match" &&
     !results.topMatch &&
     results.people.length === 0 &&
     results.movies.length === 0 &&
@@ -168,7 +168,11 @@ export function SearchOverlay() {
           {trimmed && !directInput && status === "error" && (
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-edge-soft bg-elevated p-4">
               <p role="alert" className="min-w-0 flex-1 text-[14px] text-ink-muted">
-                {t(hasResults ? "Some search sources are unavailable. Available results are shown below." : "Search could not be completed. Check your connection and try again.")}
+                {t(hasResults
+                  ? "Some search sources are unavailable. Available results are shown below."
+                  : emptySearchOutcome(status, sources) === "unavailable"
+                    ? "Search could not be completed. Check your connection and try again."
+                    : "Some sources did not respond, so a match may be missing.")}
               </p>
               <button type="button" className="mac-secondary-button" onClick={() => { retry(); inputRef.current?.focus(); }}>
                 {t("Retry search")}

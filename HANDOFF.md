@@ -80,10 +80,12 @@
   page d'un prix.
 
 ### Plus tard
-- Android : lecture à confirmer sur le S24 Ultra. Recette sur émulateur et revue design
+- Android : lecture à confirmer sur le S26 Ultra (le téléphone de l’utilisateur depuis le 11/11). Recette sur émulateur et revue design
   faites le 11/11 (`docs/design-reviews/2026-11-11-android-emulateur.md`) : 7 écarts, dont
   une recherche sans résultat qui accuse la connexion dès qu'une source tombe, et
-  l'historique qui garde les URL et magnets collés. Rien n'est corrigé.
+  l'historique qui garde les URL et magnets collés. Corrigés le 11/11 (branche
+  `fix/android-review`) et vérifiés sur l'émulateur ; seul le titre « Recherches
+  récentes » passe encore sur deux lignes.
 - Mac : #176 (libmpv2 6, en brouillon), à essayer en lecture.
 
 ### À surveiller

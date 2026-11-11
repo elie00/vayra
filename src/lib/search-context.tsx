@@ -32,16 +32,32 @@ type SearchValue = SearchState & {
   retry: () => void;
 };
 
+/**
+ * What a search that found nothing means once its sources have settled: no
+ * match when at least one source answered, even if another failed; an outage
+ * only when none did. Null while a source is still pending.
+ */
+export function emptySearchOutcome(status: SearchState["status"], sources: SearchState["sources"]): "no-match" | "unavailable" | null {
+  if (status === "done") return "no-match";
+  if (status !== "error") return null;
+  return Object.values(sources).some((s) => s === "ready" || s === "empty") ? "no-match" : "unavailable";
+}
+
 const Ctx = createContext<SearchValue | null>(null);
 const RECENT_KEY = "harbor.search.recent";
 const MAX_RECENT = 8;
+
+// A pasted link or magnet can carry a token: never keep it in the history.
+function isLinkInput(q: string): boolean {
+  return isMagnetInput(q) || /^[a-z][a-z0-9+.-]*:\/\//i.test(q.trim());
+}
 
 function loadRecent(): string[] {
   try {
     const raw = localStorage.getItem(RECENT_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string").slice(0, MAX_RECENT) : [];
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string" && !isLinkInput(x)).slice(0, MAX_RECENT) : [];
   } catch {
     return [];
   }
@@ -242,7 +258,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
 
   const recordRecent = useCallback((q: string) => {
     const trimmed = q.trim();
-    if (!trimmed) return;
+    if (!trimmed || isLinkInput(trimmed)) return;
     setRecent((prev) => {
       const next = [trimmed, ...prev.filter((p) => p.toLowerCase() !== trimmed.toLowerCase())].slice(0, MAX_RECENT);
       saveRecent(next);

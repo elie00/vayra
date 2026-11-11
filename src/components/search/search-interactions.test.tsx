@@ -16,9 +16,10 @@ vi.mock("@/lib/i18n", () => ({ useT: () => (key: string, vars?: Record<string, s
   for (const [name, replacement] of Object.entries(vars ?? {})) value = value.replaceAll(`{${name}}`, String(replacement));
   return value;
 } }));
-vi.mock("@/lib/search-context", () => ({ useSearch: () => ({
-  ...state, open: true, status: "done", recent: [], setQuery: vi.fn(),
-}) }));
+vi.mock("@/lib/search-context", async (importOriginal) => ({
+  emptySearchOutcome: (await importOriginal<typeof import("@/lib/search-context")>()).emptySearchOutcome,
+  useSearch: () => ({ ...state, open: true, status: "done", sources: {}, recent: [], setQuery: vi.fn() }),
+}));
 vi.mock("@/lib/view", () => ({ useView: () => ({ openMeta: state.openMeta, openFilter: vi.fn(), setView: vi.fn() }) }));
 vi.mock("@/lib/parental", () => ({ useParental: () => ({ hiddenTabs: {} }) }));
 vi.mock("@/lib/settings", () => ({ useSettings: () => ({ settings: { streaming: {}, tmdbKey: "test-only", region: "FR" } }) }));
