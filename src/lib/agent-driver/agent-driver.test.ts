@@ -65,6 +65,11 @@ describe("locate", () => {
     expect(() => locate("dune w")).toThrow(/matches 2: #0 button "Dune World", #1 button "Dune Warriors"/);
   });
 
+  it("prefers a control to a heading or an announcement with the same name", () => {
+    html(`<p role="status">Accueil</p><h2>Accueil</h2><button>Accueil</button>`);
+    expect(locate("Accueil").node.role).toBe("button");
+  });
+
   it("says when nothing matches", () => {
     html(`<button>Menu</button>`);
     expect(() => locate("Réglages")).toThrow('nothing named "Réglages" on screen');
@@ -86,12 +91,23 @@ describe("run", () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
+  it("refuses to tap a disabled control, which would do nothing", async () => {
+    html(`<button disabled>Envoyer le rapport de bug</button>`);
+    await expect(run("tap", ["Envoyer"])).rejects.toThrow('#0 "Envoyer le rapport de bug" is disabled');
+  });
+
   it("types into a field so an input listener sees it", async () => {
     html(`<input aria-label="Rechercher">`);
     const seen: string[] = [];
     document.querySelector("input")!.addEventListener("input", (e) => seen.push((e.target as HTMLInputElement).value));
     await run("type", ["Rechercher", "dune", "part", "two"]);
     expect(seen).toEqual(["dune part two"]);
+  });
+
+  it("types into the field when a button shares its name", async () => {
+    html(`<button>Rechercher</button><input type="search" aria-label="Rechercher">`);
+    await run("type", ["Rechercher", "dune"]);
+    expect(document.querySelector("input")!.value).toBe("dune");
   });
 
   it("settles once nothing changes", async () => {
@@ -102,5 +118,30 @@ describe("run", () => {
 
   it("refuses an unknown operation and lists the known ones", async () => {
     await expect(run("swipe", [])).rejects.toThrow(/unknown operation "swipe"; use tree, tap/);
+  });
+});
+
+describe("locate with layout", () => {
+  it("prefers a control a scroll would reach to one something covers", () => {
+    html(`<button id="behind">Paramètres</button><button id="below">Paramètres</button><div id="sheet"></div>`);
+    const at = (el: Element, top: number) => {
+      el.getBoundingClientRect = () => ({ left: 10, top, width: 100, height: 40, right: 110, bottom: top + 40, x: 10, y: top, toJSON: () => ({}) }) as DOMRect;
+    };
+    at(document.documentElement, 0);
+    document.documentElement.getBoundingClientRect = () => ({ left: 0, top: 0, width: 400, height: 800, right: 400, bottom: 800, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+    at(document.getElementById("behind")!, 300);
+    at(document.getElementById("below")!, 2000);
+    const sheet = document.getElementById("sheet")!;
+    // Whatever is on screen at the point is the sheet, covering the first button.
+    document.elementFromPoint = () => sheet;
+    vi.stubGlobal("innerWidth", 400);
+    vi.stubGlobal("innerHeight", 800);
+    const found = locate("Paramètres");
+    expect(found.element.id).toBe("below");
+    expect(found.node.offscreen).toBe(true);
+    // The document element outlives the test: give it back its own layout.
+    Reflect.deleteProperty(document.documentElement, "getBoundingClientRect");
+    Reflect.deleteProperty(document, "elementFromPoint");
+    vi.unstubAllGlobals();
   });
 });

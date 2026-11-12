@@ -1,4 +1,4 @@
-import { agentTree, locate } from "./a11y";
+import { agentTree, locate, reachable, TEXT_FIELDS } from "./a11y";
 
 /**
  * The operations an agent can run inside the app. Each takes string arguments
@@ -84,12 +84,13 @@ async function waitFor(query: string, timeoutMs: number) {
 }
 
 function state(doc: Document = document) {
-  const names = (sel: string) => Array.from(doc.querySelectorAll(sel)).map((el) => el.getAttribute("aria-label") || el.textContent?.trim().slice(0, 60) || "");
+  // From the visible tree, so a hidden copy of a control is not counted.
+  const tree = agentTree(doc);
   const focused = doc.activeElement && doc.activeElement !== doc.body ? doc.activeElement : null;
   return {
-    dialogs: names("[role='dialog']:not([aria-hidden='true'])"),
-    current: names("[aria-current='page'], [aria-current='true']"),
-    expanded: names("[aria-expanded='true']"),
+    dialogs: tree.filter((n) => n.role === "dialog").map((n) => n.name),
+    current: tree.filter((n) => n.state?.current).map((n) => n.name),
+    expanded: tree.filter((n) => n.state?.expanded).map((n) => n.name),
     focused: focused ? focused.getAttribute("aria-label") || (focused as HTMLInputElement).placeholder || focused.tagName.toLowerCase() : null,
     os: doc.documentElement.dataset.os ?? null,
     viewport: { w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio },
@@ -103,12 +104,15 @@ export async function run(op: string, args: string[]): Promise<unknown> {
       return agentTree();
     case "tap": {
       const { node, element } = locate(need(args[0], "tap <name>"));
-      if (!node.reachable) throw new Error(`#${node.index} "${node.name}" is covered by another element; close what is on top first`);
+      if (node.state?.disabled) throw new Error(`#${node.index} "${node.name}" is disabled`);
+      // As a person would: scroll it into view, then tap only if nothing covers it.
+      element.scrollIntoView?.({ block: "center", inline: "center" });
+      if (!reachable(element)) throw new Error(`#${node.index} "${node.name}" is covered by another element; close what is on top first`);
       (element as HTMLElement).click();
       return node;
     }
     case "type": {
-      const { node, element } = locate(need(args[0], "type <field> <text>"));
+      const { node, element } = locate(need(args[0], "type <field> <text>"), document, TEXT_FIELDS);
       typeInto(element, args.slice(1).join(" "));
       return node;
     }

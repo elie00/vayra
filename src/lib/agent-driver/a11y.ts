@@ -12,8 +12,10 @@ export type AgentNode = {
   /** Viewport rectangle in CSS pixels. */
   rect: { x: number; y: number; w: number; h: number };
   state?: Partial<Record<"current" | "expanded" | "pressed" | "checked" | "disabled" | "selected", boolean>> & { value?: string };
-  /** False when another element sits on top of its centre, so a tap would land on that one. */
+  /** True when a tap at its centre would land on it now. */
   reachable: boolean;
+  /** Below or beside the screen, with nothing known on top: a scroll brings it in. */
+  offscreen?: boolean;
 };
 
 const SELECTOR = [
@@ -38,6 +40,14 @@ function roleOf(el: Element): string {
   }
   return IMPLICIT_ROLE[el.tagName] ?? "generic";
 }
+
+const ACTIONABLE = new Set([
+  "button", "link", "tab", "menuitem", "option", "checkbox", "radio", "switch",
+  "textbox", "searchbox", "combobox", "slider", "spinbutton",
+]);
+
+/** What `type` aims at when a name is shared with a button. */
+export const TEXT_FIELDS: ReadonlySet<string> = new Set(["textbox", "searchbox", "combobox"]);
 
 const clean = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
 
@@ -86,11 +96,21 @@ function stateOf(el: Element): AgentNode["state"] {
   return Object.keys(state).length > 0 ? state : undefined;
 }
 
-function reachable(el: Element, rect: DOMRect): boolean {
+function offscreen(el: Element, rect: DOMRect): boolean {
+  const view = el.ownerDocument.defaultView;
+  if (!view) return false;
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  return x < 0 || y < 0 || x > view.innerWidth || y > view.innerHeight;
+}
+
+/** True when a tap at the element's centre would land on it: on screen, with nothing on top. */
+export function reachable(el: Element, rect: DOMRect = el.getBoundingClientRect()): boolean {
   const doc = el.ownerDocument;
   if (typeof doc.elementFromPoint !== "function") return true;
   const top = doc.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-  return top === null || top === el || el.contains(top) || top.contains(el);
+  // Off screen, there is nothing under the point: a person would scroll first.
+  return top !== null && (top === el || el.contains(top) || top.contains(el));
 }
 
 type Entry = { node: AgentNode; element: Element };
@@ -120,6 +140,7 @@ function walk(root: ParentNode): Entry[] {
         rect: { x: Math.round(rect.left), y: Math.round(rect.top), w: Math.round(rect.width), h: Math.round(rect.height) },
         state: stateOf(el),
         reachable: hasLayout ? reachable(el, rect) : true,
+        ...(hasLayout && offscreen(el, rect) ? { offscreen: true } : {}),
       },
     });
   }
@@ -138,7 +159,7 @@ export type Located = Entry;
  * and accents aside. Prefers controls a tap would actually reach. Refuses an
  * ambiguous query and lists the candidates, rather than guessing.
  */
-export function locate(query: string, root: ParentNode = document): Located {
+export function locate(query: string, root: ParentNode = document, prefer?: ReadonlySet<string>): Located {
   const entries = walk(root);
   const indexed = /^#(\d+)$/.exec(query.trim());
   if (indexed) {
@@ -150,7 +171,15 @@ export function locate(query: string, root: ParentNode = document): Located {
   const q = fold(query.trim());
   const exact = entries.filter((e) => fold(e.node.name) === q);
   const partial = exact.length > 0 ? exact : entries.filter((e) => fold(e.node.name).includes(q));
-  const candidates = partial.some((e) => e.node.reachable) ? partial.filter((e) => e.node.reachable) : partial;
+  // Reachable now, else one a scroll would bring in, before one that something covers.
+  const reachableOnes = partial.some((e) => e.node.reachable)
+    ? partial.filter((e) => e.node.reachable)
+    : partial.some((e) => e.node.offscreen)
+      ? partial.filter((e) => e.node.offscreen)
+      : partial;
+  // A control beats a heading or a live announcement that repeats its name.
+  const keep = (list: Entry[], roles: ReadonlySet<string>) => (list.some((e) => roles.has(e.node.role)) ? list.filter((e) => roles.has(e.node.role)) : list);
+  const candidates = keep(keep(reachableOnes, ACTIONABLE), prefer ?? ACTIONABLE);
   if (candidates.length === 1) return candidates[0];
   if (candidates.length === 0) throw new Error(`nothing named "${query}" on screen`);
   const list = candidates.slice(0, 8).map((e) => `#${e.node.index} ${e.node.role} "${e.node.name}"`).join(", ");
