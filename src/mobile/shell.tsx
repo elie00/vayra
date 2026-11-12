@@ -77,6 +77,8 @@ export function MobileShell() {
   const go = (tab: TabId) => {
     haptic();
     if (tab === "menu") {
+      // The search page sits at the menu's level: one tab at a time.
+      if (!menuOpen) setSearchOpen(false);
       setPlusOpen(!menuOpen);
       return;
     }
