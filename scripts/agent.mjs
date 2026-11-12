@@ -34,7 +34,7 @@ if (!["android", "desktop"].includes(target) || texts.length === 0) {
 }
 const port = Number(process.env.VAYRA_AGENT_PORT ?? 47800);
 const adbPath = process.env.ADB ?? join(process.env.ANDROID_HOME ?? join(homedir(), "Library/Android/sdk"), "platform-tools/adb");
-const adb = (...args) => execFileSync(adbPath, args, { maxBuffer: 64 * 1024 * 1024 });
+const adb = (...args) => execFileSync(adbPath, args, { maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
 
 let plan;
 try {
@@ -47,7 +47,19 @@ try {
 const queue = createQueue();
 let connected = false;
 let onConnect = () => {};
+// The app's page is another origin (tauri://localhost, http://tauri.localhost):
+// without these headers the webview sends a poll but may not read the reply,
+// and the command it carried is lost.
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+  "access-control-allow-private-network": "true",
+};
+
 const server = createServer((req, res) => {
+  for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v);
+  if (req.method === "OPTIONS") return res.writeHead(204).end();
   if (req.method === "GET" && req.url?.startsWith("/next")) {
     if (!connected) {
       connected = true;
