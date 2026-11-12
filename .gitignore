@@ -17,6 +17,7 @@ target
 # wrongly catches src/lib — the app's source. Re-include it so new files there
 # (i18n locales, player modules, …) are tracked instead of silently dropped.
 !/src/lib/
+!/scripts/lib/
 
 *.tsbuildinfo
 /vite.config.js
