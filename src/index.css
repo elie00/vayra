@@ -1652,6 +1652,11 @@ html[data-os="android"] {
 [data-mobile-settings] :is(.p-7, .p-8, .p-10) {
   padding: 1rem;
 }
+/* On a phone the bug report's send bar ends the form instead of floating over
+   its fields: it took a fifth of the screen. */
+[data-mobile-settings] [data-bug-submit] {
+  position: static;
+}
 /* Fields shrink with their row instead of pushing its button out, and no
    text in the phone settings is smaller than a label (12px). */
 [data-mobile-settings] input:not([type="checkbox"], [type="radio"]) {
