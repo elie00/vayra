@@ -468,6 +468,10 @@
 - **More translations** : ouvert (ajouter d'autres langues au besoin).
 
 ## Build / vérif par plateforme
+- **Pilote pour agent** (12/11) : `VITE_VAYRA_AGENT=1` + `node scripts/agent.mjs <android|desktop> …`
+  (voir `docs/agent-driver.md`). Validé sur l'émulateur : un parcours accueil →
+  recherche → aperçu → glisser → menu → Paramètres → Aide tourne en ~14 s, sans attente
+  devinée.
 - **Frontend** : `pnpm exec tsc -b && pnpm lint && pnpm test`. Pour le build
   complet (`pnpm build`), préfixer `export PATH="$HOME/.cargo/bin:$PATH"`
   (cible wasm absente du rustc Homebrew).

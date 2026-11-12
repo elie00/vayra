@@ -73,6 +73,10 @@ if (import.meta.env.DEV) console.log("[harbor] entry: pip =", isPip, "modal =", 
 if (import.meta.env.DEV && !isPip && !isModal && !isHdrOverlay) {
   void import("./lib/streams/__fixtures__/verify").then((m) => m.logVerificationReport());
 }
+// The agent driver exists only in builds made for it (scripts/agent.mjs).
+if (import.meta.env.VITE_VAYRA_AGENT === "1" && !isPip && !isModal && !isHdrOverlay) {
+  void import("./lib/agent-driver").then((m) => m.startAgentDriver());
+}
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {isHdrOverlay ? <HdrOverlayApp /> : isModal ? <ModalOverlayApp /> : isPip ? <PipApp /> : <App />}

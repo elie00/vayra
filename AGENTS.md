@@ -16,6 +16,10 @@ automatique des fonctions du produit. Distinguer validation des sources, tests
 automatiques et essais dans l’application installée (`/Applications/VAYRA.app` sur
 macOS, `%LOCALAPPDATA%\VAYRA` sur Windows). Ne pas supprimer de téléchargements, modifier des comptes ou exposer des secrets pour une recette.
 
+Pour piloter l’application pendant une recette (Android, bureau), utiliser le
+[pilote pour agent](docs/agent-driver.md) plutôt que des appuis à des
+coordonnées devinées.
+
 ## Commits et pull requests
 
 Les commits et les descriptions de PR ne créditent aucun assistant IA : pas de
