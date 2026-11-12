@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronRight, Info, Play, Plus, X } from "lucide-react";
+import { meta as fetchMeta, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { useSearch } from "@/lib/search-context";
 import { useView } from "@/lib/view";
@@ -17,7 +18,8 @@ import { useSheetDrag } from "./use-sheet-drag";
 export function MetaPreviewSheet() {
   const current = useMetaPreview();
   // The title stays on the sheet while it slides away.
-  const { shown: meta, closing } = useSheetPresence(current);
+  const { shown, closing } = useSheetPresence(current);
+  const meta = useFilledMeta(shown);
   const t = useT();
   const { openMeta, openPicker } = useView();
   // Opened from search, the sheet sits over it; leaving for the title closes both.
@@ -135,6 +137,36 @@ export function MetaPreviewSheet() {
       </section>
     </div>
   );
+}
+
+// A search result carries little more than a name and a year. Fetch the rest
+// so the sheet has a synopsis, a runtime and genres to show, not an empty card.
+function useFilledMeta(meta: Meta | null): Meta | null {
+  const [full, setFull] = useState<Meta | null>(null);
+  const id = meta?.id;
+  const type = meta?.type;
+  const thin = !!meta && !meta.description;
+  useEffect(() => {
+    if (!thin || !id || !/^tt\d/.test(id) || (type !== "movie" && type !== "series")) return;
+    let cancelled = false;
+    fetchMeta(type, id)
+      .then((m) => {
+        if (!cancelled && m) setFull(m);
+      })
+      .catch(() => { /* The sheet keeps what the list knew. */ });
+    return () => {
+      cancelled = true;
+    };
+  }, [thin, id, type]);
+  if (!meta || !full || full.id !== meta.id) return meta;
+  return {
+    ...meta,
+    description: meta.description ?? full.description,
+    runtime: meta.runtime ?? full.runtime,
+    genres: meta.genres?.length ? meta.genres : full.genres,
+    imdbRating: meta.imdbRating ?? full.imdbRating,
+    releaseInfo: meta.releaseInfo ?? full.releaseInfo,
+  };
 }
 
 function RoundAction({

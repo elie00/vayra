@@ -9,6 +9,8 @@ import { closeMetaPreview, previewMeta } from "./meta-preview";
 const view = { openMeta: vi.fn(), openPicker: vi.fn() };
 vi.mock("@/lib/view", () => ({ useView: () => view }));
 vi.mock("@/lib/i18n", () => ({ useT: () => (key: string) => key }));
+const cinemeta = vi.hoisted(() => ({ meta: vi.fn() }));
+vi.mock("@/lib/cinemeta", () => cinemeta);
 const watchlist = vi.hoisted(() => ({ toggleWatchlist: vi.fn(), useInWatchlist: vi.fn(() => false) }));
 vi.mock("@/lib/watchlist", () => watchlist);
 const search = vi.hoisted(() => ({ setOpen: vi.fn() }));
@@ -91,5 +93,22 @@ it("adds the title to the watchlist without leaving the sheet", () => {
   act(() => button(host, "To watch").click());
   expect(watchlist.toggleWatchlist).toHaveBeenCalledWith({ id: "tt1", type: "movie", name: "Heat", poster: undefined });
   expect(host.textContent).toContain("Heat");
+  act(() => root.unmount());
+});
+
+it("fills in the synopsis a search result came without", async () => {
+  cinemeta.meta.mockResolvedValue({ id: "tt9", type: "movie", name: "Dune", description: "A desert planet.", runtime: "155 min", genres: ["Sci-Fi"] });
+  const { host, root } = mount();
+  await act(async () => previewMeta({ id: "tt9", type: "movie", name: "Dune", releaseInfo: "2021" }));
+  expect(cinemeta.meta).toHaveBeenCalledWith("movie", "tt9");
+  expect(host.textContent).toContain("A desert planet.");
+  expect(host.textContent).toContain("155 min");
+  act(() => root.unmount());
+});
+
+it("does not fetch a title that already has its synopsis", () => {
+  const { root } = mount();
+  act(() => previewMeta(film));
+  expect(cinemeta.meta).not.toHaveBeenCalled();
   act(() => root.unmount());
 });
