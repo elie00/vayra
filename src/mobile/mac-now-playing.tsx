@@ -6,6 +6,7 @@ import type { ConnectCommand } from "@/lib/connect/host";
 import { macStatusLabel, sendToMac, useLinkStatus, useMacPosition } from "@/lib/connect/link";
 import { useT } from "@/lib/i18n";
 import { closeMacRemote, openMacRemote, useMacRemoteOpen } from "./mac-remote";
+import { useSheetPresence } from "./sheet-presence";
 import { useSheetDrag } from "./use-sheet-drag";
 
 const SKIP_SEC = 10;
@@ -137,11 +138,13 @@ export function MacRemoteSheet() {
   const { mac, connected, state } = useLinkStatus();
   const position = useMacPosition(state);
   const sheetRef = useRef<HTMLElement>(null);
-  const drag = useSheetDrag(sheetRef, closeMacRemote, open);
+  const available = connected && !!mac && !!state;
+  // The remote stays on screen while it slides away.
+  const { shown, closing } = useSheetPresence(open && available ? true : null);
+  useSheetDrag(sheetRef, closeMacRemote, open && available);
   // A value being dragged, shown until the Mac reports a newer state.
   const [scrub, setScrub] = useState<{ value: number; at: number } | null>(null);
   const [volume, setVolume] = useState<{ value: number; at: number } | null>(null);
-  const available = connected && !!mac && !!state;
 
   useEffect(() => {
     if (open && !available) closeMacRemote();
@@ -156,22 +159,20 @@ export function MacRemoteSheet() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  if (!open || !available || !mac || !state) return null;
+  if (!shown || !mac || !state) return null;
   const playing = state.status === "playing";
   const shownPosition = scrub && scrub.at === state.at ? scrub.value : position;
   const shownVolume = volume && volume.at === state.at ? volume.value : state.muted ? 0 : Math.min(1, state.volume);
   const duration = Math.max(state.durationSec, shownPosition);
 
   return (
-    <div className="fixed inset-0 z-[130]">
+    <div data-closing={closing ? "" : undefined} className="fixed inset-0 z-[130]">
       <button type="button" aria-label={t("common.close")} onClick={closeMacRemote} className="vayra-scrim absolute inset-0 bg-black/55" />
       <section
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("Remote for {name}", { name: mac.name })}
-        data-dragging={drag > 0 ? "" : undefined}
-        style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
         className="vayra-sheet absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-3xl bg-canvas ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >
         <div aria-hidden className="flex shrink-0 justify-center pb-1 pt-3">

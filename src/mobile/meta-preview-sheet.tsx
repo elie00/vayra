@@ -5,6 +5,7 @@ import { useSearch } from "@/lib/search-context";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import { closeMetaPreview, useMetaPreview } from "./meta-preview";
+import { useSheetPresence } from "./sheet-presence";
 import { useSheetDrag } from "./use-sheet-drag";
 
 /**
@@ -14,23 +15,25 @@ import { useSheetDrag } from "./use-sheet-drag";
  * once from MobileIntegration.
  */
 export function MetaPreviewSheet() {
-  const meta = useMetaPreview();
+  const current = useMetaPreview();
+  // The title stays on the sheet while it slides away.
+  const { shown: meta, closing } = useSheetPresence(current);
   const t = useT();
   const { openMeta, openPicker } = useView();
   // Opened from search, the sheet sits over it; leaving for the title closes both.
   const { setOpen: setSearchOpen } = useSearch();
   const inWatchlist = useInWatchlist(meta?.id ?? "");
   const sheetRef = useRef<HTMLElement>(null);
-  const drag = useSheetDrag(sheetRef, closeMetaPreview, meta !== null);
+  useSheetDrag(sheetRef, closeMetaPreview, current !== null);
 
   useEffect(() => {
-    if (!meta) return;
+    if (!current) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeMetaPreview();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [meta]);
+  }, [current]);
 
   if (!meta) return null;
   const facts = [meta.releaseInfo, meta.runtime, meta.imdbRating && `IMDb ${meta.imdbRating}`].filter(Boolean);
@@ -45,7 +48,7 @@ export function MetaPreviewSheet() {
   };
 
   return (
-    <div className="fixed inset-0 z-[210]">
+    <div data-closing={closing ? "" : undefined} className="fixed inset-0 z-[210]">
       <button
         type="button"
         aria-label={t("common.close")}
@@ -57,8 +60,6 @@ export function MetaPreviewSheet() {
         role="dialog"
         aria-modal="true"
         aria-label={meta.name}
-        data-dragging={drag > 0 ? "" : undefined}
-        style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
         className="vayra-sheet absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col rounded-t-[1.75rem] bg-elevated shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgb(255_255_255/0.06)]"
       >
         <div aria-hidden className="flex shrink-0 justify-center pb-1 pt-2.5">

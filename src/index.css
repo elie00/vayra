@@ -1590,15 +1590,38 @@ html[data-os="android"] {
   }
 }
 /* Bottom sheets rise on the drawer curve over a fading scrim, and track the
-   finger 1:1 while it pulls them down. */
+   finger 1:1 while it pulls them down. They leave the way they came, faster
+   than they arrived: [data-closing] is set on the wrapper while the exit plays. */
 .vayra-sheet {
   transition: transform 420ms var(--ease-drawer);
 }
 .vayra-sheet[data-dragging] {
   transition: none;
 }
+/* The sheet's own colour continues below its edge, so pulling it up against
+   the rubber band never opens a gap. */
+.vayra-sheet::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 48px;
+  background: inherit;
+  pointer-events: none;
+}
 .vayra-scrim {
   transition: opacity 300ms ease;
+}
+[data-closing] {
+  pointer-events: none;
+}
+[data-closing] > .vayra-sheet {
+  transform: translateY(100%);
+  transition: transform 220ms var(--ease-drawer);
+}
+[data-closing] > .vayra-scrim {
+  opacity: 0;
+  transition: opacity 220ms ease;
 }
 @starting-style {
   .vayra-sheet {
@@ -1611,6 +1634,11 @@ html[data-os="android"] {
 @media (prefers-reduced-motion: reduce) {
   .vayra-sheet {
     transition: opacity 200ms ease;
+  }
+  [data-closing] > .vayra-sheet {
+    transform: none;
+    opacity: 0;
+    transition: opacity 150ms ease;
   }
   @starting-style {
     .vayra-sheet {

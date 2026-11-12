@@ -54,8 +54,20 @@ it("opens the page from the sheet and closes it", () => {
   act(() => button(host, "Details & more").click());
   expect(view.openMeta).toHaveBeenCalledWith(film);
   expect(search.setOpen).toHaveBeenCalledWith(false);
+  act(() => root.unmount());
+});
+
+it("stays on screen while it slides away, then goes", () => {
+  vi.useFakeTimers();
+  const { host, root } = mount();
+  act(() => previewMeta(film));
+  act(() => closeMetaPreview());
+  expect(host.querySelector("[data-closing]")).not.toBeNull();
+  expect(host.textContent).toContain("Heat");
+  act(() => vi.advanceTimersByTime(300));
   expect(host.textContent).toBe("");
   act(() => root.unmount());
+  vi.useRealTimers();
 });
 
 it("plays a film through the picker, as a card's play button does", () => {

@@ -1,8 +1,10 @@
 import { Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { TogetherPopover } from "@/components/together-modal";
 import { useT } from "@/lib/i18n";
 import { useTogether } from "@/lib/together/provider";
+import { useSheetPresence } from "./sheet-presence";
+import { useSheetDrag } from "./use-sheet-drag";
 
 // Mobile entry point for VARA. The desktop TogetherButton anchors a
 // popover to the topbar; on mobile that popover content is reused inside a
@@ -43,10 +45,10 @@ export function MobileTogetherSheet() {
   const { modalOpen, closeModal } = useTogether();
   const t = useT();
 
-  // Drag-down-to-close on the sheet handle (same gesture as MobilePlayPicker).
-  const [drag, setDrag] = useState(0);
-  const startY = useRef<number | null>(null);
   const sheetRef = useRef<HTMLElement>(null);
+  // The sheet stays on screen while it slides away, and pulls down to close.
+  const { shown, closing } = useSheetPresence(modalOpen ? true : null);
+  useSheetDrag(sheetRef, closeModal, modalOpen);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -89,24 +91,11 @@ export function MobileTogetherSheet() {
       previouslyFocused?.focus();
     };
   }, [closeModal, modalOpen]);
-  const onPointerDown = (e: React.PointerEvent) => {
-    startY.current = e.clientY;
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (startY.current == null) return;
-    setDrag(Math.max(0, e.clientY - startY.current));
-  };
-  const onPointerUp = () => {
-    if (drag > 90) closeModal();
-    startY.current = null;
-    setDrag(0);
-  };
 
-  if (!modalOpen) return null;
+  if (!shown) return null;
 
   return (
-    <div className="fixed inset-0 z-[140]">
+    <div data-closing={closing ? "" : undefined} className="fixed inset-0 z-[140]">
       {/* Backdrop — tap to dismiss. */}
       <button
         type="button"
@@ -120,8 +109,6 @@ export function MobileTogetherSheet() {
         role="dialog"
         aria-modal="true"
         aria-label={t("VARA")}
-        data-dragging={drag > 0 ? "" : undefined}
-        style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
         className="vayra-sheet harbor-together-surface absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-3rem)] min-h-[55dvh] flex-col rounded-t-3xl ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >
         {/* Drag handle */}
@@ -129,14 +116,10 @@ export function MobileTogetherSheet() {
           role="button"
           tabIndex={0}
           aria-label={t("Drag down to close")}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") closeModal();
           }}
-          className="flex shrink-0 cursor-grab touch-none justify-center pb-1 pt-3 active:cursor-grabbing"
+          className="flex shrink-0 justify-center pb-1 pt-3"
         >
           <span className="h-1.5 w-11 rounded-full bg-ink-subtle/40" />
         </div>
