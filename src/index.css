@@ -1590,15 +1590,38 @@ html[data-os="android"] {
   }
 }
 /* Bottom sheets rise on the drawer curve over a fading scrim, and track the
-   finger 1:1 while it pulls them down. */
+   finger 1:1 while it pulls them down. They leave the way they came, faster
+   than they arrived: [data-closing] is set on the wrapper while the exit plays. */
 .vayra-sheet {
   transition: transform 420ms var(--ease-drawer);
 }
 .vayra-sheet[data-dragging] {
   transition: none;
 }
+/* The sheet's own colour continues below its edge, so pulling it up against
+   the rubber band never opens a gap. */
+.vayra-sheet::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 48px;
+  background: inherit;
+  pointer-events: none;
+}
 .vayra-scrim {
   transition: opacity 300ms ease;
+}
+[data-closing] {
+  pointer-events: none;
+}
+[data-closing] > .vayra-sheet {
+  transform: translateY(100%);
+  transition: transform 220ms var(--ease-drawer);
+}
+[data-closing] > .vayra-scrim {
+  opacity: 0;
+  transition: opacity 220ms ease;
 }
 @starting-style {
   .vayra-sheet {
@@ -1612,6 +1635,11 @@ html[data-os="android"] {
   .vayra-sheet {
     transition: opacity 200ms ease;
   }
+  [data-closing] > .vayra-sheet {
+    transform: none;
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
   @starting-style {
     .vayra-sheet {
       transform: none;
@@ -1623,6 +1651,11 @@ html[data-os="android"] {
    28-40px padding for the 16px a phone can spare. */
 [data-mobile-settings] :is(.p-7, .p-8, .p-10) {
   padding: 1rem;
+}
+/* On a phone the bug report's send bar ends the form instead of floating over
+   its fields: it took a fifth of the screen. */
+[data-mobile-settings] [data-bug-submit] {
+  position: static;
 }
 /* Fields shrink with their row instead of pushing its button out, and no
    text in the phone settings is smaller than a label (12px). */

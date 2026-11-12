@@ -7,6 +7,7 @@ import { useView } from "@/lib/view";
 import { removeFromWatchlist } from "@/lib/watchlist";
 import type { WatchlistMerged } from "@/lib/watchlist-merge";
 import { useWatchlistData } from "@/views/library/use-watchlist-data";
+import { useSheetClose } from "./sheet-presence";
 
 // The My list tab, after HBO Max: two tabs — the watchlist (saved on this
 // device, Stremio and Trakt, merged) and Continue watching — each a list of
@@ -178,9 +179,10 @@ function Empty({ icon, title, children }: { icon: React.ReactNode; title: string
 
 function ActionSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   const t = useT();
+  const [closing, close] = useSheetClose(onClose);
   return (
-    <div className="fixed inset-0 z-[130]">
-      <button type="button" aria-label={t("common.close")} onClick={onClose} className="vayra-scrim absolute inset-0 bg-black/60" />
+    <div data-closing={closing ? "" : undefined} className="fixed inset-0 z-[130]">
+      <button type="button" aria-label={t("common.close")} onClick={close} className="vayra-scrim absolute inset-0 bg-black/60" />
       <section
         role="dialog"
         aria-modal="true"
@@ -189,7 +191,7 @@ function ActionSheet({ title, onClose, children }: { title: string; onClose: () 
       >
         <p className="truncate px-2 pb-2 type-footnote font-semibold text-ink-subtle">{title}</p>
         {children}
-        <SheetAction onClick={onClose}>{t("Cancel")}</SheetAction>
+        <SheetAction onClick={close}>{t("Cancel")}</SheetAction>
       </section>
     </div>
   );

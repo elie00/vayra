@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown, Download, Gauge, ListVideo, Moon, PictureInPicture2, Replace, Scan, SkipBack, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useSheetClose } from "@/mobile/sheet-presence";
 import { SLEEP_PRESETS } from "@/views/player/hooks/use-sleep-timer";
 import type { ControlContext } from "./transport/control-renderer";
 
@@ -22,9 +23,10 @@ const PICTURE_MODES: { id: string; label: string }[] = [
 export function MobileMoreSheet({ ctx, onClose }: { ctx: ControlContext; onClose: () => void }) {
   const t = useT();
   const [open, setOpen] = useState<"speed" | "sleep" | "picture" | null>(null);
+  const [closing, close] = useSheetClose(onClose);
   const act = (fn: () => void) => () => {
     fn();
-    onClose();
+    close();
   };
   const toggle = (id: "speed" | "sleep" | "picture") => setOpen((v) => (v === id ? null : id));
   const sleep = ctx.sleep;
@@ -33,8 +35,8 @@ export function MobileMoreSheet({ ctx, onClose }: { ctx: ControlContext; onClose
   const live = ctx.isLiveChannel;
 
   return (
-    <div className="pointer-events-auto fixed inset-0 z-[60]">
-      <button type="button" aria-label={t("common.close")} onClick={onClose} className="vayra-scrim absolute inset-0 bg-black/50" />
+    <div data-closing={closing ? "" : undefined} className={`${closing ? "" : "pointer-events-auto "}fixed inset-0 z-[60]`}>
+      <button type="button" aria-label={t("common.close")} onClick={close} className="vayra-scrim absolute inset-0 bg-black/50" />
       <section
         role="dialog"
         aria-modal="true"
@@ -43,7 +45,7 @@ export function MobileMoreSheet({ ctx, onClose }: { ctx: ControlContext; onClose
       >
         <header className="flex h-16 shrink-0 items-center justify-between ps-6 pe-2">
           <h2 className="type-title-3 font-semibold">{t("More options")}</h2>
-          <button type="button" onClick={onClose} aria-label={t("common.close")} className="flex h-12 w-12 items-center justify-center rounded-full active:bg-raised">
+          <button type="button" onClick={close} aria-label={t("common.close")} className="flex h-12 w-12 items-center justify-center rounded-full active:bg-raised">
             <X size={22} />
           </button>
         </header>

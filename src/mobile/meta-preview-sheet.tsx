@@ -1,10 +1,12 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronRight, Info, Play, Plus, X } from "lucide-react";
+import { meta as fetchMeta, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { useSearch } from "@/lib/search-context";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import { closeMetaPreview, useMetaPreview } from "./meta-preview";
+import { useSheetPresence } from "./sheet-presence";
 import { useSheetDrag } from "./use-sheet-drag";
 
 /**
@@ -14,23 +16,26 @@ import { useSheetDrag } from "./use-sheet-drag";
  * once from MobileIntegration.
  */
 export function MetaPreviewSheet() {
-  const meta = useMetaPreview();
+  const current = useMetaPreview();
+  // The title stays on the sheet while it slides away.
+  const { shown, closing } = useSheetPresence(current);
+  const meta = useFilledMeta(shown);
   const t = useT();
   const { openMeta, openPicker } = useView();
   // Opened from search, the sheet sits over it; leaving for the title closes both.
   const { setOpen: setSearchOpen } = useSearch();
   const inWatchlist = useInWatchlist(meta?.id ?? "");
   const sheetRef = useRef<HTMLElement>(null);
-  const drag = useSheetDrag(sheetRef, closeMetaPreview, meta !== null);
+  useSheetDrag(sheetRef, closeMetaPreview, current !== null);
 
   useEffect(() => {
-    if (!meta) return;
+    if (!current) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeMetaPreview();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [meta]);
+  }, [current]);
 
   if (!meta) return null;
   const facts = [meta.releaseInfo, meta.runtime, meta.imdbRating && `IMDb ${meta.imdbRating}`].filter(Boolean);
@@ -45,7 +50,7 @@ export function MetaPreviewSheet() {
   };
 
   return (
-    <div className="fixed inset-0 z-[210]">
+    <div data-closing={closing ? "" : undefined} className="fixed inset-0 z-[210]">
       <button
         type="button"
         aria-label={t("common.close")}
@@ -57,8 +62,6 @@ export function MetaPreviewSheet() {
         role="dialog"
         aria-modal="true"
         aria-label={meta.name}
-        data-dragging={drag > 0 ? "" : undefined}
-        style={drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
         className="vayra-sheet absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col rounded-t-[1.75rem] bg-elevated shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgb(255_255_255/0.06)]"
       >
         <div aria-hidden className="flex shrink-0 justify-center pb-1 pt-2.5">
@@ -134,6 +137,36 @@ export function MetaPreviewSheet() {
       </section>
     </div>
   );
+}
+
+// A search result carries little more than a name and a year. Fetch the rest
+// so the sheet has a synopsis, a runtime and genres to show, not an empty card.
+function useFilledMeta(meta: Meta | null): Meta | null {
+  const [full, setFull] = useState<Meta | null>(null);
+  const id = meta?.id;
+  const type = meta?.type;
+  const thin = !!meta && !meta.description;
+  useEffect(() => {
+    if (!thin || !id || !/^tt\d/.test(id) || (type !== "movie" && type !== "series")) return;
+    let cancelled = false;
+    fetchMeta(type, id)
+      .then((m) => {
+        if (!cancelled && m) setFull(m);
+      })
+      .catch(() => { /* The sheet keeps what the list knew. */ });
+    return () => {
+      cancelled = true;
+    };
+  }, [thin, id, type]);
+  if (!meta || !full || full.id !== meta.id) return meta;
+  return {
+    ...meta,
+    description: meta.description ?? full.description,
+    runtime: meta.runtime ?? full.runtime,
+    genres: meta.genres?.length ? meta.genres : full.genres,
+    imdbRating: meta.imdbRating ?? full.imdbRating,
+    releaseInfo: meta.releaseInfo ?? full.releaseInfo,
+  };
 }
 
 function RoundAction({

@@ -1,16 +1,17 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Bookmark, Home, Search, X } from "lucide-react";
+import { Bookmark, Home, Menu, Search, X } from "lucide-react";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
 import { useT } from "@/lib/i18n";
 import { useSearch } from "@/lib/search-context";
 import { useView, type View } from "@/lib/view";
+import { haptic } from "@/mobile/haptics";
 import { MacNowPlayingBar, MacRemoteSheet } from "@/mobile/mac-now-playing";
 import { MobileTogetherSheet } from "@/mobile/together-sheet";
 
-// The phone's navigation, after HBO Max: three icon tabs — Home, My list and
-// Search — and a menu behind the header's ☰ for everything else: shows,
-// movies, anime, sports, live TV, genres, then downloads, addons and settings.
+// The phone's navigation: four labelled tabs under the thumb — Home, My list,
+// Search and Menu. The menu holds everything else: shows, movies, anime,
+// sports, live TV, then downloads, addons and settings, then the genres.
 
 // ── Menu open/close store (shared with the Back handler) ──────────────────────
 let plusOpen = false;
@@ -36,7 +37,7 @@ export function usePlusOpen(): boolean {
   );
 }
 
-type TabId = "home" | "mylist" | "search";
+type TabId = "home" | "mylist" | "search" | "menu";
 
 // Material 3 hides the navigation bar while content scrolls down and brings it
 // back on the way up, so the screen stays free. Scroll events don't bubble, so
@@ -70,10 +71,17 @@ export function MobileShell() {
   const menuOpen = usePlusOpen();
   // The tab bar shows everywhere except the fullscreen playback contexts.
   const hidden = !!player || topKind === "picker";
-  const active: TabId | null = searchOpen ? "search" : topKind === "library" ? "mylist" : topKind === "home" ? "home" : null;
+  const active: TabId | null = menuOpen ? "menu" : searchOpen ? "search" : topKind === "library" ? "mylist" : topKind === "home" ? "home" : null;
   const scrolledAway = useHideOnScroll(`${topKind}:${searchOpen}`) && !menuOpen;
 
   const go = (tab: TabId) => {
+    haptic();
+    if (tab === "menu") {
+      // The search page sits at the menu's level: one tab at a time.
+      if (!menuOpen) setSearchOpen(false);
+      setPlusOpen(!menuOpen);
+      return;
+    }
     setPlusOpen(false);
     if (tab === "search") {
       setSearchOpen(true);
@@ -84,9 +92,10 @@ export function MobileShell() {
   };
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
-    { id: "home", label: t("nav.home"), icon: <Home size={25} strokeWidth={active === "home" ? 2.4 : 1.8} fill={active === "home" ? "currentColor" : "none"} /> },
-    { id: "mylist", label: t("My list"), icon: <Bookmark size={24} strokeWidth={active === "mylist" ? 2.4 : 1.8} fill={active === "mylist" ? "currentColor" : "none"} /> },
-    { id: "search", label: t("Search"), icon: <Search size={25} strokeWidth={active === "search" ? 2.6 : 1.8} /> },
+    { id: "home", label: t("nav.home"), icon: <Home size={23} strokeWidth={active === "home" ? 2.4 : 1.8} fill={active === "home" ? "currentColor" : "none"} /> },
+    { id: "mylist", label: t("My list"), icon: <Bookmark size={22} strokeWidth={active === "mylist" ? 2.4 : 1.8} fill={active === "mylist" ? "currentColor" : "none"} /> },
+    { id: "search", label: t("Search"), icon: <Search size={23} strokeWidth={active === "search" ? 2.6 : 1.8} /> },
+    { id: "menu", label: t("Menu"), icon: <Menu size={23} strokeWidth={active === "menu" ? 2.6 : 1.8} /> },
   ];
 
   return (
@@ -99,10 +108,10 @@ export function MobileShell() {
         <nav
           data-vayra-tabbar
           aria-label={t("Primary")}
-          // Above the search page while it is open (search is a tab); below the
-          // bottom sheets otherwise.
+          // Above the search page and the menu while one is open (both are
+          // tabs); below the bottom sheets otherwise.
           data-hidden={scrolledAway ? "" : undefined}
-          className={`vayra-tabbar fixed inset-x-0 bottom-0 ${searchOpen ? "z-[205]" : "z-[90]"} pb-[var(--vayra-safe-bottom)]`}
+          className={`vayra-tabbar fixed inset-x-0 bottom-0 ${searchOpen || menuOpen ? "z-[205]" : "z-[90]"} pb-[var(--vayra-safe-bottom)]`}
         >
           <div className="flex items-stretch">
             {tabs.map((tab) => (
@@ -110,13 +119,14 @@ export function MobileShell() {
                 key={tab.id}
                 type="button"
                 onClick={() => go(tab.id)}
-                aria-label={tab.label}
                 aria-current={active === tab.id ? "page" : undefined}
-                className={`group flex h-16 flex-1 items-center justify-center transition-colors duration-150 ${
+                aria-expanded={tab.id === "menu" ? menuOpen : undefined}
+                className={`group flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 ${
                   active === tab.id ? "text-ink" : "text-ink-subtle"
                 }`}
               >
                 <span className="transition-transform duration-150 ease-out group-active:scale-90">{tab.icon}</span>
+                <span className={`max-w-full truncate px-1 text-[11px] leading-none ${active === tab.id ? "font-semibold" : "font-medium"}`}>{tab.label}</span>
               </button>
             ))}
           </div>
@@ -184,19 +194,19 @@ function MenuScreen() {
           ))}
         </nav>
         <hr className="my-4 w-2/3 border-white/15" />
+        <nav className="flex flex-col">
+          {more.map((s) => (
+            <MenuLink key={s.label} muted onClick={() => go(s.onGo)}>
+              {t(s.label)}
+            </MenuLink>
+          ))}
+        </nav>
+        <hr className="my-4 w-2/3 border-white/15" />
         <p className="pb-1 type-caption font-semibold uppercase tracking-[0.18em] text-ink-subtle">{t("Categories")}</p>
         <nav className="flex flex-col">
           {Object.entries(MOVIE_GENRES).map(([name, id]) => (
             <MenuLink key={name} onClick={() => go(() => view.openFilter({ kind: "genre", mediaType: "movie", name, id }))}>
               {t(name)}
-            </MenuLink>
-          ))}
-        </nav>
-        <hr className="my-4 w-2/3 border-white/15" />
-        <nav className="flex flex-col">
-          {more.map((s) => (
-            <MenuLink key={s.label} muted onClick={() => go(s.onGo)}>
-              {t(s.label)}
             </MenuLink>
           ))}
         </nav>

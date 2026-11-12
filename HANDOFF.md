@@ -88,6 +88,12 @@
   l'historique qui garde les URL et magnets collés. Corrigés le 11/11 (branche
   `fix/android-review`) et vérifiés sur l'émulateur ; seul le titre « Recherches
   récentes » passe encore sur deux lignes.
+- Android, gestes et navigation (12/11, branche `feat/android-sheet-gestures`, d'après les
+  skills d'Emil Kowalski) : les panneaux sortent vers le bas au lieu de disparaître, le
+  glisser écrit le transform sans rendu React et lit la vitesse au lâcher, le fond suit le
+  glisser ; le menu devient un 4e onglet, les onglets ont un libellé ; vibration légère
+  (permission VIBRATE) ; l'aperçu va chercher le résumé manquant. Vérifié sur l'émulateur ;
+  la fluidité et la vibration restent à juger sur le S26 Ultra.
 - Mac : #176 (libmpv2 6, en brouillon), à essayer en lecture.
 
 ### À surveiller

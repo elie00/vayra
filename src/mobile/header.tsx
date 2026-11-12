@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Menu } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { ProfileAvatar } from "@/chrome/sidebar/profile-chip";
@@ -8,12 +8,11 @@ import { useActiveKid, useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { MobileTogetherButton } from "@/mobile/together-sheet";
-import { setPlusOpen } from "@/mobile/shell";
 
-// Streaming-app header for the mobile tab-level views, after HBO Max: the menu
-// (shows, movies, anime, sports, categories…) and a small VAYRA mark on the left,
-// Watch Together and the profile, which opens the settings, on the right. Search
-// is a tab; the header turns solid once the page scrolls under it.
+// Streaming-app header for the mobile tab-level views: a small VAYRA mark on
+// the left, Watch Together and the profile, which opens the settings, on the
+// right. Search and the menu are tabs, under the thumb; the header turns solid
+// once the page scrolls under it.
 export function MobileHeader({ raised = false }: { raised?: boolean }) {
   const t = useT();
   const { topKind, setView, openSettings } = useView();
@@ -28,15 +27,7 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
         scrolled ? "bg-canvas/92 backdrop-blur-xl" : "bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
       }`}
     >
-      <div className="flex h-16 items-center gap-1 ps-2 pe-2">
-        <button
-          type="button"
-          onClick={() => setPlusOpen(true)}
-          aria-label={t("Open menu")}
-          className="flex h-12 w-12 items-center justify-center rounded-full text-ink transition-colors active:bg-elevated"
-        >
-          <Menu size={24} strokeWidth={1.9} />
-        </button>
+      <div className="flex h-16 items-center gap-1 ps-5 pe-2">
         <button
           type="button"
           onClick={() => setView("home")}

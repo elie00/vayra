@@ -224,7 +224,7 @@ export function BugReportPanel() {
         </div>
       )}
 
-      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-edge-soft bg-elevated/85 px-5 py-3 backdrop-blur">
+      <div data-bug-submit className="sticky bottom-3 z-10 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-edge-soft bg-elevated/85 px-5 py-3 backdrop-blur">
         <span className="me-auto text-[11.5px] text-ink-subtle">
           {canSubmit ? t("Ready to send") : summary.trim().length < 6 ? t("Summary needs at least 6 characters") : files.length > 0 && !filesReviewed ? t("Review attached files before sending") : t("Preparing…")}
         </span>
