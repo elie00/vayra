@@ -15,6 +15,21 @@ export const HARBOR_COLOR_SWATCHES = [
   "#22d3ee",
 ];
 
+// What each swatch is called, for a screen reader and the agent driver: a hex
+// code says nothing to a person.
+const SWATCH_NAMES: Record<string, string> = {
+  "#7dd3fc": "Sky blue",
+  "#60a5fa": "Blue",
+  "#a78bfa": "Violet",
+  "#f472b6": "Pink",
+  "#fb7185": "Coral",
+  "#8267ff": "Indigo",
+  "#4b9dff": "Azure",
+  "#a3e635": "Lime",
+  "#34d399": "Emerald",
+  "#22d3ee": "Cyan",
+};
+
 export function ColorPicker({
   value,
   onChange,
@@ -37,7 +52,8 @@ export function ColorPicker({
               key={hex}
               type="button"
               onClick={() => onChange(hex)}
-              aria-label={hex}
+              aria-label={t(SWATCH_NAMES[hex] ?? hex)}
+              aria-pressed={selected}
               className={`relative h-7 w-7 rounded-full transition-transform max-sm:h-9 max-sm:w-9 ${
                 selected ? "scale-110 ring-2 ring-ink ring-offset-2 ring-offset-canvas" : "hover:scale-105"
               }`}
