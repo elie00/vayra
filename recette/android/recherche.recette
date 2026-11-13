@@ -1,0 +1,29 @@
+# Recherche : résultats, aperçu, historique sans liens
+@cible android
+
+restart
+wait Accueil 20000
+tap Rechercher
+settle
+
+type Rechercher dune
+expect value Rechercher dune
+expect visible "Dune: Part Two" 20000
+
+tap "Dune: Part Two"
+settle
+expect dialog "Dune: Part Two"
+expect visible "Détails et plus"
+
+# Tirer l'aperçu vers le bas le ferme.
+swipe "Détails et plus" down 400
+settle
+expect closed "Dune: Part Two"
+
+# Un lien collé n'entre pas dans l'historique.
+type Rechercher https://exemple.test/dl/jeton/film.mkv
+key Enter
+tap Effacer
+settle
+expect gone "https://exemple.test/dl/jeton/film.mkv"
+expect noerrors

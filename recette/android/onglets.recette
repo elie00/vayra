@@ -1,0 +1,28 @@
+# Onglets et menu
+@cible android
+
+restart
+wait Accueil 20000
+settle
+expect current Accueil
+
+tap "Ma liste"
+settle
+expect current "Ma liste"
+
+tap Rechercher
+settle
+expect current Rechercher
+expect dialog Rechercher
+
+# Le menu ouvert depuis la recherche ne reste pas caché dessous.
+tap Menu
+settle
+expect current Menu
+expect dialog Menu
+expect closed Rechercher
+
+back
+settle
+expect nodialog
+expect noerrors
