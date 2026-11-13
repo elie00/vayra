@@ -472,6 +472,11 @@
   (voir `docs/agent-driver.md`). Validé sur l'émulateur : un parcours accueil →
   recherche → aperçu → glisser → menu → Paramètres → Aide tourne en ~14 s, sans attente
   devinée.
+- **Recette rejouable** (13/11) : `node scripts/recette.mjs <android|desktop>` rejoue
+  `recette/` ; 4 scénarios Android (émulateur, 4/4 deux fois de suite) et 3 bureau
+  (navigateur, 3/3). À faire sur le PC : rejouer `recette/desktop` dans l'appli Windows
+  construite avec `VITE_VAYRA_AGENT=1`, et y ajouter des attentes sur les résultats de
+  recherche.
 - **Frontend** : `pnpm exec tsc -b && pnpm lint && pnpm test`. Pour le build
   complet (`pnpm build`), préfixer `export PATH="$HOME/.cargo/bin:$PATH"`
   (cible wasm absente du rustc Homebrew).
