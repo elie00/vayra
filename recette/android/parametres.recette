@@ -1,0 +1,25 @@
+# Paramètres et Aide
+@cible android
+
+restart
+wait Accueil 20000
+tap Menu
+settle
+tap Paramètres
+settle
+expect visible Visionnage
+expect visible "Langues et sous-titres"
+
+tap Aide
+settle
+expect visible "Envoyer le rapport de bug"
+# Sans résumé, l'envoi reste impossible.
+expect disabled "Envoyer le rapport de bug"
+
+back
+settle
+expect visible Visionnage
+back
+settle
+expect current Accueil
+expect noerrors

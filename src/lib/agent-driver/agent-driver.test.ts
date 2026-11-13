@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { accessibleName, agentTree, locate } from "./a11y";
-import { run } from "./ops";
+import { run, trackTimers } from "./ops";
 
 afterEach(() => {
   document.body.innerHTML = "";
@@ -108,6 +108,37 @@ describe("run", () => {
     html(`<button>Rechercher</button><input type="search" aria-label="Rechercher">`);
     await run("type", ["Rechercher", "dune"]);
     expect(document.querySelector("input")!.value).toBe("dune");
+  });
+
+  it("waits for a control to leave the screen", async () => {
+    html(`<button>Fermer</button>`);
+    setTimeout(() => (document.body.innerHTML = ""), 150);
+    await expect(run("gone", ["Fermer", "2000"])).resolves.toEqual({ gone: "Fermer" });
+  });
+
+  it("says when a control stays on screen", async () => {
+    html(`<button>Fermer</button>`);
+    await expect(run("gone", ["Fermer", "200"])).rejects.toThrow('"Fermer" is still on screen after 200 ms');
+  });
+
+  it("types into the field even when a panel has the exact name and the field a longer one", async () => {
+    html(`<div role="dialog" aria-label="Rechercher"><input placeholder="Rechercher films, séries"></div>`);
+    await run("type", ["Rechercher", "dune"]);
+    expect(document.querySelector("input")!.value).toBe("dune");
+  });
+
+  it("reads the field's value when a button shares its name", async () => {
+    html(`<button>Rechercher</button><input type="search" aria-label="Rechercher" value="dune">`);
+    await expect(run("value", ["Rechercher"])).resolves.toMatchObject({ role: "searchbox", state: { value: "dune" } });
+  });
+
+  it("waits for a short timer the app set, like a sheet closing after its animation", async () => {
+    trackTimers();
+    html(`<div role="dialog" aria-label="Assistant"><button>Passer</button></div>`);
+    setTimeout(() => (document.body.innerHTML = ""), 400);
+    const result = (await run("settle", [])) as { settled: boolean; ms: number };
+    expect(result.settled).toBe(true);
+    expect(document.querySelector("[role='dialog']")).toBeNull();
   });
 
   it("settles once nothing changes", async () => {

@@ -1,0 +1,18 @@
+# Recherche : ouvrir, saisir, fermer avec Échap
+@cible desktop
+
+restart
+wait Accueil 30000
+settle
+
+tap Rechercher
+settle
+expect dialog Rechercher
+type Rechercher dune
+expect value Rechercher dune
+
+key Escape
+settle
+expect closed Rechercher
+expect current Accueil
+expect noerrors

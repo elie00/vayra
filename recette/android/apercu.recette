@@ -1,0 +1,27 @@
+# Aperçu : fermer par la croix et par Retour
+@cible android
+
+restart
+wait Accueil 20000
+tap Rechercher
+settle
+type Rechercher dune
+expect visible "Dune: Part Two" 20000
+
+tap "Dune: Part Two"
+settle
+expect dialog "Dune: Part Two"
+# Le résumé manquant des résultats de recherche est complété.
+expect visible "Lecture"
+tap Fermer
+settle
+expect closed "Dune: Part Two"
+
+tap "Dune: Part Two"
+settle
+expect dialog "Dune: Part Two"
+back
+settle
+expect closed "Dune: Part Two"
+expect dialog Rechercher
+expect noerrors
