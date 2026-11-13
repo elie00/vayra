@@ -9,7 +9,7 @@
 - **Repo** : `elie00/vayra`, remote `origin`. `main` est la référence, tout y entre par
   pull request.
 - **App installée sur le Mac** : `/Applications/VAYRA.app` 0.9.42, construite le
-  2026-11-11 depuis `main` (`abe37003`), signée « VAYRA Local Signing ». L'ancienne
+  2026-11-13 depuis `main` (`538fd214`), signée « VAYRA Local Signing ». L'ancienne
   version est supprimée à chaque installation, sans copie de secours. Des copies de
   septembre restent dans `~/Library/Application Support/VAYRA-backups/`.
 - **Vercel** : le projet `vayra-site` (production `https://vayra.eybo.tech`) est relié
@@ -46,10 +46,10 @@
     et `site/**`), #200 (tables de prix chargées à la demande).
 
 ### Appli Mac
-- Reconstruite le 11/11 depuis `abe37003` : elle a toutes les fusions jusqu'aux #205, #206
-  et #207 (correctifs de la revue Android, dont la recherche sans résultat et l'historique
-  sans liens, qui touchent aussi le Mac). Signature vérifiée, lancement vérifié ; rien n'y
-  a été vérifié à l'œil.
+- Reconstruite le 13/11 depuis `538fd214` : elle a toutes les fusions jusqu'à la #212
+  (étapes de l'assistant en français, pastilles de couleur nommées, un seul « Modifier »
+  sur le profil actif). Version normale, sans le pilote pour agent (vérifié sur le
+  bundle). Signature et lancement vérifiés ; rien n'y a été vérifié à l'œil.
 
 ### À reprendre sur le PC pro (réseau filtré)
 - Fait le 10/11 : recherche des textes en anglais. Le scan de l'accueil, d'Explorer, de la
