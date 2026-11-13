@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 // @ts-expect-error The driver script's helpers are a Node-only ES module.
-import { createQueue, planOps, splitOp, swipeArgs } from "../../../scripts/lib/agent-ops.mjs";
+import { createAppGate, createQueue, planOps, splitOp, swipeArgs } from "../../../scripts/lib/agent-ops.mjs";
 
 describe("agent script", () => {
   it("splits an operation, keeping quoted names whole", () => {
@@ -39,5 +39,26 @@ describe("agent script", () => {
 
   it("ends an idle poll with nothing", async () => {
     await expect(createQueue().next(10)).resolves.toBeNull();
+  });
+});
+
+describe("app identity", () => {
+  it("takes the first app that polls, then only that one", () => {
+    const gate = createAppGate();
+    expect(gate.accept("a")).toBe("new");
+    expect(gate.accept("a")).toBe("current");
+    expect(gate.connected).toBe(true);
+  });
+
+  it("ignores the killed app's late polls after a restart, and waits for the new one", () => {
+    const gate = createAppGate();
+    gate.accept("old");
+    gate.retire();
+    expect(gate.connected).toBe(false);
+    // A poll still in flight from the app that was just stopped.
+    expect(gate.accept("old")).toBe("retired");
+    expect(gate.connected).toBe(false);
+    expect(gate.accept("fresh")).toBe("new");
+    expect(gate.connected).toBe(true);
   });
 });

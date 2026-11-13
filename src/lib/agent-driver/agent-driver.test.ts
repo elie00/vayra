@@ -110,6 +110,22 @@ describe("run", () => {
     expect(document.querySelector("input")!.value).toBe("dune");
   });
 
+  it("waits for a control to leave the screen", async () => {
+    html(`<button>Fermer</button>`);
+    setTimeout(() => (document.body.innerHTML = ""), 150);
+    await expect(run("gone", ["Fermer", "2000"])).resolves.toEqual({ gone: "Fermer" });
+  });
+
+  it("says when a control stays on screen", async () => {
+    html(`<button>Fermer</button>`);
+    await expect(run("gone", ["Fermer", "200"])).rejects.toThrow('"Fermer" is still on screen after 200 ms');
+  });
+
+  it("reads the field's value when a button shares its name", async () => {
+    html(`<button>Rechercher</button><input type="search" aria-label="Rechercher" value="dune">`);
+    await expect(run("value", ["Rechercher"])).resolves.toMatchObject({ role: "searchbox", state: { value: "dune" } });
+  });
+
   it("settles once nothing changes", async () => {
     html(`<button>A</button>`);
     const result = (await run("settle", [])) as { settled: boolean };

@@ -66,7 +66,10 @@ export function accessibleName(el: Element): string {
     if ("placeholder" in el && clean(el.placeholder)) return clean(el.placeholder);
   }
   const alt = el.querySelector("img[alt]")?.getAttribute("alt");
-  return clean(el.textContent) || clean(alt) || clean(el.getAttribute("title"));
+  // innerText follows the layout, so two stacked blocks read "Guest Local"
+  // rather than "GuestLocal"; jsdom has no layout and leaves it empty.
+  const rendered = el instanceof HTMLElement && typeof el.innerText === "string" ? el.innerText : "";
+  return clean(rendered) || clean(el.textContent) || clean(alt) || clean(el.getAttribute("title"));
 }
 
 function hidden(el: Element): boolean {

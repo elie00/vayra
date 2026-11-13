@@ -10,8 +10,8 @@ export function splitOp(text) {
 }
 
 /** Operations the app runs itself; the rest go through the host (adb, screencapture). */
-export const APP_OPS = new Set(["tree", "tap", "type", "rect", "wait", "settle", "state", "logs", "key"]);
-export const HOST_OPS = new Set(["screenshot", "back", "swipe", "launch", "sleep"]);
+export const APP_OPS = new Set(["tree", "tap", "type", "value", "rect", "wait", "gone", "settle", "state", "logs", "key", "reload"]);
+export const HOST_OPS = new Set(["screenshot", "back", "swipe", "launch", "restart", "sleep"]);
 
 export function planOps(texts) {
   return texts.map((text) => {
@@ -75,6 +75,32 @@ export function createQueue() {
       pending.delete(reply.id);
       done(reply);
       return true;
+    },
+  };
+}
+
+/**
+ * Which running app the script talks to. Each app start polls with its own id;
+ * after a restart the stopped app's id is retired, so a poll it still had in
+ * flight cannot pass for the new app and swallow the next command.
+ */
+export function createAppGate() {
+  let current = null;
+  const retired = new Set();
+  return {
+    get connected() {
+      return current !== null;
+    },
+    /** "new" for the app now in use, "current" for it again, "retired" for a stopped one. */
+    accept(id) {
+      if (retired.has(id)) return "retired";
+      if (id === current) return "current";
+      current = id;
+      return "new";
+    },
+    retire() {
+      if (current !== null) retired.add(current);
+      current = null;
     },
   };
 }

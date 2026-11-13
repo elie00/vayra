@@ -83,6 +83,21 @@ async function waitFor(query: string, timeoutMs: number) {
   }
 }
 
+/** Waits until no control by that name is on screen, up to `timeoutMs`. */
+async function waitGone(query: string, timeoutMs: number) {
+  const start = performance.now();
+  for (;;) {
+    try {
+      locate(query);
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith("nothing named")) return { gone: query };
+      throw e;
+    }
+    if (performance.now() - start >= timeoutMs) throw new Error(`"${query}" is still on screen after ${timeoutMs} ms`);
+    await sleep(100);
+  }
+}
+
 function state(doc: Document = document) {
   // From the visible tree, so a hidden copy of a control is not counted.
   const tree = agentTree(doc);
@@ -116,10 +131,21 @@ export async function run(op: string, args: string[]): Promise<unknown> {
       typeInto(element, args.slice(1).join(" "));
       return node;
     }
+    case "value": {
+      // A field's content, aiming at the field when a button shares its name.
+      const { node } = locate(need(args[0], "value <field>"), document, TEXT_FIELDS);
+      return node;
+    }
     case "rect":
       return locate(need(args[0], "rect <name>")).node.rect;
     case "wait":
       return waitFor(need(args[0], "wait <name> [ms]"), Number(args[1] ?? 10000));
+    case "reload":
+      // Reply first; the page reloads just after and polls again.
+      setTimeout(() => window.location.reload(), 100);
+      return { reloading: true };
+    case "gone":
+      return waitGone(need(args[0], "gone <name> [ms]"), Number(args[1] ?? 10000));
     case "settle":
       return settle();
     case "state":
@@ -134,7 +160,7 @@ export async function run(op: string, args: string[]): Promise<unknown> {
       return { key };
     }
     default:
-      throw new Error(`unknown operation "${op}"; use tree, tap, type, rect, wait, settle, state, logs or key`);
+      throw new Error(`unknown operation "${op}"; use tree, tap, type, value, rect, wait, gone, settle, state, logs, key or reload`);
   }
 }
 

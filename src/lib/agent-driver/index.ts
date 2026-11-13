@@ -8,13 +8,16 @@ import { captureLogs, run } from "./ops";
  */
 export function startAgentDriver(port = Number(import.meta.env.VITE_VAYRA_AGENT_PORT ?? 47800)): void {
   const base = `http://127.0.0.1:${port}`;
+  // This start's own id: after a restart the script tells the new app from
+  // a poll the stopped one still had in flight.
+  const app = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   captureLogs();
   console.info(`[agent] driver waiting on ${base}`);
   void (async () => {
     for (;;) {
       let command: { id: number; op: string; args: string[] } | null = null;
       try {
-        const res = await fetch(`${base}/next`, { cache: "no-store" });
+        const res = await fetch(`${base}/next?app=${encodeURIComponent(app)}`, { cache: "no-store" });
         if (res.status === 200) command = await res.json();
       } catch {
         // No driver running: try again shortly.
