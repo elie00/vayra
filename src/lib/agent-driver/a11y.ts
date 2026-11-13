@@ -173,7 +173,11 @@ export function locate(query: string, root: ParentNode = document, prefer?: Read
   const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
   const q = fold(query.trim());
   const exact = entries.filter((e) => fold(e.node.name) === q);
-  const partial = exact.length > 0 ? exact : entries.filter((e) => fold(e.node.name).includes(q));
+  const containing = entries.filter((e) => fold(e.node.name).includes(q));
+  // An exact name wins, unless only a longer name has the role asked for: the
+  // search panel is "Rechercher", its field "Rechercher films, séries…".
+  const wanted = (list: Entry[]) => !!prefer && list.some((e) => prefer.has(e.node.role));
+  const partial = exact.length > 0 && !(wanted(containing) && !wanted(exact)) ? exact : containing;
   // Reachable now, else one a scroll would bring in, before one that something covers.
   const reachableOnes = partial.some((e) => e.node.reachable)
     ? partial.filter((e) => e.node.reachable)

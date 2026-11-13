@@ -1,4 +1,4 @@
-import { captureLogs, run } from "./ops";
+import { captureLogs, run, trackTimers } from "./ops";
 
 /**
  * The in-app half of the agent driver, compiled only into builds made with
@@ -12,6 +12,7 @@ export function startAgentDriver(port = Number(import.meta.env.VITE_VAYRA_AGENT_
   // a poll the stopped one still had in flight.
   const app = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   captureLogs();
+  trackTimers();
   console.info(`[agent] driver waiting on ${base}`);
   void (async () => {
     for (;;) {

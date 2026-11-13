@@ -35,15 +35,47 @@ function safeJson(v: unknown): string {
 }
 
 /** Sets an input's value the way typing does, so React sees the change. */
-function typeInto(el: Element, text: string) {
-  if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) throw new Error(`"${el.textContent}" is not a text field`);
+function typeInto(el: Element, text: string, name: string) {
+  if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) throw new Error(`"${name}" is not a text field`);
   el.focus();
   const proto = el instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
   Object.getOwnPropertyDescriptor(proto, "value")!.set!.call(el, text);
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// The driver's own waits use the untracked timer, so settle does not wait on itself.
+const nativeSetTimeout = globalThis.setTimeout.bind(globalThis);
+const sleep = (ms: number) => new Promise((r) => nativeSetTimeout(r, ms));
+
+/** Short timers the app has set and not yet run: a close after its animation, a debounce. */
+const pendingTimers = new Set<unknown>();
+const SHORT_TIMER_MS = 1000;
+let tracking = false;
+
+/**
+ * Counts the app's short timers, so `settle` also waits for what is about to
+ * happen, not only for what is moving. Longer timers (polls, retries) are left out.
+ */
+export function trackTimers(target: typeof globalThis = globalThis): void {
+  if (tracking) return;
+  tracking = true;
+  const original = target.setTimeout.bind(target);
+  const clear = target.clearTimeout.bind(target);
+  target.setTimeout = ((handler: TimerHandler, delay?: number, ...rest: unknown[]) => {
+    if (typeof handler !== "function" || !delay || delay <= 0 || delay > SHORT_TIMER_MS) return original(handler, delay, ...rest);
+    let id: unknown = null;
+    id = original(() => {
+      pendingTimers.delete(id);
+      (handler as (...a: unknown[]) => void)(...rest);
+    }, delay);
+    pendingTimers.add(id);
+    return id;
+  }) as typeof setTimeout;
+  target.clearTimeout = ((id?: Parameters<typeof clearTimeout>[0]) => {
+    pendingTimers.delete(id);
+    clear(id);
+  }) as typeof clearTimeout;
+}
 
 /**
  * Waits until nothing moves: no running animation or transition, and no DOM
@@ -60,7 +92,7 @@ export async function settle(quietMs = 250, timeoutMs = 8000, doc: Document = do
     for (;;) {
       const now = performance.now();
       const running = typeof doc.getAnimations === "function" && doc.getAnimations().some((a) => a.playState === "running" && isFinite(Number(a.effect?.getComputedTiming().endTime)));
-      if (running) last = now;
+      if (running || pendingTimers.size > 0) last = now;
       if (now - last >= quietMs) return { ms: Math.round(now - start), settled: true };
       if (now - start >= timeoutMs) return { ms: Math.round(now - start), settled: false };
       await sleep(50);
@@ -128,7 +160,7 @@ export async function run(op: string, args: string[]): Promise<unknown> {
     }
     case "type": {
       const { node, element } = locate(need(args[0], "type <field> <text>"), document, TEXT_FIELDS);
-      typeInto(element, args.slice(1).join(" "));
+      typeInto(element, args.slice(1).join(" "), node.name);
       return node;
     }
     case "value": {
