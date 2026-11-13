@@ -75,14 +75,17 @@ export function ProfilesStrip() {
                 )}
               </span>
             </button>
-            <button
-              type="button"
-              onClick={() => openPicker({ kind: "edit", profileId: p.id })}
-              aria-label={t("Edit {name}", { name: p.name })}
-              className="absolute end-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-ink-subtle/70 transition-colors hover:bg-canvas hover:text-ink"
-            >
-              <Pencil size={14} strokeWidth={2.2} />
-            </button>
+            {/* The active card already edits its profile; a pencil on it was a second "Edit". */}
+            {!active && (
+              <button
+                type="button"
+                onClick={() => openPicker({ kind: "edit", profileId: p.id })}
+                aria-label={t("Edit {name}", { name: p.name })}
+                className="absolute end-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-ink-subtle/70 transition-colors hover:bg-canvas hover:text-ink"
+              >
+                <Pencil size={14} strokeWidth={2.2} />
+              </button>
+            )}
           </div>
         );
       })}
