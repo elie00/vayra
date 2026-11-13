@@ -1,0 +1,24 @@
+# Barre latérale et pages
+@cible desktop
+
+restart
+wait Accueil 30000
+settle
+expect current Accueil
+
+tap Films
+settle
+expect current Films
+
+tap Séries
+settle
+expect current Séries
+
+tap "Ma bibliothèque"
+settle
+expect current "Ma bibliothèque"
+
+tap Accueil
+settle
+expect current Accueil
+expect noerrors

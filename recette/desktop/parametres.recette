@@ -1,0 +1,20 @@
+# Paramètres : ouvrir, chercher un réglage, revenir
+@cible desktop
+
+restart
+wait Accueil 30000
+settle
+
+tap Paramètres
+settle
+expect gone Chargement… 15000
+expect visible "Rechercher dans les réglages"
+
+type "Rechercher dans les réglages" sous-titres
+settle
+expect value "Rechercher dans les réglages" sous-titres
+
+tap Retour
+settle
+expect gone "Rechercher dans les réglages"
+expect noerrors
