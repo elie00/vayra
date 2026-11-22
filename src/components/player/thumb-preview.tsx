@@ -82,7 +82,7 @@ export function ThumbPreview({
     return (
       <div
         className="pointer-events-none absolute -top-9 flex -translate-x-1/2 items-center gap-1 rounded-md border border-white/10 bg-black/90 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-md"
-        style={{ left: `${pct}%` }}
+        style={{ left: `clamp(28px, ${pct}%, calc(100% - 28px))` }}
       >
         {segLabel && (
           <span className="rounded bg-accent px-1 font-sans text-[10px] font-bold uppercase tracking-wide text-canvas">
@@ -97,7 +97,7 @@ export function ThumbPreview({
   return (
     <div
       className="pointer-events-none absolute -translate-x-1/2"
-      style={{ left: `${pct}%`, bottom: "calc(100% + 8px)" }}
+      style={{ left: `clamp(${CARD_WIDTH / 2}px, ${pct}%, calc(100% - ${CARD_WIDTH / 2}px))`, bottom: "calc(100% + 8px)" }}
     >
       <div
         className="relative overflow-hidden rounded-lg border border-white/10 bg-black/85 shadow-[0_18px_40px_-15px_rgba(0,0,0,0.7)] backdrop-blur-md"

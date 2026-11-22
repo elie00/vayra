@@ -65,6 +65,8 @@ const frExtended: Record<string, string> = {
   "Show AniList comments": "Afficher les commentaires AniList",
   "Show forum threads and comments from AniList on anime detail pages.": "Afficher les discussions et commentaires AniList sur les pages des anime.",
   "Comments on anime pages are blurred until you reveal them, even if they are not tagged as spoilers.": "Les commentaires des pages anime restent floutés jusqu’à leur révélation, même sans balise spoiler.",
+  "This link cannot be opened here. Use a direct video URL such as a link ending in .mp4.": "Ce lien ne peut pas être ouvert ici. Utilisez un lien direct vers une vidéo, par exemple un lien se terminant par .mp4.",
+  "Geist Serif for titles, Geist for text.": "Geist Serif pour les titres et Geist pour le texte.",
 };
 
 export default frExtended;

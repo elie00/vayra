@@ -30,6 +30,7 @@ export function SeekBar({
   const rectRef = useRef<DOMRect | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [scrub, setScrub] = useState<number | null>(null);
+  const scrubRef = useRef<number | null>(null);
   const [pending, setPending] = useState<number | null>(null);
   const pendingAtRef = useRef<number | null>(null);
   const positionRef = useRef(0);
@@ -56,6 +57,7 @@ export function SeekBar({
 
   const clearInteraction = () => {
     rectRef.current = null;
+    scrubRef.current = null;
     setScrub(null);
     setHover(null);
   };
@@ -69,6 +71,8 @@ export function SeekBar({
   }, [position]);
   useEffect(() => {
     const clearInterruptedInteraction = () => {
+      rectRef.current = null;
+      scrubRef.current = null;
       setScrub(null);
       setHover(null);
     };
@@ -113,10 +117,13 @@ export function SeekBar({
   const onMove = (e: React.PointerEvent) => {
     const next = fromEvent(e.clientX);
     setHover(next);
-    if (scrub != null) setScrub(next);
+    if (scrubRef.current != null) {
+      scrubRef.current = next;
+      setScrub(next);
+    }
   };
   const onLeave = () => {
-    if (scrub == null) rectRef.current = null;
+    if (scrubRef.current == null) rectRef.current = null;
     setHover(null);
   };
   const onCancel = () => clearInteraction();
@@ -127,18 +134,22 @@ export function SeekBar({
     rectRef.current = ref.current?.getBoundingClientRect() ?? null;
     setPending(null);
     pendingAtRef.current = null;
-    setScrub(fromEvent(e.clientX));
+    const next = fromEvent(e.clientX);
+    scrubRef.current = next;
+    setScrub(next);
   };
   const onUp = (e: React.PointerEvent) => {
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
-    if (scrub != null) {
-      onSeek(scrub);
-      setPending(scrub);
+    const target = scrubRef.current ?? fromEvent(e.clientX);
+    if (scrubRef.current != null) {
+      onSeek(target);
+      setPending(target);
       pendingAtRef.current = Date.now();
     }
     rectRef.current = null;
+    scrubRef.current = null;
     setScrub(null);
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
