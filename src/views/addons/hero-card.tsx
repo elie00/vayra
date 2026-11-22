@@ -33,7 +33,7 @@ export function HeroCard({
       tabIndex={0}
       onClick={(e) => e.currentTarget.contains(e.target as Node) && onOpen()}
       onKeyDown={(e) => e.target === e.currentTarget && (e.key === "Enter" || e.key === " ") && onOpen()}
-      className="group relative flex min-h-[260px] w-full cursor-pointer overflow-hidden rounded-3xl border border-edge-soft bg-surface text-start transition-all hover:border-edge hover:shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
+      className="group relative flex min-h-[260px] w-full cursor-pointer overflow-hidden rounded-3xl border border-edge-soft bg-surface text-start transition-[background-color,border-color,color,opacity,box-shadow] hover:border-edge hover:shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
     >
       {isTorrentio ? (
         <TorrentioHeroArt />

@@ -54,7 +54,7 @@ export function DiscoveryQueueCta({ items }: { items: FeedItem[] }) {
           }}
         />
         <div className="relative flex w-full items-center justify-center px-12">
-          <div className="flex h-14 w-full max-w-[560px] items-center gap-3 rounded-full border border-ink/15 bg-canvas/85 px-8 transition-all duration-300 group-hover:bg-canvas group-hover:shadow-[0_22px_44px_-18px_rgba(0,0,0,0.7)]">
+          <div className="flex h-14 w-full max-w-[560px] items-center gap-3 rounded-full border border-ink/15 bg-canvas/85 px-8 transition-[background-color,border-color,color,opacity,box-shadow] duration-300 group-hover:bg-canvas group-hover:shadow-[0_22px_44px_-18px_rgba(0,0,0,0.7)]">
             <span className="flex-1 text-center font-display text-[18px] font-medium tracking-tight text-ink">
               {t("Explore your queue")}
             </span>

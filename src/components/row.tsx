@@ -576,7 +576,7 @@ function EdgeArrow({
         onClick={onClick}
         aria-label={label}
         tabIndex={visible ? 0 : -1}
-        className={`harbor-row-arrow pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-canvas ${
+        className={`harbor-row-arrow pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-[transform,opacity,background-color,border-color,color] duration-200 hover:scale-105 hover:bg-canvas ${
           visible ? "opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100" : "pointer-events-none opacity-0"
         }`}
       >

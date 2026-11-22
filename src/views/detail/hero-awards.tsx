@@ -121,7 +121,7 @@ export function HeroAwardsCorner({
         e.stopPropagation();
         document.getElementById("awards-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }}
-      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${positionCls}`}
+      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-[transform,opacity,background-color,border-color,color] duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${positionCls}`}
     >
       {content}
     </button>

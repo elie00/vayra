@@ -44,7 +44,7 @@ export function LayoutStep() {
               key={opt.id}
               type="button"
               onClick={() => update({ homeMode: opt.id })}
-              className={`group relative h-[200px] overflow-hidden rounded-2xl border bg-canvas text-start transition-all ${
+              className={`group relative h-[200px] overflow-hidden rounded-2xl border bg-canvas text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
                 selected
                   ? "border-ink shadow-[0_0_0_3px_rgba(255,255,255,0.04)]"
                   : "border-edge-soft hover:border-edge"

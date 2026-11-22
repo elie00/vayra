@@ -65,7 +65,7 @@ export function HomeLanguagePicker() {
             <button
               key={code}
               onClick={() => toggle(code)}
-              className={`group relative flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-start transition-all ${
+              className={`group relative flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
                 on
                   ? "border-accent/50 bg-accent/[0.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]"
                   : "border-edge-soft bg-canvas/40 hover:border-edge hover:bg-elevated/60"
@@ -78,7 +78,7 @@ export function HomeLanguagePicker() {
                   {native}
                 </span>
                 <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-all ${
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-[background-color,border-color,color,opacity,box-shadow] ${
                     on ? "bg-accent text-canvas" : "bg-transparent text-transparent ring-1 ring-edge-soft"
                   }`}
                 >

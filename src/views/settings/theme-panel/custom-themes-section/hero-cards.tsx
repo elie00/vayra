@@ -67,7 +67,7 @@ function HeroCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex h-full min-h-[200px] flex-col items-start justify-between overflow-hidden rounded-2xl border p-6 text-start transition-all hover:-translate-y-0.5 ${
+      className={`group relative flex h-full min-h-[200px] flex-col items-start justify-between overflow-hidden rounded-2xl border p-6 text-start transition-[transform,opacity,background-color,border-color,color] hover:-translate-y-0.5 ${
         accent
           ? "border-accent/40 hover:border-accent"
           : "border-edge-soft bg-surface hover:border-edge hover:bg-canvas/55"

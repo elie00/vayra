@@ -252,7 +252,7 @@ function IconBtn({
       disabled={disabled}
       title={title}
       aria-label={title}
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-150 active:scale-[0.94] ${
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-[transform,opacity,background-color,border-color,color] duration-150 active:scale-[0.94] ${
         disabled ? "cursor-not-allowed text-white/25" : tone
       }`}
     >

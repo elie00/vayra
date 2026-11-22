@@ -18,7 +18,7 @@ export function Dots({
           onClick={() => onJump(i)}
           aria-label={t("Step {n}", { n: i + 1 })}
           aria-current={i === active ? "step" : undefined}
-          className={`h-1.5 rounded-full transition-all duration-300 ${
+          className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-300 ${
             i === active ? "w-9 bg-ink" : "w-1.5 bg-ink-subtle/40 hover:bg-ink-subtle"
           }`}
         />

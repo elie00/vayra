@@ -219,7 +219,7 @@ export function BigCardStack({
             onPrev();
           }}
           style={{ position: "absolute", insetInlineStart: 12, top: "50%", transform: "translateY(-50%)", zIndex: 10 }}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/65 text-ink opacity-0 backdrop-blur-md transition-all duration-200 hover:bg-canvas/85 hover:scale-105 group-hover:opacity-100"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/65 text-ink opacity-0 backdrop-blur-md transition-[transform,opacity,background-color,border-color,color] duration-200 hover:bg-canvas/85 hover:scale-105 group-hover:opacity-100"
         >
           <ChevronLeft size={22} strokeWidth={2.2} className="dir-icon" />
         </button>
@@ -235,7 +235,7 @@ export function BigCardStack({
             onNext();
           }}
           style={{ position: "absolute", insetInlineEnd: 12, top: "50%", transform: "translateY(-50%)", zIndex: 10 }}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/65 text-ink opacity-0 backdrop-blur-md transition-all duration-200 hover:bg-canvas/85 hover:scale-105 group-hover:opacity-100"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/65 text-ink opacity-0 backdrop-blur-md transition-[transform,opacity,background-color,border-color,color] duration-200 hover:bg-canvas/85 hover:scale-105 group-hover:opacity-100"
         >
           <ChevronRight size={22} strokeWidth={2.2} className="dir-icon" />
         </button>

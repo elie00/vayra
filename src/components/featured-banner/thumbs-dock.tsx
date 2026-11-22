@@ -126,7 +126,7 @@ function ThumbButton({
       onPointerDown={(e) => e.stopPropagation()}
       aria-label={ariaLabel}
       aria-pressed={active}
-      className={`flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200 ${
+      className={`flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors duration-200 ${
         active
           ? activeClass
           : "border-edge-soft/70 bg-canvas/55 text-ink/85 hover:bg-canvas/80 hover:text-ink"

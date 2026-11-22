@@ -161,7 +161,7 @@ export function KeyField({
         </div>
       </div>
       <div
-        className={`flex h-14 items-center gap-3 rounded-2xl border bg-elevated px-4 transition-all ${
+        className={`flex h-14 items-center gap-3 rounded-2xl border bg-elevated px-4 transition-[background-color,border-color,color,opacity,box-shadow] ${
           focused
             ? "border-ink shadow-[0_0_0_3px_rgba(255,255,255,0.04)]"
             : "border-edge hover:border-edge"
@@ -243,7 +243,7 @@ export function KeyField({
           </button>
         )}
         <div
-          className={`flex shrink-0 items-center transition-all ${
+          className={`flex shrink-0 items-center transition-[background-color,border-color,color,opacity] ${
             showSave || saved ? "ms-1 w-auto opacity-100" : "w-0 overflow-hidden opacity-0"
           }`}
         >
@@ -251,14 +251,14 @@ export function KeyField({
             type="button"
             onClick={onSave}
             disabled={!showSave && !saved}
-            className={`relative flex h-10 items-center justify-center overflow-hidden rounded-xl px-4 text-[13.5px] font-semibold transition-all ${
+            className={`relative flex h-10 items-center justify-center overflow-hidden rounded-xl px-4 text-[13.5px] font-semibold transition-[transform,opacity,background-color,border-color,color] ${
               saved
                 ? "bg-accent/15 text-accent"
                 : "bg-ink text-canvas hover:scale-[1.02] active:scale-[0.97]"
             }`}
           >
             <span
-              className={`flex items-center gap-1.5 transition-all ${
+              className={`flex items-center gap-1.5 transition-[transform,opacity,background-color,border-color,color] ${
                 saved ? "translate-y-0 opacity-100" : "absolute translate-y-3 opacity-0"
               }`}
             >
@@ -266,7 +266,7 @@ export function KeyField({
               {t("Saved")}
             </span>
             <span
-              className={`flex items-center transition-all ${
+              className={`flex items-center transition-[transform,opacity,background-color,border-color,color] ${
                 saved ? "absolute -translate-y-3 opacity-0" : "translate-y-0 opacity-100"
               }`}
             >

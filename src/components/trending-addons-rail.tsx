@@ -109,7 +109,7 @@ function MoverCard({
       tabIndex={0}
       onClick={open}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && open()}
-      className="group relative flex w-[260px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-rose-500/20 bg-surface transition-all hover:-translate-y-0.5 hover:border-rose-400/50 hover:shadow-[0_22px_44px_-22px_rgba(244,63,94,0.45)]"
+      className="group relative flex w-[260px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-rose-500/20 bg-surface transition-[transform,opacity,background-color,border-color,color,box-shadow] hover:-translate-y-0.5 hover:border-rose-400/50 hover:shadow-[0_22px_44px_-22px_rgba(244,63,94,0.45)]"
     >
       <div
         className="relative h-24 w-full"

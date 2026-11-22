@@ -148,7 +148,7 @@ function GalleryCard({
     <div
       onMouseEnter={onPreviewStart}
       onMouseLeave={onPreviewStop}
-      className={`group flex flex-col overflow-hidden rounded-2xl border bg-surface transition-all ${
+      className={`group flex flex-col overflow-hidden rounded-2xl border bg-surface transition-[background-color,border-color,color,opacity,box-shadow] ${
         active
           ? "border-accent shadow-[0_0_0_2px_var(--color-accent-soft)]"
           : "border-edge-soft hover:border-edge hover:shadow-[0_18px_36px_-22px_rgba(0,0,0,0.3)]"

@@ -187,7 +187,7 @@ function StepRail({ step }: { step: number }) {
           </div>
           {i < STEPS.length - 1 && (
             <div className="h-px flex-1 bg-edge-soft">
-              <div className="h-full bg-accent transition-all duration-300" style={{ width: i < step ? "100%" : "0%" }} />
+              <div className="h-full bg-accent transition-[width,background-color,opacity] duration-300" style={{ width: i < step ? "100%" : "0%" }} />
             </div>
           )}
         </div>
@@ -216,7 +216,7 @@ function ThemeStep({ themes, selected, onSelect }: { themes: CustomTheme[]; sele
             <button
               key={t.id}
               onClick={() => onSelect(t)}
-              className={`flex flex-col overflow-hidden rounded-2xl border text-start transition-all ${
+              className={`flex flex-col overflow-hidden rounded-2xl border text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
                 active ? "border-accent shadow-[0_0_0_2px_var(--color-accent-soft)]" : "border-edge-soft bg-surface hover:border-edge"
               }`}
             >

@@ -191,7 +191,7 @@ export function AnimeHero({
                   type="button"
                   onClick={() => setActive(i)}
                   aria-label={t("Slide {n}", { n: i + 1 })}
-                  className={`h-1.5 rounded-full transition-all duration-200 ${
+                  className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-200 ${
                     i === active ? "w-10 bg-accent" : "w-6 bg-ink-subtle/35 hover:bg-ink-subtle/60"
                   }`}
                 />
@@ -321,7 +321,7 @@ function CrunchyrollBadge({ name, year }: { name: string; year?: number }) {
       </span>
       <div
         role="tooltip"
-        className={`pointer-events-none absolute start-0 top-full z-30 mt-2 w-max max-w-[280px] origin-top-left rtl:origin-top-right rounded-xl border border-edge-soft/70 bg-elevated/95 px-3.5 py-2.5 text-start shadow-[0_18px_40px_-16px_rgba(0,0,0,0.8)] backdrop-blur-md transition-all duration-150 ${
+        className={`pointer-events-none absolute start-0 top-full z-30 mt-2 w-max max-w-[280px] origin-top-left rtl:origin-top-right rounded-xl border border-edge-soft/70 bg-elevated/95 px-3.5 py-2.5 text-start shadow-[0_18px_40px_-16px_rgba(0,0,0,0.8)] backdrop-blur-md transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-150 ${
           hover ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
       >

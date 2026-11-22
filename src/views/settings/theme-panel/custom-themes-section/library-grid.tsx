@@ -50,7 +50,7 @@ function CreateTile({ onCreate }: { onCreate: () => void }) {
     <button
       type="button"
       onClick={onCreate}
-      className="group relative flex h-full min-h-[252px] flex-col items-start justify-between overflow-hidden rounded-2xl border border-accent/30 p-5 text-start transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_18px_40px_-22px_var(--color-accent-soft)]"
+      className="group relative flex h-full min-h-[252px] flex-col items-start justify-between overflow-hidden rounded-2xl border border-accent/30 p-5 text-start transition-[transform,opacity,background-color,border-color,color,box-shadow] hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_18px_40px_-22px_var(--color-accent-soft)]"
       style={{
         background:
           "linear-gradient(160deg, var(--color-accent-soft) 0%, var(--color-surface) 60%, var(--color-surface) 100%)",
@@ -114,7 +114,7 @@ function ImportTile({ onUpload }: { onUpload: (file: File) => void }) {
         const f = e.dataTransfer.files?.[0];
         if (f) onUpload(f);
       }}
-      className={`group relative flex h-full min-h-[252px] flex-col items-start justify-between overflow-hidden rounded-2xl border p-5 text-start transition-all duration-200 ${
+      className={`group relative flex h-full min-h-[252px] flex-col items-start justify-between overflow-hidden rounded-2xl border p-5 text-start transition-[transform,opacity,background-color,border-color,color] duration-200 ${
         dragOver
           ? "border-accent bg-accent-soft"
           : "border-edge-soft bg-canvas/40 hover:-translate-y-0.5 hover:border-edge hover:bg-canvas/55"
@@ -134,7 +134,7 @@ function ImportTile({ onUpload }: { onUpload: (file: File) => void }) {
       </div>
       <div className="relative flex items-end justify-between gap-3 self-stretch">
         <span
-          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-edge-soft bg-surface text-ink-muted transition-all duration-300 group-hover:border-edge group-hover:text-ink"
+          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-edge-soft bg-surface text-ink-muted transition-colors duration-300 group-hover:border-edge group-hover:text-ink"
           style={{
             transform: dragOver ? "scale(1.08)" : "scale(1)",
             transition: "transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 200ms, color 200ms",
@@ -169,7 +169,7 @@ function LibraryCard({
   const bg = theme.background?.image ?? `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-surface transition-all ${
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-surface transition-[background-color,border-color,color,opacity,box-shadow] ${
         active
           ? "border-accent shadow-[0_0_0_2px_var(--color-accent-soft),0_18px_40px_-22px_rgba(0,0,0,0.35)]"
           : "border-edge-soft hover:border-edge hover:shadow-[0_18px_36px_-22px_rgba(0,0,0,0.3)]"

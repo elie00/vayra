@@ -262,7 +262,7 @@ function ControlPick({
         e.stopPropagation();
         onSelect(selected ? null : id);
       }}
-      className={`relative cursor-pointer rounded-xl p-1 transition-all duration-150 ${
+      className={`relative cursor-pointer rounded-xl p-1 transition-[background-color,border-color,color,opacity,box-shadow] duration-150 ${
         selected ? "bg-accent/15 ring-2 ring-accent" : "ring-2 ring-transparent hover:bg-white/8"
       }`}
     >

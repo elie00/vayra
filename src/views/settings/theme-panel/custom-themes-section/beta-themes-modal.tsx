@@ -10,7 +10,7 @@ export function BetaThemesCard({ count, onClick }: { count: number; onClick: () 
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-edge-soft bg-surface text-start transition-all hover:border-edge"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-edge-soft bg-surface text-start transition-colors hover:border-edge"
     >
       <div className="relative flex h-40 w-full items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_28%_18%,#3574fc_0%,transparent_55%),radial-gradient(ellipse_70%_60%_at_82%_92%,#775bf4_0%,transparent_60%),linear-gradient(135deg,#0c0c0c,#111827)]" />
@@ -70,7 +70,7 @@ export function BetaThemesModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 items-center gap-2 rounded-full border border-edge-soft bg-canvas/60 px-4 text-[13px] font-semibold text-ink-muted transition-all hover:-translate-x-0.5 hover:border-edge hover:text-ink"
+            className="flex h-11 items-center gap-2 rounded-full border border-edge-soft bg-canvas/60 px-4 text-[13px] font-semibold text-ink-muted transition-[transform,opacity,background-color,border-color,color] hover:-translate-x-0.5 hover:border-edge hover:text-ink"
           >
             <ArrowLeft size={15} strokeWidth={2.2} />
             {t("Back")}
@@ -123,7 +123,7 @@ function BetaCard({
   const bg = theme.background?.image ?? `linear-gradient(135deg, ${theme.swatch[0]}, ${theme.swatch[1]})`;
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-2xl border transition-all ${
+      className={`flex flex-col overflow-hidden rounded-2xl border transition-[background-color,border-color,color,opacity,box-shadow] ${
         active
           ? "border-accent shadow-[0_0_0_2px_var(--color-accent-soft),0_18px_40px_-22px_rgba(0,0,0,0.35)]"
           : "border-edge-soft bg-surface hover:border-edge"

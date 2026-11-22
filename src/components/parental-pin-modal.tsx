@@ -174,7 +174,7 @@ export function ParentalPinModal({
               <span
                 key={i}
                 aria-hidden="true"
-                className={`pointer-events-none h-3.5 w-3.5 rounded-full ring-1 transition-all ${
+                className={`pointer-events-none h-3.5 w-3.5 rounded-full ring-1 transition-[transform,opacity,background-color,border-color,color,box-shadow] ${
                   pin.length > i ? "scale-110 bg-ink ring-ink" : "bg-transparent ring-edge-soft"
                 }`}
               />
@@ -230,7 +230,7 @@ function PinKey({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/55 text-[20px] font-medium tabular-nums text-ink ring-1 ring-edge-soft transition-all hover:bg-canvas/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/55 text-[20px] font-medium tabular-nums text-ink ring-1 ring-edge-soft transition-[transform,opacity,background-color,border-color,color,box-shadow] hover:bg-canvas/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
       {...rest}
     >
       {children}

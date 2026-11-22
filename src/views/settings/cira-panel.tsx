@@ -132,7 +132,7 @@ function SmallButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-9 items-center rounded-lg px-3 text-[12.5px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-45 ${toneClass}`}
+      className={`flex h-9 items-center rounded-lg px-3 text-[12.5px] font-medium transition-[background-color,border-color,color,opacity] disabled:cursor-not-allowed disabled:opacity-45 ${toneClass}`}
     >
       {label}
     </button>

@@ -202,7 +202,7 @@ export function RegionPicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-14 w-full items-center gap-3.5 rounded-2xl border bg-elevated px-4 text-start transition-all ${
+        className={`flex h-14 w-full items-center gap-3.5 rounded-2xl border bg-elevated px-4 text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
           open
             ? "border-ink shadow-[0_0_0_3px_rgba(255,255,255,0.04)]"
             : "border-edge hover:border-edge"

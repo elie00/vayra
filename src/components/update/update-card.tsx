@@ -28,7 +28,7 @@ export function UpdateCard() {
 
   return (
     <div
-      className={`fixed bottom-5 end-5 z-[120] w-[372px] max-w-[calc(100vw-2.5rem)] transition-all duration-300 ${
+      className={`fixed bottom-5 end-5 z-[120] w-[372px] max-w-[calc(100vw-2.5rem)] transition-[transform,opacity,background-color,border-color,color] duration-300 ${
         shown ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
       }`}
     >

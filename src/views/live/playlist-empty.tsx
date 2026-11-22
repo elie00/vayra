@@ -53,7 +53,7 @@ function Intro({ onContinue }: { onContinue: () => void }) {
           <div className="pt-2">
             <button
               onClick={onContinue}
-              className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-ink ps-6 pe-5 text-[14.5px] font-semibold text-canvas transition-all duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
+              className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-ink ps-6 pe-5 text-[14.5px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
             >
               {t("Connect a provider")}
               <ArrowRight
@@ -205,7 +205,7 @@ function Form({
       <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col justify-center gap-8 max-sm:justify-start max-sm:gap-6">
         <button
           onClick={onBack}
-          className="group inline-flex h-11 items-center gap-2 self-start rounded-full border border-edge-soft bg-elevated/60 ps-3.5 pe-5 text-[14px] font-semibold text-ink-muted transition-all duration-150 ease-out hover:border-edge hover:bg-elevated hover:text-ink active:scale-[0.97]"
+          className="group inline-flex h-11 items-center gap-2 self-start rounded-full border border-edge-soft bg-elevated/60 ps-3.5 pe-5 text-[14px] font-semibold text-ink-muted transition-[transform,opacity,background-color,border-color,color] duration-150 ease-out hover:border-edge hover:bg-elevated hover:text-ink active:scale-[0.97]"
         >
           <ArrowLeft
             size={16}
@@ -234,7 +234,7 @@ function Form({
                 key={k.id}
                 type="button"
                 onClick={() => setKind(k.id)}
-                className={`group flex items-center gap-4 rounded-2xl border px-5 py-4 text-start transition-all duration-150 ${
+                className={`group flex items-center gap-4 rounded-2xl border px-5 py-4 text-start transition-colors duration-150 ${
                   selected
                     ? "border-ink/40 bg-elevated"
                     : "border-edge-soft/60 bg-elevated/30 hover:border-edge hover:bg-elevated/55"
@@ -374,7 +374,7 @@ function Form({
             <button
               disabled={!canSave}
               onClick={submit}
-              className="flex h-12 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas transition-all duration-150 ease-out hover:opacity-90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex h-12 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] duration-150 ease-out hover:opacity-90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-30"
             >
               {t("Save and continue")}
               <ArrowRight size={15} strokeWidth={2.4} className="dir-icon" />

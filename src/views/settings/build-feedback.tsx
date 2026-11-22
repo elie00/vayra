@@ -186,7 +186,7 @@ export function BuildFeedback() {
           ))}
           <span
             aria-hidden
-            className={`absolute top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-canvas shadow-[0_4px_14px_-2px_rgba(0,0,0,0.55)] ring-2 transition-all duration-150 ${
+            className={`absolute top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-canvas shadow-[0_4px_14px_-2px_rgba(0,0,0,0.55)] ring-2 transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-150 ${
               dragging.current ? "scale-110" : ""
             }`}
             style={{ left: `${(value / (STOPS.length - 1)) * 100}%`, color: cur.color, "--tw-ring-color": cur.color } as React.CSSProperties}

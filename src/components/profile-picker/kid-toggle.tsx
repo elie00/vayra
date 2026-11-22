@@ -21,7 +21,7 @@ export function KidToggle({
     <div
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-500 ${
+      className={`relative overflow-hidden rounded-2xl border p-4 transition-[background-color,border-color,color,opacity,box-shadow] duration-500 ${
         on
           ? "border-[#6bc5ca]/60 shadow-[0_14px_36px_-14px_rgba(15,82,119,0.7)]"
           : "border-edge-soft bg-canvas/40"
@@ -39,7 +39,7 @@ export function KidToggle({
             src={`/kids/doodles/${d.src}.png`}
             alt=""
             draggable={false}
-            className={`pointer-events-none absolute ${d.pos} w-auto drop-shadow-[0_6px_12px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out`}
+            className={`pointer-events-none absolute ${d.pos} w-auto drop-shadow-[0_6px_12px_rgba(0,0,0,0.3)] transition-[background-color,border-color,color,opacity,box-shadow] duration-500 ease-out`}
             style={{
               transform: `${d.flip ? "scaleX(-1) " : ""}translateY(${visible ? "0" : "2.75rem"})`,
               opacity: visible ? 0.95 : 0,
@@ -75,7 +75,7 @@ function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
       }`}
     >
       <span
-        className={`absolute top-1 h-5 w-5 rounded-full shadow transition-all duration-300 ${
+        className={`absolute top-1 h-5 w-5 rounded-full shadow transition-colors duration-300 ${
           on ? "left-6 bg-[#0d4f73]" : "left-1 bg-ink/55"
         }`}
       />

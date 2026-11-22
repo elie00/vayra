@@ -68,7 +68,7 @@ export function SeekImageUpload({
           <ImageIcon
             size={20}
             strokeWidth={1.6}
-            className={`absolute text-ink-subtle transition-all duration-300 ${
+            className={`absolute text-ink-subtle transition-[transform,opacity,background-color,border-color,color] duration-300 ${
               value ? "scale-50 opacity-0" : "scale-100 opacity-100"
             }`}
           />
@@ -76,7 +76,7 @@ export function SeekImageUpload({
             key={value || "empty"}
             src={value || "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="}
             alt=""
-            className={`h-12 w-12 object-contain transition-all duration-300 ease-out ${
+            className={`h-12 w-12 object-contain transition-[transform,opacity,background-color,border-color,color] duration-300 ease-out ${
               value ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-75 opacity-0"
             }`}
           />
@@ -108,7 +108,7 @@ export function SeekImageUpload({
             onClear();
           }}
           disabled={!value}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-raised text-ink-muted transition-all duration-200 hover:bg-danger hover:text-white disabled:pointer-events-none disabled:scale-90 disabled:opacity-0"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-raised text-ink-muted transition-[transform,opacity,background-color,border-color,color] duration-200 hover:bg-danger hover:text-white disabled:pointer-events-none disabled:scale-90 disabled:opacity-0"
           aria-label={t("Remove image")}
         >
           <X size={13} strokeWidth={2.2} />

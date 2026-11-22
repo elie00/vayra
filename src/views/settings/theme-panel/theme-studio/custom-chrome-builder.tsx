@@ -248,7 +248,7 @@ function PosButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-16 flex-col items-center justify-center gap-1.5 rounded-lg border text-[13px] font-semibold transition-all ${
+      className={`flex h-16 flex-col items-center justify-center gap-1.5 rounded-lg border text-[13px] font-semibold transition-colors ${
         active
           ? "border-accent/80 bg-canvas/40 text-ink"
           : "border-edge-soft bg-canvas/30 text-ink-muted hover:border-edge hover:text-ink"

@@ -52,7 +52,7 @@ export function SongIdToast() {
   };
 
   const anim = [
-    "origin-top transition-all duration-500 ease-out",
+    "origin-top transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-500 ease-out",
     enter ? "scale-100 opacity-100" : "scale-90 opacity-0",
     isResult ? "pointer-events-auto cursor-pointer hover:ring-white/25" : "",
   ].join(" ");

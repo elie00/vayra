@@ -68,7 +68,7 @@ export function LibraryBrowser({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 items-center gap-2 rounded-full border border-edge-soft bg-canvas/60 px-4 text-[13px] font-semibold text-ink-muted transition-all hover:-translate-x-0.5 rtl:hover:translate-x-0.5 hover:border-edge hover:text-ink"
+            className="flex h-11 items-center gap-2 rounded-full border border-edge-soft bg-canvas/60 px-4 text-[13px] font-semibold text-ink-muted transition-[transform,opacity,background-color,border-color,color] hover:-translate-x-0.5 rtl:hover:translate-x-0.5 hover:border-edge hover:text-ink"
           >
             <ArrowLeft size={15} strokeWidth={2.2} className="dir-icon" />
             {t("Back to settings")}
@@ -288,7 +288,7 @@ function BrowserCard({
   };
   return (
     <div
-      className={`group flex flex-col overflow-hidden rounded-2xl border transition-all ${
+      className={`group flex flex-col overflow-hidden rounded-2xl border transition-[background-color,border-color,color,opacity,box-shadow] ${
         active
           ? "border-accent shadow-[0_0_0_2px_var(--color-accent-soft),0_18px_40px_-22px_rgba(0,0,0,0.35)]"
           : "border-edge-soft bg-surface hover:border-edge"

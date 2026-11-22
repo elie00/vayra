@@ -156,7 +156,7 @@ export function PeekHero({ slides }: { slides: Meta[] }) {
               key={i}
               onClick={() => setActive(i)}
               aria-label={t("Slide {n}", { n: i + 1 })}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
+              className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-500 ${
                 i === active ? "w-8 bg-ink" : "w-1.5 bg-ink-muted/55 hover:bg-ink-muted"
               }`}
             />

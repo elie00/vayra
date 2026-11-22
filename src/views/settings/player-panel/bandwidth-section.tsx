@@ -39,7 +39,7 @@ export function BandwidthInput() {
               key={p.value}
               type="button"
               onClick={() => update({ bandwidthMbps: p.value })}
-              className={`flex h-9 items-center rounded-lg border px-3 text-[12.5px] font-semibold tabular-nums transition-all ${
+              className={`flex h-9 items-center rounded-lg border px-3 text-[12.5px] font-semibold tabular-nums transition-colors ${
                 selected
                   ? "border-ink bg-ink text-canvas"
                   : "border-edge-soft bg-canvas/30 text-ink-muted hover:border-edge hover:text-ink"

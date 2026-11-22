@@ -150,7 +150,7 @@ export function AvatarCatalogModal({
                     className="group flex flex-col items-center gap-1.5"
                   >
                     <span
-                      className={`relative block aspect-square w-full overflow-hidden rounded-full ring-2 transition-all ${
+                      className={`relative block aspect-square w-full overflow-hidden rounded-full ring-2 transition-[background-color,border-color,color,opacity,box-shadow] ${
                         selected ? "ring-accent" : "ring-transparent group-hover:ring-edge"
                       }`}
                     >

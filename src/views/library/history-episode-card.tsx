@@ -189,7 +189,7 @@ function RemoveButton({ onRemove }: { onRemove: () => void }) {
       }}
       onMouseLeave={() => setConfirm(false)}
       aria-label={confirm ? t("Confirm remove from history") : t("Remove from history")}
-      className={`absolute end-2 top-2 z-10 flex h-7 items-center justify-center gap-1 rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
+      className={`absolute end-2 top-2 z-10 flex h-7 items-center justify-center gap-1 rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-[background-color,border-color,color,opacity,box-shadow] duration-200 ${
         confirm
           ? "bg-danger px-2.5 text-[11px] font-semibold"
           : "w-7 bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"

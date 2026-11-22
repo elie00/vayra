@@ -130,7 +130,7 @@ export function FeedHero({
             <button
               type="button"
               onClick={() => openPicker(meta, smartPlayEpisode(meta), { autoPlay: settings.instantPlay })}
-              className="flex h-12 items-center gap-2.5 rounded-full bg-ink px-7 text-[15px] font-semibold text-canvas transition-all duration-200 hover:bg-ink/90"
+              className="flex h-12 items-center gap-2.5 rounded-full bg-ink px-7 text-[15px] font-semibold text-canvas transition-colors duration-200 hover:bg-ink/90"
             >
               <Play size={18} fill="currentColor" />
               <span>{t("Play tonight")}</span>

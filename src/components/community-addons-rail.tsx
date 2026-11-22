@@ -68,7 +68,7 @@ export function CommunityAddonsRail({
             type="button"
             onClick={() => openUrl(SITE_URL)}
             aria-label={`Open ${SITE_NAME}`}
-            className="group/logo relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-1 ring-edge-soft transition-all hover:-translate-y-0.5 hover:ring-2 hover:ring-accent/50 hover:shadow-[0_12px_28px_-12px_var(--color-accent-soft)]"
+            className="group/logo relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-1 ring-edge-soft transition-[transform,opacity,background-color,border-color,color,box-shadow] hover:-translate-y-0.5 hover:ring-2 hover:ring-accent/50 hover:shadow-[0_12px_28px_-12px_var(--color-accent-soft)]"
           >
             <img
               src={stremioAddonsLogo}
@@ -240,7 +240,7 @@ function CommunityCard({
       onClick={openDetail}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openDetail()}
       style={{ contentVisibility: "auto", containIntrinsicSize: "280px 244px" }}
-      className="group relative flex w-[280px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-edge-soft bg-surface transition-all hover:-translate-y-0.5 hover:border-edge hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.35)]"
+      className="group relative flex w-[280px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-edge-soft bg-surface transition-[transform,opacity,background-color,border-color,color,box-shadow] hover:-translate-y-0.5 hover:border-edge hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.35)]"
     >
       <div
         className="relative h-24 w-full"

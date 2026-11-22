@@ -84,7 +84,7 @@ export function VersionNotesModal({
               type="button"
               title={t("Download this build's installer, then run it over your current copy")}
               onClick={() => openUrl(url)}
-              className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-ink px-4 text-[13px] font-semibold text-canvas transition-all hover:scale-[1.02] active:scale-[0.97]"
+              className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-ink px-4 text-[13px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] hover:scale-[1.02] active:scale-[0.97]"
             >
               <ArrowDownToLine size={14} strokeWidth={2.4} />
               {t("Download this build")}

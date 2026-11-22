@@ -16,7 +16,7 @@ export function RelayDocs({ onBack }: { onBack: () => void }) {
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-3">
         <button
           onClick={onBack}
-          className="flex h-12 items-center gap-2.5 rounded-xl bg-elevated px-5 text-[14px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-edge-soft)] transition-all hover:bg-raised hover:shadow-[inset_0_0_0_1px_var(--color-edge)]"
+          className="flex h-12 items-center gap-2.5 rounded-xl bg-elevated px-5 text-[14px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-edge-soft)] transition-[background-color,border-color,color,opacity,box-shadow] hover:bg-raised hover:shadow-[inset_0_0_0_1px_var(--color-edge)]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path

@@ -103,7 +103,7 @@ function HistoryError({ onRetry }: { onRetry: () => void }) {
         <button
           type="button"
           onClick={onRetry}
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3 text-[12px] font-semibold text-ink transition-all hover:scale-[1.02] hover:border-ink active:scale-[0.97]"
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3 text-[12px] font-semibold text-ink transition-[transform,opacity,background-color,border-color,color] hover:scale-[1.02] hover:border-ink active:scale-[0.97]"
         >
           <RotateCw size={13} strokeWidth={2.4} />
           {t("Try again")}

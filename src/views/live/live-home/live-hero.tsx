@@ -132,7 +132,7 @@ export function LiveHero({
                 setIdx(i);
               }}
               aria-label={t("Spotlight {n}", { n: i + 1 })}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-300 ${
                 i === activeIdx ? "w-8 bg-ink" : "w-4 bg-ink-muted/60 hover:bg-ink-muted"
               }`}
             />

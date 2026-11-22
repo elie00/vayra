@@ -52,7 +52,7 @@ export function SettingsRecoverRow() {
         type="button"
         onClick={restore}
         disabled={applying}
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-[12.5px] font-semibold text-canvas transition-all hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60"
+        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-[12.5px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60"
       >
         <History size={14} strokeWidth={2.4} />
         {applying ? t("Restoring...") : t("Restore")}

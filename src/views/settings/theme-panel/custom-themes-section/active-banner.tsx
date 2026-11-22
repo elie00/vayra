@@ -90,7 +90,7 @@ export function ActiveBanner({
           <button
             type="button"
             onClick={onCustomize}
-            className="flex h-10 items-center gap-1.5 rounded-full border px-4 text-[12.5px] font-semibold backdrop-blur-md transition-all hover:-translate-y-px"
+            className="flex h-10 items-center gap-1.5 rounded-full border px-4 text-[12.5px] font-semibold backdrop-blur-md transition-[transform,opacity,background-color,border-color,color] hover:-translate-y-px"
             style={{ borderColor: editBorder, background: editBg, color: fg }}
           >
             {t("Edit colors")}
@@ -98,7 +98,7 @@ export function ActiveBanner({
           <button
             type="button"
             onClick={onExport}
-            className="flex h-10 items-center gap-1.5 rounded-full px-4 text-[12.5px] font-semibold transition-all hover:-translate-y-px hover:opacity-90"
+            className="flex h-10 items-center gap-1.5 rounded-full px-4 text-[12.5px] font-semibold transition-[transform,opacity,background-color,border-color,color] hover:-translate-y-px hover:opacity-90"
             style={{ background: exportBg, color: exportFg }}
           >
             <Copy size={13} strokeWidth={2.2} />

@@ -64,7 +64,7 @@ function RailArrow({ side, visible, onClick }: { side: "start" | "end"; visible:
         onClick={onClick}
         aria-label={side === "start" ? t("Scroll left") : t("Scroll right")}
         tabIndex={visible ? 0 : -1}
-        className={`flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-canvas ${
+        className={`flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-[transform,opacity,background-color,border-color,color] duration-200 hover:scale-105 hover:bg-canvas ${
           visible
             ? "pointer-events-auto opacity-0 group-hover/rail:opacity-100 focus-visible:opacity-100"
             : "pointer-events-none opacity-0"

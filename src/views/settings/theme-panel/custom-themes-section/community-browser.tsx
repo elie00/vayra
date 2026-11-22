@@ -135,7 +135,7 @@ function CommunityCard({ theme, onOpen }: { theme: StoreTheme; onOpen: () => voi
       role="button"
       tabIndex={0}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen()}
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-edge-soft bg-surface text-start transition-all hover:border-edge hover:shadow-[0_18px_36px_-22px_rgba(0,0,0,0.3)]"
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-edge-soft bg-surface text-start transition-[background-color,border-color,color,opacity,box-shadow] hover:border-edge hover:shadow-[0_18px_36px_-22px_rgba(0,0,0,0.3)]"
     >
       <div className="relative h-36 w-full overflow-hidden bg-elevated">
         {t.cover ? (

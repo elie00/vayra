@@ -47,7 +47,7 @@ function FilmCard({ credit, showRole }: { credit: PersonCredit; showRole: boolea
         onError={poster.onError}
         seed={`${credit.mediaType}-${credit.id}`}
         ratio="portrait"
-        className="rounded-xl shadow-[0_0_0_rgba(0,0,0,0)] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] group-hover:-translate-y-2 group-hover:shadow-[0_24px_44px_-14px_rgba(0,0,0,0.6)]"
+        className="rounded-xl shadow-[0_0_0_rgba(0,0,0,0)] transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] group-hover:-translate-y-2 group-hover:shadow-[0_24px_44px_-14px_rgba(0,0,0,0.6)]"
       />
       <div className="flex flex-col gap-0.5">
         <p className="line-clamp-2 text-[13px] font-medium leading-snug text-ink">{credit.title}</p>

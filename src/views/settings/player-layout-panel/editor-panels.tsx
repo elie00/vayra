@@ -72,7 +72,7 @@ function PanelMount({
         e.stopPropagation();
         onSelect(selected ? null : id);
       }}
-      className={`absolute z-20 cursor-pointer ${radius} p-0.5 transition-all duration-150 ${
+      className={`absolute z-20 cursor-pointer ${radius} p-0.5 transition-[background-color,border-color,color,opacity,box-shadow] duration-150 ${
         selected ? "ring-2 ring-accent" : "ring-2 ring-transparent hover:ring-white/20"
       }`}
       style={style}

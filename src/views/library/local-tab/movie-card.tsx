@@ -114,7 +114,7 @@ export function OwnedCard({
                     setConfirm(true);
                   }
                 }}
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-[background-color,border-color,color,opacity,box-shadow] duration-200 ${
                   confirm
                     ? "bg-danger"
                     : "bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"

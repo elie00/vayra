@@ -200,7 +200,7 @@ function GroupTab({
   return (
     <button
       onClick={onClick}
-      className={`relative flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all ${
+      className={`relative flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
         active
           ? "border-transparent bg-ink text-canvas"
           : "border-edge-soft/50 bg-elevated text-ink-muted hover:border-edge hover:text-ink"
@@ -230,7 +230,7 @@ function LeagueCard({
   return (
     <button
       onClick={onToggle}
-      className={`relative flex items-center gap-2.5 rounded-xl border p-2.5 text-start transition-all ${
+      className={`relative flex items-center gap-2.5 rounded-xl border p-2.5 text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
         selected
           ? "border-ink/40 bg-ink/8 ring-1 ring-ink/20"
           : "border-edge-soft/40 bg-elevated/50 hover:border-edge hover:bg-elevated"

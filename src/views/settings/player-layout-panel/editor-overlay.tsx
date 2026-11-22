@@ -247,7 +247,7 @@ export function EditorOverlay({
             type="button"
             onClick={onSave}
             disabled={!dirty && !justSaved}
-            className={`flex h-11 items-center gap-2 rounded-full ps-3.5 pe-4 text-[13px] font-semibold transition-all duration-150 active:scale-[0.97] ${
+            className={`flex h-11 items-center gap-2 rounded-full ps-3.5 pe-4 text-[13px] font-semibold transition-[transform,opacity,background-color,border-color,color] duration-150 active:scale-[0.97] ${
               justSaved
                 ? "bg-emerald-500/85 text-white"
                 : dirty

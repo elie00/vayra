@@ -105,7 +105,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
               disabled={!syncAvailable}
               title={syncAvailable ? t("Sync subtitles via text") : t("Select a subtitle track to sync")}
               aria-label={t("Sync via text")}
-              className={`flex h-10 items-center gap-2 rounded-xl px-3.5 text-[13px] font-semibold transition-all ${
+              className={`flex h-10 items-center gap-2 rounded-xl px-3.5 text-[13px] font-semibold transition-[transform,opacity,background-color,border-color,color] ${
                 syncAvailable
                   ? "bg-raised text-ink-muted hover:bg-elevated hover:text-ink active:scale-95"
                   : "bg-raised/40 opacity-60 cursor-not-allowed text-ink-subtle/50"
@@ -162,7 +162,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
             type="button"
             onClick={handleSave}
             aria-label={t("Save")}
-            className="flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-[13px] font-semibold text-canvas transition-all hover:brightness-110 active:scale-95"
+            className="flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-[13px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] hover:brightness-110 active:scale-95"
           >
             <Check size={16} strokeWidth={2.6} />
             {t("Done")}

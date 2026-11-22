@@ -150,7 +150,7 @@ export function CollectionsView() {
         <div ref={stickySentinelRef} aria-hidden className="h-px" />
         <div className="sticky top-24 z-40 mt-8 max-sm:top-[calc(4rem+var(--harbor-status-bar,1.75rem))] max-sm:mt-5">
           <div
-            className={`flex flex-wrap items-center gap-3 transition-all duration-300 ${
+            className={`flex flex-wrap items-center gap-3 transition-[background-color,border-color,color,opacity,box-shadow] duration-300 ${
               stuck
                 ? "rounded-2xl border border-edge-soft bg-canvas/85 px-5 py-3 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl"
                 : "rounded-2xl border border-transparent px-0 py-0"

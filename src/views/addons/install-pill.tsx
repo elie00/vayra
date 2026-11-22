@@ -57,7 +57,7 @@ export function InstallPill({
     return (
       <button
         onClick={runInstall}
-        className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-all duration-150 ease-out hover:opacity-90 active:scale-[0.96]"
+        className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] duration-150 ease-out hover:opacity-90 active:scale-[0.96]"
       >
         <Settings2 size={14} strokeWidth={2.2} />
         {t("Set up")}
@@ -67,7 +67,7 @@ export function InstallPill({
   return (
     <button
       onClick={runInstall}
-      className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-all duration-150 ease-out hover:opacity-90 active:scale-[0.96]"
+      className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] duration-150 ease-out hover:opacity-90 active:scale-[0.96]"
     >
       <Plus size={14} strokeWidth={2.6} />
       {t("Install")}
