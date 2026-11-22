@@ -82,6 +82,8 @@ export function PrimaryCard({
             <img
               src={heroImage}
               alt=""
+              decoding="async"
+              fetchPriority="high"
               className="h-full w-full object-cover"
               draggable={false}
             />
@@ -97,6 +99,7 @@ export function PrimaryCard({
               <img
                 src={meta.logo}
                 alt={meta.name}
+                decoding="async"
                 className="pointer-events-none absolute bottom-3 start-3.5 max-h-[26%] max-w-[58%] object-contain opacity-70 drop-shadow-[0_4px_18px_rgba(0,0,0,0.7)]"
                 draggable={false}
               />
