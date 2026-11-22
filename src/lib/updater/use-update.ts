@@ -91,9 +91,18 @@ export function updateAvailable(s: UpdateState): boolean {
 
 function betaChannel(): boolean {
   try {
-    const raw = localStorage.getItem("harbor.settings");
-    if (!raw) return false;
-    return (JSON.parse(raw) as { betaUpdates?: boolean }).betaUpdates === true;
+    // Check active profile override first, then fall back to global settings.
+    const activeId = localStorage.getItem("harbor.profile.active");
+    const keys = activeId
+      ? [`harbor.settings.profile.${activeId}`, "harbor.settings"]
+      : ["harbor.settings"];
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as { betaUpdates?: boolean };
+      if (typeof parsed.betaUpdates === "boolean") return parsed.betaUpdates;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -101,6 +110,7 @@ function betaChannel(): boolean {
 
 export async function checkForUpdate(manual = false): Promise<void> {
   if (!IS_TAURI) return;
+  if (!manual && typeof navigator !== "undefined" && navigator.onLine === false) return;
   if (state.status === "checking" || state.status === "downloading" || state.status === "installing") {
     return;
   }
