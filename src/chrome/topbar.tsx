@@ -1,8 +1,7 @@
 import { ArrowLeft, Menu, Search, Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
-import { TogetherPopover } from "@/components/together-modal";
 import { DownloadsButton } from "@/components/downloads-popover";
 import { RecordingPill } from "@/chrome/recording-pill";
 import {
@@ -28,8 +27,11 @@ import {
   windowZoomLabel,
 } from "@/lib/window";
 import { desktopUx, hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
-import { MobileBackBar, MobileHeader } from "@/mobile/header";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
+
+const TogetherPopover = lazy(() => import("@/components/together-modal").then((m) => ({ default: m.TogetherPopover })));
+const MobileHeader = lazy(() => import("@/mobile/header").then((m) => ({ default: m.MobileHeader })));
+const MobileBackBar = lazy(() => import("@/mobile/header").then((m) => ({ default: m.MobileBackBar })));
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -68,10 +70,15 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   // (recording/downloads) or window controls. Live TV, opened from the menu,
   // gets the same header as every other page.
   if (mobile) {
-    if (!(canGoBack && !connecting)) {
-      return <MobileHeader raised={topKind === "picker" || connecting} />;
-    }
-    return <MobileBackBar />;
+    return (
+      <Suspense fallback={null}>
+        {!(canGoBack && !connecting) ? (
+          <MobileHeader raised={topKind === "picker" || connecting} />
+        ) : (
+          <MobileBackBar />
+        )}
+      </Suspense>
+    );
   }
 
   return (
@@ -306,7 +313,9 @@ export function TogetherButton({
             above ? "bottom-[calc(100%-1px)] start-0" : "end-0 top-[calc(100%-1px)]"
           }`}
         >
-          <TogetherPopover placement={popoverPlacement} connectStyle={connectStyle} />
+          <Suspense fallback={null}>
+            <TogetherPopover placement={popoverPlacement} connectStyle={connectStyle} />
+          </Suspense>
         </div>
       )}
     </div>

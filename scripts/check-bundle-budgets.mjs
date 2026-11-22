@@ -46,13 +46,13 @@ const checks = [
   { label: "entry JS", bytes: gzipBytes(entryMatch[1]), limit: 650 * KIB, unit: "gzip" },
   {
     label: "settings JS",
-    bytes: gzipBytes(onlyAsset(/^settings-.*\.js$/, "settings JS")),
+    bytes: gzipBytes(onlyAsset(/^settings-[A-Za-z0-9_-]{8}\.js$/, "settings JS")),
     limit: 325 * KIB,
     unit: "gzip",
   },
   {
     label: "player JS",
-    bytes: gzipBytes(onlyAsset(/^player-.*\.js$/, "player JS")),
+    bytes: gzipBytes(onlyAsset(/^player-[A-Za-z0-9_-]{8}\.js$/, "player JS")),
     limit: 310 * KIB,
     unit: "gzip",
   },

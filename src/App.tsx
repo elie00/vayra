@@ -22,29 +22,18 @@ import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { DevErrorTrigger } from "@/components/dev-error-trigger";
 import { HarborErrorBoundary } from "@/components/error-boundary";
-import { ContextMenu } from "@/components/context-menu";
 import { CurfewGuard } from "@/components/curfew-guard";
-import { HoverPreview } from "@/components/hover-preview";
 import { CustomHoverCssMount } from "@/components/custom-hover-css-mount";
-import { EmbedViewportRoot } from "@/components/embed-viewport";
-import { InstallerViewportRoot } from "@/components/installer-viewport";
-import { UpdateRoot } from "@/components/update/update-root";
 import { CustomCodeMount } from "@/components/custom-code-mount";
 import { OfflineBanner } from "@/chrome/offline-banner";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { AppFeedbackHost } from "@/components/app-feedback-host";
 import { AccessibilityNavigation } from "@/components/accessibility-navigation";
-import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
 import { VaraInviteBridge } from "@/components/vara-invite-bridge";
 import { WatchActivityConsent } from "@/components/watch-activity-consent";
 import { CiraProvider } from "@/lib/cira/provider";
 import { VaraProvider } from "@/lib/vara/provider";
-import { TogetherCursors } from "@/components/together-cursors";
-import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
-import { TogetherInviteToast } from "@/components/together-invite-toast";
-import { TogetherSummonToast } from "@/components/together-summon-toast";
-import { TogetherParticipantLeftToast } from "@/components/together-participant-left-toast";
 import { AnilistSyncToast } from "@/components/anilist/anilist-sync-toast";
 import { CacheExpiryToast } from "@/components/cache-expiry-toast";
 import { AnilistAvatarSync } from "@/components/anilist/anilist-avatar-sync";
@@ -66,7 +55,6 @@ import { SettingsProvider } from "@/lib/settings";
 import { SearchProvider, useSearch } from "@/lib/search-context";
 import { SearchHotkey } from "@/components/search/search-hotkey";
 import { RoomHotkeys } from "@/components/room-hotkeys";
-import { MobileIntegration } from "@/components/mobile-integration";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
@@ -100,8 +88,20 @@ const CinematicOverlay = lazy(() => import("@/chrome/cinematic-overlay").then((m
 
 // Secondary / platform-conditional global overlays loaded off the critical boot path.
 const MobileShell = lazy(() => import("@/mobile/shell").then((m) => ({ default: m.MobileShell })));
+const MobileIntegration = lazy(() => import("@/components/mobile-integration").then((m) => ({ default: m.MobileIntegration })));
 const MacLinkBridge = lazy(() => import("@/components/mac-link-bridge").then((m) => ({ default: m.MacLinkBridge })));
 const MobileNotice = lazy(() => import("@/components/mobile-notice").then((m) => ({ default: m.MobileNotice })));
+const ContextMenu = lazy(() => import("@/components/context-menu").then((m) => ({ default: m.ContextMenu })));
+const HoverPreview = lazy(() => import("@/components/hover-preview").then((m) => ({ default: m.HoverPreview })));
+const EmbedViewportRoot = lazy(() => import("@/components/embed-viewport").then((m) => ({ default: m.EmbedViewportRoot })));
+const InstallerViewportRoot = lazy(() => import("@/components/installer-viewport").then((m) => ({ default: m.InstallerViewportRoot })));
+const UpdateRoot = lazy(() => import("@/components/update/update-root").then((m) => ({ default: m.UpdateRoot })));
+const TogetherChatToast = lazy(() => import("@/components/together-chat-toast").then((m) => ({ default: m.TogetherChatToast })));
+const TogetherCursors = lazy(() => import("@/components/together-cursors").then((m) => ({ default: m.TogetherCursors })));
+const TogetherHostLeavingPrompt = lazy(() => import("@/components/together-host-leaving-prompt").then((m) => ({ default: m.TogetherHostLeavingPrompt })));
+const TogetherInviteToast = lazy(() => import("@/components/together-invite-toast").then((m) => ({ default: m.TogetherInviteToast })));
+const TogetherSummonToast = lazy(() => import("@/components/together-summon-toast").then((m) => ({ default: m.TogetherSummonToast })));
+const TogetherParticipantLeftToast = lazy(() => import("@/components/together-participant-left-toast").then((m) => ({ default: m.TogetherParticipantLeftToast })));
 const SearchOverlay = lazy(() => import("@/components/search/search-overlay").then((m) => ({ default: m.SearchOverlay })));
 const CommandPalette = lazy(() => import("@/components/command-palette").then((m) => ({ default: m.CommandPalette })));
 const WatchLocalModal = lazy(() => import("@/components/player/watch-local-modal").then((m) => ({ default: m.WatchLocalModal })));
@@ -299,15 +299,15 @@ export function App() {
                       </Suspense>
                       <AccessibilityNavigation />
                       <WatchlistSync />
-                      <MobileIntegration />
                       <Suspense fallback={null}>
+                        {isMobileTauri() && <MobileIntegration />}
                         {isMobileTauri() && <MobileShell />}
                       </Suspense>
                       <Shell />
                       <Suspense fallback={null}>
                         <OnboardingModal />
+                        <TogetherInviteToast />
                       </Suspense>
-                      <TogetherInviteToast />
                       <CiraInviteBridge />
                       <Suspense fallback={null}>
                         <PrivateBetaLaunchModal />
@@ -317,10 +317,12 @@ export function App() {
                         {isMobileTauri() && <MacLinkBridge />}
                       </Suspense>
                       <WatchActivityConsent />
-                      <TogetherFloater />
-                      <TogetherHostLeavingPrompt />
-                      <TogetherSummonToast />
-                      <TogetherParticipantLeftToast />
+                      <Suspense fallback={null}>
+                        <TogetherFloater />
+                        <TogetherHostLeavingPrompt />
+                        <TogetherSummonToast />
+                        <TogetherParticipantLeftToast />
+                      </Suspense>
                       <AnilistSyncToast />
                       <MalSyncToast />
                       <CacheExpiryToast />
@@ -330,12 +332,12 @@ export function App() {
                       </Suspense>
                       <TogetherLocationPublisher />
                       <DiscordPresence />
-                      <ContextMenu />
                       <Suspense fallback={null}>
+                        <ContextMenu />
                         <WatchLocalModal />
                         <LocalEpisodesModal />
+                        <HoverPreview />
                       </Suspense>
-                      <HoverPreview />
                       <CustomHoverCssMount />
                       <Suspense fallback={null}>
                         <TopRankModal />
@@ -350,9 +352,11 @@ export function App() {
                         <CommandPalette />
                       </Suspense>
                       <RoomHotkeys />
-                      <EmbedViewportRoot />
-                      <InstallerViewportRoot />
-                      <UpdateRoot />
+                      <Suspense fallback={null}>
+                        <EmbedViewportRoot />
+                        <InstallerViewportRoot />
+                        <UpdateRoot />
+                      </Suspense>
                     </HarborErrorBoundary>
                     <Suspense fallback={null}>
                       <ErrorView />
