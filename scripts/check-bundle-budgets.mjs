@@ -40,20 +40,20 @@ const checks = [
   {
     label: "initial linked payload",
     bytes: initialAssets.reduce((total, asset) => total + gzipBytes(asset), 0),
-    limit: 840 * KIB,
+    limit: 620 * KIB,
     unit: "gzip",
   },
-  { label: "entry JS", bytes: gzipBytes(entryMatch[1]), limit: 650 * KIB, unit: "gzip" },
+  { label: "entry JS", bytes: gzipBytes(entryMatch[1]), limit: 420 * KIB, unit: "gzip" },
   {
     label: "settings JS",
     bytes: gzipBytes(onlyAsset(/^settings-[A-Za-z0-9_-]{8}\.js$/, "settings JS")),
-    limit: 325 * KIB,
+    limit: 60 * KIB,
     unit: "gzip",
   },
   {
     label: "player JS",
     bytes: gzipBytes(onlyAsset(/^player-[A-Za-z0-9_-]{8}\.js$/, "player JS")),
-    limit: 310 * KIB,
+    limit: 135 * KIB,
     unit: "gzip",
   },
   {
