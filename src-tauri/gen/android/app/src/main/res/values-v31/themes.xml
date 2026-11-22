@@ -1,12 +1,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Android 12+ launch screen: the mark on mineral black, without a light disc. -->
-    <style name="Theme.vayra" parent="Theme.MaterialComponents.NoActionBar">
+    <!-- Android 12+ launch screen: Material 3 dark surface with the mark on mineral black,
+         without a light disc or system-bar contrast flash. -->
+    <style name="Theme.vayra" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/vayra_titanium</item>
-        <item name="colorPrimaryVariant">@color/vayra_graphite</item>
         <item name="colorOnPrimary">@color/vayra_canvas</item>
         <item name="colorSecondary">@color/vayra_titanium</item>
         <item name="colorOnSecondary">@color/vayra_canvas</item>
+        <item name="colorSurface">@color/vayra_canvas</item>
+        <item name="android:colorBackground">@color/vayra_canvas</item>
         <item name="android:windowBackground">@color/vayra_canvas</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowSplashScreenBackground">@color/vayra_canvas</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@color/vayra_canvas</item>
     </style>

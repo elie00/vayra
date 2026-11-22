@@ -40,7 +40,7 @@ export function EditLayoutCard({
       <button
         type="button"
         onClick={onOpen}
-        className="flex shrink-0 items-center gap-2 self-start rounded-xl bg-ink px-5 py-3 text-[13.5px] font-semibold text-canvas transition-all duration-150 hover:scale-[1.02] active:scale-[0.97] sm:self-auto"
+        className="flex shrink-0 items-center gap-2 self-start rounded-xl bg-ink px-5 py-3 text-[13.5px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] duration-150 hover:scale-[1.02] active:scale-[0.97] sm:self-auto"
       >
         <Pencil size={14} strokeWidth={2.4} />
         {t("Edit player layout")}
@@ -126,7 +126,7 @@ export function FooterBar({
           type="button"
           onClick={onSave}
           disabled={!dirty}
-          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12.5px] font-semibold transition-all duration-150 active:scale-[0.97] ${
+          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12.5px] font-semibold transition-[transform,opacity,background-color,border-color,color] duration-150 active:scale-[0.97] ${
             justSaved
               ? "bg-accent/15 text-accent"
               : dirty

@@ -20,7 +20,7 @@
   font-display: swap;
 }
 
-/* Geist (Vercel, SIL OFL 1.1): Geist Serif for titles, Geist Sans for the rest.
+/* Optional Geist pair (Vercel, SIL OFL 1.1).
    The serif ships in one weight only; declaring it over the whole weight range
    makes a bold title use that cut as is instead of a smeared synthetic bold. */
 @font-face {
@@ -45,9 +45,25 @@
   font-display: swap;
 }
 
-/* Those alternates suit the other pairs; Geist keeps its own letters. */
-:root[data-font-pair="geist"] {
-  font-feature-settings: normal;
+/* Inter-specific alternates only belong on the Fraunces + Inter pair.
+   Google Sans and Geist ship both upright and italic masters, so disabling
+   synthesis avoids smeared faux-bold at 800/900 on macOS WebKit. */
+:root[data-font-pair="fraunces-inter"] {
+  font-feature-settings: "cv11", "ss01";
+  font-synthesis: auto;
+}
+:root[data-font-pair="sentient-switzer"],
+:root[data-font-pair="general-sans"],
+:root[data-font-pair="cabinet-switzer"],
+:root[data-font-pair="plex"],
+:root[data-font-pair="plus-jakarta"],
+:root[data-font-pair="system"] {
+  font-synthesis: auto;
+}
+:root[data-font-pair="google-sans"] :is(h1, h2, h3, h4, .font-display),
+:root:not([data-font-pair]) :is(h1, h2, h3, h4, .font-display) {
+  font-optical-sizing: auto;
+  text-wrap: balance;
 }
 
 @font-face {
@@ -65,7 +81,7 @@
   --color-raised: #242529;
   --color-ink: #f4f2ed;
   --color-ink-muted: #a8aaad;
-  --color-ink-subtle: #737579;
+  --color-ink-subtle: #8d9096;
   --color-edge: rgb(75 77 80 / 0.72);
   --color-edge-soft: rgb(75 77 80 / 0.38);
   --color-accent: #a8aaad;
@@ -81,10 +97,10 @@
   --radius-xl: 20px;
   --radius-2xl: 28px;
 
-  --font-display: "Geist Serif", "Iowan Old Style", "Georgia", serif;
-  --font-sans: "Geist", "Inter", system-ui, sans-serif;
+  --font-display: "Google Sans", "Inter", system-ui, sans-serif;
+  --font-sans: "Google Sans", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-channel: "Geist", "Inter", system-ui, sans-serif;
+  --font-channel: "Google Sans", "Inter", system-ui, sans-serif;
   --font-anime: "WonderfulFontyCure", "Sentient", "Georgia", serif;
   --font-arabic: "Geeza Pro", "SF Arabic", "Segoe UI", "Tahoma", "Noto Naskh Arabic", serif;
 
@@ -99,7 +115,9 @@
 :root {
   color-scheme: dark;
   font-family: var(--font-sans);
-  font-feature-settings: "cv11", "ss01";
+  font-feature-settings: normal;
+  font-optical-sizing: auto;
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -669,108 +687,6 @@ html[data-os="windows"] ::-webkit-scrollbar-corner {
   animation: done-check-draw 360ms var(--ease-out) 480ms both;
 }
 
-html[data-theme-card="glass"] .bg-surface:not(button):not(.no-glass):not(.rounded-full),
-html[data-theme-card="glass"] .bg-elevated:not(button):not(.no-glass):not(.rounded-full) {
-  background-image:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 5%, transparent), color-mix(in srgb, var(--color-ink) 0%, transparent));
-  border-color: color-mix(in srgb, var(--color-ink) 12%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-ink) 14%, transparent);
-}
-
-html[data-theme-card="minui"],
-html[data-theme-layout="minui"] {
-  --service-logo-filter: brightness(0);
-}
-
-html[data-theme-card="minui"] .harbor-service-tile,
-html[data-theme-layout="minui"] .harbor-service-tile {
-  background-color: transparent !important;
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-canvas) 18%, transparent);
-  transition: box-shadow 180ms ease, background-color 180ms ease;
-}
-
-@media (hover: hover) {
-  html[data-theme-card="minui"] .harbor-service-tile:hover,
-  html[data-theme-layout="minui"] .harbor-service-tile:hover {
-    background-color: color-mix(in srgb, var(--color-canvas) 4%, transparent) !important;
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-canvas) 42%, transparent);
-  }
-}
-
-html[data-theme-card="minui"] .harbor-service-tile img,
-html[data-theme-layout="minui"] .harbor-service-tile img {
-  filter: brightness(0) !important;
-  opacity: 0.78;
-  transition: opacity 180ms ease;
-}
-
-@media (hover: hover) {
-  html[data-theme-card="minui"] .harbor-service-tile:hover img,
-  html[data-theme-layout="minui"] .harbor-service-tile:hover img {
-    opacity: 1;
-  }
-}
-
-html[data-theme-layout="rail"] main.pt-20:not([data-rail-flush]),
-html[data-theme-layout="rail"] main.pt-24:not([data-rail-flush]),
-html[data-theme-layout="rail"] main.pt-28:not([data-rail-flush]),
-html[data-theme-layout="rail"] main.pt-32:not([data-rail-flush]) {
-  padding-top: 3.5rem;
-}
-
-html[data-theme-layout="rail"] main[data-rail-flush] {
-  padding-top: 1rem;
-}
-
-html[data-theme-card="glass"] .modal-panel {
-  background-color: var(--color-canvas) !important;
-  background-image: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border-color: color-mix(in srgb, var(--color-ink) 15%, transparent) !important;
-}
-
-html[data-theme-card="glass"] .glass-card {
-  backdrop-filter: blur(16px) saturate(135%);
-  -webkit-backdrop-filter: blur(16px) saturate(135%);
-  background-image:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 7%, transparent), color-mix(in srgb, var(--color-ink) 0%, transparent));
-  border-color: color-mix(in srgb, var(--color-ink) 14%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-ink) 16%, transparent),
-    0 18px 50px -22px color-mix(in srgb, var(--color-canvas) 60%, transparent);
-}
-
-html[data-theme-button="glossy"] button,
-html[data-theme-button="glossy"] .glossy {
-  position: relative;
-}
-
-html[data-theme-button="glossy"] .bg-ink,
-html[data-theme-button="glossy"] .bg-accent {
-  background-image: linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 22%, transparent), color-mix(in srgb, var(--color-ink) 0%, transparent) 55%);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-ink) 50%, transparent),
-    0 6px 18px -6px color-mix(in srgb, var(--color-canvas) 45%, transparent);
-}
-
-html[data-theme-layout="stremio"] main.pt-20:not([data-rail-flush]),
-html[data-theme-layout="stremio"] main.pt-24:not([data-rail-flush]),
-html[data-theme-layout="stremio"] main.pt-28:not([data-rail-flush]),
-html[data-theme-layout="stremio"] main.pt-32:not([data-rail-flush]) {
-  padding-top: 5.5rem;
-}
-
-html[data-theme-layout="stremio"] main {
-  padding-left: 2.5rem !important;
-  padding-right: 2.75rem !important;
-}
-
-html[data-theme-layout="stremio"] .harbor-bleed-stremio {
-  margin-left: -2.5rem;
-  margin-right: -2.75rem;
-}
-
 .harbor-cinema-badge {
   color: var(--color-accent);
   border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
@@ -779,27 +695,6 @@ html[data-theme-layout="stremio"] .harbor-bleed-stremio {
 .harbor-together-surface {
   background-color: var(--color-canvas);
   background-image: linear-gradient(var(--color-elevated), var(--color-elevated));
-}
-
-html[data-theme-card="crunch"] .harbor-wt-wrap,
-html[data-theme-card="noir"] .harbor-wt-wrap {
-  transform: translateY(2px);
-}
-
-html[data-theme-card="crunch"] .harbor-wt-tab,
-html[data-theme-card="noir"] .harbor-wt-tab,
-html[data-theme-card="glass"] .harbor-wt-tab {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-}
-
-html[data-theme-card="stremio"] .harbor-rating-star {
-  color: #4b9dff;
-}
-
-html[data-theme-layout="stremio"] .harbor-cinema-badge {
-  color: color-mix(in srgb, var(--color-ink) 95%, transparent);
-  border-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
 }
 
 @media (hover: hover) {
@@ -813,531 +708,14 @@ html[data-theme-layout="stremio"] .harbor-cinema-badge {
   }
 }
 
-@media (hover: hover) {
-  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover > .relative {
-    transform: none;
-  }
-}
-
-@media (hover: hover) {
-  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster {
-    box-shadow: none !important;
-  }
-}
-
-@media (hover: hover) {
-  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    box-shadow:
-      inset 0 0 0 3px rgb(255 255 255 / 1),
-      inset 0 0 16px color-mix(in srgb, var(--color-accent) 30%, transparent);
-    pointer-events: none;
-  }
-}
-
-html[data-theme-card="stremio"] button.group:not([data-no-card-ring]) .rounded-xl > img {
-  transition: transform 280ms var(--ease-out);
-}
-
-@media (hover: hover) {
-  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .rounded-xl > img {
-    transform: scale(1.05);
-  }
-}
-
-html[data-theme-card="stremio"] .modal-panel {
-  background-color: var(--color-canvas) !important;
-  background-image: none !important;
-  border-color: color-mix(in srgb, var(--color-ink) 12%, transparent) !important;
-}
-
-html[data-theme-layout="stremio"] [data-vayra-player] {
-  --color-canvas: var(--color-canvas);
-  --color-surface: #181434;
-  --color-elevated: #1f1b3f;
-  --color-raised: #2a2358;
-  --color-edge: rgba(255, 255, 255, 0.18);
-  --color-edge-soft: rgba(255, 255, 255, 0.08);
-}
-
-html[data-theme-layout="stremio"] .harbor-chat-toast,
-html[data-theme-layout="stremio"] .harbor-together-pill {
-  background-color: color-mix(in srgb, var(--color-canvas) 85%, transparent) !important;
-  background-image: none !important;
-  border-color: color-mix(in srgb, var(--color-ink) 12%, transparent) !important;
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-}
-
-html[data-theme-layout="minui"] {
-  font-size: 16px;
-}
-
-html[data-theme-layout="minui"] main {
-  padding-bottom: 7.5rem !important;
-}
-
-html[data-theme-layout="minui"] main.pt-20:not([data-rail-flush]),
-html[data-theme-layout="minui"] main.pt-24:not([data-rail-flush]),
-html[data-theme-layout="minui"] main.pt-28:not([data-rail-flush]),
-html[data-theme-layout="minui"] main.pt-32:not([data-rail-flush]),
-html[data-theme-layout="minui"] main.lg\:pt-28:not([data-rail-flush]) {
-  padding-top: 4.5rem;
-}
-
-html[data-theme-layout="minui"] main > div.pt-28,
-html[data-theme-layout="minui"] main > div.pt-32,
-html[data-theme-layout="minui"] main > section .pt-32,
-html[data-theme-layout="minui"] main > div > div.pt-28,
-html[data-theme-layout="minui"] main > div > div.pt-32 {
-  padding-top: 4rem !important;
-}
-
-html[data-theme-layout="minui"] .modal-panel,
-html[data-theme-card="minui"] .modal-panel {
-  background-color: var(--color-surface) !important;
-  background-image: none !important;
-  border-color: var(--color-edge) !important;
-  box-shadow: 0 30px 80px -28px color-mix(in srgb, var(--color-canvas) 32%, transparent), 0 2px 10px -2px color-mix(in srgb, var(--color-canvas) 10%, transparent) !important;
-}
-
-html[data-theme-card="minui"] .glass-card {
-  background: var(--color-surface);
-  border-color: var(--color-edge-soft);
-  box-shadow: 0 2px 10px -2px color-mix(in srgb, var(--color-canvas) 10%, transparent), 0 12px 32px -16px color-mix(in srgb, var(--color-canvas) 16%, transparent);
-}
-
-html[data-theme-button="minui"] .bg-ink {
-  background-color: var(--color-ink) !important;
-}
-
-html[data-theme-button="minui"] .bg-accent {
-  background-color: var(--color-accent) !important;
-  color: var(--color-canvas) !important;
-}
-
-html[data-theme-layout="minui"] .harbor-cinema-badge {
-  color: var(--color-accent);
-  border-color: var(--color-accent-soft);
-}
-
-html[data-theme-layout="minui"] .harbor-chat-toast,
-html[data-theme-layout="minui"] .harbor-together-pill {
-  background-color: var(--color-surface) !important;
-  background-image: none !important;
-  border-color: var(--color-edge) !important;
-  color: var(--color-ink) !important;
-  backdrop-filter: blur(14px) saturate(150%);
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--color-canvas) 28%, transparent);
-}
-
 .harbor-search-backdrop {
   background: color-mix(in srgb, var(--color-canvas) 88%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-html[data-theme-layout="minui"] .harbor-search-backdrop {
-  background: var(--color-canvas);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-}
-
-html[data-theme-layout="minui"] .harbor-service-tile {
-  background: var(--color-surface);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-ink) 6%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-canvas) 18%, transparent);
-}
-
-@media (hover: hover) {
-  html[data-theme-layout="minui"] .harbor-service-tile:hover {
-    background: var(--color-elevated);
-  }
-}
-
-html[data-theme-layout="minui"] [data-vayra-player] {
-  --color-canvas: #0a0a0c;
-  --color-surface: #15151a;
-  --color-elevated: #1d1d24;
-  --color-raised: #262630;
-  --color-ink: #f5f5f7;
-  --color-ink-muted: #c7c7cf;
-  --color-ink-subtle: #8a8a96;
-  --color-edge: rgba(255, 255, 255, 0.18);
-  --color-edge-soft: rgba(255, 255, 255, 0.08);
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 {
-  padding-left: 0;
-  padding-right: 0;
-  align-items: flex-start;
-  height: 60px;
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 > div {
-  height: 60px;
-  border-radius: 0;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-ink) 4%, transparent);
-  background-color: var(--color-elevated) !important;
-  background-image: none !important;
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 2%, transparent) !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  padding-left: 1.5rem;
-  padding-right: 0.75rem;
-  gap: 0.25rem;
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 button[aria-label="Harbor home"] {
-  color: var(--color-accent);
-  padding-right: 0.75rem;
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 nav button {
-  border-radius: 0 !important;
-  height: 60px !important;
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-  font-size: 14.5px;
-  font-weight: 500;
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 nav span[aria-hidden].rounded-full.bg-white\/15 {
-  background-color: var(--color-accent) !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  inset: auto 10px 0 10px !important;
-  height: 3px !important;
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 .bg-white\/15 {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 .w-px.bg-white\/15 {
-  display: none;
-}
-
-html[data-theme-button="crunch"] .bg-accent {
-  background-color: var(--color-accent) !important;
-  color: var(--color-canvas) !important;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-@media (hover: hover) {
-  html[data-theme-button="crunch"] .bg-accent:hover {
-    filter: brightness(1.12);
-  }
-}
-
-html[data-theme-button="crunch"] .bg-ink {
-  background-color: var(--color-ink) !important;
-  color: var(--color-canvas) !important;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-html[data-theme-button="crunch"] .text-accent {
-  color: var(--color-accent) !important;
-}
-
-html[data-theme-card="crunch"] .modal-panel {
-  background-color: var(--color-surface) !important;
-  background-image: none !important;
-  border-color: var(--color-edge-soft) !important;
-  box-shadow: 0 30px 80px -20px color-mix(in srgb, var(--color-canvas) 85%, transparent) !important;
-}
-
-html[data-theme-card="crunch"] .glass-card {
-  background-color: var(--color-elevated) !important;
-  background-image: none !important;
-  border-color: var(--color-edge-soft) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--color-canvas) 55%, transparent) !important;
-}
-
-html[data-theme-card="crunch"] .harbor-poster {
-  border-radius: 4px;
-}
-
-html[data-theme-card="crunch"] .harbor-chat-toast,
-html[data-theme-card="crunch"] .harbor-together-pill {
-  background-color: var(--color-elevated) !important;
-  background-image: none !important;
-  border-color: var(--color-accent-soft) !important;
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-}
-
-html[data-theme-card="crunch"] .harbor-search-backdrop {
-  background: color-mix(in srgb, var(--color-canvas) 92%, transparent);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-}
-
-html[data-theme-card="crunch"] .harbor-cinema-badge {
-  color: var(--color-accent);
-  border-color: var(--color-accent-soft);
-}
-
-html[data-theme-card="crunch"] [data-vayra-player] [role="slider"],
-html[data-theme-card="crunch"] [data-vayra-player] .player-progress-fill {
-  background-color: var(--color-accent);
-}
-
-html[data-theme-card="crunch"] ::selection {
-  color: var(--color-accent);
-  background: var(--color-raised);
-}
-
-html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 button[data-open="true"] {
-  background-color: var(--color-surface) !important;
-  border-radius: 0 !important;
-  height: 60px !important;
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-  color: var(--color-ink) !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown {
-  position: fixed !important;
-  top: 60px !important;
-  right: 0 !important;
-  left: auto !important;
-  width: 24.25rem !important;
-  max-width: 100vw !important;
-  height: auto !important;
-  max-height: calc(100vh - 60px) !important;
-  border-radius: 0 !important;
-  border: none !important;
-  background-color: var(--color-surface) !important;
-  background-image: none !important;
-  box-shadow: -10px 0 30px -10px color-mix(in srgb, var(--color-canvas) 65%, transparent) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  overflow-y: auto !important;
-  z-index: 100 !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown > div {
-  border-color: color-mix(in srgb, var(--color-ink) 5%, transparent) !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown > div:first-child {
-  padding: 22px 24px !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown > div:first-child > div:first-child {
-  font-size: 17px !important;
-  font-weight: 700 !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown > div:first-child > div:last-child {
-  font-size: 13px !important;
-  margin-top: 4px !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown button,
-html[data-theme-card="crunch"] .harbor-profile-dropdown a {
-  padding-top: 16px !important;
-  padding-bottom: 16px !important;
-  padding-left: 24px !important;
-  padding-right: 24px !important;
-  font-size: 15px !important;
-  gap: 14px !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown button > svg,
-html[data-theme-card="crunch"] .harbor-profile-dropdown a > svg {
-  width: 18px !important;
-  height: 18px !important;
-}
-
-html[data-theme-card="crunch"] .harbor-profile-dropdown span.uppercase {
-  font-size: 11.5px !important;
-  padding: 14px 24px 6px !important;
-}
-
-html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 {
-  padding-left: 0;
-  padding-right: 0;
-  align-items: flex-start;
-  height: 60px;
-}
-
-html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 > div {
-  height: 60px;
-  border-radius: 0;
-  border: none;
-  background-color: var(--color-canvas) !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  padding-left: 1.5rem;
-  padding-right: 0.75rem;
-  gap: 0.25rem;
-}
-
-html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 nav button {
-  border-radius: 0 !important;
-  height: 60px !important;
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-  font-size: 13.5px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
-
-html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 nav span[aria-hidden].rounded-full.bg-white\/15 {
-  background-color: var(--color-accent) !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  border-radius: 9999px !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  inset: auto auto 10px 50% !important;
-  width: 4px !important;
-  height: 4px !important;
-  transform: translateX(-50%);
-}
-
-html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 .w-px.bg-white\/15 {
-  display: none;
-}
-
-html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 .bg-white\/12,
-html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 .bg-white\/20 {
-  background-color: color-mix(in srgb, var(--color-ink) 6%, transparent) !important;
-}
-
-html[data-theme-button="noir"] .bg-accent {
-  background-color: var(--color-accent) !important;
-  color: var(--color-canvas) !important;
-  font-weight: 600;
-}
-
-html[data-theme-button="noir"] .bg-ink {
-  background-color: var(--color-ink) !important;
-  color: var(--color-canvas) !important;
-  font-weight: 600;
-}
-
-html[data-theme-card="noir"] .modal-panel {
-  background-color: var(--color-surface) !important;
-  background-image: none !important;
-  border-color: color-mix(in srgb, var(--color-ink) 6%, transparent) !important;
-  box-shadow: 0 30px 80px -20px color-mix(in srgb, var(--color-canvas) 90%, transparent) !important;
-}
-
-html[data-theme-card="noir"] .glass-card {
-  background-color: var(--color-surface) !important;
-  background-image: none !important;
-  border-color: color-mix(in srgb, var(--color-ink) 4%, transparent) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-}
-
-html[data-theme-card="noir"] .harbor-chat-toast,
-html[data-theme-card="noir"] .harbor-together-pill {
-  background-color: var(--color-surface) !important;
-  background-image: none !important;
-  border-color: color-mix(in srgb, var(--color-ink) 8%, transparent) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-html[data-theme-card="noir"] .harbor-search-backdrop {
-  background: color-mix(in srgb, var(--color-canvas) 96%, transparent);
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
-}
-
-html[data-theme-card="noir"] .harbor-cinema-badge {
-  color: var(--color-ink);
-  border-color: color-mix(in srgb, var(--color-ink) 18%, transparent);
-}
-
-html[data-theme-card="noir"] [data-vayra-player] {
-  --color-canvas: #000000;
-  --color-surface: var(--color-surface);
-  --color-elevated: var(--color-elevated);
-  --color-raised: var(--color-raised);
-  --color-ink: var(--color-ink);
-  --color-edge: rgba(255, 255, 255, 0.16);
-  --color-edge-soft: rgba(255, 255, 255, 0.1);
-}
-
-html[data-theme-card="noir"] ::selection {
-  color: var(--color-canvas);
-  background: var(--color-ink);
-}
-
 .anime-award-banner-logo {
   filter: invert(1) hue-rotate(180deg);
-}
-
-html[data-theme-layout="minui"] .anime-award-banner-logo {
-  filter: none;
-}
-
-@keyframes harbor-twinkle {
-  0%, 100% { opacity: 0.2; transform: scale(0.7); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-
-@keyframes harbor-moon-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2.5px); }
-}
-
-.harbor-dracula-twinkle { animation: harbor-twinkle 3.2s ease-in-out infinite; }
-.harbor-dracula-moon { animation: harbor-moon-bob 4.5s ease-in-out infinite; }
-
-@keyframes harbor-forest-ray {
-  0%, 100% { opacity: 0.34; }
-  50% { opacity: 0.58; }
-}
-.harbor-forest-ray { animation: harbor-forest-ray 7s ease-in-out infinite; }
-
-@keyframes harbor-royal-bar-in {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.harbor-royal-bar {
-  animation: harbor-royal-bar-in 360ms var(--ease-out) both;
-}
-@keyframes harbor-royal-pop-in {
-  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-.harbor-royal-menu {
-  transform-origin: top right;
-  animation: harbor-royal-pop-in 200ms var(--ease-out) both;
-}
-@keyframes harbor-royal-glint {
-  0% { transform: translateY(-150%); opacity: 0; }
-  45% { opacity: 0.18; }
-  100% { transform: translateY(650%); opacity: 0; }
-}
-.harbor-royal-glint {
-  opacity: 0;
-  animation: harbor-royal-glint 1600ms var(--ease-out) 380ms 1 forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1396,58 +774,6 @@ summary:focus-visible,
   outline-offset: 2px;
 }
 
-/* Opaque-surface overrides for translucent "glass" facet (aurora + any user glass theme).
-   Derived from each theme's own --color-canvas via color-mix so they adapt per theme.
-   Canvas/bokeh page background is intentionally left untouched. Opaque themes
-   (flat/crunch/noir/velvet) and the already-handled stremio/minui are not affected. */
-html[data-theme-card="glass"] {
-  --color-surface: color-mix(in srgb, var(--color-canvas) 91%, white);
-  --color-elevated: color-mix(in srgb, var(--color-canvas) 85%, white);
-  --color-raised: color-mix(in srgb, var(--color-canvas) 79%, white);
-}
-
-html[data-theme-card="glass"] [data-vayra-player] {
-  --color-surface: color-mix(in srgb, var(--color-canvas) 92%, white);
-  --color-elevated: color-mix(in srgb, var(--color-canvas) 86%, white);
-  --color-raised: color-mix(in srgb, var(--color-canvas) 80%, white);
-  --color-edge: rgba(255, 255, 255, 0.18);
-  --color-edge-soft: rgba(255, 255, 255, 0.08);
-}
-
-html[data-theme-card="glass"] .bg-surface:not(button):not(.no-glass):not(.rounded-full),
-html[data-theme-card="glass"] .bg-elevated:not(button):not(.no-glass):not(.rounded-full) {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-html[data-theme-card="glass"] .glass-card {
-  background-color: color-mix(in srgb, var(--color-canvas) 90%, white);
-  background-image: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-color: color-mix(in srgb, var(--color-ink) 14%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-ink) 12%, transparent),
-    0 18px 50px -22px color-mix(in srgb, var(--color-canvas) 70%, transparent);
-}
-
-html[data-theme-card="glass"] .harbor-together-surface {
-  background-color: color-mix(in srgb, var(--color-canvas) 90%, white);
-  background-image: linear-gradient(
-    color-mix(in srgb, var(--color-canvas) 86%, white),
-    color-mix(in srgb, var(--color-canvas) 86%, white)
-  );
-}
-
-html[data-theme-card="glass"] .harbor-chat-toast,
-html[data-theme-card="glass"] .harbor-together-pill {
-  background-color: color-mix(in srgb, var(--color-canvas) 88%, white) !important;
-  background-image: none !important;
-  border-color: color-mix(in srgb, var(--color-ink) 14%, transparent) !important;
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-}
-
 .dir-icon {
   display: inline-flex;
 }
@@ -1472,229 +798,19 @@ html[data-theme-card="glass"] .harbor-together-pill {
   transform-origin: 69% 65%;
 }
 
-html[data-theme-card="crunch"][dir="rtl"] .harbor-profile-dropdown {
-  right: auto !important;
-  left: 0 !important;
-  box-shadow: 10px 0 30px -10px color-mix(in srgb, var(--color-canvas) 65%, transparent) !important;
-}
-
-
-/* Android (Tauri): keep the app clear of the status bar and gesture insets.
-   Android WebView often reports env(safe-area-inset-top) as 0 even under the
-   status bar, so the top inset falls back to a fixed ~28px. */
 :root {
   --vayra-safe-bottom: env(safe-area-inset-bottom);
+  --vayra-safe-left: env(safe-area-inset-left);
+  --vayra-safe-right: env(safe-area-inset-right);
 }
-/* MainActivity hands the real bar heights over as --vayra-inset-* (see
-   src/lib/android-insets.ts); 28px stands in until they arrive. */
-html[data-os="android"] {
-  --harbor-status-bar: max(env(safe-area-inset-top), var(--vayra-inset-top, 28px));
-  --vayra-safe-bottom: max(env(safe-area-inset-bottom), var(--vayra-inset-bottom, 0px));
-}
-html[data-os="android"] #root {
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-/* The top bar is position:fixed, so #root padding can't move it; give it its
-   own status-bar inset and grow its height so the 80px control row is preserved
-   and simply pushed below the status bar. */
-html[data-os="android"] [data-vayra-topbar] {
-  box-sizing: border-box;
-  height: calc(5rem + var(--harbor-status-bar));
-  padding-top: var(--harbor-status-bar);
-}
-/* The mobile nav drawer is fixed full-height; keep its logo clear of the bar. */
-html[data-os="android"] [data-harbor-nav-drawer] {
-  padding-top: var(--harbor-status-bar);
-}
-/* While the native ExoPlayer surface is active it sits BEHIND the WebView, so
-   the document background must be transparent for the video to show through the
-   (transparent) player stage. Restored automatically when the flag is cleared. */
-html[data-os="android"][data-exo-active="1"],
-html[data-os="android"][data-exo-active="1"] body,
-html[data-os="android"][data-exo-active="1"] #root {
-  background: transparent !important;
-}
-/* Mobile bottom tab bar (MobileShell): reserve its height so the main scroll
-   views don't hide their last items behind it. Targets the primary content
-   scrollers (flex-1 + overflow-y-auto); centered modal panels don't match. */
-html[data-os="android"] {
-  --harbor-tabbar: calc(4rem + var(--vayra-safe-bottom));
-}
-html[data-os="android"] .flex-1.overflow-y-auto {
-  padding-bottom: var(--harbor-tabbar);
-}
-/* Phone type scale, from the Material 3 type scale (docs/mobile-design-spec.md):
-   styles named by role, each with its line height and tracking. 11sp is for
-   labels only, reading text is 14sp on 20 at least, fields stay at 16sp so
-   typing never zooms. A leading-* utility still wins. Titles from 20sp up are
-   set in the display serif. */
-@utility type-micro { font-size: 11px; line-height: var(--tw-leading, 16px); letter-spacing: 0.03em; }
-@utility type-caption { font-size: 12px; line-height: var(--tw-leading, 16px); letter-spacing: 0.02em; }
-@utility type-footnote { font-size: 14px; line-height: var(--tw-leading, 20px); letter-spacing: 0.01em; }
-@utility type-callout { font-size: 16px; line-height: var(--tw-leading, 24px); letter-spacing: 0.01em; }
-@utility type-body { font-size: 16px; line-height: var(--tw-leading, 24px); }
-@utility type-title-3 { font-family: var(--font-display); font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
-@utility type-title-2 { font-family: var(--font-display); font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
-@utility type-title-1 { font-family: var(--font-display); font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.015em; }
-@utility type-display { font-family: var(--font-display); font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.02em; }
 
-/* Phone polish, after Emil Kowalski's mobile-native baseline and
-   design-engineering notes. Clickable cards are divs too, so the tap flash
-   goes everywhere. Hand-written :hover rules sit under (hover: hover), like
-   Tailwind's hover: variant, so a tap never leaves them stuck on. */
-html[data-os="android"] {
-  -webkit-tap-highlight-color: transparent;
-  /* No font inflation in landscape, and the app shell never rubber-bands. */
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-  overscroll-behavior: none;
-}
-/* Controls react on the first tap, without waiting for a double-tap zoom, and
-   a long press on them does not select their label. Zero specificity, so a
-   control that sets its own touch-action or selection keeps it. */
-:where(html[data-os="android"]) :where(button, a, [role="button"]) {
-  touch-action: manipulation;
-  -webkit-user-select: none;
-  user-select: none;
-}
-/* The tab bar is a translucent material the content scrolls under, lit along
-   its top edge. It slides away while the page scrolls down (Material 3). */
-.vayra-tabbar {
-  background: color-mix(in srgb, var(--color-canvas) 76%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07);
-  transition: transform 260ms var(--ease-out);
-}
-.vayra-tabbar[data-hidden] {
-  transform: translateY(100%);
-}
-@media (prefers-reduced-motion: reduce) {
-  .vayra-tabbar {
-    transition: opacity 150ms ease;
-  }
-  .vayra-tabbar[data-hidden] {
-    transform: none;
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .vayra-tabbar {
-    background: var(--color-canvas);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-/* Bottom sheets rise on the drawer curve over a fading scrim, and track the
-   finger 1:1 while it pulls them down. They leave the way they came, faster
-   than they arrived: [data-closing] is set on the wrapper while the exit plays. */
-.vayra-sheet {
-  transition: transform 420ms var(--ease-drawer);
-}
-.vayra-sheet[data-dragging] {
-  transition: none;
-}
-/* The sheet's own colour continues below its edge, so pulling it up against
-   the rubber band never opens a gap. */
-.vayra-sheet::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  top: 100%;
-  height: 48px;
-  background: inherit;
-  pointer-events: none;
-}
-.vayra-scrim {
-  transition: opacity 300ms ease;
-}
-[data-closing] {
-  pointer-events: none;
-}
-[data-closing] > .vayra-sheet {
-  transform: translateY(100%);
-  transition: transform 220ms var(--ease-drawer);
-}
-[data-closing] > .vayra-scrim {
-  opacity: 0;
-  transition: opacity 220ms ease;
-}
-@starting-style {
-  .vayra-sheet {
-    transform: translateY(100%);
-  }
-  .vayra-scrim {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .vayra-sheet {
-    transition: opacity 200ms ease;
-  }
-  [data-closing] > .vayra-sheet {
-    transform: none;
-    opacity: 0;
-    transition: opacity 150ms ease;
-  }
-  @starting-style {
-    .vayra-sheet {
-      transform: none;
-      opacity: 0;
-    }
-  }
-}
-/* The phone settings reuse the desktop panels: their cards drop the desktop's
-   28-40px padding for the 16px a phone can spare. */
-[data-mobile-settings] :is(.p-7, .p-8, .p-10) {
-  padding: 1rem;
-}
-/* On a phone the bug report's send bar ends the form instead of floating over
-   its fields: it took a fifth of the screen. */
-[data-mobile-settings] [data-bug-submit] {
-  position: static;
-}
-/* Fields shrink with their row instead of pushing its button out, and no
-   text in the phone settings is smaller than a label (12px). */
-[data-mobile-settings] input:not([type="checkbox"], [type="radio"]) {
-  min-width: 0;
-}
-[data-mobile-settings] :is(.text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\], .text-\[11\.5px\]) {
-  font-size: 12px;
-}
-/* A double-tap skip mark rises in place and fades out. */
-.vayra-skip {
-  animation: vayra-skip 650ms var(--ease-out) forwards;
-}
-@keyframes vayra-skip {
-  0% { opacity: 0; scale: 0.9; }
-  20% { opacity: 1; scale: 1; }
-  100% { opacity: 0; scale: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .vayra-skip { animation-duration: 400ms; }
-}
-/* The phone search page settles in rather than popping. */
-.vayra-search {
-  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
-}
-@starting-style {
-  .vayra-search {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  @starting-style {
-    .vayra-search {
-      transform: none;
-    }
-  }
-}
-/* VAYRA Connect mini player (MacNowPlayingBar) sits above the tab bar. */
-html[data-os="android"][data-mac-bar] {
-  --harbor-tabbar: calc(8.5rem + var(--vayra-safe-bottom));
-}
+/* Phone type scale utilities (kept at root so Tailwind registers them globally). */
+@utility type-micro { font-size: 11px; line-height: var(--tw-leading, 16px); letter-spacing: 0.025em; }
+@utility type-caption { font-size: 12px; line-height: var(--tw-leading, 16px); letter-spacing: 0.015em; }
+@utility type-footnote { font-size: 14px; line-height: var(--tw-leading, 20px); letter-spacing: 0.005em; }
+@utility type-callout { font-size: 16px; line-height: var(--tw-leading, 24px); letter-spacing: 0; }
+@utility type-body { font-size: 16px; line-height: var(--tw-leading, 24px); }
+@utility type-title-3 { font-family: var(--font-display); font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.015em; }
+@utility type-title-2 { font-family: var(--font-display); font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.018em; }
+@utility type-title-1 { font-family: var(--font-display); font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.022em; }
+@utility type-display { font-family: var(--font-display); font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.025em; }

@@ -159,9 +159,9 @@ for (const absolute of sourceFiles(sourceRoot)) {
 }
 
 const debtBudgets = {
-  nonSemanticClick: 111,
-  autoFocus: 35,
-  transitionAll: 167,
+  nonSemanticClick: 25,
+  autoFocus: 30,
+  transitionAll: 0,
 };
 
 for (const [key, budget] of Object.entries(debtBudgets)) {

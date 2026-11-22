@@ -10,6 +10,7 @@ import {
 } from "@/lib/sports/espn";
 import { fmtClock } from "@/views/live/live-home/now-format";
 import { SportsCustomizeModal } from "@/views/live/live-home/sports/sports-customize-modal";
+import { haptic } from "./haptics";
 
 // Mobile-first Sports room (Apple Sports card model). Rendered from `SportsHome`
 // in src/views/sports.tsx when isMobileTauri(); useSports keeps polling (12s +
@@ -376,9 +377,12 @@ function LeagueChip({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => {
+        haptic("tick");
+        onClick();
+      }}
       aria-pressed={active}
-      className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border ps-1.5 pe-3.5 type-footnote font-medium transition-colors ${
+      className={`flex h-10 shrink-0 items-center gap-1.5 rounded-full border ps-2 pe-4 type-footnote font-medium transition-colors active:scale-95 ${
         active
           ? "border-transparent bg-ink text-canvas"
           : "border-edge-soft/60 bg-elevated text-ink-muted"

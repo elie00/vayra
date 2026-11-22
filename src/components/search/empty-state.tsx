@@ -396,7 +396,7 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
                 setView(j.view);
                 onClose();
               }}
-              className="flex h-12 items-center gap-2.5 rounded-full border border-edge-soft bg-elevated/50 px-5 text-[14.5px] font-semibold text-ink transition-all hover:border-edge hover:bg-elevated active:scale-[0.97]"
+              className="flex h-12 items-center gap-2.5 rounded-full border border-edge-soft bg-elevated/50 px-5 text-[14.5px] font-semibold text-ink transition-[transform,opacity,background-color,border-color,color] hover:border-edge hover:bg-elevated active:scale-[0.97]"
             >
               <span className="flex h-5 w-5 items-center justify-center text-ink-muted">{j.icon}</span>
               {t(j.label)}
@@ -405,7 +405,7 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
           {!hiddenTabs.liveTv && (
             <button
               onClick={() => onOpenGuide()}
-              className="flex h-12 items-center gap-2.5 rounded-full border border-edge-soft bg-elevated/50 px-5 text-[14.5px] font-semibold text-ink transition-all hover:border-edge hover:bg-elevated active:scale-[0.97]"
+              className="flex h-12 items-center gap-2.5 rounded-full border border-edge-soft bg-elevated/50 px-5 text-[14.5px] font-semibold text-ink transition-[transform,opacity,background-color,border-color,color] hover:border-edge hover:bg-elevated active:scale-[0.97]"
             >
               <span className="flex h-5 w-5 items-center justify-center text-ink-muted">
                 <ListTree size={16} strokeWidth={2} />
@@ -467,7 +467,7 @@ function FilterPill({
     <button
       type="button"
       onClick={onClick}
-      className={`h-8 rounded-full border px-3.5 text-[12px] font-semibold transition-all ${
+      className={`h-8 rounded-full border px-3.5 text-[12px] font-semibold transition-colors ${
         active
           ? "border-ink bg-ink text-canvas"
           : "border-edge-soft bg-elevated/40 text-ink-muted hover:border-edge hover:text-ink"

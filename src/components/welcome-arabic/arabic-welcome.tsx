@@ -40,10 +40,14 @@ export default function ArabicWelcome({ onFeedback }: { onFeedback?: () => void 
   const primaryIsAr = settings.uiLanguage === "ar";
 
   return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[240] flex items-center justify-center bg-canvas/92 px-8 backdrop-blur-2xl [backdrop-filter:blur(28px)_saturate(120%)]"
-      onClick={dismiss}
-    >
+    <div className="animate-fade-in fixed inset-0 z-[240] flex items-center justify-center px-8">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Close"
+        onClick={dismiss}
+        className="absolute inset-0 bg-canvas/92 backdrop-blur-2xl [backdrop-filter:blur(28px)_saturate(120%)]"
+      />
       <div
         aria-hidden
         className={`pointer-events-none absolute left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,var(--color-accent-soft),transparent_70%)] blur-[60px] ${
@@ -56,8 +60,7 @@ export default function ArabicWelcome({ onFeedback }: { onFeedback?: () => void 
         aria-modal="true"
         aria-labelledby="arabic-welcome-headline"
         dir={settings.uiLanguage === "ar" ? "rtl" : "ltr"}
-        onClick={(e) => e.stopPropagation()}
-        className="relative flex max-h-screen w-full max-w-[680px] flex-col items-center overflow-y-auto py-10 text-center"
+        className="relative z-10 flex max-h-screen w-full max-w-[680px] flex-col items-center overflow-y-auto py-10 text-center"
       >
         <h2
           id="arabic-welcome-headline"

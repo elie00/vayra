@@ -683,7 +683,7 @@ function ActionRow({
           type="button"
           onClick={onClick}
           disabled={disabled}
-          className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-all ${
+          className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-[transform,opacity,background-color,border-color,color] ${
             tone === "success"
               ? "bg-accent/15 text-accent"
               : "border border-edge bg-elevated text-ink hover:border-ink hover:scale-[1.02] active:scale-[0.97]"

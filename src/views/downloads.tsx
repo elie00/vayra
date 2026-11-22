@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "reac
 import { Check, Download as DownloadIcon, FolderOpen, Pause, Play, Trash2, X } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { DeleteDownloadDialog } from "@/components/delete-download-dialog";
+import { isMobileTauri } from "@/lib/platform";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { getUiLanguage, t, useT } from "@/lib/i18n";
@@ -111,8 +112,8 @@ export function DownloadsView() {
       className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-8">
-          <h1 ref={headingRef} tabIndex={-1} className="text-[28px] font-semibold tracking-tight text-ink">{t("Downloads")}</h1>
-          <p className="mt-1.5 text-[13.5px] text-ink-subtle">
+          <h1 ref={headingRef} tabIndex={-1} className="mac-page-title">{t("Downloads")}</h1>
+          <p className="mt-1.5 text-[13.5px] tabular-nums text-ink-subtle">
             {items.length === 0
               ? t("Saved movies and episodes for offline watching")
               : [
@@ -129,7 +130,14 @@ export function DownloadsView() {
 
         <DownloadDirBar />
         {items.length > 0 && <div aria-label={t("Filter downloads")} className="mb-5 flex flex-wrap gap-2">{(["all", "active", "ready", "attention"] as const).map((id) => <button type="button" key={id} ref={filter === id ? activeFilterRef : undefined} aria-pressed={filter === id} onClick={() => setFilter(id)} className={`mac-secondary-button ${filter === id ? "bg-raised text-ink" : "text-ink-muted"}`}>{t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs attention")}</button>)}</div>}
-        {items.length > 0 && groups.length === 0 && <p role="status" className="py-8 text-[14px] text-ink-muted">{t("No downloads in this category")}</p>}
+        {items.length > 0 && groups.length === 0 && (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <p role="status" className="text-[14px] text-ink-muted">{t("No downloads in this category")}</p>
+            <button type="button" className="mac-secondary-button" onClick={() => setFilter("all")}>
+              {t("Show all")}
+            </button>
+          </div>
+        )}
 
         {items.length === 0 ? (
           <EmptyState />
@@ -163,7 +171,9 @@ function EmptyState() {
       <div className="flex flex-col gap-1.5">
         <p className="text-[15px] font-semibold text-ink">{t("No downloads yet")}</p>
         <p className="max-w-[340px] text-[13.5px] leading-relaxed text-ink-muted">
-          {t("Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.")}
+          {isMobileTauri()
+            ? t("Open any movie or show, tap the download button on an episode, and pick a source to save it here for offline watching.")
+            : t("Open any movie or show, hover an episode, and click the download icon. Pick the exact source you want and it saves here for offline watching.")}
         </p>
       </div>
       <button type="button" className="mac-primary-button" onClick={() => setView("discover")}>{t("Explore")}</button>
@@ -206,7 +216,7 @@ function ShowGroup({ group, onRemove, onRemoveMany }: { group: Extract<DownloadG
         </div>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-[14px] font-semibold text-ink">{group.title}</span>
-          <span className="text-[11.5px] text-ink-subtle">
+          <span className="text-[11.5px] tabular-nums text-ink-subtle">
             {episodes.length === 1 ? t("1 episode") : t("{n} episodes", { n: episodes.length })}
             {totalBytes > 0 ? `  ·  ${fmtBytes(totalBytes)}` : ""}
           </span>

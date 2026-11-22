@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Download, Loader2, Play, RefreshCw } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
 import { getUiLanguage, useT } from "@/lib/i18n";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
 import { BackdropLayer } from "@/views/play-picker/backdrop-layer";
+import { haptic } from "./haptics";
 import { QUALITY_ORDER, sourceFacts, sourceFeatures, sourceQuality, type SourceQuality } from "./source-summary";
 
 // The phone's source picker, as a sheet: the best source first with one Play
@@ -79,6 +80,14 @@ export function MobilePlayPicker({
   const shown = streams.filter((s) => (quality === "all" ? s !== best : sourceQuality(s) === quality));
   const drag = useHandleDrag(onBack);
   const bestFailure = best ? failedStreams.get(best) : undefined;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onBack();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onBack]);
 
   return (
     <main className="absolute inset-0 z-50 overflow-hidden bg-black/40">
@@ -259,9 +268,12 @@ function Chip({ on, onClick, label, count }: { on: boolean; onClick: () => void;
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => {
+        haptic("tick");
+        onClick();
+      }}
       aria-pressed={on}
-      className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 type-footnote font-semibold transition-colors active:scale-95 ${
+      className={`flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 type-footnote font-semibold transition-colors active:scale-95 ${
         on ? "bg-ink text-canvas" : "border border-ink/20 text-ink"
       }`}
     >
@@ -306,7 +318,10 @@ function useHandleDrag(onClose: () => void) {
         const pulled = s ? e.clientY - s.y : 0;
         const flick = s ? pulled / Math.max(1, e.timeStamp - s.at) > 0.4 : false;
         setOffset(0);
-        if (pulled > 90 || (pulled > 8 && flick)) onClose();
+        if (pulled > 90 || (pulled > 8 && flick)) {
+          haptic("gesture");
+          onClose();
+        }
       },
     },
   };

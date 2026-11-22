@@ -134,7 +134,7 @@ function AddProfileButton({ onClick }: { onClick: () => void }) {
       className="group flex flex-col items-center gap-2 outline-none"
       aria-label={t("Add profile")}
     >
-      <span className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-edge text-ink-subtle transition-all duration-200 group-hover:scale-[1.04] group-hover:border-ink group-hover:text-ink">
+      <span className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-edge text-ink-subtle transition-[transform,opacity,background-color,border-color,color] duration-200 group-hover:scale-[1.04] group-hover:border-ink group-hover:text-ink">
         <Plus size={28} strokeWidth={2.2} />
       </span>
       <span className="text-[14px] font-medium text-ink-muted transition-colors group-hover:text-ink">

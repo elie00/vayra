@@ -21,6 +21,8 @@ export function InstalledPane({
   onUninstall,
   onManage,
   onReorder,
+  onBrowseDiscover,
+  onClearSearch,
 }: {
   installed: ResolvedAddon[];
   search?: string | null;
@@ -28,6 +30,8 @@ export function InstalledPane({
   onUninstall: (r: ResolvedAddon) => Promise<void>;
   onManage?: (r: ResolvedAddon) => void;
   onReorder?: () => void;
+  onBrowseDiscover?: () => void;
+  onClearSearch?: () => void;
 }) {
   const t = useT();
   const paneRef = useRef<HTMLDivElement>(null);
@@ -42,21 +46,31 @@ export function InstalledPane({
     : installed;
   if (installed.length === 0) {
     return (
-      <div ref={paneRef} tabIndex={-1} className="rounded-2xl border border-edge-soft bg-elevated/30 p-12 text-center">
-        <h3 className="font-display text-[22px] font-medium text-ink">{t("No addons installed yet")}</h3>
+      <div ref={paneRef} tabIndex={-1} className="flex flex-col items-center rounded-2xl border border-edge-soft bg-elevated/30 p-12 text-center">
+        <h3 className="font-display text-[22px] font-semibold text-ink">{t("No addons installed yet")}</h3>
         <p className="mx-auto mt-2 max-w-md text-[13.5px] text-ink-muted">
           {t("Head to Discover. Cinemeta and OpenSubtitles cover the basics; Torrentio + a debrid key cover almost everything else.")}
         </p>
+        {onBrowseDiscover && (
+          <button type="button" onClick={onBrowseDiscover} className="mac-primary-button mt-5">
+            {t("Explore")}
+          </button>
+        )}
       </div>
     );
   }
   if (filtered.length === 0) {
     return (
-      <div ref={paneRef} tabIndex={-1} className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 p-10 text-center">
-        <p className="font-display text-[16px] font-medium text-ink">{t("No installed addon matches that.")}</p>
+      <div ref={paneRef} tabIndex={-1} className="flex flex-col items-center rounded-2xl border border-dashed border-edge-soft bg-canvas/30 p-10 text-center">
+        <p className="font-display text-[16px] font-semibold text-ink">{t("No installed addon matches that.")}</p>
         <p className="mt-1.5 text-[12.5px] text-ink-subtle">
           {t("Clear the search to see all {n} installed.", { n: installed.length })}
         </p>
+        {onClearSearch && (
+          <button type="button" onClick={onClearSearch} className="mac-secondary-button mt-4">
+            {t("Clear")}
+          </button>
+        )}
       </div>
     );
   }

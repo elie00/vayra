@@ -54,17 +54,16 @@ export function TopMatch({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[11.5px] font-semibold uppercase tracking-[0.22em] text-accent">
+          <span className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
             {t("Top match")}
           </span>
           <h2
-            className="mt-1.5 text-[clamp(32px,3.4vw,52px)] font-medium leading-[1.02] tracking-tight text-ink"
-            style={{ fontFamily: "var(--font-display, 'Fraunces')" }}
+            className="mt-1.5 font-display text-[clamp(32px,3.4vw,52px)] font-semibold leading-[1.06] tracking-[-0.025em] text-ink"
           >
             {match.meta.name}
           </h2>
           <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[14px] text-ink-muted">
-            <span className="font-medium">{match.kind === "movie" ? "Movie" : "Series"}</span>
+            <span className="font-medium">{t(match.kind === "movie" ? "Movie" : "Series")}</span>
             {yearTxt && (
               <>
                 <Dot />
@@ -86,7 +85,7 @@ export function TopMatch({
               {synopsis}
             </p>
           )}
-          <div className="mt-6 inline-flex h-12 max-w-max items-center gap-2 self-start rounded-full bg-ink px-6 text-[14.5px] font-semibold text-canvas shadow-[0_8px_24px_-8px_rgba(255,255,255,0.25)] transition-all group-hover:bg-ink group-hover:shadow-[0_10px_28px_-6px_rgba(255,255,255,0.4)]">
+          <div className="mt-6 inline-flex h-12 max-w-max items-center gap-2 self-start rounded-full bg-ink px-6 text-[14.5px] font-semibold text-canvas shadow-[0_8px_24px_-8px_rgba(255,255,255,0.25)] transition-[background-color,border-color,color,opacity,box-shadow] group-hover:bg-ink group-hover:shadow-[0_10px_28px_-6px_rgba(255,255,255,0.4)]">
             <Play size={15} className="fill-current" strokeWidth={0} />
             {t("Open")}
           </div>

@@ -360,7 +360,7 @@ export function ServiceCard({
     <button
       onClick={onToggle}
       aria-pressed={active}
-      className={`relative flex h-20 items-center justify-center overflow-hidden rounded-xl border px-4 transition-all ${
+      className={`relative flex h-20 items-center justify-center overflow-hidden rounded-xl border px-4 transition-[background-color,border-color,color,opacity] ${
         active
           ? "border-ink-subtle/50 bg-raised opacity-100"
           : "border-edge-soft bg-canvas opacity-55 hover:opacity-90"

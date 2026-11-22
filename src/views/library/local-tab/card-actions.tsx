@@ -27,7 +27,7 @@ export function CardIconButton({
       }}
       aria-label={title}
       title={title}
-      className="flex h-7 w-7 items-center justify-center rounded-full bg-canvas/70 text-ink opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.4)] backdrop-blur-sm transition-all duration-200 hover:bg-canvas/90 group-hover:opacity-100"
+      className="flex h-7 w-7 items-center justify-center rounded-full bg-canvas/70 text-ink opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.4)] backdrop-blur-sm transition-[background-color,border-color,color,opacity,box-shadow] duration-200 hover:bg-canvas/90 group-hover:opacity-100"
     >
       {children}
     </button>

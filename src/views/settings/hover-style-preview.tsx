@@ -160,35 +160,34 @@ function CustomTile({
   const props = customHoverPosterProps(config, true);
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
-      aria-pressed={selected}
-      className={`group/tile flex cursor-pointer flex-col gap-2 rounded-xl border p-2 text-start transition-colors ${
+      className={`group/tile relative flex flex-col gap-2 rounded-xl border p-2 text-start transition-colors ${
         selected ? "border-accent bg-accent/10" : "border-edge-soft bg-canvas/50 hover:border-edge"
       }`}
     >
-      <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-elevated ring-1 ring-edge-soft/60 ${props.className}`} style={props.style}>
-        {meta?.poster && (
-          <img src={meta.poster} alt="" draggable={false} className="absolute inset-0 h-full w-full rounded-lg object-cover" />
-        )}
-        {meta && <CustomHoverOverlay config={config} meta={meta} onPlay={() => {}} preview />}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          aria-label={t("Edit")}
-          className="absolute end-1.5 top-1.5 z-30 flex h-6 w-6 items-center justify-center rounded-md bg-black/55 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover/tile:opacity-100"
-        >
-          <Pencil size={12} />
-        </button>
-      </div>
-      <div className="flex items-center justify-between px-0.5">
-        <span className={`line-clamp-1 text-[12px] font-semibold ${selected ? "text-accent" : "text-ink"}`}>{config.name}</span>
-      </div>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={selected}
+        className="flex cursor-pointer flex-col gap-2 text-start"
+      >
+        <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-elevated ring-1 ring-edge-soft/60 ${props.className}`} style={props.style}>
+          {meta?.poster && (
+            <img src={meta.poster} alt="" draggable={false} className="absolute inset-0 h-full w-full rounded-lg object-cover" />
+          )}
+          {meta && <CustomHoverOverlay config={config} meta={meta} onPlay={() => {}} preview />}
+        </div>
+        <div className="flex items-center justify-between px-0.5">
+          <span className={`line-clamp-1 text-[12px] font-semibold ${selected ? "text-accent" : "text-ink"}`}>{config.name}</span>
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={onEdit}
+        aria-label={t("Edit")}
+        className="absolute end-3.5 top-3.5 z-30 flex h-6 w-6 items-center justify-center rounded-md bg-black/55 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover/tile:opacity-100 focus-visible:opacity-100"
+      >
+        <Pencil size={12} />
+      </button>
     </div>
   );
 }

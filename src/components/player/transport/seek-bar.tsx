@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import {
   usePlaybackPositionGated,
@@ -24,9 +25,12 @@ export function SeekBar({
   onSeek: (s: number) => void;
   active: boolean;
 }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [scrub, setScrub] = useState<number | null>(null);
+  const scrubRef = useRef<number | null>(null);
   const [pending, setPending] = useState<number | null>(null);
   const pendingAtRef = useRef<number | null>(null);
   const positionRef = useRef(0);
@@ -52,6 +56,8 @@ export function SeekBar({
     }));
 
   const clearInteraction = () => {
+    rectRef.current = null;
+    scrubRef.current = null;
     setScrub(null);
     setHover(null);
   };
@@ -65,6 +71,8 @@ export function SeekBar({
   }, [position]);
   useEffect(() => {
     const clearInterruptedInteraction = () => {
+      rectRef.current = null;
+      scrubRef.current = null;
       setScrub(null);
       setHover(null);
     };
@@ -97,48 +105,87 @@ export function SeekBar({
   }, [pending]);
 
   const fromEvent = (clientX: number): number => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return 0;
+    const r = rectRef.current ?? ref.current?.getBoundingClientRect();
+    if (!r || r.width <= 0) return 0;
     const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
     return x * dur;
   };
 
-  const onMove = (e: React.PointerEvent) => {
-    setHover(fromEvent(e.clientX));
-    if (scrub != null) setScrub(fromEvent(e.clientX));
+  const onEnter = () => {
+    rectRef.current = ref.current?.getBoundingClientRect() ?? null;
   };
-  const onLeave = () => setHover(null);
+  const onMove = (e: React.PointerEvent) => {
+    const next = fromEvent(e.clientX);
+    setHover(next);
+    if (scrubRef.current != null) {
+      scrubRef.current = next;
+      setScrub(next);
+    }
+  };
+  const onLeave = () => {
+    if (scrubRef.current == null) rectRef.current = null;
+    setHover(null);
+  };
   const onCancel = () => clearInteraction();
   const onDown = (e: React.PointerEvent) => {
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
+    rectRef.current = ref.current?.getBoundingClientRect() ?? null;
     setPending(null);
     pendingAtRef.current = null;
-    setScrub(fromEvent(e.clientX));
+    const next = fromEvent(e.clientX);
+    scrubRef.current = next;
+    setScrub(next);
   };
   const onUp = (e: React.PointerEvent) => {
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
-    if (scrub != null) {
-      onSeek(scrub);
-      setPending(scrub);
+    const target = scrubRef.current ?? fromEvent(e.clientX);
+    if (scrubRef.current != null) {
+      onSeek(target);
+      setPending(target);
       pendingAtRef.current = Date.now();
     }
+    rectRef.current = null;
+    scrubRef.current = null;
     setScrub(null);
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (durationSec <= 0) return;
+    let target: number | null = null;
+    if (e.key === "ArrowLeft") target = Math.max(0, value - (settings.seekBackStepSec || 10));
+    else if (e.key === "ArrowRight") target = Math.min(durationSec, value + (settings.seekForwardStepSec || 10));
+    else if (e.key === "Home") target = 0;
+    else if (e.key === "End") target = durationSec;
+    if (target == null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSeek(target);
+    setPending(target);
+    pendingAtRef.current = Date.now();
   };
 
   return (
     <div dir="ltr" className="pointer-events-auto group/seek relative h-12">
       <div
         ref={ref}
+        role="slider"
+        tabIndex={0}
+        aria-label={t("Position")}
+        aria-valuemin={0}
+        aria-valuemax={Math.round(durationSec)}
+        aria-valuenow={Math.round(value)}
+        aria-valuetext={fmtTime(value)}
+        onPointerEnter={onEnter}
         onPointerMove={onMove}
         onPointerLeave={onLeave}
         onPointerDown={onDown}
         onPointerUp={onUp}
         onPointerCancel={onCancel}
-        className="absolute inset-x-0 top-1/2 -translate-y-1/2 cursor-pointer"
+        onKeyDown={onKeyDown}
+        className="absolute inset-x-0 top-1/2 -translate-y-1/2 cursor-pointer rounded-full"
       >
         <SeekBarVisual
           settings={settings}
@@ -158,7 +205,7 @@ export function SeekBar({
           ) : (
             <div
               className="pointer-events-none absolute -top-9 -translate-x-1/2 rounded-md border border-white/10 bg-black/90 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-md"
-              style={{ left: `${(hover / dur) * 100}%` }}
+              style={{ left: `clamp(28px, ${(hover / dur) * 100}%, calc(100% - 28px))` }}
             >
               {fmtTime(hover)}
             </div>

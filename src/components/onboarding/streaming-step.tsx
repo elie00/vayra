@@ -10,8 +10,8 @@ export function StreamingStep() {
   const tmdbReady = !!settings.tmdbKey;
   return (
     <div className="flex flex-col gap-6">
-      <span className="text-[12.5px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
-        {t("Step 3 · Streaming")}
+      <span className="text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+        {t("Step 5 · Streaming")}
       </span>
       <div className="flex flex-col gap-3">
         <h1 className="font-display text-[36px] font-medium leading-[1.08] tracking-tight text-ink">
@@ -31,7 +31,7 @@ export function StreamingStep() {
               key={svc}
               onClick={() => toggleStreaming(svc)}
               aria-pressed={on}
-              className={`relative flex h-16 items-center justify-center overflow-hidden rounded-xl border px-2 transition-all ${
+              className={`relative flex h-16 items-center justify-center overflow-hidden rounded-xl border px-2 transition-[background-color,border-color,color,opacity] ${
                 on
                   ? "border-ink-subtle/50 bg-raised opacity-100"
                   : "border-edge-soft bg-canvas opacity-55 hover:opacity-90"

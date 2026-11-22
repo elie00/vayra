@@ -66,6 +66,8 @@ type HarborExoApi = {
   setLandscape(on: string): string;
   getSystemVolume(): string;
   setSystemVolume(level: string): string;
+  getScreenBrightness(): string;
+  setScreenBrightness(level: string): string;
   getState(): string;
   destroy(): string;
 };
@@ -90,6 +92,17 @@ export function systemVolume(): number | null {
 
 export function setSystemVolume(level: number): void {
   window.HarborExo?.setSystemVolume?.(String(Math.max(0, Math.min(1, level))));
+}
+
+/** The player window's screen brightness (0–1), or null outside the Android app. */
+export function screenBrightness(): number | null {
+  const raw = window.HarborExo?.getScreenBrightness?.();
+  const v = raw == null ? NaN : Number(raw);
+  return Number.isFinite(v) ? v : null;
+}
+
+export function setScreenBrightness(level: number): void {
+  window.HarborExo?.setScreenBrightness?.(String(Math.max(0.01, Math.min(1, level))));
 }
 
 export function hasHarborExo(): boolean {
@@ -117,8 +130,9 @@ export function createExoBridge(): PlayerBridge {
   let authPaused = true;
   let posTicker: number | null = null;
 
-  // Resize is derived from the mpv-style panscan/zoom calls the player emits.
+  // Resize is derived from the mpv-style panscan/stretch/zoom calls the player emits.
   let panscan = 0;
+  let stretch = false;
   let zoom = 0;
 
   // Subtitle state.
@@ -249,7 +263,11 @@ export function createExoBridge(): PlayerBridge {
   };
 
   const applyResize = () => {
-    const mode = zoom > 0 ? "zoom" : panscan >= 1 ? "fill" : "fit";
+    // In media3 AspectRatioFrameLayout:
+    //   "fill" (RESIZE_MODE_FILL) stretches without preserving aspect ratio ("Stretch")
+    //   "zoom" (RESIZE_MODE_ZOOM) crops to fill preserving aspect ratio ("Fill" / panscan=1)
+    //   "fit"  (RESIZE_MODE_FIT)  letterboxes preserving aspect ratio ("Fit")
+    const mode = stretch ? "fill" : panscan >= 1 || zoom > 0 ? "zoom" : "fit";
     invokeExo("setResize", mode);
   };
 
@@ -473,7 +491,10 @@ export function createExoBridge(): PlayerBridge {
       panscan = value;
       applyResize();
     },
-    setStretch() {},
+    setStretch(on) {
+      stretch = on;
+      applyResize();
+    },
     setVideoEq() {},
     setVideoZoom(log2) {
       zoom = log2;

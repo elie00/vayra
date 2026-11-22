@@ -292,7 +292,8 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
             key={src}
             src={src}
             alt=""
-            decoding="sync"
+            loading="lazy"
+            decoding="async"
             onError={() => setImgIdx((i) => i + 1)}
             className="absolute inset-0 h-full w-full object-cover brightness-95"
           />
@@ -372,7 +373,7 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
               style={{ boxShadow: `0 0 0 2px ${watcher.color}, 0 2px 8px rgba(0,0,0,0.5)` }}
             >
               {watcher.avatar ? (
-                <img src={watcher.avatar} alt="" className="h-full w-full object-cover" draggable={false} />
+                <img src={watcher.avatar} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" draggable={false} />
               ) : (
                 (watcher.name.trim()[0]?.toUpperCase() ?? "?")
               )}

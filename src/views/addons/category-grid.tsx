@@ -35,13 +35,11 @@ export function CategoryGrid({ onCategorySelect }: { onCategorySelect: (cat: str
       </header>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {CATEGORY_TILES.map((tile) => (
-          <div
+          <button
             key={tile.cat}
-            role="button"
-            tabIndex={0}
+            type="button"
             onClick={() => onCategorySelect(tile.cat)}
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onCategorySelect(tile.cat)}
-            className="group relative flex h-[120px] cursor-pointer overflow-hidden rounded-2xl border border-edge-soft transition-all hover:border-edge"
+            className="group relative flex h-[120px] cursor-pointer overflow-hidden rounded-2xl border border-edge-soft text-start transition-colors hover:border-edge"
           >
             <div className={`absolute inset-0 bg-gradient-to-br ${tile.accent}`} />
             <div className="absolute inset-0 bg-gradient-to-t from-canvas/85 via-canvas/30 to-transparent" />
@@ -60,7 +58,7 @@ export function CategoryGrid({ onCategorySelect }: { onCategorySelect: (cat: str
               </h4>
               <p className="text-[12px] text-ink-muted">{t(tile.blurb)}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </section>

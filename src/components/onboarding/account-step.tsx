@@ -120,7 +120,7 @@ export function AccountStep() {
               type="button"
               onClick={() => void verifyCode()}
               disabled={busy || otp.length !== 6}
-              className="h-11 rounded-xl bg-accent px-4 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              className="h-11 rounded-xl bg-accent px-4 text-[13px] font-semibold text-canvas disabled:cursor-not-allowed disabled:opacity-45"
             >
               {busy ? <Loader2 size={15} className="animate-spin" /> : t("Verify")}
             </button>
@@ -182,7 +182,7 @@ export function AccountStep() {
           <button
             type="submit"
             disabled={busy || loading || !configured || !email.trim()}
-            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-semibold text-white transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
+            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
           >
             {busy || loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
             {t("Sign in or create my account")}

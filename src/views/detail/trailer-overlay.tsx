@@ -75,17 +75,21 @@ export function TrailerOverlay({
   }, [dismiss]);
 
   return createPortal(
-    <div
-      onClick={dismiss}
-      className="fixed inset-0 z-[120] flex cursor-zoom-out items-center justify-center"
-      style={{
-        backgroundColor: open ? (isMacDesktop() ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.82)") : "rgba(0,0,0,0)",
-        backdropFilter: open ? "blur(32px) saturate(1.2)" : "blur(0px)",
-        WebkitBackdropFilter: open ? "blur(32px) saturate(1.2)" : "blur(0px)",
-        transition:
-          "background-color 360ms cubic-bezier(0.32,0.72,0.24,1), backdrop-filter 360ms cubic-bezier(0.32,0.72,0.24,1)",
-      }}
-    >
+    <div className="fixed inset-0 z-[120] flex items-center justify-center">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("Close trailer")}
+        onClick={dismiss}
+        className="absolute inset-0 cursor-zoom-out"
+        style={{
+          backgroundColor: open ? (isMacDesktop() ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.82)") : "rgba(0,0,0,0)",
+          backdropFilter: open ? "blur(32px) saturate(1.2)" : "blur(0px)",
+          WebkitBackdropFilter: open ? "blur(32px) saturate(1.2)" : "blur(0px)",
+          transition:
+            "background-color 360ms cubic-bezier(0.32,0.72,0.24,1), backdrop-filter 360ms cubic-bezier(0.32,0.72,0.24,1)",
+        }}
+      />
       <div
         className="absolute end-7 top-16 z-10 flex items-center gap-2.5"
         style={{
@@ -99,10 +103,7 @@ export function TrailerOverlay({
         <Tooltip label={t("Close · Esc")}>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              dismiss();
-            }}
+            onClick={dismiss}
             aria-label={t("Close trailer")}
             className="relative flex h-11 w-11 items-center justify-center rounded-full bg-canvas/90 text-ink shadow-[0_8px_22px_rgba(0,0,0,0.4)] transition-colors duration-200 before:absolute before:-inset-3 before:content-[''] hover:bg-canvas active:scale-[0.94]"
           >
@@ -111,8 +112,10 @@ export function TrailerOverlay({
         </Tooltip>
       </div>
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative aspect-video w-[min(1280px,86vw)] cursor-default overflow-hidden rounded-[22px] bg-black shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Trailer")}
+        className="relative z-10 aspect-video w-[min(1280px,86vw)] cursor-default overflow-hidden rounded-[22px] bg-black shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
         style={{
           opacity: open ? 1 : 0,
           transform: open ? "scale(1)" : "scale(0.93)",

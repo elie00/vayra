@@ -1,30 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { AccountStub } from "./settings/account";
-import { CiraPanel } from "./settings/cira-panel";
-import { AdvancedPanel } from "./settings/advanced-panel";
-import { BasicsPanel } from "./settings/basics-panel";
-import { BugReportPanel } from "./settings/bug-report-panel";
-import { LibraryPanel, type LibraryKey } from "./settings/library-panel";
-import { LanguagePanel } from "./settings/language-panel";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import type { LibraryKey } from "./settings/library-panel";
+import type { RelayMode } from "./settings/relay-section";
+import type { DebridKey } from "./settings/streaming-sources-panel";
 import { isSettingsSectionAvailable, SettingsNav, SettingsTabs } from "./settings/nav";
 import { SettingsUnsavedChanges } from "./settings/unsaved-changes";
-import { HotkeysPanel } from "./settings/hotkeys-panel";
-import { PlayerLayoutPanel } from "./settings/player-layout-panel";
-import { QualityPanel } from "./settings/quality-panel";
-import { MpvPanel } from "./settings/mpv-panel";
-import { P2PPanel } from "./settings/p2p-panel";
-import { AnimePanel } from "./settings/anime-panel";
-import { TraktPanel } from "./settings/trakt-panel";
-import { AnilistPanel } from "./settings/anilist-panel";
-import { MalPanel } from "./settings/mal-panel";
-import { SimklPanel } from "./settings/simkl-panel";
-import { LetterboxdPanel } from "./settings/letterboxd-panel";
-import { RelaySection, type RelayMode } from "./settings/relay-section";
 import { SettingsActiveContext, type SectionId } from "./settings/shared";
-import { StreamingSourcesPanel, type DebridKey } from "./settings/streaming-sources-panel";
-import { StreamFiltersPanel } from "./settings/stream-filters-panel";
-import { ThemePanel } from "./settings/theme-panel";
-import { WebhooksPanel } from "./settings/webhooks-panel";
 import { BackToTop } from "@/components/back-to-top";
 import { resetOmdbBudget } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
@@ -34,7 +14,43 @@ import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { setSettingsBack } from "@/mobile/settings-back";
 import { mobileEntryFor, MobileSettingsBar, MobileSettingsList, type MobileSettingsEntry } from "@/mobile/settings-list";
 import { MacSettingsNav } from "./settings/mac-settings-nav";
-import { MacConnectionsPanel, MacDownloadsPanel, MacPrivacyPanel } from "./settings/mac-panels";
+
+// Code-split every settings panel so opening Settings only loads the active section.
+const AccountStub = lazy(() => import("./settings/account").then((m) => ({ default: m.AccountStub })));
+const CiraPanel = lazy(() => import("./settings/cira-panel").then((m) => ({ default: m.CiraPanel })));
+const AdvancedPanel = lazy(() => import("./settings/advanced-panel").then((m) => ({ default: m.AdvancedPanel })));
+const BasicsPanel = lazy(() => import("./settings/basics-panel").then((m) => ({ default: m.BasicsPanel })));
+const BugReportPanel = lazy(() => import("./settings/bug-report-panel").then((m) => ({ default: m.BugReportPanel })));
+const LibraryPanel = lazy(() => import("./settings/library-panel").then((m) => ({ default: m.LibraryPanel })));
+const LanguagePanel = lazy(() => import("./settings/language-panel").then((m) => ({ default: m.LanguagePanel })));
+const HotkeysPanel = lazy(() => import("./settings/hotkeys-panel").then((m) => ({ default: m.HotkeysPanel })));
+const PlayerLayoutPanel = lazy(() => import("./settings/player-layout-panel").then((m) => ({ default: m.PlayerLayoutPanel })));
+const QualityPanel = lazy(() => import("./settings/quality-panel").then((m) => ({ default: m.QualityPanel })));
+const MpvPanel = lazy(() => import("./settings/mpv-panel").then((m) => ({ default: m.MpvPanel })));
+const P2PPanel = lazy(() => import("./settings/p2p-panel").then((m) => ({ default: m.P2PPanel })));
+const AnimePanel = lazy(() => import("./settings/anime-panel").then((m) => ({ default: m.AnimePanel })));
+const TraktPanel = lazy(() => import("./settings/trakt-panel").then((m) => ({ default: m.TraktPanel })));
+const AnilistPanel = lazy(() => import("./settings/anilist-panel").then((m) => ({ default: m.AnilistPanel })));
+const MalPanel = lazy(() => import("./settings/mal-panel").then((m) => ({ default: m.MalPanel })));
+const SimklPanel = lazy(() => import("./settings/simkl-panel").then((m) => ({ default: m.SimklPanel })));
+const LetterboxdPanel = lazy(() => import("./settings/letterboxd-panel").then((m) => ({ default: m.LetterboxdPanel })));
+const RelaySection = lazy(() => import("./settings/relay-section").then((m) => ({ default: m.RelaySection })));
+const StreamingSourcesPanel = lazy(() => import("./settings/streaming-sources-panel").then((m) => ({ default: m.StreamingSourcesPanel })));
+const StreamFiltersPanel = lazy(() => import("./settings/stream-filters-panel").then((m) => ({ default: m.StreamFiltersPanel })));
+const ThemePanel = lazy(() => import("./settings/theme-panel").then((m) => ({ default: m.ThemePanel })));
+const WebhooksPanel = lazy(() => import("./settings/webhooks-panel").then((m) => ({ default: m.WebhooksPanel })));
+const MacConnectionsPanel = lazy(() => import("./settings/mac-panels").then((m) => ({ default: m.MacConnectionsPanel })));
+const MacDownloadsPanel = lazy(() => import("./settings/mac-panels").then((m) => ({ default: m.MacDownloadsPanel })));
+const MacPrivacyPanel = lazy(() => import("./settings/mac-panels").then((m) => ({ default: m.MacPrivacyPanel })));
+
+function PanelSkeleton() {
+  return (
+    <div aria-hidden="true" className="flex flex-col gap-4">
+      <div className="h-24 animate-pulse rounded-2xl bg-elevated/60" />
+      <div className="h-36 animate-pulse rounded-2xl bg-elevated/45" />
+    </div>
+  );
+}
 
 const IS_WEB = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
 
@@ -282,7 +298,7 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
 
   // The panel for one section; the phone can stack several on one page.
   const renderPanel = (id: SectionId) => (
-    <>
+    <Suspense fallback={<PanelSkeleton />}>
       {id === "basics" && <BasicsPanel />}
       {id === "connections" && <MacConnectionsPanel />}
       {id === "privacy" && <MacPrivacyPanel />}
@@ -363,7 +379,7 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
       {id === "bug" && <BugReportPanel />}
 
       {id === "advanced" && <AdvancedPanel />}
-    </>
+    </Suspense>
   );
   const panels = renderPanel(active);
 
@@ -410,10 +426,10 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
         ref={scrollRef}
         className="flex-1 overflow-y-auto pt-28 pb-16 max-sm:pt-3"
       >
-        <div data-tauri-drag-region className="mx-auto flex max-w-3xl flex-col gap-10 px-12 max-sm:px-4 max-sm:gap-6">
+        <div className="mx-auto flex max-w-3xl flex-col gap-10 px-12 max-sm:px-4 max-sm:gap-6">
           {!(active === "relay" && relayMode !== "panel") && (
             <header className="flex flex-col gap-2">
-              <h1 className={hasNativeDesktopUx() ? "mac-page-title" : "font-display text-[44px] font-medium leading-[1.05] tracking-tight text-ink"}>
+              <h1 className={hasNativeDesktopUx() ? "mac-page-title" : "font-display text-[40px] font-semibold leading-[1.08] tracking-[-0.025em] text-ink"}>
                 {t(hasNativeDesktopUx() && active === "basics" ? "Overview" : SECTION_META[active].label)}
               </h1>
               <p className="text-[15px] text-ink-muted">{t(SECTION_META[active].sub)}</p>

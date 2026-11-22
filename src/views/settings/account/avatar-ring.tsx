@@ -15,7 +15,7 @@ export function AvatarRing({
     <button
       onClick={onClick}
       type="button"
-      className="group relative shrink-0 overflow-hidden rounded-full ring-2 ring-edge-soft transition-all hover:ring-ink"
+      className="group relative shrink-0 overflow-hidden rounded-full ring-2 ring-edge-soft transition-[width,background-color,opacity] hover:ring-ink"
       style={{ width: size, height: size }}
     >
       {src ? (

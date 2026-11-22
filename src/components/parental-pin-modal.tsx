@@ -119,18 +119,20 @@ export function ParentalPinModal({
   };
 
   return (
-    <div
-      className="pointer-events-auto fixed inset-0 z-[120] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) mode.onCancel();
-      }}
-    >
+    <div className="pointer-events-auto fixed inset-0 z-[120] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={mode.onCancel}
+        className="absolute inset-0 cursor-default"
+      />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="parental-pin-title"
-        className={`modal-panel flex w-full max-w-[420px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 ${
+        className={`modal-panel relative z-10 flex w-full max-w-[420px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 ${
           shake ? "animate-[pin-shake_0.34s_ease]" : ""
         }`}
       >
@@ -149,10 +151,8 @@ export function ParentalPinModal({
         </div>
 
         <div className="flex flex-col items-center gap-5">
-          <button
-            type="button"
-            onClick={focus}
-            aria-label={t("Focus PIN entry")}
+          <div
+            onMouseDown={() => focus()}
             className="relative flex cursor-text items-center gap-3 rounded-full px-3 py-2"
           >
             <input
@@ -175,13 +175,14 @@ export function ParentalPinModal({
             {[0, 1, 2, 3].map((i) => (
               <span
                 key={i}
-                className={`pointer-events-none h-3.5 w-3.5 rounded-full ring-1 transition-all ${
+                aria-hidden="true"
+                className={`pointer-events-none h-3.5 w-3.5 rounded-full ring-1 transition-[transform,opacity,background-color,border-color,color,box-shadow] ${
                   pin.length > i ? "scale-110 bg-ink ring-ink" : "bg-transparent ring-edge-soft"
                 }`}
               />
             ))}
-          </button>
-          {error && <p className="text-[12.5px] font-medium text-red-300">{error}</p>}
+          </div>
+          {error && <p role="alert" aria-live="polite" className="text-[12.5px] font-medium text-danger">{error}</p>}
           <div className="grid grid-cols-3 gap-2.5 pt-1">
             {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
               <PinKey key={d} onClick={() => tap(d)} disabled={busy}>
@@ -231,7 +232,7 @@ function PinKey({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/55 text-[20px] font-medium tabular-nums text-ink ring-1 ring-edge-soft transition-all hover:bg-canvas/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/55 text-[20px] font-medium tabular-nums text-ink ring-1 ring-edge-soft transition-[transform,opacity,background-color,border-color,color,box-shadow] hover:bg-canvas/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
       {...rest}
     >
       {children}

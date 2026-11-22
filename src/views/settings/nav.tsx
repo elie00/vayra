@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { APP_VERSION } from "@/lib/build-info";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { activeLayout } from "@/lib/theme";
+import { activeFontPair, activeLayout, DEFAULT_THEME } from "@/lib/theme";
 import {
   currentPlatformCapabilities,
   type PlatformCapabilities,
@@ -1154,6 +1155,25 @@ export function SettingsTabs({
   );
 }
 
+const ADVANCED_NAV_KEY = "vayra.settings.showAdvanced";
+const ADVANCED_NAV_IDS = new Set<SectionId>([
+  "mpv",
+  "anime",
+  "playerLayout",
+  "streamFilters",
+  "p2p",
+  "relay",
+  "webhooks",
+]);
+
+function readShowAdvanced(): boolean {
+  try {
+    return localStorage.getItem(ADVANCED_NAV_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function SettingsNav({
   active,
   onChange,
@@ -1168,6 +1188,23 @@ export function SettingsNav({
   const navLayout = activeLayout(settings.theme);
   const showBack = navLayout === "custom" || navLayout === "minui";
   const [query, setQuery] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(readShowAdvanced);
+  const effectiveShowAdvanced = showAdvanced || ADVANCED_NAV_IDS.has(active);
+  const advancedCount = useMemo(
+    () => NAV_GROUPS.flatMap((g) => g.items).filter((it) => ADVANCED_NAV_IDS.has(it.id)).length,
+    [],
+  );
+  const toggleAdvanced = () => {
+    setShowAdvanced((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(ADVANCED_NAV_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore storage failure */
+      }
+      return next;
+    });
+  };
   const trimmed = query.trim().toLowerCase();
   const sectionLabel = useMemo(() => {
     const m = new Map<SectionId, string>();
@@ -1178,26 +1215,30 @@ export function SettingsNav({
     if (!trimmed) return null;
     const out: NavItem[] = [];
     for (const group of NAV_GROUPS) {
-      const groupHit = group.heading?.toLowerCase().includes(trimmed) ?? false;
+      const groupHit =
+        (group.heading?.toLocaleLowerCase().includes(trimmed) ?? false) ||
+        (group.heading ? t(group.heading).toLocaleLowerCase().includes(trimmed) : false);
       for (const item of group.items) {
         const hit =
           groupHit ||
-          item.label.toLowerCase().includes(trimmed) ||
-          (item.keywords ?? []).some((k) => k.toLowerCase().includes(trimmed));
+          item.label.toLocaleLowerCase().includes(trimmed) ||
+          t(item.label).toLocaleLowerCase().includes(trimmed) ||
+          (item.keywords ?? []).some((k) => k.toLocaleLowerCase().includes(trimmed));
         if (hit) out.push(item);
       }
     }
     return out;
-  }, [trimmed]);
+  }, [trimmed, t]);
   const optionMatches = useMemo<SettingsOption[] | null>(() => {
     if (!trimmed) return null;
     return SETTINGS_OPTIONS.filter(
       (o) =>
         AVAILABLE_SECTION_IDS.has(o.section) &&
-        (o.label.toLowerCase().includes(trimmed) ||
-          (o.keywords ?? []).some((k) => k.toLowerCase().includes(trimmed))),
+        (o.label.toLocaleLowerCase().includes(trimmed) ||
+          t(o.label).toLocaleLowerCase().includes(trimmed) ||
+          (o.keywords ?? []).some((k) => k.toLocaleLowerCase().includes(trimmed))),
     );
-  }, [trimmed]);
+  }, [trimmed, t]);
 
   const libraryKeys = [
     settings.tmdbKey,
@@ -1214,8 +1255,6 @@ export function SettingsNav({
     settings.pmKey,
     settings.dlKey,
   ].filter(Boolean).length;
-
-  const debridChip = libraryKeys > 0 ? `${libraryKeys}/5` : null;
 
   const relayLive = settings.togetherRelayUrl ? "live" : null;
   const langChip =
@@ -1244,7 +1283,7 @@ export function SettingsNav({
     simkl: null,
     letterboxd: settings.letterboxd.enabled ? (settings.letterboxd.mode === "full" ? "FULL" : "ON") : null,
     relay: relayLive,
-    streaming: debridChip,
+    streaming: null,
     streamFilters: settings.customStreamFilters?.length ? String(settings.customStreamFilters.length) : null,
     p2p: null,
     language: langChip,
@@ -1252,7 +1291,7 @@ export function SettingsNav({
     mpv: (settings.mpvQuality ?? "balanced") === "balanced" ? null : settings.mpvQuality === "performance" ? "lite" : "max",
     anime: settings.playerAnime4k ? "on" : null,
     playerLayout: null,
-    theme: settings.theme.preset === "cool-grey" && settings.theme.fontPair === "geist" ? null : "•",
+    theme: settings.theme.preset === DEFAULT_THEME.preset && activeFontPair(settings.theme) === DEFAULT_THEME.fontPair && !settings.theme.customFontId ? null : "•",
     webhooks: webhookActive ? "live" : null,
     hotkeys: null,
     bug: null,
@@ -1347,7 +1386,7 @@ export function SettingsNav({
                   setQuery("");
                 } else if (optionMatches && optionMatches.length > 0) {
                   const o = optionMatches[0];
-                  onChange(o.section, o.anchorTitle ? settingsAnchor(o.anchorTitle) : undefined);
+                  onChange(o.section, o.anchorTitle ? settingsAnchor(t(o.anchorTitle)) : undefined);
                   setQuery("");
                 }
               } else if (e.key === "Escape") {
@@ -1394,7 +1433,7 @@ export function SettingsNav({
                   <button
                     key={`${o.section}-${o.label}`}
                     onClick={() => {
-                      onChange(o.section, o.anchorTitle ? settingsAnchor(o.anchorTitle) : undefined);
+                      onChange(o.section, o.anchorTitle ? settingsAnchor(t(o.anchorTitle)) : undefined);
                       setQuery("");
                     }}
                     className="group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-start text-ink-muted transition-colors hover:bg-elevated/70 hover:text-ink"
@@ -1417,72 +1456,96 @@ export function SettingsNav({
             )}
           </div>
         )}
-        {!matches && NAV_GROUPS.map((group, gi) => (
-          <div key={gi} className="flex flex-col gap-1">
-            {group.heading && (
-              <div className="px-3.5 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-subtle/80">
-                {t(group.heading)}
+        {!matches &&
+          NAV_GROUPS.map((group, gi) => {
+            const visibleItems = effectiveShowAdvanced
+              ? group.items
+              : group.items.filter((it) => !ADVANCED_NAV_IDS.has(it.id));
+            if (visibleItems.length === 0) return null;
+            return (
+              <div key={gi} className="flex flex-col gap-1">
+                {group.heading && (
+                  <div className="px-3.5 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-subtle/80">
+                    {t(group.heading)}
+                  </div>
+                )}
+                {visibleItems.map(({ id, label, Icon }) => {
+                  const isActive = id === active;
+                  const chip = status[id];
+                  const debridChip = id === "streaming" && debridKeys > 0 ? `${debridKeys}D` : null;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={() => {
+                        onChange(id);
+                        markSectionSeen(id);
+                      }}
+                      className={`group flex h-14 w-full items-center gap-3 rounded-xl px-2.5 text-start transition-colors ${
+                        isActive
+                          ? "bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-edge)]"
+                          : "text-ink-muted hover:bg-elevated/70 hover:text-ink"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                          isActive
+                            ? "bg-elevated text-ink shadow-[inset_0_0_0_1px_var(--color-edge-soft)]"
+                            : "bg-canvas/60 text-ink-subtle group-hover:text-ink-muted"
+                        }`}
+                      >
+                        <Icon size={20} strokeWidth={1.6} />
+                      </span>
+                      <span className="flex-1 truncate text-[14.5px] font-medium">{t(label)}</span>
+                      {isNew(id) && (
+                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-accent ring-1 ring-accent/30">
+                          <span className="h-1 w-1 rounded-full bg-accent" />
+                          {t("New")}
+                        </span>
+                      )}
+                      {(chip || debridChip) && (
+                        <span className="flex shrink-0 gap-1">
+                          {debridChip && (
+                            <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-accent">
+                              {debridChip}
+                            </span>
+                          )}
+                          {chip && (
+                            <span
+                              className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${
+                                chip === "live" || chip === "via relay"
+                                  ? "bg-accent/15 text-accent"
+                                  : "bg-canvas/70 text-ink-subtle"
+                              }`}
+                            >
+                              {chip}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-            {group.items.map(({ id, label, Icon }) => {
-              const isActive = id === active;
-              const chip = status[id];
-              const debridChip = id === "streaming" && debridKeys > 0 ? `${debridKeys}D` : null;
-              return (
-                <button
-                  key={id}
-                  aria-current={isActive ? "page" : undefined}
-                  onClick={() => {
-                    onChange(id);
-                    markSectionSeen(id);
-                  }}
-                  className={`group flex h-14 w-full items-center gap-3 rounded-xl px-2.5 text-start transition-colors ${
-                    isActive
-                      ? "bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-edge)]"
-                      : "text-ink-muted hover:bg-elevated/70 hover:text-ink"
-                  }`}
-                >
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
-                      isActive
-                        ? "bg-elevated text-ink shadow-[inset_0_0_0_1px_var(--color-edge-soft)]"
-                        : "bg-canvas/60 text-ink-subtle group-hover:text-ink-muted"
-                    }`}
-                  >
-                    <Icon size={20} strokeWidth={1.6} />
-                  </span>
-                  <span className="flex-1 truncate text-[14.5px] font-medium">{t(label)}</span>
-                  {isNew(id) && (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-accent ring-1 ring-accent/30">
-                      <span className="h-1 w-1 rounded-full bg-accent" />
-                      {t("New")}
-                    </span>
-                  )}
-                  {(chip || debridChip) && (
-                    <span className="flex shrink-0 gap-1">
-                      {debridChip && (
-                        <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-accent">
-                          {debridChip}
-                        </span>
-                      )}
-                      {chip && (
-                        <span
-                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${
-                            chip === "live" || chip === "via relay"
-                              ? "bg-accent/15 text-accent"
-                              : "bg-canvas/70 text-ink-subtle"
-                          }`}
-                        >
-                          {chip}
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            );
+          })}
+        {!matches && (
+          <div className="mt-1 border-t border-edge-soft/60 pt-3">
+            <button
+              type="button"
+              aria-expanded={effectiveShowAdvanced}
+              onClick={toggleAdvanced}
+              className="flex h-10 w-full items-center justify-between rounded-xl px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:bg-elevated/70 hover:text-ink"
+            >
+              <span>{effectiveShowAdvanced ? t("Show less") : t("Advanced")}</span>
+              <span className="rounded-md bg-elevated px-1.5 py-0.5 text-[10.5px] tabular-nums text-ink-subtle">
+                {advancedCount}
+              </span>
+            </button>
+            <p className="mt-3 px-3 text-[11px] tabular-nums text-ink-subtle/75">VAYRA · v{APP_VERSION}</p>
           </div>
-        ))}
+        )}
       </div>
     </nav>
   );

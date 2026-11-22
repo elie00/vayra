@@ -43,7 +43,7 @@ export function CrunchyrollAwardsCorner({
           .getElementById("anime-awards-section")
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }}
-      className={`group flex max-w-xs flex-col items-end gap-2 rounded-2xl px-1 py-1 text-end transition-all duration-200 hover:-translate-y-0.5 ${
+      className={`group flex max-w-xs flex-col items-end gap-2 rounded-2xl px-1 py-1 text-end transition-[transform,opacity,background-color,border-color,color] duration-200 hover:-translate-y-0.5 ${
         inline ? "" : "absolute bottom-14 end-12"
       }`}
       title={tooltip}

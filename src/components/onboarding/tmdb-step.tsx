@@ -36,8 +36,8 @@ export function TmdbStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      <span className="text-[12.5px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
-        {t("Step 1 · Metadata")}
+      <span className="text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+        {t("Step 4 · Metadata")}
       </span>
       <div className="flex flex-col gap-3">
         <h1 className="flex flex-wrap items-center font-display text-[36px] font-medium leading-[1.08] tracking-tight text-ink">
@@ -92,7 +92,7 @@ export function TmdbStep() {
         <button
           onClick={validate}
           disabled={!draft.trim() || status === "checking" || status === "ok"}
-          className={`flex h-12 min-w-[112px] items-center justify-center gap-1.5 rounded-xl px-5 text-[14px] font-semibold transition-all duration-300 ${
+          className={`flex h-12 min-w-[112px] items-center justify-center gap-1.5 rounded-xl px-5 text-[14px] font-semibold transition-[transform,opacity,background-color,border-color,color] duration-300 ${
             status === "ok"
               ? "bg-accent-soft text-accent"
               : "bg-ink text-canvas hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 disabled:opacity-50"

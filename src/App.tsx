@@ -4,16 +4,7 @@ import { loadAwardsData } from "@/lib/awards-history";
 import { FloatingBack } from "@/chrome/floating-back";
 import { WindowControls } from "@/chrome/window-controls";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
-import { MinUIDock } from "@/chrome/minui-dock";
 import { Sidebar } from "@/chrome/sidebar";
-import { DraculaSidebar } from "@/chrome/dracula-sidebar";
-import { NordSidebar } from "@/chrome/nord-sidebar";
-import { ForestSidebar } from "@/chrome/forest-sidebar";
-import { RoyalTopbar } from "@/chrome/royal-topbar";
-import { SideRail } from "@/chrome/siderail";
-import { StremioRail } from "@/chrome/stremio-rail";
-import { TopDock } from "@/chrome/topdock";
-import { CinematicOverlay } from "@/chrome/cinematic-overlay";
 import { Topbar } from "@/chrome/topbar";
 import { useFirstRunLocaleDetect } from "@/lib/region/locale-cascade";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
@@ -30,45 +21,24 @@ import { hasNativeDesktopUx, isMobileDevice, isMobileTauri, isWeb } from "@/lib/
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { DevErrorTrigger } from "@/components/dev-error-trigger";
-import { ErrorView } from "@/components/error-view";
 import { HarborErrorBoundary } from "@/components/error-boundary";
-import { ContextMenu } from "@/components/context-menu";
-import { WatchLocalModal } from "@/components/player/watch-local-modal";
-import { LocalEpisodesModal } from "@/components/player/local-episodes-modal";
 import { CurfewGuard } from "@/components/curfew-guard";
-import { HoverPreview } from "@/components/hover-preview";
 import { CustomHoverCssMount } from "@/components/custom-hover-css-mount";
-import { EmbedViewportRoot } from "@/components/embed-viewport";
-import { InstallerViewportRoot } from "@/components/installer-viewport";
-import { UpdateRoot } from "@/components/update/update-root";
 import { CustomCodeMount } from "@/components/custom-code-mount";
-import { MemoryHud } from "@/components/memory-hud";
 import { OfflineBanner } from "@/chrome/offline-banner";
-import { MobileNotice } from "@/components/mobile-notice";
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { AppFeedbackHost } from "@/components/app-feedback-host";
 import { AccessibilityNavigation } from "@/components/accessibility-navigation";
-import { TogetherChatToast } from "@/components/together-chat-toast";
 import { CiraInviteBridge } from "@/components/cira-invite-bridge";
-import { PrivateBetaLaunchModal } from "@/components/private-beta-launch-modal";
 import { VaraInviteBridge } from "@/components/vara-invite-bridge";
-import { MacLinkBridge } from "@/components/mac-link-bridge";
 import { WatchActivityConsent } from "@/components/watch-activity-consent";
 import { CiraProvider } from "@/lib/cira/provider";
 import { VaraProvider } from "@/lib/vara/provider";
-import { TogetherCursors } from "@/components/together-cursors";
-import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
-import { TogetherInviteToast } from "@/components/together-invite-toast";
-import { TogetherSummonToast } from "@/components/together-summon-toast";
-import { TogetherParticipantLeftToast } from "@/components/together-participant-left-toast";
 import { AnilistSyncToast } from "@/components/anilist/anilist-sync-toast";
 import { CacheExpiryToast } from "@/components/cache-expiry-toast";
 import { AnilistAvatarSync } from "@/components/anilist/anilist-avatar-sync";
 import { MalAvatarSync } from "@/components/mal/mal-avatar-sync";
 import { MalSyncToast } from "@/components/mal/mal-sync-toast";
-import { TogetherLeaveForLiveModal } from "@/components/together-leave-for-live-modal";
-import { ThemeBackdrop } from "@/components/theme-backdrop";
-import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider } from "@/lib/auth";
 import { VayraAccountProvider } from "@/lib/vayra-account";
 import { PrivateBetaLaunchProvider } from "@/lib/private-beta-launch-provider";
@@ -76,7 +46,6 @@ import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
 import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
 import { TrackerProfileBridge } from "@/lib/tracker-profile-bridge";
-import { ProfilePickerModal } from "@/components/profile-picker/picker-modal";
 import { WatchlistSync } from "@/lib/watchlist-sync";
 import { ContextMenuProvider } from "@/lib/context-menu";
 import { TopRankModalProvider } from "@/lib/top-rank-modal";
@@ -84,12 +53,8 @@ import { OnboardingProvider } from "@/lib/onboarding";
 import { RankingsProvider } from "@/lib/rankings";
 import { SettingsProvider } from "@/lib/settings";
 import { SearchProvider, useSearch } from "@/lib/search-context";
-import { SearchOverlay } from "@/components/search/search-overlay";
 import { SearchHotkey } from "@/components/search/search-hotkey";
-import { CommandPalette } from "@/components/command-palette";
 import { RoomHotkeys } from "@/components/room-hotkeys";
-import { MobileIntegration } from "@/components/mobile-integration";
-import { MobileShell } from "@/mobile/shell";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
@@ -109,6 +74,45 @@ import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
 import { useKeyboardNavigation } from "@/lib/keyboard-navigation";
 import { SFX } from "@/lib/sfx";
+
+// Alternative chrome shells: lazy-loaded so the default sidebar boot never parses unused layouts.
+const MinUIDock = lazy(() => import("@/chrome/minui-dock").then((m) => ({ default: m.MinUIDock })));
+const DraculaSidebar = lazy(() => import("@/chrome/dracula-sidebar").then((m) => ({ default: m.DraculaSidebar })));
+const NordSidebar = lazy(() => import("@/chrome/nord-sidebar").then((m) => ({ default: m.NordSidebar })));
+const ForestSidebar = lazy(() => import("@/chrome/forest-sidebar").then((m) => ({ default: m.ForestSidebar })));
+const RoyalTopbar = lazy(() => import("@/chrome/royal-topbar").then((m) => ({ default: m.RoyalTopbar })));
+const SideRail = lazy(() => import("@/chrome/siderail").then((m) => ({ default: m.SideRail })));
+const StremioRail = lazy(() => import("@/chrome/stremio-rail").then((m) => ({ default: m.StremioRail })));
+const TopDock = lazy(() => import("@/chrome/topdock").then((m) => ({ default: m.TopDock })));
+const CinematicOverlay = lazy(() => import("@/chrome/cinematic-overlay").then((m) => ({ default: m.CinematicOverlay })));
+
+// Secondary / platform-conditional global overlays loaded off the critical boot path.
+const MobileShell = lazy(() => import("@/mobile/shell").then((m) => ({ default: m.MobileShell })));
+const MobileIntegration = lazy(() => import("@/components/mobile-integration").then((m) => ({ default: m.MobileIntegration })));
+const MacLinkBridge = lazy(() => import("@/components/mac-link-bridge").then((m) => ({ default: m.MacLinkBridge })));
+const MobileNotice = lazy(() => import("@/components/mobile-notice").then((m) => ({ default: m.MobileNotice })));
+const ContextMenu = lazy(() => import("@/components/context-menu").then((m) => ({ default: m.ContextMenu })));
+const HoverPreview = lazy(() => import("@/components/hover-preview").then((m) => ({ default: m.HoverPreview })));
+const EmbedViewportRoot = lazy(() => import("@/components/embed-viewport").then((m) => ({ default: m.EmbedViewportRoot })));
+const InstallerViewportRoot = lazy(() => import("@/components/installer-viewport").then((m) => ({ default: m.InstallerViewportRoot })));
+const UpdateRoot = lazy(() => import("@/components/update/update-root").then((m) => ({ default: m.UpdateRoot })));
+const TogetherChatToast = lazy(() => import("@/components/together-chat-toast").then((m) => ({ default: m.TogetherChatToast })));
+const TogetherCursors = lazy(() => import("@/components/together-cursors").then((m) => ({ default: m.TogetherCursors })));
+const TogetherHostLeavingPrompt = lazy(() => import("@/components/together-host-leaving-prompt").then((m) => ({ default: m.TogetherHostLeavingPrompt })));
+const TogetherInviteToast = lazy(() => import("@/components/together-invite-toast").then((m) => ({ default: m.TogetherInviteToast })));
+const TogetherSummonToast = lazy(() => import("@/components/together-summon-toast").then((m) => ({ default: m.TogetherSummonToast })));
+const TogetherParticipantLeftToast = lazy(() => import("@/components/together-participant-left-toast").then((m) => ({ default: m.TogetherParticipantLeftToast })));
+const SearchOverlay = lazy(() => import("@/components/search/search-overlay").then((m) => ({ default: m.SearchOverlay })));
+const CommandPalette = lazy(() => import("@/components/command-palette").then((m) => ({ default: m.CommandPalette })));
+const WatchLocalModal = lazy(() => import("@/components/player/watch-local-modal").then((m) => ({ default: m.WatchLocalModal })));
+const LocalEpisodesModal = lazy(() => import("@/components/player/local-episodes-modal").then((m) => ({ default: m.LocalEpisodesModal })));
+const ProfilePickerModal = lazy(() => import("@/components/profile-picker/picker-modal").then((m) => ({ default: m.ProfilePickerModal })));
+const TopRankModal = lazy(() => import("@/components/top-rank-modal").then((m) => ({ default: m.TopRankModal })));
+const TogetherLeaveForLiveModal = lazy(() => import("@/components/together-leave-for-live-modal").then((m) => ({ default: m.TogetherLeaveForLiveModal })));
+const PrivateBetaLaunchModal = lazy(() => import("@/components/private-beta-launch-modal").then((m) => ({ default: m.PrivateBetaLaunchModal })));
+const ThemeBackdrop = lazy(() => import("@/components/theme-backdrop").then((m) => ({ default: m.ThemeBackdrop })));
+const MemoryHud = lazy(() => import("@/components/memory-hud").then((m) => ({ default: m.MemoryHud })));
+const ErrorView = lazy(() => import("@/components/error-view").then((m) => ({ default: m.ErrorView })));
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
@@ -251,7 +255,13 @@ function useIdleEvict(active: boolean, pin = false): boolean {
 }
 
 export function App() {
-  if (isWeb() && isMobileDevice()) return <MobileNotice />;
+  if (isWeb() && isMobileDevice()) {
+    return (
+      <Suspense fallback={null}>
+        <MobileNotice />
+      </Suspense>
+    );
+  }
   return (
     <SettingsProvider>
       <ProfilesProvider>
@@ -284,55 +294,73 @@ export function App() {
                       <AnilistAvatarSync />
                       <MalAvatarSync />
                       <MiddleClickScroll />
-                      <ThemeBackdrop />
+                      <Suspense fallback={null}>
+                        <ThemeBackdrop />
+                      </Suspense>
                       <AccessibilityNavigation />
                       <WatchlistSync />
-                      <MobileIntegration />
-                      {isMobileTauri() && <MobileShell />}
+                      <Suspense fallback={null}>
+                        {isMobileTauri() && <MobileIntegration />}
+                        {isMobileTauri() && <MobileShell />}
+                      </Suspense>
                       <Shell />
                       <Suspense fallback={null}>
                         <OnboardingModal />
+                        <TogetherInviteToast />
                       </Suspense>
-                      <TogetherInviteToast />
                       <CiraInviteBridge />
-                      <PrivateBetaLaunchModal />
+                      <Suspense fallback={null}>
+                        <PrivateBetaLaunchModal />
+                      </Suspense>
                       <VaraInviteBridge />
-                      {isMobileTauri() && <MacLinkBridge />}
+                      <Suspense fallback={null}>
+                        {isMobileTauri() && <MacLinkBridge />}
+                      </Suspense>
                       <WatchActivityConsent />
-                      <TogetherFloater />
-                      <TogetherHostLeavingPrompt />
-                      <TogetherSummonToast />
-                      <TogetherParticipantLeftToast />
+                      <Suspense fallback={null}>
+                        <TogetherFloater />
+                        <TogetherHostLeavingPrompt />
+                        <TogetherSummonToast />
+                        <TogetherParticipantLeftToast />
+                      </Suspense>
                       <AnilistSyncToast />
                       <MalSyncToast />
                       <CacheExpiryToast />
                       <AppFeedbackHost />
-                      <TogetherLeaveForLiveModal />
+                      <Suspense fallback={null}>
+                        <TogetherLeaveForLiveModal />
+                      </Suspense>
                       <TogetherLocationPublisher />
                       <DiscordPresence />
-                      <ContextMenu />
-                      <WatchLocalModal />
-                      <LocalEpisodesModal />
-                      <HoverPreview />
+                      <Suspense fallback={null}>
+                        <ContextMenu />
+                        <WatchLocalModal />
+                        <LocalEpisodesModal />
+                        <HoverPreview />
+                      </Suspense>
                       <CustomHoverCssMount />
-                      <TopRankModal />
-                      <ProfilePickerModal />
+                      <Suspense fallback={null}>
+                        <TopRankModal />
+                        <ProfilePickerModal />
+                      </Suspense>
                       <CurfewGuard />
-                      {isMobileTauri() ? (
-                        <Suspense fallback={null}>
-                          <MobileSearch />
-                        </Suspense>
-                      ) : (
-                        <SearchOverlay />
-                      )}
+                      <Suspense fallback={null}>
+                        {isMobileTauri() ? <MobileSearch /> : <SearchOverlay />}
+                      </Suspense>
                       <SearchHotkey />
-                      <CommandPalette />
+                      <Suspense fallback={null}>
+                        <CommandPalette />
+                      </Suspense>
                       <RoomHotkeys />
-                      <EmbedViewportRoot />
-                      <InstallerViewportRoot />
-                      <UpdateRoot />
+                      <Suspense fallback={null}>
+                        <EmbedViewportRoot />
+                        <InstallerViewportRoot />
+                        <UpdateRoot />
+                      </Suspense>
                     </HarborErrorBoundary>
-                    <ErrorView />
+                    <Suspense fallback={null}>
+                      <ErrorView />
+                    </Suspense>
                     <DevErrorTrigger />
                   </TopRankModalProvider>
                 </ContextMenuProvider>
@@ -381,8 +409,17 @@ function TogetherLocationPublisher() {
     if (!inSession) return;
     const location = computeLocation();
     sendPresence(location ?? undefined);
-    const id = window.setInterval(() => sendPresence(location ?? undefined), 6000);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(() => {
+      if (!document.hidden) sendPresence(location ?? undefined);
+    }, 6000);
+    const onVisibility = () => {
+      if (!document.hidden) sendPresence(location ?? undefined);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
     function computeLocation(): import("@/lib/together/protocol").ParticipantLocation | null {
       const metaToLoc = (m: import("@/lib/cinemeta").Meta) => ({
         id: m.id,
@@ -1048,15 +1085,17 @@ function Shell() {
   return (
     <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
       {!settingsTop && !playerActive && (!liveTop || hasNativeDesktopUx()) && !pickerTop && layout === "sidebar" && <Sidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "stremio" && <StremioRail />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "topdock" && <TopDock />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "cinematic" && <CinematicOverlay />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "royal" && <RoyalTopbar />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "rail" && <SideRail />}
-      {!playerActive && !pickerTop && layout === "minui" && <MinUIDock />}
+      <Suspense fallback={null}>
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && <NordSidebar />}
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && <ForestSidebar />}
+        {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "stremio" && <StremioRail />}
+        {!settingsTop && !playerActive && !pickerTop && layout === "topdock" && <TopDock />}
+        {!settingsTop && !playerActive && !pickerTop && layout === "cinematic" && <CinematicOverlay />}
+        {!settingsTop && !playerActive && !pickerTop && layout === "royal" && <RoyalTopbar />}
+        {!settingsTop && !playerActive && !pickerTop && layout === "rail" && <SideRail />}
+        {!playerActive && !pickerTop && layout === "minui" && <MinUIDock />}
+      </Suspense>
       {!playerActive && !pickerTop && layout === "topdock" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "cinematic" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "royal" && <FloatingBack offsetTop={92} />}
@@ -1206,7 +1245,9 @@ function Shell() {
       )}
       <CustomCodeMount />
       <WebhookLoopMount />
-      <MemoryHud />
+      <Suspense fallback={null}>
+        <MemoryHud />
+      </Suspense>
       {!player && <OfflineBanner />}
     </div>
   );

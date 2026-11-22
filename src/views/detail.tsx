@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Check, HardDrive, Layers, ListPlus, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
 import { animeDetails, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
@@ -7,20 +7,16 @@ import { stripFranchiseSuffix } from "@/lib/providers/jikan";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { useMalRating } from "@/lib/mal-rating";
 import type { KitsuEpisode, KitsuStreamer } from "@/lib/providers/kitsu";
-import { AnimeAwardsBlock } from "@/components/anime-awards-block";
-import { AwardsBlock } from "@/components/awards-block";
 import { BackToTop } from "@/components/back-to-top";
 import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import { meta as fetchCinemetaMeta, narrowMediaType, isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
 import { fetchAddonMeta } from "@/lib/addons";
 import { hasProgrammeGuide, programmesOf } from "@/lib/addon-epg";
-import { ProgrammeSchedule } from "./detail/programme-schedule";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
 import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
-import { MobileDetail } from "@/mobile/detail";
 import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
@@ -67,7 +63,6 @@ import { AddToSimklButton } from "./detail/add-to-simkl-button";
 import { getLocalCache, saveLocalCache } from "@/lib/simkl/activities";
 import { simklRequest } from "@/lib/simkl/client";
 import { CollectionRow } from "./detail/collection-row";
-import { MediaGallery } from "./detail/media-gallery";
 import { useTitleBackdrop } from "@/lib/title-backdrop";
 import { useTitleLogo } from "@/lib/title-logo";
 import { useStableAsset, toHiResBackdrop } from "@/lib/use-stable-asset";
@@ -108,21 +103,55 @@ import { PreviewIcon } from "./detail/preview-icon";
 import { HeroActionOverflow, useHeroActionOverflow } from "./detail/hero-action-overflow";
 import { PlayOnMacButton } from "./detail/play-on-mac-button";
 import { HeroRatings } from "./detail/hero-ratings";
-import { TrailerOverlay } from "./detail/trailer-overlay";
-import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
-import { SeriesEpisodes } from "./detail/series-episodes";
-import { CinemetaEpisodes } from "./detail/cinemeta-episodes";
-import { AnimeEpisodes } from "./detail/anime-episodes";
 import { EpisodeGridSkeleton } from "./detail/episode-grid-skeleton";
 import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
-import { TraktComments } from "./detail/trakt-comments";
-import { LetterboxdPanel } from "./detail/letterboxd-panel";
-import { LetterboxdReviews } from "./detail/letterboxd-reviews";
-import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
+
+const MobileDetail = lazy(() =>
+  import("@/mobile/detail").then((m) => ({ default: m.MobileDetail })),
+);
+const TrailerOverlay = lazy(() =>
+  import("./detail/trailer-overlay").then((m) => ({ default: m.TrailerOverlay })),
+);
+const DetailHeroTrailer = lazy(() =>
+  import("./detail/detail-hero-trailer").then((m) => ({ default: m.DetailHeroTrailer })),
+);
+const SeriesEpisodes = lazy(() =>
+  import("./detail/series-episodes").then((m) => ({ default: m.SeriesEpisodes })),
+);
+const CinemetaEpisodes = lazy(() =>
+  import("./detail/cinemeta-episodes").then((m) => ({ default: m.CinemetaEpisodes })),
+);
+const AnimeEpisodes = lazy(() =>
+  import("./detail/anime-episodes").then((m) => ({ default: m.AnimeEpisodes })),
+);
+const ProgrammeSchedule = lazy(() =>
+  import("./detail/programme-schedule").then((m) => ({ default: m.ProgrammeSchedule })),
+);
+const MediaGallery = lazy(() =>
+  import("./detail/media-gallery").then((m) => ({ default: m.MediaGallery })),
+);
+const AnimeAwardsBlock = lazy(() =>
+  import("@/components/anime-awards-block").then((m) => ({ default: m.AnimeAwardsBlock })),
+);
+const AwardsBlock = lazy(() =>
+  import("@/components/awards-block").then((m) => ({ default: m.AwardsBlock })),
+);
+const TraktComments = lazy(() =>
+  import("./detail/trakt-comments").then((m) => ({ default: m.TraktComments })),
+);
+const AnilistComments = lazy(() =>
+  import("./detail/anilist-comments").then((m) => ({ default: m.AnilistComments })),
+);
+const LetterboxdPanel = lazy(() =>
+  import("./detail/letterboxd-panel").then((m) => ({ default: m.LetterboxdPanel })),
+);
+const LetterboxdReviews = lazy(() =>
+  import("./detail/letterboxd-reviews").then((m) => ({ default: m.LetterboxdReviews })),
+);
 
 function parseYear(v: string | number | undefined | null): number {
   if (v == null) return 0;
@@ -208,7 +237,7 @@ export function DetailView({
   );
   const scrollRef = useRef<HTMLElement>(null);
 
-  const { setNavStack, openPicker, openPlayer, openFilter, promoteMetaToRoot } = useView();
+  const { setNavStack, openPicker, openPlayer, openFilter, promoteMetaToRoot, goBack, canGoBack } = useView();
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();
   const inWatchlist = useInWatchlist(meta.id, [detail?.imdbId]);
@@ -1124,42 +1153,90 @@ export function DetailView({
     </>
   );
 
+  useEffect(() => {
+    if (isMobileTauri()) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      if (e.key === "Escape") {
+        if (trailerOpen) {
+          e.preventDefault();
+          setTrailerOpen(false);
+        } else if (layoutEdit) {
+          e.preventDefault();
+          setLayoutEdit(false);
+        } else if (canGoBack) {
+          e.preventDefault();
+          goBack();
+        }
+        return;
+      }
+      if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        void smartPlay(false);
+      } else if (e.key === "w" || e.key === "W") {
+        e.preventDefault();
+        toggleWatchlist({
+          id: meta.id,
+          type: meta.type,
+          name: title || meta.name,
+          poster: meta.poster ?? detail?.poster,
+          imdbId: detail?.imdbId,
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canGoBack, detail?.imdbId, detail?.poster, goBack, layoutEdit, meta.id, meta.name, meta.poster, meta.type, smartPlay, title, trailerOpen]);
+
   if (isMobileTauri()) {
     return (
-      <MobileDetail
-        meta={meta}
-        playMeta={playMeta}
-        title={title}
-        logo={logo}
-        backdrop={backdrop}
-        year={year}
-        rating={rating}
-        runtime={runtime}
-        overview={overview}
-        isSeries={isSeries}
-        isAnime={isAnime}
-        detail={detail}
-        recommendations={recommendations}
-        similar={similar}
-        cinemetaVideos={cinemetaFull?.videos}
-        stremioWatched={stremioWatched}
-        animeEpisodes={animeEpisodes}
-        franchise={franchise}
-        animeCanonicalId={animeCanonicalId}
-        inWatchlist={inWatchlist}
-        onToggleWatchlist={() =>
-          toggleWatchlist({
-            id: meta.id,
-            type: meta.type,
-            name: title || meta.name,
-            poster: meta.poster ?? detail?.poster,
-            imdbId: detail?.imdbId,
-          })
-        }
-        onPlay={() => void smartPlay(false)}
-        playLabel={smartPlayLabel}
-        trailerCandidate={trailerCandidate}
-      />
+      <Suspense fallback={null}>
+        <MobileDetail
+          meta={meta}
+          playMeta={playMeta}
+          title={title}
+          logo={logo}
+          backdrop={backdrop}
+          year={year}
+          rating={rating}
+          runtime={runtime}
+          overview={overview}
+          isSeries={isSeries}
+          isAnime={isAnime}
+          detail={detail}
+          recommendations={recommendations}
+          similar={similar}
+          cinemetaVideos={cinemetaFull?.videos}
+          stremioWatched={stremioWatched}
+          animeEpisodes={animeEpisodes}
+          franchise={franchise}
+          animeCanonicalId={animeCanonicalId}
+          inWatchlist={inWatchlist}
+          onToggleWatchlist={() =>
+            toggleWatchlist({
+              id: meta.id,
+              type: meta.type,
+              name: title || meta.name,
+              poster: meta.poster ?? detail?.poster,
+              imdbId: detail?.imdbId,
+            })
+          }
+          onPlay={() => void smartPlay(false)}
+          playLabel={smartPlayLabel}
+          trailerCandidate={trailerCandidate}
+        />
+      </Suspense>
     );
   }
 
@@ -1191,7 +1268,9 @@ export function DetailView({
             <div className="absolute inset-0 animate-pulse bg-white/[0.02]" />
           )}
           {settings.detailTrailerAutoplay && trailerCandidate && (
-            <DetailHeroTrailer candidateId={trailerCandidate} paused={trailerOpen} />
+            <Suspense fallback={null}>
+              <DetailHeroTrailer candidateId={trailerCandidate} paused={trailerOpen} />
+            </Suspense>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
@@ -1467,36 +1546,40 @@ export function DetailView({
 
         {!liveContext && detail && isAnime && (animeEpisodes.length > 1 || franchise.length > 1) && (
           <FadeInUp>
-          <AnimeEpisodes
-            meta={playMeta}
-            episodes={animeEpisodes}
-            franchise={franchise}
-            currentId={currentFranchiseId}
-            scrollRef={scrollRef}
-            trackId={animeCanonicalId ?? undefined}
-            imdbId={
-              detail.imdbId ??
-              animeEpisodes.find((e) => e.imdbId)?.imdbId ??
-              (meta.id.startsWith("tt") ? meta.id : null)
-            }
-          />
+            <Suspense fallback={<EpisodeGridSkeleton />}>
+              <AnimeEpisodes
+                meta={playMeta}
+                episodes={animeEpisodes}
+                franchise={franchise}
+                currentId={currentFranchiseId}
+                scrollRef={scrollRef}
+                trackId={animeCanonicalId ?? undefined}
+                imdbId={
+                  detail.imdbId ??
+                  animeEpisodes.find((e) => e.imdbId)?.imdbId ??
+                  (meta.id.startsWith("tt") ? meta.id : null)
+                }
+              />
+            </Suspense>
           </FadeInUp>
         )}
 
         {!liveContext && detail && !isAnime && isSeries && detail.seasons.length > 0 && (
           <FadeInUp>
-          <SeriesEpisodes
-            meta={playMeta}
-            tvId={detail.id}
-            imdbId={detail.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
-            seasons={detail.seasons}
-            lastEpisodeAir={detail.lastEpisodeAir}
-            scrollRef={scrollRef}
-            cinemetaVideos={cinemetaFull?.videos}
-            stremioWatched={stremioWatched}
-            resumeSeason={lastPlay?.season}
-            resumeEpisode={lastPlay?.episode}
-          />
+            <Suspense fallback={<EpisodeGridSkeleton />}>
+              <SeriesEpisodes
+                meta={playMeta}
+                tvId={detail.id}
+                imdbId={detail.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                seasons={detail.seasons}
+                lastEpisodeAir={detail.lastEpisodeAir}
+                scrollRef={scrollRef}
+                cinemetaVideos={cinemetaFull?.videos}
+                stremioWatched={stremioWatched}
+                resumeSeason={lastPlay?.season}
+                resumeEpisode={lastPlay?.episode}
+              />
+            </Suspense>
           </FadeInUp>
         )}
 
@@ -1509,9 +1592,11 @@ export function DetailView({
           (addonNative
             ? cinemetaFull.videos.length > 0
             : cinemetaFull.videos.some((v) => v.season != null && v.season > 0 && v.episode != null)) && (
-            hasProgrammeGuide(cinemetaFull)
-              ? <FadeInUp><ProgrammeSchedule programmes={programmesOf(cinemetaFull.videos)} /></FadeInUp>
-              : <FadeInUp><CinemetaEpisodes meta={playMeta} videos={cinemetaFull.videos} /></FadeInUp>
+            <Suspense fallback={<EpisodeGridSkeleton />}>
+              {hasProgrammeGuide(cinemetaFull)
+                ? <FadeInUp><ProgrammeSchedule programmes={programmesOf(cinemetaFull.videos)} /></FadeInUp>
+                : <FadeInUp><CinemetaEpisodes meta={playMeta} videos={cinemetaFull.videos} /></FadeInUp>}
+            </Suspense>
           )}
 
         {(() => {
@@ -1599,7 +1684,11 @@ export function DetailView({
             railSections.push({
               key: "mediaGallery",
               label: t("Media"),
-              node: <MediaGallery detail={detail} title={title} logo={logo} metaId={meta.id} />,
+              node: (
+                <Suspense fallback={null}>
+                  <MediaGallery detail={detail} title={title} logo={logo} metaId={meta.id} />
+                </Suspense>
+              ),
             });
           }
           if (isAnime) {
@@ -1608,14 +1697,16 @@ export function DetailView({
               label: t("Awards"),
               minHeight: 160,
               node: (
-                <AnimeAwardsBlock
-                  name={
-                    animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-                    stickyAwardName.current ??
-                    title
-                  }
-                  year={releaseYearNum}
-                />
+                <Suspense fallback={null}>
+                  <AnimeAwardsBlock
+                    name={
+                      animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
+                      stickyAwardName.current ??
+                      title
+                    }
+                    year={releaseYearNum}
+                  />
+                </Suspense>
               ),
             });
           }
@@ -1624,7 +1715,11 @@ export function DetailView({
               key: "awards",
               label: t("Awards & Recognition"),
               minHeight: 200,
-              node: <AwardsBlock awards={awards} />,
+              node: (
+                <Suspense fallback={null}>
+                  <AwardsBlock awards={awards} />
+                </Suspense>
+              ),
             });
           }
           if (detail) {
@@ -1640,7 +1735,11 @@ export function DetailView({
               key: "traktComments",
               label: t("Comments"),
               minHeight: 120,
-              node: <TraktComments resolution={traktResolution} />,
+              node: (
+                <Suspense fallback={null}>
+                  <TraktComments resolution={traktResolution} />
+                </Suspense>
+              ),
             });
           }
           if (isAnime && settings.showAnilistComments === true) {
@@ -1648,7 +1747,11 @@ export function DetailView({
               key: "anilistComments",
               label: t("AniList Comments"),
               minHeight: 120,
-              node: <AnilistComments harborId={animeCanonicalId ?? meta.id} />,
+              node: (
+                <Suspense fallback={null}>
+                  <AnilistComments harborId={animeCanonicalId ?? meta.id} />
+                </Suspense>
+              ),
             });
           }
           if (!isAnime) {
@@ -1657,10 +1760,12 @@ export function DetailView({
               label: t("Letterboxd"),
               minHeight: 120,
               node: (
-                <LetterboxdPanel
-                  meta={meta}
-                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
-                />
+                <Suspense fallback={null}>
+                  <LetterboxdPanel
+                    meta={meta}
+                    imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                  />
+                </Suspense>
               ),
             });
             railSections.push({
@@ -1668,10 +1773,12 @@ export function DetailView({
               label: t("Letterboxd Reviews"),
               minHeight: 120,
               node: (
-                <LetterboxdReviews
-                  meta={meta}
-                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
-                />
+                <Suspense fallback={null}>
+                  <LetterboxdReviews
+                    meta={meta}
+                    imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                  />
+                </Suspense>
               ),
             });
           }
@@ -1727,12 +1834,14 @@ export function DetailView({
       </div>
       <BackToTop scrollRef={scrollRef} />
       {trailerOpen && trailerCandidate && (
-        <TrailerOverlay
-          id={trailerCandidate}
-          title={title}
-          logo={logo}
-          onClose={() => setTrailerOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <TrailerOverlay
+            id={trailerCandidate}
+            title={title}
+            logo={logo}
+            onClose={() => setTrailerOpen(false)}
+          />
+        </Suspense>
       )}
     </main>
   );

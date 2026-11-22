@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { safeFetch } from "@/lib/safe-fetch";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackBuffered, getPlaybackPosition, usePlaybackFlag } from "@/lib/player/playback-clock";
 import { isLocalUrl } from "@/lib/player/local-url";
@@ -29,11 +30,19 @@ async function probeSourceStatus(url: string, headers?: Record<string, string>):
   } catch {
     host = "";
   }
+  const ac = new AbortController();
+  const timer = window.setTimeout(() => ac.abort(), 6000);
   try {
-    const res = await fetch(url, { method: "GET", headers: { ...(headers ?? {}), Range: "bytes=0-1" } });
+    const res = await safeFetch(url, {
+      method: "GET",
+      headers: { ...(headers ?? {}), Range: "bytes=0-1" },
+      signal: ac.signal,
+    });
     return { status: res.status, host };
   } catch {
     return { status: 0, host };
+  } finally {
+    window.clearTimeout(timer);
   }
 }
 

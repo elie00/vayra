@@ -317,17 +317,20 @@ export function TogetherDeployModal({ onClose, inline = false }: { onClose: () =
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-canvas/70 backdrop-blur-md"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/70 backdrop-blur-md"
+      />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="together-deploy-title"
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-[560px] flex-col gap-5 overflow-y-auto rounded-2xl border border-edge bg-surface p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
+        className="relative z-10 flex max-h-[88vh] w-[560px] flex-col gap-5 overflow-y-auto rounded-2xl border border-edge bg-surface p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
       >
         {body}
       </div>

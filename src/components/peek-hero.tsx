@@ -156,7 +156,7 @@ export function PeekHero({ slides }: { slides: Meta[] }) {
               key={i}
               onClick={() => setActive(i)}
               aria-label={t("Slide {n}", { n: i + 1 })}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
+              className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-500 ${
                 i === active ? "w-8 bg-ink" : "w-1.5 bg-ink-muted/55 hover:bg-ink-muted"
               }`}
             />
@@ -229,7 +229,6 @@ function PeekSlide({
 
   return (
     <div
-      onClick={() => (active ? openMeta(meta) : onSelect())}
       className="absolute left-1/2 top-1/2 h-[420px] w-[920px] overflow-hidden rounded-[20px] shadow-[0_28px_60px_-26px_rgba(0,0,0,0.7)]"
       style={{
         transform: `translate(-50%, -50%) translateX(${translatePct}%) scale(${scale})`,
@@ -241,18 +240,24 @@ function PeekSlide({
         maxWidth: `${CENTER_FRACTION * 100}%`,
       }}
     >
+      <button
+        type="button"
+        aria-label={meta.name}
+        onClick={() => (active ? openMeta(meta) : onSelect())}
+        className="absolute inset-0 z-0 cursor-pointer"
+      />
       {bg && (
         <img
           src={bg}
           alt=""
           decoding="async"
           fetchPriority={active ? "high" : "low"}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
       {active && <MetaAwardsCorner meta={meta} imdbId={resolvedImdb} />}
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3.5 px-9 pb-9">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3.5 px-9 pb-9 [&_button]:pointer-events-auto">
         <div className="flex min-h-[68px] items-end">
           {logo ? (
             <img
@@ -267,7 +272,7 @@ function PeekSlide({
               }}
             />
           ) : (
-            <h3 className="font-display text-[40px] font-medium leading-[0.95] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+            <h3 className="font-display text-[40px] font-semibold leading-[1.06] tracking-[-0.025em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
               {meta.name}
             </h3>
           )}

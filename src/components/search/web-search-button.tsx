@@ -18,7 +18,7 @@ export function WebSearchButton() {
         onClick={() => update({ aiWebSearch: !active })}
         aria-label={t("Toggle live web")}
         aria-pressed={active}
-        className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all ${
+        className={`flex h-10 w-10 items-center justify-center rounded-full border transition-[background-color,border-color,color,opacity,box-shadow] ${
           active
             ? "border-accent/60 bg-accent/15 text-accent shadow-[0_0_0_3px_var(--color-accent-soft)]"
             : "border-edge-soft bg-canvas/60 text-ink-muted hover:border-edge hover:text-ink"

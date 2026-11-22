@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { BackToTop } from "@/components/back-to-top";
-import { HeroCarousel, type Slide } from "@/components/hero-carousel";
-import { CollectionsRow } from "@/components/collections-row";
+import type { Slide } from "@/components/hero-carousel";
 import { TmdbNudge } from "@/components/nudge";
 import { Row, ScrollRootContext } from "@/components/row";
 import {
@@ -72,14 +71,17 @@ import {
 } from "./home/home-rows";
 import type { HomeRow } from "./home/home-types";
 import { RowSkeleton } from "./home/row-skeleton";
-import { AddSourceModal } from "@/components/add-source-modal";
 import type { SourceRow } from "@/lib/custom-sources";
 import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { MacPersonalSections } from "./home/mac-personal-sections";
 import { MacDiscoveryBanner } from "./home/mac-discovery-banner";
-import { MobileHome } from "@/mobile/home";
 import { LumaResumeSection } from "./home/luma-resume-section";
 import { HOME_CATALOG_TIMEOUT_MS, withRequestTimeout } from "@/lib/request-outcome";
+
+const HeroCarousel = lazy(() => import("@/components/hero-carousel").then((m) => ({ default: m.HeroCarousel })));
+const CollectionsRow = lazy(() => import("@/components/collections-row").then((m) => ({ default: m.CollectionsRow })));
+const AddSourceModal = lazy(() => import("@/components/add-source-modal").then((m) => ({ default: m.AddSourceModal })));
+const MobileHome = lazy(() => import("@/mobile/home").then((m) => ({ default: m.MobileHome })));
 
 export function Home({ active = true }: { active?: boolean }) {
   const { authKey, user } = useAuth();
@@ -787,17 +789,19 @@ export function Home({ active = true }: { active?: boolean }) {
 
   if (isMobileTauri())
     return (
-      <MobileHome
-        nudgeSuppress={tmdbProvidedByAddon || settings.homeMode === "classic"}
-        heroSlides={heroSlides}
-        signedIn={!!authKey}
-        cwItems={cwItems}
-        onDismissCw={onDismissCw}
-        top10={top10}
-        top10Title={displayed.top10Title}
-        rows={visibleRows}
-        loadMore={loadMore}
-      />
+      <Suspense fallback={null}>
+        <MobileHome
+          nudgeSuppress={tmdbProvidedByAddon || settings.homeMode === "classic"}
+          heroSlides={heroSlides}
+          signedIn={!!authKey}
+          cwItems={cwItems}
+          onDismissCw={onDismissCw}
+          top10={top10}
+          top10Title={displayed.top10Title}
+          rows={visibleRows}
+          loadMore={loadMore}
+        />
+      </Suspense>
     );
 
   const tmdbNudge = <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />;
@@ -845,11 +849,17 @@ export function Home({ active = true }: { active?: boolean }) {
                   onToggleHidden={() => handleToggleHidden("hero")}
                 />
               )}
-              {hasNativeDesktopUx() ? <MacDiscoveryBanner meta={heroSlides[0]?.meta} /> : <HeroCarousel
-                slides={heroSlides}
-                full={!hasNativeDesktopUx() && settings.heroFull}
-                fullQuality={settings.heroFullQuality}
-              />}
+              {hasNativeDesktopUx() ? (
+                <MacDiscoveryBanner meta={heroSlides[0]?.meta} />
+              ) : (
+                <Suspense fallback={null}>
+                  <HeroCarousel
+                    slides={heroSlides}
+                    full={!hasNativeDesktopUx() && settings.heroFull}
+                    fullQuality={settings.heroFullQuality}
+                  />
+                </Suspense>
+              )}
               {!editMode && (
                 <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
                   <CustomizeBar
@@ -932,7 +942,9 @@ export function Home({ active = true }: { active?: boolean }) {
                   onToggleHidden={() => handleToggleHidden("collections")}
                 />
               )}
-              <CollectionsRow />
+              <Suspense fallback={null}>
+                <CollectionsRow />
+              </Suspense>
             </div>
           )}
           {editMode && settings.homeMode !== "classic" && settings.tmdbKey && homeRowsCustom.hidden.includes("collections") && (
@@ -977,11 +989,15 @@ export function Home({ active = true }: { active?: boolean }) {
       </ScrollRootContext.Provider>
       <BackToTop scrollRef={scrollRef} />
 
-      <AddSourceModal
-        isOpen={isAddSourceModalOpen}
-        onClose={() => setAddSourceModalOpen(false)}
-        onSave={handleSaveCustomSources}
-      />
+      {isAddSourceModalOpen && (
+        <Suspense fallback={null}>
+          <AddSourceModal
+            isOpen={isAddSourceModalOpen}
+            onClose={() => setAddSourceModalOpen(false)}
+            onSave={handleSaveCustomSources}
+          />
+        </Suspense>
+      )}
     </main>
   );
 }

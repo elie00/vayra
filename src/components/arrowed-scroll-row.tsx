@@ -148,7 +148,7 @@ function Arrow({
       onClick={onClick}
       aria-label={t(side === "left" ? "Scroll left" : "Scroll right")}
       tabIndex={visible ? 0 : -1}
-      className={`absolute top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-edge bg-canvas/95 text-ink shadow-[0_8px_24px_-6px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all hover:scale-105 hover:bg-canvas active:scale-95 ${
+      className={`absolute top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-edge bg-canvas/95 text-ink shadow-[0_8px_24px_-6px_rgba(0,0,0,0.5)] backdrop-blur-md transition-[transform,opacity,background-color,border-color,color,box-shadow] hover:scale-105 hover:bg-canvas active:scale-95 ${
         side === "left" ? "start-1" : "end-1"
       } ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}
     >

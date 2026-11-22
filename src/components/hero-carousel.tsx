@@ -193,7 +193,7 @@ export function HeroCarousel({ slides, full = false, fullQuality = false }: { sl
               key={i}
               onClick={() => setActive(i)}
               aria-label={t("Slide {n}", { n: i + 1 })}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-300 ${
                 i === active ? "w-12 bg-ink" : "w-6 bg-ink-muted/70 hover:bg-ink-muted"
               }`}
             />

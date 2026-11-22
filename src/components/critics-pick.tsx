@@ -247,7 +247,7 @@ export function CriticsPick({ meta }: { meta: Meta }) {
                   }}
                 />
               ) : (
-                <h3 className="font-display text-[36px] font-medium leading-[1.0] tracking-tight text-ink drop-shadow-[0_2px_22px_rgba(0,0,0,0.55)]">
+                <h3 className="font-display text-[36px] font-semibold leading-[1.08] tracking-[-0.025em] text-ink drop-shadow-[0_2px_22px_rgba(0,0,0,0.55)]">
                   {meta.name}
                 </h3>
               )}

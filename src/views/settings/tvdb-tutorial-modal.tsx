@@ -43,13 +43,19 @@ export function TvdbGuideModal({ open, onClose }: { open: boolean; onClose: () =
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/70 p-6 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-150">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/70 backdrop-blur-sm"
+      />
       <div
-        className="flex max-h-[86vh] w-full max-w-[520px] flex-col overflow-hidden rounded-3xl border border-edge bg-elevated shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] animate-popover-in"
-        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Get your free TheTVDB key")}
+        className="relative z-10 flex max-h-[86vh] w-full max-w-[520px] flex-col overflow-hidden rounded-3xl border border-edge bg-elevated shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] animate-popover-in"
       >
         <div className="flex items-start justify-between gap-4 border-b border-edge-soft px-6 py-5">
           <div className="flex items-center gap-3">

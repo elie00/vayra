@@ -14,13 +14,16 @@ export function Anime4kIndicator({ engine, chromeVisible, suppressed = false }: 
   const enabled = settings.playerAnime4kIndicator && engine === "mpv" && isTauri;
   const [active, setActive] = useState(false);
 
+  const visible = chromeVisible && !suppressed;
   useEffect(() => {
     if (!enabled) {
       setActive(false);
       return;
     }
+    if (!visible) return;
     let cancelled = false;
     const tick = async () => {
+      if (document.hidden) return;
       const shaders = await invoke("mpv_get_property", { name: "glsl-shaders" }).catch(() => null);
       if (!cancelled) setActive(shadersActive(shaders));
     };
@@ -30,7 +33,7 @@ export function Anime4kIndicator({ engine, chromeVisible, suppressed = false }: 
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [enabled]);
+  }, [enabled, visible]);
 
   if (!active) return null;
 

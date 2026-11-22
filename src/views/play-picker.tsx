@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { resolveAddonLogo } from "@/components/addon-logo";
@@ -21,15 +21,11 @@ import { useScrollMemory, useView, type PickerIntent, type PlayEpisode, type Pla
 import { prefetchSegments } from "@/lib/skip-intro";
 
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
-import { AutoExhaustedModal } from "./play-picker/auto-exhausted-modal";
 import { AutoPlayTransition } from "./play-picker/auto-play-transition";
 import { BackdropLayer } from "./play-picker/backdrop-layer";
 import { CinematicLoader } from "./play-picker/cinematic-loader";
-import { DebridDownModal } from "./play-picker/debrid-down-modal";
-import { P2pConfirmModal } from "./play-picker/p2p-confirm-modal";
 import { CachedFilterPill, LanguageFilterPill } from "./play-picker/filter-pills";
 import { PickerEmptyLadder } from "./play-picker/picker-empty-ladder";
-import { NoSourcesConfiguredModal } from "./play-picker/no-sources-modal";
 import {
   hasCachedMarker,
   hasUncachedMarker,
@@ -42,8 +38,6 @@ import { PickerHeader } from "./play-picker/picker-header";
 import { PrimaryCard } from "./play-picker/primary-card";
 import { SourceDiagnostic } from "./play-picker/source-diagnostic";
 import { CachedTip } from "./play-picker/cached-tip";
-import { StremioLayout } from "./play-picker/stremio-layout";
-import { SourceDrawer } from "./play-picker/source-drawer";
 import { TierStrip } from "./play-picker/tier-strip";
 import { usePickHandler } from "./play-picker/use-pick-handler";
 import { useActiveKid } from "@/lib/profiles";
@@ -56,16 +50,40 @@ import { usePipelineResult } from "./play-picker/use-pipeline-result";
 import { useStreamIds } from "./play-picker/use-stream-ids";
 import { findLocalEpisodeByIds, findLocalMovie } from "@/lib/local-library";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
-import { hasNativeDesktopUx } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri, isWeb } from "@/lib/platform";
 import { useDownloads } from "@/lib/download/downloads-store";
 import { completedDownloadFor, validatedDownloadSource } from "@/lib/download/offline-playback";
 import { LocalStreamCard } from "./play-picker/local-stream-card";
-import { SubtitleSelectStep } from "./play-picker/subtitle-select-step";
-import { SeasonDownloadOverlay } from "./play-picker/season-download-overlay";
 import type { SeasonDownloadProgress } from "@/lib/download/season-download";
-import { isMobileTauri, isWeb } from "@/lib/platform";
-import { MobilePlayPicker } from "@/mobile/play-picker";
 import { shouldRevealLiteSourceFallback } from "@/lib/lite/runtime-settings";
+
+const AutoExhaustedModal = lazy(() =>
+  import("./play-picker/auto-exhausted-modal").then((m) => ({ default: m.AutoExhaustedModal })),
+);
+const DebridDownModal = lazy(() =>
+  import("./play-picker/debrid-down-modal").then((m) => ({ default: m.DebridDownModal })),
+);
+const P2pConfirmModal = lazy(() =>
+  import("./play-picker/p2p-confirm-modal").then((m) => ({ default: m.P2pConfirmModal })),
+);
+const NoSourcesConfiguredModal = lazy(() =>
+  import("./play-picker/no-sources-modal").then((m) => ({ default: m.NoSourcesConfiguredModal })),
+);
+const StremioLayout = lazy(() =>
+  import("./play-picker/stremio-layout").then((m) => ({ default: m.StremioLayout })),
+);
+const SourceDrawer = lazy(() =>
+  import("./play-picker/source-drawer").then((m) => ({ default: m.SourceDrawer })),
+);
+const SubtitleSelectStep = lazy(() =>
+  import("./play-picker/subtitle-select-step").then((m) => ({ default: m.SubtitleSelectStep })),
+);
+const SeasonDownloadOverlay = lazy(() =>
+  import("./play-picker/season-download-overlay").then((m) => ({ default: m.SeasonDownloadOverlay })),
+);
+const MobilePlayPicker = lazy(() =>
+  import("@/mobile/play-picker").then((m) => ({ default: m.MobilePlayPicker })),
+);
 
 const TIER_ORDER: Tier[] = ["4K_DV", "4K_HDR", "4K", "1080p_HDR", "1080p", "720p", "SD", "ROUGH"];
 
@@ -626,16 +644,82 @@ export function PlayPicker({
   const noSourcesConfigured =
     addons !== null && addons.length === 0 && debrids.length === 0;
 
+  useEffect(() => {
+    if (isMobileTauri()) return;
+    if (pendingPreselect || p2pConfirm || seasonProgress || debridDown || autoExhausted || noSourcesConfigured) {
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (showAutoTransition) {
+          abortResolve();
+          setResolving(null);
+          setAutoCancelled(true);
+        } else if (drawerOpen) {
+          setDrawerOpen(false);
+        } else {
+          exitPickerToDetail(meta);
+        }
+        return;
+      }
+      if (showAutoTransition || loading || resolving) return;
+      if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        refresh();
+        return;
+      }
+      if (
+        e.key === "Enter" &&
+        !isDownload &&
+        settings.pickerLayout !== "stremio" &&
+        currentPick &&
+        (!target || (target.tagName !== "BUTTON" && target.tagName !== "A" && target.getAttribute("role") !== "button"))
+      ) {
+        e.preventDefault();
+        playManually(currentPick);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [
+    abortResolve,
+    autoExhausted,
+    currentPick,
+    debridDown,
+    drawerOpen,
+    exitPickerToDetail,
+    isDownload,
+    loading,
+    meta,
+    noSourcesConfigured,
+    p2pConfirm,
+    pendingPreselect,
+    playManually,
+    refresh,
+    resolving,
+    seasonProgress,
+    settings.pickerLayout,
+    showAutoTransition,
+  ]);
+
   if (pendingPreselect) {
     return (
-      <SubtitleSelectStep
-        src={pendingPreselect}
-        onStart={(finalSrc) => {
-          setPendingPreselect(null);
-          openPlayer(finalSrc);
-        }}
-        onCancel={() => { setPendingPreselect(null); setOfflineState("stream"); setAutoCancelled(true); }}
-      />
+      <Suspense fallback={null}>
+        <SubtitleSelectStep
+          src={pendingPreselect}
+          onStart={(finalSrc) => {
+            setPendingPreselect(null);
+            openPlayer(finalSrc);
+          }}
+          onCancel={() => { setPendingPreselect(null); setOfflineState("stream"); setAutoCancelled(true); }}
+        />
+      </Suspense>
     );
   }
 
@@ -644,33 +728,41 @@ export function PlayPicker({
   }
 
   if (noSourcesConfigured && !completedDownload) {
-    return <NoSourcesConfiguredModal meta={meta} />;
+    return (
+      <Suspense fallback={null}>
+        <NoSourcesConfiguredModal meta={meta} />
+      </Suspense>
+    );
   }
 
   if (p2pConfirm) {
     return (
-      <P2pConfirmModal
-        meta={meta}
-        stream={p2pConfirm.stream}
-        onConfirm={(remember) => {
-          if (remember) update({ p2pAutoConsent: true });
-          confirmP2p();
-        }}
-        onCancel={cancelP2p}
-      />
+      <Suspense fallback={null}>
+        <P2pConfirmModal
+          meta={meta}
+          stream={p2pConfirm.stream}
+          onConfirm={(remember) => {
+            if (remember) update({ p2pAutoConsent: true });
+            confirmP2p();
+          }}
+          onCancel={cancelP2p}
+        />
+      </Suspense>
     );
   }
 
   if (seasonProgress) {
     return (
-      <SeasonDownloadOverlay
-        meta={metaForDisplay}
-        progress={seasonProgress}
-        onCancel={() => {
-          abortResolve();
-          setSeasonProgress(null);
-        }}
-      />
+      <Suspense fallback={null}>
+        <SeasonDownloadOverlay
+          meta={metaForDisplay}
+          progress={seasonProgress}
+          onCancel={() => {
+            abortResolve();
+            setSeasonProgress(null);
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -693,26 +785,30 @@ export function PlayPicker({
 
   if (debridDown) {
     return (
-      <DebridDownModal
-        meta={meta}
-        onTryAgain={resetDebridDown}
-        onBack={() => backToDetail()}
-      />
+      <Suspense fallback={null}>
+        <DebridDownModal
+          meta={meta}
+          onTryAgain={resetDebridDown}
+          onBack={() => backToDetail()}
+        />
+      </Suspense>
     );
   }
 
   if (autoExhausted) {
     return (
-      <AutoExhaustedModal
-        meta={meta}
-        episode={episode}
-        triedCount={autoCandidates.length}
-        otherLanguageCount={hostSourceForMedia ? 0 : langHiddenCount}
-        onBrowseManually={() => {
-          setAutoCancelled(true);
-          setAutoExhausted(false);
-        }}
-      />
+      <Suspense fallback={null}>
+        <AutoExhaustedModal
+          meta={meta}
+          episode={episode}
+          triedCount={autoCandidates.length}
+          otherLanguageCount={hostSourceForMedia ? 0 : langHiddenCount}
+          onBrowseManually={() => {
+            setAutoCancelled(true);
+            setAutoExhausted(false);
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -742,45 +838,47 @@ export function PlayPicker({
   if (isMobileTauri()) {
     const listed = filteredPicker && filteredPicker.all.length > 0 ? displayStreams : [];
     return (
-      <MobilePlayPicker
-        meta={metaForDisplay}
-        episode={episode}
-        onBack={backToDetail}
-        onRefresh={refresh}
-        refreshing={loading}
-        backdropSrc={backdropSrc}
-        best={listed.length > 0 ? (currentPick && listed.includes(currentPick) ? currentPick : listed[0]) : null}
-        streams={listed}
-        searching={!pipelineDone && !maxWaitElapsed && listed.length === 0}
-        stillSearching={stillDiscovering ? Math.max(0, (addons?.length ?? 0) - addonCount) : 0}
-        failedStreams={failedStreams}
-        resolving={resolving?.stream ?? null}
-        onPlay={playManually}
-        isDownload={isDownload}
-        notices={
-          <>
-            {!isDownload && localMatch && (
-              <LocalStreamCard entry={localMatch} onPlay={() => openPlayerGated(localPlayerSrc(localMatch))} />
-            )}
-            {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
-            {isDownload && (
-              <p className="rounded-2xl bg-elevated px-4 py-3 type-footnote text-ink-muted">
-                {t("Choose a source to save offline. You can track progress on the Downloads page.")}
-              </p>
-            )}
-            {stubBanner && <p className="rounded-2xl bg-info/10 px-4 py-3 type-footnote text-info">{stubBanner}</p>}
-          </>
-        }
-        empty={emptyLadder}
-        resolveError={resolveError}
-        engineWarming={engineWarming}
-        filters={{
-          cachedOnly,
-          onToggleCached: uncachedHiddenCount > 0 || cachedOnly ? () => setCachedOnly((v) => !v) : undefined,
-          langOn: langFilter,
-          onToggleLang: preferredLangs.length > 0 && (langHiddenCount > 0 || langFilter) ? () => setLangFilter((v) => !v) : undefined,
-        }}
-      />
+      <Suspense fallback={null}>
+        <MobilePlayPicker
+          meta={metaForDisplay}
+          episode={episode}
+          onBack={backToDetail}
+          onRefresh={refresh}
+          refreshing={loading}
+          backdropSrc={backdropSrc}
+          best={listed.length > 0 ? (currentPick && listed.includes(currentPick) ? currentPick : listed[0]) : null}
+          streams={listed}
+          searching={!pipelineDone && !maxWaitElapsed && listed.length === 0}
+          stillSearching={stillDiscovering ? Math.max(0, (addons?.length ?? 0) - addonCount) : 0}
+          failedStreams={failedStreams}
+          resolving={resolving?.stream ?? null}
+          onPlay={playManually}
+          isDownload={isDownload}
+          notices={
+            <>
+              {!isDownload && localMatch && (
+                <LocalStreamCard entry={localMatch} onPlay={() => openPlayerGated(localPlayerSrc(localMatch))} />
+              )}
+              {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
+              {isDownload && (
+                <p className="rounded-2xl bg-elevated px-4 py-3 type-footnote text-ink-muted">
+                  {t("Choose a source to save offline. You can track progress on the Downloads page.")}
+                </p>
+              )}
+              {stubBanner && <p className="rounded-2xl bg-info/10 px-4 py-3 type-footnote text-info">{stubBanner}</p>}
+            </>
+          }
+          empty={emptyLadder}
+          resolveError={resolveError}
+          engineWarming={engineWarming}
+          filters={{
+            cachedOnly,
+            onToggleCached: uncachedHiddenCount > 0 || cachedOnly ? () => setCachedOnly((v) => !v) : undefined,
+            langOn: langFilter,
+            onToggleLang: preferredLangs.length > 0 && (langHiddenCount > 0 || langFilter) ? () => setLangFilter((v) => !v) : undefined,
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -845,18 +943,20 @@ export function PlayPicker({
         {debrids.length > 0 && filteredPicker && filteredPicker.all.length > 0 && <CachedTip />}
 
         {(settings.pickerLayout === "stremio" || isDownload) && filteredPicker && filteredPicker.all.length > 0 ? (
-          <StremioLayout
-            streams={displayStreams}
-            addons={addons}
-            pipelineDone={pipelineDone}
-            loadingAddonCount={Math.max(0, (addons?.length ?? 0) - addonCount)}
-            failedStreams={failedStreams}
-            preserveOrder={addonOrderMode || !!hostMatch}
-            matchFor={hostMatch ? matchFor : undefined}
-            onPlay={playManually}
-            download={isDownload}
-            isAnime={isAnimeMetaId}
-          />
+          <Suspense fallback={null}>
+            <StremioLayout
+              streams={displayStreams}
+              addons={addons}
+              pipelineDone={pipelineDone}
+              loadingAddonCount={Math.max(0, (addons?.length ?? 0) - addonCount)}
+              failedStreams={failedStreams}
+              preserveOrder={addonOrderMode || !!hostMatch}
+              matchFor={hostMatch ? matchFor : undefined}
+              onPlay={playManually}
+              download={isDownload}
+              isAnime={isAnimeMetaId}
+            />
+          </Suspense>
         ) : (
           <>
             {!loading && result && (
@@ -913,21 +1013,23 @@ export function PlayPicker({
             )}
 
             {!loading && allCount > 0 && filteredPicker && (
-              <SourceDrawer
-                open={drawerOpen}
-                onToggle={() => setDrawerOpen((o) => !o)}
-                count={allCount}
-                addonCount={addonCount}
-                usedAddons={usedAddons}
-                streams={displayStreams}
-                debrids={debrids}
-                getAddonLogo={lookupLogo}
-                matchFor={hostMatch ? matchFor : undefined}
-                onPlay={playManually}
-                resolvingId={resolving?.stream.infoHash ?? null}
-                showName={meta.name}
-                episode={episode}
-              />
+              <Suspense fallback={null}>
+                <SourceDrawer
+                  open={drawerOpen}
+                  onToggle={() => setDrawerOpen((o) => !o)}
+                  count={allCount}
+                  addonCount={addonCount}
+                  usedAddons={usedAddons}
+                  streams={displayStreams}
+                  debrids={debrids}
+                  getAddonLogo={lookupLogo}
+                  matchFor={hostMatch ? matchFor : undefined}
+                  onPlay={playManually}
+                  resolvingId={resolving?.stream.infoHash ?? null}
+                  showName={meta.name}
+                  episode={episode}
+                />
+              </Suspense>
             )}
           </>
         )}

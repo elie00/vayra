@@ -1,5 +1,5 @@
 import { BarChart3, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
 import simklLogo from "@/assets/simkl.png";
@@ -13,21 +13,22 @@ import { useTrakt } from "@/lib/trakt/provider";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { watchlistHas } from "@/lib/watchlist";
-import { AnilistTab } from "./library/anilist-tab";
-import { HistoryTab } from "./library/history-tab";
-import { LocalTab } from "./library/local-tab";
 import { TabBtn, type Tab } from "./library/shared";
-import { SimklTab } from "./library/simkl-tab";
-import { MalTab } from "./library/mal-tab";
-import { MyListsTab } from "./library/my-lists-tab";
-import { LetterboxdTab } from "./library/letterboxd-tab";
-import { TraktTab } from "./library/trakt-tab";
-import { WatchlistTab } from "./library/watchlist-tab";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 import { tabAvailable } from "./library/tab-availability";
 import { isMobileTauri } from "@/lib/platform";
-import { MobileMyList } from "@/mobile/my-list";
+
+const AnilistTab = lazy(() => import("./library/anilist-tab").then((m) => ({ default: m.AnilistTab })));
+const HistoryTab = lazy(() => import("./library/history-tab").then((m) => ({ default: m.HistoryTab })));
+const LocalTab = lazy(() => import("./library/local-tab").then((m) => ({ default: m.LocalTab })));
+const SimklTab = lazy(() => import("./library/simkl-tab").then((m) => ({ default: m.SimklTab })));
+const MalTab = lazy(() => import("./library/mal-tab").then((m) => ({ default: m.MalTab })));
+const MyListsTab = lazy(() => import("./library/my-lists-tab").then((m) => ({ default: m.MyListsTab })));
+const LetterboxdTab = lazy(() => import("./library/letterboxd-tab").then((m) => ({ default: m.LetterboxdTab })));
+const TraktTab = lazy(() => import("./library/trakt-tab").then((m) => ({ default: m.TraktTab })));
+const WatchlistTab = lazy(() => import("./library/watchlist-tab").then((m) => ({ default: m.WatchlistTab })));
+const MobileMyList = lazy(() => import("@/mobile/my-list").then((m) => ({ default: m.MobileMyList })));
 
 const LIBRARY_TAB_KEY = "harbor.library.tab";
 
@@ -54,7 +55,13 @@ function readSavedTab(): Tab {
 
 /** On a phone, the My list tab (watchlist and Continue watching); elsewhere, the full library. */
 export function LibraryView({ active }: { active: boolean }) {
-  return isMobileTauri() ? <MobileMyList /> : <DesktopLibraryView active={active} />;
+  return isMobileTauri() ? (
+    <Suspense fallback={null}>
+      <MobileMyList />
+    </Suspense>
+  ) : (
+    <DesktopLibraryView active={active} />
+  );
 }
 
 function DesktopLibraryView({ active }: { active: boolean }) {
@@ -129,15 +136,17 @@ function DesktopLibraryView({ active }: { active: boolean }) {
           malConnected={malConnected}
           letterboxdActive={lb.isActive}
         />
-        {tab === "watchlist" && <WatchlistTab />}
-        {tab === "history" && <HistoryTab />}
-        {tab === "local" && tabAvailable("local", CAPABILITIES) && <LocalTab />}
-        {tab === "trakt" && traktConnected && <TraktTab />}
-        {tab === "anilist" && anilistConnected && <AnilistTab />}
-        {tab === "simkl" && simklConnected && <SimklTab />}
-        {tab === "mal" && malConnected && <MalTab />}
-        {tab === "lists" && <MyListsTab />}
-        {tab === "letterboxd" && lb.isActive && <LetterboxdTab />}
+        <Suspense fallback={null}>
+          {tab === "watchlist" && <WatchlistTab />}
+          {tab === "history" && <HistoryTab />}
+          {tab === "local" && tabAvailable("local", CAPABILITIES) && <LocalTab />}
+          {tab === "trakt" && traktConnected && <TraktTab />}
+          {tab === "anilist" && anilistConnected && <AnilistTab />}
+          {tab === "simkl" && simklConnected && <SimklTab />}
+          {tab === "mal" && malConnected && <MalTab />}
+          {tab === "lists" && <MyListsTab />}
+          {tab === "letterboxd" && lb.isActive && <LetterboxdTab />}
+        </Suspense>
       </div>
     </main>
   );

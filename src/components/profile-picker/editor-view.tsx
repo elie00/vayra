@@ -1,5 +1,5 @@
 import { Check, ChevronLeft, Loader2, Lock, Link2, ShieldCheck, Trash2, Unlock, User as UserIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import simklLogo from "@/assets/simkl.png";
 import { AddonsIcon } from "@/components/icons/addons-icon";
@@ -38,9 +38,12 @@ import { useSettings } from "@/lib/settings";
 import { AvatarRing } from "@/views/settings/account/avatar-ring";
 import { resizeAvatar } from "@/views/settings/account/avatar-utils";
 import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
-import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
-import { avatarUrl } from "@/lib/avatars/catalog";
+import { avatarUrl } from "@/lib/avatars/url";
 import { ColorPicker } from "@/views/settings/color-picker";
+
+const AvatarCatalogModal = lazy(() =>
+  import("@/components/avatar-picker/avatar-catalog-modal").then((m) => ({ default: m.AvatarCatalogModal })),
+);
 import { KidToggle } from "./kid-toggle";
 import { KidsSetupPanel } from "./kids-setup-panel";
 import { PinEntry } from "./pin-entry";
@@ -544,15 +547,17 @@ export function EditorView({
         </button>
       </div>
       {avatarPickerOpen && (
-        <AvatarCatalogModal
-          current={avatar}
-          onPick={(id) => {
-            setAvatar(avatarUrl(id));
-            setAvatarSource("builtin");
-            setAvatarPickerOpen(false);
-          }}
-          onClose={() => setAvatarPickerOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <AvatarCatalogModal
+            current={avatar}
+            onPick={(id) => {
+              setAvatar(avatarUrl(id));
+              setAvatarSource("builtin");
+              setAvatarPickerOpen(false);
+            }}
+            onClose={() => setAvatarPickerOpen(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

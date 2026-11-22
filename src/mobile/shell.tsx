@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import "@/styles/mobile.css";
 import { Bookmark, Home, Menu, Search, X } from "lucide-react";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
@@ -111,24 +112,33 @@ export function MobileShell() {
           // Above the search page and the menu while one is open (both are
           // tabs); below the bottom sheets otherwise.
           data-hidden={scrolledAway ? "" : undefined}
-          className={`vayra-tabbar fixed inset-x-0 bottom-0 ${searchOpen || menuOpen ? "z-[205]" : "z-[90]"} pb-[var(--vayra-safe-bottom)]`}
+          className={`vayra-tabbar fixed inset-x-0 bottom-0 ${searchOpen || menuOpen ? "z-[205]" : "z-[90]"} pb-[var(--vayra-safe-bottom)] ps-[var(--vayra-safe-left,0px)] pe-[var(--vayra-safe-right,0px)]`}
         >
           <div className="flex items-stretch">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => go(tab.id)}
-                aria-current={active === tab.id ? "page" : undefined}
-                aria-expanded={tab.id === "menu" ? menuOpen : undefined}
-                className={`group flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 ${
-                  active === tab.id ? "text-ink" : "text-ink-subtle"
-                }`}
-              >
-                <span className="transition-transform duration-150 ease-out group-active:scale-90">{tab.icon}</span>
-                <span className={`max-w-full truncate px-1 text-[11px] leading-none ${active === tab.id ? "font-semibold" : "font-medium"}`}>{tab.label}</span>
-              </button>
-            ))}
+            {tabs.map((tab) => {
+              const isActive = active === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => go(tab.id)}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-expanded={tab.id === "menu" ? menuOpen : undefined}
+                  className={`group flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 ${
+                    isActive ? "text-ink" : "text-ink-subtle"
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-16 items-center justify-center rounded-full transition-[background-color,transform] duration-200 ease-out group-active:scale-90 ${
+                      isActive ? "bg-ink/12" : "bg-transparent"
+                    }`}
+                  >
+                    {tab.icon}
+                  </span>
+                  <span className={`max-w-full truncate px-1 text-[11px] leading-none ${isActive ? "font-semibold" : "font-medium"}`}>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </nav>
       )}
@@ -169,7 +179,7 @@ function MenuScreen() {
   // Close and the status bar's band stay above that child, so the list never
   // scrolls Close away or slides under the clock.
   return (
-    <div data-vayra-plus role="dialog" aria-modal="true" aria-label={t("Menu")} className="fixed inset-0 z-[200] isolate flex transform-gpu flex-col bg-canvas/90 backdrop-blur-2xl">
+    <div data-vayra-plus role="region" aria-label={t("Menu")} className="fixed inset-0 z-[200] isolate flex transform-gpu flex-col bg-canvas/90 backdrop-blur-2xl">
       <div className="shrink-0 px-6 pt-[var(--harbor-status-bar,1.75rem)]">
         <div className="-ms-3 flex h-14 items-center">
           <button
@@ -219,8 +229,11 @@ function MenuLink({ big = false, muted = false, onClick, children }: { big?: boo
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={`self-start py-2.5 text-start transition-opacity active:opacity-60 ${
+      onClick={() => {
+        haptic("tick");
+        onClick();
+      }}
+      className={`flex min-h-12 w-full items-center py-2 text-start transition-opacity active:opacity-60 ${
         big ? "type-title-1 font-semibold text-ink" : muted ? "type-callout text-ink-muted" : "type-body text-ink"
       }`}
     >

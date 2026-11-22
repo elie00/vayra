@@ -4,11 +4,12 @@ import { Clock, Loader2, Search, X } from "lucide-react";
 import { topMovies, topSeries, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { emptySearchOutcome, useSearch } from "@/lib/search-context";
-import { isDirectVideoUrl, isMagnetInput } from "@/lib/torrent/magnet";
+import { searchInputKind } from "@/lib/search-input";
 import { animeHitMeta } from "@/components/search/anime-row";
 import { MagnetCard } from "@/components/search/magnet-card";
 import { PeopleRow } from "@/components/search/people-row";
 import { UrlCard } from "@/components/search/url-card";
+import { haptic } from "./haptics";
 import { previewMeta } from "./meta-preview";
 import "@/components/search/search-field.css";
 
@@ -44,16 +45,15 @@ export function MobileSearch() {
     inputRef.current?.blur();
     previewMeta(meta);
   };
-  const magnet = !!trimmed && isMagnetInput(trimmed);
-  const directUrl = !!trimmed && !magnet && isDirectVideoUrl(trimmed);
+  const inputKind = searchInputKind(trimmed);
   const titles = results && trimmed ? resultTitles(results) : [];
   const people = results && trimmed ? results.people : [];
-  const searching = !!trimmed && (status === "typing" || status === "loading");
+  const searching = !!trimmed && inputKind === "text" && (status === "typing" || status === "loading");
   const outcome = emptySearchOutcome(status, sources);
-  const nothing = !!trimmed && !magnet && !directUrl && outcome === "no-match" && titles.length === 0 && people.length === 0;
+  const nothing = outcome === "no-match" && titles.length === 0 && people.length === 0;
 
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={t("Search")} className="vayra-search fixed inset-0 z-[200] flex flex-col bg-canvas">
+    <div role="region" aria-label={t("Search")} className="vayra-search fixed inset-0 z-[200] flex flex-col bg-canvas">
       <div className="shrink-0 pt-[var(--harbor-status-bar,1.75rem)]">
         <div className="flex h-[72px] items-center px-4">
           <label data-search-field className="flex h-14 min-w-0 flex-1 items-center gap-3 rounded-full bg-raised ps-4 pe-2">
@@ -66,6 +66,11 @@ export function MobileSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  if (query) clear();
+                  else close();
+                  return;
+                }
                 if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
                 if (trimmed) recordRecent(query);
                 inputRef.current?.blur();
@@ -103,7 +108,14 @@ export function MobileSearch() {
               <section className="flex flex-col gap-1">
                 <SectionTitle
                   action={
-                    <button type="button" onClick={clearRecent} className="shrink-0 whitespace-nowrap type-footnote font-medium text-ink-subtle active:text-ink">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic("tick");
+                        clearRecent();
+                      }}
+                      className="-me-2 flex min-h-10 shrink-0 items-center rounded-full px-2 whitespace-nowrap type-caption font-medium text-ink-subtle active:bg-elevated active:text-ink"
+                    >
                       {t("Clear history")}
                     </button>
                   }
@@ -136,18 +148,24 @@ export function MobileSearch() {
           </div>
         )}
 
-        {magnet && (
+        {inputKind === "magnet" && (
           <div className="pt-2">
             <MagnetCard raw={trimmed} onClose={close} />
           </div>
         )}
-        {directUrl && (
+        {inputKind === "video" && (
           <div className="pt-2">
             <UrlCard raw={trimmed} onClose={close} />
           </div>
         )}
 
-        {trimmed && !magnet && !directUrl && (
+        {inputKind === "link" && (
+          <p role="status" className="pt-2 type-callout text-ink-muted">
+            {t("This link cannot be opened here. Use a direct video URL such as a link ending in .mp4.")}
+          </p>
+        )}
+
+        {trimmed && inputKind === "text" && (
           <div className="flex flex-col gap-7 pt-2">
             {status === "error" && titles.length === 0 && (
               <div role="alert" className="flex flex-col items-start gap-3">
@@ -292,8 +310,8 @@ function PosterTile({ meta, onPick }: { meta: Meta; onPick: (meta: Meta) => void
 
 function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <h2 className="type-title-3 font-semibold tracking-[-0.01em] text-ink">{children}</h2>
+    <div className="flex items-center justify-between gap-2">
+      <h2 className="min-w-0 truncate type-title-3 font-semibold tracking-[-0.01em] text-ink">{children}</h2>
       {action}
     </div>
   );

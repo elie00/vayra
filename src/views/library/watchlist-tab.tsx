@@ -71,9 +71,19 @@ export function WatchlistTab() {
       {merged.length === 0 ? (
         <EmptyWatchlist connected={traktConnected} />
       ) : visible.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-6 py-10 text-center text-[13px] text-ink-muted">
-          {tr("No matches for these filters.")}
-        </p>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-6 py-10 text-center">
+          <p className="text-[13.5px] text-ink-muted">{tr("No matches for these filters.")}</p>
+          <button
+            type="button"
+            className="mac-secondary-button"
+            onClick={() => {
+              setType("all");
+              setQuery("");
+            }}
+          >
+            {tr("Clear filters")}
+          </button>
+        </div>
       ) : settings.librarySort !== "recent" ? (
         <GroupedGrid groups={sortedGroups(visible, settings.librarySort)} onRemove={handleRemove} />
       ) : flat ? (

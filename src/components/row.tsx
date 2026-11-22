@@ -466,8 +466,8 @@ export function Row({
           {title && (
             <div className="flex min-w-0 items-center gap-2">
               <h3
-                className={`truncate font-medium tracking-tight ${mobile ? "font-display" : ""} ${titleClassName}`}
-                style={{ fontSize: `${Math.round((mobile ? 20 : 17) * settings.rowTitleScale * titleScale)}px` }}
+                className={`truncate font-semibold leading-[1.25] tracking-[-0.015em] ${mobile ? "font-display" : ""} ${titleClassName}`}
+                style={{ fontSize: `${Math.round((mobile ? 20 : 18) * settings.rowTitleScale * titleScale)}px` }}
               >
                 {title}
               </h3>
@@ -508,8 +508,6 @@ export function Row({
             className="harbor-row-track grid grid-flow-col items-start gap-5 overflow-x-auto p-5 -m-5 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none]"
             style={{
               gridAutoColumns: cellWidth != null ? `${cellWidth}px` : `${effMin}px`,
-              willChange: "transform",
-              transform: "translateZ(0)",
               contain: "layout style",
             }}
           >
@@ -576,7 +574,7 @@ function EdgeArrow({
         onClick={onClick}
         aria-label={label}
         tabIndex={visible ? 0 : -1}
-        className={`harbor-row-arrow pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-canvas ${
+        className={`harbor-row-arrow pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-canvas/85 text-ink backdrop-blur-md transition-[transform,opacity,background-color,border-color,color] duration-200 hover:scale-105 hover:bg-canvas ${
           visible ? "opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100" : "pointer-events-none opacity-0"
         }`}
       >

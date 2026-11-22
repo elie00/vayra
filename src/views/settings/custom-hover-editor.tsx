@@ -76,11 +76,20 @@ export function CustomHoverEditor({
   };
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="flex max-h-[88vh] w-full max-w-[760px] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)]">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={initial ? t("Edit hover style") : t("New hover style")}
+        className="relative z-10 flex max-h-[88vh] w-full max-w-[760px] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)]"
+      >
         <div className="hidden w-[240px] shrink-0 flex-col items-center justify-center gap-3 border-e border-edge-soft bg-canvas/40 p-6 sm:flex">
           <div className="w-[150px]">
             <div className={`group ${PREVIEW_SCOPE} relative aspect-[2/3] w-full rounded-[12px] bg-elevated ring-1 ring-edge-soft/60 ${customHoverPosterProps(draft, true).className}`} style={customHoverPosterProps(draft, true).style}>

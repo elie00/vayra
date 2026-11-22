@@ -183,7 +183,7 @@ export function CinemaHero({
               key={i}
               onClick={() => setActive(i)}
               aria-label={t("Slide {n}", { n: i + 1 })}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
+              className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-500 ${
                 i === active ? "w-10 bg-ink" : "w-1.5 bg-ink-muted/55 hover:bg-ink-muted"
               }`}
             />
@@ -437,7 +437,7 @@ function CinemaTitlePlate({
         />
       ) : resolved ? (
         <h2
-          className="font-display text-[72px] font-medium leading-[0.95] tracking-tight text-ink"
+          className="font-display text-[72px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink"
           style={{ animation: "harbor-fade-in 420ms cubic-bezier(0.32, 0.72, 0.24, 1) both" }}
         >
           {name}

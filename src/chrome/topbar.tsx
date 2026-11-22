@@ -1,8 +1,7 @@
 import { ArrowLeft, Menu, Search, Users } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
-import { TogetherPopover } from "@/components/together-modal";
 import { DownloadsButton } from "@/components/downloads-popover";
 import { RecordingPill } from "@/chrome/recording-pill";
 import {
@@ -28,8 +27,11 @@ import {
   windowZoomLabel,
 } from "@/lib/window";
 import { desktopUx, hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
-import { MobileBackBar, MobileHeader } from "@/mobile/header";
 import { toggleNavDrawer } from "@/lib/nav-drawer";
+
+const TogetherPopover = lazy(() => import("@/components/together-modal").then((m) => ({ default: m.TogetherPopover })));
+const MobileHeader = lazy(() => import("@/mobile/header").then((m) => ({ default: m.MobileHeader })));
+const MobileBackBar = lazy(() => import("@/mobile/header").then((m) => ({ default: m.MobileBackBar })));
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -40,6 +42,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const preview = useThemePreview();
   const fullscreen = useWindowFullscreen();
   const maxed = useMaximized();
+  const scrolled = useDesktopScrolledPast(8, `${topKind}:${view}`);
   if (chromeHidden && !connecting) return null;
   const layout = hasNativeDesktopUx() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
@@ -58,8 +61,8 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
         ? "ps-[84px]"
         : "ps-[84px] lg:ps-[260px]";
   const searchWidth = canGoBack
-    ? "w-[14rem] sm:w-[18rem] lg:w-[22rem] xl:w-[24rem]"
-    : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
+    ? "w-[16rem] sm:w-[22rem] lg:w-[26rem] xl:w-[28rem]"
+    : "w-[16rem] sm:w-[22rem] lg:w-[26rem] xl:w-[30rem]";
   const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
 
   // Mobile: the streaming-app header on tab-level views (MobileHeader), a Back
@@ -67,14 +70,25 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   // (recording/downloads) or window controls. Live TV, opened from the menu,
   // gets the same header as every other page.
   if (mobile) {
-    if (!(canGoBack && !connecting)) {
-      return <MobileHeader raised={topKind === "picker" || connecting} />;
-    }
-    return <MobileBackBar />;
+    return (
+      <Suspense fallback={null}>
+        {!(canGoBack && !connecting) ? (
+          <MobileHeader raised={topKind === "picker" || connecting} />
+        ) : (
+          <MobileBackBar />
+        )}
+      </Suspense>
+    );
   }
 
   return (
-    <header data-vayra-topbar className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}>
+    <header
+      data-vayra-topbar
+      data-scrolled={scrolled ? "" : undefined}
+      className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20 transition-[background-color,backdrop-filter,box-shadow] duration-200 ${
+        scrolled ? "vayra-topbar-scrolled" : ""
+      }`}
+    >
       <div
         {...dragProps}
         className="relative z-10 grid h-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-8"
@@ -110,7 +124,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
           {onLiveRoot && (
             <div className="flex items-center gap-1.5 text-ink">
               <HarborMark className="h-7 w-7" />
-              <span className="font-display text-[18px] font-semibold leading-none tracking-tight">
+              <span className="font-display text-[18px] font-semibold leading-none tracking-[-0.015em]">
                 {t("Live")}
               </span>
             </div>
@@ -299,7 +313,9 @@ export function TogetherButton({
             above ? "bottom-[calc(100%-1px)] start-0" : "end-0 top-[calc(100%-1px)]"
           }`}
         >
-          <TogetherPopover placement={popoverPlacement} connectStyle={connectStyle} />
+          <Suspense fallback={null}>
+            <TogetherPopover placement={popoverPlacement} connectStyle={connectStyle} />
+          </Suspense>
         </div>
       )}
     </div>
@@ -359,4 +375,20 @@ function Control({
       {children}
     </button>
   );
+}
+
+function useDesktopScrolledPast(threshold: number, viewKey: string): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    setScrolled(false);
+    const onScroll = (e: Event) => {
+      const el = e.target;
+      if (!(el instanceof HTMLElement) || el.scrollHeight <= el.clientHeight) return;
+      if (el.closest("aside, nav")) return;
+      setScrolled(el.scrollTop > threshold);
+    };
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true });
+  }, [threshold, viewKey]);
+  return scrolled;
 }

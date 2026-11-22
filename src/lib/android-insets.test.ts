@@ -21,6 +21,9 @@ it("follows later changes and waits while nothing is measured", () => {
   window.VayraInsets = { read: () => "" };
   installAndroidInsets();
   expect(root.style.getPropertyValue("--vayra-inset-top")).toBe("");
-  window.__VAYRA_INSETS__?.({ top: 24, bottom: 16 });
+  window.__VAYRA_INSETS__?.({ top: 24, bottom: 16, left: 32, right: 0, ime: 280 });
   expect(root.style.getPropertyValue("--vayra-inset-bottom")).toBe("16px");
+  expect(root.style.getPropertyValue("--vayra-inset-left")).toBe("32px");
+  expect(root.style.getPropertyValue("--vayra-inset-right")).toBe("0px");
+  expect(root.style.getPropertyValue("--vayra-ime-bottom")).toBe("280px");
 });

@@ -25,14 +25,23 @@ export function CurfewGuard() {
 
   useEffect(() => {
     if (!profileId || !limit || locked || !player) return;
+    let latest: CurfewRecord | null = null;
     const id = window.setInterval(() => {
+      if (document.hidden) return;
       setRec((r) => {
         const next = { ...r, seconds: r.seconds + 1 };
-        saveCurfew(profileId, next);
+        latest = next;
+        // Persist every 15s (and immediately when hitting the limit) instead of every second.
+        if (next.seconds % 15 === 0 || next.seconds >= limit * 60) {
+          saveCurfew(profileId, next);
+        }
         return next;
       });
     }, 1000);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      if (latest) saveCurfew(profileId, latest);
+    };
   }, [profileId, limit, locked, player]);
 
   useEffect(() => {

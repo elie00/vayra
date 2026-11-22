@@ -1,13 +1,16 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- VAYRA is always dark: a fixed dark theme in Mineral Monochrome, so the
-         launch, the recents card and system widgets never flash white or use
-         the Material template purple. -->
-    <style name="Theme.vayra" parent="Theme.MaterialComponents.NoActionBar">
+    <!-- VAYRA is always dark: a fixed Material 3 dark theme in Mineral Monochrome,
+         so launch, recents, and native system widgets match #0A0B0D with zero flash. -->
+    <style name="Theme.vayra" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/vayra_titanium</item>
-        <item name="colorPrimaryVariant">@color/vayra_graphite</item>
         <item name="colorOnPrimary">@color/vayra_canvas</item>
         <item name="colorSecondary">@color/vayra_titanium</item>
         <item name="colorOnSecondary">@color/vayra_canvas</item>
+        <item name="colorSurface">@color/vayra_canvas</item>
+        <item name="android:colorBackground">@color/vayra_canvas</item>
         <item name="android:windowBackground">@color/vayra_canvas</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

@@ -9,7 +9,7 @@ export function MacDiscoveryBanner({ meta }: { meta?: Meta }) {
   return <section aria-label={t("Discoveries")} className="grid min-h-56 grid-cols-[1fr_40%] overflow-hidden rounded-2xl bg-elevated">
     <div className="flex flex-col items-start justify-center gap-3 p-7">
       <p className="text-[12px] font-medium text-ink-muted">{t("Discoveries")}</p>
-      <h2 className="text-[26px] font-semibold leading-tight tracking-tight text-ink">{meta.name}</h2>
+      <h2 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-ink">{meta.name}</h2>
       <div className="mt-2 flex flex-wrap gap-2"><button type="button" className="mac-primary-button" onClick={() => openMeta(meta)}>{t("View details")}</button><button type="button" className="mac-secondary-button" onClick={() => setView("discover")}>{t("Explore")}</button></div>
     </div>
     {(meta.background || meta.poster) && <img src={meta.background || meta.poster} alt="" loading="lazy" className="h-64 w-full object-cover" />}

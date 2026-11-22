@@ -76,7 +76,7 @@ export function OwnedCard({
         {selectMode && (
           <span
             className={`absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-md ${
-              isSelected ? "bg-accent text-white" : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
+              isSelected ? "bg-accent text-canvas" : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
             }`}
           >
             {isSelected ? <CheckSquare size={14} strokeWidth={2.4} /> : <Square size={14} strokeWidth={2.2} />}
@@ -114,7 +114,7 @@ export function OwnedCard({
                     setConfirm(true);
                   }
                 }}
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-[background-color,border-color,color,opacity,box-shadow] duration-200 ${
                   confirm
                     ? "bg-danger"
                     : "bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"

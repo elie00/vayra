@@ -111,7 +111,7 @@ export function BackupRow() {
           type="button"
           onClick={doExport}
           disabled={exporting || applying || !!restoreFailure?.retryRecovery}
-          className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-all ${
+          className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-[transform,opacity,background-color,border-color,color] ${
             exported
               ? "bg-accent/15 text-accent"
               : "bg-ink text-canvas hover:scale-[1.02] active:scale-[0.97]"
@@ -133,7 +133,7 @@ export function BackupRow() {
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={applying || !!restoreFailure?.retryRecovery}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[12.5px] font-semibold text-ink transition-all hover:scale-[1.02] hover:border-ink active:scale-[0.97]"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge bg-elevated px-3.5 text-[12.5px] font-semibold text-ink transition-[transform,opacity,background-color,border-color,color] hover:scale-[1.02] hover:border-ink active:scale-[0.97]"
         >
           <Upload size={14} strokeWidth={2.4} />
           {t("Restore")}

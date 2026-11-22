@@ -87,13 +87,20 @@ export function CustomManager({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-canvas/85 p-6 backdrop-blur-md"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="flex max-h-[86vh] w-full max-w-[1040px] flex-col overflow-hidden rounded-3xl border border-edge-soft bg-elevated shadow-[0_40px_100px_-24px_rgba(0,0,0,0.75)]">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-canvas/85 p-6 backdrop-blur-md">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Custom calendar")}
+        className="relative z-10 flex max-h-[86vh] w-full max-w-[1040px] flex-col overflow-hidden rounded-3xl border border-edge-soft bg-elevated shadow-[0_40px_100px_-24px_rgba(0,0,0,0.75)]"
+      >
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-edge-soft px-8 py-6">
           <div className="flex flex-col gap-1.5">
             <h2 className="font-display text-[24px] font-medium leading-none tracking-tight text-ink">

@@ -1,30 +1,30 @@
+import { Check, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
 import { setNavGuard } from "@/lib/nav-guard";
 import { useSettings, type Settings } from "@/lib/settings";
 import { changedSettingKeys } from "@/lib/settings/diff";
-import { useFocusTrap } from "@/lib/use-focus-trap";
 
-/** Settings apply live so previews keep working. This snapshots them on entry
- *  and, when leaving with changes, asks whether to apply them or restore the
- *  snapshot. No floating bar: changes take effect as they are made. */
+/** Settings save live as you edit them. Snapshots the session baseline on entry
+ *  and shows a non-blocking saved confirmation with a one-click Undo action,
+ *  without ever blocking navigation out of Settings. */
 export function SettingsUnsavedChanges({ active }: { active: boolean }) {
   const t = useT();
   const { settings, update } = useSettings();
   const [snapshot, setSnapshot] = useState<Settings | null>(null);
-  const [pendingLeave, setPendingLeave] = useState<{ proceed: () => void } | null>(null);
+  const [visible, setVisible] = useState(false);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  // Start a session when Settings becomes visible; end it when we leave, so a
-  // kept-alive Settings view doesn't hold a stale baseline.
   useEffect(() => {
-    if (active) setSnapshot((cur) => cur ?? settingsRef.current);
-    else {
+    setNavGuard(null);
+    if (active) {
+      setSnapshot((cur) => cur ?? settingsRef.current);
+    } else {
       setSnapshot(null);
-      setPendingLeave(null);
+      setVisible(false);
     }
   }, [active]);
 
@@ -32,114 +32,47 @@ export function SettingsUnsavedChanges({ active }: { active: boolean }) {
     () => (snapshot ? changedSettingKeys(settings, snapshot) : []),
     [settings, snapshot],
   );
-  const dirty = changed.length > 0;
-
-  useEffect(() => {
-    if (!dirty) return;
-    setNavGuard((proceed) => {
-      setPendingLeave({ proceed });
-      return true;
-    });
-    return () => setNavGuard(null);
-  }, [dirty]);
-
-  const leaveSaving = useCallback(() => {
-    const go = pendingLeave?.proceed;
-    setSnapshot(settingsRef.current);
-    setPendingLeave(null);
-    setNavGuard(null);
-    go?.();
-  }, [pendingLeave]);
-
-  const leaveDiscarding = useCallback(() => {
-    const go = pendingLeave?.proceed;
-    if (snapshot) update(snapshot);
-    setPendingLeave(null);
-    setNavGuard(null);
-    go?.();
-  }, [pendingLeave, snapshot, update]);
-
-  if (!active) return null;
-
-  return (
-    <>
-      {pendingLeave && (
-        <ConfirmDialog
-          title={t("You have unsaved changes")}
-          body={t("Apply your changes before leaving Settings, or discard them?")}
-          onCancel={() => setPendingLeave(null)}
-          actions={[
-            { label: t("Cancel"), onClick: () => setPendingLeave(null), tone: "ghost" },
-            { label: t("Discard"), onClick: leaveDiscarding, tone: "danger" },
-            { label: t("Apply"), onClick: leaveSaving, tone: "accent" },
-          ]}
-        />
-      )}
-    </>
+  const changeSignature = useMemo(
+    () => (changed.length > 0 ? changed.map((k) => `${k}:${JSON.stringify(settings[k as keyof Settings])}`).join("|") : ""),
+    [changed, settings],
   );
-}
 
-type Action = { label: string; onClick: () => void; tone: "ghost" | "danger" | "accent" };
-
-function ConfirmDialog({
-  title,
-  body,
-  onCancel,
-  actions,
-}: {
-  title: string;
-  body: string;
-  onCancel: () => void;
-  actions: Action[];
-}) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useFocusTrap(dialogRef, true);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+    if (!active || !changeSignature) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
+    const id = window.setTimeout(() => setVisible(false), 4500);
+    return () => window.clearTimeout(id);
+  }, [active, changeSignature]);
 
-  const tone: Record<Action["tone"], string> = {
-    ghost: "text-ink-muted hover:bg-raised hover:text-ink",
-    danger: "text-rose-300 hover:bg-rose-500/10",
-    accent: "bg-accent text-canvas hover:opacity-90",
-  };
+  const undoSession = useCallback(() => {
+    if (!snapshot) return;
+    update(snapshot);
+    setVisible(false);
+  }, [snapshot, update]);
+
+  if (!active || !visible || changed.length === 0) return null;
 
   return createPortal(
     <div
-      className="animate-fade-in fixed inset-0 z-[220] flex items-center justify-center p-4"
+      role="status"
+      aria-live="polite"
+      className="animate-fade-in fixed bottom-6 end-6 z-[180] flex items-center gap-3 rounded-full border border-edge-soft bg-elevated/95 ps-4 pe-2 py-2 shadow-[0_18px_48px_-16px_rgba(0,0,0,0.65)] backdrop-blur-xl max-sm:bottom-24 max-sm:end-4"
     >
-      <button type="button" tabIndex={-1} aria-label={actions[0]?.label} onClick={onCancel}
-        className="absolute inset-0 cursor-default bg-canvas/80 backdrop-blur-sm" />
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className="animate-modal-in relative flex w-[min(92vw,420px)] flex-col gap-3 rounded-2xl border border-edge-soft bg-elevated p-5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15 text-accent" aria-hidden="true">
+        <Check size={12} strokeWidth={3} />
+      </span>
+      <span className="text-[13px] font-medium text-ink">{t("Changes saved")}</span>
+      <button
+        type="button"
+        onClick={undoSession}
+        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-raised px-3 text-[12.5px] font-medium text-ink transition-colors hover:bg-ink hover:text-canvas"
       >
-        <h2 className="font-display text-[18px] font-medium text-ink">{title}</h2>
-        <p className="text-[13.5px] leading-relaxed text-ink-muted">{body}</p>
-        <div className="mt-2 flex items-center justify-end gap-2">
-          {actions.map((a) => (
-            <button
-              key={a.label}
-              type="button"
-              onClick={a.onClick}
-              className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors max-sm:min-h-12 max-sm:text-[15px] ${tone[a.tone]}`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </div>
+        <RotateCcw size={12} strokeWidth={2.2} />
+        {t("Undo")}
+      </button>
     </div>,
     document.body,
   );

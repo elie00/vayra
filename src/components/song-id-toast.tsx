@@ -52,7 +52,7 @@ export function SongIdToast() {
   };
 
   const anim = [
-    "origin-top transition-all duration-500 ease-out",
+    "origin-top transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-500 ease-out",
     enter ? "scale-100 opacity-100" : "scale-90 opacity-0",
     isResult ? "pointer-events-auto cursor-pointer hover:ring-white/25" : "",
   ].join(" ");
@@ -64,47 +64,69 @@ export function SongIdToast() {
       </span>
 
       {style === "compact" ? (
-        <div
-          role={isResult ? "button" : undefined}
-          onClick={isResult ? open : undefined}
-          className={[
-            "group flex items-center gap-4 rounded-3xl bg-black/85 p-4 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-xl",
-            isResult ? "w-[min(88vw,440px)]" : "w-[min(80vw,340px)]",
-            anim,
-          ].join(" ")}
-        >
-          <Vinyl art={msg.art} size="h-20 w-20" listening={listening} />
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="truncate text-lg font-semibold leading-tight">{msg.title}</span>
-            {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
-            {isResult ? (
+        isResult ? (
+          <button
+            type="button"
+            onClick={open}
+            className={[
+              "group flex w-[min(88vw,440px)] items-center gap-4 rounded-3xl bg-black/85 p-4 text-start text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-xl",
+              anim,
+            ].join(" ")}
+          >
+            <Vinyl art={msg.art} size="h-20 w-20" listening={listening} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="truncate text-lg font-semibold leading-tight">{msg.title}</span>
+              {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
               <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-white/85 transition-colors group-hover:bg-white/16 group-hover:text-white">
                 {t("Open on YouTube")}
                 <ArrowUpRight size={13} strokeWidth={2.4} />
               </span>
-            ) : null}
+            </div>
+          </button>
+        ) : (
+          <div
+            className={[
+              "group flex w-[min(80vw,340px)] items-center gap-4 rounded-3xl bg-black/85 p-4 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-xl",
+              anim,
+            ].join(" ")}
+          >
+            <Vinyl art={msg.art} size="h-20 w-20" listening={listening} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="truncate text-lg font-semibold leading-tight">{msg.title}</span>
+              {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div
-          role={isResult ? "button" : undefined}
-          onClick={isResult ? open : undefined}
+        )
+      ) : isResult ? (
+        <button
+          type="button"
+          onClick={open}
           className={[
-            "group flex flex-col items-center gap-4 rounded-3xl bg-black/90 p-6 text-center text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-xl",
-            isResult ? "w-[min(82vw,360px)]" : "w-[min(80vw,320px)]",
+            "group flex w-[min(82vw,360px)] flex-col items-center gap-4 rounded-3xl bg-black/90 p-6 text-center text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-xl",
             anim,
           ].join(" ")}
         >
-          <Vinyl art={msg.art} size={isResult ? "h-44 w-44" : "h-32 w-32"} listening={listening} />
+          <Vinyl art={msg.art} size="h-44 w-44" listening={listening} />
           <div className="flex w-full min-w-0 flex-col items-center gap-1">
             <span className="truncate text-xl font-bold leading-tight">{msg.title}</span>
             {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
-            {isResult ? (
-              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-[13px] font-semibold text-white/85 transition-colors group-hover:bg-white/16 group-hover:text-white">
-                {t("Open on YouTube")}
-                <ArrowUpRight size={15} strokeWidth={2.4} />
-              </span>
-            ) : null}
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-[13px] font-semibold text-white/85 transition-colors group-hover:bg-white/16 group-hover:text-white">
+              {t("Open on YouTube")}
+              <ArrowUpRight size={15} strokeWidth={2.4} />
+            </span>
+          </div>
+        </button>
+      ) : (
+        <div
+          className={[
+            "group flex w-[min(80vw,320px)] flex-col items-center gap-4 rounded-3xl bg-black/90 p-6 text-center text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-xl",
+            anim,
+          ].join(" ")}
+        >
+          <Vinyl art={msg.art} size="h-32 w-32" listening={listening} />
+          <div className="flex w-full min-w-0 flex-col items-center gap-1">
+            <span className="truncate text-xl font-bold leading-tight">{msg.title}</span>
+            {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
           </div>
         </div>
       )}

@@ -88,7 +88,7 @@ export function Dots({
           type="button"
           onClick={() => onJump(i)}
           aria-label={t("Featured {n}", { n: i + 1 })}
-          className={`h-1.5 rounded-full transition-all duration-200 ${
+          className={`h-1.5 rounded-full transition-[width,background-color,opacity] duration-200 ${
             i === active ? "w-7 bg-ink" : "w-1.5 bg-ink-subtle/40 hover:bg-ink-muted"
           }`}
         />

@@ -73,7 +73,14 @@ export function ProfilePicker({
     reader.onload = () => {
       if (typeof reader.result === "string") onImport(reader.result);
     };
-    reader.onerror = () => window.alert(t("Could not read the file."));
+    reader.onerror = () =>
+      setDialog({
+        kind: "confirm",
+        title: t("Could not read the file."),
+        message: "",
+        confirmLabel: t("OK"),
+        onConfirm: () => {},
+      });
     reader.readAsText(file);
   };
 

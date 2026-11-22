@@ -30,17 +30,20 @@ export function DayModal({
   }, [onClose]);
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[140] flex animate-fade-in items-center justify-center bg-canvas/80 backdrop-blur-md"
-    >
+    <div className="fixed inset-0 z-[140] flex animate-fade-in items-center justify-center">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/80 backdrop-blur-md"
+      />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="day-modal-title"
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[80vh] w-[min(92vw,560px)] animate-modal-in flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
+        className="relative z-10 flex max-h-[80vh] w-[min(92vw,560px)] animate-modal-in flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
       >
         <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-6 py-5">
           <div className="flex flex-col">

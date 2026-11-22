@@ -19,24 +19,37 @@ export function SubtitleMenu(props: Props) {
   const [open, setOpen] = useState(false);
   const [forceInline, setForceInline] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const { side, measure } = useMenuSide(wrap, 500);
   const useOverlay = props.useOverlayPopup === true;
+  const inlineOpen = open && (forceInline || !useOverlay);
   const propsRef = useRef(props);
   propsRef.current = props;
   const onOpenChange = props.onOpenChange;
   useEffect(() => {
-    onOpenChange?.(open && (forceInline || !useOverlay));
-  }, [open, forceInline, useOverlay, onOpenChange]);
+    onOpenChange?.(inlineOpen);
+  }, [inlineOpen, onOpenChange]);
 
   useEffect(() => {
-    if (useOverlay) return;
-    if (!open) return;
+    if (!inlineOpen) return;
     const close = (e: MouseEvent) => {
       if (!wrap.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
     window.addEventListener("mousedown", close);
-    return () => window.removeEventListener("mousedown", close);
-  }, [open, useOverlay]);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [inlineOpen]);
 
   useEffect(() => {
     if (!useOverlay) return;
@@ -104,9 +117,12 @@ export function SubtitleMenu(props: Props) {
     <div ref={wrap} className="relative">
       <Tooltip label={t("Subtitles")}>
         <button
+          ref={triggerRef}
           type="button"
           onClick={handleClick}
           aria-label={t("Subtitles")}
+          aria-expanded={open}
+          aria-haspopup="dialog"
           className={`relative flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
             open ? "bg-white/22 text-white" : "text-white/85 hover:bg-white/10 hover:text-white"
           }`}
@@ -117,9 +133,13 @@ export function SubtitleMenu(props: Props) {
           )}
         </button>
       </Tooltip>
-      {open && (forceInline || !useOverlay) && (
-        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} flex h-[400px] max-h-[72vh] w-[500px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
-          <MenuBody {...props} onClose={() => setOpen(false)} onOpenStyleBar={openStyleBar} />
+      {inlineOpen && (
+        <div
+          role="dialog"
+          aria-label={t("Subtitles")}
+          className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} flex h-[400px] max-h-[72vh] w-[500px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}
+        >
+          <MenuBody {...props} onClose={() => { setOpen(false); triggerRef.current?.focus(); }} onOpenStyleBar={openStyleBar} />
         </div>
       )}
     </div>

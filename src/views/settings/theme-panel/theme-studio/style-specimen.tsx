@@ -26,7 +26,7 @@ export function StyleSpecimen({ colors }: { colors: CustomColors }) {
               </p>
             </div>
             <div className="flex gap-2">
-              <button className="flex h-10 flex-1 items-center justify-center rounded-lg bg-accent text-[12px] font-semibold text-white">
+              <button className="flex h-10 flex-1 items-center justify-center rounded-lg bg-accent text-[12px] font-semibold text-canvas">
                 {t("Primary")}
               </button>
               <button className="flex h-10 flex-1 items-center justify-center rounded-lg bg-ink text-[12px] font-semibold text-canvas">

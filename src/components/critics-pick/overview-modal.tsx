@@ -66,16 +66,19 @@ export function OverviewModal({
   }, []);
 
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("{title} overview", { title })}
-      onClick={onClose}
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-canvas/85 p-8 backdrop-blur-sm"
-    >
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-8">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("Close overview")}
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/85 backdrop-blur-sm"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative flex max-h-[80vh] w-full max-w-[640px] flex-col gap-5 overflow-hidden rounded-2xl border border-edge-soft bg-surface p-8"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("{title} overview", { title })}
+        className="relative z-10 flex max-h-[80vh] w-full max-w-[640px] flex-col gap-5 overflow-hidden rounded-2xl border border-edge-soft bg-surface p-8"
       >
         <button
           type="button"

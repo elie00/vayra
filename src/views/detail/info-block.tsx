@@ -122,14 +122,14 @@ export function InfoBlock({ detail, isAnime = false }: { detail: TmdbDetail; isA
 
   return (
     <div className="border-t border-edge-soft pt-12">
-      <h3 className="mb-6 text-[22px] font-medium tracking-tight text-ink">{t("Information")}</h3>
+      <h3 className="mb-6 text-[22px] font-semibold leading-[1.2] tracking-[-0.02em] text-ink">{t("Information")}</h3>
       <dl className="grid grid-cols-1 gap-x-12 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((row) => (
           <div key={row.label} className="flex flex-col gap-1.5">
-            <dt className="text-[12px] font-medium uppercase tracking-[0.18em] text-ink-subtle">
+            <dt className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-subtle">
               {row.label}
             </dt>
-            <dd className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[14.5px] text-ink">
+            <dd className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[14.5px] tabular-nums text-ink">
               {row.kind === "text"
                 ? row.value
                 : row.chips.map((c, i) => (

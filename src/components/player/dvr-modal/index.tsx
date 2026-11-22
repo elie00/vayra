@@ -49,10 +49,14 @@ export function DvrModal({
   if (!open) return null;
 
   return (
-    <div
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
-    >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
       <div
         ref={dialogRef}
         role="dialog"
@@ -62,7 +66,7 @@ export function DvrModal({
           backgroundColor: "var(--color-canvas)",
           backgroundImage: "linear-gradient(var(--color-elevated), var(--color-elevated))",
         }}
-        className="flex w-[min(520px,92vw)] max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-edge shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 duration-200"
+        className="relative z-10 flex w-[min(520px,92vw)] max-h-[88vh] flex-col overflow-hidden rounded-2xl border border-edge shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 duration-200"
       >
         <Header channelName={channelName} channelLogo={channelLogo} onClose={onClose} />
         {activeForChannel ? (

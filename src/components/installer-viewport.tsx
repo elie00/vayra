@@ -179,6 +179,7 @@ function InstallerViewport({
   phaseRef.current = phase;
   const submitRef = useRef(submit);
   submitRef.current = submit;
+  const [pendingConfirm, setPendingConfirm] = useState<{ url: string; host: string } | null>(null);
 
   useEffect(() => {
     const isBusy = () =>
@@ -189,8 +190,7 @@ function InstallerViewport({
       const candidate = trustedInstallerMessage(e, iframeRef.current?.contentWindow ?? null, url);
       if (!candidate) return;
       const addonHost = new URL(candidate).hostname;
-      if (!window.confirm(`Install the addon provided by ${addonHost}?`)) return;
-      void submitRef.current(candidate);
+      setPendingConfirm({ url: candidate, host: addonHost });
     };
     const onDeeplink = (e: Event) => {
       if (isBusy()) return;
@@ -333,6 +333,37 @@ function InstallerViewport({
       </div>
 
       <footer className="flex shrink-0 flex-col gap-2.5 border-t border-white/10 bg-canvas/72 px-5 py-3.5 backdrop-blur-md">
+        {pendingConfirm && (
+          <div
+            role="alertdialog"
+            aria-label={t("Install")}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent/12 px-4 py-2.5 text-[12.5px] text-ink"
+          >
+            <span className="min-w-0 flex-1 truncate font-medium">
+              {t("Install")} — <strong className="font-semibold" dir="ltr">{pendingConfirm.host}</strong>
+            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingConfirm(null)}
+                className="rounded-full border border-edge-soft px-3 py-1 text-[12px] font-medium text-ink-muted transition-colors hover:text-ink"
+              >
+                {t("Cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = pendingConfirm.url;
+                  setPendingConfirm(null);
+                  void submitRef.current(target);
+                }}
+                className="rounded-full bg-accent px-3.5 py-1 text-[12px] font-semibold text-canvas transition-opacity hover:opacity-90"
+              >
+                {t("Install")}
+              </button>
+            </div>
+          </div>
+        )}
         <p className="text-[12.5px] leading-snug text-ink-muted">
           {isWeb()
             ? t("Configure the addon above, then copy its manifest URL and paste it here. The web app can't catch the Install button automatically the way the desktop app does.")

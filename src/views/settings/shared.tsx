@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Eye, Key, Lock } from "lucide-react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 import { HoverPreviewCard } from "./setting-preview";
@@ -52,7 +52,14 @@ export function ExtLink({ href, children }: { href: string; children: React.Reac
 }
 
 export function settingsAnchor(title: string): string {
-  return "set-" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-+|-+$)/g, "");
+  return (
+    "set-" +
+    title
+      .normalize("NFKC")
+      .toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .replace(/(^-+|-+$)/g, "")
+  );
 }
 
 export function Section({
@@ -67,8 +74,8 @@ export function Section({
   return (
     <section id={settingsAnchor(title)} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[19px] font-medium tracking-tight text-ink">{title}</h2>
-        {subtitle && <p className="text-[13.5px] leading-relaxed text-ink-muted">{subtitle}</p>}
+        <h2 className="text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-ink">{title}</h2>
+        {subtitle && <p className="text-[13.5px] leading-[1.55] text-ink-muted">{subtitle}</p>}
       </div>
       {children}
     </section>
@@ -101,6 +108,7 @@ export function KeyField({
   badge?: string;
 }) {
   const t = useT();
+  const inputId = useId();
   const [reveal, setReveal] = useState(false);
   const [focused, setFocused] = useState(false);
   const [initialValue, setInitialValue] = useState(value);
@@ -133,7 +141,7 @@ export function KeyField({
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <label className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+          <label htmlFor={inputId} className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
             {label}
           </label>
           {badge && (
@@ -153,7 +161,7 @@ export function KeyField({
         </div>
       </div>
       <div
-        className={`flex h-14 items-center gap-3 rounded-2xl border bg-elevated px-4 transition-all ${
+        className={`flex h-14 items-center gap-3 rounded-2xl border bg-elevated px-4 transition-[background-color,border-color,color,opacity,box-shadow] ${
           focused
             ? "border-ink shadow-[0_0_0_3px_rgba(255,255,255,0.04)]"
             : "border-edge hover:border-edge"
@@ -181,6 +189,7 @@ export function KeyField({
           </span>
         )}
         <input
+          id={inputId}
           type={reveal ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -234,7 +243,7 @@ export function KeyField({
           </button>
         )}
         <div
-          className={`flex shrink-0 items-center transition-all ${
+          className={`flex shrink-0 items-center transition-[background-color,border-color,color,opacity] ${
             showSave || saved ? "ms-1 w-auto opacity-100" : "w-0 overflow-hidden opacity-0"
           }`}
         >
@@ -242,14 +251,14 @@ export function KeyField({
             type="button"
             onClick={onSave}
             disabled={!showSave && !saved}
-            className={`relative flex h-10 items-center justify-center overflow-hidden rounded-xl px-4 text-[13.5px] font-semibold transition-all ${
+            className={`relative flex h-10 items-center justify-center overflow-hidden rounded-xl px-4 text-[13.5px] font-semibold transition-[transform,opacity,background-color,border-color,color] ${
               saved
                 ? "bg-accent/15 text-accent"
                 : "bg-ink text-canvas hover:scale-[1.02] active:scale-[0.97]"
             }`}
           >
             <span
-              className={`flex items-center gap-1.5 transition-all ${
+              className={`flex items-center gap-1.5 transition-[transform,opacity,background-color,border-color,color] ${
                 saved ? "translate-y-0 opacity-100" : "absolute translate-y-3 opacity-0"
               }`}
             >
@@ -257,7 +266,7 @@ export function KeyField({
               {t("Saved")}
             </span>
             <span
-              className={`flex items-center transition-all ${
+              className={`flex items-center transition-[transform,opacity,background-color,border-color,color] ${
                 saved ? "absolute -translate-y-3 opacity-0" : "translate-y-0 opacity-100"
               }`}
             >
@@ -311,6 +320,9 @@ export function ToggleRow({
   return (
     <button
       ref={btnRef}
+      type="button"
+      role="switch"
+      aria-checked={effective}
       onClick={() => !locked && onChange(!value)}
       onMouseEnter={openPreview}
       onMouseLeave={closePreview}
@@ -386,6 +398,7 @@ export function Segmented<T extends string>({
         <button
           key={o.value}
           type="button"
+          aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
             value === o.value

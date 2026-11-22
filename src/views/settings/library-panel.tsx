@@ -1262,7 +1262,7 @@ function HomeModePicker({
             key={opt.id}
             type="button"
             onClick={() => onChange(opt.id)}
-            className={`group relative h-[180px] overflow-hidden rounded-2xl border bg-canvas text-start transition-all ${
+            className={`group relative h-[180px] overflow-hidden rounded-2xl border bg-canvas text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
               selected ? "border-ink shadow-[0_0_0_3px_rgba(255,255,255,0.04)]" : "border-edge-soft hover:border-edge"
             }`}
           >
@@ -1447,7 +1447,7 @@ function PlacementPicker({
             key={opt.id}
             type="button"
             onClick={() => onChange(opt.id)}
-            className={`group flex flex-col gap-2.5 rounded-2xl border bg-canvas/40 p-3 text-start transition-all ${
+            className={`group flex flex-col gap-2.5 rounded-2xl border bg-canvas/40 p-3 text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
               selected
                 ? "border-ink shadow-[0_0_0_3px_rgba(255,255,255,0.04)]"
                 : "border-edge-soft hover:border-edge"

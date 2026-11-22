@@ -58,6 +58,8 @@ export function Discover({ active = true }: { active?: boolean }) {
   const [criticsPickList, setCriticsPickList] = useState<Meta[]>([]);
   const [tasteVersion, setTasteVersion] = useState(0);
   const [rails, setRails] = useState<Record<string, Meta[]>>({});
+  const [failedRails, setFailedRails] = useState<Record<string, boolean>>({});
+  const [retryTick, setRetryTick] = useState(0);
   const railPagesRef = useRef<Record<string, number>>({});
   const railExhaustedRef = useRef<Record<string, boolean>>({});
   const railLoadingRef = useRef<Record<string, boolean>>({});
@@ -162,12 +164,14 @@ export function Discover({ active = true }: { active?: boolean }) {
           if (genRef.current !== gen) return;
           railPagesRef.current[railId] = 1;
           if (list.length < MIN_PAGE_YIELD) railExhaustedRef.current[railId] = true;
+          setFailedRails((prev) => (prev[railId] ? { ...prev, [railId]: false } : prev));
           setRails((prev) => ({ ...prev, [railId]: list }));
         })
         .catch(() => {
           if (genRef.current !== gen) return;
           railPagesRef.current[railId] = 1;
           railExhaustedRef.current[railId] = true;
+          setFailedRails((prev) => ({ ...prev, [railId]: true }));
           setRails((prev) => ({ ...prev, [railId]: [] }));
         })
         .finally(() => {
@@ -183,12 +187,13 @@ export function Discover({ active = true }: { active?: boolean }) {
   useEffect(() => {
     genRef.current += 1;
     setRails({});
+    setFailedRails({});
     railPagesRef.current = {};
     railExhaustedRef.current = {};
     railLoadingRef.current = {};
     for (const id of DEDUP_PRIORITY) ensureLoadedRef.current(id);
 
-  }, [rowSig, settings.tmdbKey, settings.region, settings.streaming, settings.tmdbLanguage]);
+  }, [rowSig, settings.tmdbKey, settings.region, settings.streaming, settings.tmdbLanguage, retryTick]);
 
   const loadMore = useCallback(
     (railId: string) => {
@@ -271,6 +276,20 @@ export function Discover({ active = true }: { active?: boolean }) {
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-14">
           <AskHarbor />
+          {Object.values(failedRails).some(Boolean) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-4">
+              <p role="alert" className="text-[13.5px] text-ink-muted">
+                {t("Some recommendations could not be loaded. Check your connection and try again.")}
+              </p>
+              <button
+                type="button"
+                className="mac-secondary-button"
+                onClick={() => setRetryTick((n) => n + 1)}
+              >
+                {t("Retry")}
+              </button>
+            </div>
+          )}
           <div className="relative">
             <FeaturedBanner items={featured} />
             <div className="absolute end-0 bottom-4 z-10">

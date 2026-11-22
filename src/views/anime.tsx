@@ -644,7 +644,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
                 onClick={() => setShowPicker(true)}
                 title={t("Tune anime")}
                 aria-label={t("Tune anime")}
-                className="group absolute end-[-3rem] top-[34%] z-10 flex flex-col items-center gap-2.5 rounded-s-xl border border-e-0 border-edge-soft/40 bg-canvas/55 py-4 pe-2 ps-2 text-ink-subtle opacity-45 backdrop-blur-md transition-all duration-300 hover:bg-canvas/85 hover:text-ink hover:opacity-100 hover:ps-3"
+                className="group absolute end-[-3rem] top-[34%] z-10 flex flex-col items-center gap-2.5 rounded-s-xl border border-e-0 border-edge-soft/40 bg-canvas/55 py-4 pe-2 ps-2 text-ink-subtle opacity-45 backdrop-blur-md transition-[background-color,border-color,color,opacity] duration-300 hover:bg-canvas/85 hover:text-ink hover:opacity-100 hover:ps-3"
               >
                 <SlidersHorizontal
                   size={15}

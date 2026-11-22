@@ -579,6 +579,8 @@ export function AddonsView() {
             onUninstall={onUninstall}
             onReorder={() => setReorderOpen(true)}
             onManage={onManage}
+            onBrowseDiscover={() => setTab("discover")}
+            onClearSearch={() => setQuery("")}
           />
         )}
       </div>

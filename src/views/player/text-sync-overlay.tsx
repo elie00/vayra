@@ -187,7 +187,7 @@ export function TextSyncOverlay({
               <button
                 onClick={() => void api.save()}
                 disabled={!api.dirty}
-                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-[14px] font-semibold text-canvas transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-[14px] font-semibold text-canvas transition-[transform,opacity,background-color,border-color,color] hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
               >
                 <Check size={16} strokeWidth={2.6} />
                 {t("Save")}

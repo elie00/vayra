@@ -64,11 +64,11 @@ function SingleUpload({
     if (!file) return;
     setWarning(null);
     if (!/^image\//.test(file.type)) {
-      window.alert(tr("Please choose a PNG, SVG, JPG, or WebP image."));
+      setWarning(tr("Please choose a PNG, SVG, JPG, or WebP image."));
       return;
     }
     if (file.size > MAX_BYTES) {
-      window.alert(tr("Icon must be under {max} KB. Yours is {size} KB.", { max: String(Math.round(MAX_BYTES / 1024)), size: String(Math.round(file.size / 1024)) }));
+      setWarning(tr("Icon must be under {max} KB. Yours is {size} KB.", { max: String(Math.round(MAX_BYTES / 1024)), size: String(Math.round(file.size / 1024)) }));
       return;
     }
     setBusy(true);
@@ -83,7 +83,7 @@ function SingleUpload({
       if (messages.length > 0) setWarning(messages.join(" · "));
       onUpload(sanitized);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : tr("Could not read the file."));
+      setWarning(err instanceof Error ? err.message : tr("Could not read the file."));
     } finally {
       setBusy(false);
     }
@@ -112,6 +112,11 @@ function SingleUpload({
       />
       <PickButton onPick={(f) => void handleFile(f)} busy={busy} />
       {currentUrl && <ResetButton onClick={onReset} />}
+      {warning && (
+        <span role="alert" title={warning} className="max-w-[180px] truncate text-[11px] text-amber-300">
+          {warning}
+        </span>
+      )}
     </div>
   );
 }

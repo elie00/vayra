@@ -58,7 +58,7 @@ export function SportsMarquee({
           <button
             onClick={() => setShowCustomize(true)}
             title={t("sports.customize")}
-            className="flex items-center gap-1.5 rounded-full border border-edge-soft/50 bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-ink-muted transition-all hover:border-edge hover:bg-elevated hover:text-ink"
+            className="flex items-center gap-1.5 rounded-full border border-edge-soft/50 bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:bg-elevated hover:text-ink"
           >
             <Settings2 size={13} />
             <span>{t("sports.customize")}</span>

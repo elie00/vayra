@@ -23,6 +23,7 @@ export function FontPicker({
           <button
             key={p.id}
             type="button"
+            aria-pressed={active}
             onClick={() => onPickPair(p.id)}
             className={`relative flex flex-col gap-1.5 rounded-lg border p-3.5 text-start transition-colors ${
               active
@@ -46,7 +47,7 @@ export function FontPicker({
             <span className="truncate text-[13.5px] text-ink-muted" style={{ fontFamily: p.sans }}>
               {t("Pick up an episode")}
             </span>
-            <span className="mt-1 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+            <span className="mt-1 text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
               {p.name}
             </span>
           </button>

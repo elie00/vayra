@@ -80,7 +80,7 @@ export function MyListsTab() {
                 setDragId(null);
                 setOverId(null);
               }}
-              className={`cursor-grab rounded-2xl transition-all active:cursor-grabbing ${dragId === l.id ? "opacity-40" : ""} ${
+              className={`cursor-grab rounded-2xl transition-[background-color,border-color,color,opacity,box-shadow] active:cursor-grabbing ${dragId === l.id ? "opacity-40" : ""} ${
                 overId === l.id && dragId !== l.id ? "ring-2 ring-accent ring-offset-2 ring-offset-canvas" : ""
               }`}
             >

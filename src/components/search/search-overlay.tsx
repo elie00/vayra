@@ -1,5 +1,5 @@
 import { Search, X, Loader2, CornerDownLeft, CalendarRange, Tag } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
 import { emptySearchOutcome, useSearch } from "@/lib/search-context";
@@ -7,25 +7,35 @@ import { useView } from "@/lib/view";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { AnimeRow } from "./anime-row";
 import { EmptyState } from "./empty-state";
-import { GuideModal } from "./guide-modal";
 import { LiveTvRow } from "./live-tv-row";
 import { TopMatch } from "./top-match";
 import { PeopleRow } from "./people-row";
 import { MetaList } from "./meta-list";
 import { AddonHits } from "./addon-hits";
 import { AddonResults } from "./addon-results";
-import { MagnetCard } from "./magnet-card";
-import { UrlCard } from "./url-card";
-import { AiSearchSection } from "./ai-search-section";
 import { WebSearchButton } from "./web-search-button";
-import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
+import { searchInputKind } from "@/lib/search-input";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import "./search-field.css";
+
+const GuideModal = lazy(() =>
+  import("./guide-modal").then((m) => ({ default: m.GuideModal })),
+);
+const MagnetCard = lazy(() =>
+  import("./magnet-card").then((m) => ({ default: m.MagnetCard })),
+);
+const UrlCard = lazy(() =>
+  import("./url-card").then((m) => ({ default: m.UrlCard })),
+);
+const AiSearchSection = lazy(() =>
+  import("./ai-search-section").then((m) => ({ default: m.AiSearchSection })),
+);
 
 export function SearchOverlay() {
   const { open, setOpen, query, setQuery, results, status, sources, clear, retry, recordRecent } = useSearch();
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   useFocusTrap(overlayRef, open);
   const { openFilter, openMeta } = useView();
   const t = useT();
@@ -69,9 +79,8 @@ export function SearchOverlay() {
   };
 
   const trimmed = query.trim();
-  const magnetInput = !!trimmed && isMagnetInput(trimmed);
-  const urlInput = !!trimmed && !magnetInput && isDirectVideoUrl(trimmed);
-  const directInput = magnetInput || urlInput;
+  const inputKind = searchInputKind(trimmed);
+  const directInput = inputKind !== "text";
   const hasResults = Boolean(
     results &&
     trimmed &&
@@ -96,15 +105,47 @@ export function SearchOverlay() {
     results.addons.length === 0 &&
     results.addonGroups.length === 0;
 
+  const moveResultFocus = (dir: 1 | -1) => {
+    const container = resultsRef.current;
+    if (!container) return;
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>("button:not([disabled])")).filter(
+      (b) => b.offsetParent !== null,
+    );
+    if (buttons.length === 0) return;
+    const idx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (idx === -1) {
+      (dir === 1 ? buttons[0] : buttons[buttons.length - 1]).focus();
+      return;
+    }
+    const next = idx + dir;
+    if (next < 0) {
+      inputRef.current?.focus();
+    } else if (next < buttons.length) {
+      buttons[next].focus();
+    }
+  };
+
   return createPortal(
     <div
       ref={overlayRef}
       role="dialog"
       aria-modal="true"
       aria-label={t("Search")}
+      onKeyDown={(e) => {
+        if (e.nativeEvent.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          moveResultFocus(1);
+        } else if (e.key === "ArrowUp" && document.activeElement !== inputRef.current) {
+          e.preventDefault();
+          moveResultFocus(-1);
+        }
+      }}
       className="fixed inset-0 z-[200] flex flex-col"
     >
       <button
+        type="button"
+        tabIndex={-1}
         aria-label={t("Close search")}
         onClick={close}
         className="harbor-search-backdrop absolute inset-0 cursor-default"
@@ -122,6 +163,7 @@ export function SearchOverlay() {
               // IME confirmation, held keys and system shortcuts must not open
               // a title or trigger an AI request while the user is still typing.
               if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229 || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+              if (directInput) return;
               // Shift+Enter runs the AI search on what is typed, without having
               // to reach for the button below the results.
               if (e.key === "Enter" && e.shiftKey) {
@@ -130,12 +172,17 @@ export function SearchOverlay() {
                 setAiRunSignal((n) => n + 1);
                 return;
               }
-              if (e.key === "Enter" && results?.topMatch && results.query.trim() === query.trim()) {
-                e.preventDefault();
-                recordRecent(query);
-                const meta = results.topMatch.meta;
-                setOpen(false);
-                openMeta(meta);
+              if (e.key === "Enter" && results?.query.trim() === query.trim()) {
+                if (results.topMatch) {
+                  e.preventDefault();
+                  recordRecent(query);
+                  const meta = results.topMatch.meta;
+                  setOpen(false);
+                  openMeta(meta);
+                } else if (results.intent) {
+                  e.preventDefault();
+                  onIntent();
+                }
               }
             }}
             placeholder={t("Search movies, shows, people, genres, years...")}
@@ -145,7 +192,7 @@ export function SearchOverlay() {
             autoComplete="off"
           />
           {status === "loading" && <Loader2 aria-hidden="true" size={18} className="shrink-0 animate-spin text-ink-subtle" />}
-          <WebSearchButton />
+          {!directInput && <WebSearchButton />}
           {query && (
             <button
               type="button"
@@ -159,10 +206,10 @@ export function SearchOverlay() {
               <X size={18} strokeWidth={2.2} />
             </button>
           )}
-          <Hint />
+          <Hint showNav={hasResults} />
         </div>
 
-        <div className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={resultsRef} className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!trimmed && <EmptyState onClose={close} onOpenGuide={() => setGuideOpen(true)} />}
 
           {trimmed && !directInput && status === "error" && (
@@ -187,16 +234,26 @@ export function SearchOverlay() {
             </p>
           )}
 
-          {magnetInput && (
+          {inputKind === "magnet" && (
             <div className="mb-5">
-              <MagnetCard raw={trimmed} onClose={close} />
+              <Suspense fallback={null}>
+                <MagnetCard raw={trimmed} onClose={close} />
+              </Suspense>
             </div>
           )}
 
-          {urlInput && (
+          {inputKind === "video" && (
             <div className="mb-5">
-              <UrlCard raw={trimmed} onClose={close} />
+              <Suspense fallback={null}>
+                <UrlCard raw={trimmed} onClose={close} />
+              </Suspense>
             </div>
+          )}
+
+          {inputKind === "link" && (
+            <p role="status" className="rounded-2xl border border-edge-soft bg-elevated p-4 text-[14px] text-ink-muted">
+              {t("This link cannot be opened here. Use a direct video URL such as a link ending in .mp4.")}
+            </p>
           )}
 
           {trimmed && !directInput && results?.intent && (
@@ -225,7 +282,11 @@ export function SearchOverlay() {
             </button>
           )}
 
-          {trimmed && !directInput && <AiSearchSection query={trimmed} onClose={close} runSignal={aiRunSignal} />}
+          {trimmed && !directInput && (
+            <Suspense fallback={null}>
+              <AiSearchSection query={trimmed} onClose={close} runSignal={aiRunSignal} />
+            </Suspense>
+          )}
 
           {trimmed && !directInput && hasResults && results && (
             <div className="flex flex-col gap-8 pb-12">
@@ -253,15 +314,29 @@ export function SearchOverlay() {
 
         </div>
       </div>
-      {guideOpen && <GuideModal onClose={() => setGuideOpen(false)} />}
+      {guideOpen && (
+        <Suspense fallback={null}>
+          <GuideModal onClose={() => setGuideOpen(false)} />
+        </Suspense>
+      )}
     </div>,
     document.body,
   );
 }
 
-function Hint() {
+function Hint({ showNav }: { showNav: boolean }) {
   return (
-    <span className="hidden shrink-0 items-center gap-1 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-subtle sm:flex">
+    <span className="hidden shrink-0 items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-subtle sm:flex">
+      {showNav && (
+        <>
+          <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
+            ↑↓
+          </kbd>
+          <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
+            ↵
+          </kbd>
+        </>
+      )}
       <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
         Esc
       </kbd>

@@ -30,7 +30,7 @@ export function ProfileTile({
           aria-label={t("Switch to {name}", { name: profile.name })}
         >
           <span
-            className={`relative flex ${dim} items-center justify-center overflow-hidden rounded-full bg-elevated ${ring} transition-all duration-200 group-hover:scale-[1.04]`}
+            className={`relative flex ${dim} items-center justify-center overflow-hidden rounded-full bg-elevated ${ring} transition-[transform,opacity,background-color,border-color,color] duration-200 group-hover:scale-[1.04]`}
             style={{ boxShadow: `0 0 0 3px ${profile.color}` }}
           >
             {profile.avatar ? (

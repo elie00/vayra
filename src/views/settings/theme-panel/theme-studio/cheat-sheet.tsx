@@ -300,7 +300,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
               className="flex h-5 w-5 items-center justify-center"
             >
               <span
-                className="block h-2 w-2 rounded-full transition-all"
+                className="block h-2 w-2 rounded-full transition-[width,background-color,opacity]"
                 style={{
                   background: active === s.id ? "var(--color-accent)" : "var(--color-edge)",
                   transform: active === s.id ? "scale(1.6)" : "scale(1)",

@@ -370,7 +370,7 @@ function ScrollArrow({
       type="button"
       aria-label={side === "left" ? t("Scroll filters left") : t("Scroll filters right")}
       onClick={onClick}
-      className={`absolute top-1/2 -translate-y-1/2 ${side === "left" ? "left-0 -translate-x-1/3" : "right-0 translate-x-1/3"} z-20 flex h-9 w-9 items-center justify-center rounded-full bg-canvas/85 text-ink shadow-[0_8px_24px_-6px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-200 hover:bg-canvas focus:outline-none ${
+      className={`absolute top-1/2 -translate-y-1/2 ${side === "left" ? "left-0 -translate-x-1/3" : "right-0 translate-x-1/3"} z-20 flex h-9 w-9 items-center justify-center rounded-full bg-canvas/85 text-ink shadow-[0_8px_24px_-6px_rgba(0,0,0,0.6)] backdrop-blur-md transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-200 hover:bg-canvas focus:outline-none ${
         visible
           ? "opacity-0 group-hover/pills:opacity-100 pointer-events-auto"
           : "pointer-events-none opacity-0"

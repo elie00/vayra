@@ -82,7 +82,7 @@ export function SkipPill({
 
   return (
     <div
-      className={`pointer-events-none absolute end-7 z-30 flex items-center gap-2 transition-all duration-200 ease-out ${
+      className={`pointer-events-none absolute end-7 z-30 flex items-center gap-2 transition-[transform,opacity,background-color,border-color,color] duration-200 ease-out ${
         visible && show
           ? "bottom-44 opacity-100 translate-y-0"
           : "bottom-40 opacity-0 translate-y-2"
@@ -142,7 +142,7 @@ function UpNextCard({
 
   return (
     <div
-      className={`pointer-events-none absolute end-7 z-30 transition-all duration-200 ease-out ${
+      className={`pointer-events-none absolute end-7 z-30 transition-[transform,opacity,background-color,border-color,color] duration-200 ease-out ${
         visible
           ? "bottom-44 opacity-100 translate-y-0"
           : "bottom-40 opacity-0 translate-y-2"

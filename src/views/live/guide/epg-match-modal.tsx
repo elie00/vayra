@@ -43,13 +43,19 @@ export function EpgMatchModal({
   };
 
   return (
-    <div
-      className="absolute inset-0 z-[80] flex items-center justify-center bg-canvas/70 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <div className="absolute inset-0 z-[80] flex items-center justify-center">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/70 backdrop-blur-sm"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[70vh] w-[520px] flex-col overflow-hidden rounded-2xl border border-edge bg-surface shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Match EPG channel")}
+        className="relative z-10 flex max-h-[70vh] w-[520px] flex-col overflow-hidden rounded-2xl border border-edge bg-surface shadow-2xl"
       >
         <div className="flex items-center gap-3 border-b border-edge-soft/55 px-5 py-4">
           <div className="flex min-w-0 flex-1 flex-col">

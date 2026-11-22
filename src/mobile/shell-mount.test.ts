@@ -6,6 +6,6 @@ import { expect, it } from "vitest";
 // room for the bar.
 it("mounts the mobile shell on Android", () => {
   const app = readFileSync("src/App.tsx", "utf8");
-  expect(app).toContain('import { MobileShell } from "@/mobile/shell";');
+  expect(app).toContain('import("@/mobile/shell")');
   expect(app).toContain("{isMobileTauri() && <MobileShell />}");
 });

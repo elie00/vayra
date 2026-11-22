@@ -65,7 +65,7 @@ export function SourceDrawer({
     <div className="flex flex-col gap-4">
       <button
         onClick={onToggle}
-        className="group flex w-fit items-center gap-3 rounded-full border border-edge-soft/70 bg-canvas/70 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] text-ink-muted transition-all hover:border-edge hover:bg-canvas/90 hover:text-ink"
+        className="group flex w-fit items-center gap-3 rounded-full border border-edge-soft/70 bg-canvas/70 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] text-ink-muted transition-colors hover:border-edge hover:bg-canvas/90 hover:text-ink"
       >
         <ChevronDown
           size={14}
@@ -114,6 +114,11 @@ export function SourceDrawer({
               episode={episode}
             />
           ))}
+          {shown.length > 80 && (
+            <li className="border-t border-edge-soft/40 px-4 py-3 text-center text-[12px] text-ink-subtle">
+              {t("+{n} more sources — filter by addon or quality to narrow down", { n: shown.length - 80 })}
+            </li>
+          )}
         </ul>
       )}
     </div>
@@ -254,14 +259,14 @@ function SourceRow({
             <ExternalLink
               size={14}
               strokeWidth={2.2}
-              className="text-ink-muted/50 transition-all group-hover:text-ink"
+              className="text-ink-muted/50 transition-colors group-hover:text-ink"
             />
           ) : (
             <Play
               size={15}
               fill="currentColor"
               strokeWidth={0}
-              className="text-ink-muted/50 transition-all group-hover:translate-x-0.5 group-hover:text-ink"
+              className="text-ink-muted/50 transition-[transform,opacity,background-color,border-color,color] group-hover:translate-x-0.5 group-hover:text-ink"
             />
           )}
         </div>

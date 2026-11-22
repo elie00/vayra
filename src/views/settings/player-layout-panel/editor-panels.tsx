@@ -65,14 +65,17 @@ function PanelMount({
         : "rounded-l-2xl"
       : "rounded-2xl";
   return (
-    <div
+    <button
+      type="button"
       data-panel-id={id}
+      aria-label={id}
+      aria-pressed={selected}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
         onSelect(selected ? null : id);
       }}
-      className={`absolute z-20 cursor-pointer ${radius} p-0.5 transition-all duration-150 ${
+      className={`absolute z-20 cursor-pointer ${radius} p-0.5 text-start transition-[background-color,border-color,color,opacity,box-shadow] duration-150 ${
         selected ? "ring-2 ring-accent" : "ring-2 ring-transparent hover:ring-white/20"
       }`}
       style={style}
@@ -84,7 +87,7 @@ function PanelMount({
       ) : (
         <EpisodesTabBody side={isLeftCorner(corner) ? "left" : "right"} />
       )}
-    </div>
+    </button>
   );
 }
 

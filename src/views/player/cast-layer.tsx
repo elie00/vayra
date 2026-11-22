@@ -1,13 +1,15 @@
-import { CastMenu } from "@/components/player/cast-menu";
+import { Suspense, lazy } from "react";
 import { useT } from "@/lib/i18n";
 import { getCastPositionPrecise, useCastPosition } from "@/lib/player/cast-interp";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { CastDeviceInfo } from "@/lib/cast";
 import type { PlayerSrc } from "@/lib/view";
-import { CastErrorModal } from "./cast-error-modal";
-import { CastSessionBar } from "./cast-session-bar";
-import { CastingOverlay } from "./casting-overlay";
 import type { PlayerCastController } from "./hooks/use-player-cast";
+
+const CastMenu = lazy(() => import("@/components/player/cast-menu").then((m) => ({ default: m.CastMenu })));
+const CastErrorModal = lazy(() => import("./cast-error-modal").then((m) => ({ default: m.CastErrorModal })));
+const CastSessionBar = lazy(() => import("./cast-session-bar").then((m) => ({ default: m.CastSessionBar })));
+const CastingOverlay = lazy(() => import("./casting-overlay").then((m) => ({ default: m.CastingOverlay })));
 
 /**
  * Isolates the 1 Hz cast-position subscription to this tiny wrapper so only the
@@ -69,16 +71,18 @@ export function CastLayer({
 }) {
   const t = useT();
   return (
-    <>
-      <CastMenu
-        open={cast.castMenuOpen}
-        anchor={cast.castMenuAnchor}
-        onClose={cast.closeCastMenu}
-        onPick={cast.onPickDevice}
-        hasActiveSub={hasActiveSub}
-        burnSubsOnTv={cast.burnSubsOnTv}
-        setBurnSubsOnTv={cast.setBurnSubsOnTv}
-      />
+    <Suspense fallback={null}>
+      {cast.castMenuOpen && (
+        <CastMenu
+          open={cast.castMenuOpen}
+          anchor={cast.castMenuAnchor}
+          onClose={cast.closeCastMenu}
+          onPick={cast.onPickDevice}
+          hasActiveSub={hasActiveSub}
+          burnSubsOnTv={cast.burnSubsOnTv}
+          setBurnSubsOnTv={cast.setBurnSubsOnTv}
+        />
+      )}
       {cast.pendingCastDevice && !cast.castDevice && (
         <CastingOverlay
           device={cast.pendingCastDevice}
@@ -120,7 +124,9 @@ export function CastLayer({
           {cast.castError}
         </div>
       )}
-      <CastErrorModal error={cast.castErrorInfo} onDismiss={cast.dismissCastErrorInfo} />
+      {cast.castErrorInfo && (
+        <CastErrorModal error={cast.castErrorInfo} onDismiss={cast.dismissCastErrorInfo} />
+      )}
       {cast.castIncompatError && (
         <div className="pointer-events-auto absolute left-1/2 top-20 z-30 flex max-w-[520px] -translate-x-1/2 items-start gap-3 rounded-2xl border border-info/40 bg-info/15 px-4 py-3 text-[12.5px] leading-relaxed text-info shadow-[0_18px_40px_-18px_rgba(0,0,0,0.6)] backdrop-blur-md">
           <span className="flex-1">{cast.castIncompatError}</span>
@@ -143,6 +149,6 @@ export function CastLayer({
           </button>
         </div>
       )}
-    </>
+    </Suspense>
   );
 }

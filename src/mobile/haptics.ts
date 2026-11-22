@@ -1,11 +1,36 @@
 import { isAndroidTauri } from "@/lib/platform";
 
-/** A light tick under the finger, where the finger hides what it just did. */
-export function haptic(): void {
+export type HapticKind = "tick" | "context" | "confirm" | "reject" | "gesture";
+
+declare global {
+  interface Window {
+    VayraHaptics?: { perform(kind: string): void };
+  }
+}
+
+const FALLBACK_MS: Record<HapticKind, number> = {
+  tick: 8,
+  context: 10,
+  confirm: 12,
+  reject: 18,
+  gesture: 8,
+};
+
+/**
+ * Tactile feedback on Android: prefers native `View.performHapticFeedback` via
+ * `VayraHaptics` (respecting the user's system "Touch feedback" setting and
+ * Material 3 haptic primitives), falling back to `navigator.vibrate`.
+ */
+export function haptic(kind: HapticKind = "tick"): void {
   if (!isAndroidTauri()) return;
   try {
-    navigator.vibrate?.(8);
+    const bridge = window.VayraHaptics;
+    if (bridge && typeof bridge.perform === "function") {
+      bridge.perform(kind);
+      return;
+    }
+    navigator.vibrate?.(FALLBACK_MS[kind]);
   } catch {
-    /* No vibrator: nothing to feel. */
+    /* No haptic actuator: nothing to feel. */
   }
 }

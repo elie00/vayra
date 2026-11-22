@@ -240,7 +240,7 @@ function NavArrow({
       aria-label={side === "left" ? t("Previous") : t("Next")}
       className={`group absolute top-1/2 ${
         side === "left" ? "-start-3" : "-end-3"
-      } z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-canvas/80 text-ink/75 ring-1 ring-inset ring-ink/12 shadow-[0_10px_28px_-12px_rgba(0,0,0,0.8)] transition-all duration-200 ease-out hover:scale-110 hover:bg-canvas hover:text-ink hover:ring-ink/25 active:scale-95 disabled:pointer-events-none disabled:opacity-25`}
+      } z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-canvas/80 text-ink/75 ring-1 ring-inset ring-ink/12 shadow-[0_10px_28px_-12px_rgba(0,0,0,0.8)] transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-200 ease-out hover:scale-110 hover:bg-canvas hover:text-ink hover:ring-ink/25 active:scale-95 disabled:pointer-events-none disabled:opacity-25`}
     >
       {side === "left" ? (
         <ChevronLeft
@@ -298,7 +298,7 @@ function Strip({
               type="button"
               data-active={isActive}
               onClick={() => onJump(i)}
-              className={`group relative h-[112px] w-[200px] shrink-0 rounded-[10px] transition-all duration-200 hover:z-10 hover:scale-[1.02] ${
+              className={`group relative h-[112px] w-[200px] shrink-0 rounded-[10px] transition-[transform,opacity,background-color,border-color,color] duration-200 hover:z-10 hover:scale-[1.02] ${
                 isPast ? "opacity-50" : ""
               }`}
             >

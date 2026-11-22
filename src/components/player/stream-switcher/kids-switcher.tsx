@@ -27,12 +27,14 @@ export function KidsStreamSwitcher({
   const options = list.slice(0, 6);
 
   return (
-    <div
-      className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#3aa6c4]/95 via-[#1c789f]/96 to-[#0a3d5c]/98 px-8 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#3aa6c4]/95 via-[#1c789f]/96 to-[#0a3d5c]/98 px-8 backdrop-blur-md animate-in fade-in duration-200">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {BUBBLES.map((left, i) => (
           <span
@@ -63,7 +65,12 @@ export function KidsStreamSwitcher({
         />
       </div>
 
-      <div className="relative flex w-full max-w-[620px] flex-col items-center gap-6 text-center text-white">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Pick a video")}
+        className="relative z-10 flex w-full max-w-[620px] flex-col items-center gap-6 text-center text-white"
+      >
         <button
           onClick={onClose}
           aria-label={t("Close")}
