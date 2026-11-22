@@ -23,26 +23,33 @@ export function SvpIndicator({
   const enabled = settings.playerSvp && engine === "mpv" && isTauri;
   const [active, setActive] = useState(false);
 
+  const visible = chromeVisible && !suppressed;
   useEffect(() => {
     if (!enabled) {
       setActive(false);
       return;
     }
+    const onFailed = () => setActive(false);
+    window.addEventListener("vayra:svp-failed", onFailed);
+    if (!visible) {
+      return () => {
+        window.removeEventListener("vayra:svp-failed", onFailed);
+      };
+    }
     let cancelled = false;
     const tick = async () => {
+      if (document.hidden) return;
       const vf = await invoke("mpv_get_property", { name: "vf" }).catch(() => null);
       if (!cancelled) setActive(hasVapoursynth(vf));
     };
     void tick();
     const id = window.setInterval(() => void tick(), 2000);
-    const onFailed = () => setActive(false);
-    window.addEventListener("vayra:svp-failed", onFailed);
     return () => {
       cancelled = true;
       window.clearInterval(id);
       window.removeEventListener("vayra:svp-failed", onFailed);
     };
-  }, [enabled]);
+  }, [enabled, visible]);
 
   if (!enabled || !active) return null;
 

@@ -409,8 +409,17 @@ function TogetherLocationPublisher() {
     if (!inSession) return;
     const location = computeLocation();
     sendPresence(location ?? undefined);
-    const id = window.setInterval(() => sendPresence(location ?? undefined), 6000);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(() => {
+      if (!document.hidden) sendPresence(location ?? undefined);
+    }, 6000);
+    const onVisibility = () => {
+      if (!document.hidden) sendPresence(location ?? undefined);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
     function computeLocation(): import("@/lib/together/protocol").ParticipantLocation | null {
       const metaToLoc = (m: import("@/lib/cinemeta").Meta) => ({
         id: m.id,

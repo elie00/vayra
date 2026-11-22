@@ -118,10 +118,14 @@ export function startMaintenance(): () => void {
   };
 
   const interval = window.setInterval(() => {
+    if (document.hidden) return;
     runMaintenance(heapDelta() > AGGRESSIVE_HEAP_DELTA_MB);
   }, INTERVAL_MS);
 
-  const pressureInterval = window.setInterval(pollPressure, PRESSURE_POLL_MS);
+  const pressureInterval = window.setInterval(() => {
+    if (document.hidden) return;
+    pollPressure();
+  }, PRESSURE_POLL_MS);
   const stopNative = startNativeMemory();
   const unsubNative = subscribeNativeMemory(pollPressure);
 
