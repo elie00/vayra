@@ -302,21 +302,13 @@ function ResultRow({
           </span>
         </div>
       </button>
-      <span
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         title={saved ? t("Saved to disk") : t("Download to disk")}
         aria-label={t("Download subtitle to disk")}
         onClick={(e) => {
           e.stopPropagation();
           void download();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-            void download();
-          }
         }}
         className={`mt-0.5 inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors ${
           saved ? "text-accent" : "text-ink-subtle hover:bg-elevated hover:text-ink"
@@ -329,7 +321,7 @@ function ResultRow({
         ) : (
           <Save size={13} strokeWidth={2} />
         )}
-      </span>
+      </button>
     </div>
   );
 }

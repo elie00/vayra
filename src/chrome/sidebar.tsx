@@ -44,10 +44,12 @@ export function Sidebar() {
   return (
     <>
       {mobile && drawerOpen && !chromeHidden && (
-        <div
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={t("common.close")}
           className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-[2px]"
           onClick={() => setNavDrawer(false)}
-          aria-hidden
         />
       )}
       <aside
