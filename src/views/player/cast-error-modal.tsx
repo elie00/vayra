@@ -32,13 +32,19 @@ export function CastErrorModal({
 
   return (
     <div className="pointer-events-auto fixed inset-0 z-50 flex animate-[harbor-cast-err-in_180ms_ease-out] items-center justify-center bg-canvas/85 backdrop-blur-md">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onDismiss}
+        className="absolute inset-0 cursor-default"
+      />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cast-error-title"
-        className="relative mx-6 w-full max-w-[440px] rounded-[20px] border border-edge bg-elevated p-7 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 mx-6 w-full max-w-[440px] rounded-[20px] border border-edge bg-elevated p-7 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]"
       >
         <div className="mb-5 flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-400/15 text-rose-200">

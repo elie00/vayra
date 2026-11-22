@@ -257,17 +257,22 @@ function ControlPick({
   return (
     <div
       data-control-id={id}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onSelect(selected ? null : id);
-      }}
-      className={`relative cursor-pointer rounded-xl p-1 transition-[background-color,border-color,color,opacity,box-shadow] duration-150 ${
+      className={`relative rounded-xl p-1 transition-[background-color,border-color,color,opacity,box-shadow] duration-150 ${
         selected ? "bg-accent/15 ring-2 ring-accent" : "ring-2 ring-transparent hover:bg-white/8"
       }`}
     >
       <div className="pointer-events-none">{children}</div>
-      <span className="pointer-events-auto absolute inset-0 z-10" />
+      <button
+        type="button"
+        aria-label={id}
+        aria-pressed={selected}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onSelect(selected ? null : id);
+        }}
+        className="pointer-events-auto absolute inset-0 z-10 cursor-pointer rounded-xl"
+      />
     </div>
   );
 }
