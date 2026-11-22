@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
 import { AuthModal, StremioAuthModal } from "@/components/auth-modal";
@@ -18,8 +18,11 @@ import { ProfilesStrip } from "./account/profiles-strip";
 import { StartupDefaults } from "./account/startup-defaults";
 import { SettingsScopeCard } from "./account/settings-scope-card";
 import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
-import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
-import { avatarUrl } from "@/lib/avatars/catalog";
+import { avatarUrl } from "@/lib/avatars/url";
+
+const AvatarCatalogModal = lazy(() =>
+  import("@/components/avatar-picker/avatar-catalog-modal").then((m) => ({ default: m.AvatarCatalogModal })),
+);
 
 export function AccountStub() {
   const t = useT();
@@ -146,14 +149,16 @@ export function AccountStub() {
       {showVayraAuth && <AuthModal onClose={() => setShowVayraAuth(false)} />}
       {showStremioAuth && <StremioAuthModal onClose={() => setShowStremioAuth(false)} />}
       {avatarPickerOpen && (
-        <AvatarCatalogModal
-          current={effectiveAvatar}
-          onPick={(id) => {
-            pushIdentity({ harborAvatar: avatarUrl(id) });
-            setAvatarPickerOpen(false);
-          }}
-          onClose={() => setAvatarPickerOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <AvatarCatalogModal
+            current={effectiveAvatar}
+            onPick={(id) => {
+              pushIdentity({ harborAvatar: avatarUrl(id) });
+              setAvatarPickerOpen(false);
+            }}
+            onClose={() => setAvatarPickerOpen(false)}
+          />
+        </Suspense>
       )}
     </>
   );

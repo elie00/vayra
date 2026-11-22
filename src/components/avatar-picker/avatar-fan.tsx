@@ -1,12 +1,16 @@
 import { useMemo } from "react";
 import { Shuffle } from "lucide-react";
-import { AVATAR_CATALOG, avatarUrl } from "@/lib/avatars/catalog";
+import { AVATAR_COUNT, AVATAR_PREVIEW_IDS, avatarUrl } from "@/lib/avatars/url";
 import { useT } from "@/lib/i18n";
 
-const ALL_IDS = AVATAR_CATALOG.flatMap((g) => g.items.map((i) => i.id));
+let cachedAllIds: string[] | null = null;
 
-function randomId(): string {
-  return ALL_IDS[Math.floor(Math.random() * ALL_IDS.length)];
+async function randomId(): Promise<string> {
+  if (!cachedAllIds) {
+    const { AVATAR_CATALOG } = await import("@/lib/avatars/catalog");
+    cachedAllIds = AVATAR_CATALOG.flatMap((g) => g.items.map((i) => i.id));
+  }
+  return cachedAllIds[Math.floor(Math.random() * cachedAllIds.length)];
 }
 
 export function AvatarFan({
@@ -20,7 +24,7 @@ export function AvatarFan({
 }) {
   const t = useT();
   const picks = useMemo(() => {
-    const ids = [...ALL_IDS];
+    const ids = [...AVATAR_PREVIEW_IDS];
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [ids[i], ids[j]] = [ids[j], ids[i]];
@@ -44,11 +48,11 @@ export function AvatarFan({
                 style={{ zIndex: i }}
               >
                 <span className="block h-full w-full overflow-hidden rounded-full ring-2 ring-canvas">
-                  <img src={avatarUrl(id)} alt="" draggable={false} className="h-full w-full object-cover" />
+                  <img src={avatarUrl(id)} alt="" loading="lazy" decoding="async" draggable={false} className="h-full w-full object-cover" />
                 </span>
                 {last && (
                   <span className="absolute -bottom-1 -end-1.5 z-10 rounded-full bg-ink px-1.5 py-px text-[9.5px] font-bold leading-tight text-canvas ring-2 ring-canvas">
-                    {ALL_IDS.length}
+                    {AVATAR_COUNT}
                   </span>
                 )}
               </span>
@@ -61,7 +65,7 @@ export function AvatarFan({
       </button>
       <button
         type="button"
-        onClick={() => onRandomize(randomId())}
+        onClick={() => void randomId().then(onRandomize)}
         aria-label={t("Random avatar")}
         title={t("Random avatar")}
         className="flex w-10 shrink-0 items-center justify-center self-stretch border-s border-edge-soft text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"

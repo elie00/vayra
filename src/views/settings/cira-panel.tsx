@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Camera, ImagePlus, QrCode, Share2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
 import QRCode from "qrcode";
-import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
-import { avatarUrl } from "@/lib/avatars/catalog";
+import { avatarUrl } from "@/lib/avatars/url";
+
+const AvatarCatalogModal = lazy(() =>
+  import("@/components/avatar-picker/avatar-catalog-modal").then((m) => ({ default: m.AvatarCatalogModal })),
+);
 import { copyText } from "@/lib/clipboard";
 import { useCira } from "@/lib/cira/provider";
 import { CiraError } from "@/lib/cira";
@@ -242,11 +245,13 @@ function ProfileCard() {
           {notice && <InlineNotice text={notice.text} tone={notice.tone} />}
         </div>
         {avatarOpen && (
-          <AvatarCatalogModal
-            current={avatarKey ? avatarUrl(avatarKey) : null}
-            onPick={(id) => { setAvatarKey(id); setAvatarOpen(false); }}
-            onClose={() => setAvatarOpen(false)}
-          />
+          <Suspense fallback={null}>
+            <AvatarCatalogModal
+              current={avatarKey ? avatarUrl(avatarKey) : null}
+              onPick={(id) => { setAvatarKey(id); setAvatarOpen(false); }}
+              onClose={() => setAvatarOpen(false)}
+            />
+          </Suspense>
         )}
       </div>
     </Section>

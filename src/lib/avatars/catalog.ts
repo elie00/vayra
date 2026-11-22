@@ -1,7 +1,7 @@
+export { AVATAR_COUNT, avatarUrl } from "./url";
+
 export type AvatarItem = { id: string; name: string };
 export type AvatarGroup = { group: string; items: AvatarItem[] };
-
-export const avatarUrl = (id: string): string => `/avatars/${id}.webp`;
 
 export const AVATAR_CATALOG: AvatarGroup[] = [
   {
@@ -1882,5 +1882,3 @@ export const AVATAR_CATALOG: AvatarGroup[] = [
     ],
   },
 ];
-
-export const AVATAR_COUNT = 621;
