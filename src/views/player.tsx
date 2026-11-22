@@ -203,7 +203,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     engineStats,
   });
 
-  useWakeReconnect({ bridgeRef, src, snap });
+  useWakeReconnect({ bridgeRef, src, snap, debrids });
 
   useEffect(() => {
     if (roomSnapshot.state !== "joined") return;
