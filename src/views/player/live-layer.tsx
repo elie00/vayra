@@ -1,6 +1,10 @@
-import { LiveChannelDvr } from "@/components/player/live-channel-dvr";
-import { LiveChannelOverlay } from "@/components/player/live-channel-overlay/overlay";
+import { Suspense, lazy } from "react";
 import type { useLiveChannelOverlay } from "./hooks/use-live-channel-overlay";
+
+const LiveChannelDvr = lazy(() => import("@/components/player/live-channel-dvr").then((m) => ({ default: m.LiveChannelDvr })));
+const LiveChannelOverlay = lazy(() =>
+  import("@/components/player/live-channel-overlay/overlay").then((m) => ({ default: m.LiveChannelOverlay })),
+);
 
 export function LiveLayer({
   liveOverlay,
@@ -16,7 +20,7 @@ export function LiveLayer({
   channelName: string;
 }) {
   return (
-    <>
+    <Suspense fallback={null}>
       {liveOverlay.open && liveOverlay.activeSource && (
         <LiveChannelOverlay
           source={liveOverlay.activeSource}
@@ -31,7 +35,7 @@ export function LiveLayer({
           setQuery={liveOverlay.setQuery}
         />
       )}
-      {liveOverlay.isLive && liveOverlay.activeSource && liveOverlay.currentChannelId && (
+      {liveOverlay.isLive && liveOverlay.activeSource && liveOverlay.currentChannelId && dvrOpen && (
         <LiveChannelDvr
           open={dvrOpen}
           onClose={onCloseDvr}
@@ -41,6 +45,6 @@ export function LiveLayer({
           channelName={channelName}
         />
       )}
-    </>
+    </Suspense>
   );
 }

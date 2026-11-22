@@ -1,10 +1,12 @@
-import { EpisodePanel } from "@/components/player/episode-panel";
+import { Suspense, lazy } from "react";
 import { ResumePrompt } from "@/components/player/resume-prompt";
 import type { Meta } from "@/lib/cinemeta";
 import type { PanelCorner } from "@/lib/player-chrome";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { HeaderWarning, NoAudioWarning } from "./header-warning";
+
+const EpisodePanel = lazy(() => import("@/components/player/episode-panel").then((m) => ({ default: m.EpisodePanel })));
 
 export function PanelsLayer({
   isSeriesPlayback,
@@ -89,18 +91,20 @@ export function PanelsLayer({
       )}
 
       {isSeriesPlayback && (
-        <EpisodePanel
-          open={episodePanelOpen && !episodesHidden}
-          onClose={onCloseEpisodePanel}
-          meta={meta}
-          currentEpisode={currentEpisode}
-          corner={episodesCorner}
-          roomGuest={roomGuest}
-          onHostAdvance={onHostAdvance}
-          watchedFor={watchedFor}
-          nextEp={nextEp}
-          onRestart={onRestart}
-        />
+        <Suspense fallback={null}>
+          <EpisodePanel
+            open={episodePanelOpen && !episodesHidden}
+            onClose={onCloseEpisodePanel}
+            meta={meta}
+            currentEpisode={currentEpisode}
+            corner={episodesCorner}
+            roomGuest={roomGuest}
+            onHostAdvance={onHostAdvance}
+            watchedFor={watchedFor}
+            nextEp={nextEp}
+            onRestart={onRestart}
+          />
+        </Suspense>
       )}
 
       {pendingResumeSec != null && (

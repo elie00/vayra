@@ -1,11 +1,8 @@
 import { MoreHorizontal, Settings2 } from "lucide-react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
-import { CastModal } from "./cast-modal";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
-import { TransportStremio } from "./transport-stremio";
-import { TransportKids } from "./transport-kids";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -26,10 +23,14 @@ import {
 } from "@/lib/player-chrome";
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 import { isMobileTauri } from "@/lib/platform";
-import { MobileMoreSheet } from "./mobile-more-sheet";
 import { SongIdToast } from "@/components/song-id-toast";
 import { useCastModalPlay } from "./use-cast-modal-play";
 import { LUMA_OPEN_EVENT } from "@/lib/luma";
+
+const CastModal = lazy(() => import("./cast-modal").then((m) => ({ default: m.CastModal })));
+const TransportStremio = lazy(() => import("./transport-stremio").then((m) => ({ default: m.TransportStremio })));
+const TransportKids = lazy(() => import("./transport-kids").then((m) => ({ default: m.TransportKids })));
+const MobileMoreSheet = lazy(() => import("./mobile-more-sheet").then((m) => ({ default: m.MobileMoreSheet })));
 
 export function Transport({
   snap,
@@ -228,7 +229,8 @@ export function Transport({
   }, [pipMode]);
   if (isStremioLayout && !pipMode) {
     return (
-      <TransportStremio
+      <Suspense fallback={null}>
+        <TransportStremio
         snap={snap}
         capabilities={capabilities}
         visible={visible}
@@ -289,28 +291,31 @@ export function Transport({
         onOpenDvr={onOpenDvr}
         sleep={sleep}
       />
+      </Suspense>
     );
   }
   if (kid && !pipMode) {
     return (
-      <TransportKids
-        snap={snap}
-        capabilities={capabilities}
-        visible={visible}
-        fullscreen={fullscreen}
-        title={title}
-        resolution={resolution}
-        onBack={onBack}
-        onPlayPause={onPlayPause}
-        onSeek={onSeek}
-        onSeekStep={onSeekStep}
-        onMute={onMute}
-        onVolume={onVolume}
-        onSubtitle={onSubtitle}
-        onFullscreen={onFullscreen}
-        onPickAnother={onPickAnother}
-        canPickAnother={canPickAnother}
-      />
+      <Suspense fallback={null}>
+        <TransportKids
+          snap={snap}
+          capabilities={capabilities}
+          visible={visible}
+          fullscreen={fullscreen}
+          title={title}
+          resolution={resolution}
+          onBack={onBack}
+          onPlayPause={onPlayPause}
+          onSeek={onSeek}
+          onSeekStep={onSeekStep}
+          onMute={onMute}
+          onVolume={onVolume}
+          onSubtitle={onSubtitle}
+          onFullscreen={onFullscreen}
+          onPickAnother={onPickAnother}
+          canPickAnother={canPickAnother}
+        />
+      </Suspense>
     );
   }
   if (pipMode) {
@@ -523,28 +528,34 @@ export function Transport({
         </div>
       </div>
 
-      {mobile && moreOpen && <MobileMoreSheet ctx={ctx} onClose={() => setMoreOpen(false)} />}
+      {mobile && moreOpen && (
+        <Suspense fallback={null}>
+          <MobileMoreSheet ctx={ctx} onClose={() => setMoreOpen(false)} />
+        </Suspense>
+      )}
 
-      {meta && !isLiveChannel && (
-        <CastModal
-          open={castModalOpen}
-          onClose={() => setCastModalOpen(false)}
-          meta={meta}
-          tmdbKey={tmdbKey ?? null}
-          onOpenDetail={(m) => {
-            setCastModalOpen(false);
-            exitPlayer();
-            openMeta(m);
-          }}
-          onPlay={(m, ep) => {
-            setCastModalOpen(false);
-            castModalPlay(m, ep);
-          }}
-          currentEpisode={
-            season != null && episode != null ? { season, episode } : null
-          }
-          initialView={castModalInitialView}
-        />
+      {meta && !isLiveChannel && castModalOpen && (
+        <Suspense fallback={null}>
+          <CastModal
+            open={castModalOpen}
+            onClose={() => setCastModalOpen(false)}
+            meta={meta}
+            tmdbKey={tmdbKey ?? null}
+            onOpenDetail={(m) => {
+              setCastModalOpen(false);
+              exitPlayer();
+              openMeta(m);
+            }}
+            onPlay={(m, ep) => {
+              setCastModalOpen(false);
+              castModalPlay(m, ep);
+            }}
+            currentEpisode={
+              season != null && episode != null ? { season, episode } : null
+            }
+            initialView={castModalInitialView}
+          />
+        </Suspense>
       )}
     </>
   );
