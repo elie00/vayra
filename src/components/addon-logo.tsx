@@ -109,14 +109,26 @@ export function addonLogoSrc(addonId: string, addonName: string): string | null 
   return null;
 }
 
+function upgradeLogoProtocol(url: string): string {
+  if (!/^http:\/\//i.test(url)) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") return url;
+    parsed.protocol = "https:";
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function resolveAddonLogo(logo: string | null | undefined, transportUrl: string | null | undefined): string | null {
   if (!logo) return null;
   const trimmed = logo.trim();
   if (!trimmed) return null;
-  if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return upgradeLogoProtocol(trimmed);
   if (!transportUrl) return null;
   try {
-    return new URL(trimmed, transportUrl).toString();
+    return upgradeLogoProtocol(new URL(trimmed, transportUrl).toString());
   } catch {
     return null;
   }
@@ -149,8 +161,8 @@ export function AddonLogo({
   const preferBundled = PREFER_BUNDLED(addonId, addonName) && !!bundled;
   const primary = preferBundled ? bundled : manifestLogo || bundled || null;
   const fallback = preferBundled ? null : manifestLogo && bundled ? bundled : null;
-  const [remoteFailed, setRemoteFailed] = useState(false);
-  const src = remoteFailed && fallback ? fallback : primary;
+  const [imgStage, setImgStage] = useState<0 | 1 | 2>(0);
+  const src = imgStage === 0 ? primary : imgStage === 1 ? fallback : null;
   const initial = (addonName || "?").trim().charAt(0).toUpperCase();
   const [from, to] = paletteFor(addonId || addonName || "?");
 
@@ -168,7 +180,7 @@ export function AddonLogo({
         decoding="async"
         referrerPolicy="no-referrer"
         onError={() => {
-          if (!remoteFailed && fallback) setRemoteFailed(true);
+          setImgStage((s) => (s === 0 && fallback ? 1 : 2));
         }}
         style={{
           height: px,
