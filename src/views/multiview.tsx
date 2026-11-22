@@ -76,11 +76,6 @@ export function MultiviewView({
     return () => window.removeEventListener("keydown", onKey);
   }, [collapsed]);
 
-  useEffect(() => {
-    if (active) return;
-    store.reset();
-  }, [active, store]);
-
   const closeSlot = (slot: number) => {
     store.setSlot(slot, null);
     if (store.audioFocus === slot) {
@@ -149,15 +144,17 @@ export function MultiviewView({
       )}
 
       <div className={`min-h-0 flex-1 px-6 ${collapsed ? "pb-3" : "pb-6"}`}>
-        <Grid
-          layout={store.layout}
-          slots={store.slots}
-          focusIndex={store.audioFocus}
-          onPick={(s) => setPickerSlot(s)}
-          onClose={closeSlot}
-          onFocus={(s) => store.setAudioFocus(s)}
-          onMute={() => store.setAudioFocus(-1)}
-        />
+        {active && (
+          <Grid
+            layout={store.layout}
+            slots={store.slots}
+            focusIndex={store.audioFocus}
+            onPick={(s) => setPickerSlot(s)}
+            onClose={closeSlot}
+            onFocus={(s) => store.setAudioFocus(s)}
+            onMute={() => store.setAudioFocus(-1)}
+          />
+        )}
       </div>
 
       {pickerSlot != null && (
