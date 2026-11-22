@@ -1,20 +1,20 @@
 import { Monitor, Tv2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CastDeviceInfo } from "@/lib/cast";
 
-const MODULES = import.meta.glob("/src/assets/cast-icons/*.webp", {
-  eager: true,
+const LOADERS = import.meta.glob("/src/assets/cast-icons/*.webp", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
-const ICONS: Record<string, string> = {};
-for (const [path, url] of Object.entries(MODULES)) {
+const SLUG_LOADERS: Record<string, () => Promise<string>> = {};
+for (const [path, load] of Object.entries(LOADERS)) {
   const m = path.match(/([^/]+)\.webp$/);
-  if (m) ICONS[m[1]] = url;
+  if (m) SLUG_LOADERS[m[1]] = load;
 }
+const ICON_CACHE = new Map<string, string>();
 
-const icon = (slug: string): string | null => ICONS[slug] ?? null;
+const hasIcon = (slug: string): boolean => slug in SLUG_LOADERS;
 
 const NAME_RULES: Array<[RegExp, string]> = [
   [/google tv|chromecast with google tv|gtv/, "google_tv_streamer"],
@@ -104,10 +104,43 @@ const DARK_ICONS = new Set(["marantz_receiver"]);
 function resolveSlug(device: CastDeviceInfo): string | null {
   const hay = `${device.name} ${device.model ?? ""}`.toLowerCase();
   for (const [re, slug] of NAME_RULES) {
-    if (re.test(hay) && icon(slug)) return slug;
+    if (re.test(hay) && hasIcon(slug)) return slug;
   }
   const fallback = KIND_FALLBACK[device.kind] ?? "generic_streaming_stick";
-  return icon(fallback) ? fallback : null;
+  return hasIcon(fallback) ? fallback : null;
+}
+
+function useCastIconUrl(slug: string | null): string | null {
+  const [url, setUrl] = useState<string | null>(() => (slug ? ICON_CACHE.get(slug) ?? null : null));
+  useEffect(() => {
+    if (!slug) {
+      setUrl(null);
+      return;
+    }
+    const cached = ICON_CACHE.get(slug);
+    if (cached) {
+      setUrl(cached);
+      return;
+    }
+    const load = SLUG_LOADERS[slug];
+    if (!load) {
+      setUrl(null);
+      return;
+    }
+    let cancelled = false;
+    load()
+      .then((resolved) => {
+        ICON_CACHE.set(slug, resolved);
+        if (!cancelled) setUrl(resolved);
+      })
+      .catch(() => {
+        if (!cancelled) setUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+  return url;
 }
 
 export function CastIcon({
@@ -119,7 +152,7 @@ export function CastIcon({
 }) {
   const [errored, setErrored] = useState(false);
   const slug = resolveSlug(device);
-  const src = slug ? icon(slug) : null;
+  const src = useCastIconUrl(slug);
   if (!src || errored) {
     return device.kind === "dlna" ? (
       <Tv2 size={Math.round(size * 0.55)} strokeWidth={1.8} className="text-ink-muted" />

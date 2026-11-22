@@ -1,13 +1,16 @@
-import { useMemo } from "react";
-import { AvatarDock } from "@/components/player/avatar-dock";
-import { ChatOverlay } from "@/components/player/chat-overlay";
+import { Suspense, lazy, useMemo } from "react";
 import type { PanelCorner } from "@/lib/player-chrome";
 import type { RoomSnapshot } from "@/lib/together/client";
 import type { ChatMessage } from "@/lib/together/provider";
 import type { ParticipantLocation, SourceDescriptor, SyncState } from "@/lib/together/protocol";
-import { DurationMismatchChip } from "./duration-mismatch-chip";
-import { ForeignNoticeBox } from "./foreign-notice-box";
-import { WaitingForRoom } from "./waiting-for-room";
+
+const AvatarDock = lazy(() => import("@/components/player/avatar-dock").then((m) => ({ default: m.AvatarDock })));
+const ChatOverlay = lazy(() => import("@/components/player/chat-overlay").then((m) => ({ default: m.ChatOverlay })));
+const DurationMismatchChip = lazy(() =>
+  import("./duration-mismatch-chip").then((m) => ({ default: m.DurationMismatchChip })),
+);
+const ForeignNoticeBox = lazy(() => import("./foreign-notice-box").then((m) => ({ default: m.ForeignNoticeBox })));
+const WaitingForRoom = lazy(() => import("./waiting-for-room").then((m) => ({ default: m.WaitingForRoom })));
 
 export function RoomLayer({
   inRoom,
@@ -84,7 +87,7 @@ export function RoomLayer({
   );
   const notReady = useMemo(() => participants.filter((p) => !p.ready), [participants]);
   return (
-    <>
+    <Suspense fallback={null}>
       {inRoom && !pipMode && (
         <AvatarDock
           participants={participants}
@@ -127,7 +130,7 @@ export function RoomLayer({
         />
       )}
 
-      {!pipMode && !drawMode && (
+      {!pipMode && !drawMode && guestHostSource && (
         <DurationMismatchChip
           hostSource={guestHostSource}
           guestDurationSec={guestDurationSec}
@@ -141,6 +144,6 @@ export function RoomLayer({
       {foreignNotice && (
         <ForeignNoticeBox title={foreignNotice.title} onDismiss={onDismissForeign} />
       )}
-    </>
+    </Suspense>
   );
 }
