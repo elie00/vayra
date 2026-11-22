@@ -1,15 +1,16 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { StrictMode } from "react";
+import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
 import { installAndroidInsets } from "@/lib/android-insets";
 import { isAndroidTauri, isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
-import { ModalOverlayApp } from "@/views/modal-overlay-app";
-import { HdrOverlayApp } from "@/views/hdr-overlay-app";
-import { PipApp } from "@/views/pip";
 import "@/index.css";
 import { invoke } from "@tauri-apps/api/core";
 import { forwardConsoleToLog } from "@/lib/web-log";
+
+const ModalOverlayApp = lazy(() => import("@/views/modal-overlay-app").then((m) => ({ default: m.ModalOverlayApp })));
+const HdrOverlayApp = lazy(() => import("@/views/hdr-overlay-app").then((m) => ({ default: m.HdrOverlayApp })));
+const PipApp = lazy(() => import("@/views/pip").then((m) => ({ default: m.PipApp })));
 
 if ("__TAURI_INTERNALS__" in window) {
   forwardConsoleToLog((level, message) => {
@@ -79,7 +80,21 @@ if (import.meta.env.VITE_VAYRA_AGENT === "1" && !isPip && !isModal && !isHdrOver
 }
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {isHdrOverlay ? <HdrOverlayApp /> : isModal ? <ModalOverlayApp /> : isPip ? <PipApp /> : <App />}
+    {isHdrOverlay ? (
+      <Suspense fallback={null}>
+        <HdrOverlayApp />
+      </Suspense>
+    ) : isModal ? (
+      <Suspense fallback={null}>
+        <ModalOverlayApp />
+      </Suspense>
+    ) : isPip ? (
+      <Suspense fallback={null}>
+        <PipApp />
+      </Suspense>
+    ) : (
+      <App />
+    )}
   </StrictMode>,
 );
 
