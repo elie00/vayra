@@ -25,20 +25,124 @@ const RETENTION_KEY = "harbor.snap.retention";
 const MAX_ENTRIES = 80;
 const DEFAULT_RETENTION_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const IDB_NAME = "vayra-snapshots";
+const IDB_STORE = "thumbs";
 
 type IndexEntry = { id: string; t: number };
 
+let cachedIndex: IndexEntry[] | null = null;
+const memoryCache = new Map<string, string>();
+const idbPending = new Set<string>();
+let dbPromise: Promise<IDBDatabase | null> | null = null;
+
+function hasIndexedDb(): boolean {
+  return typeof indexedDB !== "undefined";
+}
+
+function openSnapshotDb(): Promise<IDBDatabase | null> {
+  if (!hasIndexedDb()) return Promise.resolve(null);
+  if (!dbPromise) {
+    dbPromise = new Promise<IDBDatabase | null>((resolve) => {
+      try {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+  return dbPromise;
+}
+
+function idbPut(id: string, dataUrl: string): void {
+  void openSnapshotDb().then((db) => {
+    if (!db) return;
+    try {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put(dataUrl, id);
+    } catch {
+      /* noop */
+    }
+  });
+}
+
+function idbDelete(id: string): void {
+  void openSnapshotDb().then((db) => {
+    if (!db) return;
+    try {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).delete(id);
+    } catch {
+      /* noop */
+    }
+  });
+}
+
+function idbClear(): void {
+  void openSnapshotDb().then((db) => {
+    if (!db) return;
+    try {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).clear();
+    } catch {
+      /* noop */
+    }
+  });
+}
+
+function hydrateFromIdb(id: string): void {
+  if (!hasIndexedDb() || idbPending.has(id)) return;
+  idbPending.add(id);
+  void openSnapshotDb().then((db) => {
+    if (!db) {
+      idbPending.delete(id);
+      return;
+    }
+    try {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const req = tx.objectStore(IDB_STORE).get(id);
+      req.onsuccess = () => {
+        idbPending.delete(id);
+        if (typeof req.result === "string" && memoryCache.get(id) !== req.result) {
+          memoryCache.set(id, req.result);
+          bumpSnapVersion();
+        }
+      };
+      req.onerror = () => {
+        idbPending.delete(id);
+      };
+    } catch {
+      idbPending.delete(id);
+    }
+  });
+}
+
 function readIndex(): IndexEntry[] {
+  if (cachedIndex) return cachedIndex;
   try {
     const raw = localStorage.getItem(INDEX_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as IndexEntry[];
+    if (!raw) {
+      cachedIndex = [];
+      return cachedIndex;
+    }
+    const parsed = JSON.parse(raw) as IndexEntry[];
+    cachedIndex = Array.isArray(parsed) ? parsed : [];
+    return cachedIndex;
   } catch {
-    return [];
+    cachedIndex = [];
+    return cachedIndex;
   }
 }
 
 function writeIndex(entries: IndexEntry[]): void {
+  cachedIndex = entries;
   try {
     localStorage.setItem(INDEX_KEY, JSON.stringify(entries));
   } catch {
@@ -68,6 +172,8 @@ function snapshotsDisabled(): boolean {
 }
 
 function dropEntry(id: string): void {
+  memoryCache.delete(id);
+  idbDelete(id);
   try {
     localStorage.removeItem(PREFIX + id);
   } catch {
@@ -98,21 +204,46 @@ export function readSnapshot(id: string): string | null {
     writeIndex(index.filter((e) => e.id !== id));
     return null;
   }
+  const hit = memoryCache.get(id);
+  if (hit !== undefined) return hit;
   try {
-    return localStorage.getItem(PREFIX + id);
+    const legacy = localStorage.getItem(PREFIX + id);
+    if (legacy) {
+      memoryCache.set(id, legacy);
+      if (hasIndexedDb()) {
+        idbPut(id, legacy);
+        try {
+          localStorage.removeItem(PREFIX + id);
+        } catch {
+          /* noop */
+        }
+      }
+      return legacy;
+    }
   } catch {
-    return null;
+    /* noop */
   }
+  hydrateFromIdb(id);
+  return null;
 }
 
 function tryReadOrphan(id: string): string | null {
   try {
     const raw = localStorage.getItem(PREFIX + id);
     if (!raw) return null;
-    const index = readIndex();
+    memoryCache.set(id, raw);
+    const index = [...readIndex()];
     if (!index.some((e) => e.id === id)) {
       index.push({ id, t: Date.now() });
       writeIndex(index);
+    }
+    if (hasIndexedDb()) {
+      idbPut(id, raw);
+      try {
+        localStorage.removeItem(PREFIX + id);
+      } catch {
+        /* noop */
+      }
     }
     return raw;
   } catch {
@@ -129,6 +260,18 @@ export function saveSnapshot(id: string, dataUrl: string): void {
     const evicted = index.shift();
     if (evicted) dropEntry(evicted.id);
   }
+  if (hasIndexedDb()) {
+    memoryCache.set(id, dataUrl);
+    idbPut(id, dataUrl);
+    try {
+      localStorage.removeItem(PREFIX + id);
+    } catch {
+      /* noop */
+    }
+    writeIndex(index);
+    bumpSnapVersion();
+    return;
+  }
   let saved = false;
   for (let attempts = 0; attempts < 50; attempts++) {
     try {
@@ -143,6 +286,8 @@ export function saveSnapshot(id: string, dataUrl: string): void {
   }
   if (!saved) {
     index = index.filter((e) => e.id !== id);
+  } else {
+    memoryCache.set(id, dataUrl);
   }
   writeIndex(index);
   if (saved) bumpSnapVersion();
@@ -173,7 +318,10 @@ export function pruneExpiredSnapshots(): void {
 export function clearAllSnapshots(): number {
   const index = readIndex();
   for (const e of index) dropEntry(e.id);
+  memoryCache.clear();
+  idbClear();
   writeIndex([]);
+  bumpSnapVersion();
   try {
     const orphans: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
