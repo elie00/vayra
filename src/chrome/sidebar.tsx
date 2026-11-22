@@ -96,10 +96,9 @@ export function Sidebar() {
               />
             ) : (
               <span
-                className="hidden whitespace-nowrap text-[19px] font-semibold leading-none tracking-[0.16em] lg:inline"
+                className="hidden whitespace-nowrap text-[19px] font-semibold leading-none tracking-[0.12em] lg:inline"
                 style={{
-                  fontFamily: 'var(--font-sans)',
-                  transform: "translateY(1px)",
+                  fontFamily: "var(--font-display)",
                 }}
               >
                 VAYRA
@@ -122,7 +121,7 @@ export function Sidebar() {
             }`}
           />
           {!mobile && (
-            <div className={`flex pb-1 ${collapsed ? "justify-center" : ""}`}>
+            <div className={`hidden pb-1 lg:flex ${collapsed ? "justify-center" : ""}`}>
               <CollapseToggle collapsed={collapsed} />
             </div>
           )}
@@ -246,11 +245,11 @@ function ScrollableNav({
         </div>
         {mac && (isExploreView(view) || pins.length > 0) && (
           <div className="mt-4 flex flex-col gap-1 border-t border-edge-soft pt-3">
-            {!collapsed && <p className="px-3 pb-1 text-[12px] font-medium text-ink-subtle">{t(isExploreView(view) ? "Explore categories" : "Pinned categories")}</p>}
+            {!collapsed && <p className="hidden px-3 pb-1 text-[12px] font-medium text-ink-subtle lg:block">{t(isExploreView(view) ? "Explore categories" : "Pinned categories")}</p>}
             {categories.filter((item) => isExploreView(view) || pins.includes(item.view)).map((item) => (
               <div key={item.id} className="flex min-w-0 items-center gap-1">
                 <NavItem {...item} compact collapsed={collapsed} active={view === item.view} onClick={() => setView(item.view)} />
-                {!collapsed && item.id !== "discover" && <button type="button" aria-pressed={pins.includes(item.view)} aria-label={t(pins.includes(item.view) ? "Unpin {name}" : "Pin {name}", { name: t(item.label) })} onClick={() => update({ macPinnedViews: pins.includes(item.view) ? pins.filter((id) => id !== item.view) : [...pins, item.view] })} className={`flex h-11 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-elevated ${pins.includes(item.view) ? "text-accent" : "text-ink-subtle"}`}><Pin size={14} fill={pins.includes(item.view) ? "currentColor" : "none"} /></button>}
+                {!collapsed && item.id !== "discover" && <button type="button" aria-pressed={pins.includes(item.view)} aria-label={t(pins.includes(item.view) ? "Unpin {name}" : "Pin {name}", { name: t(item.label) })} onClick={() => update({ macPinnedViews: pins.includes(item.view) ? pins.filter((id) => id !== item.view) : [...pins, item.view] })} className={`hidden h-11 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-elevated lg:flex ${pins.includes(item.view) ? "text-accent" : "text-ink-subtle"}`}><Pin size={14} fill={pins.includes(item.view) ? "currentColor" : "none"} /></button>}
               </div>
             ))}
           </div>
@@ -330,7 +329,7 @@ export function NavItem({
       aria-current={active ? "page" : undefined}
       aria-label={gated ? t("chrome.lockedRequiresPin", { label: translatedLabel }) : translatedLabel}
       title={gated ? t("chrome.lockedShort", { label: translatedLabel }) : translatedLabel}
-      className={`relative flex items-center justify-center transition-colors duration-150 ${compact ? "min-h-11 min-w-0 flex-1 gap-3 rounded-lg text-[13px] [&_svg]:h-5 [&_svg]:w-5" : "h-14 gap-4 rounded-xl text-[16px]"} ${
+      className={`relative flex items-center justify-center transition-colors duration-150 ${compact ? "min-h-11 min-w-0 flex-1 gap-3 rounded-lg text-[13.5px] tracking-[-0.005em] [&_svg]:h-5 [&_svg]:w-5" : "h-14 gap-4 rounded-xl text-[15px] tracking-[-0.005em]"} ${
         collapsed ? "" : "lg:justify-start lg:px-4"
       } ${
         collapsed

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { activeLayout } from "@/lib/theme";
+import { activeFontPair, activeLayout, DEFAULT_THEME } from "@/lib/theme";
 import {
   currentPlatformCapabilities,
   type PlatformCapabilities,
@@ -1178,26 +1178,30 @@ export function SettingsNav({
     if (!trimmed) return null;
     const out: NavItem[] = [];
     for (const group of NAV_GROUPS) {
-      const groupHit = group.heading?.toLowerCase().includes(trimmed) ?? false;
+      const groupHit =
+        (group.heading?.toLocaleLowerCase().includes(trimmed) ?? false) ||
+        (group.heading ? t(group.heading).toLocaleLowerCase().includes(trimmed) : false);
       for (const item of group.items) {
         const hit =
           groupHit ||
-          item.label.toLowerCase().includes(trimmed) ||
-          (item.keywords ?? []).some((k) => k.toLowerCase().includes(trimmed));
+          item.label.toLocaleLowerCase().includes(trimmed) ||
+          t(item.label).toLocaleLowerCase().includes(trimmed) ||
+          (item.keywords ?? []).some((k) => k.toLocaleLowerCase().includes(trimmed));
         if (hit) out.push(item);
       }
     }
     return out;
-  }, [trimmed]);
+  }, [trimmed, t]);
   const optionMatches = useMemo<SettingsOption[] | null>(() => {
     if (!trimmed) return null;
     return SETTINGS_OPTIONS.filter(
       (o) =>
         AVAILABLE_SECTION_IDS.has(o.section) &&
-        (o.label.toLowerCase().includes(trimmed) ||
-          (o.keywords ?? []).some((k) => k.toLowerCase().includes(trimmed))),
+        (o.label.toLocaleLowerCase().includes(trimmed) ||
+          t(o.label).toLocaleLowerCase().includes(trimmed) ||
+          (o.keywords ?? []).some((k) => k.toLocaleLowerCase().includes(trimmed))),
     );
-  }, [trimmed]);
+  }, [trimmed, t]);
 
   const libraryKeys = [
     settings.tmdbKey,
@@ -1214,8 +1218,6 @@ export function SettingsNav({
     settings.pmKey,
     settings.dlKey,
   ].filter(Boolean).length;
-
-  const debridChip = libraryKeys > 0 ? `${libraryKeys}/5` : null;
 
   const relayLive = settings.togetherRelayUrl ? "live" : null;
   const langChip =
@@ -1244,7 +1246,7 @@ export function SettingsNav({
     simkl: null,
     letterboxd: settings.letterboxd.enabled ? (settings.letterboxd.mode === "full" ? "FULL" : "ON") : null,
     relay: relayLive,
-    streaming: debridChip,
+    streaming: null,
     streamFilters: settings.customStreamFilters?.length ? String(settings.customStreamFilters.length) : null,
     p2p: null,
     language: langChip,
@@ -1252,7 +1254,7 @@ export function SettingsNav({
     mpv: (settings.mpvQuality ?? "balanced") === "balanced" ? null : settings.mpvQuality === "performance" ? "lite" : "max",
     anime: settings.playerAnime4k ? "on" : null,
     playerLayout: null,
-    theme: settings.theme.preset === "cool-grey" && settings.theme.fontPair === "geist" ? null : "•",
+    theme: settings.theme.preset === DEFAULT_THEME.preset && activeFontPair(settings.theme) === DEFAULT_THEME.fontPair && !settings.theme.customFontId ? null : "•",
     webhooks: webhookActive ? "live" : null,
     hotkeys: null,
     bug: null,
@@ -1347,7 +1349,7 @@ export function SettingsNav({
                   setQuery("");
                 } else if (optionMatches && optionMatches.length > 0) {
                   const o = optionMatches[0];
-                  onChange(o.section, o.anchorTitle ? settingsAnchor(o.anchorTitle) : undefined);
+                  onChange(o.section, o.anchorTitle ? settingsAnchor(t(o.anchorTitle)) : undefined);
                   setQuery("");
                 }
               } else if (e.key === "Escape") {
@@ -1394,7 +1396,7 @@ export function SettingsNav({
                   <button
                     key={`${o.section}-${o.label}`}
                     onClick={() => {
-                      onChange(o.section, o.anchorTitle ? settingsAnchor(o.anchorTitle) : undefined);
+                      onChange(o.section, o.anchorTitle ? settingsAnchor(t(o.anchorTitle)) : undefined);
                       setQuery("");
                     }}
                     className="group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-start text-ink-muted transition-colors hover:bg-elevated/70 hover:text-ink"

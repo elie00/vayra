@@ -61,7 +61,7 @@ export function ProfileChip({
         >
           {otherProfiles.length > 0 && (
             <div className="flex flex-col gap-0.5 border-b border-edge-soft p-1.5">
-              <span className="px-2.5 pb-1 pt-1 text-[10.5px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
+              <span className="px-2.5 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
                 {t("profile.switch")}
               </span>
               {otherProfiles.map((p) => (

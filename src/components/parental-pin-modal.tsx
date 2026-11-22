@@ -149,10 +149,8 @@ export function ParentalPinModal({
         </div>
 
         <div className="flex flex-col items-center gap-5">
-          <button
-            type="button"
-            onClick={focus}
-            aria-label={t("Focus PIN entry")}
+          <div
+            onMouseDown={() => focus()}
             className="relative flex cursor-text items-center gap-3 rounded-full px-3 py-2"
           >
             <input
@@ -175,13 +173,14 @@ export function ParentalPinModal({
             {[0, 1, 2, 3].map((i) => (
               <span
                 key={i}
+                aria-hidden="true"
                 className={`pointer-events-none h-3.5 w-3.5 rounded-full ring-1 transition-all ${
                   pin.length > i ? "scale-110 bg-ink ring-ink" : "bg-transparent ring-edge-soft"
                 }`}
               />
             ))}
-          </button>
-          {error && <p className="text-[12.5px] font-medium text-red-300">{error}</p>}
+          </div>
+          {error && <p role="alert" aria-live="polite" className="text-[12.5px] font-medium text-danger">{error}</p>}
           <div className="grid grid-cols-3 gap-2.5 pt-1">
             {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
               <PinKey key={d} onClick={() => tap(d)} disabled={busy}>

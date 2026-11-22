@@ -316,7 +316,7 @@ function HeroTitlePlate({
         />
       ) : resolved ? (
         <h2
-          className="font-display text-[68px] font-medium leading-[0.98] tracking-tight text-ink"
+          className="font-display text-[68px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink"
           style={{ animation: "harbor-fade-in 420ms cubic-bezier(0.32, 0.72, 0.24, 1) both" }}
         >
           {name}

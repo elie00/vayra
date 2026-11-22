@@ -20,7 +20,7 @@
   font-display: swap;
 }
 
-/* Geist (Vercel, SIL OFL 1.1): Geist Serif for titles, Geist Sans for the rest.
+/* Optional Geist pair (Vercel, SIL OFL 1.1).
    The serif ships in one weight only; declaring it over the whole weight range
    makes a bold title use that cut as is instead of a smeared synthetic bold. */
 @font-face {
@@ -45,9 +45,25 @@
   font-display: swap;
 }
 
-/* Those alternates suit the other pairs; Geist keeps its own letters. */
-:root[data-font-pair="geist"] {
-  font-feature-settings: normal;
+/* Inter-specific alternates only belong on the Fraunces + Inter pair.
+   Google Sans and Geist ship both upright and italic masters, so disabling
+   synthesis avoids smeared faux-bold at 800/900 on macOS WebKit. */
+:root[data-font-pair="fraunces-inter"] {
+  font-feature-settings: "cv11", "ss01";
+  font-synthesis: auto;
+}
+:root[data-font-pair="sentient-switzer"],
+:root[data-font-pair="general-sans"],
+:root[data-font-pair="cabinet-switzer"],
+:root[data-font-pair="plex"],
+:root[data-font-pair="plus-jakarta"],
+:root[data-font-pair="system"] {
+  font-synthesis: auto;
+}
+:root[data-font-pair="google-sans"] :is(h1, h2, h3, h4, .font-display),
+:root:not([data-font-pair]) :is(h1, h2, h3, h4, .font-display) {
+  font-optical-sizing: auto;
+  text-wrap: balance;
 }
 
 @font-face {
@@ -65,7 +81,7 @@
   --color-raised: #242529;
   --color-ink: #f4f2ed;
   --color-ink-muted: #a8aaad;
-  --color-ink-subtle: #737579;
+  --color-ink-subtle: #8d9096;
   --color-edge: rgb(75 77 80 / 0.72);
   --color-edge-soft: rgb(75 77 80 / 0.38);
   --color-accent: #a8aaad;
@@ -81,10 +97,10 @@
   --radius-xl: 20px;
   --radius-2xl: 28px;
 
-  --font-display: "Geist Serif", "Iowan Old Style", "Georgia", serif;
-  --font-sans: "Geist", "Inter", system-ui, sans-serif;
+  --font-display: "Google Sans", "Inter", system-ui, sans-serif;
+  --font-sans: "Google Sans", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-channel: "Geist", "Inter", system-ui, sans-serif;
+  --font-channel: "Google Sans", "Inter", system-ui, sans-serif;
   --font-anime: "WonderfulFontyCure", "Sentient", "Georgia", serif;
   --font-arabic: "Geeza Pro", "SF Arabic", "Segoe UI", "Tahoma", "Noto Naskh Arabic", serif;
 
@@ -99,7 +115,9 @@
 :root {
   color-scheme: dark;
   font-family: var(--font-sans);
-  font-feature-settings: "cv11", "ss01";
+  font-feature-settings: normal;
+  font-optical-sizing: auto;
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -1484,26 +1502,32 @@ html[data-theme-card="crunch"][dir="rtl"] .harbor-profile-dropdown {
    status bar, so the top inset falls back to a fixed ~28px. */
 :root {
   --vayra-safe-bottom: env(safe-area-inset-bottom);
+  --vayra-safe-left: env(safe-area-inset-left);
+  --vayra-safe-right: env(safe-area-inset-right);
 }
-/* MainActivity hands the real bar heights over as --vayra-inset-* (see
-   src/lib/android-insets.ts); 28px stands in until they arrive. */
+/* MainActivity hands the real bar heights and display cutouts over as
+   --vayra-inset-* (see src/lib/android-insets.ts); 28px stands in until they arrive. */
 html[data-os="android"] {
   --harbor-status-bar: max(env(safe-area-inset-top), var(--vayra-inset-top, 28px));
   --vayra-safe-bottom: max(env(safe-area-inset-bottom), var(--vayra-inset-bottom, 0px));
+  --vayra-safe-left: max(env(safe-area-inset-left), var(--vayra-inset-left, 0px));
+  --vayra-safe-right: max(env(safe-area-inset-right), var(--vayra-inset-right, 0px));
 }
 html[data-os="android"] #root {
   box-sizing: border-box;
   padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  padding-left: var(--vayra-safe-left);
+  padding-right: var(--vayra-safe-right);
 }
 /* The top bar is position:fixed, so #root padding can't move it; give it its
-   own status-bar inset and grow its height so the 80px control row is preserved
-   and simply pushed below the status bar. */
+   own status-bar and cutout insets and grow its height so the 80px control row
+   is preserved and simply pushed below the status bar. */
 html[data-os="android"] [data-vayra-topbar] {
   box-sizing: border-box;
   height: calc(5rem + var(--harbor-status-bar));
   padding-top: var(--harbor-status-bar);
+  padding-left: var(--vayra-safe-left);
+  padding-right: var(--vayra-safe-right);
 }
 /* The mobile nav drawer is fixed full-height; keep its logo clear of the bar. */
 html[data-os="android"] [data-harbor-nav-drawer] {
@@ -1530,16 +1554,16 @@ html[data-os="android"] .flex-1.overflow-y-auto {
    styles named by role, each with its line height and tracking. 11sp is for
    labels only, reading text is 14sp on 20 at least, fields stay at 16sp so
    typing never zooms. A leading-* utility still wins. Titles from 20sp up are
-   set in the display serif. */
-@utility type-micro { font-size: 11px; line-height: var(--tw-leading, 16px); letter-spacing: 0.03em; }
-@utility type-caption { font-size: 12px; line-height: var(--tw-leading, 16px); letter-spacing: 0.02em; }
-@utility type-footnote { font-size: 14px; line-height: var(--tw-leading, 20px); letter-spacing: 0.01em; }
-@utility type-callout { font-size: 16px; line-height: var(--tw-leading, 24px); letter-spacing: 0.01em; }
+   set in the display family. */
+@utility type-micro { font-size: 11px; line-height: var(--tw-leading, 16px); letter-spacing: 0.025em; }
+@utility type-caption { font-size: 12px; line-height: var(--tw-leading, 16px); letter-spacing: 0.015em; }
+@utility type-footnote { font-size: 14px; line-height: var(--tw-leading, 20px); letter-spacing: 0.005em; }
+@utility type-callout { font-size: 16px; line-height: var(--tw-leading, 24px); letter-spacing: 0; }
 @utility type-body { font-size: 16px; line-height: var(--tw-leading, 24px); }
-@utility type-title-3 { font-family: var(--font-display); font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
-@utility type-title-2 { font-family: var(--font-display); font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.01em; }
-@utility type-title-1 { font-family: var(--font-display); font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.015em; }
-@utility type-display { font-family: var(--font-display); font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.02em; }
+@utility type-title-3 { font-family: var(--font-display); font-size: 20px; line-height: var(--tw-leading, 28px); letter-spacing: -0.015em; }
+@utility type-title-2 { font-family: var(--font-display); font-size: 22px; line-height: var(--tw-leading, 28px); letter-spacing: -0.018em; }
+@utility type-title-1 { font-family: var(--font-display); font-size: 28px; line-height: var(--tw-leading, 36px); letter-spacing: -0.022em; }
+@utility type-display { font-family: var(--font-display); font-size: 32px; line-height: var(--tw-leading, 40px); letter-spacing: -0.025em; }
 
 /* Phone polish, after Emil Kowalski's mobile-native baseline and
    design-engineering notes. Clickable cards are divs too, so the tap flash
@@ -1692,6 +1716,19 @@ html[data-os="android"] {
     .vayra-search {
       transform: none;
     }
+  }
+}
+.vayra-topbar-scrolled {
+  background: color-mix(in srgb, var(--color-canvas) 84%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.05);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .vayra-topbar-scrolled {
+    background: var(--color-canvas);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 /* VAYRA Connect mini player (MacNowPlayingBar) sits above the tab bar. */

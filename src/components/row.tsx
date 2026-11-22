@@ -466,8 +466,8 @@ export function Row({
           {title && (
             <div className="flex min-w-0 items-center gap-2">
               <h3
-                className={`truncate font-medium tracking-tight ${mobile ? "font-display" : ""} ${titleClassName}`}
-                style={{ fontSize: `${Math.round((mobile ? 20 : 17) * settings.rowTitleScale * titleScale)}px` }}
+                className={`truncate font-semibold leading-[1.25] tracking-[-0.015em] ${mobile ? "font-display" : ""} ${titleClassName}`}
+                style={{ fontSize: `${Math.round((mobile ? 20 : 18) * settings.rowTitleScale * titleScale)}px` }}
               >
                 {title}
               </h3>

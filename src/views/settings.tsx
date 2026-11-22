@@ -410,10 +410,10 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
         ref={scrollRef}
         className="flex-1 overflow-y-auto pt-28 pb-16 max-sm:pt-3"
       >
-        <div data-tauri-drag-region className="mx-auto flex max-w-3xl flex-col gap-10 px-12 max-sm:px-4 max-sm:gap-6">
+        <div className="mx-auto flex max-w-3xl flex-col gap-10 px-12 max-sm:px-4 max-sm:gap-6">
           {!(active === "relay" && relayMode !== "panel") && (
             <header className="flex flex-col gap-2">
-              <h1 className={hasNativeDesktopUx() ? "mac-page-title" : "font-display text-[44px] font-medium leading-[1.05] tracking-tight text-ink"}>
+              <h1 className={hasNativeDesktopUx() ? "mac-page-title" : "font-display text-[40px] font-semibold leading-[1.08] tracking-[-0.025em] text-ink"}>
                 {t(hasNativeDesktopUx() && active === "basics" ? "Overview" : SECTION_META[active].label)}
               </h1>
               <p className="text-[15px] text-ink-muted">{t(SECTION_META[active].sub)}</p>

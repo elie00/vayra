@@ -874,6 +874,7 @@ const misc: Record<string, string> = {
     "Vous pourrez changer plus tard dans Paramètres, sous Bibliothèque et métadonnées.",
 
   "Step 1 · Metadata": "Étape 1 · Métadonnées",
+  "Step 4 · Metadata": "Étape 4 · Métadonnées",
   "Free, two-minute signup. Unlocks Trending, In Theaters Now, Top Rated, and per-streaming catalogs (Netflix, Disney+, Hulu, …). Your key stays on this machine.":
     "Inscription gratuite en deux minutes. Débloque les tendances, l'affiche cinéma, les mieux notés et les catalogues par plateforme (Netflix, Disney+, Hulu, …). Votre clé reste sur cette machine.",
   "Get a free key at themoviedb.org": "Obtenez une clé gratuite sur themoviedb.org",
@@ -898,6 +899,7 @@ const misc: Record<string, string> = {
   "Don't have an account? Create one →": "Pas de compte ? Créez-en un →",
 
   "Step 3 · Streaming": "Étape 3 · Streaming",
+  "Step 5 · Streaming": "Étape 5 · Streaming",
   "Pick what you actually use": "Choisissez ce que vous utilisez vraiment",
   "VAYRA pulls the most popular titles each service has right now. Toggle off anything you don't subscribe to.":
     "VAYRA récupère les titres les plus populaires de chaque service en ce moment. Désactivez tout ce à quoi vous n'êtes pas abonné.",
@@ -905,6 +907,7 @@ const misc: Record<string, string> = {
     "Ces rangées s'activent une fois une clé TMDB définie. Vous pouvez y revenir à tout moment dans les Paramètres.",
 
   "Step 4 · Subtitles": "Étape 4 · Sous-titres",
+  "Step 6 · Subtitles": "Étape 6 · Sous-titres",
   "Pick your subtitle languages": "Choisissez vos langues de sous-titres",
   "When playback starts, VAYRA finds and loads a subtitle in one of these languages automatically. The first available match wins, so put your main language first.":
     "Au lancement de la lecture, VAYRA trouve et charge automatiquement des sous-titres dans l'une de ces langues. La première correspondance disponible l'emporte, alors mettez votre langue principale en premier.",

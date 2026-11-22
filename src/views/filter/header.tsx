@@ -21,7 +21,7 @@ export function Header({ filter }: { filter: MetaFilter }) {
       {filter.kind === "genre" ? (
         <GenreSwitcher activeName={title} mediaType={filter.mediaType} />
       ) : (
-        <h1 className="mt-3 font-display text-[64px] font-medium leading-[0.95] tracking-tight text-ink">
+        <h1 className="mt-3 font-display text-[60px] font-semibold leading-[1.05] tracking-[-0.03em] text-ink">
           {title}
         </h1>
       )}
@@ -85,7 +85,7 @@ function GenreSwitcher({
         onClick={() => setOpen((v) => !v)}
         className="group inline-flex items-center gap-3 text-start transition-colors"
       >
-        <span className="font-display text-[64px] font-medium leading-[0.95] tracking-tight text-ink">
+        <span className="font-display text-[60px] font-semibold leading-[1.05] tracking-[-0.03em] text-ink">
           {t(activeName)}
         </span>
         <span

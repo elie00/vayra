@@ -18,7 +18,7 @@ import { MagnetCard } from "./magnet-card";
 import { UrlCard } from "./url-card";
 import { AiSearchSection } from "./ai-search-section";
 import { WebSearchButton } from "./web-search-button";
-import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
+import { searchInputKind } from "@/lib/search-input";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import "./search-field.css";
 
@@ -26,6 +26,7 @@ export function SearchOverlay() {
   const { open, setOpen, query, setQuery, results, status, sources, clear, retry, recordRecent } = useSearch();
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   useFocusTrap(overlayRef, open);
   const { openFilter, openMeta } = useView();
   const t = useT();
@@ -69,9 +70,8 @@ export function SearchOverlay() {
   };
 
   const trimmed = query.trim();
-  const magnetInput = !!trimmed && isMagnetInput(trimmed);
-  const urlInput = !!trimmed && !magnetInput && isDirectVideoUrl(trimmed);
-  const directInput = magnetInput || urlInput;
+  const inputKind = searchInputKind(trimmed);
+  const directInput = inputKind !== "text";
   const hasResults = Boolean(
     results &&
     trimmed &&
@@ -96,15 +96,47 @@ export function SearchOverlay() {
     results.addons.length === 0 &&
     results.addonGroups.length === 0;
 
+  const moveResultFocus = (dir: 1 | -1) => {
+    const container = resultsRef.current;
+    if (!container) return;
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>("button:not([disabled])")).filter(
+      (b) => b.offsetParent !== null,
+    );
+    if (buttons.length === 0) return;
+    const idx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (idx === -1) {
+      (dir === 1 ? buttons[0] : buttons[buttons.length - 1]).focus();
+      return;
+    }
+    const next = idx + dir;
+    if (next < 0) {
+      inputRef.current?.focus();
+    } else if (next < buttons.length) {
+      buttons[next].focus();
+    }
+  };
+
   return createPortal(
     <div
       ref={overlayRef}
       role="dialog"
       aria-modal="true"
       aria-label={t("Search")}
+      onKeyDown={(e) => {
+        if (e.nativeEvent.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          moveResultFocus(1);
+        } else if (e.key === "ArrowUp" && document.activeElement !== inputRef.current) {
+          e.preventDefault();
+          moveResultFocus(-1);
+        }
+      }}
       className="fixed inset-0 z-[200] flex flex-col"
     >
       <button
+        type="button"
+        tabIndex={-1}
         aria-label={t("Close search")}
         onClick={close}
         className="harbor-search-backdrop absolute inset-0 cursor-default"
@@ -122,6 +154,7 @@ export function SearchOverlay() {
               // IME confirmation, held keys and system shortcuts must not open
               // a title or trigger an AI request while the user is still typing.
               if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229 || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+              if (directInput) return;
               // Shift+Enter runs the AI search on what is typed, without having
               // to reach for the button below the results.
               if (e.key === "Enter" && e.shiftKey) {
@@ -130,12 +163,17 @@ export function SearchOverlay() {
                 setAiRunSignal((n) => n + 1);
                 return;
               }
-              if (e.key === "Enter" && results?.topMatch && results.query.trim() === query.trim()) {
-                e.preventDefault();
-                recordRecent(query);
-                const meta = results.topMatch.meta;
-                setOpen(false);
-                openMeta(meta);
+              if (e.key === "Enter" && results?.query.trim() === query.trim()) {
+                if (results.topMatch) {
+                  e.preventDefault();
+                  recordRecent(query);
+                  const meta = results.topMatch.meta;
+                  setOpen(false);
+                  openMeta(meta);
+                } else if (results.intent) {
+                  e.preventDefault();
+                  onIntent();
+                }
               }
             }}
             placeholder={t("Search movies, shows, people, genres, years...")}
@@ -145,7 +183,7 @@ export function SearchOverlay() {
             autoComplete="off"
           />
           {status === "loading" && <Loader2 aria-hidden="true" size={18} className="shrink-0 animate-spin text-ink-subtle" />}
-          <WebSearchButton />
+          {!directInput && <WebSearchButton />}
           {query && (
             <button
               type="button"
@@ -162,7 +200,7 @@ export function SearchOverlay() {
           <Hint />
         </div>
 
-        <div className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={resultsRef} className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!trimmed && <EmptyState onClose={close} onOpenGuide={() => setGuideOpen(true)} />}
 
           {trimmed && !directInput && status === "error" && (
@@ -187,16 +225,22 @@ export function SearchOverlay() {
             </p>
           )}
 
-          {magnetInput && (
+          {inputKind === "magnet" && (
             <div className="mb-5">
               <MagnetCard raw={trimmed} onClose={close} />
             </div>
           )}
 
-          {urlInput && (
+          {inputKind === "video" && (
             <div className="mb-5">
               <UrlCard raw={trimmed} onClose={close} />
             </div>
+          )}
+
+          {inputKind === "link" && (
+            <p role="status" className="rounded-2xl border border-edge-soft bg-elevated p-4 text-[14px] text-ink-muted">
+              {t("This link cannot be opened here. Use a direct video URL such as a link ending in .mp4.")}
+            </p>
           )}
 
           {trimmed && !directInput && results?.intent && (

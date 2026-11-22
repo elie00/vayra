@@ -67,7 +67,7 @@ export function TitlePlate({ title, logo, loading }: { title: string; logo?: str
   return (
     <div className="relative flex min-h-[120px] flex-col justify-end">
       <h1
-        className={`font-display text-[80px] font-medium leading-[0.95] tracking-tight text-ink transition-opacity duration-500 ${!hasLogo && settled ? "opacity-100" : "opacity-0"}`}
+        className={`font-display text-[76px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink transition-opacity duration-500 ${!hasLogo && settled ? "opacity-100" : "opacity-0"}`}
       >
         {title}
       </h1>

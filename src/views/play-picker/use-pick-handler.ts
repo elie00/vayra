@@ -220,7 +220,13 @@ export function usePickHandler({
           stream.name ||
           stream.addonName ||
           null;
-        void enqueueDownload({ meta, episode, streamLabel: label, url: r.data.url, headers: r.data.headers });
+        try {
+          await enqueueDownload({ meta, episode, streamLabel: label, url: r.data.url, headers: r.data.headers });
+        } catch (err) {
+          setResolving(null);
+          setResolveError(err instanceof Error && err.message ? err.message : t("Could not start the download."));
+          return;
+        }
         opened = true;
         setResolving(null);
         onDownloadStarted?.(label);

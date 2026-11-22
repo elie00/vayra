@@ -1,5 +1,5 @@
 import { Check, ExternalLink, Eye, Key, Lock } from "lucide-react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { openUrl } from "@/lib/window";
 import { useT } from "@/lib/i18n";
 import { HoverPreviewCard } from "./setting-preview";
@@ -52,7 +52,14 @@ export function ExtLink({ href, children }: { href: string; children: React.Reac
 }
 
 export function settingsAnchor(title: string): string {
-  return "set-" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-+|-+$)/g, "");
+  return (
+    "set-" +
+    title
+      .normalize("NFKC")
+      .toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .replace(/(^-+|-+$)/g, "")
+  );
 }
 
 export function Section({
@@ -67,8 +74,8 @@ export function Section({
   return (
     <section id={settingsAnchor(title)} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[19px] font-medium tracking-tight text-ink">{title}</h2>
-        {subtitle && <p className="text-[13.5px] leading-relaxed text-ink-muted">{subtitle}</p>}
+        <h2 className="text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-ink">{title}</h2>
+        {subtitle && <p className="text-[13.5px] leading-[1.55] text-ink-muted">{subtitle}</p>}
       </div>
       {children}
     </section>
@@ -101,6 +108,7 @@ export function KeyField({
   badge?: string;
 }) {
   const t = useT();
+  const inputId = useId();
   const [reveal, setReveal] = useState(false);
   const [focused, setFocused] = useState(false);
   const [initialValue, setInitialValue] = useState(value);
@@ -133,7 +141,7 @@ export function KeyField({
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <label className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+          <label htmlFor={inputId} className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
             {label}
           </label>
           {badge && (
@@ -181,6 +189,7 @@ export function KeyField({
           </span>
         )}
         <input
+          id={inputId}
           type={reveal ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -311,6 +320,9 @@ export function ToggleRow({
   return (
     <button
       ref={btnRef}
+      type="button"
+      role="switch"
+      aria-checked={effective}
       onClick={() => !locked && onChange(!value)}
       onMouseEnter={openPreview}
       onMouseLeave={closePreview}
@@ -386,6 +398,7 @@ export function Segmented<T extends string>({
         <button
           key={o.value}
           type="button"
+          aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
             value === o.value

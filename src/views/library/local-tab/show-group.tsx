@@ -119,7 +119,7 @@ export function ShowGroupCard({
         {selectMode && (
           <span
             className={`absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-md ${
-              isSelected ? "bg-accent text-white" : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
+              isSelected ? "bg-accent text-canvas" : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
             }`}
           >
             {isSelected ? <CheckSquare size={14} strokeWidth={2.4} /> : <Square size={14} strokeWidth={2.2} />}

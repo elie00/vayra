@@ -189,7 +189,7 @@ export function SourceFolderCard({
             setIsEditModalOpen(true);
           }}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-colors hover:bg-accent">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-colors hover:bg-accent hover:text-canvas">
             <Pencil className="h-4 w-4" />
           </div>
         </div>
@@ -222,7 +222,7 @@ export function SourceFolderCard({
             </p>
             <button
               onClick={() => setErrorAddon(null)}
-              className="w-full rounded-full bg-accent px-6 py-2.5 font-medium text-white shadow-sm transition-opacity hover:opacity-90"
+              className="w-full rounded-full bg-accent px-6 py-2.5 font-medium text-canvas shadow-sm transition-opacity hover:opacity-90"
             >
               {t("OK")}
             </button>
@@ -258,7 +258,7 @@ export function SourceFolderCard({
             </p>
             <button
               onClick={() => setMissingTmdbKey(false)}
-              className="w-full rounded-full bg-accent px-6 py-2.5 font-medium text-white shadow-sm transition-opacity hover:opacity-90"
+              className="w-full rounded-full bg-accent px-6 py-2.5 font-medium text-canvas shadow-sm transition-opacity hover:opacity-90"
             >
               {t("OK")}
             </button>

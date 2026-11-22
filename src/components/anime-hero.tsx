@@ -286,7 +286,7 @@ function HeroLogo({ title, logo }: { title: string; logo?: string }) {
     );
   }
   return (
-    <h1 className="font-display text-[56px] font-medium leading-[0.98] tracking-tight text-ink drop-shadow-[0_2px_22px_rgba(0,0,0,0.6)]">
+    <h1 className="font-display text-[56px] font-semibold leading-[1.05] tracking-[-0.025em] text-ink drop-shadow-[0_2px_22px_rgba(0,0,0,0.6)]">
       {title}
     </h1>
   );

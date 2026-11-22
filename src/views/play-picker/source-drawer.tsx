@@ -114,6 +114,11 @@ export function SourceDrawer({
               episode={episode}
             />
           ))}
+          {shown.length > 80 && (
+            <li className="border-t border-edge-soft/40 px-4 py-3 text-center text-[12px] text-ink-subtle">
+              {t("+{n} more sources — filter by addon or quality to narrow down", { n: shown.length - 80 })}
+            </li>
+          )}
         </ul>
       )}
     </div>

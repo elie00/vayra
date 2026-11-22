@@ -54,12 +54,11 @@ export function TopMatch({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[11.5px] font-semibold uppercase tracking-[0.22em] text-accent">
+          <span className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
             {t("Top match")}
           </span>
           <h2
-            className="mt-1.5 text-[clamp(32px,3.4vw,52px)] font-medium leading-[1.02] tracking-tight text-ink"
-            style={{ fontFamily: "var(--font-display, 'Fraunces')" }}
+            className="mt-1.5 font-display text-[clamp(32px,3.4vw,52px)] font-semibold leading-[1.06] tracking-[-0.025em] text-ink"
           >
             {match.meta.name}
           </h2>

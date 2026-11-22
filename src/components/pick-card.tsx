@@ -576,7 +576,7 @@ export const PickCard = memo(function PickCard({
             className={
               kids
                 ? "line-clamp-2 min-h-9 text-[15px] font-bold leading-snug text-[#0e3a43]"
-                : "line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink"
+                : "line-clamp-2 min-h-9 text-[13px] font-medium leading-[1.35] tracking-[-0.005em] text-ink"
             }
           >
             {translatedTitle || meta.name}
@@ -613,7 +613,7 @@ function BadgeContent({ badge }: { badge: CardBadge }) {
   switch (badge.kind) {
     case "rating":
       return (
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1 tabular-nums">
           {badge.source === "mal" ? (
             <MalLogo className="h-[11px] w-auto text-ink-muted" />
           ) : badge.source === "tmdb" ? (
@@ -626,14 +626,14 @@ function BadgeContent({ badge }: { badge: CardBadge }) {
       );
     case "rt":
       return (
-        <span className="flex items-center gap-0.5">
+        <span className="flex items-center gap-0.5 tabular-nums">
           <RtBadge score={badge.value} className="h-[12px] w-auto" />
           <span>{badge.value}%</span>
         </span>
       );
     case "audience":
       return (
-        <span className="flex items-center gap-0.5">
+        <span className="flex items-center gap-0.5 tabular-nums">
           <Popcorn size={12} strokeWidth={2.4} className={badge.value >= 60 ? "text-accent" : "text-ink-muted"} />
           <span>{Math.round(badge.value)}%</span>
         </span>

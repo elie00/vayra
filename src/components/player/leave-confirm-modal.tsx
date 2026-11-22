@@ -1,5 +1,6 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import {
   closeLeaveConfirm,
   getLeaveConfirm,
@@ -10,9 +11,16 @@ export function LeaveConfirmModal() {
   const t = useT();
   const state = useSyncExternalStore(subscribeLeaveConfirm, getLeaveConfirm);
   const [remember, setRemember] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const keepWatchingRef = useRef<HTMLButtonElement>(null);
+
+  useFocusTrap(dialogRef, state.open);
 
   useEffect(() => {
-    if (state.open) setRemember(false);
+    if (state.open) {
+      setRemember(false);
+      keepWatchingRef.current?.focus();
+    }
   }, [state.open]);
 
   useEffect(() => {
@@ -22,17 +30,11 @@ export function LeaveConfirmModal() {
         e.preventDefault();
         e.stopImmediatePropagation();
         closeLeaveConfirm();
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        const fn = state.onConfirm;
-        closeLeaveConfirm();
-        fn?.(remember);
       }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [state.open, state.onConfirm, remember]);
+  }, [state.open]);
 
   if (!state.open) return null;
 
@@ -43,16 +45,27 @@ export function LeaveConfirmModal() {
   };
 
   return (
-    <div
-      className="absolute inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      onClick={closeLeaveConfirm}
-    >
+    <div className="absolute inset-0 z-[80] flex items-center justify-center p-4">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("Keep watching")}
+        onClick={closeLeaveConfirm}
+        className="absolute inset-0 cursor-default bg-black/70 backdrop-blur-sm"
+      />
       <div
-        className="mx-4 w-full max-w-md rounded-2xl border border-edge bg-surface p-7 text-center shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="leave-confirm-title"
+        aria-describedby="leave-confirm-desc"
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-2xl border border-edge bg-surface p-7 text-center shadow-2xl"
       >
-        <h2 className="text-[22px] font-bold text-ink">{t("Leave the show?")}</h2>
-        <p className="mt-2.5 text-[15px] leading-relaxed text-ink-muted">
+        <h2 id="leave-confirm-title" className="text-[22px] font-semibold tracking-[-0.02em] text-ink">
+          {t("Leave playback?")}
+        </h2>
+        <p id="leave-confirm-desc" className="mt-2.5 text-[15px] leading-relaxed text-ink-muted">
           {t("We'll save your spot so you can pick up right where you left off.")}
         </p>
         <label className="mt-5 inline-flex cursor-pointer items-center justify-center gap-2.5 text-[14px] text-ink-muted">
@@ -66,15 +79,17 @@ export function LeaveConfirmModal() {
         </label>
         <div className="mt-6 flex gap-3">
           <button
+            ref={keepWatchingRef}
+            type="button"
             onClick={closeLeaveConfirm}
-            className="h-12 flex-1 rounded-xl bg-elevated text-[16px] font-semibold text-ink transition-colors hover:bg-raised"
+            className="h-12 flex-1 rounded-xl bg-elevated text-[15px] font-semibold text-ink transition-colors hover:bg-raised"
           >
             {t("Keep watching")}
           </button>
           <button
+            type="button"
             onClick={leave}
-            autoFocus
-            className="h-12 flex-1 rounded-xl bg-ink text-[16px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
+            className="h-12 flex-1 rounded-xl bg-ink text-[15px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
           >
             {t("Leave")}
           </button>

@@ -1,7 +1,8 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Check, HardDrive, RotateCcw, Wifi } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import {
   closeWatchLocalConfirm,
   getWatchLocalConfirm,
@@ -22,9 +23,16 @@ export function WatchLocalModal() {
   const t = useT();
   const state = useSyncExternalStore(subscribeWatchLocalConfirm, getWatchLocalConfirm);
   const [remember, setRemember] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const primaryRef = useRef<HTMLButtonElement>(null);
+
+  useFocusTrap(dialogRef, state.open);
 
   useEffect(() => {
-    if (state.open) setRemember(false);
+    if (state.open) {
+      setRemember(false);
+      primaryRef.current?.focus();
+    }
   }, [state.open]);
 
   const choose = (choice: WatchLocalChoice) => {
@@ -40,29 +48,35 @@ export function WatchLocalModal() {
         e.preventDefault();
         e.stopImmediatePropagation();
         closeWatchLocalConfirm();
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        choose("local");
       }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.open, state.onChoose, remember]);
+  }, [state.open]);
 
   if (!state.open) return null;
 
   return createPortal(
-    <div
-      className="pointer-events-auto fixed inset-0 z-[210] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) closeWatchLocalConfirm();
-      }}
-    >
-      <div className="mx-4 flex w-full max-w-[440px] flex-col gap-5 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
+    <div className="pointer-events-auto fixed inset-0 z-[210] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("Close")}
+        onClick={closeWatchLocalConfirm}
+        className="absolute inset-0 cursor-default bg-black/72 backdrop-blur-md"
+      />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="watch-local-title"
+        tabIndex={-1}
+        className="relative flex w-full max-w-[440px] flex-col gap-5 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200"
+      >
         <div className="flex flex-col gap-1.5 text-center">
-          <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("This is in your local library")}</h2>
+          <h2 id="watch-local-title" className="text-[19px] font-semibold tracking-[-0.015em] text-ink">
+            {t("This is in your local library")}
+          </h2>
           <p className="text-[13px] leading-relaxed text-ink-muted">
             {state.subtitle ? `${state.title} · ${state.subtitle}` : state.title}
           </p>
@@ -71,8 +85,8 @@ export function WatchLocalModal() {
           {state.hasResume ? (
             <>
               <button
+                ref={primaryRef}
                 type="button"
-                autoFocus
                 onClick={() => choose("local")}
                 className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
               >
@@ -92,8 +106,8 @@ export function WatchLocalModal() {
             </>
           ) : (
             <button
+              ref={primaryRef}
               type="button"
-              autoFocus
               onClick={() => choose("local")}
               className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
             >

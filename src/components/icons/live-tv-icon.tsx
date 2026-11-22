@@ -41,10 +41,10 @@ export function LiveTvIcon({ active = false }: { active?: boolean }) {
       <text
         x="12"
         y="12.4"
-        fontFamily='"Inter", -apple-system, system-ui, sans-serif'
+        fontFamily="var(--font-sans)"
         fontSize="8.4"
-        fontWeight="800"
-        letterSpacing="0.7"
+        fontWeight="700"
+        letterSpacing="0.6"
         fill="currentColor"
       >
         LIVE

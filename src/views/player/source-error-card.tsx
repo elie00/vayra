@@ -1,5 +1,7 @@
-import { ListVideo, RotateCcw, ServerCrash, WifiOff } from "lucide-react";
+import { ArrowLeft, ListVideo, RotateCcw, ServerCrash, WifiOff } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import type { SourceError } from "./hooks/use-auto-retry";
 
 const STATUS_TEXT: Record<number, string> = {
@@ -46,29 +48,56 @@ export function SourceErrorCard({
   error,
   onChoose,
   onRetry,
+  onBack,
 }: {
   error: SourceError;
   onChoose: () => void;
   onRetry: () => void;
+  onBack?: () => void;
 }) {
   const t = useT();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
+
+  useEffect(() => {
+    if (!onBack) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onBack();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onBack]);
+
   const info = describe(error.status);
   const codeLabel = error.status === 0 ? t("No response") : `HTTP ${error.status}`;
   const statusName = STATUS_TEXT[error.status];
 
   return (
     <div className="animate-fade-in absolute inset-0 z-40 flex items-center justify-center bg-canvas/85 p-6 backdrop-blur-md">
-      <div className="animate-modal-in flex w-[min(94vw,440px)] flex-col items-center gap-5 rounded-2xl border border-edge-soft bg-elevated/95 px-7 py-8 text-center shadow-[0_30px_90px_-25px_rgba(0,0,0,0.7)]">
+      <div
+        ref={dialogRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="source-error-title"
+        tabIndex={-1}
+        className="animate-modal-in flex w-[min(94vw,440px)] flex-col items-center gap-5 rounded-2xl border border-edge-soft bg-elevated/95 px-7 py-8 text-center shadow-[0_30px_90px_-25px_rgba(0,0,0,0.7)]"
+      >
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500/12 text-rose-300">
           {info.offline ? <WifiOff size={26} strokeWidth={2} /> : <ServerCrash size={26} strokeWidth={2} />}
         </div>
         <div className="flex flex-col gap-2">
-          <h2 className="font-display text-[20px] font-medium text-ink">{t(info.title)}</h2>
+          <h2 id="source-error-title" className="font-display text-[20px] font-semibold tracking-[-0.015em] text-ink">
+            {t(info.title)}
+          </h2>
           <p className="text-[13.5px] leading-relaxed text-ink-muted">{t(info.detail)}</p>
         </div>
         <div className="flex w-full flex-col gap-1 rounded-xl border border-edge-soft bg-canvas/50 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-subtle">
               {t("Source said")}
             </span>
             <span className="font-mono text-[13px] font-semibold text-rose-300">
@@ -98,6 +127,16 @@ export function SourceErrorCard({
             {t("Choose another source")}
           </button>
         </div>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+          >
+            <ArrowLeft size={14} strokeWidth={2.2} className="dir-icon" />
+            {t("Back")}
+          </button>
+        )}
       </div>
     </div>
   );

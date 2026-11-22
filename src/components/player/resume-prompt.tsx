@@ -1,6 +1,8 @@
 import { Play, RotateCcw } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 const KID_BUBBLES = [10, 24, 40, 55, 70, 84, 93];
 
@@ -19,10 +21,34 @@ export function ResumePrompt({
 }) {
   const t = useT();
   const kid = useActiveKid();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const resumeBtnRef = useRef<HTMLButtonElement>(null);
+  useFocusTrap(dialogRef, true);
+
+  useEffect(() => {
+    resumeBtnRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onResume();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onResume]);
+
   const pct = totalSec > 0 ? Math.min(100, Math.round((resumeSec / totalSec) * 100)) : 0;
   if (kid) {
     return (
-      <div className="absolute inset-0 z-[90] flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#3aa6c4] via-[#1c789f] to-[#0a3d5c] px-8 text-center text-white">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resume-prompt-title"
+        tabIndex={-1}
+        className="absolute inset-0 z-[90] flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#3aa6c4] via-[#1c789f] to-[#0a3d5c] px-8 text-center text-white"
+      >
         <div className="pointer-events-none absolute inset-0">
           {KID_BUBBLES.map((left, i) => (
             <span
@@ -52,7 +78,7 @@ export function ResumePrompt({
           draggable={false}
           className="pointer-events-none absolute bottom-[10%] right-[10%] h-20 w-auto opacity-75"
         />
-        <h2 className="relative line-clamp-2 max-w-4xl font-display text-[clamp(36px,6vw,64px)] font-bold leading-none tracking-tight drop-shadow-[0_3px_12px_rgba(0,0,0,0.4)]">
+        <h2 id="resume-prompt-title" className="relative line-clamp-2 max-w-4xl font-display text-[clamp(36px,6vw,64px)] font-bold leading-none tracking-tight drop-shadow-[0_3px_12px_rgba(0,0,0,0.4)]">
           {title}
         </h2>
         <p className="relative mt-5 text-[22px] font-bold text-white/90">
@@ -60,14 +86,16 @@ export function ResumePrompt({
         </p>
         <div className="relative mt-10 flex flex-col items-center gap-5 sm:flex-row">
           <button
+            ref={resumeBtnRef}
+            type="button"
             onClick={onResume}
-            autoFocus
             className="flex h-20 min-w-[280px] items-center justify-center gap-3 rounded-full bg-white px-10 text-[24px] font-extrabold text-[#0c4a6e] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-transform hover:scale-[1.04] active:scale-[0.97]"
           >
             <Play size={30} strokeWidth={0} fill="currentColor" />
             {t("Keep Watching")}
           </button>
           <button
+            type="button"
             onClick={onStartOver}
             className="flex h-20 min-w-[220px] items-center justify-center gap-3 rounded-full bg-white/15 px-10 text-[24px] font-extrabold text-white ring-2 ring-white/40 transition-transform hover:scale-[1.04] hover:bg-white/25 active:scale-[0.97]"
           >
@@ -80,14 +108,21 @@ export function ResumePrompt({
   }
   return (
     <div className="absolute inset-0 z-[90] flex items-end justify-center bg-gradient-to-t from-black/90 via-black/55 to-transparent pb-16">
-      <div className="w-full max-w-xl rounded-3xl bg-surface p-7 ring-1 ring-edge-soft shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resume-prompt-title"
+        tabIndex={-1}
+        className="w-full max-w-xl rounded-3xl bg-surface p-7 ring-1 ring-edge-soft shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]"
+      >
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
           {t("Pick up where you left off")}
         </p>
-        <h2 className="mt-3 line-clamp-2 font-display text-[24px] font-semibold leading-tight text-ink">
+        <h2 id="resume-prompt-title" className="mt-3 line-clamp-2 font-display text-[24px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {title}
         </h2>
-        <p className="mt-2 text-[13.5px] text-ink-muted">
+        <p className="mt-2 text-[13.5px] tabular-nums text-ink-muted">
           {t("{watched} of {total} watched ({pct}%).", {
             watched: formatTime(resumeSec),
             total: formatTime(totalSec),
@@ -99,14 +134,16 @@ export function ResumePrompt({
         </div>
         <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
           <button
+            ref={resumeBtnRef}
+            type="button"
             onClick={onResume}
-            autoFocus
             className="flex h-12 flex-1 items-center justify-center gap-2.5 rounded-full bg-accent text-[15px] font-semibold text-canvas shadow-[0_8px_22px_-10px_var(--color-accent)] transition-opacity hover:opacity-90"
           >
             <Play size={18} fill="currentColor" />
             {t("Resume from {time}", { time: formatTime(resumeSec) })}
           </button>
           <button
+            type="button"
             onClick={onStartOver}
             className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-elevated px-6 text-[14px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-raised"
           >

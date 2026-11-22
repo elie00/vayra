@@ -58,7 +58,7 @@ export function PickerHeader({
           <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
             {meta.name} · {t("Season")} {episode.imdbSeason ?? episode.season} · {t("Episode")} {String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}
           </p>
-          <h1 className="font-display text-[64px] font-medium leading-[0.96] tracking-tight text-ink">
+          <h1 className="font-display text-[60px] font-semibold leading-[1.05] tracking-[-0.03em] text-ink">
             {episode.name || t("Episode {n}", { n: episode.episode })}
           </h1>
           {episode.overview && <CollapsibleOverview text={episode.overview} />}
@@ -71,7 +71,7 @@ export function PickerHeader({
               {meta.genres?.length ? ` · ${meta.genres.slice(0, 2).join(" · ")}` : ""}
             </p>
           )}
-          <h1 className="font-display text-[68px] font-medium leading-[0.96] tracking-tight text-ink">
+          <h1 className="font-display text-[64px] font-semibold leading-[1.05] tracking-[-0.03em] text-ink">
             {meta.name}
           </h1>
         </>

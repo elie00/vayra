@@ -36,8 +36,8 @@ export function TmdbStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      <span className="text-[12.5px] font-medium uppercase tracking-[0.16em] text-ink-subtle">
-        {t("Step 1 · Metadata")}
+      <span className="text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-subtle">
+        {t("Step 4 · Metadata")}
       </span>
       <div className="flex flex-col gap-3">
         <h1 className="flex flex-wrap items-center font-display text-[36px] font-medium leading-[1.08] tracking-tight text-ink">

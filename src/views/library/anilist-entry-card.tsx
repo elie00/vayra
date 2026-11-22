@@ -61,29 +61,32 @@ export function AnilistEntryCard({
 
   return (
     <div className="group relative flex flex-col gap-2 text-start">
-      <button
-        type="button"
-        onClick={open}
-        className="relative aspect-[2/3] overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:scale-[1.02]"
-      >
-        <Poster
-          src={poster.src}
-          onError={poster.onError}
-          seed={String(m.id)}
-          className="h-full w-full"
-        />
-        <span
-          role="button"
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:scale-[1.02]">
+        <button
+          type="button"
+          onClick={open}
+          aria-label={name}
+          className="block h-full w-full"
+        >
+          <Poster
+            src={poster.src}
+            onError={poster.onError}
+            seed={String(m.id)}
+            className="h-full w-full"
+          />
+        </button>
+        <button
+          type="button"
           aria-label={t("Remove from AniList")}
-          onClick={(e) => {
-            e.stopPropagation();
+          disabled={busy}
+          onClick={() => {
             if (!busy) onRemove();
           }}
-          className="absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-canvas/85 text-ink-muted opacity-0 ring-1 ring-edge-soft backdrop-blur-sm transition-opacity hover:text-danger group-hover:opacity-100"
+          className="absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-canvas/85 text-ink-muted opacity-0 ring-1 ring-edge-soft backdrop-blur-sm transition-opacity hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
         >
           <Trash2 size={13} />
-        </span>
-      </button>
+        </button>
+      </div>
 
       <button type="button" onClick={open} className="truncate text-start text-[13px] font-medium text-ink">
         {name}

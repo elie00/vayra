@@ -83,6 +83,7 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
     <div className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center overflow-y-auto bg-canvas/80 p-4">
       <button
         type="button"
+        tabIndex={-1}
         aria-label={t("Cancel")}
         className="absolute inset-0 cursor-default"
         onClick={onClose}
@@ -149,7 +150,7 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
                 type="button"
                 onClick={() => void verifyCode()}
                 disabled={busy || otp.length !== 6}
-                className="h-11 rounded-xl bg-accent px-4 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                className="h-11 rounded-xl bg-accent px-4 text-[13px] font-semibold text-canvas disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {busy ? <Loader2 size={15} className="animate-spin" /> : t("Verify")}
               </button>
@@ -195,7 +196,7 @@ function VayraEmailModal({ onClose }: { onClose: () => void }) {
             <button
               type="submit"
               disabled={busy || loading || !configured || !email.trim()}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-semibold text-white transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy || loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
               {t("Email me a sign-in link")}
@@ -252,6 +253,7 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
     <div className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center overflow-y-auto bg-canvas/80 p-4">
       <button
         type="button"
+        tabIndex={-1}
         aria-label={t("Cancel")}
         className="absolute inset-0 cursor-default"
         onClick={onClose}
@@ -315,8 +317,6 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
 
         <button
           type="button"
-          role="checkbox"
-          aria-checked={remember}
           onClick={() => {
             setKeyMode((v) => !v);
             setError(null);
@@ -331,6 +331,8 @@ export function StremioAuthModal({ onClose }: { onClose: () => void }) {
 
         <button
           type="button"
+          role="checkbox"
+          aria-checked={remember}
           onClick={() => setRemember((v) => !v)}
           disabled={busy}
           className="flex items-center gap-2.5 self-start text-start"

@@ -159,7 +159,7 @@ export function PersonView({ personId }: { personId: number }) {
                 </button>
               )}
             </div>
-            <h1 className="font-display text-[88px] font-medium leading-[0.95] tracking-tight text-ink">
+            <h1 className="font-display text-[80px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink">
               {person?.name ?? (loading ? "" : t("Unknown"))}
             </h1>
 

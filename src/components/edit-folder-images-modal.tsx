@@ -105,7 +105,7 @@ export function EditFolderImagesModal({
                 onSave(cover.trim(), gif.trim());
                 onClose();
               }}
-              className="rounded-full bg-accent px-5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="rounded-full bg-accent px-5 py-2 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {t("Save")}
             </button>
