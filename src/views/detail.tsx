@@ -237,7 +237,7 @@ export function DetailView({
   );
   const scrollRef = useRef<HTMLElement>(null);
 
-  const { setNavStack, openPicker, openPlayer, openFilter, promoteMetaToRoot } = useView();
+  const { setNavStack, openPicker, openPlayer, openFilter, promoteMetaToRoot, goBack, canGoBack } = useView();
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();
   const inWatchlist = useInWatchlist(meta.id, [detail?.imdbId]);
@@ -1152,6 +1152,52 @@ export function DetailView({
       )}
     </>
   );
+
+  useEffect(() => {
+    if (isMobileTauri()) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      if (e.key === "Escape") {
+        if (trailerOpen) {
+          e.preventDefault();
+          setTrailerOpen(false);
+        } else if (layoutEdit) {
+          e.preventDefault();
+          setLayoutEdit(false);
+        } else if (canGoBack) {
+          e.preventDefault();
+          goBack();
+        }
+        return;
+      }
+      if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        void smartPlay(false);
+      } else if (e.key === "w" || e.key === "W") {
+        e.preventDefault();
+        toggleWatchlist({
+          id: meta.id,
+          type: meta.type,
+          name: title || meta.name,
+          poster: meta.poster ?? detail?.poster,
+          imdbId: detail?.imdbId,
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canGoBack, detail?.imdbId, detail?.poster, goBack, layoutEdit, meta.id, meta.name, meta.poster, meta.type, smartPlay, title, trailerOpen]);
 
   if (isMobileTauri()) {
     return (
