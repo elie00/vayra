@@ -190,13 +190,20 @@ function GridModal({ payload }: { payload: LocalEpisodesPayload }) {
   const seasonLabel = (s: number) => (s === 0 ? t("Specials") : `S${String(s).padStart(2, "0")}`);
 
   return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center bg-canvas/80 p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) closeLocalEpisodes();
-      }}
-    >
-      <div className="animate-modal-in flex max-h-[86vh] w-[min(94vw,600px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]">
+    <div className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center bg-canvas/80 p-4 backdrop-blur-sm">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={closeLocalEpisodes}
+        className="absolute inset-0 cursor-default"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={payload.title}
+        className="animate-modal-in relative z-10 flex max-h-[86vh] w-[min(94vw,600px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+      >
         <div className="flex items-center gap-3 border-b border-edge-soft px-5 pb-3.5 pt-4">
           {payload.poster && (
             <img

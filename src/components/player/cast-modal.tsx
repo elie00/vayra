@@ -141,12 +141,16 @@ export function CastModal({
   const backdrop = [...stack].reverse().find((v) => v.kind === "title")?.meta.background;
 
   return (
-    <div
-      className="pointer-events-auto absolute inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 backdrop-blur-md animate-in fade-in duration-200 motion-reduce:animate-none sm:items-center sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !confirmTarget) onClose();
-      }}
-    >
+    <div className="pointer-events-auto absolute inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 backdrop-blur-md animate-in fade-in duration-200 motion-reduce:animate-none sm:items-center sm:p-6">
+      {!confirmTarget && (
+        <button
+          type="button"
+          aria-label={t("Close")}
+          tabIndex={-1}
+          onClick={onClose}
+          className="absolute inset-0 cursor-default"
+        />
+      )}
       <div
         ref={dialogRef}
         role="dialog"
@@ -154,7 +158,7 @@ export function CastModal({
         aria-label={view.kind === "queue" ? "LUMA" : t("About this title")}
         tabIndex={-1}
         style={cardHeight ? { height: cardHeight } : undefined}
-        className={`relative flex max-h-[92dvh] w-full min-w-0 max-w-6xl flex-col overflow-hidden rounded-t-[24px] bg-neutral-950/90 ring-1 ring-white/10 shadow-[0_44px_120px_-32px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-[height,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in slide-in-from-bottom-4 fade-in motion-reduce:animate-none motion-reduce:transition-none sm:max-h-[88vh] sm:w-[72vw] sm:rounded-[18px] sm:zoom-in-95 ${confirmTarget ? "pointer-events-none opacity-0" : ""}`}
+        className={`relative z-10 flex max-h-[92dvh] w-full min-w-0 max-w-6xl flex-col overflow-hidden rounded-t-[24px] bg-neutral-950/90 ring-1 ring-white/10 shadow-[0_44px_120px_-32px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-[height,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in slide-in-from-bottom-4 fade-in motion-reduce:animate-none motion-reduce:transition-none sm:max-h-[88vh] sm:w-[72vw] sm:rounded-[18px] sm:zoom-in-95 ${confirmTarget ? "pointer-events-none opacity-0" : ""}`}
       >
         {view.kind === "genre" ? (
           <GenreBackdrop
@@ -289,12 +293,15 @@ export function CastModal({
       </div>
 
       {confirmTarget && (
-        <div
-          className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 p-6 backdrop-blur-sm animate-in fade-in duration-150"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setConfirmTarget(null);
-          }}
-        >
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 p-6 backdrop-blur-sm animate-in fade-in duration-150">
+          <button
+            type="button"
+            aria-label={t("Close")}
+            tabIndex={-1}
+            onClick={() => setConfirmTarget(null)}
+            className="absolute inset-0 cursor-default"
+          />
+          <div className="relative z-10">
           <ExitConfirm
             onCancel={() => setConfirmTarget(null)}
             onConfirm={(remember) => {
@@ -310,6 +317,7 @@ export function CastModal({
               onOpenDetail?.(target);
             }}
           />
+          </div>
         </div>
       )}
     </div>

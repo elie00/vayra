@@ -137,18 +137,22 @@ export function AddonInstallModal({
   const isUpdate = resolved && resolved.matchKind !== "fresh";
 
   return (
-    <div
-      className="fixed inset-0 z-[140] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-150"
-      onClick={(e) => {
-        if (!installStage && !done && e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-150">
+      {!installStage && !done && (
+        <button
+          type="button"
+          aria-label={t("Close")}
+          tabIndex={-1}
+          onClick={onClose}
+          className="absolute inset-0 cursor-default"
+        />
+      )}
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="addon-install-title"
-        className="flex max-h-[90vh] w-[min(92vw,560px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated/97 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-150 backdrop-blur-xl"
+        className="relative z-10 flex max-h-[90vh] w-[min(92vw,560px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated/97 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-150 backdrop-blur-xl"
       >
         <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-6 py-4">
           <div className="flex min-w-0 flex-1 items-center gap-3">
