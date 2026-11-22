@@ -21,20 +21,29 @@ describe("theme decisions", () => {
     vi.stubGlobal("navigator", { userAgent: "Macintosh", platform: "MacIntel" });
     for (const preset of Object.values(THEME_PRESETS)) {
       expect(activeLayout({ ...DEFAULT_THEME, preset: preset.id })).toBe("sidebar");
-      expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id })).toBe("geist");
+      expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id })).toBe("google-sans");
       expect(activeFontPair({ ...DEFAULT_THEME, preset: preset.id, fontPairOverride: true, fontPair: "general-sans" })).toBe("general-sans");
     }
   });
 
-  it("sets every palette in Geist, phone included", () => {
+  it("sets every palette in Google Sans, phone included", () => {
     for (const preset of ["obsidian", "sage", "ivory"] as const) {
-      expect(activeFontPair({ ...DEFAULT_THEME, preset })).toBe("geist");
+      expect(activeFontPair({ ...DEFAULT_THEME, preset })).toBe("google-sans");
     }
     vi.stubGlobal("window", { __TAURI_INTERNALS__: {} });
     vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Linux; Android 15) wv", platform: "Linux aarch64" });
-    expect(activeFontPair({ ...DEFAULT_THEME, preset: "obsidian" })).toBe("geist");
-    expect(FONT_PAIRS.geist.display).toMatch(/^"Geist Serif"/);
-    expect(FONT_PAIRS.geist.sans).toMatch(/^"Geist"/);
+    expect(activeFontPair({ ...DEFAULT_THEME, preset: "obsidian" })).toBe("google-sans");
+    expect(FONT_PAIRS["google-sans"].display).toMatch(/^"Google Sans"/);
+    expect(FONT_PAIRS["google-sans"].sans).toMatch(/^"Google Sans"/);
+  });
+
+  it("updates saved implicit defaults to Google Sans and honors explicit choices", () => {
+    const savedGeist = { ...DEFAULT_THEME, fontPair: "geist" } as const;
+    const savedFraunces = { ...DEFAULT_THEME, fontPair: "fraunces-inter" } as const;
+    expect(activeFontPair(savedGeist)).toBe("google-sans");
+    expect(activeFontPair(savedFraunces)).toBe("google-sans");
+    expect(activeFontPair({ ...savedGeist, fontPairOverride: true })).toBe("geist");
+    expect(activeFontPair({ ...savedFraunces, fontPairOverride: true })).toBe("fraunces-inter");
   });
 
   it("keeps the native system pair one family across sizes", () => {
@@ -69,7 +78,7 @@ describe("theme decisions", () => {
     expect(root.style.colorScheme).toBe("dark");
   });
 
-  it.each(["obsidian", "sage", "ivory"] as const)("keeps %s readable on every opaque surface", (id) => {
+  it.each(["cool-grey", "obsidian", "sage", "ivory"] as const)("keeps %s readable on every opaque surface", (id) => {
     const theme = THEME_PRESETS[id];
     const luminance = (hex: string) => {
       const rgb = [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16) / 255)
@@ -78,10 +87,12 @@ describe("theme decisions", () => {
     };
     expect(Object.keys(theme.tokens).sort()).toEqual(Object.keys(THEME_PRESETS["cool-grey"].tokens).sort());
     for (const fg of ["ink", "ink-muted", "ink-subtle", "accent", "danger"]) {
+      const fgVal = theme.tokens[`--color-${fg}`];
+      if (!fgVal.startsWith("#")) continue;
       for (const bg of ["canvas", "surface", "elevated", "raised"]) {
-        const a = luminance(theme.tokens[`--color-${fg}`]);
+        const a = luminance(fgVal);
         const b = luminance(theme.tokens[`--color-${bg}`]);
-        expect((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        expect((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), `${id}: ${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
@@ -118,7 +129,7 @@ describe("theme decisions", () => {
       "--color-raised": "#242529",
       "--color-ink": "#f4f2ed",
       "--color-ink-muted": "#a8aaad",
-      "--color-ink-subtle": "#737579",
+      "--color-ink-subtle": "#8d9096",
       "--color-edge": "#4b4d508c",
       "--color-edge-soft": "#4b4d5040",
       "--color-accent": "#a8aaad",

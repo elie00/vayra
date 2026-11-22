@@ -22,6 +22,8 @@ export function FontGrid({
         return (
           <button
             key={p.id}
+            type="button"
+            aria-pressed={active}
             onClick={() => onPickPair(p.id)}
             className={`flex flex-col gap-3 rounded-2xl border p-5 text-start transition-colors ${
               active ? "border-ink bg-elevated/40" : "border-edge-soft bg-elevated/15 hover:border-edge"
@@ -35,18 +37,18 @@ export function FontGrid({
                 </span>
               )}
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <span
-                className="text-[28px] font-medium leading-none tracking-tight text-ink"
+                className="text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink"
                 style={{ fontFamily: p.display }}
               >
                 VAYRA
               </span>
-              <span className="text-[13px] text-ink-muted" style={{ fontFamily: p.sans }}>
+              <span className="text-[13px] leading-[1.45] text-ink-muted" style={{ fontFamily: p.sans }}>
                 {t("The quick brown fox jumps over the lazy dog")}
               </span>
             </div>
-            <p className="text-[11.5px] text-ink-subtle">{t(p.blurb)}</p>
+            <p className="text-[12px] leading-[1.45] text-ink-subtle">{t(p.blurb)}</p>
           </button>
         );
       })}

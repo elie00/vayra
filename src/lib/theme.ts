@@ -30,6 +30,7 @@ export type ThemeButtonStyle = "flat" | "glossy" | "minui" | "crunch" | "noir" |
 export type ActiveThemeId = ThemePresetId | "custom" | `user:${string}`;
 
 export type FontPairId =
+  | "google-sans"
   | "geist"
   | "sentient-switzer"
   | "fraunces-inter"
@@ -116,7 +117,7 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
       "--color-raised": "#242529",
       "--color-ink": "#f4f2ed",
       "--color-ink-muted": "#a8aaad",
-      "--color-ink-subtle": "#737579",
+      "--color-ink-subtle": "#8d9096",
       "--color-edge": "rgb(75 77 80 / 0.72)",
       "--color-edge-soft": "rgb(75 77 80 / 0.38)",
       "--color-accent": "#a8aaad",
@@ -1607,10 +1608,24 @@ export const TEMPLATE_THEMES: ThemePreset[] = [
 ];
 
 export const FONT_PAIRS: Record<FontPairId, FontPair> = {
+  "google-sans": {
+    id: "google-sans",
+    name: "Google Sans",
+    blurb: "Default. Clean geometric sans across titles and controls.",
+    display: '"Google Sans", "Inter", system-ui, sans-serif',
+    sans: '"Google Sans", "Inter", system-ui, sans-serif',
+  },
+  "fraunces-inter": {
+    id: "fraunces-inter",
+    name: "Fraunces + Inter",
+    blurb: "Fraunces for titles, Inter for text.",
+    display: '"Fraunces", "Iowan Old Style", "Georgia", serif',
+    sans: '"Inter", system-ui, sans-serif',
+  },
   geist: {
     id: "geist",
     name: "Geist Serif + Geist",
-    blurb: "Default. Serif titles, Geist for everything else.",
+    blurb: "Geist Serif for titles, Geist for text.",
     display: '"Geist Serif", "Iowan Old Style", "Georgia", serif',
     sans: '"Geist", "Inter", system-ui, sans-serif',
   },
@@ -1620,13 +1635,6 @@ export const FONT_PAIRS: Record<FontPairId, FontPair> = {
     blurb: "Humanist serif, warm sans.",
     display: '"Sentient", "Iowan Old Style", "Georgia", serif',
     sans: '"Switzer", "Inter", system-ui, sans-serif',
-  },
-  "fraunces-inter": {
-    id: "fraunces-inter",
-    name: "Fraunces + Inter",
-    blurb: "Classic. Was VAYRA's original pair.",
-    display: '"Fraunces", "Iowan Old Style", "Georgia", serif',
-    sans: '"Inter", system-ui, sans-serif',
   },
   "general-sans": {
     id: "general-sans",
@@ -1699,7 +1707,7 @@ export const DEFAULT_CUSTOM_COLORS: CustomColors = {
   raised: "#242529",
   ink: "#f4f2ed",
   inkMuted: "#a8aaad",
-  inkSubtle: "#737579",
+  inkSubtle: "#8d9096",
   edge: "#4b4d50",
   accent: "#a8aaad",
   danger: "#b94545",
@@ -1709,7 +1717,7 @@ export const DEFAULT_THEME: ThemeSettings = {
   preset: "cool-grey",
   backgroundImage: null,
   backgroundDim: 0.65,
-  fontPair: "geist",
+  fontPair: "google-sans",
   customColors: null,
 };
 
@@ -1768,9 +1776,9 @@ function resolveTokens(theme: ThemeSettings): Record<string, string> {
   return THEME_PRESETS["cool-grey"].tokens;
 }
 
-// Geist on every theme and platform, unless a pair was picked in Appearance.
+// Color palettes share the default pair until a pair is chosen in Appearance.
 export function activeFontPair(theme: ThemeSettings): FontPairId {
-  return theme.fontPairOverride ? theme.fontPair : "geist";
+  return theme.fontPairOverride ? theme.fontPair : DEFAULT_THEME.fontPair;
 }
 
 export function applyTheme(theme: ThemeSettings): void {
@@ -1781,7 +1789,7 @@ export function applyTheme(theme: ThemeSettings): void {
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   root.style.colorScheme = preset?.colorScheme ?? "dark";
   const fontPairId = activeFontPair(theme);
-  const pair = FONT_PAIRS[fontPairId] ?? FONT_PAIRS.geist;
+  const pair = FONT_PAIRS[fontPairId] ?? FONT_PAIRS[DEFAULT_THEME.fontPair];
   root.dataset.fontPair = theme.customFontId ? "custom" : pair.id;
   if (theme.customFontId) {
     const custom = `"harbor-font-${theme.customFontId}"`;

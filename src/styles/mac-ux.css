@@ -1,9 +1,9 @@
 /* Stable visual contract shared by the macOS and Windows desktop apps. */
 @layer components {
-  .mac-page-title { @apply text-[32px] font-semibold leading-tight tracking-tight text-ink; font-family: var(--font-display); }
-  .mac-primary-button { @apply inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2 text-[14px] font-semibold text-canvas; }
+  .mac-page-title { @apply text-[32px] font-semibold leading-[1.12] tracking-[-0.025em] text-ink; font-family: var(--font-display); }
+  .mac-primary-button { @apply inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl bg-ink px-4.5 py-2 text-[14px] font-semibold leading-none tracking-[-0.01em] text-canvas; }
   .mac-primary-button:hover { opacity: .88; }
-  .mac-secondary-button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-edge-soft px-4 py-2 text-[13px] font-medium text-ink-muted; }
+  .mac-secondary-button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-edge-soft px-4 py-2 text-[13.5px] font-medium leading-none tracking-[-0.005em] text-ink-muted; }
   .mac-secondary-button:hover { @apply bg-elevated text-ink; }
 }
 [data-desktop-ux]:not([data-desktop-ux="none"]) :is(button, a, input, summary):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
@@ -11,11 +11,11 @@
 [data-desktop-ux]:not([data-desktop-ux="none"]) .mac-home-discovery { margin-top: 0; }
 [data-desktop-ux]:not([data-desktop-ux="none"]) .mac-home-discovery h1 { font-size: 32px; }
 /* On the Mac every heading, page titles down to the deepest settings card, is
-   set in the display serif; labels, buttons and body text stay in Geist. */
+   set in the display family; labels, buttons and body text use the text family. */
 html[data-desktop-ux="mac"] :is(h1, h2, h3, h4) { font-family: var(--font-display); }
 /* One continuous canvas: no divider, fade, or selected navigation tile. */
 [data-desktop-sidebar] { border-inline-end: 0; background: var(--color-canvas); }
-[data-desktop-sidebar] [data-vayra-nav][data-active] { background: transparent; color: var(--color-ink); }
+[data-desktop-sidebar] [data-vayra-nav][data-active] { background: transparent; color: var(--color-ink); font-weight: 500; }
 
 /* Every destination responds, including selected and previously static icons. */
 [data-desktop-sidebar] [data-nav-icon] { transition: transform 180ms cubic-bezier(.2,.8,.2,1); }
