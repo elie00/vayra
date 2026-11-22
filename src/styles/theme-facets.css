@@ -1,0 +1,697 @@
+/* Non-default theme facet overrides (glass, minui, stremio, crunch, noir, glossy, rail, dracula, forest, royal).
+   Loaded on demand from src/lib/theme.ts when a non-default layout/card/button facet is active. */
+
+html[data-theme-card="glass"] .bg-surface:not(button):not(.no-glass):not(.rounded-full),
+html[data-theme-card="glass"] .bg-elevated:not(button):not(.no-glass):not(.rounded-full) {
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 5%, transparent), color-mix(in srgb, var(--color-ink) 0%, transparent));
+  border-color: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-ink) 14%, transparent);
+}
+
+html[data-theme-card="minui"],
+html[data-theme-layout="minui"] {
+  --service-logo-filter: brightness(0);
+}
+
+html[data-theme-card="minui"] .harbor-service-tile,
+html[data-theme-layout="minui"] .harbor-service-tile {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-canvas) 18%, transparent);
+  transition: box-shadow 180ms ease, background-color 180ms ease;
+}
+
+@media (hover: hover) {
+  html[data-theme-card="minui"] .harbor-service-tile:hover,
+  html[data-theme-layout="minui"] .harbor-service-tile:hover {
+    background-color: color-mix(in srgb, var(--color-canvas) 4%, transparent) !important;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-canvas) 42%, transparent);
+  }
+}
+
+html[data-theme-card="minui"] .harbor-service-tile img,
+html[data-theme-layout="minui"] .harbor-service-tile img {
+  filter: brightness(0) !important;
+  opacity: 0.78;
+  transition: opacity 180ms ease;
+}
+
+@media (hover: hover) {
+  html[data-theme-card="minui"] .harbor-service-tile:hover img,
+  html[data-theme-layout="minui"] .harbor-service-tile:hover img {
+    opacity: 1;
+  }
+}
+
+html[data-theme-layout="rail"] main.pt-20:not([data-rail-flush]),
+html[data-theme-layout="rail"] main.pt-24:not([data-rail-flush]),
+html[data-theme-layout="rail"] main.pt-28:not([data-rail-flush]),
+html[data-theme-layout="rail"] main.pt-32:not([data-rail-flush]) {
+  padding-top: 3.5rem;
+}
+
+html[data-theme-layout="rail"] main[data-rail-flush] {
+  padding-top: 1rem;
+}
+
+html[data-theme-card="glass"] .modal-panel {
+  background-color: var(--color-canvas) !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: color-mix(in srgb, var(--color-ink) 15%, transparent) !important;
+}
+
+html[data-theme-card="glass"] .glass-card {
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 7%, transparent), color-mix(in srgb, var(--color-ink) 0%, transparent));
+  border-color: color-mix(in srgb, var(--color-ink) 14%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-ink) 16%, transparent),
+    0 18px 50px -22px color-mix(in srgb, var(--color-canvas) 60%, transparent);
+}
+
+html[data-theme-button="glossy"] button,
+html[data-theme-button="glossy"] .glossy {
+  position: relative;
+}
+
+html[data-theme-button="glossy"] .bg-ink,
+html[data-theme-button="glossy"] .bg-accent {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 22%, transparent), color-mix(in srgb, var(--color-ink) 0%, transparent) 55%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-ink) 50%, transparent),
+    0 6px 18px -6px color-mix(in srgb, var(--color-canvas) 45%, transparent);
+}
+
+html[data-theme-layout="stremio"] main.pt-20:not([data-rail-flush]),
+html[data-theme-layout="stremio"] main.pt-24:not([data-rail-flush]),
+html[data-theme-layout="stremio"] main.pt-28:not([data-rail-flush]),
+html[data-theme-layout="stremio"] main.pt-32:not([data-rail-flush]) {
+  padding-top: 5.5rem;
+}
+
+html[data-theme-layout="stremio"] main {
+  padding-left: 2.5rem !important;
+  padding-right: 2.75rem !important;
+}
+
+html[data-theme-layout="stremio"] .harbor-bleed-stremio {
+  margin-left: -2.5rem;
+  margin-right: -2.75rem;
+}
+
+html[data-theme-card="crunch"] .harbor-wt-wrap,
+html[data-theme-card="noir"] .harbor-wt-wrap {
+  transform: translateY(2px);
+}
+
+html[data-theme-card="crunch"] .harbor-wt-tab,
+html[data-theme-card="noir"] .harbor-wt-tab,
+html[data-theme-card="glass"] .harbor-wt-tab {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+html[data-theme-card="stremio"] .harbor-rating-star {
+  color: #4b9dff;
+}
+
+html[data-theme-layout="stremio"] .harbor-cinema-badge {
+  color: color-mix(in srgb, var(--color-ink) 95%, transparent);
+  border-color: color-mix(in srgb, var(--color-ink) 28%, transparent);
+}
+
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover > .relative {
+    transform: none;
+  }
+}
+
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster {
+    box-shadow: none !important;
+  }
+}
+
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .harbor-poster::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 0 3px rgb(255 255 255 / 1),
+      inset 0 0 16px color-mix(in srgb, var(--color-accent) 30%, transparent);
+    pointer-events: none;
+  }
+}
+
+html[data-theme-card="stremio"] button.group:not([data-no-card-ring]) .rounded-xl > img {
+  transition: transform 280ms var(--ease-out);
+}
+
+@media (hover: hover) {
+  html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover .rounded-xl > img {
+    transform: scale(1.05);
+  }
+}
+
+html[data-theme-card="stremio"] .modal-panel {
+  background-color: var(--color-canvas) !important;
+  background-image: none !important;
+  border-color: color-mix(in srgb, var(--color-ink) 12%, transparent) !important;
+}
+
+html[data-theme-layout="stremio"] [data-vayra-player] {
+  --color-canvas: var(--color-canvas);
+  --color-surface: #181434;
+  --color-elevated: #1f1b3f;
+  --color-raised: #2a2358;
+  --color-edge: rgba(255, 255, 255, 0.18);
+  --color-edge-soft: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme-layout="stremio"] .harbor-chat-toast,
+html[data-theme-layout="stremio"] .harbor-together-pill {
+  background-color: color-mix(in srgb, var(--color-canvas) 85%, transparent) !important;
+  background-image: none !important;
+  border-color: color-mix(in srgb, var(--color-ink) 12%, transparent) !important;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+
+html[data-theme-layout="minui"] {
+  font-size: 16px;
+}
+
+html[data-theme-layout="minui"] main {
+  padding-bottom: 7.5rem !important;
+}
+
+html[data-theme-layout="minui"] main.pt-20:not([data-rail-flush]),
+html[data-theme-layout="minui"] main.pt-24:not([data-rail-flush]),
+html[data-theme-layout="minui"] main.pt-28:not([data-rail-flush]),
+html[data-theme-layout="minui"] main.pt-32:not([data-rail-flush]),
+html[data-theme-layout="minui"] main.lg\:pt-28:not([data-rail-flush]) {
+  padding-top: 4.5rem;
+}
+
+html[data-theme-layout="minui"] main > div.pt-28,
+html[data-theme-layout="minui"] main > div.pt-32,
+html[data-theme-layout="minui"] main > section .pt-32,
+html[data-theme-layout="minui"] main > div > div.pt-28,
+html[data-theme-layout="minui"] main > div > div.pt-32 {
+  padding-top: 4rem !important;
+}
+
+html[data-theme-layout="minui"] .modal-panel,
+html[data-theme-card="minui"] .modal-panel {
+  background-color: var(--color-surface) !important;
+  background-image: none !important;
+  border-color: var(--color-edge) !important;
+  box-shadow: 0 30px 80px -28px color-mix(in srgb, var(--color-canvas) 32%, transparent), 0 2px 10px -2px color-mix(in srgb, var(--color-canvas) 10%, transparent) !important;
+}
+
+html[data-theme-card="minui"] .glass-card {
+  background: var(--color-surface);
+  border-color: var(--color-edge-soft);
+  box-shadow: 0 2px 10px -2px color-mix(in srgb, var(--color-canvas) 10%, transparent), 0 12px 32px -16px color-mix(in srgb, var(--color-canvas) 16%, transparent);
+}
+
+html[data-theme-button="minui"] .bg-ink {
+  background-color: var(--color-ink) !important;
+}
+
+html[data-theme-button="minui"] .bg-accent {
+  background-color: var(--color-accent) !important;
+  color: var(--color-canvas) !important;
+}
+
+html[data-theme-layout="minui"] .harbor-cinema-badge {
+  color: var(--color-accent);
+  border-color: var(--color-accent-soft);
+}
+
+html[data-theme-layout="minui"] .harbor-chat-toast,
+html[data-theme-layout="minui"] .harbor-together-pill {
+  background-color: var(--color-surface) !important;
+  background-image: none !important;
+  border-color: var(--color-edge) !important;
+  color: var(--color-ink) !important;
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--color-canvas) 28%, transparent);
+}
+
+html[data-theme-layout="minui"] .harbor-search-backdrop {
+  background: var(--color-canvas);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+html[data-theme-layout="minui"] .harbor-service-tile {
+  background: var(--color-surface);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-ink) 6%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-canvas) 18%, transparent);
+}
+
+@media (hover: hover) {
+  html[data-theme-layout="minui"] .harbor-service-tile:hover {
+    background: var(--color-elevated);
+  }
+}
+
+html[data-theme-layout="minui"] [data-vayra-player] {
+  --color-canvas: #0a0a0c;
+  --color-surface: #15151a;
+  --color-elevated: #1d1d24;
+  --color-raised: #262630;
+  --color-ink: #f5f5f7;
+  --color-ink-muted: #c7c7cf;
+  --color-ink-subtle: #8a8a96;
+  --color-edge: rgba(255, 255, 255, 0.18);
+  --color-edge-soft: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 {
+  padding-left: 0;
+  padding-right: 0;
+  align-items: flex-start;
+  height: 60px;
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 > div {
+  height: 60px;
+  border-radius: 0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-ink) 4%, transparent);
+  background-color: var(--color-elevated) !important;
+  background-image: none !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 2%, transparent) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding-left: 1.5rem;
+  padding-right: 0.75rem;
+  gap: 0.25rem;
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 button[aria-label="Harbor home"] {
+  color: var(--color-accent);
+  padding-right: 0.75rem;
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 nav button {
+  border-radius: 0 !important;
+  height: 60px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 nav span[aria-hidden].rounded-full.bg-white\/15 {
+  background-color: var(--color-accent) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  inset: auto 10px 0 10px !important;
+  height: 3px !important;
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 .bg-white\/15 {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 .w-px.bg-white\/15 {
+  display: none;
+}
+
+html[data-theme-button="crunch"] .bg-accent {
+  background-color: var(--color-accent) !important;
+  color: var(--color-canvas) !important;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+@media (hover: hover) {
+  html[data-theme-button="crunch"] .bg-accent:hover {
+    filter: brightness(1.12);
+  }
+}
+
+html[data-theme-button="crunch"] .bg-ink {
+  background-color: var(--color-ink) !important;
+  color: var(--color-canvas) !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+html[data-theme-button="crunch"] .text-accent {
+  color: var(--color-accent) !important;
+}
+
+html[data-theme-card="crunch"] .modal-panel {
+  background-color: var(--color-surface) !important;
+  background-image: none !important;
+  border-color: var(--color-edge-soft) !important;
+  box-shadow: 0 30px 80px -20px color-mix(in srgb, var(--color-canvas) 85%, transparent) !important;
+}
+
+html[data-theme-card="crunch"] .glass-card {
+  background-color: var(--color-elevated) !important;
+  background-image: none !important;
+  border-color: var(--color-edge-soft) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--color-canvas) 55%, transparent) !important;
+}
+
+html[data-theme-card="crunch"] .harbor-poster {
+  border-radius: 4px;
+}
+
+html[data-theme-card="crunch"] .harbor-chat-toast,
+html[data-theme-card="crunch"] .harbor-together-pill {
+  background-color: var(--color-elevated) !important;
+  background-image: none !important;
+  border-color: var(--color-accent-soft) !important;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+
+html[data-theme-card="crunch"] .harbor-search-backdrop {
+  background: color-mix(in srgb, var(--color-canvas) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+html[data-theme-card="crunch"] .harbor-cinema-badge {
+  color: var(--color-accent);
+  border-color: var(--color-accent-soft);
+}
+
+html[data-theme-card="crunch"] [data-vayra-player] [role="slider"],
+html[data-theme-card="crunch"] [data-vayra-player] .player-progress-fill {
+  background-color: var(--color-accent);
+}
+
+html[data-theme-card="crunch"] ::selection {
+  color: var(--color-accent);
+  background: var(--color-raised);
+}
+
+html[data-theme-card="crunch"] header.fixed.top-0.z-\[60\].h-20 button[data-open="true"] {
+  background-color: var(--color-surface) !important;
+  border-radius: 0 !important;
+  height: 60px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  color: var(--color-ink) !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown {
+  position: fixed !important;
+  top: 60px !important;
+  right: 0 !important;
+  left: auto !important;
+  width: 24.25rem !important;
+  max-width: 100vw !important;
+  height: auto !important;
+  max-height: calc(100vh - 60px) !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background-color: var(--color-surface) !important;
+  background-image: none !important;
+  box-shadow: -10px 0 30px -10px color-mix(in srgb, var(--color-canvas) 65%, transparent) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow-y: auto !important;
+  z-index: 100 !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown > div {
+  border-color: color-mix(in srgb, var(--color-ink) 5%, transparent) !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown > div:first-child {
+  padding: 22px 24px !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown > div:first-child > div:first-child {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown > div:first-child > div:last-child {
+  font-size: 13px !important;
+  margin-top: 4px !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown button,
+html[data-theme-card="crunch"] .harbor-profile-dropdown a {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  font-size: 15px !important;
+  gap: 14px !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown button > svg,
+html[data-theme-card="crunch"] .harbor-profile-dropdown a > svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+html[data-theme-card="crunch"] .harbor-profile-dropdown span.uppercase {
+  font-size: 11.5px !important;
+  padding: 14px 24px 6px !important;
+}
+
+html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 {
+  padding-left: 0;
+  padding-right: 0;
+  align-items: flex-start;
+  height: 60px;
+}
+
+html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 > div {
+  height: 60px;
+  border-radius: 0;
+  border: none;
+  background-color: var(--color-canvas) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding-left: 1.5rem;
+  padding-right: 0.75rem;
+  gap: 0.25rem;
+}
+
+html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 nav button {
+  border-radius: 0 !important;
+  height: 60px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 nav span[aria-hidden].rounded-full.bg-white\/15 {
+  background-color: var(--color-accent) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-radius: 9999px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  inset: auto auto 10px 50% !important;
+  width: 4px !important;
+  height: 4px !important;
+  transform: translateX(-50%);
+}
+
+html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 .w-px.bg-white\/15 {
+  display: none;
+}
+
+html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 .bg-white\/12,
+html[data-theme-card="noir"] header.fixed.top-0.z-\[60\].h-20 .bg-white\/20 {
+  background-color: color-mix(in srgb, var(--color-ink) 6%, transparent) !important;
+}
+
+html[data-theme-button="noir"] .bg-accent {
+  background-color: var(--color-accent) !important;
+  color: var(--color-canvas) !important;
+  font-weight: 600;
+}
+
+html[data-theme-button="noir"] .bg-ink {
+  background-color: var(--color-ink) !important;
+  color: var(--color-canvas) !important;
+  font-weight: 600;
+}
+
+html[data-theme-card="noir"] .modal-panel {
+  background-color: var(--color-surface) !important;
+  background-image: none !important;
+  border-color: color-mix(in srgb, var(--color-ink) 6%, transparent) !important;
+  box-shadow: 0 30px 80px -20px color-mix(in srgb, var(--color-canvas) 90%, transparent) !important;
+}
+
+html[data-theme-card="noir"] .glass-card {
+  background-color: var(--color-surface) !important;
+  background-image: none !important;
+  border-color: color-mix(in srgb, var(--color-ink) 4%, transparent) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme-card="noir"] .harbor-chat-toast,
+html[data-theme-card="noir"] .harbor-together-pill {
+  background-color: var(--color-surface) !important;
+  background-image: none !important;
+  border-color: color-mix(in srgb, var(--color-ink) 8%, transparent) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme-card="noir"] .harbor-search-backdrop {
+  background: color-mix(in srgb, var(--color-canvas) 96%, transparent);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+}
+
+html[data-theme-card="noir"] .harbor-cinema-badge {
+  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--color-ink) 18%, transparent);
+}
+
+html[data-theme-card="noir"] [data-vayra-player] {
+  --color-canvas: #000000;
+  --color-surface: var(--color-surface);
+  --color-elevated: var(--color-elevated);
+  --color-raised: var(--color-raised);
+  --color-ink: var(--color-ink);
+  --color-edge: rgba(255, 255, 255, 0.16);
+  --color-edge-soft: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme-card="noir"] ::selection {
+  color: var(--color-canvas);
+  background: var(--color-ink);
+}
+
+html[data-theme-layout="minui"] .anime-award-banner-logo {
+  filter: none;
+}
+
+@keyframes harbor-twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes harbor-moon-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+
+.harbor-dracula-twinkle { animation: harbor-twinkle 3.2s ease-in-out infinite; }
+.harbor-dracula-moon { animation: harbor-moon-bob 4.5s ease-in-out infinite; }
+
+@keyframes harbor-forest-ray {
+  0%, 100% { opacity: 0.34; }
+  50% { opacity: 0.58; }
+}
+.harbor-forest-ray { animation: harbor-forest-ray 7s ease-in-out infinite; }
+
+@keyframes harbor-royal-bar-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.harbor-royal-bar {
+  animation: harbor-royal-bar-in 360ms var(--ease-out) both;
+}
+@keyframes harbor-royal-pop-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.harbor-royal-menu {
+  transform-origin: top right;
+  animation: harbor-royal-pop-in 200ms var(--ease-out) both;
+}
+@keyframes harbor-royal-glint {
+  0% { transform: translateY(-150%); opacity: 0; }
+  45% { opacity: 0.18; }
+  100% { transform: translateY(650%); opacity: 0; }
+}
+.harbor-royal-glint {
+  opacity: 0;
+  animation: harbor-royal-glint 1600ms var(--ease-out) 380ms 1 forwards;
+}
+
+/* Opaque-surface overrides for translucent "glass" facet (aurora + any user glass theme). */
+html[data-theme-card="glass"] {
+  --color-surface: color-mix(in srgb, var(--color-canvas) 91%, white);
+  --color-elevated: color-mix(in srgb, var(--color-canvas) 85%, white);
+  --color-raised: color-mix(in srgb, var(--color-canvas) 79%, white);
+}
+
+html[data-theme-card="glass"] [data-vayra-player] {
+  --color-surface: color-mix(in srgb, var(--color-canvas) 92%, white);
+  --color-elevated: color-mix(in srgb, var(--color-canvas) 86%, white);
+  --color-raised: color-mix(in srgb, var(--color-canvas) 80%, white);
+  --color-edge: rgba(255, 255, 255, 0.18);
+  --color-edge-soft: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme-card="glass"] .bg-surface:not(button):not(.no-glass):not(.rounded-full),
+html[data-theme-card="glass"] .bg-elevated:not(button):not(.no-glass):not(.rounded-full) {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-theme-card="glass"] .glass-card {
+  background-color: color-mix(in srgb, var(--color-canvas) 90%, white);
+  background-image: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: color-mix(in srgb, var(--color-ink) 14%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-ink) 12%, transparent),
+    0 18px 50px -22px color-mix(in srgb, var(--color-canvas) 70%, transparent);
+}
+
+html[data-theme-card="glass"] .harbor-together-surface {
+  background-color: color-mix(in srgb, var(--color-canvas) 90%, white);
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--color-canvas) 86%, white),
+    color-mix(in srgb, var(--color-canvas) 86%, white)
+  );
+}
+
+html[data-theme-card="glass"] .harbor-chat-toast,
+html[data-theme-card="glass"] .harbor-together-pill {
+  background-color: color-mix(in srgb, var(--color-canvas) 88%, white) !important;
+  background-image: none !important;
+  border-color: color-mix(in srgb, var(--color-ink) 14%, transparent) !important;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+
+html[data-theme-card="crunch"][dir="rtl"] .harbor-profile-dropdown {
+  right: auto !important;
+  left: 0 !important;
+  box-shadow: 10px 0 30px -10px color-mix(in srgb, var(--color-canvas) 65%, transparent) !important;
+}

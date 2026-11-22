@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import "@/styles/mobile.css";
 import { Bookmark, Home, Menu, Search, X } from "lucide-react";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { MOVIE_GENRES } from "@/lib/feed/tags";

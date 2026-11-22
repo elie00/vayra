@@ -1807,6 +1807,9 @@ export function applyTheme(theme: ThemeSettings): void {
   root.dataset.themeCard = cardStyle;
   root.dataset.themeButton = buttonStyle;
   root.dataset.themeBokeh = preset?.bokeh ? "on" : "off";
+  if (layout !== "sidebar" || cardStyle !== "flat" || buttonStyle !== "flat") {
+    void import("@/styles/theme-facets.css");
+  }
 }
 
 export function activeLayout(theme: ThemeSettings): ThemeLayout {
