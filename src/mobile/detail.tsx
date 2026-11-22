@@ -17,6 +17,7 @@ import { Synopsis } from "@/views/detail/synopsis";
 import { EpisodeDownloadButton } from "@/views/detail/episode-download-button";
 import { MobileCinemetaEpisodes } from "./cinemeta-episodes";
 import { MobileEpisodeItem } from "./episode-item";
+import { haptic } from "./haptics";
 
 // Mobile-first Detail (streaming-app model: artwork, full-width Play, round
 // actions, then Episodes / Similar titles / Cast list tabs). Rendered from
@@ -132,7 +133,7 @@ export function MobileDetail({
 
   return (
     <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
-      <div className="pb-[calc(2rem+var(--vayra-safe-bottom))]">
+      <div className="pb-[calc(2rem+var(--harbor-tabbar,var(--vayra-safe-bottom)))]">
         {/* The artwork across the top, as streaming apps open a title; it dims
             under the status bar and the Back button, and fades into the page. */}
         <div className="relative aspect-video w-full overflow-hidden bg-elevated">
@@ -194,7 +195,10 @@ export function MobileDetail({
               label={t("To watch")}
               ariaLabel={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
               pressed={inWatchlist}
-              onClick={onToggleWatchlist}
+              onClick={() => {
+                haptic(inWatchlist ? "tick" : "confirm");
+                onToggleWatchlist();
+              }}
             >
               {inWatchlist ? <Check size={20} strokeWidth={2.4} /> : <Plus size={20} strokeWidth={2.2} />}
             </RoundAction>
@@ -218,7 +222,10 @@ export function MobileDetail({
                   type="button"
                   role="tab"
                   aria-selected={tab === id}
-                  onClick={() => setPicked(id)}
+                  onClick={() => {
+                    haptic("tick");
+                    setPicked(id);
+                  }}
                   className={`relative shrink-0 py-3 type-callout font-semibold transition-colors ${tab === id ? "text-ink" : "text-ink-subtle"}`}
                 >
                   {/* Like streaming apps, the active tab is marked along its top edge. */}
@@ -371,9 +378,12 @@ function MobileEpisodes({
               <button
                 key={s.seasonNumber}
                 type="button"
-                onClick={() => setActive(s.seasonNumber)}
+                onClick={() => {
+                  haptic("tick");
+                  setActive(s.seasonNumber);
+                }}
                 aria-pressed={on}
-                className={`shrink-0 rounded-full px-4 py-2 type-footnote font-medium transition-colors ${
+                className={`flex h-10 shrink-0 items-center rounded-full px-4 type-footnote font-medium transition-colors active:scale-95 ${
                   on ? "bg-ink text-canvas" : "bg-elevated/60 text-ink-muted"
                 }`}
               >

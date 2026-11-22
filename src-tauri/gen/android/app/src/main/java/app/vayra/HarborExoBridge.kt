@@ -7,10 +7,12 @@ import android.content.pm.ActivityInfo
 import android.media.AudioManager
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Base64
 import android.util.Rational
 import android.view.LayoutInflater
@@ -21,6 +23,7 @@ import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -312,9 +315,13 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
                 if (bmp == null) {
                     holder[0] = "error:no frame available"
                 } else {
-                    val baos = ByteArrayOutputStream()
-                    bmp.compress(Bitmap.CompressFormat.PNG, 100, baos)
-                    holder[0] = "data:image/png;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+                    try {
+                        val baos = ByteArrayOutputStream()
+                        bmp.compress(Bitmap.CompressFormat.PNG, 100, baos)
+                        holder[0] = "data:image/png;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+                    } finally {
+                        bmp.recycle()
+                    }
                 }
             } catch (e: Exception) {
                 holder[0] = "error:${e.message}"
@@ -336,15 +343,7 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         val holder = arrayOfNulls<String>(1)
         mainHandler.post {
             try {
-                val builder = PictureInPictureParams.Builder()
-                val w = player?.videoSize?.width ?: 0
-                val h = player?.videoSize?.height ?: 0
-                if (w > 0 && h > 0) {
-                    val ratio = w.toDouble() / h.toDouble()
-                    // Android only accepts aspect ratios in [0.4185, 2.39]
-                    if (ratio in 0.42..2.39) builder.setAspectRatio(Rational(w, h))
-                }
-                holder[0] = if (activity.enterPictureInPictureMode(builder.build())) "ok"
+                holder[0] = if (activity.enterPictureInPictureMode(buildPipParams(autoEnter = visible && player?.isPlaying == true))) "ok"
                 else "error:enter pip refused"
             } catch (e: Exception) {
                 holder[0] = "error:${e.message}"
@@ -356,6 +355,49 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
             if (latch.await(2, TimeUnit.SECONDS)) holder[0] ?: "error:null result" else "error:timeout"
         } catch (e: InterruptedException) {
             "error:interrupted"
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun buildPipParams(autoEnter: Boolean): PictureInPictureParams {
+        val builder = PictureInPictureParams.Builder()
+        val w = player?.videoSize?.width ?: 0
+        val h = player?.videoSize?.height ?: 0
+        if (w > 0 && h > 0) {
+            val ratio = w.toDouble() / h.toDouble()
+            // Android only accepts aspect ratios in [0.4185, 2.39]
+            if (ratio in 0.42..2.39) builder.setAspectRatio(Rational(w, h))
+        }
+        playerView?.let { pv ->
+            val rect = Rect()
+            if (pv.getGlobalVisibleRect(rect) && !rect.isEmpty) {
+                builder.setSourceRectHint(rect)
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(autoEnter)
+            builder.setSeamlessResizeEnabled(true)
+        }
+        return builder.build()
+    }
+
+    private fun updatePipParams() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        try {
+            activity.setPictureInPictureParams(buildPipParams(autoEnter = visible && player?.isPlaying == true))
+        } catch (_: Exception) {
+            // PiP unsupported or disabled by system policy.
+        }
+    }
+
+    /** Android 8–11 auto-PiP fallback when leaving the activity while video is actively playing. */
+    fun onUserLeaveHint() {
+        if (Build.VERSION.SDK_INT !in Build.VERSION_CODES.O until Build.VERSION_CODES.S) return
+        if (!visible || pipActive || player?.isPlaying != true) return
+        try {
+            activity.enterPictureInPictureMode(buildPipParams(autoEnter = false))
+        } catch (_: Exception) {
+            // Ignore when PiP is unavailable.
         }
     }
 
@@ -379,6 +421,38 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, Math.round(v.coerceIn(0.0, 1.0) * max).toInt(), 0)
         return "ok"
+    }
+
+    /** Current window screen brightness (0 to 1) for left-edge player swipe gestures. */
+    @JavascriptInterface
+    fun getScreenBrightness(): String {
+        val current = activity.window.attributes.screenBrightness
+        if (current >= 0f) return current.coerceIn(0f, 1f).toString()
+        val sys = try {
+            Settings.System.getInt(activity.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 128)
+        } catch (_: Exception) {
+            128
+        }
+        return (sys.coerceIn(0, 255) / 255.0).toString()
+    }
+
+    /** Overrides the player window brightness (0.01 to 1); restored to system auto on exit. */
+    @JavascriptInterface
+    fun setScreenBrightness(level: String): String {
+        val v = level.toFloatOrNull() ?: return "error:bad brightness"
+        return post {
+            val lp = activity.window.attributes
+            lp.screenBrightness = v.coerceIn(0.01f, 1.0f)
+            activity.window.attributes = lp
+        }
+    }
+
+    private fun resetScreenBrightness() {
+        val lp = activity.window.attributes
+        if (lp.screenBrightness != WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE) {
+            lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            activity.window.attributes = lp
+        }
     }
 
     /** Landscape for watching (either way up, following the sensor), or back to free rotation. */
@@ -410,8 +484,10 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         // reported it, and the page took a fresh start for a failed one.
         lastError = null
         setImmersive(false)
+        resetScreenBrightness()
+        updatePipParams()
         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        webView.setBackgroundColor(Color.BLACK)
+        webView.setBackgroundColor(MainActivity.VAYRA_CANVAS_COLOR)
         activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         stateJson = emptyState()
     }
@@ -438,6 +514,7 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
 
         val exo = ExoPlayer.Builder(activity)
             .setMediaSourceFactory(DefaultMediaSourceFactory(factory))
+            .setHandleAudioBecomingNoisy(true)
             .build()
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
@@ -492,12 +569,14 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
         visible = show
         setImmersive(show)
         playerView?.visibility = if (show) View.VISIBLE else View.GONE
-        webView.setBackgroundColor(if (show) Color.TRANSPARENT else Color.BLACK)
+        webView.setBackgroundColor(if (show) Color.TRANSPARENT else MainActivity.VAYRA_CANVAS_COLOR)
         if (!show) {
+            resetScreenBrightness()
             activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } else if (player?.isPlaying == true) {
             activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+        updatePipParams()
     }
 
     // ---- MediaItem building -----------------------------------------------
@@ -598,6 +677,7 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
                 activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 stopTicker()
             }
+            updatePipParams()
             emitState()
         }
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = emitState()
@@ -605,7 +685,10 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
             maybeSelectPendingSub(tracks)
             emitState()
         }
-        override fun onVideoSizeChanged(videoSize: VideoSize) = emitState()
+        override fun onVideoSizeChanged(videoSize: VideoSize) {
+            updatePipParams()
+            emitState()
+        }
         override fun onPositionDiscontinuity(
             oldPosition: Player.PositionInfo,
             newPosition: Player.PositionInfo,
@@ -683,6 +766,7 @@ class HarborExoBridge(private val activity: Activity, private val webView: WebVi
     fun onPipChanged(active: Boolean) {
         mainHandler.post {
             pipActive = active
+            if (!active && visible) setImmersive(true)
             emitEvent("{\"type\":\"pip\",\"active\":$active}")
             emitState()
         }

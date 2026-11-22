@@ -3,8 +3,10 @@ import { Check, ChevronRight, Info, Play, Plus, X } from "lucide-react";
 import { meta as fetchMeta, type Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { useSearch } from "@/lib/search-context";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useView } from "@/lib/view";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import { haptic } from "./haptics";
 import { closeMetaPreview, useMetaPreview } from "./meta-preview";
 import { useSheetPresence } from "./sheet-presence";
 import { useSheetDrag } from "./use-sheet-drag";
@@ -27,6 +29,7 @@ export function MetaPreviewSheet() {
   const inWatchlist = useInWatchlist(meta?.id ?? "");
   const sheetRef = useRef<HTMLElement>(null);
   useSheetDrag(sheetRef, closeMetaPreview, current !== null);
+  useFocusTrap(sheetRef, current !== null);
 
   useEffect(() => {
     if (!current) return;
@@ -119,7 +122,10 @@ export function MetaPreviewSheet() {
               label={t("To watch")}
               ariaLabel={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
               pressed={inWatchlist}
-              onClick={() => toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster })}
+              onClick={() => {
+                haptic(inWatchlist ? "tick" : "confirm");
+                toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });
+              }}
             >
               {inWatchlist ? <Check size={20} strokeWidth={2.4} /> : <Plus size={20} strokeWidth={2.2} />}
             </RoundAction>

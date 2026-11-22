@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { PickCard } from "@/components/pick-card";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
+import { haptic } from "@/mobile/haptics";
 import { MobileHeroCard } from "@/mobile/home";
 
 // Mobile-first Discover (Apple Sports card model). Rendered from `Discover` in
@@ -79,9 +80,12 @@ export function MobileDiscover({
                 <button
                   key={r.key}
                   type="button"
-                  onClick={() => setSelected(r.key)}
+                  onClick={() => {
+                    haptic("tick");
+                    setSelected(r.key);
+                  }}
                   aria-pressed={on}
-                  className={`shrink-0 rounded-full px-4 py-2 type-footnote font-medium transition-colors ${
+                  className={`flex h-10 shrink-0 items-center rounded-full px-4 type-footnote font-medium transition-colors active:scale-95 ${
                     on ? "bg-ink text-canvas" : "bg-elevated/60 text-ink-muted"
                   }`}
                 >
@@ -100,6 +104,10 @@ export function MobileDiscover({
               <div key={i} className="aspect-[2/3] animate-pulse rounded-xl bg-elevated/40" />
             ))}
           </div>
+        ) : items.length === 0 ? (
+          <p role="status" className="py-10 text-center type-callout text-ink-muted">
+            {t("Nothing here yet")}
+          </p>
         ) : (
           <div className="grid grid-cols-3 gap-2.5">
             {items.map((m, i) => (

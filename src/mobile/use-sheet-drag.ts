@@ -93,7 +93,7 @@ export function useSheetDrag(sheetRef: RefObject<HTMLElement | null>, onDismiss:
           scrim.style.transition = `opacity ${ms}ms linear`;
           scrim.style.opacity = "0";
         }
-        haptic();
+        haptic("gesture");
         dismissRef.current();
         return;
       }

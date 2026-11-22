@@ -6,6 +6,7 @@ import type { AddonCategory, AddonTag } from "@/lib/addons-store/curated";
 import { categorizeAddon, type ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, subtitleFromManifest } from "@/views/addons/addons-utils";
+import { haptic } from "./haptics";
 import { MacAddonsImport } from "./mac-addons-import";
 
 // The addons page on a phone, organised by what an addon is for rather than by
@@ -94,8 +95,11 @@ export function MobileAddons({
               type="button"
               role="tab"
               aria-selected={tab === id}
-              onClick={() => setTab(id)}
-              className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full type-callout font-semibold transition-colors ${
+              onClick={() => {
+                haptic("tick");
+                setTab(id);
+              }}
+              className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full type-callout font-semibold transition-colors ${
                 tab === id ? "bg-ink text-canvas" : "text-ink-muted"
               }`}
             >
@@ -107,7 +111,7 @@ export function MobileAddons({
 
         <MacAddonsImport />
 
-        <label data-search-field className="flex h-11 items-center gap-2.5 rounded-full bg-raised ps-4 pe-1.5">
+        <label data-search-field className="flex h-12 items-center gap-2.5 rounded-full bg-raised ps-4 pe-1.5">
           {link ? <Link2 size={18} className="shrink-0 text-ink-subtle" /> : <Search size={18} className="shrink-0 text-ink-subtle" />}
           <input
             type="search"
@@ -128,7 +132,7 @@ export function MobileAddons({
               type="button"
               onClick={() => setQuery("")}
               aria-label={t("Clear")}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle active:bg-elevated"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-subtle active:bg-elevated"
             >
               <X size={16} strokeWidth={2.4} />
             </button>
@@ -219,7 +223,7 @@ function RecommendedSection({
         ))}
       </div>
       {items.length > SECTION_PREVIEW && (
-        <button type="button" onClick={() => setAll(!all)} className="self-start type-footnote font-medium text-ink-muted active:text-ink">
+        <button type="button" onClick={() => setAll(!all)} className="flex min-h-11 items-center self-start px-1 type-footnote font-medium text-ink-muted active:text-ink">
           {all ? t("Show less") : t("Show all {count}", { count: items.length })}
         </button>
       )}
@@ -276,6 +280,7 @@ function InstallAction({ r, onInstall }: { r: ResolvedAddon; onInstall: (r: Reso
       type="button"
       disabled={busy}
       onClick={async () => {
+        haptic("confirm");
         setBusy(true);
         try {
           await onInstall(r);
@@ -283,7 +288,7 @@ function InstallAction({ r, onInstall }: { r: ResolvedAddon; onInstall: (r: Reso
           setBusy(false);
         }
       }}
-      className="flex h-9 shrink-0 items-center justify-center rounded-full bg-ink px-4 type-footnote font-semibold text-canvas transition-transform active:scale-95 disabled:opacity-60"
+      className="flex h-10 min-w-[4.75rem] shrink-0 items-center justify-center rounded-full bg-ink px-4 type-footnote font-semibold text-canvas transition-transform active:scale-95 disabled:opacity-60"
     >
       {busy ? <Loader2 size={15} className="animate-spin" /> : t("Install")}
     </button>
@@ -312,6 +317,7 @@ function InstalledActions({ r, onManage }: { r: ResolvedAddon; onManage: (r: Res
         aria-checked={enabled}
         aria-label={t("Use {name}", { name })}
         onClick={() => {
+          haptic("tick");
           const next = !enabled;
           setEnabled(next);
           setAddonEnabled(r.transportUrl, next);

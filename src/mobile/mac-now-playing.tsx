@@ -5,6 +5,8 @@ import { emitAppFeedback } from "@/lib/app-feedback";
 import type { ConnectCommand } from "@/lib/connect/host";
 import { macStatusLabel, sendToMac, useLinkStatus, useMacPosition } from "@/lib/connect/link";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
+import { haptic } from "./haptics";
 import { closeMacRemote, openMacRemote, useMacRemoteOpen } from "./mac-remote";
 import { useSheetPresence } from "./sheet-presence";
 import { useSheetDrag } from "./use-sheet-drag";
@@ -142,6 +144,7 @@ export function MacRemoteSheet() {
   // The remote stays on screen while it slides away.
   const { shown, closing } = useSheetPresence(open && available ? true : null);
   useSheetDrag(sheetRef, closeMacRemote, open && available);
+  useFocusTrap(sheetRef, open && available);
   // A value being dragged, shown until the Mac reports a newer state.
   const [scrub, setScrub] = useState<{ value: number; at: number } | null>(null);
   const [volume, setVolume] = useState<{ value: number; at: number } | null>(null);
@@ -213,7 +216,10 @@ export function MacRemoteSheet() {
           <div className="flex items-center justify-center gap-8">
             <button
               type="button"
-              onClick={() => send({ type: "command", action: "skip", seconds: -SKIP_SEC })}
+              onClick={() => {
+                haptic("tick");
+                send({ type: "command", action: "skip", seconds: -SKIP_SEC });
+              }}
               aria-label={t("Back {n} seconds", { n: SKIP_SEC })}
               className="flex h-12 w-12 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
             >
@@ -221,7 +227,10 @@ export function MacRemoteSheet() {
             </button>
             <button
               type="button"
-              onClick={() => send({ type: "command", action: playing ? "pause" : "play" })}
+              onClick={() => {
+                haptic("tick");
+                send({ type: "command", action: playing ? "pause" : "play" });
+              }}
               aria-label={playing ? t("Pause") : t("Play")}
               className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-canvas transition-transform active:scale-95"
             >
@@ -229,7 +238,10 @@ export function MacRemoteSheet() {
             </button>
             <button
               type="button"
-              onClick={() => send({ type: "command", action: "skip", seconds: SKIP_SEC })}
+              onClick={() => {
+                haptic("tick");
+                send({ type: "command", action: "skip", seconds: SKIP_SEC });
+              }}
               aria-label={t("Forward {n} seconds", { n: SKIP_SEC })}
               className="flex h-12 w-12 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
             >
@@ -260,10 +272,11 @@ export function MacRemoteSheet() {
           <button
             type="button"
             onClick={() => {
+              haptic("confirm");
               send({ type: "command", action: "stop" });
               closeMacRemote();
             }}
-            className="flex h-11 items-center justify-center gap-2 rounded-full bg-danger/15 type-callout font-semibold text-danger transition-colors hover:bg-danger/25"
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-danger/15 type-callout font-semibold text-danger transition-colors active:bg-danger/25"
           >
             <Square size={14} fill="currentColor" />
             {t("Stop on the Mac")}

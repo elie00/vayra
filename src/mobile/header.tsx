@@ -35,8 +35,7 @@ export function MobileHeader({ raised = false }: { raised?: boolean }) {
           className="me-auto flex items-center gap-1.5 text-ink"
         >
           <HarborMark className="h-[18px] w-[18px] shrink-0" />
-          {/* The Mac sets its wordmark in the system sans (San Francisco); Switzer is its match here. */}
-          <span className="font-sans text-[17px] font-semibold leading-none tracking-tight">VAYRA</span>
+          <span className="font-display text-[17px] font-semibold leading-none tracking-[0.06em]">VAYRA</span>
         </button>
         <MobileTogetherButton />
         {/* The profile, far right as in streaming apps; it opens the settings. */}

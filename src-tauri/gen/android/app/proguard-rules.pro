@@ -38,7 +38,11 @@
 # réflexion JNI depuis Rust (settings_store.rs) — sans -keep, R8 le strippe.
 -keep class app.vayra.HarborCredentials { *; }
 
-# Barres système pour la page : la WebView appelle window.VayraInsets.read()
+# Barres système et retours haptiques natifs pour la page :
+# la WebView appelle window.VayraInsets.read() et window.VayraHaptics.perform(kind)
 -keepclassmembers class app.vayra.MainActivity$Insets {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keepclassmembers class app.vayra.MainActivity$Haptics {
     @android.webkit.JavascriptInterface <methods>;
 }

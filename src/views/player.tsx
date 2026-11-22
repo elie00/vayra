@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveChromeTheme } from "@/lib/theme";
 import { useActiveKid } from "@/lib/profiles";
 import { isMobileTauri } from "@/lib/platform";
-import { setSystemVolume, systemVolume } from "@/lib/player/exo/bridge";
+import { screenBrightness, setScreenBrightness, setSystemVolume, systemVolume } from "@/lib/player/exo/bridge";
 import { type PlayerBridge } from "@/lib/player/bridge";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
@@ -81,6 +81,7 @@ import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
 import { SourceErrorCard } from "./player/source-error-card";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
+import { PlayerShortcutsSheet } from "@/components/player/shortcuts-sheet";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
 import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
@@ -976,6 +977,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     // A phone has no hover: a tap on the picture toggles the controls, not playback.
     touchTap: isMobileTauri() ? { start: tapStart, end: tapEnd, seek: seekStep } : undefined,
     swipeVolume: isMobileTauri() ? { read: systemVolume, write: setSystemVolume } : undefined,
+    swipeBrightness: isMobileTauri() ? { read: screenBrightness, write: setScreenBrightness } : undefined,
     setHideOthersDrawings,
     canPickAnother: !liveOverlay.isLive || !inRoom || isHost,
     resolvedImdbId,
@@ -1090,8 +1092,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
             clearSourceError();
             openPicker(src.meta, src.episode, { autoPlay: true });
           }}
+          onBack={() => {
+            clearSourceError();
+            closePlayer();
+          }}
         />
       )}
+      <PlayerShortcutsSheet />
       <LeaveConfirmModal />
       <HdrStageBridge
         active={hdrStageRequested}

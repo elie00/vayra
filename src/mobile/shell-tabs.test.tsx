@@ -29,5 +29,9 @@ it("closes the search page when the Menu tab opens the menu, so the menu is not 
   act(() => menuTab!.click());
   expect(getPlusOpen()).toBe(true);
   expect(search.setOpen).toHaveBeenCalledWith(false);
+  // Menu stays a non-modal region so TalkBack can reach the sibling tab bar.
+  const menu = host.querySelector("[data-vayra-plus]");
+  expect(menu?.getAttribute("role")).toBe("region");
+  expect(menu?.getAttribute("aria-modal")).toBeNull();
   act(() => root.unmount());
 });

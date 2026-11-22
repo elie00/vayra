@@ -436,17 +436,19 @@ export function Transport({
       <SongIdToast />
       <div
         data-tauri-drag-region={fullscreen ? undefined : ""}
-        className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent px-7 pt-4 pb-8 max-sm:px-4 max-sm:pt-[calc(var(--harbor-status-bar,0px)+0.5rem)] transition-opacity duration-300 ${
+        aria-hidden={!visible}
+        inert={!visible || undefined}
+        className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent ps-[calc(1.75rem+var(--vayra-safe-left,0px))] pe-[calc(1.75rem+var(--vayra-safe-right,0px))] pt-4 pb-8 max-sm:ps-[calc(1rem+var(--vayra-safe-left,0px))] max-sm:pe-[calc(1rem+var(--vayra-safe-right,0px))] max-sm:pt-[calc(var(--harbor-status-bar,0px)+0.5rem)] transition-opacity duration-300 ${
           visible ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="pointer-events-auto flex items-start gap-2">
+        <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-start gap-2`}>
           {controlsInSlot(chromeConfig, "top-left").map((c) => (
             <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
           ))}
         </div>
         <div className="flex items-start gap-2">
-          <div className="pointer-events-auto flex items-start gap-2">
+          <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-start gap-2`}>
             {controlsInSlot(chromeConfig, "top-right").map((c) => (
               <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
             ))}
@@ -457,11 +459,15 @@ export function Transport({
       <div
         ref={controlsRef}
         dir="ltr"
+        aria-hidden={!visible}
+        inert={!visible || undefined}
         className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2.5 bg-gradient-to-t from-black/70 via-black/25 to-transparent ${
-          tight ? "px-3 pt-6 pb-[calc(0.75rem+var(--vayra-safe-bottom,0px))]" : "px-7 pt-10 pb-[calc(1.25rem+var(--vayra-safe-bottom,0px))]"
+          tight
+            ? "ps-[calc(0.75rem+var(--vayra-safe-left,0px))] pe-[calc(0.75rem+var(--vayra-safe-right,0px))] pt-6 pb-[calc(0.75rem+var(--vayra-safe-bottom,0px))]"
+            : "ps-[calc(1.75rem+var(--vayra-safe-left,0px))] pe-[calc(1.75rem+var(--vayra-safe-right,0px))] pt-10 pb-[calc(1.25rem+var(--vayra-safe-bottom,0px))]"
         } transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
       >
-        <div dir="ltr" className="pointer-events-auto flex items-center gap-3">
+        <div dir="ltr" className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-center gap-3`}>
           {isLiveChannel ? (
             <>
               <LiveBadge />
@@ -484,7 +490,7 @@ export function Transport({
             </>
           )}
         </div>
-        <div className={`pointer-events-auto grid items-center ${
+        <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} grid items-center ${
           // A phone keeps the playback buttons centred however narrow the bar.
           compact && !mobile ? "grid-cols-[auto_1fr_auto] gap-2" : "grid-cols-[1fr_auto_1fr] gap-4"
         }`}>

@@ -1,7 +1,10 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Download, Gauge, ListVideo, Moon, PictureInPicture2, Replace, Scan, SkipBack, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
+import { haptic } from "@/mobile/haptics";
 import { useSheetClose } from "@/mobile/sheet-presence";
+import { useSheetDrag } from "@/mobile/use-sheet-drag";
 import { SLEEP_PRESETS } from "@/views/player/hooks/use-sleep-timer";
 import type { ControlContext } from "./transport/control-renderer";
 
@@ -24,11 +27,27 @@ export function MobileMoreSheet({ ctx, onClose }: { ctx: ControlContext; onClose
   const t = useT();
   const [open, setOpen] = useState<"speed" | "sleep" | "picture" | null>(null);
   const [closing, close] = useSheetClose(onClose);
+  const sheetRef = useRef<HTMLElement>(null);
+  useSheetDrag(sheetRef, close, !closing);
+  useFocusTrap(sheetRef, !closing);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close]);
+
   const act = (fn: () => void) => () => {
+    haptic("tick");
     fn();
     close();
   };
-  const toggle = (id: "speed" | "sleep" | "picture") => setOpen((v) => (v === id ? null : id));
+  const toggle = (id: "speed" | "sleep" | "picture") => {
+    haptic("tick");
+    setOpen((v) => (v === id ? null : id));
+  };
   const sleep = ctx.sleep;
   const sleepLabel = !sleep || sleep.mode.kind === "off" ? t("Off") : sleep.remainingMs != null ? `${Math.ceil(sleep.remainingMs / 60000)} min` : t("On");
   const download = ctx.download;
@@ -38,11 +57,15 @@ export function MobileMoreSheet({ ctx, onClose }: { ctx: ControlContext; onClose
     <div data-closing={closing ? "" : undefined} className={`${closing ? "" : "pointer-events-auto "}fixed inset-0 z-[60]`}>
       <button type="button" aria-label={t("common.close")} onClick={close} className="vayra-scrim absolute inset-0 bg-black/50" />
       <section
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("More options")}
-        className="vayra-sheet absolute inset-x-0 bottom-0 flex max-h-[75%] flex-col rounded-t-[28px] bg-elevated pb-[var(--vayra-safe-bottom,0px)] text-ink landscape:inset-y-0 landscape:start-auto landscape:w-[min(380px,45%)] landscape:max-h-none landscape:rounded-none landscape:rounded-s-[28px]"
+        className="vayra-sheet absolute inset-x-0 bottom-0 flex max-h-[75%] flex-col rounded-t-[28px] bg-elevated pb-[var(--vayra-safe-bottom,0px)] text-ink landscape:inset-y-0 landscape:start-auto landscape:w-[min(380px,45%)] landscape:max-h-none landscape:rounded-none landscape:rounded-s-[28px] landscape:pe-[var(--vayra-safe-right,0px)]"
       >
+        <div aria-hidden className="flex shrink-0 justify-center pt-2.5 landscape:hidden">
+          <span className="h-1 w-8 rounded-full bg-ink-subtle/40" />
+        </div>
         <header className="flex h-16 shrink-0 items-center justify-between ps-6 pe-2">
           <h2 className="type-title-3 font-semibold">{t("More options")}</h2>
           <button type="button" onClick={close} aria-label={t("common.close")} className="flex h-12 w-12 items-center justify-center rounded-full active:bg-raised">
@@ -177,9 +200,12 @@ function Choices({ options, current, onPick }: { options: { id: string; label: s
         <button
           key={o.id}
           type="button"
-          onClick={() => onPick(o.id)}
+          onClick={() => {
+            haptic("tick");
+            onPick(o.id);
+          }}
           aria-pressed={o.id === current}
-          className={`h-8 rounded-lg px-3 type-footnote font-medium transition-colors ${o.id === current ? "bg-ink text-canvas" : "bg-raised text-ink"}`}
+          className={`flex h-10 min-w-12 items-center justify-center rounded-full px-3.5 type-footnote font-medium transition-colors active:scale-95 ${o.id === current ? "bg-ink text-canvas" : "bg-raised text-ink"}`}
         >
           {o.label}
         </button>

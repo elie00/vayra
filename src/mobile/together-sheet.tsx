@@ -112,17 +112,14 @@ export function MobileTogetherSheet() {
         className="vayra-sheet harbor-together-surface absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-3rem)] min-h-[55dvh] flex-col rounded-t-3xl ring-1 ring-edge-soft/70 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.7)]"
       >
         {/* Drag handle */}
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
+          onClick={closeModal}
           aria-label={t("Drag down to close")}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") closeModal();
-          }}
           className="flex shrink-0 justify-center pb-1 pt-3"
         >
           <span className="h-1.5 w-11 rounded-full bg-ink-subtle/40" />
-        </div>
+        </button>
 
         <TogetherPopover variant="sheet" />
       </section>

@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bookmark, MoreVertical, Play } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
 import { useContinueWatching } from "@/lib/continue-watching";
 import { useT } from "@/lib/i18n";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useView } from "@/lib/view";
 import { removeFromWatchlist } from "@/lib/watchlist";
 import type { WatchlistMerged } from "@/lib/watchlist-merge";
 import { useWatchlistData } from "@/views/library/use-watchlist-data";
+import { haptic } from "./haptics";
 import { useSheetClose } from "./sheet-presence";
+import { useSheetDrag } from "./use-sheet-drag";
 
 // The My list tab, after HBO Max: two tabs — the watchlist (saved on this
 // device, Stremio and Trakt, merged) and Continue watching — each a list of
@@ -29,7 +32,10 @@ export function MobileMyList() {
             type="button"
             role="tab"
             aria-selected={tab === id}
-            onClick={() => setTab(id)}
+            onClick={() => {
+              haptic("tick");
+              setTab(id);
+            }}
             className={`relative pb-3 pt-1 type-callout font-semibold transition-colors ${tab === id ? "text-ink" : "text-ink-subtle"}`}
           >
             {id === "list" ? t("My list") : t("Continue Watching")}
@@ -158,7 +164,7 @@ function Row({
           type="button"
           onClick={onMenu}
           aria-label={menuLabel}
-          className="-me-2 flex h-11 w-9 shrink-0 items-center justify-center text-ink-muted active:text-ink"
+          className="-me-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-ink-muted active:bg-elevated active:text-ink"
         >
           <MoreVertical size={20} />
         </button>
@@ -179,16 +185,32 @@ function Empty({ icon, title, children }: { icon: React.ReactNode; title: string
 
 function ActionSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   const t = useT();
+  const sheetRef = useRef<HTMLElement>(null);
   const [closing, close] = useSheetClose(onClose);
+  useSheetDrag(sheetRef, close, !closing);
+  useFocusTrap(sheetRef, !closing);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close]);
+
   return (
     <div data-closing={closing ? "" : undefined} className="fixed inset-0 z-[130]">
       <button type="button" aria-label={t("common.close")} onClick={close} className="vayra-scrim absolute inset-0 bg-black/60" />
       <section
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="vayra-sheet absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-t-[1.75rem] bg-elevated px-4 pb-[calc(1rem+var(--vayra-safe-bottom))] pt-4"
+        className="vayra-sheet absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-t-[1.75rem] bg-elevated px-4 pb-[calc(1rem+var(--vayra-safe-bottom))] pt-2.5"
       >
+        <div aria-hidden className="flex shrink-0 justify-center pb-2">
+          <span className="h-1 w-8 rounded-full bg-ink-subtle/40" />
+        </div>
         <p className="truncate px-2 pb-2 type-footnote font-semibold text-ink-subtle">{title}</p>
         {children}
         <SheetAction onClick={close}>{t("Cancel")}</SheetAction>

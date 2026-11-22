@@ -20,6 +20,7 @@ import type { HomeRow } from "@/views/home/home-types";
 import { RowSkeleton } from "@/views/home/row-skeleton";
 import { lumaStore, useLuma, type LumaResumeEntry } from "@/lib/luma";
 import { OfflineMark, useOfflineIds } from "@/mobile/offline-mark";
+import { haptic } from "@/mobile/haptics";
 import { lumaResumeEpisode, resolveLumaResumeTarget } from "@/lib/luma/resume-target";
 
 // Mobile-first Home (streaming-app model: hero, Continue Watching, poster rails). Rendered from `Home` in
@@ -112,14 +113,19 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
 
   return (
     <div
-      onClick={() => openMeta(meta)}
-      className="relative aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-3xl bg-elevated ring-1 ring-edge-soft/40 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]"
+      className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-elevated ring-1 ring-edge-soft/40 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.8)]"
     >
+      <button
+        type="button"
+        aria-label={meta.name}
+        onClick={() => openMeta(meta)}
+        className="absolute inset-0 z-0 cursor-pointer"
+      />
       {bg && (
-        <img src={bg} alt="" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={bg} alt="" decoding="async" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/40 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-5 pb-5 text-center">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-canvas via-canvas/40 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 px-5 pb-5 text-center [&_button]:pointer-events-auto">
         {label && (
           <span className="flex items-center gap-1.5 type-micro font-semibold uppercase tracking-[0.28em] text-ink-muted">
             <HarborMark className="h-3.5 w-3.5" />
@@ -165,6 +171,7 @@ export function MobileHeroCard({ meta, label }: { meta: Meta; label?: string }) 
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              haptic(inWatchlist ? "tick" : "confirm");
               toggleWatchlist({
                 id: meta.id,
                 type: meta.type,
@@ -267,7 +274,10 @@ function HeroSlide({ meta, label }: { meta: Meta; label?: string }) {
           </button>
           <button
             type="button"
-            onClick={() => toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster })}
+            onClick={() => {
+              haptic(inWatchlist ? "tick" : "confirm");
+              toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });
+            }}
             aria-label={inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
             aria-pressed={inWatchlist}
             className="flex h-12 w-12 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
