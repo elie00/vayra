@@ -508,8 +508,6 @@ export function Row({
             className="harbor-row-track grid grid-flow-col items-start gap-5 overflow-x-auto p-5 -m-5 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none]"
             style={{
               gridAutoColumns: cellWidth != null ? `${cellWidth}px` : `${effMin}px`,
-              willChange: "transform",
-              transform: "translateZ(0)",
               contain: "layout style",
             }}
           >
