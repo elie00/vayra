@@ -1,5 +1,5 @@
 import { Search, X, Loader2, CornerDownLeft, CalendarRange, Tag } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
 import { emptySearchOutcome, useSearch } from "@/lib/search-context";
@@ -7,20 +7,29 @@ import { useView } from "@/lib/view";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { AnimeRow } from "./anime-row";
 import { EmptyState } from "./empty-state";
-import { GuideModal } from "./guide-modal";
 import { LiveTvRow } from "./live-tv-row";
 import { TopMatch } from "./top-match";
 import { PeopleRow } from "./people-row";
 import { MetaList } from "./meta-list";
 import { AddonHits } from "./addon-hits";
 import { AddonResults } from "./addon-results";
-import { MagnetCard } from "./magnet-card";
-import { UrlCard } from "./url-card";
-import { AiSearchSection } from "./ai-search-section";
 import { WebSearchButton } from "./web-search-button";
 import { searchInputKind } from "@/lib/search-input";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import "./search-field.css";
+
+const GuideModal = lazy(() =>
+  import("./guide-modal").then((m) => ({ default: m.GuideModal })),
+);
+const MagnetCard = lazy(() =>
+  import("./magnet-card").then((m) => ({ default: m.MagnetCard })),
+);
+const UrlCard = lazy(() =>
+  import("./url-card").then((m) => ({ default: m.UrlCard })),
+);
+const AiSearchSection = lazy(() =>
+  import("./ai-search-section").then((m) => ({ default: m.AiSearchSection })),
+);
 
 export function SearchOverlay() {
   const { open, setOpen, query, setQuery, results, status, sources, clear, retry, recordRecent } = useSearch();
@@ -197,7 +206,7 @@ export function SearchOverlay() {
               <X size={18} strokeWidth={2.2} />
             </button>
           )}
-          <Hint />
+          <Hint showNav={hasResults} />
         </div>
 
         <div ref={resultsRef} className="relative mt-6 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -227,13 +236,17 @@ export function SearchOverlay() {
 
           {inputKind === "magnet" && (
             <div className="mb-5">
-              <MagnetCard raw={trimmed} onClose={close} />
+              <Suspense fallback={null}>
+                <MagnetCard raw={trimmed} onClose={close} />
+              </Suspense>
             </div>
           )}
 
           {inputKind === "video" && (
             <div className="mb-5">
-              <UrlCard raw={trimmed} onClose={close} />
+              <Suspense fallback={null}>
+                <UrlCard raw={trimmed} onClose={close} />
+              </Suspense>
             </div>
           )}
 
@@ -269,7 +282,11 @@ export function SearchOverlay() {
             </button>
           )}
 
-          {trimmed && !directInput && <AiSearchSection query={trimmed} onClose={close} runSignal={aiRunSignal} />}
+          {trimmed && !directInput && (
+            <Suspense fallback={null}>
+              <AiSearchSection query={trimmed} onClose={close} runSignal={aiRunSignal} />
+            </Suspense>
+          )}
 
           {trimmed && !directInput && hasResults && results && (
             <div className="flex flex-col gap-8 pb-12">
@@ -297,15 +314,29 @@ export function SearchOverlay() {
 
         </div>
       </div>
-      {guideOpen && <GuideModal onClose={() => setGuideOpen(false)} />}
+      {guideOpen && (
+        <Suspense fallback={null}>
+          <GuideModal onClose={() => setGuideOpen(false)} />
+        </Suspense>
+      )}
     </div>,
     document.body,
   );
 }
 
-function Hint() {
+function Hint({ showNav }: { showNav: boolean }) {
   return (
-    <span className="hidden shrink-0 items-center gap-1 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-subtle sm:flex">
+    <span className="hidden shrink-0 items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-subtle sm:flex">
+      {showNav && (
+        <>
+          <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
+            ↑↓
+          </kbd>
+          <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
+            ↵
+          </kbd>
+        </>
+      )}
       <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
         Esc
       </kbd>
