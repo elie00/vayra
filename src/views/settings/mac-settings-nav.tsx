@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronRight, Search, X } from "lucide-react";
+import { APP_VERSION } from "@/lib/build-info";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { NAV_GROUPS, SETTINGS_OPTIONS } from "./nav";
@@ -37,10 +38,11 @@ export function MacSettingsNav({ active, onChange }: { active: SectionId; onChan
       {q ? <>{matches.length === 0 && <p className="p-3 text-[13px] text-ink-muted">{t("No matching settings")}</p>}{matches.map((m, i) => <button key={`${m.section}-${i}`} type="button" onClick={() => { onChange(m.section, settingsAnchor(t(m.anchorTitle ?? m.label))); setQuery(""); }} className="flex min-h-11 flex-col justify-center rounded-xl px-3 py-2 text-start hover:bg-elevated"><span className="truncate text-[13px] font-medium text-ink">{t(m.label)}</span><span className="truncate text-[11px] text-ink-subtle">{t(sectionLabels.get(m.section) ?? m.section)}</span></button>)}</> : MAC_SETTINGS_GROUPS.map((group) => {
         const selected = group.id === active || group.children.includes(active);
         return <div key={group.id}>
-          <button type="button" aria-current={group.id === active ? "page" : undefined} onClick={() => onChange(group.id)} className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-start text-[14px] tracking-[-0.005em] ${selected ? "bg-elevated font-medium text-ink" : "font-normal text-ink-muted hover:bg-elevated/60 hover:text-ink"}`}><span>{t(group.label)}</span>{group.children.length > 0 && <ChevronRight size={14} className={selected ? "rotate-90" : ""} />}</button>
-          {selected && group.children.map((id) => { const item = allItems.find((it) => it.id === id); return item && <button key={id} type="button" aria-current={id === active ? "page" : undefined} onClick={() => onChange(id)} className={`my-0.5 min-h-11 w-full rounded-lg ps-6 pe-3 text-start text-[13px] ${id === active ? "text-accent bg-elevated/50" : "text-ink-muted hover:bg-elevated/50"}`}>{t(item.label)}</button>; })}
+          <button type="button" aria-current={group.id === active ? "page" : undefined} aria-expanded={group.children.length > 0 ? selected : undefined} onClick={() => onChange(group.id)} className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-start text-[14px] tracking-[-0.005em] transition-colors ${selected ? "bg-elevated font-medium text-ink" : "font-normal text-ink-muted hover:bg-elevated/60 hover:text-ink"}`}><span>{t(group.label)}</span>{group.children.length > 0 && <ChevronRight size={14} className={`transition-transform duration-150 ${selected ? "rotate-90" : ""}`} />}</button>
+          {selected && group.children.map((id) => { const item = allItems.find((it) => it.id === id); return item && <button key={id} type="button" aria-current={id === active ? "page" : undefined} onClick={() => onChange(id)} className={`my-0.5 min-h-11 w-full rounded-lg ps-6 pe-3 text-start text-[13px] transition-colors ${id === active ? "text-accent bg-elevated/50" : "text-ink-muted hover:bg-elevated/50"}`}>{t(item.label)}</button>; })}
         </div>;
       })}
     </div>
+    <p className="px-3 text-[11px] tabular-nums text-ink-subtle/75">VAYRA · v{APP_VERSION}</p>
   </nav>;
 }
