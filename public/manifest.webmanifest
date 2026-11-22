@@ -1,0 +1,17 @@
+{
+  "name": "VAYRA",
+  "short_name": "VAYRA",
+  "description": "Personal cinema, synced together.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0b0d",
+  "theme_color": "#0a0b0d",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
