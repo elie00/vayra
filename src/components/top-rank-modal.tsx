@@ -81,16 +81,19 @@ export function TopRankModal() {
   const meta = DEPT_LABELS[openDept];
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[130] flex items-stretch justify-center bg-canvas/85 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t(meta.title)}
-      onClick={close}
-    >
+    <div className="fixed inset-0 z-[130] flex items-stretch justify-center">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={close}
+        className="absolute inset-0 bg-canvas/85 backdrop-blur-sm"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative m-6 flex max-h-[calc(100vh-3rem)] w-full max-w-[1240px] flex-col overflow-hidden rounded-3xl border border-edge-soft bg-surface shadow-[0_30px_120px_-30px_rgba(0,0,0,0.85)] animate-popover-in"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t(meta.title)}
+        className="relative z-10 m-6 flex max-h-[calc(100vh-3rem)] w-full max-w-[1240px] flex-col overflow-hidden rounded-3xl border border-edge-soft bg-surface shadow-[0_30px_120px_-30px_rgba(0,0,0,0.85)] animate-popover-in"
       >
         <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-7 py-5">
           <div>

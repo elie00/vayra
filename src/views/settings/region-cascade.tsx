@@ -63,14 +63,20 @@ function LocaleConfirm({
     return () => window.removeEventListener("keydown", onKey);
   }, [onDismiss]);
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/70 p-6 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={onDismiss}
-    >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-150">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onDismiss}
+        className="absolute inset-0 bg-canvas/70 backdrop-blur-sm"
+      />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Switch VAYRA to {language}?", { language: label })}
         dir={rtl ? "rtl" : undefined}
-        className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-3xl border border-edge bg-elevated shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] animate-popover-in"
-        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 flex w-full max-w-[440px] flex-col overflow-hidden rounded-3xl border border-edge bg-elevated shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] animate-popover-in"
       >
         <div className="flex items-start justify-between gap-4 border-b border-edge-soft px-6 py-5">
           <div className="flex items-center gap-3">

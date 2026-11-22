@@ -27,13 +27,19 @@ export function VersionNotesModal({
   }, [onClose]);
 
   return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 p-4"
-      onClick={onClose}
-    >
+    <div className="animate-fade-in fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/80"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="animate-modal-in flex max-h-[80vh] w-[min(94vw,560px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={entry.version}
+        className="animate-modal-in relative z-10 flex max-h-[80vh] w-[min(94vw,560px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <div className="flex items-center justify-between gap-3 border-b border-edge-soft px-5 pb-3.5 pt-4">
           <div className="flex min-w-0 items-center gap-2.5">

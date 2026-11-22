@@ -200,13 +200,19 @@ export function FilterBuilder({
   };
 
   return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center bg-canvas/80 p-4"
-      onClick={onClose}
-    >
+    <div className="animate-fade-in fixed inset-0 z-[210] flex items-center justify-center p-4">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-canvas/80"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="animate-modal-in flex max-h-[88vh] w-[min(94vw,560px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEdit ? t("Edit filter") : t("New filter")}
+        className="animate-modal-in relative z-10 flex max-h-[88vh] w-[min(94vw,560px)] flex-col rounded-2xl border border-edge-soft bg-elevated shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <div className="flex items-start justify-between gap-4 border-b border-edge-soft px-6 pb-4 pt-6">
           <div className="flex min-w-0 flex-col gap-1">
