@@ -567,21 +567,27 @@ export function AgeGateModal({
   };
 
   return (
-    <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !verified) onClose();
-      }}
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/72 px-4 backdrop-blur-md animate-fade-in"
-    >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/72 px-4 backdrop-blur-md animate-fade-in">
+      {!verified && (
+        <button
+          type="button"
+          aria-label={t("Close")}
+          tabIndex={-1}
+          onClick={onClose}
+          className="absolute inset-0 cursor-default"
+        />
+      )}
       {verified ? (
-        <VerifiedSplash t={t} />
+        <div className="relative z-10">
+          <VerifiedSplash t={t} />
+        </div>
       ) : (
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="age-gate-title"
-        className="relative w-full max-w-xl animate-modal-in"
+        className="relative z-10 w-full max-w-xl animate-modal-in"
       >
       <div className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-3xl border border-edge bg-canvas shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
         <header className="relative shrink-0 overflow-hidden border-b border-edge-soft bg-gradient-to-b from-elevated/35 to-canvas px-7 py-6">
