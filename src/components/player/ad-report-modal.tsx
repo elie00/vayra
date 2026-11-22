@@ -42,16 +42,19 @@ export function AdReportModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[200] grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[200] grid place-items-center p-4">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Report an injected ad")}
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[82vh] w-[440px] max-w-[92vw] flex-col gap-4 overflow-y-auto rounded-2xl border border-edge bg-surface p-5 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.8)] animate-popover-in"
+        className="relative z-10 flex max-h-[82vh] w-[440px] max-w-[92vw] flex-col gap-4 overflow-y-auto rounded-2xl border border-edge bg-surface p-5 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.8)] animate-popover-in"
       >
         <header className="flex items-center justify-between gap-3">
           <h2 className="text-[15px] font-semibold tracking-tight text-ink">

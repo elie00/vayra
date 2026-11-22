@@ -66,18 +66,20 @@ export function AvatarCatalogModal({
   }, [franchise, query]);
 
   return (
-    <div
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4 sm:p-8"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 animate-in fade-in bg-black/70 backdrop-blur-sm duration-200" />
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 sm:p-8">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={onClose}
+        className="absolute inset-0 animate-in fade-in bg-black/70 backdrop-blur-sm duration-200"
+      />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="avatar-catalog-title"
-        onClick={(e) => e.stopPropagation()}
-        className="relative flex max-h-[86vh] w-full max-w-[940px] animate-in fade-in zoom-in-95 flex-col overflow-hidden rounded-3xl border border-edge bg-surface shadow-2xl duration-200"
+        className="relative z-10 flex max-h-[86vh] w-full max-w-[940px] animate-in fade-in zoom-in-95 flex-col overflow-hidden rounded-3xl border border-edge bg-surface shadow-2xl duration-200"
       >
         <div className="flex items-center gap-4 px-6 pt-5 pb-4">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">

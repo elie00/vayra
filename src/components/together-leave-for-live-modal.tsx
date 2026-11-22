@@ -24,17 +24,20 @@ export function TogetherLeaveForLiveModal() {
   const name = pendingLiveSrc.title || t("this channel");
 
   return (
-    <div
-      className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 px-6 animate-fade-in"
-      onClick={cancelLeavePartyForLive}
-    >
+    <div className="fixed inset-0 z-[130] flex items-center justify-center px-6 animate-fade-in">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={t("common.close")}
+        onClick={cancelLeavePartyForLive}
+        className="absolute inset-0 bg-black/60"
+      />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="leave-for-live-title"
-        className="w-full max-w-md rounded-2xl border border-edge bg-surface p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] animate-modal-in"
-        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-md rounded-2xl border border-edge bg-surface p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] animate-modal-in"
       >
         <div className="flex items-start gap-3.5">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated text-ink">
