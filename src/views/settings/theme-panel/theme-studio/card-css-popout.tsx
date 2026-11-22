@@ -62,13 +62,19 @@ export function CardCssPopout({
   }, []);
 
   return createPortal(
-    <div
-      className="animate-in fade-in pointer-events-auto fixed inset-0 z-[235] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm duration-150"
-      onClick={onClose}
-    >
+    <div className="animate-in fade-in pointer-events-auto fixed inset-0 z-[235] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm duration-150">
+      <button
+        type="button"
+        aria-label={t("Done")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="animate-in zoom-in-95 fade-in flex h-[min(680px,90vh)] w-[min(1080px,94vw)] flex-col overflow-hidden rounded-2xl border border-edge bg-canvas shadow-[0_40px_100px_-30px_rgba(0,0,0,0.85)] duration-150"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Custom cards")}
+        className="animate-in zoom-in-95 fade-in relative z-10 flex h-[min(680px,90vh)] w-[min(1080px,94vw)] flex-col overflow-hidden rounded-2xl border border-edge bg-canvas shadow-[0_40px_100px_-30px_rgba(0,0,0,0.85)] duration-150"
       >
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-edge-soft bg-surface/80 px-5">
           <div className="flex min-w-0 flex-col">

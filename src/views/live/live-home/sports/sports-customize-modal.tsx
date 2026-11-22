@@ -54,14 +54,20 @@ export function SportsCustomizeModal({ selected, onSave, onClose }: SportsCustom
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backdropFilter: "blur(12px)", backgroundColor: "rgba(0,0,0,0.65)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="sports-customize-title"
-        className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-edge-soft/40 bg-canvas shadow-2xl"
+        className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-edge-soft/40 bg-canvas shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-edge-soft/30 px-6 py-4">
           <div className="flex items-center gap-3">

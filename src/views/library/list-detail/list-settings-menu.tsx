@@ -131,14 +131,20 @@ function RenameModal({
   };
 
   return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[230] flex items-center justify-center bg-canvas/80"
-      onClick={onClose}
-    >
+    <div className="animate-fade-in fixed inset-0 z-[230] flex items-center justify-center bg-canvas/80">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
       <form
-        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Rename list")}
         onSubmit={submit}
-        className="animate-modal-in flex w-[min(92vw,380px)] flex-col gap-5 rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+        className="animate-modal-in relative z-10 flex w-[min(92vw,380px)] flex-col gap-5 rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <h2 className="font-display text-[22px] font-medium tracking-tight text-ink">
           {t("Rename list")}
@@ -191,13 +197,19 @@ function ConfirmDelete({
   }, [onClose]);
 
   return createPortal(
-    <div
-      className="animate-fade-in fixed inset-0 z-[230] flex items-center justify-center bg-canvas/80"
-      onClick={onClose}
-    >
+    <div className="animate-fade-in fixed inset-0 z-[230] flex items-center justify-center bg-canvas/80">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="animate-modal-in flex w-[min(92vw,380px)] flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Delete this list?")}
+        className="animate-modal-in relative z-10 flex w-[min(92vw,380px)] flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]"
       >
         <div className="flex flex-col gap-1.5">
           <h2 className="font-display text-[22px] font-medium tracking-tight text-ink">

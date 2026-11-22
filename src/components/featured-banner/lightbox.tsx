@@ -48,12 +48,15 @@ export function Lightbox({
       role="dialog"
       aria-modal="true"
       aria-label={t("{title} image viewer", { title })}
-      onClick={onClose}
     >
-      <div
-        className="absolute start-8 top-8 flex flex-col gap-1"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <button
+        type="button"
+        aria-label={t("Close image viewer")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
+      <div className="absolute start-8 top-8 z-10 flex flex-col gap-1">
         <span className="font-display text-[18px] font-medium tracking-tight text-ink">
           {title}
         </span>
@@ -64,12 +67,9 @@ export function Lightbox({
 
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
+        onClick={onClose}
         aria-label={t("Close image viewer")}
-        className="absolute end-8 top-8 flex h-12 w-12 items-center justify-center rounded-full border border-edge-soft bg-elevated/50 text-ink-muted transition-colors duration-200 hover:bg-elevated hover:text-ink"
+        className="absolute end-8 top-8 z-10 flex h-12 w-12 items-center justify-center rounded-full border border-edge-soft bg-elevated/50 text-ink-muted transition-colors duration-200 hover:bg-elevated hover:text-ink"
       >
         <X size={22} />
       </button>
@@ -78,23 +78,17 @@ export function Lightbox({
         <>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              prev();
-            }}
+            onClick={prev}
             aria-label={t("Previous image")}
-            className="absolute start-8 top-1/2 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-edge-soft bg-elevated/50 text-ink-muted transition-colors duration-200 hover:bg-elevated hover:text-ink"
+            className="absolute start-8 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-edge-soft bg-elevated/50 text-ink-muted transition-colors duration-200 hover:bg-elevated hover:text-ink"
           >
             <ChevronLeft size={28} className="dir-icon" />
           </button>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              next();
-            }}
+            onClick={next}
             aria-label={t("Next image")}
-            className="absolute end-8 top-1/2 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-edge-soft bg-elevated/50 text-ink-muted transition-colors duration-200 hover:bg-elevated hover:text-ink"
+            className="absolute end-8 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-edge-soft bg-elevated/50 text-ink-muted transition-colors duration-200 hover:bg-elevated hover:text-ink"
           >
             <ChevronRight size={28} className="dir-icon" />
           </button>
@@ -105,15 +99,11 @@ export function Lightbox({
         key={images[index]}
         src={images[index]}
         alt={`${title} ${index + 1}`}
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[86vh] max-w-[90vw] rounded-xl border border-edge-soft object-contain shadow-2xl"
+        className="relative z-10 max-h-[86vh] max-w-[90vw] rounded-xl border border-edge-soft object-contain shadow-2xl"
       />
 
       {total > 1 && (
-        <div
-          className="absolute inset-x-0 bottom-8 flex justify-center gap-1.5"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="absolute inset-x-0 bottom-8 z-10 flex justify-center gap-1.5">
           {images.map((_, i) => (
             <button
               key={i}

@@ -42,8 +42,10 @@ export function MediaLightbox({
 
   return (
     <div
-      onClick={onClose}
-      className="fixed inset-0 z-[120] flex cursor-zoom-out items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("Close")}
+      className="fixed inset-0 z-[120] flex items-center justify-center"
       style={{
         backgroundColor: open ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0)",
         backdropFilter: open ? "blur(28px) saturate(1.15)" : "blur(0px)",
@@ -54,10 +56,14 @@ export function MediaLightbox({
     >
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-zoom-out"
+      />
+      <button
+        type="button"
+        onClick={onClose}
         aria-label={t("Close")}
         className="absolute end-7 top-16 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-canvas/90 text-ink shadow-[0_8px_22px_rgba(0,0,0,0.4)] transition-colors hover:bg-canvas active:scale-[0.94]"
       >
@@ -115,8 +121,7 @@ export function MediaLightbox({
         key={i}
         src={images[i]}
         alt=""
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[82vh] max-w-[88vw] cursor-default rounded-2xl object-contain shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
+        className="relative z-10 max-h-[82vh] max-w-[88vw] cursor-default rounded-2xl object-contain shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
         style={{
           opacity: open ? 1 : 0,
           transform: open ? "scale(1)" : "scale(0.94)",

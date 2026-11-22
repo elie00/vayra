@@ -553,13 +553,20 @@ function ConfirmDeleteFont({
   }, [onCancel]);
 
   return (
-    <div
-      className="fixed inset-0 z-[140] flex items-center justify-center bg-black/65 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
-    >
-      <div className="w-[min(92vw,360px)] rounded-2xl border border-edge bg-elevated p-5 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-150">
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/65 backdrop-blur-sm animate-in fade-in duration-150">
+      <button
+        type="button"
+        aria-label={t("Close")}
+        tabIndex={-1}
+        onClick={onCancel}
+        className="absolute inset-0 cursor-default"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Delete this font?")}
+        className="relative z-10 w-[min(92vw,360px)] rounded-2xl border border-edge bg-elevated p-5 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-150"
+      >
         <p className="text-[15px] font-semibold text-ink">{t("Delete this font?")}</p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
           <span className="font-semibold text-ink">{name}</span>{" "}
