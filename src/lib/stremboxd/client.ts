@@ -227,6 +227,9 @@ export type LetterboxdReview = {
 // safeFetch already sends a good User-Agent via vayra_fetch, but we add
 // Accept-Language and a Referer hint to improve pass-through.
 async function fetchWithCloudflareBypass(url: string): Promise<Response> {
+  if (typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window)) {
+    throw new Error("Direct Letterboxd HTML fetch is unavailable in browser builds");
+  }
   const headers: Record<string, string> = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
@@ -256,6 +259,9 @@ export async function fetchLetterboxdReviewsDirect(
   page = 1,
   _sortBy: "newest" | "popular" = "popular",
 ): Promise<{ reviews: LetterboxdReview[]; hasNext: boolean }> {
+  if (typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window)) {
+    return { reviews: [], hasNext: false };
+  }
   console.log(`[Letterboxd] fetchReviewsDirect imdb=${imdbId} page=${page}`);
 
   // The IMDb redirect page IS the film's main page and returns 200.
@@ -356,6 +362,9 @@ export async function fetchLetterboxdFriendsReviews(
   username: string,
   imdbId: string,
 ): Promise<LetterboxdReview[]> {
+  if (typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window)) {
+    return [];
+  }
   // First resolve the film slug from the IMDb redirect page
   const url = `https://letterboxd.com/imdb/${imdbId}/`;
   let html: string;
