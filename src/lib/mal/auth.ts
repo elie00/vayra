@@ -106,7 +106,10 @@ export async function refreshAccessToken(): Promise<MalSession | null> {
       }),
     });
     if (!res.ok) {
-      setSession(null);
+      // Only clear the session on an explicit auth rejection; keep it across 5xx/rate-limit outages.
+      if (res.status === 400 || res.status === 401 || res.status === 403) {
+        setSession(null);
+      }
       return null;
     }
     const data = await res.json() as {
@@ -125,8 +128,6 @@ export async function refreshAccessToken(): Promise<MalSession | null> {
     setSession(next);
     return next;
   } catch {
-    if (!navigator.onLine) return null;
-    setSession(null);
     return null;
   }
 }

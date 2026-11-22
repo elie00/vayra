@@ -33,16 +33,25 @@ function baseHeaders(): HeadersInit {
 async function refreshAccessToken(): Promise<TraktSession | null> {
   const current = getSession();
   if (!current) return null;
-  const res = await fetch(TRAKT_TOKEN_PROXY, {
-    method: "POST",
-    headers: baseHeaders(),
-    body: JSON.stringify({
-      refresh_token: current.refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(TRAKT_TOKEN_PROXY, {
+      method: "POST",
+      headers: baseHeaders(),
+      body: JSON.stringify({
+        refresh_token: current.refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+  } catch {
+    return null;
+  }
   if (!res.ok) {
-    setSession(null);
+    // Only invalidate the saved session when Trakt explicitly rejects the refresh token;
+    // transient 5xx or 429 responses should not force the user to pair again.
+    if (res.status === 400 || res.status === 401 || res.status === 403) {
+      setSession(null);
+    }
     return null;
   }
   const data = (await res.json()) as {

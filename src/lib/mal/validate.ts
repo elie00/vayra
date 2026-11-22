@@ -1,4 +1,4 @@
-import { getSession, setSession } from "./session";
+import { getSession } from "./session";
 import { ensureRefreshed } from "./auth";
 
 let inflight: Promise<void> | null = null;
@@ -27,11 +27,9 @@ async function run(): Promise<void> {
       headers: { Authorization: `Bearer ${session.accessToken}` },
     });
     if (res.status === 401) {
-      const refreshed = await ensureRefreshed();
-      if (!refreshed) setSession(null);
+      await ensureRefreshed();
     }
   } catch {
-    if (!navigator.onLine) return;
-    setSession(null);
+    // Preserve the session on transient DNS/network/timeout errors.
   }
 }
