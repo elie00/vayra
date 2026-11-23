@@ -47,7 +47,10 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const layout = hasNativeDesktopUx() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
   const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !hasNativeDesktopUx()) || topKind === "picker";
-  const hideSearch = view === "addons";
+  // On native desktop, quick search lives directly in the left VAYRA rail so
+  // the top edge stays calm and lets cinema artwork breathe edge-to-edge.
+  const searchInSidebar = hasNativeDesktopUx() && !sidebarHidden;
+  const hideSearch = view === "addons" || searchInSidebar;
   // On mobile the primary nav is the bottom tab bar (MobileShell), so the header
   // reserves no rail space and shows no hamburger (the drawer is kept in the code
   // but intentionally unreachable on mobile).
@@ -85,7 +88,9 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
     <header
       data-vayra-topbar
       data-scrolled={scrolled ? "" : undefined}
-      className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20 transition-[background-color,backdrop-filter,box-shadow] duration-200 ${
+      className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} ${
+        searchInSidebar ? "h-16" : "h-20"
+      } transition-[background-color,backdrop-filter,box-shadow] duration-200 ${
         scrolled ? "vayra-topbar-scrolled" : ""
       }`}
     >

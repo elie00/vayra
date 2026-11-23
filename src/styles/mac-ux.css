@@ -8,6 +8,7 @@
   .mac-secondary-button:hover { @apply border-edge bg-elevated text-ink; }
   .vayra-kicker { @apply text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-subtle; }
   .vayra-surface { @apply rounded-2xl border border-edge-soft/75 bg-surface/85 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset]; }
+  .vayra-stage { @apply relative isolate overflow-hidden rounded-[26px] border border-edge-soft/80 bg-surface shadow-[0_28px_72px_-32px_rgba(0,0,0,0.88)]; }
   .vayra-pill-track { @apply inline-flex items-center gap-1 rounded-xl border border-edge-soft/65 bg-surface/90 p-1; }
   .vayra-header-rule { @apply h-px w-full bg-gradient-to-r from-edge-soft/80 via-edge-soft/30 to-transparent; }
 }

@@ -1,4 +1,4 @@
-import { ChevronDown, Lock, Pin } from "lucide-react";
+import { ChevronDown, Lock, Pin, Search } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import {
@@ -9,14 +9,16 @@ import {
 } from "@/chrome/nav-items";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { useActiveDownloadCount } from "@/lib/download/downloads-store";
+import { effectiveBinding, formatBindingForDisplay } from "@/lib/hotkeys";
 import { useT } from "@/lib/i18n";
+import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useParental, type LockableTab } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
-import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
+import { desktopUx, hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { isExploreView, isLibraryView, MAC_EXPLORE_VIEWS, MAC_PRIMARY_VIEWS, sanitizeMacPins } from "./mac-navigation";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 
@@ -75,7 +77,7 @@ export function Sidebar() {
       >
         <div
           data-tauri-drag-region
-          className={`flex h-20 shrink-0 items-center justify-center px-3 text-ink ${
+          className={`flex h-16 shrink-0 items-center justify-center px-3 pt-1 text-ink ${
             collapsed ? "" : "min-[960px]:justify-between min-[960px]:ps-5 min-[960px]:pe-3.5"
           }`}
         >
@@ -91,10 +93,10 @@ export function Sidebar() {
                 src={customMark}
                 alt=""
                 draggable={false}
-                className="h-8 w-8 shrink-0 object-contain min-[960px]:h-9 min-[960px]:w-9"
+                className="h-8 w-8 shrink-0 object-contain min-[960px]:h-8 min-[960px]:w-8"
               />
             ) : (
-              <HarborMark className="h-8 w-8 shrink-0 min-[960px]:h-9 min-[960px]:w-9" />
+              <HarborMark className="h-8 w-8 shrink-0" />
             )}
             {!collapsed &&
               (customWordmark ? (
@@ -106,7 +108,7 @@ export function Sidebar() {
                 />
               ) : (
                 <span
-                  className="hidden whitespace-nowrap text-[17.5px] font-semibold leading-none tracking-[0.16em] text-ink min-[960px]:inline"
+                  className="hidden whitespace-nowrap text-[17px] font-semibold leading-none tracking-[0.18em] text-ink min-[960px]:inline"
                   style={{
                     fontFamily: "var(--font-display)",
                   }}
@@ -121,6 +123,7 @@ export function Sidebar() {
             </div>
           )}
         </div>
+        {!mobile && hasNativeDesktopUx() && <SidebarSearchTrigger collapsed={collapsed} />}
         <ScrollableNav
           view={view}
           setView={navigate}
@@ -177,6 +180,43 @@ export function Sidebar() {
         />
       )}
     </>
+  );
+}
+
+function SidebarSearchTrigger({ collapsed }: { collapsed: boolean }) {
+  const { setOpen } = useSearch();
+  const { settings } = useSettings();
+  const t = useT();
+  const os = desktopUx();
+  const binding = effectiveBinding("globalSearchFocus", settings.hotkeys ?? {});
+  const kbd = os === "mac" ? "⌘F" : os === "windows" ? "Ctrl F" : formatBindingForDisplay(binding);
+
+  return (
+    <div className={`shrink-0 pb-2 pt-1 ${collapsed ? "flex justify-center px-3" : "px-3 min-[960px]:px-3.5"}`}>
+      <button
+        type="button"
+        data-tauri-drag-region="false"
+        onClick={() => setOpen(true)}
+        aria-label={t("common.search")}
+        aria-keyshortcuts={os === "mac" ? "Meta+F" : os === "windows" ? "Control+F" : undefined}
+        title={`${t("common.search")} (${kbd})`}
+        className={`group flex h-10 items-center justify-center rounded-xl border border-edge-soft/75 bg-surface/90 text-ink-subtle transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink ${
+          collapsed ? "w-10" : "w-10 min-[960px]:w-full min-[960px]:justify-start min-[960px]:gap-2.5 min-[960px]:px-3"
+        }`}
+      >
+        <Search size={15} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+        {!collapsed && (
+          <>
+            <span className="hidden min-w-0 flex-1 truncate text-start text-[13px] font-medium text-ink-subtle group-hover:text-ink-muted min-[960px]:inline">
+              {t("common.search")}
+            </span>
+            <kbd className="hidden shrink-0 rounded-md border border-edge-soft/75 bg-canvas/70 px-1.5 py-0.5 font-mono text-[10px] font-medium text-ink-subtle min-[960px]:inline">
+              {kbd}
+            </kbd>
+          </>
+        )}
+      </button>
+    </div>
   );
 }
 
