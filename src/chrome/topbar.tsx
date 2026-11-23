@@ -59,7 +59,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
       ? "ps-[80px]"
       : settings.sidebarCollapsed
         ? "ps-[84px]"
-        : "ps-[84px] lg:ps-[260px]";
+        : "ps-[84px] min-[960px]:ps-[252px]";
   const searchWidth = canGoBack
     ? "w-[16rem] sm:w-[22rem] lg:w-[26rem] xl:w-[28rem]"
     : "w-[16rem] sm:w-[22rem] lg:w-[26rem] xl:w-[30rem]";
@@ -341,7 +341,7 @@ function SearchPill() {
       data-tauri-drag-region="false"
       aria-keyshortcuts={os === "mac" ? "Meta+F" : os === "windows" ? "Control+F" : undefined}
       onClick={() => setOpen(true)}
-      className="flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/60 bg-elevated/80 px-5 text-start opacity-80 transition-[opacity,background-color] duration-200 hover:bg-elevated hover:opacity-100"
+      className="flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/75 bg-surface/90 px-5 text-start opacity-95 transition-[opacity,background-color,border-color] duration-200 hover:border-edge hover:bg-elevated hover:opacity-100"
     >
       <Search size={16} strokeWidth={1.75} className="text-ink-subtle" />
       <span className="flex-1 truncate text-[14px] text-ink-subtle">{t("search.placeholder")}</span>

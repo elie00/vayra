@@ -45,6 +45,7 @@ const chrome: Record<string, string> = {
   "chrome.lockedShort": "{label} · verrouillé",
   "chrome.harborHome": "Accueil VAYRA",
   "chrome.sectionLibrary": "Bibliothèque",
+  "Navigation": "Navigation",
 
   "profile.whoWatching": "Qui regarde",
   "profile.editThis": "Modifier ce profil",
