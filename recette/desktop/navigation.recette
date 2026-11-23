@@ -1,18 +1,17 @@
 # Barre latérale et pages
 @cible desktop
+# Barre latérale de l’appli de bureau (Mac et Windows) : Explorer y remplace
+# Films et Séries de la mise en page navigateur. « Téléchargements » n’est pas
+# visité : le nom désigne aussi le bouton de la barre du haut, donc il est ambigu.
 
 restart
 wait Accueil 30000
 settle
 expect current Accueil
 
-tap Films
+tap Explorer
 settle
-expect current Films
-
-tap Séries
-settle
-expect current Séries
+expect current Explorer
 
 tap "Ma bibliothèque"
 settle

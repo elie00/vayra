@@ -83,11 +83,23 @@ expect current "Ma liste"
 
 Chaque scénario commence par `restart`, pour ne pas dépendre du précédent.
 `recette/android/` : 4 scénarios, validés sur l’émulateur. `recette/desktop/` :
-3 scénarios, validés dans un navigateur à taille de bureau (`VITE_VAYRA_AGENT=1
-VITE_VAYRA_AGENT_PORT=47801 pnpm exec vite`, puis `VAYRA_AGENT_PORT=47801`) ; à
-rejouer dans l’appli de bureau sur le PC. Sans le relais web, le navigateur
-n’obtient pas de résultats de recherche : les scénarios bureau ne vérifient donc
-pas de résultats.
+3 scénarios, validés dans l’appli Windows (deux passes à 3/3 le 23/11/2026).
+Ils visent la barre latérale de l’appli de bureau (Accueil, Explorer, Ma
+bibliothèque) : dans un navigateur, où la barre liste Films et Séries à la place
+d’Explorer, le parcours de navigation ne s’applique pas. Sans le relais web, le
+navigateur n’obtient pas non plus de résultats de recherche, ni l’appli de
+bureau sur le PC pro, dont le filtrage bloque les sources.
+
+Sous Windows, construire sans installeur et lancer le binaire depuis `target`,
+avec un dossier de données jetable pour laisser le vrai profil intact. Une seule
+instance pilotable à la fois : toutes interrogent le même port.
+
+```sh
+VITE_VAYRA_AGENT=1 pnpm tauri build --no-bundle --config src-tauri/tauri.windows.conf.json
+git checkout -- vayra-core/pkg        # le build réécrit le WASM
+VAYRA_DATA_DIR="$TEMP/vayra-recette-data" src-tauri/target/release/VAYRA.exe &
+node scripts/recette.mjs desktop
+```
 
 ## Fonctionnement
 
