@@ -16,18 +16,18 @@ export function DiscoveryQueueCta({ items }: { items: FeedItem[] }) {
 
   return (
     <section className="flex flex-col gap-3.5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="font-display text-[24px] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-[26px]">
           {t("Your Discovery Queue")}
         </h2>
-        <span className="text-[12.5px] uppercase tracking-[0.2em] text-ink-subtle">
+        <span className="rounded-full border border-edge-soft/70 bg-surface/85 px-3 py-1 text-[11px] font-semibold uppercase tabular-nums tracking-[0.16em] text-ink-subtle">
           {t("{count} picks ready", { count: items.length })}
         </span>
       </div>
       <button
         type="button"
         onClick={openQueue}
-        className="group relative flex h-[156px] items-stretch overflow-hidden rounded-2xl border border-edge-soft bg-elevated/40 text-start"
+        className="group relative flex h-[160px] items-stretch overflow-hidden rounded-2xl border border-edge-soft/80 bg-surface text-start shadow-[0_14px_38px_-22px_rgba(0,0,0,0.75)] transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-edge motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
         <div className="absolute inset-0 grid grid-cols-6 gap-px">
           {peek.map((item, i) => (

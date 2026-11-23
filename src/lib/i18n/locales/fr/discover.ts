@@ -1,5 +1,7 @@
 const discover: Record<string, string> = {
   "Featured & Recommended": "En vedette et recommandés",
+  "Browse curated shelves, genres, origins, and universes.":
+    "Parcourez des sélections éditoriales, genres, origines et univers.",
   "What people are watching": "Ce que les gens regardent",
   "Showing now": "Actuellement à l'affiche",
   "Critically Loved": "Adorés par la critique",

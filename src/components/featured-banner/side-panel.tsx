@@ -67,13 +67,13 @@ export function SidePanel({
   };
 
   return (
-    <aside className="flex flex-col gap-3 self-start rounded-2xl border border-edge-soft bg-elevated/35 p-4">
-      <div className="flex flex-col gap-1">
-        <h4 className="line-clamp-1 font-display text-[19px] font-medium tracking-tight text-ink">
+    <aside className="vayra-surface flex flex-col gap-3.5 self-stretch p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <h4 className="line-clamp-2 font-display text-[19px] font-semibold leading-tight tracking-[-0.015em] text-ink">
           {meta.name}
         </h4>
-        <span className="text-[12px] uppercase tracking-[0.16em] text-ink-subtle">
-          {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+        <span className="shrink-0 rounded-full border border-edge-soft/75 bg-elevated/80 px-2 py-0.5 text-[10.5px] font-semibold tabular-nums tracking-[0.12em] text-ink-subtle">
+          {String(activeIndex + 1).padStart(2, "0")}/{String(total).padStart(2, "0")}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -87,12 +87,12 @@ export function SidePanel({
         ))}
       </div>
       {description && (
-        <p className="text-[12.5px] leading-snug text-ink-muted line-clamp-3">
+        <p className="line-clamp-3 text-[13px] leading-relaxed text-ink-muted">
           {description}
         </p>
       )}
       {live.value && (
-        <div className="mt-auto flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/40 px-2.5 py-1 text-[12px] font-semibold text-ink self-start">
+        <div className="mt-auto flex items-center gap-1.5 self-start rounded-full border border-edge-soft/75 bg-canvas/55 px-3 py-1 text-[12px] font-semibold tabular-nums text-ink">
           {live.isImdb ? (
             <ImdbIcon className="h-[12px] w-auto rounded-[2px]" />
           ) : (
