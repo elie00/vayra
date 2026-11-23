@@ -83,12 +83,15 @@ expect current "Ma liste"
 
 Chaque scénario commence par `restart`, pour ne pas dépendre du précédent.
 `recette/android/` : 4 scénarios, validés sur l’émulateur. `recette/desktop/` :
-3 scénarios, validés dans l’appli Windows (deux passes à 3/3 le 23/11/2026).
-Ils visent la barre latérale de l’appli de bureau (Accueil, Explorer, Ma
-bibliothèque) : dans un navigateur, où la barre liste Films et Séries à la place
-d’Explorer, le parcours de navigation ne s’applique pas. Sans le relais web, le
-navigateur n’obtient pas non plus de résultats de recherche, ni l’appli de
-bureau sur le PC pro, dont le filtrage bloque les sources.
+4 scénarios. Trois sont validés dans l’appli Windows (deux passes à 3/3 le
+23/11/2026). Ils visent la barre latérale de l’appli de bureau (Accueil,
+Explorer, Ma bibliothèque) : dans un navigateur, où la barre liste Films et
+Séries à la place d’Explorer, le parcours de navigation ne s’applique pas. Le
+quatrième, `recherche-resultats`, attend des résultats et ouvre le meilleur : il
+demande des sources joignables. Le navigateur sans relais web n’en obtient pas,
+ni l’appli sur le PC pro, dont le filtrage bloque les sources : le scénario y
+échoue sur l’alerte des sources (voir son en-tête). Son parcours réussi reste à
+valider sur un réseau ordinaire.
 
 Sous Windows, construire sans installeur et lancer le binaire depuis `target`,
 avec un dossier de données jetable pour laisser le vrai profil intact. Une seule
