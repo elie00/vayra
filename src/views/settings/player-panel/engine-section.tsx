@@ -60,6 +60,7 @@ export function PlayerEnginePanel() {
               const selected = settings.playerEngine === c.id;
               return (
                 <button
+                  aria-pressed={selected}
                   key={c.id}
                   type="button"
                   onClick={() => update({ playerEngine: c.id })}

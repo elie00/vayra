@@ -64,6 +64,7 @@ export function HdrModePicker() {
           const selected = current === o.id;
           return (
             <button
+              aria-pressed={selected}
               key={o.id}
               type="button"
               onClick={() => update(MODE_FLAGS[o.id])}
@@ -104,6 +105,8 @@ export function HdrModePicker() {
       {isWindowsDesktop() && (
         <button
           type="button"
+          role="switch"
+          aria-checked={settings.playerRtxHdr}
           onClick={() => update({ playerRtxHdr: !settings.playerRtxHdr })}
           className={`mt-1 flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 text-start transition-colors ${
             settings.playerRtxHdr
