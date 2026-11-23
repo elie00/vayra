@@ -12,6 +12,7 @@ import { fetchWatchedHistory, type HistoryItem } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import {
   applyFilter,
   countByType,
@@ -41,6 +42,7 @@ type HistoryView = "posters" | "episodes";
 
 export function HistoryTab() {
   const t = useT();
+  const { setView: navigateView } = useView();
   const { authKey } = useAuth();
   const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
@@ -142,12 +144,19 @@ export function HistoryTab() {
 
   if (!authKey && !traktConnected) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-16 text-center">
-        <Clock size={28} strokeWidth={1.6} className="text-ink-subtle" />
-        <h2 className="text-[16px] font-semibold text-ink">{t("No history yet")}</h2>
-        <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
-          {t("Sign in to Stremio or connect Trakt to see what you've been watching here.")}
-        </p>
+      <div className="vayra-surface flex flex-col items-center gap-4 px-8 py-16 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-edge-soft/75 bg-elevated/80 text-ink-subtle">
+          <Clock size={24} strokeWidth={1.7} />
+        </span>
+        <div className="flex flex-col gap-1.5">
+          <h2 className="font-display text-[20px] font-semibold tracking-[-0.015em] text-ink">{t("No history yet")}</h2>
+          <p className="max-w-md text-[13.5px] leading-relaxed text-ink-muted">
+            {t("Sign in to Stremio or connect Trakt to see what you've been watching here.")}
+          </p>
+        </div>
+        <button type="button" className="mac-secondary-button mt-1" onClick={() => navigateView("settings")}>
+          {t("Settings")}
+        </button>
       </div>
     );
   }
@@ -173,7 +182,7 @@ export function HistoryTab() {
         />
       )}
       <div className="flex items-center justify-between">
-        <span className="text-[12px] text-ink-muted">
+        <span className="text-[12px] tabular-nums text-ink-muted">
           {merged.length === 1
             ? t("{n} item", { n: merged.length })
             : t("{n} items", { n: merged.length })}
@@ -181,17 +190,34 @@ export function HistoryTab() {
         </span>
       </div>
       {merged.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-16 text-center">
-          <Clock size={28} strokeWidth={1.6} className="text-ink-subtle" />
-          <h2 className="text-[16px] font-semibold text-ink">{t("Nothing watched yet")}</h2>
-          <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
-            {t("Press play on something. It'll show up here once you start watching.")}
-          </p>
+        <div className="vayra-surface flex flex-col items-center gap-4 px-8 py-16 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-edge-soft/75 bg-elevated/80 text-ink-subtle">
+            <Clock size={24} strokeWidth={1.7} />
+          </span>
+          <div className="flex flex-col gap-1.5">
+            <h2 className="font-display text-[20px] font-semibold tracking-[-0.015em] text-ink">{t("Nothing watched yet")}</h2>
+            <p className="max-w-md text-[13.5px] leading-relaxed text-ink-muted">
+              {t("Press play on something. It'll show up here once you start watching.")}
+            </p>
+          </div>
+          <button type="button" className="mac-primary-button mt-1" onClick={() => navigateView("discover")}>
+            {t("Explore")}
+          </button>
         </div>
       ) : visible.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-6 py-10 text-center text-[13px] text-ink-muted">
-          {t("No matches for these filters.")}
-        </p>
+        <div className="vayra-surface flex flex-col items-center gap-3.5 px-6 py-12 text-center">
+          <p className="text-[14px] text-ink-muted">{t("No matches for these filters.")}</p>
+          <button
+            type="button"
+            className="mac-secondary-button"
+            onClick={() => {
+              setType("all");
+              setQuery("");
+            }}
+          >
+            {t("Clear filters")}
+          </button>
+        </div>
       ) : view === "episodes" ? (
         <EpisodesGrid groups={groups} onRemove={handleRemove} />
       ) : (
@@ -204,19 +230,23 @@ export function HistoryTab() {
 function ViewModeToggle({ flat, onToggle }: { flat: boolean; onToggle: () => void }) {
   const t = useT();
   return (
-    <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
+    <div className="vayra-pill-track">
       <button
+        type="button"
+        aria-pressed={!flat}
         onClick={() => flat && onToggle()}
-        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
-          !flat ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-[background-color,color] duration-150 ${
+          !flat ? "bg-ink text-canvas font-semibold" : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
         }`}
       >
         {t("Grouped")}
       </button>
       <button
+        type="button"
+        aria-pressed={flat}
         onClick={() => !flat && onToggle()}
-        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
-          flat ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-[background-color,color] duration-150 ${
+          flat ? "bg-ink text-canvas font-semibold" : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
         }`}
       >
         {t("One list")}
@@ -234,19 +264,23 @@ function HistoryViewToggle({
 }) {
   const t = useT();
   return (
-    <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
+    <div className="vayra-pill-track">
       <button
+        type="button"
+        aria-pressed={view === "posters"}
         onClick={() => view !== "posters" && onChange("posters")}
-        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
-          view === "posters" ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-[background-color,color] duration-150 ${
+          view === "posters" ? "bg-ink text-canvas font-semibold" : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
         }`}
       >
         {t("Posters")}
       </button>
       <button
+        type="button"
+        aria-pressed={view === "episodes"}
         onClick={() => view !== "episodes" && onChange("episodes")}
-        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
-          view === "episodes" ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-[background-color,color] duration-150 ${
+          view === "episodes" ? "bg-ink text-canvas font-semibold" : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
         }`}
       >
         {t("Episodes")}

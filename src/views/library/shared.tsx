@@ -1,7 +1,8 @@
-import { Bookmark } from "lucide-react";
+import { Bookmark, Search, X } from "lucide-react";
 import { type Meta } from "@/lib/cinemeta";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { WatchlistCard } from "./watchlist-card";
 
 export { WatchlistCard } from "./watchlist-card";
@@ -25,17 +26,16 @@ export function TabBtn({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
-      className={`relative -mb-px flex items-center gap-2 px-4 pb-3 pt-2 text-[13.5px] font-semibold transition-colors ${
-        active ? "text-ink" : "text-ink-muted hover:text-ink"
+      className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-[13px] font-medium transition-[background-color,color] duration-150 ${
+        active
+          ? "bg-ink text-canvas font-semibold shadow-sm"
+          : "text-ink-muted hover:bg-elevated/75 hover:text-ink"
       }`}
     >
       {children}
-      <span
-        className={`absolute inset-x-3 -bottom-px h-0.5 rounded-full transition-colors ${
-          active ? "bg-ink" : "bg-transparent"
-        }`}
-      />
     </button>
   );
 }
@@ -59,27 +59,41 @@ export function FilterBar({
 }) {
   const t = useT();
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="vayra-surface flex flex-wrap items-center gap-2.5 p-2.5 sm:p-3">
       {!hideTypePills && (
-        <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
-          <FilterPill active={type === "all"} onClick={() => setType("all")}>
-            {t("All")} <span className="ms-1 text-ink-subtle">{counts.all}</span>
+        <div className="vayra-pill-track">
+          <FilterPill active={type === "all"} onClick={() => setType("all")} count={counts.all}>
+            {t("All")}
           </FilterPill>
-          <FilterPill active={type === "movie"} onClick={() => setType("movie")}>
-            {t("Movies")} <span className="ms-1 text-ink-subtle">{counts.movie}</span>
+          <FilterPill active={type === "movie"} onClick={() => setType("movie")} count={counts.movie}>
+            {t("Movies")}
           </FilterPill>
-          <FilterPill active={type === "series"} onClick={() => setType("series")}>
-            {t("Shows")} <span className="ms-1 text-ink-subtle">{counts.series}</span>
+          <FilterPill active={type === "series"} onClick={() => setType("series")} count={counts.series}>
+            {t("Shows")}
           </FilterPill>
         </div>
       )}
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={t("Search title…")}
-        className="min-w-[220px] flex-1 max-w-md rounded-full bg-elevated/40 px-4 py-2 text-[13px] text-ink placeholder:text-ink-subtle ring-1 ring-edge-soft/60 outline-none focus:ring-edge"
-      />
+      <div className="flex h-10 min-w-[200px] max-w-md flex-1 items-center gap-2 rounded-xl border border-edge-soft/75 bg-canvas/75 px-3 text-ink-subtle transition-colors focus-within:border-edge">
+        <Search size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("Search title…")}
+          aria-label={t("Search title…")}
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink placeholder:text-ink-subtle outline-none"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label={t("Clear")}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+          >
+            <X size={13} strokeWidth={2.2} />
+          </button>
+        )}
+      </div>
       {trailing}
     </div>
   );
@@ -88,23 +102,31 @@ export function FilterBar({
 export function FilterPill({
   active,
   onClick,
+  count,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  count?: number;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
-      className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-[background-color,color] duration-150 ${
         active
-          ? "bg-ink text-canvas"
-          : "text-ink-muted hover:bg-raised hover:text-ink"
+          ? "bg-ink text-canvas font-semibold"
+          : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
       }`}
     >
-      {children}
+      <span>{children}</span>
+      {count != null && (
+        <span className={`text-[11px] tabular-nums ${active ? "text-canvas/70" : "text-ink-subtle"}`}>
+          {count}
+        </span>
+      )}
     </button>
   );
 }
@@ -187,16 +209,17 @@ export function SortControl() {
     ["year", t("Year")],
   ];
   return (
-    <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
+    <div className="vayra-pill-track">
       {options.map(([key, label]) => (
         <button
           key={key}
           type="button"
+          aria-pressed={settings.librarySort === key}
           onClick={() => update({ librarySort: key })}
-          className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+          className={`rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-[background-color,color] duration-150 ${
             settings.librarySort === key
-              ? "bg-ink text-canvas"
-              : "text-ink-muted hover:bg-raised hover:text-ink"
+              ? "bg-ink text-canvas font-semibold"
+              : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
           }`}
         >
           {label}
@@ -217,12 +240,18 @@ export function GroupedGrid<
 }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-8">
       {groups.map((g) => (
-        <div key={g.label} className="flex flex-col gap-3">
-          <h3 className="text-[11px] font-bold uppercase tracking-[0.24em] text-ink-subtle">
-            {t(g.label)} <span className="ms-1 text-ink-subtle/70">{g.items.length}</span>
-          </h3>
+        <div key={g.label} className="flex flex-col gap-3.5">
+          <div className="flex items-center gap-3">
+            <h3 className="vayra-kicker shrink-0">
+              {t(g.label)}
+            </h3>
+            <span className="rounded-full border border-edge-soft/70 bg-surface/85 px-2 py-0.5 text-[10.5px] font-semibold tabular-nums text-ink-subtle">
+              {g.items.length}
+            </span>
+            <div className="vayra-header-rule flex-1" aria-hidden="true" />
+          </div>
           <Grid>
             {g.items.map((it) => (
               <WatchlistCard
@@ -240,16 +269,26 @@ export function GroupedGrid<
 
 export function EmptyWatchlist({ connected }: { connected: boolean }) {
   const t = useT();
+  const { setView } = useView();
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-16 text-center">
-      <Bookmark size={28} strokeWidth={1.6} className="text-ink-subtle" />
-      <h2 className="text-[16px] font-semibold text-ink">{t("Your watchlist is empty")}</h2>
-      <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
-        {t("Right-click any title in VAYRA or hit \"Add to Watchlist\" on its detail page to save it here.")}
-        {connected
-          ? t(" Anything you save also syncs to your Trakt account.")
-          : t(" Connect Trakt in Settings to sync this list across devices.")}
-      </p>
+    <div className="vayra-surface flex flex-col items-center gap-4 px-8 py-16 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-edge-soft/75 bg-elevated/80 text-ink-subtle">
+        <Bookmark size={24} strokeWidth={1.7} />
+      </span>
+      <div className="flex flex-col gap-1.5">
+        <h2 className="font-display text-[20px] font-semibold tracking-[-0.015em] text-ink">
+          {t("Your watchlist is empty")}
+        </h2>
+        <p className="max-w-md text-[13.5px] leading-relaxed text-ink-muted">
+          {t("Right-click any title in VAYRA or hit \"Add to Watchlist\" on its detail page to save it here.")}
+          {connected
+            ? t(" Anything you save also syncs to your Trakt account.")
+            : t(" Connect Trakt in Settings to sync this list across devices.")}
+        </p>
+      </div>
+      <button type="button" className="mac-primary-button mt-1" onClick={() => setView("discover")}>
+        {t("Explore")}
+      </button>
     </div>
   );
 }

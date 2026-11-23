@@ -71,8 +71,8 @@ export function WatchlistTab() {
       {merged.length === 0 ? (
         <EmptyWatchlist connected={traktConnected} />
       ) : visible.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-6 py-10 text-center">
-          <p className="text-[13.5px] text-ink-muted">{tr("No matches for these filters.")}</p>
+        <div className="vayra-surface flex flex-col items-center gap-3.5 px-6 py-12 text-center">
+          <p className="text-[14px] text-ink-muted">{tr("No matches for these filters.")}</p>
           <button
             type="button"
             className="mac-secondary-button"
@@ -101,19 +101,23 @@ export function WatchlistTab() {
 function ViewModeToggle({ flat, onToggle }: { flat: boolean; onToggle: () => void }) {
   const t = useT();
   return (
-    <div className="flex items-center gap-1 rounded-full bg-elevated/40 p-0.5 ring-1 ring-edge-soft/60">
+    <div className="vayra-pill-track">
       <button
+        type="button"
+        aria-pressed={!flat}
         onClick={() => flat && onToggle()}
-        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
-          !flat ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-[background-color,color] duration-150 ${
+          !flat ? "bg-ink text-canvas font-semibold" : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
         }`}
       >
         {t("Grouped")}
       </button>
       <button
+        type="button"
+        aria-pressed={flat}
         onClick={() => !flat && onToggle()}
-        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
-          flat ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
+        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-[background-color,color] duration-150 ${
+          flat ? "bg-ink text-canvas font-semibold" : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
         }`}
       >
         {t("One list")}

@@ -1,4 +1,4 @@
-import { BarChart3, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
+import { ArrowUpRight, BarChart3, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
@@ -171,78 +171,93 @@ function Header({
 }) {
   const t = useT();
   const { openStats } = useView();
+  const hasExternalTabs =
+    traktConnected || anilistConnected || simklConnected || malConnected || letterboxdActive;
+
   return (
     <header className="flex flex-col gap-5">
-      <div className="flex items-end justify-between gap-6">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
-            {t("My library")}
-          </span>
-          <h1 className="font-display text-[44px] font-medium leading-[1.05] text-ink">
-            {t("Your collection.")}
-          </h1>
-          <p className="text-[14px] leading-snug text-ink-muted">
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span className="vayra-kicker">{t("My library")}</span>
+          <h1 className="mac-page-title">{t("Your collection.")}</h1>
+          <p className="max-w-[60ch] text-[14px] leading-relaxed text-ink-muted">
             {t("Watchlist is what you've saved for later. History is everything you've watched. Local is files on your computer.")}
           </p>
         </div>
         <button
+          type="button"
           onClick={openStats}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-edge-soft/60 bg-elevated px-3.5 py-2 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+          className="mac-secondary-button shrink-0"
         >
-          <BarChart3 size={14} strokeWidth={2.2} />
-          {t("Stats")}
+          <BarChart3 size={14} strokeWidth={2.1} />
+          <span>{t("Stats")}</span>
+          <ArrowUpRight size={13} strokeWidth={2} className="text-ink-subtle" />
         </button>
       </div>
-      <div className="flex items-center gap-1 border-b border-edge-soft max-sm:overflow-x-auto max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
-        <TabBtn active={tab === "watchlist"} onClick={() => onTab("watchlist")}>
-          <Bookmark size={14} strokeWidth={2.2} />
-          {t("Watchlist")}
-        </TabBtn>
-        <TabBtn active={tab === "history"} onClick={() => onTab("history")}>
-          <Clock size={14} strokeWidth={2.2} />
-          {t("History")}
-        </TabBtn>
-{tabAvailable("local", CAPABILITIES) && (
-                  <TabBtn active={tab === "local"} onClick={() => onTab("local")}>
-          <HardDrive size={14} strokeWidth={2.2} />
-          {t("Local")}
-        </TabBtn>
-        )}
-        <TabBtn active={tab === "lists"} onClick={() => onTab("lists")}>
-          <Layers size={14} strokeWidth={2.2} />
-          {t("My Lists")}
-        </TabBtn>
-        {traktConnected && (
-          <TabBtn active={tab === "trakt"} onClick={() => onTab("trakt")}>
-            <img src={traktLogo} alt="" className="h-3.5 w-3.5 object-contain" />
-            Trakt
+      <div
+        role="tablist"
+        aria-label={t("My library")}
+        className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="vayra-pill-track shrink-0">
+          <TabBtn active={tab === "watchlist"} onClick={() => onTab("watchlist")}>
+            <Bookmark size={14} strokeWidth={2.1} />
+            {t("Watchlist")}
           </TabBtn>
-        )}
-        {anilistConnected && (
-          <TabBtn active={tab === "anilist"} onClick={() => onTab("anilist")}>
-            <img src={anilistLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
-            AniList
+          <TabBtn active={tab === "history"} onClick={() => onTab("history")}>
+            <Clock size={14} strokeWidth={2.1} />
+            {t("History")}
           </TabBtn>
-        )}
-        {simklConnected && (
-          <TabBtn active={tab === "simkl"} onClick={() => onTab("simkl")}>
-            <img src={simklLogo} alt="" className="h-3.5 w-3.5 object-contain" />
-            Simkl
+          {tabAvailable("local", CAPABILITIES) && (
+            <TabBtn active={tab === "local"} onClick={() => onTab("local")}>
+              <HardDrive size={14} strokeWidth={2.1} />
+              {t("Local")}
+            </TabBtn>
+          )}
+          <TabBtn active={tab === "lists"} onClick={() => onTab("lists")}>
+            <Layers size={14} strokeWidth={2.1} />
+            {t("My Lists")}
           </TabBtn>
-        )}
-        {malConnected && (
-          <TabBtn active={tab === "mal"} onClick={() => onTab("mal")}>
-            <img src={malLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
-            MAL
-          </TabBtn>
-        )}
-        {letterboxdActive && (
-          <TabBtn active={tab === "letterboxd"} onClick={() => onTab("letterboxd")}>
-            <img src={letterboxdLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
-            Letterboxd
-          </TabBtn>
+        </div>
+        {hasExternalTabs && (
+          <>
+            <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-edge-soft/75" />
+            <div className="vayra-pill-track shrink-0">
+              {traktConnected && (
+                <TabBtn active={tab === "trakt"} onClick={() => onTab("trakt")}>
+                  <img src={traktLogo} alt="" className="h-3.5 w-3.5 object-contain" />
+                  Trakt
+                </TabBtn>
+              )}
+              {anilistConnected && (
+                <TabBtn active={tab === "anilist"} onClick={() => onTab("anilist")}>
+                  <img src={anilistLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
+                  AniList
+                </TabBtn>
+              )}
+              {simklConnected && (
+                <TabBtn active={tab === "simkl"} onClick={() => onTab("simkl")}>
+                  <img src={simklLogo} alt="" className="h-3.5 w-3.5 object-contain" />
+                  Simkl
+                </TabBtn>
+              )}
+              {malConnected && (
+                <TabBtn active={tab === "mal"} onClick={() => onTab("mal")}>
+                  <img src={malLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
+                  MAL
+                </TabBtn>
+              )}
+              {letterboxdActive && (
+                <TabBtn active={tab === "letterboxd"} onClick={() => onTab("letterboxd")}>
+                  <img src={letterboxdLogo} alt="" className="h-3.5 w-3.5 rounded-[3px] object-contain" />
+                  Letterboxd
+                </TabBtn>
+              )}
+            </div>
+          </>
         )}
       </div>
+      <div className="vayra-header-rule" aria-hidden="true" />
     </header>
   );
 }
