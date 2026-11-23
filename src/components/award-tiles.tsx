@@ -20,7 +20,7 @@ const AWARDS: Array<{ type: AwardType; name: string; sub: string }> = [
 export function AwardTiles() {
   const t = useT();
   return (
-    <Row title={t("Browse by Award")} min={210} shape="tile" alwaysActive>
+    <Row title={t("Browse by Award")} min={210} shape="tile" scrollKey="discover:awards" alwaysActive>
       {AWARDS.map((a) => (
         <AwardTile key={a.type} type={a.type} name={a.name} sub={a.sub} />
       ))}
@@ -36,7 +36,7 @@ function AwardTile({ type, name, sub }: { type: AwardType; name: string; sub: st
     <button
       type="button"
       onClick={() => openAward(type)}
-      className="group relative aspect-[5/4] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft text-start transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] hover:-translate-y-1"
+      className="group relative aspect-[5/4] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft text-start shadow-[0_4px_18px_-10px_rgba(0,0,0,0.5)] ring-1 ring-inset ring-white/0 transition-[border-color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] hover:-translate-y-0.5 hover:border-edge hover:ring-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       style={{
         background: `linear-gradient(150deg, oklch(from ${tint} 0.26 calc(c * 0.45) h), oklch(from ${tint} 0.11 calc(c * 0.3) h))`,
       }}
@@ -52,21 +52,21 @@ function AwardTile({ type, name, sub }: { type: AwardType; name: string; sub: st
         className="absolute inset-x-0 top-0 flex h-[62%] items-center justify-center"
         style={{ color: tint }}
       >
-        <span className="opacity-95 drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] group-hover:scale-[1.06]">
+        <span className="opacity-95 drop-shadow-[0_4px_24px_rgba(0,0,0,0.45)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
           <Laurel size={96}>
             <AwardLogo type={type} size={32} />
           </Laurel>
         </span>
       </div>
-      <div className="absolute inset-x-5 bottom-4 flex items-end justify-between gap-2">
+      <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-2">
         <div className="flex min-w-0 flex-col">
-          <h3 className="truncate font-display text-[21px] font-medium leading-tight tracking-tight text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.5)]">
+          <h3 className="truncate font-display text-[22px] font-medium leading-[1.15] tracking-tight text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.5)]">
             {t(name)}
           </h3>
           <span className="truncate text-[11.5px] font-medium text-white/65">{t(sub)}</span>
         </div>
         <span
-          className="dir-icon shrink-0 text-[18px] text-white/80 transition-transform duration-200 group-hover:translate-x-1 rtl:group-hover:-translate-x-1"
+          className="dir-icon shrink-0 text-[18px] leading-none text-white/80 transition-transform duration-200 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
           aria-hidden
         >
           ›

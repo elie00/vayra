@@ -14,7 +14,7 @@ export function CollectionsRow() {
     <Row
       title={t("Collections")}
       min={320}
-      shape="landscape"
+      shape="banner"
       arrowsAlways
       scrollKey="home:collections"
       onViewAll={openCollections}

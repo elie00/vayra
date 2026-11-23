@@ -84,12 +84,17 @@ export function AnimeGenrePicker({
         onClick={onClose}
         className="absolute inset-0 -z-10 cursor-default bg-canvas/88"
       />
-      <div className="relative flex max-h-full w-full max-w-xl flex-col overflow-hidden rounded-[26px] border border-edge-soft/70 bg-elevated shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="anime-genre-picker-title"
+        className="relative flex max-h-full w-full max-w-xl flex-col overflow-hidden rounded-[26px] border border-edge-soft/70 bg-elevated shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)]"
+      >
         <button
           type="button"
           aria-label={t("Close")}
           onClick={onClose}
-          className="absolute end-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
+          className="absolute end-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
         >
           <X size={16} strokeWidth={2.2} />
         </button>
@@ -98,7 +103,7 @@ export function AnimeGenrePicker({
           <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
             {t("Tune anime")}
           </span>
-          <h2 className="font-display text-[27px] font-medium leading-tight tracking-tight text-ink">
+          <h2 id="anime-genre-picker-title" className="font-display text-[27px] font-medium leading-tight tracking-tight text-ink">
             {t("Shape your anime feed.")}
           </h2>
           <p className="text-[13.5px] text-ink-muted">
@@ -118,14 +123,15 @@ export function AnimeGenrePicker({
                   <button
                     key={opt.id}
                     type="button"
+                    aria-pressed={on}
                     onClick={() => toggle(opt.id)}
-                    className={`h-11 rounded-full px-5 text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] ${
+                    className={`h-11 rounded-full px-5 text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink active:scale-[0.97] motion-reduce:transition-none ${
                       on
                         ? "bg-ink text-canvas shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
                         : "bg-canvas/50 text-ink-muted ring-1 ring-edge-soft hover:text-ink hover:ring-edge"
                     }`}
                   >
-                    {opt.label}
+                    {t(opt.label)}
                   </button>
                 );
               })}
@@ -142,8 +148,9 @@ export function AnimeGenrePicker({
                   <button
                     key={opt.code}
                     type="button"
+                    aria-pressed={on}
                     onClick={() => toggleOrigin(opt.code)}
-                    className={`h-11 rounded-full px-5 text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.97] ${
+                    className={`h-11 rounded-full px-5 text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink active:scale-[0.97] motion-reduce:transition-none ${
                       on
                         ? "bg-danger text-white shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
                         : "bg-canvas/50 text-ink-muted ring-1 ring-edge-soft hover:text-ink hover:ring-edge"
@@ -156,8 +163,10 @@ export function AnimeGenrePicker({
             </div>
             <button
               type="button"
+              role="checkbox"
+              aria-checked={hideWatched}
               onClick={() => setHideWatched((v) => !v)}
-              className="mt-1 flex items-center gap-3 self-start rounded-xl py-1 text-start"
+              className="mt-1 flex items-center gap-3 self-start rounded-xl py-1 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
             >
               <span
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
