@@ -193,8 +193,9 @@ export function CollectionsView() {
                   <button
                     key={c}
                     type="button"
+                    aria-pressed={category === c}
                     onClick={() => setCategory(c)}
-                    className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors max-sm:h-8 max-sm:shrink-0 max-sm:whitespace-nowrap max-sm:py-0 max-sm:text-[14px] ${
+                    className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink max-sm:h-8 max-sm:shrink-0 max-sm:whitespace-nowrap max-sm:py-0 max-sm:text-[14px] ${
                       category === c
                         ? "bg-ink text-canvas"
                         : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft hover:bg-raised hover:text-ink"

@@ -20,7 +20,7 @@ const GAP = 20;
 const EAGER_COUNT = 6;
 const NEAR_MARGIN = "300px";
 
-export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile" | "compact";
+export type RowShape = "portrait" | "landscape" | "banner" | "service" | "rank" | "tile" | "compact";
 
 const RowTrackContext = createContext<HTMLDivElement | null>(null);
 export const ScrollRootContext = createContext<HTMLElement | null>(null);
@@ -96,6 +96,9 @@ function Skeleton({ shape }: { shape: RowShape }) {
   }
   if (shape === "tile") {
     return <div className="aspect-[5/4] w-full rounded-2xl bg-elevated/30" />;
+  }
+  if (shape === "banner") {
+    return <div className="aspect-[16/9] w-full rounded-2xl bg-elevated/35" />;
   }
   const aspect = shape === "landscape" ? "aspect-[16/9]" : "aspect-[2/3]";
   const hideText = shape === "portrait" && settings.hidePosterTitles;
