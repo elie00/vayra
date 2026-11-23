@@ -8,7 +8,7 @@ import {
   type NavItem as CanonicalNavItem,
 } from "@/chrome/nav-items";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
-import { useActiveDownloadCount } from "@/lib/download/downloads-store";
+import { useActiveDownloadCount, useDownloads } from "@/lib/download/downloads-store";
 import { effectiveBinding, formatBindingForDisplay } from "@/lib/hotkeys";
 import { useT } from "@/lib/i18n";
 import { useSearch } from "@/lib/search-context";
@@ -236,6 +236,8 @@ function ScrollableNav({
   onPinNav: (v: View) => void;
 }) {
   const { settings, update } = useSettings();
+  const allDownloads = useDownloads();
+  const totalDownloads = allDownloads.length;
   const activeDownloads = useActiveDownloadCount();
   const t = useT();
   const isItemVisible = (item: CanonicalNavItem) => {
@@ -247,6 +249,8 @@ function ScrollableNav({
   const mac = hasNativeDesktopUx();
   const pins = sanitizeMacPins(settings.macPinnedViews);
   const visiblePrimary = (mac ? MAC_PRIMARY_VIEWS.map((id) => NAV_ITEMS.find((it) => it.id === id)!) : PRIMARY_NAV_ITEMS).filter(isItemVisible);
+  const downloadsNavItem = NAV_ITEMS.find((it) => it.id === "downloads") ?? null;
+  const showLibraryDownloadsLink = mac && downloadsNavItem !== null && (isLibraryView(view) || totalDownloads > 0);
   const categories = MAC_EXPLORE_VIEWS.map((id) => NAV_ITEMS.find((it) => it.id === id)!).filter(isItemVisible);
   const visibleCategories = categories.filter((item) => isExploreView(view) || pins.includes(item.view));
   const labelFor = (item: CanonicalNavItem) => mac && item.id === "discover" ? "Explore" : mac && item.id === "library" ? "My library" : item.label;
@@ -294,22 +298,42 @@ function ScrollableNav({
         <div className="flex flex-col gap-1">
           {visiblePrimary.map((item) => {
             const showsDownloadsBadge =
-              activeDownloads > 0 && (mac ? item.view === "library" : item.view === "downloads");
+              activeDownloads > 0 && (mac ? item.view === "library" && !showLibraryDownloadsLink : item.view === "downloads");
+            const isLibraryRow = mac && item.id === "library";
             return (
-              <NavItem
-                key={item.id}
-                {...item}
-                label={labelFor(item)}
-                collapsed={collapsed}
-                badge={!collapsed && showsDownloadsBadge ? activeDownloads : undefined}
-                dot={collapsed && mac && showsDownloadsBadge}
-                active={
-                  view === item.view ||
-                  (mac && item.id === "discover" && isExploreView(view)) ||
-                  (mac && item.id === "library" && isLibraryView(view))
-                }
-                onClick={() => setView(item.view)}
-              />
+              <div key={item.id} className="flex flex-col gap-0.5">
+                <NavItem
+                  {...item}
+                  label={labelFor(item)}
+                  collapsed={collapsed}
+                  badge={!collapsed && showsDownloadsBadge ? activeDownloads : undefined}
+                  dot={collapsed && mac && activeDownloads > 0 && isLibraryRow}
+                  active={
+                    view === item.view ||
+                    (mac && item.id === "discover" && isExploreView(view)) ||
+                    (isLibraryRow && view === "downloads" && !showLibraryDownloadsLink)
+                  }
+                  onClick={() => setView(item.view)}
+                />
+                {isLibraryRow && showLibraryDownloadsLink && downloadsNavItem && (
+                  <div
+                    className={`flex flex-col ${
+                      collapsed ? "" : "min-[960px]:ms-[19px] min-[960px]:border-s min-[960px]:border-edge-soft/50 min-[960px]:ps-2.5"
+                    }`}
+                  >
+                    <NavItem
+                      {...downloadsNavItem}
+                      label="Downloads"
+                      collapsed={collapsed}
+                      nested
+                      badge={!collapsed && totalDownloads > 0 ? totalDownloads : undefined}
+                      dot={collapsed && activeDownloads > 0}
+                      active={view === "downloads"}
+                      onClick={() => setView("downloads")}
+                    />
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

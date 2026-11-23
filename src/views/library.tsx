@@ -34,16 +34,14 @@ const MobileMyList = lazy(() => import("@/mobile/my-list").then((m) => ({ defaul
 
 const LIBRARY_TAB_KEY = "harbor.library.tab";
 
-const CAPABILITIES = currentPlatformCapabilities();
-
-function readSavedTab(): Tab {
+function readSavedTab(capabilities: ReturnType<typeof currentPlatformCapabilities>): Tab {
   try {
     const v = localStorage.getItem(LIBRARY_TAB_KEY);
     if (
       v === "watchlist" ||
       v === "history" ||
-      (v === "downloads" && tabAvailable("downloads", CAPABILITIES)) ||
-      (v === "local" && tabAvailable("local", CAPABILITIES)) ||
+      (v === "downloads" && tabAvailable("downloads", capabilities)) ||
+      (v === "local" && tabAvailable("local", capabilities)) ||
       v === "trakt" ||
       v === "anilist" ||
       v === "simkl" ||
@@ -68,9 +66,10 @@ export function LibraryView({ active }: { active: boolean }) {
 }
 
 function DesktopLibraryView({ active }: { active: boolean }) {
+  const capabilities = currentPlatformCapabilities();
   const { view, setView } = useView();
   const [tab, setTab] = useState<Tab>(() =>
-    view === "downloads" && tabAvailable("downloads", CAPABILITIES) ? "downloads" : readSavedTab(),
+    view === "downloads" && tabAvailable("downloads", capabilities) ? "downloads" : readSavedTab(capabilities),
   );
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
@@ -81,10 +80,10 @@ function DesktopLibraryView({ active }: { active: boolean }) {
   useScrollMemory("library", scrollRef, active);
 
   useEffect(() => {
-    if (active && view === "downloads" && tabAvailable("downloads", CAPABILITIES)) {
+    if (active && view === "downloads" && tabAvailable("downloads", capabilities)) {
       setTab("downloads");
     }
-  }, [active, view]);
+  }, [active, view, capabilities]);
 
   const selectTab = useCallback(
     (next: Tab) => {
@@ -162,11 +161,11 @@ function DesktopLibraryView({ active }: { active: boolean }) {
           malConnected={malConnected}
           letterboxdActive={lb.isActive}
         />
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-surface/60" aria-hidden="true" />}>
           {tab === "watchlist" && <WatchlistTab />}
           {tab === "history" && <HistoryTab />}
-          {tab === "downloads" && tabAvailable("downloads", CAPABILITIES) && <DownloadsView embedded />}
-          {tab === "local" && tabAvailable("local", CAPABILITIES) && <LocalTab />}
+          {tab === "downloads" && tabAvailable("downloads", capabilities) && <DownloadsView embedded />}
+          {tab === "local" && tabAvailable("local", capabilities) && <LocalTab />}
           {tab === "trakt" && traktConnected && <TraktTab />}
           {tab === "anilist" && anilistConnected && <AnilistTab />}
           {tab === "simkl" && simklConnected && <SimklTab />}
@@ -200,7 +199,8 @@ function Header({
   const { openStats } = useView();
   const downloads = useDownloads();
   const activeDownloads = useActiveDownloadCount();
-  const hasDownloadsTab = tabAvailable("downloads", CAPABILITIES);
+  const capabilities = currentPlatformCapabilities();
+  const hasDownloadsTab = tabAvailable("downloads", capabilities);
   const hasExternalTabs =
     traktConnected || anilistConnected || simklConnected || malConnected || letterboxdActive;
 
@@ -267,7 +267,7 @@ function Header({
               )}
             </TabBtn>
           )}
-          {tabAvailable("local", CAPABILITIES) && (
+          {tabAvailable("local", capabilities) && (
             <TabBtn active={tab === "local"} onClick={() => onTab("local")}>
               <HardDrive size={14} strokeWidth={2.1} />
               {t("Local")}

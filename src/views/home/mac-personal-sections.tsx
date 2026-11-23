@@ -67,7 +67,8 @@ export function MacPersonalSections({
     if (!settings.connectEnabled) return;
     void publishHistory(JSON.parse(history)).catch(() => { /* Connect stopped: nobody to tell. */ });
   }, [history, settings.connectEnabled]);
-  const doneDownloads = useDownloads().filter((d) => d.status === "done");
+  const allDownloads = useDownloads();
+  const doneDownloads = allDownloads.filter((d) => d.status === "done");
   const downloads = doneDownloads.slice(0, 12);
   const [error, setError] = useState("");
   return (
@@ -91,7 +92,7 @@ export function MacPersonalSections({
             <span>{t("My Watchlist")}</span>
             <span className="tabular-nums text-ink">{watchlist.length}</span>
           </button>
-          {doneDownloads.length > 0 && (
+          {allDownloads.length > 0 && (
             <button
               type="button"
               onClick={() => setView("downloads")}
@@ -99,7 +100,7 @@ export function MacPersonalSections({
             >
               <Download size={13} strokeWidth={2} className="text-ink-subtle group-hover:text-ink" />
               <span>{t("Downloads")}</span>
-              <span className="tabular-nums text-ink">{doneDownloads.length}</span>
+              <span className="tabular-nums text-ink">{doneDownloads.length > 0 ? doneDownloads.length : allDownloads.length}</span>
             </button>
           )}
           <button
