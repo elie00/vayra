@@ -18,7 +18,7 @@ import { TabBtn, type Tab } from "./library/shared";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 import { currentPlatformCapabilities } from "@/lib/platform-capabilities";
 import { tabAvailable } from "./library/tab-availability";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 
 const AnilistTab = lazy(() => import("./library/anilist-tab").then((m) => ({ default: m.AnilistTab })));
 const DownloadsView = lazy(() => import("./downloads").then((m) => ({ default: m.DownloadsView })));
@@ -148,9 +148,11 @@ function DesktopLibraryView({ active }: { active: boolean }) {
   return (
     <main
       ref={scrollRef}
-      className="flex-1 overflow-y-auto px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28 max-sm:pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]"
+      className={`flex-1 overflow-y-auto px-5 pb-14 sm:px-8 lg:px-12 max-sm:pt-[calc(5rem+var(--harbor-status-bar,1.75rem))] ${
+        hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
+      }`}
     >
-      <div data-tauri-drag-region className="flex flex-col gap-7">
+      <div data-tauri-drag-region className="flex flex-col gap-6">
         <Header
           tab={tab}
           onTab={selectTab}

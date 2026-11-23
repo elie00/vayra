@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "reac
 import { AlertTriangle, Check, Download as DownloadIcon, FolderOpen, HardDrive, Pause, Play, Trash2, X } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { DeleteDownloadDialog } from "@/components/delete-download-dialog";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { getUiLanguage, t, useT } from "@/lib/i18n";
@@ -252,7 +252,9 @@ export function DownloadsView({ embedded = false }: { embedded?: boolean } = {})
   return (
     <main onFocusCapture={(event) => { focusedRef.current = event.target; }}
       onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedRef.current = null; }}
-      className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
+      className={`flex-1 overflow-y-auto bg-canvas px-5 pb-24 sm:px-8 lg:px-12 ${
+        hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
+      }`}>
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         {body}
       </div>
