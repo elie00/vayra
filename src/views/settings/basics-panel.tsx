@@ -1,64 +1,117 @@
-import { ChevronRight, Eye, EyeOff, Languages, LogIn, MonitorPlay, Palette, Zap } from "lucide-react";
+import { Check, ChevronRight, Eye, EyeOff, Languages, ListVideo, LogIn, Palette, Play, Puzzle } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { THEME_PRESETS, type ThemePresetId } from "@/lib/theme";
 import { useVayraAccount } from "@/lib/vayra-account";
-import { PlayModePanel } from "./player-panel";
 import { Section, useSettingsActiveContext } from "./shared";
 
-const ENGINE_LABEL: Record<string, string> = {
-  auto: "Auto",
-  html5: "HTML5",
-  mpv: "mpv",
-};
+const QUICK_PALETTES: ThemePresetId[] = ["cool-grey", "obsidian", "sage", "ivory"];
 
 export function BasicsPanel() {
   const t = useT();
   const { user } = useVayraAccount();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { setActive } = useSettingsActiveContext();
 
-  const debridCount = [settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey].filter(
-    Boolean,
-  ).length;
+  const hasSources = [settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey].some(Boolean);
   const langs = settings.preferredLanguages;
   const langLabel =
     langs.length === 0 ? t("Any") : langs.length === 1 ? langs[0] : t("{n} languages", { n: langs.length });
+  const isInstant = settings.instantPlay && !settings.seasonSourceLock;
 
   return (
     <>
-      <div className="flex flex-col gap-2.5">
-        <SignInRow email={user?.email ?? null} signedIn={!!user} onManage={() => setActive("account")} />
-
-        <LaunchRow
-          icon={<Zap size={19} strokeWidth={2} />}
-          title={t("Streaming quality")}
-          sub={
-            debridCount > 0
-              ? t("A debrid service is connected. You'll get instant, high-quality streams.")
-              : t("Connect a debrid service (Real-Debrid, TorBox, AllDebrid) for instant HD without the wait.")
-          }
-          status={debridCount > 0 ? t("{n} connected", { n: debridCount }) : t("Set up")}
-          highlight={debridCount === 0}
-          onClick={() => setActive("streaming")}
-        />
-      </div>
+      <SignInRow email={user?.email ?? null} signedIn={!!user} onManage={() => setActive("account")} />
 
       <Section
-        title={t("How Play works")}
-        subtitle={t("What happens when you hit Play on a title. Instant just starts; Manual lets you pick the source.")}
+        title={t("How Play starts")}
+        subtitle={t("Choose whether VAYRA plays immediately or lets you pick a source first.")}
       >
-        <PlayModePanel />
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <ChoiceCard
+            active={isInstant}
+            icon={<Play size={16} strokeWidth={2.1} fill="currentColor" />}
+            title={t("Instant")}
+            subtitle={t("Starts the best available stream right away.")}
+            onClick={() => update({ instantPlay: true, seasonSourceLock: false })}
+          />
+          <ChoiceCard
+            active={!isInstant}
+            icon={<ListVideo size={16} strokeWidth={2} />}
+            title={t("Choose first")}
+            subtitle={t("Shows available sources before playback starts.")}
+            onClick={() => update({ instantPlay: false, seasonSourceLock: false })}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setActive("player")}
+          className="inline-flex items-center gap-1.5 self-start text-[12.5px] font-medium text-ink-muted transition-colors hover:text-ink"
+        >
+          <span>{t("More playback options")}</span>
+          <ChevronRight size={14} strokeWidth={2} aria-hidden="true" />
+        </button>
+      </Section>
+
+      <Section
+        title={t("Look & feel")}
+        subtitle={t("Switch atmosphere in one click, or open Appearance for fonts and custom wallpapers.")}
+      >
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {QUICK_PALETTES.map((id) => {
+            const preset = THEME_PRESETS[id];
+            const active = settings.theme.preset === id;
+            const [bg, surface, accent] = preset.swatch;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => update({ theme: { ...settings.theme, preset: id } })}
+                className={`group flex flex-col gap-2.5 rounded-xl border p-3 text-start transition-[border-color,background-color] duration-150 ${
+                  active
+                    ? "border-ink bg-elevated/90"
+                    : "border-edge-soft/75 bg-canvas/50 hover:border-edge hover:bg-elevated/55"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div
+                    aria-hidden="true"
+                    className="flex h-7 w-14 overflow-hidden rounded-lg border border-white/12 shadow-sm"
+                  >
+                    <span className="h-full flex-1" style={{ backgroundColor: bg }} />
+                    <span className="h-full flex-1" style={{ backgroundColor: surface }} />
+                    <span className="h-full w-3.5" style={{ backgroundColor: accent }} />
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                      active
+                        ? "border-ink bg-ink text-canvas"
+                        : "border-edge-soft/75 bg-transparent text-transparent"
+                    }`}
+                  >
+                    <Check size={12} strokeWidth={2.6} />
+                  </span>
+                </div>
+                <span className="truncate text-[13px] font-semibold text-ink">{t(preset.name)}</span>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={() => setActive("theme")}
+          className="inline-flex items-center gap-1.5 self-start text-[12.5px] font-medium text-ink-muted transition-colors hover:text-ink"
+        >
+          <Palette size={13} strokeWidth={2} aria-hidden="true" />
+          <span>{t("Customize further")}</span>
+          <ChevronRight size={14} strokeWidth={2} aria-hidden="true" />
+        </button>
       </Section>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <LaunchRow
-          icon={<MonitorPlay size={18} strokeWidth={2} />}
-          title={t("Player engine")}
-          sub={t("Auto is best for most people. mpv handles the trickiest 4K, HDR, and audio formats.")}
-          status={ENGINE_LABEL[settings.playerEngine] ?? settings.playerEngine}
-          onClick={() => setActive("player")}
-        />
         <LaunchRow
           icon={<Languages size={18} strokeWidth={2} />}
           title={t("Languages")}
@@ -66,22 +119,58 @@ export function BasicsPanel() {
           status={langLabel}
           onClick={() => setActive("language")}
         />
-        <div className="sm:col-span-2">
-          <LaunchRow
-            icon={<Palette size={18} strokeWidth={2} />}
-            title={t("Theme & appearance")}
-            sub={t("Recolor everything, swap fonts, resize posters, set a wallpaper.")}
-            status={prettyPreset(settings.theme.preset)}
-            onClick={() => setActive("theme")}
-          />
-        </div>
+        <LaunchRow
+          icon={<Puzzle size={18} strokeWidth={2} />}
+          title={t("Extensions and connections")}
+          sub={t("Manage content sources and optional connected services.")}
+          status={hasSources ? t("Ready") : t("Set up")}
+          highlight={!hasSources}
+          onClick={() => setActive("connections")}
+        />
       </div>
     </>
   );
 }
 
-function prettyPreset(id: string): string {
-  return id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function ChoiceCard({
+  active,
+  icon,
+  title,
+  subtitle,
+  onClick,
+}: {
+  active: boolean;
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex items-start gap-3 rounded-xl border p-4 text-start transition-[border-color,background-color] duration-150 ${
+        active
+          ? "border-ink bg-elevated/90"
+          : "border-edge-soft/75 bg-canvas/50 hover:border-edge hover:bg-elevated/55"
+      }`}
+    >
+      <span
+        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+          active
+            ? "border-ink bg-ink text-canvas"
+            : "border-edge-soft/75 bg-elevated/80 text-ink-muted"
+        }`}
+      >
+        {icon}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[14px] font-semibold text-ink">{title}</span>
+        <span className="text-[12.5px] leading-snug text-ink-muted">{subtitle}</span>
+      </div>
+    </button>
+  );
 }
 
 function maskEmail(email: string): string {

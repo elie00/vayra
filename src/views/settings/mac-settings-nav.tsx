@@ -6,17 +6,17 @@ import { useView } from "@/lib/view";
 import { NAV_GROUPS, SETTINGS_OPTIONS } from "./nav";
 import { settingsAnchor, type SectionId } from "./shared";
 
-// The account comes first, on its own, as on the phone.
-export const MAC_SETTINGS_GROUPS: { id: SectionId; label: string; children: SectionId[]; cluster?: "profile" | "experience" | "data" }[] = [
-  { id: "account", label: "Account", children: [], cluster: "profile" },
-  { id: "basics", label: "Overview", children: [], cluster: "profile" },
-  { id: "player", label: "Playback", children: ["mpv", "anime", "playerLayout", "hotkeys"], cluster: "experience" },
-  { id: "language", label: "Languages", children: [], cluster: "experience" },
-  { id: "theme", label: "Appearance", children: [], cluster: "experience" },
-  { id: "downloads", label: "Downloads", children: [], cluster: "data" },
-  { id: "connections", label: "Extensions and connections", children: ["library", "streaming", "trakt", "anilist", "mal", "simkl", "letterboxd", "cira"], cluster: "data" },
-  { id: "privacy", label: "Privacy and backups", children: [], cluster: "data" },
-  { id: "advanced", label: "Advanced", children: ["streamFilters", "p2p", "relay", "webhooks", "bug"], cluster: "data" },
+// Essentials first (matching the desktop landing view), followed by deeper options.
+export const MAC_SETTINGS_GROUPS: { id: SectionId; label: string; children: SectionId[]; cluster: "essentials" | "more" }[] = [
+  { id: "basics", label: "Overview", children: [], cluster: "essentials" },
+  { id: "account", label: "Account", children: [], cluster: "essentials" },
+  { id: "theme", label: "Appearance", children: [], cluster: "essentials" },
+  { id: "language", label: "Languages", children: [], cluster: "essentials" },
+  { id: "player", label: "Playback", children: ["mpv", "anime", "playerLayout", "hotkeys"], cluster: "more" },
+  { id: "downloads", label: "Downloads", children: [], cluster: "more" },
+  { id: "connections", label: "Extensions and connections", children: ["library", "streaming", "trakt", "anilist", "mal", "simkl", "letterboxd", "cira"], cluster: "more" },
+  { id: "privacy", label: "Privacy and backups", children: [], cluster: "more" },
+  { id: "advanced", label: "Advanced", children: ["streamFilters", "p2p", "relay", "webhooks", "bug"], cluster: "more" },
 ];
 
 const allItems = NAV_GROUPS.flatMap((g) => g.items);
@@ -55,7 +55,7 @@ export function MacSettingsNav({ active, onChange }: { active: SectionId; onChan
   return (
     <nav
       aria-label={t("Settings")}
-      className="flex w-[264px] shrink-0 flex-col gap-4 border-e border-edge-soft/45 bg-canvas px-3.5 pb-5 pt-20 max-sm:hidden"
+      className="flex w-[264px] shrink-0 flex-col gap-4 border-e border-edge-soft/45 bg-canvas px-3.5 pb-5 pt-16 max-sm:hidden"
     >
       <div className="flex items-center justify-between gap-2 pt-1">
         <button
@@ -145,12 +145,14 @@ export function MacSettingsNav({ active, onChange }: { active: SectionId; onChan
           MAC_SETTINGS_GROUPS.map((group, idx) => {
             const selected = group.id === active || group.children.includes(active);
             const exact = group.id === active;
-            const prevCluster = idx > 0 ? MAC_SETTINGS_GROUPS[idx - 1].cluster : group.cluster;
-            const showDivider = idx > 0 && prevCluster !== group.cluster;
+            const prevCluster = idx > 0 ? MAC_SETTINGS_GROUPS[idx - 1].cluster : null;
+            const showClusterHeading = prevCluster !== group.cluster;
             return (
               <div key={group.id} className="flex flex-col">
-                {showDivider && (
-                  <div className="my-2 mx-2 h-px bg-gradient-to-r from-transparent via-edge-soft/60 to-transparent" aria-hidden="true" />
+                {showClusterHeading && (
+                  <span className={`vayra-kicker px-3 ${idx === 0 ? "pb-1.5 pt-0.5" : "pb-1.5 pt-4"}`}>
+                    {t(group.cluster === "essentials" ? "Essentials" : "More options")}
+                  </span>
                 )}
                 <button
                   type="button"

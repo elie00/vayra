@@ -428,7 +428,9 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
       </div>
       <main
         ref={scrollRef}
-        className="flex-1 overflow-y-auto pt-24 pb-20 lg:pt-28 max-sm:pt-3"
+        className={`flex-1 overflow-y-auto pb-20 max-sm:pt-3 ${
+          hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
+        }`}
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-8 px-6 sm:px-10 lg:px-12 max-sm:gap-6 max-sm:px-4">
           {!(active === "relay" && relayMode !== "panel") && (
