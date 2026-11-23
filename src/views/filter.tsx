@@ -3,7 +3,7 @@ import { BackToTop } from "@/components/back-to-top";
 import { selectSpotlights } from "@/lib/feed/genre-spotlights";
 import { SeenIdsProvider } from "@/lib/feed/seen-ids";
 import { useScrollMemory, type MetaFilter } from "@/lib/view";
-import { Header } from "./filter/header";
+import { Header, type LanguageMediaScope } from "./filter/header";
 import { Rails } from "./filter/rails";
 import {
   SPOTLIGHT_TIMEOUT_MS,
@@ -20,10 +20,12 @@ export function FilterView({ filter }: { filter: MetaFilter }) {
   );
   const [doneSpotlights, setDoneSpotlights] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
+  const [languageScope, setLanguageScope] = useState<LanguageMediaScope>("all");
   useEffect(() => {
     seenRef.current = new Map();
     setDoneSpotlights(0);
     setTimedOut(false);
+    setLanguageScope("all");
     const t = window.setTimeout(() => setTimedOut(true), SPOTLIGHT_TIMEOUT_MS);
     return () => window.clearTimeout(t);
   }, [filter]);
@@ -35,9 +37,13 @@ export function FilterView({ filter }: { filter: MetaFilter }) {
     <SeenIdsProvider value={seenRef}>
       <SpotlightGateContext.Provider value={gate}>
         <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
-          <Header filter={filter} />
+          <Header
+            filter={filter}
+            languageScope={languageScope}
+            onLanguageScopeChange={setLanguageScope}
+          />
           <div className="flex flex-col gap-12 px-12 pb-24">
-            <Rails filter={filter} />
+            <Rails filter={filter} languageScope={languageScope} />
           </div>
           <BackToTop scrollRef={scrollRef} />
         </main>
