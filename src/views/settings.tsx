@@ -13,7 +13,7 @@ import { useT } from "@/lib/i18n";
 import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { setSettingsBack } from "@/mobile/settings-back";
 import { mobileEntryFor, MobileSettingsBar, MobileSettingsList, type MobileSettingsEntry } from "@/mobile/settings-list";
-import { MacSettingsNav } from "./settings/mac-settings-nav";
+import { MAC_SETTINGS_GROUPS, MacSettingsNav } from "./settings/mac-settings-nav";
 
 // Code-split every settings panel so opening Settings only loads the active section.
 const AccountStub = lazy(() => import("./settings/account").then((m) => ({ default: m.AccountStub })));
@@ -415,6 +415,10 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
     );
   }
 
+  const parentGroup = hasNativeDesktopUx()
+    ? MAC_SETTINGS_GROUPS.find((g) => g.children.includes(active))
+    : undefined;
+
   return (
     <SettingsActiveContext.Provider value={{ setActive }}>
     <div className="flex h-full bg-canvas max-sm:flex-col">
@@ -424,15 +428,35 @@ export function Settings({ active: activeView = true }: { active?: boolean } = {
       </div>
       <main
         ref={scrollRef}
-        className="flex-1 overflow-y-auto pt-28 pb-16 max-sm:pt-3"
+        className="flex-1 overflow-y-auto pt-24 pb-20 lg:pt-28 max-sm:pt-3"
       >
-        <div className="mx-auto flex max-w-3xl flex-col gap-10 px-12 max-sm:px-4 max-sm:gap-6">
+        <div className="mx-auto flex max-w-3xl flex-col gap-8 px-6 sm:px-10 lg:px-12 max-sm:gap-6 max-sm:px-4">
           {!(active === "relay" && relayMode !== "panel") && (
-            <header className="flex flex-col gap-2">
-              <h1 className={hasNativeDesktopUx() ? "mac-page-title" : "font-display text-[40px] font-semibold leading-[1.08] tracking-[-0.025em] text-ink"}>
-                {t(hasNativeDesktopUx() && active === "basics" ? "Overview" : SECTION_META[active].label)}
-              </h1>
-              <p className="text-[15px] text-ink-muted">{t(SECTION_META[active].sub)}</p>
+            <header className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                {parentGroup ? (
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+                    <span>{t("Settings")}</span>
+                    <span aria-hidden="true">/</span>
+                    <button
+                      type="button"
+                      onClick={() => handleNav(parentGroup.id)}
+                      className="text-ink-muted transition-colors hover:text-ink"
+                    >
+                      {t(parentGroup.label)}
+                    </button>
+                  </div>
+                ) : (
+                  <span className="vayra-kicker">{t("Settings")}</span>
+                )}
+                <h1 className={hasNativeDesktopUx() ? "mac-page-title" : "font-display text-[36px] font-semibold leading-[1.08] tracking-[-0.025em] text-ink"}>
+                  {t(hasNativeDesktopUx() && active === "basics" ? "Overview" : SECTION_META[active].label)}
+                </h1>
+                <p className="max-w-[60ch] text-[14px] leading-relaxed text-ink-muted">
+                  {t(SECTION_META[active].sub)}
+                </p>
+              </div>
+              <div className="vayra-header-rule" aria-hidden="true" />
             </header>
           )}
 
