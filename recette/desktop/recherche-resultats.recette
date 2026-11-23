@@ -1,0 +1,24 @@
+# Recherche : des résultats, et le meilleur s’ouvre (réseau non filtré)
+@cible desktop
+# Demande des sources joignables : sur le PC pro, dont le filtrage les bloque,
+# il échoue sur l’alerte « Certaines sources n’ont pas répondu ».
+
+restart
+wait Accueil 30000
+settle
+
+tap Rechercher
+settle
+expect dialog Rechercher
+type Rechercher dune
+settle
+expect gone "Recherche…" 40000
+expect gone "sources n’ont pas répondu" 2000
+expect gone "La recherche n’a pas pu aboutir" 1000
+expect visible "Meilleur résultat" 20000
+settle
+
+tap "Meilleur résultat"
+settle
+expect closed Rechercher
+expect noerrors
