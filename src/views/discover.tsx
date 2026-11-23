@@ -349,17 +349,17 @@ export function Discover({ active = true }: { active?: boolean }) {
                   {i === 0 && <GenreTiles />}
                   {i === 1 && queue.length > 0 && <DiscoveryQueueCta items={queue} />}
                   {i === 2 && <LanguageTiles />}
-                  {i === 2 && settings.tmdbKey && (
+                  {i === 3 && settings.tmdbKey && (
                     <LazyMount minHeight={260}>
                       <CollectionsRow />
                     </LazyMount>
                   )}
-                  {i === 3 && criticsPick && (
+                  {i === 4 && criticsPick && (
                     <LazyMount minHeight={580}>
                       <CriticsPick meta={criticsPick} />
                     </LazyMount>
                   )}
-                  {i === 4 && <AwardTiles />}
+                  {i === 5 && <AwardTiles />}
                 </Fragment>
               ))}
         </div>
