@@ -24,6 +24,8 @@ const EXPECTATIONS = {
   nodialog: "expect nodialog",
   closed: "expect closed <dialog>",
   disabled: "expect disabled <name>",
+  on: "expect on <name>",
+  off: "expect off <name>",
   value: "expect value <field> <text>",
   noerrors: "expect noerrors",
 };
@@ -57,7 +59,7 @@ export function parseScenario(text, file = "scenario") {
     if (op === "expect") {
       const [kind, ...rest] = args;
       if (!(kind in EXPECTATIONS)) throw new Error(`${at}: unknown expectation "${kind}"; use ${Object.keys(EXPECTATIONS).join(", ")}`);
-      const needs = { visible: 1, gone: 1, current: 1, dialog: 1, closed: 1, disabled: 1, value: 2 }[kind] ?? 0;
+      const needs = { visible: 1, gone: 1, current: 1, dialog: 1, closed: 1, disabled: 1, on: 1, off: 1, value: 2 }[kind] ?? 0;
       if (rest.length < needs) throw new Error(`${at}: usage: ${EXPECTATIONS[kind]}`);
       steps.push({ at, line, only, where: "expect", op: kind, args: rest });
       return;
@@ -69,6 +71,9 @@ export function parseScenario(text, file = "scenario") {
   if (!targets) throw new Error(`${file}: missing "@cible android" or "@cible desktop"`);
   return { file, title: title ?? file, targets, steps };
 }
+
+// The ARIA states that say a toggle or a choice is on; any one of them set wins.
+const ON_STATES = ["pressed", "checked", "selected"];
 
 const fold = (s) => String(s).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
@@ -97,6 +102,14 @@ export function expectationPlan(kind, args) {
       return { op: "state", args: [], check: (s) => (includesName(s.dialogs, args[0]) ? `"${args[0]}" is still open` : null) };
     case "disabled":
       return { op: "wait", args: [args[0], "8000"], check: (node) => (node.state?.disabled ? null : `"${node.name}" is enabled`) };
+    case "on":
+    case "off":
+      return { op: "wait", args: [args[0], "8000"], check: (node) => {
+        const states = ON_STATES.map((k) => node.state?.[k]).filter((v) => v !== undefined);
+        if (states.length === 0) return `"${node.name}" exposes no on/off state`;
+        const isOn = states.some(Boolean);
+        return isOn === (kind === "on") ? null : `"${node.name}" is ${isOn ? "on" : "off"}`;
+      } };
     case "value": {
       const want = args.slice(1).join(" ");
       return { op: "value", args: [args[0]], check: (node) => ((node.state?.value ?? "") === want ? null : `"${args[0]}" holds "${node.state?.value ?? ""}", not "${want}"`) };

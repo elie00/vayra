@@ -60,6 +60,22 @@ describe("expectations", () => {
     expect(disabled.check({ name: "Envoyer" })).toBe('"Envoyer" is enabled');
   });
 
+  it("checks that a toggle or a choice is on or off", () => {
+    const on = expectationPlan("on", ["Instantané"]);
+    expect(on.op).toBe("wait");
+    expect(on.check({ name: "Instantané", state: { pressed: true } })).toBeNull();
+    expect(on.check({ name: "Instantané", state: { checked: true } })).toBeNull();
+    expect(on.check({ name: "Instantané", state: { selected: true } })).toBeNull();
+    expect(on.check({ name: "Instantané", state: { pressed: false } })).toBe('"Instantané" is off');
+    expect(on.check({ name: "Instantané" })).toBe('"Instantané" exposes no on/off state');
+    const off = expectationPlan("off", ["Haut"]);
+    expect(off.check({ name: "Haut", state: { checked: false } })).toBeNull();
+    expect(off.check({ name: "Haut", state: { pressed: true } })).toBe('"Haut" is on');
+    expect(off.check({ name: "Haut" })).toBe('"Haut" exposes no on/off state');
+    expect(on.check({ name: "Instantané", state: { selected: false, pressed: true } })).toBeNull();
+    expect(() => parseScenario("@cible desktop\nexpect on", "s")).toThrow("usage: expect on <name>");
+  });
+
   it("checks a field's value and the app's errors", () => {
     const value = expectationPlan("value", ["Rechercher", "dune", "part"]);
     expect(value.op).toBe("value");
