@@ -65,8 +65,19 @@
 - Ctrl+0 n'est pas un conflit : le lecteur le garde pour Anime4K, le zoom ne s'applique
   qu'ailleurs (`App.tsx`).
 - Au premier lancement après deux des installations, `document.fonts.load` n'a renvoyé
-  aucune police ; aux lancements suivants elles se chargent. Cause non établie : effet du
-  test (qui recharge la page) ou vrai retard au démarrage.
+  aucune police ; aux lancements suivants elles se chargent. **Cause probable, enquête
+  du 23/11** (issue #221) : un faux positif du test. Sondés toutes les 150 ms par le port
+  DevTools (build release de `670bb9d0`, profils via `VAYRA_DATA_DIR`), les trois
+  lancements montrent d'abord, pendant ~0,5 s, un document vide sur
+  `http://tauri.localhost` (aucune feuille de style, police Times) où
+  `document.fonts.load` renvoie 0. Avec un profil WebView neuf, la page est en plus
+  rechargée ~1 s après son affichage : la pile de la navigation (CDP) mène à
+  `reloadApp`, appelé quand la langue TMDB effective change au premier démarrage
+  (`src/lib/settings.tsx`). Dès que la page a ses feuilles de style, avant comme après
+  ce rechargement, Google Sans est chargée et `document.fonts.load` renvoie 1. Non fait :
+  une vraie réinstallation par l'installeur. Pour sonder les polices : attendre que
+  `document.styleSheets.length > 0`, puis refaire la mesure après un éventuel
+  rechargement.
 - **Ne pas lancer `recognize_now_playing` sur ce PC** : la commande enregistre le son du
   poste et l'envoie à AudD. Elle reste donc non testée, et demande une clé AudD.
 
