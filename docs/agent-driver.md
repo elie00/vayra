@@ -35,6 +35,7 @@ node scripts/agent.mjs android launch "wait Accueil 20000" settle \
 | `tree` | Les contrôles visibles : rôle, nom, rectangle, état, `reachable`, `offscreen` |
 | `tap <nom\|#i>` | Fait défiler le contrôle jusqu’à l’écran puis appuie ; refuse un contrôle recouvert ou désactivé |
 | `type <champ> <texte>` | Saisit comme au clavier ; vise le champ si un bouton ou un panneau porte le même nom |
+| `choose <liste> <option>` | Choisit une option d’une liste déroulante par son libellé (ou une partie unique), comme à la main |
 | `value <champ>` | Contenu d’un champ |
 | `wait <nom> [ms]` · `gone <nom> [ms]` | Attend qu’un contrôle apparaisse, ou qu’il disparaisse |
 | `settle` | Attend qu’aucune animation ne tourne, qu’aucune minuterie courte (≤ 1 s) ne reste en attente et que la page ne change plus |
