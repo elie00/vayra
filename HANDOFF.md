@@ -287,8 +287,24 @@
   Le routeur DHT `router.bitcomet.com` ne résout plus (sans effet, tier 1 atteint).
 - Reste : afficher « aucun pair trouvé » / « pairs perdus » pendant le chargement,
   une fois la recette HiggsBoson faite (il faudra exposer `seen`/`dead` dans
-  `TorrentEngineStats`) ; mesurer l'effet de l'intervalle de 2 s de
-  `use-fullscreen.ts` avec les nouvelles mesures avant d'y toucher.
+  `TorrentEngineStats`).
+- Intervalle de 2 s de `use-fullscreen.ts` **mesuré le 23/11 sous Windows** (issue #222,
+  build release de `670bb9d0`, vidéo 1080p servie en HTTP local, plein écran). Chaque
+  passage émet `resize` et `vayra:mpv-refresh-geom` et appelle
+  `webview_reapply_transparency`, `mpv_force_below` et `hdr_overlay_sync` ; comptés par
+  CDP, ces trois appels partent 40 fois par minute chacun avec lui, 0 sans lui.
+  - CPU de VAYRA et de ses processus WebView2, 4 mesures alternées de 60 s : 41,5 % et
+    41,9 % d'un cœur avec, 37,9 % et 34,5 % sans (l'intervalle de cet effet recréé après
+    un `setInterval` intercepté par CDP), soit 3,6 à 7,4 points. Les valeurs absolues
+    dépendent de la vidéo : 11,9 % avec le maintien sur une autre, plus courte.
+  - Mémoire privée : elle grimpe tout au long de la lecture (vayra.exe de 479 à 615 Mo
+    en 5 min), avec ou sans ; rien ne se rattache au maintien.
+  - Effet visible : non observé (fenêtre de l'appli derrière l'IDE, pas de changement
+    de focus provoqué).
+  **Décision : garder.** Le gain est réel mais modeste, et sans observation à l'œil on
+  ne sait pas ce que ces appels rattrapent (fenêtre mpv repassée devant la WebView,
+  transparence perdue). Piste : les déclencher sur événement (focus, redimensionnement,
+  création de la fenêtre mpv) au lieu de les répéter, puis vérifier à l'œil.
 
 ## Lot n°7 — le nettoyeur de cache supprimait des torrents en cours (2026-09-23)
 - Cause trouvée grâce au journal : `error dumping DHT: error renaming dht.json.tmp.<pid>
