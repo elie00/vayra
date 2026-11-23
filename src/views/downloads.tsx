@@ -82,7 +82,7 @@ function buildGroups(items: DownloadItem[]): DownloadGroup[] {
   });
 }
 
-export function DownloadsView() {
+export function DownloadsView({ embedded = false }: { embedded?: boolean } = {}) {
   const t = useT();
   const items = useDownloads();
   const [pendingRemoval, setPendingRemoval] = useState<DownloadItem[] | null>(null);
@@ -110,11 +110,52 @@ export function DownloadsView() {
     }
   }, [groups]);
 
-  return (
-    <main onFocusCapture={(event) => { focusedRef.current = event.target; }}
-      onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedRef.current = null; }}
-      className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+  const summaryCards = items.length > 0 && (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="vayra-surface flex items-center gap-3.5 px-4 py-3.5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge-soft/75 bg-elevated/80 text-success">
+          <Check size={17} strokeWidth={2.4} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11.5px] font-medium text-ink-subtle">{t("Ready to watch")}</p>
+          <p className="font-display text-[22px] font-semibold leading-tight tabular-nums text-ink">{ready}</p>
+        </div>
+      </div>
+      <div className="vayra-surface flex items-center gap-3.5 px-4 py-3.5">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge-soft/75 bg-elevated/80 ${attention > 0 ? "text-danger" : "text-ink-muted"}`}>
+          {attention > 0 ? <AlertTriangle size={17} strokeWidth={2} /> : <DownloadIcon size={17} strokeWidth={2} />}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11.5px] font-medium text-ink-subtle">
+            {attention > 0 ? t("Needs attention") : t("Downloading")}
+          </p>
+          <p className="font-display text-[22px] font-semibold leading-tight tabular-nums text-ink">
+            {attention > 0 ? attention : active + queued}
+          </p>
+        </div>
+      </div>
+      <div className="vayra-surface flex items-center gap-3.5 px-4 py-3.5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge-soft/75 bg-elevated/80 text-ink-muted">
+          <HardDrive size={17} strokeWidth={2} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11.5px] font-medium text-ink-subtle">{t("Saved to disk")}</p>
+          <p className="truncate font-display text-[22px] font-semibold leading-tight tabular-nums text-ink">
+            {savedBytes > 0 ? fmtBytes(savedBytes) : "—"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const body = (
+    <>
+      {embedded ? (
+        <>
+          <h2 ref={headingRef} tabIndex={-1} className="sr-only">{t("Downloads")}</h2>
+          {summaryCards}
+        </>
+      ) : (
         <header className="flex flex-col gap-5">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex min-w-0 flex-col gap-1.5">
@@ -136,96 +177,84 @@ export function DownloadsView() {
             </div>
           </div>
 
-          {items.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="vayra-surface flex items-center gap-3.5 px-4 py-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge-soft/75 bg-elevated/80 text-success">
-                  <Check size={17} strokeWidth={2.4} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[11.5px] font-medium text-ink-subtle">{t("Ready to watch")}</p>
-                  <p className="font-display text-[22px] font-semibold leading-tight tabular-nums text-ink">{ready}</p>
-                </div>
-              </div>
-              <div className="vayra-surface flex items-center gap-3.5 px-4 py-3.5">
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge-soft/75 bg-elevated/80 ${attention > 0 ? "text-danger" : "text-ink-muted"}`}>
-                  {attention > 0 ? <AlertTriangle size={17} strokeWidth={2} /> : <DownloadIcon size={17} strokeWidth={2} />}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[11.5px] font-medium text-ink-subtle">
-                    {attention > 0 ? t("Needs attention") : t("Downloading")}
-                  </p>
-                  <p className="font-display text-[22px] font-semibold leading-tight tabular-nums text-ink">
-                    {attention > 0 ? attention : active + queued}
-                  </p>
-                </div>
-              </div>
-              <div className="vayra-surface flex items-center gap-3.5 px-4 py-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge-soft/75 bg-elevated/80 text-ink-muted">
-                  <HardDrive size={17} strokeWidth={2} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[11.5px] font-medium text-ink-subtle">{t("Saved to disk")}</p>
-                  <p className="truncate font-display text-[22px] font-semibold leading-tight tabular-nums text-ink">
-                    {savedBytes > 0 ? fmtBytes(savedBytes) : "—"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          {summaryCards}
 
           <div className="vayra-header-rule" aria-hidden="true" />
         </header>
+      )}
 
-        <DownloadDirBar />
+      <DownloadDirBar />
 
-        {items.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div aria-label={t("Filter downloads")} className="vayra-pill-track flex-wrap">
-              {(["all", "active", "ready", "attention"] as const).map((id) => (
-                <button
-                  type="button"
-                  key={id}
-                  ref={filter === id ? activeFilterRef : undefined}
-                  aria-pressed={filter === id}
-                  onClick={() => setFilter(id)}
-                  className={`rounded-lg px-3.5 py-2 text-[13px] font-medium transition-[background-color,color] duration-150 ${
-                    filter === id
-                      ? "bg-ink text-canvas font-semibold shadow-sm"
-                      : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
-                  }`}
-                >
-                  {t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs attention")}
-                </button>
-              ))}
-            </div>
+      {items.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div aria-label={t("Filter downloads")} className="vayra-pill-track flex-wrap">
+            {(["all", "active", "ready", "attention"] as const).map((id) => (
+              <button
+                type="button"
+                key={id}
+                ref={filter === id ? activeFilterRef : undefined}
+                aria-pressed={filter === id}
+                onClick={() => setFilter(id)}
+                className={`rounded-lg px-3.5 py-2 text-[13px] font-medium transition-[background-color,color] duration-150 ${
+                  filter === id
+                    ? "bg-ink text-canvas font-semibold shadow-sm"
+                    : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
+                }`}
+              >
+                {t(id === "all" ? "All" : id === "active" ? "Downloading" : id === "ready" ? "Ready to watch" : "Needs attention")}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {items.length > 0 && groups.length === 0 && (
-          <div className="vayra-surface flex flex-col items-center gap-3.5 px-6 py-12 text-center">
-            <p role="status" className="text-[14px] text-ink-muted">{t("No downloads in this category")}</p>
-            <button type="button" className="mac-secondary-button" onClick={() => setFilter("all")}>
-              {t("Show all")}
-            </button>
-          </div>
-        )}
+      {items.length > 0 && groups.length === 0 && (
+        <div className="vayra-surface flex flex-col items-center gap-3.5 px-6 py-12 text-center">
+          <p role="status" className="text-[14px] text-ink-muted">{t("No downloads in this category")}</p>
+          <button type="button" className="mac-secondary-button" onClick={() => setFilter("all")}>
+            {t("Show all")}
+          </button>
+        </div>
+      )}
 
-        {items.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {groups.map((g) =>
-              g.kind === "movie" ? (
-                <ul key={g.item.id} className="contents">
-                  <DownloadRow d={g.item} onRemove={removeOne} />
-                </ul>
-              ) : (
-                <ShowGroup key={g.metaId} group={g} onRemove={removeOne} onRemoveMany={setPendingRemoval} />
-              ),
-            )}
-          </div>
-        )}
+      {items.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {groups.map((g) =>
+            g.kind === "movie" ? (
+              <ul key={g.item.id} className="contents">
+                <DownloadRow d={g.item} onRemove={removeOne} />
+              </ul>
+            ) : (
+              <ShowGroup key={g.metaId} group={g} onRemove={removeOne} onRemoveMany={setPendingRemoval} />
+            ),
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <section
+        aria-label={t("Downloads")}
+        onFocusCapture={(event) => { focusedRef.current = event.target; }}
+        onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedRef.current = null; }}
+        className="flex w-full max-w-4xl flex-col gap-6"
+      >
+        {body}
+        {pendingRemoval && <DeleteDownloadDialog items={pendingRemoval} returnFocusRef={headingRef} onClose={() => setPendingRemoval(null)} />}
+      </section>
+    );
+  }
+
+  return (
+    <main onFocusCapture={(event) => { focusedRef.current = event.target; }}
+      onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedRef.current = null; }}
+      className="flex-1 overflow-y-auto bg-canvas px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+        {body}
       </div>
       {pendingRemoval && <DeleteDownloadDialog items={pendingRemoval} returnFocusRef={headingRef} onClose={() => setPendingRemoval(null)} />}
     </main>

@@ -1,11 +1,12 @@
-import { ArrowUpRight, BarChart3, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { ArrowUpRight, BarChart3, Bookmark, Clock, Download, HardDrive, Layers } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
 import simklLogo from "@/assets/simkl.png";
 import malLogo from "@/assets/mal.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import { useAnilist } from "@/lib/anilist/provider";
+import { useActiveDownloadCount, useDownloads } from "@/lib/download/downloads-store";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useMal } from "@/lib/mal/provider";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
@@ -20,6 +21,7 @@ import { tabAvailable } from "./library/tab-availability";
 import { isMobileTauri } from "@/lib/platform";
 
 const AnilistTab = lazy(() => import("./library/anilist-tab").then((m) => ({ default: m.AnilistTab })));
+const DownloadsView = lazy(() => import("./downloads").then((m) => ({ default: m.DownloadsView })));
 const HistoryTab = lazy(() => import("./library/history-tab").then((m) => ({ default: m.HistoryTab })));
 const LocalTab = lazy(() => import("./library/local-tab").then((m) => ({ default: m.LocalTab })));
 const SimklTab = lazy(() => import("./library/simkl-tab").then((m) => ({ default: m.SimklTab })));
@@ -40,6 +42,7 @@ function readSavedTab(): Tab {
     if (
       v === "watchlist" ||
       v === "history" ||
+      (v === "downloads" && tabAvailable("downloads", CAPABILITIES)) ||
       (v === "local" && tabAvailable("local", CAPABILITIES)) ||
       v === "trakt" ||
       v === "anilist" ||
@@ -65,7 +68,10 @@ export function LibraryView({ active }: { active: boolean }) {
 }
 
 function DesktopLibraryView({ active }: { active: boolean }) {
-  const [tab, setTab] = useState<Tab>(readSavedTab);
+  const { view, setView } = useView();
+  const [tab, setTab] = useState<Tab>(() =>
+    view === "downloads" && tabAvailable("downloads", CAPABILITIES) ? "downloads" : readSavedTab(),
+  );
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
   const { isConnected: simklConnected } = useSimkl();
@@ -73,6 +79,22 @@ function DesktopLibraryView({ active }: { active: boolean }) {
   const lb = useLetterboxd();
   const scrollRef = useRef<HTMLElement>(null);
   useScrollMemory("library", scrollRef, active);
+
+  useEffect(() => {
+    if (active && view === "downloads" && tabAvailable("downloads", CAPABILITIES)) {
+      setTab("downloads");
+    }
+  }, [active, view]);
+
+  const selectTab = useCallback(
+    (next: Tab) => {
+      setTab(next);
+      if (view === "downloads" && next !== "downloads") {
+        setView("library");
+      }
+    },
+    [view, setView],
+  );
 
   useEffect(() => {
     try {
@@ -107,17 +129,19 @@ function DesktopLibraryView({ active }: { active: boolean }) {
         ? "Browsing their watchlist"
         : tab === "history"
           ? "Browsing their watch history"
-          : tab === "trakt"
-            ? "Browsing their Trakt library"
-            : tab === "simkl"
-              ? "Browsing their Simkl library"
-              : tab === "mal"
-                ? "Browsing their MyAnimeList library"
-                : tab === "lists"
-                  ? "Browsing their lists"
-                  : tab === "letterboxd"
-                    ? "Browsing their Letterboxd library"
-                    : "Browsing their Stremio library";
+          : tab === "downloads"
+            ? "Managing their downloads"
+            : tab === "trakt"
+              ? "Browsing their Trakt library"
+              : tab === "simkl"
+                ? "Browsing their Simkl library"
+                : tab === "mal"
+                  ? "Browsing their MyAnimeList library"
+                  : tab === "lists"
+                    ? "Browsing their lists"
+                    : tab === "letterboxd"
+                      ? "Browsing their Letterboxd library"
+                      : "Browsing their Stremio library";
     return pushActivityHint({ details: label, state: "Library" });
   }, [active, tab]);
 
@@ -129,7 +153,7 @@ function DesktopLibraryView({ active }: { active: boolean }) {
       <div data-tauri-drag-region className="flex flex-col gap-7">
         <Header
           tab={tab}
-          onTab={setTab}
+          onTab={selectTab}
           traktConnected={traktConnected}
           anilistConnected={anilistConnected}
           simklConnected={simklConnected}
@@ -139,6 +163,7 @@ function DesktopLibraryView({ active }: { active: boolean }) {
         <Suspense fallback={null}>
           {tab === "watchlist" && <WatchlistTab />}
           {tab === "history" && <HistoryTab />}
+          {tab === "downloads" && tabAvailable("downloads", CAPABILITIES) && <DownloadsView embedded />}
           {tab === "local" && tabAvailable("local", CAPABILITIES) && <LocalTab />}
           {tab === "trakt" && traktConnected && <TraktTab />}
           {tab === "anilist" && anilistConnected && <AnilistTab />}
@@ -171,6 +196,9 @@ function Header({
 }) {
   const t = useT();
   const { openStats } = useView();
+  const downloads = useDownloads();
+  const activeDownloads = useActiveDownloadCount();
+  const hasDownloadsTab = tabAvailable("downloads", CAPABILITIES);
   const hasExternalTabs =
     traktConnected || anilistConnected || simklConnected || malConnected || letterboxdActive;
 
@@ -180,8 +208,10 @@ function Header({
         <div className="flex min-w-0 flex-col gap-1.5">
           <span className="vayra-kicker">{t("My library")}</span>
           <h1 className="mac-page-title">{t("Your collection.")}</h1>
-          <p className="max-w-[60ch] text-[14px] leading-relaxed text-ink-muted">
-            {t("Watchlist is what you've saved for later. History is everything you've watched. Local is files on your computer.")}
+          <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-muted">
+            {hasDownloadsTab
+              ? t("Watchlist, history, offline downloads, and local files — all in one place.")
+              : t("Watchlist is what you've saved for later. History is everything you've watched. Local is files on your computer.")}
           </p>
         </div>
         <button
@@ -208,6 +238,33 @@ function Header({
             <Clock size={14} strokeWidth={2.1} />
             {t("History")}
           </TabBtn>
+          {hasDownloadsTab && (
+            <TabBtn active={tab === "downloads"} onClick={() => onTab("downloads")}>
+              <Download size={14} strokeWidth={2.1} />
+              <span>{t("Downloads")}</span>
+              {downloads.length > 0 && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold leading-none tabular-nums ${
+                    tab === "downloads"
+                      ? "bg-canvas/15 text-canvas"
+                      : activeDownloads > 0
+                        ? "bg-ink/12 text-ink"
+                        : "bg-elevated text-ink-subtle"
+                  }`}
+                >
+                  {activeDownloads > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className={`h-1.5 w-1.5 rounded-full animate-pulse motion-reduce:animate-none ${
+                        tab === "downloads" ? "bg-canvas" : "bg-ink"
+                      }`}
+                    />
+                  )}
+                  {downloads.length}
+                </span>
+              )}
+            </TabBtn>
+          )}
           {tabAvailable("local", CAPABILITIES) && (
             <TabBtn active={tab === "local"} onClick={() => onTab("local")}>
               <HardDrive size={14} strokeWidth={2.1} />

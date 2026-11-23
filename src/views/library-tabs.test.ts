@@ -3,15 +3,18 @@ import { capabilitiesFor } from "@/lib/platform-capabilities";
 import { tabAvailable } from "./library/tab-availability";
 
 describe("library tabs by platform", () => {
-  it("keeps the Local tab on desktop", () => {
+  it("keeps the Local and Downloads tabs on desktop", () => {
     expect(tabAvailable("local", capabilitiesFor("desktop"))).toBe(true);
+    expect(tabAvailable("downloads", capabilitiesFor("desktop"))).toBe(true);
   });
 
-  it("hides the Local tab where there are no local files to scan", () => {
+  it("hides platform-gated tabs where the runtime lacks them", () => {
     // Scanning a folder goes through the backend; a browser has no equivalent,
     // so the tab could only ever fail there.
     expect(tabAvailable("local", capabilitiesFor("web"))).toBe(false);
     expect(tabAvailable("local", capabilitiesFor("mobile-native"))).toBe(false);
+    expect(tabAvailable("downloads", capabilitiesFor("web"))).toBe(false);
+    expect(tabAvailable("downloads", capabilitiesFor("mobile-native"))).toBe(true);
   });
 
   it("leaves the service tabs alone on every platform", () => {

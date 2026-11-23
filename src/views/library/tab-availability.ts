@@ -6,6 +6,7 @@ import type { Tab } from "./shared";
  *  for, so the tab could only ever fail there. */
 const TAB_REQUIRES: Partial<Record<Tab, keyof PlatformCapabilities>> = {
   local: "localFiles",
+  downloads: "nativeDownloads",
 };
 
 export function tabAvailable(tab: Tab, capabilities: PlatformCapabilities): boolean {

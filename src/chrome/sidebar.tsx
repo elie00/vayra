@@ -17,7 +17,7 @@ import { useParental, type LockableTab } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
-import { isExploreView, MAC_EXPLORE_VIEWS, MAC_PRIMARY_VIEWS, sanitizeMacPins } from "./mac-navigation";
+import { isExploreView, isLibraryView, MAC_EXPLORE_VIEWS, MAC_PRIMARY_VIEWS, sanitizeMacPins } from "./mac-navigation";
 import { setNavDrawer, useNavDrawer } from "@/lib/nav-drawer";
 
 export function Sidebar() {
@@ -252,17 +252,26 @@ function ScrollableNav({
         }`}
       >
         <div className="flex flex-col gap-1">
-          {visiblePrimary.map((item) => (
-            <NavItem
-              key={item.id}
-              {...item}
-              label={labelFor(item)}
-              collapsed={collapsed}
-              badge={!collapsed && item.view === "downloads" && activeDownloads > 0 ? activeDownloads : undefined}
-              active={view === item.view || (mac && item.id === "discover" && isExploreView(view))}
-              onClick={() => setView(item.view)}
-            />
-          ))}
+          {visiblePrimary.map((item) => {
+            const showsDownloadsBadge =
+              activeDownloads > 0 && (mac ? item.view === "library" : item.view === "downloads");
+            return (
+              <NavItem
+                key={item.id}
+                {...item}
+                label={labelFor(item)}
+                collapsed={collapsed}
+                badge={!collapsed && showsDownloadsBadge ? activeDownloads : undefined}
+                dot={collapsed && mac && showsDownloadsBadge}
+                active={
+                  view === item.view ||
+                  (mac && item.id === "discover" && isExploreView(view)) ||
+                  (mac && item.id === "library" && isLibraryView(view))
+                }
+                onClick={() => setView(item.view)}
+              />
+            );
+          })}
         </div>
         {mac && (isExploreView(view) || pins.length > 0) && (
           <div className="mt-4 flex flex-col gap-1">
@@ -370,6 +379,7 @@ export function NavItem({
   collapsed,
   compact = false,
   badge,
+  dot = false,
   view,
 }: {
   render: (active: boolean) => ReactNode;
@@ -380,6 +390,7 @@ export function NavItem({
   collapsed?: boolean;
   compact?: boolean;
   badge?: number;
+  dot?: boolean;
   view: View;
 }) {
   const t = useT();
@@ -426,6 +437,12 @@ export function NavItem({
         className={`relative inline-flex shrink-0 ${gated ? "opacity-70" : active ? "text-ink" : "text-ink-muted group-hover/nav:text-ink"}`}
       >
         {render(hovered || focused)}
+        {dot && (
+          <span
+            aria-hidden="true"
+            className="absolute -end-1 -top-1 h-2 w-2 rounded-full bg-accent ring-2 ring-canvas"
+          />
+        )}
         {gated && (
           <span className="absolute -bottom-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink-subtle ring-1 ring-edge">
             <Lock size={9} strokeWidth={2.4} />
