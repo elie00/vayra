@@ -74,6 +74,7 @@ export function SubtitleStylePanel() {
                 key={s.id}
                 type="button"
                 onClick={() => update({ subStyle: s.id })}
+                aria-pressed={sel}
                 className={`flex flex-col items-start gap-0.5 rounded-xl border px-3.5 py-2.5 text-start transition-colors ${
                   sel ? "border-ink bg-elevated" : "border-edge-soft bg-canvas/40 hover:border-edge"
                 }`}
@@ -96,6 +97,7 @@ export function SubtitleStylePanel() {
                 key={m.id}
                 type="button"
                 onClick={() => update({ subAssOverride: m.id })}
+                aria-pressed={sel}
                 className={`flex flex-col items-start gap-0.5 rounded-xl border px-3.5 py-2.5 text-start transition-colors ${
                   sel ? "border-ink bg-elevated" : "border-edge-soft bg-canvas/40 hover:border-edge"
                 }`}
@@ -204,6 +206,7 @@ export function SubtitleStylePanel() {
                 key={a.id}
                 type="button"
                 onClick={() => update({ subAlignX: a.id })}
+                aria-pressed={sel}
                 className={`flex h-10 items-center justify-center rounded-xl border text-[12.5px] font-semibold transition-colors ${
                   sel ? "border-ink bg-elevated text-ink" : "border-edge-soft bg-canvas/40 text-ink-muted hover:border-edge hover:text-ink"
                 }`}
@@ -470,6 +473,7 @@ function FontPicker() {
               <button
                 type="button"
                 onClick={() => update({ subFontFamily: f.id })}
+                aria-pressed={sel}
                 className={`flex h-11 w-full items-center justify-center rounded-xl border px-2 text-[13px] font-semibold transition-colors ${
                   sel
                     ? "border-ink bg-elevated text-ink"

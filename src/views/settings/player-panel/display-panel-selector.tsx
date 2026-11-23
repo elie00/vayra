@@ -13,20 +13,22 @@ export function DisplayPanelSelector() {
         </span>
       </div>
       <div className="flex shrink-0 overflow-hidden rounded-lg border border-edge-soft">
-        {(["auto", "oled", "lcd"] as const).map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => update({ playerDisplayPanel: p })}
-            className={`px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-              settings.playerDisplayPanel === p
-                ? "bg-elevated text-ink"
-                : "text-ink-muted hover:bg-canvas/60"
-            }`}
-          >
-            {p === "auto" ? t("Auto") : p.toUpperCase()}
-          </button>
-        ))}
+        {(["auto", "oled", "lcd"] as const).map((p) => {
+          const selected = settings.playerDisplayPanel === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => update({ playerDisplayPanel: p })}
+              aria-pressed={selected}
+              className={`px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                selected ? "bg-elevated text-ink" : "text-ink-muted hover:bg-canvas/60"
+              }`}
+            >
+              {p === "auto" ? t("Auto") : p.toUpperCase()}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
