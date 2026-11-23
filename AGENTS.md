@@ -27,3 +27,21 @@ ligne `Co-Authored-By: Claude…` ni de mention « Generated with Claude Code »
 macOS comme sur Windows. `.claude/settings.json` coupe cette attribution dans
 Claude Code, le hook `.githooks/commit-msg` (activé par `pnpm install`) retire ces
 lignes, et le contrôle CI `commit-policy` refuse une PR qui en contient encore.
+
+## Agent skills
+
+### Issue tracker
+
+Les tickets vivent dans les GitHub Issues de `elie00/vayra`, via la CLI `gh`.
+Voir `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Les cinq rôles canoniques gardent leur nom par défaut : `needs-triage`,
+`needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Voir
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Contexte unique (single-context) : `GLOSSARY.md` et `docs/adr/` à la racine,
+créés au besoin. Voir `docs/agents/domain.md`.
