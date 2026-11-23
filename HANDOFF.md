@@ -58,10 +58,13 @@
 - Réglages un par un : les 11 interrupteurs (`role=switch`) testés répondent, ceux qui
   agissent hors de l'app sont exclus. Restent les listes, boutons et champs.
 - `VAYRA_DATA_DIR` n'isolait pas le `localStorage` de la WebView, seulement le fichier de
-  réglages. Corrigé pour Windows (branche `fix/dev-data-dir-webview`) : la variable fixe
-  aussi `WEBVIEW2_USER_DATA_FOLDER` à `<dossier>\webview`. **À vérifier sur le PC** avant de
-  s'y fier : lancer avec `VAYRA_DATA_DIR`, changer un réglage, relancer sans, le vrai
-  profil doit être intact. Sur le Mac, le `localStorage` reste partagé.
+  réglages. Corrigé pour Windows (#205) : la variable fixe aussi
+  `WEBVIEW2_USER_DATA_FOLDER` à `<dossier>\webview`. **Vérifié sur le PC le 23/11**
+  (issue #220, build release de `670bb9d0`) : l'instance de test, barre latérale
+  repliée, écrit dans `<dossier>\webview` et son `settings.json` ; le `Local Storage`
+  du vrai `EBWebView` et le vrai `settings.json` restent identiques octet pour octet ;
+  relancée sans la variable, l'appli montre la barre dépliée ; relancée avec le même
+  dossier, elle la retrouve repliée. Sur le Mac, le `localStorage` reste partagé.
 - Ctrl+0 n'est pas un conflit : le lecteur le garde pour Anime4K, le zoom ne s'applique
   qu'ailleurs (`App.tsx`).
 - Au premier lancement après deux des installations, `document.fonts.load` n'a renvoyé
