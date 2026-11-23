@@ -187,18 +187,18 @@ export function CinematicPlayerLoader({
           <HarborLoader size="md" caption={isLocal ? t("Loading") : t("Connecting")} />
         )}
         {!kid && showEngineActivity && (
-          <p className="text-[12.5px] font-medium tracking-wide text-white/50 tabular-nums">
+          <p className="rounded-full border border-white/12 bg-black/45 px-3.5 py-1 text-[12px] font-medium tracking-wide text-white/65 tabular-nums backdrop-blur-md">
             {enginePeers} {enginePeers === 1 ? t("peer") : t("peers")} · {fmtSpeed(engineSpeed)}
           </p>
         )}
         {!kid && heavyForP2p && (
-          <p className="max-w-md text-[12.5px] leading-relaxed text-info/85">
+          <p className="max-w-md rounded-2xl border border-info/25 bg-black/45 px-4 py-2.5 text-[12.5px] leading-relaxed text-info/90 backdrop-blur-md">
             {t("Heads up: this is a large file for peer-to-peer streaming, so it can take a while to start. A 1080p source or a debrid service will load faster.")}
           </p>
         )}
       </div>
       {lagging && onNextSource && (
-        <p className="absolute bottom-24 left-1/2 z-10 w-max max-w-[90%] -translate-x-1/2 text-center text-[13px] font-medium text-white/80">
+        <p className="absolute bottom-24 left-1/2 z-10 w-max max-w-[90%] -translate-x-1/2 rounded-full border border-white/12 bg-black/55 px-4 py-1.5 text-center text-[12.5px] font-medium text-white/85 backdrop-blur-xl">
           {t("This source is taking a while.")} {t("You can try the next one.")}
         </p>
       )}
@@ -207,7 +207,7 @@ export function CinematicPlayerLoader({
       {/* Centred between the edges rather than from the middle, which capped the
           row at half the width and wrapped the labels on a phone. */}
       <div className="absolute inset-x-4 bottom-[calc(2.5rem+var(--vayra-safe-bottom,0px))] z-10 flex flex-wrap items-center justify-center gap-3">
-        <button onClick={onCancel} className="flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white">
+        <button type="button" onClick={onCancel} className="flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white/16 bg-[#0d0f13]/72 px-6 text-[13.5px] font-medium text-white/82 backdrop-blur-xl transition-[border-color,background-color,color] hover:border-white/30 hover:bg-white/14 hover:text-white">
           {isLocal ? (
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
               <path
@@ -222,9 +222,10 @@ export function CinematicPlayerLoader({
         </button>
         {!isLocal && onNextSource && (
           <button
+            type="button"
             onClick={onNextSource}
             data-emphasis={lagging ? "on" : undefined}
-            className={lagging ? "flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white bg-white px-6 text-[13.5px] font-semibold text-black transition-colors hover:bg-white/90" : "flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-black/45 px-6 text-[13.5px] font-medium text-white/75 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/60 hover:text-white"}
+            className={lagging ? "flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white bg-white px-6 text-[13.5px] font-semibold text-[#0a0b0d] transition-opacity hover:opacity-90" : "flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border border-white/16 bg-[#0d0f13]/72 px-6 text-[13.5px] font-medium text-white/82 backdrop-blur-xl transition-[border-color,background-color,color] hover:border-white/30 hover:bg-white/14 hover:text-white"}
           >
             {t("Next source")}
           </button>

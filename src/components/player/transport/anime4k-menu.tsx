@@ -49,18 +49,18 @@ export function Anime4kMenu({
             setOpen((o) => !o);
           }}
           aria-label={t("Anime4K upscaling")}
-          className={`flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color] ${
-            accent ? "bg-white/22 text-white hover:bg-white/30" : "text-white/85 hover:bg-white/10 hover:text-white"
+          className={`flex h-10 min-w-10 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none ${
+            accent ? "bg-white/20 text-white ring-1 ring-white/15 hover:bg-white/26" : "text-white/80 hover:bg-white/12 hover:text-white"
           }`}
         >
-          <Sparkles size={20} strokeWidth={1.9} />
+          <Sparkles size={19} strokeWidth={1.9} />
           {active && current ? (
             <span className="text-[11px] font-bold tracking-wider">{current.label.replace("Mode ", "")}</span>
           ) : null}
         </button>
       </Tooltip>
       {open && (
-        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} w-[320px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
+        <div className={`absolute bottom-[calc(100%+12px)] ${side === "start" ? "start-0" : "end-0"} w-[320px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-white/12 bg-[#111215]/94 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.92)] backdrop-blur-2xl`}>
           <div className="p-2">
             <div className="px-3 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
               {t("Anime4K")}

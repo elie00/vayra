@@ -82,20 +82,20 @@ export function SkipPill({
 
   return (
     <div
-      className={`pointer-events-none absolute end-7 z-30 flex items-center gap-2 transition-[transform,opacity,background-color,border-color,color] duration-200 ease-out ${
+      className={`pointer-events-none absolute end-7 z-30 flex items-center gap-2 transition-[transform,opacity,background-color,border-color,color] duration-200 ease-out motion-reduce:transition-none ${
         visible && show
-          ? "bottom-44 opacity-100 translate-y-0"
-          : "bottom-40 opacity-0 translate-y-2"
+          ? "bottom-40 opacity-100 translate-y-0"
+          : "bottom-36 opacity-0 translate-y-2"
       }`}
     >
       <button
         type="button"
         onClick={action}
-        className={`pointer-events-auto inline-flex items-center gap-2 rounded-full border bg-black/75 px-5 py-2.5 text-[14px] font-semibold text-white shadow-[0_18px_50px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-[background-color,transform] hover:bg-black/90 active:scale-[0.97] ${
-          isAd ? "border-rose-400/50" : "border-white/20"
+        className={`pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full border bg-[#0d0f13]/82 px-5 text-[13.5px] font-semibold text-white shadow-[0_20px_54px_-16px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-[background-color,border-color,transform] hover:border-white/30 hover:bg-white/18 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none ${
+          isAd ? "border-rose-400/50" : "border-white/16"
         }`}
       >
-        {isAd ? <AdSkipIcon className="h-[18px] w-[18px]" /> : <Icon size={18} strokeWidth={2.2} />}
+        {isAd ? <AdSkipIcon className="h-[17px] w-[17px]" /> : <Icon size={17} strokeWidth={2.2} />}
         {label}
       </button>
       {onDismiss && !isOutroNext && (
@@ -104,9 +104,9 @@ export function SkipPill({
           onClick={onDismiss}
           aria-label={t("Hide this Skip button")}
           title={t("Hide this Skip button")}
-          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/75 text-white/70 shadow-[0_18px_50px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-colors hover:bg-black/90 hover:text-white active:scale-[0.97]"
+          className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-white/16 bg-[#0d0f13]/82 text-white/70 shadow-[0_20px_54px_-16px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-colors hover:border-white/28 hover:bg-white/16 hover:text-white active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
-          <X size={16} strokeWidth={2.4} />
+          <X size={15} strokeWidth={2.3} />
         </button>
       )}
     </div>
@@ -142,13 +142,13 @@ function UpNextCard({
 
   return (
     <div
-      className={`pointer-events-none absolute end-7 z-30 transition-[transform,opacity,background-color,border-color,color] duration-200 ease-out ${
+      className={`pointer-events-none absolute end-7 z-30 transition-[transform,opacity,background-color,border-color,color] duration-200 ease-out motion-reduce:transition-none ${
         visible
-          ? "bottom-44 opacity-100 translate-y-0"
-          : "bottom-40 opacity-0 translate-y-2"
+          ? "bottom-40 opacity-100 translate-y-0"
+          : "bottom-36 opacity-0 translate-y-2"
       }`}
     >
-      <div className="pointer-events-auto relative flex w-[360px] overflow-hidden rounded-2xl border border-white/15 bg-black/80 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9)] backdrop-blur-md">
+      <div className="pointer-events-auto relative flex w-[368px] overflow-hidden rounded-2xl border border-white/14 bg-[#0d0f13]/88 shadow-[0_28px_72px_-18px_rgba(0,0,0,0.94)] backdrop-blur-2xl">
         <div className="relative aspect-[16/10] w-[148px] shrink-0 overflow-hidden bg-white/5">
           {ep.still && !hideStill ? (
             <img

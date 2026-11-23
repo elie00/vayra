@@ -84,20 +84,20 @@ export function SourceErrorCard({
         aria-modal="true"
         aria-labelledby="source-error-title"
         tabIndex={-1}
-        className="animate-modal-in flex w-[min(94vw,440px)] flex-col items-center gap-5 rounded-2xl border border-edge-soft bg-elevated/95 px-7 py-8 text-center shadow-[0_30px_90px_-25px_rgba(0,0,0,0.7)]"
+        className="animate-modal-in flex w-[min(94vw,452px)] flex-col items-center gap-5 rounded-[26px] border border-white/12 bg-[#111215]/94 px-7 py-8 text-center shadow-[0_32px_90px_-22px_rgba(0,0,0,0.92)] backdrop-blur-2xl"
       >
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500/12 text-rose-300">
-          {info.offline ? <WifiOff size={26} strokeWidth={2} /> : <ServerCrash size={26} strokeWidth={2} />}
+        <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/12 text-rose-300">
+          {info.offline ? <WifiOff size={24} strokeWidth={2} /> : <ServerCrash size={24} strokeWidth={2} />}
         </div>
         <div className="flex flex-col gap-2">
-          <h2 id="source-error-title" className="font-display text-[20px] font-semibold tracking-[-0.015em] text-ink">
+          <h2 id="source-error-title" className="font-display text-[21px] font-semibold tracking-[-0.02em] text-white">
             {t(info.title)}
           </h2>
-          <p className="text-[13.5px] leading-relaxed text-ink-muted">{t(info.detail)}</p>
+          <p className="text-[13.5px] leading-relaxed text-white/65">{t(info.detail)}</p>
         </div>
-        <div className="flex w-full flex-col gap-1 rounded-xl border border-edge-soft bg-canvas/50 px-4 py-3">
+        <div className="flex w-full flex-col gap-1 rounded-2xl border border-white/10 bg-black/45 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-subtle">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
               {t("Source said")}
             </span>
             <span className="font-mono text-[13px] font-semibold text-rose-300">
@@ -106,24 +106,24 @@ export function SourceErrorCard({
             </span>
           </div>
           {error.host && (
-            <div className="truncate text-start font-mono text-[11.5px] text-ink-subtle">{error.host}</div>
+            <div className="truncate text-start font-mono text-[11.5px] text-white/50">{error.host}</div>
           )}
         </div>
         <div className="flex w-full items-center gap-2.5">
           <button
             type="button"
             onClick={onRetry}
-            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-edge-soft text-[14px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
+            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/8 text-[13.5px] font-semibold text-white/85 transition-colors hover:border-white/24 hover:bg-white/14 hover:text-white"
           >
-            <RotateCcw size={16} strokeWidth={2.2} />
+            <RotateCcw size={15} strokeWidth={2.2} />
             {t("Retry")}
           </button>
           <button
             type="button"
             onClick={onChoose}
-            className="flex h-11 flex-[1.4] items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90"
+            className="flex h-11 flex-[1.4] items-center justify-center gap-2 rounded-full bg-white text-[13.5px] font-semibold text-[#0a0b0d] transition-opacity hover:opacity-90"
           >
-            <ListVideo size={17} strokeWidth={2.2} />
+            <ListVideo size={16} strokeWidth={2.2} />
             {t("Choose another source")}
           </button>
         </div>
@@ -131,7 +131,7 @@ export function SourceErrorCard({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-medium text-white/65 transition-colors hover:bg-white/10 hover:text-white"
           >
             <ArrowLeft size={14} strokeWidth={2.2} className="dir-icon" />
             {t("Back")}

@@ -44,18 +44,18 @@ export function AspectMenu({
             setOpen((o) => !o);
           }}
           aria-label={t("Picture")}
-          className={`flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color] ${
-            accent ? "bg-white/22 text-white hover:bg-white/30" : "text-white/85 hover:bg-white/10 hover:text-white"
+          className={`flex h-10 min-w-10 items-center justify-center gap-1 rounded-full px-2 transition-[background-color,color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none ${
+            accent ? "bg-white/20 text-white ring-1 ring-white/15 hover:bg-white/26" : "text-white/80 hover:bg-white/12 hover:text-white"
           }`}
         >
-          <SlidersHorizontal size={21} strokeWidth={1.9} />
+          <SlidersHorizontal size={19} strokeWidth={1.9} />
           {aspectActive && current ? (
             <span className="text-[11px] font-bold tabular-nums tracking-wider">{current.label}</span>
           ) : null}
         </button>
       </Tooltip>
       {open && (
-        <div className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} flex max-h-[70vh] w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-y-auto rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}>
+        <div className={`absolute bottom-[calc(100%+12px)] ${side === "start" ? "start-0" : "end-0"} flex max-h-[70vh] w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-y-auto rounded-2xl border border-white/12 bg-[#111215]/94 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.92)] backdrop-blur-2xl`}>
           <div className="p-3">
             <div className="flex items-center justify-between px-1 pb-2">
               <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
