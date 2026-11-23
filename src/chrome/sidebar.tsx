@@ -325,7 +325,7 @@ function ScrollableNav({
                       {...downloadsNavItem}
                       label="Downloads"
                       collapsed={collapsed}
-                      nested
+                      compact
                       badge={!collapsed && totalDownloads > 0 ? totalDownloads : undefined}
                       dot={collapsed && activeDownloads > 0}
                       active={view === "downloads"}
