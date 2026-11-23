@@ -35,7 +35,7 @@ import {
   togglePageRowHidden,
   usePageRows,
 } from "@/lib/page-rows";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { MobileDiscover } from "@/mobile/discover";
 
 const MAX_RAIL_PAGES = 10;
@@ -296,7 +296,12 @@ export function Discover({ active = true }: { active?: boolean }) {
     );
 
   return (
-    <main ref={scrollCb} className="flex-1 overflow-y-auto px-5 pb-20 pt-24 sm:px-8 lg:px-12 lg:pt-28">
+    <main
+      ref={scrollCb}
+      className={`flex-1 overflow-y-auto px-5 pb-20 sm:px-8 lg:px-12 ${
+        hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
+      }`}
+    >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-12">
           <header className="flex flex-col gap-5">

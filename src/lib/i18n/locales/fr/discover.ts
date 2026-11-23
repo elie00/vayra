@@ -2,6 +2,12 @@ const discover: Record<string, string> = {
   "Featured & Recommended": "En vedette et recommandés",
   "Browse curated shelves, genres, origins, and universes.":
     "Parcourez des sélections éditoriales, genres, origines et univers.",
+  "In this selection": "Dans cette sélection",
+  "View stills": "Voir les images",
+  "Personalized deck": "Sélection personnalisée",
+  "Swipe through tailored picks and refine what VAYRA recommends next.":
+    "Parcourez des recommandations choisies pour vous et affinez les prochaines suggestions de VAYRA.",
+  "Start browsing": "Lancer la session",
   "What people are watching": "Ce que les gens regardent",
   "Showing now": "Actuellement à l'affiche",
   "Critically Loved": "Adorés par la critique",
