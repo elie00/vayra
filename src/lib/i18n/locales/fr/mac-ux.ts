@@ -94,5 +94,10 @@ const macUx: Record<string, string> = {
   "Off at playback start": "Désactivés au démarrage",
   "Your language preferences": "Vos préférences de langue",
   "These preferences are independent. Changing the interface does not change the audio or subtitles.": "Ces préférences sont indépendantes. Changer la langue de l’interface ne modifie ni l’audio ni les sous-titres.",
+  "Good morning": "Bonjour",
+  "Good afternoon": "Bon après-midi",
+  "Good evening": "Bonsoir",
+  "Tonight on VAYRA": "Ce soir sur VAYRA",
+  "Picked for you": "Sélection pour vous",
 };
 export default macUx;

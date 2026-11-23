@@ -19,7 +19,26 @@ import { LumaResumeCard } from "./luma-resume-section";
 import { unifiedResumes } from "@/lib/unified-resumes";
 import { connectResumes, publishHistory } from "@/lib/connect/history";
 
-export function MacPersonalSections({ items, libraryItems, onDismiss, notice }: { items: LibraryItem[]; libraryItems: LibraryItem[]; onDismiss: (item: LibraryItem) => void; notice?: ReactNode }) {
+function greetingKey(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+export function MacPersonalSections({
+  items,
+  libraryItems,
+  onDismiss,
+  notice,
+  stage,
+}: {
+  items: LibraryItem[];
+  libraryItems: LibraryItem[];
+  onDismiss: (item: LibraryItem) => void;
+  notice?: ReactNode;
+  stage?: ReactNode;
+}) {
   const t = useT();
   const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
@@ -53,53 +72,49 @@ export function MacPersonalSections({ items, libraryItems, onDismiss, notice }: 
   const [error, setError] = useState("");
   return (
     <section aria-label={t("Your viewing")} className="flex flex-col gap-9">
-      <header className="flex flex-col gap-5">
-        <div className="flex flex-wrap items-end justify-between gap-5">
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <span className="vayra-kicker">{t("Your viewing")}</span>
-            <h1 className="mac-page-title">{t("Home")}</h1>
-            <p className="max-w-[54ch] text-[14px] leading-relaxed text-ink-muted">
-              {t("Your next viewing, right where you left it.")}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setView("library")}
-              className="group inline-flex min-h-10 items-center gap-2 rounded-xl border border-edge-soft/75 bg-surface/85 px-3.5 py-2 text-[13px] font-medium text-ink-muted transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
-            >
-              <Bookmark size={14} strokeWidth={2} className="text-ink-subtle group-hover:text-ink" />
-              <span>{t("My Watchlist")}</span>
-              <span className="rounded-md bg-elevated px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink">
-                {watchlist.length}
-              </span>
-            </button>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.028em] text-ink sm:text-[32px]">
+            {t(greetingKey())}
+          </h1>
+          <span className="hidden text-[13.5px] text-ink-subtle sm:inline">
+            {t("Your next viewing, right where you left it.")}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setView("library")}
+            className="group inline-flex h-9 items-center gap-2 rounded-full border border-edge-soft/75 bg-surface/85 px-3.5 text-[12.5px] font-medium text-ink-muted transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
+          >
+            <Bookmark size={13} strokeWidth={2} className="text-ink-subtle group-hover:text-ink" />
+            <span>{t("My Watchlist")}</span>
+            <span className="tabular-nums text-ink">{watchlist.length}</span>
+          </button>
+          {doneDownloads.length > 0 && (
             <button
               type="button"
               onClick={() => setView("downloads")}
-              className="group inline-flex min-h-10 items-center gap-2 rounded-xl border border-edge-soft/75 bg-surface/85 px-3.5 py-2 text-[13px] font-medium text-ink-muted transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
+              className="group inline-flex h-9 items-center gap-2 rounded-full border border-edge-soft/75 bg-surface/85 px-3.5 text-[12.5px] font-medium text-ink-muted transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
             >
-              <Download size={14} strokeWidth={2} className="text-ink-subtle group-hover:text-ink" />
+              <Download size={13} strokeWidth={2} className="text-ink-subtle group-hover:text-ink" />
               <span>{t("Downloads")}</span>
-              <span className="rounded-md bg-elevated px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink">
-                {doneDownloads.length}
-              </span>
+              <span className="tabular-nums text-ink">{doneDownloads.length}</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setView("discover")}
-              className="mac-secondary-button"
-            >
-              <Compass size={14} strokeWidth={2} />
-              <span>{t("Explore")}</span>
-              <ArrowUpRight size={13} strokeWidth={2} className="text-ink-subtle" />
-            </button>
-          </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setView("discover")}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-edge-soft/75 bg-surface/85 px-3.5 text-[12.5px] font-medium text-ink-muted transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
+          >
+            <Compass size={13} strokeWidth={2} />
+            <span>{t("Explore")}</span>
+          </button>
         </div>
-        <div className="vayra-header-rule" aria-hidden="true" />
       </header>
 
       {notice}
+      {stage}
 
       {resumes.length > 0 ? (
         <Row
@@ -121,7 +136,7 @@ export function MacPersonalSections({ items, libraryItems, onDismiss, notice }: 
             ),
           )}
         </Row>
-      ) : (
+      ) : !stage ? (
         <div className="vayra-surface flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3.5">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge-soft/70 bg-elevated/80 text-ink-subtle">
@@ -138,7 +153,7 @@ export function MacPersonalSections({ items, libraryItems, onDismiss, notice }: 
             {t("Find something to watch")}
           </button>
         </div>
-      )}
+      ) : null}
 
       <Row
         title={t("My Watchlist")}
