@@ -850,7 +850,10 @@ export function Home({ active = true }: { active?: boolean }) {
                 />
               )}
               {hasNativeDesktopUx() ? (
-                <MacDiscoveryBanner meta={heroSlides[0]?.meta} />
+                <MacDiscoveryBanner
+                  meta={heroSlides[0]?.meta}
+                  items={heroSlides.map((s) => s.meta)}
+                />
               ) : (
                 <Suspense fallback={null}>
                   <HeroCarousel
@@ -861,7 +864,13 @@ export function Home({ active = true }: { active?: boolean }) {
                 </Suspense>
               )}
               {!editMode && (
-                <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
+                <div
+                  className={
+                    hasNativeDesktopUx()
+                      ? "mt-3 flex justify-end"
+                      : "pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto"
+                  }
+                >
                   <CustomizeBar
                     editMode={editMode}
                     customization={homeRowsCustom}
@@ -974,15 +983,15 @@ export function Home({ active = true }: { active?: boolean }) {
               homeLanguages={settings.homeLanguages}
           />
           {catalogStatus === "loading" && <div role="status" className="flex flex-col gap-8">
-            <p className="text-[14px] text-ink-muted">{t("Loading catalogs…")}</p>
+            <p className="text-[13.5px] font-medium text-ink-muted">{t("Loading catalogs…")}</p>
             {visibleRows.length === 0 && Array.from({ length: 3 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)}
           </div>}
-          {catalogStatus === "error" && <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-elevated p-5">
-            <p role="alert" className="min-w-0 flex-1 text-[14px] text-ink-muted">{t("Some catalogs could not be loaded. Your available rows are still shown.")}</p>
+          {catalogStatus === "error" && <div className="vayra-surface flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+            <p role="alert" className="min-w-0 flex-1 text-[13.5px] text-ink-muted">{t("Some catalogs could not be loaded. Your available rows are still shown.")}</p>
             <button type="button" className="mac-secondary-button" onClick={() => setCatalogRetry((n) => n + 1)}>{t("Retry catalogs")}</button>
           </div>}
-          {catalogStatus === "done" && visibleRows.length === 0 && <div className="flex flex-wrap items-center gap-3">
-            <p role="status" className="text-[14px] text-ink-muted">{t("No catalogs to show yet.")}</p>
+          {catalogStatus === "done" && visibleRows.length === 0 && <div className="vayra-surface flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+            <p role="status" className="text-[13.5px] text-ink-muted">{t("No catalogs to show yet.")}</p>
             <button type="button" className="mac-secondary-button" onClick={() => setCatalogRetry((n) => n + 1)}>{t("Retry catalogs")}</button>
           </div>}
         </div>

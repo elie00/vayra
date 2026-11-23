@@ -4,7 +4,7 @@ import { useT } from "@/lib/i18n";
 import type { HomeRowCustomization } from "@/lib/home-customization";
 
 const pillClass =
-  "flex h-8 items-center gap-1.5 rounded-md border border-edge-soft/40 bg-canvas/80 px-2.5 text-[12px] font-medium text-ink-muted backdrop-blur-md transition-colors hover:bg-canvas hover:text-ink";
+  "flex h-9 items-center gap-1.5 rounded-xl border border-edge-soft/75 bg-surface/90 px-3 text-[12.5px] font-medium text-ink-muted backdrop-blur-md transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink";
 
 export function CustomizeBar({
   editMode,
@@ -81,11 +81,12 @@ export function CustomizeBar({
         </button>
       )}
       <button
+        type="button"
         onClick={onToggleEdit}
-        className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium backdrop-blur-md transition-colors ${
+        className={`flex h-9 items-center gap-1.5 rounded-xl border px-3 text-[12.5px] font-medium backdrop-blur-md transition-[color,background-color,border-color,opacity] duration-150 ${
           editMode
             ? "border-ink bg-ink text-canvas hover:opacity-90"
-            : "border-edge-soft/40 bg-canvas/80 text-ink-muted hover:bg-canvas hover:text-ink"
+            : "border-edge-soft/75 bg-surface/90 text-ink-muted hover:border-edge hover:bg-elevated hover:text-ink"
         }`}
       >
         <Pencil size={12} strokeWidth={2.4} />
