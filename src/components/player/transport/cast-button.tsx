@@ -25,7 +25,7 @@ export function CastButton({
       }
       disabled={!supported}
     >
-      <Cast size={22} strokeWidth={1.9} />
+      <Cast size={19} strokeWidth={1.9} />
     </BigButton>
   );
 }

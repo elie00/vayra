@@ -1,5 +1,5 @@
 import { t as translate } from "@/lib/i18n";
-import { Camera, ChevronLeft, Info, ListVideo, Maximize, Minimize, PauseCircle, PictureInPicture2, PlayCircle, Replace, Tv } from "lucide-react";
+import { Camera, ChevronLeft, Info, ListVideo, Maximize, Minimize, Pause, PictureInPicture2, Play, Replace, Tv } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { Meta } from "@/lib/cinemeta";
@@ -154,11 +154,12 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       return (
         <Tooltip label={t("Back")} side="bottom">
           <button
+            type="button"
             onClick={ctx.onBack}
             aria-label={t("Back")}
-            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-black/80"
+            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-[#0b0c0f]/60 text-white backdrop-blur-xl transition-[background-color,border-color,transform] duration-150 hover:border-white/24 hover:bg-white/16 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none"
           >
-            <ChevronLeft size={26} strokeWidth={2.2} />
+            <ChevronLeft size={21} strokeWidth={2.2} className="dir-icon" />
           </button>
         </Tooltip>
       );
@@ -181,21 +182,21 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
         <>
           <div className="flex items-center gap-2">
             <h1
-              style={{ fontSize: `${Math.round(19 * scale)}px` }}
-              className="font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+              style={{ fontSize: `${Math.round(18 * scale)}px` }}
+              className="font-display font-semibold leading-tight tracking-[-0.02em] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.7)]"
             >
               {primary}
             </h1>
             {qual && (
-              <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white/85">
+              <span className="shrink-0 rounded-full border border-white/16 bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/90 backdrop-blur-md">
                 {qual}
               </span>
             )}
           </div>
           {secondary && (
             <p
-              style={{ fontSize: `${Math.round(13 * scale)}px` }}
-              className="text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+              style={{ fontSize: `${Math.round(12.5 * scale)}px` }}
+              className="text-white/70 drop-shadow-[0_1px_6px_rgba(0,0,0,0.7)]"
             >
               {secondary}
             </p>
@@ -204,12 +205,12 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
             <span
               role="status"
               aria-live="polite"
-              className={`mt-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums backdrop-blur-sm ${
+              className={`mt-1 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-semibold tabular-nums backdrop-blur-md ${
                 sourceStatus.tone === "error"
-                  ? "bg-danger/20 text-red-100"
+                  ? "border-danger/35 bg-danger/20 text-red-100"
                   : sourceStatus.tone === "success"
-                    ? "bg-emerald-400/20 text-emerald-100"
-                    : "bg-white/15 text-white/80"
+                    ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-100"
+                    : "border-white/14 bg-black/45 text-white/85"
               }`}
             >
               <span
@@ -235,14 +236,14 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           <button
             type="button"
             onClick={ctx.onTitleClick}
-            className="pointer-events-auto group inline-flex items-center gap-2 rounded-lg px-2 py-0.5 text-start transition-colors hover:bg-white/10"
+            className="pointer-events-auto group inline-flex items-center gap-2 rounded-xl px-2.5 py-1 text-start transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             aria-label={t("Title info")}
           >
             <div className="flex flex-col items-start gap-0.5">{lines}</div>
             <Info
               size={14}
-              strokeWidth={2.2}
-              className="opacity-50 transition-opacity group-hover:opacity-95"
+              strokeWidth={2.1}
+              className="text-white/50 transition-colors group-hover:text-white/90"
             />
           </button>
         );
@@ -328,16 +329,17 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       return (
         <Tooltip label={ctx.playing ? t("Pause") : t("Play")}>
           <button
+            type="button"
             onClick={ctx.onPlayPause}
-            className={`flex items-center justify-center rounded-full bg-white/12 text-white backdrop-blur-md transition-[background-color,transform] hover:bg-white/22 active:scale-95 ${
-              ctx.tight ? "h-12 w-12" : ctx.compact ? "h-14 w-14" : "h-16 w-16"
+            className={`flex items-center justify-center rounded-full bg-white text-[#0a0b0d] shadow-[0_10px_28px_-10px_rgba(0,0,0,0.85)] transition-[transform,opacity] duration-150 hover:scale-[1.04] hover:opacity-95 active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/85 focus-visible:ring-offset-2 focus-visible:ring-offset-black/70 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+              ctx.tight ? "h-10 w-10" : ctx.compact ? "h-11 w-11" : "h-12 w-12"
             }`}
             aria-label={ctx.playing ? t("Pause") : t("Play")}
           >
             {ctx.playing ? (
-              <PauseCircle size={ctx.tight ? 28 : ctx.compact ? 32 : 36} strokeWidth={1.5} />
+              <Pause size={ctx.tight ? 18 : 20} strokeWidth={0} fill="currentColor" />
             ) : (
-              <PlayCircle size={ctx.tight ? 28 : ctx.compact ? 32 : 36} strokeWidth={1.5} />
+              <Play size={ctx.tight ? 18 : 20} strokeWidth={0} fill="currentColor" className="translate-x-[1px]" />
             )}
           </button>
         </Tooltip>
@@ -370,9 +372,9 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           tooltip={ctx.isLiveChannel ? t("TV Guide") : t("Switch stream")}
         >
           {ctx.isLiveChannel ? (
-            <Tv size={22} strokeWidth={1.9} />
+            <Tv size={19} strokeWidth={1.9} />
           ) : (
-            <Replace size={22} strokeWidth={1.9} />
+            <Replace size={19} strokeWidth={1.9} />
           )}
         </BigButton>
       );
@@ -464,7 +466,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     case "screenshot": {
       return (
         <BigButton onClick={ctx.onScreenshot} ariaLabel={t("Screenshot")} tooltip={t("Screenshot")}>
-          <Camera size={24} strokeWidth={1.9} />
+          <Camera size={19} strokeWidth={1.9} />
         </BigButton>
       );
     }
@@ -476,7 +478,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       if (!ctx.capabilities.pictureInPicture) return null;
       return (
         <BigButton onClick={ctx.onPiP} ariaLabel={t("Picture in Picture")} tooltip={t("Picture in Picture")}>
-          <PictureInPicture2 size={22} strokeWidth={1.9} />
+          <PictureInPicture2 size={19} strokeWidth={1.9} />
         </BigButton>
       );
     }
@@ -488,7 +490,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       if (!ctx.onLuma || ctx.tight) return null;
       return (
         <BigButton onClick={ctx.onLuma} ariaLabel="LUMA" tooltip={`${t("Open LUMA")} · Q`}>
-          <ListVideo size={22} strokeWidth={1.9} />
+          <ListVideo size={19} strokeWidth={1.9} />
         </BigButton>
       );
     }
@@ -500,9 +502,9 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           tooltip={ctx.fullscreen ? t("Exit fullscreen") : t("Fullscreen")}
         >
           {ctx.fullscreen ? (
-            <Minimize size={22} strokeWidth={1.9} />
+            <Minimize size={19} strokeWidth={1.9} />
           ) : (
-            <Maximize size={22} strokeWidth={1.9} />
+            <Maximize size={19} strokeWidth={1.9} />
           )}
         </BigButton>
       );

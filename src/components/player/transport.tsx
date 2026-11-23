@@ -443,17 +443,17 @@ export function Transport({
         data-tauri-drag-region={fullscreen ? undefined : ""}
         aria-hidden={!visible}
         inert={!visible || undefined}
-        className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/55 via-black/15 to-transparent ps-[calc(1.75rem+var(--vayra-safe-left,0px))] pe-[calc(1.75rem+var(--vayra-safe-right,0px))] pt-4 pb-8 max-sm:ps-[calc(1rem+var(--vayra-safe-left,0px))] max-sm:pe-[calc(1rem+var(--vayra-safe-right,0px))] max-sm:pt-[calc(var(--harbor-status-bar,0px)+0.5rem)] transition-opacity duration-300 ${
-          visible ? "opacity-100" : "opacity-0"
+        className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/78 via-black/30 to-transparent ps-[calc(1.75rem+var(--vayra-safe-left,0px))] pe-[calc(1.75rem+var(--vayra-safe-right,0px))] pt-5 pb-12 max-sm:ps-[calc(1rem+var(--vayra-safe-left,0px))] max-sm:pe-[calc(1rem+var(--vayra-safe-right,0px))] max-sm:pt-[calc(var(--harbor-status-bar,0px)+0.5rem)] transition-[opacity,transform] duration-300 motion-reduce:transition-none motion-reduce:transform-none ${
+          visible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
         }`}
       >
-        <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-start gap-2`}>
+        <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-center gap-3`}>
           {controlsInSlot(chromeConfig, "top-left").map((c) => (
             <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
           ))}
         </div>
-        <div className="flex items-start gap-2">
-          <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-start gap-2`}>
+        <div className="flex items-center gap-2">
+          <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-center gap-1.5`}>
             {controlsInSlot(chromeConfig, "top-right").map((c) => (
               <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
             ))}
@@ -466,64 +466,74 @@ export function Transport({
         dir="ltr"
         aria-hidden={!visible}
         inert={!visible || undefined}
-        className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2.5 bg-gradient-to-t from-black/70 via-black/25 to-transparent ${
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/88 via-black/42 to-transparent ${
           tight
-            ? "ps-[calc(0.75rem+var(--vayra-safe-left,0px))] pe-[calc(0.75rem+var(--vayra-safe-right,0px))] pt-6 pb-[calc(0.75rem+var(--vayra-safe-bottom,0px))]"
-            : "ps-[calc(1.75rem+var(--vayra-safe-left,0px))] pe-[calc(1.75rem+var(--vayra-safe-right,0px))] pt-10 pb-[calc(1.25rem+var(--vayra-safe-bottom,0px))]"
-        } transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
+            ? "ps-[calc(0.75rem+var(--vayra-safe-left,0px))] pe-[calc(0.75rem+var(--vayra-safe-right,0px))] pt-8 pb-[calc(0.75rem+var(--vayra-safe-bottom,0px))]"
+            : "ps-[calc(1.5rem+var(--vayra-safe-left,0px))] pe-[calc(1.5rem+var(--vayra-safe-right,0px))] pt-14 pb-[calc(1.25rem+var(--vayra-safe-bottom,0px))]"
+        } transition-[opacity,transform] duration-300 motion-reduce:transition-none motion-reduce:transform-none ${
+          visible ? "translate-y-0 opacity-100" : "translate-y-1.5 opacity-0"
+        }`}
       >
-        <div dir="ltr" className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-center gap-3`}>
-          {isLiveChannel ? (
-            <>
-              <LiveBadge />
-              <div className="flex-1">
-                <LiveSeekBar durationSec={snap.durationSec} onSeek={onSeek} active={visible} />
-              </div>
-              <GoToLive durationSec={snap.durationSec} onSeek={onSeek} />
-            </>
-          ) : (
-            <>
-              {controlsInSlot(chromeConfig, "seek-leading").map((c) => (
-                <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
-              ))}
-              <div className="flex-1">
-                <SeekBar durationSec={snap.durationSec} onSeek={onSeek} active={visible} />
-              </div>
-              {controlsInSlot(chromeConfig, "seek-trailing").map((c) => (
-                <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
-              ))}
-            </>
-          )}
-        </div>
-        <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} grid items-center ${
-          // A phone keeps the playback buttons centred however narrow the bar.
-          compact && !mobile ? "grid-cols-[auto_1fr_auto] gap-2" : "grid-cols-[1fr_auto_1fr] gap-4"
-        }`}>
-          <div className="flex min-w-0 items-center gap-2 justify-self-start">
-            {controlsInSlot(chromeConfig, "bottom-left").map((c) => (
-              <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5">
-            {controlsInSlot(chromeConfig, "bottom-center").map((c) => (
-              <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5 justify-self-end">
-            {controlsInSlot(chromeConfig, "bottom-right").map((c) => (
-              <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
-            ))}
-            {mobile && (
-              <button
-                type="button"
-                onClick={() => setMoreOpen((v) => !v)}
-                aria-label={t("More options")}
-                aria-expanded={moreOpen}
-                className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-colors ${moreOpen ? "bg-white/20" : "active:bg-white/15"}`}
-              >
-                <MoreHorizontal size={22} />
-              </button>
+        <div
+          className={`mx-auto flex w-full max-w-[1380px] flex-col gap-2.5 ${
+            tight
+              ? ""
+              : "rounded-[22px] border border-white/[0.09] bg-[#0b0c0f]/58 px-4 py-3 shadow-[0_24px_64px_-20px_rgba(0,0,0,0.92)] backdrop-blur-2xl"
+          }`}
+        >
+          <div dir="ltr" className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-center gap-3`}>
+            {isLiveChannel ? (
+              <>
+                <LiveBadge />
+                <div className="flex-1">
+                  <LiveSeekBar durationSec={snap.durationSec} onSeek={onSeek} active={visible} />
+                </div>
+                <GoToLive durationSec={snap.durationSec} onSeek={onSeek} />
+              </>
+            ) : (
+              <>
+                {controlsInSlot(chromeConfig, "seek-leading").map((c) => (
+                  <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
+                ))}
+                <div className="flex-1">
+                  <SeekBar durationSec={snap.durationSec} onSeek={onSeek} active={visible} />
+                </div>
+                {controlsInSlot(chromeConfig, "seek-trailing").map((c) => (
+                  <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
+                ))}
+              </>
             )}
+          </div>
+          <div className={`${visible ? "pointer-events-auto" : "pointer-events-none"} grid items-center ${
+            // A phone keeps the playback buttons centred however narrow the bar.
+            compact && !mobile ? "grid-cols-[auto_1fr_auto] gap-2" : "grid-cols-[1fr_auto_1fr] gap-4"
+          }`}>
+            <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
+              {controlsInSlot(chromeConfig, "bottom-left").map((c) => (
+                <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              {controlsInSlot(chromeConfig, "bottom-center").map((c) => (
+                <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
+              ))}
+            </div>
+            <div className="flex items-center gap-1 justify-self-end">
+              {controlsInSlot(chromeConfig, "bottom-right").map((c) => (
+                <Fragment key={c.id}>{renderControl(c.id, ctx)}</Fragment>
+              ))}
+              {mobile && (
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((v) => !v)}
+                  aria-label={t("More options")}
+                  aria-expanded={moreOpen}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors ${moreOpen ? "bg-white/20" : "active:bg-white/15"}`}
+                >
+                  <MoreHorizontal size={20} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

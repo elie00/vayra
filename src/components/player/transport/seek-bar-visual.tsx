@@ -63,7 +63,7 @@ export function SeekBarVisual({
   return (
     <>
       <div
-        className="w-full rounded-full bg-white/15 transition-[height] duration-150"
+        className="w-full rounded-full bg-white/18 transition-[height] duration-150 motion-reduce:transition-none"
         style={{ height: trackHeight }}
       >
         {bufferedPct != null && bufferedPct > 0 && (

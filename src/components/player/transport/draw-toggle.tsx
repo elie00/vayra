@@ -24,7 +24,7 @@ export function DrawToggle({
         tooltip={active ? t("Stop drawing") : t("Draw")}
         active={active}
       >
-        <Pencil size={22} strokeWidth={2} />
+        <Pencil size={19} strokeWidth={1.9} />
       </BigButton>
       {active && (
         <>
@@ -33,7 +33,7 @@ export function DrawToggle({
             ariaLabel={t("Clear drawings")}
             tooltip={t("Clear drawings")}
           >
-            <Eraser size={22} strokeWidth={2} />
+            <Eraser size={19} strokeWidth={1.9} />
           </BigButton>
           <BigButton
             onClick={onToggleHideOthers}
@@ -41,7 +41,7 @@ export function DrawToggle({
             tooltip={hideOthers ? t("Show others' drawings") : t("Hide others' drawings")}
             active={hideOthers}
           >
-            {hideOthers ? <EyeOff size={22} strokeWidth={2} /> : <Eye size={22} strokeWidth={2} />}
+            {hideOthers ? <EyeOff size={19} strokeWidth={1.9} /> : <Eye size={19} strokeWidth={1.9} />}
           </BigButton>
         </>
       )}

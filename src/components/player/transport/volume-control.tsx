@@ -79,11 +79,12 @@ export function VolumeControl({
   const muteBtn = (
     <Tooltip label={label}>
       <button
+        type="button"
         onClick={onMute}
-        className="flex h-12 w-12 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-white/85 transition-[background-color,color,transform] duration-150 hover:bg-white/12 hover:text-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none"
         aria-label={label}
       >
-        {muted ? <VolumeX size={24} strokeWidth={1.75} /> : <Volume2 size={24} strokeWidth={1.75} />}
+        {muted ? <VolumeX size={20} strokeWidth={1.9} /> : <Volume2 size={20} strokeWidth={1.9} />}
       </button>
     </Tooltip>
   );
@@ -130,7 +131,7 @@ export function VolumeControl({
   }
 
   return (
-    <div className="flex items-center gap-2" onWheel={onWheel}>
+    <div className="group/vol flex items-center gap-2" onWheel={onWheel}>
       {muteBtn}
       <div
         ref={trackRef}
@@ -138,27 +139,29 @@ export function VolumeControl({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="relative h-2 shrink-0 cursor-pointer rounded-full bg-white/15"
+        className="relative flex h-6 shrink-0 cursor-pointer items-center"
         style={{ width: TRACK_WIDTH }}
       >
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 rounded-full"
-          style={{ width: `${filledPct}%`, background: fillBackground }}
-        />
-        <div
-          className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            left: `${filledPct}%`,
-            width: 14,
-            height: 14,
-            background: boosting ? color : "white",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.6)",
-          }}
-        />
+        <div className="relative h-1.5 w-full rounded-full bg-white/18 transition-[height] duration-150 group-hover/vol:h-2 motion-reduce:transition-none">
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 rounded-full"
+            style={{ width: `${filledPct}%`, background: fillBackground }}
+          />
+          <div
+            className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-150 group-hover/vol:scale-110 motion-reduce:transition-none"
+            style={{
+              left: `${filledPct}%`,
+              width: 12,
+              height: 12,
+              background: boosting ? color : "white",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.65)",
+            }}
+          />
+        </div>
       </div>
       {boosting && (
         <span
-          className="text-[12px] font-semibold tabular-nums leading-none"
+          className="text-[11.5px] font-semibold tabular-nums leading-none"
           style={{ color, minWidth: 36 }}
         >
           {pct}%
