@@ -65,6 +65,17 @@
   du vrai `EBWebView` et le vrai `settings.json` restent identiques octet pour octet ;
   relancée sans la variable, l'appli montre la barre dépliée ; relancée avec le même
   dossier, elle la retrouve repliée. Sur le Mac, le `localStorage` reste partagé.
+- `VAYRA_DATA_DIR` isole aussi, depuis #239, les secrets du trousseau (noms
+  `app.vayra.dev-<empreinte>` et `app.vayra.auth.dev-<empreinte>`), les points de restauration des réglages, le journal et
+  le cache mpv, les appairages Connect, le moteur torrent, les shaders Anime4K, le
+  script SVP, le journal stderr (`<dossier>\logs`) et l'état de la fenêtre (détail dans
+  `docs/agent-driver.md`). **Vérifié sur le PC le 24/11** (build release de la
+  branche) : l'instance de test démarre en invitée, sans la session ni le coffre du
+  vrai profil ; une connexion puis une déconnexion simulées n'écrivent et ne retirent
+  que l'entrée `…dev-…` ; les 5 entrées du vrai profil, son dossier `%APPDATA%\app.vayra`
+  et son `vayra.log` restent identiques ; relancée avec le même dossier, elle retrouve
+  son coffre. **Reste partagé** : `%LOCALAPPDATA%\app.vayra\.cookies`, le pot à cookies
+  du plugin HTTP de Tauri (chemin figé), lu puis réécrit à la fermeture.
 - Ctrl+0 n'est pas un conflit : le lecteur le garde pour Anime4K, le zoom ne s'applique
   qu'ailleurs (`App.tsx`).
 - Au premier lancement après deux des installations, `document.fonts.load` n'a renvoyé
