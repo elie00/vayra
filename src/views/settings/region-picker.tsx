@@ -247,7 +247,7 @@ export function RegionPicker({
               className="h-7 flex-1 bg-transparent text-[14px] text-ink placeholder:text-ink-subtle/60 outline-none"
             />
           </div>
-          <div className="flex-1 overflow-y-auto py-1.5">
+          <div role="listbox" aria-label={t("Region")} className="flex-1 overflow-y-auto py-1.5">
             {filtered.length === 0 ? (
               <div className="px-4 py-6 text-center text-[13px] text-ink-subtle">{t("No matches")}</div>
             ) : (
@@ -255,6 +255,8 @@ export function RegionPicker({
                 const selected = r.code === current.code;
                 return (
                   <button
+                    role="option"
+                    aria-selected={selected}
                     key={r.code}
                     onClick={() => {
                       onChange(r.code);

@@ -56,11 +56,13 @@ export function AiModelSelect({
           />
         </button>
         {open && (
-          <div className="absolute inset-x-0 top-[calc(100%+6px)] z-30 flex max-h-[320px] flex-col overflow-y-auto rounded-2xl border border-edge bg-canvas py-1.5 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] backdrop-blur-xl">
+          <div role="listbox" aria-label={t("Model")} className="absolute inset-x-0 top-[calc(100%+6px)] z-30 flex max-h-[320px] flex-col overflow-y-auto rounded-2xl border border-edge bg-canvas py-1.5 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] backdrop-blur-xl">
             {models.map((m) => {
               const sel = m.id === value;
               return (
                 <button
+                  role="option"
+                  aria-selected={sel}
                   key={m.id}
                   onClick={() => {
                     onChange(m.id);
