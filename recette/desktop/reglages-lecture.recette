@@ -1,0 +1,317 @@
+# Réglages : Lecture, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place, pour rejouer le scénario sur le
+# même profil. Part d’un profil jetable (VAYRA_DATA_DIR), configuration du
+# premier lancement passée, réglages par défaut de Windows. Exclu : « Lancer le
+# test de débit », qui envoie du trafic vers des serveurs tiers. Les noms en
+# double (« Auto », « Désactivé », « 30 s ») sont résolus par le contrôle
+# visible à l’écran quand c’est possible, sinon par l’index lu avec les
+# réglages par défaut (relevé sous Windows : à revoir sur le Mac).
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Lecture
+settle
+expect current Lecture
+
+# Comportement du bouton Lecture
+tap "Sélection manuelle"
+settle
+expect on "Sélection manuelle"
+expect off "Instantané RECOMMANDÉ"
+tap "Verrouiller sur le serveur"
+settle
+expect on "Verrouiller sur le serveur"
+tap "Instantané RECOMMANDÉ"
+settle
+expect on "Instantané RECOMMANDÉ"
+expect off "Verrouiller sur le serveur"
+
+tap "Mémoriser le dernier flux"
+settle
+expect off "Mémoriser le dernier flux"
+tap "Mémoriser le dernier flux"
+settle
+expect on "Mémoriser le dernier flux"
+tap "Demander de reprendre"
+settle
+expect on "Demander de reprendre"
+tap "Demander de reprendre"
+settle
+expect off "Demander de reprendre"
+tap "Reprendre où vous"
+settle
+expect off "Reprendre où vous"
+tap "Reprendre où vous"
+settle
+expect on "Reprendre où vous"
+tap "Garder la même source"
+settle
+expect on "Garder la même source"
+tap "Garder la même source"
+settle
+expect off "Garder la même source"
+tap "Restaurer la position de la fenêtre"
+settle
+expect off "Restaurer la position de la fenêtre"
+tap "Restaurer la position de la fenêtre"
+settle
+expect on "Restaurer la position de la fenêtre"
+
+# Pop-up de volume et sa position
+tap Centre
+settle
+expect on Centre
+expect off Haut
+tap "En haut à gauche"
+settle
+expect on "En haut à gauche"
+tap "En haut à droite"
+settle
+expect on "En haut à droite"
+tap Haut
+settle
+expect on Haut
+tap "Pop-up de volume"
+settle
+expect off "Pop-up de volume"
+tap "Pop-up de volume"
+settle
+expect on "Pop-up de volume"
+
+# Moteur de lecture
+tap "mpv Fourni"
+settle
+expect on "mpv Fourni"
+expect off "Auto RECOMMANDÉ"
+tap "HTML5 Lecture"
+settle
+expect on "HTML5 Lecture"
+tap "Auto RECOMMANDÉ"
+settle
+expect on "Auto RECOMMANDÉ"
+tap "Intégrer mpv"
+settle
+expect off "Intégrer mpv"
+tap "Intégrer mpv"
+settle
+expect on "Intégrer mpv"
+
+# HDR et type d’écran
+tap "Vrai HDR, fenêtre séparée"
+settle
+expect on "Vrai HDR, fenêtre séparée"
+expect off Tonemapper
+tap "Vrai HDR, intégré"
+settle
+expect on "Vrai HDR, intégré"
+tap Tonemapper
+settle
+expect on Tonemapper
+tap OLED
+settle
+expect on OLED
+tap LCD
+settle
+expect on LCD
+tap Auto
+settle
+expect on Auto
+expect off LCD
+tap "RTX Video HDR"
+settle
+expect on "RTX Video HDR"
+tap "RTX Video HDR"
+settle
+expect off "RTX Video HDR"
+tap "Mode vidéo sans ligne"
+settle
+expect off "Mode vidéo sans ligne"
+tap "Mode vidéo sans ligne"
+settle
+expect on "Mode vidéo sans ligne"
+tap "Toujours réencoder"
+settle
+expect off "Toujours réencoder"
+tap "Toujours réencoder"
+settle
+expect on "Toujours réencoder"
+
+# Limite de débit
+tap "25 Mbps"
+settle
+expect on "25 Mbps"
+expect off "Aucune limite"
+tap "50 Mbps"
+settle
+expect on "50 Mbps"
+tap "100 Mbps"
+settle
+expect on "100 Mbps"
+tap "300 Mbps"
+settle
+expect on "300 Mbps"
+tap "500 Mbps"
+settle
+expect on "500 Mbps"
+tap "1 Gbps"
+settle
+expect on "1 Gbps"
+tap "Aucune limite"
+settle
+expect on "Aucune limite"
+expect off "1 Gbps"
+
+tap "Afficher la qualité du flux"
+settle
+expect on "Afficher la qualité du flux"
+tap "Afficher la qualité du flux"
+settle
+expect off "Afficher la qualité du flux"
+
+# Format d’image
+tap Remplie
+settle
+expect on Remplie
+expect off Ajustée
+tap Étirée
+settle
+expect on Étirée
+tap "16:9"
+settle
+expect on "16:9"
+tap "4:3"
+settle
+expect on "4:3"
+tap "21:9"
+settle
+expect on "21:9"
+tap "1,85:1"
+settle
+expect on "1,85:1"
+tap "2,39:1"
+settle
+expect on "2,39:1"
+tap Ajustée
+settle
+expect on Ajustée
+expect off "2,39:1"
+tap "Activez-le dans la disposition du lecteur"
+settle
+expect current "Disposition du lecteur"
+# Le fil d’Ariane de la sous-page porte aussi « Lecture » : viser l’entrée de
+# la navigation, toujours en #9.
+tap #9
+settle
+expect current Lecture
+
+# Audio
+tap "Normaliser le volume"
+settle
+expect on "Normaliser le volume"
+tap "Normaliser le volume"
+settle
+expect off "Normaliser le volume"
+tap "Basses renforcées"
+settle
+expect on "Basses renforcées"
+expect off Plat
+tap "Voix plus claires"
+settle
+expect on "Voix plus claires"
+tap "Moins de basses"
+settle
+expect on "Moins de basses"
+tap "Mode nuit"
+settle
+expect on "Mode nuit"
+tap Plat
+settle
+expect on Plat
+expect off "Mode nuit"
+
+# Passer les intros et génériques
+tap "Afficher le bouton Passer"
+settle
+expect off "Afficher le bouton Passer"
+tap "Afficher le bouton Passer"
+settle
+expect on "Afficher le bouton Passer"
+tap "Passer les intros"
+settle
+expect on "Passer les intros"
+tap "Passer les intros"
+settle
+expect off "Passer les intros"
+tap "Passer les résumés"
+settle
+expect on "Passer les résumés"
+tap "Passer les résumés"
+settle
+expect off "Passer les résumés"
+tap "Passer les génériques de fin"
+settle
+expect on "Passer les génériques de fin"
+tap "Passer les génériques de fin"
+settle
+expect off "Passer les génériques de fin"
+tap "5 s"
+settle
+expect on "5 s"
+tap "10 s"
+settle
+expect on "10 s"
+tap "15 s"
+settle
+expect on "15 s"
+# « 30 s » et « Désactivé » existent aussi dans l’invite de l’épisode
+# suivant, à l’écran en même temps : index lus avec les réglages par défaut.
+tap #84
+settle
+expect on #84
+tap #80
+settle
+expect on #80
+expect off "5 s"
+
+# Invite de l’épisode suivant
+tap #87
+settle
+expect on #87
+expect off #86
+tap #88
+settle
+expect on #88
+tap "45 s"
+settle
+expect on "45 s"
+tap "1 min"
+settle
+expect on "1 min"
+tap "1,5 min"
+settle
+expect on "1,5 min"
+tap "2 min"
+settle
+expect on "2 min"
+tap Auto
+settle
+expect on Auto
+expect off "2 min"
+tap "Lire automatiquement"
+settle
+expect off "Lire automatiquement"
+tap "Lire automatiquement"
+settle
+expect on "Lire automatiquement"
+tap "Afficher les commandes lors"
+settle
+expect off "Afficher les commandes lors"
+tap "Afficher les commandes lors"
+settle
+expect on "Afficher les commandes lors"
+expect noerrors

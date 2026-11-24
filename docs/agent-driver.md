@@ -85,7 +85,9 @@ expect current "Ma liste"
 
 Chaque scénario commence par `restart`, pour ne pas dépendre du précédent.
 `recette/android/` : 4 scénarios, validés sur l’émulateur. `recette/desktop/` :
-4 scénarios. Trois sont validés dans l’appli Windows (deux passes à 3/3 le
+5 scénarios de navigation et de recherche, et un scénario par page des
+Réglages (`reglages-*`), qui change chaque contrôle puis le remet en place et
+liste dans son en-tête ce qu’il exclut. Parmi les premiers, trois sont validés dans l’appli Windows (deux passes à 3/3 le
 23/11/2026). Ils visent la barre latérale de l’appli de bureau (Accueil,
 Explorer, Ma bibliothèque) : dans un navigateur, où la barre liste Films et
 Séries à la place d’Explorer, le parcours de navigation ne s’applique pas. Le

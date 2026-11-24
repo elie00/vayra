@@ -206,6 +206,7 @@ function SeekStepPicker({
             <button
               key={seconds}
               type="button"
+              aria-label={`${label} ${seconds}s`}
               aria-pressed={selected}
               onClick={() => onChange(seconds)}
               className={`h-7 min-w-0 rounded-[6px] px-1 font-mono text-[11.5px] font-bold tabular-nums transition-colors ${
@@ -265,6 +266,7 @@ function HotkeyRow({
   onReset: () => void;
 }) {
   const t = useT();
+  const shown = formatBindingForDisplay(binding);
   const rowRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (isCapturing) rowRef.current?.scrollIntoView({ block: "nearest" });
@@ -310,6 +312,7 @@ function HotkeyRow({
             <button
               onClick={onReset}
               title={t("Reset to default")}
+              aria-label={`${t("Reset to default")} (${t(def.label)})`}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
             >
               <X size={14} strokeWidth={2.2} />
@@ -317,9 +320,10 @@ function HotkeyRow({
           )}
           <button
             onClick={onStartCapture}
+            aria-label={`${t(def.label)} (${shown})`}
             className="flex h-8 min-w-[88px] items-center justify-center rounded-lg border border-edge bg-elevated px-3 text-[12.5px] font-semibold text-ink transition-colors hover:border-ink hover:bg-raised"
           >
-            {formatBindingForDisplay(binding)}
+            {shown}
           </button>
         </div>
       )}

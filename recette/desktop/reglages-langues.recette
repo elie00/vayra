@@ -1,0 +1,214 @@
+# Réglages : Langues, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée, interface en
+# français. Les quatre listes de langues (sous-titres, images, audio,
+# préférées) répètent les mêmes suggestions et le même champ de recherche :
+# chaque liste reçoit une langue différente, retirée par son nom
+# « Retirer <langue> ». Exclus : « Importer une police » (fichier), les deux couleurs
+# (sélecteur du système), « Contribuer sur GitHub » (site externe), la liste
+# de la langue des métadonnées (son bouton « Français » a le nom d’une
+# suggestion de langue).
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Langues
+settle
+expect current Langues
+
+# Langue d’affichage : anglais, arabe, puis retour au français
+tap "English Anglais"
+settle
+expect on "English English"
+expect current Languages
+tap "العربية Arabic"
+settle
+expect on "العربية العربية"
+# « Français » est aussi le nom exact de la liste des métadonnées : l’entrée
+# d’affichage est visée en #20.
+tap #20
+settle
+expect on "Français Français"
+expect current Langues
+
+# Sous-titres
+# Le champ s’appelle « Rechercher des langues (tamoul, …) » : le résultat est
+# vérifié en l’ajoutant puis en le retirant.
+type #27 tamoul
+settle
+tap Tamoul
+settle
+expect visible "Retirer Tamoul"
+tap "Retirer Tamoul"
+settle
+expect gone "Retirer Tamoul"
+type #27 ""
+settle
+expect value #27 ""
+tap "Démarrer avec les sous-titres désactivés"
+settle
+expect on "Démarrer avec les sous-titres désactivés"
+tap "Démarrer avec les sous-titres désactivés"
+settle
+expect off "Démarrer avec les sous-titres désactivés"
+tap "Préférer les sous-titres intégrés"
+settle
+expect on "Préférer les sous-titres intégrés"
+tap "Préférer les sous-titres intégrés"
+settle
+expect off "Préférer les sous-titres intégrés"
+tap "Sous-titres forcés"
+settle
+expect on "Sous-titres forcés"
+tap "Sous-titres forcés"
+settle
+expect off "Sous-titres forcés"
+tap "Améliorer les sous-titres"
+settle
+expect on "Améliorer les sous-titres"
+tap "Améliorer les sous-titres"
+settle
+expect off "Améliorer les sous-titres"
+tap "Choisir les sous-titres avant la lecture"
+settle
+expect on "Choisir les sous-titres avant la lecture"
+tap "Choisir les sous-titres avant la lecture"
+settle
+expect off "Choisir les sous-titres avant la lecture"
+type "commentaire, descriptif" commentary, karaoke
+settle
+expect value "commentaire, descriptif" commentary, karaoke
+type "commentaire, descriptif" commentary
+settle
+expect value "commentaire, descriptif" commentary
+
+# Style des sous-titres
+tap "Contour Trait"
+settle
+expect on "Contour Trait"
+expect off "Ombre portée"
+expect visible "Rétablir les valeurs par défaut"
+tap "Bandeau noir"
+settle
+expect on "Bandeau noir"
+tap "Ombre portée"
+settle
+expect on "Ombre portée"
+tap "Redimensionner uniquement"
+settle
+expect on "Redimensionner uniquement"
+expect off "Garder l"
+tap "Utiliser mon style"
+settle
+expect on "Utiliser mon style"
+tap "Garder l"
+settle
+expect on "Garder l"
+tap Système
+settle
+expect on Système
+expect off Inter
+tap Arrondi
+settle
+expect on Arrondi
+tap Serif
+settle
+expect on Serif
+# « Arabe » est aussi une suggestion de langue : la police est en #69.
+tap #69
+settle
+expect on #69
+tap Inter
+settle
+expect on Inter
+tap "Texte en gras"
+settle
+expect on "Texte en gras"
+tap "Texte en gras"
+settle
+expect off "Texte en gras"
+tap "Afficher les sous-titres en image"
+settle
+expect off "Afficher les sous-titres en image"
+tap "Afficher les sous-titres en image"
+settle
+expect on "Afficher les sous-titres en image"
+tap Gauche
+settle
+expect on Gauche
+expect off Centre
+tap Droite
+settle
+expect on Droite
+tap "Rétablir les valeurs par défaut"
+settle
+expect on Centre
+expect disabled "Rétablir les valeurs par défaut"
+
+# Métadonnées
+tap "Traduire les titres"
+settle
+expect off "Traduire les titres"
+tap "Traduire les titres"
+settle
+expect on "Traduire les titres"
+tap "Traduire les résumés"
+settle
+expect off "Traduire les résumés"
+tap "Traduire les résumés"
+settle
+expect on "Traduire les résumés"
+
+# Images, audio, langues préférées : une langue rare cherchée dans le champ
+# de la liste, ajoutée puis retirée ; le champ est vidé avant la liste
+# suivante, dont l’index dépend des suggestions affichées au-dessus.
+type "Langues de recherche" islandais
+settle
+tap Islandais
+settle
+expect visible "Retirer Islandais"
+tap "Retirer Islandais"
+settle
+expect gone "Retirer Islandais"
+type "Langues de recherche" ""
+# Changer les langues des images recharge l’appli 1,2 s plus tard, pour
+# recharger les visuels : attendre l’accueil puis revenir sur la page.
+sleep 2500
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+tap Langues
+settle
+expect current Langues
+type #115 swahili
+settle
+tap Swahili
+settle
+expect visible "Retirer Swahili"
+tap "Retirer Swahili"
+settle
+expect gone "Retirer Swahili"
+type #115 ""
+settle
+type #143 télougou
+settle
+tap Télougou
+settle
+expect visible "Retirer Télougou"
+tap "Retirer Télougou"
+settle
+expect gone "Retirer Télougou"
+type #143 ""
+settle
+tap "afficher que les flux"
+settle
+expect on "afficher que les flux"
+tap "afficher que les flux"
+settle
+expect off "afficher que les flux"
+expect noerrors

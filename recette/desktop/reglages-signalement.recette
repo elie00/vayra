@@ -1,0 +1,67 @@
+# Réglages : Signaler un problème, chaque contrôle sans envoi
+@cible desktop
+# Part d’un profil jetable (VAYRA_DATA_DIR). Le formulaire est rempli puis
+# vidé ; « Envoyer le rapport de bug » s’active mais n’est pas actionné.
+# Exclus : l’ajout de captures (sélecteur de fichier), « Exporter le journal
+# du lecteur » (fichier), les liens GitHub (site externe). Le bloc de
+# diagnostic s’ouvre et se referme sans que le pilote lise son état.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Avancé
+settle
+tap "Signaler un problème"
+settle
+expect current "Signaler un problème"
+
+expect disabled "Envoyer le rapport de bug"
+type Résumé Recette : scénario rejoué
+settle
+expect value Résumé Recette : scénario rejoué
+tap "Faible cosmétique"
+settle
+expect on "Faible cosmétique"
+expect off "Normale gênant"
+tap "Élevée fonctionnalité"
+settle
+expect on "Élevée fonctionnalité"
+tap "Critique application"
+settle
+expect on "Critique application"
+tap "Normale gênant"
+settle
+expect on "Normale gênant"
+type "Étapes de reproduction" 1. Ouvrir les Réglages
+type "Ce que vous attendiez" Rien
+type "Ce qui s" Rien
+type affichage Recette
+type "utilisateur GitHub" recette
+type "E-mail ou Discord" recette
+settle
+expect value "Étapes de reproduction" 1. Ouvrir les Réglages
+tap "Créditez-moi"
+settle
+expect off "Créditez-moi"
+tap "Créditez-moi"
+settle
+expect on "Créditez-moi"
+tap "Diagnostic facultatif"
+settle
+tap "Diagnostic facultatif"
+settle
+expect visible "Envoyer le rapport de bug"
+type Résumé ""
+type "Étapes de reproduction" ""
+type "Ce que vous attendiez" ""
+type "Ce qui s" ""
+type affichage ""
+type "utilisateur GitHub" ""
+type "E-mail ou Discord" ""
+settle
+expect value Résumé ""
+expect disabled "Envoyer le rapport de bug"
+expect noerrors

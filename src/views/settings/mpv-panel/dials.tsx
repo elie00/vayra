@@ -58,6 +58,7 @@ export function TweakSlider({
       </span>
       <input
         type="range"
+        aria-label={label}
         min={min}
         max={max}
         step={step}

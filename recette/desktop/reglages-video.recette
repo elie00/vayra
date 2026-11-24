@@ -1,0 +1,133 @@
+# Réglages : Réglages vidéo, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée. Le pilote ne
+# sait pas déplacer un curseur : luminosité, contraste, saturation, gamma et
+# netteté sont exercés par les ajustements en un appui et le bouton
+# « Réinitialiser l’image ». « Voir le mpv.conf généré »
+# ouvre un bloc dont le pilote ne lit pas l’état : il est actionné sans
+# vérification. Les libellés portent l’apostrophe droite : les noms visés
+# s’arrêtent avant.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Lecture
+settle
+tap "Réglages vidéo"
+settle
+expect current "Réglages vidéo"
+
+# Qualité d’image
+tap "Fluide sur les ordinateurs modestes"
+settle
+expect on "Fluide sur les ordinateurs modestes"
+expect off "Équilibré LA PLUPART"
+tap "Qualité maximale"
+settle
+expect on "Qualité maximale"
+tap "Équilibré LA PLUPART"
+settle
+expect on "Équilibré LA PLUPART"
+expect off "Qualité maximale"
+
+# Accélération matérielle
+tap "Toujours activé"
+settle
+expect on "Toujours activé"
+expect off Auto
+tap "Désactivé (processeur)"
+settle
+expect on "Désactivé (processeur)"
+tap Auto
+settle
+expect on Auto
+expect off "Désactivé (processeur)"
+
+# Ajustements de l’image
+tap "Éclaircir les films sombres"
+settle
+expect visible "Réinitialiser l"
+tap "Réinitialiser l"
+settle
+expect gone "Réinitialiser l"
+tap "Couleurs plus vives"
+settle
+expect visible "Voir le mpv.conf"
+tap "Voir le mpv.conf"
+settle
+tap "Réinitialiser l"
+settle
+expect gone "Réinitialiser l"
+tap "Confort visuel"
+settle
+expect visible "Réinitialiser l"
+tap "Réinitialiser l"
+settle
+tap "Netteté (animés"
+settle
+expect visible "Réinitialiser l"
+tap "Réinitialiser l"
+settle
+expect gone "Réinitialiser l"
+expect gone "Voir le mpv.conf"
+
+# Couleur et HDR : chaque courbe de tone-mapping, puis retour à Auto
+tap "Auto (recommandé)"
+settle
+tap "Référence (bt.2390)"
+settle
+expect visible "Référence (bt.2390)"
+tap "Référence (bt.2390)"
+settle
+tap "Filmique (Hable)"
+settle
+tap "Filmique (Hable)"
+settle
+tap "Équilibré (Mobius)"
+settle
+tap "Équilibré (Mobius)"
+settle
+tap "Doux (Reinhard)"
+settle
+tap "Doux (Reinhard)"
+settle
+tap "Moderne (Spline)"
+settle
+tap "Moderne (Spline)"
+settle
+tap "Auto (recommandé)"
+settle
+expect visible "Auto (recommandé)"
+expect gone "Moderne (Spline)"
+tap "Rehausser la vidéo SDR"
+settle
+expect on "Rehausser la vidéo SDR"
+tap "Rehausser la vidéo SDR"
+settle
+expect off "Rehausser la vidéo SDR"
+
+tap "Constituer un tampon"
+settle
+expect on "Constituer un tampon"
+tap "Constituer un tampon"
+settle
+expect off "Constituer un tampon"
+tap "Remixer le son"
+settle
+expect on "Remixer le son"
+tap "Remixer le son"
+settle
+expect off "Remixer le son"
+
+# Avancé (mpv.conf)
+type tone-mapping=hable sub-scale=1.2
+settle
+expect value tone-mapping=hable sub-scale=1.2
+type tone-mapping=hable ""
+settle
+expect value tone-mapping=hable ""
+expect noerrors

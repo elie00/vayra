@@ -1,0 +1,28 @@
+# Réglages : Relais VAYRA, chaque contrôle sans réseau
+@cible desktop
+# Part d’un profil jetable (VAYRA_DATA_DIR), sans relais. Une adresse est
+# saisie puis effacée sans être enregistrée. Exclus : « Enregistrer » et
+# « Utiliser le relais public VAYRA » (connexion à un relais), « Déployer un
+# relais » et la documentation (sites externes).
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Avancé
+settle
+tap "Relais VAYRA"
+settle
+expect current "Relais VAYRA"
+
+expect disabled Enregistrer
+type "wss://your-relay" wss://relais.example.invalid
+settle
+expect value "wss://your-relay" wss://relais.example.invalid
+type "wss://your-relay" ""
+settle
+expect value "wss://your-relay" ""
+expect disabled Enregistrer
+expect noerrors

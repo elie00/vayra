@@ -1,0 +1,106 @@
+# Réglages : Disposition du lecteur, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée. Le style, les
+# menus noirs et les deux interrupteurs s’enregistrent aussitôt ; l’affichage
+# du temps et le volume attendent « Enregistrer les modifications ». La
+# réinitialisation demande une confirmation dans la page. L’éditeur de
+# disposition est seulement ouvert, parcouru par mode et refermé : déplacer
+# les commandes demande un glisser que le pilote ne sait pas faire.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Lecture
+settle
+tap "Disposition du lecteur"
+settle
+expect current "Disposition du lecteur"
+
+tap "Stremio Ordre"
+settle
+expect on "Stremio Ordre"
+expect off "Par défaut Interface"
+tap "Par défaut Interface"
+settle
+expect on "Par défaut Interface"
+tap "Menus noir absolu"
+settle
+expect on "Menus noir absolu"
+tap "Menus noir absolu"
+settle
+expect off "Menus noir absolu"
+
+# Éditeur de disposition
+tap "Modifier la disposition"
+settle
+expect visible "Fermer l"
+tap "TV en direct"
+settle
+expect on "TV en direct"
+tap Ensemble
+settle
+expect on Ensemble
+tap Normal
+settle
+expect on Normal
+tap "Fermer l"
+settle
+expect gone "Fermer l"
+
+# Brouillon : annuler, puis enregistrer
+expect disabled "Enregistrer les modifications"
+tap "Restant uniquement"
+settle
+expect on "Restant uniquement"
+tap "Annuler les modifications"
+settle
+expect on "Écoulé et restant"
+expect disabled "Enregistrer les modifications"
+tap "Écoulé uniquement"
+settle
+tap "Icône seule"
+settle
+tap "Enregistrer les modifications"
+settle
+expect on "Écoulé uniquement"
+expect on "Icône seule"
+expect disabled "Enregistrer les modifications"
+tap Paliers
+settle
+expect on Paliers
+tap Curseur
+settle
+tap "Écoulé et restant"
+settle
+tap "Enregistrer les modifications"
+settle
+expect on Curseur
+expect on "Écoulé et restant"
+
+tap "Afficher la pastille"
+settle
+expect off "Afficher la pastille"
+tap "Afficher la pastille"
+settle
+expect on "Afficher la pastille"
+tap "Avertissement de contenu"
+settle
+expect on "Avertissement de contenu"
+tap "Avertissement de contenu"
+settle
+expect off "Avertissement de contenu"
+
+tap "Tout réinitialiser"
+settle
+expect visible "Confirmer la réinitialisation"
+tap "Confirmer la réinitialisation"
+settle
+expect visible "Tout réinitialiser"
+expect on "Par défaut Interface"
+expect on "Écoulé et restant"
+expect on Curseur
+expect noerrors
