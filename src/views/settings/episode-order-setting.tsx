@@ -1,6 +1,6 @@
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { ToggleRow } from "./shared";
+import { ChoiceButton, ToggleRow } from "./shared";
 
 function Seg<T extends string>({
   options,
@@ -14,16 +14,16 @@ function Seg<T extends string>({
   return (
     <div className="flex shrink-0 items-center gap-1 rounded-full border border-edge-soft bg-canvas/60 p-1">
       {options.map((o) => (
-        <button
+        <ChoiceButton
+          selected={value === o.value}
           key={o.value}
-          type="button"
           onClick={() => onChange(o.value)}
           className={`h-8 whitespace-nowrap rounded-full px-3 text-[12.5px] font-medium transition-colors ${
             value === o.value ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"
           }`}
         >
           {o.label}
-        </button>
+        </ChoiceButton>
       ))}
     </div>
   );

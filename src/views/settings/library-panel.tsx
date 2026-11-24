@@ -35,7 +35,7 @@ import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
 import { RegionField } from "./region-cascade";
 import { Dropdown, type DropdownOption } from "@/components/dropdown";
-import { ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
+import { ChoiceButton, ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
 import { TmdbGuideModal } from "./tmdb-tutorial-modal";
 import { TvdbGuideModal } from "./tvdb-tutorial-modal";
 import { EpisodeOrderSetting } from "./episode-order-setting";
@@ -304,9 +304,9 @@ export function LibraryPanel({
                   { v: "side", label: t("To the side") },
                 ] as const
               ).map((o) => (
-                <button
+                <ChoiceButton
+                  selected={settings.hoverPreviewPlacement === o.v}
                   key={o.v}
-                  type="button"
                   onClick={() => update({ hoverPreviewPlacement: o.v })}
                   className={`rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
                     settings.hoverPreviewPlacement === o.v
@@ -315,7 +315,7 @@ export function LibraryPanel({
                   }`}
                 >
                   {o.label}
-                </button>
+                </ChoiceButton>
               ))}
             </div>
               </div>
@@ -789,9 +789,9 @@ export function LibraryPanel({
               const disabled = n > maxN;
               const effLimit = Math.min(settings.cardBadgeLimit, maxN);
               return (
-                <button
+                <ChoiceButton
+                  selected={!disabled && effLimit === n}
                   key={n}
-                  type="button"
                   disabled={disabled}
                   onClick={() => update({ cardBadgeLimit: n })}
                   className={`h-9 w-9 rounded-lg border text-[13px] font-semibold transition-colors ${
@@ -803,7 +803,7 @@ export function LibraryPanel({
                   }`}
                 >
                   {n}
-                </button>
+                </ChoiceButton>
               );
             })}
           </div>
@@ -823,9 +823,9 @@ export function LibraryPanel({
                 { v: "bottomEnd", label: t("Bottom right") },
               ] as const
             ).map((o) => (
-              <button
+              <ChoiceButton
+                selected={settings.watchlistBadge === o.v}
                 key={o.v}
-                type="button"
                 onClick={() => update({ watchlistBadge: o.v })}
                 className={`h-9 rounded-lg border px-3 text-[13px] font-semibold transition-colors ${
                   settings.watchlistBadge === o.v
@@ -834,7 +834,7 @@ export function LibraryPanel({
                 }`}
               >
                 {o.label}
-              </button>
+              </ChoiceButton>
             ))}
           </div>
         </div>
@@ -1258,9 +1258,9 @@ function HomeModePicker({
       {options.map((opt) => {
         const selected = value === opt.id;
         return (
-          <button
+          <ChoiceButton
+            selected={selected}
             key={opt.id}
-            type="button"
             onClick={() => onChange(opt.id)}
             className={`group relative h-[180px] overflow-hidden rounded-2xl border bg-canvas text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
               selected ? "border-ink shadow-[0_0_0_3px_rgba(255,255,255,0.04)]" : "border-edge-soft hover:border-edge"
@@ -1309,7 +1309,7 @@ function HomeModePicker({
                 {opt.sub}
               </span>
             </div>
-          </button>
+          </ChoiceButton>
         );
       })}
     </div>
@@ -1341,9 +1341,9 @@ function RetentionPicker({
         {options.map((opt) => {
           const selected = value === opt.days;
           return (
-            <button
+            <ChoiceButton
+              selected={selected}
               key={opt.days}
-              type="button"
               onClick={() => onChange(opt.days)}
               className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors ${
                 selected
@@ -1352,7 +1352,7 @@ function RetentionPicker({
               }`}
             >
               {opt.label}
-            </button>
+            </ChoiceButton>
           );
         })}
       </div>
@@ -1443,9 +1443,9 @@ function PlacementPicker({
       {options.map((opt) => {
         const selected = effective === opt.id;
         return (
-          <button
+          <ChoiceButton
+            selected={selected}
             key={opt.id}
-            type="button"
             onClick={() => onChange(opt.id)}
             className={`group flex flex-col gap-2.5 rounded-2xl border bg-canvas/40 p-3 text-start transition-[background-color,border-color,color,opacity,box-shadow] ${
               selected
@@ -1477,7 +1477,7 @@ function PlacementPicker({
                 {selected && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
               </span>
             </div>
-          </button>
+          </ChoiceButton>
         );
       })}
     </div>

@@ -382,6 +382,16 @@ export function ToggleRow({
   );
 }
 
+/** One button of a group of choices. It tells assistive technology whether
+ *  it is the chosen one (`aria-pressed`) and leaves the look to `className`. */
+export function ChoiceButton({
+  selected,
+  type = "button",
+  ...rest
+}: { selected: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button type={type} aria-pressed={selected} {...rest} />;
+}
+
 export function Segmented<T extends string>({
   value,
   options,
@@ -395,10 +405,9 @@ export function Segmented<T extends string>({
   return (
     <div className="vayra-pill-track w-fit flex-wrap">
       {options.map((o) => (
-        <button
+        <ChoiceButton
           key={o.value}
-          type="button"
-          aria-pressed={value === o.value}
+          selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={`rounded-lg px-3.5 py-1.5 text-[12.5px] font-medium transition-[background-color,color] duration-150 ${
             value === o.value
@@ -407,7 +416,7 @@ export function Segmented<T extends string>({
           }`}
         >
           {t(o.label)}
-        </button>
+        </ChoiceButton>
       ))}
     </div>
   );

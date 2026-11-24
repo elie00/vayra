@@ -12,7 +12,7 @@ import {
   torrentEngineStatus,
 } from "@/lib/torrent/local-engine";
 import { portStatusLine, usePortStatus } from "@/lib/torrent/port-status";
-import { Section, ToggleRow } from "../shared";
+import { ChoiceButton, Section, ToggleRow } from "../shared";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -133,9 +133,9 @@ export function P2PAdvancedSection() {
           </p>
           <div className="flex flex-wrap gap-1.5">
             {RETENTIONS.map((r) => (
-              <button
+              <ChoiceButton
+                selected={retention === r.h}
                 key={r.h}
-                type="button"
                 onClick={() => setRetention(r.h)}
                 className={`h-9 rounded-lg px-3.5 text-[12.5px] font-semibold transition-colors ${
                   retention === r.h
@@ -144,7 +144,7 @@ export function P2PAdvancedSection() {
                 }`}
               >
                 {t(r.label)}
-              </button>
+              </ChoiceButton>
             ))}
           </div>
         </div>
@@ -156,9 +156,9 @@ export function P2PAdvancedSection() {
           </p>
           <div className="flex flex-wrap gap-1.5">
             {CACHE_LIMITS.map((c) => (
-              <button
+              <ChoiceButton
+                selected={maxGb === c.gb}
                 key={c.gb}
-                type="button"
                 onClick={() => setMaxGb(c.gb)}
                 className={`h-9 rounded-lg px-3.5 text-[12.5px] font-semibold transition-colors ${
                   maxGb === c.gb
@@ -167,7 +167,7 @@ export function P2PAdvancedSection() {
                 }`}
               >
                 {t(c.label)}
-              </button>
+              </ChoiceButton>
             ))}
           </div>
         </div>
