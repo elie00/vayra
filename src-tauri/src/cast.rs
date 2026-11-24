@@ -49,10 +49,7 @@ fn needs_auto_remux(kind: &str, url: &str) -> bool {
     // because non-faststart MP4 with moov-at-end stalls the chromecast) gets
     // segmented through our HLS emitter. The HLS path uses fast transmux for
     // h264+aac sources so there's no CPU cost.
-    if path.ends_with(".m3u8") || path.ends_with(".mpd") || path.ends_with(".ts") {
-        return false;
-    }
-    true
+    !(path.ends_with(".m3u8") || path.ends_with(".mpd") || path.ends_with(".ts"))
 }
 
 fn detect_audio_only(name: &str, model: &Option<String>, kind: &str) -> bool {
