@@ -304,7 +304,7 @@ const sweep3: Record<string, string> = {
   "Previous episodes": "Épisodes précédents",
   "More episodes": "Plus d'épisodes",
   // Font pairs
-  "Default. Serif titles, Geist for everything else.": "Par défaut. Titres en serif, Geist pour tout le reste.",
+  "Geist Serif for titles, Geist for text.": "Geist Serif pour les titres et Geist pour le texte.",
   "Humanist serif, warm sans.": "Serif humaniste, sans chaleureuse.",
   // Calendar months and weekdays
   "January": "Janvier",

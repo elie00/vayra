@@ -72,6 +72,11 @@ export function useBridgeLoad(params: {
       !!src.meta.id?.startsWith("iptv:") ||
       (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
     let cancelled = false;
+    let unsubscribeFromDuration: (() => void) | undefined;
+    const stopDurationCheck = () => {
+      unsubscribeFromDuration?.();
+      unsubscribeFromDuration = undefined;
+    };
     (async () => {
       const openingVid = videoIdFor(
         src,
@@ -138,22 +143,16 @@ export function useBridgeLoad(params: {
       }
       if (cancelled) return;
       if (!eligibleForPrompt && !guestInRoom && startSec > 5) {
-        let unsub: (() => void) | null = null;
-        let synced = false;
-        const stop = () => {
-          synced = true;
-          unsub?.();
-        };
-        unsub = bridge.subscribe((s) => {
-          if (cancelled) {
-            stop();
-            return;
-          }
-          if (s.durationSec <= 0) return;
-          stop();
+        let durationHandled = false;
+        unsubscribeFromDuration = bridge.subscribe((s) => {
+          if (cancelled || durationHandled || s.durationSec <= 0) return;
+          // subscribe and seek can both emit synchronously. Mark the check
+          // complete before seek, even if subscribe has yet to return.
+          durationHandled = true;
+          stopDurationCheck();
           if (startSec >= s.durationSec - 20) bridge.seek(0);
         });
-        if (synced) unsub?.();
+        if (durationHandled) stopDurationCheck();
       }
       if (eligibleForPrompt) {
         bridge.pause();
@@ -175,6 +174,7 @@ export function useBridgeLoad(params: {
     })();
     return () => {
       cancelled = true;
+      stopDurationCheck();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridgeReady, bridgeKey, src.url, src.notWebReady, src.meta.id, src.subtitles, season, episode, transcodedUrl, authKey]);

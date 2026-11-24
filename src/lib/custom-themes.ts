@@ -1,4 +1,4 @@
-import { FONT_PAIRS, type ChromeConfig, type ChromeNavId, type FontPairId, type ThemePreset, type ThemeButtonStyle, type ThemeCardStyle, type ThemeLayout } from "./theme";
+import { DEFAULT_THEME, FONT_PAIRS, type ChromeConfig, type ChromeNavId, type FontPairId, type ThemePreset, type ThemeButtonStyle, type ThemeCardStyle, type ThemeLayout } from "./theme";
 
 const STORAGE_KEY = "harbor.custom-themes.v1";
 const PREFIX = "user:";
@@ -313,7 +313,7 @@ export function getStarterTemplate(): string {
       layout: "sidebar",
       cardStyle: "flat",
       buttonStyle: "flat",
-      fontPair: "geist",
+      fontPair: DEFAULT_THEME.fontPair,
       bokeh: false,
       background: {
         image: "linear-gradient(180deg, #0a0b0d 0%, #18191c 100%)",

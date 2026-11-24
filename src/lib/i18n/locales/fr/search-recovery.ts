@@ -8,4 +8,5 @@ export const searchRecovery: Record<string, string> = {
   "Some catalogs could not be loaded. Your available rows are still shown.": "Certains catalogues n’ont pas pu être chargés. Vos rangées disponibles restent affichées.",
   "No catalogs to show yet.": "Aucun catalogue à afficher pour le moment.",
   "Retry catalogs": "Réessayer les catalogues",
+  "This link cannot be opened here. Use a direct video URL such as a link ending in .mp4.": "Ce lien ne peut pas être ouvert ici. Utilisez un lien direct vers une vidéo, par exemple un lien se terminant par .mp4.",
 };

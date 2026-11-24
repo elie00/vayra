@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { emptySearchOutcome, SearchProvider, useSearch } from "./search-context";
 import { searchAll, searchAnime, searchCinemeta, searchLiveTvChannels } from "./search";
+import { gatherCatalogAddons } from "./addons";
 import { searchAddonCatalogs, searchAddonGroups } from "./search-addons";
 import { searchAddonIndex } from "./search-addon-index";
 import type { SearchResults } from "./search";
@@ -292,6 +293,28 @@ it("keeps pasted links and magnets out of the recent searches", async () => {
   });
   expect(latest.recent).toEqual(["dune"]);
   expect(localStorage.getItem("harbor.search.recent")).toBe(JSON.stringify(["dune"]));
+});
+
+it.each([
+  " https://example.invalid/media?ticket=fixture ",
+  "https://example.invalid/film.mp4?ticket=fixture",
+  "//example.invalid/media?ticket=fixture",
+  "stremio://example.invalid/manifest.json",
+  "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
+])("keeps link input out of every search provider: %s", async (query) => {
+  await type(query);
+  await tick();
+  await act(async () => {
+    latest.retry();
+    latest.recordRecent(query);
+  });
+  await tick();
+  expect(latest.status).toBe("idle");
+  expect(latest.results).toBeNull();
+  expect(latest.recent).toEqual([]);
+  for (const lookup of [searchAll, searchAnime, searchCinemeta, gatherCatalogAddons, searchAddonCatalogs, searchAddonGroups]) {
+    expect(lookup).not.toHaveBeenCalled();
+  }
 });
 
 it("drops links saved in the recent searches by an earlier version", async () => {

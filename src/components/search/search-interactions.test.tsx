@@ -89,6 +89,18 @@ it("keeps Shift+Enter intentional and restores input focus after clearing", asyn
   expect(document.activeElement).toBe(document.querySelector("input"));
 });
 
+it("shows local guidance for an unsupported link and never offers AI search for it", async () => {
+  state.query = "https://example.invalid/media?ticket=fixture";
+  await mount();
+  await enter({ shiftKey: true });
+  expect(document.querySelector('[role="status"]')?.textContent).toContain("Ce lien ne peut pas être ouvert ici");
+  expect(document.querySelector("[data-ai-run]")).toBeNull();
+  expect(document.body.textContent).not.toContain("Aucun résultat");
+  state.query = "Dark";
+  await mount();
+  expect(document.querySelector("[data-ai-run]")?.getAttribute("data-ai-run")).toBe("0");
+});
+
 it("translates genre chips and headings without changing provider identifiers", async () => {
   state.query = "";
   state.results = null;

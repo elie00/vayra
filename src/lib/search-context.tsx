@@ -8,7 +8,7 @@ import { gatherCatalogAddons, type Addon } from "@/lib/addons";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { SEARCH_TIMEOUT_MS, withRequestTimeout, type RequestDiagnostics } from "@/lib/request-outcome";
-import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
+import { searchInputKind } from "@/lib/search-input";
 
 export type SearchSource = "tmdb" | "anime" | "catalogs" | "groups" | "cinemeta";
 export type SearchSourceStatus = "pending" | "ready" | "empty" | "error" | "skipped";
@@ -47,17 +47,12 @@ const Ctx = createContext<SearchValue | null>(null);
 const RECENT_KEY = "harbor.search.recent";
 const MAX_RECENT = 8;
 
-// A pasted link or magnet can carry a token: never keep it in the history.
-function isLinkInput(q: string): boolean {
-  return isMagnetInput(q) || /^[a-z][a-z0-9+.-]*:\/\//i.test(q.trim());
-}
-
 function loadRecent(): string[] {
   try {
     const raw = localStorage.getItem(RECENT_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string" && !isLinkInput(x)).slice(0, MAX_RECENT) : [];
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string" && searchInputKind(x) === "text").slice(0, MAX_RECENT) : [];
   } catch {
     return [];
   }
@@ -114,7 +109,9 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     const trimmed = query.trim();
     setResults(null);
     setSources({});
-    if (!trimmed) {
+    // Only text belongs in catalog requests. Links can carry credentials even
+    // when the player does not recognize them as direct video URLs.
+    if (!trimmed || searchInputKind(trimmed) !== "text") {
       setStatus("idle");
       return;
     }
@@ -127,13 +124,12 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       debounceRef.current = null;
       setStatus("loading");
       const liveTv = liveTvAllowed ? searchLiveTvChannels(trimmed, settings.iptvPlaylists) : [];
-      const direct = isMagnetInput(trimmed) || isDirectVideoUrl(trimmed);
       const sourceStates: Record<SearchSource, SearchSourceStatus> = {
-        tmdb: !direct && settings.tmdbKey ? "pending" : "skipped",
-        anime: !direct && animeAllowed && trimmed.length >= 2 ? "pending" : "skipped",
-        catalogs: direct ? "skipped" : "pending",
-        groups: direct ? "skipped" : "pending",
-        cinemeta: !direct && trimmed.length >= 2 ? "pending" : "skipped",
+        tmdb: settings.tmdbKey ? "pending" : "skipped",
+        anime: animeAllowed && trimmed.length >= 2 ? "pending" : "skipped",
+        catalogs: "pending",
+        groups: "pending",
+        cinemeta: trimmed.length >= 2 ? "pending" : "skipped",
       };
       let tmdbResult: SearchResults = {
         query: trimmed, topMatch: null, people: [], movies: [], series: [], liveTv: [],
@@ -188,8 +184,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       });
       run("anime", (diagnostics) => searchAnime(trimmed, 8, diagnostics), (a) => { acc.anime = a; return a.length > 0; });
       const addonDiagnostics = { failed: false };
-      // Share the lookup, but never start remote work for a pasted media URL.
-      const addonsP = direct ? Promise.resolve([]) : ensureAddons(addonDiagnostics);
+      const addonsP = ensureAddons(addonDiagnostics);
       // Attach both consumers immediately, including lookup rejection handling.
       run("catalogs", async (diagnostics) => {
         const addons = await addonsP;
@@ -239,7 +234,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     setQueryState({ query: q });
     setResults(null);
     setSources({});
-    setStatus(q.trim() ? "typing" : "idle");
+    setStatus(q.trim() && searchInputKind(q) === "text" ? "typing" : "idle");
   }, []);
 
   const clear = useCallback(() => {
@@ -247,7 +242,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   }, [setQuery]);
 
   const retry = useCallback(() => {
-    if (!queryRef.current.trim()) return;
+    if (!queryRef.current.trim() || searchInputKind(queryRef.current) !== "text") return;
     ++reqIdRef.current;
     addonsRef.current = null;
     setResults(null);
@@ -258,7 +253,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
 
   const recordRecent = useCallback((q: string) => {
     const trimmed = q.trim();
-    if (!trimmed || isLinkInput(trimmed)) return;
+    if (!trimmed || searchInputKind(trimmed) !== "text") return;
     setRecent((prev) => {
       const next = [trimmed, ...prev.filter((p) => p.toLowerCase() !== trimmed.toLowerCase())].slice(0, MAX_RECENT);
       saveRecent(next);

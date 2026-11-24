@@ -1,4 +1,4 @@
-import { DEFAULT_CUSTOM_COLORS, type ThemePreset } from "@/lib/theme";
+import { DEFAULT_CUSTOM_COLORS, DEFAULT_THEME, type ThemePreset } from "@/lib/theme";
 import { DEFAULT_CHROME } from "./chrome-config";
 import type { Draft } from "./studio-types";
 
@@ -30,7 +30,7 @@ export function emptyDraft(seed?: ThemePreset): Draft {
       layout: "sidebar",
       cardStyle: "flat",
       buttonStyle: "flat",
-      fontPair: "geist",
+      fontPair: DEFAULT_THEME.fontPair,
       customFontId: null,
       bokeh: false,
       colors: { ...DEFAULT_CUSTOM_COLORS },
@@ -54,7 +54,7 @@ export function emptyDraft(seed?: ThemePreset): Draft {
     layout: seed.layout ?? "sidebar",
     cardStyle: seed.cardStyle ?? "flat",
     buttonStyle: seed.buttonStyle ?? "flat",
-    fontPair: seed.fontPair ?? "geist",
+    fontPair: seed.fontPair ?? DEFAULT_THEME.fontPair,
     customFontId: ext.customFontId ?? null,
     bokeh: !!seed.bokeh,
     colors: {
