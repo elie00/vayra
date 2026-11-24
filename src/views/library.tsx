@@ -34,13 +34,13 @@ const MobileMyList = lazy(() => import("@/mobile/my-list").then((m) => ({ defaul
 
 const LIBRARY_TAB_KEY = "harbor.library.tab";
 
-function readSavedTab(capabilities: ReturnType<typeof currentPlatformCapabilities>): Tab {
+function readSavedTab(capabilities: ReturnType<typeof currentPlatformCapabilities>, unified: boolean): Tab {
   try {
     const v = localStorage.getItem(LIBRARY_TAB_KEY);
     if (
       v === "watchlist" ||
+      (v === "downloads" && !unified && tabAvailable("downloads", capabilities)) ||
       v === "history" ||
-      (v === "downloads" && tabAvailable("downloads", capabilities)) ||
       (v === "local" && tabAvailable("local", capabilities)) ||
       v === "trakt" ||
       v === "anilist" ||
@@ -68,9 +68,15 @@ export function LibraryView({ active }: { active: boolean }) {
 function DesktopLibraryView({ active }: { active: boolean }) {
   const capabilities = currentPlatformCapabilities();
   const { view, setView } = useView();
-  const [tab, setTab] = useState<Tab>(() =>
-    view === "downloads" && tabAvailable("downloads", capabilities) ? "downloads" : readSavedTab(capabilities),
-  );
+  // On Mac and Windows, Downloads lives inside My library: its tab is shown
+  // exactly when the view is "downloads", so the sidebar's Downloads sub-link
+  // always agrees with the tab, and `savedTab` is the last other tab, the one
+  // My library opens on. Elsewhere Downloads has its own page and the tab is
+  // just local state.
+  const unified = hasNativeDesktopUx();
+  const [savedTab, setTab] = useState<Tab>(() => readSavedTab(capabilities, unified));
+  const tab: Tab =
+    unified && view === "downloads" && tabAvailable("downloads", capabilities) ? "downloads" : savedTab;
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
   const { isConnected: simklConnected } = useSimkl();
@@ -79,27 +85,23 @@ function DesktopLibraryView({ active }: { active: boolean }) {
   const scrollRef = useRef<HTMLElement>(null);
   useScrollMemory("library", scrollRef, active);
 
-  useEffect(() => {
-    if (active && view === "downloads" && tabAvailable("downloads", capabilities)) {
-      setTab("downloads");
-    }
-  }, [active, view, capabilities]);
-
   const selectTab = useCallback(
     (next: Tab) => {
-      setTab(next);
-      if (view === "downloads" && next !== "downloads") {
-        setView("library");
+      if (unified && next === "downloads") {
+        if (view !== "downloads") setView("downloads");
+        return;
       }
+      setTab(next);
+      if (unified && view === "downloads") setView("library");
     },
-    [view, setView],
+    [unified, view, setView],
   );
 
   useEffect(() => {
     try {
-      localStorage.setItem(LIBRARY_TAB_KEY, tab);
+      localStorage.setItem(LIBRARY_TAB_KEY, savedTab);
     } catch {}
-  }, [tab]);
+  }, [savedTab]);
 
   useEffect(() => {
     if (tab === "trakt" && !traktConnected) setTab("watchlist");

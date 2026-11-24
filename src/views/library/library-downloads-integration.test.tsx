@@ -7,6 +7,7 @@ import { LibraryView } from "../library";
 
 const mocks = vi.hoisted(() => ({
   view: "downloads" as "library" | "downloads",
+  unified: true,
   setView: vi.fn(),
   openStats: vi.fn(),
   openPlayer: vi.fn(),
@@ -52,7 +53,7 @@ vi.mock("@/lib/platform", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/platform")>();
   return {
     ...actual,
-    hasNativeDesktopUx: () => true,
+    hasNativeDesktopUx: () => mocks.unified,
     isMobileTauri: () => false,
     isWeb: () => false,
   };
@@ -110,6 +111,7 @@ beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   localStorage.clear();
   mocks.view = "downloads";
+  mocks.unified = true;
   mocks.validatedDownloadSource.mockResolvedValue({
     meta: { id: "tt9999999", name: "Already Downloaded Film", type: "movie" },
     url: "/Users/test/Downloads/Already Downloaded Film.mkv",
@@ -148,5 +150,45 @@ describe("LibraryView + embedded DownloadsView", () => {
     });
     expect(mocks.validatedDownloadSource).toHaveBeenCalledWith(mocks.downloads[0]);
     expect(mocks.openPlayer).toHaveBeenCalledTimes(1);
+  });
+
+  it("ties the Downloads tab to the downloads view, so the sidebar sub-link agrees", async () => {
+    mocks.view = "library";
+    localStorage.setItem("harbor.library.tab", "downloads");
+    await act(async () => {
+      root.render(<LibraryView active />);
+    });
+    const tab = (name: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((b) => b.textContent?.includes(name))!;
+
+    // My library never opens on Downloads by itself, even if it was the last tab.
+    expect(tab("History").getAttribute("aria-selected")).toBe("false");
+    expect(tab("Watchlist").getAttribute("aria-selected")).toBe("true");
+
+    await act(async () => tab("Downloads").click());
+    expect(mocks.setView).toHaveBeenCalledWith("downloads");
+
+    mocks.view = "downloads";
+    mocks.setView.mockClear();
+    await act(async () => root.render(<LibraryView active />));
+    expect(tab("Downloads").getAttribute("aria-selected")).toBe("true");
+    await act(async () => tab("History").click());
+    expect(mocks.setView).toHaveBeenCalledWith("library");
+    expect(localStorage.getItem("harbor.library.tab")).toBe("history");
+  });
+
+  it("keeps the Downloads tab local where Downloads has its own page", async () => {
+    mocks.unified = false;
+    mocks.view = "library";
+    await act(async () => {
+      root.render(<LibraryView active />);
+    });
+    const tab = (name: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((b) => b.textContent?.includes(name))!;
+
+    await act(async () => tab("Downloads").click());
+    expect(mocks.setView).not.toHaveBeenCalled();
+    expect(tab("Downloads").getAttribute("aria-selected")).toBe("true");
+    expect(localStorage.getItem("harbor.library.tab")).toBe("downloads");
   });
 });
