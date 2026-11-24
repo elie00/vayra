@@ -21,7 +21,10 @@ export function WindowControls() {
   const t = useT();
   if (!IS_TAURI || settings.useNativeTitleBar) return null;
   return (
-    <div data-tauri-drag-region="false" className="flex items-center gap-2">
+    <div
+      data-tauri-drag-region="false"
+      className="inline-flex items-center gap-0.5 rounded-full border border-edge-soft/75 bg-surface/85 p-0.5 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+    >
       <Ctl
         label={t("chrome.minimize")}
         shortcut={windowControlShortcut("minimize")}
@@ -76,11 +79,11 @@ function Ctl({
       title={label}
       onClick={onClick}
       data-tauri-drag-region="false"
-      className={`flex h-11 w-11 items-center justify-center rounded-full bg-elevated/85 text-ink-muted ring-1 ring-edge-soft/60 backdrop-blur-md transition-colors hover:text-ink ${
-        danger ? "hover:bg-danger hover:text-white" : "hover:bg-raised"
+      className={`flex h-8 w-9 items-center justify-center rounded-full text-ink-muted transition-[color,background-color] duration-150 ${
+        danger ? "hover:bg-danger hover:text-white" : "hover:bg-elevated hover:text-ink"
       }`}
     >
-      <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 13 13" fill="none">
+      <svg aria-hidden="true" focusable="false" width="15" height="15" viewBox="0 0 13 13" fill="none">
         {children}
       </svg>
     </button>

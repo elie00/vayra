@@ -77,9 +77,9 @@ export function DownloadsButton() {
         aria-controls={open ? panelId : undefined}
         aria-label={t("Downloads")}
         onClick={() => setOpen((v) => !v)}
-        className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
+        className={`relative h-9 w-9 vayra-chrome-pill ${open ? "border-edge bg-elevated text-ink" : ""}`}
       >
-        <Download size={17} strokeWidth={1.9} />
+        <Download size={16} strokeWidth={1.9} />
         {activeCount > 0 && (
           <span className="absolute -top-1 -end-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-canvas">
             {activeCount}
@@ -87,21 +87,29 @@ export function DownloadsButton() {
         )}
       </button>
       {open && (
-        <div id={panelId} role="region" aria-label={t("Downloads")} className="absolute end-0 top-[calc(100%+8px)] z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in">
-          <div className="flex items-center justify-between px-4 pb-2 pt-3">
-            <span className="text-[13.5px] font-semibold text-ink">{t("Downloads")}</span>
+        <div
+          id={panelId}
+          role="region"
+          aria-label={t("Downloads")}
+          className="absolute end-0 top-[calc(100%+10px)] z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-edge-soft/85 bg-surface/95 shadow-[0_24px_64px_-20px_rgba(0,0,0,0.82)] backdrop-blur-2xl animate-popover-in"
+        >
+          <div className="flex items-center justify-between border-b border-edge-soft/60 px-4 py-3">
+            <span className="vayra-kicker text-ink">{t("Downloads")}</span>
             <button
+              type="button"
               onClick={() => {
                 setOpen(false);
                 setView("downloads");
               }}
-              className="text-[12px] font-medium text-ink-subtle transition-colors hover:text-ink"
+              className="text-[12px] font-medium text-ink-muted transition-colors hover:text-ink"
             >
               {t("See all")}
             </button>
           </div>
-          <div className="flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto px-2 pb-2">
-            {downloads.length === 0 && <p className="px-2 py-5 text-[13px] text-ink-muted">{t("No downloads yet")}</p>}
+          <div className="flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto p-2">
+            {downloads.length === 0 && (
+              <p className="px-2.5 py-6 text-center text-[13px] text-ink-muted">{t("No downloads yet")}</p>
+            )}
             {downloads.slice(0, 8).map((d) => (
               <DownloadRow key={d.id} d={d} t={t} onOpen={() => goToShow(d)} onRemove={() => setPendingRemoval(d)} />
             ))}

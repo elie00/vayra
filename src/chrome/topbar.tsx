@@ -46,11 +46,13 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   if (chromeHidden && !connecting) return null;
   const layout = hasNativeDesktopUx() ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const onLiveRoot = topKind === "live";
-  const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !hasNativeDesktopUx()) || topKind === "picker";
+  const quietDesktopHeader = hasNativeDesktopUx();
+  const sidebarHidden = connecting || view === "settings" || (onLiveRoot && !quietDesktopHeader) || topKind === "picker";
   // On native desktop, quick search lives directly in the left VAYRA rail so
-  // the top edge stays calm and lets cinema artwork breathe edge-to-edge.
-  const searchInSidebar = hasNativeDesktopUx() && !sidebarHidden;
-  const hideSearch = view === "addons" || searchInSidebar;
+  // the top edge stays calm and lets cinema artwork breathe edge-to-edge;
+  // Settings and the source picker also suppress the top search pill.
+  const searchInSidebar = quietDesktopHeader && !sidebarHidden;
+  const hideSearch = view === "addons" || searchInSidebar || (view === "settings" && quietDesktopHeader) || topKind === "picker";
   // On mobile the primary nav is the bottom tab bar (MobileShell), so the header
   // reserves no rail space and shows no hamburger (the drawer is kept in the code
   // but intentionally unreachable on mobile).
@@ -89,7 +91,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
       data-vayra-topbar
       data-scrolled={scrolled ? "" : undefined}
       className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} ${
-        searchInSidebar ? "h-16" : "h-20"
+        quietDesktopHeader ? "h-16" : "h-20"
       } transition-[background-color,backdrop-filter,box-shadow] duration-200 ${
         scrolled ? "vayra-topbar-scrolled" : ""
       }`}
@@ -108,21 +110,23 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
         >
           {showHamburger && (
             <button
+              type="button"
               onClick={toggleNavDrawer}
               aria-label={t("Open menu")}
               data-tauri-drag-region="false"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated/70 text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
+              className="vayra-chrome-pill h-9 w-9 shrink-0"
             >
-              <Menu size={20} strokeWidth={2} />
+              <Menu size={18} strokeWidth={2} />
             </button>
           )}
           {onLiveRoot && (
             <button
+              type="button"
               onClick={() => setView("home")}
               aria-label={t("common.back")}
-              className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-edge-soft/60 bg-canvas/85 ps-3 pe-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
+              className="vayra-chrome-pill h-9 shrink-0 gap-2 ps-3 pe-4 text-[13px] font-medium"
             >
-              <ArrowLeft size={15} strokeWidth={2.2} className="dir-icon" />
+              <ArrowLeft size={15} strokeWidth={2.1} className="dir-icon" />
               {t("common.back")}
             </button>
           )}
@@ -135,7 +139,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
             </div>
           )}
           {/* The desktop settings navigation carries its own Back button. */}
-          {!onLiveRoot && !connecting && !(view === "settings" && hasNativeDesktopUx()) && <BackChrome />}
+          {!onLiveRoot && !connecting && !(view === "settings" && quietDesktopHeader) && <BackChrome />}
         </div>
         <div
           {...dragProps}
@@ -151,13 +155,16 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
           <DownloadsButton />
           {!onLiveRoot && <TogetherButton />}
           {IS_TAURI && !settings.useNativeTitleBar && (
-            <div className="ms-1 flex items-center gap-2">
+            <div
+              data-tauri-drag-region="false"
+              className="ms-1 inline-flex items-center gap-0.5 rounded-full border border-edge-soft/75 bg-surface/85 p-0.5 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+            >
               <Control
                 label={t("chrome.minimize")}
                 shortcut={windowControlShortcut("minimize")}
                 onClick={() => void minimize()}
               >
-                <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 13 13" fill="none">
+                <svg aria-hidden="true" focusable="false" width="15" height="15" viewBox="0 0 13 13" fill="none">
                   <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </Control>
@@ -166,7 +173,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
                 shortcut={windowControlShortcut("zoom")}
                 onClick={() => void toggleMaximize()}
               >
-                <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 13 13" fill="none">
+                <svg aria-hidden="true" focusable="false" width="15" height="15" viewBox="0 0 13 13" fill="none">
                   {maxed ? (
                     <>
                       <rect x="2.5" y="4.5" width="6" height="6" stroke="currentColor" strokeWidth="1.4" rx="1" />
@@ -181,8 +188,9 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
                 label={t("common.close")}
                 shortcut={windowControlShortcut("close")}
                 onClick={close}
+                danger
               >
-                <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 13 13" fill="none">
+                <svg aria-hidden="true" focusable="false" width="15" height="15" viewBox="0 0 13 13" fill="none">
                   <path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </Control>
@@ -232,23 +240,16 @@ export function TogetherButton({
 
   const above = popoverPlacement === "above-left";
   const idleSize = live
-    ? variant === "ghost"
-      ? "h-9 gap-2 ps-3 pe-2"
-      : "h-11 gap-2.5 ps-3 pe-2"
-    : variant === "ghost"
-      ? "h-9 w-9 justify-center"
-      : "h-11 w-11 justify-center";
+    ? "h-9 gap-2 ps-3 pe-2"
+    : "h-9 w-9 justify-center";
   const sizing =
-    modalOpen && !above ? (live ? "h-14 gap-2 px-3" : "h-14 w-11 justify-center") : idleSize;
-  const idleChrome = `border border-transparent ${variant === "ghost" ? "rounded-full" : "rounded-xl"} ${
-    live
-      ? variant === "ghost"
-        ? "text-ink hover:bg-white/12"
-        : "bg-elevated/70 text-ink hover:bg-elevated"
-      : variant === "ghost"
-        ? "text-ink-muted hover:bg-white/12 hover:text-ink"
-        : "bg-elevated/70 text-ink-muted hover:bg-elevated hover:text-ink"
-  }`;
+    modalOpen && !above ? (live ? "h-12 gap-2 px-3" : "h-12 w-9 justify-center") : idleSize;
+  const idleChrome =
+    variant === "ghost"
+      ? `rounded-full border border-transparent ${
+          live ? "text-ink hover:bg-white/12" : "text-ink-muted hover:bg-white/12 hover:text-ink"
+        }`
+      : `vayra-chrome-pill ${live ? "border-edge text-ink" : ""}`;
   const chrome = modalOpen
     ? `z-[51] harbor-together-surface border border-edge text-ink ${
         above ? "rounded-t-none rounded-b-lg border-t-0" : "rounded-b-none rounded-t-lg border-b-0"
@@ -258,6 +259,7 @@ export function TogetherButton({
   return (
     <div ref={wrapRef} className={`relative ${modalOpen && !above ? "harbor-wt-wrap flex flex-col self-stretch justify-end" : ""}`}>
       <button
+        type="button"
         aria-label={t("chrome.watchTogether")}
         onClick={() => (modalOpen ? closeModal() : openModal())}
         className={`relative flex items-center transition-colors duration-150 ${modalOpen && !above ? "harbor-wt-tab" : ""} ${sizing} ${chrome}`}
@@ -309,7 +311,7 @@ export function TogetherButton({
             </div>
           </>
         ) : (
-          <Users size={17} strokeWidth={1.9} />
+          <Users size={16} strokeWidth={1.9} />
         )}
       </button>
       {modalOpen && (
@@ -346,10 +348,10 @@ function SearchPill() {
       data-tauri-drag-region="false"
       aria-keyshortcuts={os === "mac" ? "Meta+F" : os === "windows" ? "Control+F" : undefined}
       onClick={() => setOpen(true)}
-      className="flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/75 bg-surface/90 px-5 text-start opacity-95 transition-[opacity,background-color,border-color] duration-200 hover:border-edge hover:bg-elevated hover:opacity-100"
+      className="flex h-10 w-full items-center gap-3 rounded-full border border-edge-soft/75 bg-surface/85 px-4.5 text-start opacity-95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-[opacity,background-color,border-color] duration-200 hover:border-edge hover:bg-elevated hover:opacity-100"
     >
-      <Search size={16} strokeWidth={1.75} className="text-ink-subtle" />
-      <span className="flex-1 truncate text-[14px] text-ink-subtle">{t("search.placeholder")}</span>
+      <Search size={15} strokeWidth={1.85} className="text-ink-subtle" />
+      <span className="flex-1 truncate text-[13.5px] text-ink-subtle">{t("search.placeholder")}</span>
       <kbd className="hidden shrink-0 rounded-md border border-edge-soft bg-canvas/50 px-1.5 py-0.5 font-mono text-[10.5px] font-medium text-ink-subtle sm:inline">
         {os === "mac" ? "⌘ F" : os === "windows" ? "Ctrl F" : formatBindingForDisplay(binding)}
       </kbd>
@@ -361,11 +363,13 @@ function Control({
   label,
   shortcut,
   onClick,
+  danger,
   children,
 }: {
   label: string;
   shortcut?: string;
   onClick: () => void;
+  danger?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -375,7 +379,9 @@ function Control({
       aria-keyshortcuts={shortcut}
       title={label}
       onClick={onClick}
-      className="flex h-11 w-12 items-center justify-center rounded-xl bg-elevated/70 text-ink-muted transition-colors duration-150 hover:bg-elevated hover:text-ink"
+      className={`flex h-8 w-9 items-center justify-center rounded-full text-ink-muted transition-[color,background-color] duration-150 ${
+        danger ? "hover:bg-danger hover:text-white" : "hover:bg-elevated hover:text-ink"
+      }`}
     >
       {children}
     </button>

@@ -31,9 +31,9 @@ export function FloatingBack({
       onClick={onClick}
       aria-label={t("common.back")}
       style={{ position: "fixed", top: offsetTop, insetInlineStart: offsetLeft, zIndex: 70 }}
-      className="flex h-10 items-center gap-2 rounded-full border border-edge-soft bg-canvas/90 ps-3 pe-5 text-[13.5px] font-medium text-ink-muted shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)] backdrop-blur-md transition-colors hover:bg-canvas hover:text-ink"
+      className="vayra-chrome-pill h-9 gap-2 ps-3 pe-4 text-[13px] font-medium"
     >
-      <ArrowLeft size={15} className="dir-icon" />
+      <ArrowLeft size={15} strokeWidth={2.1} className="dir-icon" />
       {t("common.back")}
     </button>
   );

@@ -39,12 +39,11 @@ export function RecordingPill() {
   return (
     <div ref={wrapRef} className="relative">
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={t("Recordings")}
-        className={`relative flex h-11 items-center gap-2 rounded-xl px-3 transition-colors duration-150 ${
-          showRecording
-            ? "bg-elevated/85 text-ink hover:bg-elevated"
-            : "bg-elevated/70 text-ink-muted hover:bg-elevated hover:text-ink"
+        className={`relative h-9 gap-2 px-3.5 vayra-chrome-pill ${
+          showRecording || open ? "border-edge bg-elevated text-ink" : ""
         }`}
       >
         <span className="relative h-2 w-2">
@@ -57,7 +56,7 @@ export function RecordingPill() {
             <span className="absolute inset-0 rounded-full bg-danger animate-ping opacity-70" />
           )}
         </span>
-        <span className="text-[11.5px] font-semibold uppercase tracking-[0.22em]">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">
           {showRecording ? t("Rec") : t("Done")}
         </span>
         {active.length > 1 && (
@@ -72,9 +71,9 @@ export function RecordingPill() {
         )}
       </button>
       {open && (
-        <div className="absolute end-0 top-[calc(100%+10px)] z-50 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-edge bg-elevated/97 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-150">
-          <div className="flex items-center justify-between border-b border-edge-soft px-4 py-3">
-            <span className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-ink-subtle">
+        <div className="absolute end-0 top-[calc(100%+10px)] z-50 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-edge-soft/85 bg-surface/95 shadow-[0_24px_64px_-20px_rgba(0,0,0,0.82)] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between border-b border-edge-soft/60 px-4 py-3">
+            <span className="vayra-kicker text-ink">
               {t("Recordings")}
             </span>
             <span className="text-[11px] text-ink-subtle">

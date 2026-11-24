@@ -24,10 +24,11 @@ export function BackChrome() {
   const label = topKind === "downloads" && meta ? t("Back to {title}", { title: meta.name }) : t("common.back");
   return (
     <button
+      type="button"
       onClick={goBack}
-      className="flex h-10 min-w-0 max-w-[20rem] shrink-0 items-center gap-2 rounded-full border border-edge-soft/60 bg-canvas/85 ps-3 pe-5 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
+      className="vayra-chrome-pill h-9 min-w-0 max-w-[20rem] shrink-0 gap-2 ps-3 pe-4 text-[13px] font-medium"
     >
-      <ArrowLeft size={15} className="dir-icon shrink-0" />
+      <ArrowLeft size={15} strokeWidth={2.1} className="dir-icon shrink-0" />
       <span className="truncate">{label}</span>
     </button>
   );
