@@ -25,7 +25,7 @@ use librqbit::{
     SessionOptions, SessionPersistenceConfig,
 };
 use serde::Serialize;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::net::TcpListener;
 use tokio::time::timeout;
 
@@ -337,7 +337,7 @@ pub struct EngineConfig {
 }
 
 fn config_path(app: &AppHandle) -> Option<std::path::PathBuf> {
-    app.path().app_cache_dir().ok().map(|d| d.join("engine.json"))
+    crate::profile_dir::cache_dir(app).ok().map(|d| d.join("engine.json"))
 }
 
 fn read_config(app: &AppHandle) -> EngineConfig {
@@ -351,10 +351,11 @@ fn engine_dir(app: &AppHandle, cfg: &EngineConfig) -> Result<std::path::PathBuf,
     if let Some(custom) = cfg.dir.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         return Ok(std::path::PathBuf::from(custom).join("harbor-stream-cache"));
     }
-    app.path()
-        .app_cache_dir()
-        .map_err(|e| e.to_string())
-        .map(|d| d.join("engine"))
+    default_engine_dir(app)
+}
+
+fn default_engine_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    crate::profile_dir::cache_dir(app).map(|d| d.join("engine"))
 }
 
 /// One engine start at a time. Restoring the previous torrents can take minutes;

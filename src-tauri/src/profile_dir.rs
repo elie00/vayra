@@ -31,6 +31,15 @@ pub fn data_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     }
 }
 
+/// Where the torrent engine keeps its session and configuration, and mpv its
+/// disk cache.
+pub fn cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    match dev_data_dir() {
+        Some(dir) => Ok(dir.join("cache")),
+        None => app.path().app_cache_dir().map_err(|e| e.to_string()),
+    }
+}
+
 /// The keyring service for this instance: `base`, or `base.dev-<tag>`.
 #[cfg(desktop)]
 pub fn keyring_service(base: &str) -> String {

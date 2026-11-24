@@ -562,7 +562,7 @@ pub async fn mpv_start(
         let _ = mpv.set_property("demuxer-max-bytes", "256MiB");
         let _ = mpv.set_property("demuxer-max-back-bytes", "32MiB");
         let _ = mpv.set_property("demuxer-readahead-secs", "120");
-        if let Ok(base) = app.path().app_cache_dir() {
+        if let Ok(base) = crate::profile_dir::cache_dir(&app) {
             let dir = base.join("mpv-cache");
             let _ = std::fs::create_dir_all(&dir);
             sweep_stale_cache(&dir);
