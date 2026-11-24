@@ -25,7 +25,7 @@ import {
 } from "@/lib/manual-watched";
 import { useCwAdvance } from "./home/hooks/use-cw-advance";
 import { useScrollMemory, useView } from "@/lib/view";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { heroSlides, MobileContinueWatching, MobileHeroRow } from "@/mobile/home";
 import { buildShowHero, bucketCopy } from "./shows/hero-curation";
 import { showSpecs } from "./shows/show-specs";
@@ -282,7 +282,11 @@ export function Shows({ active = true }: { active?: boolean }) {
   return (
     <main ref={scrollCb} className="relative h-full overflow-y-auto bg-canvas">
       <ScrollRootContext.Provider value={scrollEl}>
-        <div className="relative flex w-full flex-col gap-12 px-12 pb-32 pt-32">
+        <div
+          className={`relative flex w-full flex-col gap-10 px-8 pb-32 sm:px-12 ${
+            hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-28"
+          }`}
+        >
           <PageMast />
           <div className="relative">
             <PeekHero slides={hero} />
@@ -345,16 +349,19 @@ function PageMast() {
   const t = useT();
   const copy = bucketCopy();
   return (
-    <header data-tauri-drag-region className="flex flex-col gap-2">
-      <span className="text-[11px] font-bold uppercase tracking-[0.42em] text-ink-subtle">
-        {t(copy.kicker)}
-      </span>
-      <h1 className="font-display text-[44px] font-medium leading-[1.05] tracking-tight text-ink">
-        {t(copy.title)}
-      </h1>
-      <p className="max-w-2xl text-[15px] leading-relaxed text-ink-muted">
-        {t(copy.subtitle)}
-      </p>
+    <header data-tauri-drag-region className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <span className="vayra-kicker">
+          {t(copy.kicker)}
+        </span>
+        <h1 className="mac-page-title">
+          {t(copy.title)}
+        </h1>
+        <p className="max-w-2xl text-[14.5px] leading-relaxed text-ink-muted">
+          {t(copy.subtitle)}
+        </p>
+      </div>
+      <div className="vayra-header-rule" aria-hidden="true" />
     </header>
   );
 }

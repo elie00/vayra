@@ -59,7 +59,7 @@ import { loadSimklWatchedMap, loadSimklStatusMap, type WatchlistStatus } from "@
 import { loadAnilistWatchedMap } from "@/lib/anilist/watched-map";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { heroSlides, MobileContinueWatching, MobileHeroRow } from "@/mobile/home";
 
 export { isAnimeRow } from "./anime/anime-rows";
@@ -610,7 +610,11 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     <main
       ref={scrollCb}
       className={`flex-1 overflow-y-auto overflow-x-hidden ${
-        mobile ? "px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]" : "px-12 pt-28 pb-14"
+        mobile
+          ? "px-4 pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]"
+          : hasNativeDesktopUx()
+            ? "px-8 pt-16 pb-16 sm:px-12 lg:pt-20"
+            : "px-12 pt-28 pb-14"
       }`}
     >
       <ScrollRootContext.Provider value={scrollEl}>

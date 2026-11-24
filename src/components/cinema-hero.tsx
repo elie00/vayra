@@ -126,7 +126,7 @@ export function CinemaHero({
 
   if (slides.length === 0) {
     return (
-      <section className="harbor-bleed-stremio relative h-[78vh] min-h-[640px] animate-pulse bg-elevated/30" />
+      <section className="harbor-bleed-stremio relative h-[74vh] min-h-[580px] max-h-[820px] animate-pulse bg-elevated/30" />
     );
   }
 
@@ -135,7 +135,7 @@ export function CinemaHero({
   return (
     <section
       ref={ref}
-      className="harbor-bleed-stremio relative h-[78vh] min-h-[640px] overflow-hidden bg-canvas"
+      className="harbor-bleed-stremio relative h-[74vh] min-h-[580px] max-h-[820px] overflow-hidden bg-canvas"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -341,13 +341,14 @@ function CinemaSlide({
           />
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/70 via-30% to-transparent" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-canvas/55 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/68 via-32% to-transparent" />
       <MetaAwardsCorner meta={meta} imdbId={resolvedImdb} />
-      <div className="absolute inset-y-0 start-0 w-3/5 bg-gradient-to-r from-canvas/95 via-canvas/55 to-transparent rtl:bg-gradient-to-l" />
+      <div className="absolute inset-y-0 start-0 w-3/5 bg-gradient-to-r from-canvas/94 via-canvas/54 to-transparent rtl:bg-gradient-to-l" />
 
-      <div className="relative flex h-full items-end pb-28 ps-20 pe-20">
-        <div className="flex max-w-[640px] flex-col gap-5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.42em] text-ink-subtle">
+      <div className="relative flex h-full items-end pb-24 ps-12 pe-12 lg:ps-16 lg:pe-16">
+        <div className="flex max-w-[620px] flex-col gap-4.5">
+          <span className="vayra-kicker">
             {t(eyebrow)}
           </span>
           <CinemaTitlePlate
@@ -361,7 +362,7 @@ function CinemaSlide({
               setLogoResolved(true);
             }}
           />
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] tracking-wide text-ink-muted">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-ink-muted">
             {meta.releaseInfo && <span>{meta.releaseInfo}</span>}
             {meta.runtime && <Dot />}
             {meta.runtime && <span>{meta.runtime}</span>}
@@ -378,25 +379,27 @@ function CinemaSlide({
             )}
           </div>
           {description && (
-            <p className="line-clamp-2 max-w-[560px] text-[15.5px] leading-relaxed text-ink-muted">
+            <p className="line-clamp-2 max-w-[560px] text-[15px] leading-relaxed text-ink-muted">
               {description}
             </p>
           )}
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-1.5 flex items-center gap-2.5">
             <button
+              type="button"
               onClick={() => openPicker(meta, smartPlayEpisode(meta), { autoPlay: settings.instantPlay })}
-              className="flex h-12 items-center gap-2.5 rounded-md bg-ink px-7 text-[14.5px] font-semibold text-canvas shadow-[0_8px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.5)] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
+              className="inline-flex h-11 items-center gap-2.5 rounded-xl bg-ink px-6 text-[14.5px] font-semibold tracking-[-0.01em] text-canvas shadow-[0_14px_34px_-12px_rgba(0,0,0,0.65)] transition-[opacity,transform] duration-150 hover:opacity-92 active:scale-[0.98]"
             >
-              <Play size={17} fill="currentColor" />
+              <Play size={16} fill="currentColor" />
               {t("Play")}
             </button>
             <button
+              type="button"
               onClick={() => openMeta(meta)}
-              className="flex h-12 items-center gap-2.5 rounded-md border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-edge-soft/80 bg-surface/80 px-5 text-[14px] font-medium text-ink backdrop-blur-xl transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated"
             >
-              <Info size={16} strokeWidth={2} />
+              <Info size={15} strokeWidth={2} />
               {t("More info")}
-              <ChevronRight size={15} strokeWidth={2} className="dir-icon opacity-65" />
+              <ChevronRight size={14} strokeWidth={2} className="dir-icon opacity-65" />
             </button>
           </div>
         </div>
@@ -421,7 +424,7 @@ function CinemaTitlePlate({
   onError: () => void;
 }) {
   return (
-    <div className="relative flex min-h-[120px] items-end">
+    <div className="relative flex min-h-[108px] items-end">
       {logo ? (
         <img
           src={logo}
@@ -429,7 +432,7 @@ function CinemaTitlePlate({
           decoding="async"
           onLoad={onLoad}
           onError={onError}
-          className="max-h-[140px] w-auto max-w-[520px] object-contain object-left rtl:object-right drop-shadow-[0_8px_28px_rgba(0,0,0,0.55)]"
+          className="max-h-[124px] w-auto max-w-[480px] object-contain object-left rtl:object-right drop-shadow-[0_8px_28px_rgba(0,0,0,0.55)]"
           style={{
             opacity: loaded ? 1 : 0,
             transition: "opacity 360ms cubic-bezier(0.32, 0.72, 0.24, 1)",
@@ -437,7 +440,7 @@ function CinemaTitlePlate({
         />
       ) : resolved ? (
         <h2
-          className="font-display text-[72px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink"
+          className="font-display text-[clamp(36px,4.2vw,60px)] font-semibold leading-[1.04] tracking-[-0.03em] text-ink"
           style={{ animation: "harbor-fade-in 420ms cubic-bezier(0.32, 0.72, 0.24, 1) both" }}
         >
           {name}

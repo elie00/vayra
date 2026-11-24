@@ -5,6 +5,7 @@ import { listBrowseCatalogs, type BrowseCatalog } from "@/lib/catalog-browse";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { CatalogShelf } from "./catalogs/catalog-shelf";
 import { CatalogManageList } from "./catalogs/catalog-manage-list";
 import { AddonFilterSelect } from "./catalogs/addon-filter-select";
@@ -76,13 +77,18 @@ export function Catalogs({ active = true }: { active?: boolean }) {
   );
 
   return (
-    <main className="flex-1 overflow-y-auto px-12 pb-24 pt-28">
+    <main
+      className={`flex-1 overflow-y-auto px-8 pb-24 sm:px-12 ${
+        hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-28"
+      }`}
+    >
       <div data-tauri-drag-region className="flex flex-col gap-8">
         <header className="flex flex-col gap-5">
-          <div className="flex items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-col gap-1.5">
-              <h1 className="font-display text-[30px] font-medium tracking-tight text-ink">{t("Catalogs")}</h1>
-              <p className="text-[14px] text-ink-muted">
+              <span className="vayra-kicker">{t("Explore")}</span>
+              <h1 className="mac-page-title">{t("Catalogs")}</h1>
+              <p className="max-w-2xl text-[14px] leading-relaxed text-ink-muted">
                 {customize
                   ? t("Choose what shows, what stays hidden, and what sits up top.")
                   : t("Everything your addons offer, shown as posters. Scroll, search, or filter to what you want.")}
@@ -90,42 +96,43 @@ export function Catalogs({ active = true }: { active?: boolean }) {
             </div>
             {!loading && catalogs.length > 0 && (
               <button
+                type="button"
+                aria-pressed={customize}
                 onClick={() => setCustomize((v) => !v)}
-                className={`flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors ${
-                  customize
-                    ? "bg-ink text-canvas"
-                    : "border border-edge-soft bg-elevated/40 text-ink-muted hover:bg-elevated hover:text-ink"
-                }`}
+                className={customize ? "mac-primary-button" : "mac-secondary-button"}
               >
-                {customize ? <Check size={16} /> : <SlidersHorizontal size={15} />}
+                {customize ? <Check size={15} /> : <SlidersHorizontal size={15} />}
                 {customize ? t("Done") : t("Customize")}
               </button>
             )}
           </div>
+          <div className="vayra-header-rule" aria-hidden="true" />
 
           {!loading && catalogs.length > 0 && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="relative h-11 w-full max-w-[360px] min-w-0">
-                  <Search size={16} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
+                <div className="relative h-10 w-full max-w-[340px] min-w-0">
+                  <Search size={15} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={t("Search catalogs")}
+                    aria-label={t("Search catalogs")}
                     spellCheck={false}
-                    className="h-full w-full rounded-full border border-edge-soft bg-elevated/40 ps-10 pe-9 text-[14px] text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-edge"
+                    className="h-full w-full rounded-xl border border-edge-soft/75 bg-surface/85 ps-9.5 pe-9 text-[13.5px] text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-edge"
                   />
                   {query && (
                     <button
+                      type="button"
                       onClick={() => setQuery("")}
                       aria-label={t("Clear")}
-                      className="absolute end-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
+                      className="absolute end-2 top-1/2 flex h-6.5 w-6.5 -translate-y-1/2 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
                     >
-                      <X size={15} />
+                      <X size={14} />
                     </button>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="vayra-pill-track flex-wrap">
                   <Chip label={t("All")} active={typeFilter === "all"} onClick={() => setTypeFilter("all")} />
                   {types.map((ty) => (
                     <Chip
@@ -214,9 +221,11 @@ export function Catalogs({ active = true }: { active?: boolean }) {
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
-      className={`h-9 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-        active ? "bg-ink text-canvas" : "bg-elevated/40 text-ink-muted hover:bg-elevated hover:text-ink"
+      className={`h-8 rounded-lg px-3.5 text-[12.5px] font-semibold transition-colors ${
+        active ? "bg-ink text-canvas" : "text-ink-muted hover:bg-elevated hover:text-ink"
       }`}
     >
       {label}

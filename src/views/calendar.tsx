@@ -17,6 +17,7 @@ import { useTrakt } from "@/lib/trakt/provider";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { hasNativeDesktopUx } from "@/lib/platform";
 import { DayModal } from "./calendar/day-modal";
 import { EmptyState, ErrorState, NoKeyState, NotSignedInState } from "./calendar/empty-states";
 import { MonthGrid } from "./calendar/month-grid";
@@ -156,44 +157,51 @@ export function CalendarView() {
 
   return (
     <main className="flex h-full flex-col overflow-hidden">
-      <header className="shrink-0 border-b border-edge-soft px-12 pb-5 pt-24 max-sm:px-4 max-sm:pb-3 max-sm:pt-[calc(4.5rem+var(--harbor-status-bar,1.75rem))]">
+      <header
+        className={`shrink-0 border-b border-edge-soft/65 px-8 pb-5 sm:px-12 max-sm:px-4 max-sm:pb-3 max-sm:pt-[calc(4.5rem+var(--harbor-status-bar,1.75rem))] ${
+          hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24"
+        }`}
+      >
         <div className="flex items-end justify-between gap-6 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
+            <span className="vayra-kicker">
               {t("Releases")}
             </span>
-            <h1 className="font-display text-[44px] font-medium leading-none tracking-tight text-ink max-sm:type-title-1">
+            <h1 className="mac-page-title max-sm:type-title-1">
               {t("Calendar")}
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-2 max-sm:w-full">
             <button
+              type="button"
               onClick={goPrev}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-edge-soft text-ink-muted transition-colors hover:border-edge hover:text-ink"
+              className="vayra-chrome-pill h-9 w-9"
               aria-label={t("Previous month")}
             >
-              <ChevronLeft size={16} strokeWidth={2.2} className="dir-icon" />
+              <ChevronLeft size={15} strokeWidth={2.2} className="dir-icon" />
             </button>
             <button
+              type="button"
               onClick={goToday}
-              className="h-10 rounded-full border border-edge-soft px-4 text-[13px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
+              className="vayra-chrome-pill h-9 px-3.5 text-[12.5px] font-semibold"
             >
               {t("Today")}
             </button>
-            <div className="flex h-10 min-w-[150px] items-center justify-center gap-2 rounded-full border border-edge-soft px-5 text-[14px] font-semibold text-ink max-sm:min-w-0 max-sm:flex-1 max-sm:px-3">
-              <CalendarIcon size={14} strokeWidth={2} className="text-ink-subtle" />
+            <div className="flex h-9 min-w-[148px] items-center justify-center gap-2 rounded-full border border-edge-soft/75 bg-surface/85 px-4 text-[13.5px] font-semibold text-ink max-sm:min-w-0 max-sm:flex-1 max-sm:px-3">
+              <CalendarIcon size={13} strokeWidth={2} className="text-ink-subtle" />
               {t(MONTH_NAMES[month])} {year}
             </div>
             <button
+              type="button"
               onClick={goNext}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-edge-soft text-ink-muted transition-colors hover:border-edge hover:text-ink"
+              className="vayra-chrome-pill h-9 w-9"
               aria-label={t("Next month")}
             >
-              <ChevronRight size={16} strokeWidth={2.2} className="dir-icon" />
+              <ChevronRight size={15} strokeWidth={2.2} className="dir-icon" />
             </button>
           </div>
         </div>
-        <nav className="mt-6 flex flex-wrap items-center gap-3 max-sm:-mx-4 max-sm:mt-3 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden max-sm:[&_button]:whitespace-nowrap max-sm:[&>*]:shrink-0">
+        <nav className="mt-5 flex flex-wrap items-center gap-2.5 max-sm:-mx-4 max-sm:mt-3 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden max-sm:[&_button]:whitespace-nowrap max-sm:[&>*]:shrink-0">
           <SourceSwitcher
             value={source}
             onChange={(s) => update({ calendarSource: s })}
@@ -201,11 +209,13 @@ export function CalendarView() {
             simklConnected={simklConnected}
           />
           <button
+            type="button"
+            aria-pressed={settings.weekStartsMonday}
             onClick={() => update({ weekStartsMonday: !settings.weekStartsMonday })}
-            className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
+            className={`h-8.5 rounded-xl px-3.5 text-[12.5px] font-semibold transition-colors ${
               settings.weekStartsMonday
                 ? "bg-ink text-canvas"
-                : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
+                : "border border-edge-soft/75 bg-surface/80 text-ink-muted hover:border-edge hover:text-ink"
             }`}
           >
             {t("Start week on Monday")}
@@ -220,8 +230,8 @@ export function CalendarView() {
           )}
           {showAllControls && (
             <>
-              <span className="mx-1 h-5 w-px bg-edge-soft" />
-              <div className="flex flex-wrap items-center gap-2 max-sm:flex-nowrap">
+              <span className="mx-0.5 h-5 w-px bg-edge-soft/75" />
+              <div className="vayra-pill-track flex-wrap max-sm:flex-nowrap">
                 {FILTERS.map((f) => {
                   const active = filter === f.id;
                   const count =
@@ -231,11 +241,13 @@ export function CalendarView() {
                   return (
                     <button
                       key={f.id}
+                      type="button"
+                      aria-pressed={active}
                       onClick={() => setFilter(f.id)}
-                      className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                      className={`flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-colors ${
                         active
                           ? "bg-ink text-canvas"
-                          : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
+                          : "text-ink-muted hover:bg-elevated hover:text-ink"
                       }`}
                     >
                       {t(f.label)}
@@ -250,13 +262,15 @@ export function CalendarView() {
                   );
                 })}
                 <button
+                  type="button"
+                  aria-pressed={watchlistOnly}
                   onClick={() => authKey && setWatchlistOnly((v) => !v)}
                   disabled={!authKey}
                   title={!authKey ? t("Sign in to filter by your library") : undefined}
-                  className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     watchlistOnly
                       ? "bg-ink text-canvas"
-                      : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
+                      : "text-ink-muted hover:bg-elevated hover:text-ink"
                   }`}
                 >
                   <Star
@@ -271,8 +285,8 @@ export function CalendarView() {
           )}
           {showPremiereFilters && (
             <>
-              <span className="mx-1 h-5 w-px bg-edge-soft" />
-              <div className="flex flex-wrap items-center gap-2 max-sm:flex-nowrap">
+              <span className="mx-0.5 h-5 w-px bg-edge-soft/75" />
+              <div className="vayra-pill-track flex-wrap max-sm:flex-nowrap">
                 {FILTERS.map((f) => {
                   const active = filter === f.id;
                   const count =
@@ -280,11 +294,13 @@ export function CalendarView() {
                   return (
                     <button
                       key={f.id}
+                      type="button"
+                      aria-pressed={active}
                       onClick={() => setFilter(f.id)}
-                      className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                      className={`flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-[12.5px] font-semibold transition-colors ${
                         active
                           ? "bg-ink text-canvas"
-                          : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
+                          : "text-ink-muted hover:bg-elevated hover:text-ink"
                       }`}
                     >
                       {t(f.label)}
@@ -304,7 +320,7 @@ export function CalendarView() {
         </nav>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 py-8 max-sm:px-4 max-sm:py-4">{body}</div>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-8 py-8 sm:px-12 max-sm:px-4 max-sm:py-4">{body}</div>
 
       {dayModal && dayModalItems.length > 0 && (
         <DayModal

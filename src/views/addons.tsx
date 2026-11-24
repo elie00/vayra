@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AgeGateModal } from "@/components/age-gate-modal";
 import { HarborLoader } from "@/components/harbor-loader";
 import { openInstallerViewport } from "@/components/installer-viewport";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { MobileAddons } from "@/mobile/addons";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useSettings } from "@/lib/settings";
@@ -378,26 +378,32 @@ export function AddonsView() {
         onClose={() => setAgeGateOpen(false)}
         onPass={() => update({ showAdultAddons: true })}
       />
-      <header className="shrink-0 px-12 pt-20 pb-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <nav className="flex flex-wrap items-center gap-1">
+      <header
+        className={`shrink-0 px-8 pb-3 sm:px-12 ${
+          hasNativeDesktopUx() ? "pt-16 lg:pt-18" : "pt-20"
+        }`}
+      >
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <nav className="vayra-pill-track flex-wrap">
             {(["discover", "browse", "installed"] as Tab[]).map((tabId) => {
               const active = tab === tabId;
               if (tabId === "installed") {
                 return (
                   <button
                     key={tabId}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() => setTab(tabId)}
-                    className={`flex h-12 items-center gap-2 rounded-full px-4 text-[14px] font-semibold transition-colors ${
+                    className={`flex h-9 items-center gap-2 rounded-lg px-3.5 text-[13px] font-semibold transition-colors ${
                       active
                         ? "bg-ink text-canvas"
                         : "text-ink-muted hover:bg-elevated hover:text-ink"
                     }`}
                   >
-                    <Check size={15} strokeWidth={2.6} className={active ? "" : "text-accent"} />
+                    <Check size={14} strokeWidth={2.5} className={active ? "" : "text-accent"} />
                     <span>{t("Installed")}</span>
                     <span
-                      className={`min-w-[1.5rem] rounded-full px-1.5 py-0.5 text-[11.5px] font-bold tabular-nums ${
+                      className={`min-w-[1.4rem] rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
                         active ? "bg-canvas/15 text-canvas" : "bg-edge text-ink-muted"
                       }`}
                     >
@@ -408,11 +414,13 @@ export function AddonsView() {
               }
               const btn = (
                 <button
+                  type="button"
+                  aria-pressed={active}
                   onClick={() => {
                     setTab(tabId);
                     if (tabId === "browse") setCategoryFilter(null);
                   }}
-                  className={`flex h-12 items-center rounded-full px-5 text-[14px] font-semibold transition-colors ${
+                  className={`flex h-9 items-center rounded-lg px-4 text-[13px] font-semibold transition-colors ${
                     active
                       ? "bg-ink text-canvas"
                       : "text-ink-muted hover:bg-elevated hover:text-ink"
@@ -425,7 +433,7 @@ export function AddonsView() {
                 return (
                   <div key={tabId} className="group relative">
                     {btn}
-                    <div className="pointer-events-none invisible absolute start-0 top-full z-50 mt-2 w-80 rounded-xl border border-edge-soft bg-elevated/95 px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted opacity-0 shadow-xl backdrop-blur-md transition duration-150 group-hover:visible group-hover:opacity-100">
+                    <div className="pointer-events-none invisible absolute start-0 top-full z-50 mt-2 w-80 rounded-2xl border border-edge-soft/85 bg-surface/95 px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted opacity-0 shadow-[0_24px_64px_-20px_rgba(0,0,0,0.82)] backdrop-blur-2xl transition duration-150 group-hover:visible group-hover:opacity-100">
                       {t("Curated for popularity and reliability. No paid placements. Install anything else by URL on the Browse tab.")}
                     </div>
                   </div>
@@ -442,6 +450,8 @@ export function AddonsView() {
               <AddByUrlBar onSubmit={async (raw) => { setInstallModal({ kind: "install", url: raw }); }} compact />
             </div>
             <button
+              type="button"
+              aria-pressed={settings.showAdultAddons}
               onClick={() => {
                 if (settings.showAdultAddons) {
                   update({ showAdultAddons: false });
@@ -450,10 +460,10 @@ export function AddonsView() {
                 }
               }}
               title={settings.showAdultAddons ? t("Hide adult addons") : t("Show adult addons")}
-              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] transition-colors ${
+              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] transition-colors ${
                 settings.showAdultAddons
                   ? "border-ink bg-ink/10 text-ink"
-                  : "border-edge-soft text-ink-subtle hover:border-edge hover:text-ink-muted"
+                  : "border-edge-soft/75 bg-surface/80 text-ink-subtle hover:border-edge hover:text-ink-muted"
               }`}
             >
               <span
@@ -471,8 +481,10 @@ export function AddonsView() {
             </button>
             {tab === "browse" && (
               <button
+                type="button"
+                aria-expanded={filtersOpen}
                 onClick={() => setFiltersOpen((v) => !v)}
-                className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:border-edge hover:text-ink-muted"
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-edge-soft/75 bg-surface/80 px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:border-edge hover:text-ink-muted"
               >
                 <ChevronRight
                   size={13}
@@ -487,17 +499,19 @@ export function AddonsView() {
         {tab === "browse" && (
           <div
             className={`grid transition-[grid-template-rows,opacity,margin-top] duration-300 ease-out ${
-              filtersOpen ? "mt-4 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
+              filtersOpen ? "mt-3.5 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
             }`}
           >
             <div className="overflow-hidden">
-              <div className="flex flex-wrap items-center gap-2 pb-1">
+              <div className="flex flex-wrap items-center gap-1.5 pb-1">
                 <button
+                  type="button"
+                  aria-pressed={categoryFilter == null}
                   onClick={() => setCategoryFilter(null)}
-                  className={`flex h-10 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors ${
+                  className={`flex h-9 items-center gap-2 rounded-xl px-3.5 text-[13px] font-semibold transition-colors ${
                     categoryFilter == null
                       ? "bg-ink text-canvas"
-                      : "bg-elevated/40 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated/70 hover:text-ink"
+                      : "border border-edge-soft/75 bg-surface/80 text-ink-muted hover:border-edge hover:bg-elevated hover:text-ink"
                   }`}
                 >
                   {t("All")}
@@ -507,44 +521,49 @@ export function AddonsView() {
                   return (
                     <button
                       key={c.slug}
+                      type="button"
+                      aria-pressed={active}
                       onClick={() => setCategoryFilter(c.slug)}
-                      className={`flex h-10 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors ${
+                      className={`flex h-9 items-center gap-2 rounded-xl px-3.5 text-[13px] font-semibold transition-colors ${
                         active
                           ? "bg-ink text-canvas"
-                          : "bg-elevated/40 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated/70 hover:text-ink"
+                          : "border border-edge-soft/75 bg-surface/80 text-ink-muted hover:border-edge hover:bg-elevated hover:text-ink"
                       }`}
                     >
                       <span>{c.name}</span>
                     </button>
                   );
                 })}
-                <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-edge-soft" />
-                {BROWSE_MODES.map((m) => {
-                  const active = browseMode === m.id;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setBrowseMode(m.id)}
-                      title={t(m.sub)}
-                      className={`flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-                        active
-                          ? "bg-ink text-canvas"
-                          : "bg-elevated/40 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated/70 hover:text-ink"
-                      }`}
-                    >
-                      <m.Icon size={13} strokeWidth={2.4} className={active ? "" : "text-accent"} />
-                      {t(m.label)}
-                    </button>
-                  );
-                })}
+                <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-edge-soft/75" />
+                <div className="vayra-pill-track">
+                  {BROWSE_MODES.map((m) => {
+                    const active = browseMode === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setBrowseMode(m.id)}
+                        title={t(m.sub)}
+                        className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold transition-colors ${
+                          active
+                            ? "bg-ink text-canvas"
+                            : "text-ink-muted hover:bg-elevated hover:text-ink"
+                        }`}
+                      >
+                        <m.Icon size={12.5} strokeWidth={2.4} className={active ? "" : "text-accent"} />
+                        {t(m.label)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         )}
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 pb-20 pt-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-8 pb-20 pt-5 sm:px-12">
         {loading && allAddons.length === 0 ? (
           <div className="flex h-full items-center justify-center py-24">
             <HarborLoader size="lg" caption={t("Loading the catalog")} keyed />
