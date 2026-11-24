@@ -98,6 +98,7 @@ export function SeekBarPanel() {
                 key={c || "default"}
                 type="button"
                 onClick={() => update({ seekBarColor: c })}
+                aria-pressed={isSel}
                 className={`flex h-8 w-8 items-center justify-center rounded-full ring-2 transition-[transform,opacity,background-color,border-color,color,box-shadow] ${
                   isSel ? "ring-ink scale-110" : "ring-edge-soft hover:ring-edge"
                 }`}

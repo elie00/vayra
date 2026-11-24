@@ -338,6 +338,7 @@ function StreamFilterPicker({
         const selected = value === opt.id;
         return (
           <button
+            aria-pressed={selected}
             key={opt.id}
             type="button"
             onClick={() => onChange(opt.id)}
@@ -391,6 +392,7 @@ function PickerLayoutPicker({
         const selected = value === opt.id;
         return (
           <button
+            aria-pressed={selected}
             key={opt.id}
             type="button"
             onClick={() => onChange(opt.id)}
@@ -444,6 +446,7 @@ function StreamSortPicker({
         const selected = value === opt.id;
         return (
           <button
+            aria-pressed={selected}
             key={opt.id}
             type="button"
             onClick={() => onChange(opt.id)}

@@ -110,6 +110,27 @@ describe("run", () => {
     expect(document.querySelector("input")!.value).toBe("dune");
   });
 
+  it("chooses an option in a list by its label, so a change listener sees it", async () => {
+    html(`<select aria-label="Qualité"><option value="auto">Automatique</option><option value="1080">1080p</option><option value="4k">4K HDR</option></select>`);
+    const seen: string[] = [];
+    document.querySelector("select")!.addEventListener("change", (e) => seen.push((e.target as HTMLSelectElement).value));
+    await expect(run("choose", ["Qualité", "4k", "hdr"])).resolves.toMatchObject({ role: "combobox", state: { value: "4k" } });
+    expect(seen).toEqual(["4k"]);
+  });
+
+  it("refuses an option the list does not offer, or a field that is not a list", async () => {
+    html(`<select aria-label="Qualité"><option>Automatique</option><option>1080p</option></select><input aria-label="Nom">`);
+    await expect(run("choose", ["Qualité", "720p"])).rejects.toThrow('"Qualité" has no option "720p"; options: Automatique, 1080p');
+    await expect(run("choose", ["Nom", "x"])).rejects.toThrow('"Nom" is not a list');
+  });
+
+  it("asks for a longer label when several options match, and skips disabled ones", async () => {
+    html(`<select aria-label="Qualité"><option>1080p</option><option>1080p HDR</option><option disabled>4K</option></select>`);
+    await expect(run("choose", ["Qualité", "1080"])).rejects.toThrow('"Qualité" has several options matching "1080"; use a longer label: 1080p, 1080p HDR');
+    await expect(run("choose", ["Qualité", "1080p"])).resolves.toMatchObject({ state: { value: "1080p" } });
+    await expect(run("choose", ["Qualité", "4K"])).rejects.toThrow('"Qualité" has no option "4K"');
+  });
+
   it("waits for a control to leave the screen", async () => {
     html(`<button>Fermer</button>`);
     setTimeout(() => (document.body.innerHTML = ""), 150);

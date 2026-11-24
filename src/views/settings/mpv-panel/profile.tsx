@@ -32,6 +32,7 @@ export function QualityProfile() {
         const selected = value === p.id;
         return (
           <button
+            aria-pressed={selected}
             key={p.id}
             type="button"
             onClick={() => update({ mpvQuality: p.id })}

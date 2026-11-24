@@ -10,7 +10,7 @@ export function splitOp(text) {
 }
 
 /** Operations the app runs itself; the rest go through the host (adb, screencapture). */
-export const APP_OPS = new Set(["tree", "tap", "type", "value", "rect", "wait", "gone", "settle", "state", "logs", "key", "reload"]);
+export const APP_OPS = new Set(["tree", "tap", "type", "choose", "value", "rect", "wait", "gone", "settle", "state", "logs", "key", "reload"]);
 export const HOST_OPS = new Set(["screenshot", "back", "swipe", "launch", "restart", "sleep"]);
 
 export function planOps(texts) {

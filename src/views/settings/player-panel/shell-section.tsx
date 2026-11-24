@@ -11,6 +11,7 @@ export function ShellSection() {
         const selected = settings.playerShellId === shell.id;
         return (
           <button
+            aria-pressed={selected}
             key={shell.id}
             type="button"
             onClick={() => update({ playerShellId: shell.id })}

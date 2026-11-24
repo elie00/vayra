@@ -1,4 +1,4 @@
-import { agentTree, locate, reachable, TEXT_FIELDS } from "./a11y";
+import { agentTree, fold, LISTS, locate, reachable, TEXT_FIELDS } from "./a11y";
 
 /**
  * The operations an agent can run inside the app. Each takes string arguments
@@ -41,6 +41,25 @@ function typeInto(el: Element, text: string, name: string) {
   const proto = el instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
   Object.getOwnPropertyDescriptor(proto, "value")!.set!.call(el, text);
   el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/** Picks a list option by its label (or a unique part of it), the way a person would. */
+function chooseIn(el: HTMLSelectElement, label: string, name: string) {
+  const options = [...el.options].filter((o) => !o.disabled);
+  const want = fold(label.trim());
+  const exact = options.filter((o) => fold(o.text.trim()) === want);
+  const partial = options.filter((o) => fold(o.text).includes(want));
+  const match = exact.length === 1 ? exact[0] : exact.length === 0 && partial.length === 1 ? partial[0] : null;
+  if (!match) {
+    const list = options.map((o) => o.text.trim()).join(", ");
+    throw new Error(exact.length + partial.length > 1
+      ? `"${name}" has several options matching "${label}"; use a longer label: ${list}`
+      : `"${name}" has no option "${label}"; options: ${list}`);
+  }
+  el.focus();
+  match.selected = true;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 // The driver's own waits use the untracked timer, so settle does not wait on itself.
@@ -163,6 +182,17 @@ export async function run(op: string, args: string[]): Promise<unknown> {
       typeInto(element, args.slice(1).join(" "), node.name);
       return node;
     }
+    case "choose": {
+      const usage = "choose <list> <option>";
+      const { node, element } = locate(need(args[0], usage), document, LISTS);
+      const label = need(args.slice(1).join(" "), usage);
+      if (!(element instanceof HTMLSelectElement)) throw new Error(`#${node.index} "${node.name}" is not a list`);
+      if (node.state?.disabled) throw new Error(`#${node.index} "${node.name}" is disabled`);
+      element.scrollIntoView?.({ block: "center", inline: "center" });
+      if (!reachable(element)) throw new Error(`#${node.index} "${node.name}" is covered by another element; close what is on top first`);
+      chooseIn(element, label, node.name);
+      return { ...node, state: { ...node.state, value: element.value } };
+    }
     case "value": {
       // A field's content, aiming at the field when a button shares its name.
       const { node } = locate(need(args[0], "value <field>"), document, TEXT_FIELDS);
@@ -192,7 +222,7 @@ export async function run(op: string, args: string[]): Promise<unknown> {
       return { key };
     }
     default:
-      throw new Error(`unknown operation "${op}"; use tree, tap, type, value, rect, wait, gone, settle, state, logs, key or reload`);
+      throw new Error(`unknown operation "${op}"; use tree, tap, type, choose, value, rect, wait, gone, settle, state, logs, key or reload`);
   }
 }
 

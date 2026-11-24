@@ -48,6 +48,11 @@ const ACTIONABLE = new Set([
 
 /** What `type` aims at when a name is shared with a button. */
 export const TEXT_FIELDS: ReadonlySet<string> = new Set(["textbox", "searchbox", "combobox"]);
+/** The roles `choose` aims at when a button or a field shares the list's name. */
+export const LISTS: ReadonlySet<string> = new Set(["combobox"]);
+
+/** A name as matching compares it: case and accents aside. */
+export const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 const clean = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
 
@@ -170,7 +175,6 @@ export function locate(query: string, root: ParentNode = document, prefer?: Read
     if (!entry) throw new Error(`no node ${query}; the tree has ${entries.length}`);
     return entry;
   }
-  const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
   const q = fold(query.trim());
   const exact = entries.filter((e) => fold(e.node.name) === q);
   const containing = entries.filter((e) => fold(e.node.name).includes(q));

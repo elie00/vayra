@@ -13,6 +13,7 @@ describe("agent script", () => {
       { where: "app", op: "tap", args: ["Menu"] },
       { where: "host", op: "screenshot", args: ["/tmp/a.png"] },
     ]);
+    expect(planOps(["choose Qualité 1080p"])).toEqual([{ where: "app", op: "choose", args: ["Qualité", "1080p"] }]);
     expect(() => planOps(["click Menu"])).toThrow(/unknown operation "click"/);
   });
 

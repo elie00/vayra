@@ -49,6 +49,7 @@ export function PlayModePanel() {
             key={c.id}
             type="button"
             onClick={() => selectMode(c.id)}
+            aria-pressed={selected}
             className={`flex items-start gap-3.5 rounded-2xl border px-5 py-4 text-start transition-colors ${
               selected
                 ? "border-ink bg-elevated"
@@ -79,6 +80,8 @@ export function PlayModePanel() {
       <button
         type="button"
         id="set-remember-last-stream"
+        role="switch"
+        aria-checked={settings.rememberLastStream}
         onClick={() => update({ rememberLastStream: !settings.rememberLastStream })}
         className="mt-1 scroll-mt-28 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
       >
@@ -98,6 +101,8 @@ export function PlayModePanel() {
       </button>
       <button
         type="button"
+        role="switch"
+        aria-checked={settings.resumePrompt}
         onClick={() => update({ resumePrompt: !settings.resumePrompt })}
         className="flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
       >
@@ -117,6 +122,8 @@ export function PlayModePanel() {
       </button>
       <button
         type="button"
+        role="switch"
+        aria-checked={settings.resumePlayback}
         onClick={() => update({ resumePlayback: !settings.resumePlayback })}
         className="flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
       >
@@ -136,6 +143,8 @@ export function PlayModePanel() {
       </button>
       <button
         type="button"
+        role="switch"
+        aria-checked={settings.keepSourceNextEpisode}
         onClick={() => update({ keepSourceNextEpisode: !settings.keepSourceNextEpisode })}
         className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
       >
@@ -157,6 +166,8 @@ export function PlayModePanel() {
         <>
           <button
             type="button"
+            role="switch"
+            aria-checked={settings.fullscreenRestorePosition}
             onClick={() => update({ fullscreenRestorePosition: !settings.fullscreenRestorePosition })}
             className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
           >
@@ -176,6 +187,8 @@ export function PlayModePanel() {
           </button>
           <button
             type="button"
+            role="switch"
+            aria-checked={settings.playerVolumeHud}
             onClick={() => update({ playerVolumeHud: !settings.playerVolumeHud })}
             className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
           >

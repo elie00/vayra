@@ -30,6 +30,7 @@ export function SettingsScopeCard() {
               key={key}
               type="button"
               onClick={() => setScope(key === "shared")}
+              aria-pressed={active}
               className={`flex items-start gap-3 rounded-lg border p-3 text-start transition-colors ${
                 active
                   ? "border-ink bg-canvas/60"
