@@ -34,6 +34,9 @@ export type TorrentEngineStats = {
   streamProgress: number;
   streamLen: number;
   peerSearchRunning: boolean;
+  peersSeen: number;
+  peersDead: number;
+  peersTrying: number;
   finished: boolean;
   state: string;
 };

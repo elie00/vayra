@@ -290,6 +290,16 @@ pub struct TorrentEngineStats {
     stream_len: u64,
     #[serde(rename = "peerSearchRunning")]
     peer_search_running: bool,
+    /// Peers found by trackers, DHT or exchange so far: low when discovery fails.
+    #[serde(rename = "peersSeen")]
+    peers_seen: u32,
+    /// Peers whose connection failed right now. A gauge, not a total: a dead
+    /// peer is queued again after its back-off.
+    #[serde(rename = "peersDead")]
+    peers_dead: u32,
+    /// Peers queued or connecting right now: while any is, nothing is lost yet.
+    #[serde(rename = "peersTrying")]
+    peers_trying: u32,
     finished: bool,
     state: String,
 }
@@ -926,13 +936,19 @@ pub async fn torrent_engine_stats(
     let id = TorrentIdOrHash::parse(&info_hash).map_err(|e| e.to_string())?;
     let handle = session.get(id).ok_or_else(|| "no torrent".to_string())?;
     let s = handle.stats();
-    let (peers, download_speed, peer_search_running) = match &s.live {
-        Some(live) => (
-            live.snapshot.peer_stats.live as usize,
-            (live.download_speed.mbps * 1024.0 * 1024.0) as u64,
-            true,
-        ),
-        None => (0, 0, false),
+    let (peers, download_speed, peer_search_running, peers_seen, peers_dead, peers_trying) = match &s.live {
+        Some(live) => {
+            let ps = &live.snapshot.peer_stats;
+            (
+                ps.live as usize,
+                (live.download_speed.mbps * 1024.0 * 1024.0) as u64,
+                true,
+                ps.seen,
+                ps.dead,
+                ps.queued + ps.connecting,
+            )
+        }
+        None => (0, 0, false, 0, 0, 0),
     };
     let stream_progress = match file_idx {
         Some(i) => s.file_progress.get(i).copied().unwrap_or(s.progress_bytes),
@@ -954,6 +970,9 @@ pub async fn torrent_engine_stats(
         stream_progress,
         stream_len,
         peer_search_running,
+        peers_seen,
+        peers_dead,
+        peers_trying,
         finished: s.finished,
         state: format!("{:?}", s.state),
     })
@@ -1164,6 +1183,28 @@ pub async fn torrent_engine_selftest(app: AppHandle) -> selftest::SelfTestResult
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stats_send_the_peer_counters_the_loader_reads() {
+        let stats = TorrentEngineStats {
+            peers: 0,
+            unchoked: 0,
+            downloaded: 0,
+            download_speed: 0,
+            stream_progress: 0,
+            stream_len: 0,
+            peer_search_running: true,
+            peers_seen: 42,
+            peers_dead: 7,
+            peers_trying: 3,
+            finished: false,
+            state: "live".into(),
+        };
+        let json = serde_json::to_value(&stats).unwrap();
+        assert_eq!(json["peersSeen"], 42);
+        assert_eq!(json["peersDead"], 7);
+        assert_eq!(json["peersTrying"], 3);
+    }
 
     #[test]
     fn stops_the_restored_torrents_nothing_wants_once() {
