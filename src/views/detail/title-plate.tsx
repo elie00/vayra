@@ -26,7 +26,7 @@ function LogoLayer({
       }}
       onLoad={done}
       onError={onFailed}
-      className={`absolute bottom-0 start-0 max-h-[124px] w-auto max-w-[440px] object-contain object-left rtl:object-right drop-shadow-[0_6px_24px_rgba(0,0,0,0.45)] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+      className={`absolute bottom-0 start-0 max-h-[112px] w-auto max-w-[420px] object-contain object-left rtl:object-right drop-shadow-[0_8px_28px_rgba(0,0,0,0.55)] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
     />
   );
 }
@@ -62,12 +62,12 @@ export function TitlePlate({ title, logo, loading }: { title: string; logo?: str
 
   const hasLogo = layers.length > 0;
 
-  if (loading && !hasLogo) return <div className="min-h-[120px]" />;
+  if (loading && !hasLogo) return <div className="min-h-[108px]" />;
 
   return (
-    <div className="relative flex min-h-[120px] flex-col justify-end">
+    <div className="relative flex min-h-[108px] flex-col justify-end">
       <h1
-        className={`font-display text-[76px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink transition-opacity duration-500 ${!hasLogo && settled ? "opacity-100" : "opacity-0"}`}
+        className={`font-display text-[clamp(38px,4.4vw,64px)] font-semibold leading-[1.03] tracking-[-0.03em] text-ink transition-opacity duration-500 ${!hasLogo && settled ? "opacity-100" : "opacity-0"}`}
       >
         {title}
       </h1>

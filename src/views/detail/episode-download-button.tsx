@@ -59,7 +59,7 @@ export function EpisodeDownloadButton({
   const ratio = dl?.ratio ?? 0;
   const pct = Math.round(ratio * 100);
   const isBar = variant === "bar";
-  const dim = isBar ? 48 : size;
+  const dim = isBar ? 44 : size;
 
   const onClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -99,7 +99,7 @@ export function EpisodeDownloadButton({
         ? "text-ink"
         : "text-ink-subtle hover:bg-elevated hover:text-ink active:scale-90";
   const wrapperClass = isBar
-    ? `group/dl relative flex shrink-0 items-center justify-center rounded-full border border-edge bg-canvas/80 transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.96] ${stateTone}`
+    ? `group/dl relative flex shrink-0 items-center justify-center rounded-xl border border-edge-soft/80 bg-surface/82 backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated active:scale-[0.96] ${stateTone}`
     : `group/dl relative flex shrink-0 items-center justify-center self-start rounded-full transition-[opacity,background-color,transform] duration-200 ease-out ${
         persistent ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
       } ${stateTone}`;

@@ -30,7 +30,7 @@ export function Synopsis({ text }: { text: string }) {
     <div className="max-w-3xl">
       <p
         ref={ref}
-        className={`text-[16px] leading-relaxed text-ink-muted ${expanded ? "" : "line-clamp-4"}`}
+        className={`text-[15.5px] leading-[1.68] text-ink-muted ${expanded ? "" : "line-clamp-4"}`}
       >
         {text}
       </p>
@@ -38,7 +38,7 @@ export function Synopsis({ text }: { text: string }) {
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
-          className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-ink-muted transition-colors hover:text-ink"
+          className="mt-2.5 inline-flex items-center gap-1 text-[12.5px] font-semibold text-ink-subtle transition-colors hover:text-ink"
         >
           {expanded ? t("Show less") : t("Show more")}
           <ChevronDown

@@ -1115,23 +1115,23 @@ export function DetailView({
         </Pill>
       )}
       {meta.addonOrigin ? (
-        <span className="flex items-center gap-2 rounded-full border border-edge bg-canvas/80 py-1 ps-1.5 pe-3 text-[12.5px] font-medium text-ink-muted">
+        <span className="inline-flex h-7 items-center gap-2 rounded-lg border border-edge-soft/75 bg-surface/80 ps-1.5 pe-2.5 text-[12.5px] font-medium text-ink-muted backdrop-blur-md">
           {meta.addonOrigin.logo ? (
             <img
               src={meta.addonOrigin.logo}
               alt=""
               draggable={false}
-              className="h-5 w-5 rounded-full object-cover"
+              className="h-4.5 w-4.5 rounded-full object-cover"
             />
           ) : (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-raised text-[10px] font-semibold text-ink">
+            <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-raised text-[10px] font-semibold text-ink">
               {meta.addonOrigin.name.charAt(0).toUpperCase()}
             </span>
           )}
           {meta.addonOrigin.name}
         </span>
       ) : (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {genres.slice(0, 3).map((g) => {
             const map = isSeries ? TV_GENRES : MOVIE_GENRES;
             const id = map[g];
@@ -1248,7 +1248,7 @@ export function DetailView({
       <section className="relative">
         <div
           data-tauri-drag-region
-          className="harbor-bleed-stremio relative h-[78vh] min-h-[640px] overflow-hidden"
+          className="harbor-bleed-stremio relative h-[74vh] min-h-[580px] max-h-[820px] overflow-hidden"
         >
           {carouselOn ? (
             backdropPool.map((b, i) => (
@@ -1272,14 +1272,15 @@ export function DetailView({
               <DetailHeroTrailer candidateId={trailerCandidate} paused={trailerOpen} />
             </Suspense>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-canvas/55 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/60 via-44% to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/88 via-canvas/38 to-transparent" />
 
-          <div className="absolute inset-x-0 bottom-0 px-12 pb-14">
+          <div className="absolute inset-x-0 bottom-0 px-8 pb-12 sm:px-12">
             <div className={awardsInDescription ? "max-w-3xl" : undefined}>
               {tagline && !loading && !detectingAnime && (
                 <p
-                  className={`mb-4 text-[14px] font-medium uppercase tracking-[0.2em] ${
+                  className={`mb-3.5 text-[12px] font-semibold uppercase tracking-[0.22em] ${
                     awardsInDescription
                       ? "text-white/85 [text-shadow:0_1px_12px_rgba(0,0,0,0.7)]"
                       : "max-w-3xl text-ink-subtle"
@@ -1290,12 +1291,12 @@ export function DetailView({
               )}
               <TitlePlate title={title} logo={logo} loading={loading} />
               {awardsInDescription ? (
-                <div className="mt-6 flex flex-wrap items-center gap-3 text-[13px] font-medium text-ink-muted">
+                <div className="mt-5 flex flex-wrap items-center gap-2 text-[13px] font-medium text-ink-muted">
                   {heroPills}
                 </div>
               ) : (
-                <div className="mt-6 flex items-center justify-between gap-8">
-                  <div className="flex max-w-3xl flex-wrap items-center gap-3 text-[13px] font-medium text-ink-muted">
+                <div className="mt-5 flex items-center justify-between gap-8">
+                  <div className="flex max-w-3xl flex-wrap items-center gap-2 text-[13px] font-medium text-ink-muted">
                     {heroPills}
                   </div>
                   {heroAwardsCorner && <div className="shrink-0">{heroAwardsCorner}</div>}
@@ -1303,21 +1304,22 @@ export function DetailView({
               )}
               <div
                 ref={actionRowRef}
-                className={`mt-9 flex ${awardsInDescription ? "" : "w-fit max-w-full "}items-center gap-3 [&>*]:shrink-0`}
+                className={`mt-7 flex ${awardsInDescription ? "" : "w-fit max-w-full "}items-center gap-2.5 [&>*]:shrink-0`}
               >
                 {upcoming ? (
                   <UpcomingCta detail={detail} onTry={() => smartPlay()} />
                 ) : (
                   <PlayModeHint>
                   <button
+                    type="button"
                     onClick={() => smartPlay(false)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       void smartPlay(true);
                     }}
-                    className="flex h-12 items-center gap-2.5 rounded-full bg-ink px-7 text-[15px] font-semibold text-canvas shadow-[0_8px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.65),inset_0_-1px_0_rgba(0,0,0,0.18)] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                    className="inline-flex h-11 items-center gap-2.5 rounded-xl bg-ink px-6 text-[14.5px] font-semibold tracking-[-0.01em] text-canvas shadow-[0_14px_34px_-12px_rgba(0,0,0,0.65)] transition-[opacity,transform] duration-150 hover:opacity-92 active:scale-[0.98]"
                   >
-                    <Play size={18} fill="currentColor" />
+                    <Play size={17} fill="currentColor" />
                     {smartPlayLabel}
                   </button>
                   </PlayModeHint>
@@ -1329,7 +1331,13 @@ export function DetailView({
                   />
                 )}
                 {hasNativeDesktopUx() && actionStage < 2 && (
-                  <button type="button" className="mac-secondary-button" onClick={() => void smartPlay(true)}>{t("Choose another source")}</button>
+                  <button
+                    type="button"
+                    onClick={() => void smartPlay(true)}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-edge-soft/80 bg-surface/82 px-4.5 text-[13.5px] font-medium text-ink backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated active:scale-[0.98]"
+                  >
+                    {t("Choose another source")}
+                  </button>
                 )}
                 {actionStage < 2 && (
                   <button
@@ -1344,20 +1352,20 @@ export function DetailView({
                       })
                     }
                     title={traktConnected ? t("Synced to Trakt") : t("Saved locally. Connect Trakt in Settings to sync.")}
-                    className={`flex h-12 items-center gap-2.5 whitespace-nowrap rounded-full border px-6 text-[15px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 active:scale-[0.98] ${
+                    className={`inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-xl border px-4.5 text-[13.5px] font-medium backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.98] ${
                       inWatchlist
-                        ? "border-ink bg-ink/10 text-ink hover:bg-ink/20"
-                        : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
+                        ? "border-ink/40 bg-ink/12 text-ink hover:bg-ink/18"
+                        : "border-edge-soft/80 bg-surface/82 text-ink hover:border-edge hover:bg-elevated"
                     }`}
                   >
                     {inWatchlist ? (
                       <>
-                        <Check size={18} strokeWidth={2.4} />
+                        <Check size={16} strokeWidth={2.4} />
                         {t("In Watchlist")}
                       </>
                     ) : (
                       <>
-                        <Plus size={18} strokeWidth={2} />
+                        <Plus size={16} strokeWidth={2.1} />
                         {t("Add to Watchlist")}
                       </>
                     )}
@@ -1432,13 +1440,13 @@ export function DetailView({
                       }
                       aria-label={isFav ? t("Remove from favorites") : t("Add to favorites")}
                       title={isFav ? t("Favorited") : t("Favorite")}
-                      className={`group flex h-12 w-12 items-center justify-center rounded-full border transition-[transform,background-color,border-color] duration-200 active:scale-[0.94] ${
+                      className={`group flex h-11 w-11 items-center justify-center rounded-xl border backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.96] ${
                         isFav
                           ? "border-accent/55 bg-accent/15 text-accent hover:bg-accent/22"
-                          : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
+                          : "border-edge-soft/80 bg-surface/82 text-ink-muted hover:border-edge hover:bg-elevated hover:text-ink"
                       }`}
                     >
-                      <Star size={20} strokeWidth={isFav ? 0 : 1.9} fill={isFav ? "currentColor" : "none"} />
+                      <Star size={18} strokeWidth={isFav ? 0 : 1.9} fill={isFav ? "currentColor" : "none"} />
                     </button>
                     <button
                       ref={addToListRef}
@@ -1446,9 +1454,9 @@ export function DetailView({
                       onClick={() => setAddToListOpen((v) => !v)}
                       aria-label={t("Add to list")}
                       title={t("Add to list")}
-                      className="group flex h-12 w-12 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
+                      className="group flex h-11 w-11 items-center justify-center rounded-xl border border-edge-soft/80 bg-surface/82 text-ink-muted backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated hover:text-ink active:scale-[0.96]"
                     >
-                      <Layers size={20} strokeWidth={1.9} />
+                      <Layers size={18} strokeWidth={1.9} />
                     </button>
                     <AddToListMenu
                       item={listSeed}
@@ -1464,9 +1472,9 @@ export function DetailView({
                           onClick={() => setAddToCollectionOpen((v) => !v)}
                           aria-label={t("Add to a group collection")}
                           title={t("Add to a group collection")}
-                          className="group flex h-12 w-12 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
+                          className="group flex h-11 w-11 items-center justify-center rounded-xl border border-edge-soft/80 bg-surface/82 text-ink-muted backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated hover:text-ink active:scale-[0.96]"
                         >
-                          <ListPlus size={20} strokeWidth={1.9} />
+                          <ListPlus size={18} strokeWidth={1.9} />
                         </button>
                         <AddToCollectionMenu
                           seed={{
@@ -1487,13 +1495,13 @@ export function DetailView({
                         onClick={markThisMovieWatched}
                         aria-label={t("Mark watched")}
                         title={watchedMark ? t("Marked watched") : t("Mark watched")}
-                        className={`group flex h-12 w-12 items-center justify-center rounded-full border transition-[transform,background-color,border-color] duration-200 active:scale-[0.94] ${
+                        className={`group flex h-11 w-11 items-center justify-center rounded-xl border backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.96] ${
                           watchedMark
                             ? "border-accent/55 bg-accent/15 text-accent"
-                            : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
+                            : "border-edge-soft/80 bg-surface/82 text-ink-muted hover:border-edge hover:bg-elevated hover:text-ink"
                         }`}
                       >
-                        <Check size={20} strokeWidth={2.4} />
+                        <Check size={18} strokeWidth={2.4} />
                       </button>
                     )}
                     {trailerCandidate && (
@@ -1502,9 +1510,9 @@ export function DetailView({
                         onClick={() => setTrailerOpen(true)}
                         aria-label={t("Watch trailer")}
                         title={t("Watch trailer")}
-                        className="group flex h-12 w-12 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
+                        className="group flex h-11 w-11 items-center justify-center rounded-xl border border-edge-soft/80 bg-surface/82 text-ink-muted backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated hover:text-ink active:scale-[0.96]"
                       >
-                        <PreviewIcon size={20} />
+                        <PreviewIcon size={18} />
                       </button>
                     )}
                     {meta.type === "movie" && <EpisodeDownloadButton meta={meta} variant="bar" />}
@@ -1514,7 +1522,7 @@ export function DetailView({
                   <button
                     type="button"
                     onClick={promoteMetaToRoot}
-                    className="flex h-12 items-center gap-2 rounded-full border border-edge bg-canvas/80 px-5 text-[14px] font-medium text-ink-muted transition-colors hover:border-ink-subtle hover:bg-canvas/95 hover:text-ink"
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-edge-soft/80 bg-surface/82 px-4.5 text-[13.5px] font-medium text-ink-muted backdrop-blur-xl transition-colors hover:border-edge hover:bg-elevated hover:text-ink"
                   >
                     {meta.type === "series" || meta.type === "tv"
                       ? t("Open in TV Shows")
@@ -1529,7 +1537,7 @@ export function DetailView({
         </div>
       </section>
 
-      <div data-tauri-drag-region className="flex flex-col gap-16 px-12 pb-24 pt-14">
+      <div data-tauri-drag-region className="flex flex-col gap-14 px-8 pb-24 pt-12 sm:px-12">
         {(overview || heroAwardsInline) && (
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
             {overview && <Synopsis text={overview} />}

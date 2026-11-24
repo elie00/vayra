@@ -10,14 +10,14 @@ export function Pill({
       <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/85 px-3 py-1 transition-[transform,opacity,background-color,border-color,color] hover:scale-[1.04] hover:border-edge hover:bg-canvas"
+        className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-edge-soft/75 bg-surface/80 px-2.5 text-[12.5px] font-medium text-ink-muted backdrop-blur-md transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
       >
         {children}
       </button>
     );
   }
   return (
-    <span className="flex items-center gap-1.5 rounded-full border border-edge-soft bg-canvas/85 px-3 py-1">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-edge-soft/75 bg-surface/80 px-2.5 text-[12.5px] font-medium text-ink-muted backdrop-blur-md">
       {children}
     </span>
   );

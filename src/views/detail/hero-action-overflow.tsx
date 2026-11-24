@@ -145,10 +145,10 @@ export function HeroActionOverflow({
         title={t("More")}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={() => (menu ? setMenu(null) : openMenu())}
-        className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-edge-soft/80 bg-surface/82 text-ink-muted backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated hover:text-ink active:scale-[0.96]"
       >
-        <MoreHorizontal size={20} strokeWidth={1.9} />
-        {isFav && <span className="absolute end-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-accent" />}
+        <MoreHorizontal size={19} strokeWidth={1.9} />
+        {isFav && <span className="absolute end-2 top-2 h-1.5 w-1.5 rounded-full bg-accent" />}
       </button>
       {menu &&
         createPortal(
@@ -156,7 +156,7 @@ export function HeroActionOverflow({
             role="menu"
             style={{ left: menu.x, top: menu.y }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="fixed z-[320] flex max-h-[min(70vh,480px)] w-[224px] flex-col overflow-y-auto rounded-xl border border-edge bg-elevated p-1 shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in"
+            className="fixed z-[320] flex max-h-[min(70vh,480px)] w-[228px] flex-col overflow-y-auto rounded-2xl border border-edge-soft/85 bg-surface/95 p-1.5 shadow-[0_24px_64px_-20px_rgba(0,0,0,0.82)] backdrop-blur-2xl animate-popover-in"
           >
             {showSync && (
               <>
