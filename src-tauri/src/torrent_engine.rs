@@ -1120,6 +1120,13 @@ pub fn torrent_engine_get_options(app: AppHandle) -> EngineConfig {
     read_config(&app)
 }
 
+/// Where the engine keeps its session when no folder is chosen: the settings
+/// show and reveal this one, which is under `VAYRA_DATA_DIR` for a test instance.
+#[tauri::command]
+pub fn torrent_engine_default_dir(app: AppHandle) -> Result<String, String> {
+    default_engine_dir(&app).map(|d| d.to_string_lossy().into_owned())
+}
+
 #[tauri::command]
 pub async fn torrent_engine_set_options(
     app: AppHandle,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check, ClipboardCopy, FolderOpen, Loader2, RotateCcw, Trash2 } from "lucide-react";
-import { appCacheDir, join } from "@tauri-apps/api/path";
+import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { copyText } from "@/lib/clipboard";
@@ -48,7 +48,7 @@ export function P2PAdvancedSection() {
     if (!isTauri) return;
     void (async () => {
       try {
-        setDefaultPath(await join(await appCacheDir(), "engine"));
+        setDefaultPath(await invoke<string>("torrent_engine_default_dir"));
       } catch {
         /* engine dir not created until the engine runs once */
       }
@@ -112,7 +112,7 @@ export function P2PAdvancedSection() {
     if (!isTauri) return;
     setOpening(true);
     try {
-      await revealItemInDir(cachePath || (await join(await appCacheDir(), "engine")));
+      await revealItemInDir(cachePath || (await invoke<string>("torrent_engine_default_dir")));
     } catch {
       /* folder not created until the engine runs once */
     } finally {
