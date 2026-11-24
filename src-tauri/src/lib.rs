@@ -10,6 +10,7 @@ mod fonts;
 mod http_fetch;
 mod local_lib;
 mod power;
+mod profile_dir;
 mod credential_queue;
 mod settings_store;
 mod settings_history;
@@ -626,7 +627,7 @@ pub fn run() {
     // branch always registers `single_instance`, so release behavior is byte
     // -for-byte identical to before.
     #[cfg(desktop)]
-    let vayra_dev_data_dir = std::env::var_os("VAYRA_DATA_DIR").filter(|v| !v.is_empty());
+    let vayra_dev_data_dir = profile_dir::dev_data_dir();
     // Tauri ignores an absolute `dataDirectory`, so without this a dev instance
     // shares the real profile's WebView2 storage (localStorage included).
     // WebView2 reads this variable when it creates its environment and lets it
@@ -684,16 +685,13 @@ pub fn run() {
                 | tauri_plugin_window_state::StateFlags::MAXIMIZED
                 | tauri_plugin_window_state::StateFlags::FULLSCREEN,
         );
-        // The window-state plugin resolves its file under the bundle-id-keyed
-        // `app_config_dir`, which Tauri v2 does not let us override at runtime.
-        // Two dev instances would otherwise clobber the same state file, so we
-        // give each `VAYRA_DATA_DIR` a distinct, deterministic filename. When
-        // the env var is unset the default filename is used (unchanged).
-        if let Some(dir) = &vayra_dev_data_dir {
-            let mut hasher = std::collections::hash_map::DefaultHasher::new();
-            std::hash::Hash::hash(dir, &mut hasher);
-            let tag = std::hash::Hasher::finish(&hasher);
-            ws_builder = ws_builder.with_filename(format!(".window-state-dev-{tag:016x}.json"));
+        // The window-state plugin joins its filename onto the real profile's
+        // `app_config_dir`; an absolute filename replaces that folder, so a dev
+        // instance keeps its window state under `VAYRA_DATA_DIR`. Unset, the
+        // default filename is used (unchanged).
+        if let Some(dir) = profile_dir::dev_data_dir() {
+            ws_builder = ws_builder
+                .with_filename(dir.join(".window-state.json").to_string_lossy().into_owned());
         }
         app_builder.plugin(ws_builder.build())
     };
@@ -978,6 +976,7 @@ pub fn run() {
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,
             torrent_engine::torrent_engine_get_options,
+            torrent_engine::torrent_engine_default_dir,
             torrent_engine::torrent_engine_set_options,
             torrent_engine::torrent_engine_lan_status,
             torrent_engine::torrent_engine_lan_start,

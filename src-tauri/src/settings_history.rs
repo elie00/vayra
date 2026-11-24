@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::Path;
 use std::sync::Mutex;
-use tauri::Manager;
 
 static LOCK: Mutex<()> = Mutex::new(());
 #[derive(Clone, Serialize, Deserialize)]
@@ -49,7 +48,7 @@ fn record(path: &Path, content: &str, now: u64) -> Result<(), String> {
     std::fs::rename(&tmp, path).map_err(|_| "Could not replace settings history".into())
 }
 fn history_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
-    let dir = app.path().app_data_dir().map_err(|_| "App data directory unavailable")?;
+    let dir = crate::profile_dir::data_dir(app).map_err(|_| "App data directory unavailable")?;
     std::fs::create_dir_all(&dir).map_err(|_| "App data directory unavailable")?;
     Ok(dir.join("settings-history.json"))
 }

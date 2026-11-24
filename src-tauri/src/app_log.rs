@@ -57,7 +57,8 @@ fn drain_into_log(reader: impl std::io::Read + Send + 'static, mut log: Log) {
 const MAX_LOG_BYTES: u64 = 10 * 1024 * 1024;
 
 /// A Finder launch sends stderr nowhere, taking every `eprintln!` diagnostic with it.
-/// Keep them in ~/Library/Logs/VAYRA/vayra.log, unless stderr is already a terminal.
+/// Keep them in ~/Library/Logs/VAYRA/vayra.log (`<VAYRA_DATA_DIR>/logs` for a test
+/// instance), unless stderr is already a terminal.
 /// Lines reach the file through a pipe so that URLs are redacted on the way.
 #[cfg(target_os = "macos")]
 pub fn redirect_stderr_to_log() {
@@ -65,8 +66,14 @@ pub fn redirect_stderr_to_log() {
     if unsafe { libc::isatty(libc::STDERR_FILENO) } == 1 {
         return;
     }
-    let Some(home) = std::env::var_os("HOME") else { return };
-    let Some(log) = Log::open(&std::path::Path::new(&home).join("Library/Logs/VAYRA"), MAX_LOG_BYTES) else { return };
+    let dir = match crate::profile_dir::dev_data_dir() {
+        Some(dir) => dir.join("logs"),
+        None => {
+            let Some(home) = std::env::var_os("HOME") else { return };
+            std::path::Path::new(&home).join("Library/Logs/VAYRA")
+        }
+    };
+    let Some(log) = Log::open(&dir, MAX_LOG_BYTES) else { return };
     let mut fds = [0; 2];
     if unsafe { libc::pipe(fds.as_mut_ptr()) } != 0 {
         return;
@@ -84,8 +91,8 @@ pub fn redirect_stderr_to_log() {
 
 /// A GUI-subsystem launch from Explorer or the Start menu has no stderr at all.
 /// Keep diagnostics in %LOCALAPPDATA%\app.vayra\logs\vayra.log (Tauri's log
-/// folder for this identifier), unless stderr already goes to a console or a
-/// pipe such as `tauri dev`.
+/// folder for this identifier; `<VAYRA_DATA_DIR>\logs` for a test instance),
+/// unless stderr already goes to a console or a pipe such as `tauri dev`.
 #[cfg(windows)]
 pub fn redirect_stderr_to_log() {
     use std::os::windows::io::IntoRawHandle;
@@ -94,8 +101,14 @@ pub fn redirect_stderr_to_log() {
     if unsafe { GetStdHandle(STD_ERROR_HANDLE) }.is_ok_and(|h| !h.is_invalid() && !h.0.is_null()) {
         return;
     }
-    let Some(base) = std::env::var_os("LOCALAPPDATA") else { return };
-    let Some(log) = Log::open(&std::path::Path::new(&base).join("app.vayra").join("logs"), MAX_LOG_BYTES) else { return };
+    let dir = match crate::profile_dir::dev_data_dir() {
+        Some(dir) => dir.join("logs"),
+        None => {
+            let Some(base) = std::env::var_os("LOCALAPPDATA") else { return };
+            std::path::Path::new(&base).join("app.vayra").join("logs")
+        }
+    };
+    let Some(log) = Log::open(&dir, MAX_LOG_BYTES) else { return };
     let Ok((reader, writer)) = std::io::pipe() else { return };
     // Rust's stderr looks the handle up on every write, so this reroutes eprintln!.
     // The write end now belongs to the process standard error and is never closed.

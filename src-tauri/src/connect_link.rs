@@ -323,8 +323,7 @@ struct Stored {
 }
 
 fn stored_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
-    use tauri::Manager;
-    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let dir = crate::profile_dir::data_dir(app)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.join("connect-link.json"))
 }

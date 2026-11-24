@@ -104,6 +104,23 @@ VAYRA_DATA_DIR="$TEMP/vayra-recette-data" src-tauri/target/release/VAYRA.exe &
 node scripts/recette.mjs desktop
 ```
 
+Avec `VAYRA_DATA_DIR`, l’instance de bureau garde tout ce qu’elle écrit dans ce
+dossier : réglages, points de restauration, journal mpv, appairages Connect,
+moteur torrent et cache mpv (`cache`), journal stderr (`logs`), état de la
+fenêtre et, sous Windows, stockage de la WebView (`webview`). Ses secrets
+vont dans le trousseau sous des noms à elle : `app.vayra.dev-<empreinte>` pour
+le coffre des réglages, `app.vayra.auth.dev-<empreinte>` pour la session du
+compte VAYRA. Elle démarre déconnectée et sans les secrets du vrai profil, et
+une déconnexion ne touche pas celui-ci. L’empreinte est calculée sur le chemin
+tel qu’il est écrit : le même dossier retrouve ses secrets d’un lancement à
+l’autre s’il est écrit pareil (`C:\x` et `C:\x\` donnent deux empreintes). Elle saute aussi
+le verrou d’instance unique. Restent partagés : le `localStorage` de la WebView
+sur le Mac, et les cookies du plugin HTTP de Tauri (`.cookies` dans le dossier
+cache de l’appli, chemin figé par le plugin), que l’instance de test lit et
+réécrit en se fermant. Les entrées `app.vayra.dev-*` et `app.vayra.auth.dev-*`
+restent dans le trousseau après la recette : les retirer dans le gestionnaire d’identifiants si besoin
+(`cmdkey /delete:<nom>` sous Windows).
+
 ## Fonctionnement
 
 L’appli interroge le script en boucle sur `http://127.0.0.1:47800`
