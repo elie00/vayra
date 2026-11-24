@@ -685,16 +685,13 @@ pub fn run() {
                 | tauri_plugin_window_state::StateFlags::MAXIMIZED
                 | tauri_plugin_window_state::StateFlags::FULLSCREEN,
         );
-        // The window-state plugin resolves its file under the bundle-id-keyed
-        // `app_config_dir`, which Tauri v2 does not let us override at runtime.
-        // Two dev instances would otherwise clobber the same state file, so we
-        // give each `VAYRA_DATA_DIR` a distinct, deterministic filename. When
-        // the env var is unset the default filename is used (unchanged).
-        if let Some(dir) = &vayra_dev_data_dir {
-            let mut hasher = std::collections::hash_map::DefaultHasher::new();
-            std::hash::Hash::hash(dir, &mut hasher);
-            let tag = std::hash::Hasher::finish(&hasher);
-            ws_builder = ws_builder.with_filename(format!(".window-state-dev-{tag:016x}.json"));
+        // The window-state plugin joins its filename onto the real profile's
+        // `app_config_dir`; an absolute filename replaces that folder, so a dev
+        // instance keeps its window state under `VAYRA_DATA_DIR`. Unset, the
+        // default filename is used (unchanged).
+        if let Some(dir) = profile_dir::dev_data_dir() {
+            ws_builder = ws_builder
+                .with_filename(dir.join(".window-state.json").to_string_lossy().into_owned());
         }
         app_builder.plugin(ws_builder.build())
     };

@@ -1,7 +1,10 @@
 //! Where this instance keeps what it writes. A desktop instance started with
 //! `VAYRA_DATA_DIR` keeps its state under that folder and its secrets under
 //! keyring names of its own, so a test instance never touches the real
-//! profile. Unset, the usual app folders and keyring names are used, unchanged.
+//! profile. Its stderr log goes to `<folder>/logs` (see `app_log`), its window
+//! state to `<folder>/.window-state.json` and, on Windows, its WebView2 storage
+//! to `<folder>/webview` (see `lib.rs`). Unset, the usual app folders and
+//! keyring names are used, unchanged.
 
 #[cfg(desktop)]
 use std::path::Path;
