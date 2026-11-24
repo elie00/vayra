@@ -49,5 +49,6 @@ export function DeleteDownloadDialog({ items, onClose, returnFocusRef }: { items
         <p>{t("These video files and any partial downloads will be permanently deleted. This cannot be undone.")}</p>
       </>
     )}
+    <p>{t("An empty subfolder in your download directory will also be removed.")}</p>
   </ConfirmationDialog>;
 }

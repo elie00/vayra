@@ -1,4 +1,6 @@
 export const downloadSafety: Record<string, string> = {
+  "An empty subfolder in your download directory will also be removed.": "Le sous-dossier de téléchargement sera aussi supprimé s’il devient vide.",
+  "The video was deleted, but its folder could not be removed.": "La vidéo a été supprimée. Son dossier n’a pas pu être supprimé.",
   "Delete this download?": "Supprimer ce téléchargement ?",
   "Deleting file…": "Suppression du fichier…",
   "File could not be deleted": "Suppression impossible",

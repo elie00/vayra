@@ -23,8 +23,8 @@ type DownloadEvent =
  * the backend: the fs plugin is scoped to the app's own folders, so removing a file
  * from the user's download directory is refused there.
  */
-export async function removeDownloadFile(destPath: string): Promise<void> {
-  await invoke("download_remove_file", { dest: destPath });
+export async function removeDownloadFile(destPath: string, downloadRoot: string): Promise<boolean> {
+  return invoke<boolean>("download_remove_file", { dest: destPath, downloadRoot });
 }
 
 /** Whether something already sits at this path — same scope reason as above. */

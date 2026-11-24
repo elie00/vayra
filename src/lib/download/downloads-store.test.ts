@@ -78,7 +78,7 @@ beforeEach(() => {
   for (const m of Object.values(mocks)) m.mockReset();
   mocks.downloadDir.mockResolvedValue("/dl");
   mocks.downloadFileExists.mockResolvedValue(false);
-  mocks.removeDownloadFile.mockResolvedValue(undefined);
+  mocks.removeDownloadFile.mockResolvedValue(true);
   mocks.startDownload.mockImplementation(() => startable().handle);
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => store.get(k) ?? null,
@@ -101,6 +101,23 @@ afterEach(async () => {
 });
 
 describe("download destination ownership", () => {
+  it("reports a folder cleanup error without retrying deletion of an already removed video", async () => {
+    const id = await enqueueDownload({ meta, url: "https://cdn/episode.mp4" });
+    mocks.removeDownloadFile.mockResolvedValueOnce(false);
+    expect(await removeDownload(id)).toBe(true);
+    expect(downloadSnapshot().some(item => item.id === id)).toBe(false);
+    expect(mocks.feedback).toHaveBeenCalledWith({ kind: "info", text: "The video was deleted, but its folder could not be removed." });
+    await removeDownload(id);
+    expect(mocks.removeDownloadFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the configured download root for the final episode of a show", async () => {
+    store.set("harbor.settings", JSON.stringify({ downloadDir: "/films", downloadCreateFolders: true }));
+    const id = await enqueueDownload({ meta, url: "https://cdn/episode.mp4" });
+    expect(await removeDownload(id)).toBe(true);
+    expect(mocks.removeDownloadFile).toHaveBeenCalledWith("/films/Show/Show.mp4", "/films");
+  });
+
   it("reports folder-opening failure without changing or exposing the download", async () => {
     const id = await enqueueDownload({ meta, url: "https://example.invalid/fixture.mkv", destinationPath: "/fixtures/video.mkv" });
     const before = downloadSnapshot().find((item) => item.id === id);
@@ -476,7 +493,7 @@ describe("removing a download", () => {
     removeDownload(id);
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(mocks.removeDownloadFile).toHaveBeenCalledWith(path);
+    expect(mocks.removeDownloadFile).toHaveBeenCalledWith(path, "/dl");
   });
 
   it("reserves the name until the old writer stops and deferred deletion finishes", async () => {
@@ -500,7 +517,7 @@ describe("removing a download", () => {
     canceled.name = "AbortError";
     settleWriter(canceled);
     await vi.advanceTimersByTimeAsync(0);
-    expect(mocks.removeDownloadFile).toHaveBeenCalledWith("/dl/video.mkv");
+    expect(mocks.removeDownloadFile).toHaveBeenCalledWith("/dl/video.mkv", "/dl");
 
     const duringRemoval = await enqueueDownload(args);
     expect(downloadSnapshot().find((item) => item.id === duringRemoval)?.path).toBe("/dl/video (3).mkv");

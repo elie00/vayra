@@ -489,9 +489,12 @@ export function removeDownload(id: string): Promise<boolean> {
     // has stopped. Never unlink a partial while that old writer can recreate it.
     if (handle) await handle.promise.catch(() => { /* Writer stopped after cancellation or failure. */ });
     try {
-      await removeDownloadFile(item.path);
+      const folderCleanupSucceeded = await removeDownloadFile(item.path, await resolveDir());
       items.delete(id);
       rebuild();
+      if (folderCleanupSucceeded === false) {
+        emitAppFeedback({ kind: "info", text: t("The video was deleted, but its folder could not be removed.") });
+      }
       return true;
     } catch (error) {
       // Keep the bytes in the quota and the item visible until native removal

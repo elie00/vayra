@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -10,7 +11,12 @@ use tauri::State;
 use tokio::io::AsyncWriteExt;
 
 pub struct DownloadState {
-    tasks: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    tasks: Arc<Mutex<HashMap<String, DownloadTask>>>,
+}
+
+struct DownloadTask {
+    cancel: Arc<AtomicBool>,
+    folder: PathBuf,
 }
 
 impl DownloadState {
@@ -81,7 +87,10 @@ pub async fn download_start(
     on_event: Channel<DownloadEvent>,
 ) -> Result<(), String> {
     let cancel = Arc::new(AtomicBool::new(false));
-    state.tasks.lock().unwrap().insert(id.clone(), cancel.clone());
+    state.tasks.lock().unwrap().insert(id.clone(), DownloadTask {
+        cancel: cancel.clone(),
+        folder: Path::new(&dest).parent().unwrap_or(Path::new("")).to_owned(),
+    });
 
     let outcome = run_download(&url, &dest, &headers.unwrap_or_default(), &cancel, &on_event, max_bytes).await;
     state.tasks.lock().unwrap().remove(&id);
@@ -107,11 +116,30 @@ pub async fn download_start(
 /// picture folder, so a `remove` on the user's download directory is refused, and
 /// the file outlived the entry that was supposed to own it.
 #[tauri::command]
-pub async fn download_remove_file(dest: String) -> Result<(), String> {
+pub async fn download_remove_file(
+    state: State<'_, DownloadState>,
+    dest: String,
+    download_root: Option<String>,
+) -> Result<bool, String> {
+    remove_download_files(&dest).await?;
+    let Some(root) = download_root else { return Ok(true) };
+    let tasks = state.tasks.clone();
+    let cleanup = tokio::task::spawn_blocking(move || {
+        // Registering a writer and removing its empty folder must not race.
+        let tasks = tasks.lock().unwrap();
+        let active_folders = tasks.values().map(|task| task.folder.as_path());
+        remove_empty_download_folder(Path::new(&dest), Path::new(&root), active_folders)
+    }).await;
+    // The video is already gone. Retrying file deletion after a folder error
+    // could remove a different file that has since taken its place.
+    Ok(matches!(cleanup, Ok(Ok(()))))
+}
+
+async fn remove_download_files(dest: &str) -> Result<(), String> {
     let part = format!("{}.part", dest);
     let identity = format!("{}.part.vayra-resume.json", dest);
     let mut failure: Option<String> = None;
-    for path in [dest.as_str(), part.as_str(), identity.as_str()] {
+    for path in [dest, part.as_str(), identity.as_str()] {
         match tokio::fs::remove_file(path).await {
             Ok(()) => {}
             // Only one of the two is expected to be there at any point.
@@ -122,6 +150,38 @@ pub async fn download_remove_file(dest: String) -> Result<(), String> {
     match failure {
         Some(e) => Err(e),
         None => Ok(()),
+    }
+}
+
+fn remove_empty_download_folder<'a>(
+    dest: &Path,
+    root: &Path,
+    mut active: impl Iterator<Item = &'a Path>,
+) -> std::io::Result<()> {
+    use std::io::ErrorKind;
+    let Some(folder) = dest.parent() else { return Ok(()) };
+    let Ok(relative) = folder.strip_prefix(root) else { return Ok(()) };
+    if !root.is_absolute() || relative.as_os_str().is_empty()
+        || folder.components().any(|c| c == Component::ParentDir)
+    {
+        return Ok(());
+    }
+    // Skip redirected subfolders. The download root itself may be a mounted
+    // volume or a symlink selected by the user.
+    let mut checked_remove = || -> std::io::Result<()> {
+        let canonical_root = root.canonicalize()?;
+        let canonical_folder = folder.canonicalize()?;
+        if canonical_folder != canonical_root.join(relative)
+            || active.any(|p| p == folder || p.canonicalize().is_ok_and(|path| path == canonical_folder))
+        {
+            return Ok(());
+        }
+        // rmdir checks emptiness atomically and never removes other files.
+        std::fs::remove_dir(folder)
+    };
+    match checked_remove() {
+        Err(e) if matches!(e.kind(), ErrorKind::NotFound | ErrorKind::DirectoryNotEmpty) => Ok(()),
+        result => result,
     }
 }
 
@@ -183,8 +243,8 @@ pub async fn download_available_space(path: String) -> Result<u64, String> {
 
 #[tauri::command]
 pub fn download_cancel(state: State<'_, DownloadState>, id: String) {
-    if let Some(flag) = state.tasks.lock().unwrap().get(&id) {
-        flag.store(true, Ordering::Relaxed);
+    if let Some(task) = state.tasks.lock().unwrap().get(&id) {
+        task.cancel.store(true, Ordering::Relaxed);
     }
 }
 
@@ -457,6 +517,77 @@ mod tests {
     fn fixture_dir(label: &str) -> std::path::PathBuf {
         let dir = std::env::temp_dir().join(format!("vayra-resume-{}-{}", label, std::process::id()));
         std::fs::create_dir_all(&dir).unwrap(); dir
+    }
+
+    #[tokio::test]
+    async fn last_download_removes_only_its_empty_subfolder() {
+        let root = fixture_dir("empty-show-folder");
+        let folder = root.join("Show");
+        std::fs::create_dir(&folder).unwrap();
+        let first = folder.join("episode-1.mp4");
+        let last = folder.join("episode-2.mp4");
+        for file in [&first, &last] { std::fs::write(file, b"video").unwrap(); }
+        std::fs::write(folder.join("episode-2.mp4.part"), b"partial").unwrap();
+        std::fs::write(folder.join("episode-2.mp4.part.vayra-resume.json"), b"{}").unwrap();
+        for file in [&first, &last] {
+            remove_download_files(file.to_str().unwrap()).await.unwrap();
+            remove_empty_download_folder(file, &root, std::iter::empty()).unwrap();
+            assert_eq!(folder.exists(), file == &first);
+        }
+        remove_empty_download_folder(&last, &root, std::iter::empty()).unwrap();
+        remove_empty_download_folder(&root.join("film.mp4"), &root, std::iter::empty()).unwrap();
+        assert!(root.is_dir());
+        std::fs::remove_dir(root).unwrap();
+    }
+
+    #[test]
+    fn folder_cleanup_preserves_other_contents_external_folders_and_active_writers() {
+        let root = fixture_dir("protected-folders");
+        let folder = root.join("Show");
+        let outside = fixture_dir("elsewhere");
+        std::fs::create_dir(&folder).unwrap();
+        let video = folder.join("film.mp4");
+        let keep = folder.join(".notes");
+        std::fs::write(&keep, b"keep").unwrap();
+        remove_empty_download_folder(&video, &root, std::iter::empty()).unwrap();
+        assert_eq!(std::fs::read(&keep).unwrap(), b"keep");
+        std::fs::remove_file(keep).unwrap();
+        remove_empty_download_folder(&video, &root, std::iter::once(folder.as_path())).unwrap();
+        assert!(folder.is_dir());
+        remove_empty_download_folder(&outside.join("video.mp4"), &root, std::iter::empty()).unwrap();
+        assert!(outside.is_dir());
+        #[cfg(unix)]
+        {
+            let alias = root.join("Shortcut");
+            std::os::unix::fs::symlink(&outside, &alias).unwrap();
+            remove_empty_download_folder(&alias.join("film.mp4"), &root, std::iter::empty()).unwrap();
+            assert!(alias.is_symlink() && outside.is_dir());
+            std::fs::remove_file(alias).unwrap();
+        }
+        for dir in [&folder, &root, &outside] { std::fs::remove_dir(dir).unwrap(); }
+    }
+
+    #[tokio::test]
+    async fn concurrent_episode_deletions_remove_the_season_but_keep_its_parent() {
+        let root = fixture_dir("batch-season");
+        let show = root.join("Show");
+        let season = show.join("Season 1");
+        std::fs::create_dir_all(&season).unwrap();
+        let first = season.join("1.mp4");
+        let last = season.join("2.mp4");
+        let remove = |video: PathBuf| {
+            let root = &root;
+            async move {
+                remove_download_files(video.to_str().unwrap()).await.unwrap();
+                remove_empty_download_folder(&video, root, std::iter::empty()).unwrap();
+            }
+        };
+        for file in [&first, &last] { std::fs::write(file, b"video").unwrap(); }
+        tokio::join!(remove(first), remove(last));
+        assert!(!season.exists());
+        assert!(show.is_dir());
+        std::fs::remove_dir(show).unwrap();
+        std::fs::remove_dir(root).unwrap();
     }
 
     #[tokio::test]
