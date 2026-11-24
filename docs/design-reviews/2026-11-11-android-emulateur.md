@@ -141,3 +141,38 @@ Preuve : **obs.** = observé sur l'émulateur, **src.** = lu dans le code.
 6. La croix du menu reste en haut, la liste ne passe plus sous l’heure.
 7. « Effacer l’historique » tient sur une ligne ; le titre « Recherches récentes »
    passe encore sur deux lignes à 1080 px (non traité).
+
+## Suivi du 24 novembre — titre « Recherches récentes » (#223)
+
+Le titre ne peut plus passer sur deux lignes depuis le 22/11 (`7d4d4d53`) :
+`SectionTitle` (`src/mobile/search.tsx`) tronque le titre (`min-w-0 truncate`) et
+garde « Effacer l’historique » en `type-caption` sur une ligne. Restait à savoir
+s’il tient sans être tronqué.
+
+Preuve : **test simulé, pas une observation sur l’émulateur.** Mise en page de
+`SectionTitle` (`src/mobile/search.tsx:311-318`, action ligne 117) recopiée dans
+une page de mesure : titre 20 px semi-gras, interlettrage −0,01 em ; action
+12 px, interlettrage +0,015 em, remplissage `px-2` compensé par `-me-2` ; écart
+8 px ; marge latérale 16 px. Polices embarquées de l’appli, rendu Chromium
+(Edge 156 headless sous Windows : même moteur que la WebView Android, lissage du
+texte différent). Commit examiné : `74ac0880`. Marge restante la plus faible sur
+les huit paires de polices (« Police du système » non mesurée : Roboto sur
+Android) :
+
+|Largeur|Français|Arabe (action en anglais)|Anglais (de, es, it, pt)|
+|---|---|---|---|
+|412 dp (téléphone 1080 px de la revue)|52 px|121 px|133 px|
+|384 dp|24 px|93 px|105 px|
+|360 dp|0 px (Plus Jakarta Sans) ; 8 px avec Google Sans, la police par défaut|69 px|81 px|
+
+Aucune troncature dans les 72 cas, mais à 360 dp avec Plus Jakarta Sans la marge
+est nulle : le lissage d’Android peut suffire à couper la fin du titre. La
+largeur courante (412 dp) garde 52 px. L’arabe traduit le titre mais pas
+« Clear history », affiché en anglais ; l’allemand, l’espagnol, l’italien et le
+portugais n’ont aucun des deux textes et affichent l’anglais.
+
+Non vérifié : capture sur l’émulateur (absent de ce PC Windows) et effet de la
+taille de police système d’Android sur la WebView. Critère pour fermer #223,
+sur le Mac : sur l’émulateur à 360 dp, avec Plus Jakarta Sans puis la police
+par défaut, « Recherches récentes » s’affiche en entier, à la taille de police
+système normale et agrandie, capture à l’appui.
