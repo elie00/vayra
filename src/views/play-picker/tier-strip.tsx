@@ -24,15 +24,15 @@ export function TierStrip({
 }) {
   const tr = useT();
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <p className="text-[12px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
+    <div className="flex flex-col gap-3.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="vayra-kicker">
           {tr("Switch quality")}
         </p>
         <QualityDisclaimer />
         {langFilterSlot}
       </div>
-      <div className="flex flex-wrap gap-2.5">
+      <div className="flex flex-wrap gap-2">
         {tiers.map((t) => {
           const stream = byTier[t]!;
           const isActive = selected === t;
@@ -48,11 +48,13 @@ export function TierStrip({
           return (
             <button
               key={t}
+              type="button"
+              aria-pressed={isActive}
               onClick={() => onSelect(t)}
-              className={`group flex min-h-[56px] items-center gap-3 rounded-[14px] border px-4 py-2.5 text-start transition-[border-color,background-color,opacity] duration-200 ${
+              className={`group flex min-h-[54px] items-center gap-3 rounded-xl border px-4 py-2.5 text-start transition-[border-color,background-color,opacity] duration-150 ${
                 isActive
-                  ? "border-ink/35 bg-ink/[0.05]"
-                  : "border-edge-soft hover:border-edge hover:bg-canvas/60"
+                  ? "border-ink/45 bg-elevated shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]"
+                  : "border-edge-soft/75 bg-surface/75 hover:border-edge hover:bg-elevated/80"
               } ${cachedHere ? "" : "opacity-65 hover:opacity-90"}`}
             >
               <FormatBadge kind={badgeKind} size="lg" />
@@ -125,7 +127,7 @@ function QualityDisclaimer() {
         createPortal(
           <div
             style={{ top: pos.top, left: pos.left, width: 320 }}
-            className="pointer-events-none fixed z-[145] flex flex-col gap-2 rounded-xl border border-edge bg-elevated/97 px-4 py-3.5 text-start shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in"
+            className="pointer-events-none fixed z-[145] flex flex-col gap-2 rounded-2xl border border-edge-soft/85 bg-surface/95 px-4 py-3.5 text-start shadow-[0_24px_64px_-20px_rgba(0,0,0,0.82)] backdrop-blur-2xl animate-popover-in"
           >
             <span className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-accent">
               <Info size={11} strokeWidth={2.4} />

@@ -69,12 +69,12 @@ export function PrimaryCard({
   const isLandscape = Boolean(landscapeImage);
 
   return (
-    <section className="relative overflow-hidden rounded-[24px] bg-canvas/70">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/12 to-transparent" />
+    <section className="vayra-stage bg-surface/88 backdrop-blur-xl">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-      <div className={`grid gap-7 p-7 ${isLandscape ? "grid-cols-[320px_1fr] items-center" : "grid-cols-[224px_1fr]"}`}>
+      <div className={`grid gap-7 p-6 sm:p-7 ${isLandscape ? "md:grid-cols-[308px_1fr] items-center" : "sm:grid-cols-[208px_1fr]"}`}>
         <div
-          className={`relative overflow-hidden rounded-[16px] bg-canvas/50 ring-1 ring-edge-soft/60 ${
+          className={`relative overflow-hidden rounded-2xl bg-canvas/60 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.75)] ring-1 ring-white/10 ${
             isLandscape ? "aspect-video self-center" : "aspect-[2/3]"
           }`}
         >
@@ -153,10 +153,13 @@ export function PrimaryCard({
             )}
             <HostMatchChip match={match} long />
             {hasNativeDesktopUx() && <p className="text-[17px] font-semibold text-ink">{meta.name}<span className="mt-1 block text-[13px] font-normal text-ink-muted">{[stream.resolution, isCached ? t("Available now") : t("Availability to check")].filter(Boolean).join(" · ")}</span></p>}
-            <details open={!hasNativeDesktopUx()} className="text-ink-muted"><summary className="cursor-pointer py-2 text-[13px]">{t("Technical details")}</summary>
-            <p className="break-all font-mono text-[13px] leading-relaxed text-ink-muted">
-              {title}
-            </p>
+            <details open={!hasNativeDesktopUx()} className="text-ink-muted">
+              <summary className="cursor-pointer py-1.5 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink">
+                {t("Technical details")}
+              </summary>
+              <p className="mt-1.5 break-all rounded-xl border border-edge-soft/65 bg-canvas/55 px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-ink-muted">
+                {title}
+              </p>
             </details>
             {!hasNativeDesktopUx() && fname && fname !== title && (
               <p className="break-all font-mono text-[12.5px] leading-relaxed text-ink-subtle/80">
@@ -218,76 +221,80 @@ export function PrimaryCard({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-5">
+          <div className="flex flex-wrap items-center gap-4">
             {externalOnly ? (
               <button
+                type="button"
                 onClick={onPlay}
-                className="group flex h-14 items-center gap-3 rounded-full border border-ink/30 bg-ink/[0.04] px-7 text-[14.5px] font-semibold tracking-[0.04em] text-ink transition-[transform,background-color,opacity] duration-200 hover:scale-[1.02] hover:bg-ink/[0.08] active:scale-[0.98]"
+                className="group inline-flex h-11 items-center gap-2.5 rounded-xl border border-edge-soft/85 bg-surface/85 px-6 text-[14px] font-semibold tracking-[-0.01em] text-ink transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated active:scale-[0.98]"
               >
-                <ExternalLink size={18} strokeWidth={2.2} />
+                <ExternalLink size={16} strokeWidth={2.1} />
                 {t("Open in browser")}
               </button>
             ) : isCached ? (
               <button
+                type="button"
                 onClick={onPlay}
                 disabled={resolving}
-                className="group flex h-14 items-center gap-3 rounded-full bg-ink px-9 text-[15px] font-semibold tracking-[0.04em] text-canvas shadow-[0_12px_36px_rgba(0,0,0,0.45)] transition-[transform,opacity] duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                className="group inline-flex h-11 items-center gap-2.5 rounded-xl bg-ink px-7 text-[14.5px] font-semibold tracking-[-0.01em] text-canvas shadow-[0_14px_34px_-12px_rgba(0,0,0,0.65)] transition-[opacity,transform] duration-150 hover:opacity-92 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
               >
                 {resolving ? (
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={18} className="animate-spin" />
                 ) : (
                   <Play
-                    size={20}
+                    size={17}
                     fill="currentColor"
                     strokeWidth={0}
-                    className="transition-transform group-hover:translate-x-0.5"
                   />
                 )}
                 {resolving ? t("Connecting") : inSession ? t("Play Together") : t("Play")}
               </button>
             ) : queued ? (
               <button
+                type="button"
                 disabled
-                className="flex h-14 items-center gap-3 rounded-full bg-emerald-400/15 px-7 text-[14px] font-semibold tracking-[0.04em] text-emerald-300 ring-1 ring-emerald-400/40"
+                className="inline-flex h-11 items-center gap-2.5 rounded-xl bg-emerald-400/15 px-6 text-[13.5px] font-semibold text-emerald-300 ring-1 ring-emerald-400/40"
               >
-                <Check size={18} strokeWidth={2.5} />
+                <Check size={16} strokeWidth={2.4} />
                 {t("Queued on {name}", { name: queueTarget?.name ?? t("debrid") })}
               </button>
             ) : queueTarget ? (
               <button
+                type="button"
                 onClick={onCache}
                 disabled={resolving}
-                className="group flex h-14 items-center gap-3 rounded-full border border-accent/55 bg-accent/12 px-7 text-[14.5px] font-semibold tracking-[0.04em] text-accent transition-[transform,background-color,opacity] duration-200 hover:scale-[1.02] hover:bg-accent/20 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                className="group inline-flex h-11 items-center gap-2.5 rounded-xl border border-accent/50 bg-accent/12 px-6 text-[14px] font-semibold text-accent transition-[background-color,border-color,transform,opacity] duration-150 hover:border-accent/70 hover:bg-accent/18 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
               >
                 {resolving ? (
-                  <Loader2 size={18} className="animate-spin" />
+                  <Loader2 size={16} className="animate-spin" />
                 ) : (
-                  <Download size={18} strokeWidth={2.4} />
+                  <Download size={16} strokeWidth={2.2} />
                 )}
                 {resolving ? t("Sending to TorBox") : t("Cache on {name}", { name: queueTarget.name })}
               </button>
             ) : canStream ? (
               <button
+                type="button"
                 onClick={onPlay}
                 disabled={resolving}
-                className="group flex h-14 items-center gap-3 rounded-full bg-ink px-9 text-[15px] font-semibold tracking-[0.04em] text-canvas shadow-[0_12px_36px_rgba(0,0,0,0.45)] transition-[transform,opacity] duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                className="group inline-flex h-11 items-center gap-2.5 rounded-xl bg-ink px-7 text-[14.5px] font-semibold tracking-[-0.01em] text-canvas shadow-[0_14px_34px_-12px_rgba(0,0,0,0.65)] transition-[opacity,transform] duration-150 hover:opacity-92 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
               >
                 {resolving ? (
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={18} className="animate-spin" />
                 ) : (
                   <Play
-                    size={20}
+                    size={17}
                     fill="currentColor"
                     strokeWidth={0}
-                    className="transition-transform group-hover:translate-x-0.5"
                   />
                 )}
                 {resolving ? t("Connecting") : inSession ? t("Stream Together") : t("Stream")}
               </button>
             ) : (
               <button
+                type="button"
                 disabled
-                className="flex h-14 items-center gap-3 rounded-full bg-canvas/60 px-7 text-[14px] font-semibold tracking-[0.04em] text-ink-subtle ring-1 ring-edge-soft"
+                className="inline-flex h-11 items-center gap-2.5 rounded-xl border border-edge-soft/75 bg-canvas/60 px-6 text-[13.5px] font-semibold text-ink-subtle"
               >
                 {t("Not cached")}
               </button>
@@ -297,7 +304,7 @@ export function PrimaryCard({
               <CopyLinkButton
                 url={link}
                 size={15}
-                className="h-9 w-9 ring-1 ring-edge-soft/60"
+                className="h-9 w-9 rounded-xl border border-edge-soft/75 bg-surface/80"
               />
             )}
           </div>

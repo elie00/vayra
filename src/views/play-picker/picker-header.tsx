@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, ChevronDown, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
@@ -22,20 +22,18 @@ export function PickerHeader({
   const { settings } = useSettings();
   return (
     <header className="flex flex-col gap-3">
-      <div className="sticky top-4 z-20 mb-2">
+      <div className="mb-1">
         <div
-          className={`relative flex items-center gap-3 ${
+          className={`relative flex items-center gap-2.5 ${
             settings.pickerRefreshNextToBack ? "justify-start" : "justify-between"
           }`}
         >
           <button
             type="button"
             onClick={onBack}
-            className="group/back -ms-1 flex w-fit items-center gap-3 rounded-full py-1.5 pe-6 ps-1.5 text-[17px] font-semibold text-ink-muted transition-colors hover:text-ink"
+            className="vayra-chrome-pill h-9 gap-2 ps-3 pe-4 text-[13px] font-medium"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-elevated/70 ring-1 ring-edge-soft transition-colors group-hover/back:bg-elevated">
-              <ChevronLeft size={26} strokeWidth={2.4} className="dir-icon" />
-            </span>
+            <ArrowLeft size={15} strokeWidth={2.1} className="dir-icon" />
             {t("Back")}
           </button>
           {onRefresh && (
@@ -45,9 +43,9 @@ export function PickerHeader({
               disabled={refreshing}
               title={t("Refresh sources")}
               aria-label={t("Refresh sources")}
-              className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-edge-soft bg-elevated/70 ps-4 pe-5 text-[14px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+              className="vayra-chrome-pill h-9 shrink-0 gap-2 ps-3.5 pe-4 text-[13px] font-medium disabled:cursor-not-allowed disabled:opacity-55"
             >
-              <RefreshCw size={17} strokeWidth={2.4} className={refreshing ? "animate-spin" : ""} />
+              <RefreshCw size={14} strokeWidth={2.1} className={refreshing ? "animate-spin" : ""} />
               {t("Refresh")}
             </button>
           )}
@@ -55,10 +53,10 @@ export function PickerHeader({
       </div>
       {episode ? (
         <>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
+          <p className="vayra-kicker">
             {meta.name} · {t("Season")} {episode.imdbSeason ?? episode.season} · {t("Episode")} {String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}
           </p>
-          <h1 className="font-display text-[60px] font-semibold leading-[1.05] tracking-[-0.03em] text-ink">
+          <h1 className="font-display text-[clamp(34px,4vw,52px)] font-semibold leading-[1.05] tracking-[-0.03em] text-ink">
             {episode.name || t("Episode {n}", { n: episode.episode })}
           </h1>
           {episode.overview && <CollapsibleOverview text={episode.overview} />}
@@ -66,16 +64,17 @@ export function PickerHeader({
       ) : (
         <>
           {meta.releaseInfo && (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
+            <p className="vayra-kicker">
               {meta.releaseInfo}
               {meta.genres?.length ? ` · ${meta.genres.slice(0, 2).join(" · ")}` : ""}
             </p>
           )}
-          <h1 className="font-display text-[64px] font-semibold leading-[1.05] tracking-[-0.03em] text-ink">
+          <h1 className="font-display text-[clamp(36px,4.2vw,56px)] font-semibold leading-[1.04] tracking-[-0.03em] text-ink">
             {meta.name}
           </h1>
         </>
       )}
+      <div className="vayra-header-rule mt-1" aria-hidden="true" />
     </header>
   );
 }

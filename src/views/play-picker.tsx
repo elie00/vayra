@@ -888,24 +888,24 @@ export function PlayPicker({
 
       <div aria-hidden data-tauri-drag-region={fs ? "false" : "true"} className="absolute inset-x-0 top-0 z-10 h-20" />
 
-      <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-12 px-12 pb-32 pt-32">
+      <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-9 px-8 pb-28 pt-20 sm:px-12 sm:pt-24">
         <PickerHeader meta={metaForDisplay} episode={episode} onBack={backToDetail} onRefresh={refresh} refreshing={loading} />
 
         {!isDownload && localMatch && (
           <LocalStreamCard entry={localMatch} onPlay={() => openPlayerGated(localPlayerSrc(localMatch))} />
         )}
-        {!isDownload && completedDownload && <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-elevated p-5 text-ink"><div><h2 className="text-[17px] font-semibold">{t("Available offline")}</h2><p className="mt-1 text-[13px] text-ink-muted">{t("Your downloaded copy is checked before playback.")}</p></div><button type="button" className="mac-primary-button" onClick={() => { void validatedDownloadSource(completedDownload, meta, episode).then((src) => { if (src) { setAutoCancelled(true); openPlayerGated(src); } else setResolveError(t("This file is missing or incomplete. Download it again from the title page.")); }); }}>{t("Watch offline")}</button></section>}
+        {!isDownload && completedDownload && <section className="vayra-surface flex flex-wrap items-center justify-between gap-4 p-5 text-ink"><div><h2 className="text-[17px] font-semibold">{t("Available offline")}</h2><p className="mt-1 text-[13px] text-ink-muted">{t("Your downloaded copy is checked before playback.")}</p></div><button type="button" className="mac-primary-button" onClick={() => { void validatedDownloadSource(completedDownload, meta, episode).then((src) => { if (src) { setAutoCancelled(true); openPlayerGated(src); } else setResolveError(t("This file is missing or incomplete. Download it again from the title page.")); }); }}>{t("Watch offline")}</button></section>}
 
         {hostSourceForMedia && <HostSourceBanner source={hostSourceForMedia} />}
 
         {isDownload && !isSeasonDownload && (
-          <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-3.5 text-[13.5px] text-ink-muted">
+          <div className="vayra-surface px-5 py-3.5 text-[13.5px] text-ink-muted">
             {t("Choose a source to save offline. You can track progress on the Downloads page.")}
           </div>
         )}
 
         {isSeasonDownload && (
-          <div className="rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-3.5 text-[13.5px] text-ink-muted">
+          <div className="vayra-surface px-5 py-3.5 text-[13.5px] text-ink-muted">
             {t("Only multi-episode torrents are listed: every episode of this season is pulled from the one source you pick.")}
           </div>
         )}
@@ -1070,10 +1070,10 @@ function PickerScrollTop({ scrollRef }: { scrollRef: React.RefObject<HTMLElement
       type="button"
       onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label={t("Scroll to top")}
-      className="animate-in fade-in slide-in-from-bottom-3 fixed bottom-7 end-7 z-[60] flex h-14 items-center gap-2.5 rounded-full bg-accent px-6 text-canvas shadow-[0_16px_40px_-10px_rgba(0,0,0,0.7)] transition-transform duration-200 hover:scale-105 active:scale-95"
+      className="vayra-chrome-pill animate-in fade-in slide-in-from-bottom-3 fixed bottom-7 end-7 z-[60] h-11 gap-2 px-4.5 text-ink"
     >
-      <ArrowUp size={24} strokeWidth={2.6} />
-      <span className="text-[16px] font-bold">{t("Top")}</span>
+      <ArrowUp size={16} strokeWidth={2.2} />
+      <span className="text-[13px] font-semibold">{t("Top")}</span>
     </button>
   );
 }
