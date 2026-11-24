@@ -1,0 +1,40 @@
+# Réglages : Confidentialité et sauvegardes, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée ; les scénarios
+# précédents y ont laissé des sauvegardes automatiques. L’aperçu de la plus
+# récente est ouvert puis annulé, sans restaurer. Exclus : « Exporter » et
+# « Restaurer » (enregistrement et choix de fichier du système). Les aperçus
+# ne se distinguent que par leur date : le plus récent est visé en #19.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap "Confidentialité et sauvegardes"
+settle
+expect current "Confidentialité et sauvegardes"
+
+tap "Bloquer pubs et traqueurs"
+settle
+expect off "Bloquer pubs et traqueurs"
+tap "Bloquer pubs et traqueurs"
+settle
+expect on "Bloquer pubs et traqueurs"
+
+tap #19
+settle
+expect visible "Restaurer ces préférences"
+tap Annuler
+settle
+expect gone "Restaurer ces préférences"
+
+tap "Inclure les listes privées"
+settle
+expect on "Inclure les listes privées"
+tap "Inclure les listes privées"
+settle
+expect off "Inclure les listes privées"
+expect noerrors

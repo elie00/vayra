@@ -1,0 +1,294 @@
+# Réglages : Apparence, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée, thème « VAYRA
+# par défaut ». Les palettes VAYRA par défaut, Obsidienne, Sauge et Ivoire sont
+# déjà couvertes par « L’essentiel ». Exclus : les imports et choix de fichier
+# (image de fond, logos « Upload », police, thème, images du curseur,
+# « Image personnalisée »), la couleur « Personnalisé » (sélecteur du système),
+# « Copier le thème » (presse-papiers), « Télécharger » et l’onglet
+# « Communautaire » de la bibliothèque (fichier, réseau), les curseurs et
+# leurs valeurs (le pilote ne sait pas les régler). La bibliothèque répète
+# « Appliquer » sans nom de thème : seul « Retirer » du thème installé y est
+# visé. Le studio et l’éditeur de couleurs sont ouverts puis refermés. La
+# carte « Personnalisé » devient « Appliquer / Modifier le thème
+# personnalisé » après une première modification : elle n’est pas visée,
+# l’éditeur est ouvert par « Modifier les couleurs ».
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Apparence
+settle
+expect current Apparence
+
+# Palettes
+tap "Nord Gris"
+settle
+expect on "Nord Gris"
+expect off "VAYRA par défaut Monochrome"
+tap "Stremio Accent"
+settle
+expect on "Stremio Accent"
+tap "Royal Bleu"
+settle
+expect on "Royal Bleu"
+tap "Dracula Violet"
+settle
+expect on "Dracula Violet"
+tap "Forest Des verts"
+settle
+expect on "Forest Des verts"
+tap "Noir Noir pur"
+settle
+expect on "Noir Noir pur"
+tap "VAYRA par défaut Monochrome"
+settle
+expect on "VAYRA par défaut Monochrome"
+expect off "Noir Noir pur"
+
+# Éditeur de couleurs, ouvert puis refermé
+tap "Modifier les couleurs"
+settle
+expect visible Terminé
+tap Terminé
+settle
+expect gone Terminé
+# Refermer l’éditeur active le thème personnalisé : revenir au thème par défaut.
+tap "VAYRA par défaut Monochrome"
+settle
+expect on "VAYRA par défaut Monochrome"
+
+# Typographie
+tap "Fraunces + Inter"
+settle
+expect on "Fraunces + Inter"
+expect off "Google Sans VAYRA"
+tap "Geist Serif + Geist"
+settle
+expect on "Geist Serif + Geist"
+tap "Sentient + Switzer"
+settle
+expect on "Sentient + Switzer"
+tap "General Sans VAYRA"
+settle
+expect on "General Sans VAYRA"
+tap "Cabinet Grotesk + Switzer"
+settle
+expect on "Cabinet Grotesk + Switzer"
+tap "IBM Plex VAYRA"
+settle
+expect on "IBM Plex VAYRA"
+tap "Plus Jakarta Sans VAYRA"
+settle
+expect on "Plus Jakarta Sans VAYRA"
+tap "Police du système"
+settle
+expect on "Police du système"
+tap "Google Sans VAYRA"
+settle
+expect on "Google Sans VAYRA"
+expect off "Police du système"
+
+# Studio de thème : chaque onglet, puis fermeture sans enregistrer
+tap "Créer un thème"
+settle
+expect visible "Fermer le studio"
+# Chaque onglet répète son nom en titre de section : vérifier son contenu.
+tap Disposition
+settle
+expect visible "Dock supérieur"
+tap Code
+settle
+expect visible "Ouvrir l"
+expect gone "Dock supérieur"
+tap "Fermer le studio"
+settle
+expect gone "Fermer le studio"
+expect current Apparence
+
+# Galerie : installer un thème, revenir au thème par défaut, le retirer
+tap "Installer Tokyo Night"
+settle
+expect visible "Tokyo Night est actif"
+tap "VAYRA par défaut Monochrome"
+settle
+expect on "VAYRA par défaut Monochrome"
+tap "Bibliothèque de thèmes"
+settle
+expect dialog "Bibliothèque de thèmes"
+tap Retirer
+settle
+key Escape
+settle
+expect nodialog
+expect visible "Installer Tokyo Night"
+
+# Style des affiches
+tap Compact
+settle
+expect on Compact
+expect off Standard
+tap Dense
+settle
+expect on Dense
+tap Équilibré
+settle
+expect on Équilibré
+tap Confort
+settle
+expect on Confort
+tap Grand
+settle
+expect on Grand
+tap Standard
+settle
+expect on Standard
+tap Droits
+settle
+expect on Droits
+expect off Classiques
+tap Légers
+settle
+expect on Légers
+tap Arrondi
+settle
+expect on Arrondi
+tap Pilule
+settle
+expect on Pilule
+tap Classiques
+settle
+expect on Classiques
+tap Défloutage
+settle
+expect on Défloutage
+expect off Instantané
+tap Fondu
+settle
+expect on Fondu
+tap Instantané
+settle
+expect on Instantané
+
+# Effets sonores, texte des titres, accueil
+choose "Aucune Glassy" Glassy
+settle
+expect value "Aucune Glassy" glass
+choose "Aucune Glassy" Aucune
+settle
+tap "Afficher le nom de la série"
+settle
+expect on "Afficher le nom de la série"
+tap "Afficher le nom de la série"
+settle
+expect off "Afficher le nom de la série"
+tap "Afficher les puces de format"
+settle
+expect off "Afficher les puces de format"
+tap "Afficher les puces de format"
+settle
+expect on "Afficher les puces de format"
+tap "Bannière héros pleine largeur"
+settle
+expect on "Bannière héros pleine largeur"
+tap "Bannière héros pleine largeur"
+settle
+expect off "Bannière héros pleine largeur"
+tap "Image héros en pleine qualité"
+settle
+expect on "Image héros en pleine qualité"
+tap "Image héros en pleine qualité"
+settle
+expect off "Image héros en pleine qualité"
+
+# Bandes-annonces
+tap 360p
+settle
+expect on 360p
+expect off Auto
+tap 720p
+settle
+expect on 720p
+tap 1080p
+settle
+expect on 1080p
+tap Meilleure
+settle
+expect on Meilleure
+tap Auto
+settle
+expect on Auto
+tap "Lecture automatique de la bande-annonce"
+settle
+expect off "Lecture automatique de la bande-annonce"
+tap "Lecture automatique de la bande-annonce"
+settle
+expect on "Lecture automatique de la bande-annonce"
+
+# Barre de progression
+tap "aperçu miniature"
+settle
+expect off "aperçu miniature"
+tap "aperçu miniature"
+settle
+expect on "aperçu miniature"
+tap "Verre Léger"
+settle
+expect on "Verre Léger"
+expect off "Style plat"
+tap "Fines rayures"
+settle
+expect on "Fines rayures"
+tap "Arc-en-ciel"
+settle
+expect on "Arc-en-ciel"
+tap "Style plat"
+settle
+expect on "Style plat"
+# La pastille « Personnalisé » prend le code de la couleur choisie : seul
+# l’état de « Par défaut » est vérifié.
+tap #a8aaad
+settle
+tap #f4f2ed
+settle
+tap #4b4d50
+settle
+tap #ff3b30
+settle
+tap #34c759
+settle
+tap #5ac8fa
+settle
+tap #007aff
+settle
+tap #af52de
+settle
+tap #ff2d92
+settle
+tap #ffffff
+settle
+expect off "Par défaut (monochrome"
+tap "Par défaut (monochrome"
+settle
+expect on "Par défaut (monochrome"
+tap "Remplissage du tampon"
+settle
+expect off "Remplissage du tampon"
+tap "Remplissage du tampon"
+settle
+expect on "Remplissage du tampon"
+tap "Carré Carré"
+settle
+expect on "Carré Carré"
+expect off "Cercle Le point"
+tap "Masqué Pas"
+settle
+expect on "Masqué Pas"
+tap "Cercle Le point"
+settle
+expect on "Cercle Le point"
+expect noerrors

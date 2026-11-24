@@ -1,0 +1,410 @@
+# Réglages : Bibliothèque et métadonnées, chaque contrôle sans clé tierce
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), sans clé d’API. Exclus : les clés d’API (OpenRouter, Groq,
+# Jina, TMDB, OMDb, RPDB, MDBList, AudD, Fanart.tv, TheTVDB) et leurs liens
+# (services tiers), le service d’affiches personnalisé, la région (sélecteur
+# en cascade non parcouru), le champ sans nom de la bibliothèque locale et les
+# trois listes « 500px (recommended) » / « 1280px (recommended) » qui ne se
+# distinguent pas. Les interrupteurs qui demandent une clé restent désactivés.
+# L’entrée de navigation porte le nom d’une carte de la page Extensions : elle
+# est visée en #12.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap "Extensions et connexions"
+settle
+tap #12
+settle
+expect current "Bibliothèque et métadonnées"
+
+# Disposition de l’accueil
+tap "Classic Stremio"
+settle
+expect on "Classic Stremio"
+expect off "VAYRA curated"
+tap "VAYRA curated"
+settle
+expect on "VAYRA curated"
+
+# Interrupteurs
+tap "Afficher toutes"
+settle
+expect on "Afficher toutes"
+tap "Afficher toutes"
+settle
+expect off "Afficher toutes"
+tap "La watchlist"
+settle
+expect off "La watchlist"
+tap "La watchlist"
+settle
+expect on "La watchlist"
+tap "onglet Playlists"
+settle
+expect on "onglet Playlists"
+tap "onglet Playlists"
+settle
+expect off "onglet Playlists"
+tap "Garder les"
+settle
+expect off "Garder les"
+tap "Garder les"
+settle
+expect on "Garder les"
+tap "Faire avancer"
+settle
+expect off "Faire avancer"
+tap "Faire avancer"
+settle
+expect on "Faire avancer"
+tap "Masquer les titres vus"
+settle
+expect on "Masquer les titres vus"
+tap "Masquer les titres vus"
+settle
+expect off "Masquer les titres vus"
+tap "Masquer les titres non"
+settle
+expect on "Masquer les titres non"
+tap "Masquer les titres non"
+settle
+expect off "Masquer les titres non"
+# Les options de flou n’apparaissent que spoilers floutés.
+tap "Flouter les spoilers"
+settle
+expect on "Flouter les spoilers"
+tap "Flouter les vignettes"
+settle
+expect off "Flouter les vignettes"
+tap "Flouter les vignettes"
+settle
+expect on "Flouter les vignettes"
+tap "Flouter les titres"
+settle
+expect off "Flouter les titres"
+tap "Flouter les titres"
+settle
+expect on "Flouter les titres"
+tap "Flouter les descriptions"
+settle
+expect off "Flouter les descriptions"
+tap "Flouter les descriptions"
+settle
+expect on "Flouter les descriptions"
+tap "Flouter les images"
+settle
+expect on "Flouter les images"
+tap "Flouter les images"
+settle
+expect off "Flouter les images"
+tap "arrière-plan du flux"
+settle
+expect off "arrière-plan du flux"
+tap "arrière-plan du flux"
+settle
+expect on "arrière-plan du flux"
+tap "Flouter les spoilers"
+settle
+expect off "Flouter les spoilers"
+expect gone "Flouter les vignettes"
+tap "Afficher la note IMDb"
+settle
+expect off "Afficher la note IMDb"
+tap "Afficher la note IMDb"
+settle
+expect on "Afficher la note IMDb"
+tap "Afficher la description"
+settle
+expect off "Afficher la description"
+tap "Afficher la description"
+settle
+expect on "Afficher la description"
+tap "haute qualité"
+settle
+expect off "haute qualité"
+tap "haute qualité"
+settle
+expect on "haute qualité"
+tap "Grouper les"
+settle
+expect on "Grouper les"
+tap "Grouper les"
+settle
+expect off "Grouper les"
+tap "Identifier le"
+settle
+expect on "Identifier le"
+tap "Identifier le"
+settle
+expect off "Identifier le"
+tap "Afficher les détails"
+settle
+expect off "Afficher les détails"
+tap "Afficher les détails"
+settle
+expect on "Afficher les détails"
+tap "Aperçu au survol Posez"
+settle
+expect on "Aperçu au survol Posez"
+tap "Aperçu au survol Posez"
+settle
+expect off "Aperçu au survol Posez"
+tap "Images pleine"
+settle
+expect on "Images pleine"
+tap "Images pleine"
+settle
+expect off "Images pleine"
+tap "Utiliser le contexte"
+settle
+expect on "Utiliser le contexte"
+tap "Utiliser le contexte"
+settle
+expect off "Utiliser le contexte"
+tap "Utiliser les"
+settle
+expect off "Utiliser les"
+tap "Utiliser les"
+settle
+expect on "Utiliser les"
+tap "Masquer les titres sous"
+settle
+expect on "Masquer les titres sous"
+tap "Masquer les titres sous"
+settle
+expect off "Masquer les titres sous"
+tap "Préférer mon"
+settle
+expect on "Préférer mon"
+tap "Préférer mon"
+settle
+expect off "Préférer mon"
+tap "Panneau des"
+settle
+expect off "Panneau des"
+tap "Panneau des"
+settle
+expect on "Panneau des"
+tap "Afficher les étiquettes"
+settle
+expect off "Afficher les étiquettes"
+tap "Afficher les étiquettes"
+settle
+expect on "Afficher les étiquettes"
+tap "Afficher les notes"
+settle
+expect off "Afficher les notes"
+tap "Afficher les notes"
+settle
+expect on "Afficher les notes"
+tap "IMDb IMDb"
+settle
+expect off "IMDb IMDb"
+tap "IMDb IMDb"
+settle
+expect on "IMDb IMDb"
+tap "TMDB sur la"
+settle
+expect off "TMDB sur la"
+tap "TMDB sur la"
+settle
+expect on "TMDB sur la"
+tap "MAL sur la"
+settle
+expect off "MAL sur la"
+tap "MAL sur la"
+settle
+expect on "MAL sur la"
+tap "Rotten Tomatoes sur la"
+settle
+expect off "Rotten Tomatoes sur la"
+tap "Rotten Tomatoes sur la"
+settle
+expect on "Rotten Tomatoes sur la"
+tap "Score du public sur la"
+settle
+expect off "Score du public sur la"
+tap "Score du public sur la"
+settle
+expect on "Score du public sur la"
+tap "Letterboxd sur la"
+settle
+expect off "Letterboxd sur la"
+tap "Letterboxd sur la"
+settle
+expect on "Letterboxd sur la"
+tap "M Metacritic"
+settle
+expect off "M Metacritic"
+tap "M Metacritic"
+settle
+expect on "M Metacritic"
+tap "Trakt sur la"
+settle
+expect off "Trakt sur la"
+tap "Trakt sur la"
+settle
+expect on "Trakt sur la"
+tap "MDBList sur la"
+settle
+expect off "MDBList sur la"
+tap "MDBList sur la"
+settle
+expect on "MDBList sur la"
+tap "Afficher la note MAL"
+settle
+expect off "Afficher la note MAL"
+tap "Afficher la note MAL"
+settle
+expect on "Afficher la note MAL"
+tap "Afficher le badge"
+settle
+expect off "Afficher le badge"
+tap "Afficher le badge"
+settle
+expect on "Afficher le badge"
+tap "Afficher la note SIMKL"
+settle
+expect off "Afficher la note SIMKL"
+tap "Afficher la note SIMKL"
+settle
+expect on "Afficher la note SIMKL"
+tap "Bouton Marquer"
+settle
+expect off "Bouton Marquer"
+tap "Bouton Marquer"
+settle
+expect on "Bouton Marquer"
+tap "Masquer les anime"
+settle
+expect on "Masquer les anime"
+tap "Masquer les anime"
+settle
+expect off "Masquer les anime"
+tap "Masquer la"
+settle
+expect on "Masquer la"
+tap "Masquer la"
+settle
+expect off "Masquer la"
+tap "Masquer le contenu"
+settle
+expect off "Masquer le contenu"
+tap "Masquer le contenu"
+settle
+expect on "Masquer le contenu"
+tap "Afficher un"
+settle
+expect off "Afficher un"
+tap "Afficher un"
+settle
+expect on "Afficher un"
+
+# Langues de l’accueil
+tap "Español / Espagnol"
+settle
+expect on "Español / Espagnol"
+tap "Español / Espagnol"
+settle
+expect off "Español / Espagnol"
+tap "日本語 Japonais"
+settle
+expect on "日本語 Japonais"
+tap "日本語 Japonais"
+settle
+expect off "日本語 Japonais"
+
+# Carte de lecture en cours, captures de Reprendre la lecture
+tap "Compact Disque"
+settle
+expect on "Compact Disque"
+expect off "Cinématique Grande"
+tap "Cinématique Grande"
+settle
+expect on "Cinématique Grande"
+tap Aucune
+settle
+expect on Aucune
+expect off "30 jours"
+tap "1 semaine"
+settle
+expect on "1 semaine"
+tap "3 mois"
+settle
+expect on "3 mois"
+tap "6 mois"
+settle
+expect on "6 mois"
+tap "1 an"
+settle
+expect on "1 an"
+tap "30 jours"
+settle
+expect on "30 jours"
+expect disabled "Tout effacer"
+
+# Recherche IA (sans clé), ordre des épisodes, notes des fiches
+tap Groq
+settle
+expect on Groq
+expect off OpenRouter
+tap OpenRouter
+settle
+expect on OpenRouter
+tap "Par défaut"
+settle
+expect on "Par défaut"
+expect off TVDB
+tap TVDB
+settle
+expect on TVDB
+tap IMDb
+settle
+expect on IMDb
+expect off MAL
+tap MAL
+settle
+expect on MAL
+tap "Top Floats"
+settle
+expect on "Top Floats"
+expect off "Bottom Sits"
+tap "Bottom Sits"
+settle
+expect on "Bottom Sits"
+expect on 2
+expect disabled 3
+tap Désactivé
+settle
+expect on Désactivé
+expect off "En haut à droite"
+tap "En haut à gauche"
+settle
+expect on "En haut à gauche"
+tap "En bas à gauche"
+settle
+expect on "En bas à gauche"
+tap "En bas à droite"
+settle
+expect on "En bas à droite"
+tap "En haut à droite"
+settle
+expect on "En haut à droite"
+
+# Bibliothèque locale
+tap "Lire en local"
+settle
+expect on "Lire en local"
+expect off Demander
+tap Diffuser
+settle
+expect on Diffuser
+tap Demander
+settle
+expect on Demander
+expect noerrors

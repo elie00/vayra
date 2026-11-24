@@ -1,0 +1,49 @@
+# Réglages : Téléchargements, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée. Exclus : le
+# chemin du dossier (l’ouvre dans l’Explorateur) et « Changer » (sélecteur de
+# dossier du système). L’entrée de navigation porte le nom du bouton
+# Téléchargements de la barre d’outils : elle est visée en #10.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap #10
+settle
+expect current Téléchargements
+expect visible "disponibles"
+
+tap "Options de stockage"
+settle
+expect visible "Organiser les téléchargements"
+tap "Organiser les téléchargements"
+settle
+expect on "Organiser les téléchargements"
+tap "Organiser les téléchargements"
+settle
+expect off "Organiser les téléchargements"
+choose "Téléchargements simultanés" 5
+settle
+expect value "Téléchargements simultanés" 5
+choose "Téléchargements simultanés" 3
+settle
+expect value "Téléchargements simultanés" 3
+choose "Budget disque" "50 Go"
+settle
+expect value "Budget disque" 50
+choose "Budget disque" "Sans limite"
+settle
+expect value "Budget disque" 0
+tap "Options de stockage"
+settle
+expect gone "Organiser les téléchargements"
+
+tap "Ouvrir les téléchargements"
+settle
+expect current Téléchargements
+expect gone "Ouvrir les téléchargements"
+expect noerrors
