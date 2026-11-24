@@ -1,0 +1,48 @@
+# Réglages : Réglages des animés, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée. Exclus :
+# « Configurer Anime4K », qui télécharge les shaders, et « Obtenir SVP
+# (gratuit) », qui ouvre le site de SVP. L’option de l’indicateur n’existe
+# qu’Anime4K activé ; son libellé porte l’apostrophe droite, d’où la cible
+# « Afficher l ». Sans SVP installé, l’activer échoue et l’explique : le
+# scénario vérifie ce refus.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Lecture
+settle
+tap "Réglages des animés"
+settle
+expect current "Réglages des animés"
+
+tap "Activer Anime4K"
+settle
+expect on "Activer Anime4K"
+expect visible "Configurer Anime4K"
+tap "Afficher l"
+settle
+expect on "Afficher l"
+tap "Afficher l"
+settle
+expect off "Afficher l"
+tap "Activer Anime4K"
+settle
+expect off "Activer Anime4K"
+expect gone "Configurer Anime4K"
+
+tap "Fluidification du mouvement"
+settle
+expect on "Fluidification du mouvement"
+tap "Fluidification du mouvement"
+settle
+expect off "Fluidification du mouvement"
+tap "Activer SVP"
+settle
+expect off "Activer SVP"
+expect visible "Impossible de configurer SVP"
+expect noerrors
