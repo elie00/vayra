@@ -11,6 +11,14 @@ export type EngineStats = {
   streamProgress: number;
   streamLen: number | null;
   peerSearchRunning: boolean;
+  /** Peers found so far (trackers, DHT, exchange); null from engines that do not say. */
+  peersSeen: number | null;
+  /** Peers whose connection failed right now (a gauge); null from engines that do not say. */
+  peersDead: number | null;
+  /** Peers queued or connecting right now; null from engines that do not say. */
+  peersTrying: number | null;
+  /** The whole torrent is downloaded. */
+  finished: boolean;
   sawData: boolean;
 };
 
@@ -39,6 +47,12 @@ function bool(o: Record<string, unknown>, ...keys: string[]): boolean {
   return false;
 }
 
+/** A count the engine may not report at all: null when absent, 0 kept as 0. */
+function countOrNull(o: Record<string, unknown>, key: string): number | null {
+  const v = o[key];
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
 function numOrNull(o: Record<string, unknown>, ...keys: string[]): number | null {
   for (const k of keys) {
     const v = o[k];
@@ -56,6 +70,10 @@ export function parseEngineStats(raw: unknown, prev: EngineStats | null): Engine
     streamProgress: 0,
     streamLen: null,
     peerSearchRunning: false,
+    peersSeen: null,
+    peersDead: null,
+    peersTrying: null,
+    finished: false,
     sawData: false,
   };
   if (!raw || typeof raw !== "object") return base;
@@ -75,6 +93,10 @@ export function parseEngineStats(raw: unknown, prev: EngineStats | null): Engine
     streamProgress,
     streamLen: numOrNull(o, "streamLen", "length") ?? base.streamLen,
     peerSearchRunning: bool(o, "peerSearchRunning", "peer_search_running"),
+    peersSeen: countOrNull(o, "peersSeen"),
+    peersDead: countOrNull(o, "peersDead"),
+    peersTrying: countOrNull(o, "peersTrying"),
+    finished: bool(o, "finished"),
     sawData: base.sawData || anyNonZero,
   };
 }
