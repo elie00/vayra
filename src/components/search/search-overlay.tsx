@@ -151,9 +151,12 @@ export function SearchOverlay() {
         className="harbor-search-backdrop absolute inset-0 cursor-default"
       />
 
-      <div className="relative mx-auto flex h-full w-full max-w-[1080px] flex-col px-6 py-6 sm:px-10 sm:py-10">
-        <div data-search-field="" className="modal-panel flex shrink-0 items-center gap-3 rounded-2xl border border-edge-soft/80 bg-elevated/70 px-5 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.7)]">
-          <Search size={22} className="shrink-0 text-ink-muted" strokeWidth={1.9} />
+      <div className="relative mx-auto flex h-full w-full max-w-[1040px] flex-col px-6 py-6 sm:px-10 sm:py-9">
+        <div
+          data-search-field=""
+          className="modal-panel flex shrink-0 items-center gap-3.5 rounded-2xl border border-edge-soft/85 bg-surface/92 px-5 shadow-[0_28px_80px_-28px_rgba(0,0,0,0.85),0_1px_0_0_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl"
+        >
+          <Search size={20} className="shrink-0 text-ink-muted" strokeWidth={1.9} />
           <input
             ref={inputRef}
             type="text"
@@ -187,11 +190,11 @@ export function SearchOverlay() {
             }}
             placeholder={t("Search movies, shows, people, genres, years...")}
             aria-label={t("Search movies, shows, people, genres, years...")}
-            className="h-16 min-w-0 flex-1 bg-transparent text-[20px] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[22px]"
+            className="h-16 min-w-0 flex-1 bg-transparent text-[18px] tracking-[-0.01em] text-ink placeholder:text-ink-subtle focus:outline-none sm:text-[20px]"
             spellCheck={false}
             autoComplete="off"
           />
-          {status === "loading" && <Loader2 aria-hidden="true" size={18} className="shrink-0 animate-spin text-ink-subtle" />}
+          {status === "loading" && <Loader2 aria-hidden="true" size={17} className="shrink-0 animate-spin text-ink-subtle" />}
           {!directInput && <WebSearchButton />}
           {query && (
             <button
@@ -201,9 +204,9 @@ export function SearchOverlay() {
                 clear();
                 inputRef.current?.focus();
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
             >
-              <X size={18} strokeWidth={2.2} />
+              <X size={17} strokeWidth={2.1} />
             </button>
           )}
           <Hint showNav={hasResults} />
@@ -213,8 +216,8 @@ export function SearchOverlay() {
           {!trimmed && <EmptyState onClose={close} onOpenGuide={() => setGuideOpen(true)} />}
 
           {trimmed && !directInput && status === "error" && (
-            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-edge-soft bg-elevated p-4">
-              <p role="alert" className="min-w-0 flex-1 text-[14px] text-ink-muted">
+            <div className="vayra-surface mb-6 flex flex-wrap items-center gap-3 p-4">
+              <p role="alert" className="min-w-0 flex-1 text-[13.5px] text-ink-muted">
                 {t(hasResults
                   ? "Some search sources are unavailable. Available results are shown below."
                   : emptySearchOutcome(status, sources) === "unavailable"
@@ -228,8 +231,8 @@ export function SearchOverlay() {
           )}
 
           {trimmed && !directInput && (status === "typing" || status === "loading") && (
-            <p role="status" className="mb-5 flex items-center gap-2 text-[13.5px] text-ink-muted">
-              <Loader2 aria-hidden="true" size={18} className="animate-spin" />
+            <p role="status" className="mb-5 flex items-center gap-2 text-[13px] text-ink-muted">
+              <Loader2 aria-hidden="true" size={16} className="animate-spin text-ink-subtle" />
               {t(hasResults ? "Searching other sources…" : "Looking…")}
             </p>
           )}
@@ -251,34 +254,35 @@ export function SearchOverlay() {
           )}
 
           {inputKind === "link" && (
-            <p role="status" className="rounded-2xl border border-edge-soft bg-elevated p-4 text-[14px] text-ink-muted">
+            <p role="status" className="vayra-surface p-4 text-[13.5px] text-ink-muted">
               {t("This link cannot be opened here. Use a direct video URL such as a link ending in .mp4.")}
             </p>
           )}
 
           {trimmed && !directInput && results?.intent && (
             <button
+              type="button"
               onClick={onIntent}
-              className="mb-5 flex h-14 w-full items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 px-5 text-start transition-colors hover:bg-accent/15"
+              className="mb-5 flex min-h-14 w-full items-center gap-3.5 rounded-2xl border border-accent/35 bg-accent/[0.08] px-5 py-3 text-start transition-[background-color,border-color] duration-150 hover:border-accent/55 hover:bg-accent/[0.13]"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-accent">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/18 text-accent">
                 {results.intent.kind === "year" ? (
                   <CalendarRange size={16} strokeWidth={2.1} />
                 ) : (
                   <Tag size={16} strokeWidth={2.1} />
                 )}
               </span>
-              <span className="flex flex-col">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="vayra-kicker text-accent">
                   {t("Browse")}
                 </span>
-                <span className="text-[15px] font-semibold text-ink">
+                <span className="truncate text-[14.5px] font-semibold text-ink">
                   {results.intent.kind === "year"
                     ? t("Movies from {year}", { year: results.intent.year })
                     : t(results.intent.mediaType === "movie" ? "{genre} movies" : "{genre} shows", { genre: t(results.intent.genre) })}
                 </span>
               </span>
-              <CornerDownLeft size={15} className="ms-auto text-ink-subtle" />
+              <CornerDownLeft size={15} className="ms-auto shrink-0 text-ink-subtle" />
             </button>
           )}
 
@@ -326,18 +330,18 @@ export function SearchOverlay() {
 
 function Hint({ showNav }: { showNav: boolean }) {
   return (
-    <span className="hidden shrink-0 items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-subtle sm:flex">
+    <span className="hidden shrink-0 items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-[0.14em] text-ink-subtle sm:flex">
       {showNav && (
         <>
-          <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
+          <kbd className="rounded-md border border-edge-soft/80 bg-canvas/70 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
             ↑↓
           </kbd>
-          <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
+          <kbd className="rounded-md border border-edge-soft/80 bg-canvas/70 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
             ↵
           </kbd>
         </>
       )}
-      <kbd className="rounded-md border border-edge-soft bg-canvas/60 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
+      <kbd className="rounded-md border border-edge-soft/80 bg-canvas/70 px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">
         Esc
       </kbd>
     </span>

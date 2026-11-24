@@ -258,15 +258,15 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
               setItems([]);
               setFilterTab("all");
             }}
-            className="flex h-9 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+            className="vayra-chrome-pill h-9 gap-1.5 ps-3 pe-3.5 text-[12.5px] font-medium"
           >
-            <ArrowLeft size={13} strokeWidth={2.4} className="dir-icon" />
+            <ArrowLeft size={13} strokeWidth={2.2} className="dir-icon" />
             {t("Back")}
           </button>
-          <span className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-ink-subtle">
+          <span className="vayra-kicker">
             {t("Browsing")}
           </span>
-          <h3 className="font-display text-[22px] font-medium tracking-tight text-ink">
+          <h3 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-ink">
             {t(genreBrowse)}
           </h3>
         </div>
@@ -345,18 +345,18 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
   }
 
   return (
-    <div className="flex flex-col gap-9">
+    <div className="flex flex-col gap-8 pb-8">
       {recent.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
-              <span className="text-ink-muted"><Clock size={13} strokeWidth={2.2} /></span>
+            <h3 className="vayra-kicker flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-ink-muted"><Clock size={12} strokeWidth={2.2} /></span>
               {t("Recent searches")}
             </h3>
             <button
               type="button"
               onClick={clearRecent}
-              className="text-[11.5px] font-medium uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:text-ink"
+              className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:text-ink"
             >
               {t("Clear history")}
             </button>
@@ -365,20 +365,21 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
             {recent.map((q) => (
               <span
                 key={q}
-                className="group inline-flex items-center gap-1 rounded-full border border-edge-soft bg-elevated/60 ps-3.5 pe-1.5 text-[13.5px] text-ink-muted transition-colors hover:border-edge hover:text-ink"
+                className="group inline-flex items-center gap-1 rounded-xl border border-edge-soft/75 bg-surface/85 ps-3.5 pe-1.5 text-[13px] text-ink-muted transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
               >
-                <button onClick={() => setQuery(q)} className="h-10 py-2 pe-1">
+                <button type="button" onClick={() => setQuery(q)} className="h-9 py-1.5 pe-1">
                   {q}
                 </button>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     removeRecent(q);
                   }}
                   aria-label={t("Remove {name}", { name: q })}
-                  className="ms-0.5 flex h-7 w-7 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
+                  className="ms-0.5 flex h-6 w-6 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-canvas/70 hover:text-ink"
                 >
-                  <X size={12} strokeWidth={2.4} />
+                  <X size={12} strokeWidth={2.2} />
                 </button>
               </span>
             ))}
@@ -387,28 +388,30 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
       )}
 
       <section>
-        <Title icon={<Compass size={13} strokeWidth={2.2} />}>{t("Jump to")}</Title>
+        <Title icon={<Compass size={12} strokeWidth={2.2} />}>{t("Jump to")}</Title>
         <div className="flex flex-wrap gap-2">
           {visibleJumps.map((j) => (
             <button
               key={j.view}
+              type="button"
               onClick={() => {
                 setView(j.view);
                 onClose();
               }}
-              className="flex h-12 items-center gap-2.5 rounded-full border border-edge-soft bg-elevated/50 px-5 text-[14.5px] font-semibold text-ink transition-[transform,opacity,background-color,border-color,color] hover:border-edge hover:bg-elevated active:scale-[0.97]"
+              className="flex h-10 items-center gap-2.5 rounded-xl border border-edge-soft/75 bg-surface/85 px-4 text-[13.5px] font-medium text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated"
             >
-              <span className="flex h-5 w-5 items-center justify-center text-ink-muted">{j.icon}</span>
+              <span className="flex h-4 w-4 items-center justify-center text-ink-muted">{j.icon}</span>
               {t(j.label)}
             </button>
           ))}
           {!hiddenTabs.liveTv && (
             <button
+              type="button"
               onClick={() => onOpenGuide()}
-              className="flex h-12 items-center gap-2.5 rounded-full border border-edge-soft bg-elevated/50 px-5 text-[14.5px] font-semibold text-ink transition-[transform,opacity,background-color,border-color,color] hover:border-edge hover:bg-elevated active:scale-[0.97]"
+              className="flex h-10 items-center gap-2.5 rounded-xl border border-edge-soft/75 bg-surface/85 px-4 text-[13.5px] font-medium text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated"
             >
-              <span className="flex h-5 w-5 items-center justify-center text-ink-muted">
-                <ListTree size={16} strokeWidth={2} />
+              <span className="flex h-4 w-4 items-center justify-center text-ink-muted">
+                <ListTree size={15} strokeWidth={2} />
               </span>
               {t("TV Guide")}
             </button>
@@ -417,13 +420,14 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
       </section>
 
       <section>
-        <Title icon={<Sparkles size={13} strokeWidth={2.2} />}>{t("Try a genre")}</Title>
+        <Title icon={<Sparkles size={12} strokeWidth={2.2} />}>{t("Try a genre")}</Title>
         <div className="flex flex-wrap gap-2">
           {visibleGenres.map((name) => (
             <button
               key={name}
+              type="button"
               onClick={() => setGenreBrowse(name)}
-              className="h-10 rounded-full border border-edge-soft bg-elevated/40 px-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+              className="h-9 rounded-xl border border-edge-soft/70 bg-surface/70 px-3.5 text-[13px] font-medium text-ink-muted transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
             >
               {t(name)}
             </button>
@@ -431,19 +435,19 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
         </div>
       </section>
 
-      <section className="flex justify-center pt-2">
+      <section className="flex justify-center pt-1">
         <button
           type="button"
           onClick={onSurprise}
           disabled={surpriseBusy}
-          className="group inline-flex items-center gap-2 text-[13.5px] font-medium text-ink-subtle transition-colors hover:text-ink disabled:opacity-60"
+          className="mac-secondary-button group rounded-full px-4.5 disabled:opacity-60"
         >
           <Shuffle
             size={14}
             strokeWidth={1.9}
             className={`transition-transform duration-300 ${surpriseBusy ? "animate-spin" : "group-hover:rotate-[18deg]"}`}
           />
-          <span className="underline decoration-edge-soft underline-offset-4 transition-colors group-hover:decoration-edge">
+          <span>
             {surpriseBusy ? t("Picking…") : t("Surprise me")}
           </span>
         </button>
@@ -467,10 +471,11 @@ function FilterPill({
     <button
       type="button"
       onClick={onClick}
-      className={`h-8 rounded-full border px-3.5 text-[12px] font-semibold transition-colors ${
+      aria-pressed={active}
+      className={`h-8 rounded-lg border px-3.5 text-[12px] font-semibold transition-colors ${
         active
           ? "border-ink bg-ink text-canvas"
-          : "border-edge-soft bg-elevated/40 text-ink-muted hover:border-edge hover:text-ink"
+          : "border-edge-soft/75 bg-surface/80 text-ink-muted hover:border-edge hover:text-ink"
       }`}
       style={active && accent ? { background: accent, borderColor: accent, color: "white" } : undefined}
     >
@@ -481,7 +486,7 @@ function FilterPill({
 
 function Title({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <h3 className="mb-3 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+    <h3 className="vayra-kicker mb-3 flex items-center gap-1.5">
       <span className="text-ink-muted">{icon}</span>
       {children}
     </h3>

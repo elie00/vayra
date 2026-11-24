@@ -24,7 +24,7 @@ export function TopMatch({
   };
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-edge-soft bg-elevated/50">
+    <section className="vayra-stage">
       {match.backdrop && (
         <div
           aria-hidden
@@ -33,60 +33,64 @@ export function TopMatch({
             backgroundImage: `url(${match.backdrop})`,
             backgroundSize: "cover",
             backgroundPosition: "center 30%",
-            opacity: 0.32,
-            filter: "blur(28px) saturate(1.3)",
+            opacity: 0.28,
+            filter: "blur(32px) saturate(1.2)",
           }}
         />
       )}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-canvas/95 via-canvas/85 to-canvas/55 rtl:bg-gradient-to-l" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-canvas/95 via-canvas/86 to-canvas/60 rtl:bg-gradient-to-l" />
 
       <button
         type="button"
         onClick={handleOpen}
-        className="group flex w-full items-stretch gap-7 p-7 text-start transition-transform duration-200 hover:scale-[1.005] active:scale-[0.995]"
+        className="group flex w-full items-stretch gap-6 p-6 text-start transition-colors duration-200 hover:bg-white/[0.015] sm:gap-7 sm:p-7"
       >
-        <div className="relative w-[180px] shrink-0 overflow-hidden rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] ring-1 ring-edge-soft">
+        <div className="relative w-[152px] shrink-0 overflow-hidden rounded-xl shadow-[0_20px_50px_-18px_rgba(0,0,0,0.75)] ring-1 ring-white/10 sm:w-[168px]">
           <ResultPoster
             id={match.meta.id}
             poster={match.meta.poster}
-            className="block h-full w-full"
+            className="block h-full w-full transition-transform duration-300 group-hover:scale-[1.02]"
           />
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent">
-            {t("Top match")}
-          </span>
-          <h2
-            className="mt-1.5 font-display text-[clamp(32px,3.4vw,52px)] font-semibold leading-[1.06] tracking-[-0.025em] text-ink"
-          >
-            {match.meta.name}
-          </h2>
-          <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[14px] text-ink-muted">
-            <span className="font-medium">{t(match.kind === "movie" ? "Movie" : "Series")}</span>
-            {yearTxt && (
-              <>
-                <Dot />
-                <span>{yearTxt}</span>
-              </>
-            )}
-            {rating && (
-              <>
-                <Dot />
-                <span className="flex items-center gap-1.5 text-ink">
-                  <Star size={13} className="fill-accent text-accent" />
-                  {rating}
-                </span>
-              </>
+        <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
+          <div className="flex flex-col">
+            <span className="vayra-kicker text-accent">
+              {t("Top match")}
+            </span>
+            <h2
+              className="mt-1.5 font-display text-[clamp(28px,3vw,42px)] font-semibold leading-[1.06] tracking-[-0.025em] text-ink"
+            >
+              {match.meta.name}
+            </h2>
+            <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[13.5px] text-ink-muted">
+              <span className="rounded-md border border-edge-soft/75 bg-canvas/60 px-2 py-0.5 text-[12px] font-medium text-ink">
+                {t(match.kind === "movie" ? "Movie" : "Series")}
+              </span>
+              {yearTxt && (
+                <>
+                  <Dot />
+                  <span>{yearTxt}</span>
+                </>
+              )}
+              {rating && (
+                <>
+                  <Dot />
+                  <span className="flex items-center gap-1 font-medium text-ink">
+                    <Star size={12} className="fill-accent text-accent" />
+                    {rating}
+                  </span>
+                </>
+              )}
+            </div>
+            {synopsis && (
+              <p className="mt-3.5 line-clamp-3 max-w-[60ch] text-[14px] leading-relaxed text-ink-muted">
+                {synopsis}
+              </p>
             )}
           </div>
-          {synopsis && (
-            <p className="mt-4 line-clamp-3 max-w-[60ch] text-[14.5px] leading-relaxed text-ink-muted">
-              {synopsis}
-            </p>
-          )}
-          <div className="mt-6 inline-flex h-12 max-w-max items-center gap-2 self-start rounded-full bg-ink px-6 text-[14.5px] font-semibold text-canvas shadow-[0_8px_24px_-8px_rgba(255,255,255,0.25)] transition-[background-color,border-color,color,opacity,box-shadow] group-hover:bg-ink group-hover:shadow-[0_10px_28px_-6px_rgba(255,255,255,0.4)]">
-            <Play size={15} className="fill-current" strokeWidth={0} />
+          <div className="mt-5 inline-flex min-h-10 max-w-max items-center gap-2 self-start rounded-xl bg-ink px-5 py-2 text-[13.5px] font-semibold text-canvas transition-opacity duration-150 group-hover:opacity-90">
+            <Play size={14} className="fill-current" strokeWidth={0} />
             {t("Open")}
           </div>
         </div>
