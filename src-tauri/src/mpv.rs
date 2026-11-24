@@ -460,8 +460,7 @@ pub async fn mpv_start(
         libmpv2_sys::mpv_request_log_messages(mpv.ctx.as_ptr(), level.as_ptr());
     }
     {
-        use tauri::Manager;
-        if let Ok(dir) = app.path().app_data_dir() {
+        if let Ok(dir) = crate::profile_dir::data_dir(&app) {
             let _ = std::fs::create_dir_all(&dir);
             let logp = dir.join("harbor-mpv.log");
             let _ = mpv.set_property("log-file", logp.to_string_lossy().as_ref());
@@ -1013,11 +1012,7 @@ pub async fn mpv_set_geometry(
 #[tauri::command]
 pub fn mpv_export_log(app: AppHandle) -> Result<String, String> {
     use tauri::Manager;
-    let src = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("harbor-mpv.log");
+    let src = crate::profile_dir::data_dir(&app)?.join("harbor-mpv.log");
     if !src.exists() {
         return Err("No player log yet. Play something first, then export.".into());
     }

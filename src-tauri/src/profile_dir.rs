@@ -22,7 +22,8 @@ pub fn dev_data_dir() -> Option<PathBuf> {
     }
 }
 
-/// Where the settings file lives.
+/// Where settings, restore points, the player log, pairings, Anime4K shaders
+/// and the SVP script live.
 pub fn data_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     match dev_data_dir() {
         Some(dir) => Ok(dir),

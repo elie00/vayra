@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use tauri::Manager;
 
 const BASE: &str = "https://raw.githubusercontent.com/bloc97/Anime4K/master/glsl";
 
@@ -24,7 +23,7 @@ const FILES: &[(&str, &str)] = &[
 ];
 
 fn shaders_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let base = crate::profile_dir::data_dir(app)?;
     Ok(base.join("anime4k"))
 }
 

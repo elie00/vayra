@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use tauri::Manager;
 
 #[derive(serde::Serialize)]
 pub struct SvpStatus {
@@ -127,11 +126,7 @@ pub fn svp_apply(app: tauri::AppHandle, target_fps: String) -> Result<String, St
         std::env::set_var("PATH", format!("{};{}", vs_str, current));
     }
 
-    let out_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("svp");
+    let out_dir = crate::profile_dir::data_dir(&app)?.join("svp");
     std::fs::create_dir_all(&out_dir).map_err(|e| format!("create dir: {}", e))?;
     let target = match target_fps.as_str() {
         "double" => "-1",
