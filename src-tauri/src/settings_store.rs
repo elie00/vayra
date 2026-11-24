@@ -1,4 +1,3 @@
-use tauri::Manager;
 
 #[cfg(desktop)]
 use crate::credential_chunks;
@@ -30,26 +29,8 @@ fn credential_account(account: &str) -> Result<&str, String> {
     }
 }
 
-/// Dev-only per-instance data dir override. When the env var `VAYRA_DATA_DIR`
-/// is set (desktop only), settings storage is routed there so two VAYRA dev
-/// instances don't collide. When unset, returns None and behavior is exactly
-/// as today (bundle-id-keyed `app_data_dir`). This never affects release
-/// builds unless the operator explicitly sets the variable.
-#[cfg(desktop)]
-fn dev_data_dir_override() -> Option<std::path::PathBuf> {
-    std::env::var_os("VAYRA_DATA_DIR")
-        .filter(|v| !v.is_empty())
-        .map(std::path::PathBuf::from)
-}
-
 fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
-    #[cfg(desktop)]
-    let dir = match dev_data_dir_override() {
-        Some(dir) => dir,
-        None => app.path().app_data_dir().map_err(|e| e.to_string())?,
-    };
-    #[cfg(not(desktop))]
-    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let dir = crate::profile_dir::data_dir(app)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.join("settings.json"))
 }
@@ -63,8 +44,9 @@ fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
 /// does not carry over — users should export a backup before updating.
 #[cfg(desktop)]
 fn migrate_legacy_settings(app: &tauri::AppHandle, new_path: &std::path::Path) {
+    use tauri::Manager;
     // A dev-isolated data dir must stay pristine: skip the legacy carry-over.
-    if dev_data_dir_override().is_some() {
+    if crate::profile_dir::dev_data_dir().is_some() {
         return;
     }
     let Ok(new_dir) = app.path().app_data_dir() else {
@@ -98,9 +80,13 @@ fn migrate_secret(legacy_service: &str, service: &str, user: &str) -> Result<Opt
 /// Reads a secret, carrying it forward from the legacy service when absent.
 #[cfg(desktop)]
 fn read_secret(legacy_service: &str, service: &str, user: &str) -> Result<Option<String>, String> {
-    match credential_chunks::get(service, user) {
+    let dev = crate::profile_dir::dev_data_dir().is_some();
+    let service = crate::profile_dir::keyring_service(service);
+    match credential_chunks::get(&service, user) {
         Ok(value) => Ok(Some(value)),
-        Err(keyring::Error::NoEntry) => migrate_secret(legacy_service, service, user),
+        // A dev instance starts empty: never carry the real profile's secrets in.
+        Err(keyring::Error::NoEntry) if dev => Ok(None),
+        Err(keyring::Error::NoEntry) => migrate_secret(legacy_service, &service, user),
         Err(e) => Err(format!("credential read: {e}")),
     }
 }
@@ -160,7 +146,7 @@ pub async fn settings_secrets_write(content: String) -> Result<(), String> {
 fn settings_secrets_write_blocking(content: String) -> Result<(), String> {
     #[cfg(desktop)]
     {
-        credential_chunks::set(KEYRING_SERVICE, KEYRING_USER, &content)
+        credential_chunks::set(&crate::profile_dir::keyring_service(KEYRING_SERVICE), KEYRING_USER, &content)
             .map_err(|e| format!("credential write: {e}"))
     }
     #[cfg(target_os = "android")]
@@ -207,10 +193,11 @@ fn auth_secret_write_blocking(account: String, content: Option<String>) -> Resul
     let account = credential_account(&account)?;
     #[cfg(desktop)]
     {
+        let service = crate::profile_dir::keyring_service(AUTH_KEYRING_SERVICE);
         match content {
-            Some(value) => credential_chunks::set(AUTH_KEYRING_SERVICE, account, &value)
+            Some(value) => credential_chunks::set(&service, account, &value)
                 .map_err(|e| format!("credential write: {e}")),
-            None => match credential_chunks::delete(AUTH_KEYRING_SERVICE, account) {
+            None => match credential_chunks::delete(&service, account) {
                 Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
                 Err(e) => Err(format!("credential delete: {e}")),
             },

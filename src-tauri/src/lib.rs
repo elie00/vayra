@@ -10,6 +10,7 @@ mod fonts;
 mod http_fetch;
 mod local_lib;
 mod power;
+mod profile_dir;
 mod credential_queue;
 mod settings_store;
 mod settings_history;
@@ -626,7 +627,7 @@ pub fn run() {
     // branch always registers `single_instance`, so release behavior is byte
     // -for-byte identical to before.
     #[cfg(desktop)]
-    let vayra_dev_data_dir = std::env::var_os("VAYRA_DATA_DIR").filter(|v| !v.is_empty());
+    let vayra_dev_data_dir = profile_dir::dev_data_dir();
     // Tauri ignores an absolute `dataDirectory`, so without this a dev instance
     // shares the real profile's WebView2 storage (localStorage included).
     // WebView2 reads this variable when it creates its environment and lets it
