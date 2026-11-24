@@ -560,6 +560,7 @@ function SubChips({
       <div className="flex flex-wrap gap-1.5">
         {items.map((it) => (
           <button
+            aria-pressed={it.selected}
             key={it.key}
             type="button"
             onClick={it.onToggle}
@@ -591,6 +592,7 @@ function ChannelToggle({
   const t = useT();
   return (
     <button
+      aria-pressed={on && !disabled}
       type="button"
       onClick={() => !disabled && onToggle()}
       disabled={disabled}

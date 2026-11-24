@@ -68,6 +68,7 @@ export function LayoutPicker({
         const active = value === l.id;
         return (
           <button
+            aria-pressed={active}
             key={l.id}
             type="button"
             onClick={() => onChange(l.id)}

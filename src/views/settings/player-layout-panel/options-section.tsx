@@ -72,6 +72,7 @@ function OptionCard<T extends string>({
           const selected = value === opt.id;
           return (
             <button
+              aria-pressed={selected}
               key={opt.id}
               type="button"
               onClick={() => onChange(opt.id)}

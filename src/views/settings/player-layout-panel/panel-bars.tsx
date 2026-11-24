@@ -61,6 +61,7 @@ export function ThemeTabs({ value, onChange }: { value: ThemeId; onChange: (v: T
         const selected = value === t.id;
         return (
           <button
+            aria-pressed={selected}
             key={t.id}
             type="button"
             onClick={() => onChange(t.id)}

@@ -29,6 +29,7 @@ export function SeverityPicker({
         const selected = value === o.id;
         return (
           <button
+            aria-pressed={selected}
             key={o.id}
             type="button"
             onClick={() => onChange(o.id)}

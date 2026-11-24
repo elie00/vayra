@@ -305,6 +305,7 @@ export function LetterboxdPanel() {
                   const locked = !!opt.fullOnly && !isFullConnected;
                   return (
                     <button
+                      aria-pressed={selected && !locked}
                       key={opt.id}
                       onClick={() => !locked && toggleCatalog(opt.id, !selected)}
                       disabled={locked}

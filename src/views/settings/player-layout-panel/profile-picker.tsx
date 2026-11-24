@@ -167,6 +167,7 @@ export function ProfilePicker({
                 return (
                   <li key={p.id}>
                     <button
+                      aria-pressed={isActive}
                       type="button"
                       onClick={() => {
                         onSwitch(p.id);

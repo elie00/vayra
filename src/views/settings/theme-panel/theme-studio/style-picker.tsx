@@ -36,6 +36,7 @@ export function StylePicker({
         const editable = kind === "card" && s.id === "custom" && !!onEditCustom;
         return (
           <button
+            aria-pressed={active}
             key={s.id}
             type="button"
             onClick={() => {

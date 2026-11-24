@@ -162,6 +162,7 @@ function BetaCard({
           )}
         </div>
         <button
+          aria-pressed={active}
           type="button"
           onClick={onActivate}
           disabled={active}

@@ -197,6 +197,8 @@ function SourceToggle({
   const effective = on && !disabled;
   return (
     <button
+      role="switch"
+      aria-checked={effective}
       type="button"
       onClick={() => !disabled && onChange(!on)}
       disabled={disabled}
@@ -251,6 +253,8 @@ function ChipToggle({
   const t = useT();
   return (
     <button
+      role="switch"
+      aria-checked={on}
       onClick={() => onToggle(!on)}
       className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
         on ? "bg-ink text-canvas" : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"

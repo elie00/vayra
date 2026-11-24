@@ -45,6 +45,7 @@ export function CommunityPane() {
       <div className="flex flex-wrap items-center gap-2">
         {SORTS.map((s) => (
           <button
+            aria-pressed={sort === s.id}
             key={s.id}
             onClick={() => setSort(s.id)}
             className={`h-8 rounded-full border px-3.5 text-[12px] font-semibold transition-colors ${

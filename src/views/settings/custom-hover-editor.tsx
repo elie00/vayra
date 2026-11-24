@@ -248,6 +248,7 @@ function Segmented({
       <div className="flex items-center rounded-lg bg-raised p-0.5">
         {options.map((o) => (
           <button
+            aria-pressed={value === o.v}
             key={o.v}
             type="button"
             onClick={() => onChange(o.v)}

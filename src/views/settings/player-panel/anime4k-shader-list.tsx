@@ -98,6 +98,7 @@ export function Anime4kShaderList() {
               const selected = mode === m.id;
               return (
                 <button
+                  aria-pressed={selected}
                   key={m.id}
                   type="button"
                   onClick={() => pickMode(m.id)}
@@ -167,6 +168,7 @@ export function Anime4kShaderList() {
 function TierBtn({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
     <button
+      aria-pressed={active}
       type="button"
       onClick={onClick}
       className={`rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${

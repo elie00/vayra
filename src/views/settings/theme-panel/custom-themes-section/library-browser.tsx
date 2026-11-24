@@ -187,6 +187,7 @@ export function LibraryBrowser({
 function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
+      aria-pressed={active}
       type="button"
       onClick={onClick}
       className={`inline-flex h-9 items-center rounded-full px-4 text-[13px] font-semibold transition-colors ${
@@ -339,6 +340,7 @@ function BrowserCard({
         </div>
         <div className="flex items-center gap-1.5">
           <button
+            aria-pressed={active}
             type="button"
             onClick={onActivate}
             disabled={active}
