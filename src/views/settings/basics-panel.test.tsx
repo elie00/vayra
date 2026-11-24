@@ -74,4 +74,21 @@ describe("BasicsPanel", () => {
     act(() => customize.click());
     expect(setActive).toHaveBeenCalledWith("theme");
   });
+
+  it("presses neither play card while the season lock is on, and says so", () => {
+    mocks.settings.seasonSourceLock = true;
+    act(() =>
+      root.render(
+        <SettingsActiveContext.Provider value={{ setActive: vi.fn() }}>
+          <BasicsPanel />
+        </SettingsActiveContext.Provider>,
+      ),
+    );
+
+    const card = (title: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent?.includes(title))!;
+    expect(card("Instant").getAttribute("aria-pressed")).toBe("false");
+    expect(card("Choose first").getAttribute("aria-pressed")).toBe("false");
+    expect(host.textContent).toContain("Lock to season server is on.");
+  });
 });

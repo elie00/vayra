@@ -18,7 +18,8 @@ export function BasicsPanel() {
   const langs = settings.preferredLanguages;
   const langLabel =
     langs.length === 0 ? t("Any") : langs.length === 1 ? langs[0] : t("{n} languages", { n: langs.length });
-  const isInstant = settings.instantPlay && !settings.seasonSourceLock;
+  // The season lock is a third mode, set in Playback: neither card is it.
+  const playMode = settings.seasonSourceLock ? "season" : settings.instantPlay ? "instant" : "manual";
 
   return (
     <>
@@ -30,20 +31,25 @@ export function BasicsPanel() {
       >
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <ChoiceCard
-            active={isInstant}
+            active={playMode === "instant"}
             icon={<Play size={16} strokeWidth={2.1} fill="currentColor" />}
             title={t("Instant")}
             subtitle={t("Starts the best available stream right away.")}
             onClick={() => update({ instantPlay: true, seasonSourceLock: false })}
           />
           <ChoiceCard
-            active={!isInstant}
+            active={playMode === "manual"}
             icon={<ListVideo size={16} strokeWidth={2} />}
             title={t("Choose first")}
             subtitle={t("Shows available sources before playback starts.")}
             onClick={() => update({ instantPlay: false, seasonSourceLock: false })}
           />
         </div>
+        {playMode === "season" && (
+          <p className="text-[12.5px] leading-snug text-ink-muted">
+            {t("Lock to season server is on. Choosing Instant or Choose first turns it off.")}
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setActive("player")}

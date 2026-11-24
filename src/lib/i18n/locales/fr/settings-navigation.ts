@@ -10,6 +10,7 @@ const settingsNavigation: Record<string, string> = {
   "Choose first": "Choisir d’abord",
   "Shows available sources before playback starts.": "Affiche la liste des sources avant de lancer la lecture.",
   "More playback options": "Plus d’options de lecture",
+  "Lock to season server is on. Choosing Instant or Choose first turns it off.": "Le verrou sur le serveur de la saison est actif. Choisir Instantané ou Choisir d’abord le désactive.",
   "Manage content sources and optional connected services.": "Gérez vos sources de contenu et vos services connectés.",
   "Library & metadata": "Bibliothèque et métadonnées",
   "Optional keys that unlock TMDB rails, baked-in poster ratings, fanart, and TVDB episode data.": "Clés facultatives pour les catalogues TMDB, les notes sur les affiches, les visuels et les épisodes TVDB.",
