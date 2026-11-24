@@ -1,0 +1,97 @@
+# Réglages : Pair-à-pair et serveurs, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée. Exclus :
+# « Lancer l’auto-test » (réseau), « Vider et redémarrer » et « Vider le cache
+# maintenant » (suppriment des fichiers), « Modifier… » (sélecteur de dossier),
+# les boutons « Copier » (presse-papiers), « Afficher le dossier du moteur »
+# (Explorateur), « Démarrer le serveur » et « VAYRA dans votre navigateur »
+# (ouvrent un port réseau). « Redémarrer le moteur » est exercé.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Avancé
+settle
+tap "Pair-à-pair et serveurs"
+settle
+expect current "Pair-à-pair et serveurs"
+
+tap "Afficher la surimpression"
+settle
+expect off "Afficher la surimpression"
+tap "Afficher la surimpression"
+settle
+expect on "Afficher la surimpression"
+tap "Télécharger tout le fichier"
+settle
+expect on "Télécharger tout le fichier"
+tap "Télécharger tout le fichier"
+settle
+expect off "Télécharger tout le fichier"
+tap "Redémarrer le moteur"
+settle
+
+# Cache de flux : durée, taille, suppression après visionnage
+tap Désactivé
+settle
+expect on Désactivé
+expect off "1 day"
+tap "3 days"
+settle
+expect on "3 days"
+tap "1 semaine"
+settle
+expect on "1 semaine"
+tap "Pour toujours"
+settle
+expect on "Pour toujours"
+tap "1 day"
+settle
+expect on "1 day"
+tap "10 GB"
+settle
+expect on "10 GB"
+expect off "Sans limite"
+tap "25 GB"
+settle
+expect on "25 GB"
+tap "50 GB"
+settle
+expect on "50 GB"
+tap "100 GB"
+settle
+expect on "100 GB"
+tap "Sans limite"
+settle
+expect on "Sans limite"
+tap "Supprimer après la fin"
+settle
+expect on "Supprimer après la fin"
+tap "Supprimer après la fin"
+settle
+expect off "Supprimer après la fin"
+
+# Outils avancés
+tap "Streaming torrent direct"
+settle
+expect off "Streaming torrent direct"
+tap "Streaming torrent direct"
+settle
+expect on "Streaming torrent direct"
+tap "Confirmer automatiquement"
+settle
+expect on "Confirmer automatiquement"
+tap "Confirmer automatiquement"
+settle
+expect off "Confirmer automatiquement"
+type "http://192.168.1.50:11470" http://127.0.0.1:11470
+settle
+expect value "http://192.168.1.50:11470" http://127.0.0.1:11470
+type "http://192.168.1.50:11470" ""
+settle
+expect value "http://192.168.1.50:11470" ""
+expect noerrors

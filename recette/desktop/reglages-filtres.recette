@@ -1,0 +1,80 @@
+# Réglages : Filtres des sources, chaque contrôle
+@cible desktop
+# Part d’un profil jetable (VAYRA_DATA_DIR) sans filtre enregistré. Un filtre
+# est créé, renommé, rouvert, puis supprimé. Les trois puces « Other » ne se
+# distinguent que par leur index ; « HDR uniquement » et « En cache
+# uniquement » n’exposent pas leur état : actionnés sans vérification. Les
+# deux champs de taille portent le même nom « Indifférent » : seul le premier
+# est rempli.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Avancé
+settle
+tap "Filtres des sources"
+settle
+expect current "Filtres des sources"
+
+# Annuler ne crée rien
+tap "Nouveau filtre"
+settle
+expect dialog "Nouveau filtre"
+expect disabled Créer
+tap Annuler
+settle
+expect nodialog
+expect gone "Supprimer le filtre"
+
+# Créer un filtre en touchant chaque famille de puces
+tap "Nouveau filtre"
+settle
+type "Mon filtre" Recette
+tap 4K
+settle
+expect on 4K
+tap 1080p
+settle
+expect on 1080p
+tap 4K
+settle
+expect off 4K
+tap REMUX
+settle
+expect on REMUX
+tap HEVC
+settle
+expect on HEVC
+tap Atmos
+settle
+expect on Atmos
+tap "HDR uniquement"
+settle
+tap "En cache uniquement"
+settle
+type #72 2
+settle
+expect value #72 2
+tap Créer
+settle
+expect nodialog
+expect value "Filtre sans titre" Recette
+
+# Renommer, rouvrir, supprimer
+type "Filtre sans titre" Recette 2
+settle
+expect value "Filtre sans titre" Recette 2
+tap "Modifier le filtre"
+settle
+expect on 1080p
+expect on REMUX
+tap Annuler
+settle
+expect nodialog
+tap "Supprimer le filtre"
+settle
+expect gone "Supprimer le filtre"
+expect noerrors

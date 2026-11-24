@@ -1,0 +1,66 @@
+# Réglages : Webhooks, chaque contrôle sans envoi
+@cible desktop
+# Part d’un profil jetable (VAYRA_DATA_DIR), déconnecté de Stremio et Trakt,
+# sans clé TMDB. Les champs sont remplis de valeurs factices puis vidés ; les
+# boutons « Envoyer un test » s’activent mais ne sont pas actionnés (envoi
+# vers Discord ou Telegram), comme les liens d’aide (sites externes). Les
+# alertes qui demandent un compte ou une clé restent désactivées.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Avancé
+settle
+tap Webhooks
+settle
+expect current Webhooks
+
+type "https://discord.com/api/webhooks" https://discord.com/api/webhooks/0/recette
+settle
+expect value "https://discord.com/api/webhooks" https://discord.com/api/webhooks/0/recette
+type "https://discord.com/api/webhooks" ""
+settle
+expect value "https://discord.com/api/webhooks" ""
+type "Jeton du bot" 0:recette
+settle
+type "ID de discussion" 0
+settle
+expect value "Jeton du bot" 0:recette
+expect value "ID de discussion" 0
+type "Jeton du bot" ""
+settle
+type "ID de discussion" ""
+settle
+expect value "Jeton du bot" ""
+
+expect disabled "Ma bibliothèque"
+expect disabled "Mon Trakt"
+expect disabled "Nouvelle règle"
+tap Attendus
+settle
+expect on Attendus
+tap Attendus
+settle
+expect off Attendus
+tap Films
+settle
+expect off Films
+tap Films
+settle
+expect on Films
+tap TV
+settle
+expect off TV
+tap TV
+settle
+expect on TV
+tap Animés
+settle
+expect off Animés
+tap Animés
+settle
+expect on Animés
+expect noerrors

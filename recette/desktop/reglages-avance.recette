@@ -1,0 +1,87 @@
+# Réglages : Avancé, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée. Exclus :
+# « Rechercher des mises à jour » et « Envoyer la note » (réseau ; le pilote
+# ne sait pas non plus régler le curseur de note), « Exporter » et
+# « Restaurer » la sauvegarde (fichiers), « Ouvrir » et « Choisir un dossier »
+# (Explorateur, sélecteur du système), « Laisser mes téléphones piloter ce
+# lecteur » (ouvre un port réseau), « Utiliser VAYRA » pour les liens torrent
+# (associe les liens magnet dans Windows). « En savoir plus » ouvre une note
+# dont le pilote ne lit pas l’état : actionné sans vérification. Le code
+# personnalisé ne reçoit que des commentaires. « Revoir » relance l’accueil :
+# le scénario finit par un redémarrage qui le passe.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Avancé
+settle
+expect current Avancé
+
+tap "Inclure les listes privées"
+settle
+expect on "Inclure les listes privées"
+tap "Inclure les listes privées"
+settle
+expect off "Inclure les listes privées"
+tap "Créer des dossiers pour les films"
+settle
+expect on "Créer des dossiers pour les films"
+tap "Créer des dossiers pour les films"
+settle
+expect off "Créer des dossiers pour les films"
+tap "Bloquer pubs et traqueurs"
+settle
+expect off "Bloquer pubs et traqueurs"
+tap "Bloquer pubs et traqueurs"
+settle
+expect on "Bloquer pubs et traqueurs"
+
+# Code personnalisé : un commentaire dans chaque champ, puis vidé
+tap "Code personnalisé Un"
+settle
+expect visible "/* override anything */"
+type "/* override anything */" /* recette */
+settle
+expect value "/* override anything */" /* recette */
+type "/* override anything */" ""
+settle
+expect value "/* override anything */" ""
+type "// runs once" // recette
+settle
+expect value "// runs once" // recette
+type "// runs once" ""
+settle
+expect value "// runs once" ""
+type "position:fixed" <!-- recette -->
+settle
+expect value "position:fixed" <!-- recette -->
+type "position:fixed" ""
+settle
+expect value "position:fixed" ""
+tap "Code personnalisé Un"
+settle
+expect gone "/* override anything */"
+
+tap "En savoir plus"
+settle
+tap "En savoir plus"
+settle
+
+# Prise en main : restaurer les astuces, puis revoir l’accueil
+# « Restaurer » existe aussi pour la sauvegarde : celui des astuces est en #44.
+tap #44
+settle
+tap Revoir
+settle
+restart
+wait "Passer la configuration" 30000
+expect dialog "Configuration de VAYRA"
+tap "Passer la configuration"
+settle
+expect nodialog
+expect noerrors
