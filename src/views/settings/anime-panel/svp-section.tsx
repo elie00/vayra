@@ -113,7 +113,7 @@ export function SvpSection() {
       )}
 
       {error && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-3 text-[12px] leading-snug text-ink">
+        <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-3 text-[12px] leading-snug text-ink">
           <span className="mt-0.5 shrink-0 font-bold text-danger">!</span>
           <span>{error}</span>
         </div>
