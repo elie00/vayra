@@ -1,6 +1,6 @@
 ---
 name: checklist-design
-description: "Cadre et audite les écrans, composants et parcours UI/UX de VAYRA avec Checklist Design. Utiliser pour une demande de design, de revue d’interface ou de parcours, et pour vérifier les changements UI avant livraison. Priorité à l’app macOS installée ; ne transforme pas un audit en autorisation de modifier le produit."
+description: "Cadre et audite les écrans, composants et parcours UI/UX de VAYRA avec Checklist Design. Utiliser pour une demande de design, de revue d’interface ou de parcours, et pour vérifier les changements UI avant livraison. Couvre les apps installées macOS, Windows et Android ; ne transforme pas un audit en autorisation de modifier le produit."
 ---
 
 # Checklist Design — VAYRA
@@ -16,22 +16,26 @@ ci-dessous adaptent leur usage à VAYRA, sans importer les exigences de Pilot.
    comptes, intégrations et états vides ; `flows.md` pour filtres, erreurs et
    enregistrement. Les catégories web décrivent aussi les composants React de
    Tauri : les utiliser ne remet pas la version web en chantier.
-2. Charger `mobile.md` ou `website.md` uniquement si le périmètre utilisateur le
-   demande. Ne pas appliquer mécaniquement facturation, administration, paiement,
-   collecte analytique ou fonctionnalités sociales à une app média personnelle.
+2. Charger `mobile.md` pour les écrans Android, et `website.md` uniquement si
+   l’utilisateur demande la version web. Ne pas appliquer mécaniquement
+   facturation, administration, paiement, collecte analytique ou fonctionnalités
+   sociales à une app média personnelle.
 3. Lire `docs/DESIGN_VERIFICATION_LOOP.md` depuis la racine du dépôt. Examiner les
    revues voisines dans `docs/design-reviews/` comme historique, pas comme preuve
    actuelle de conformité.
 
 ## Contrats VAYRA
 
-- Respecter le périmètre macOS personnel. Aucune publication web ou modification
-  de compte, connexion tierce, bibliothèque ou téléchargement réel pour un audit.
+- Respecter le périmètre fixé par `AGENTS.md`. Aucune publication web ou
+  modification de compte, connexion tierce, bibliothèque ou téléchargement réel
+  pour un audit.
 - Conserver le fond uniforme et l’absence de séparation verticale de la barre
   latérale ; ne pas réintroduire de tuile active décorative. Garder les animations
   de navigation demandées et leur variante de mouvement réduit.
-- Préserver un focus clavier visible, les raccourcis macOS et le plein écran en
-  quittant une vidéo. Ne pas confondre plein écran de fenêtre et plein écran média.
+- Préserver un focus clavier visible, les raccourcis clavier de chaque système
+  et le plein écran en quittant une vidéo. Ne pas confondre plein écran de
+  fenêtre et plein écran média. Sur Android, suivre les cibles tactiles de
+  `docs/mobile-design-spec.md` et garder la barre d’onglets accessible.
 - Vérifier français, typographie, textes longs, absence d’image et chargement
   différé. Une même famille de cartes doit garder son gabarit et ses espacements.
 - Pour les téléchargements : distinguer attente, actif, pause, interruption,
