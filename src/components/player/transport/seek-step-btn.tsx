@@ -97,19 +97,19 @@ export function SeekStepBtn({
             setPickerOpen(true);
           }}
           aria-label={t("{word} {n} seconds. Hold for options", { word, n: seconds })}
-          className={`relative flex h-14 w-14 items-center justify-center rounded-full transition-colors ${
-            pickerOpen ? "bg-white/15 text-white" : "text-white/85 hover:bg-white/10 hover:text-white"
+          className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-[background-color,color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none ${
+            pickerOpen ? "bg-white/18 text-white ring-1 ring-white/15" : "text-white/82 hover:bg-white/12 hover:text-white"
           }`}
         >
-          <Icon size={32} strokeWidth={1.8} />
-          <span className="absolute font-mono text-[10.5px] font-bold tabular-nums leading-none">
+          <Icon size={24} strokeWidth={1.85} />
+          <span className="absolute font-mono text-[8.5px] font-bold tabular-nums leading-none">
             {seconds}
           </span>
         </button>
       </Tooltip>
       {pickerOpen && (
-        <div className="absolute bottom-[calc(100%+12px)] left-1/2 z-30 -translate-x-1/2 overflow-hidden rounded-2xl border border-edge bg-elevated p-1.5 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
-          <div className="border-b border-edge-soft px-2.5 pb-2 pt-1.5 text-center text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+        <div className="absolute bottom-[calc(100%+12px)] left-1/2 z-30 -translate-x-1/2 overflow-hidden rounded-2xl border border-white/12 bg-[#111215]/94 p-1.5 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.9)] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="border-b border-white/10 px-2.5 pb-2 pt-1.5 text-center text-[10.5px] font-semibold uppercase tracking-[0.18em] text-white/55">
             {word}
           </div>
           <div className="flex flex-col-reverse gap-1 pt-1.5">
@@ -120,10 +120,10 @@ export function SeekStepBtn({
                   key={s}
                   type="button"
                   onClick={() => commitChoice(s)}
-                  className={`flex h-10 w-12 items-center justify-center rounded-full font-mono text-[12px] font-bold tabular-nums transition-colors ${
+                  className={`flex h-9 w-12 items-center justify-center rounded-xl font-mono text-[12px] font-semibold tabular-nums transition-colors ${
                     isSel
-                      ? "bg-elevated text-ink ring-1 ring-edge"
-                      : "text-ink-muted hover:bg-canvas/55 hover:text-ink"
+                      ? "bg-white text-[#0a0b0d]"
+                      : "text-white/75 hover:bg-white/12 hover:text-white"
                   }`}
                   aria-label={t("{word} {n} seconds", { word, n: s })}
                 >

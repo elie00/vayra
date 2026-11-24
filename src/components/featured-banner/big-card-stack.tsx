@@ -134,7 +134,7 @@ export function BigCardStack({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      className={`group relative block h-full min-h-[420px] w-full min-w-0 overflow-hidden rounded-2xl border border-edge-soft bg-canvas text-start transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0.24,1)] hover:-translate-y-1 ${
+      className={`vayra-stage group relative block h-full min-h-[420px] w-full min-w-0 text-start transition-[border-color] duration-200 hover:border-edge ${
         dragging ? "cursor-grabbing select-none" : "cursor-pointer"
       }`}
       style={{ isolation: "isolate", touchAction: "pan-y" }}

@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import type { FeedItem } from "@/lib/feed";
 import { useT } from "@/lib/i18n";
 import { rpdbPoster } from "@/lib/providers/rpdb";
@@ -10,59 +10,91 @@ export function DiscoveryQueueCta({ items }: { items: FeedItem[] }) {
   const { settings } = useSettings();
   const { openQueue } = useView();
   const t = useT();
-  const peek = items.slice(0, 6);
+  const peek = items.slice(0, 3);
 
   if (peek.length === 0) return null;
 
+  const backdropSrc = peek[0]?.meta.background ?? peek[0]?.meta.poster;
+
   return (
     <section className="flex flex-col gap-3.5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="font-display text-[24px] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-[26px]">
           {t("Your Discovery Queue")}
         </h2>
-        <span className="text-[12.5px] uppercase tracking-[0.2em] text-ink-subtle">
+        <span className="rounded-full border border-edge-soft/70 bg-surface/85 px-3 py-1 text-[11px] font-semibold uppercase tabular-nums tracking-[0.16em] text-ink-subtle">
           {t("{count} picks ready", { count: items.length })}
         </span>
       </div>
+
       <button
         type="button"
         onClick={openQueue}
-        className="group relative flex h-[156px] items-stretch overflow-hidden rounded-2xl border border-edge-soft bg-elevated/40 text-start"
+        className="vayra-surface group relative flex flex-col items-start justify-between gap-6 overflow-hidden px-6 py-6 text-start transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:border-edge sm:flex-row sm:items-center sm:px-8 sm:py-7 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
-        <div className="absolute inset-0 grid grid-cols-6 gap-px">
-          {peek.map((item, i) => (
-            <div
-              key={item.meta.id}
-              className="relative overflow-hidden"
-              style={{ opacity: 0.45 + i * 0.06 }}
-            >
-              <Poster
-                src={rpdbPoster(settings.rpdbKey, item.meta.id, item.meta.background ?? item.meta.poster)}
-                seed={item.meta.id}
-                ratio="landscape"
-                className="absolute inset-0 rounded-none"
-              />
-            </div>
-          ))}
-        </div>
+        {backdropSrc && (
+          <img
+            src={backdropSrc}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            className="pointer-events-none absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.12] blur-xl"
+          />
+        )}
         <div
-          aria-hidden
-          className="absolute inset-0"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg, oklch(0.10 0.02 260 / 0.85) 0%, oklch(0.10 0.02 260 / 0.35) 50%, oklch(0.10 0.02 260 / 0.85) 100%)",
+              "linear-gradient(105deg, color-mix(in srgb, var(--color-surface) 94%, transparent) 0%, color-mix(in srgb, var(--color-surface) 78%, transparent) 58%, color-mix(in srgb, var(--color-canvas) 62%, transparent) 100%)",
           }}
         />
-        <div className="relative flex w-full items-center justify-center px-12">
-          <div className="flex h-14 w-full max-w-[560px] items-center gap-3 rounded-full border border-ink/15 bg-canvas/85 px-8 transition-[background-color,border-color,color,opacity,box-shadow] duration-300 group-hover:bg-canvas group-hover:shadow-[0_22px_44px_-18px_rgba(0,0,0,0.7)]">
-            <span className="flex-1 text-center font-display text-[18px] font-medium tracking-tight text-ink">
-              {t("Explore your queue")}
-            </span>
+
+        <div className="relative z-10 flex max-w-[46ch] flex-col gap-2.5">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
+            <Sparkles size={12} strokeWidth={2} aria-hidden="true" />
+            <span>{t("Personalized deck")}</span>
+          </span>
+          <h3 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-[24px]">
+            {t("Explore your queue")}
+          </h3>
+          <p className="text-[13.5px] leading-relaxed text-ink-muted">
+            {t("Swipe through tailored picks and refine what VAYRA recommends next.")}
+          </p>
+          <span className="mt-1 inline-flex min-h-10 items-center gap-2 self-start rounded-full bg-ink px-4 py-2 text-[13px] font-semibold text-canvas transition-opacity duration-150 group-hover:opacity-90">
+            <span>{t("Start browsing")}</span>
             <ArrowRight
-              size={18}
-              className="dir-icon shrink-0 text-ink-subtle transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 group-hover:text-ink"
+              size={15}
+              strokeWidth={2}
+              className="dir-icon transition-transform duration-200 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 motion-reduce:transition-none"
             />
-          </div>
+          </span>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="relative z-10 hidden h-[148px] w-[240px] shrink-0 items-center justify-end sm:flex"
+        >
+          {peek.map((item, i) => {
+            const offsets = [
+              "end-[112px] -rotate-6 scale-[0.9] opacity-80 group-hover:-rotate-8 group-hover:end-[120px]",
+              "end-[56px] rotate-0 scale-[0.96] opacity-95 z-10 group-hover:-translate-y-1",
+              "end-0 rotate-6 scale-100 z-20 group-hover:rotate-8 group-hover:-translate-y-1.5",
+            ];
+            return (
+              <div
+                key={item.meta.id}
+                className={`absolute bottom-0 w-[94px] overflow-hidden rounded-xl border border-edge-soft/85 bg-canvas shadow-[0_18px_36px_-14px_rgba(0,0,0,0.8)] transition-[transform,inset,opacity] duration-300 motion-reduce:transition-none ${offsets[i] ?? ""}`}
+              >
+                <Poster
+                  src={rpdbPoster(settings.rpdbKey, item.meta.id, item.meta.poster ?? item.meta.background)}
+                  seed={item.meta.id}
+                  ratio="portrait"
+                  className="rounded-none"
+                />
+              </div>
+            );
+          })}
         </div>
       </button>
     </section>

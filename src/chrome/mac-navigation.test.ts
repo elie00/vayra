@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { MAC_EXPLORE_VIEWS, MAC_PRIMARY_VIEWS, isExploreView, sanitizeMacPins } from "./mac-navigation";
+import { MAC_EXPLORE_VIEWS, MAC_PRIMARY_VIEWS, isExploreView, isLibraryView, sanitizeMacPins } from "./mac-navigation";
 import { NAV_ITEMS } from "./nav-items";
 
 describe("Mac navigation contract", () => {
-  it("always provides the four main destinations", () => {
-    expect(MAC_PRIMARY_VIEWS).toEqual(["home", "discover", "library", "downloads"]);
+  it("provides the three unified main destinations with downloads inside library", () => {
+    expect(MAC_PRIMARY_VIEWS).toEqual(["home", "discover", "library"]);
+    expect(isLibraryView("library")).toBe(true);
+    expect(isLibraryView("downloads")).toBe(true);
+    expect(isLibraryView("home")).toBe(false);
   });
   it("retains all catalog destinations under Explore", () => {
     for (const view of MAC_EXPLORE_VIEWS) {

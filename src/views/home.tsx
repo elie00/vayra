@@ -805,21 +805,61 @@ export function Home({ active = true }: { active?: boolean }) {
     );
 
   const tmdbNudge = <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />;
+  const nativeDesktop = hasNativeDesktopUx();
+  const showHero = settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero");
+  const desktopOpeningStage =
+    nativeDesktop && showHero ? (
+      <div data-scroll-anchor="hero" className="relative mac-home-discovery">
+        {editMode && (
+          <PinnedRowControls
+            label={t("Featured hero")}
+            hidden={false}
+            onToggleHidden={() => handleToggleHidden("hero")}
+          />
+        )}
+        <MacDiscoveryBanner
+          meta={heroSlides[0]?.meta}
+          items={heroSlides.map((s) => s.meta)}
+        />
+      </div>
+    ) : null;
 
   return (
     <main
       ref={scrollCb}
-      className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
+      className={`flex-1 overflow-y-auto overflow-x-hidden px-5 pb-16 sm:px-8 lg:px-12 ${
+        nativeDesktop ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
+      }`}
     >
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="relative flex flex-col gap-12">
-          {hasNativeDesktopUx() ? (
-            // The desktop home opens on its title, so the nudge sits below it
-            // instead of floating over it like it floats over the classic hero.
-            <MacPersonalSections items={cwItems} libraryItems={items} onDismiss={onDismissCw} notice={tmdbNudge} />
+          {nativeDesktop ? (
+            <MacPersonalSections
+              items={cwItems}
+              libraryItems={items}
+              onDismiss={onDismissCw}
+              notice={tmdbNudge}
+              stage={desktopOpeningStage}
+            />
           ) : (
             <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
               <div className="pointer-events-auto">{tmdbNudge}</div>
+            </div>
+          )}
+          {nativeDesktop && settings.homeMode !== "classic" && (
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <span className="vayra-kicker shrink-0">{t("Picked for you")}</span>
+                <div className="vayra-header-rule flex-1" aria-hidden="true" />
+              </div>
+              {!editMode && (
+                <CustomizeBar
+                  editMode={editMode}
+                  customization={homeRowsCustom}
+                  onToggleEdit={() => setEditMode((v) => !v)}
+                  onReset={() => mutateHomeRows(resetHomeRows())}
+                />
+              )}
             </div>
           )}
           {editMode && (
@@ -837,10 +877,10 @@ export function Home({ active = true }: { active?: boolean }) {
               </div>
             </div>
           )}
-          {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && (
+          {!nativeDesktop && showHero && (
             <div
               data-scroll-anchor="hero"
-              className={`relative ${hasNativeDesktopUx() ? "mac-home-discovery" : settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
+              className={`relative ${settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
             >
               {editMode && (
                 <PinnedRowControls
@@ -849,17 +889,13 @@ export function Home({ active = true }: { active?: boolean }) {
                   onToggleHidden={() => handleToggleHidden("hero")}
                 />
               )}
-              {hasNativeDesktopUx() ? (
-                <MacDiscoveryBanner meta={heroSlides[0]?.meta} />
-              ) : (
-                <Suspense fallback={null}>
-                  <HeroCarousel
-                    slides={heroSlides}
-                    full={!hasNativeDesktopUx() && settings.heroFull}
-                    fullQuality={settings.heroFullQuality}
-                  />
-                </Suspense>
-              )}
+              <Suspense fallback={null}>
+                <HeroCarousel
+                  slides={heroSlides}
+                  full={settings.heroFull}
+                  fullQuality={settings.heroFullQuality}
+                />
+              </Suspense>
               {!editMode && (
                 <div className="pointer-events-none absolute -bottom-3 end-5 z-20 flex justify-end [&>*]:pointer-events-auto">
                   <CustomizeBar
@@ -879,7 +915,7 @@ export function Home({ active = true }: { active?: boolean }) {
               onToggleHidden={() => handleToggleHidden("hero")}
             />
           )}
-          {!editMode && settings.homeMode !== "classic" && homeRowsCustom.hidden.includes("hero") && (
+          {!nativeDesktop && !editMode && settings.homeMode !== "classic" && homeRowsCustom.hidden.includes("hero") && (
             <div className="pointer-events-none absolute end-5 top-0 z-20 [&>*]:pointer-events-auto">
               <CustomizeBar
                 editMode={editMode}
@@ -974,15 +1010,15 @@ export function Home({ active = true }: { active?: boolean }) {
               homeLanguages={settings.homeLanguages}
           />
           {catalogStatus === "loading" && <div role="status" className="flex flex-col gap-8">
-            <p className="text-[14px] text-ink-muted">{t("Loading catalogs…")}</p>
+            <p className="text-[13.5px] font-medium text-ink-muted">{t("Loading catalogs…")}</p>
             {visibleRows.length === 0 && Array.from({ length: 3 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)}
           </div>}
-          {catalogStatus === "error" && <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-elevated p-5">
-            <p role="alert" className="min-w-0 flex-1 text-[14px] text-ink-muted">{t("Some catalogs could not be loaded. Your available rows are still shown.")}</p>
+          {catalogStatus === "error" && <div className="vayra-surface flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+            <p role="alert" className="min-w-0 flex-1 text-[13.5px] text-ink-muted">{t("Some catalogs could not be loaded. Your available rows are still shown.")}</p>
             <button type="button" className="mac-secondary-button" onClick={() => setCatalogRetry((n) => n + 1)}>{t("Retry catalogs")}</button>
           </div>}
-          {catalogStatus === "done" && visibleRows.length === 0 && <div className="flex flex-wrap items-center gap-3">
-            <p role="status" className="text-[14px] text-ink-muted">{t("No catalogs to show yet.")}</p>
+          {catalogStatus === "done" && visibleRows.length === 0 && <div className="vayra-surface flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+            <p role="status" className="text-[13.5px] text-ink-muted">{t("No catalogs to show yet.")}</p>
             <button type="button" className="mac-secondary-button" onClick={() => setCatalogRetry((n) => n + 1)}>{t("Retry catalogs")}</button>
           </div>}
         </div>

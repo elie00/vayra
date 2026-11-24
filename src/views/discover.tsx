@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, ArrowUpRight, Calendar, Film, Layers, LayoutGrid, Radio, Sparkles, Tv } from "lucide-react";
 import { BackToTop } from "@/components/back-to-top";
 import { CollectionsRow } from "@/components/collections-row";
 import { CriticsPick } from "@/components/critics-pick";
@@ -15,8 +16,9 @@ import { fetchCriticsPickList, fetchFeatured, getPool, selectDailyRows, type Fee
 import { getStore, subscribe as subscribeTaste } from "@/lib/discover/store";
 import { getDownvotedIds, getUpvotedIds, subscribePrefs } from "@/lib/feed/preferences";
 import { recentlyPlayed, subscribePlayback, watchTitleKey } from "@/lib/playback-history";
+import { useParental, type LockableTab } from "@/lib/parental";
 import { useSettings } from "@/lib/settings";
-import { useScrollMemory } from "@/lib/view";
+import { useScrollMemory, useView, type View } from "@/lib/view";
 import { Rail } from "./discover/discover-rail";
 import { useDedupedRows } from "./discover/use-deduped-rows";
 import { ANCHOR_AWARDS, ANCHOR_TOP_RATED } from "@/lib/feed/daily-rows-anchors";
@@ -33,7 +35,7 @@ import {
   togglePageRowHidden,
   usePageRows,
 } from "@/lib/page-rows";
-import { isMobileTauri } from "@/lib/platform";
+import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { MobileDiscover } from "@/mobile/discover";
 
 const MAX_RAIL_PAGES = 10;
@@ -51,6 +53,8 @@ export function Discover({ active = true }: { active?: boolean }) {
   useScrollMemory("discover", scrollRef, active);
 
   const { settings } = useSettings();
+  const { setView, openCollections } = useView();
+  const { locked, hiddenTabs } = useParental();
   const t = useT();
   const pageRows = usePageRows("discover");
   const [featured, setFeatured] = useState<Meta[]>([]);
@@ -260,6 +264,26 @@ export function Discover({ active = true }: { active?: boolean }) {
     [railKeys, pageRows.custom],
   );
 
+  const universes = useMemo(() => {
+    const items: Array<{
+      id: string;
+      label: string;
+      icon: typeof Film;
+      onClick: () => void;
+      hide?: boolean;
+      parentalKey?: LockableTab;
+    }> = [
+      { id: "movies", label: "nav.movies", icon: Film, onClick: () => setView("movies" as View), parentalKey: "movies" },
+      { id: "shows", label: "nav.shows", icon: Tv, onClick: () => setView("shows" as View), parentalKey: "shows" },
+      { id: "anime", label: "nav.anime", icon: Sparkles, onClick: () => setView("anime" as View), hide: settings.hideContent.anime, parentalKey: "anime" },
+      { id: "collections", label: "Collections", icon: Layers, onClick: openCollections, hide: !settings.tmdbKey },
+      { id: "catalogs", label: "nav.catalogs", icon: LayoutGrid, onClick: () => setView("catalogs" as View), parentalKey: "discover" },
+      { id: "calendar", label: "nav.calendar", icon: Calendar, onClick: () => setView("calendar" as View), parentalKey: "calendar" },
+      { id: "live", label: "nav.live", icon: Radio, onClick: () => setView("live" as View), hide: settings.hideContent.liveTv, parentalKey: "liveTv" },
+    ];
+    return items.filter((it) => !it.hide && !(locked && it.parentalKey && hiddenTabs[it.parentalKey]));
+  }, [settings.hideContent.anime, settings.hideContent.liveTv, settings.tmdbKey, locked, hiddenTabs, setView, openCollections]);
+
   if (isMobileTauri())
     return (
       <MobileDiscover
@@ -272,15 +296,59 @@ export function Discover({ active = true }: { active?: boolean }) {
     );
 
   return (
-    <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pb-20 pt-28">
+    <main
+      ref={scrollCb}
+      className={`flex-1 overflow-y-auto px-5 pb-20 sm:px-8 lg:px-12 ${
+        hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
+      }`}
+    >
       <ScrollRootContext.Provider value={scrollEl}>
-        <div data-tauri-drag-region className="flex flex-col gap-14">
+        <div data-tauri-drag-region className="flex flex-col gap-12">
+          <header className="flex flex-col gap-5">
+            <div className="flex flex-wrap items-end justify-between gap-5">
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <span className="vayra-kicker">{t("Discoveries")}</span>
+                <h1 className="mac-page-title">{t("Explore")}</h1>
+                <p className="max-w-[58ch] text-[14px] leading-relaxed text-ink-muted">
+                  {t("Browse curated shelves, genres, origins, and universes.")}
+                </p>
+              </div>
+              <CatalogCustomizeBar
+                editMode={pageRows.editMode}
+                hasChanges={hasPageRowChanges(pageRows.custom)}
+                onToggleEdit={() => pageRows.setEditMode((v) => !v)}
+                onReset={() => pageRows.persist(resetPageRows())}
+              />
+            </div>
+
+            {universes.length > 0 && (
+              <nav aria-label={t("Explore categories")} className="flex flex-wrap items-center gap-2">
+                {universes.map(({ id, label, icon: Icon, onClick }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={onClick}
+                    className="group inline-flex min-h-10 items-center gap-2 rounded-xl border border-edge-soft/75 bg-surface/85 px-3.5 py-2 text-[13px] font-medium text-ink-muted transition-[border-color,background-color,color,transform] duration-150 hover:-translate-y-0.5 hover:border-edge hover:bg-elevated hover:text-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                  >
+                    <Icon size={14} strokeWidth={2} className="text-ink-subtle transition-colors group-hover:text-ink" />
+                    <span>{t(label)}</span>
+                    <ArrowUpRight size={12} strokeWidth={2} className="text-ink-subtle/70 opacity-60 transition-[opacity,transform] duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0" />
+                  </button>
+                ))}
+              </nav>
+            )}
+            <div className="vayra-header-rule" aria-hidden="true" />
+          </header>
+
           <AskHarbor />
           {Object.values(failedRails).some(Boolean) && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-edge-soft bg-elevated/60 px-5 py-4">
-              <p role="alert" className="text-[13.5px] text-ink-muted">
-                {t("Some recommendations could not be loaded. Check your connection and try again.")}
-              </p>
+            <div className="vayra-surface flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <AlertCircle size={17} strokeWidth={2} className="shrink-0 text-ink-subtle" aria-hidden="true" />
+                <p role="alert" className="text-[13.5px] text-ink-muted">
+                  {t("Some recommendations could not be loaded. Check your connection and try again.")}
+                </p>
+              </div>
               <button
                 type="button"
                 className="mac-secondary-button"
@@ -290,17 +358,7 @@ export function Discover({ active = true }: { active?: boolean }) {
               </button>
             </div>
           )}
-          <div className="relative">
-            <FeaturedBanner items={featured} />
-            <div className="absolute end-0 bottom-4 z-10">
-              <CatalogCustomizeBar
-                editMode={pageRows.editMode}
-                hasChanges={hasPageRowChanges(pageRows.custom)}
-                onToggleEdit={() => pageRows.setEditMode((v) => !v)}
-                onReset={() => pageRows.persist(resetPageRows())}
-              />
-            </div>
-          </div>
+          <FeaturedBanner items={featured} />
 
           {pageRows.editMode
             ? editRails.map((item) => {

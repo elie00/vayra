@@ -2,6 +2,7 @@ const library: Record<string, string> = {
   "My library": "Ma bibliothèque",
   "Your collection.": "Votre collection.",
   "Watchlist is what you've saved for later. History is everything you've watched. Local is files on your computer.": "À voir regroupe les titres que vous avez gardés pour plus tard. L’historique rassemble vos visionnages. Local contient les fichiers de votre Mac.",
+  "Watchlist, history, offline downloads, and local files — all in one place.": "À voir, historique, téléchargements hors connexion et fichiers locaux réunis au même endroit.",
   History: "Historique",
   Local: "Local",
   "My Lists": "Mes listes",

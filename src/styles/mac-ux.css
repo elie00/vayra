@@ -1,10 +1,16 @@
 /* Stable visual contract shared by the macOS and Windows desktop apps. */
 @layer components {
-  .mac-page-title { @apply text-[32px] font-semibold leading-[1.12] tracking-[-0.025em] text-ink; font-family: var(--font-display); }
-  .mac-primary-button { @apply inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl bg-ink px-4.5 py-2 text-[14px] font-semibold leading-none tracking-[-0.01em] text-canvas; }
-  .mac-primary-button:hover { opacity: .88; }
-  .mac-secondary-button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-edge-soft px-4 py-2 text-[13.5px] font-medium leading-none tracking-[-0.005em] text-ink-muted; }
-  .mac-secondary-button:hover { @apply bg-elevated text-ink; }
+  .mac-page-title { @apply text-[34px] sm:text-[38px] font-semibold leading-[1.06] tracking-[-0.03em] text-ink; font-family: var(--font-display); }
+  .mac-primary-button { @apply inline-flex min-h-10 w-fit items-center justify-center gap-2 rounded-xl bg-ink px-4.5 py-2 text-[13.5px] font-semibold leading-none tracking-[-0.01em] text-canvas transition-[opacity,transform] duration-150 motion-reduce:transition-none; }
+  .mac-primary-button:hover { opacity: .9; }
+  .mac-primary-button:active { transform: scale(.98); }
+  .mac-secondary-button { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-edge-soft/80 bg-surface/75 px-3.5 py-2 text-[13px] font-medium leading-none tracking-[-0.005em] text-ink-muted transition-[color,background-color,border-color] duration-150 motion-reduce:transition-none; }
+  .mac-secondary-button:hover { @apply border-edge bg-elevated text-ink; }
+  .vayra-kicker { @apply text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-subtle; }
+  .vayra-surface { @apply rounded-2xl border border-edge-soft/75 bg-surface/85 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset]; }
+  .vayra-stage { @apply relative isolate overflow-hidden rounded-[26px] border border-edge-soft/80 bg-surface shadow-[0_28px_72px_-32px_rgba(0,0,0,0.88)]; }
+  .vayra-pill-track { @apply inline-flex items-center gap-1 rounded-xl border border-edge-soft/65 bg-surface/90 p-1; }
+  .vayra-header-rule { @apply h-px w-full bg-gradient-to-r from-edge-soft/80 via-edge-soft/30 to-transparent; }
 }
 [data-desktop-ux]:not([data-desktop-ux="none"]) :is(button, a, input, summary):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 [data-desktop-ux]:not([data-desktop-ux="none"]) .mac-home-discovery :is(.h-\[560px\], .min-h-\[560px\]) { height: 360px; min-height: 360px; }

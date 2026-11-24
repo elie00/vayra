@@ -24,32 +24,32 @@ export function AskHarbor() {
   return (
     <form
       onSubmit={submit}
-      className="rounded-3xl border border-accent/40 bg-accent/10 p-5"
+      className="vayra-surface flex flex-col gap-3 p-4 sm:p-5"
     >
-      <div className="mb-3 flex items-center gap-2 text-accent">
-        <Sparkles size={16} strokeWidth={2.1} />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
+      <div className="flex items-center gap-2 text-ink-subtle">
+        <Sparkles size={14} strokeWidth={2} className="text-ink-muted" />
+        <span className="vayra-kicker">
           {t("Ask VAYRA")}
         </span>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={t("Describe what you feel like watching…")}
           aria-label={t("Describe what you feel like watching…")}
-          className="h-12 flex-1 rounded-2xl border border-edge-soft bg-canvas/60 px-4 text-[15px] text-ink placeholder:text-ink-subtle focus:border-accent/60 focus:outline-none"
+          className="h-11 flex-1 rounded-xl border border-edge-soft/75 bg-canvas/75 px-4 text-[14.5px] text-ink placeholder:text-ink-subtle transition-colors focus:border-edge focus:outline-none"
           spellCheck={false}
           autoComplete="off"
         />
         <button
           type="submit"
           disabled={!text.trim()}
-          className="flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-accent px-5 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="mac-primary-button h-11 shrink-0 px-4.5 disabled:opacity-40"
         >
           {t("Ask")}
-          <CornerDownLeft size={15} />
+          <CornerDownLeft size={14} />
         </button>
       </div>
     </form>

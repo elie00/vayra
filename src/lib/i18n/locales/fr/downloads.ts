@@ -53,6 +53,7 @@ const downloads: Record<string, string> = {
   "Saving to": "Enregistrement dans",
   "Saving to system default": "Enregistrement dans le dossier système par défaut",
   "Reset to default folder": "Rétablir le dossier par défaut",
+  "Storage options": "Options de stockage",
   Scanning: "Analyse en cours",
   Filename: "Nom du fichier",
   File: "Fichier",

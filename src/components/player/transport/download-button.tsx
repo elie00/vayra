@@ -53,15 +53,16 @@ export function DownloadButton({
     return (
       <Tooltip label={detail}>
         <button
+          type="button"
           onClick={onPause}
           aria-label={t("Pause download")}
           title={t("Pause download")}
-          className="group relative flex h-12 w-12 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/10 hover:text-white"
+          className="group relative flex h-10 w-10 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
           <ProgressRing ratio={status.ratio} indeterminate={!status.totalBytes} />
-          <Download size={20} strokeWidth={1.9} className="relative transition-opacity group-hover:opacity-0" />
+          <Download size={18} strokeWidth={1.9} className="relative transition-opacity group-hover:opacity-0" />
           <Pause
-            size={18}
+            size={16}
             strokeWidth={2.4}
             fill="currentColor"
             className="absolute opacity-0 transition-opacity group-hover:opacity-100"
@@ -76,12 +77,13 @@ export function DownloadButton({
     return (
       <Tooltip label={`${t("Resume download")} · ${pct}%`}>
         <button
+          type="button"
           onClick={onResume}
           aria-label={t("Resume download")}
-          className="group relative flex h-12 w-12 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/10 hover:text-white"
+          className="group relative flex h-10 w-10 items-center justify-center rounded-full text-white/85 transition-[background-color,color] hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
           <ProgressRing ratio={status.ratio} indeterminate={!status.totalBytes} />
-          <Play size={19} strokeWidth={2.2} fill="currentColor" className="relative" />
+          <Play size={17} strokeWidth={2.2} fill="currentColor" className="relative" />
         </button>
       </Tooltip>
     );

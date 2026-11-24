@@ -890,10 +890,11 @@ function Shell() {
   const moviesTop = topKind === "movies";
   const kidsTop = topKind === "kids";
   const showsTop = topKind === "shows";
-  const libraryTop = topKind === "library";
+  const unifiedLibraryDownloads = hasNativeDesktopUx();
+  const libraryTop = topKind === "library" || (unifiedLibraryDownloads && topKind === "downloads");
   const liveTop = topKind === "live";
   const vodTop = topKind === "vod";
-  const downloadsTop = topKind === "downloads";
+  const downloadsTop = !unifiedLibraryDownloads && topKind === "downloads";
   const matchDetailTop = topKind === "match-detail";
 
   const [immersive, setImmersive] = useState(false);
@@ -914,9 +915,13 @@ function Shell() {
 
   useEffect(() => {
     document.querySelectorAll("[data-vayra-nav]").forEach((el) => {
-      el.toggleAttribute("data-active", el.getAttribute("data-vayra-nav") === topKind);
+      const target = el.getAttribute("data-vayra-nav");
+      const active =
+        target === topKind ||
+        (unifiedLibraryDownloads && target === "library" && topKind === "downloads");
+      el.toggleAttribute("data-active", active);
     });
-  }, [topKind]);
+  }, [topKind, unifiedLibraryDownloads]);
 
   const layer = (top: boolean) => (top ? "contents" : "hidden");
 

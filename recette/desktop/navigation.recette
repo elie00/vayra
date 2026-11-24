@@ -3,17 +3,21 @@
 # Barre latérale de l’appli de bureau (Mac et Windows) : Explorer y remplace
 # Films et Séries de la mise en page navigateur. « Téléchargements » n’est pas
 # visité : le nom désigne aussi le bouton de la barre du haut, donc il est ambigu.
+# Depuis la refonte (#244), l’Accueil et la Bibliothèque vide ont aussi des
+# boutons « Explorer » et « Ma bibliothèque » : les entrées de la barre latérale
+# sont visées par leur index (#7, #8), et chaque appui est vérifié par l’onglet
+# courant qui suit.
 
 restart
 wait Accueil 30000
 settle
 expect current Accueil
 
-tap Explorer
+tap #7
 settle
 expect current Explorer
 
-tap "Ma bibliothèque"
+tap #8
 settle
 expect current "Ma bibliothèque"
 

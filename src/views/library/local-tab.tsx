@@ -435,9 +435,19 @@ export function LocalTab() {
         </p>
       )}
       {groups.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-6 py-10 text-center text-[13px] text-ink-muted">
-          {t("No matches for these filters.")}
-        </p>
+        <div className="vayra-surface flex flex-col items-center gap-3.5 px-6 py-12 text-center">
+          <p className="text-[14px] text-ink-muted">{t("No matches for these filters.")}</p>
+          <button
+            type="button"
+            className="mac-secondary-button"
+            onClick={() => {
+              setType("all");
+              setQuery("");
+            }}
+          >
+            {t("Clear filters")}
+          </button>
+        </div>
       ) : (
         <Grid>
           {groups.map((g) =>
@@ -471,11 +481,13 @@ function EmptyOwned({
 }) {
   const t = useT();
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-16 text-center">
-      <HardDrive size={32} strokeWidth={1.5} className="text-ink-subtle" />
+    <div className="vayra-surface flex flex-col items-center gap-4 px-8 py-16 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-edge-soft/75 bg-elevated/80 text-ink-subtle">
+        <HardDrive size={26} strokeWidth={1.6} />
+      </span>
       <div className="flex flex-col gap-1.5">
-        <h2 className="text-[18px] font-semibold text-ink">{t("Add files from your computer")}</h2>
-        <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
+        <h2 className="font-display text-[20px] font-semibold tracking-[-0.015em] text-ink">{t("Add files from your computer")}</h2>
+        <p className="max-w-md text-[13.5px] leading-relaxed text-ink-muted">
           {t("Point VAYRA at a folder. We scan it for movies and shows, parse titles from filenames, and enrich them with TMDB so they look the same as everything else here. We just remember the path; nothing is copied or moved.")}
         </p>
       </div>
@@ -483,13 +495,13 @@ function EmptyOwned({
         type="button"
         onClick={onAddFolder}
         disabled={busy}
-        className="flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-colors hover:bg-ink/90 disabled:cursor-wait disabled:opacity-60"
+        className="mac-primary-button mt-1 disabled:cursor-wait disabled:opacity-60"
       >
         {busy ? <Loader2 size={15} className="animate-spin" /> : <FolderPlus size={15} strokeWidth={2.2} />}
         {busy ? scanLabel(progress, t) : t("Choose folder")}
       </button>
       {error && (
-        <p className="rounded-lg bg-danger/15 px-3 py-2 text-[12px] text-danger ring-1 ring-danger/30">
+        <p className="rounded-xl border border-danger/35 bg-danger/10 px-3.5 py-2 text-[12.5px] text-danger">
           {error}
         </p>
       )}

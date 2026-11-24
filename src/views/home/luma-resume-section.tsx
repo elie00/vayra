@@ -39,23 +39,23 @@ export function LumaResumeCard({ entry, announce }: { entry: LumaResumeEntry; an
   };
 
   return (
-    <article className="group relative isolate aspect-[16/9] overflow-hidden rounded-2xl border border-edge-soft bg-elevated shadow-[0_18px_45px_-30px_rgba(0,0,0,0.75)] outline-none transition-transform hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-ink motion-reduce:transition-none">
+    <article className="group relative isolate aspect-[16/9] overflow-hidden rounded-2xl border border-edge-soft/80 bg-surface shadow-[0_18px_45px_-30px_rgba(0,0,0,0.75)] outline-none transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-edge focus-within:ring-2 focus-within:ring-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       {entry.presentation.artwork ? (
-        <img src={entry.presentation.artwork} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={entry.presentation.artwork} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-elevated text-ink-muted"><HardDrive size={24} /></div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/38 to-transparent" />
       <button type="button" onClick={resume} aria-label={t("Resume {title} with LUMA", { title: entry.presentation.title })} className="absolute inset-0 z-10 text-start outline-none">
         <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
           <span className="min-w-0">
-            <span className="block truncate text-[15px] font-semibold text-white">{entry.presentation.title}</span>
-            <span className="mt-0.5 block truncate text-[11.5px] text-white/65">{subtitle}</span>
+            <span className="block truncate text-[15px] font-semibold leading-tight text-white">{entry.presentation.title}</span>
+            <span className="mt-1 block truncate text-[11.5px] font-medium tabular-nums text-white/75">{subtitle}</span>
           </span>
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black shadow-lg"><Play size={16} fill="currentColor" className="ms-0.5" /></span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black shadow-lg transition-transform duration-150 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"><Play size={16} fill="currentColor" className="ms-0.5" /></span>
         </span>
       </button>
-      <button type="button" onClick={() => lumaStore().clearResume(entry.id)} aria-label={t("Remove {title} from LUMA history", { title: entry.presentation.title })} className="absolute end-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white/70 opacity-100 outline-none backdrop-blur-md hover:bg-black/80 hover:text-white focus-visible:ring-2 focus-visible:ring-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"><X size={15} /></button>
+      <button type="button" onClick={() => lumaStore().clearResume(entry.id)} aria-label={t("Remove {title} from LUMA history", { title: entry.presentation.title })} className="absolute end-2.5 top-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/55 text-white/75 opacity-100 outline-none backdrop-blur-md transition-[opacity,background-color,color] duration-150 hover:bg-black/80 hover:text-white focus-visible:ring-2 focus-visible:ring-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"><X size={14} /></button>
       <div className="absolute inset-x-0 bottom-0 z-20 h-1 bg-white/15" aria-hidden="true"><div className="h-full bg-white" style={{ width: `${progress * 100}%` }} /></div>
     </article>
   );

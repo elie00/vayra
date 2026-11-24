@@ -1351,24 +1351,24 @@ export function SettingsNav({
   };
 
   return (
-    <nav className="relative flex w-72 max-sm:hidden shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)]">
+    <nav aria-label={t("Settings")} className="relative flex w-72 max-sm:hidden shrink-0 flex-col border-e border-edge-soft/45 bg-canvas pt-20">
       <div data-tauri-drag-region className="h-3 shrink-0" />
       {showBack && (
-        <div className="px-3 pb-1.5">
+        <div className="px-3.5 pb-2">
           <button
             type="button"
             onClick={() => (canGoBack ? goBack() : setView("home"))}
-            className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-start text-[13.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated/70 hover:text-ink"
+            className="inline-flex h-9 items-center gap-2 rounded-xl border border-edge-soft/70 bg-surface/80 px-3 text-start text-[13px] font-medium text-ink-muted transition-[color,background-color,border-color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="dir-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="dir-icon">
               <path d="M15 5l-7 7 7 7" />
             </svg>
             {t("Back")}
           </button>
         </div>
       )}
-      <div className="px-3 pb-3">
-        <div className="flex h-10 items-center gap-2 rounded-xl bg-elevated/70 px-3 shadow-[inset_0_0_0_1px_var(--color-edge-soft)]">
+      <div className="px-3.5 pb-3">
+        <div className="flex h-10 items-center gap-2 rounded-xl border border-edge-soft/75 bg-surface/90 px-3 transition-colors focus-within:border-edge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-ink-subtle">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />

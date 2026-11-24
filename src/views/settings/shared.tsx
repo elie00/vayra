@@ -72,9 +72,9 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={settingsAnchor(title)} className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-[19px] font-semibold leading-[1.25] tracking-[-0.015em] text-ink">{title}</h2>
+    <section id={settingsAnchor(title)} className="vayra-surface scroll-mt-28 flex flex-col gap-5 p-6 sm:p-7">
+      <div className="flex flex-col gap-1 border-b border-edge-soft/55 pb-4">
+        <h2 className="font-display text-[18.5px] font-semibold leading-[1.25] tracking-[-0.015em] text-ink">{title}</h2>
         {subtitle && <p className="text-[13.5px] leading-[1.55] text-ink-muted">{subtitle}</p>}
       </div>
       {children}
@@ -329,10 +329,10 @@ export function ToggleRow({
       onFocus={openPreview}
       onBlur={closePreview}
       disabled={locked}
-      className={`relative flex items-center justify-between gap-4 rounded-xl border bg-canvas/40 px-4 py-3 text-start transition-colors ${
+      className={`relative flex items-center justify-between gap-4 rounded-xl border bg-canvas/55 px-4 py-3.5 text-start transition-[border-color,background-color] duration-150 ${
         locked
           ? "cursor-not-allowed border-edge-soft/40 opacity-60"
-          : "border-edge-soft hover:border-edge"
+          : "border-edge-soft/70 hover:border-edge hover:bg-elevated/55"
       }`}
     >
       {preview && <HoverPreviewCard open={hover} anchorRef={btnRef}>{preview}</HoverPreviewCard>}
@@ -393,17 +393,17 @@ export function Segmented<T extends string>({
 }) {
   const t = useT();
   return (
-    <div className="flex w-fit flex-wrap gap-1 rounded-2xl bg-elevated/40 p-1 ring-1 ring-edge-soft/60">
+    <div className="vayra-pill-track w-fit flex-wrap">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
+          className={`rounded-lg px-3.5 py-1.5 text-[12.5px] font-medium transition-[background-color,color] duration-150 ${
             value === o.value
-              ? "bg-ink text-canvas"
-              : "text-ink-muted hover:bg-raised hover:text-ink"
+              ? "bg-ink text-canvas font-semibold shadow-sm"
+              : "text-ink-muted hover:bg-elevated/80 hover:text-ink"
           }`}
         >
           {t(o.label)}

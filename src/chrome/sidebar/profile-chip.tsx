@@ -1,4 +1,4 @@
-import { Lock, LogIn, LogOut, Pencil, Plus, Users } from "lucide-react";
+import { ChevronsUpDown, Lock, LogIn, LogOut, Pencil, Plus, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AuthModal } from "@/components/auth-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
@@ -18,55 +18,90 @@ export function ProfileChip({
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
     const onDown = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setMenuOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [menuOpen]);
 
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
+  const displayName = activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback");
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={triggerRef}
+        type="button"
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
         onClick={() => setMenuOpen((o) => !o)}
-        aria-label={activeProfile?.name ?? user?.email ?? t("profile.fallback")}
-        className={`flex w-full items-center justify-center gap-3.5 rounded-xl py-2.5 text-start transition-colors hover:bg-elevated/60 ${
-          collapsed ? "" : "lg:justify-start lg:px-3"
+        aria-label={displayName}
+        className={`group flex w-full items-center justify-center gap-3 rounded-xl py-2 text-start transition-[background-color,border-color] duration-150 motion-reduce:transition-none ${
+          collapsed
+            ? "hover:bg-elevated/60"
+            : "border border-transparent hover:bg-elevated/65 min-[960px]:justify-start min-[960px]:border-edge-soft/60 min-[960px]:bg-surface/80 min-[960px]:px-2.5 min-[960px]:hover:border-edge min-[960px]:hover:bg-elevated/85"
         }`}
       >
         {/* No profile-colour ring, as on the phone: a coloured circle round the picture read as Stremio. */}
         <span className="shrink-0 rounded-full ring-1 ring-white/15">
-          <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} />
+          <ProfileAvatar profile={activeProfile} fallbackAvatar={settings.harborAvatar} compact />
         </span>
-        <div className={`hidden min-w-0 flex-1 ${collapsed ? "" : "lg:block"}`}>
-          <div className="truncate text-[14.5px] font-medium tracking-tight text-ink">
-            {activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback")}
+        <div className={`hidden min-w-0 flex-1 ${collapsed ? "" : "min-[960px]:block"}`}>
+          <div className="truncate text-[13.5px] font-medium leading-tight tracking-[-0.01em] text-ink">
+            {displayName}
           </div>
-          <div className="truncate text-[12px] text-ink-subtle">
-            <SubtitleText user={user} />
+          <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11.5px] leading-tight text-ink-subtle">
+            <span
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${user ? "bg-success" : "bg-ink-subtle/60"}`}
+            />
+            <span className="truncate">
+              <SubtitleText user={user} />
+            </span>
           </div>
         </div>
+        {!collapsed && (
+          <ChevronsUpDown
+            size={14}
+            strokeWidth={1.9}
+            aria-hidden="true"
+            className="hidden shrink-0 text-ink-subtle/75 transition-colors group-hover:text-ink-muted min-[960px]:block"
+          />
+        )}
       </button>
 
       {menuOpen && (
         <div
-          className={`absolute overflow-hidden rounded-xl border border-edge bg-elevated shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)] ${
-            menuPlacement === "below" ? "top-full mt-1.5" : "bottom-full mb-1.5"
-          } ${collapsed ? "start-0 w-64" : "start-2 end-2 lg:start-4 lg:end-4"}`}
+          role="menu"
+          className={`absolute z-[90] overflow-hidden rounded-2xl border border-edge bg-surface/96 shadow-[0_24px_48px_-14px_rgba(0,0,0,0.72)] backdrop-blur-xl ${
+            menuPlacement === "below" ? "top-full mt-2" : "bottom-full mb-2"
+          } ${collapsed ? "start-0 w-64" : "inset-x-0 min-w-56"}`}
         >
           {otherProfiles.length > 0 && (
-            <div className="flex flex-col gap-0.5 border-b border-edge-soft p-1.5">
-              <span className="px-2.5 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
+            <div className="flex flex-col gap-0.5 border-b border-edge-soft/75 p-1.5">
+              <span className="px-2.5 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
                 {t("profile.switch")}
               </span>
               {otherProfiles.map((p) => (
                 <button
                   key={p.id}
+                  type="button"
+                  role="menuitem"
                   onClick={() => {
                     setMenuOpen(false);
                     if (p.passwordHash) {
@@ -75,7 +110,7 @@ export function ProfileChip({
                       selectProfile(p.id);
                     }
                   }}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-raised"
+                  className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-start transition-colors hover:bg-raised"
                 >
                   <span className="relative inline-flex shrink-0">
                     <span className="rounded-full ring-1 ring-white/15">
@@ -102,61 +137,72 @@ export function ProfileChip({
               ))}
             </div>
           )}
-          <div className="flex flex-col">
+          <div className="flex flex-col p-1">
             <button
+              type="button"
+              role="menuitem"
               onClick={() => {
                 openPicker({ kind: "list" });
                 setMenuOpen(false);
               }}
-              className="flex items-center gap-2.5 px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
             >
-              <Users size={14} strokeWidth={2.2} />
+              <Users size={14} strokeWidth={2} />
               {t("profile.whoWatching")}
             </button>
             {activeProfile && (
               <button
+                type="button"
+                role="menuitem"
                 onClick={() => {
                   openPicker({ kind: "edit", profileId: activeProfile.id });
                   setMenuOpen(false);
                 }}
-                className="flex items-center gap-2.5 px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
               >
-                <Pencil size={14} strokeWidth={2.2} />
+                <Pencil size={14} strokeWidth={2} />
                 {t("profile.editThis")}
               </button>
             )}
             {activeProfile?.isPrimary && (
               <button
+                type="button"
+                role="menuitem"
                 onClick={() => {
                   openPicker({ kind: "create" });
                   setMenuOpen(false);
                 }}
-                className="flex items-center gap-2.5 px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
               >
-                <Plus size={14} strokeWidth={2.2} />
+                <Plus size={14} strokeWidth={2} />
                 {t("profile.new")}
               </button>
             )}
+            <div className="my-1 h-px bg-edge-soft/60" aria-hidden="true" />
             {user ? (
               <button
+                type="button"
+                role="menuitem"
                 onClick={() => {
                   void signOut();
                   setMenuOpen(false);
                 }}
-                className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
               >
-                <LogOut size={14} strokeWidth={2.2} />
+                <LogOut size={14} strokeWidth={2} />
                 {t("profile.signOut")}
               </button>
             ) : (
               <button
+                type="button"
+                role="menuitem"
                 onClick={() => {
                   setAuthOpen(true);
                   setMenuOpen(false);
                 }}
-                className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
               >
-                <LogIn size={14} strokeWidth={2.2} />
+                <LogIn size={14} strokeWidth={2} />
                 {t("Sign in to VAYRA")}
               </button>
             )}
@@ -178,7 +224,7 @@ export function ProfileAvatar({
   fallbackAvatar: string | null;
   compact?: boolean;
 }) {
-  const dim = compact ? "h-9 w-9" : "h-12 w-12";
+  const dim = compact ? "h-9 w-9" : "h-11 w-11";
   const src = profile?.avatar ?? fallbackAvatar ?? null;
   return (
     <div className={`${dim} shrink-0 overflow-hidden rounded-full bg-elevated`}>

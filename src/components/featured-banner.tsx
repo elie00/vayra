@@ -52,21 +52,29 @@ export function FeaturedBanner({ items }: { items: Meta[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <h2 className="font-display text-[28px] font-medium leading-tight tracking-tight text-ink">
-        {t("Featured & Recommended")}
-      </h2>
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-display text-[24px] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-[26px]">
+          {t("Featured & Recommended")}
+        </h2>
+        <span className="text-[11.5px] font-medium tabular-nums tracking-[0.14em] text-ink-subtle">
+          {String(safeActive + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
+        </span>
+      </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-4">
+      <div className="grid grid-cols-1 gap-4 min-[1060px]:grid-cols-[minmax(0,1fr)_316px] xl:grid-cols-[minmax(0,1fr)_344px]">
         <BigCardStack items={items} active={safeActive} onPrev={goPrev} onNext={goNext} />
         <SidePanel
+          items={items}
           meta={current}
           activeIndex={safeActive}
-          total={items.length}
+          onSelect={setActive}
           onOpenLightbox={setLightbox}
         />
       </div>
 
-      <Dots count={items.length} active={safeActive} onJump={setActive} />
+      <div className="min-[1060px]:hidden">
+        <Dots count={items.length} active={safeActive} onJump={setActive} />
+      </div>
 
       {lightbox && (
         <Lightbox
@@ -82,9 +90,9 @@ export function FeaturedBanner({ items }: { items: Meta[] }) {
 
 function BannerSkeleton() {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-4">
-      <div className="aspect-[16/9] animate-pulse rounded-2xl bg-elevated/30" />
-      <div className="animate-pulse rounded-2xl bg-elevated/25" />
+    <div className="grid grid-cols-1 gap-4 min-[1060px]:grid-cols-[minmax(0,1fr)_316px] xl:grid-cols-[minmax(0,1fr)_344px]">
+      <div className="aspect-[16/9] animate-pulse rounded-2xl border border-edge-soft/60 bg-surface/80" />
+      <div className="hidden animate-pulse rounded-2xl border border-edge-soft/60 bg-surface/70 min-[1060px]:block" />
     </div>
   );
 }

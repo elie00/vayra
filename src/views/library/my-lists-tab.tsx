@@ -35,17 +35,17 @@ export function MyListsTab() {
   return (
     <section className="flex flex-col gap-6">
       {lists.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <span className="text-[12px] tabular-nums text-ink-muted">
+        <div className="vayra-surface flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+          <span className="text-[12.5px] font-medium tabular-nums text-ink-muted">
             {t("{n} / {max} lists", { n: lists.length, max: MAX_LISTS })}
           </span>
           <button
             type="button"
             disabled={atMax}
             onClick={() => setCreating(true)}
-            className="flex h-10 items-center gap-2 rounded-full border border-edge bg-canvas/80 px-4 text-[13.5px] font-semibold text-ink transition-colors hover:border-ink-subtle hover:bg-canvas/95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mac-primary-button disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Plus size={16} strokeWidth={2.2} />
+            <Plus size={15} strokeWidth={2.2} />
             {t("Create new list")}
           </button>
         </div>
@@ -103,20 +103,20 @@ export function MyListsTab() {
 function EmptyLists({ onCreate }: { onCreate: () => void }) {
   const t = useT();
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-20 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-elevated/60 text-ink-subtle ring-1 ring-edge-soft/60">
+    <div className="vayra-surface flex flex-col items-center gap-4 px-8 py-16 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-edge-soft/75 bg-elevated/80 text-ink-subtle">
         <Layers size={24} strokeWidth={1.6} />
       </span>
       <div className="flex flex-col gap-1.5">
-        <h2 className="font-display text-[20px] font-medium text-ink">{t("Create your first list")}</h2>
-        <p className="max-w-sm text-[13px] leading-relaxed text-ink-muted">
+        <h2 className="font-display text-[20px] font-semibold tracking-[-0.015em] text-ink">{t("Create your first list")}</h2>
+        <p className="max-w-sm text-[13.5px] leading-relaxed text-ink-muted">
           {t("Group the movies and shows you love. Rewatch shelf, weekend picks, whatever keeps them close.")}
         </p>
       </div>
       <button
         type="button"
         onClick={onCreate}
-        className="mt-1 flex h-11 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
+        className="mac-primary-button mt-1"
       >
         <Plus size={17} strokeWidth={2.2} />
         {t("New list")}

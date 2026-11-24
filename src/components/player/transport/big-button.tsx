@@ -17,15 +17,16 @@ export function BigButton({
 }) {
   const btn = (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className={`flex h-12 w-12 items-center justify-center rounded-full transition-[background-color,color,opacity] ${
+      className={`flex h-10 w-10 items-center justify-center rounded-full transition-[background-color,color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none ${
         disabled
           ? "cursor-not-allowed text-white/30"
           : active
-            ? "bg-white/22 text-white hover:bg-white/30"
-            : "text-white/85 hover:bg-white/10 hover:text-white"
+            ? "bg-white/20 text-white ring-1 ring-white/15 hover:bg-white/26 active:scale-95"
+            : "text-white/80 hover:bg-white/12 hover:text-white active:scale-95"
       }`}
     >
       {children}

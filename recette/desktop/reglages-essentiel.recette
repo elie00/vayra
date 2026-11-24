@@ -1,12 +1,13 @@
 # Réglages : L’essentiel, chaque contrôle
 @cible desktop
-# Chaque choix et chaque bascule est changé puis remis en place, pour rejouer
-# le scénario sur le même profil. « Gérer » et les cartes mènent à d’autres
-# pages des Réglages ; la carte Langues est visée par son texte, son titre
-# étant aussi celui de l’entrée de navigation, et « Instantané RECOMMANDÉ »
-# évite le « instantanée » de la carte Qualité. Demande un compte connecté
-# avec un e-mail (« Afficher l'e-mail », « Gérer »). « Retour en haut » n’est
-# pas exercé : son effet, un défilement, échappe aux attentes de la recette.
+# Chaque choix est changé puis remis en place, pour rejouer le scénario sur le
+# même profil. Part d’un profil jetable (VAYRA_DATA_DIR), configuration du
+# premier lancement passée : déconnecté, lecture Instantanée et palette
+# « VAYRA par défaut ». Les liens et les cartes mènent à
+# d’autres pages des Réglages ; les cartes Langues et Extensions sont visées
+# par leur texte, leur titre étant aussi celui d’une entrée de navigation. Les
+# autres réglages de lecture (mémoriser le flux, reprise, verrou de saison…)
+# sont sur la page Lecture depuis la refonte (#244).
 
 restart
 wait Accueil 30000
@@ -16,96 +17,43 @@ settle
 expect gone Chargement… 15000
 expect current "L’essentiel"
 
-tap "Afficher l'e-mail"
+tap "Choisir d’abord"
 settle
-expect visible "Masquer l'e-mail"
-tap "Masquer l'e-mail"
+expect on "Choisir d’abord"
+expect off Instantané
+tap Instantané
 settle
-expect visible "Afficher l'e-mail"
+expect on Instantané
+expect off "Choisir d’abord"
 
-tap "Sélection manuelle"
+tap Obsidienne
 settle
-expect on "Sélection manuelle"
-expect off "Instantané RECOMMANDÉ"
-tap "Verrouiller sur le serveur de la saison"
+expect on Obsidienne
+expect off "VAYRA par défaut"
+tap Sauge
 settle
-expect on "Verrouiller sur le serveur de la saison"
-expect off "Sélection manuelle"
-tap "Instantané RECOMMANDÉ"
+expect on Sauge
+tap Ivoire
 settle
-expect on "Instantané RECOMMANDÉ"
+expect on Ivoire
+tap "VAYRA par défaut"
+settle
+expect on "VAYRA par défaut"
+expect off Ivoire
 
-tap "Mémoriser le dernier flux"
-settle
-expect off "Mémoriser le dernier flux"
-tap "Mémoriser le dernier flux"
-settle
-expect on "Mémoriser le dernier flux"
-
-tap "Demander de reprendre ou recommencer"
-settle
-expect on "Demander de reprendre ou recommencer"
-tap "Demander de reprendre ou recommencer"
-settle
-expect off "Demander de reprendre ou recommencer"
-
-tap "Reprendre où vous vous êtes arrêté"
-settle
-expect off "Reprendre où vous vous êtes arrêté"
-tap "Reprendre où vous vous êtes arrêté"
-settle
-expect on "Reprendre où vous vous êtes arrêté"
-
-tap "Garder la même source à l'épisode suivant"
-settle
-expect on "Garder la même source à l'épisode suivant"
-tap "Garder la même source à l'épisode suivant"
-settle
-expect off "Garder la même source à l'épisode suivant"
-
-tap "Restaurer la position de la fenêtre"
-settle
-expect off "Restaurer la position de la fenêtre"
-tap "Restaurer la position de la fenêtre"
-settle
-expect on "Restaurer la position de la fenêtre"
-
-tap Centre
-settle
-expect on Centre
-expect off Haut
-tap "En haut à gauche"
-settle
-expect on "En haut à gauche"
-tap "En haut à droite"
-settle
-expect on "En haut à droite"
-tap Haut
-settle
-expect on Haut
-
-tap "Pop-up de volume pendant le visionnage"
-settle
-expect off "Pop-up de volume pendant le visionnage"
-expect gone "En haut à gauche"
-tap "Pop-up de volume pendant le visionnage"
-settle
-expect on "Pop-up de volume pendant le visionnage"
-expect visible "En haut à gauche"
-
-tap Gérer
+tap "Se connecter ou créer un compte VAYRA"
 settle
 expect current Compte
 tap "L’essentiel"
 settle
-tap "Qualité de streaming"
-settle
-expect current "Sources de lecture"
-tap "L’essentiel"
-settle
-tap "Moteur de lecture"
+tap "Plus d’options de lecture"
 settle
 expect current Lecture
+tap "L’essentiel"
+settle
+tap "Personnaliser davantage"
+settle
+expect current Apparence
 tap "L’essentiel"
 settle
 tap "Choisissez les langues audio"
@@ -113,7 +61,7 @@ settle
 expect current Langues
 tap "L’essentiel"
 settle
-tap "Thème et apparence"
+tap "Gérez vos sources de contenu"
 settle
-expect current Apparence
+expect current "Extensions et connexions"
 expect noerrors

@@ -123,13 +123,13 @@ export function SubtitleMenu(props: Props) {
           aria-label={t("Subtitles")}
           aria-expanded={open}
           aria-haspopup="dialog"
-          className={`relative flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
-            open ? "bg-white/22 text-white" : "text-white/85 hover:bg-white/10 hover:text-white"
+          className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-[background-color,color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none ${
+            open ? "bg-white/20 text-white ring-1 ring-white/15" : "text-white/80 hover:bg-white/12 hover:text-white"
           }`}
         >
-          <SubsIcon size={19} strokeWidth={2} />
+          <SubsIcon size={19} strokeWidth={1.9} />
           {subSelected && (
-            <span className="absolute end-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="absolute end-2 top-2 h-1.5 w-1.5 rounded-full bg-emerald-400" />
           )}
         </button>
       </Tooltip>
@@ -137,7 +137,7 @@ export function SubtitleMenu(props: Props) {
         <div
           role="dialog"
           aria-label={t("Subtitles")}
-          className={`absolute bottom-[calc(100%+10px)] ${side === "start" ? "start-0" : "end-0"} flex h-[400px] max-h-[72vh] w-[500px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl`}
+          className={`absolute bottom-[calc(100%+12px)] ${side === "start" ? "start-0" : "end-0"} flex h-[400px] max-h-[72vh] w-[500px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-white/12 bg-[#111215]/94 shadow-[0_28px_72px_-20px_rgba(0,0,0,0.92)] backdrop-blur-2xl`}
         >
           <MenuBody {...props} onClose={() => { setOpen(false); triggerRef.current?.focus(); }} onOpenStyleBar={openStyleBar} />
         </div>
