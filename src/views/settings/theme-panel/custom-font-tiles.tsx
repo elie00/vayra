@@ -51,6 +51,7 @@ export function CustomFontTiles({
             style={{ animation: "harborFontIn 240ms ease both" }}
           >
             <button
+              aria-pressed={active}
               type="button"
               onClick={() => onSelect(f.id)}
               className="flex flex-1 flex-col gap-1.5 pe-8 text-start"

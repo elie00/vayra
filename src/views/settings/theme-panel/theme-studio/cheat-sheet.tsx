@@ -124,6 +124,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
           <nav className="flex flex-col gap-0.5">
             {SECTIONS.map((s) => (
               <button
+                aria-current={active === s.id ? "true" : undefined}
                 key={s.id}
                 type="button"
                 onClick={() => jump(s.id)}

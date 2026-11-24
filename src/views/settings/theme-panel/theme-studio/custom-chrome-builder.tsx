@@ -246,6 +246,7 @@ function PosButton({
 }) {
   return (
     <button
+      aria-pressed={active}
       type="button"
       onClick={onClick}
       className={`flex h-16 flex-col items-center justify-center gap-1.5 rounded-lg border text-[13px] font-semibold transition-colors ${

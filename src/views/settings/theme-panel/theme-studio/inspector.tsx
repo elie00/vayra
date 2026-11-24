@@ -49,6 +49,7 @@ export function Inspector({
           const active = tab === tabDef.id;
           return (
             <button
+              aria-pressed={active}
               key={tabDef.id}
               type="button"
               onClick={() => setTab(tabDef.id)}

@@ -55,6 +55,7 @@ export function FileTree({
                 />
               )}
               <button
+                aria-pressed={on}
                 type="button"
                 onClick={() => onSelect(f.id)}
                 className="flex h-11 w-full items-center gap-2.5 rounded-lg ps-6 pe-2.5 text-start transition-colors hover:bg-white/[0.04]"

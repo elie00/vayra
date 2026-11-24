@@ -114,6 +114,7 @@ function Tile({
 }) {
   return (
     <button
+      aria-pressed={active}
       type="button"
       onClick={onClick}
       onMouseEnter={() => onHover(true)}

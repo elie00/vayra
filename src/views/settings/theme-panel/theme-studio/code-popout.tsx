@@ -111,6 +111,7 @@ export function CodePopout({
                 const on = f.id === tab;
                 return (
                   <button
+                    aria-pressed={on}
                     key={f.id}
                     type="button"
                     onClick={() => setTab(f.id)}

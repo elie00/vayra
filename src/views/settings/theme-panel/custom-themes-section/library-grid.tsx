@@ -209,6 +209,7 @@ function LibraryCard({
         </div>
         <div className="flex items-center justify-between gap-2">
           <button
+            aria-pressed={active}
             type="button"
             onClick={onActivate}
             className={`h-8 flex-1 rounded-lg text-[12px] font-semibold transition-opacity ${

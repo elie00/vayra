@@ -141,6 +141,7 @@ function MultiStateUpload({
       <div className="flex items-center gap-0.5 rounded-lg bg-white/8 p-0.5">
         {states.map((s) => (
           <button
+            aria-pressed={s.id === active.id}
             key={s.id}
             type="button"
             onClick={() => setActiveState(s.id)}

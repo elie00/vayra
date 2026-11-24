@@ -53,6 +53,7 @@ export function StartupDefaults() {
                 const active = interval === val;
                 return (
                   <button
+                    aria-pressed={active}
                     key={val}
                     type="button"
                     onClick={() => update({ profilePromptInterval: val })}
@@ -81,6 +82,7 @@ export function StartupDefaults() {
                   const active = defaultId === id;
                   return (
                     <button
+                      aria-pressed={active}
                       key={id || "ask"}
                       type="button"
                       onClick={() => update({ defaultProfileId: id })}

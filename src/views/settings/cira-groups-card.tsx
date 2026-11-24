@@ -501,7 +501,7 @@ export function CiraGroupsCard() {
         <GroupInvitations />
         <div className="flex flex-wrap gap-2">
           {groups.map((group) => (
-            <button key={group.id} onClick={() => setSelectedId(group.id)} className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-[12.5px] transition-colors ${selectedId === group.id ? "border-ink bg-ink text-canvas" : "border-edge-soft text-ink-muted hover:border-edge"}`}>
+            <button aria-pressed={selectedId === group.id} key={group.id} onClick={() => setSelectedId(group.id)} className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-[12.5px] transition-colors ${selectedId === group.id ? "border-ink bg-ink text-canvas" : "border-edge-soft text-ink-muted hover:border-edge"}`}>
               <Users size={14} />{group.name}<span className="opacity-65">{group.memberCount}</span>
             </button>
           ))}

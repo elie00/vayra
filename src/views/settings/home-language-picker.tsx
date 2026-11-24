@@ -63,6 +63,7 @@ export function HomeLanguagePicker() {
           const on = selected.includes(code);
           return (
             <button
+              aria-pressed={on}
               key={code}
               onClick={() => toggle(code)}
               className={`group relative flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-start transition-[background-color,border-color,color,opacity,box-shadow] ${

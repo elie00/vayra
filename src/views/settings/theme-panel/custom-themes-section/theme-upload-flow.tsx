@@ -214,6 +214,7 @@ function ThemeStep({ themes, selected, onSelect }: { themes: CustomTheme[]; sele
           const active = selected?.id === t.id;
           return (
             <button
+              aria-pressed={active}
               key={t.id}
               onClick={() => onSelect(t)}
               className={`flex flex-col overflow-hidden rounded-2xl border text-start transition-[background-color,border-color,color,opacity,box-shadow] ${

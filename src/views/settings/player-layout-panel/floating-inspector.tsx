@@ -132,6 +132,7 @@ export function FloatingInspector({
                   const active = (previewStates[selectedId] ?? controlStates(selectedId)[0]) === s;
                   return (
                     <button
+                      aria-pressed={active}
                       key={s}
                       type="button"
                       onClick={() => onSetPreviewState(selectedId, s)}
@@ -335,6 +336,7 @@ function PanelInspector({
                   const targetCorner: PanelCorner = side === "left" ? "top-left" : "top-right";
                   return (
                     <button
+                      aria-pressed={active}
                       key={side}
                       type="button"
                       onClick={() => onSetCorner(panelId, targetCorner)}
@@ -351,6 +353,7 @@ function PanelInspector({
                   const active = cfg.corner === c;
                   return (
                     <button
+                      aria-pressed={active}
                       key={c}
                       type="button"
                       onClick={() => onSetCorner(panelId, c)}
@@ -409,6 +412,7 @@ function VariantPicker({
         const active = value === opt.value;
         return (
           <button
+            aria-pressed={active}
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
