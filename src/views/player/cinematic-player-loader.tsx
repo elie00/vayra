@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
 import { LoaderLogoOrText } from "./loader-logo-or-text";
 import { readinessScore, type EngineStats } from "@/lib/torrent/engine-stats";
+import { peerProblem, type PeerProblem } from "@/lib/torrent/peer-problem";
 import { isBundledEngineUrl, isLocalEngineUrl } from "@/lib/stremio-server";
 import { StreamLoadingBar } from "./stream-loading-bar";
 
@@ -85,6 +86,20 @@ export function CinematicPlayerLoader({
     const t = window.setTimeout(() => setLagging(true), SLOW_SOURCE_HINT_MS);
     return () => window.clearTimeout(t);
   }, [showing, isLocal, isInfoHash, src.url]);
+  // How long this torrent has been loading, for the peer verdict below.
+  const [waitedMs, setWaitedMs] = useState(0);
+  useEffect(() => {
+    setWaitedMs(0);
+    if (!showing || isLocal || !isInfoHash) return;
+    const started = Date.now();
+    const id = window.setInterval(() => setWaitedMs(Date.now() - started), 1000);
+    return () => window.clearInterval(id);
+  }, [showing, isLocal, isInfoHash, src.url]);
+  // The verdict so far feeds the next one, so a lost swarm's retries do not blink it.
+  const [problem, setProblem] = useState<PeerProblem | null>(null);
+  useEffect(() => {
+    setProblem((prev) => (isInfoHash ? peerProblem(engineStats, waitedMs, prev) : null));
+  }, [isInfoHash, engineStats, waitedMs]);
   useEffect(() => {
     onShowingChange?.(showing);
   }, [showing, onShowingChange]);
@@ -185,6 +200,16 @@ export function CinematicPlayerLoader({
           </div>
         ) : (
           <HarborLoader size="md" caption={isLocal ? t("Loading") : t("Connecting")} />
+        )}
+        {!kid && problem && (
+          <p
+            role="status"
+            className="max-w-md rounded-full border border-white/12 bg-black/45 px-3.5 py-1 text-[12px] font-medium tracking-wide text-white/75 backdrop-blur-md"
+          >
+            {problem === "none-found"
+              ? t("No peers found for this torrent yet.")
+              : t("Peers were found, then all disconnected.")}
+          </p>
         )}
         {!kid && showEngineActivity && (
           <p className="rounded-full border border-white/12 bg-black/45 px-3.5 py-1 text-[12px] font-medium tracking-wide text-white/65 tabular-nums backdrop-blur-md">
