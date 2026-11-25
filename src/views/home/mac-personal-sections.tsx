@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowUpRight, Bookmark, Compass, Download, Film, Play } from "lucide-react";
+import { ArrowUpRight, Download, Film, Play } from "lucide-react";
 import { Row } from "@/components/row";
 import { PickCard } from "@/components/pick-card";
 import { ContinueCard } from "@/components/continue-card";
@@ -82,17 +82,8 @@ export function MacPersonalSections({
             {t("Your next viewing, right where you left it.")}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setView("library")}
-            className="group inline-flex h-9 items-center gap-2 rounded-full border border-edge-soft/75 bg-surface/85 px-3.5 text-[12.5px] font-medium text-ink-muted transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
-          >
-            <Bookmark size={13} strokeWidth={2} className="text-ink-subtle group-hover:text-ink" />
-            <span>{t("My Watchlist")}</span>
-            <span className="tabular-nums text-ink">{watchlist.length}</span>
-          </button>
-          {allDownloads.length > 0 && (
+        {allDownloads.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setView("downloads")}
@@ -102,16 +93,8 @@ export function MacPersonalSections({
               <span>{t("Downloads")}</span>
               <span className="tabular-nums text-ink">{doneDownloads.length > 0 ? doneDownloads.length : allDownloads.length}</span>
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setView("discover")}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-edge-soft/75 bg-surface/85 px-3.5 text-[12.5px] font-medium text-ink-muted transition-[border-color,background-color,color] duration-150 hover:border-edge hover:bg-elevated hover:text-ink"
-          >
-            <Compass size={13} strokeWidth={2} />
-            <span>{t("Explore")}</span>
-          </button>
-        </div>
+          </div>
+        )}
       </header>
 
       {notice}

@@ -158,3 +158,13 @@ it("keeps invalid offline files out of the player and announces the problem", as
   expect(view.openPlayer).not.toHaveBeenCalled();
   expect(host.querySelector('[role="alert"]')?.textContent).toBe("This file is missing or incomplete. Download it again from the title page.");
 });
+
+it("keeps only the Downloads pill in the top-right home header", async () => {
+  await renderHome();
+  const header = host.querySelector("header")!;
+  const buttons = Array.from(header.querySelectorAll("button")).map((b) => b.textContent ?? "");
+  expect(buttons).toHaveLength(1);
+  expect(buttons[0]).toContain("Downloads");
+  expect(header.textContent).not.toContain("My Watchlist");
+  expect(header.textContent).not.toContain("Explore");
+});
