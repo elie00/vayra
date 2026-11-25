@@ -1,9 +1,10 @@
-import { ChevronRight } from "lucide-react";
+import { ArrowUpRight, Layers } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PickCard } from "@/components/pick-card";
 import { Row } from "@/components/row";
 import type { Meta } from "@/lib/cinemeta";
-import { tmdbCollection } from "@/lib/providers/tmdb";
+import { useT } from "@/lib/i18n";
+import { cleanCollectionTitle, tmdbCollection } from "@/lib/providers/tmdb";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
@@ -16,43 +17,60 @@ export function CollectionRow({
   collection: { id: number; name: string };
   currentId: string;
 }) {
+  const t = useT();
   const { settings } = useSettings();
   const { openCollection } = useView();
   const kid = useActiveKid();
   const [parts, setParts] = useState<Meta[]>([]);
+  const [totalParts, setTotalParts] = useState(0);
+  const [displayName, setDisplayName] = useState(() => cleanCollectionTitle(collection.name));
 
   useEffect(() => {
     if (!settings.tmdbKey) return;
     let cancelled = false;
     setParts([]);
+    setTotalParts(0);
+    setDisplayName(cleanCollectionTitle(collection.name));
     tmdbCollection(settings.tmdbKey, collection.id)
       .then((c) => {
         if (cancelled || !c) return;
         const rest = c.parts.filter((p) => p.id !== currentId);
         setParts(kid ? dropUnreleased(rest) : rest);
+        setTotalParts(c.parts.length);
+        if (c.displayName) setDisplayName(c.displayName);
       })
-      .catch(() => {});
+      .catch(() => {
+        /* best-effort related saga strip; hidden when collection fetch fails */
+      });
     return () => {
       cancelled = true;
     };
-  }, [settings.tmdbKey, collection.id, currentId, kid]);
+  }, [settings.tmdbKey, collection.id, collection.name, currentId, kid]);
 
   if (parts.length === 0) return null;
 
   return (
     <Row
       scrollKey={`collection-${collection.id}`}
-      title={
+      title={displayName}
+      titleExtra={
+        totalParts > 0 ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-edge-soft/70 bg-surface/85 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink-subtle">
+            <Layers size={10.5} />
+            {totalParts === 1
+              ? t("{n} film", { n: totalParts })
+              : t("{count} films", { count: totalParts })}
+          </span>
+        ) : undefined
+      }
+      headerRight={
         <button
+          type="button"
           onClick={() => openCollection(collection.id)}
-          className="group inline-flex items-center gap-1.5 text-start transition-colors hover:text-ink"
+          className="mac-secondary-button"
         >
-          {collection.name}
-          <ChevronRight
-            size={18}
-            strokeWidth={2.4}
-            className="dir-icon text-ink-subtle transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
-          />
+          <span>{t("Explore saga")}</span>
+          <ArrowUpRight size={13} strokeWidth={2} className="text-ink-subtle" />
         </button>
       }
     >
