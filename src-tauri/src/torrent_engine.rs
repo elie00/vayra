@@ -736,7 +736,7 @@ pub async fn torrent_engine_add(
     let auto_start_idx = if start_immediately == Some(true) {
         file_idx
             .filter(|&i| i < files.len())
-            .or_else(|| if files.len() == 1 { Some(0) } else { None })
+            .or((files.len() == 1).then_some(0))
     } else {
         None
     };
