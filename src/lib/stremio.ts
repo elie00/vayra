@@ -1,10 +1,35 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
+import { registerEvictable } from "@/lib/maintenance";
 import { readResumeEntry } from "@/lib/resume";
 import { isDetectedAnime } from "./anime-detect";
 
 const API = "https://api.strem.io/api";
 
 const CW_FINISHED_RATIO = 0.9;
+const LIBRARY_CACHE_TTL_MS = 15_000;
+
+type LibraryCacheEntry = { items: LibraryItem[]; expiresAt: number };
+const libraryCache = new Map<string, LibraryCacheEntry>();
+const libraryInflight = new Map<string, Promise<LibraryItem[]>>();
+
+export function invalidateStremioLibraryCache(authKey?: string): void {
+  if (authKey) {
+    libraryCache.delete(authKey);
+  } else {
+    libraryCache.clear();
+  }
+}
+
+registerEvictable("stremio-library", (aggressive) => {
+  if (aggressive) {
+    libraryCache.clear();
+    return;
+  }
+  const now = Date.now();
+  for (const [k, v] of libraryCache) {
+    if (now >= v.expiresAt) libraryCache.delete(k);
+  }
+});
 
 export type User = {
   _id: string;
@@ -127,21 +152,40 @@ export function getUser(authKey: string) {
 }
 
 export function logout(authKey: string) {
+  invalidateStremioLibraryCache(authKey);
   return call<unknown>("logout", { authKey });
 }
 
-export async function library(authKey: string): Promise<LibraryItem[]> {
-  const ids = await call<Array<[string, string]>>("datastoreMeta", {
-    authKey,
-    collection: "libraryItem",
-  });
-  if (!ids?.length) return [];
-  return call<LibraryItem[]>("datastoreGet", {
-    authKey,
-    collection: "libraryItem",
-    ids: ids.map(([id]) => id),
-    all: true,
-  });
+export async function library(authKey: string, opts?: { force?: boolean }): Promise<LibraryItem[]> {
+  if (!opts?.force) {
+    const cached = libraryCache.get(authKey);
+    if (cached && Date.now() < cached.expiresAt) return cached.items;
+  }
+  let pending = libraryInflight.get(authKey);
+  if (!pending) {
+    pending = (async () => {
+      const ids = await call<Array<[string, string]>>("datastoreMeta", {
+        authKey,
+        collection: "libraryItem",
+      });
+      if (!ids?.length) {
+        libraryCache.set(authKey, { items: [], expiresAt: Date.now() + LIBRARY_CACHE_TTL_MS });
+        return [];
+      }
+      const items = await call<LibraryItem[]>("datastoreGet", {
+        authKey,
+        collection: "libraryItem",
+        ids: ids.map(([id]) => id),
+        all: true,
+      });
+      libraryCache.set(authKey, { items, expiresAt: Date.now() + LIBRARY_CACHE_TTL_MS });
+      return items;
+    })().finally(() => {
+      if (libraryInflight.get(authKey) === pending) libraryInflight.delete(authKey);
+    });
+    libraryInflight.set(authKey, pending);
+  }
+  return pending;
 }
 
 export async function libraryGetOne(authKey: string, id: string): Promise<LibraryItem | null> {
@@ -166,6 +210,7 @@ export async function libraryPut(
   for (let attempt = 0; ; attempt++) {
     try {
       await call<unknown>("datastorePut", { authKey, collection: "libraryItem", changes: [item] });
+      invalidateStremioLibraryCache(authKey);
       return;
     } catch (e) {
       if (!(e instanceof StremioUnreachable) || attempt >= PUT_RETRY_MS.length) throw e;
