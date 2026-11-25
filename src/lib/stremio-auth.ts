@@ -1,7 +1,7 @@
 import { openUrl } from "@/lib/window";
 
 const LOGIN_URL = "https://www.stremio.com/login";
-const TIMEOUT_MS = 300000;
+const TIMEOUT_MS = 600000;
 
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
