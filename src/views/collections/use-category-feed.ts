@@ -44,6 +44,9 @@ export type CategoryHit = {
   name: string;
   backdrop: string | null;
   count: number;
+  posters: string[];
+  yearRange: string | null;
+  rating: string | null;
 };
 
 export function useCategoryFeed(params: {
@@ -115,9 +118,12 @@ export function useCategoryFeed(params: {
               if (!matchesCategory(c, category)) continue;
               found.push({
                 id: c.id,
-                name: display,
-                backdrop: c.backdrop ?? null,
+                name: c.displayName || display,
+                backdrop: c.cardBackdrop ?? c.backdrop ?? null,
                 count: c.parts.length,
+                posters: c.posterStack,
+                yearRange: c.yearRange,
+                rating: c.averageRating,
               });
             }
           }
