@@ -153,7 +153,7 @@ function DesktopLibraryView({ active }: { active: boolean }) {
         hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
       }`}
     >
-      <div data-tauri-drag-region className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div data-tauri-drag-region className="flex w-full flex-col gap-6">
         <Header
           tab={tab}
           onTab={selectTab}

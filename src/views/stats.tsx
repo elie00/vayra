@@ -55,7 +55,7 @@ export function StatsView({ active }: { active: boolean }) {
       ref={scrollRef}
       className="flex-1 overflow-y-auto px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28 max-sm:px-4 max-sm:pt-[calc(5rem+var(--harbor-status-bar,1.75rem))]"
     >
-      <div data-tauri-drag-region className="mx-auto flex w-full max-w-6xl flex-col gap-7">
+      <div data-tauri-drag-region className="flex w-full flex-col gap-7">
         <header className="flex flex-col gap-5">
           <button
             onClick={goBack}

@@ -192,18 +192,25 @@ describe("LibraryView + embedded DownloadsView", () => {
     expect(localStorage.getItem("harbor.library.tab")).toBe("downloads");
   });
 
-  it("centers the library container and embedded Downloads tab on wide screens", async () => {
+  it("aligns the library container and embedded Downloads tab flush with the full-width Home/Explore shell", async () => {
     await act(async () => {
       root.render(<LibraryView active />);
     });
+    const main = host.querySelector<HTMLElement>("main");
+    expect(main?.className).toContain("px-5");
+    expect(main?.className).toContain("sm:px-8");
+    expect(main?.className).toContain("lg:px-12");
+
     const shell = host.querySelector<HTMLDivElement>("main > div[data-tauri-drag-region]");
-    expect(shell?.className).toContain("mx-auto");
-    expect(shell?.className).toContain("max-w-6xl");
+    expect(shell?.className).toContain("w-full");
+    expect(shell?.className).not.toContain("mx-auto");
+    expect(shell?.className).not.toContain("max-w-6xl");
 
     await vi.waitFor(() => {
       const downloadsSection = host.querySelector<HTMLElement>('section[aria-label="Downloads"]');
       expect(downloadsSection).not.toBeNull();
-      expect(downloadsSection?.className).toContain("mx-auto");
+      expect(downloadsSection?.className).toContain("w-full");
+      expect(downloadsSection?.className).not.toContain("mx-auto");
       expect(downloadsSection?.className).not.toContain("max-w-4xl");
     });
   });
