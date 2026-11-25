@@ -166,6 +166,12 @@ export function Home({ active = true }: { active?: boolean }) {
     setCatalogStatus("loading");
     const request = (async () => {
       const isClassic = settings.homeMode === "classic";
+      const dedupRows = isClassic ? false : !settings.homeShowAllAddonRows;
+      // Start addon catalogs concurrently with TMDB/Cinemeta instead of waiting
+      // for built-in rows before requesting addon catalogs.
+      const addonsPromise = loadAddonRows(authKey, { dedup: dedupRows, diagnostics }).catch(
+        () => { diagnostics.failed = true; return [] as AddonRow[]; },
+      );
 
       let built: { rows: HomeRow[]; hero: Meta[] } = { rows: [], hero: [] };
       if (!isClassic) {
@@ -177,13 +183,12 @@ export function Home({ active = true }: { active?: boolean }) {
         }
       }
       if (cancelled) return;
-      setRows(mergeRows(built.rows, []));
-      setHeroPool(built.hero);
+      if (!isClassic) {
+        setRows(mergeRows(built.rows, []));
+        setHeroPool(built.hero);
+      }
 
-      const dedupRows = isClassic ? false : !settings.homeShowAllAddonRows;
-      const addons = await loadAddonRows(authKey, { dedup: dedupRows, diagnostics }).catch(
-        () => { diagnostics.failed = true; return [] as AddonRow[]; },
-      );
+      const addons = await addonsPromise;
       if (cancelled) return;
       const filtered = isClassic
         ? addons

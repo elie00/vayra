@@ -201,6 +201,7 @@ function usePlaybackPathPreloader() {
       void importDetail();
       void importPlayPicker();
       void importPlayer();
+      void import("@/lib/streams/pipeline").then((m) => m.warmStreamCore());
     });
     return () => {
       cancelled = true;

@@ -184,13 +184,17 @@ export function Row({
     const available = container.clientWidth;
     if (available <= 0) return;
     const fits = Math.max(1, Math.floor((available + GAP) / (effMin + GAP)));
-    setCellWidth((available - (fits - 1) * GAP) / fits);
+    const nextWidth = (available - (fits - 1) * GAP) / fits;
+    setCellWidth((prev) => (prev !== null && Math.abs(prev - nextWidth) < 0.25 ? prev : nextWidth));
   }, [effMin]);
 
-  const isRtlTrack = (el: HTMLDivElement) => getComputedStyle(el).direction === "rtl";
-  const readPos = useCallback((el: HTMLDivElement) => (isRtlTrack(el) ? -el.scrollLeft : el.scrollLeft), []);
+  // Avoid getComputedStyle() on every scroll/resize frame (forces synchronous
+  // style recalc in WebKit across every mounted row).
+  const isRtlTrack = (_el?: HTMLDivElement) =>
+    typeof document !== "undefined" && document.documentElement.dir === "rtl";
+  const readPos = useCallback((el: HTMLDivElement) => (isRtlTrack() ? -el.scrollLeft : el.scrollLeft), []);
   const writePos = useCallback((el: HTMLDivElement, pos: number) => {
-    el.scrollLeft = isRtlTrack(el) ? -pos : pos;
+    el.scrollLeft = isRtlTrack() ? -pos : pos;
   }, []);
 
   const measureScroll = useCallback(() => {
@@ -244,7 +248,6 @@ export function Row({
       });
     });
     ro.observe(container);
-    ro.observe(track);
     let saveTimer: number | null = null;
     let scrollRaf: number | null = null;
     const onScroll = () => {
