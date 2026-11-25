@@ -94,7 +94,11 @@ export function FilterBar({
           </button>
         )}
       </div>
-      {trailing}
+      {trailing && (
+        <div className="ms-auto flex flex-wrap items-center gap-2">
+          {trailing}
+        </div>
+      )}
     </div>
   );
 }

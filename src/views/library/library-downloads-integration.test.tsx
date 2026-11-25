@@ -191,4 +191,20 @@ describe("LibraryView + embedded DownloadsView", () => {
     expect(tab("Downloads").getAttribute("aria-selected")).toBe("true");
     expect(localStorage.getItem("harbor.library.tab")).toBe("downloads");
   });
+
+  it("centers the library container and embedded Downloads tab on wide screens", async () => {
+    await act(async () => {
+      root.render(<LibraryView active />);
+    });
+    const shell = host.querySelector<HTMLDivElement>("main > div[data-tauri-drag-region]");
+    expect(shell?.className).toContain("mx-auto");
+    expect(shell?.className).toContain("max-w-6xl");
+
+    await vi.waitFor(() => {
+      const downloadsSection = host.querySelector<HTMLElement>('section[aria-label="Downloads"]');
+      expect(downloadsSection).not.toBeNull();
+      expect(downloadsSection?.className).toContain("mx-auto");
+      expect(downloadsSection?.className).not.toContain("max-w-4xl");
+    });
+  });
 });

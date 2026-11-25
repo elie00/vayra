@@ -241,7 +241,7 @@ export function DownloadsView({ embedded = false }: { embedded?: boolean } = {})
         aria-label={t("Downloads")}
         onFocusCapture={(event) => { focusedRef.current = event.target; }}
         onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) focusedRef.current = null; }}
-        className="flex w-full max-w-4xl flex-col gap-6"
+        className="mx-auto flex w-full flex-col gap-6"
       >
         {body}
         {pendingRemoval && <DeleteDownloadDialog items={pendingRemoval} returnFocusRef={headingRef} onClose={() => setPendingRemoval(null)} />}
@@ -255,7 +255,7 @@ export function DownloadsView({ embedded = false }: { embedded?: boolean } = {})
       className={`flex-1 overflow-y-auto bg-canvas px-5 pb-24 sm:px-8 lg:px-12 ${
         hasNativeDesktopUx() ? "pt-16 lg:pt-20" : "pt-24 lg:pt-28"
       }`}>
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         {body}
       </div>
       {pendingRemoval && <DeleteDownloadDialog items={pendingRemoval} returnFocusRef={headingRef} onClose={() => setPendingRemoval(null)} />}

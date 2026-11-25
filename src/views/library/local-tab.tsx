@@ -362,7 +362,7 @@ export function LocalTab() {
         setQuery={setQuery}
         counts={counts}
         trailing={
-          <div className="ms-auto flex items-center gap-2">
+          <>
             <SortMenu
               sortKey={sortKey}
               setSortKey={setSortKey}
@@ -394,7 +394,7 @@ export function LocalTab() {
               )}
               {busy ? scanLabel(progress, t) : t("Add folder")}
             </button>
-          </div>
+          </>
         }
       />
       {selectMode ? (
