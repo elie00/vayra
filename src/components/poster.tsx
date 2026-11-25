@@ -13,12 +13,12 @@ import { shouldLocalizePosters } from "@/lib/providers/tmdb/tmdb-image-lang";
 
 type Ratio = "portrait" | "landscape" | "wide";
 
-export function useLocalizedPoster(metaId: string): string | undefined {
+export function useLocalizedPoster(metaId: string, enabled = true): string | undefined {
   const { settings } = useSettings();
   const [url, setUrl] = useState<string | undefined>(undefined);
   useEffect(() => {
     setUrl(undefined);
-    if (!settings.tmdbKey || !metaId.startsWith("tmdb:") || !shouldLocalizePosters()) return;
+    if (!enabled || !settings.tmdbKey || !metaId.startsWith("tmdb:") || !shouldLocalizePosters()) return;
     let alive = true;
     void tmdbLocalizedPoster(settings.tmdbKey, metaId).then((u) => {
       if (alive && u) setUrl(u);
@@ -26,7 +26,7 @@ export function useLocalizedPoster(metaId: string): string | undefined {
     return () => {
       alive = false;
     };
-  }, [metaId, settings.tmdbKey]);
+  }, [metaId, settings.tmdbKey, enabled]);
   return url;
 }
 

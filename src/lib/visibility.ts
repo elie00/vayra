@@ -2,16 +2,22 @@ import { useEffect, useState, type RefObject } from "react";
 
 type Callback = (visible: boolean) => void;
 
-const subs = new WeakMap<Element, Callback>();
+const subs = new WeakMap<Element, Set<Callback>>();
 let observer: IntersectionObserver | null = null;
+let observerCtor: typeof IntersectionObserver | undefined;
 
-function ensureObserver(): IntersectionObserver {
-  if (observer) return observer;
+function ensureObserver(): IntersectionObserver | null {
+  if (typeof IntersectionObserver === "undefined") return null;
+  if (observer && observerCtor === IntersectionObserver) return observer;
+  observerCtor = IntersectionObserver;
   observer = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {
-        const cb = subs.get(e.target);
-        if (cb) cb(e.isIntersecting);
+        const set = subs.get(e.target);
+        if (!set) continue;
+        for (const cb of [...set]) {
+          cb(e.isIntersecting);
+        }
       }
     },
     { rootMargin: "100px" },
@@ -21,11 +27,26 @@ function ensureObserver(): IntersectionObserver {
 
 export function observe(el: Element, cb: Callback): () => void {
   const o = ensureObserver();
-  subs.set(el, cb);
-  o.observe(el);
+  if (!o) {
+    cb(true);
+    return () => {};
+  }
+  let set = subs.get(el);
+  const first = !set;
+  if (!set) {
+    set = new Set();
+    subs.set(el, set);
+  }
+  set.add(cb);
+  if (first) o.observe(el);
   return () => {
-    o.unobserve(el);
-    subs.delete(el);
+    const cur = subs.get(el);
+    if (!cur) return;
+    cur.delete(cb);
+    if (cur.size === 0) {
+      subs.delete(el);
+      o.unobserve(el);
+    }
   };
 }
 

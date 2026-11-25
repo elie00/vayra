@@ -116,20 +116,35 @@ export const PickCard = memo(function PickCard({
   const [animeTvdb, setAnimeTvdb] = useState<string | undefined>();
   const animeWantsImdb = isAnimeCardId && settings.animeCardRating === "imdb";
   const ratingTt = isAnimeCardId ? (animeWantsImdb ? animeImdb : undefined) : imdbId;
+  const ref = useRef<HTMLButtonElement>(null);
+  const [seenInView, setSeenInView] = useState(false);
+  useEffect(() => {
+    if (seenInView) return;
+    const el = ref.current;
+    if (!el) return;
+    let off: (() => void) | null = null;
+    off = observe(el, (visible) => {
+      if (!visible) return;
+      off?.();
+      off = null;
+      setSeenInView(true);
+    });
+    return () => off?.();
+  }, [seenInView]);
   const [harborRating, setHarborRating] = useState<string | undefined>();
   useEffect(() => {
     setHarborRating(undefined);
-    if (!ratingTt || !ratingTt.startsWith("tt")) return;
+    if (!seenInView || !ratingTt || !ratingTt.startsWith("tt")) return;
     let cancelled = false;
     harborImdbTitle(ratingTt)
       .then((r) => {
         if (!cancelled && r != null) setHarborRating(r.toFixed(1));
       })
-      .catch(() => {});
+      .catch(() => { /* best-effort rating lookup */ });
     return () => {
       cancelled = true;
     };
-  }, [ratingTt]);
+  }, [ratingTt, seenInView]);
   const mediaKind = meta.type === "series" ? "show" : "movie";
   const wantMdblist =
     settings.showPopcornBadge ||
@@ -190,7 +205,6 @@ export const PickCard = memo(function PickCard({
     cardBadges.push({ kind: "mdblist", value: cardScores.score });
   if (settings.showTraktBadge && cardScores?.trakt != null)
     cardBadges.push({ kind: "trakt", value: cardScores.trakt });
-  const ref = useRef<HTMLButtonElement>(null);
   const altIds = useMemo(() => [imdbId], [imdbId]);
   const inWatchlist = useInWatchlist(meta.id, altIds);
   const watched = useMetaWatched(meta.id, meta.type);
@@ -198,7 +212,7 @@ export const PickCard = memo(function PickCard({
 
   const [imgIdx, setImgIdx] = useState(0);
   const [hydratedPoster, setHydratedPoster] = useState<string | undefined>();
-  const localizedPoster = useLocalizedPoster(meta.id);
+  const localizedPoster = useLocalizedPoster(meta.id, seenInView);
   const wantTmdbPoster = needsTmdbForPoster(settings.rpdbKey, meta.id);
   const resolvedTmdb = useTmdbIdFromImdb(wantTmdbPoster ? meta.id : undefined);
   const animeTmdb = useTmdbIdFromImdb(animeImdb) ?? undefined;
@@ -244,7 +258,7 @@ export const PickCard = memo(function PickCard({
   }, [meta.id]);
 
   useEffect(() => {
-    if (!isAnimeCardId || (!settings.rpdbKey && !settings.posterBaseUrl && !animeWantsImdb)) return;
+    if (!seenInView || !isAnimeCardId || (!settings.rpdbKey && !settings.posterBaseUrl && !animeWantsImdb)) return;
     const m = meta.id.match(/^(kitsu|mal|anilist|anidb):(\d+)/);
     if (!m) return;
     const source = m[1];
@@ -269,10 +283,10 @@ export const PickCard = memo(function PickCard({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, isAnimeCardId, settings.rpdbKey, settings.posterBaseUrl, animeWantsImdb]);
+  }, [seenInView, meta.id, isAnimeCardId, settings.rpdbKey, settings.posterBaseUrl, animeWantsImdb]);
 
   useEffect(() => {
-    if (posterSrc !== undefined || hydratedPoster || posterPending) return;
+    if (!seenInView || posterSrc !== undefined || hydratedPoster || posterPending) return;
     let cancelled = false;
     const isAnimeId =
       meta.id.startsWith("kitsu:") ||
@@ -301,19 +315,17 @@ export const PickCard = memo(function PickCard({
         if (cancelled || !res?.poster) return;
         setHydratedPoster(res.poster);
       })
-      .catch(() => {});
+      .catch(() => { /* best-effort poster hydration */ });
     return () => {
       cancelled = true;
     };
-  }, [posterSrc, hydratedPoster, meta.type, meta.id, posterPending]);
+  }, [seenInView, posterSrc, hydratedPoster, meta.type, meta.id, posterPending]);
 
   const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
 
   useEffect(() => {
     setTranslatedTitle(null);
-    if (!isAnimeCardId) return;
-    const el = ref.current;
-    if (!el) return;
+    if (!seenInView || !isAnimeCardId) return;
 
     let cancelled = false;
     const cache = getLocalCache();
@@ -402,36 +414,25 @@ export const PickCard = memo(function PickCard({
       }
     };
 
-    let started = false;
-    const off = observe(el, (visible) => {
-      if (visible && !started && !cancelled) {
-        started = true;
-        fetchTitles().catch(() => {});
-      }
-    });
+    fetchTitles().catch(() => { /* best-effort anime title lookup */ });
 
     return () => {
       cancelled = true;
-      off?.();
     };
-  }, [meta.id, isAnimeCardId, settings.simklAnimeTitleLanguage]);
+  }, [seenInView, meta.id, isAnimeCardId, settings.simklAnimeTitleLanguage]);
 
   useEffect(() => {
     if (
-      !settings.omdbKey &&
-      !settings.mdblistKey &&
-      !needsImdbForPoster(settings.rpdbKey, meta.id) &&
-      !wantTmdbPoster &&
-      !wantCinemetaRating
+      !seenInView ||
+      (!settings.omdbKey &&
+        !settings.mdblistKey &&
+        !needsImdbForPoster(settings.rpdbKey, meta.id) &&
+        !wantTmdbPoster &&
+        !wantCinemetaRating)
     )
       return;
-    const el = ref.current;
-    if (!el) return;
-    let off: (() => void) | null = null;
-    off = observe(el, async (visible) => {
-      if (!visible) return;
-      off?.();
-      off = null;
+    let cancelled = false;
+    (async () => {
       if (wantTmdbPoster) {
         void tmdbIdFromImdb(
           settings.tmdbKey,
@@ -440,29 +441,22 @@ export const PickCard = memo(function PickCard({
         );
       }
       const id = await tmdbImdbId(settings.tmdbKey, meta.id);
-      if (!id) return;
+      if (cancelled || !id) return;
       if (settings.omdbKey) omdbPrefetch(settings.omdbKey, id);
       if (settings.mdblistKey && wantMdblist) {
         mdblistCardPrefetch(id, meta.type === "series" ? "show" : "movie");
       }
       if (wantCinemetaRating) cinemetaRatingPrefetch(id, meta.type === "series" ? "series" : "movie");
-    });
-    return () => off?.();
-  }, [meta.id, meta.type, settings.tmdbKey, settings.omdbKey, settings.mdblistKey, wantMdblist, settings.rpdbKey, wantCinemetaRating, wantTmdbPoster]);
+    })().catch(() => { /* best-effort card score prefetch */ });
+    return () => {
+      cancelled = true;
+    };
+  }, [seenInView, meta.id, meta.type, settings.tmdbKey, settings.omdbKey, settings.mdblistKey, wantMdblist, settings.rpdbKey, wantCinemetaRating, wantTmdbPoster]);
 
   useEffect(() => {
-    if (!isAnimeCardId) return;
-    const el = ref.current;
-    if (!el) return;
-    let off: (() => void) | null = null;
-    off = observe(el, (visible) => {
-      if (!visible) return;
-      off?.();
-      off = null;
-      prefetchFranchiseRoot(meta.id);
-    });
-    return () => off?.();
-  }, [meta.id, isAnimeCardId]);
+    if (!seenInView || !isAnimeCardId) return;
+    prefetchFranchiseRoot(meta.id);
+  }, [seenInView, meta.id, isAnimeCardId]);
 
   const hoverActions = activeCustom ? (
     <CustomHoverOverlay
