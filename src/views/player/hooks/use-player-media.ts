@@ -44,6 +44,7 @@ export function usePlayerMedia(params: {
   videoMountRef: RefObject<HTMLDivElement | null>;
   toggleFullscreen: () => void;
   castActiveRef: RefObject<boolean>;
+  controlsVisible?: boolean;
   season: number | undefined;
   episode: number | undefined;
 }) {
@@ -59,6 +60,7 @@ export function usePlayerMedia(params: {
     videoMountRef,
     toggleFullscreen,
     castActiveRef,
+    controlsVisible = false,
     season,
     episode,
   } = params;
@@ -148,6 +150,7 @@ export function usePlayerMedia(params: {
     settings,
     assNativeActive,
     imageNativeActive,
+    controlsVisible,
     bridgeReady,
     mediaReady: mpvMediaReadyForStyle,
     bridgeKey,

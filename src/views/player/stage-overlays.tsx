@@ -53,7 +53,12 @@ export function StageOverlays({
   return (
     <>
       {(!pipMode || subShowInPip) && !subAssNative && (
-        <SubtitleOverlay text={snap.subText} startSec={snap.subStartSec} scale={pipMode ? 0.45 : 1} />
+        <SubtitleOverlay
+          text={snap.subText}
+          startSec={snap.subStartSec}
+          scale={pipMode ? 0.45 : 1}
+          controlsVisible={chromeVisible && !pipMode}
+        />
       )}
       {showStats && !pipMode && <StatsOverlay snap={snap} engine={engine} />}
       {!pipMode && <Anime4kIndicator engine={engine} chromeVisible={chromeVisible} suppressed={topVolumeShowing} />}

@@ -356,6 +356,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     videoMountRef,
     toggleFullscreen,
     castActiveRef: cast.castActiveRef,
+    controlsVisible: (chromeVisible || drawMode) && !pipMode,
     season,
     episode,
   });

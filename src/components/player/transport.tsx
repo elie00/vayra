@@ -466,21 +466,15 @@ export function Transport({
         dir="ltr"
         aria-hidden={!visible}
         inert={!visible || undefined}
-        className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/88 via-black/42 to-transparent ${
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/32 to-transparent ${
           tight
             ? "ps-[calc(0.75rem+var(--vayra-safe-left,0px))] pe-[calc(0.75rem+var(--vayra-safe-right,0px))] pt-8 pb-[calc(0.75rem+var(--vayra-safe-bottom,0px))]"
-            : "ps-[calc(1.5rem+var(--vayra-safe-left,0px))] pe-[calc(1.5rem+var(--vayra-safe-right,0px))] pt-14 pb-[calc(1.25rem+var(--vayra-safe-bottom,0px))]"
+            : "ps-[calc(1.5rem+var(--vayra-safe-left,0px))] pe-[calc(1.5rem+var(--vayra-safe-right,0px))] pt-10 pb-[calc(0.9rem+var(--vayra-safe-bottom,0px))]"
         } transition-[opacity,transform] duration-300 motion-reduce:transition-none motion-reduce:transform-none ${
           visible ? "translate-y-0 opacity-100" : "translate-y-1.5 opacity-0"
         }`}
       >
-        <div
-          className={`mx-auto flex w-full max-w-[1380px] flex-col gap-2.5 ${
-            tight
-              ? ""
-              : "rounded-[22px] border border-white/[0.09] bg-[#0b0c0f]/58 px-4 py-3 shadow-[0_24px_64px_-20px_rgba(0,0,0,0.92)] backdrop-blur-2xl"
-          }`}
-        >
+        <div className="mx-auto flex w-full max-w-[1380px] flex-col gap-1.5">
           <div dir="ltr" className={`${visible ? "pointer-events-auto" : "pointer-events-none"} flex items-center gap-3`}>
             {isLiveChannel ? (
               <>

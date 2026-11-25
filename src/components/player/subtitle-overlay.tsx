@@ -6,9 +6,17 @@ type Props = {
   text: string;
   startSec: number;
   scale?: number;
+  controlsVisible?: boolean;
+  liftPx?: number;
 };
 
-export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
+export function SubtitleOverlay({
+  text,
+  startSec,
+  scale = 1,
+  controlsVisible = false,
+  liftPx = 92,
+}: Props) {
   const { settings } = useSettings();
   const kid = useActiveKid();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -69,13 +77,14 @@ export function SubtitleOverlay({ text, startSec, scale = 1 }: Props) {
       : undefined;
 
   const opacity = clamp(settings.subOpacity ?? 1, 0.1, 1);
+  const bottom = controlsVisible ? `max(${marginY}%, ${liftPx}px)` : `${marginY}%`;
 
   return (
     <div
       key={startSec}
       ref={wrapRef}
-      className={`pointer-events-none absolute inset-x-0 z-10 flex ${justify} px-[6%]`}
-      style={{ bottom: `${marginY}%`, opacity }}
+      className={`pointer-events-none absolute inset-x-0 z-10 flex ${justify} px-[6%] transition-[bottom] duration-200 motion-reduce:transition-none`}
+      style={{ bottom, opacity }}
     >
       <div className="max-w-[80%]" style={boxStyle}>
         <div style={baseTextStyle}>

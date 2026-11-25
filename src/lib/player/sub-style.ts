@@ -33,7 +33,40 @@ function mpvFontFor(id: string): string {
 export type SubRenderContext = {
   assNativeActive: boolean;
   imageNativeActive: boolean;
+  controlsVisible?: boolean;
 };
+
+const CONTROLS_MIN_MARGIN_PX = 96;
+const CONTROLS_MIN_MARGIN_PCT = 15;
+
+export function computeSubPosition(
+  s: Pick<Settings, "subMarginY" | "subAssOverride">,
+  context: SubRenderContext = { assNativeActive: false, imageNativeActive: false },
+): { marginY: number; pos: number } {
+  const baseMarginY = clamp(Number(s.subMarginY) || 0, 0, 100);
+  const reposition = !context.assNativeActive || s.subAssOverride !== "no";
+  const lifted = Boolean(context.controlsVisible);
+  const marginY = lifted ? Math.max(baseMarginY, CONTROLS_MIN_MARGIN_PX) : baseMarginY;
+  const posMargin = lifted ? Math.max(baseMarginY, CONTROLS_MIN_MARGIN_PCT) : baseMarginY;
+  const pos = reposition ? clamp(100 - posMargin, 0, 100) : 100;
+  return { marginY, pos };
+}
+
+export async function applySubPositionForControls(
+  s: Pick<Settings, "subMarginY" | "subAssOverride">,
+  context: SubRenderContext = { assNativeActive: false, imageNativeActive: false },
+): Promise<void> {
+  const { marginY, pos } = computeSubPosition(s, context);
+  const props: Array<[string, unknown]> = [
+    ["sub-margin-y", marginY],
+    ["sub-pos", pos],
+  ];
+  await Promise.all(
+    props.map(([name, value]) =>
+      invoke("mpv_set_property", { name, value }).catch(() => {}),
+    ),
+  );
+}
 
 export async function applySubStyle(
   s: Settings,
@@ -41,12 +74,11 @@ export async function applySubStyle(
 ): Promise<void> {
   const override = s.subAssOverride;
   const assMargins = context.assNativeActive && override !== "no" ? "yes" : "no";
-  const marginY = clamp(Number(s.subMarginY) || 0, 0, 100);
+  const { marginY, pos } = computeSubPosition(s, context);
   const opacity = clamp(Number(s.subOpacity ?? 1), 0.1, 1);
   const boxOpacity = clamp(Number(s.subBoxOpacity ?? 0.6), 0, 1);
   const isBox = s.subStyle === "box";
   const isShadow = s.subStyle === "shadow";
-  const reposition = !context.assNativeActive || override !== "no";
   const props: Array<[string, unknown]> = [
     ["sub-font-size", 32],
     ["sub-font", mpvFontFor(s.subFontFamily)],
@@ -64,7 +96,7 @@ export async function applySubStyle(
     ["sub-use-margins", assMargins],
     ["sub-spacing", s.subLineSpacing],
     ["sub-bold", s.subBold ? "yes" : "no"],
-    ["sub-pos", reposition ? clamp(100 - marginY, 0, 100) : 100],
+    ["sub-pos", pos],
   ];
   await Promise.all(
     props.map(([name, value]) =>
