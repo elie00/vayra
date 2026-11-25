@@ -14,14 +14,21 @@ export type LibraryQuery = {
 // Per-debrid cap so one slow/hung debrid can't stall library collection.
 const LIBRARY_TIMEOUT_MS = 8000;
 
-export async function fetchLibraryStreams(
+export type LibrarySnapshot = {
+  streams: Stream[];
+  hashesBySlug: Map<DebridSlug, Set<string>>;
+};
+
+export async function fetchLibrarySnapshot(
   clients: DebridStore[],
   query: LibraryQuery,
   signal: AbortSignal,
-): Promise<Stream[]> {
-  if (clients.length === 0) return [];
+): Promise<LibrarySnapshot> {
+  const hashesBySlug = new Map<DebridSlug, Set<string>>();
+  if (clients.length === 0) return { streams: [], hashesBySlug };
   // Collect per-debrid as each returns; bound each lookup with a timeout so a
-  // slow debrid can't stall the batch. Final result is order-independent.
+  // slow debrid can't stall the batch. Also capture library hashes in the same
+  // pass so the pipeline never has to call listLibrary() a second time.
   const perClient = await Promise.all(
     clients.map(async (c) => {
       const slug = c.slug;
@@ -38,17 +45,28 @@ export async function fetchLibraryStreams(
         clearTimeout(timer!);
       }
       if (!r || !r.ok) return [];
+      const hashes = new Set<string>();
       const streams: Stream[] = [];
       for (const entry of r.data) {
         if (!entry.hash) continue;
+        hashes.add(entry.hash.toLowerCase());
         const matched = matchEntry(entry, query);
         if (!matched) continue;
         streams.push(buildLibraryStream(slug, entry, matched));
       }
+      hashesBySlug.set(slug, hashes);
       return streams;
     }),
   );
-  return perClient.flat();
+  return { streams: perClient.flat(), hashesBySlug };
+}
+
+export async function fetchLibraryStreams(
+  clients: DebridStore[],
+  query: LibraryQuery,
+  signal: AbortSignal,
+): Promise<Stream[]> {
+  return (await fetchLibrarySnapshot(clients, query, signal)).streams;
 }
 
 function matchEntry(entry: LibraryEntry, query: LibraryQuery): MatchInfo | null {

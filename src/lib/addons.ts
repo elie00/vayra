@@ -96,6 +96,30 @@ async function call<T>(path: string, body: object): Promise<T | null> {
   }
 }
 
+const USER_ADDONS_TTL_MS = 5 * 60_000;
+const userAddonsCache = new Map<string, { addons: Addon[]; at: number }>();
+const userAddonsInflight = new Map<string, Promise<Addon[]>>();
+
+export function peekUserAddons(authKey: string): Addon[] | null {
+  const hit = userAddonsCache.get(authKey);
+  if (!hit) return null;
+  if (Date.now() - hit.at > USER_ADDONS_TTL_MS) {
+    userAddonsCache.delete(authKey);
+    return null;
+  }
+  return hit.addons;
+}
+
+export function invalidateUserAddonsCache(authKey?: string): void {
+  if (authKey) {
+    userAddonsCache.delete(authKey);
+    userAddonsInflight.delete(authKey);
+  } else {
+    userAddonsCache.clear();
+    userAddonsInflight.clear();
+  }
+}
+
 export async function userAddons(authKey: string, opts: { strict?: boolean } = {}): Promise<Addon[]> {
   const result = await call<{ addons: Addon[] }>("addonCollectionGet", {
     authKey,
@@ -103,7 +127,22 @@ export async function userAddons(authKey: string, opts: { strict?: boolean } = {
     update: false,
   });
   if (opts.strict && !Array.isArray(result?.addons)) throw new Error("Addon collection unavailable");
+  if (Array.isArray(result?.addons)) {
+    userAddonsCache.set(authKey, { addons: result.addons, at: Date.now() });
+  }
   return result?.addons ?? [];
+}
+
+export async function userAddonsCached(authKey: string): Promise<Addon[]> {
+  const cached = peekUserAddons(authKey);
+  if (cached) return cached;
+  const inflight = userAddonsInflight.get(authKey);
+  if (inflight) return inflight;
+  const promise = userAddons(authKey).finally(() => {
+    userAddonsInflight.delete(authKey);
+  });
+  userAddonsInflight.set(authKey, promise);
+  return promise;
 }
 
 export async function setUserAddons(authKey: string, addons: Addon[]): Promise<boolean> {
@@ -123,7 +162,9 @@ export async function setUserAddons(authKey: string, addons: Addon[]): Promise<b
       };
     }),
   });
-  return result != null && result.success !== false;
+  const ok = result != null && result.success !== false;
+  if (ok) invalidateUserAddonsCache(authKey);
+  return ok;
 }
 
 export async function getUserAddonsRaw(authKey: string): Promise<Addon[] | null> {
@@ -143,7 +184,9 @@ export async function setUserAddonsRaw(authKey: string, addons: Addon[]): Promis
     type: "user",
     addons,
   });
-  return result != null && result.success !== false;
+  const ok = result != null && result.success !== false;
+  if (ok) invalidateUserAddonsCache(authKey);
+  return ok;
 }
 
 const STRIP_WORDS = ["movies", "movie", "series", "shows", "show", "tv shows", "tv"];

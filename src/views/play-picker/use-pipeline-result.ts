@@ -7,6 +7,7 @@ import { buildPickerConfigHash, clearOnePickerCache, getPickerCache, setPickerCa
 import { useSettings } from "@/lib/settings";
 import { readPlayback } from "@/lib/playback-history";
 import { runPipeline, type PipelineResult } from "@/lib/streams/pipeline";
+import { clearAddonStreamCache } from "@/lib/streams/addons";
 import type { Stream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
 import { parseRuntimeMinutes, stampAddonOrder } from "./picker-utils";
@@ -196,6 +197,7 @@ export function usePipelineResult({
 
   const refresh = useCallback(() => {
     clearOnePickerCache(meta, episode);
+    clearAddonStreamCache();
     setRefreshNonce((n) => n + 1);
   }, [meta, episode]);
 

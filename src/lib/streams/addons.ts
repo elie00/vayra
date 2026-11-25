@@ -162,6 +162,14 @@ function addonAcceptsId(addon: Addon, type: string, id: string): boolean {
   return true;
 }
 
+const STREAM_CACHE_TTL_MS = 90_000;
+const STREAM_CACHE_MAX = 160;
+const streamResponseCache = new Map<string, { streams: Stream[]; at: number }>();
+
+export function clearAddonStreamCache(): void {
+  streamResponseCache.clear();
+}
+
 async function fetchOne(
   addon: Addon,
   type: string,
@@ -170,6 +178,10 @@ async function fetchOne(
 ): Promise<Stream[]> {
   const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
   const url = `${base}/stream/${type}/${id}.json`;
+  const cached = streamResponseCache.get(url);
+  if (cached && Date.now() - cached.at < STREAM_CACHE_TTL_MS) {
+    return cached.streams.map((s) => ({ ...s }));
+  }
   const limit = timeoutFor(addon);
   const ac = new AbortController();
   let timedOut = false;
@@ -196,7 +208,7 @@ async function fetchOne(
     const json = (await res.json()) as { streams?: RawStream[] };
     const list = json.streams ?? [];
     const ranked = isAddonRanked(addon);
-    return list.map((s) => {
+    const out = list.map((s) => {
       const mapped = {
         ...s,
         infoHash: s.infoHash?.toLowerCase(),
@@ -215,6 +227,14 @@ async function fetchOne(
       }
       return mapped;
     });
+    if (out.length > 0) {
+      if (streamResponseCache.size >= STREAM_CACHE_MAX) {
+        const oldest = streamResponseCache.keys().next().value;
+        if (oldest) streamResponseCache.delete(oldest);
+      }
+      streamResponseCache.set(url, { streams: out, at: Date.now() });
+    }
+    return out;
   } catch (e) {
     if (timedOut) {
       dwarn(`[addons] ${addon.manifest.name} timed out after ${limit}ms — dropped`);

@@ -3,7 +3,7 @@ import { dlog } from "@/lib/debug";
 import type { DebridResult, DebridStore } from "@/lib/debrid/types";
 import { fetchAddonStreams, type StreamRequest } from "./addons";
 import { enhanceAnimeStreams } from "./anitomy";
-import { fetchLibraryStreams, type LibraryQuery } from "./library";
+import { fetchLibrarySnapshot, type LibraryQuery, type LibrarySnapshot } from "./library";
 import { parseStream } from "./parser";
 import { applyTrust, type Rejection, type TrustOptions } from "./trust";
 import { computeCorpusStats, rankAndPick, scoreStream, type ScoreOptions } from "./scoring";
@@ -19,6 +19,12 @@ function getCore(): Promise<VayraCore> {
     return m;
   });
   return corePromise;
+}
+
+export function warmStreamCore(): void {
+  const isTauri =
+    typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
+  if (!isTauri) void getCore().catch(() => { /* best-effort WASM prewarm */ });
 }
 
 const GIB = 1024 ** 3;
@@ -109,8 +115,34 @@ export async function runPipeline(
   onProgress?: (partial: PipelineResult) => void,
 ): Promise<PipelineResult> {
   let library: Stream[] = [];
+  let librarySnapshot: LibrarySnapshot = { streams: [], hashesBySlug: new Map() };
   let lastPartialAt = 0;
   let lastPartialCount = 0;
+
+  // Overlap WASM compilation with network I/O on non-Tauri targets.
+  warmStreamCore();
+
+  // Start debrid library lookups in parallel with addon stream queries instead
+  // of blocking every addon behind debrid API latency.
+  const libraryPromise: Promise<LibrarySnapshot> = fetchLibrarySnapshot(
+    input.debrids,
+    input.query,
+    signal,
+  )
+    .then((snap) => {
+      librarySnapshot = snap;
+      library = snap.streams;
+      if (snap.streams.length > 0 && lastPartialCount === 0 && onProgress && !signal.aborted) {
+        lastPartialAt = performance.now();
+        try {
+          onProgress(buildPartial([]));
+        } catch {
+          /* swallow */
+        }
+      }
+      return snap;
+    })
+    .catch(() => librarySnapshot);
 
   const buildPartial = (addonStreams: Stream[]): PipelineResult => {
     const merged = mergeAndDedupe(library, addonStreams);
@@ -145,6 +177,9 @@ export async function runPipeline(
   // the fast phase settles (resolves the returned promise, flipping pipelineDone),
   // then again in the background if slow addons contribute more streams.
   const finalize = async (addonStreams: Stream[]): Promise<PipelineResult> => {
+    const snap = await libraryPromise;
+    librarySnapshot = snap;
+    library = snap.streams;
     const merged = mergeAndDedupe(library, addonStreams);
     const parsed = merged.map(parseStream);
 
@@ -162,13 +197,28 @@ export async function runPipeline(
     ];
     if (hashes.length > 0 && input.debrids.length > 0 && !signal.aborted) {
       dlog(`[pipeline] ${parsed.length} parsed streams · ${hashes.length} unique hashes · debrids: ${input.debrids.map((d) => d.name).join(", ")}`);
-      // Mark streams progressively as each debrid returns (per-debrid .then),
-      // bounding each lookup with a timeout so one slow debrid can't stall the
-      // batch. Awaiting all before the core rank keeps the final result identical.
+      // Cross-check library hashes already fetched in parallel (zero extra HTTP calls),
+      // and run per-debrid cacheCheck concurrently.
+      for (const d of input.debrids) {
+        const libHashes = librarySnapshot.hashesBySlug.get(d.slug);
+        if (!libHashes || libHashes.size === 0) continue;
+        let hits = 0;
+        for (const p of parsed) {
+          if (!p.infoHash) continue;
+          if (libHashes.has(p.infoHash.toLowerCase())) {
+            if (!p.cached[d.slug]) hits++;
+            p.cached[d.slug] = true;
+            p.inLibrary[d.slug] = true;
+          }
+        }
+        if (hits > 0) {
+          dlog(`[pipeline] listLibrary cross-check on ${d.name}: ${hits} streams flagged cached`);
+        }
+      }
       await Promise.all(
         input.debrids.map((d) => {
           const slug = d.slug;
-          const cachePromise = withDebridTimeout(d.cacheCheck(hashes, signal)).then((r) => {
+          return withDebridTimeout(d.cacheCheck(hashes, signal)).then((r) => {
             if (!r.ok) return;
             let hits = 0;
             for (const p of parsed) {
@@ -180,21 +230,6 @@ export async function runPipeline(
             }
             dlog(`[pipeline] cacheCheck on ${d.name}: ${hits} streams flagged cached`);
           });
-          const libraryPromise = withDebridTimeout(d.listLibrary(signal)).then((r) => {
-            if (!r.ok) return;
-            const libHashes = new Set(r.data.map((e) => e.hash.toLowerCase()).filter(Boolean));
-            let hits = 0;
-            for (const p of parsed) {
-              if (!p.infoHash) continue;
-              if (libHashes.has(p.infoHash.toLowerCase())) {
-                if (!p.cached[slug]) hits++;
-                p.cached[slug] = true;
-                p.inLibrary[slug] = true;
-              }
-            }
-            dlog(`[pipeline] listLibrary cross-check on ${d.name}: ${hits} extra streams flagged cached (lib has ${libHashes.size} hashes)`);
-          });
-          return Promise.allSettled([cachePromise, libraryPromise]);
         }),
       );
 
@@ -240,13 +275,6 @@ export async function runPipeline(
 
   // Presets bypass the fast/slow split entirely.
   if (presets.length > 0) {
-    const librarySettled = await Promise.allSettled([
-      fetchLibraryStreams(input.debrids, input.query, signal).then((s) => {
-        library = s;
-        return s;
-      }),
-    ]);
-    if (librarySettled[0].status === "fulfilled") library = librarySettled[0].value;
     return finalize(presets);
   }
 
@@ -265,14 +293,6 @@ export async function runPipeline(
       }
     });
   };
-
-  const librarySettled = await Promise.allSettled([
-    fetchLibraryStreams(input.debrids, input.query, signal).then((s) => {
-      library = s;
-      return s;
-    }),
-  ]);
-  if (librarySettled[0].status === "fulfilled") library = librarySettled[0].value;
 
   // Resolve the returned result on the fast phase; keep collecting slow addons.
   let fastResolved = false;

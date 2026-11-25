@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { fetchInstalledAddons, fetchManifestAt, filterEnabled } from "@/lib/addon-store";
 import {
+  fetchInstalledAddons,
+  fetchManifestAt,
+  filterEnabled,
+  loadInstalled,
+} from "@/lib/addon-store";
+import {
+  peekUserAddons,
   torboxAddonFor,
-  userAddons,
+  userAddonsCached,
   withDebridKeys,
   type Addon,
 } from "@/lib/addons";
@@ -33,91 +39,131 @@ async function resolveManifests(addons: Addon[]): Promise<Addon[]> {
   );
 }
 
+function finalizeAddonList(
+  stremioAddons: Addon[],
+  installed: Addon[],
+  settings: Settings,
+): { list: Addon[]; userHasStreamAddons: boolean } {
+  const debridKeys = {
+    rdKey: settings.rdKey,
+    tbKey: settings.tbKey,
+    adKey: settings.adKey,
+    pmKey: settings.pmKey,
+    dlKey: settings.dlKey,
+  };
+  const torbox = torboxAddonFor(settings.tbKey);
+  const sourceAddons = isWeb()
+    ? filterEnabled(
+        mergeLiteStarterAddons(
+          [...stremioAddons, ...installed],
+          debridKeys,
+          settings.preferredLanguages,
+        ),
+      )
+    : [...stremioAddons, ...installed];
+  const merged: Addon[] = [];
+  const idxByUrl = new Map<string, number>();
+  for (const a of sourceAddons) {
+    const existingIdx = idxByUrl.get(a.transportUrl);
+    if (existingIdx === undefined) {
+      idxByUrl.set(a.transportUrl, merged.length);
+      merged.push(a);
+      continue;
+    }
+    if (!hasAnyResources(merged[existingIdx]) && hasAnyResources(a)) {
+      merged[existingIdx] = a;
+    }
+  }
+  const savedOrder = loadDisplayOrder();
+  const ordered = savedOrder.length > 0 ? applyOrderToItems(merged, savedOrder) : merged;
+  const userStreamCount = ordered.filter(declaresStream).length;
+  const list = withDebridKeys(ordered, debridKeys, settings.preferredLanguages);
+  const existingTorboxIdx = list.findIndex(
+    (a) =>
+      a.manifest.id === "app.torbox.stremio" ||
+      a.transportUrl?.includes("stremio.torbox.app"),
+  );
+  if (torbox) {
+    if (existingTorboxIdx >= 0) {
+      const existing = list[existingTorboxIdx];
+      if (existing.transportUrl !== torbox.transportUrl) {
+        list[existingTorboxIdx] = torbox;
+      }
+    } else {
+      list.push(torbox);
+    }
+  }
+  return { list, userHasStreamAddons: userStreamCount > 0 };
+}
+
+function tryBuildWarmAddons(
+  authKey: string | null,
+  settings: Settings,
+): { list: Addon[]; userHasStreamAddons: boolean } | null {
+  const stremioRaw = authKey ? peekUserAddons(authKey) : [];
+  if (stremioRaw === null) return null;
+  const localRaw = loadInstalled();
+  if (localRaw.some((entry) => !entry.manifest)) return null;
+  const localAddons: Addon[] = localRaw.map((entry) => ({
+    manifest: entry.manifest!,
+    transportUrl: entry.transportUrl,
+  }));
+  const stremioAddons = filterEnabled(stremioRaw);
+  const installed = filterEnabled(localAddons);
+  if ([...stremioAddons, ...installed].some((a) => !hasAnyResources(a))) return null;
+  return finalizeAddonList(stremioAddons, installed, settings);
+}
+
 export function useAddons(authKey: string | null, settings: Settings): {
   addons: Addon[] | null;
   userHasStreamAddons: boolean;
 } {
-  const [addons, setAddons] = useState<Addon[] | null>(null);
-  const [userHasStreamAddons, setUserHasStreamAddons] = useState(false);
+  const [state, setState] = useState<{ addons: Addon[] | null; userHasStreamAddons: boolean }>(() => {
+    const warm = tryBuildWarmAddons(authKey, settings);
+    return warm
+      ? { addons: warm.list, userHasStreamAddons: warm.userHasStreamAddons }
+      : { addons: null, userHasStreamAddons: false };
+  });
+
   useEffect(() => {
     let cancelled = false;
-    const debridKeys = {
-      rdKey: settings.rdKey,
-      tbKey: settings.tbKey,
-      adKey: settings.adKey,
-      pmKey: settings.pmKey,
-      dlKey: settings.dlKey,
-    };
-    const torbox = torboxAddonFor(settings.tbKey);
-    (async () => {
-      const stremioAddons = filterEnabled(authKey ? await userAddons(authKey).catch(() => []) : []);
-      const installed = filterEnabled(await fetchInstalledAddons().catch(() => []));
+    const warm = tryBuildWarmAddons(authKey, settings);
+    if (warm) {
+      setState({ addons: warm.list, userHasStreamAddons: warm.userHasStreamAddons });
+      return;
+    }
+    void (async () => {
+      const [stremioRaw, installedRaw] = await Promise.all([
+        authKey ? userAddonsCached(authKey).catch(() => []) : Promise.resolve([] as Addon[]),
+        fetchInstalledAddons().catch(() => [] as Addon[]),
+      ]);
       if (cancelled) return;
-      const sourceAddons = isWeb()
-        ? filterEnabled(
-            mergeLiteStarterAddons(
-              [...stremioAddons, ...installed],
-              debridKeys,
-              settings.preferredLanguages,
-            ),
-          )
-        : [...stremioAddons, ...installed];
-      const merged: Addon[] = [];
-      const idxByUrl = new Map<string, number>();
-      for (const a of sourceAddons) {
-        const existingIdx = idxByUrl.get(a.transportUrl);
-        if (existingIdx === undefined) {
-          idxByUrl.set(a.transportUrl, merged.length);
-          merged.push(a);
-          continue;
-        }
-        if (!hasAnyResources(merged[existingIdx]) && hasAnyResources(a)) {
-          merged[existingIdx] = a;
-        }
-      }
-      const resolved = await resolveManifests(merged);
+      const stremioAddons = filterEnabled(stremioRaw);
+      const installed = filterEnabled(installedRaw);
+      const needsResolve = [...stremioAddons, ...installed].some((a) => !hasAnyResources(a));
+      const [resolvedStremio, resolvedInstalled] = needsResolve
+        ? await Promise.all([resolveManifests(stremioAddons), resolveManifests(installed)])
+        : [stremioAddons, installed];
       if (cancelled) return;
-      merged.length = 0;
-      merged.push(...resolved);
-      const savedOrder = loadDisplayOrder();
-      if (savedOrder.length > 0) {
-        const ordered = applyOrderToItems(merged, savedOrder);
-        merged.length = 0;
-        merged.push(...ordered);
-      }
-      const userStreamCount = merged.filter(declaresStream).length;
-      setUserHasStreamAddons(userStreamCount > 0);
-      const list = withDebridKeys(merged, debridKeys, settings.preferredLanguages);
-      const existingTorboxIdx = list.findIndex(
-        (a) =>
-          a.manifest.id === "app.torbox.stremio" ||
-          a.transportUrl?.includes("stremio.torbox.app"),
-      );
+      const built = finalizeAddonList(resolvedStremio, resolvedInstalled, settings);
       console.info(
-        `[picker] authKey=${authKey ? "yes" : "no"} tbKey=${settings.tbKey ? `set(${settings.tbKey.slice(0, 8)}…)` : "EMPTY"} stremioAddons=${stremioAddons.length} installed=${installed.length} merged=${merged.length} userStreamCount=${userStreamCount} hasTorbox=${existingTorboxIdx >= 0} torboxAutoAddable=${!!torbox}`,
+        `[picker] final addon list (${built.list.length}): ${built.list.map((a) => a.manifest.name).join(", ")}`,
       );
-      if (torbox) {
-        if (existingTorboxIdx >= 0) {
-          const existing = list[existingTorboxIdx];
-          if (existing.transportUrl !== torbox.transportUrl) {
-            // Never log transportUrl: it embeds the raw TorBox API key.
-            console.info(`[picker] refreshing stale TorBox addon URL`);
-            list[existingTorboxIdx] = torbox;
-          }
-        } else {
-          console.info(`[picker] auto-adding TorBox addon`);
-          list.push(torbox);
-        }
-      }
-      console.info(
-        `[picker] final addon list (${list.length}): ${list.map((a) => a.manifest.name).join(", ")}`,
-      );
-      setAddons(list);
+      setState({ addons: built.list, userHasStreamAddons: built.userHasStreamAddons });
     })();
     return () => {
       cancelled = true;
     };
-  }, [authKey, settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey, settings.preferredLanguages]);
+  }, [
+    authKey,
+    settings,
+    settings.rdKey,
+    settings.tbKey,
+    settings.adKey,
+    settings.pmKey,
+    settings.dlKey,
+    settings.preferredLanguages,
+  ]);
 
-  return { addons, userHasStreamAddons };
+  return state;
 }
