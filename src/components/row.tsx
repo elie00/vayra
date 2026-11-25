@@ -98,7 +98,16 @@ function Skeleton({ shape }: { shape: RowShape }) {
     return <div className="aspect-[5/4] w-full rounded-2xl bg-elevated/30" />;
   }
   if (shape === "banner") {
-    return <div className="aspect-[16/9] w-full rounded-2xl bg-elevated/35" />;
+    return (
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-edge-soft/60 bg-surface/75">
+        <div className="absolute start-3.5 top-3 h-5 w-20 rounded-full bg-elevated/60" />
+        <div className="absolute bottom-3.5 start-4 flex flex-col gap-2">
+          <div className="h-5 w-40 rounded bg-elevated/70" />
+          <div className="h-3 w-24 rounded bg-elevated/45" />
+        </div>
+        <div className="absolute bottom-3.5 end-4 hidden h-[76px] w-[52px] rotate-[6deg] rounded-md bg-elevated/55 sm:block" />
+      </div>
+    );
   }
   const aspect = shape === "landscape" ? "aspect-[16/9]" : "aspect-[2/3]";
   const hideText = shape === "portrait" && settings.hidePosterTitles;
