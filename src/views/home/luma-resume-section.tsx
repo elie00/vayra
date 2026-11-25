@@ -96,7 +96,9 @@ export function LumaResumeCard({
         .then((l) => {
           if (!cancelled && l) setLogo(l);
         })
-        .catch(() => {});
+        .catch(() => {
+          /* best-effort logo enrichment; card already displays its title */
+        });
     };
 
     const start = () => {
@@ -120,7 +122,9 @@ export function LumaResumeCard({
             const bg = m.background || (artwork ? undefined : m.poster);
             if (bg) setMetaBg(bg);
           })
-          .catch(() => {});
+          .catch(() => {
+            /* best-effort metadata hydration; local LUMA snapshot stays visible */
+          });
         return;
       }
       if (metaId.startsWith("tmdb:")) {
@@ -139,7 +143,9 @@ export function LumaResumeCard({
             const bg = m.background || (artwork ? undefined : m.poster);
             if (bg) setMetaBg(bg);
           })
-          .catch(() => {});
+          .catch(() => {
+            /* best-effort metadata hydration; local LUMA snapshot stays visible */
+          });
         return;
       }
       fetchMeta(narrowMediaType(mediaType), metaId)
@@ -150,7 +156,9 @@ export function LumaResumeCard({
           const bg = full.background || (artwork ? undefined : full.poster);
           if (bg) setMetaBg(bg);
         })
-        .catch(() => {});
+        .catch(() => {
+          /* best-effort metadata hydration; local LUMA snapshot stays visible */
+        });
     };
 
     if (typeof IntersectionObserver === "undefined") {
