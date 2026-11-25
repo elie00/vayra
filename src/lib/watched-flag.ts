@@ -42,7 +42,7 @@ export function setWatchedFlag(metaId: string, watched: boolean): void {
   persist(next);
 }
 
-function subscribe(fn: () => void): () => void {
+export function subscribeWatchedFlags(fn: () => void): () => void {
   subs.add(fn);
   const offMovie = subscribeMovieWatched(fn);
   return () => {
@@ -51,14 +51,16 @@ function subscribe(fn: () => void): () => void {
   };
 }
 
+export function isPartWatched(metaId: string | undefined, type: string | undefined): boolean {
+  if (!metaId) return false;
+  if (load().has(metaId)) return true;
+  return type === "movie" && isMovieWatchedLocal(metaId);
+}
+
 export function useMetaWatched(metaId: string | undefined, type: string | undefined): boolean {
   return useSyncExternalStore(
-    subscribe,
-    () => {
-      if (!metaId) return false;
-      if (load().has(metaId)) return true;
-      return type === "movie" && isMovieWatchedLocal(metaId);
-    },
+    subscribeWatchedFlags,
+    () => isPartWatched(metaId, type),
     () => false,
   );
 }

@@ -67,11 +67,19 @@ export {
 } from "./tmdb/tmdb-details";
 
 export {
+  cleanCollectionTitle,
+  computeCollectionYearRange,
+  peekCollectionArtwork,
+  peekTmdbCollection,
+  pickBestCollectionBackdrop,
+  pickCollectionPosterStack,
   tmdbCollection,
+  tmdbCollectionImages,
   tmdbCollectionsFeed,
   tmdbSearchCollectionId,
   tmdbSearchCollections,
   collectionNameMatches,
+  type CollectionArtwork,
   type CollectionHit,
   type TmdbCollection,
 } from "./tmdb/tmdb-collection";
