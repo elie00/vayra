@@ -14,6 +14,7 @@ import { parseRuntimeMinutes } from "@/views/play-picker/picker-utils";
 
 const RESUME_PROMPT_MIN_SEC = 30;
 const RESTART_THRESHOLD = 0.8;
+const REMOTE_RESUME_TIMEOUT_MS = 600;
 
 export function useBridgeLoad(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
@@ -78,6 +79,22 @@ export function useBridgeLoad(params: {
       unsubscribeFromDuration = undefined;
     };
     (async () => {
+      const guestInRoom = inRoomRef.current && !isHostRef.current;
+      const engineFile = isLocalEngineUrl(playUrl) ? src.streamRef : undefined;
+      const runtimeMin = src.episode?.runtime ?? null;
+      const minutes = runtimeMin ?? parseRuntimeMinutes(src.meta.runtime) ?? 0;
+      // Kick off tail-index prefetch immediately before any cloud resume lookup
+      // so MKV cues / MP4 moov arrive in parallel with startup.
+      const localStartSec = readResumeMs(src.meta.id, season, episode) / 1000;
+      if (engineFile?.infoHash && engineFile.fileIdx != null && !guestInRoom) {
+        void torrentEnginePrefetch(
+          engineFile.infoHash,
+          engineFile.fileIdx,
+          localStartSec > 5 ? localStartSec : 0,
+          minutes * 60,
+        );
+      }
+
       const openingVid = videoIdFor(
         src,
         cloudWriteId(src.meta.id, src.imdbId ?? null, src.imdbIdVerified === true),
@@ -94,12 +111,10 @@ export function useBridgeLoad(params: {
             openingVid,
           );
       const startMs = resolved.ms;
-      const runtimeMin = src.episode?.runtime ?? null;
       const durationMs = runtimeMin && runtimeMin > 0 ? runtimeMin * 60_000 : 0;
       const finishedNearEnd =
         resolved.finished || (durationMs > 0 && startMs / durationMs >= RESTART_THRESHOLD);
       const startSec = (!resumePlaybackRef.current || finishedNearEnd ? 0 : startMs) / 1000;
-      const guestInRoom = inRoomRef.current && !isHostRef.current;
       const eligibleForPrompt =
         isFirstLoad &&
         !isAutoRetry &&
@@ -107,12 +122,16 @@ export function useBridgeLoad(params: {
         resumePromptRef.current &&
         startSec > RESUME_PROMPT_MIN_SEC &&
         !guestInRoom;
-      // The engine reads the end of the file and the resume point while mpv reads
-      // the header, instead of after it.
-      const engineFile = isLocalEngineUrl(playUrl) ? src.streamRef : undefined;
-      if (engineFile?.infoHash && engineFile.fileIdx != null && !guestInRoom) {
-        const minutes = runtimeMin ?? parseRuntimeMinutes(src.meta.runtime) ?? 0;
-        void torrentEnginePrefetch(engineFile.infoHash, engineFile.fileIdx, startSec > 5 ? startSec : 0, minutes * 60);
+      // If cloud resume moved the start point significantly past the local one,
+      // also prefetch around the updated resume position.
+      if (
+        engineFile?.infoHash &&
+        engineFile.fileIdx != null &&
+        !guestInRoom &&
+        startSec > 5 &&
+        Math.abs(startSec - localStartSec) > 20
+      ) {
+        void torrentEnginePrefetch(engineFile.infoHash, engineFile.fileIdx, startSec, minutes * 60);
       }
       try {
         await bridge.load({
@@ -220,8 +239,25 @@ async function resolveStartMs(
   if (metaId.startsWith("tt")) lookups.push(metaId);
   else if (imdbVerified && imdbId?.startsWith("tt")) lookups.push(imdbId, metaId);
   else lookups.push(metaId);
-  for (const lookupId of lookups) {
-    const remote = await libraryGetOne(authKey, lookupId).catch(() => null);
+  // Query all candidate cloud IDs concurrently with a tight startup budget so a
+  // slow cloud API never delays video launch by seconds.
+  const remotes = await new Promise<Array<Awaited<ReturnType<typeof libraryGetOne>>>>((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve([]);
+    }, REMOTE_RESUME_TIMEOUT_MS);
+    void Promise.all(lookups.map((id) => libraryGetOne(authKey, id).catch(() => null))).then(
+      (list) => {
+        clearTimeout(timer);
+        if (settled) return;
+        settled = true;
+        resolve(list);
+      },
+    );
+  });
+  for (const remote of remotes) {
     if (!remote || !matchesEpisode(remote)) continue;
     const remoteMs = remote.state?.timeOffset ?? 0;
     if (remoteMs <= 0) continue;

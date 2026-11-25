@@ -90,6 +90,20 @@ impl MpvState {
     }
 }
 
+/// Local files and loopback streams (like the local torrent engine cache) are
+/// already backed by local disk, so writing mpv's cache-on-disk duplicates I/O.
+fn is_local_or_loopback_source(url: &str) -> bool {
+    let lower = url.trim().to_ascii_lowercase();
+    if lower.starts_with("http://127.0.0.1:")
+        || lower.starts_with("http://localhost:")
+        || lower.starts_with("http://[::1]:")
+        || lower.starts_with("file://")
+    {
+        return true;
+    }
+    !lower.starts_with("http://") && !lower.starts_with("https://")
+}
+
 /// mpv deletes its on-disk cache when it closes a file, but a crash or a kill
 /// leaves the whole buffer — up to half a gigabyte per playback — sitting in the
 /// cache directory with nothing left to claim it.
@@ -248,7 +262,7 @@ fn apply_pre_init(
     set("title", "Harbor")?;
     set("audio-client-name", "Harbor")?;
     set("terminal", "no")?;
-    set("msg-level", "all=warn,vo=v,d3d11=v,gpu=v,win32=v")?;
+    set("msg-level", "all=warn")?;
     let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
     let mut header_fields: Vec<String> = Vec::new();
     if let Some(headers) = &args.headers {
@@ -488,7 +502,7 @@ pub async fn mpv_start(
             .map_err(|e| format!("ns_window: {:?}", e))? as i64;
         let mpv_ctx_addr: usize = mpv.ctx.as_ptr() as usize;
         let mac_edr = args.mac_edr.unwrap_or(false);
-        let (tx, rx) = std::sync::mpsc::sync_channel::<Result<(), String>>(1);
+        let (tx, rx) = tokio::sync::oneshot::channel::<Result<(), String>>();
         let _ = app.run_on_main_thread(move || {
             let res = match std::ptr::NonNull::new(mpv_ctx_addr as *mut libmpv2_sys::mpv_handle) {
                 Some(p) => crate::mpv_render_mac::install(p, ns_window_ptr, mac_edr),
@@ -496,14 +510,14 @@ pub async fn mpv_start(
             };
             let _ = tx.send(res);
         });
-        match rx.recv_timeout(std::time::Duration::from_millis(3000)) {
-            Ok(Ok(())) => eprintln!("[harbor::mpv_mac] install OK"),
-            Ok(Err(e)) => {
+        match tokio::time::timeout(std::time::Duration::from_millis(3000), rx).await {
+            Ok(Ok(Ok(()))) => eprintln!("[harbor::mpv_mac] install OK"),
+            Ok(Ok(Err(e))) => {
                 eprintln!("[harbor::mpv_mac] install failed: {}", e);
                 return Err(format!("mac render install: {}", e));
             }
-            Err(e) => {
-                eprintln!("[harbor::mpv_mac] install timed out: {:?}", e);
+            Ok(Err(_)) | Err(_) => {
+                eprintln!("[harbor::mpv_mac] install timed out");
                 return Err("mac render install timeout".into());
             }
         }
@@ -515,7 +529,7 @@ pub async fn mpv_start(
             .get_webview_window("main")
             .ok_or_else(|| "main window missing for render API install".to_string())?;
         let mpv_ctx_addr: usize = mpv.ctx.as_ptr() as usize;
-        let (tx, rx) = std::sync::mpsc::sync_channel::<Result<(), String>>(1);
+        let (tx, rx) = tokio::sync::oneshot::channel::<Result<(), String>>();
         let _ = app.run_on_main_thread(move || {
             let res = (|| {
                 let p = std::ptr::NonNull::new(mpv_ctx_addr as *mut libmpv2_sys::mpv_handle)
@@ -527,19 +541,20 @@ pub async fn mpv_start(
             })();
             let _ = tx.send(res);
         });
-        match rx.recv_timeout(std::time::Duration::from_millis(3000)) {
-            Ok(Ok(())) => eprintln!("[harbor::mpv_linux] install OK"),
-            Ok(Err(e)) => {
+        match tokio::time::timeout(std::time::Duration::from_millis(3000), rx).await {
+            Ok(Ok(Ok(()))) => eprintln!("[harbor::mpv_linux] install OK"),
+            Ok(Ok(Err(e))) => {
                 eprintln!("[harbor::mpv_linux] install failed: {}", e);
                 return Err(format!("linux render install: {}", e));
             }
-            Err(e) => {
-                eprintln!("[harbor::mpv_linux] install timed out: {:?}", e);
+            Ok(Err(_)) | Err(_) => {
+                eprintln!("[harbor::mpv_linux] install timed out");
                 return Err("linux render install timeout".into());
             }
         }
     }
     let is_live = args.is_live.unwrap_or(false);
+    let local_or_loopback = is_local_or_loopback_source(&args.url);
     if is_live {
         let _ = mpv.set_property("cache", "yes");
         let _ = mpv.set_property("cache-secs", "30");
@@ -550,7 +565,7 @@ pub async fn mpv_start(
         let _ = mpv.set_property("demuxer-readahead-secs", "20");
         let _ = mpv.set_property("network-timeout", "60");
         let _ = mpv.set_property("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=5,reconnect_on_network_error=1");
-        let _ = mpv.set_property("stream-buffer-size", "16MiB");
+        let _ = mpv.set_property("stream-buffer-size", "1MiB");
     } else {
         let _ = mpv.set_property("cache", "yes");
         // Five minutes and half a gigabyte of read-ahead meant a paused episode
@@ -562,22 +577,29 @@ pub async fn mpv_start(
         let _ = mpv.set_property("demuxer-max-bytes", "256MiB");
         let _ = mpv.set_property("demuxer-max-back-bytes", "32MiB");
         let _ = mpv.set_property("demuxer-readahead-secs", "120");
-        if let Ok(base) = crate::profile_dir::cache_dir(&app) {
-            let dir = base.join("mpv-cache");
-            let _ = std::fs::create_dir_all(&dir);
-            sweep_stale_cache(&dir);
-            if let Some(s) = dir.to_str() {
-                let _ = mpv.set_property("cache-dir", s);
+        if !local_or_loopback {
+            if let Ok(base) = crate::profile_dir::cache_dir(&app) {
+                let dir = base.join("mpv-cache");
+                let _ = std::fs::create_dir_all(&dir);
+                let sweep_dir = dir.clone();
+                std::thread::spawn(move || sweep_stale_cache(&sweep_dir));
+                if let Some(s) = dir.to_str() {
+                    let _ = mpv.set_property("cache-dir", s);
+                }
             }
+            let _ = mpv.set_property("cache-on-disk", "yes");
+        } else {
+            let _ = mpv.set_property("cache-on-disk", "no");
         }
-        let _ = mpv.set_property("cache-on-disk", "yes");
         // A connection that died while the video sat paused is only noticed once
         // this elapses: at ten minutes, pressing play left the viewer staring at a
         // still frame long enough to assume the button had not worked. A minute is
         // still far more patience than a stream that is coming back needs.
         let _ = mpv.set_property("network-timeout", "60");
         let _ = mpv.set_property("stream-lavf-o", "reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_on_network_error=1");
-        let _ = mpv.set_property("stream-buffer-size", "32MiB");
+        // Keep low-level stream read buffer nimble (2MiB) so initial probe and
+        // seeks flush minimal bytes while demuxer-max-bytes handles 256MiB cache.
+        let _ = mpv.set_property("stream-buffer-size", "2MiB");
     }
     if want_embed {
         let _ = mpv.set_property("sub-visibility", "no");
@@ -1959,4 +1981,20 @@ fn position_embedded_mpv_child(
         }
     }
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::is_local_or_loopback_source;
+
+    #[test]
+    fn identifies_local_and_loopback_streams_to_skip_redundant_disk_cache() {
+        assert!(is_local_or_loopback_source("http://127.0.0.1:49152/stream/abc/0"));
+        assert!(is_local_or_loopback_source("http://localhost:11470/hash/0"));
+        assert!(is_local_or_loopback_source("/Users/eybo/Movies/film.mkv"));
+        assert!(is_local_or_loopback_source("file:///Users/eybo/Movies/film.mkv"));
+        assert!(!is_local_or_loopback_source("https://cdn.debrid.example/video.mkv"));
+        assert!(!is_local_or_loopback_source("http://192.168.1.20:8080/live.ts"));
+    }
 }
