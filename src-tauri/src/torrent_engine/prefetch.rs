@@ -49,6 +49,23 @@ pub fn head_ranges(file_len: u64) -> Vec<(u64, u64)> {
     out
 }
 
+/// Immediate start-of-playback ranges: container header + first GOP (4 MiB) and
+/// tail index (8 MiB, MKV cues / MP4 moov), kicked off as soon as a file is
+/// selected so pieces arrive while mpv is initializing.
+pub fn play_start_ranges(file_len: u64) -> Vec<(u64, u64)> {
+    if file_len == 0 {
+        return Vec::new();
+    }
+    let head = (4 * MIB).min(file_len);
+    let mut out = vec![(0, head)];
+    let tail = file_len.saturating_sub(TAIL).max(head);
+    if tail < file_len {
+        out.push((tail, file_len - tail));
+    }
+    out.retain(|&(_, len)| len > 0);
+    out
+}
+
 /// Read those ranges in the background, so librqbit fetches their pieces now.
 pub fn start(handle: Arc<librqbit::ManagedTorrent>, file_idx: usize, ranges: Vec<(u64, u64)>) {
     tokio::spawn(read_all(handle, file_idx, ranges));
@@ -116,5 +133,14 @@ mod tests {
         assert_eq!(head_ranges(20 * MIB), vec![(0, 20 * MIB)]);
         assert_eq!(head_ranges(36 * MIB), vec![(0, 32 * MIB), (32 * MIB, 4 * MIB)]);
         assert!(head_ranges(0).is_empty());
+    }
+
+    #[test]
+    fn primes_header_and_tail_for_immediate_playback_start() {
+        let len = 1_500 * MIB;
+        assert_eq!(super::play_start_ranges(len), vec![(0, 4 * MIB), (len - 8 * MIB, 8 * MIB)]);
+        assert_eq!(super::play_start_ranges(6 * MIB), vec![(0, 4 * MIB), (4 * MIB, 2 * MIB)]);
+        assert_eq!(super::play_start_ranges(2 * MIB), vec![(0, 2 * MIB)]);
+        assert!(super::play_start_ranges(0).is_empty());
     }
 }

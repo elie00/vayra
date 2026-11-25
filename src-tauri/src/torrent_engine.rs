@@ -393,36 +393,50 @@ async fn start(app: AppHandle) -> Result<(), String> {
 }
 
 
-async fn init_unlocked(app: AppHandle) -> Result<(), String> {
+async fn init_unlocked(app: AppHandle) -> Result<() , String> {
     std::env::set_var("DHT_QUERIES_PER_SECOND", "100");
     let cfg = read_config(&app);
     let dir = engine_dir(&app, &cfg)?;
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    cache_sweep::run(&dir, cfg.retention_hours.unwrap_or(24), cfg.max_gb.unwrap_or(0));
-    for hash in persistence::drop_torrents_without_metadata(&dir) {
-        eprintln!("[torrent-engine] not restoring {}: its .torrent file is gone", hash.get(..8).unwrap_or(&hash));
-    }
-    cache_index::update(&dir, Vec::new());
-    let (session, dht_tier) = match new_session(&dir, true, true, true).await {
-        Ok(s) => (s, 1u8),
-        Err(e1) => {
-            eprintln!("[torrent-engine] tier1 (inbound + warm dht) unavailable ({e1}); trying no-inbound + warm dht");
-            match new_session(&dir, false, true, true).await {
-                Ok(s) => (s, 2u8),
-                Err(e2) => {
-                    eprintln!("[torrent-engine] tier2 unavailable ({e2}); trying cold ephemeral dht");
-                    match new_session(&dir, false, true, false).await {
-                        Ok(s) => (s, 3u8),
-                        Err(e3) => {
-                            eprintln!("[torrent-engine] tier3 (cold dht) unavailable ({e3}); starting without dht");
-                            (new_session(&dir, false, false, false).await?, 4u8)
+    let prep_dir = dir.clone();
+    let retention = cfg.retention_hours.unwrap_or(24);
+    let max_gb = cfg.max_gb.unwrap_or(0);
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        std::fs::create_dir_all(&prep_dir).map_err(|e| e.to_string())?;
+        cache_sweep::run(&prep_dir, retention, max_gb);
+        for hash in persistence::drop_torrents_without_metadata(&prep_dir) {
+            eprintln!(
+                "[torrent-engine] not restoring {}: its .torrent file is gone",
+                hash.get(..8).unwrap_or(&hash)
+            );
+        }
+        cache_index::update(&prep_dir, Vec::new());
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("engine prep join: {e}"))??;
+    let session_fut = async {
+        match new_session(&dir, true, true, true).await {
+            Ok(s) => Ok((s, 1u8)),
+            Err(e1) => {
+                eprintln!("[torrent-engine] tier1 (inbound + warm dht) unavailable ({e1}); trying no-inbound + warm dht");
+                match new_session(&dir, false, true, true).await {
+                    Ok(s) => Ok((s, 2u8)),
+                    Err(e2) => {
+                        eprintln!("[torrent-engine] tier2 unavailable ({e2}); trying cold ephemeral dht");
+                        match new_session(&dir, false, true, false).await {
+                            Ok(s) => Ok((s, 3u8)),
+                            Err(e3) => {
+                                eprintln!("[torrent-engine] tier3 (cold dht) unavailable ({e3}); starting without dht");
+                                new_session(&dir, false, false, false).await.map(|s| (s, 4u8))
+                            }
                         }
                     }
                 }
             }
         }
     };
-    let side_dht = dht_boot::build().await;
+    let (session_res, side_dht) = tokio::join!(session_fut, dht_boot::build());
+    let (session, dht_tier) = session_res?;
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
         .await
         .map_err(|e| e.to_string())?;
@@ -560,7 +574,7 @@ const INIT_TIMEOUT: Duration = Duration::from_secs(25);
 /// Short budget for the concurrent side-DHT peer lookup (B7). Was a serial 3s
 /// tax before add; now the lookup races the metadata fetch instead of blocking
 /// it, and librqbit's own tracker+DHT discovery proceeds in parallel.
-const DHT_SEED_BUDGET: Duration = Duration::from_millis(1500);
+const DHT_SEED_BUDGET: Duration = Duration::from_millis(1200);
 
 /// Incoming peer connections use the first free port of the range the router
 /// forwards; librqbit 9 binds one exact port where 8 took a range.
@@ -575,7 +589,7 @@ fn free_listen_port() -> u16 {
 
 fn peer_opts() -> PeerConnectionOptions {
     PeerConnectionOptions {
-        connect_timeout: Some(Duration::from_secs(7)),
+        connect_timeout: Some(Duration::from_secs(4)),
         // A connected peer may be temporarily choked or serving other clients.
         // Keep the short TCP connect budget, but allow idle established peers
         // time to contribute instead of repeatedly reconnecting after 10s.
@@ -617,6 +631,16 @@ async fn acquire_handle(
     only_files: Option<Vec<usize>>,
     trackers: Vec<String>,
 ) -> Result<Arc<librqbit::ManagedTorrent>, String> {
+    // Fast path: if the torrent is already live or prewarmed in this session with
+    // metadata, skip the side-DHT wait and return immediately.
+    if let Some(id) = dht_boot::info_hash_from_magnet(magnet) {
+        if let Some(existing) = session.get(TorrentIdOrHash::Hash(id)) {
+            if existing.with_metadata(|_| ()).is_ok() {
+                return Ok(existing);
+            }
+        }
+    }
+
     let dht = current_side_dht();
     let seed = match &dht {
         Some(d) => dht_boot::seed_peers(d, magnet, 40, DHT_SEED_BUDGET).await,
@@ -820,7 +844,16 @@ pub fn torrent_engine_lan_stop() {
 /// still pulling from it.
 #[tauri::command]
 pub async fn torrent_engine_select(info_hash: String, file_idx: usize) -> Result<(), String> {
-    apply_selection(&info_hash, wanted_files(&info_hash, Some(file_idx))).await
+    apply_selection(&info_hash, wanted_files(&info_hash, Some(file_idx))).await?;
+    // Immediately warm header + tail index while the player is still starting.
+    if let (Some(session), Ok(id)) = (current_session(), TorrentIdOrHash::parse(&info_hash)) {
+        if let Some(handle) = session.get(id) {
+            if let Ok(Some(len)) = handle.with_metadata(|m| m.file_infos.get(file_idx).map(|f| f.len)) {
+                prefetch::start(handle, file_idx, prefetch::play_start_ranges(len));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Select several files at once. Streaming narrows a torrent down to the single file

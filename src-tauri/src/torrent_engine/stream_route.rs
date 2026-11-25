@@ -210,7 +210,7 @@ async fn stream_file(
     }
     let body = Body::from_stream(tokio_util::io::ReaderStream::with_capacity(
         stream.take(to_take),
-        65536,
+        262_144,
     ));
     (status, out, body).into_response()
 }
