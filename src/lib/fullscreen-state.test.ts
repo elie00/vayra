@@ -9,10 +9,11 @@ vi.mock("@tauri-apps/api/window", () => ({
 }));
 vi.mock("@/lib/settings/load", () => ({ loadStoredSettings: () => ({}) }));
 
-async function load() {
+async function load(platform = "Win32") {
   vi.resetModules();
   vi.stubGlobal("window", { __TAURI_INTERNALS__: {} });
   vi.stubGlobal("document", {});
+  vi.stubGlobal("navigator", { platform, userAgent: platform });
   return await import("./fullscreen-state");
 }
 
@@ -22,6 +23,25 @@ beforeEach(() => {
 });
 
 describe("entering fullscreen", () => {
+  it("reads the completed AppKit state when starting on macOS", async () => {
+    mocks.invoke.mockResolvedValue(true);
+    const fs = await load("MacIntel");
+    await vi.waitFor(() => expect(fs.getWindowFullscreen()).toBe(true));
+    expect(mocks.invoke).toHaveBeenCalledWith("window_fullscreen_status");
+  });
+
+  it("waits for the native transition before changing the button", async () => {
+    const fs = await load();
+    let confirm!: () => void;
+    mocks.invoke.mockReturnValue(new Promise<void>((resolve) => { confirm = resolve; }));
+    const entering = fs.enterWindowFullscreen();
+    await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("window_fullscreen_enter"));
+    expect(fs.getWindowFullscreen()).toBe(false);
+    confirm();
+    await entering;
+    expect(fs.getWindowFullscreen()).toBe(true);
+  });
+
   it("does not claim fullscreen when the window refused", async () => {
     const fs = await load();
     mocks.invoke.mockRejectedValue(new Error("main window missing"));

@@ -38,3 +38,16 @@
 @media (prefers-reduced-motion: reduce) {
   [data-desktop-sidebar] [data-nav-icon], [data-desktop-sidebar] [data-nav-icon] * { animation: none !important; transition: none !important; transform: none !important; }
 }
+
+/* Match the black camera band at the first pixel, then reveal the page.
+   The overlay ends above the title-bar controls and never covers video. */
+[data-mac-fullscreen-chrome]::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 14px;
+  z-index: 140;
+  pointer-events: none;
+  border-block-start: 1px solid #000;
+  background: linear-gradient(to bottom, #000, rgb(0 0 0 / 45%) 45%, transparent) padding-box;
+}

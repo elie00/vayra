@@ -9,6 +9,7 @@ import { Topbar } from "@/chrome/topbar";
 import { useFirstRunLocaleDetect } from "@/lib/region/locale-cascade";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
 import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
+import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { startWindowFullscreenSync, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
@@ -17,7 +18,7 @@ import { forgetUnusedTorrents } from "@/lib/torrent/local-engine";
 import { downloadSnapshot } from "@/lib/download/downloads-store";
 import { torrentsKeptByDownloads } from "@/lib/download/kept-torrents";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { hasNativeDesktopUx, isMobileDevice, isMobileTauri, isWeb } from "@/lib/platform";
+import { hasNativeDesktopUx, isMacDesktop, isMobileDevice, isMobileTauri, isWeb } from "@/lib/platform";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
 import { DevErrorTrigger } from "@/components/dev-error-trigger";
@@ -506,6 +507,8 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
 }
 
 function Shell() {
+  const fullscreen = useWindowFullscreen();
+  const macFullscreen = fullscreen && isMacDesktop();
   const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, collectionId, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openPlayer, openPicker, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
   const { setOpen: setSearchOpen, setQuery: setSearchQuery } = useSearch();
@@ -698,7 +701,14 @@ function Shell() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "F11") {
+      const macFullscreenShortcut =
+        isMacDesktop() &&
+        e.ctrlKey &&
+        e.metaKey &&
+        !e.altKey &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === "f";
+      if (e.key === "F11" || macFullscreenShortcut) {
         e.preventDefault();
         void toggleWindowFullscreen();
       }
@@ -1088,7 +1098,11 @@ function Shell() {
   } satisfies Record<View, ReactNode>;
 
   return (
-    <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
+    <div
+      data-kids={kidsTop || kid ? "on" : undefined}
+      data-mac-fullscreen-chrome={macFullscreen && !playerActive ? "" : undefined}
+      className="relative flex h-full"
+    >
       {!settingsTop && !playerActive && (!liveTop || hasNativeDesktopUx()) && !pickerTop && layout === "sidebar" && <Sidebar />}
       <Suspense fallback={null}>
         {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && <DraculaSidebar />}
@@ -1111,7 +1125,7 @@ function Shell() {
           <WindowControls />
         </div>
       )}
-      {!playerActive && <WindowResizeEdges />}
+      {!playerActive && !macFullscreen && <WindowResizeEdges />}
       <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}>
         {Object.entries(primaryViewMounts).map(([view, mount]) => (
           <Fragment key={view}>{mount}</Fragment>

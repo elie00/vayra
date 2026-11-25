@@ -85,7 +85,10 @@ mod dvr;
 #[cfg(mobile)]
 #[path = "mobile_stubs/dvr.rs"]
 mod dvr;
-#[cfg(desktop)]
+#[cfg(all(desktop, not(target_os = "macos")))]
+mod fullscreen;
+#[cfg(target_os = "macos")]
+#[path = "fullscreen_mac.rs"]
 mod fullscreen;
 #[cfg(mobile)]
 #[path = "mobile_stubs/fullscreen.rs"]
@@ -169,7 +172,7 @@ pub(crate) fn shutdown_services(app: &tauri::AppHandle) {
 pub static CLOSE_FLUSH_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static CLOSE_IN_PROGRESS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-#[cfg(desktop)]
+#[cfg(all(desktop, not(target_os = "macos")))]
 fn emit_window_fullscreen_state(window: &tauri::Window) {
     use tauri::Emitter;
     let event = if window.is_fullscreen().unwrap_or(false) {
@@ -757,6 +760,9 @@ pub fn run() {
                         if let Err(e) = mpv_render_mac::install_window_rounding(ns_window_ptr) {
                             eprintln!("[harbor::mac] rounding failed: {}", e);
                         }
+                        // App setup runs on the main thread; Tauri owns this window.
+                        let native = unsafe { &*ns_window.cast::<objc2_app_kit::NSWindow>() };
+                        fullscreen::install(app.handle(), native);
                         if let Err(e) = mpv_render_mac::make_resizable(ns_window_ptr) {
                             eprintln!("[harbor::mac] resizable failed: {}", e);
                         }
@@ -782,6 +788,7 @@ pub fn run() {
             if window.label() != "main" {
                 return;
             }
+            #[cfg(not(target_os = "macos"))]
             if matches!(
                 event,
                 tauri::WindowEvent::Resized(_)
@@ -927,6 +934,8 @@ pub fn run() {
             pip::pip_publish_state,
             pip::window_pip_enter,
             pip::window_pip_exit,
+            #[cfg(target_os = "macos")]
+            fullscreen::window_fullscreen_status,
             fullscreen::window_fullscreen_enter,
             fullscreen::window_fullscreen_exit,
             browser::browser_open,

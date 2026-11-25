@@ -1,3 +1,4 @@
+import { isMacDesktop } from "@/lib/platform";
 import { loadStoredSettings } from "@/lib/settings/load";
 
 let windowFullscreen = false;
@@ -61,11 +62,11 @@ export function startWindowFullscreenSync(): void {
   void (async () => {
     try {
       const { listen } = await import("@tauri-apps/api/event");
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
-      setWindowFullscreen(await win.isFullscreen().catch(() => windowFullscreen));
       await listen("fs://entered", () => setWindowFullscreen(true));
       await listen("fs://exited", () => setWindowFullscreen(false));
+      const before = windowFullscreen;
+      const os = await osWindowFullscreen();
+      if (windowFullscreen === before) setWindowFullscreen(os);
     } catch {
       /* not Tauri or event API unavailable */
     }
@@ -148,6 +149,10 @@ export async function toggleWindowFullscreen(): Promise<void> {
 async function osWindowFullscreen(): Promise<boolean> {
   if (!isTauri()) return false;
   try {
+    if (isMacDesktop()) {
+      const { invoke } = await import("@tauri-apps/api/core");
+      return await invoke<boolean>("window_fullscreen_status");
+    }
     const { getCurrentWindow } = await import("@tauri-apps/api/window");
     return await getCurrentWindow().isFullscreen().catch(() => false);
   } catch {

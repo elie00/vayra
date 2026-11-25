@@ -286,8 +286,6 @@ pub fn install_window_rounding(ns_window_ptr: i64) -> Result<(), String> {
         if let Some(content_view) = ns_window.contentView() {
             let _: () = msg_send![&*content_view, setWantsLayer: true];
             if let Some(layer) = content_view.layer() {
-                let radius: f64 = 14.0;
-                let _: () = msg_send![&*layer, setCornerRadius: radius];
                 let _: () = msg_send![&*layer, setMasksToBounds: true];
                 let cg_clear: *mut AnyObject = msg_send![&*clear, CGColor];
                 let _: () = msg_send![&*layer, setBackgroundColor: cg_clear];
@@ -295,6 +293,45 @@ pub fn install_window_rounding(ns_window_ptr: i64) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+pub fn set_window_corner_radius(window: &NSWindow, fullscreen: bool) {
+    if let Some(layer) = window.contentView().and_then(|view| view.layer()) {
+        let radius: f64 = if fullscreen { 0.0 } else { 14.0 };
+        unsafe {
+            let _: () = msg_send![&*layer, setCornerRadius: radius];
+        }
+    }
+}
+
+pub fn apply_dark_appearance(window: &NSWindow) {
+    unsafe {
+        let name = NSString::from_str("NSAppearanceNameDarkAqua");
+        let appearance: *mut AnyObject =
+            msg_send![objc2::class!(NSAppearance), appearanceNamed: &*name];
+        if !appearance.is_null() {
+            let app: *mut AnyObject = msg_send![objc2::class!(NSApplication), sharedApplication];
+            if !app.is_null() {
+                let _: () = msg_send![app, setAppearance: appearance];
+            }
+            let _: () = msg_send![window, setAppearance: appearance];
+        }
+    }
+}
+
+pub fn sync_content_subviews(window: &NSWindow) {
+    let Some(content_view) = window.contentView() else {
+        return;
+    };
+    let bounds = content_view.bounds();
+    let subviews = content_view.subviews();
+    for view in subviews.iter() {
+        view.setFrame(bounds);
+        unsafe {
+            let _: () = msg_send![&*view, setNeedsLayout: true];
+            let _: () = msg_send![&*view, layoutSubtreeIfNeeded];
+        }
+    }
 }
 
 pub fn make_resizable(ns_window_ptr: i64) -> Result<(), String> {

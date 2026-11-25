@@ -23,6 +23,8 @@ import { EditorPanels } from "./editor-panels";
 import { FloatingInspector } from "./floating-inspector";
 import { ProfilePicker } from "./profile-picker";
 import { usePreviewBackdrop } from "./use-preview-backdrop";
+import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { useT } from "@/lib/i18n";
 
 type Props = {
@@ -93,7 +95,7 @@ export function EditorOverlay({
     w: window.innerWidth,
     h: window.innerHeight,
   }));
-  const [isFs, setIsFs] = useState(false);
+  const isFs = useWindowFullscreen();
   const [mode, setMode] = useState<PlayerMode>("normal");
   const previewBg = usePreviewBackdrop();
   const [previewStates, setPreviewStates] = useState<Partial<Record<PlayerControlId, string>>>({});
@@ -127,27 +129,6 @@ export function EditorOverlay({
     const onResize = () => setWinSize({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const check = async () => {
-      try {
-        const { getCurrentWindow } = await import("@tauri-apps/api/window");
-        const fs = await getCurrentWindow().isFullscreen();
-        if (!cancelled) setIsFs(fs);
-      } catch {
-        if (!cancelled) setIsFs(document.fullscreenElement != null);
-      }
-    };
-    check();
-    window.addEventListener("resize", check);
-    document.addEventListener("fullscreenchange", check);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("resize", check);
-      document.removeEventListener("fullscreenchange", check);
-    };
   }, []);
 
   useEffect(() => {
@@ -198,22 +179,8 @@ export function EditorOverlay({
     if (id) onSelectPanel(null);
   };
 
-  const toggleFullscreen = async () => {
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
-      const current = await win.isFullscreen();
-      await win.setFullscreen(!current);
-      setIsFs(!current);
-    } catch {
-      try {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen();
-        } else {
-          await document.documentElement.requestFullscreen();
-        }
-      } catch {}
-    }
+  const toggleFullscreen = () => {
+    void toggleWindowFullscreen();
   };
 
   return createPortal(
