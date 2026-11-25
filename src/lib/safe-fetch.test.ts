@@ -24,13 +24,42 @@ afterEach(() => {
 });
 
 describe("safeFetch on Tauri", () => {
-  it("aborts promptly without falling back to plugin-http when signal aborts", async () => {
-    invokeMock.mockImplementation(() => new Promise(() => {}));
+  it("aborts promptly and cancels the native Rust request without falling back to plugin-http", async () => {
+    invokeMock.mockImplementation((cmd: string) => {
+      if (cmd === "vayra_fetch_cancel") return Promise.resolve(true);
+      return new Promise(() => {});
+    });
     const { safeFetch } = await import("./safe-fetch");
     const ac = new AbortController();
     const pending = safeFetch("https://example.com/stream.json", { signal: ac.signal });
+    const fetchCall = invokeMock.mock.calls.find(([cmd]) => cmd === "vayra_fetch");
+    expect(fetchCall).toBeDefined();
+    const requestId = (fetchCall![1] as { args: { requestId?: number } }).args.requestId;
+    expect(typeof requestId).toBe("number");
+
     ac.abort();
     await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(invokeMock).toHaveBeenCalledWith("vayra_fetch_cancel", { requestId });
+    expect(tauriPluginFetchMock).not.toHaveBeenCalled();
+  });
+
+  it("routes URL instances through vayra_fetch on Tauri", async () => {
+    invokeMock.mockResolvedValue({
+      status: 200,
+      ok: true,
+      body: '{"ok":true}',
+      contentType: "application/json",
+      contentLength: null,
+    });
+    const { safeFetch } = await import("./safe-fetch");
+    const res = await safeFetch(new URL("https://api.themoviedb.org/3/configuration"));
+    expect(res.ok).toBe(true);
+    expect(invokeMock).toHaveBeenCalledWith(
+      "vayra_fetch",
+      expect.objectContaining({
+        args: expect.objectContaining({ url: "https://api.themoviedb.org/3/configuration" }),
+      }),
+    );
     expect(tauriPluginFetchMock).not.toHaveBeenCalled();
   });
 

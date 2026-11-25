@@ -954,6 +954,7 @@ pub fn run() {
             vara_client::vayra_sync_send,
             vara_client::vayra_sync_publish,
             http_fetch::vayra_fetch,
+            http_fetch::vayra_fetch_cancel,
             discord_rp::discord_set_presence,
             discord_rp::discord_clear,
             discord_rp::discord_set_enabled,

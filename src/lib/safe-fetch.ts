@@ -76,6 +76,8 @@ type HarborFetchResponse = {
   contentLength?: string | null;
 };
 
+let nextFetchRequestId = 1;
+
 function abortError(): DOMException {
   return new DOMException("The operation was aborted.", "AbortError");
 }
@@ -84,19 +86,29 @@ function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === "AbortError";
 }
 
-function raceWithSignal<T>(promise: Promise<T>, signal?: AbortSignal | null): Promise<T> {
+function raceWithSignal<T>(
+  promise: Promise<T>,
+  signal?: AbortSignal | null,
+  onAbort?: () => void,
+): Promise<T> {
   if (!signal) return promise;
-  if (signal.aborted) return Promise.reject(abortError());
+  if (signal.aborted) {
+    onAbort?.();
+    return Promise.reject(abortError());
+  }
   return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(abortError());
-    signal.addEventListener("abort", onAbort, { once: true });
+    const handleAbort = () => {
+      onAbort?.();
+      reject(abortError());
+    };
+    signal.addEventListener("abort", handleAbort, { once: true });
     promise.then(
       (value) => {
-        signal.removeEventListener("abort", onAbort);
+        signal.removeEventListener("abort", handleAbort);
         resolve(value);
       },
       (err) => {
-        signal.removeEventListener("abort", onAbort);
+        signal.removeEventListener("abort", handleAbort);
         reject(err);
       },
     );
@@ -120,6 +132,7 @@ async function tauriHarborFetch(input: string, init?: RequestInit): Promise<Resp
         : init?.body
           ? JSON.stringify(init.body)
           : undefined;
+  const requestId = init?.signal ? nextFetchRequestId++ : undefined;
   const resp = await raceWithSignal(
     invoke<HarborFetchResponse>("vayra_fetch", {
       args: {
@@ -128,9 +141,17 @@ async function tauriHarborFetch(input: string, init?: RequestInit): Promise<Resp
         headers,
         body,
         timeoutMs: 15000,
+        requestId,
       },
     }),
     init?.signal,
+    requestId !== undefined
+      ? () => {
+          invoke("vayra_fetch_cancel", { requestId }).catch(() => {
+            /* best-effort cancellation of native inflight socket */
+          });
+        }
+      : undefined,
   );
   const resHeaders: Record<string, string> = {};
   if (resp.contentType) resHeaders["content-type"] = resp.contentType;
@@ -159,19 +180,19 @@ export const safeFetch: typeof fetch = (input, init) => {
     return Promise.reject(new TrackerBlockedError(host));
   }
   if (isTauri) {
-    if (typeof input === "string") {
+    if (target) {
       if (isIdempotent(init?.method)) {
-        return tauriHarborFetch(input, init).catch((err) => {
+        return tauriHarborFetch(target, init).catch((err) => {
           if (isAbortError(err) || init?.signal?.aborted) throw err;
-          return tauriFetchImpl(input as string, init as RequestInit) as Promise<Response>;
+          return tauriFetchImpl(target, init as RequestInit) as Promise<Response>;
         });
       }
-      return tauriHarborFetch(input, init);
+      return tauriHarborFetch(target, init);
     }
     return tauriFetchImpl(input as unknown as string, init as RequestInit) as Promise<Response>;
   }
-  if (typeof input === "string") {
-    const r = rewriteForWeb(input, init);
+  if (target) {
+    const r = rewriteForWeb(target, init);
     return fetch(r.url, r.init);
   }
   return fetch(input, init);
