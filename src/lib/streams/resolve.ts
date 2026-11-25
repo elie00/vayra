@@ -351,6 +351,7 @@ async function tryLocalEngine(
     magnetFromHash(stream.infoHash),
     trackersFromSources(stream.sources),
     addIdx,
+    true,
   );
   if (!added || added.files.length === 0) return null;
   const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName ?? null;
@@ -362,7 +363,9 @@ async function tryLocalEngine(
       absolute: hint?.absolute ?? null,
     });
   }
-  await torrentEngineSelect(added.info_hash, chosenIdx);
+  if (added.started_file_idx !== chosenIdx) {
+    await torrentEngineSelect(added.info_hash, chosenIdx);
+  }
   const engineUrl = `${added.stream_base}/${added.info_hash.toLowerCase()}/${chosenIdx}`;
   if (fullDownloadEnabled()) startFullDownload(added.info_hash.toLowerCase(), engineUrl);
   return {

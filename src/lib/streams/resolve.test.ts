@@ -130,4 +130,23 @@ describe("resolveStream over the local engine", () => {
     if (!r.ok) return;
     expect(r.data.fileIdx).toBe(1);
   });
+
+  it("skips redundant torrentEngineSelect when torrent_engine_add already started the chosen file", async () => {
+    mocks.torrentEngineAdd.mockResolvedValue({
+      info_hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF01",
+      stream_base: "http://127.0.0.1:11470/stream",
+      files: [{ idx: 0, name: "movie.mkv", length: 9000 }],
+      started_file_idx: 0,
+    });
+
+    const r = await resolveStream({ ...batch, fileIdx: 0 }, [], new AbortController().signal, true, true);
+    expect(r.ok).toBe(true);
+    expect(mocks.torrentEngineAdd).toHaveBeenCalledWith(
+      expect.stringContaining("magnet:?xt=urn:btih:"),
+      [],
+      0,
+      true,
+    );
+    expect(mocks.torrentEngineSelect).not.toHaveBeenCalled();
+  });
 });

@@ -449,27 +449,30 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
               typeof src.startAtSec === "number" && src.startAtSec > 0 ? src.startAtSec : 0;
             const cmd: Array<string | number> = ["loadfile", src.url, "replace", 0, `start=${startAt}`];
             await invoke("mpv_command", { cmd });
-            for (const s of src.subtitles ?? []) {
-              try {
-                let url = s.url;
-                if (/^https?:/i.test(url)) {
-                  try {
-                    url = await invoke<string>("sub_download", { url: s.url });
-                  } catch {
-                    /* fall back to remote URL */
-                  }
-                }
-                await invoke("mpv_sub_add", {
-                  url,
-                  lang: s.lang ?? null,
-                  title: null,
-                  select: false,
-                });
-              } catch {
-                /* noop */
-              }
-            }
             window.dispatchEvent(new Event("vayra:mpv-refresh-geom"));
+            const gen = playbackGeneration;
+            const subs = src.subtitles ?? [];
+            if (subs.length > 0) {
+              void Promise.allSettled(
+                subs.map(async (s) => {
+                  let url = s.url;
+                  if (/^https?:/i.test(url)) {
+                    try {
+                      url = await invoke<string>("sub_download", { url: s.url });
+                    } catch {
+                      /* fall back to remote URL */
+                    }
+                  }
+                  if (gen !== playbackGeneration || !mpvStarted) return;
+                  await invoke("mpv_sub_add", {
+                    url,
+                    lang: s.lang ?? null,
+                    title: null,
+                    select: false,
+                  });
+                }),
+              );
+            }
             return;
           } catch (err) {
             console.warn("[mpv] loadfile reload failed, falling back to recreate", err);

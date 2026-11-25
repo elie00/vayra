@@ -24,6 +24,7 @@ export type AddResult = {
   info_hash: string;
   files: EngineFile[];
   stream_base: string;
+  started_file_idx?: number | null;
 };
 
 export type TorrentEngineStats = {
@@ -72,6 +73,7 @@ export async function torrentEngineAdd(
   magnet: string,
   trackers: string[],
   fileIdx?: number,
+  startImmediately = false,
 ): Promise<AddResult | null> {
   if (!isTauri) return null;
   try {
@@ -80,6 +82,7 @@ export async function torrentEngineAdd(
       magnet,
       trackers,
       fileIdx: typeof fileIdx === "number" && fileIdx >= 0 ? fileIdx : null,
+      startImmediately,
     });
   } catch (e) {
     lastAddError = String(e);

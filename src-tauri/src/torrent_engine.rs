@@ -275,6 +275,7 @@ pub struct AddResult {
     info_hash: String,
     files: Vec<EngineFile>,
     stream_base: String,
+    started_file_idx: Option<usize>,
 }
 
 #[derive(Serialize)]
@@ -702,6 +703,7 @@ pub async fn torrent_engine_add(
     magnet: String,
     trackers: Vec<String>,
     file_idx: Option<usize>,
+    start_immediately: Option<bool>,
 ) -> Result<AddResult, String> {
     let session = ensure_session(&app).await?;
     let handle = acquire_handle(
@@ -731,13 +733,36 @@ pub async fn torrent_engine_add(
                 .collect::<Vec<_>>()
         })
         .map_err(|e| format!("{e:#}"))?;
-    let narrow_idx = file_idx
-        .filter(|&i| i < files.len())
-        .or_else(|| files.iter().max_by_key(|f| f.length).map(|f| f.idx));
-    let only = wanted_files(&info_hash, narrow_idx);
-    if !only.is_empty() {
-        if let Err(e) = session.update_only_files(&handle, &only).await {
-            eprintln!("[torrent-engine] initial file narrowing failed: {e:#}");
+    let auto_start_idx = if start_immediately == Some(true) {
+        file_idx
+            .filter(|&i| i < files.len())
+            .or_else(|| if files.len() == 1 { Some(0) } else { None })
+    } else {
+        None
+    };
+    let mut started_file_idx = None;
+    if let Some(idx) = auto_start_idx {
+        let only = wanted_files(&info_hash, Some(idx));
+        match select_files(&session, &handle, &only).await {
+            Ok(()) => {
+                started_file_idx = Some(idx);
+                if let Some(file) = files.get(idx) {
+                    prefetch::start(handle.clone(), idx, prefetch::play_start_ranges(file.length));
+                }
+            }
+            Err(e) => {
+                eprintln!("[torrent-engine] atomic start selection failed: {e}");
+            }
+        }
+    } else {
+        let narrow_idx = file_idx
+            .filter(|&i| i < files.len())
+            .or_else(|| files.iter().max_by_key(|f| f.length).map(|f| f.idx));
+        let only = wanted_files(&info_hash, narrow_idx);
+        if !only.is_empty() {
+            if let Err(e) = session.update_only_files(&handle, &only).await {
+                eprintln!("[torrent-engine] initial file narrowing failed: {e:#}");
+            }
         }
     }
     let port = current_port().ok_or_else(|| "engine port unavailable".to_string())?;
@@ -745,6 +770,7 @@ pub async fn torrent_engine_add(
         info_hash,
         files,
         stream_base: format!("http://127.0.0.1:{port}/stream"),
+        started_file_idx,
     })
 }
 

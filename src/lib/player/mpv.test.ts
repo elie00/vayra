@@ -191,4 +191,33 @@ describe("mpv resume integration", () => {
     await vi.advanceTimersByTimeAsync(60_000);
     expect(reloadCalls()).toHaveLength(0);
   });
+
+  it("does not block warm loadfile on slow external subtitles and drops stale downloads on switch", async () => {
+    const { bridge } = await loaded();
+    let resolveSub!: (path: string) => void;
+    mocks.invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "sub_download") {
+        return new Promise<string>((r) => { resolveSub = r; });
+      }
+      return undefined;
+    });
+
+    await bridge.load({
+      url: "https://example.invalid/ep1.mkv",
+      subtitles: [{ url: "https://subs.example.invalid/ep1.srt", lang: "fr" }],
+    });
+    expect(reloadCalls()).toHaveLength(1);
+    expect(mocks.invoke).toHaveBeenCalledWith("sub_download", {
+      url: "https://subs.example.invalid/ep1.srt",
+    });
+
+    // Switch episodes before the slow subtitle finishes; the late download must not attach to ep2.
+    await bridge.load({ url: "https://example.invalid/ep2.mkv" });
+    resolveSub("/tmp/ep1.srt");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.invoke).not.toHaveBeenCalledWith(
+      "mpv_sub_add",
+      expect.objectContaining({ url: "/tmp/ep1.srt" }),
+    );
+  });
 });
