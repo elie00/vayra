@@ -74,6 +74,7 @@ async function retry() {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   vi.clearAllMocks();
   vi.useFakeTimers();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);

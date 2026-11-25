@@ -76,6 +76,13 @@ import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { MacPersonalSections } from "./home/mac-personal-sections";
 import { MacDiscoveryBanner } from "./home/mac-discovery-banner";
 import { LumaResumeSection } from "./home/luma-resume-section";
+import {
+  clearLibrarySnapshot,
+  readHomeSnapshot,
+  readLibrarySnapshot,
+  writeHomeSnapshot,
+  writeLibrarySnapshot,
+} from "./home/home-snapshot";
 import { HOME_CATALOG_TIMEOUT_MS, withRequestTimeout } from "@/lib/request-outcome";
 
 const HeroCarousel = lazy(() => import("@/components/hero-carousel").then((m) => ({ default: m.HeroCarousel })));
@@ -90,7 +97,14 @@ export function Home({ active = true }: { active?: boolean }) {
   const uiLang = useUiLanguage();
   const [editMode, setEditMode] = useState(false);
   const [isAddSourceModalOpen, setAddSourceModalOpen] = useState(false);
-  const [rows, setRows] = useState<HomeRow[]>([]);
+  const initialSnapRef = useRef<ReturnType<typeof readHomeSnapshot> | undefined>(undefined);
+  if (initialSnapRef.current === undefined) {
+    initialSnapRef.current = readHomeSnapshot(settings, uiLang);
+  }
+  const [rows, setRows] = useState<HomeRow[]>(() => initialSnapRef.current?.rows ?? []);
+  const [hydratedFromSnapshot, setHydratedFromSnapshot] = useState<boolean>(
+    () => (initialSnapRef.current?.rows.length ?? 0) > 0,
+  );
   const [catalogStatus, setCatalogStatus] = useState<"loading" | "done" | "error">("loading");
   const [catalogRetry, setCatalogRetry] = useState(0);
   const [animeRows, setAnimeRows] = useState<HomeRow[]>([]);
@@ -105,8 +119,10 @@ export function Home({ active = true }: { active?: boolean }) {
   const [anilistWatchedMap, setAnilistWatchedMap] = useState<Map<string, Set<string>>>(() => new Map());
   const [localWatched, setLocalWatched] = useState<WatchedSet>(() => recentlyPlayed());
   useEffect(() => subscribePlayback(() => setLocalWatched(recentlyPlayed())), []);
-  const [heroPool, setHeroPool] = useState<Meta[]>([]);
-  const [items, setItems] = useState<LibraryItem[]>([]);
+  const [heroPool, setHeroPool] = useState<Meta[]>(() => initialSnapRef.current?.hero ?? []);
+  const [items, setItems] = useState<LibraryItem[]>(() =>
+    authKey ? (readLibrarySnapshot(user?._id) ?? []) : [],
+  );
   const cwVersion = useCwDismissVersion();
   const [tmdbProvidedByAddon, setTmdbProvidedByAddon] = useState(false);
   const [addonsTick, setAddonsTick] = useState(0);
@@ -193,7 +209,12 @@ export function Home({ active = true }: { active?: boolean }) {
       const filtered = isClassic
         ? addons
         : addons.filter((a) => !isAnimeRow(a) && !isStreamingServiceRow(a.name));
-      setRows(mergeRows(built.rows, filtered, { dedup: dedupRows }));
+      const merged = mergeRows(built.rows, filtered, { dedup: dedupRows });
+      setRows(merged);
+      setHydratedFromSnapshot(false);
+      if (!diagnostics.failed && (merged.length > 0 || built.hero.length > 0)) {
+        writeHomeSnapshot(settings, uiLang, merged, built.hero);
+      }
 
       if (authKey) {
         const installed = await userAddons(authKey).catch(() => []);
@@ -202,17 +223,21 @@ export function Home({ active = true }: { active?: boolean }) {
       }
     })();
     void withRequestTimeout(request, HOME_CATALOG_TIMEOUT_MS, controller.signal).then(() => {
-      if (!cancelled) setCatalogStatus(diagnostics.failed ? "error" : "done");
+      if (!cancelled) {
+        setHydratedFromSnapshot(false);
+        setCatalogStatus(diagnostics.failed ? "error" : "done");
+      }
     }, () => {
       if (cancelled) return;
       cancelled = true;
+      setHydratedFromSnapshot(false);
       setCatalogStatus("error");
     });
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [authKey, settings.tmdbKey, settings.tmdbLanguage, settings.region, settings.homeMode, settings.homeShowAllAddonRows, addonsTick, settings, catalogRetry]);
+  }, [authKey, settings.tmdbKey, settings.tmdbLanguage, settings.region, settings.homeMode, settings.homeShowAllAddonRows, addonsTick, settings, catalogRetry, uiLang]);
 
   useEffect(() => {
     if (settings.hideContent.anime || settings.homeMode === "classic") {
@@ -367,7 +392,12 @@ export function Home({ active = true }: { active?: boolean }) {
   useEffect(() => {
     if (!authKey) {
       setItems([]);
+      clearLibrarySnapshot();
       return;
+    }
+    const cachedLib = readLibrarySnapshot(user?._id);
+    if (cachedLib && cachedLib.length > 0) {
+      setItems((prev) => (prev.length === 0 ? cachedLib : prev));
     }
     let cancelled = false;
     const load = () => {
@@ -375,6 +405,7 @@ export function Home({ active = true }: { active?: boolean }) {
         .then((libItems) => {
           if (cancelled) return;
           setItems(libItems);
+          writeLibrarySnapshot(user?._id, libItems);
           const importKey = `harbor.discover.libImported.${user?._id ?? "anon"}`;
           let importedSince = 0;
           try {
@@ -1014,7 +1045,7 @@ export function Home({ active = true }: { active?: boolean }) {
               stremioWatched={stremioWatchedIds}
               homeLanguages={settings.homeLanguages}
           />
-          {catalogStatus === "loading" && <div role="status" className="flex flex-col gap-8">
+          {catalogStatus === "loading" && !hydratedFromSnapshot && <div role="status" className="flex flex-col gap-8">
             <p className="text-[13.5px] font-medium text-ink-muted">{t("Loading catalogs…")}</p>
             {visibleRows.length === 0 && Array.from({ length: 3 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)}
           </div>}
