@@ -1,10 +1,28 @@
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
 const BROWSER_UA: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+
+fn shared_client() -> Result<&'static reqwest::Client, String> {
+    static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+    CLIENT
+        .get_or_init(|| {
+            reqwest::Client::builder()
+                .no_proxy()
+                .tcp_nodelay(true)
+                .connect_timeout(Duration::from_secs(8))
+                .pool_max_idle_per_host(16)
+                .pool_idle_timeout(Duration::from_secs(90))
+                .build()
+                .map_err(|e| format!("client: {}", e))
+        })
+        .as_ref()
+        .map_err(|e| e.clone())
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +41,7 @@ pub struct VayraFetchResponse {
     pub ok: bool,
     pub body: String,
     pub content_type: Option<String>,
+    pub content_length: Option<String>,
 }
 
 fn parse_http_url(raw: &str) -> Result<reqwest::Url, String> {
@@ -46,22 +65,21 @@ pub async fn vayra_fetch(args: VayraFetchArgs) -> Result<VayraFetchResponse, Str
     // tournent en local (127.0.0.1 / LAN).
     let parsed_url = parse_http_url(&args.url)?;
 
-    let timeout = Duration::from_millis(args.timeout_ms.unwrap_or(30_000));
-    let client = reqwest::Client::builder()
-        .timeout(timeout)
-        .no_proxy()
-        .build()
-        .map_err(|e| format!("client: {}", e))?;
-
+    let timeout = Duration::from_millis(args.timeout_ms.unwrap_or(15_000).clamp(500, 60_000));
+    let client = shared_client()?;
     let parsed_method = parse_method(args.method.as_deref())?;
+    let is_head = parsed_method == reqwest::Method::HEAD;
 
-    let mut req = client.request(parsed_method, parsed_url);
+    let mut req = client.request(parsed_method, parsed_url).timeout(timeout);
 
     let mut has_user_agent = false;
+    let mut has_accept = false;
     if let Some(headers) = args.headers {
         for (k, v) in headers {
             if k.eq_ignore_ascii_case("user-agent") {
                 has_user_agent = true;
+            } else if k.eq_ignore_ascii_case("accept") {
+                has_accept = true;
             }
             req = req.header(k, v);
         }
@@ -69,7 +87,9 @@ pub async fn vayra_fetch(args: VayraFetchArgs) -> Result<VayraFetchResponse, Str
     if !has_user_agent {
         req = req.header("User-Agent", BROWSER_UA);
     }
-    req = req.header("Accept", "application/json, text/plain, */*");
+    if !has_accept {
+        req = req.header("Accept", "application/json, text/plain, */*");
+    }
     req = req.header("Accept-Language", "en-US,en;q=0.9");
 
     if let Some(body) = args.body {
@@ -84,13 +104,23 @@ pub async fn vayra_fetch(args: VayraFetchArgs) -> Result<VayraFetchResponse, Str
         .get(reqwest::header::CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
-    let body = res.text().await.unwrap_or_default();
+    let content_length = res
+        .headers()
+        .get(reqwest::header::CONTENT_LENGTH)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+    let body = if is_head {
+        String::new()
+    } else {
+        res.text().await.unwrap_or_default()
+    };
 
     Ok(VayraFetchResponse {
         status,
         ok,
         body,
         content_type,
+        content_length,
     })
 }
 
@@ -129,5 +159,12 @@ mod tests {
         assert!(parse_method(Some("bad method"))
             .unwrap_err()
             .starts_with("method: "));
+    }
+
+    #[test]
+    fn reuses_a_single_pooled_http_client() {
+        let a = shared_client().unwrap() as *const reqwest::Client;
+        let b = shared_client().unwrap() as *const reqwest::Client;
+        assert_eq!(a, b);
     }
 }

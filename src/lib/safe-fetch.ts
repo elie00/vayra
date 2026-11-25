@@ -73,9 +73,38 @@ type HarborFetchResponse = {
   ok: boolean;
   body: string;
   contentType: string | null;
+  contentLength?: string | null;
 };
 
+function abortError(): DOMException {
+  return new DOMException("The operation was aborted.", "AbortError");
+}
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "AbortError";
+}
+
+function raceWithSignal<T>(promise: Promise<T>, signal?: AbortSignal | null): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(abortError());
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(abortError());
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (err) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(err);
+      },
+    );
+  });
+}
+
 async function tauriHarborFetch(input: string, init?: RequestInit): Promise<Response> {
+  if (init?.signal?.aborted) throw abortError();
   const headers: Record<string, string> = {};
   if (init?.headers) {
     const h = new Headers(init.headers as HeadersInit);
@@ -91,18 +120,24 @@ async function tauriHarborFetch(input: string, init?: RequestInit): Promise<Resp
         : init?.body
           ? JSON.stringify(init.body)
           : undefined;
-  const resp = await invoke<HarborFetchResponse>("vayra_fetch", {
-    args: {
-      url: input,
-      method: init?.method ?? "GET",
-      headers,
-      body,
-      timeoutMs: 30000,
-    },
-  });
+  const resp = await raceWithSignal(
+    invoke<HarborFetchResponse>("vayra_fetch", {
+      args: {
+        url: input,
+        method: init?.method ?? "GET",
+        headers,
+        body,
+        timeoutMs: 15000,
+      },
+    }),
+    init?.signal,
+  );
+  const resHeaders: Record<string, string> = {};
+  if (resp.contentType) resHeaders["content-type"] = resp.contentType;
+  if (resp.contentLength) resHeaders["content-length"] = resp.contentLength;
   return new Response(resp.body, {
     status: resp.status,
-    headers: resp.contentType ? { "content-type": resp.contentType } : {},
+    headers: resHeaders,
   });
 }
 
@@ -118,15 +153,18 @@ export const safeFetch: typeof fetch = (input, init) => {
     let host = target;
     try {
       host = new URL(target).hostname;
-    } catch {}
+    } catch {
+      /* invalid URL string; preserve raw target as host label */
+    }
     return Promise.reject(new TrackerBlockedError(host));
   }
   if (isTauri) {
     if (typeof input === "string") {
       if (isIdempotent(init?.method)) {
-        return tauriHarborFetch(input, init).catch(
-          () => tauriFetchImpl(input as string, init as RequestInit) as Promise<Response>,
-        );
+        return tauriHarborFetch(input, init).catch((err) => {
+          if (isAbortError(err) || init?.signal?.aborted) throw err;
+          return tauriFetchImpl(input as string, init as RequestInit) as Promise<Response>;
+        });
       }
       return tauriHarborFetch(input, init);
     }
