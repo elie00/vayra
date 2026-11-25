@@ -3,14 +3,23 @@ import { useEffect, useMemo, useState } from "react";
 import { addonLogoSrc, resolveAddonLogo } from "@/components/addon-logo";
 import type { Addon } from "@/lib/addons";
 import { useT } from "@/lib/i18n";
-import type { ScoredStream } from "@/lib/streams/types";
-import { StremioRow } from "./stremio-row";
-import { FACET_DIMS, facetOptions, matchesFacets, type FacetState } from "./stream-facets";
-import { addonInstanceKey, buildAddonOptions } from "./picker-utils";
 import { useSettings } from "@/lib/settings";
 import { matchesCustomFilter, type CustomStreamFilter } from "@/lib/streams/custom-filters";
+import type { ScoredStream } from "@/lib/streams/types";
+import { AddonErrorBanner } from "./addon-error-banner";
+import { BestChoiceCard } from "./best-choice-card";
+import { ExternalLinksStrip } from "./external-links-strip";
 import { FacetMenuRow } from "./facet-menu-row";
 import { FilterBuilder } from "./filter-builder";
+import { addonInstanceKey, buildAddonOptions } from "./picker-utils";
+import { FACET_DIMS, facetOptions, matchesFacets, type FacetState } from "./stream-facets";
+import {
+  classifyStreams,
+  groupPlayableByQuality,
+  pickBestPlayable,
+  type QualityBucketKey,
+} from "./stream-presentation";
+import { StremioRow } from "./stremio-row";
 
 export function StremioLayout({
   streams,
@@ -113,14 +122,27 @@ export function StremioLayout({
       return 0;
     });
   }, [customFiltered, facet, filter, addonRank, preserveOrder]);
+  const classified = useMemo(() => classifyStreams(visibleStreams), [visibleStreams]);
+  const { best, rest } = useMemo(
+    () => pickBestPlayable(classified.playable),
+    [classified.playable],
+  );
+  const qualityGroups = useMemo(() => groupPlayableByQuality(rest), [rest]);
   const filterLabel = filter === "all"
     ? t("All")
     : addonOptions.find((o) => o.id === filter)?.name ?? t("All");
   const filterLogo = filter === "all" ? null : addonLogoMap.get(filter) ?? null;
+  const nothingVisible =
+    classified.playable.length === 0 &&
+    classified.errors.length === 0 &&
+    classified.external.length === 0 &&
+    streams.length > 0;
   return (
     <div className="flex flex-col gap-3">
       <div className="relative">
         <button
+          type="button"
+          aria-expanded={filterOpen}
           onClick={() => setFilterOpen((v) => !v)}
           className="flex w-full items-center justify-between gap-3 rounded-2xl bg-elevated/60 px-4 py-3 text-start text-[15px] font-medium text-ink ring-1 ring-edge-soft transition-colors hover:bg-elevated"
         >
@@ -143,6 +165,7 @@ export function StremioLayout({
         {filterOpen && (
           <div className="absolute inset-x-0 top-full z-10 mt-1 max-h-80 overflow-y-auto rounded-2xl bg-elevated p-1.5 ring-1 ring-edge shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)]">
             <button
+              type="button"
               onClick={() => {
                 setFilter("all");
                 setFilterOpen(false);
@@ -153,10 +176,11 @@ export function StremioLayout({
             >
               <CircleLogo addonId={null} addonName="All" logo={null} />
               <span className="flex-1 truncate">{t("All sources")}</span>
-              <span className="text-[12px] text-ink-subtle">{streams.length}</span>
+              <span className="text-[12px] tabular-nums text-ink-subtle">{streams.length}</span>
             </button>
             {addonOptions.map((opt) => (
               <button
+                type="button"
                 key={opt.id}
                 onClick={() => {
                   setFilter(opt.id);
@@ -172,7 +196,7 @@ export function StremioLayout({
                   logo={addonLogoMap.get(opt.id) ?? null}
                 />
                 <span className="flex-1 truncate">{opt.name}</span>
-                <span className="text-[12px] text-ink-subtle">{opt.count}</span>
+                <span className="text-[12px] tabular-nums text-ink-subtle">{opt.count}</span>
               </button>
             ))}
           </div>
@@ -193,20 +217,58 @@ export function StremioLayout({
           setBuilderOpen(true);
         }}
       />
-      <div className="flex flex-col gap-2">
-        {visibleStreams.map((s, i) => (
-          <StremioRow
-            key={`${s.url ?? s.infoHash ?? s.title}-${i}`}
-            stream={s}
-            failure={failedStreams.get(s) ?? null}
-            addonLogo={addonLogoMap.get(s.addonUrl ?? "") ?? addonLogoMap.get(s.addonId) ?? null}
-            match={matchFor ? matchFor(s) : null}
-            onPlay={() => onPlay(s)}
-            download={download}
-            isAnime={isAnime}
-          />
-        ))}
-      </div>
+      <AddonErrorBanner errors={classified.errors} />
+      {best && (
+        <BestChoiceCard
+          stream={best}
+          failure={failedStreams.get(best) ?? null}
+          match={matchFor ? matchFor(best) : null}
+          onPlay={() => onPlay(best)}
+          download={download}
+          isAnime={isAnime}
+        />
+      )}
+      {qualityGroups.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {qualityGroups.map((group) => (
+            <section
+              key={group.key}
+              aria-label={qualitySectionLabel(group.key, t)}
+              className="flex flex-col gap-1.5"
+            >
+              <header className="flex items-center gap-2 px-1 pt-0.5">
+                <h3 className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+                  {qualitySectionLabel(group.key, t)}
+                </h3>
+                <span className="rounded-full bg-elevated/80 px-1.5 py-0.5 text-[10.5px] font-semibold leading-none tabular-nums text-ink-subtle ring-1 ring-edge-soft/50">
+                  {group.streams.length}
+                </span>
+                <span aria-hidden className="h-px flex-1 bg-edge-soft/35" />
+              </header>
+              <div className="flex flex-col gap-1.5">
+                {group.streams.map((s, i) => (
+                  <StremioRow
+                    key={`${s.url ?? s.infoHash ?? s.title}-${i}`}
+                    stream={s}
+                    failure={failedStreams.get(s) ?? null}
+                    addonLogo={addonLogoMap.get(s.addonUrl ?? "") ?? addonLogoMap.get(s.addonId) ?? null}
+                    match={matchFor ? matchFor(s) : null}
+                    onPlay={() => onPlay(s)}
+                    download={download}
+                    isAnime={isAnime}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+      {nothingVisible && (
+        <p className="rounded-xl bg-elevated/35 px-4 py-6 text-center text-[13px] text-ink-muted ring-1 ring-edge-soft/40">
+          {t("No streams match these filters.")}
+        </p>
+      )}
+      <ExternalLinksStrip links={classified.external} onOpen={onPlay} />
       {!pipelineDone && (
         <PendingAddonsPill
           addons={addons}
@@ -323,6 +385,10 @@ function PendingChip({ addon }: { addon: Addon }) {
       </span>
     </span>
   );
+}
+
+function qualitySectionLabel(key: QualityBucketKey, t: (k: string) => string): string {
+  return key === "other" ? t("Others") : key;
 }
 
 function isInstantText(s: ScoredStream): boolean {

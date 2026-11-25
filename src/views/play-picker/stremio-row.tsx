@@ -1,20 +1,27 @@
-import { ArrowDownToLine, ChevronDown, Play } from "lucide-react";
+import { ArrowDownToLine, Play } from "lucide-react";
 import { useState } from "react";
-import { AddonLogo } from "@/components/addon-logo";
-import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
-import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
+import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { explainScore } from "@/lib/streams/score-reasons";
 import type { ScoredStream } from "@/lib/streams/types";
 import { EditionChip } from "./edition-chip";
+import {
+  LanguageBadges,
+  QualityPill,
+  ScoreBreakdown,
+  ScoreInfoButton,
+  StreamMetrics,
+  TechFormatBadges,
+} from "./stream-badges-line";
+import { extractReleaseMeta } from "./stream-presentation";
 
 export function StremioRow({
   stream,
   failure,
-  addonLogo,
+  addonLogo: _addonLogo,
   match = null,
   onPlay,
   download = false,
@@ -23,109 +30,123 @@ export function StremioRow({
   stream: ScoredStream;
   /** Why this source failed in this picker, or null while it has not. */
   failure: string | null;
-  addonLogo: string | null;
+  addonLogo?: string | null;
   match?: "same" | "close" | null;
   onPlay: () => void;
   download?: boolean;
   isAnime?: boolean;
 }) {
+  void _addonLogo;
   const t = useT();
   const { settings } = useSettings();
-  const full = settings.fullStreamDescription;
-  const addonName = stream.addonName ?? t("Source");
-  const headline = stream.name?.trim() || addonName;
-  const rawDescription = stream.title?.trim() || stream.description?.trim() || "";
-  const description = full ? rawDescription : condenseDescription(rawDescription);
-  const badges = settings.showQualityBadge ? streamBadges(stream) : [];
+  const [whyOpen, setWhyOpen] = useState(false);
+
+  const meta = extractReleaseMeta(stream);
   const dubSub = settings.showDubBadge ? streamDubSub(stream.audioLanguages, isAnime) : null;
   const link = resolveStreamLink(stream);
-  const [whyOpen, setWhyOpen] = useState(false);
   const why = explainScore(stream.reasons ?? []);
+  const rawDescription = stream.title?.trim() || stream.description?.trim() || "";
+  const sublineParts = [meta.releaseName, meta.sourceLabel].filter(Boolean);
+
   return (
     <div
-      className={`flex items-stretch gap-5 rounded-2xl bg-elevated/40 p-5 ring-1 transition-colors ${
-        failure != null ? "ring-danger/40 bg-danger/5" : "ring-edge-soft/50"
+      className={`group rounded-xl ring-1 transition-colors ${
+        failure != null
+          ? "bg-danger/5 ring-danger/45"
+          : "bg-elevated/35 ring-edge-soft/45 hover:bg-elevated/70 hover:ring-edge-soft focus-within:ring-edge"
       }`}
     >
-      <div className="flex w-[68px] shrink-0 flex-col items-center justify-center">
-        <AddonLogo
-          addonId={stream.addonId}
-          addonName={addonName}
-          manifestLogo={addonLogo}
-          size="tile"
-        />
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
-        <p className="whitespace-pre-line text-[16px] font-semibold leading-snug text-ink">
-          {headline}
-        </p>
-        {description && (
-          <p className={`whitespace-pre-line text-[14.5px] leading-snug text-ink-muted${full ? "" : " line-clamp-3"}`}>
-            {description}
-          </p>
-        )}
-        {(badges.length > 0 || match || stream.edition || dubSub) && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <HostMatchChip match={match} />
-            {dubSub && <DubSubPill kind={dubSub} size="sm" />}
-            {badges.map((k) => (
-              <FormatBadge key={k} kind={k} size="sm" />
-            ))}
-            <EditionChip stream={stream} />
-          </div>
-        )}
-        {why.length > 0 && (
-          <div className="flex flex-col items-start gap-1.5">
-            <button
-              type="button"
-              onClick={() => setWhyOpen((open) => !open)}
-              aria-expanded={whyOpen}
-              className="flex items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
-            >
-              {t("Why this score?")}
-              <ChevronDown size={13} className={`transition-transform duration-150 ${whyOpen ? "rotate-180" : ""}`} />
-            </button>
-            {whyOpen && (
-              <ul className="flex flex-wrap gap-1.5">
-                {why.map((line) => (
-                  <li
-                    key={line.label}
-                    className={`rounded-full px-2 py-0.5 text-[12px] font-medium ring-1 ${
-                      line.delta > 0 ? "bg-success/10 text-success ring-success/25" : "bg-danger/10 text-danger ring-danger/25"
-                    }`}
-                  >
-                    <span className="tabular-nums">{line.delta > 0 ? `+${line.delta}` : `−${-line.delta}`}</span> {line.label}
-                  </li>
-                ))}
-              </ul>
+      <div className="flex min-h-[56px] items-center gap-1.5 px-3 py-2">
+        <button
+          type="button"
+          onClick={onPlay}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-start focus-visible:outline-none"
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {settings.showQualityBadge && (
+                <>
+                  <QualityPill stream={stream} />
+                  <TechFormatBadges stream={stream} />
+                </>
+              )}
+              <LanguageBadges
+                stream={stream}
+                preferredLanguages={settings.preferredLanguages}
+                maxPrimary={2}
+              />
+              <HostMatchChip match={match} />
+              {dubSub && <DubSubPill kind={dubSub} size="sm" />}
+              <EditionChip stream={stream} />
+            </div>
+            {sublineParts.length > 0 && (
+              <p
+                className="truncate text-[12px] leading-snug text-ink-muted"
+                title={sublineParts.join(" · ")}
+              >
+                {meta.releaseName && <span>{meta.releaseName}</span>}
+                {meta.releaseName && meta.sourceLabel && (
+                  <span className="mx-1.5 text-ink-subtle" aria-hidden>
+                    ·
+                  </span>
+                )}
+                {meta.sourceLabel && (
+                  <span className="text-ink-subtle">{meta.sourceLabel}</span>
+                )}
+              </p>
+            )}
+            {(meta.sizeLabel || meta.isCached || meta.seeders != null) && (
+              <div className="flex items-center sm:hidden">
+                <StreamMetrics meta={meta} columns={false} />
+              </div>
             )}
           </div>
-        )}
-        {failure != null && (
-          <p className="text-[13px] font-medium text-danger">{failure || t("Unavailable, try another.")}</p>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-2 self-center">
-        {link && <CopyLinkButton url={link} size={16} className="h-9 w-9" />}
-        <button
-          onClick={onPlay}
-          aria-label={download ? t("Download") : t("Play")}
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent text-canvas shadow-[0_2px_6px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[transform,box-shadow] duration-150 ease-out hover:shadow-[0_5px_14px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.18)] active:scale-[0.96] active:duration-100"
-        >
-          {download ? (
-            <ArrowDownToLine size={25} strokeWidth={2.4} />
-          ) : (
-            <Play size={26} fill="currentColor" className="ml-0.5" />
-          )}
+
+          <div className="hidden shrink-0 sm:flex">
+            <StreamMetrics meta={meta} columns />
+          </div>
+
+          <span
+            aria-hidden
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-raised/70 text-ink-muted transition-colors group-hover:bg-ink group-hover:text-canvas group-focus-within:bg-ink group-focus-within:text-canvas"
+          >
+            {download ? (
+              <ArrowDownToLine size={13} strokeWidth={2.4} />
+            ) : (
+              <Play size={12} fill="currentColor" strokeWidth={0} className="ml-0.5" />
+            )}
+          </span>
         </button>
+
+        {(why.length > 0 || link) && (
+          <div className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+            {why.length > 0 && (
+              <ScoreInfoButton open={whyOpen} onToggle={() => setWhyOpen((v) => !v)} />
+            )}
+            {link && <CopyLinkButton url={link} size={13} />}
+          </div>
+        )}
       </div>
+
+      {settings.fullStreamDescription && rawDescription && (
+        <div className="px-3 pb-2.5">
+          <p className="whitespace-pre-line rounded-lg bg-canvas/55 px-2.5 py-2 font-mono text-[11.5px] leading-relaxed text-ink-muted ring-1 ring-edge-soft/50">
+            {rawDescription}
+          </p>
+        </div>
+      )}
+
+      {whyOpen && why.length > 0 && (
+        <div className="border-t border-edge-soft/40 px-3 pb-2.5 pt-1.5">
+          <ScoreBreakdown why={why} />
+        </div>
+      )}
+
+      {failure != null && (
+        <p className="px-3 pb-2.5 text-[12.5px] font-medium text-danger">
+          {failure || t("Unavailable, try another.")}
+        </p>
+      )}
     </div>
   );
-}
-
-function condenseDescription(text: string): string {
-  if (!text) return "";
-  const [first, ...rest] = text.split("\n");
-  const head = first.length > 90 ? first.slice(0, 90).trimEnd() + "…" : first;
-  return [head, ...rest].join("\n");
 }
